@@ -1,15 +1,68 @@
-# Validation Evidence
+<!--
+SPDX-License-Identifier: MIT
+Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
+-->
 
-This repository formally models material physics. Here we validate its core components against established literature.
+# Validation
 
-## Thermodynamic Consistency
+The UMST Manifold ships with a validation envelope that is deliberately
+narrower than its capability surface — every claim in this document is
+backed by an automated test in [`tests/`](../tests).
 
-The engine computes exact adjoint sensitivities in $O(1)$ activation memory. To validate this, we ran 10,000 steps of continuous integration against a closed-form analytic thermal diffusion equation. 
+## V.1 Discrete exterior calculus
 
-*Figure 1: Numerical PDE heat flow vs UMST Topological Laplacian. The error margin is $<10^{-5}$ across the entire domain.*
+| Identity | Test | Reference |
+|----------|------|-----------|
+| `d ∘ d = 0` on every closed 1-chain | [`tests/dec_identities.rs::d_squared_zero`](../tests/dec_identities.rs) | Crane et al. 2013 §3 |
+| Discrete Stokes on a triangulated disk | [`tests/dec_identities.rs::stokes_triangle`](../tests/dec_identities.rs) | Hirani 2003 §2.4 |
+| Hodge Laplacian symmetry: `Δ = Δᵀ` | [`tests/dec_identities.rs::laplacian_symmetric`](../tests/dec_identities.rs) | — |
+| Mass conservation under random topology mutation | [`tests/conservation.rs::mass_conserved_under_severing`](../tests/conservation.rs) | Crane et al. §4 |
 
-## Admissibility
+These run on a deterministic 32-vertex test graph and on a 1024-vertex
+Delaunay triangulation of a unit square.
 
-When a topological transition violates Landauer's principle (requiring more energy than available in the local boundary), the `ThermodynamicCBF` correctly rejects the transition.
+## V.2 Adjoint sensitivity
 
-*Figure 2: Information gain (nats) vs Total Cost (Joules). The phase boundary exactly tracks the theoretical bound $Q = k_B T \ln(2) H$.*
+| Property | Test | Tolerance |
+|----------|------|-----------|
+| Adjoint gradient agrees with finite-difference gradient on a linear ODE | [`tests/adjoint.rs::linear_ode_gradient_matches_fd`](../tests/adjoint.rs) | $\le 10^{-4}$ relative |
+| Constant activation memory: peak allocator usage independent of horizon $T$ | [`tests/adjoint.rs::activation_memory_constant`](../tests/adjoint.rs) | within $1.5\times$ of $T=1$ |
+| Time-reversal: $\mathbf{a}(0)$ recovers the analytic adjoint | [`tests/adjoint.rs::reverse_terminal_condition`](../tests/adjoint.rs) | $\le 10^{-6}$ |
+
+## V.3 Thermodynamic CBF
+
+| Property | Test | Reference |
+|----------|------|-----------|
+| Admissible Carnot cycle is accepted | [`tests/cbf.rs::carnot_admissible`](../tests/cbf.rs) | classical |
+| Reverse Carnot cycle (entropy decrease) is rejected | [`tests/cbf.rs::reverse_carnot_rejected`](../tests/cbf.rs) | classical |
+| Erasure cost saturates the Landauer bound to within 1 % | [`tests/cbf.rs::landauer_saturation`](../tests/cbf.rs) | Landauer 1961 |
+
+## V.4 Type-state pattern
+
+| Property | Test |
+|----------|------|
+| `VerifiedUMST` is constructible only via the gateway | [`tests/type_state.rs::no_external_construction`](../tests/type_state.rs) (compile-fail) |
+| Inadmissible state cannot be lifted to `VerifiedUMST` | [`tests/type_state.rs::inadmissible_rejected`](../tests/type_state.rs) |
+
+## How to reproduce
+
+```bash
+git clone https://github.com/tytolabs/umst-manifold
+cd umst-manifold
+cargo test --all-features --release
+```
+
+CI runs the full suite on every push and pull request — see
+[`.github/workflows/rust.yml`](../.github/workflows/rust.yml).
+
+## What this document does *not* claim
+
+- The CBF is not a *proof* of the Second Law. It is a runtime gate. Bugs
+  in the gate can let inadmissible states through, which is why
+  contributions that touch dissipation must add a regression test.
+- Adjoint memory is $\mathcal{O}(1)$ in the *integration horizon*. Total
+  memory still scales with parameter count and adjoint state width.
+- "Conservation by construction" is conservation under exact arithmetic.
+  In practice, floating-point round-off introduces a residual; the
+  conservation tests assert this residual is below $10^{-10}$ in
+  absolute mass for a unit-mass setup.

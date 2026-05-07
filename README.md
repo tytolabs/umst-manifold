@@ -138,7 +138,7 @@ If you use UMST in academic work, please cite via the [CITATION.cff](CITATION.cf
 ## Authors
 
 **Santhosh Shyamsundar** — Studio TYTO; IAAC Barcelona · [santhoshshyamsundar@tyto.studio](mailto:santhoshshyamsundar@tyto.studio)
-**Santosh Prabhu Shenbagamoorthy** — Studio TYTO; IAAC Barcelona · [santosh@tyto.studio](mailto:santosh@tyto.studio)
+**Santosh Prabhu Shenbagamoorthy** — Studio TYTO; IAAC Barcelona
 
 ## Contributing
 
