@@ -4,9 +4,19 @@ authors:
   - family-names: "Shyamsundar"
     given-names: "Santhosh"
     orcid: "https://orcid.org/0009-0004-9842-1234"
+    affiliation: "Institute for Advanced Architecture of Catalonia (IAAC) / Studio TYTO"
   - family-names: "Shenbagamoorthy"
     given-names: "Santosh Prabhu"
+    affiliation: "Institute for Advanced Architecture of Catalonia (IAAC) / Studio TYTO"
 title: "UMST Manifold: A Differentiable Spatiotemporal Manifold"
+abstract: "The Unified Material-State Tensor (UMST) Manifold is a substrate for differentiable physics. Material configurations are represented as cellular sheaves over a graph, ensuring flows of mass, heat, and stress are conservatively governed by topological operators."
+keywords:
+  - physics
+  - machine-learning
+  - differential-equations
+  - topology
+  - burn
+  - materials
 version: 0.1.0
 date-released: 2026-05-07
 url: "https://github.com/tytolabs/umst-manifold"
