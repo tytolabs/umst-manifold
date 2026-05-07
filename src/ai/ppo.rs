@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-
 use crate::ai::cbf::ThermodynamicCBF;
 use crate::core::traits::{IScienceCartridge, PhysicalResult};
 use burn::tensor::{backend::Backend, Tensor};

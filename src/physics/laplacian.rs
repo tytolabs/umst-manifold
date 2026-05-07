@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-
 use burn::tensor::{backend::Backend, Int, Tensor};
 
 /// The Hodge-Dirac topological flow engine.

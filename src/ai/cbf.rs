@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-
 use burn::tensor::{backend::Backend, Tensor};
 use std::f64::consts::LN_2;
 
@@ -52,7 +51,7 @@ impl ThermodynamicCBF {
         let erasure_cost = self.calculate_landauer_cost(bits_resolved);
 
         // 2. Check Global Thermodynamic Limits (Economic/Computational Bound)
-        
+
         if erasure_cost > self.available_credit_joules {
             return Err(format!(
                 "REJECTED: Insufficient Global Energy Credit. Required {} J, Available {} J.",
