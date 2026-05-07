@@ -27,7 +27,7 @@ wgpu = ["burn/wgpu"]
 train = ["burn/train"]
 
 [dependencies]
-burn = { version = "0.13.0", default-features = false }
+burn = { version = "0.20.1", default-features = false }
 burn-ndarray = "0.13.0"
 rand = "0.8"
 
