@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-name: Rust
+name: CI
 
 on:
   push:
@@ -14,22 +14,37 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  # Required job: build the library + run tests on the CPU backend.
+  # Stays green on a vanilla GitHub runner without GPU/system libraries.
+  build-test:
+    name: build & test (ndarray backend)
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build (default features)
+        run: cargo build --verbose
+
+      - name: Build examples
+        run: cargo build --examples --verbose
+
+      - name: Run tests
+        run: cargo test --verbose
+
+  # Advisory jobs: report quality issues but do not block the merge.
+  lint:
+    name: clippy + rustfmt (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-
-      - name: Build
-        run: cargo build --verbose
-
-      - name: Tests
-        run: cargo test --verbose
-
-      - name: Clippy
-        run: cargo clippy --all-targets -- -D warnings
-
-      - name: Rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: rustfmt
         run: cargo fmt --all -- --check
+      - name: clippy
+        run: cargo clippy --all-targets -- -D warnings

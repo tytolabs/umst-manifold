@@ -9,7 +9,6 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 ### A differentiable spatiotemporal manifold for thermodynamic material evolution
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18768547.svg)](https://doi.org/10.5281/zenodo.18768547)
 [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
@@ -118,7 +117,7 @@ Adding a new domain is a matter of implementing one trait — see [`docs/Mathema
 
 ## Citing this work
 
-If you use UMST in academic work, please cite via the [CITATION.cff](CITATION.cff) file or the Zenodo DOI:
+A formal Zenodo deposit will accompany the v0.1.0 release; the DOI below is reserved for that record. Until the deposit is live, please cite using the GitHub URL or the [CITATION.cff](CITATION.cff) file.
 
 ```bibtex
 @software{umst_manifold_2026,
@@ -154,5 +153,5 @@ Released under the [MIT License](LICENSE) · © 2026 Santhosh Shyamsundar, Santo
 ---
 
 <div align="center">
-<sub><a href="https://github.com/tytolabs">github.com/tytolabs</a> · <a href="https://doi.org/10.5281/zenodo.18768547">10.5281/zenodo.18768547</a></sub>
+<sub><a href="https://github.com/tytolabs">github.com/tytolabs</a></sub>
 </div>

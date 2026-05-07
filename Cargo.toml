@@ -17,8 +17,17 @@ readme = "README.md"
 keywords = ["physics", "differentiable", "thermodynamics", "topology", "burn"]
 categories = ["science", "mathematics", "simulation"]
 
+[features]
+default = ["ndarray"]
+# CPU backend — always builds in CI without system libraries.
+ndarray = []
+# GPU backend via WGPU. Requires Vulkan/Metal toolchain locally; not enabled in CI.
+wgpu = ["burn/wgpu"]
+# Optimiser / training utilities.
+train = ["burn/train"]
+
 [dependencies]
-burn = { version = "0.13.0", features = ["wgpu", "train"] }
+burn = { version = "0.13.0", default-features = false }
 burn-ndarray = "0.13.0"
 rand = "0.8"
 

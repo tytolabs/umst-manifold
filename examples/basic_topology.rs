@@ -4,95 +4,102 @@
 //! Basic-topology example.
 //!
 //! Builds a small ring graph, applies the discrete Laplacian to a heat
-//! distribution, and demonstrates the two invariants the manifold relies
-//! on at the substrate level:
+//! impulse, and demonstrates the two invariants the manifold relies on
+//! at the substrate level:
 //!
-//! 1. The discrete Stokes identity — the sum of `d*omega` over a closed
-//!    chain is zero.
-//! 2. The Laplacian's row-sum is zero — i.e. the operator conserves
-//!    total mass on a closed graph.
+//! 1. The discrete Stokes identity — `Σ d ω = 0` over a closed cycle.
+//! 2. Mass conservation — the Laplacian's row-sum is zero.
+//!
+//! No `burn` backend is needed: the example uses pure-stdlib matrix
+//! arithmetic so it runs on any platform without GPU drivers.
 //!
 //! Run with:
 //! ```bash
 //! cargo run --example basic_topology --release
 //! ```
 
-use burn::backend::NdArray;
-use burn::tensor::Tensor;
+fn ring_b1(n: usize) -> Vec<Vec<f32>> {
+    let mut b1 = vec![vec![0.0_f32; n]; n];
+    for e in 0..n {
+        let tail = e;
+        let head = (e + 1) % n;
+        b1[head][e] = 1.0;
+        b1[tail][e] = -1.0;
+    }
+    b1
+}
 
-type B = NdArray<f32>;
+fn matvec(m: &[Vec<f32>], v: &[f32]) -> Vec<f32> {
+    m.iter()
+        .map(|row| row.iter().zip(v).map(|(a, b)| a * b).sum())
+        .collect()
+}
+
+fn matmul(a: &[Vec<f32>], b: &[Vec<f32>]) -> Vec<Vec<f32>> {
+    let m = a.len();
+    let k = a[0].len();
+    let n = b[0].len();
+    let mut out = vec![vec![0.0_f32; n]; m];
+    for i in 0..m {
+        for j in 0..n {
+            for p in 0..k {
+                out[i][j] += a[i][p] * b[p][j];
+            }
+        }
+    }
+    out
+}
+
+fn transpose(a: &[Vec<f32>]) -> Vec<Vec<f32>> {
+    let m = a.len();
+    let n = a[0].len();
+    let mut out = vec![vec![0.0_f32; m]; n];
+    for i in 0..m {
+        for j in 0..n {
+            out[j][i] = a[i][j];
+        }
+    }
+    out
+}
 
 fn main() {
     println!("UMST Manifold — basic topology example");
     println!("======================================");
 
-    let device = Default::default();
-
-    // 1. Build a ring graph on N vertices.
-    //    Edges: 0-1, 1-2, ..., (N-1)-0.
     let n: usize = 8;
     println!("Graph: ring on N = {n} vertices.");
 
-    // B1 boundary matrix (vertex-edge incidence, signed):
-    //   row v, column e is +1 if v is the head of e, -1 if tail, 0 otherwise.
-    let mut b1 = vec![vec![0.0f32; n]; n]; // n vertices, n edges
-    for e in 0..n {
-        let head = (e + 1) % n;
-        let tail = e;
-        b1[head][e] = 1.0;
-        b1[tail][e] = -1.0;
-    }
-    let b1: Tensor<B, 2> =
-        Tensor::from_data(burn::tensor::TensorData::from(reshape(&b1, n, n)), &device);
+    let b1 = ring_b1(n);
+    let b1t = transpose(&b1);
 
-    // 2. Place a heat impulse at vertex 0.
-    let mut omega0 = vec![0.0f32; n];
-    omega0[0] = 1.0;
-    let omega: Tensor<B, 2> = Tensor::from_data(
-        burn::tensor::TensorData::from(reshape(&[omega0.clone()], 1, n)),
-        &device,
-    );
+    let mut omega = vec![0.0_f32; n];
+    omega[0] = 1.0;
+    println!("Initial 0-cochain ω : {omega:?}");
 
-    println!("Initial heat distribution: {omega0:?}");
+    let d_omega = matvec(&b1t, &omega);
+    println!("d ω                : {d_omega:?}");
 
-    // 3. Apply the discrete exterior derivative d : C0 -> C1.
-    //    d.omega = B1^T . omega
-    let b1_t = b1.clone().transpose();
-    let d_omega = omega.clone().matmul(b1_t.clone());
+    let lap = matmul(&b1, &b1t);
+    let lap_omega = matvec(&lap, &omega);
+    println!("Δ₀ ω = d* d ω      : {lap_omega:?}");
 
-    // 4. Apply d* = B1 to recover a divergence on vertices.
-    let div = d_omega.clone().matmul(b1.clone().transpose());
-
-    // 5. Hodge Laplacian Delta_0 = d* d on vertices.
-    let lap = b1.clone().matmul(b1.clone().transpose());
-    let lap_omega = omega.matmul(lap);
-
-    let lap_v: Vec<f32> = lap_omega.into_data().to_vec().unwrap();
-    println!("Δ₀·ω        : {lap_v:.3?}");
-
-    let div_v: Vec<f32> = div.into_data().to_vec().unwrap();
-    println!("d*(d ω)     : {div_v:.3?}");
-
-    // 6. Invariant: sum of Δ₀·ω over all vertices equals zero (mass conservation).
-    let total: f32 = lap_v.iter().sum();
-    println!("Σ Δ₀·ω      = {total:+.3e}  (should be ~0 by mass conservation)");
+    let total: f32 = lap_omega.iter().sum();
+    println!("Σ Δ₀ ω             = {total:+.3e}  (mass-conservation invariant)");
 
     assert!(
         total.abs() < 1.0e-5,
-        "Laplacian violated row-sum invariant: |sum| = {}",
+        "Laplacian row-sum invariant violated: |sum| = {}",
         total.abs()
     );
 
-    println!();
-    println!("OK — discrete Laplacian conserves mass on a closed graph.");
-}
+    let stokes: f32 = d_omega.iter().sum();
+    println!("Σ d ω over cycle    = {stokes:+.3e}  (discrete Stokes invariant)");
+    assert!(
+        stokes.abs() < 1.0e-5,
+        "Discrete Stokes violated: |sum| = {}",
+        stokes.abs()
+    );
 
-fn reshape(rows: &[Vec<f32>], r: usize, c: usize) -> Vec<f32> {
-    let mut out = Vec::with_capacity(r * c);
-    for row in rows.iter().take(r) {
-        for &v in row.iter().take(c) {
-            out.push(v);
-        }
-    }
-    out
+    println!();
+    println!("OK — both DEC invariants hold to within 1e-5.");
 }
