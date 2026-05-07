@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
 use burn::tensor::{backend::Backend, Tensor};
+use num_traits::ToPrimitive;
 use std::f64::consts::LN_2;
 
 // Boltzmann constant in J/K
@@ -86,8 +87,10 @@ impl ThermodynamicCBF {
         // Compute precise bits resolved via tensor sum reduction
         // info_gain contains the mutual information per batch element
         let sum_bits_tensor = info_gain.sum();
-        let bits_resolved_arr = sum_bits_tensor.into_data().to_vec::<f32>().unwrap();
-        let total_bits_resolved = bits_resolved_arr[0] as f64;
+        let total_bits_resolved = sum_bits_tensor
+            .into_scalar()
+            .to_f64()
+            .unwrap_or(0.0);
 
         // Note: Real D_int to entropy conversion would use material specific heat capacity.
         // For the exact thermodynamic barrier, we require the scalar extraction of bits.

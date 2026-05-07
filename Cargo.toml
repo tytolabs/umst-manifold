@@ -29,7 +29,10 @@ train = ["burn/train"]
 [dependencies]
 burn = { version = "0.13.0", default-features = false }
 burn-ndarray = "0.13.0"
+# Pin: burn 0.13's burn-core calls bincode 2.0.0-rc.3 APIs not present in bincode 2.0.0+.
+bincode = "=2.0.0-rc.3"
 rand = "0.8"
+num-traits = "0.2"
 
 [dev-dependencies]
 approx = "0.5"

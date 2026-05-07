@@ -52,10 +52,15 @@ impl<B: Backend> EmergenceMonitor<B> {
         let sdf_z_minus = sdf.clone().slice([0..batch, 0..(d - 2), 0..h, 0..w]);
         let dz = sdf_z_plus.sub(sdf_z_minus).div_scalar(2.0);
 
-        // Pad the gradients back to original dimensions using zeros at the boundary
-        let pad_x = dx.pad(&[(0, 0), (0, 0), (0, 0), (1, 1)], 0.0);
-        let pad_y = dy.pad(&[(0, 0), (0, 0), (1, 1), (0, 0)], 0.0);
-        let pad_z = dz.pad(&[(0, 0), (1, 1), (0, 0), (0, 0)], 0.0);
+        let zero = sdf.mul_scalar(0.0).into_scalar();
+        let pad_x = dx.pad((1, 1, 0, 0), zero);
+        let pad_y = dy.pad((0, 0, 1, 1), zero);
+        let dev = dz.device();
+        let mut pad_z = Tensor::<B, 4>::zeros([batch, d, h, w], &dev);
+        pad_z = pad_z.slice_assign(
+            [0..batch, 1..(d - 1), 0..h, 0..w],
+            dz,
+        );
 
         // Compute magnitude squared: |∇SDF|^2 = dx^2 + dy^2 + dz^2
         let grad_sdf_sq = pad_x

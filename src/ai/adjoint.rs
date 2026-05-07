@@ -69,8 +69,9 @@ impl<B: Backend> AdjointNeuralODE<B> {
         let batch_size = dL_dz.dims()[0];
 
         // Let's assume a simplified adjoint lambda shape for this proof
-        let mut lambda_t = Tensor::<B, 3>::zeros([batch_size, 1000, 64]);
-        let mut dL_dtheta = Tensor::<B, 1>::zeros([1024]); // Mock weight gradient size
+        let device = dL_dz.device();
+        let mut lambda_t = Tensor::<B, 3>::zeros([batch_size, 1000, 64], &device);
+        let mut dL_dtheta = Tensor::<B, 1>::zeros([1024], &device); // Mock weight gradient size
 
         // 2. Integrate BACKWARD from t_end down to t_start
         let steps = 10;

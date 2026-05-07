@@ -55,14 +55,9 @@ impl TopologicalLaplacian {
         let raw_flow = x_tgt.sub(x_src);
         let edge_flow = raw_flow.mul(flow_coefficient);
 
-        // 5. Scatter the flow back to the nodes to compute divergence (Laplacian \Delta = d^* d)
-        let mut out = Tensor::<B, 3>::zeros_like(&x);
-
-        // Add flow to the source node
-        out = out.scatter_add(1, src_indices, edge_flow.clone());
-        // Subtract flow from target node (strict thermodynamic conservation!)
-        out = out.scatter_add(1, tgt_indices, edge_flow.neg());
-
-        out
+        // 5. Scatter the flow back to the nodes (sum reduction) for divergence (Laplacian \Delta = d^* d)
+        Tensor::<B, 3>::zeros_like(&x)
+            .scatter(1, src_indices, edge_flow.clone())
+            .scatter(1, tgt_indices, edge_flow.neg())
     }
 }

@@ -17,6 +17,7 @@ impl Proof for ClausiusDuhemProof {}
 
 /// The Ultimate Modular and Extensible Tensor State (UMST)
 /// A Proof-Carrying, E(3)-Equivariant Topological Manifold.
+#[derive(Clone)]
 pub struct UnifiedMaterialStateTensor<B: Backend> {
     // --- 1. The Domain: 4D Spacetime Sparse Coordinates ---
     /// Shape: [N_active_voxels, 5] -> (Batch, Time_Global, X, Y, Z)
