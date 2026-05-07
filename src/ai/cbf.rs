@@ -50,10 +50,12 @@ impl ThermodynamicCBF {
         // 1. Calculate the minimum thermodynamic cost of this computation
         let erasure_cost = self.calculate_landauer_cost(bits_resolved);
 
-        // 2. Check UCRS Credit Limits (Economic/Computational Bound)
-        if self.available_credit_joules < erasure_cost {
+        // 2. Check Global Thermodynamic Limits (Economic/Computational Bound)
+        let erasure_cost_joules = bits_resolved * (crate::ai::cbf::KB * self.temperature_k * f64::ln(2.0));
+        
+        if erasure_cost_joules > self.available_credit_joules {
             return Err(format!(
-                "REJECTED: Insufficient UCRS Credit. Required {} J, Available {} J.",
+                "REJECTED: Insufficient Global Energy Credit. Required {} J, Available {} J.",
                 erasure_cost, self.available_credit_joules
             ));
         }
