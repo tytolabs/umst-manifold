@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
+#![allow(clippy::needless_range_loop)]
+
 //! Discrete Exterior Calculus identities on the 1-skeleton.
 //!
 //! These tests assert the two foundational identities the manifold

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
+#![allow(clippy::needless_range_loop)]
+
 //! Basic-topology example.
 //!
 //! Builds a small ring graph, applies the discrete Laplacian to a heat

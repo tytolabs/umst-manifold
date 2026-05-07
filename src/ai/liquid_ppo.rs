@@ -79,19 +79,4 @@ impl<B: Backend, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B, C> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::core::tensors::UnifiedMaterialStateTensor;
-    use burn::tensor::backend::Backend;
-
-    // A mock test to verify the Adjoint ODE gradients backpropagate through the
-    // Topological Laplacian and the Manifold Gateway.
-    // #[test]
-    // fn test_adjoint_gradient_flow() {
-    //     // 1. Initialize BurnLiquidPPOAgent with a test Backend (e.g., Wgpu or NdArray)
-    //     // 2. Pass a mock UnifiedMaterialStateTensor
-    //     // 3. Run step_and_learn()
-    //     // 4. Assert that the returned gradients array (dL_dtheta) contains non-zero values
-    //     //    proving that the spatial reward successfully backpropagated through the DEC edges.
-    // }
-}
+mod tests {}

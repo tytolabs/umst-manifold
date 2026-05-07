@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
+#![allow(non_snake_case)]
+
 use crate::core::tensors::UnifiedMaterialStateTensor;
-use burn::tensor::{backend::Backend, Int, Tensor};
+use burn::tensor::{backend::Backend, Tensor};
 
 /// Augmented state tensor for the Adjoint Method.
 /// \mathbf{a}(t) = [\mathbf{z}(t), \mathbf{\lambda}(t), \frac{\partial L}{\partial \theta}]
@@ -18,6 +20,12 @@ pub struct AugmentedState<B: Backend> {
 pub struct AdjointNeuralODE<B: Backend> {
     _backend: std::marker::PhantomData<B>,
     // Policy weights would go here in a full Burn Module
+}
+
+impl<B: Backend> Default for AdjointNeuralODE<B> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<B: Backend> AdjointNeuralODE<B> {
@@ -40,9 +48,9 @@ impl<B: Backend> AdjointNeuralODE<B> {
         // For O(1) memory, we DO NOT push intermediate states to a Vector.
         // We only return the final state z(t_end).
 
-        let mut current_state = initial_state;
+        let current_state = initial_state;
         let steps = 10;
-        let dt = (t_end - t_start) / steps as f32;
+        let _dt = (t_end - t_start) / steps as f32;
 
         for _ in 0..steps {
             // current_state = rk4_step(current_state, f_theta, dt);
@@ -56,11 +64,11 @@ impl<B: Backend> AdjointNeuralODE<B> {
     /// Driven by the spatial reward returned from the ManifoldGateway.
     pub fn backward_adjoint(
         &self,
-        final_state: UnifiedMaterialStateTensor<B>,
+        _final_state: UnifiedMaterialStateTensor<B>,
         dL_dz: Tensor<B, 1>, // The spatial reward (gradient of loss w.r.t final state)
         t_start: f32,
         t_end: f32,
-        dt_sim_dt_global: Tensor<B, 1>, // Differentiable Time Dilation (No-Compromise B4)
+        _dt_sim_dt_global: Tensor<B, 1>, // Differentiable Time Dilation (No-Compromise B4)
     ) -> Tensor<B, 1> {
         // Returns the accumulated gradients dL/d\theta
 
@@ -70,12 +78,12 @@ impl<B: Backend> AdjointNeuralODE<B> {
 
         // Let's assume a simplified adjoint lambda shape for this proof
         let device = dL_dz.device();
-        let mut lambda_t = Tensor::<B, 3>::zeros([batch_size, 1000, 64], &device);
-        let mut dL_dtheta = Tensor::<B, 1>::zeros([1024], &device); // Mock weight gradient size
+        let _lambda_t = Tensor::<B, 3>::zeros([batch_size, 1000, 64], &device);
+        let dL_dtheta = Tensor::<B, 1>::zeros([1024], &device); // Mock weight gradient size
 
         // 2. Integrate BACKWARD from t_end down to t_start
         let steps = 10;
-        let dt = (t_end - t_start) / steps as f32;
+        let _dt = (t_end - t_start) / steps as f32;
 
         for _step in (0..steps).rev() {
             // The augmented ODE derivative incorporates the Time Dilation coupling!
