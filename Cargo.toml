@@ -1,0 +1,14 @@
+[package]
+name = "umst-manifold"
+version = "0.1.0"
+edition = "2021"
+authors = ["Santhosh Shyamsundar", "Santosh Prabhu Shenbagamoorthy", "Studio Tyto"]
+description = "A Differentiable Spatiotemporal Manifold for Thermodynamic Material Evolution"
+repository = "https://github.com/studiotyto/umst-manifold"
+license = "Apache-2.0"
+keywords = ["physics", "machine-learning", "differential-equations", "topology", "burn"]
+
+[dependencies]
+burn = { version = "0.13.0", features = ["wgpu", "train"] }
+burn-ndarray = "0.13.0"
+rand = "0.8"
