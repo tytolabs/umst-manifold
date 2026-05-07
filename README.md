@@ -17,6 +17,8 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 *The Unified Material-State Tensor (UMST) Manifold is a pure physics compiler. It represents materials not as static arrays, but as a mathematically rigorous Cellular Sheaf, allowing differential equations to strictly govern structural, thermodynamic, and physical evolution.*
 
+</div>
+
 <br>
 
 | | |
@@ -25,8 +27,6 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 | **Proof-Carrying States** | `VerifiedUMST` enforces the Second Law at compile time |
 | **O(1) Adjoint Integration** | Continuous-time optimization bypassing BPTT GPU exhaustion |
 | **Topological Fracture** | Edge-based DEC modeling resolves the fracture paradox |
-
-</div>
 
 ---
 

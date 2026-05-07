@@ -16,7 +16,7 @@ const K_BOLTZMANN: f64 = 1.380649e-23;
 pub struct ThermodynamicCBF {
     /// Local temperature of the physical system (Kelvin)
     pub temperature_k: f64,
-    /// Available energy budget for the PPO agent, sourced from the external ledger
+    /// Available energy budget for the PPO agent, sourced from the external thermodynamic budget source.
     pub available_credit_joules: f64,
 }
 
