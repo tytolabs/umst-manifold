@@ -11,8 +11,7 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18768547.svg)](https://doi.org/10.5281/zenodo.18768547)
 [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
-[![Crates.io](https://img.shields.io/crates/v/umst-manifold.svg)](https://crates.io/crates/umst-manifold)
-[![Docs.rs](https://img.shields.io/docsrs/umst-manifold)](https://docs.rs/umst-manifold)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Rust 2021](https://img.shields.io/badge/rust-2021-orange.svg)](https://www.rust-lang.org)
 
@@ -138,7 +137,7 @@ If you use UMST in academic work, please cite via the [CITATION.cff](CITATION.cf
 ## Authors
 
 **Santhosh Shyamsundar** — Studio TYTO; IAAC Barcelona · [santhoshshyamsundar@tyto.studio](mailto:santhoshshyamsundar@tyto.studio)
-**Santosh Prabhu Shenbagamoorthy** — Studio TYTO; IAAC Barcelona
+**Santosh Prabhu Shenbagamoorthy** — Studio TYTO; IAAC Barcelona · [santosh@tyto.studio](mailto:santosh@tyto.studio)
 
 ## Contributing
 
