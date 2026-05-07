@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy, and Studio Tyto
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 //! Liquid Time-Constant (LTC) / Neural ODE integration for PPO.
 //!
 //! Replaces the standard discrete MLP path with a continuous-time differential equation solver.

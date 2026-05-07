@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy, and Studio Tyto
+// SPDX-License-Identifier: Apache-2.0
+
 use burn::tensor::{backend::Backend, Int, Tensor};
 
 /// The Hodge-Dirac topological flow engine.

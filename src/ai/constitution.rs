@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy, and Studio Tyto
+// SPDX-License-Identifier: Apache-2.0
+
 //! Constitutional Physics Layer (Elevated v2)
 //!
 //! First-class representation of the "invincible constitution" of physical laws.
