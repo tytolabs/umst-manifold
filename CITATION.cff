@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Shyamsundar"
+    given-names: "Santhosh"
+    orcid: "https://orcid.org/0009-0004-9842-1234"
+  - family-names: "Shenbagamoorthy"
+    given-names: "Santosh Prabhu"
+title: "UMST Manifold: A Differentiable Spatiotemporal Manifold"
+version: 0.1.0
+date-released: 2026-05-07
+url: "https://github.com/tytolabs/umst-manifold"
+doi: "10.5281/zenodo.18768547"

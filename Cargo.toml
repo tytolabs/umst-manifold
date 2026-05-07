@@ -2,13 +2,33 @@
 name = "umst-manifold"
 version = "0.1.0"
 edition = "2021"
-authors = ["Santhosh Shyamsundar", "Santosh Prabhu Shenbagamoorthy", "Studio Tyto"]
-description = "A Differentiable Spatiotemporal Manifold for Thermodynamic Material Evolution"
-repository = "https://github.com/studiotyto/umst-manifold"
+rust-version = "1.75"
+authors = [
+    "Santhosh Shyamsundar <santhoshshyamsundar@gmail.com>",
+    "Santosh Prabhu Shenbagamoorthy",
+    "Studio TYTO",
+]
+description = "A differentiable spatiotemporal manifold for thermodynamic material evolution, built in pure Rust on the burn tensor framework."
+documentation = "https://docs.rs/umst-manifold"
+homepage = "https://github.com/tytolabs/umst-manifold"
+repository = "https://github.com/tytolabs/umst-manifold"
 license = "MIT"
-keywords = ["physics", "machine-learning", "differential-equations", "topology", "burn"]
+readme = "README.md"
+keywords = ["physics", "differentiable", "thermodynamics", "topology", "burn"]
+categories = ["science", "mathematics", "simulation"]
 
 [dependencies]
 burn = { version = "0.13.0", features = ["wgpu", "train"] }
 burn-ndarray = "0.13.0"
 rand = "0.8"
+
+[dev-dependencies]
+approx = "0.5"
+
+[lib]
+name = "umst_manifold"
+path = "src/lib.rs"
+
+[[example]]
+name = "basic_topology"
+path = "examples/basic_topology.rs"
