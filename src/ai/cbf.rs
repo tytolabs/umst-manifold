@@ -51,9 +51,8 @@ impl ThermodynamicCBF {
         let erasure_cost = self.calculate_landauer_cost(bits_resolved);
 
         // 2. Check Global Thermodynamic Limits (Economic/Computational Bound)
-        let erasure_cost_joules = bits_resolved * (crate::ai::cbf::KB * self.temperature_k * f64::ln(2.0));
         
-        if erasure_cost_joules > self.available_credit_joules {
+        if erasure_cost > self.available_credit_joules {
             return Err(format!(
                 "REJECTED: Insufficient Global Energy Credit. Required {} J, Available {} J.",
                 erasure_cost, self.available_credit_joules
@@ -70,7 +69,7 @@ impl ThermodynamicCBF {
             ));
         }
 
-        // 4. Deduct the exact erasure cost from the agent's ledger
+        // 4. Deduct the exact erasure cost from the agent's energy pool
         self.available_credit_joules -= erasure_cost;
 
         Ok(erasure_cost)
@@ -81,7 +80,7 @@ impl ThermodynamicCBF {
     /// Uses Burn tensor reductions to calculate batch entropy.
     pub fn verify_tensor_update<B: Backend>(
         &mut self,
-        _d_int: Tensor<B, 4>,
+        _d_int: Tensor<B, 1>,
         info_gain: Tensor<B, 1>,
     ) -> Result<f64, String> {
         // Compute precise bits resolved via tensor sum reduction

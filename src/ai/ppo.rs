@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::ai::cbf::ThermodynamicCBF;
-use crate::core::tensors::SpatialTensor;
 use crate::core::traits::{IScienceCartridge, PhysicalResult};
 use burn::tensor::{backend::Backend, Tensor};
 
