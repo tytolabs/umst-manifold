@@ -57,10 +57,7 @@ impl<B: Backend> EmergenceMonitor<B> {
         let pad_y = dy.pad((0, 0, 1, 1), zero);
         let dev = dz.device();
         let mut pad_z = Tensor::<B, 4>::zeros([batch, d, h, w], &dev);
-        pad_z = pad_z.slice_assign(
-            [0..batch, 1..(d - 1), 0..h, 0..w],
-            dz,
-        );
+        pad_z = pad_z.slice_assign([0..batch, 1..(d - 1), 0..h, 0..w], dz);
 
         // Compute magnitude squared: |∇SDF|^2 = dx^2 + dy^2 + dz^2
         let grad_sdf_sq = pad_x

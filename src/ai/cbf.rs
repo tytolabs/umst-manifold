@@ -87,10 +87,7 @@ impl ThermodynamicCBF {
         // Compute precise bits resolved via tensor sum reduction
         // info_gain contains the mutual information per batch element
         let sum_bits_tensor = info_gain.sum();
-        let total_bits_resolved = sum_bits_tensor
-            .into_scalar()
-            .to_f64()
-            .unwrap_or(0.0);
+        let total_bits_resolved = sum_bits_tensor.into_scalar().to_f64().unwrap_or(0.0);
 
         // Note: Real D_int to entropy conversion would use material specific heat capacity.
         // For the exact thermodynamic barrier, we require the scalar extraction of bits.
