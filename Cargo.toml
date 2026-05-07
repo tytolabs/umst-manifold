@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Santhosh Shyamsundar", "Santosh Prabhu Shenbagamoorthy", "Studio Tyto"]
 description = "A Differentiable Spatiotemporal Manifold for Thermodynamic Material Evolution"
 repository = "https://github.com/studiotyto/umst-manifold"
-license = "Apache-2.0"
+license = "MIT"
 keywords = ["physics", "machine-learning", "differential-equations", "topology", "burn"]
 
 [dependencies]
