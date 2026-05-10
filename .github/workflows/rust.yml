@@ -14,6 +14,21 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  readme-sanity:
+    name: README sanity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: README sanity (catch accidental wipes)
+        run: |
+          set -euo pipefail
+          lines=$(wc -l < README.md)
+          if [ "$lines" -lt 20 ]; then
+            echo "FAIL: README.md is suspiciously short ($lines lines)"
+            exit 1
+          fi
+          echo "OK: README.md has $lines lines"
+
   # Required job: build the library + run tests on the CPU backend.
   # Stays green on a vanilla GitHub runner without GPU/system libraries.
   build-test:
