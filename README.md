@@ -36,25 +36,89 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 The manifold operates on the 1-skeleton of a graph using **Discrete Exterior Calculus (DEC)**. Physical flows are conserved by construction because they are expressed through the discrete exterior derivative `d` and its adjoint `d*`, satisfying the discrete Stokes identity.
 
 ```mermaid
-graph TD
-    A[UnifiedMaterialStateTensor]
-    B{Topological Laplacian}
-    C[Edge Flow d]
-    D[Divergence d*d]
-    E[Dissipation / Heat]
-    F[Free Energy]
+flowchart TB
+    Mix[/"sparse spacetime input<br/>coords · scalar · vector · matrix features"/]
 
-    A --> B
-    B --> C
-    B --> D
-    C -->|Exterior Derivative| E
-    D -->|Mass Conservation| F
+    subgraph SHEAF [" Cellular Sheaf on the 1-skeleton "]
+        UMST[("UnifiedMaterialStateTensor")]
+        B1["B_1  vertex - edge incidence"]
+        B2["B_2  edge - face incidence"]
+    end
 
-    classDef tensor fill:#1e1e1e,stroke:#00ffcc,stroke-width:2px,color:#fff
-    classDef math fill:#2d2d2d,stroke:#ff00ff,stroke-width:2px,color:#fff
-    class A,E,F tensor
-    class B,C,D math
+    subgraph DEC [" Discrete Exterior Calculus "]
+        d["d = B_1^T<br/>exterior derivative"]
+        ds["d* = B_1<br/>codifferential"]
+        Lap["Hodge Laplacian<br/>Delta_0 = d* d"]
+    end
+
+    subgraph INV [" Conservation Invariants  (mechanised) "]
+        Stokes["Stokes:  sum d w = 0  on closed cycle"]
+        ZeroSq["d compose d = 0"]
+        MassC["row-sum Delta_0 = 0  ⇒  mass conservation"]
+    end
+
+    subgraph GATE [" Thermodynamic Type-State Gate "]
+        CBF{{"ThermodynamicCBF<br/>Clausius-Duhem ≥ 0<br/>Landauer ≥ kB T ln 2"}}
+        Verif[/"VerifiedUMST&lt;ClausiusDuhemProof&gt;<br/>(phantom witness)"/]
+    end
+
+    subgraph ADJ [" Adjoint Sensitivity  ·  O(1) activation memory "]
+        Fw["forward ODE<br/>z(t) = exp(t A) z_0"]
+        Bw["backward ODE<br/>a(t) = exp((T - t) A^T) c"]
+    end
+
+    subgraph PLUG [" Domain Cartridge plug-point  ·  IScienceCartridge "]
+        Concrete[("umst-concrete-cartridge")]
+        Future[("umst-{polymer · alloy · bio}-cartridge")]
+    end
+
+    Reject[/"warnings · regime breach"/]
+
+    Mix --> UMST
+    UMST --> B1
+    UMST --> B2
+    B1 --> d
+    B1 --> ds
+    d --> Lap
+    ds --> Lap
+    B1 --> ZeroSq
+    B2 --> ZeroSq
+    Lap --> MassC
+    d --> Stokes
+
+    MassC --> CBF
+    Stokes --> CBF
+    ZeroSq --> CBF
+    CBF -->|admissible| Verif
+    CBF -.->|inadmissible| Reject
+
+    Verif --> Fw
+    Fw --> Bw
+    Bw -.->|grad theta L| Verif
+
+    Verif --> Concrete
+    Verif --> Future
+
+    classDef input fill:#0a2540,stroke:#5b9bd5,stroke-width:2px,color:#e1f5fe
+    classDef topo fill:#0f2a44,stroke:#16e0bd,stroke-width:2px,color:#a7f3d0
+    classDef dec fill:#2d1b69,stroke:#bb86fc,stroke-width:2px,color:#e9d5ff
+    classDef inv fill:#1a3d2e,stroke:#10b981,stroke-width:2px,color:#d1fae5
+    classDef gate fill:#3d1a1a,stroke:#ff6b6b,stroke-width:2px,color:#fef2f2
+    classDef adj fill:#3d2e1a,stroke:#f59e0b,stroke-width:2px,color:#fef3c7
+    classDef plug fill:#1f2937,stroke:#a78bfa,stroke-width:2px,color:#e9d5ff
+    classDef warn fill:#7c2d12,stroke:#ef4444,stroke-width:2px,color:#fef2f2,stroke-dasharray: 5 5
+
+    class Mix input
+    class UMST,B1,B2 topo
+    class d,ds,Lap dec
+    class Stokes,ZeroSq,MassC inv
+    class CBF,Verif gate
+    class Fw,Bw adj
+    class Concrete,Future plug
+    class Reject warn
 ```
+
+The diagram tells the substrate's whole story in one frame: sparse spacetime input lifts onto a cellular sheaf; the boundary matrices `B_1`, `B_2` give you the discrete exterior calculus; three conservation invariants (Stokes, `d ∘ d = 0`, mass-conservation row-sum) feed the thermodynamic gate; only states that pass become `VerifiedUMST<P>`; gradients are recovered through the adjoint ODE in O(1) activation memory; and the verified state plugs into any domain cartridge that implements `IScienceCartridge`.
 
 See [`docs/Mathematical-Foundations.md`](docs/Mathematical-Foundations.md) for the full operator algebra and proofs of conservation.
 
