@@ -102,6 +102,17 @@ See [`docs/Mathematical-Foundations.md`](docs/Mathematical-Foundations.md) for t
 
 ---
 
+## Scope: nine-phase solver plan vs default build
+
+The repo tracks a **nine-phase** solver plan (see `composer-plans/umst_bleeding_edge_solvers.md` in the parent workspace). That document is a **research plan**, not a claim that all nine phases ship as finished solvers in every build.
+
+- **Default build:** DEC / sheaf plumbing, **mechanics equilibrium** (packed CG on free DOFs), thermodynamic **CBF** gating, adjoint and gateway surfaces, and the usual `cargo test` targets are **active** and CI-green. Several modules under that plan stay **stubbed or no-op** here (e.g. damage update and wave step passthroughs, THMC `step` unavailable without the feature below).
+- **`--features solver-experimental`** (also pulled in by **`solver-tests`**, which root CI runs): **opt-in** code paths for scaffold/MVP slices—AT2 damage relaxation, coupled **THMC** stepping, electrochemistry / Bingham / topology optimiser forwards, experimental Voigt–Cauchy mechanics, Newmark wave integration, photonics driver, etc. Those paths are **still partial vs the full phase spec** (no implied “complete nine-phase suite”).
+
+**Provenance / disclosure:** [GAP_AUDIT.md](GAP_AUDIT.md) records plan-vs-implementation gaps and test commands.
+
+---
+
 ## Quickstart
 
 ```toml

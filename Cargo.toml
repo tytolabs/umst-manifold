@@ -25,17 +25,52 @@ ndarray = []
 wgpu = ["burn/wgpu"]
 # Optimiser / training utilities.
 train = ["burn/train"]
+# --- Opt-in solver scaffolds (granular) ---
+# AT2-style phase-field damage relaxation (`PhaseFieldFractureSolver`).
+fracture-at2 = []
+# Implicit Newmark-β tensor wave step (`AcousticsSolver::step_wave`).
+acoustics-newmark = []
+# Differentiable density / SIMP topology forward (`TopologyOptimizer::optimize_step`).
+topology-density-evolution = []
+# Coupled THMC Newton / explicit transport scaffold (`ThmcSolver::step`); pulls fracture for post-loop damage.
+thmc-coupled = ["fracture-at2"]
+# Poisson–Nernst–Planck-style electrochemistry MVP.
+electrochemistry-mvp = []
+# Bar-network equilibrium + graph Voigt strain → Cauchy stress (`solve_equilibrium_with_voigt_cauchy`).
+mechanics-voigt-cauchy = []
+# Bingham / projection flow on the graph (`BinghamFlowSolver::step`).
+rheology-bingham = []
+# Photonics / Helmholtz-style driver scaffold (`PhotonicsDriver::step_field`).
+photonics-scaffold = []
+# Meta: enable every opt-in solver slice (backward compatible with prior `solver-experimental` workflows).
+solver-experimental = [
+    "fracture-at2",
+    "acoustics-newmark",
+    "topology-density-evolution",
+    "thmc-coupled",
+    "electrochemistry-mvp",
+    "mechanics-voigt-cauchy",
+    "rheology-bingham",
+    "photonics-scaffold",
+]
+# Declared for `check-cfg` / conditional compilation in tests and downstream crates (may be empty).
+information_density = []
+# CI / workspace: same as full `solver-experimental`.
+solver-tests = ["solver-experimental"]
 
 [dependencies]
 burn = { version = "0.13.0", default-features = false }
 burn-ndarray = "0.13.0"
 # Pin: burn 0.13's burn-core calls bincode 2.0.0-rc.3 APIs not present in bincode 2.0.0+.
 bincode = "=2.0.0-rc.3"
+# Pin: burn-train → tracing-appender → time; 0.3.47+ declares rustc 1.88+ (blocks common toolchains).
+time = "=0.3.40"
 rand = "0.8"
 num-traits = "0.2"
 
 [dev-dependencies]
 approx = "0.5"
+burn-ndarray = "0.13.0"
 
 [lib]
 name = "umst_manifold"

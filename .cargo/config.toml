@@ -1,0 +1,6 @@
+# Allow known crate features for `unexpected_cfgs` / check-cfg (nightly and future stable).
+# Feature names match `[features]` in Cargo.toml.
+[build]
+rustflags = [
+    '--check-cfg=cfg(feature,values("acoustics-newmark","electrochemistry-mvp","fracture-at2","information_density","mechanics-voigt-cauchy","photonics-scaffold","rheology-bingham","solver-experimental","solver-tests","thmc-coupled","topology-density-evolution"))',
+]

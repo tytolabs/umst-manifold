@@ -1,0 +1,18 @@
+# Files listed here may contain `into_data` / `into_scalar` after explicit audit only.
+# Goal: no *new* silent Host tensor escapes in physics — new hits must use Burn ops or join this list with rationale.
+#
+# REVIEWED 2026-05-10: `mechanics.rs` — `#[cfg(test)]` modules use Host reads for numerical assertions;
+# the default equilibrium path uses tensor CG + `bar_matvec` scatter (no `into_data` in non-test code).
+# Re-audit if new non-test `into_data` appears.
+src/physics/mechanics.rs
+# REVIEWED 2026-05-10: Matches live only under #[cfg(test)] mod tests — Host reads for assertions.
+# Re-audit if non-test code is added to these modules.
+src/physics/solvers/rheology_flow.rs
+src/physics/solvers/statistical_mechanics.rs
+# REVIEWED 2026-05-10: `into_scalar` only aggregates thermal/hydrologic Newton residuals (R_T+R_h) for
+# convergence tests and logging — explicit Euler transport makes this a control-flow diagnostic, not an
+# autodiff training hot path. Re-audit if additional Host escapes appear outside the Newton loop.
+src/physics/solvers/thmc.rs
+# REVIEWED 2026-05-10: `into_data` only in #[cfg(test)] / #[cfg(all(test, feature))] modules for rho assertions.
+# Re-audit if non-test Host reads appear.
+src/physics/solvers/topology_solver.rs

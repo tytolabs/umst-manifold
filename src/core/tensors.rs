@@ -38,6 +38,75 @@ pub struct UnifiedMaterialStateTensor<B: Backend> {
     pub matrix_features: Tensor<B, 4>, // [N, F_matrices, 3, 3]
 
     pub resolution_mm: [f32; 3],
+
+    /// Optional embedding of each active node in **world-space SI metres** (`[N, 3]`).
+    pub node_positions: Option<Tensor<B, 2>>,
+
+    /// Per-node displacement BC: `1.0` = free, `0.0` = fixed. Shape `[N, 3]` or `[1, N, 3]` depending on caller;
+    /// THMC stepping accepts `[N,3]`, `[N,3,1]`, or batched `[B,N,3]` after expansion.
+    pub displacement_bc_mask: Tensor<B, 3>,
+
+    /// `1.0` where mix/topology edits are allowed. Shape `[N, 1]`.
+    pub policy_editable_mask: Tensor<B, 2>,
+}
+
+impl<B: Backend> UnifiedMaterialStateTensor<B> {
+    /// Blend full `proposed_scalar_features` (`[N, F]`) toward the current [`Self::scalar_features`]
+    /// using [`Self::policy_editable_mask`] broadcast over all scalar channels:
+    /// `result = proposed * m + original * (1 - m)` (same rule as [`Self::project_scalar_channel`]).
+    pub fn apply_policy_mask(&self, proposed_scalar_features: Tensor<B, 2>) -> Tensor<B, 2> {
+        let dims = self.scalar_features.dims();
+        let n = dims[0];
+        let f = dims[1];
+        debug_assert_eq!(
+            proposed_scalar_features.dims(),
+            dims,
+            "apply_policy_mask: proposed shape must match scalar_features [N, F]"
+        );
+        let m = self
+            .policy_editable_mask
+            .clone()
+            .reshape([n, 1])
+            .expand([n, f]);
+        let one = Tensor::<B, 2>::ones_like(&m);
+        proposed_scalar_features
+            .mul(m.clone())
+            .add(self.scalar_features.clone().mul(one.sub(m)))
+    }
+
+    /// Bulk scalar projection over every channel at once (same tensor blend as [`Self::apply_policy_mask`]).
+    pub fn project_all_scalars(&self, proposed_scalar_features: Tensor<B, 2>) -> Tensor<B, 2> {
+        self.apply_policy_mask(proposed_scalar_features)
+    }
+
+    /// Blend `proposed` (`[N, 1]`) into scalar column `channel` using [`Self::policy_editable_mask`].
+    pub fn project_scalar_channel(&self, channel: usize, proposed: Tensor<B, 2>) -> Tensor<B, 2> {
+        let n = self.scalar_features.dims()[0];
+        let old = self
+            .scalar_features
+            .clone()
+            .slice([0..n, channel..channel + 1]);
+        let m = self.policy_editable_mask.clone().reshape([n, 1]);
+        let one = Tensor::<B, 2>::ones_like(&m);
+        proposed.mul(m.clone()).add(old.mul(one.sub(m)))
+    }
+
+    /// Replace column `channel` of `scalar_features` with `col` (`[N, 1]`).
+    pub fn write_scalar_channel(&mut self, channel: usize, col: Tensor<B, 2>) {
+        let n = self.scalar_features.dims()[0];
+        let f = self.scalar_features.dims()[1];
+        assert!(
+            channel < f,
+            "write_scalar_channel: channel {channel} out of range for F={f}"
+        );
+        let before = self.scalar_features.clone().slice([0..n, 0..channel]);
+        self.scalar_features = if channel + 1 >= f {
+            Tensor::cat(vec![before, col], 1)
+        } else {
+            let after = self.scalar_features.clone().slice([0..n, channel + 1..f]);
+            Tensor::cat(vec![before, col, after], 1)
+        };
+    }
 }
 
 /// The Mathematically Secured Tensor State.

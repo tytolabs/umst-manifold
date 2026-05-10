@@ -3,5 +3,7 @@
 
 pub mod adjoint;
 pub mod cbf;
+pub mod info_gain;
 pub mod liquid_ppo;
 pub mod ppo;
+pub mod topology;

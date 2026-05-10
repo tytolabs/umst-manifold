@@ -1,0 +1,7 @@
+# MSRV for optional dependency paths pulled in by `cargo … --all-features` (e.g. transitive
+# `time`, `burn/wgpu`). Older rustc versions fail those builds; default features alone remain
+# compatible with `package.rust-version` in Cargo.toml.
+#
+# CI pin: `.github/workflows/rust-solvers.yml` uses the same toolchain for fmt/clippy/test.
+[toolchain]
+channel = "1.88"

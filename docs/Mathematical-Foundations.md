@@ -173,10 +173,28 @@ pub trait IScienceCartridge<B: Backend> {
 }
 ```
 
-`PhysicalResult<B>` carries four 2-tensors of shape
-`[Batch, N_active_voxels]`: `free_energy`, `dissipation`, `safety_margin`,
-`cost`. The first two feed the CBF; the third feeds risk-aware control;
-the fourth feeds multi-objective optimisation.
+`PhysicalResult<B>` holds rank-2 nodal fields of shape `[Batch, N_active_voxels]`
+for `free_energy`, `dissipation`, `safety_margin`, `cost`, and `damage`, plus
+`temperature_delta: Option<…>` when the cartridge emits an explicit-Euler thermal
+increment (otherwise `None`). With the **`information_density`** crate feature,
+the same struct also carries `information_density: Tensor<…, 2>` at that shape. It is
+**not** merged by [`apply_physics_to_umst`](../src/core/apply_physics.rs) (only **damage** and
+optional **temperature** are merged into the UMST there), but [`ManifoldGateway::evaluate_topology_step`](../src/ai/ppo.rs)
+may add **η** times the per-batch **mean** of `information_density` when **η ≠ 0** (default **η = 0** in
+[`ManifoldGateway::new`](../src/ai/ppo.rs)). The thermodynamic CBF
+uses per-batch integrated **dissipation** together with the separate `info_gain`
+argument to that method (not a `PhysicalResult` field). The PPO gateway reward sums
+spatial terms from free energy, dissipation, and cost, subtracts the uniform
+erasure cost from the CBF, and may add **ζ** times the per-batch **mean** of
+`safety_margin` when **ζ ≠ 0** (default **ζ = 0** in
+[`ManifoldGateway::new`](../src/ai/ppo.rs)). Nodal **damage** and
+**temperature_delta** are merged into the UMST via
+[`apply_physics_to_umst`](../src/core/apply_physics.rs) (subject to
+`policy_editable_mask`), not via that scalar reward reduction. The `manifold` argument to
+`compute_topology` is a [`UnifiedMaterialStateTensor`](../src/core/tensors.rs):
+it carries sheaf topology (`coords`, `edges_b1`, `faces_b2`), feature tensors,
+optional SI **`node_positions`** `[N, 3]`, **`displacement_bc_mask`** for mechanics
+BCs, and **`policy_editable_mask`** for editable scalar channels.
 
 Authoring a new cartridge — concrete, polymers, alloys, mycelial
 biomaterials — is exactly: implement these two methods. No other
@@ -194,6 +212,8 @@ changes to the manifold are required.
 | $k_{B}, T$ | Boltzmann constant, absolute temperature |
 | $\mathbf{z}, \mathbf{a}$ | ODE state and adjoint state |
 | $\theta$ | learned parameters |
+| $\zeta$ | Optional weight; per-batch scalar reward adds $\zeta$ times the voxel mean of `safety_margin` when $\zeta \neq 0$ (default $0$; `ManifoldGateway::zeta` in `src/ai/ppo.rs`) |
+| $\eta$ | With **`information_density`**, optional weight; per-batch scalar reward adds $\eta$ times the voxel mean of `information_density` when $\eta \neq 0$ (default $0$; `ManifoldGateway::eta` in `src/ai/ppo.rs`) |
 
 ## References
 

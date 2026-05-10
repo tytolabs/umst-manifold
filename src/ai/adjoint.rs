@@ -1,6 +1,25 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
+//! Adjoint-state method for Neural ODE policy gradients with \(O(1)\) memory (no full BPTT tape).
+//!
+//! # Relation to [`crate::core::traits::PhysicalResult`] and **`info_gain`**
+//!
+//! End-to-end training composes this solver with [`crate::ai::ppo::ManifoldGateway`], which pulls a
+//! [`crate::core::traits::PhysicalResult`] from [`crate::core::traits::IScienceCartridge::compute_topology`]
+//! and maps sparse nodal tensors into the differentiable spatial reward (see [`crate::ai::ppo`]).
+//! The thermodynamic gate’s Landauer branch consumes a batch **`info_gain`** vector passed with the UMST
+//! ([`crate::ai::ppo::ManifoldGateway::evaluate_topology_step`]); differentiable surrogates used before a
+//! full MI estimator exists live in [`crate::ai::info_gain`].
+//!
+//! # Multi-physics Jacobian gaps
+//!
+//! The backward pass assumes an augmented ODE whose sensitivities require **−λᵀ ∂f/∂z** and **−λᵀ ∂f/∂θ**
+//! for \(\dot z = f_\theta(z,t)\). Multiple cartridges or solver phases are **not** yet assembled into one
+//! coupled Jacobian here—cross-block coupling (thermal ↔ rheology ↔ damage, experimental summaries
+//! overwritten upstream, etc.) means this stub **does not** yet supply a faithful multi-physics adjoint until
+//! those interfaces expose consistent derivatives end-to-end.
+
 #![allow(non_snake_case)]
 
 use crate::core::tensors::UnifiedMaterialStateTensor;
@@ -60,15 +79,26 @@ impl<B: Backend> AdjointNeuralODE<B> {
         current_state
     }
 
-    /// Backward pass using the Adjoint State Method (No-Compromise B2/B3)
-    /// Driven by the spatial reward returned from the ManifoldGateway.
+    /// Backward pass using the Adjoint State Method (No-Compromise B2/B3), driven by the scalar-per-batch
+    /// reward signal returned from [`crate::ai::ppo::ManifoldGateway::evaluate_topology_step`].
+    ///
+    /// # Tensor shapes
+    ///
+    /// | Parameter | Shape / type | Role |
+    /// |-----------|----------------|------|
+    /// | `_final_state` | [`UnifiedMaterialStateTensor`] | Terminal UMST after the gateway (must align with the forward trajectory); reserved for a full \(\partial f/\partial z\) coupling. |
+    /// | `dL_dz` | **`[B]`** (`Tensor<B, 1>`) | Terminal adjoint seed at \(t_{\mathrm{end}}\): same **per-batch** layout as the squeezed reward from [`crate::ai::ppo::ManifoldGateway::evaluate_topology_step`] (often the spatial reward tensor fed into this pass). `B` seeds the mock adjoint batch axis below. |
+    /// | `t_start`, `t_end` | `f32` | Integration bounds for backward time stepping (same units as [`Self::forward`]). |
+    /// | `_dt_sim_dt_global` | **`[B]`** (`Tensor<B, 1>`) | Differentiable time-dilation ratio per batch row (No-Compromise B4); must eventually broadcast consistently with adjoint dynamics. |
+    ///
+    /// **Returns** `dL/dθ` as `Tensor<B, 1>` with shape **`[P]`** here (`P` fixed placeholder, e.g. 1024 policy weights)—until the Burn module owns real parameters.
     pub fn backward_adjoint(
         &self,
         _final_state: UnifiedMaterialStateTensor<B>,
-        dL_dz: Tensor<B, 1>, // The spatial reward (gradient of loss w.r.t final state)
+        dL_dz: Tensor<B, 1>,
         t_start: f32,
         t_end: f32,
-        _dt_sim_dt_global: Tensor<B, 1>, // Differentiable Time Dilation (No-Compromise B4)
+        _dt_sim_dt_global: Tensor<B, 1>,
     ) -> Tensor<B, 1> {
         // Returns the accumulated gradients dL/d\theta
 
