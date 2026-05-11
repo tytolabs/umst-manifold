@@ -4,10 +4,9 @@
 //! **Johnson–Zollweg–Gubbins (1993)** Lennard-Jones EOS — `f64` reference lane (teqp-aligned).
 //!
 //! Implements analytic reduced `P*(ρ*, T*)` and isothermal `K* = ρ* ∂P*/∂ρ*` via numerical
-//! derivatives for verification. This is **not** the Burn `f32` placeholder in
-//! [`umst_manifold::physics::solvers::statistical_mechanics::upscale_potentials`]; tests that
-//! compare the two document **expected disagreement** until a differentiable bridge replaces the
-//! placeholder.
+//! derivatives for verification. The Burn bridge [`upscale_potentials`] uses **`[B,2]`** placeholder
+//! **`K`** (expected **disagreement** vs Johnson at the same \((\varepsilon,\sigma)\) without state) and
+//! **`[B,4]`** rows that set **`K`** from this EOS (see `upscale_potentials_b4_matches_physical_bulk_modulus_johnson1993`).
 //!
 //! Scalar Johnson physical \(K_T\) for side-by-side checks lives in
 //! [`umst_manifold::physics::solvers::statistical_mechanics::physical_bulk_modulus_johnson1993`] and
@@ -114,6 +113,34 @@ fn placeholder_upscale_bulk_modulus_disagrees_with_johnson_reference_documented(
          replace placeholder with bridge before expecting agreement"
     );
     assert_abs_diff_eq!(gap, rel_tensor, epsilon = 5.0e-4_f64);
+}
+
+/// **`[B,4]`** extended row: tensor **`K`** matches scalar Johnson \(K_T\) (matrix **#9** slice).
+#[test]
+fn upscale_potentials_b4_matches_physical_bulk_modulus_johnson1993() {
+    let dev = NdArrayDevice::Cpu;
+    let t_star = 2.0_f64;
+    let rho_star = 0.2_f64;
+    let epsilon = 1.0_f64;
+    let sigma = 0.8_f64;
+    // `upscale_potentials` reads row scalars as `f32` then promotes to `f64` for Johnson; match that
+    // so the reference is not evaluated on slightly different reduced state than the tensor path.
+    let want = physical_bulk_modulus_johnson1993(
+        f64::from(rho_star as f32),
+        f64::from(t_star as f32),
+        f64::from(epsilon as f32),
+        f64::from(sigma as f32),
+    );
+    let lj: Tensor<B, 2> = Tensor::from_data(
+        Data::new(
+            vec![epsilon as f32, sigma as f32, rho_star as f32, t_star as f32],
+            Shape::new([1, 4]),
+        ),
+        &dev,
+    );
+    let (k_tensor, _) = upscale_potentials(lj);
+    let got = f64::from(k_tensor.into_data().value[0]);
+    assert_abs_diff_eq!(got, want, epsilon = 1.0e-5_f64);
 }
 
 #[test]

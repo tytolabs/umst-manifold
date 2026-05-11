@@ -32,16 +32,22 @@
 //! is also exposed here as an optional counterpart to [`upscale_potentials`] (still Burn `f32`
 //! placeholder). Without the feature, use [`super::lj_johnson_1993_reference::bulk_modulus_from_lj_state_johnson1993`].
 //!
-//! ## Why Johnson is not compiled into [`upscale_potentials`]
+//! ## Johnson (1993) vs [`upscale_potentials`] tensor rows
 //!
-//! The Burn bridge contract is **`[B, 2]` → `(K, γ_gc)`** with columns \((\varepsilon, \sigma)\) only.
-//! The JZG (1993) isothermal bulk modulus needs **reduced state** \((\rho^*, T^*)\) in addition to
-//! \((\varepsilon, \sigma)\) to form \(K^*\), then \(K_T = (\varepsilon/\sigma^3)\,K^*\). There is no
-//! \((\rho^*, T^*)\) channel in the tensor API and no agreed default reference state, so wiring the
-//! reference EOS **inside** [`upscale_potentials`] would hide physics or break type clarity. With the
-//! opt-in feature, compare scalars side-by-side (see unit tests below and
-//! `tests/verification/statmech_lj_johnson_eos_reference.rs`). **`upscale_potentials` stays partial:**
-//! analytic placeholder for \(K\) and \(\gamma_{\mathrm{gc}}\) until a stateful bridge lands.
+//! **Placeholder `K`:** **`[B, 2]`** rows carry only \((\varepsilon, \sigma)\); the JZG isothermal bulk
+//! modulus needs **reduced** \((\rho^*, T^*)\) in addition, so that branch keeps the analytic
+//! \(K \propto \varepsilon/\sigma^3\) map (scaling contract — `statmech_lj_bridge_contract`).
+//!
+//! **Johnson `K` in Burn:** **`[B, 4]`** rows \((\varepsilon,\sigma,\rho^*,T^*)\) set **`K`** from
+//! [`physical_bulk_modulus_johnson1993`] per batch row (host **`f64`**, stored as **`f32`**). This is a
+//! **matrix acceptance** step toward verification **#9** (EOS-grounded \(K\) at explicit state), not a
+//! full virial/MD calibration. **`γ_gc`** remains the \(\varepsilon/\sigma^2\) placeholder from the
+//! first two columns. **Autodiff:** the **`[B,4]`** **`K`** branch materialises constants — use **`[B,2]`**
+//! when differentiating through **`K`**, or wait for a native Burn EOS map.
+//!
+//! Optional feature **`statistical-mechanics-johnson-reference`** still adds the scalar
+//! [`bulk_modulus_from_lj_state_johnson1993`] re-export for reduced \(K^*\) parity tests; it does not change
+//! the **`[B,2]`** / **`[B,4]`** contracts above.
 //!
 //! ## Path sketch: virial / Johnson EOS → [`upscale_potentials`] (target, not current Burn wiring)
 //!
@@ -51,8 +57,12 @@
 //! 2. **Johnson (1993) reference lane (`f64`):** analytic reduced EOS gives \(P^*(\rho^*,T^*)\) and
 //!    \(K^*=\rho^*(\partial P^*/\partial\rho^*)_{T^*}\); physical modulus
 //!    \(K_T=(\varepsilon/\sigma^3)K^*\) via [`super::lj_johnson_1993_reference::bulk_modulus_from_reduced`].
-//! 3. **Today's [`upscale_potentials`]:** reads only **`[B,2]`** \((\varepsilon,\sigma)\); no \(\rho^*,T^*\),
-//!    so steps (1–2) cannot run inside this tensor without an **extended row** (see below).
+//! 3. **Today's [`upscale_potentials`]:** **`[B,2]`** keeps the analytic placeholder; **`[B,4]`** rows
+//!    \((\varepsilon,\sigma,\rho^*,T^*)\) set **`K`** from the Johnson (1993) **`f64`** surface (host
+//!    row loop, **`f32`** storage) via [`physical_bulk_modulus_johnson1993`]. **`γ_gc`** remains the
+//!    same \(\varepsilon/\sigma^2\) placeholder from the first two columns. The **`[B,4]`** branch is
+//!    **not** AD-safe (constants materialised with [`Tensor::from_data`]); differentiable EOS in Burn
+//!    is still future work.
 //!
 //! ### Tensor channel design \((\rho^*,T^*)\)
 //!
@@ -71,19 +81,20 @@
 //!
 //! ### Feature gate sketch
 //!
-//! - **Default:** only the Burn placeholder [`upscale_potentials`] compiles; no Johnson symbol on this module.
+//! - **Default:** [`upscale_potentials`] compiles both **`[B,2]`** (placeholder **`K`**) and **`[B,4]`**
+//!   (Johnson **`K`** via host loop). No extra **`#[cfg]`** is required for the wide row.
 //! - **`statistical-mechanics-johnson-reference`:** adds [`bulk_modulus_from_lj_state_johnson1993`] (`f64`,
-//!   reduced \(K^*\)) for scalar parity vs integration tests; still does **not** extend the **`[B,2]`**
-//!   tensor. Shipping Johnson **inside** the differentiable map is gated on the extended state API above.
+//!   reduced \(K^*\)) re-export for scalar-only parity; optional for **`[B,4]`** tensor **`K`**, which uses
+//!   [`physical_bulk_modulus_johnson1993`] (always on).
 //!
 //! ## Placeholder behaviour
 //!
-//! [`upscale_potentials`] applies a **simple analytic placeholder** (dimensionless prefactors ×
-//! powers of \(\varepsilon\) and \(\sigma\)) so outputs are **finite, non-trivial**, and remain
-//! fully differentiable in Burn. This is not a calibrated EOS; it only preserves the intended
-//! scaling dimensions until virial / coexistence bridges land.
+//! **`[B,2]`** [`upscale_potentials`] applies the analytic placeholder for **`K`** and **`γ_gc`**. **`[B,4]`**
+//! uses Johnson for **`K`** only; **`γ_gc`** still uses the same \(\varepsilon/\sigma^2\) placeholder. This is
+//! not a full Kirkwood–Buff / coexistence calibration; it preserves explicit state for **`K`** until
+//! virial / coexistence bridges land.
 
-use burn::tensor::{backend::Backend, Tensor};
+use burn::tensor::{backend::Backend, Data, Shape, Tensor};
 
 /// Dimensionless scale for the analytic bulk-modulus placeholder
 /// \(K = C_K \, \varepsilon / \sigma^3\) (same dimensions as ε/σ³ up to the cartridge’s unit system).
@@ -102,42 +113,73 @@ pub const ANALYTIC_SURFACE_ENERGY_SCALE: f32 = 1.0;
 pub struct StatisticalBridge;
 
 impl StatisticalBridge {
-    /// Maps Lennard-Jones parameter rows to bulk modulus and grand-canonical surface energy.
+    /// Maps Lennard-Jones parameter rows to bulk modulus \(K\) and grand-canonical surface energy
+    /// \(\gamma_{\mathrm{gc}}\).
     ///
     /// # Argument shapes
-    /// - `lennard_jones_params`: `[B, 2]` — batch **`B`**, two channels per row. By convention
-    ///   column `0` is \(\varepsilon\) (energy well depth) and column `1` is \(\sigma\)
-    ///   (zero-crossing separation) in reduced or physical units consistent with the cartridge.
+    /// - **`[B, 2]`:** columns \((\varepsilon,\sigma)\). **`K`** uses the analytic placeholder
+    ///   \(K = \texttt{ANALYTIC\_BULK\_MODULUS\_SCALE}\,\varepsilon/\sigma^3\); **`γ_gc`** uses
+    ///   \(\texttt{ANALYTIC\_SURFACE\_ENERGY\_SCALE}\,\varepsilon/\sigma^2\). Fully differentiable in Burn.
+    /// - **`[B, 4]`:** columns \((\varepsilon,\sigma,\rho^*,T^*)\). **`K`** uses Johnson (1993)
+    ///   [`physical_bulk_modulus_johnson1993`] per row (host **`f64`**, stored **`f32`**); **`γ_gc`**
+    ///   still uses the same \(\varepsilon/\sigma^2\) placeholder from the first two columns. The **`[B,4]`**
+    ///   **`K`** branch is **not** AD-safe (`Tensor::from_data`); use **`[B,2]`** when taping **`K`**.
     ///
     /// # Returns
-    /// - `bulk_modulus`: `[B, 1]` — isotropic \(K\) placeholder.
-    /// - `surface_energy_gc`: `[B, 1]` — \(\gamma_{\mathrm{gc}}\) placeholder.
+    /// - `bulk_modulus`: `[B, 1]`
+    /// - `surface_energy_gc`: `[B, 1]`
     ///
-    /// # Placeholder mapping
-    /// - \(K = \texttt{ANALYTIC\_BULK\_MODULUS\_SCALE} \cdot \varepsilon / \sigma^3\) → `[B, 1]`
-    /// - \(\gamma_{\mathrm{gc}} = \texttt{ANALYTIC\_SURFACE\_ENERGY\_SCALE} \cdot \varepsilon / \sigma^2\) → `[B, 1]`
-    ///
-    /// **`lennard_jones_params` is not validated** beyond reading `dims()[0]`; callers must supply
-    /// **`[B, 2]`** (contract **v1**). A future stateful bridge may take **`[B, 4]`**
-    /// \((\varepsilon,\sigma,\rho^*,T^*)\) or a second tensor for \((\rho^*,T^*)\); until then, reduced
-    /// state is **not** part of this signature.
-    /// Division by \(\sigma\) follows tensor math (no extra
-    /// clamp); avoid \(\sigma \to 0\) in training if gradients should stay well-behaved.
+    /// Division by \(\sigma\) follows tensor math (no extra clamp); avoid \(\sigma \to 0\) in training
+    /// if gradients should stay well-behaved on the **`[B,2]`** branch.
     pub fn upscale_potentials<B: Backend<FloatElem = f32>>(
         &self,
         lennard_jones_params: Tensor<B, 2>,
     ) -> (Tensor<B, 2>, Tensor<B, 2>) {
-        let batch = lennard_jones_params.dims()[0];
-        let eps = lennard_jones_params.clone().slice([0..batch, 0..1]);
-        let sig = lennard_jones_params.slice([0..batch, 1..2]);
-        let sig_sq = sig.clone().mul(sig.clone());
-        let sig_cu = sig_sq.clone().mul(sig);
-        let bulk_modulus = eps
-            .clone()
-            .div(sig_cu)
-            .mul_scalar(ANALYTIC_BULK_MODULUS_SCALE);
-        let surface_energy_gc = eps.div(sig_sq).mul_scalar(ANALYTIC_SURFACE_ENERGY_SCALE);
-        (bulk_modulus, surface_energy_gc)
+        let dims = lennard_jones_params.dims();
+        let batch = dims[0];
+        let cols = dims[1];
+        let device = lennard_jones_params.device();
+
+        if cols == 2 {
+            let eps = lennard_jones_params.clone().slice([0..batch, 0..1]);
+            let sig = lennard_jones_params.slice([0..batch, 1..2]);
+            let sig_sq = sig.clone().mul(sig.clone());
+            let sig_cu = sig_sq.clone().mul(sig);
+            let bulk_modulus = eps
+                .clone()
+                .div(sig_cu)
+                .mul_scalar(ANALYTIC_BULK_MODULUS_SCALE);
+            let surface_energy_gc = eps.div(sig_sq).mul_scalar(ANALYTIC_SURFACE_ENERGY_SCALE);
+            (bulk_modulus, surface_energy_gc)
+        } else if cols == 4 {
+            let row_vals: Vec<f32> = lennard_jones_params.clone().into_data().value;
+            assert_eq!(
+                row_vals.len(),
+                batch * 4,
+                "upscale_potentials [B,4]: flat length mismatch"
+            );
+            let mut k_host = Vec::with_capacity(batch);
+            for i in 0..batch {
+                let o = i * 4;
+                let epsilon = f64::from(row_vals[o]);
+                let sigma = f64::from(row_vals[o + 1]);
+                let rho_star = f64::from(row_vals[o + 2]);
+                let t_star = f64::from(row_vals[o + 3]);
+                let k_t = physical_bulk_modulus_johnson1993(rho_star, t_star, epsilon, sigma);
+                k_host.push(k_t as f32);
+            }
+            let bulk_modulus =
+                Tensor::from_data(Data::new(k_host, Shape::new([batch, 1])), &device);
+            let eps = lennard_jones_params.clone().slice([0..batch, 0..1]);
+            let sig = lennard_jones_params.clone().slice([0..batch, 1..2]);
+            let sig_sq = sig.clone().mul(sig.clone());
+            let surface_energy_gc = eps.div(sig_sq).mul_scalar(ANALYTIC_SURFACE_ENERGY_SCALE);
+            (bulk_modulus, surface_energy_gc)
+        } else {
+            panic!(
+                "StatisticalBridge::upscale_potentials: expected [B,2] or [B,4], got dims {dims:?}"
+            );
+        }
     }
 }
 
@@ -146,9 +188,9 @@ impl StatisticalBridge {
 /// Prefer this free function when no `StatisticalBridge` instance is already in scope; it
 /// delegates to [`StatisticalBridge::upscale_potentials`] on a [`StatisticalBridge`] value.
 ///
-/// **Contract (v1):** argument is **`[B, 2]`** \((\varepsilon,\sigma)\) only. A future bridge may add
-/// **`[B, 4]`** or a companion state tensor for \((\rho^*,T^*)\); that is **not** in this signature yet
-/// (see module rustdoc).
+/// **Contract:** argument is **`[B, 2]`** (placeholder **`K`**) or **`[B, 4]`**
+/// \((\varepsilon,\sigma,\rho^*,T^*)\) (Johnson **`K`**, same **`γ_gc`** placeholder) — see
+/// [`StatisticalBridge::upscale_potentials`].
 #[inline]
 pub fn upscale_potentials<B: Backend<FloatElem = f32>>(
     lennard_jones_params: Tensor<B, 2>,
@@ -300,9 +342,43 @@ mod tests {
         );
     }
 
-    /// Johnson EOS physical \(K_T\) at a fixed \((\rho^*, T^*)\) vs Burn placeholder \(K \propto \varepsilon/\sigma^3\).
-    ///
-    /// Documents that [`upscale_potentials`] cannot match the reference without \((\rho^*, T^*)\) inputs.
+    /// **`[B,4]`** `upscale_potentials`: each row's **`K`** matches Johnson \(K_T\) (`physical_bulk_modulus_johnson1993`).
+    #[test]
+    fn upscale_potentials_b4_batch_matches_physical_johnson_per_row() {
+        let dev = NdArrayDevice::Cpu;
+        let rows: Vec<f32> = vec![
+            1.0, 0.9, 0.15, 2.5, //
+            0.5, 1.1, 0.22, 2.0,
+        ];
+        let lj: Tensor<B, 2> = Tensor::from_data(Data::new(rows.clone(), Shape::new([2, 4])), &dev);
+        let (k, gamma) = upscale_potentials(lj.clone());
+        assert_eq!(k.dims(), [2, 1]);
+        assert_eq!(gamma.dims(), [2, 1]);
+        let kv = k.into_data().value;
+        for (row, &kval) in rows.chunks_exact(4).zip(kv.iter()) {
+            let want = super::physical_bulk_modulus_johnson1993(
+                f64::from(row[2]),
+                f64::from(row[3]),
+                f64::from(row[0]),
+                f64::from(row[1]),
+            );
+            assert_abs_diff_eq!(f64::from(kval), want, epsilon = 1.0e-5_f64);
+        }
+        let gv = gamma.into_data().value;
+        let c_g = ANALYTIC_SURFACE_ENERGY_SCALE;
+        for (row, &gval) in rows.chunks_exact(4).zip(gv.iter()) {
+            let e = f64::from(row[0]);
+            let s = f64::from(row[1]);
+            assert_abs_diff_eq!(
+                f64::from(gval),
+                f64::from(c_g) * e / s.powi(2),
+                epsilon = 1.0e-5
+            );
+        }
+    }
+
+    /// Documents that **`[B,2]`** [`upscale_potentials`] placeholder \(K\) disagrees with Johnson \(K_T\)
+    /// at a reference \((\rho^*,T^*)\); relative gap matches the tensor-derived placeholder row.
     #[cfg(feature = "statistical-mechanics-johnson-reference")]
     #[test]
     fn upscale_placeholder_bulk_modulus_documented_gap_vs_johnson_scalar_path() {
