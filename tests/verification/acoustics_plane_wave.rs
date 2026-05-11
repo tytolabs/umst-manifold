@@ -12,7 +12,10 @@
 //! omits the lumped \(1/\Delta x\) from \(m=\rho\Delta x\) and mis-times \(T\) by \(\mathcal O(1/\sqrt{\Delta x})\)).
 //! **[`AcousticWaveSolver`](umst_manifold::physics::solvers::AcousticWaveSolver)** stays graph-free nodal
 //! contraction (Track D in `composer_prompts/v0.4_solver_completion_no_namesakes.md`). See
-//! **`docs/Solver-Status.md`** (Acoustics).
+//! **`docs/Solver-Status.md`** (Acoustics). **Not** vector quasi-static **`packed_bar_network_equilibrium`**
+//! (mechanics graph); cross-check honesty vs Solver-Status **#10** and
+//! **`packed_bar_network_equilibrium_uniform_axial_strain_tip_load_distinct_from_acoustic_newmark_bar_path`**
+//! in `tests/verification/mechanics_analytic.rs`.
 
 use std::f32::consts::PI;
 

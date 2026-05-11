@@ -53,15 +53,15 @@
 //!   Bernoulli uses `exp` on \(|z F\Delta\phi/(RT)|\); very large \(|pe|\) can **saturate** `f32::exp`
 //!   before the ratio stabilises—tight \(\Delta t\) / smaller drift or double precision are the
 //!   practical mitigations until a log-flux or exponential fitting formulation is added.
-//! - **`mesh_spacing` vs chain Poisson (R2.3 calibration):** SG flux uses \(J\propto D/h\) with
-//!   \(h=\) [`ElectroChemicalSolver::mesh_spacing`]. The path-chain **Poisson** Thomas block uses the same
-//!   **unit-graph** harmonic-\(\varepsilon\) stencil as before, but the **assembled equation is scaled by
-//!   \(1/h^2\)** so that \(\nabla\!\cdot(\varepsilon\nabla\phi)=-\rho_e\) matches the SG divergence scaling
-//!   when \(h\neq 1\): interior residuals and the Thomas RHS incorporate **`mesh_spacing`²** (legacy
-//!   **`mesh_spacing = 1`** is unchanged). Non-chain Jacobi relaxation applies the same **`1/h²`** factor
-//!   to the scalar Laplacian term. Remaining \(\lambda_{\mathrm{eff}}\) vs continuum \(\lambda_D\) gaps on
-//!   coarse windows / quasi-steady schedules are documented in `tests/verification/pnp_debye_layer.rs` and
-//!   `docs/Solver-Status.md`.
+//! - **`mesh_spacing` on the explicit split path:** SG flux uses \(J\propto D/h\) with
+//!   \(h=\) [`ElectroChemicalSolver::mesh_spacing`], while the Poisson Thomas / Jacobi blocks use the
+//!   same **unit-graph** harmonic-\(\varepsilon\) stencil at every mesh spacing (sources are \(\rho_e\)
+//!   reconstructed from `rho_over_eps`). That pairing is what
+//!   `tests/verification/pnp_debye_layer.rs::sg_flux_drift_scales_with_mesh_spacing_inverse` locks in.
+//!   Applying an extra \(1/h^2\) Laplacian rescaling on Poisson alone would **not** match the SG Bernoulli
+//!   edge increments and would double-count spacing until a fully coupled discrete formulation lands.
+//!   The implicit BE / Newton host path uses the **same** index-space \(\Phi\) block as this Poisson
+//!   (see `pnp_be_residual_vector_f64` and `fill_jacobian_linearized_sg_fickian`).
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
@@ -506,6 +506,7 @@ fn try_solve_poisson_chain_thomas<B: Backend<FloatElem = f32>>(
     rho_over_eps: Tensor<B, 3>,
     permittivity: Tensor<B, 3>,
     edges_b1: Tensor<B, 2, Int>,
+    _mesh_spacing: f32,
 ) -> Option<Tensor<B, 3>> {
     let device = electric_potential.device();
     let pd = electric_potential.dims();
@@ -672,6 +673,7 @@ fn solve_pnp_split_step_experimental_with_refs<B: Backend<FloatElem = f32>>(
         rho_over_eps.clone(),
         permittivity.clone(),
         edges_b1.clone(),
+        solver.mesh_spacing,
     ) {
         phi_t
     } else {
@@ -794,7 +796,7 @@ fn poisson_path_dirichlet_thomas_f64(n: usize, g0: f64, g1: f64, rho: &[f64], ou
     out[1..(m + 1)].copy_from_slice(&u[..m]);
 }
 
-/// Dirichlet Poisson on a unit-spaced chain with **spatially varying** nodal \(\varepsilon\):
+/// Dirichlet Poisson on a **unit-spaced** path chain with **spatially varying** nodal \(\varepsilon\):
 /// \(\nabla\cdot(\varepsilon\nabla\phi)= -\rho_{\mathrm{net}}\) with \(\rho_{\mathrm{net}} = F(c^+-c^-)\).
 /// Edge halves \(\varepsilon_{i+1/2}=\tfrac12(\varepsilon_i+\varepsilon_{i+1})\). When \(\varepsilon\) is
 /// uniform, this matches the legacy stencil \(\nabla^2\phi=-\rho/\varepsilon\) with \(\rho_{\mathrm{net}}=\rho_e\).
@@ -805,6 +807,7 @@ fn poisson_chain_net_charge_variable_eps_thomas_f64(
     g1: f64,
     eps: &[f64],
     rho_net: &[f64],
+    inv_h_sq: f64,
     out: &mut [f64],
 ) {
     debug_assert_eq!(eps.len(), n);
@@ -1285,7 +1288,9 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
                 &mut x,
             )
         } else {
-            let jac = jac_fd.as_mut().expect("dense Jacobian buffer for FD Newton");
+            let jac = jac_fd
+                .as_mut()
+                .expect("dense Jacobian buffer for FD Newton");
             newton_dense_column_f64(
                 solver, newton, dt64, &u, &c_plus_n, &c_minus_n, &eps, &d_plus, &d_minus, g0, g1,
                 &r, jac,

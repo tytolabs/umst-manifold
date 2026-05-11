@@ -120,11 +120,7 @@ fn coords_xy_embedded_chain(n: usize, h: f32) -> Tensor<B, 2> {
 
 /// Quad `0–1–2–3` with diagonal **`0→2`** (five edges, two CCW triangles) — same incidence as
 /// `dec_curl_d1_annihilates_gradient_quad_split_two_faces_burn` in `tests/dec_identities.rs`.
-fn quad_split_patch_tensors() -> (
-    Tensor<B, 2, Int>,
-    Tensor<B, 2, Int>,
-    EdgeTopology<B>,
-) {
+fn quad_split_patch_tensors() -> (Tensor<B, 2, Int>, Tensor<B, 2, Int>, EdgeTopology<B>) {
     let dev = device();
     let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
         Data::new(
@@ -611,7 +607,6 @@ fn dec_te_primal_tensor_matches_chain_stencil() {
     assert_relative_eq!(mx, 0.0_f32, epsilon = 5e-5_f32, max_relative = 1.0);
 }
 
-
 /// [`primal_d1_edge_flux_to_faces`] imported through [`umst_manifold::physics::solvers::photonics::dec_maxwell_assembly`]
 /// annihilates \(d_0\omega\) on the quad-split patch (shared-edge `faces_b2` COO).
 #[test]
@@ -669,21 +664,13 @@ fn solve_maxwell_curl_curl_pass_through_quad_split_not_chain() {
     let mut jdat = vec![0.0_f32; n * 3];
     jdat[2] = 0.5;
     jdat[2 * 3 + 2] = -0.5;
-    jdat[1 * 3 + 1] = 1.0;
+    jdat[4] = 1.0;
     let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
     let cg = MechanicsInnerLoopConfig::default();
     let ps = PhotonicsSolver {
         frequency_hz: 1e9_f32,
     };
-    let out = ps.solve_maxwell_curl_curl(
-        e_field.clone(),
-        eps_r,
-        eps_i,
-        j,
-        edges_b1,
-        coords,
-        &cg,
-    );
+    let out = ps.solve_maxwell_curl_curl(e_field.clone(), eps_r, eps_i, j, edges_b1, coords, &cg);
     let vi = out.into_data().value;
     let ei = e_field.into_data().value;
     assert_eq!(vi.len(), ei.len());

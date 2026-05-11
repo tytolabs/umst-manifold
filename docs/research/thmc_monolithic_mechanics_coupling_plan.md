@@ -1,7 +1,7 @@
 # Monolithic THMC with mechanics — implementation plan (research)
 
 **Workspace:** `umst-manifold` · **Feature lane:** `thmc-coupled` / `solvers::thmc`.  
-**Related:** Track 13 memo [`v0.4_track13_monolithic_newton_thmc.md`](v0.4_track13_monolithic_newton_thmc.md), [`Solver-Status.md`](../Solver-Status.md) §Solver lanes — THMC, matrix row **#8** in [`VERIFICATION_COMPLETION_MATRIX.md`](../VERIFICATION_COMPLETION_MATRIX.md).
+**Related:** Executive roadmap + phased acceptance — [`v0.4_track13_monolithic_thmc_mechanics_coupling_plan.md`](v0.4_track13_monolithic_thmc_mechanics_coupling_plan.md); Track 13 Newton / JFNK memo [`v0.4_track13_monolithic_newton_thmc.md`](v0.4_track13_monolithic_newton_thmc.md); [`Solver-Status.md`](../Solver-Status.md) §Solver lanes — THMC; matrix row **#8** in [`VERIFICATION_COMPLETION_MATRIX.md`](../VERIFICATION_COMPLETION_MATRIX.md).
 
 This document is a **step-by-step researched plan** for **full monolithic coupling** of thermal ($T$), humidity ($h$), hydration degree ($\alpha$), and **quasi-static bar-network displacement** $\mathbf u\in\mathbb{R}^{3N}$ in one implicit root $R(U^{n+1})=0$. It does **not** assert that the full stack is already shipped; claims below are tied to **verified** paths in the cited files.
 

@@ -27,3 +27,9 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 ## Takeaway
 
 Treat **contact, collision, and inter-body friction** as **explicitly absent** from the v0.4 solver surface unless a future memo and verification row add them. DEC primal and sheaf topology docs support **consistent fluxes and discrete complexes** on a given graph; they do **not** substitute for contact mechanics.
+
+## Vector quasi-static bar network vs scalar `acoustics-newmark` bar (Solver-Status **#10**)
+
+- **`VectorMechanicsSolver::solve_equilibrium`** / **`packed_bar_network_equilibrium`** (see `src/physics/mechanics.rs`) is a **vector** **\[B,N,3\]** quasi-static bar-network equilibrium on the graph 1-skeleton (projected PCG, damage-aware axial \(k\)). Boundary data are **fixed components** via `boundary_mask`; a cantilever-style tip load produces **static** axial extension, not a time-harmonic **plane wave** on a periodic bar.
+- The **`acoustics-newmark`** lane (`feature acoustics-newmark`, `tests/verification/acoustics_plane_wave.rs`, `AcousticNewmarkBar1dPeriodic` in `src/physics/solvers/acoustics.rs`) is a **scalar** 1-D periodic bar **semi-discrete wave** recipe (Newmark on a chain with lumped mass / return-map checks). It does **not** implement the same unknown stack, BCs, or residual as vector bar-network mechanics.
+- THMC’s **`VectorMechanicsSolver::projected_bar_equilibrium_residual`** (`feature thmc-coupled`) evaluates the **projected static** residual \(R_u=P(f-KPu)\) at a trial displacement — still the bar-network mechanics operator, **not** the acoustics Newmark stepper.

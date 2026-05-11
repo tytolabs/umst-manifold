@@ -204,6 +204,71 @@ impl VectorMechanicsSolver {
             .slice_assign([batch_idx..batch_idx + 1, 0..n_v, 0..3], row)
     }
 
+    /// \(R_u = P(\mathbf f_{\mathrm{ext}} - K(P\mathbf u))\) for the packed axial bar network (`P` =
+    /// `boundary_mask`). Used by THMC at a trial displacement. **Not** the scalar **`acoustics-newmark`**
+    /// periodic-bar wave path (verification **#10**).
+    #[cfg(feature = "thmc-coupled")]
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn projected_bar_equilibrium_residual<B: Backend<FloatElem = f32>>(
+        displacement: Tensor<B, 3>,
+        coords: Tensor<B, 2>,
+        stiffness: Tensor<B, 3>,
+        body_force: Tensor<B, 3>,
+        edges_b1: Tensor<B, 2, Int>,
+        damage: Tensor<B, 3>,
+        boundary_mask: Tensor<B, 3>,
+        cross_section_area: f32,
+    ) -> Tensor<B, 3> {
+        let batch = stiffness.dims()[0];
+        let n_v = coords.dims()[0];
+        let topo = EdgeTopology::new(edges_b1.clone());
+        let n_edges = topo.n_edges();
+
+        let coords_b = coords.clone().unsqueeze_dim::<3>(0).expand([batch, n_v, 3]);
+
+        let src_indices = topo.expand_src_gather_indices(batch, 3);
+        let tgt_indices = topo.expand_tgt_gather_indices(batch, 3);
+
+        let c_src = coords_b.clone().gather(1, src_indices.clone());
+        let c_tgt = coords_b.gather(1, tgt_indices.clone());
+        let delta_geom = c_tgt.sub(c_src);
+        let edge_len = delta_geom
+            .clone()
+            .powf_scalar(2.0)
+            .sum_dim(2)
+            .sqrt()
+            .clamp(1e-12, f32::MAX)
+            .reshape([batch, n_edges, 1]);
+        let edge_unit = delta_geom.div(edge_len.clone());
+
+        let e_young = stiffness.clone().slice([0..batch, 0..n_v, 0..1]);
+        let e_on_edges =
+            DecEdgeOperators::arithmetic_mean_on_edges(e_young.clone(), edges_b1.clone());
+
+        let d_on_edges =
+            DecEdgeOperators::arithmetic_mean_on_edges(damage.clone(), edges_b1.clone());
+        let dmg = Tensor::ones_like(&d_on_edges)
+            .sub(d_on_edges)
+            .powf_scalar(2.0)
+            .add_scalar(DAMAGE_REG);
+
+        let k_axial = e_on_edges
+            .mul_scalar(cross_section_area)
+            .div(edge_len.clone())
+            .mul(dmg);
+
+        let u_proj = displacement.mul(boundary_mask.clone());
+        let ku = Self::bar_matvec(
+            u_proj,
+            &k_axial,
+            &edge_unit,
+            &src_indices,
+            &tgt_indices,
+            n_v,
+        );
+        boundary_mask.mul(body_force.sub(ku))
+    }
+
     #[allow(clippy::too_many_arguments, clippy::type_complexity)]
     pub(crate) fn packed_bar_network_equilibrium<B: Backend<FloatElem = f32>>(
         displacement: Tensor<B, 3>,

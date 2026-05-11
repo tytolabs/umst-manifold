@@ -4,6 +4,12 @@
 //! Track A4 mechanics verification: axial cantilever (bar network) and **Q1 hex + B-bar**
 //! extruded-plate benchmarks on [`ExtrudedPlateMechanics`](umst_manifold::physics::extruded_plate::ExtrudedPlateMechanics).
 //!
+//! **`packed_bar_network_equilibrium_uniform_axial_strain_tip_load_distinct_from_acoustic_newmark_bar_path`**
+//! (`solver` checklist **#10**): quasi-static **`VectorMechanicsSolver::solve_equilibrium`** is a **vector**
+//! **3×N** bar-network equilibrium with fixed-left / tip-load **static** response (uniform axial strain in
+//! `x`). That is **not** the scalar **`acoustics-newmark`** **`AcousticNewmarkBar1dPeriodic`** semi-discrete
+//! wave operator in `tests/verification/acoustics_plane_wave.rs` (periodic bar, no cantilever BC story).
+//!
 //! The extruded plate uses **full-face** `u_z=0` on `z=0` plus two in-plane pins (not classical
 //! Kirchhoff SSSS on all edges). **Q1 hex** thin slabs show severe **shear locking** without SRI;
 //! `q1_hex_elasticity` applies B-bar plus **transverse shear centroid strains**. Verification uses
@@ -188,6 +194,110 @@ fn cantilever_axial_chain_tip_displacement_n64() {
         err < 0.02,
         "tip displacement error {err}: numeric={u_tip} analytic={u_analytic}"
     );
+}
+
+/// Quasi-static **`packed_bar_network_equilibrium`** chain under tip load: **uniform axial strain** and
+/// negligible transverse DOFs — distinguishes this **vector static bar-network** path from the **scalar**
+/// **`acoustics-newmark`** periodic bar wave class (see module rustdoc; Solver-Status **#10**).
+#[test]
+fn packed_bar_network_equilibrium_uniform_axial_strain_tip_load_distinct_from_acoustic_newmark_bar_path(
+) {
+    let dev = NdArrayDevice::Cpu;
+    let n: usize = 9;
+    let l_total = 1.0_f32;
+    let dx = l_total / (n - 1) as f32;
+    let e = 200e9_f32;
+    let a_sec = 0.01_f32;
+    let f_tip = 1000.0_f32;
+
+    let mut coords_data = Vec::with_capacity(n * 3);
+    for i in 0..n {
+        coords_data.push(i as f32 * dx);
+        coords_data.push(0.0);
+        coords_data.push(0.0);
+    }
+    let coords: Tensor<B, 2> = Tensor::from_data(Data::new(coords_data, Shape::new([n, 3])), &dev);
+
+    let mut edges = Vec::with_capacity((n - 1) * 2);
+    for eid in 0..(n - 1) {
+        edges.push(eid as i64);
+    }
+    for eid in 0..(n - 1) {
+        edges.push((eid + 1) as i64);
+    }
+    let edges_b1: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(edges, Shape::new([2, n - 1])), &dev);
+
+    let stiffness_val = vec![e; n];
+    let stiffness_nu = vec![0.2_f32; n];
+    let mut sf = Vec::with_capacity(n * 2);
+    for i in 0..n {
+        sf.push(stiffness_val[i]);
+        sf.push(stiffness_nu[i]);
+    }
+    let stiffness = Tensor::from_data(Data::new(sf, Shape::new([1, n, 2])), &dev);
+
+    let mut bf = vec![0.0_f32; n * 3];
+    bf[(n - 1) * 3] = f_tip;
+    let body_force = Tensor::from_data(Data::new(bf, Shape::new([1, n, 3])), &dev);
+
+    let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+
+    let mut bm_data = vec![1.0_f32; n * 3];
+    bm_data[0] = 0.0;
+    bm_data[1] = 0.0;
+    bm_data[2] = 0.0;
+    let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([1, n, 3])), &dev);
+
+    let cfg = MechanicsInnerLoopConfig {
+        max_cg_iterations: 500,
+        cg_tolerance: 1e-10,
+        pcg_tolerance: 1e-10,
+        use_preconditioner: true,
+        max_equilibrium_substeps: 1,
+    };
+
+    let displacement = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+    let (u, _) = VectorMechanicsSolver::solve_equilibrium(
+        displacement,
+        coords,
+        stiffness,
+        body_force,
+        edges_b1,
+        damage,
+        boundary_mask,
+        a_sec,
+        &cfg,
+    );
+
+    let ud = u.into_data().value;
+    let mut ux_edge = vec![0.0_f32; n - 1];
+    for i in 0..n - 1 {
+        ux_edge[i] = ud[(i + 1) * 3] - ud[i * 3];
+    }
+    let mean = ux_edge.iter().sum::<f32>() / ux_edge.len() as f32;
+    let spread = ux_edge
+        .iter()
+        .map(|v| ((v - mean).abs() / mean.abs().max(1e-30)))
+        .fold(0.0_f32, f32::max);
+    assert!(
+        spread < 0.01_f32,
+        "expected uniform axial edge increments (static bar chain), spread={spread:.3e}"
+    );
+
+    let max_ax = ud
+        .chunks_exact(3)
+        .map(|t| t[0].abs())
+        .fold(0.0_f32, f32::max);
+    for i in 0..n {
+        let uy = (ud[i * 3 + 1]).abs();
+        let uz = (ud[i * 3 + 2]).abs();
+        let tol = 1e-3_f32 * max_ax.max(1e-30);
+        assert!(
+            uy < tol && uz < tol,
+            "transverse DOFs should be ~0 on straight x-chain; node {i} uy={uy:.3e} uz={uz:.3e} tol={tol:.3e}"
+        );
+    }
 }
 
 fn run_plate_case_details(

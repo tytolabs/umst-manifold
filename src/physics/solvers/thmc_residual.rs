@@ -36,6 +36,8 @@ use burn::tensor::Tensor;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::laplacian::TopologicalLaplacian;
 #[cfg(feature = "thmc-coupled")]
+use crate::physics::mechanics::VectorMechanicsSolver;
+#[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc::{
     full_hydration_alpha_rate_tensor, ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan,
     ThmcHydrationKinetics, ThmcState,
@@ -335,11 +337,21 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHydrationResidual<B> {
 
 /// Backward-Euler residual for **thermal + humidity + hydration \(\alpha\)** on a fixed graph.
 ///
-/// Assembles the field-major stacked map (memo track 13 appendix §B) **without** quasi-static
-/// mechanics \(R_u\) and **without** the explicit split’s tail drying closure — humidity is pure
-/// implicit diffusion \(R_h = h - h^n - \Delta t\,\mathcal{L}_h(h)\). \((T,\alpha)\) blocks match
-/// [`ThmcImplicitEulerThermalHydrationResidual`]. Intended as a verification / Newton building block
-/// toward the full \((T,h,\alpha,\mathbf u)\) stack.
+/// Assembles the field-major stacked map (memo track 13 appendix §B) for \((R_T,R_h,R_\alpha)\).
+/// Humidity is pure implicit diffusion \(R_h = h - h^n - \Delta t\,\mathcal{L}_h(h)\) — **not** the
+/// explicit split’s tail drying closure. \((T,\alpha)\) blocks match
+/// [`ThmcImplicitEulerThermalHydrationResidual`].
+///
+/// **Mechanics tail (verification stub):** [`Self::assemble_with_mechanics_placeholder_r_u`] appends
+/// a **non-equilibrium** placeholder
+/// \[
+/// R_u = m\,(\mathbf u - \mathbf u^n),
+/// \]
+/// with diagonal lumped scale `mechanics_placeholder_mass` \(m\) (default `1`). This is **not** the
+/// quasi-static bar-network \(R_u\) from the mechanics coupling plan §2.4 — it exists so field-major
+/// \([\mathrm{vec}(R_T);\mathrm{vec}(R_h);\mathrm{vec}(R_\alpha);\mathrm{vec}(R_u)]\) matches
+/// [`ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`] before Phase 1
+/// `evaluate_r_u` lands.
 #[cfg(feature = "thmc-coupled")]
 #[derive(Clone, Debug)]
 pub struct ThmcImplicitEulerThermalHumidityHydrationResidual<B: Backend<FloatElem = f32>> {
@@ -347,6 +359,11 @@ pub struct ThmcImplicitEulerThermalHumidityHydrationResidual<B: Backend<FloatEle
     pub temperature_n: Tensor<B, 3>,
     pub humidity_n: Tensor<B, 3>,
     pub alpha_n: Tensor<B, 3>,
+    /// Reference displacement \(\mathbf u^n\) for the placeholder block (same shape as
+    /// [`MechanicalPlan::displacement`]: `[B, N, 3]`).
+    pub displacement_n: Tensor<B, 3>,
+    /// Scalar \(m\) in \(R_u = m(\mathbf u - \mathbf u^n)\) (layout / FD scale hook; not physical mass).
+    pub mechanics_placeholder_mass: f32,
     pub edges_b1: Tensor<B, 2, Int>,
     pub damage_m: Tensor<B, 3>,
     pub kinetics: ThmcHydrationKinetics,
@@ -429,6 +446,109 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             .sub(self.alpha_n.clone())
             .sub(d_alpha.mul_scalar(self.dt));
         Ok((r_t, r_h, r_alpha))
+    }
+
+    /// \((R_T,R_h,R_\alpha,R_u)\) with \(R_u = m(\mathbf u-\mathbf u^n)\) — see struct rustdoc (**not** bar equilibrium).
+    #[allow(clippy::type_complexity)]
+    pub fn assemble_with_mechanics_placeholder_r_u(
+        &self,
+        trial: &ThmcState<B>,
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>), String> {
+        let (r_t, r_h, r_alpha) = self.assemble(trial)?;
+        let u = trial.mechanical.displacement.clone();
+        if self.displacement_n.dims() != u.dims() {
+            return Err(format!(
+                "ThmcImplicitEulerThermalHumidityHydrationResidual: u^n dims {:?} != trial u dims {:?}",
+                self.displacement_n.dims(),
+                u.dims()
+            ));
+        }
+        let r_u = u
+            .sub(self.displacement_n.clone())
+            .mul_scalar(self.mechanics_placeholder_mass);
+        Ok((r_t, r_h, r_alpha, r_u))
+    }
+
+    /// Field-major \([\mathrm{vec}(R_T);\mathrm{vec}(R_h);\mathrm{vec}(R_\alpha);\mathrm{vec}(R_u)]\)
+    /// using [`Self::assemble_with_mechanics_placeholder_r_u`].
+    pub fn stacked_flat_residual_field_major(
+        &self,
+        trial: &ThmcState<B>,
+    ) -> Result<Vec<f32>, String> {
+        let (r_t, r_h, r_a, r_u) = self.assemble_with_mechanics_placeholder_r_u(trial)?;
+        Ok(flatten_four_residuals(&r_t, &r_h, &r_a, &r_u))
+    }
+
+    /// \(\sqrt{\|R_T\|^2+\|R_h\|^2+\|R_\alpha\|^2+\|R_u\|^2}\) including the placeholder \(R_u\) block.
+    pub fn residual_l2_including_mechanics_placeholder(
+        &self,
+        trial: &ThmcState<B>,
+    ) -> Result<f32, String> {
+        let (r_t, r_h, r_a, r_u) = self.assemble_with_mechanics_placeholder_r_u(trial)?;
+        Ok(combined_four_residual_l2(&r_t, &r_h, &r_a, &r_u))
+    }
+
+    /// **Coupling plan §4 Phase 1 — quasi-static bar \(R_u\):**
+    /// \(P(\mathbf f_{\mathrm{ext}} - K(\alpha)\,\mathbf u)\) using the same \(\alpha\mapsto E\) rule as
+    /// [`super::thmc::ThmcSolver::step_experimental`](super::thmc::ThmcSolver) and
+    /// [`VectorMechanicsSolver::projected_bar_equilibrium_residual`].
+    pub fn evaluate_quasi_static_r_u(
+        &self,
+        trial: &ThmcState<B>,
+        coords_n3: &Tensor<B, 2>,
+        boundary_mask_bn3: &Tensor<B, 3>,
+        body_force: &Tensor<B, 3>,
+        cross_section_area: f32,
+    ) -> Result<Tensor<B, 3>, String> {
+        let t_dims = trial.thermal.temperature.dims();
+        let batch = t_dims[0];
+        let n = t_dims[1];
+        if coords_n3.dims() != [n, 3] {
+            return Err(format!(
+                "evaluate_quasi_static_r_u: coords dims {:?} != [{n}, 3]",
+                coords_n3.dims()
+            ));
+        }
+        if boundary_mask_bn3.dims() != [batch, n, 3] {
+            return Err(format!(
+                "evaluate_quasi_static_r_u: boundary_mask dims {:?} != [{batch}, {n}, 3]",
+                boundary_mask_bn3.dims()
+            ));
+        }
+        if body_force.dims() != [batch, n, 3] {
+            return Err(format!(
+                "evaluate_quasi_static_r_u: body_force dims {:?} != [{batch}, {n}, 3]",
+                body_force.dims()
+            ));
+        }
+        let u = trial.mechanical.displacement.clone();
+        if u.dims() != [batch, n, 3] {
+            return Err(format!(
+                "evaluate_quasi_static_r_u: displacement dims {:?} != [{batch}, {n}, 3]",
+                u.dims()
+            ));
+        }
+        let device = u.device();
+        let alpha_bn1 = trial
+            .chemical
+            .hydration_alpha
+            .clone()
+            .slice([0..batch, 0..n, 0..1])
+            .clamp(1e-6_f32, 1.0_f32);
+        let stiffness_e = alpha_bn1.mul_scalar(self.kinetics.stiffness_e_scale_pa);
+        let stiffness_nu =
+            Tensor::<B, 3>::zeros([batch, n, 1], &device).add_scalar(self.kinetics.stiffness_nu);
+        let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
+        Ok(VectorMechanicsSolver::projected_bar_equilibrium_residual(
+            u,
+            coords_n3.clone(),
+            stiffness,
+            body_force.clone(),
+            self.edges_b1.clone(),
+            self.damage_m.clone(),
+            boundary_mask_bn3.clone(),
+            cross_section_area,
+        ))
     }
 
     /// \(\sqrt{\|R_T\|_2^2 + \|R_h\|_2^2 + \|R_\alpha\|_2^2}\) (memo §B stacked norm, truncated to scalar blocks).
@@ -575,6 +695,34 @@ fn combined_three_residual_l2<B: Backend<FloatElem = f32>>(
         + r_h.clone().mul(r_h.clone()).sum().into_scalar()
         + r_a.clone().mul(r_a.clone()).sum().into_scalar();
     s.max(0.0_f32).sqrt()
+}
+
+#[cfg(feature = "thmc-coupled")]
+fn combined_four_residual_l2<B: Backend<FloatElem = f32>>(
+    r_t: &Tensor<B, 3>,
+    r_h: &Tensor<B, 3>,
+    r_a: &Tensor<B, 3>,
+    r_u: &Tensor<B, 3>,
+) -> f32 {
+    let s = r_t.clone().mul(r_t.clone()).sum().into_scalar()
+        + r_h.clone().mul(r_h.clone()).sum().into_scalar()
+        + r_a.clone().mul(r_a.clone()).sum().into_scalar()
+        + r_u.clone().mul(r_u.clone()).sum().into_scalar();
+    s.max(0.0_f32).sqrt()
+}
+
+#[cfg(feature = "thmc-coupled")]
+fn flatten_four_residuals<B: Backend<FloatElem = f32>>(
+    r_t: &Tensor<B, 3>,
+    r_h: &Tensor<B, 3>,
+    r_a: &Tensor<B, 3>,
+    r_u: &Tensor<B, 3>,
+) -> Vec<f32> {
+    let mut v = r_t.clone().into_data().value;
+    v.extend(r_h.clone().into_data().value);
+    v.extend(r_a.clone().into_data().value);
+    v.extend(r_u.clone().into_data().value);
+    v
 }
 
 #[cfg(feature = "thmc-coupled")]

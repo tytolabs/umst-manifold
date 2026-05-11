@@ -279,13 +279,15 @@ fn sg_flux_drift_scales_with_mesh_spacing_inverse() {
     let n = 32usize;
     let edges = chain_edges(n);
 
-    // Build a non-equilibrium ion field: smooth Gaussian bump on c_+ at the centre.
+    // Electroneutral non-equilibrium field (c+ = c−) so ρ=0 and φ stays zero: isolates SG flux
+    // `J ∝ D/h` scaling from [`ElectroChemicalSolver::mesh_spacing`] without Poisson–ρ coupling
+    // changing Φ when `mesh_spacing` differs.
     let mut c_flat = Vec::with_capacity(n * 2);
     for i in 0..n {
         let x = (i as f32 - 0.5 * n as f32) / (n as f32 * 0.2);
         let bump = (-x * x).exp() * 0.3_f32;
         c_flat.push(1.0_f32 + bump);
-        c_flat.push(1.0_f32);
+        c_flat.push(1.0_f32 + bump);
     }
     let c0 = Tensor::<B, 3>::from_data(Data::new(c_flat, Shape::new([1, n, 2])), &dev);
     let phi0 = Tensor::<B, 3>::zeros([1, n, 1], &dev);
