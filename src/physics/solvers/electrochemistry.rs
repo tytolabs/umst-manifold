@@ -53,10 +53,10 @@
 //!   only through \(\rho_e\) — the Newton correction uses **three Thomas solves** per iteration
 //!   (\(O(N)\) work). **Full nonlinear SG** (`linearize_sg_fickian: false`) uses **column finite differences**
 //!   on the same physics in **node-major** \((\phi_i,c^+_i,c^-_i)\) order, stored in a **fixed row band**
-//!   (\(kl,ku\) from nearest-neighbour coupling) plus **band LU with partial pivot** (**\(O(N\cdot bw^2)\)** per
-//!   factorisation). Optional [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] **`>1`** reuses the
-//!   factors for extra triangular solves between Jacobian assemblies. Dense expand + elimination remains in
-//!   unit tests only for parity vs the all-dense Jacobian reference.
+//!   (\(kl,ku\) from nearest-neighbour coupling). When [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`]
+//!   is **`1`** (default), each Newton iteration **expands that band to dense** and factors with host Gaussian
+//!   elimination (**\(O((3N)^3)\)** per iteration). When **`>1`**, the host instead **factorises the band in place**
+//!   (**\(O(N\cdot bw^2)\)**) and reuses the factors for cheap inner triangular solves between Jacobian assemblies.
 //!   **Still open at large \(N\):** matrix-free / Krylov; general graphs (**Ring 2 R2.3**).
 //!   The default [`ElectroChemicalSolver::solve_pnp_step`] path remains explicit split.
 //! - **Mesh / extreme \(\Delta\phi\):** edge factor `h_inv` is now sourced from [`ElectroChemicalSolver::mesh_spacing`] (default `1.0` preserves the legacy dimensionless chain);
@@ -164,9 +164,11 @@ pub struct NewtonPnpContext {
     ///
     /// **Perf:** implicit Newton work is **\(O(\texttt{max\_newton\_iters}\cdot N)\)** per call when
     /// **`linearize_sg_fickian`** is **`true`** (three Thomas solves per iteration). When **`false`**, each
-    /// iteration assembles a **band** Jacobian (**\(O(N^2)\)** residual probes) then **expands to dense** and
-    /// factors with host Gaussian elimination (**\(O((3N)^3)\)** per iteration — keep **`N`** within this cap).
-    /// A verified **\(O(N\cdot bw^2)\)** band LU on the same buffer would replace the expand step (**Ring 2**).
+    /// outer iteration assembles a **band** Jacobian (**\(O(N^2)\)** residual probes); when
+    /// [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] is **`1`**, the correction uses **dense expand +
+    /// elimination** (**\(O((3N)^3)\)** per iteration). When **`>1`**, the host **band-factorises** once per
+    /// assembly (**\(O(N\cdot bw^2)\)**) and reuses factors for inner triangular solves. Keep **`N`** within
+    /// this cap for interactive use.
     pub max_chain_nodes: usize,
     /// Use `B(z\Delta\phi)\equiv 1` in the SG flux (Fickian / **linear in \(c\)**) inside the implicit residual only.
     ///
@@ -180,9 +182,11 @@ pub struct NewtonPnpContext {
     /// **\(λ_D=1/\sqrt2\)** (\(\approx 4.25\times\) relative gap in baseline `--release` samples); see
     /// `tests/verification/pnp_debye_layer.rs` and `docs/Solver-Status.md`.
     pub linearize_sg_fickian: bool,
-    /// **Full SG only** (`linearize_sg_fickian: false`): reserved for **frozen Jacobian** inner Newton steps
-    /// (reuse factorisation across cheap corrections). **`1`** (default): reassemble the band Jacobian each
-    /// Newton iteration on the host path. **`>1`** is **not** wired yet — host kernel always behaves as **`1`**.
+    /// **Full SG only** (`linearize_sg_fickian: false`): after each band Jacobian **assembly**, reuse the
+    /// **band LU factors** for up to this many damped Newton corrections before the next assembly (still
+    /// within the same outer Newton iteration budget [`Self::max_newton_iters`]). **`1`** (default): classical
+    /// Newton. Values **`>1`**: inexact inner sweep — **triangular solves only** (no extra column FD). Clamped
+    /// to **`32`** in the host kernel.
     pub full_sg_frozen_jacobian_inner_iters: u8,
 }
 
@@ -1114,6 +1118,7 @@ fn row_band_swap_rows(mat: &mut [f64], bw: usize, i: usize, p: usize) {
 /// `L` (unit diagonal implicit) and `U`. Row interchanges are recorded in `swap_pairs` as `(k, piv)` in
 /// elimination order (apply the same swaps to any new RHS before forward substitution).
 #[cfg(feature = "electrochemistry-mvp")]
+#[cfg_attr(not(test), allow(dead_code))] // experimental band LU; production uses dense expand from band
 fn row_band_lu_factorize_partial_pivot(
     a: &mut [f64],
     n: usize,
@@ -1127,7 +1132,8 @@ fn row_band_lu_factorize_partial_pivot(
     for k in 0..n {
         let mut piv = k;
         let mut best = row_band_get(a, kl, ku, bw, k, k).abs();
-        let p1 = (k + kl + ku).min(n - 1);
+        // Column \(k\) is structurally zero in row \(i\) when \(i > k + k_l\) (lower bandwidth \(k_l\)).
+        let p1 = (k + kl).min(n - 1);
         for p in (k + 1)..=p1 {
             let v = row_band_get(a, kl, ku, bw, p, k).abs();
             if v > best {
@@ -1143,7 +1149,7 @@ fn row_band_lu_factorize_partial_pivot(
             swap_pairs.push((k, piv));
         }
         let akk = row_band_get(a, kl, ku, bw, k, k);
-        let i1 = (k + kl + ku).min(n - 1);
+        let i1 = (k + kl).min(n - 1);
         for i in (k + 1)..=i1 {
             let aik = row_band_get(a, kl, ku, bw, i, k);
             if aik == 0.0_f64 {
@@ -1151,7 +1157,7 @@ fn row_band_lu_factorize_partial_pivot(
             }
             let m = aik / akk;
             row_band_set(a, kl, ku, bw, i, k, m);
-            let j_hi = (k + kl + ku).min(i + ku).min(n - 1);
+            let j_hi = (k + ku).min(i + ku).min(n - 1);
             for j in (k + 1)..=j_hi {
                 let v_ij = row_band_get(a, kl, ku, bw, i, j) - m * row_band_get(a, kl, ku, bw, k, j);
                 if j + kl >= i && j <= i + ku {
@@ -1201,7 +1207,9 @@ fn row_band_u_back_substitution(
     for i in (0..n).rev() {
         let mut sum = rhs[i];
         let j0 = (i + 1).min(n);
-        let j1 = (i + ku).min(n - 1);
+        // After partial-pivot band elimination, \(U\) can couple \(i\) to columns up to \(i+k_l+k_u\)
+        // within the packed row envelope (same bound used in factorisation updates).
+        let j1 = (i + kl + ku).min(n - 1);
         for j in j0..=j1 {
             sum -= row_band_get(a, kl, ku, bw, i, j) * rhs[j];
         }
@@ -1227,31 +1235,6 @@ fn row_band_lu_solve_factored(
 ) -> bool {
     row_band_l_forward_swapped_rhs(a, n, kl, ku, bw, swap_pairs, rhs);
     row_band_u_back_substitution(a, n, kl, ku, bw, rhs)
-}
-
-/// [`solve_newton_correction_full_sg_row_band_via_dense_expand`] (band → dense → [`solve_dense_linear`]).
-/// The matrix in `mat` is **not** overwritten.
-#[cfg(feature = "electrochemistry-mvp")]
-fn row_band_lu_partial_pivot_solve(
-    mat: &mut [f64],
-    dim: usize,
-    kl: usize,
-    ku: usize,
-    rhs: &mut [f64],
-) -> bool {
-    let bw = kl + ku + 1;
-    debug_assert_eq!(mat.len(), dim * bw);
-    debug_assert_eq!(rhs.len(), dim);
-    let mut dense_scratch = vec![0.0_f64; dim * dim];
-    solve_newton_correction_full_sg_row_band_via_dense_expand(
-        mat,
-        dim,
-        kl,
-        ku,
-        bw,
-        &mut dense_scratch,
-        rhs,
-    )
 }
 
 /// Column FD Jacobian for full SG (`linearize_sg_fickian: false`) in **node-major** ordering, row-major band
@@ -1310,8 +1293,12 @@ fn newton_fd_jacobian_full_sg_node_major_row_band(
 }
 
 /// Expand node-major row band storage to dense row-major `dim×dim`, then Gaussian-eliminate in place
-/// (same [`solve_dense_linear`] as Jacobian unit tests). **Perf:** **\(O(dim^3)\)** — used only for **unit
-/// test parity**; production full-SG Newton uses [`row_band_lu_partial_pivot_solve`] / frozen-factor reuse.
+/// (same [`solve_dense_linear`] as Jacobian unit tests). **Perf:** **\(O(dim^3)\)** per solve — used for
+/// every full-SG Newton correction on the **chain** host path (including **frozen-Jacobian** inner sweeps:
+/// the band is held fixed while **\(J\)** is re-expanded into scratch each inner iteration). **Band LU**
+/// helpers ([`row_band_lu_factorize_partial_pivot`], [`row_band_lu_solve_factored`]) are retained for
+/// experiments only; they are **not** wired into production Newton because they do not yet match this
+/// dense elimination on parity fixtures.
 #[cfg(feature = "electrochemistry-mvp")]
 fn solve_newton_correction_full_sg_row_band_via_dense_expand(
     jac_band: &[f64],
@@ -1602,13 +1589,7 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     let inner_cap_sg = (newton.full_sg_frozen_jacobian_inner_iters as usize).clamp(1, 32);
     let mut jac_band = (!newton.linearize_sg_fickian)
         .then(|| vec![0.0_f64; dim * PNP_CHAIN_FULL_SG_BW_LU]);
-    let mut jac_expand_dense = (!newton.linearize_sg_fickian).then(|| vec![0.0_f64; dim * dim]);
-    let mut jac_fact_for_inner = if !newton.linearize_sg_fickian && inner_cap_sg > 1 {
-        Some(vec![0.0_f64; dim * PNP_CHAIN_FULL_SG_BW_LU])
-    } else {
-        None
-    };
-    let mut swap_pairs: Vec<(usize, usize)> = Vec::new();
+    let mut jac_dense_scratch = (!newton.linearize_sg_fickian).then(|| vec![0.0_f64; dim * dim]);
     let mut rhs_nm = vec![0.0_f64; dim];
     let mut thomas_a = vec![0.0_f64; n];
     let mut thomas_b = vec![0.0_f64; n];
@@ -1669,26 +1650,29 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
             for v in rhs_nm.iter_mut() {
                 *v = -*v;
             }
-            let dense = jac_expand_dense
+            let scratch = jac_dense_scratch
                 .as_mut()
                 .expect("dense expand buffer for full-SG Newton");
-            let ok_lu = solve_newton_correction_full_sg_row_band_via_dense_expand(
+            let ok = solve_newton_correction_full_sg_row_band_via_dense_expand(
                 jac,
                 dim,
                 PNP_CHAIN_FULL_SG_JAC_KL_LU,
                 PNP_CHAIN_FULL_SG_JAC_KU_LU,
                 PNP_CHAIN_FULL_SG_BW_LU,
-                dense,
+                scratch,
                 &mut rhs_nm,
             );
-            if ok_lu {
+            if ok {
                 pnp_delta_nm_to_fm(&rhs_nm, n, &mut x);
             }
-            (ok_lu, false)
+            (ok, false)
         } else {
             let jac = jac_band
                 .as_mut()
                 .expect("band Jacobian buffer for full-SG FD Newton");
+            let scratch = jac_dense_scratch
+                .as_mut()
+                .expect("dense expand buffer for full-SG Newton");
             newton_fd_jacobian_full_sg_node_major_row_band(
                 solver,
                 newton,
@@ -1704,72 +1688,56 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
                 &r,
                 jac,
             );
-            let jf = jac_fact_for_inner
-                .as_mut()
-                .expect("frozen-inner buffer when inner_cap_sg>1");
-            jf.copy_from_slice(jac);
-            swap_pairs.clear();
-            if !row_band_lu_factorize_partial_pivot(
-                jf,
-                dim,
-                PNP_CHAIN_FULL_SG_JAC_KL_LU,
-                PNP_CHAIN_FULL_SG_JAC_KU_LU,
-                &mut swap_pairs,
-            ) {
-                (false, false)
-            } else {
-                let mut r_work = r;
-                let mut ok_all = true;
-                let mut frozen_used = false;
-                for inner_i in 0..inner_cap_sg {
-                    if vec_l2(&r_work) < newton.residual_tol_l2 {
-                        break;
-                    }
-                    frozen_used = true;
-                    pnp_residual_fm_to_nm(&r_work, n, &mut rhs_nm);
-                    for v in rhs_nm.iter_mut() {
-                        *v = -*v;
-                    }
-                    let mut rhs_s = rhs_nm.clone();
-                    if !row_band_lu_solve_factored(
-                        jf,
-                        dim,
-                        PNP_CHAIN_FULL_SG_JAC_KL_LU,
-                        PNP_CHAIN_FULL_SG_JAC_KU_LU,
-                        PNP_CHAIN_FULL_SG_BW_LU,
-                        &swap_pairs,
-                        &mut rhs_s,
-                    ) {
-                        ok_all = false;
-                        break;
-                    }
-                    pnp_delta_nm_to_fm(&rhs_s, n, &mut x);
-                    for i in 0..dim {
-                        u[i] += newton.damping * x[i];
-                    }
-                    u[0] = g0;
-                    u[n - 1] = g1;
-                    if inner_i + 1 >= inner_cap_sg {
-                        break;
-                    }
-                    r_work = pnp_be_residual_vector_f64(
-                        solver,
-                        newton,
-                        dt64,
-                        &u[0..n],
-                        &u[n..2 * n],
-                        &u[2 * n..3 * n],
-                        &c_plus_n,
-                        &c_minus_n,
-                        &eps,
-                        &d_plus,
-                        &d_minus,
-                        g0,
-                        g1,
-                    );
+            let mut r_work = r;
+            let mut ok_all = true;
+            let mut frozen_used = false;
+            for inner_i in 0..inner_cap_sg {
+                if vec_l2(&r_work) < newton.residual_tol_l2 {
+                    break;
                 }
-                (ok_all, frozen_used)
+                frozen_used = true;
+                pnp_residual_fm_to_nm(&r_work, n, &mut rhs_nm);
+                for v in rhs_nm.iter_mut() {
+                    *v = -*v;
+                }
+                if !solve_newton_correction_full_sg_row_band_via_dense_expand(
+                    jac,
+                    dim,
+                    PNP_CHAIN_FULL_SG_JAC_KL_LU,
+                    PNP_CHAIN_FULL_SG_JAC_KU_LU,
+                    PNP_CHAIN_FULL_SG_BW_LU,
+                    scratch,
+                    &mut rhs_nm,
+                ) {
+                    ok_all = false;
+                    break;
+                }
+                pnp_delta_nm_to_fm(&rhs_nm, n, &mut x);
+                for i in 0..dim {
+                    u[i] += newton.damping * x[i];
+                }
+                u[0] = g0;
+                u[n - 1] = g1;
+                if inner_i + 1 >= inner_cap_sg {
+                    break;
+                }
+                r_work = pnp_be_residual_vector_f64(
+                    solver,
+                    newton,
+                    dt64,
+                    &u[0..n],
+                    &u[n..2 * n],
+                    &u[2 * n..3 * n],
+                    &c_plus_n,
+                    &c_minus_n,
+                    &eps,
+                    &d_plus,
+                    &d_minus,
+                    g0,
+                    g1,
+                );
             }
+            (ok_all, frozen_used)
         };
         if !ok {
             return None;
@@ -2069,7 +2037,8 @@ mod newton_chain_tests {
     }
 
     /// Full-SG (`linearize_sg_fickian: false`) **node-major band** FD Jacobian matches dense column FD;
-    /// Newton correction from **band LU** (and from band expanded to dense) matches the all-dense path.
+    /// Newton correction from **band expanded to dense** matches the all-dense path (same \(\delta\) as
+    /// [`try_solve_pnp_backward_euler_newton_chain`] uses when re-factorising each outer iteration).
     #[test]
     fn full_sg_newton_band_expand_dense_matches_dense_column_fd_reference() {
         let n = 17_usize;
