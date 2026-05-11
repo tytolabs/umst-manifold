@@ -67,4 +67,38 @@ impl TopologicalLaplacian {
         let to_tgt = Tensor::<B, 3>::zeros_like(&x).scatter(1, tgt_indices, edge_flow.neg());
         to_src.add(to_tgt)
     }
+
+    /// Positive diagonal \(d_i = \sum_{j\sim i} w_{ij}\) of \(-\mathcal{L}\), where \(\mathcal{L}\) is the
+    /// operator returned by [`Self::scalar_laplacian`] with the same `damage` mask (\(w_{ij} = 1-\bar d_{ij}\)).
+    ///
+    /// For each edge, \(w\) is accumulated at both endpoints — matching \((-\mathcal{L})_{ii}\) in the
+    /// primal scatter convention used by [`Self::scalar_laplacian`].
+    pub fn scalar_laplacian_neg_opposite_diag<B: Backend>(
+        edges_b1: Tensor<B, 2, Int>,
+        damage: Tensor<B, 3>,
+    ) -> Tensor<B, 3> {
+        let batch_size = damage.dims()[0];
+        let features = damage.dims()[2];
+        let num_edges = edges_b1.dims()[1];
+
+        let src_indices = edges_b1
+            .clone()
+            .slice([0..1])
+            .reshape([1, num_edges, 1])
+            .expand([batch_size, num_edges, features]);
+        let tgt_indices = edges_b1
+            .clone()
+            .slice([1..2])
+            .reshape([1, num_edges, 1])
+            .expand([batch_size, num_edges, features]);
+
+        let damage_src = damage.clone().gather(1, src_indices.clone());
+        let damage_tgt = damage.clone().gather(1, tgt_indices.clone());
+        let edge_damage = damage_src.add(damage_tgt).div_scalar(2.0_f32);
+        let w = Tensor::<B, 3>::ones_like(&edge_damage).sub(edge_damage);
+
+        let to_src = Tensor::<B, 3>::zeros_like(&damage).scatter(1, src_indices, w.clone());
+        let to_tgt = Tensor::<B, 3>::zeros_like(&damage).scatter(1, tgt_indices, w);
+        to_src.add(to_tgt)
+    }
 }

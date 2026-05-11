@@ -8,8 +8,9 @@
 //! ## Audit memo (Track E)
 //! - **Steady vs transient:** [`plane_bingham_poiseuille_u`](crate::physics::rheology_analytic) is the
 //!   **steady** parallel-plate reference; [`BinghamFlowSolver::step`] is an explicit Chorin split on a
-//!   graph — no claim of convergence to that steady profile without inlet/outlet BCs and a proper
-//!   pressure Poisson (see deferrals in `tests/verification/rheology_poiseuille.rs`).
+//!   graph — no claim of convergence to that steady profile without inlet/outlet BCs (and typically a
+//!   staggered MAC pressure) even though the pressure increment solves \(\mathcal{L}\phi=b_h\) with **Jacobi-PCG**
+//!   (see deferrals in `tests/verification/rheology_poiseuille.rs`).
 //! - **Grid / BC consistency:** Channel smokes pass [`BinghamFlowSolver::edge_length_scale`] as the
 //!   wall-normal spacing so \(\dot\gamma \sim |\Delta u|/h\) matches SI; wall velocity is enforced
 //!   **outside** the solver via a nodal mask (not embedded in `step`).
@@ -27,11 +28,12 @@
 //! 2. **Pressure Poisson (graph v0 — divergence RHS)**: solve \(\mathcal{L}\phi = b_h(u^\*)\) where
 //!    \(\mathcal{L}\) is [`TopologicalLaplacian::scalar_laplacian`] and \(b_h\) is the **weak primal divergence**
 //!    of the scalar tangential mean flux \(q_e=(\bar u^\*\!\cdot\hat t)f_c\) (see `docs/research/rheology_pressure_poisson_roadmap.md` §2–4). This **replaces** the legacy \(\sum_c \mathcal{L}u^\*_c\) surrogate.
-//!    The roadmap’s explicit \(\tilde b = b_h/\Delta t\) on this graph-only lane is **deferred** until a
-//!    better-conditioned linear solve ships (see `docs/research/rheology_pressure_poisson_roadmap.md` §2–4).
+//!    The roadmap’s explicit \(\tilde b = b_h/\Delta t\) scaling note on this graph-only lane remains
+//!    **deferred** for a MAC / staggered RHS pairing (see `docs/research/rheology_pressure_poisson_roadmap.md` §2–4).
 //!    \(\mathcal{L}\) remains the graph Laplacian — not a MAC staggered operator — until that lane lands.
-//!    [`POISSON_ITERS`] damped Richardson iterations ([`POISSON_OMEGA`], no tolerance exit) smooth \(\phi\); afterwards \(\phi\) is shifted to
-//!    **zero mean** per batch (gauge for the pure-Neumann graph null space).
+//!    The linear solve is **Jacobi-preconditioned CG** on \(A=-\mathcal{L}\), \(b=-b_h\) (SPD on the mean-free
+//!    subspace), relative residual exit, iteration cap — then \(\phi\) is shifted to **zero mean** per batch
+//!    (gauge for the pure-Neumann graph null space).
 //! 3. **Projection (verification \#7 — momentum-consistent flux):** subtract \(\Delta t\) times the weak
 //!    divergence of the **same** edge flux pattern as the pressure-gradient predictor,
 //!    \(-(\phi_j-\phi_i)\hat t/\rho_e\) per edge (see `edge_pressure` construction), with \(\hat t\) from \(u^\*\).
@@ -65,7 +67,7 @@
 //! Returns `(velocity, pressure, lambda_thix)` unchanged so `cargo test` stays green.
 //!
 //! ## R2.2 — Honest scope (DEFERRAL — Rheology, Track J)
-//! **In scope today:** explicit predictor + pressure correction (Richardson on the graph Laplacian with an
+//! **In scope today:** explicit predictor + pressure correction (**Jacobi-PCG** on \(-\mathcal{L}\) with an
 //! RHS built from the **weak primal divergence** of tangential mean edge flux — a graph-only discrete
 //! source, not a full MAC \(\nabla_h\!\cdot u^\*\)); wall BCs as **external** nodal masks in tests; Bingham +
 //! optional Roussel \(\lambda\) on the same 1-skeleton.
@@ -77,15 +79,15 @@
 //!
 //! **Known numerical boundary:** the legacy \(\sum_c \mathcal{L}u^\*_c\) surrogate plus **unscaled** tangent
 //! projection produced \(\mathcal O(10^3\!-\!10^4)\) first-step \(\|u\|_\infty\) amplification on the **65×17**
-//! SI channel harness. **Verification \#7** pairs a tangential mean-flux divergence \(b_h(u^\*)\) with **Richardson**
-//! on \(\mathcal{L}\) and a **pressure-gradient flux template** projection scaled by \(\Delta t\) (plus `mean(φ)=0` gauge).
+//! SI channel harness. **Verification \#7** pairs a tangential mean-flux divergence \(b_h(u^\*)\) with **Jacobi-PCG**
+//! on \(-\mathcal{L}\) and a **pressure-gradient flux template** projection scaled by \(\Delta t\) (plus `mean(φ)=0` gauge).
 //! CI brackets the resulting step-0→1 amplification in `chorin_surrogate_poisson_amplification_regression_guard`
 //! (historical name).
 //! Steady vs analytic comparisons stay deferred until inlet/outlet BCs plus a MAC or cell-centred pressure solve land.
 //!
 //! ## MAC + Poisson — integration points (R2.2, design note)
-//! Ring 2 **R2.2** calls for real pressure Poisson (or MAC) on the developed channel; this module uses **Richardson**
-//! on the graph Laplacian (fixed iteration count, not a residual-certified sparse solve) with the \#7 projection path below.
+//! Ring 2 **R2.2** calls for MAC or cell-centred pressure on the developed channel; this module ships **graph**
+//! **Jacobi-PCG** on \(-\mathcal{L}\) (relative residual tolerance, capped iterations) with the \#7 projection path below.
 //! The following are **hook points** for a future staggered / incompressible-correct split — **not** an implemented MAC grid:
 //! - **After the predictor:** `step_experimental` forms `u_star` from explicit momentum (body, viscous,
 //!   pressure-gradient acceleration). A MAC predictor would typically commit **face-normal** provisional
@@ -93,9 +95,9 @@
 //! - **Poisson RHS:** Shipped path uses [`primal_divergence_from_edge_flux_topo`] on scalar flux \(q_e f_c\)
 //!   derived from \(u^\*\) (tangential mean; see “Chorin-style split” §2). A MAC staggered \(\nabla_h\!\cdot u^\*\)
 //!   on face fluxes remains a future swap-in.
-//! - **Poisson solve:** Shipped path uses **Richardson** on the same [`TopologicalLaplacian`] \(\mathcal{L}\);
-//!   Jacobi-preconditioned CG (or a chain **Thomas** path when topology is a path) remains the documented upgrade
-//!   once validated on the SI channel harness — compare electrochemistry Poisson helpers.
+//! - **Poisson solve:** Shipped path uses **Jacobi-preconditioned CG** on \(-\mathcal{L}\) (see
+//!   [`solve_pressure_phi_jacobi_cg`]); a chain **Thomas** fast lane when topology is a 1-D path remains a future
+//!   swap-in — compare electrochemistry Poisson helpers.
 //! - **Projection:** Edge increments [`primal_scalar_edge_increment`] / tangent projection of \(\nabla\phi\)
 //!   remain the right **shape** once \(\phi\) solves the consistent discrete Poisson; **inlet/outlet** pressure
 //!   or flux BCs still require explicit pinning — absent today.
@@ -118,10 +120,11 @@ use crate::physics::topology::EdgeTopology;
 use burn::tensor::{backend::Backend, Int, Tensor};
 
 #[cfg(feature = "rheology-bingham")]
-/// Fixed-count Richardson iterations for \(\mathcal{L}\phi \approx b_h(u^\*)\) (no tolerance exit).
-const POISSON_ITERS: usize = 28;
+/// Relative residual \(\|b - A\phi\|_2 / \|b\|_2 = \|\mathcal{L}\phi - b_h\|_2 / \|b_h\|_2\) with \(A=-\mathcal{L}\), \(b=-b_h\).
+const POISSON_CG_REL_TOL: f32 = 2e-5;
 #[cfg(feature = "rheology-bingham")]
-const POISSON_OMEGA: f32 = 0.18;
+/// Upper bound on PCG iterations per Chorin pressure step (graph Laplacian; Jacobi preconditioner).
+const POISSON_CG_MAX_IT_CAP: usize = 2048;
 #[cfg(feature = "rheology-bingham")]
 /// Floor for \(t_\mathrm{rest}\), \(\gamma_\mathrm{crit}\) in denominators (SI scales, avoids div-by-zero).
 const THIX_PARAM_EPS: f32 = 1e-12;
@@ -214,6 +217,94 @@ impl Default for BinghamFlowSolver {
     fn default() -> Self {
         Self::new(1e-3, 1.0)
     }
+}
+
+/// Solve \(\mathcal{L}\phi = b_h\) with **Jacobi-preconditioned CG** on \(A=-\mathcal{L}\), \(b=-b_h\) (SPD form).
+/// Returns \(\phi\) with **zero mean** per batch. `rhs` should already be mean-free (gauge-compatible).
+#[cfg(feature = "rheology-bingham")]
+fn solve_pressure_phi_jacobi_cg<B: Backend<FloatElem = f32>>(
+    rhs: Tensor<B, 3>,
+    edges_b1: Tensor<B, 2, Int>,
+    damage: Tensor<B, 3>,
+    batch: usize,
+    n: usize,
+) -> Tensor<B, 3> {
+    let rhs_norm = rhs
+        .clone()
+        .powf_scalar(2.0)
+        .sum()
+        .sqrt()
+        .into_scalar()
+        .max(1e-30_f32);
+    if rhs_norm < 1e-24_f32 {
+        return Tensor::zeros_like(&rhs);
+    }
+
+    let diag_a =
+        TopologicalLaplacian::scalar_laplacian_neg_opposite_diag(edges_b1.clone(), damage.clone());
+    let diag_inv = diag_a.clamp_min(1e-14_f32).recip();
+
+    let mut phi = Tensor::<B, 3>::zeros_like(&rhs);
+
+    let lphi = TopologicalLaplacian::scalar_laplacian(phi.clone(), edges_b1.clone(), damage.clone());
+    let mut r = lphi.sub(rhs.clone());
+
+    let mut z = r.clone().mul(diag_inv.clone());
+    let mut p = z.clone();
+    let mut rz_old = r.clone().mul(z.clone()).sum().into_scalar().max(1e-40_f32);
+
+    let max_it = n
+        .saturating_mul(8)
+        .clamp(128, POISSON_CG_MAX_IT_CAP);
+
+    for _ in 0..max_it {
+        let lp = TopologicalLaplacian::scalar_laplacian(p.clone(), edges_b1.clone(), damage.clone());
+        let ap = lp.neg();
+
+        let p_ap = p.clone().mul(ap.clone()).sum().into_scalar();
+        if !p_ap.is_finite() || p_ap <= 1e-40_f32 {
+            break;
+        }
+        let alpha = (rz_old / p_ap).clamp(-1e4_f32, 1e4_f32);
+        if !alpha.is_finite() {
+            break;
+        }
+
+        phi = phi.add(p.clone().mul_scalar(alpha));
+        r = r.sub(ap.mul_scalar(alpha));
+
+        let res_norm = r.clone().powf_scalar(2.0).sum().sqrt().into_scalar();
+        if !res_norm.is_finite() {
+            break;
+        }
+        if res_norm / rhs_norm < POISSON_CG_REL_TOL {
+            break;
+        }
+
+        z = r.clone().mul(diag_inv.clone());
+        let rz_new = r.clone().mul(z.clone()).sum().into_scalar();
+        if !rz_new.is_finite() {
+            break;
+        }
+
+        let beta = if rz_old > 1e-40_f32 {
+            (rz_new / rz_old).clamp(0.0_f32, 1e6_f32)
+        } else {
+            0.0_f32
+        };
+        if !beta.is_finite() {
+            break;
+        }
+        p = z.clone().add(p.mul_scalar(beta));
+        rz_old = rz_new.max(1e-40_f32);
+    }
+
+    let phi_mean = phi
+        .clone()
+        .sum_dim(1)
+        .div_scalar(n as f32)
+        .reshape([batch, 1, 1]);
+    phi.sub(phi_mean)
 }
 
 #[cfg(feature = "rheology-bingham")]
@@ -356,22 +447,11 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
     let u_star_x0 = u_star.clone().narrow(2, 0, 1);
     let rhs = primal_divergence_from_edge_flux_topo(flux_scalar_edge, &topo, &u_star_x0);
     // Neumann graph Laplacian has a constant null space; remove the nodal mean from \(b\) so
-    // Richardson / gauge-fixed solves stay compatible (avoids NaN blow-up on multi-step Chorin).
+    // Krylov / gauge-fixed solves stay compatible (avoids NaN blow-up on multi-step Chorin).
     let rhs_mean = rhs.clone().sum_dim(1).div_scalar(n as f32);
     let rhs = rhs.sub(rhs_mean);
 
-    let mut phi = Tensor::<B, 3>::zeros([batch, n, 1], &device);
-    for _ in 0..POISSON_ITERS {
-        let lphi =
-            TopologicalLaplacian::scalar_laplacian(phi.clone(), edges_b1.clone(), damage.clone());
-        phi = phi.add(rhs.clone().sub(lphi).mul_scalar(POISSON_OMEGA));
-    }
-    let phi_mean = phi
-        .clone()
-        .sum_dim(1)
-        .div_scalar(n as f32)
-        .reshape([batch, 1, 1]);
-    phi = phi.sub(phi_mean);
+    let phi = solve_pressure_phi_jacobi_cg(rhs, edges_b1.clone(), damage.clone(), batch, n);
 
     // Projection: same weak-divergence routing as `edge_pressure`, with φ increment and an extra Δt factor.
     let dphi = primal_scalar_edge_increment(phi.clone(), &topo);
@@ -468,6 +548,63 @@ mod tests {
         assert!(
             d < 1e-5_f32,
             "frozen-default λ should be unchanged; max|Δλ|={d}"
+        );
+    }
+
+    #[test]
+    fn jacobi_cg_pressure_residual_small_on_mean_free_synthetic_rhs() {
+        use super::solve_pressure_phi_jacobi_cg;
+        use crate::physics::laplacian::TopologicalLaplacian;
+
+        let dev = NdArrayDevice::Cpu;
+        let batch = 1usize;
+        let n = 5usize;
+        let e_ct = 4usize;
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64, 1, 1, 2, 2, 3, 3, 4], Shape::new([2, e_ct])), &dev);
+        let damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+
+        let phi_vals = vec![0.12_f32, -0.05, -0.03, 0.01, -0.05];
+        let phi_src = Tensor::<B, 3>::from_data(Data::new(phi_vals, Shape::new([batch, n, 1])), &dev);
+        let mean = phi_src.clone().sum_dim(1).div_scalar(n as f32);
+        let phi_src = phi_src.sub(mean.reshape([batch, 1, 1]));
+
+        let rhs = TopologicalLaplacian::scalar_laplacian(
+            phi_src.clone(),
+            edges_b1.clone(),
+            damage.clone(),
+        );
+        let rhs_mean = rhs.clone().sum_dim(1).div_scalar(n as f32);
+        let rhs_mf = rhs.sub(rhs_mean);
+
+        let phi = solve_pressure_phi_jacobi_cg(
+            rhs_mf.clone(),
+            edges_b1.clone(),
+            damage.clone(),
+            batch,
+            n,
+        );
+        let lap_phi = TopologicalLaplacian::scalar_laplacian(
+            phi.clone(),
+            edges_b1.clone(),
+            damage.clone(),
+        );
+        let res = lap_phi.sub(rhs_mf.clone());
+        let rn = res.clone().powf_scalar(2.0).sum().sqrt().into_scalar();
+        let bn = rhs_mf
+            .powf_scalar(2.0)
+            .sum()
+            .sqrt()
+            .into_scalar()
+            .max(1e-20_f32);
+        let rel = rn / bn;
+        assert!(
+            rel < 5e-4_f32,
+            "Jacobi-PCG should drive ||Lφ−b||/||b|| small; rel={rel}"
+        );
+        assert!(
+            phi.into_data().convert::<f32>().value.iter().all(|x| x.is_finite()),
+            "expected finite φ"
         );
     }
 }
