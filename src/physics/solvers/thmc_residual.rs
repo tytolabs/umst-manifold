@@ -63,9 +63,6 @@ use crate::physics::solvers::thmc::{
     HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics, ThmcState,
 };
 
-#[cfg(all(feature = "thmc-coupled", feature = "solver-experimental"))]
-use super::thmc_jfnk::gmres_f32;
-
 #[cfg(not(feature = "thmc-coupled"))]
 use super::thmc::ThmcState;
 
