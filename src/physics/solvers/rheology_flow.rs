@@ -749,4 +749,146 @@ mod tests {
             "expected finite φ"
         );
     }
+
+    /// **P1 / verification \#7 — honest regression (`solver-experimental`):** on the same **5×5**
+    /// quad channel as `chorin_single_step_finite_smoke`, compare the **legacy** surrogate RHS
+    /// \(\sum_c \mathcal{L} u^\*_c\) to the **shipped** mean-free weak primal-divergence RHS, then
+    /// Jacobi-PCG solves on \(-\mathcal{L}\). RHS differ; both reaches stay finite with modest residuals;
+    /// \(\phi\) is not identical across RHS choices.
+    #[cfg(feature = "solver-experimental")]
+    #[allow(clippy::needless_range_loop)]
+    #[test]
+    fn chorin_poisson_rhs_surrogate_vs_weak_divergence_tiny_channel() {
+        use super::{
+            chorin_pressure_rhs_mean_free_weak_divergence, solve_pressure_phi_jacobi_cg,
+        };
+        use crate::physics::laplacian::TopologicalLaplacian;
+        use crate::physics::topology::EdgeTopology;
+
+        let dev = NdArrayDevice::Cpu;
+        let nx = 5usize;
+        let ny = 5usize;
+        let n = nx * ny;
+
+        let mut edges_src: Vec<i64> = Vec::new();
+        let mut edges_tgt: Vec<i64> = Vec::new();
+        for j in 0..ny {
+            for i in 0..nx - 1 {
+                edges_src.push((j * nx + i) as i64);
+                edges_tgt.push((j * nx + i + 1) as i64);
+            }
+        }
+        for j in 0..ny - 1 {
+            for i in 0..nx {
+                edges_src.push((j * nx + i) as i64);
+                edges_tgt.push(((j + 1) * nx + i) as i64);
+            }
+        }
+        let mut edges = edges_src;
+        edges.extend(edges_tgt);
+        let e_ct = edges.len() / 2;
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(edges, Shape::new([2, e_ct])), &dev);
+
+        let topo = EdgeTopology::new(edges_b1.clone());
+        let n_edges = topo.n_edges();
+        let batch = 1usize;
+
+        let mut udat = vec![0.0_f32; batch * n * 3];
+        for idx in 0..(batch * n * 3) {
+            let k = idx / 3;
+            let c = idx % 3;
+            let node = k % n;
+            let base = ((node * 13 + c * 7) % 97) as f32 * 1e-2;
+            udat[idx] = base + (c as f32) * 0.03;
+        }
+        let u_star =
+            Tensor::<B, 3>::from_data(Data::new(udat, Shape::new([batch, n, 3])), &dev);
+        let damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+        let flow_coeff = Tensor::<B, 3>::ones([batch, n_edges, 3], &dev);
+
+        let (rhs_div, _t_hat) = chorin_pressure_rhs_mean_free_weak_divergence(
+            u_star.clone(),
+            &topo,
+            flow_coeff.clone(),
+            batch,
+            n_edges,
+            n,
+        );
+
+        let mut rhs_surr = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+        for c in 0..3 {
+            let uc = u_star.clone().narrow(2, c, 1);
+            let lap_c = TopologicalLaplacian::scalar_laplacian(
+                uc,
+                edges_b1.clone(),
+                damage.clone(),
+            );
+            rhs_surr = rhs_surr.add(lap_c);
+        }
+        let sm = rhs_surr.clone().sum_dim(1).div_scalar(n as f32);
+        let rhs_surr = rhs_surr.sub(sm.reshape([batch, 1, 1]));
+
+        let dnorm = rhs_div
+            .clone()
+            .sub(rhs_surr.clone())
+            .powf_scalar(2.0)
+            .sum()
+            .sqrt()
+            .into_scalar();
+        assert!(
+            dnorm > 1e-8_f32,
+            "expected surrogate vs divergence RHS to differ; ||Δb||={dnorm}"
+        );
+
+        let phi_div = solve_pressure_phi_jacobi_cg(
+            rhs_div.clone(),
+            edges_b1.clone(),
+            damage.clone(),
+            batch,
+            n,
+        );
+        let phi_surr = solve_pressure_phi_jacobi_cg(
+            rhs_surr.clone(),
+            edges_b1.clone(),
+            damage.clone(),
+            batch,
+            n,
+        );
+
+        let rel_res = |phi: Tensor<B, 3>, rhs: Tensor<B, 3>| -> f32 {
+            let lap_phi =
+                TopologicalLaplacian::scalar_laplacian(phi, edges_b1.clone(), damage.clone());
+            let rn = lap_phi
+                .sub(rhs.clone())
+                .powf_scalar(2.0)
+                .sum()
+                .sqrt()
+                .into_scalar();
+            let bn = rhs.powf_scalar(2.0).sum().sqrt().into_scalar().max(1e-30_f32);
+            rn / bn
+        };
+
+        let rd = rel_res(phi_div.clone(), rhs_div);
+        let rs = rel_res(phi_surr.clone(), rhs_surr);
+        assert!(
+            rd < 1e-2_f32 && rs < 1e-2_f32,
+            "Jacobi-PCG residuals too large: div_rhs rel={rd}, surr_rhs rel={rs}"
+        );
+
+        let inorm = phi_div
+            .clone()
+            .sub(phi_surr.clone())
+            .powf_scalar(2.0)
+            .sum()
+            .sqrt()
+            .into_scalar();
+        assert!(
+            inorm > 1e-8_f32,
+            "expected different φ for different RHS; ||Δφ||={inorm}"
+        );
+
+        assert!(phi_div.abs().max().into_scalar().is_finite());
+        assert!(phi_surr.abs().max().into_scalar().is_finite());
+    }
 }
