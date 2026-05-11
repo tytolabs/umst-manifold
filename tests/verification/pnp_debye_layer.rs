@@ -26,8 +26,8 @@
 // `solve_pnp_step_dispatch` (production path; falls back to explicit Picard if the chain helper
 // returns `None`). Direct `try_solve_pnp_backward_euler_newton_chain` remains for unit tests in
 // `electrochemistry.rs` and callers who bypass dispatch. Full nonlinear SG (`linearize_sg_fickian: false`)
-// uses a **node-major band** FD Jacobian, then **pivot-safe band LU** on that envelope (a \((3N)^2\) dense
-// scratch is still allocated alongside the band factor buffer — see `electrochemistry` rustdoc).
+// uses a **node-major band** FD Jacobian, then **dense expand + Gauss** on a **(3N)²** scratch for each
+// Newton correction (see `electrochemistry` rustdoc).
 
 use approx::assert_relative_eq;
 use burn::tensor::{Data, Int, Shape, Tensor};
