@@ -10,13 +10,9 @@
 //! half-steps on the graph Laplacian (see solver module docs). With `--features fracture-at2`:
 //! `update_damage_smoke_tiny_chain` (finite \(d\); `outer_iterations == 1` with a fixed-strain
 //! provider matches [`PhaseFieldFractureSolver::update_damage`]); `at2_surface_energy_scale_matches_gc_order_of_magnitude` (order-of-magnitude
-//! \(G_c/l\cdot\bar d\) on the tiny chain); `at2_gc_linear_scaling_smoke` (doubling \(G_c\) at fixed \((l,\varepsilon)\): \(\bar d\) stays same order and \(G_c/l\cdot\bar d\) tracks \(\Delta G_c\) loosely — explicit red–black sweep, not a converged Γ-limit).
+//! \(G_c/l\cdot\bar d\) on the tiny chain); `at2_gc_linear_scaling_smoke` (doubling \(G_c\) at fixed \((l,\varepsilon)\): \(\bar d\) stays same order and \(G_c/l\cdot\bar d\) tracks \(\Delta G_c\) loosely — explicit sweep, **not** the Γ-limit scaling of \(G_c\) in the sharp-interface sense); **`at2_gamma_convergence_three_length_scales`** — three \((l_0,h)\) pairs with fixed \(h/l_0=\tfrac14\), \(\psi^+\!=0\), exponential damage seed at mid-span; discrete AT2 surface functional \(D_h\) has **relative error &lt; 2%** vs **`Gc`** on each mesh and **does not worsen** across refinement (successive errors within **`10^{-3}`**, fixed-strain relaxation with 32 outer passes — not a coupled mechanics \(\psi^+\) benchmark).
 //!
-//! **Deferred:** **multi-\(l_0\) Γ-limit** harness not implemented (filename = intent); would need
-//! systematic \(l_0,h\) refinement, reference solutions, and dissipation-to-\(G_c\) checks beyond
-//! current smoke. **Full staggered elasticity–damage** (fresh \(\varepsilon\) each outer mechanics
-//! solve) is not validated here — [`PhaseFieldFractureSolver::update_damage`] is fixed-strain
-//! damage only; orchestration remains `ThmcSolver` / shell.
+//! **Deferred:** Γ-limit **with driven elasticity** (\(\psi^+\!\neq 0\)), systematic multi-ratio \((l_0,h)\) tables, and dissipation certificates on staggered \(u\!\leftrightarrow\!d\) chains beyond this fixed-strain profile check. **Full THMC within-step stagger** and **`update_damage`-only** orchestration limits remain as in **`docs/Solver-Status.md`** (**DEFERRAL — Fracture**).
 
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
@@ -344,7 +340,8 @@ fn staggered_two_outer_strains_exceeds_single_pass_weak_strain_only() {
 /// Γ-convergence harness (Phase 2.4): single 1-D pre-notched bar; refine `(l₀, h)` pairs together
 /// keeping `h/l₀ = 1/4` and check that the discrete dissipation
 /// `D_h = Σ_i [ d_i² · h / (2 l₀) + (l₀/2) (d_{i+1}-d_i)²/h ] · Gc`
-/// approaches the analytic `Gc` limit, with monotonically decreasing error.
+/// approaches the analytic `Gc` limit: **relative error &lt; 2%** vs `Gc` at each scale and **non-worsening**
+/// across refinement (successive relative errors within `1e-3`; no assertion of strict monotone decay).
 #[cfg(feature = "fracture-at2")]
 #[test]
 fn at2_gamma_convergence_three_length_scales() {
@@ -432,11 +429,11 @@ fn at2_gamma_convergence_three_length_scales() {
         eprintln!("Γ-conv: l0={l0:.4} h={h:.4} N={n} D_h={d_h:.4} rel_err={err:.4}");
     }
 
-    // Acceptance: bound the coarsest error generously (AT2 discrete factor ≈ 1.06 over `Gc`) and
-    // check monotone decrease of the error as `l₀` shrinks (Γ-convergence signature).
+    // Acceptance (matches `docs/Solver-Status.md` DEFERRAL — Fracture): relative `|D_h − Gc|/Gc` &lt; 2% on
+    // each mesh (ψ⁺=0 seed profile); successive relative errors non-worsening within `1e-3` (not strict decay).
     for (i, &err) in errors.iter().enumerate() {
         assert!(
-            err < 0.30,
+            err < 0.02,
             "Γ-conv error too large at pair {i}: D_h={} rel_err={err}",
             d_hs[i]
         );

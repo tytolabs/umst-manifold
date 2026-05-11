@@ -17,13 +17,16 @@
 //!     [`docs/Solver-Status.md`](../docs/Solver-Status.md) DEFERRAL — Photonics (single-triangle
 //!     DEC curl sanity; [`dec_curl_d1_annihilates_gradient_on_triangle_faces_b2_burn`] uses
 //!     [`umst_manifold::physics::dec_primal::primal_d1_edge_flux_to_faces`] with production-shaped
-//!     [`faces_b2`](umst_manifold::core::tensors::UnifiedMaterialStateTensor::faces_b2)).
+//!     [`faces_b2`](umst_manifold::core::tensors::UnifiedMaterialStateTensor::faces_b2).
+//!     [`dec_primal_d1_adjoint_identity_single_triangle_burn`] locks the unweighted discrete adjoint
+//!     via [`umst_manifold::physics::dec_primal::primal_d1_transpose_face_flux_to_edges`].
 
 use approx::assert_abs_diff_eq;
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::physics::dec_primal::{
-    primal_d1_edge_flux_to_faces, primal_scalar_edge_increment,
+    primal_d1_edge_flux_to_faces, primal_d1_transpose_face_flux_to_edges,
+    primal_scalar_edge_increment,
 };
 use umst_manifold::physics::topology::EdgeTopology;
 
@@ -197,6 +200,38 @@ fn dec_curl_d1_annihilates_gradient_on_triangle_faces_b2_burn() {
     let v: Vec<f32> = d1_grad.into_data().value;
     assert_eq!(v.len(), 1);
     assert_abs_diff_eq!(v[0], 0.0, epsilon = 1.0e-4);
+}
+
+/// Unweighted Frobenius inner product \(\langle a, b\rangle = \sum_{b,n,c} a\,b\) on matching `[B,N,C]`.
+fn tensor_inner(a: Tensor<NdB, 3>, b: Tensor<NdB, 3>) -> f32 {
+    a.mul(b).sum().into_scalar()
+}
+
+#[test]
+fn dec_primal_d1_adjoint_identity_single_triangle_burn() {
+    // ⟨ d₁ u , w ⟩ = ⟨ u , d₁ᵀ w ⟩ on one CCW triangle (same `faces_b2` as the Burn annihilation test).
+    let dev = NdArrayDevice::default();
+    let faces_b2: Tensor<NdB, 2, Int> = Tensor::from_data(
+        Data::new(
+            vec![
+                0i64, 1, 2, //
+                1, 1, 1,
+            ],
+            Shape::new([2, 3]),
+        ),
+        &dev,
+    );
+    let ranges = [(0usize, 3usize)];
+    let u = Tensor::from_data(
+        Data::new(vec![0.7_f32, -1.1, 0.25], Shape::new([1, 3, 1])),
+        &dev,
+    );
+    let w = Tensor::from_data(Data::new(vec![-0.33_f32], Shape::new([1, 1, 1])), &dev);
+    let d1u = primal_d1_edge_flux_to_faces(u.clone(), faces_b2.clone(), &ranges);
+    let lhs = tensor_inner(d1u, w.clone());
+    let d1t_w = primal_d1_transpose_face_flux_to_edges(w, faces_b2, &ranges, &u);
+    let rhs = tensor_inner(u.clone(), d1t_w);
+    assert_abs_diff_eq!(lhs, rhs, epsilon = 1.0e-5);
 }
 
 #[test]

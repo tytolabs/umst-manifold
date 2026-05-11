@@ -327,15 +327,17 @@ fn kirchhoff_ssss_centre_formula_smoke() {
 /// The extruded benchmark uses a **full** `u_z = 0` support on `z = 0` (see [`plate_bottom_uz_mask`]),
 /// not classical SSSS edge data, and equal-order Q1 solids are **shear dominated / locked** at
 /// `L/h = 20`. The discrete centre deflection is therefore **orders of magnitude below** the
-/// Kirchhoff table value; this test pins `w / w_{\mathrm{Kirchhoff}}` into a narrow band so
-/// regressions in the equilibrium solve (or a sudden reduction in locking) show up as failures,
-/// while still requiring a tight masked residual.
+/// Kirchhoff table value; this test pins `w / w_{\mathrm{Kirchhoff}}` into a fixed open band
+/// (`5\times 10^{-5} < w/w_K < 2\times 10^{-2}`) so regressions in the equilibrium solve (or a
+/// sudden reduction in locking) show up as failures, while still requiring a tight masked residual.
+/// (CI name was formerly `plate_centre_deflection_vs_kirchhoff_ssss_within_5pct`, which incorrectly
+/// suggested a 5% accuracy gate.)
 ///
 /// Iterate tolerance is **`1e-5`**, not `1e-7`: f32 Jacobi-PCG rarely reaches \(10^{-7}\) relative
 /// residual cost-effectively (see [`run_plate_case`]); tighter tol mainly burns iterations without
 /// improving the masked \(\|f-Ku\|\) check below.
 #[test]
-fn plate_centre_deflection_vs_kirchhoff_ssss_within_5pct() {
+fn plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band() {
     let nx = 32;
     let ny = 32;
     let nz = 4;

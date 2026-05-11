@@ -15,6 +15,8 @@
 //! columns: **row 0** = global edge index in `0 … E-1`, **row 1** = incidence sign in `{-1, +1}`.
 //! Partition columns into faces with [`primal_d1_edge_flux_to_faces`]'s `face_column_ranges`
 //! (half-open column slices). Metric/Hodge weights on 2-cells are **not** applied here — topology only.
+//! The transpose [`primal_d1_transpose_face_flux_to_edges`] scatters face potentials back to edges with
+//! the same signs (Euclidean-weight adjoint of \(d_1\) for unweighted inner products).
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
@@ -104,4 +106,63 @@ pub fn primal_d1_edge_flux_to_faces<B: Backend>(
     }
 
     Tensor::cat(face_tensors, 1)
+}
+
+/// Primal **\(d_1^\top\)**: scatter oriented face 2-cochains onto incident edges.
+///
+/// For each face `f` with column range `(start, end)` in `faces_b2`, adds
+/// \(\sigma_j \, \phi_f\) to global edge `e_j` for every column `j` in `[start, end)`,
+/// where \(\sigma_j\) is the stored incidence sign. This matches the transpose of
+/// [`primal_d1_edge_flux_to_faces`] under componentwise dot products on `[B, E, C]` and `[B, F, C]`
+/// (no Hodge / metric weighting).
+///
+/// `face_vals` must have shape `[B, F, C]` with `F = face_column_ranges.len()`. Empty ranges contribute
+/// nothing (consistent with a zero row in \(d_1\)).
+pub fn primal_d1_transpose_face_flux_to_edges<B: Backend>(
+    face_vals: Tensor<B, 3>,
+    faces_b2: Tensor<B, 2, Int>,
+    face_column_ranges: &[(usize, usize)],
+    edge_accum_template: &Tensor<B, 3>,
+) -> Tensor<B, 3> {
+    let dims_f = face_vals.dims();
+    let batch = dims_f[0];
+    let f_count = dims_f[1];
+    let channels = dims_f[2];
+    debug_assert_eq!(
+        f_count,
+        face_column_ranges.len(),
+        "face_vals: dim 1 must equal face_column_ranges.len()"
+    );
+
+    let fd = faces_b2.dims();
+    debug_assert_eq!(fd[0], 2, "faces_b2: expected shape [2, K]");
+    let k = fd[1];
+
+    let mut acc = Tensor::zeros_like(edge_accum_template);
+    for (face_idx, &(start, end)) in face_column_ranges.iter().enumerate() {
+        debug_assert!(
+            start <= end && end <= k,
+            "faces_b2: invalid column range [{start}, {end}) for K={k}"
+        );
+        if start >= end {
+            continue;
+        }
+        let len = end - start;
+        let fv = face_vals
+            .clone()
+            .slice([0..batch, face_idx..face_idx + 1, 0..channels]);
+        let edge_ix = faces_b2.clone().slice([0..1, start..end]);
+        let signs = faces_b2.clone().slice([1..2, start..end]).float();
+
+        for j in 0..len {
+            let e_idx = edge_ix.clone().slice([0..1, j..j + 1]);
+            let s = signs.clone().slice([0..1, j..j + 1]);
+            let gather_ix = e_idx.reshape([1, 1, 1]).expand([batch, 1, channels]);
+            let contrib = fv
+                .clone()
+                .mul(s.reshape([1, 1, 1]).expand([batch, 1, channels]));
+            acc = acc.scatter(1, gather_ix, contrib);
+        }
+    }
+    acc
 }

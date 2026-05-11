@@ -22,7 +22,7 @@ cargo test
 
 GPU backend (local Vulkan/Metal): `cargo build --features wgpu`. Solver integration tests: `cargo test --features solver-tests`.
 
-Solver lane / verification table: [`docs/Solver-Status.md`](docs/Solver-Status.md). GitHub Actions runs the stricter check on every PR (`solver-status` job in [`.github/workflows/rust.yml`](.github/workflows/rust.yml)). Locally, from `umst-manifold/`, assert that every **stable** row documents non-empty verification and that `tests/*.rs` paths in that column exist:
+Solver lane / verification table: [`docs/Solver-Status.md`](docs/Solver-Status.md). **Solver maturity:** treat that table as the source of truth for `solver-stable` vs `solver-research` lanes and CI-backed claims; full v0.4 documentation targets (including Track J) are spelled out in the parent-workspace brief [`../composer_prompts/v0.4_solver_completion_no_namesakes.md`](../composer_prompts/v0.4_solver_completion_no_namesakes.md) when this checkout sits beside `composer_prompts/` (MaOS-Workspace layout). GitHub Actions runs the stricter check on every PR (`solver-status` job in [`.github/workflows/rust.yml`](.github/workflows/rust.yml)). Locally, from `umst-manifold/`, assert that every **stable** row documents non-empty verification and that `tests/*.rs` paths in that column exist:
 
 ```bash
 python3 scripts/check_solver_status.py

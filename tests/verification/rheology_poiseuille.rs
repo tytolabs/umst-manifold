@@ -12,8 +12,13 @@
 //! not the same constitutive path as the shipped \(\lambda\)-ODE in [`BinghamFlowSolver`] — a separate
 //! calibration test is deferred until that tie-in exists. (3) Developed-channel Chorin vs analytic:
 //! `chorin_developed_channel_centreline_vs_regularized_reference` (ignored **stub**) and
-//! `chorin_steady_channel_64x16_vs_regularized_reference` (ignored; surrogate Poisson instability) —
+//! `chorin_steady_channel_64x16_vs_regularized_reference` (ignored; surrogate Poisson **~10³/step**,
+//! **dt-independent** blow-up on **65×17** — see that test’s docstring) —
 //! see **`docs/Solver-Status.md`** (**DEFERRAL — Rheology**).
+//!
+//! **Warning:** `chorin_single_step_finite_smoke` and analytic / regularized checks do **not** prove
+//! developed Chorin channel flow matches Poiseuille until a true pressure Poisson (or staggered MAC) plus
+//! inlet/outlet BCs replace the shipped surrogate correction (`rheology_flow.rs`).
 
 use umst_manifold::physics::rheology_analytic::{
     plane_bingham_plug_half_width, plane_bingham_poiseuille_u,

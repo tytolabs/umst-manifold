@@ -130,7 +130,7 @@ The crate-local [`.github/workflows/rust.yml`](.github/workflows/rust.yml) also 
 
 ## Deferred work
 
-In `Cargo.toml`, `solver-experimental` groups the leaf features `fracture-at2`, `acoustics-newmark`, `topology-density-evolution`, `thmc-coupled`, `electrochemistry-mvp`, `mechanics-voigt-cauchy`, `rheology-bingham`, and `photonics-scaffold`; `solver-tests` enables that umbrella.
+In `Cargo.toml`, `solver-experimental` groups the leaf features `fracture-at2`, `acoustics-newmark`, `topology-density-evolution`, `thmc-coupled`, `electrochemistry-pnp`, `mechanics-voigt-cauchy`, `rheology-bingham`, and `photonics-fdfd`; `solver-tests` enables that umbrella.
 
 ### P0 — CI, format, tests
 
@@ -172,7 +172,7 @@ In `Cargo.toml`, `solver-experimental` groups the leaf features `fracture-at2`, 
 
 ### P4 — Phases 6–9
 
-- [ ] Phase 6: Coupled implicit Newton on **general graphs**; variable \(\varepsilon\); SG robustness at large \(|z\Delta\phi|\) — MVP chain SG + optional implicit Newton **exist** (`electrochemistry-mvp` — Solver-Status **DEFERRAL — Electrochemistry**).
+- [ ] Phase 6: Coupled implicit Newton on **general graphs**; variable \(\varepsilon\); SG robustness at large \(|z\Delta\phi|\) — MVP chain SG + optional implicit Newton **exist** (`electrochemistry-pnp` — Solver-Status **DEFERRAL — Electrochemistry**).
 - [ ] Phase 7: Full **2D/3D** DEC vector curl–curl, tensor permittivity, tighter Fresnel calibration — chain TE Helmholtz + `solve_maxwell_curl_curl` + Fresnel tests **exist** (`photonics` — Solver-Status **DEFERRAL — Photonics**).
 - [ ] Phase 8: TopOpt coupling with acoustics; align brief return-map acceptance — Newmark / plane-wave suite **exists** behind `acoustics-newmark` (Solver-Status).
 - [ ] Phase 9: Virial / coexistence route **into** `upscale_potentials` — Johnson EOS reference + placeholder honesty tests **exist**; physical LJ→continuum bridge still open (Solver-Status **DEFERRAL — Statistical mechanics**).

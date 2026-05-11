@@ -10,6 +10,11 @@
 //! [`AcousticWaveSolver`](umst_manifold::physics::solvers::AcousticWaveSolver) path remains a
 //! nodal 3×3 contraction without graph stiffness; dispersion checks live on this 1-D assembly.
 //! **Deferral (return map at n=128 vs CI n=100):** see **`docs/Solver-Status.md`** (**DEFERRAL — Acoustics**).
+//!
+//! **Warning:** `undamped_energy_drift_under_half_percent_over_1000_steps` (n=128) checks the discrete
+//! energy proxy over many steps — it does **not** substitute for semi-discrete return-map accuracy at
+//! one \(\omega_h\) period on the **128-node** mesh (baseline relative \(L^2\) to `u₀` **~1.4** with the
+//! same CFL-scaled recipe as the n=100 gate; see ignored `plane_wave_return_map_n128_documented_phase_slip_band`).
 
 use std::f32::consts::PI;
 
@@ -322,7 +327,7 @@ fn plane_wave_return_map_n100_l2_within_two_percent() {
 /// bracket so tightening stepping or precision shows up as a failure here before flipping the
 /// `n=100` gate to `n=128`. **Opt-in only:** `cargo test -p umst-manifold --test acoustics_plane_wave --features acoustics-newmark -- --ignored plane_wave_return_map_n128_documented_phase_slip_band`.
 #[test]
-#[ignore = "Opt-in: n=128 return-map phase-slip bracket vs n=100 CI gate (DEFERRAL — Acoustics)"]
+#[ignore = "Opt-in: n=128 return map — ~1.4 rel L² to u₀ (same dt recipe as n=100); DEFERRAL — Acoustics"]
 fn plane_wave_return_map_n128_documented_phase_slip_band() {
     let l = 1.0_f32;
     let e = 1.0_f32;
@@ -408,6 +413,8 @@ fn plane_wave_h_refinement_second_order_band() {
     );
 }
 
+/// Undamped discrete energy drift (n=128) — **not** a substitute for the return map at n=128; see module
+/// rustdoc and **`docs/Solver-Status.md`** (**DEFERRAL — Acoustics**, validation warning).
 #[test]
 fn undamped_energy_drift_under_half_percent_over_1000_steps() {
     let l = 1.0_f32;

@@ -22,9 +22,13 @@
 //! **Monolithic Newton (Track G — not yet implemented):** a true implicit step solves \(R(U^{k+1})=0\) with
 //! consistent linearisation (analytic diagonal blocks + finite-difference band for off-diagonals) and a
 //! preconditioned Krylov solve on the coupled increment. The current [`ThmcSolver::step`] path is an
-//! **explicit split** (thermal / hydrologic Euler, then hydration, then quasi-static mechanics) wrapped in
-//! a fixed outer loop that **accumulates** transport residuals for logging hooks only — it is **not** a
-//! Jacobian–Newton solve on the coupled residual. **Opt-in (feature `thmc-coupled`):** set
+//! **operator split** per outer `max_newton` pass: **(1)** advance **\(T\)** and **hydration \(\alpha\)** (explicit
+//! thermal Laplacian + exothermic coupling, or opt-in backward-Euler **\((T,\alpha)\)** damped Newton), **(2)**
+//! advance **humidity \(h\)** (topological Laplacian + optional tail drying), **(3)** quasi-static **bar \(u\)** when
+//! `[N,3]` `node_positions` and the BC mask allow — then repeat for diagnostics; **after** the outer loop,
+//! **once**, [`PhaseFieldFractureSolver::update_damage`]. Transport Laplacians use **`damage` frozen at step
+//! entry** for every pass (no within-step \(u\!\leftrightarrow\!d\) stagger). This is **not** a Jacobian–Newton
+//! solve on the fully coupled residual. **Opt-in (feature `thmc-coupled`):** set
 //! [`ThmcSolver::implicit_t_alpha_newton`] to replace the explicit \(T\) + \(\alpha\) updates **per outer pass**
 //! with multi-step damped Newton on the backward-Euler \((T,\alpha)\) block ([`crate::physics::solvers::thmc_residual::ThmcImplicitEulerThermalHydrationResidual`]).
 //! Default **`None`** preserves the legacy split. **Milestone:** the
@@ -35,8 +39,8 @@
 //! \(R_T=|T_{\mathrm{new}}-T_{\mathrm{old}}-\Delta t\,\mathrm{lap}_T|\),
 //! \(R_h=|h_{\mathrm{new}}-h_{\mathrm{old}}-\Delta t\,\mathrm{lap}_h|\) (nodal tensors; **no** `.into_scalar()` reduction on the
 //! hot path). Early exit on \(\|R\|<\) `tol` would require a device sync — omitted for autodiff-safe control flow.
-//! Mechanics remains a **standalone** equilibrium solve per pass; hydration uses **explicit** Euler on \(\alpha\);
-//! fracture runs **after** the outer passes.
+//! Mechanics remains a **standalone** equilibrium solve per pass (after \(h\)); **\(\alpha\)** is updated in the
+//! same sub-step as \(T\) (explicit or implicit BE block). Fracture runs **once** after all outer passes.
 //! Coupled Jacobians and cartridge closures remain future work. **No** global finite-difference or AD
 //! Jacobian is assembled on [`ThmcSolver::step`]; `max_newton` only repeats the same operator-split pattern
 //! (diagnostic residuals only—no full THMC Newton correction). The optional dense Jacobian for \((T,\alpha)\)
@@ -48,14 +52,14 @@
 //! remain future work.
 //!
 //! ## Coupled stepping (`thmc-coupled`; also enabled via `solver-research` / `solver-experimental` meta-features)
-//! - **Transport:** [`crate::physics::laplacian::TopologicalLaplacian`] on temperature and humidity with the
-//!   current nodal damage mask (non-zero coupling). Explicit Euler: \(U \leftarrow U + \Delta t\,\mathcal{L}(U)\).
-//! - **Hydration \(\alpha\):** explicit Euler \(\alpha \leftarrow \mathrm{clip}_{[0,1]}\bigl(\alpha + \Delta t\,f(\alpha,T)\bigr)\)
-//!   with Arrhenius-style placeholder \(f\) (`HYDRATION_ARRHENIUS_PREFACTOR_S`, `HYDRATION_ACTIVATION_ENERGY_J_PER_MOL`,
-//!   `UNIVERSAL_GAS_CONSTANT_J_PER_MOL_K`). Temperature is taken from **`state.thermal.temperature`** (first channel,
-//!   broadcast to \(\alpha\) channels), interpreted as **absolute temperature in kelvin** for the exponential.
-//! - **Mechanics:** [`crate::physics::mechanics::VectorMechanicsSolver`] uses [`crate::core::tensors::UnifiedMaterialStateTensor::node_positions`]
-//!   (`[N,3]` **SI metres**) when `Some` and shape-valid; otherwise the equilibrium sub-solve is **skipped**.
+//! Per outer pass (see ordering above): **`damage` for Laplacian weights is fixed at step entry** (not updated between passes).
+//! - **\(T\) and hydration \(\alpha\) (first):** thermal [`crate::physics::laplacian::TopologicalLaplacian`] on \(T\) with that mask;
+//!   exothermic heat \(\propto \dot\alpha\); then either explicit Euler on \(T\) and explicit \(\alpha \leftarrow \mathrm{clip}_{[0,1]}\bigl(\alpha + \Delta t\,f(\alpha,T)\bigr)\)
+//!   with Arrhenius-style \(f\) (`HYDRATION_ARRHENIUS_PREFACTOR_S`, …), or opt-in backward-Euler Newton on the coupled \((T,\alpha)\) block only.
+//!   Temperature driving \(f\) uses **`state.thermal.temperature`** (first channel, broadcast), **kelvin**.
+//! - **Humidity \(h\) (second):** same Laplacian on \(h\) with the **same** step-entry damage mask; explicit Euler plus optional tail drying.
+//! - **Mechanics \(u\) (third):** [`crate::physics::mechanics::VectorMechanicsSolver`] when [`crate::core::tensors::UnifiedMaterialStateTensor::node_positions`]
+//!   is `[N,3]` **SI metres** and shape-valid; otherwise the equilibrium sub-solve is **skipped**.
 //!   Integer [`crate::core::tensors::UnifiedMaterialStateTensor::coords`] remain sparse spacetime indices `[N,5]` only.
 //! - **Fracture:** [`PhaseFieldFractureSolver::update_damage`] runs after the outer Newton loop. When SI
 //!   [`UnifiedMaterialStateTensor::node_positions`] are present as `[N,3]` (same `N` as state) and the
