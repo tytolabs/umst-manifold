@@ -14,6 +14,25 @@
 //! full vector edge unknowns — those require `faces_b2` and metric machinery beyond this module.
 //! Public deferral / next acceptance criteria: **`docs/Solver-Status.md`** section **DEFERRAL — Photonics**.
 //!
+//! ### Track 15 / DEFERRAL — Photonics (explicit scope boundary)
+//!
+//! **In this module (1-D chain, `photonics` on):** scalar Helmholtz + TE \(E_y\) curl–curl reduction on
+//! uniform **x-monotone path chains** (internal `extract_uniform_x_chain` gate inside
+//! [`PhotonicsSolver::solve_maxwell_curl_curl`](PhotonicsSolver::solve_maxwell_curl_curl)) only; no `faces_b2`
+//! assembly and no simplicial \(d_1\) Maxwell solve here.
+//!
+//! **Shipped elsewhere (same repo, not called from this solver path):**
+//! - **DEC \(d_1\!\circ\!d_0=0\) and unweighted \(d_1^\top\) adjoint on one CCW triangle** using Burn tensors
+//!   shaped like [`crate::core::tensors::UnifiedMaterialStateTensor::faces_b2`]:
+//!   [`tests/dec_identities.rs`](../../../tests/dec_identities.rs)
+//!   (`dec_curl_d1_annihilates_gradient_on_triangle_faces_b2_burn`,
+//!   `dec_primal_d1_adjoint_identity_single_triangle_burn`) — scope stops at [`crate::physics::dec_primal`];
+//!   does **not** wire `faces_b2` into [`PhotonicsSolver`].
+//! - **Fresnel / Helmholtz MMS + curl–curl vs scalar checks:** [`tests/verification/photonics_fresnel.rs`](../../../tests/verification/photonics_fresnel.rs).
+//!   `two_half_spaces_fresnel_te_no_pml_matches_analytic` compares the discrete solve to a **Dirichlet-linear-bridged
+//!   continuum** Fresnel field (loose nodal LS); a **discrete-only `r_disc`** gate and tighter semi-infinite
+//!   calibration remain deferred in that doc section.
+//!
 //! **Regression coverage (1-D only):** [`tests/verification/photonics_fresnel.rs`](../../../tests/verification/photonics_fresnel.rs)
 //! asserts that `solve_maxwell_curl_curl` and `solve_helmholtz` return the same \(E_y\) on a uniform
 //! x-chain for both uniform and **piecewise-varying** \(\varepsilon_r\) profiles. That locks the shared

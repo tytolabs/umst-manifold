@@ -4,6 +4,14 @@
 //! Scharfetter–Gummel PNP verification (`electrochemistry-mvp`): zero-field diffusion matches the graph
 //! Laplacian, plus a mild Debye-style screening smoke (potential decay along a chain).
 //!
+//! **Default CI** runs non-`ignored` tests in this target. **Quasi-steady λ_D** exponential-fit gates
+//! (`debye_screening_256_cells_phi_25mv_decay_length_within_band`,
+//! `debye_screening_256_cells_phi_100mv_decay_length_within_band`) stay **`#[ignore]`** (long horizon
+//! at **N=256**, dense Jacobian cost); opt-in:
+//! `cargo test --features electrochemistry-pnp --test pnp_debye_layer -- --ignored`.
+//! Track 14 dispatch + implicit chain on a short chain is covered by **`debye_implicit_dispatch_short_horizon_smoke`**
+//! (`solve_pnp_step_dispatch` + `pnp_implicit_newton_chain: Some(…)`).
+//!
 //! Specification: `composer_prompts/v0.4_solver_completion_no_namesakes.md` (Track F).
 
 #![cfg(feature = "electrochemistry-mvp")]

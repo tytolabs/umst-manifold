@@ -46,7 +46,7 @@ python3 scripts/check_solver_status.py --check-paths
 | `solver-experimental` | Umbrella flag: all opt-in solver scaffolds (damage, THMC, electrochemistry, mechanics variants, etc.). |
 | `solver-tests` | Same dependency graph as `solver-experimental`; used for CI solver coverage. |
 
-Individual flags (`fracture-at2`, `acoustics-newmark`, `thmc-coupled`, `electrochemistry-mvp`, `mechanics-voigt-cauchy`, `rheology-bingham`, `topology-density-evolution`, `photonics-scaffold`) select subsets; see `[features]` in [`Cargo.toml`](Cargo.toml).
+Individual flags (`fracture-at2`, `acoustics-newmark`, `thmc-coupled`, `electrochemistry-pnp`, `mechanics-voigt-cauchy`, `rheology-bingham`, `topology-density-evolution`, `photonics-fdfd`; legacy aliases `electrochemistry-mvp`, `photonics-scaffold`) select subsets; see `[features]` in [`Cargo.toml`](Cargo.toml).
 
 ## Scope
 

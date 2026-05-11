@@ -35,10 +35,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: check_solver_status.py (--check-paths)
+      - name: check_solver_status.py (paths + memos + statmech set)
         run: |
           set -euo pipefail
-          python3 scripts/check_solver_status.py --check-paths
+          python3 scripts/check_solver_status.py \
+            --check-paths \
+            --check-memo-links \
+            --check-statmech-verification-set
 
   # Required job: build the library + run tests on the CPU backend.
   # Stays green on a vanilla GitHub runner without GPU/system libraries.
