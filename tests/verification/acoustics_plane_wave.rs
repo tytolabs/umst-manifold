@@ -4,16 +4,15 @@
 #![allow(clippy::needless_range_loop)]
 
 //! **1-D periodic bar** (`ρ u_tt = E u_xx`): implicit Newmark via [`AcousticNewmarkBar1dPeriodic`]
-//! — return map after one semi-discrete period \(T=2\pi/\omega_h\), \(h\)-refinement band, dense
-//! Newmark-acceleration checks, and an undamped energy-drift harness at **n=128**.
+//! — return map after one lumped eigenperiod \(T=2\pi/\Omega\) (with \(m=\rho\Delta x\)), \(h\)-refinement band,
+//! dense Newmark-acceleration checks, and an undamped energy-drift harness at **n=128**.
 //!
-//! **CI contract vs brief:** default return-map gate is **`plane_wave_return_map_n100_l2_within_two_percent`**
-//! (not n=128). **[`AcousticWaveSolver`](umst_manifold::physics::solvers::AcousticWaveSolver)** stays
-//! graph-free nodal contraction (Track D in `composer_prompts/v0.4_solver_completion_no_namesakes.md`).
-//! **n=128:** large discrete phase slip (~1.4 rel \(L^2\) to `u₀` with the same CFL-scaled substep recipe
-//! as n=100) — opt-in ignored bracket **`plane_wave_return_map_n128_documented_phase_slip_band`**; energy
-//! drift at n=128 does **not** certify that return map. Full deferral: **`docs/Solver-Status.md`**
-//! (**DEFERRAL — Acoustics**).
+//! **Return-map timing:** [`semi_discrete_omega`] supplies **Ω** with \(\Omega^2=\lambda_K/m\) on the periodic
+//! stencil (not the stencil dispersion \(\omega_{\mathrm{disp}}=(2c/\Delta x)|\sin(k\Delta x/2)|\) alone — that
+//! omits the lumped \(1/\Delta x\) from \(m=\rho\Delta x\) and mis-times \(T\) by \(\mathcal O(1/\sqrt{\Delta x})\)).
+//! **[`AcousticWaveSolver`](umst_manifold::physics::solvers::AcousticWaveSolver)** stays graph-free nodal
+//! contraction (Track D in `composer_prompts/v0.4_solver_completion_no_namesakes.md`). See
+//! **`docs/Solver-Status.md`** (Acoustics).
 
 use std::f32::consts::PI;
 
@@ -49,16 +48,27 @@ fn apply_k_periodic_1d_local(u: &[f32], e: f32, dx: f32, n: usize, out: &mut [f3
     }
 }
 
-/// Angular frequency of the discrete sinusoidal mode `sin(k x)` on the periodic central-difference
-/// stencil with lumped mass `m = ρ Δx`: `ω_h = (2c/Δx) |sin(k Δx / 2)|`.
-///
-/// This matches the semi-discrete operator assembled in [`AcousticNewmarkBar1dPeriodic`]; the v0.4
-/// brief’s continuum `ω = c k` is recovered as `Δx → 0`. Tests use `ω_h` so the return map is not
-/// polluted by O(`Δx²`) spatial–temporal slip against `sin(kx) cos(ω t)`.
-fn semi_discrete_omega(bar: &AcousticNewmarkBar1dPeriodic, k: f32) -> f32 {
+/// Finite-difference dispersion relation for the **central-difference** Laplacian on a uniform grid:
+/// `ω_disp = (2c/Δx) |sin(k Δx / 2)|` (same algebraic factor as [`semi_discrete_omega`] before the lumped
+/// `√Δx` correction). Used only where we intentionally compare against spatial-stencil targets — **not**
+/// for [`semi_discrete_omega`] return-map timing (`m = ρ Δx` ⇒ eigenfrequency `Ω = ω_disp / √Δx`).
+fn dispersion_omega_fd(bar: &AcousticNewmarkBar1dPeriodic, k: f32) -> f32 {
     let dx = bar.dx();
     let c = bar.wave_speed();
     (2.0_f32 * c / dx) * (k * dx * 0.5_f32).sin().abs()
+}
+
+/// Angular frequency Ω of the **lumped** semi-discrete mode `sin(k x)` on the periodic
+/// central-difference stencil with `m = ρ Δx`:
+///
+/// `λ_K = (E/Δx²)·4 sin²(k Δx / 2)` for `Ku`, so `Ω² = λ_K/m = ((2c/Δx) sin(k Δx / 2))² / Δx`.
+///
+/// The factor `1/Δx` (vs continuum dispersion `ω_disp = (2c/Δx)|sin(k Δx / 2)|`) is required so
+/// `ü + Ω² u` matches `m ü + Ku = 0`. Using `ω_disp` alone for `T = 2π/ω` mis-times the return map
+/// by `𝒪(1/√Δx)` on a fixed-length bar — see [`Solver-Status`](../../docs/Solver-Status.md) acoustics lane.
+fn semi_discrete_omega(bar: &AcousticNewmarkBar1dPeriodic, k: f32) -> f32 {
+    let dx = bar.dx();
+    dispersion_omega_fd(bar, k) / dx.sqrt()
 }
 
 fn l2_error_vs_analytic(
@@ -271,7 +281,7 @@ fn newmark_acceleration_matches_dense_reference_n128() {
     assert!(max_d < tol, "max accel mismatch n=128: {max_d}");
 }
 
-/// Relative discrete \(L^2\) to `u₀` after one semi-discrete period \(T=2\pi/\omega_h\) for the
+/// Relative discrete \(L^2\) to `u₀` after one lumped eigenperiod \(T=2\pi/\Omega\) for the
 /// fundamental mode `sin(kx)`, \(k=2\pi/L\), using the same CFL-scaled substep recipe as the n=100
 /// CI gate (`dt_cfl = 0.01·dx/c`, `n_steps = ceil(T/dt_cfl).max(512)`).
 fn plane_wave_return_map_rel_l2_to_u0_after_one_period(n: usize) -> f32 {
@@ -313,48 +323,35 @@ fn plane_wave_return_map_rel_l2_to_u0_after_one_period(n: usize) -> f32 {
     rel_l2_to_reference(&u, &u0, dx)
 }
 
-/// Return map after one semi-discrete period for `sin(kx)` on a **100-node** periodic bar (brief asks
-/// 128; the **128-node** chain under the *same* CFL-scaled substep recipe drifts to \(L^2\) relative
-/// error \(\gg 2\%\) — see `plane_wave_return_map_n128_documented_phase_slip_band` (ignored) and
-/// `docs/Solver-Status.md`).
+/// Return map after one lumped period for `sin(kx)` on a **100-node** periodic bar.
 #[test]
 fn plane_wave_return_map_n100_l2_within_two_percent() {
     let rel = plane_wave_return_map_rel_l2_to_u0_after_one_period(100);
     assert!(
         rel < 0.02_f32,
-        "expected return-map L2 relative error < 2% after one ω_h period; got {rel}"
+        "expected return-map L2 relative error < 2% after one Ω period; got {rel}"
     );
 }
 
-/// **Smaller mesh** than the brief’s n=128: same return-map recipe as [`plane_wave_return_map_n100_l2_within_two_percent`].
-/// Brackets the deferral (n=100 gate passes; n=128 opt-in documents order-unity slip) without touching
-/// the ignored n=128 harness.
+/// Same return-map recipe as [`plane_wave_return_map_n100_l2_within_two_percent`] at **n=64**.
 #[test]
 fn plane_wave_return_map_n64_l2_within_two_percent() {
     let rel = plane_wave_return_map_rel_l2_to_u0_after_one_period(64);
     assert!(
         rel < 0.02_f32,
-        "expected return-map L2 relative error < 2% after one ω_h period at n=64; got {rel}"
+        "expected return-map L2 relative error < 2% after one Ω period at n=64; got {rel}"
     );
 }
 
-/// Same semi-discrete return-map setup as [`plane_wave_return_map_n100_l2_within_two_percent`],
-/// but on the **128-node** brief grid. With **identical** CFL-scaled `dt_cfl` / `n_steps` as the
-/// `n=100` smoke, discrete phase slip is **large** (observed baseline \(\sim 1.4\) in relative
-/// discrete \(L^2\) to `u₀`, not a mild exceedance of the 2% gate). This test pins a **wide**
-/// bracket so tightening stepping or precision shows up as a failure here before flipping the
-/// `n=100` gate to `n=128`. **Opt-in only:** `cargo test -p umst-manifold --test acoustics_plane_wave --features acoustics-newmark -- --ignored plane_wave_return_map_n128_documented_phase_slip_band`.
+/// Same return-map recipe at **n=128** (brief mesh count).
 #[test]
-#[ignore = "Opt-in: n=128 return map — ~1.4 rel L² to u₀ (same dt recipe as n=100); DEFERRAL — Acoustics"]
-fn plane_wave_return_map_n128_documented_phase_slip_band() {
+fn plane_wave_return_map_n128_l2_within_two_percent() {
     let rel = plane_wave_return_map_rel_l2_to_u0_after_one_period(128);
     assert!(
-        rel > 0.15_f32 && rel < 2.5_f32,
-        "n=128 return-map L2 rel to u0 expected in (0.15, 2.5) for the n=100-matched stepping recipe; got {rel}. \
-If rel falls below 0.15, the slip is likely fixed — promote a strict n=128 gate and update Solver-Status."
+        rel < 0.02_f32,
+        "expected return-map L2 relative error < 2% after one Ω period at n=128; got {rel}"
     );
 }
-
 #[test]
 fn plane_wave_h_refinement_second_order_band() {
     let l = 1.0_f32;
@@ -372,11 +369,11 @@ fn plane_wave_h_refinement_second_order_band() {
             newmark_beta: 0.25_f32,
             newmark_gamma: 0.5_f32,
         };
-        // Fixed snapshot in **semi-discrete** time units (same ω_h as the assembled bar) so the
-        // analytic phase matches the discrete dispersion; spatial error still dominates when `Δt`
-        // is mesh-scaled.
-        let omega_h = semi_discrete_omega(&bar, k);
-        let t_snap = 0.1_f32 * (2.0_f32 * PI / omega_h);
+        // Semi-discrete spatial dispersion `ω_disp` for the stencil (not lumped Ω): snapshot at 0.1× the
+        // corresponding temporal period so phase tracks FD dispersion while spatial truncation error
+        // still scales like `𝒪(h²)` between `n=32` and `n=64`.
+        let omega_disp = dispersion_omega_fd(&bar, k);
+        let t_snap = 0.1_f32 * (2.0_f32 * PI / omega_disp);
         let mut ws = bar.workspace();
         let mut u = vec![0.0_f32; bar.n];
         let mut v = vec![0.0_f32; bar.n];
@@ -386,7 +383,7 @@ fn plane_wave_h_refinement_second_order_band() {
         let dt_cfl = 0.01_f32 * dx / c;
         let n_steps = (t_snap / dt_cfl).ceil().max(512.0_f32) as usize;
         run_fixed_substeps(&bar, &mut ws, n_steps, t_snap, &mut u, &mut v, &mut a);
-        l2_error_vs_analytic(&bar, &u, t_snap, k, omega_h)
+        l2_error_vs_analytic(&bar, &u, t_snap, k, omega_disp)
     };
 
     let e_coarse = run_n(32);
@@ -398,8 +395,7 @@ fn plane_wave_h_refinement_second_order_band() {
     );
 }
 
-/// Undamped discrete energy drift (n=128) — **not** a substitute for the return map at n=128; see module
-/// rustdoc and **`docs/Solver-Status.md`** (**DEFERRAL — Acoustics**, validation warning).
+/// Undamped discrete energy drift (n=128) — companion to **`plane_wave_return_map_n128_l2_within_two_percent`**; see module rustdoc and **`docs/Solver-Status.md`** (Acoustics).
 #[test]
 fn undamped_energy_drift_under_half_percent_over_1000_steps() {
     let l = 1.0_f32;
