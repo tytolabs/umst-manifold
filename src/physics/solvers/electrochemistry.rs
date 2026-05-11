@@ -42,21 +42,26 @@
 //!   solves the **fully implicit backward Euler** residual with the same **variable-\(\varepsilon\)** chain
 //!   Poisson block as the host helper `pnp_be_residual_vector_f64` (harmonic \(\varepsilon\) on edges) plus SG NP rows,
 //!   on a **contiguous path** using host `f64` **dense** finite-difference Jacobians + damped Newton when
-//!   `linearize_sg_fickian` is **false** (banded sparse Jacobian per **Ring 2 R2.3** is still open). The
-//!   default [`ElectroChemicalSolver::solve_pnp_step`] path remains explicit split.
+//!   `linearize_sg_fickian` is **false**. When **`linearize_sg_fickian` is `true`**, the Jacobian is the
+//!   affine Fickian / Debye–Hückel model: concentration blocks are **uncoupled from \(\Phi\)** and each
+//!   species row is a **chain Laplacian \(+\,1/\Delta t\)**, while \(\Phi\) rows couple to \(c^\pm\)
+//!   only through \(\rho_e\) — the Newton correction uses **three Thomas solves** per iteration
+//!   (\(O(N)\) work, Ring 2 prep toward sparse/banded assembly at large **`N`**). **Full nonlinear SG**
+//!   (`linearize_sg_fickian: false`) still uses dense column FD (banded Jacobian per **Ring 2 R2.3** is open).
+//!   The default [`ElectroChemicalSolver::solve_pnp_step`] path remains explicit split.
 //! - **Mesh / extreme \(\Delta\phi\):** edge factor `h_inv` is now sourced from [`ElectroChemicalSolver::mesh_spacing`] (default `1.0` preserves the legacy dimensionless chain);
 //!   Bernoulli uses `exp` on \(|z F\Delta\phi/(RT)|\); very large \(|pe|\) can **saturate** `f32::exp`
 //!   before the ratio stabilises—tight \(\Delta t\) / smaller drift or double precision are the
 //!   practical mitigations until a log-flux or exponential fitting formulation is added.
-//! - **`mesh_spacing` vs chain Poisson (honesty for \(\lambda_{\mathrm{eff}}\) gates):** SG flux uses
-//!   \(J\propto D/h\) with \(h=\) [`ElectroChemicalSolver::mesh_spacing`]. The Debye admissibility harness
-//!   (`tests/verification/pnp_debye_layer.rs`) sets **`mesh_spacing = L/(N-1)`** to match the geometric
-//!   cell length. The path-chain **Poisson** Thomas block is assembled in **index space** on unit graph
-//!   edges (same stencil family as the explicit chain Laplacian — **no** explicit overall `1/h^2`
-//!   factor tied to [`ElectroChemicalSolver::mesh_spacing`]). Coupling that Poisson discretisation to SG
-//!   with physical \(h\) is therefore **not** the same as a single continuum scaling in \(x\); fitted
-//!   **`λ_eff`** from \(|\phi(x)|\) can sit **\(\mathcal O(1)\)** away from continuum
-//!   **`λ_D = \sqrt{\varepsilon/(2 z^2 c_0)}\)** in `--release` long-horizon samples (e.g. **\(λ_{\mathrm{eff}}\approx 3.71\)** vs **\(λ_D=1/\sqrt2\approx 0.707\)** for the shipped \(N=256\) gate recipe) until discrete screening / window calibration lands — see `docs/Solver-Status.md` electrochemistry lane.
+//! - **`mesh_spacing` vs chain Poisson (R2.3 calibration):** SG flux uses \(J\propto D/h\) with
+//!   \(h=\) [`ElectroChemicalSolver::mesh_spacing`]. The path-chain **Poisson** Thomas block uses the same
+//!   **unit-graph** harmonic-\(\varepsilon\) stencil as before, but the **assembled equation is scaled by
+//!   \(1/h^2\)** so that \(\nabla\!\cdot(\varepsilon\nabla\phi)=-\rho_e\) matches the SG divergence scaling
+//!   when \(h\neq 1\): interior residuals and the Thomas RHS incorporate **`mesh_spacing`²** (legacy
+//!   **`mesh_spacing = 1`** is unchanged). Non-chain Jacobi relaxation applies the same **`1/h²`** factor
+//!   to the scalar Laplacian term. Remaining \(\lambda_{\mathrm{eff}}\) vs continuum \(\lambda_D\) gaps on
+//!   coarse windows / quasi-steady schedules are documented in `tests/verification/pnp_debye_layer.rs` and
+//!   `docs/Solver-Status.md`.
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
@@ -97,11 +102,10 @@ pub struct ElectroChemicalSolver {
     /// existing tests; physical-units callers should pass actual edge length. Non-uniform meshes
     /// (variable `h` per edge) are deferred to the implicit-Newton step (Phase 3.3).
     ///
-    /// **Coupled note:** the MVP **Poisson** chain solve uses a **unit-graph** discrete
-    /// \(\nabla\cdot(\varepsilon\nabla\phi)\) stencil (not rescaled by this field). For Debye-length
-    /// exponential-fit gates, set `mesh_spacing` to the same geometric **`h = L/(N-1)`** used to map
-    /// node index to physical \(x\); that aligns SG with the fit abscissa but does **not** alone force
-    /// **`λ_eff ≈ λ_D`** — see module **Gaps** bullet on **`λ_eff` vs `λ_D`**.
+    /// **Coupled note:** the MVP **Poisson** chain Thomas solve applies the same harmonic-\(\varepsilon\)
+    /// stencil in index space, scaled by **`1/h²`** with \(h=\) `mesh_spacing`, so the elliptic block matches
+    /// SG flux scaling when **`mesh_spacing`** is the geometric cell length **`L/(N-1)`**. Ignored Debye
+    /// exponential-fit gates may still need schedule / window tuning before **`λ_eff ≈ λ_D`** — see tests.
     /// formal_anchor: Literature
     /// formal_citation: Scharfetter & Gummel 1969, IEEE TED 16:64
     /// formal_form: "J_e = (D_e/h) [c_s B(z F Δφ/RT) − c_t B(−z F Δφ/RT)]"
@@ -129,7 +133,10 @@ impl Default for ElectroChemicalSolver {
     }
 }
 
-/// Track 14 — implicit backward Euler Newton on a 1D chain: damping, tolerances, `f64` FD Jacobian, optional Fickian linearisation.
+/// Track 14 — implicit backward Euler Newton on a 1D chain: damping, tolerances, optional Fickian
+/// linearisation. **`linearize_sg_fickian: false`:** dense `f64` column finite-difference Jacobian +
+/// Gauss elimination. **`linearize_sg_fickian: true`:** analytic Jacobian structure with **three
+/// Thomas solves** per Newton step (\(O(N)\)), no \((3N)^2\) dense factorisation.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct NewtonPnpContext {
     /// Maximum damped Newton iterations per call.
@@ -146,8 +153,9 @@ pub struct NewtonPnpContext {
     ///
     /// **Debye \(\lambda_D\) gates:** set **`true`** so the implicit residual matches the **Debye–Hückel**
     /// linear transport limit (same limit as continuum **`λ_D = \sqrt{\varepsilon/(2 z^2 c_0)}\)** in the
-    /// reference) and so Newton can use the **analytic** Jacobian (`fill_jacobian_linearized_sg_fickian`)
-    /// instead of dense FD columns. This **does not** imply the fitted discrete decay length
+    /// reference) and so Newton can use the **analytic** Jacobian (`fill_jacobian_linearized_sg_fickian`
+    /// in unit tests; production applies **three Thomas solves** per Newton iter on the same sparse
+    /// block structure). This **does not** imply the fitted discrete decay length
     /// **`λ_eff`** from long-horizon simulations closes on **`λ_D`** on the current chain Poisson +
     /// interior LS window — measured **`#[ignore]`** harnesses still show **\(λ_{\mathrm{eff}}\approx 3.71\)** vs
     /// **\(λ_D=1/\sqrt2\)** (\(\approx 4.25\times\) relative gap in baseline `--release` samples); see
@@ -268,9 +276,12 @@ impl ElectroChemicalSolver {
         }
     }
 
-    /// Fully implicit **backward Euler** step on \((\Phi,c^\pm)\) via **damped Newton** with a dense
-    /// `f64` Jacobian (finite differences), **only** when `edges_b1` is the MVP contiguous path
-    /// `0\!-\!1\!-\!\cdots\!-\!(N-1)\` and `batch=1`. Otherwise returns `None` (caller keeps split
+    /// Fully implicit **backward Euler** step on \((\Phi,c^\pm)\) via **damped Newton** with a host
+    /// `f64` Jacobian: **dense column finite differences** when `linearize_sg_fickian` is **false**;
+    /// when **`linearize_sg_fickian` is `true`** (Fickian-linearised SG / Debye–Hückel residual), each
+    /// Newton correction uses **three Thomas solves** on the **sparse block structure** (no dense
+    /// \((3N)^2\) assembly). **Only** when `edges_b1` is the MVP contiguous path
+    /// `0\!-\!1\!-\!\cdots\!-\!(N-1)\` and `batch=1`; otherwise returns `None` (caller keeps split
     /// [`Self::solve_pnp_step`]).
     ///
     /// Dirichlet \(\Phi\) at the two endpoints is read from `electric_potential_n` at nodes `0` and
@@ -979,6 +990,7 @@ fn solve_dense_linear(dim: usize, a: &mut [f64], b: &mut [f64]) -> bool {
 }
 
 #[cfg(feature = "electrochemistry-mvp")]
+#[cfg_attr(not(test), allow(dead_code))] // dense assembly retained for unit tests / dense–sparse parity
 #[allow(clippy::too_many_arguments)]
 fn fill_jacobian_linearized_sg_fickian(
     jac: &mut [f64],
@@ -1025,6 +1037,114 @@ fn fill_jacobian_linearized_sg_fickian(
             jac[i1 * dim + i1] += k;
         }
     }
+}
+
+/// Fickian-linearised SG chain block \((1/\Delta t)\,I + L_{\mathrm{chain}}(D)\) (same `k` pattern as
+/// [`fill_jacobian_linearized_sg_fickian`]) for one species on `n` nodes — **symmetric** tridiagonal.
+#[cfg(feature = "electrochemistry-mvp")]
+fn fill_fickian_species_tridiagonal_chain_f64(
+    n: usize,
+    dt: f64,
+    d_nodal: &[f64],
+    h_inv: f64,
+    a: &mut [f64],
+    b: &mut [f64],
+    c: &mut [f64],
+) {
+    debug_assert_eq!(d_nodal.len(), n);
+    debug_assert_eq!(a.len(), n);
+    debug_assert_eq!(b.len(), n);
+    debug_assert_eq!(c.len(), n);
+    let inv_dt = 1.0_f64 / dt;
+    for i in 0..n {
+        a[i] = 0.0_f64;
+        b[i] = inv_dt;
+        c[i] = 0.0_f64;
+    }
+    for e in 0..n.saturating_sub(1) {
+        let k = h_inv * 0.5_f64 * (d_nodal[e] + d_nodal[e + 1]);
+        b[e] += k;
+        b[e + 1] += k;
+        c[e] -= k;
+        a[e + 1] -= k;
+    }
+}
+
+/// Newton correction for one linearised-SG iteration: \(J\) is block-lower (no \(\partial R_c/\partial\phi\)),
+/// so solve \(L_\pm\,\delta c^\pm=-R_{c^\pm}\) with Thomas, then the \(\Phi\) tridiagonal with RHS
+/// \(-R_\Phi - F\delta c^+ + F\delta c^-\) on interior rows and Dirichlet identity on the two endpoints.
+#[cfg(feature = "electrochemistry-mvp")]
+#[allow(clippy::too_many_arguments)]
+fn solve_newton_correction_linearized_sg_chain_f64(
+    n: usize,
+    dt: f64,
+    f: f64,
+    eps: &[f64],
+    d_plus: &[f64],
+    d_minus: &[f64],
+    h_inv: f64,
+    r: &[f64],
+    a: &mut [f64],
+    b: &mut [f64],
+    c: &mut [f64],
+    rhs: &mut [f64],
+    u: &mut [f64],
+    x: &mut [f64],
+) -> bool {
+    debug_assert_eq!(r.len(), 3 * n);
+    debug_assert_eq!(x.len(), 3 * n);
+    debug_assert_eq!(a.len(), n);
+    debug_assert_eq!(b.len(), n);
+    debug_assert_eq!(c.len(), n);
+    debug_assert_eq!(rhs.len(), n);
+    debug_assert_eq!(u.len(), n);
+
+    // δc+
+    fill_fickian_species_tridiagonal_chain_f64(n, dt, d_plus, h_inv, a, b, c);
+    rhs.copy_from_slice(&r[n..2 * n]);
+    for v in rhs.iter_mut() {
+        *v = -*v;
+    }
+    let mut bp = b.to_vec();
+    let mut rp = rhs.to_vec();
+    thomas_tridiagonal_solve_f64(a, &mut bp, c, &mut rp, u);
+    x[n..2 * n].copy_from_slice(u);
+
+    // δc−
+    fill_fickian_species_tridiagonal_chain_f64(n, dt, d_minus, h_inv, a, b, c);
+    rhs.copy_from_slice(&r[2 * n..3 * n]);
+    for v in rhs.iter_mut() {
+        *v = -*v;
+    }
+    let mut bm = b.to_vec();
+    let mut rm = rhs.to_vec();
+    thomas_tridiagonal_solve_f64(a, &mut bm, c, &mut rm, u);
+    x[2 * n..3 * n].copy_from_slice(u);
+
+    // δφ — Dirichlet rows 0 and n−1 match [`fill_jacobian_linearized_sg_fickian`].
+    let dcp = &x[n..2 * n];
+    let dcm = &x[2 * n..3 * n];
+    for i in 0..n {
+        if i == 0 || i + 1 == n {
+            a[i] = 0.0_f64;
+            b[i] = 1.0_f64;
+            c[i] = 0.0_f64;
+            rhs[i] = -r[i];
+        } else {
+            let eh_l = 0.5_f64 * (eps[i - 1] + eps[i]);
+            let eh_r = 0.5_f64 * (eps[i] + eps[i + 1]);
+            a[i] = eh_l;
+            b[i] = -(eh_l + eh_r);
+            c[i] = eh_r;
+            rhs[i] = -r[i] - f * dcp[i] + f * dcm[i];
+        }
+    }
+    let mut bf = b.to_vec();
+    let mut rf = rhs.to_vec();
+    thomas_tridiagonal_solve_f64(a, &mut bf, c, &mut rf, u);
+    x[0..n].copy_from_slice(u);
+
+    x.iter().all(|v| v.is_finite())
 }
 
 #[cfg(feature = "electrochemistry-mvp")]
@@ -1128,7 +1248,13 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     u[n..2 * n].copy_from_slice(&c_plus_n);
     u[2 * n..3 * n].copy_from_slice(&c_minus_n);
     let dim = 3 * n;
-    let mut jac = vec![0.0_f64; dim * dim];
+    let mut jac_fd = (!newton.linearize_sg_fickian).then(|| vec![0.0_f64; dim * dim]);
+    let mut thomas_a = vec![0.0_f64; n];
+    let mut thomas_b = vec![0.0_f64; n];
+    let mut thomas_c = vec![0.0_f64; n];
+    let mut thomas_r = vec![0.0_f64; n];
+    let mut thomas_u = vec![0.0_f64; n];
+    let mut x = vec![0.0_f64; dim];
     for _it in 0..newton.max_newton_iters {
         let phi_s = &u[0..n];
         let cp_s = &u[n..2 * n];
@@ -1141,19 +1267,36 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
         if nr < newton.residual_tol_l2 {
             break;
         }
-        if newton.linearize_sg_fickian {
-            fill_jacobian_linearized_sg_fickian(
-                &mut jac, dim, n, dt64, f, &eps, &d_plus, &d_minus, h_inv,
-            );
+        let ok = if newton.linearize_sg_fickian {
+            solve_newton_correction_linearized_sg_chain_f64(
+                n,
+                dt64,
+                f,
+                &eps,
+                &d_plus,
+                &d_minus,
+                h_inv,
+                &r,
+                &mut thomas_a,
+                &mut thomas_b,
+                &mut thomas_c,
+                &mut thomas_r,
+                &mut thomas_u,
+                &mut x,
+            )
         } else {
+            let jac = jac_fd.as_mut().expect("dense Jacobian buffer for FD Newton");
             newton_dense_column_f64(
                 solver, newton, dt64, &u, &c_plus_n, &c_minus_n, &eps, &d_plus, &d_minus, g0, g1,
-                &r, &mut jac,
+                &r, jac,
             );
-        }
-        let mut a_work = jac.clone();
-        let mut x = r.iter().map(|v| -v).collect::<Vec<f64>>();
-        if !solve_dense_linear(dim, &mut a_work, &mut x) {
+            let mut a_work = jac.clone();
+            for i in 0..dim {
+                x[i] = -r[i];
+            }
+            solve_dense_linear(dim, &mut a_work, &mut x)
+        };
+        if !ok {
             return None;
         }
         for i in 0..dim {
@@ -1336,6 +1479,107 @@ mod newton_chain_tests {
         assert!(
             n1 < 1e-9,
             "expected one Newton to nearly zero affine residual, n0={n0:.3e} n1={n1:.3e}"
+        );
+    }
+
+    /// Block-Thomas Newton correction for `linearize_sg_fickian` must match the assembled dense Jacobian.
+    #[test]
+    fn linearized_sg_newton_correction_block_matches_dense_jacobian() {
+        let n = 23_usize;
+        let solver = ElectroChemicalSolver {
+            faraday_const: 1.0_f32,
+            gas_const: 1.0_f32,
+            mesh_spacing: 0.07_f32,
+            ..Default::default()
+        };
+        let newton = NewtonPnpContext {
+            linearize_sg_fickian: true,
+            ..Default::default()
+        };
+        let dt = 2.3e-4_f64;
+        let f = solver.faraday_const as f64;
+        let h_inv = 1.0_f64 / solver.mesh_spacing as f64;
+        let mut eps = vec![0.0_f64; n];
+        let mut d_plus = vec![0.0_f64; n];
+        let mut d_minus = vec![0.0_f64; n];
+        for i in 0..n {
+            let x = i as f64 / (n - 1) as f64;
+            eps[i] = 1.0 + 0.12 * (x - 0.5).powi(2);
+            d_plus[i] = 0.03 + 0.01 * x.sin();
+            d_minus[i] = 0.028 + 0.009 * (x * 1.7).cos();
+        }
+        let mut c_plus_n = vec![0.0_f64; n];
+        let mut c_minus_n = vec![0.0_f64; n];
+        for i in 0..n {
+            let x = i as f64 / (n - 1) as f64;
+            c_plus_n[i] = 1.0 + 0.05 * x;
+            c_minus_n[i] = 1.0 - 0.04 * x * x;
+        }
+        let g0 = 0.02_f64;
+        let g1 = -0.01_f64;
+        let mut u = vec![0.0_f64; 3 * n];
+        for i in 0..n {
+            u[i] = 0.015 * (i as f64 / n as f64).sin();
+            u[n + i] = c_plus_n[i] + 0.002 * ((i % 3) as f64);
+            u[2 * n + i] = c_minus_n[i] - 0.001 * ((i % 2) as f64);
+        }
+        u[0] = g0;
+        u[n - 1] = g1;
+        let r = pnp_be_residual_vector_f64(
+            &solver,
+            &newton,
+            dt,
+            &u[0..n],
+            &u[n..2 * n],
+            &u[2 * n..3 * n],
+            &c_plus_n,
+            &c_minus_n,
+            &eps,
+            &d_plus,
+            &d_minus,
+            g0,
+            g1,
+        );
+        let dim = 3 * n;
+        let mut jac = vec![0.0_f64; dim * dim];
+        fill_jacobian_linearized_sg_fickian(
+            &mut jac, dim, n, dt, f, &eps, &d_plus, &d_minus, h_inv,
+        );
+        let mut x_dense: Vec<f64> = r.iter().map(|v| -v).collect();
+        let mut a_work = jac.clone();
+        assert!(
+            solve_dense_linear(dim, &mut a_work, &mut x_dense),
+            "dense ref solve"
+        );
+
+        let mut th_a = vec![0.0_f64; n];
+        let mut th_b = vec![0.0_f64; n];
+        let mut th_c = vec![0.0_f64; n];
+        let mut th_r = vec![0.0_f64; n];
+        let mut th_u = vec![0.0_f64; n];
+        let mut x_block = vec![0.0_f64; dim];
+        assert!(solve_newton_correction_linearized_sg_chain_f64(
+            n,
+            dt,
+            f,
+            &eps,
+            &d_plus,
+            &d_minus,
+            h_inv,
+            &r,
+            &mut th_a,
+            &mut th_b,
+            &mut th_c,
+            &mut th_r,
+            &mut th_u,
+            &mut x_block,
+        ));
+        let max_abs: f64 = (0..dim)
+            .map(|i| (x_dense[i] - x_block[i]).abs())
+            .fold(0.0_f64, f64::max);
+        assert!(
+            max_abs < 1e-10_f64,
+            "block Thomas vs dense Jacobian solve: max_abs={max_abs:.3e}"
         );
     }
 
