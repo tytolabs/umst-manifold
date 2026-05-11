@@ -3,7 +3,9 @@
 
 //! FDFD Helmholtz verification (`photonics`): MMS on a Dirichlet line, two-media continuum Fresnel
 //! MMS without PML, plus interface/stack smokes with PML on. Curl–curl vs Helmholtz checks are
-//! **1-D uniform-chain** regressions only (including a piecewise \(\varepsilon_r\) profile).
+//! **1-D uniform-chain** regressions only (including a piecewise \(\varepsilon_r\) profile and
+//! **`curl_curl_y_mode_matches_scalar_helmholtz_xy_embedded_chain`**: same path graph with
+//! **non-collinear** \((x,y,z)\) SI coordinates — still **not** a simplicial \(d_1\) patch solve).
 //!
 //! Specification: `composer_prompts/v0.4_solver_completion_no_namesakes.md` (Track H).
 
@@ -88,6 +90,23 @@ fn coords_line_x(n: usize, h: f32) -> Tensor<B, 2> {
         v.push(0.0);
     }
     Tensor::from_data(Data::new(v, Shape::new([n, 3])), &device())
+}
+
+/// Same index-wise \(x = i h\) as [`coords_line_x`], with small smooth **y, z** so the chain is not
+/// collinear in \(\mathbb{R}^3\) while remaining **x-monotone** for the uniform-chain gate inside
+/// [`PhotonicsSolver::solve_maxwell_curl_curl`](umst_manifold::physics::solvers::PhotonicsSolver::solve_maxwell_curl_curl).
+fn coords_xy_embedded_chain(n: usize, h: f32) -> Tensor<B, 2> {
+    let dev = device();
+    let mut v = Vec::with_capacity(n * 3);
+    let denom = (n.saturating_sub(1).max(1)) as f32;
+    let twopi = core::f32::consts::TAU;
+    for i in 0..n {
+        v.push(i as f32 * h);
+        let t = twopi * (i as f32 / denom);
+        v.push(1e-2_f32 * t.sin());
+        v.push(1e-2_f32 * t.cos());
+    }
+    Tensor::from_data(Data::new(v, Shape::new([n, 3])), &dev)
 }
 
 fn cis32(theta: f32) -> C {

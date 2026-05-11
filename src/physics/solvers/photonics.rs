@@ -35,7 +35,9 @@
 //!
 //! **Regression coverage (1-D only):** [`tests/verification/photonics_fresnel.rs`](../../../tests/verification/photonics_fresnel.rs)
 //! asserts that `solve_maxwell_curl_curl` and `solve_helmholtz` return the same \(E_y\) on a uniform
-//! x-chain for both uniform and **piecewise-varying** \(\varepsilon_r\) profiles. That locks the shared
+//! x-chain for both uniform and **piecewise-varying** \(\varepsilon_r\) profiles; **`curl_curl_y_mode_matches_scalar_helmholtz_xy_embedded_chain`**
+//! repeats the parity check with **non-collinear** \((x,y,z)\) SI coordinates on the same path graph
+//! (still **not** a \(d_1\) patch solve). That locks the shared
 //! tridiagonal / half-link stencil — not a claim of equivalence on general simplicial patches.
 //! **Default builds** (`photonics` feature **off**): [`tests/verification/photonics_curl_curl_stub_default_build.rs`](../../../tests/verification/photonics_curl_curl_stub_default_build.rs)
 //! pins that [`PhotonicsSolver::solve_maxwell_curl_curl`] is an identity on representative chain tensors.
@@ -612,4 +614,18 @@ pub fn apply_dec_te_curl_curl_chain_operator<B: Backend<FloatElem = f32>>(
         }
     }
     Some(Tensor::from_data(Data::new(o, shape), &device))
+}
+
+/// Documented assembly surface for **future** simplicial \(d_1\) / `faces_b2` curl–curl (Track 15 §R3.2).
+///
+/// The shipped [`PhotonicsSolver::solve_maxwell_curl_curl`] path uses only
+/// [`crate::physics::dec_primal::primal_scalar_edge_increment`] and
+/// [`crate::physics::dec_primal::primal_divergence_from_edge_flux_topo`]. Patch operators
+/// live in [`crate::physics::dec_primal`]; this module re-exports them so photonics integration tests
+/// and downstream crates can import one namespace while the chain-only solve remains unchanged.
+#[cfg(feature = "photonics")]
+pub mod dec_maxwell_assembly {
+    pub use crate::physics::dec_primal::{
+        primal_d1_edge_flux_to_faces, primal_d1_transpose_face_flux_to_edges,
+    };
 }
