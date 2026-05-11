@@ -228,8 +228,8 @@ pub struct ThmcSolver {
     /// stacked DOFs \(\le 64\), and **`drying_last_node_evaporation_k == 0`** (pure implicit diffusion \(R_h\)).
     /// Mutually exclusive with [`Self::implicit_t_alpha_newton`]. Default **`None`**.
     ///
-    /// [`ThmcMonolithicNewtonConfig::tol`] /
-    /// [`ThmcMonolithicNewtonConfig::relative_tol`]: optional stacked \(\|R\|_2\)
+    /// [`ThmcMonolithicNewtonConfig::stacked_residual_l2_tolerance`] /
+    /// [`ThmcMonolithicNewtonConfig::stacked_residual_relative_to_initial`]: optional stacked \(\|R\|_2\)
     /// early-exit predicates wired into
     /// [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]
     /// (host scalar reads after each residual evaluation).
