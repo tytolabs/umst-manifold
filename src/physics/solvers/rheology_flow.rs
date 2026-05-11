@@ -75,6 +75,29 @@
 //! on the first correction step (and quickly blows up further — see `tests/verification/rheology_poiseuille.rs`:
 //! ignored steady benchmark + active two-step `chorin_surrogate_poisson_amplification_regression_guard`).
 //! Steady vs analytic comparisons stay deferred until a true pressure Poisson (or MAC-type) RHS/BC story replaces this MVP.
+//!
+//! ## MAC + Poisson — integration points (R2.2, design note)
+//! Ring 2 **R2.2** calls for real pressure Poisson (or MAC) on the developed channel; this module stays on the
+//! **surrogate** Richardson step until that lands. The following are **hook points** for a future staggered /
+//! incompressible-correct split — **not** an implemented MAC grid:
+//! - **After the predictor:** `step_experimental` forms `u_star` from explicit momentum (body, viscous,
+//!   pressure-gradient acceleration). A MAC predictor would typically commit **face-normal** provisional
+//!   fluxes here; today everything stays nodal on `edges_b1`.
+//! - **Poisson RHS vs surrogate:** The block `L(u*_x)+L(u*_y)+L(u*_z)` ([`TopologicalLaplacian::scalar_laplacian`])
+//!   approximates a divergence source; a consistent pressure Poisson should use the **discrete divergence**
+//!   of `u_star`, e.g. via [`primal_divergence_from_edge_flux_topo`] on an edge flux assembled from `u_star`
+//!   (and, with staggering, from face velocities once defined). That replaces the triple-Laplacian RHS while
+//!   keeping the same graph operators.
+//! - **Poisson solve:** The Richardson loop on **phi** uses the same [`TopologicalLaplacian`](crate::physics::laplacian::TopologicalLaplacian) as the operator
+//!   \(\mathcal{L}\); swapping in Jacobi/SOR/CG iterations (or a chain **Thomas** path when topology is a
+//!   path — compare electrochemistry Poisson helpers) is the natural upgrade path without new assembly theory.
+//! - **Projection:** Edge increments [`primal_scalar_edge_increment`] / tangent projection of \(\nabla\phi\)
+//!   remain the right **shape** once \(\phi\) solves the consistent discrete Poisson; **inlet/outlet** pressure
+//!   or flux BCs still require explicit pinning — absent today.
+//!
+//! **Scope:** Wiring **2D channel MAC + consistent divergence BCs** is **not** a small patch on this scaffold
+//! (well beyond a sub-hundred-line swap). Treat the bullets above as **documentation of insertion points** until
+//! a dedicated pressure solve + boundary module ships — see **DEFERRAL — Rheology** in `docs/Solver-Status.md`.
 
 #[cfg(feature = "rheology-bingham")]
 use crate::physics::dec_primal::{
