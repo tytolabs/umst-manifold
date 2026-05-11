@@ -365,6 +365,10 @@ fn debye_screening_admissibility_check(
         faraday_const: 1.0_f32,
         gas_const: 1.0_f32,
         coupling_picard_iters: 3,
+        // SG flux uses `D/h` via `mesh_spacing`; geometric cell size is `h = L/(N−1)`.
+        // Leaving `mesh_spacing = 1` while fitting `φ` vs `x = i·h` mis-scales transport relative to
+        // the continuum λ_D reference and inflates the fitted decay length (λ_eff ≫ λ_D).
+        mesh_spacing: h,
         pnp_implicit_newton_chain: Some(newton),
         ..Default::default()
     };

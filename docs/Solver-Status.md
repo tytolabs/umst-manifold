@@ -27,7 +27,7 @@ CI lint (`.github/workflows/rust.yml` `solver-status` job): `python3 scripts/che
 Cross-check: **[`../../composer_prompts/v0.4_solver_completion_no_namesakes.md`](../../composer_prompts/v0.4_solver_completion_no_namesakes.md)** — Track J in that file.
 
 - **J1.** This document’s table is the public solver ↔ lane ↔ verification mapping; prose uses “implemented” only where the **Verification** column matches the CI rule in the header.
-- **J2.** [`README.md`](../README.md) summarizes solver maturity and links here plus the same brief ([`../../composer_prompts/v0.4_solver_completion_no_namesakes.md`](../../composer_prompts/v0.4_solver_completion_no_namesakes.md) from `docs/`, or [`../composer_prompts/v0.4_solver_completion_no_namesakes.md`](../composer_prompts/v0.4_solver_completion_no_namesakes.md) from the `umst-manifold/` tree root).
+- **J2.** [`README.md`](../README.md) summarizes solver maturity and links here plus the v0.4 brief at [`../../composer_prompts/v0.4_solver_completion_no_namesakes.md`](../../composer_prompts/v0.4_solver_completion_no_namesakes.md) (correct relative URL from this `docs/` file when `composer_prompts/` sits beside `umst-manifold/` in the parent workspace). [`README.md`](../README.md) uses `../composer_prompts/...` for that brief because it is one directory shallower.
 - **J3.** Short index: [`PROOF-STATUS.md`](PROOF-STATUS.md) (full deferrals and research-track notes stay in this file).
 - **J4.** `References.bib` is **not** in this repository yet; add entries as solver rustdoc picks up formal citations per the brief.
 
@@ -104,7 +104,7 @@ Numbered research memos under `docs/research/` (`v0.4_track12_staggered_fracture
 
 **Closed in this PR (partial):** Poisson–NP **explicit Picard** coupling in `solve_pnp_step_experimental` (`coupling_picard_iters`, fixed \(c^n\) per timestep); Thomas Poisson on MVP path chains; **MVP-chain implicit backward Euler** + damped Newton (`try_solve_pnp_backward_euler_newton_chain`, host `f64`) with residual regression tests in `pnp_debye_layer.rs`. **Wiring note:** implicit Newton is **not** merged into `solve_pnp_step_experimental`; the default `solve_pnp_step` path remains explicit Picard-only. Research users can opt in via **`pnp_implicit_newton_chain`** + **`solve_pnp_step_dispatch`** (or call `try_solve_pnp_backward_euler_newton_chain` directly). **λ_D admissibility harness** (`debye_screening_admissibility_check` in `pnp_debye_layer.rs`) uses that dispatch pattern (`debye_implicit_newton_context`, `max_chain_nodes`≥256) instead of plain **`solve_pnp_step`**. **CI-fast dispatch smoke:** `debye_implicit_dispatch_short_horizon_smoke` exercises the same opt-in fields on a short chain (finite fields + mild left-vs-bulk screening bias); it does **not** replace the ignored exponential-fit λ_D gates.
 
-**Still open:** coupled implicit Newton on **general graphs**; variable \(\varepsilon\) in Laplacian stiffness; `h_inv` per-edge non-uniform metrics; f32 Bernoulli robustness at large \(|z\Delta\phi|\); **λ_D quasi-steady gates** (both `#[ignore]`): **`debye_screening_256_cells_phi_25mv_decay_length_within_band`**, **`debye_screening_256_cells_phi_100mv_decay_length_within_band`** — harness uses **`solve_pnp_step_dispatch`** + **`pnp_implicit_newton_chain: Some(…)`** (same `electrochemistry-pnp` / `electrochemistry-mvp` lane); linear gate needs full outer trajectory at **N=256** (`dt`·`steps` ≈ `1.5e-3`×`12_000`) for the exponential-fit band (slow); **φ₀=4 V_T** Gouy–Chapman sibling deferred until the linear gate is CI-viable. **Opt-in:** `cargo test --features electrochemistry-pnp --test pnp_debye_layer -- --ignored`.
+**Still open:** coupled implicit Newton on **general graphs**; variable \(\varepsilon\) in Laplacian stiffness; `h_inv` per-edge non-uniform metrics; f32 Bernoulli robustness at large \(|z\Delta\phi|\); **λ_D quasi-steady gates** (both `#[ignore]`): **`debye_screening_256_cells_phi_25mv_decay_length_within_band`**, **`debye_screening_256_cells_phi_100mv_decay_length_within_band`** — harness uses **`solve_pnp_step_dispatch`** + **`pnp_implicit_newton_chain: Some(…)`** (same `electrochemistry-pnp` / `electrochemistry-mvp` lane); linear gate needs full outer trajectory at **N=256** (`dt`·`steps` ≈ `1.5e-3`×`12_000`) for the exponential-fit band (slow); **φ₀=4 V_T** Gouy–Chapman sibling deferred until the linear gate is CI-viable. **Opt-in:** `cargo test --release --features electrochemistry-pnp --test pnp_debye_layer -- --ignored`. **Validation:** at that shipped horizon, the linear gate can still **fail** the λ_eff vs λ_D exponential-fit check by a large margin (example release run: λ_eff \(\approx 3.47\), λ_D \(\approx 0.707\), relative error \(\approx 3.9\) vs the ±30 % band), so un-ignore is blocked on **harness / quasi-steady / discrete-screening** alignment as well as CI wall time.
 
 **Next PR acceptance criteria:** (1) residual \(\|R_\Phi\|+\|R_c\|\) decreases under damped Newton on a **non-chain** benchmark or matrix-free JVP path; (2) mass conservation band on closed graph; (3) double-precision option for large \(|z\Delta\phi|\); (4) sparse / cheaper Jacobian or reduced horizon so **`debye_screening_256_cells_phi_25mv_decay_length_within_band`** can **run on default CI** (drop **`#[ignore]`**), then extend **`debye_screening_256_cells_phi_100mv_decay_length_within_band`** (φ₀=4 V_T).
 
@@ -120,6 +120,48 @@ Numbered research memos under `docs/research/` (`v0.4_track12_staggered_fracture
 **Next PR acceptance criteria:** (1) centreline \(L^2\) error vs analytic &lt; 15% at stated `dt` / step count on **64×16**; (2) pressure correction Poisson RHS aligned with discrete divergence of \(u^\*\); (3) optional env-gated long benchmark (`UMST_RHEOLOGY_POISEUILLE_BUDGET_MS`).
 
 
-## DEFERRAL — Topology / shell (Track B)
+## DEFERRAL — Topology / shell (Tracks B + L)
 
-**Expected v0.4 public artefacts (cartridge, not guaranteed in tree):** under `umst-concrete-cartridge/notebooks/_artifacts/`, the v0.4 brief names `striatus_emergence.gif`, `striatus_shell_v0.4.stl`, `striatus_shell_v0.4.print_ready.json`, and optionally `striatus_shell_v0.4.obj` (see **`../../composer_prompts/v0.4_solver_completion_no_namesakes.md`** — Track B8 acceptance and Track L regeneration). A checkout may still only have older names (e.g. `striatus_shell_v0.3.*`); **do not assume** the v0.4 files exist until they are produced and committed per that brief. **Regenerate:** run the shell demo / frame pipeline from the cartridge (`notebooks/_run_shell_demo.sh` with the env vars described in Track L of the same brief) for GIF and mesh exports; run **`../../umst-concrete-cartridge/notebooks/export_print_ready.py`** (and the notebook flow that calls it, if used) for print-ready JSON and structural gates. Per-track-L hygiene: do **not** commit `crates/umst-concrete-cartridge/examples/_artifacts/shell/iter_*.npy` dumps—only the final GIF, STL, and `print_ready.json` are intended as committed artefacts.
+**Source brief:** [`../../composer_prompts/v0.4_solver_completion_no_namesakes.md`](../../composer_prompts/v0.4_solver_completion_no_namesakes.md) — **Track B** (topology shell / Striatus), **Track L** (GIF + committed artefacts).
+
+### v0.3 vs v0.4 honesty
+
+- The brief defines **target** public filenames and thresholds for **v0.4**. A checkout may still ship **v0.3-only** names (e.g. `striatus_shell_v0.3.*`) or lack rib-pattern completion — **do not** claim “v0.4 Striatus shell complete” until the **exact** filenames below exist, meet **Track L** size/structural gates, and **Track B8** checks are satisfied (tests + `print_ready.json`).
+- **CI vs brief:** default cartridge CI may run only a **quick** rib-pattern harness; the brief’s **40 × 40 × 4**, **200**-iteration proof may stay **`#[ignore]`** or env-gated — see sibling **[`../../umst-concrete-cartridge/docs/Solver-Status.md`](../../umst-concrete-cartridge/docs/Solver-Status.md)** preamble (**Track B6**).
+
+### Exact artefact paths (relative to `umst-concrete-cartridge/` repo root)
+
+| Role | Path |
+| --- | --- |
+| Emergence animation | `notebooks/_artifacts/striatus_emergence.gif` |
+| Mesh export (v0.4 name) | `notebooks/_artifacts/striatus_shell_v0.4.stl` |
+| Print-ready JSON (B7 / B8 / L) | `notebooks/_artifacts/striatus_shell_v0.4.print_ready.json` |
+| Optional mesh | `notebooks/_artifacts/striatus_shell_v0.4.obj` |
+
+**Anti-goal (brief):** do **not** commit `crates/umst-concrete-cartridge/examples/_artifacts/shell/iter_*.npy` — only final **`striatus_emergence.gif`**, **`striatus_shell_v0.4.stl`**, and **`striatus_shell_v0.4.print_ready.json`** are intended as committed artefacts (plus optional `.obj`).
+
+### Track L — regeneration command (verbatim from brief)
+
+Run from the **workspace root** that contains `umst-concrete-cartridge/` (the brief’s first line `cd`s into it):
+
+```bash
+cd umst-concrete-cartridge
+rm -rf crates/umst-concrete-cartridge/examples/_artifacts/shell/iter_*.npy
+rm -rf notebooks/_artifacts/frames notebooks/_artifacts/striatus_emergence.gif
+UMST_SHELL_DUMP_ITER=1 UMST_SHELL_DUMP_STRIDE=10 UMST_SHELL_ITERS=200 \
+    bash notebooks/_run_shell_demo.sh
+```
+
+**Track L acceptance (brief):** `notebooks/_artifacts/striatus_emergence.gif` exists, **≤ 5 MB**, **≥ 30 frames**; `notebooks/_artifacts/striatus_shell_v0.4.stl` exists, **≤ 8 MB**, watertight, **`genus ≥ 1`**, **`volume_fraction ∈ [0.10, 0.25]`**; commit GIF and STL to git.
+
+**Print-ready / structural JSON:** after marching-cubes and gates, run **[`../../umst-concrete-cartridge/notebooks/export_print_ready.py`](../../umst-concrete-cartridge/notebooks/export_print_ready.py)** so **`striatus_shell_v0.4.print_ready.json`** includes the B7 variance/genus/volume-fraction fields; **[`../../umst-concrete-cartridge/notebooks/tests/test_print_ready.py`](../../umst-concrete-cartridge/notebooks/tests/test_print_ready.py)** asserts them.
+
+### Track B — shell acceptance (exact names)
+
+| Item | Location |
+| --- | --- |
+| Optimiser example | `umst-concrete-cartridge/crates/umst-concrete-cartridge/examples/optimize_shell_3d.rs` |
+| Smoke / determinism | `crates/umst-concrete-cartridge/tests/shell_demo_smoke.rs` |
+| Rib-pattern test (B6) | `crates/umst-concrete-cartridge/tests/shell_topology_rib_pattern.rs` — brief thresholds at **40 × 40 × 4**, **200** iters, seed **42**: end volume fraction **±1 %** of `target_vf = 0.15`; greyness **mean(4ρ(1−ρ)) < 0.15**; spatial variance of **ρ** over **xy** **> 0.1**; compliance at end **<** compliance at iter **1 × 0.6**. |
+
+**Track B8 (brief “all of”):** (1) `shell_demo_smoke` passes; (2) `shell_topology_rib_pattern` at **40 × 40 × 4**; (3) GIF shows rib formation (subjective; objective backup: variance/genus checks); (4) **`striatus_shell_v0.4.print_ready.json`** has **`genus ≥ 1`** AND **`variance ≥ 0.1`** AND **`volume_fraction ∈ [0.10, 0.25]`**.
