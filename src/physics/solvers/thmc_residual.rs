@@ -31,6 +31,14 @@
 //! times (fresh Jacobian each iteration). Track 13 stepping stone toward full JFNK; humidity and
 //! mechanics remain out of scope here. See `docs/research/v0.4_track13_monolithic_newton_thmc.md`
 //! (appendix **§ Implementation blueprint** for stacked-unknown layout and batched constraints).
+//!
+//! ## Follow-up (**`m8-scale-ad`**): AD-safe stacked ‖R‖
+//!
+//! Newton early-exit predicates today reduce ‖R‖₂ via host scalar reads (`into_data` /
+//! elementwise accumulation). That pattern **does not commute with autodiff** through the stopping
+//! test: treat it as a **scale-out** item — re-express ‖R‖₂ as a **pure Burn subgraph**
+//! (sum of squares on the stacked residual tensors → `sqrt`) for differentiable outer loops, or gate
+//! on a **smooth surrogate** residual proxy.
 
 use burn::tensor::backend::Backend;
 
@@ -54,6 +62,9 @@ use crate::physics::solvers::thmc::{
     full_hydration_alpha_rate_tensor, shrink_strain_from_saturation_loss_tensor, ChemicalPlan,
     HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics, ThmcState,
 };
+
+#[cfg(all(feature = "thmc-coupled", feature = "solver-experimental"))]
+use super::thmc_jfnk::gmres_f32;
 
 #[cfg(not(feature = "thmc-coupled"))]
 use super::thmc::ThmcState;
@@ -820,12 +831,19 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     /// **Coupling plan §4 Phase 3:** one damped Newton step on field-major \((T,h,\alpha,\mathbf u)\)
     /// with quasi-static bar \(R_u\) from [`Self::evaluate_quasi_static_r_u`].
     ///
-    /// Dense forward-difference Jacobian on the stacked unknown (full layout cap `M \le` [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`], batch 1).
+    /// With **`solver-experimental`**, [`Self::one_damped_newton_step_with_quasi_static_r_u`] uses **JFNK**
+    /// (directional FD matvec) + **BiCGSTAB** on the reduced system, with dense Gauss–Jordan fallback if the
+    /// Krylov step stalls. [`Self::damped_newton_iterations_with_quasi_static_r_u`] keeps a **dense**
+    /// inner linear solve for stability across chained Newton steps.
+    ///
+    /// Without **`solver-experimental`**, or when the inner solve is dense-only: column-wise FD Jacobian +
+    /// Gauss–Jordan (full layout cap `M \le` [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`], batch 1).
+    ///
     /// Displacement entries where `boundary_mask == 0` are **held fixed** (excluded from the reduced
     /// Newton system) so the Jacobian is not singular on Dirichlet rows of \(R_u\).
     /// `damage` / `time` on `trial` are preserved.
     #[allow(clippy::too_many_arguments)]
-    pub fn one_damped_newton_step_with_quasi_static_r_u(
+    fn one_damped_newton_step_qs_r_u_inner(
         &self,
         trial: &ThmcState<B>,
         coords_n3: &Tensor<B, 2>,
@@ -834,6 +852,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         cross_section_area: f32,
         damping: f32,
         fd_eps: f32,
+        matrix_free_inner: bool,
     ) -> Result<(ThmcState<B>, f32, f32), String> {
         if !(damping > 0.0_f32 && damping <= 1.0_f32) {
             return Err(
@@ -845,6 +864,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
                 "one_damped_newton_step_with_quasi_static_r_u: fd_eps must be positive".into(),
             );
         }
+
+        #[cfg(not(feature = "solver-experimental"))]
+        let _ = matrix_free_inner;
 
         let t_dims = trial.thermal.temperature.dims();
         let h_dims = trial.hydro.humidity.dims();
@@ -928,29 +950,128 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         let red_map: Vec<usize> = (0..m).filter(|&j| active[j]).collect();
         let r0_red: Vec<f32> = red_map.iter().map(|&j| r0[j]).collect();
 
-        let mut jac = vec![0.0_f32; m_a * m_a];
-        for j_r in 0..m_a {
-            let j_full = red_map[j_r];
-            let eps_j = fd_eps * (1.0_f32 + packed[j_full].abs());
-            packed[j_full] += eps_j;
-            let pert =
-                trial_from_packed_four(trial, &device, &packed, t_shape, h_shape, a_shape, u_shape);
-            packed[j_full] -= eps_j;
-            let r_pert = self.stacked_flat_residual_field_major_quasi_static(
-                &pert,
-                coords_n3,
-                boundary_mask_bn3,
-                body_force,
-                cross_section_area,
-            )?;
-            for i_r in 0..m_a {
-                let i_full = red_map[i_r];
-                jac[i_r * m_a + j_r] = (r_pert[i_full] - r0[i_full]) / eps_j;
+        #[cfg(feature = "solver-experimental")]
+        let delta_red: Vec<f32> = if matrix_free_inner {
+            {
+                let rhs: Vec<f32> = r0_red.iter().map(|x| -x).collect();
+                let mut w_full = vec![0.0_f32; m];
+                let mut apply_j = |v_red: &[f32], out_red: &mut [f32]| -> Result<(), String> {
+                    w_full.fill(0.0_f32);
+                    for (ir, &vr) in v_red.iter().enumerate() {
+                        w_full[red_map[ir]] = vr;
+                    }
+                    let w_norm = w_full.iter().map(|x| x * x).sum::<f32>().sqrt();
+                    let eps_dir = fd_eps * (1.0_f32 + w_norm);
+                    if eps_dir <= 0.0_f32 {
+                        out_red.fill(0.0_f32);
+                        return Ok(());
+                    }
+                    let mut work = packed.clone();
+                    for i in 0..m {
+                        work[i] += eps_dir * w_full[i];
+                    }
+                    let pert = trial_from_packed_four(
+                        trial, &device, &work, t_shape, h_shape, a_shape, u_shape,
+                    );
+                    let r_pert = self.stacked_flat_residual_field_major_quasi_static(
+                        &pert,
+                        coords_n3,
+                        boundary_mask_bn3,
+                        body_force,
+                        cross_section_area,
+                    )?;
+                    for ir in 0..m_a {
+                        let i_full = red_map[ir];
+                        out_red[ir] = (r_pert[i_full] - r0[i_full]) / eps_dir;
+                    }
+                    Ok(())
+                };
+                match bicgstab_solve_jfnk(m_a, &mut apply_j, &rhs) {
+                    Ok(d) => d,
+                    Err(_) => {
+                        let mut jac = vec![0.0_f32; m_a * m_a];
+                        for j_r in 0..m_a {
+                            let j_full = red_map[j_r];
+                            let eps_j = fd_eps * (1.0_f32 + packed[j_full].abs());
+                            packed[j_full] += eps_j;
+                            let pert = trial_from_packed_four(
+                                trial, &device, &packed, t_shape, h_shape, a_shape, u_shape,
+                            );
+                            packed[j_full] -= eps_j;
+                            let r_pert = self.stacked_flat_residual_field_major_quasi_static(
+                                &pert,
+                                coords_n3,
+                                boundary_mask_bn3,
+                                body_force,
+                                cross_section_area,
+                            )?;
+                            for i_r in 0..m_a {
+                                let i_full = red_map[i_r];
+                                jac[i_r * m_a + j_r] = (r_pert[i_full] - r0[i_full]) / eps_j;
+                            }
+                        }
+                        let mut rhs_fb: Vec<f32> = r0_red.iter().map(|x| -x).collect();
+                        gauss_jordan_solve(&mut jac, &mut rhs_fb, m_a)?
+                    }
+                }
             }
-        }
+        } else {
+            {
+                let mut jac = vec![0.0_f32; m_a * m_a];
+                for j_r in 0..m_a {
+                    let j_full = red_map[j_r];
+                    let eps_j = fd_eps * (1.0_f32 + packed[j_full].abs());
+                    packed[j_full] += eps_j;
+                    let pert = trial_from_packed_four(
+                        trial, &device, &packed, t_shape, h_shape, a_shape, u_shape,
+                    );
+                    packed[j_full] -= eps_j;
+                    let r_pert = self.stacked_flat_residual_field_major_quasi_static(
+                        &pert,
+                        coords_n3,
+                        boundary_mask_bn3,
+                        body_force,
+                        cross_section_area,
+                    )?;
+                    for i_r in 0..m_a {
+                        let i_full = red_map[i_r];
+                        jac[i_r * m_a + j_r] = (r_pert[i_full] - r0[i_full]) / eps_j;
+                    }
+                }
 
-        let mut rhs: Vec<f32> = r0_red.iter().map(|x| -x).collect();
-        let delta_red = gauss_jordan_solve(&mut jac, &mut rhs, m_a)?;
+                let mut rhs: Vec<f32> = r0_red.iter().map(|x| -x).collect();
+                gauss_jordan_solve(&mut jac, &mut rhs, m_a)?
+            }
+        };
+
+        #[cfg(not(feature = "solver-experimental"))]
+        let delta_red: Vec<f32> = {
+            let mut jac = vec![0.0_f32; m_a * m_a];
+            for j_r in 0..m_a {
+                let j_full = red_map[j_r];
+                let eps_j = fd_eps * (1.0_f32 + packed[j_full].abs());
+                packed[j_full] += eps_j;
+                let pert = trial_from_packed_four(
+                    trial, &device, &packed, t_shape, h_shape, a_shape, u_shape,
+                );
+                packed[j_full] -= eps_j;
+                let r_pert = self.stacked_flat_residual_field_major_quasi_static(
+                    &pert,
+                    coords_n3,
+                    boundary_mask_bn3,
+                    body_force,
+                    cross_section_area,
+                )?;
+                for i_r in 0..m_a {
+                    let i_full = red_map[i_r];
+                    jac[i_r * m_a + j_r] = (r_pert[i_full] - r0[i_full]) / eps_j;
+                }
+            }
+
+            let mut rhs: Vec<f32> = r0_red.iter().map(|x| -x).collect();
+            gauss_jordan_solve(&mut jac, &mut rhs, m_a)?
+        };
+
         for k in 0..m_a {
             packed[red_map[k]] += damping * delta_red[k];
         }
@@ -965,6 +1086,31 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             cross_section_area,
         )?;
         Ok((new_trial, norm_before, norm_after))
+    }
+
+    /// Public entrypoint: one damped Newton step; **`solver-experimental`** enables matrix-free BiCGSTAB
+    /// on this call path only (see [`Self::one_damped_newton_step_qs_r_u_inner`]).
+    #[allow(clippy::too_many_arguments)]
+    pub fn one_damped_newton_step_with_quasi_static_r_u(
+        &self,
+        trial: &ThmcState<B>,
+        coords_n3: &Tensor<B, 2>,
+        boundary_mask_bn3: &Tensor<B, 3>,
+        body_force: &Tensor<B, 3>,
+        cross_section_area: f32,
+        damping: f32,
+        fd_eps: f32,
+    ) -> Result<(ThmcState<B>, f32, f32), String> {
+        self.one_damped_newton_step_qs_r_u_inner(
+            trial,
+            coords_n3,
+            boundary_mask_bn3,
+            body_force,
+            cross_section_area,
+            damping,
+            fd_eps,
+            true,
+        )
     }
 
     /// Chains [`Self::one_damped_newton_step_with_quasi_static_r_u`] (`iterations >= 2`).
@@ -1018,7 +1164,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             return Ok((trial.clone(), norms));
         }
 
-        let (mut current, _, after_first) = self.one_damped_newton_step_with_quasi_static_r_u(
+        let (mut current, _, after_first) = self.one_damped_newton_step_qs_r_u_inner(
             trial,
             coords_n3,
             boundary_mask_bn3,
@@ -1026,6 +1172,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             cross_section_area,
             damping,
             fd_eps,
+            false,
         )?;
         norms.push(after_first);
 
@@ -1039,7 +1186,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         }
 
         for _ in 1..iterations {
-            let (next, _, after) = self.one_damped_newton_step_with_quasi_static_r_u(
+            let (next, _, after) = self.one_damped_newton_step_qs_r_u_inner(
                 &current,
                 coords_n3,
                 boundary_mask_bn3,
@@ -1047,6 +1194,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
                 cross_section_area,
                 damping,
                 fd_eps,
+                false,
             )?;
             current = next;
             norms.push(after);
@@ -1339,6 +1487,89 @@ fn trial_from_packed<B: Backend<FloatElem = f32>>(
         damage: base.damage.clone(),
         time: base.time,
     }
+}
+
+/// BiCGSTAB on the reduced Jacobian \(J_r\) using a matrix-free matvec (`solver-experimental` only).
+#[cfg(all(feature = "thmc-coupled", feature = "solver-experimental"))]
+fn bicgstab_solve_jfnk<F>(n: usize, apply_a: &mut F, b: &[f32]) -> Result<Vec<f32>, String>
+where
+    F: FnMut(&[f32], &mut [f32]) -> Result<(), String>,
+{
+    const MAX_ITER: usize = 128;
+    const REL_TOL: f32 = 1e-7_f32;
+
+    if n == 0 {
+        return Err("bicgstab_solve_jfnk: n=0".into());
+    }
+    if b.len() != n {
+        return Err("bicgstab_solve_jfnk: rhs dimension mismatch".into());
+    }
+
+    let norm_b = b.iter().map(|x| x * x).sum::<f32>().max(0.0_f32).sqrt();
+    let tol = REL_TOL * norm_b.max(1e-30_f32);
+
+    let mut x = vec![0.0_f32; n];
+    let mut r = b.to_vec();
+    let r_hat = r.clone();
+    let mut rho_prev = 1.0_f32;
+    let mut alpha = 1.0_f32;
+    let mut omega = 1.0_f32;
+    let mut v = vec![0.0_f32; n];
+    let mut p = vec![0.0_f32; n];
+    let mut s = vec![0.0_f32; n];
+    let mut t = vec![0.0_f32; n];
+
+    for _ in 0..MAX_ITER {
+        let rho: f32 = r_hat.iter().zip(r.iter()).map(|(a, b)| a * b).sum();
+        if rho.abs() < 1e-30_f32 {
+            return Err("bicgstab_solve_jfnk: breakdown (rho)".into());
+        }
+        let beta = (rho / rho_prev) * (alpha / omega);
+
+        for i in 0..n {
+            p[i] = r[i] + beta * (p[i] - omega * v[i]);
+        }
+
+        apply_a(&p, &mut v)?;
+
+        let r_hat_dot_v: f32 = r_hat.iter().zip(v.iter()).map(|(a, b)| a * b).sum();
+        if r_hat_dot_v.abs() < 1e-30_f32 {
+            return Err("bicgstab_solve_jfnk: breakdown (r_hat·v)".into());
+        }
+        alpha = rho / r_hat_dot_v;
+
+        for i in 0..n {
+            s[i] = r[i] - alpha * v[i];
+        }
+
+        apply_a(&s, &mut t)?;
+
+        let t_dot_t: f32 = t.iter().map(|x| x * x).sum::<f32>().max(0.0_f32);
+        if t_dot_t < 1e-30_f32 {
+            return Err("bicgstab_solve_jfnk: breakdown (‖t‖)".into());
+        }
+        let t_dot_s: f32 = t.iter().zip(s.iter()).map(|(a, b)| a * b).sum();
+        let omega_new = t_dot_s / t_dot_t;
+
+        for i in 0..n {
+            x[i] += alpha * p[i] + omega_new * s[i];
+        }
+        for i in 0..n {
+            r[i] = s[i] - omega_new * t[i];
+        }
+
+        omega = omega_new;
+        rho_prev = rho;
+
+        let res_norm = r.iter().map(|x| x * x).sum::<f32>().max(0.0_f32).sqrt();
+        if res_norm <= tol {
+            return Ok(x);
+        }
+    }
+
+    Err(format!(
+        "bicgstab_solve_jfnk: exceeded {MAX_ITER} iterations (‖r‖ residual norm still above tol)"
+    ))
 }
 
 /// Gauss–Jordan elimination with partial pivoting; overwrites `a` (row-major `n`×`n`) and `b` (`n`).
