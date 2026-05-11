@@ -13,6 +13,9 @@
 //! **`solve_maxwell_curl_curl`** pass-through when the graph is **not** a uniform x-chain; and
 //! [`apply_dec_te_curl_curl_chain_operator`](umst_manifold::physics::solvers::photonics::apply_dec_te_curl_curl_chain_operator)
 //! vs hand stencil with **piecewise** \(\varepsilon_r\).
+//! **Verification #6:** [`apply_dec_te_curl_curl_chain_operator_none_on_quad_split_expanded_patch`] —
+//! quad-split patch (\(E=5\), \(N=4\)) rejects the chain extractor (memo
+//! [`docs/research/v0.4_track15_dec_curl_curl_photonics.md`](../../docs/research/v0.4_track15_dec_curl_curl_photonics.md) §1).
 //!
 //! Specification: `composer_prompts/v0.4_solver_completion_no_namesakes.md` (Track H).
 
@@ -702,21 +705,49 @@ fn dec_maxwell_assembly_quad_split_d1_adjoint_identity_burn() {
     let (_edges_b1, faces_b2, _) = quad_split_patch_tensors();
     let ranges = [(0usize, 3usize), (3usize, 6usize)];
     let u = Tensor::from_data(
-        Data::new(
-            vec![0.55_f32, -0.2, 1.05, -0.9, 0.3],
-            Shape::new([1, 5, 1]),
-        ),
+        Data::new(vec![0.55_f32, -0.2, 1.05, -0.9, 0.3], Shape::new([1, 5, 1])),
         &dev,
     );
-    let w = Tensor::from_data(
-        Data::new(vec![0.4_f32, -0.65], Shape::new([1, 2, 1])),
-        &dev,
-    );
+    let w = Tensor::from_data(Data::new(vec![0.4_f32, -0.65], Shape::new([1, 2, 1])), &dev);
     let d1u = primal_d1_edge_flux_to_faces(u.clone(), faces_b2.clone(), &ranges);
     let lhs = tensor_inner_b3(d1u, w.clone());
     let d1t_w = primal_d1_transpose_face_flux_to_edges(w, faces_b2, &ranges, &u);
     let rhs = tensor_inner_b3(u.clone(), d1t_w);
     assert_relative_eq!(lhs, rhs, epsilon = 1e-4_f32, max_relative = 1.0);
+}
+
+/// Track 15 — [`docs/research/v0.4_track15_dec_curl_curl_photonics.md`](../../docs/research/v0.4_track15_dec_curl_curl_photonics.md) §1:
+/// the quad-split **expanded patch** is not a spanning path (\(E \neq N-1\) — five edges on four nodes —
+/// and branch vertices), so [`apply_dec_te_curl_curl_chain_operator`] returns `None` and cannot silently
+/// apply the uniform-chain TE matvec where production \(d_1\) / `faces_b2` DEC is required (Verification **#6**).
+#[test]
+fn apply_dec_te_curl_curl_chain_operator_none_on_quad_split_expanded_patch() {
+    use umst_manifold::physics::solvers::photonics::apply_dec_te_curl_curl_chain_operator;
+
+    let dev = device();
+    let (edges_b1, _, _) = quad_split_patch_tensors();
+    let n = 4usize;
+    let coords = Tensor::from_data(
+        Data::new(
+            vec![
+                0.0_f32, 0.0, 0.0, //
+                1.0, 0.0, 0.0, //
+                1.0, 1.0, 0.0, //
+                0.0, 1.0, 0.0,
+            ],
+            Shape::new([n, 3]),
+        ),
+        &dev,
+    );
+    let ey = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let eps_r = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let f_hz = 1e9_f32;
+
+    let got = apply_dec_te_curl_curl_chain_operator(ey, eps_r, edges_b1, coords, f_hz);
+    assert!(
+        got.is_none(),
+        "quad-split expanded patch must not activate the uniform-chain TE curl–curl operator"
+    );
 }
 
 /// Non-chain **2D patch** topology: [`PhotonicsSolver::solve_maxwell_curl_curl`] returns the
