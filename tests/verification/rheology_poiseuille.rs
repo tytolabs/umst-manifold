@@ -272,6 +272,7 @@ fn weak_primal_divergence_scalar_flux_has_zero_global_sum_on_quad_channel() {
 
     let nx = 5usize;
     let ny = 5usize;
+    let n = nx * ny;
     let mut edges_src: Vec<i64> = Vec::new();
     let mut edges_tgt: Vec<i64> = Vec::new();
     for j in 0..ny {

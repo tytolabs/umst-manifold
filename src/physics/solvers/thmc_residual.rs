@@ -502,6 +502,10 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     /// **Phase 4 (optional):** when [`Self::ru_shrinkage_water_cement_ratio`] is `Some(w/c)\), a notional
     /// shrink-strain **increment** along edges (trial vs `humidity_n` saturation deficit, edge-averaged)
     /// enters the axial bar law as an eigenstrain in [`VectorMechanicsSolver::projected_bar_equilibrium_residual`].
+    ///
+    /// **Dirichlet tail:** on components where `boundary_mask` is zero, adds
+    /// [`Self::mechanics_placeholder_mass`]\(\cdot(\mathbf u-\mathbf u^n)\) so constrained displacement
+    /// unknowns participate in the dense Newton Jacobian (equilibrium rows alone would be identically zero).
     pub fn evaluate_quasi_static_r_u(
         &self,
         trial: &ThmcState<B>,
@@ -580,8 +584,8 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         let stiffness_nu =
             Tensor::<B, 3>::zeros([batch, n, 1], &device).add_scalar(self.kinetics.stiffness_nu);
         let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
-        Ok(VectorMechanicsSolver::projected_bar_equilibrium_residual(
-            u,
+        let r_eq = VectorMechanicsSolver::projected_bar_equilibrium_residual(
+            u.clone(),
             coords_n3.clone(),
             stiffness,
             body_force.clone(),
@@ -590,7 +594,17 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             boundary_mask_bn3.clone(),
             cross_section_area,
             edge_shrink_strain_increment,
-        ))
+        );
+        // `projected_bar_equilibrium_residual` zeros rows where `boundary_mask` is 0, so perturbing a
+        // constrained displacement would not move those residual entries → a singular FD Jacobian for
+        // monolithic Newton. Add the same placeholder Dirichlet channel as
+        // [`Self::assemble_with_mechanics_placeholder_r_u`]: \(m(\mathbf u-\mathbf u^n)\) on masked DOFs.
+        let ones_m = Tensor::<B, 3>::ones_like(boundary_mask_bn3);
+        let r_dirichlet = ones_m
+            .sub(boundary_mask_bn3.clone())
+            .mul(u.sub(self.displacement_n.clone()))
+            .mul_scalar(self.mechanics_placeholder_mass);
+        Ok(r_eq.add(r_dirichlet))
     }
 
     /// **Coupling plan §4 Phase 2:** \((R_T,R_h,R_\alpha,R_u)\) with \(R_u\) from
@@ -789,7 +803,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     /// **Coupling plan §4 Phase 3:** one damped Newton step on field-major \((T,h,\alpha,\mathbf u)\)
     /// with quasi-static bar \(R_u\) from [`Self::evaluate_quasi_static_r_u`].
     ///
-    /// Dense forward-difference Jacobian on the stacked unknown (cap `M \le 64`, batch 1).
+    /// Dense forward-difference Jacobian on the stacked unknown (full layout cap `M \le 64`, batch 1).
+    /// Displacement entries where `boundary_mask == 0` are **held fixed** (excluded from the reduced
+    /// Newton system) so the Jacobian is not singular on Dirichlet rows of \(R_u\).
     /// `damage` / `time` on `trial` are preserved.
     #[allow(clippy::too_many_arguments)]
     pub fn one_damped_newton_step_with_quasi_static_r_u(
@@ -882,13 +898,28 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         let a_shape = [a_dims[0], a_dims[1], a_dims[2]];
         let u_shape = [u_dims[0], u_dims[1], u_dims[2]];
 
-        let mut jac = vec![0.0_f32; m * m];
-        for j in 0..m {
-            let eps_j = fd_eps * (1.0_f32 + packed[j].abs());
-            packed[j] += eps_j;
+        let active = field_major_newton_active_mask(n, f_t, f_h, f_a, boundary_mask_bn3)?;
+        let m_a: usize = active.iter().filter(|&&a| a).count();
+        if m_a == 0 {
+            return Err("one_damped_newton_step_with_quasi_static_r_u: zero active DOFs".into());
+        }
+        if m_a > MAX_DOFS {
+            return Err(format!(
+                "one_damped_newton_step_with_quasi_static_r_u: {} active DOFs exceeds cap {}",
+                m_a, MAX_DOFS
+            ));
+        }
+        let red_map: Vec<usize> = (0..m).filter(|&j| active[j]).collect();
+        let r0_red: Vec<f32> = red_map.iter().map(|&j| r0[j]).collect();
+
+        let mut jac = vec![0.0_f32; m_a * m_a];
+        for j_r in 0..m_a {
+            let j_full = red_map[j_r];
+            let eps_j = fd_eps * (1.0_f32 + packed[j_full].abs());
+            packed[j_full] += eps_j;
             let pert =
                 trial_from_packed_four(trial, &device, &packed, t_shape, h_shape, a_shape, u_shape);
-            packed[j] -= eps_j;
+            packed[j_full] -= eps_j;
             let r_pert = self.stacked_flat_residual_field_major_quasi_static(
                 &pert,
                 coords_n3,
@@ -896,15 +927,16 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
                 body_force,
                 cross_section_area,
             )?;
-            for i in 0..m {
-                jac[i * m + j] = (r_pert[i] - r0[i]) / eps_j;
+            for i_r in 0..m_a {
+                let i_full = red_map[i_r];
+                jac[i_r * m_a + j_r] = (r_pert[i_full] - r0[i_full]) / eps_j;
             }
         }
 
-        let mut rhs: Vec<f32> = r0.iter().map(|x| -x).collect();
-        let delta = gauss_jordan_solve(&mut jac, &mut rhs, m)?;
-        for k in 0..m {
-            packed[k] += damping * delta[k];
+        let mut rhs: Vec<f32> = r0_red.iter().map(|x| -x).collect();
+        let delta_red = gauss_jordan_solve(&mut jac, &mut rhs, m_a)?;
+        for k in 0..m_a {
+            packed[red_map[k]] += damping * delta_red[k];
         }
 
         let new_trial =
@@ -1071,6 +1103,34 @@ fn trial_from_packed_three<B: Backend<FloatElem = f32>>(
         damage: base.damage.clone(),
         time: base.time,
     }
+}
+
+#[cfg(feature = "thmc-coupled")]
+fn field_major_newton_active_mask<B: Backend<FloatElem = f32>>(
+    n: usize,
+    f_t: usize,
+    f_h: usize,
+    f_a: usize,
+    boundary_mask_bn3: &Tensor<B, 3>,
+) -> Result<Vec<bool>, String> {
+    let dm = boundary_mask_bn3.dims();
+    if dm[0] != 1 || dm[1] != n || dm[2] != 3 {
+        return Err(format!(
+            "field_major_newton_active_mask: boundary_mask dims {:?}, expected [1, {n}, 3]",
+            dm
+        ));
+    }
+    let m = ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, f_t, f_h, f_a);
+    let mut active = vec![true; m];
+    let bm = boundary_mask_bn3.clone().into_data().value;
+    let u0 = n * f_t + n * f_h + n * f_a;
+    for i in 0..(n * 3) {
+        let node = i / 3;
+        let ax = i % 3;
+        let free = bm[node * 3 + ax] > 1e-6_f32;
+        active[u0 + i] = free;
+    }
+    Ok(active)
 }
 
 #[cfg(feature = "thmc-coupled")]
