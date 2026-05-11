@@ -676,7 +676,6 @@ fn solve_pnp_split_step_experimental_with_refs<B: Backend<FloatElem = f32>>(
         phi_t
     } else {
         let relax = POISSON_RELAX_SCALE * dt;
-        let inv_h_sq = 1.0_f32 / solver.mesh_spacing.max(1e-30_f32).powi(2);
         let mut phi_work = electric_potential.clone();
         for _ in 0..POISSON_SUBSTEPS {
             let lap_phi = TopologicalLaplacian::scalar_laplacian(
@@ -684,7 +683,7 @@ fn solve_pnp_split_step_experimental_with_refs<B: Backend<FloatElem = f32>>(
                 edges_b1.clone(),
                 mask_phi.clone(),
             );
-            let poisson_residual = lap_phi.mul_scalar(inv_h_sq).add(rho_over_eps.clone());
+            let poisson_residual = lap_phi.add(rho_over_eps.clone());
             phi_work = phi_work.sub(poisson_residual.mul_scalar(relax));
         }
         phi_work

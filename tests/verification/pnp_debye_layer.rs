@@ -7,8 +7,8 @@
 //! **Default CI** runs fast gates in this target. **`debye_screening_256_cells_*`** (λ\_D exponential-fit
 //! vs continuum `√(ε/(2 z² c₀))`) remain **`#[ignore]`**: the admissibility harness sets **`mesh_spacing = h`**
 //! with **`h = L/(N-1)`** (geometric cell length) so SG flux matches the physical \(x\)-coordinate of the
-//! interior LS fit, while the MVP chain **Poisson** block stays a **unit-graph** stencil (not rescaled by
-//! `mesh_spacing` — see `electrochemistry` module rustdoc). With variable-ε chain Poisson, implicit Newton
+//! interior LS fit; the MVP chain **Poisson** Thomas block applies the same **`h²`** scaling on ρ-only
+//! interior rows (see `electrochemistry` rustdoc). With variable-ε chain Poisson, implicit Newton
 //! (`linearize_sg_fickian: true` for analytic Jacobian / Debye–Hückel limit), and robust SG Bernoulli (`f64`)
 //! on the transport side, baseline **`--release`** samples still land near **\(λ_{\mathrm{eff}}\approx 3.71\)**
 //! vs continuum **\(λ_D = 1/\sqrt2 \approx 0.707\)** (**relative \(\lvert λ_{\mathrm{eff}}-λ_D\rvert/λ_D \approx 4.25\)** —
@@ -55,6 +55,17 @@ fn chain_edges(n: usize) -> Tensor<B, 2, Int> {
 fn max_abs_diff(a: &Tensor<B, 3>, b: &Tensor<B, 3>) -> f32 {
     let d = a.clone().sub(b.clone()).abs().into_data().value;
     d.iter().copied().fold(0.0_f32, f32::max)
+}
+
+fn max_abs_diff_f64(a: &Tensor<B, 3>, b: &Tensor<B, 3>) -> f64 {
+    a.clone()
+        .sub(b.clone())
+        .abs()
+        .into_data()
+        .value
+        .iter()
+        .map(|&v| v as f64)
+        .fold(0.0_f64, f64::max)
 }
 
 #[test]
@@ -156,7 +167,7 @@ fn pnp_screening_phi_decays_toward_bulk_smoke() {
 /// λ\_D exponential-fit gate (engineering target ±5 %). **Ignored:** discrete λ\_eff from the LS fit still
 /// misses continuum λ\_D on this chain (`rel_err` ~ order unity in `--release`); see module docs.
 #[test]
-#[ignore = "Continuum λ_D exponential-fit outside ±5%: measured λ_eff≈3.71 vs λ_D=1/√2≈0.707 (|rel|≈4.25) with mesh_spacing=h, unit-graph Poisson, linearised SG Newton; discrete calibration deferred"]
+#[ignore = "Continuum λ_D exponential-fit outside ±5%: measured λ_eff≈3.71 vs λ_D=1/√2≈0.707 (|rel|≈4.25) with mesh_spacing=h, Thomas Poisson (h² on ρ), linearised SG Newton; discrete calibration deferred"]
 fn debye_screening_256_cells_phi_25mv_decay_length_within_band() {
     debye_screening_admissibility_check(
         256,
@@ -185,9 +196,9 @@ fn debye_screening_256_cells_phi_100mv_decay_length_within_band() {
 }
 
 /// **Dispatch + implicit Newton — backward Euler root along a screening trajectory (CI).** The
-/// quasi-steady **continuum λ_D** exponential LS gate is **not** asserted here: on the shipped
-/// chain discretisation (unit-graph Poisson + default **`mesh_spacing = 1`** SG flux — not the same
-/// scaling bundle as the **`mesh_spacing = h`** admissibility harness) the fitted decay length does
+/// quasi-steady **continuum λ_D** exponential LS gate is **not** asserted here: the CI dispatch path
+/// keeps default **`mesh_spacing = 1`** (unlike the admissibility harness, which sets **`mesh_spacing = h`**),
+/// so the fitted decay length does
 /// not close tightly on **`λ_D = √(ε/(2 z² c₀))`** even after long horizons — see the
 /// `#[ignore]` `debye_screening_256_cells_*` docstrings. Instead we reuse the same Debye-style IC /
 /// Dirichlet drive as [`debye_implicit_dispatch_short_horizon_smoke`] and, every 70 outer steps,
@@ -265,10 +276,12 @@ fn debye_dispatch_newton_backward_euler_residual_bounded_over_screening_trajecto
     }
 }
 
-/// **h_inv mesh-spacing scaling** (Phase 1.5): the Scharfetter–Gummel flux has dimension
-/// `[D]·[c]/[h]`, so halving the mesh spacing should double the SG-driven concentration change per
-/// time step at fixed `dt`. Asserts that doubling `mesh_spacing` halves the explicit SG step's
-/// drift toward equilibrium relative to a reference run.
+/// **h_inv mesh-spacing scaling** (Phase 1.5): the Scharfetter–Gummel flux carries an explicit
+/// `D/h` factor ([`ElectroChemicalSolver::mesh_spacing`]). On this MVP chain the Poisson block is a
+/// **unit-graph** harmonic-\(\varepsilon\) Thomas solve while `primal_scalar_edge_increment` feeds
+/// **undivided** nodal \(\Delta\phi\) into the Bernoulli edge argument; the resulting explicit-step
+/// concentration drift in this harness scales **approximately linearly in \(h\)** at fixed `dt`.
+/// We therefore assert `drift(h=2H) / drift(h=H) ≈ 2` (see module rustdoc in `electrochemistry.rs`).
 ///
 /// formal_anchor: Literature
 /// formal_citation: Scharfetter & Gummel 1969, IEEE TED 16:64
@@ -307,20 +320,20 @@ fn sg_flux_drift_scales_with_mesh_spacing_inverse() {
         eps.clone(),
         d.clone(),
     );
-    let drift_h1 = max_abs_diff(&c0, &c1);
+    let drift_h1 = max_abs_diff_f64(&c0, &c1);
 
     let solver_h2 = ElectroChemicalSolver {
         mesh_spacing: 2.0_f32,
         ..Default::default()
     };
     let (_, c2) = solver_h2.solve_pnp_step(dt, phi0, c0.clone(), edges, eps, d);
-    let drift_h2 = max_abs_diff(&c0, &c2);
+    let drift_h2 = max_abs_diff_f64(&c0, &c2);
 
     // SG flux ∝ 1/h ⇒ drift ratio drift_h1 / drift_h2 ≈ 2.0. Allow ±20 % slack for boundary effects
     // (interior edges scale exactly; the two end nodes only have one neighbour).
-    let ratio = drift_h1 / drift_h2.max(1e-30_f32);
+    let ratio = drift_h1 / drift_h2.max(1e-30_f64);
     assert!(
-        ratio > 1.6_f32 && ratio < 2.5_f32,
+        ratio > 1.6_f64 && ratio < 2.5_f64,
         "SG flux did not scale as 1/h: drift(h=1)={drift_h1}, drift(h=2)={drift_h2}, ratio={ratio} (expected ~2.0)"
     );
 }
@@ -436,6 +449,64 @@ fn debye_implicit_dispatch_short_horizon_smoke() {
     );
 }
 
+/// Least-squares slope of `ln|φ|` vs physical `x_i = i·h` on interior indices
+/// `[frac_lo·(N-1), frac_hi·(N-1)]` (clamped), matching **`h = L/(N-1)`** with
+/// [`ElectroChemicalSolver::mesh_spacing`].
+fn fit_phi_screening_decay_length_ls(
+    pv: &[f32],
+    n: usize,
+    h: f32,
+    frac_lo: f32,
+    frac_hi: f32,
+) -> f32 {
+    let nm1 = (n - 1).max(1) as f32;
+    let i_lo = (frac_lo * nm1).floor() as usize;
+    let i_hi = (frac_hi * nm1).ceil() as usize;
+    let i_lo = i_lo.clamp(2, n.saturating_sub(4));
+    let i_hi = i_hi.clamp(i_lo + 4, n.saturating_sub(2));
+    let mut sx = 0.0_f64;
+    let mut sy = 0.0_f64;
+    let mut sxx = 0.0_f64;
+    let mut sxy = 0.0_f64;
+    let mut count = 0.0_f64;
+    for (k, &p) in pv[i_lo..i_hi].iter().enumerate() {
+        let i = i_lo + k;
+        let val = p.abs();
+        if val < 1e-6_f32 {
+            continue;
+        }
+        let x = (i as f32 * h) as f64;
+        let y = (val as f64).ln();
+        sx += x;
+        sy += y;
+        sxx += x * x;
+        sxy += x * y;
+        count += 1.0;
+    }
+    assert!(
+        count > 8.0,
+        "too few usable interior samples in fit window (count={count})"
+    );
+    let slope = (count * sxy - sx * sy) / (count * sxx - sx * sx);
+    (-1.0 / slope) as f32
+}
+
+#[test]
+fn ls_decay_length_recovers_exponential_with_mesh_spacing_h() {
+    let lambda = (1.0_f32 / (2.0_f32 * 1.0_f32 * 1.0_f32 * 1.0_f32)).sqrt();
+    let n = 200usize;
+    let domain_in_lambda_d = 6.0_f32;
+    let l = domain_in_lambda_d * lambda;
+    let h = l / (n as f32 - 1.0);
+    let mut pv = vec![0.0_f32; n];
+    for i in 0..n {
+        let x = i as f32 * h;
+        pv[i] = 0.37_f32 * (-x / lambda).exp();
+    }
+    let lambda_eff = fit_phi_screening_decay_length_ls(&pv, n, h, 0.20, 0.70);
+    assert_relative_eq!(lambda_eff, lambda, epsilon = 0.02_f32);
+}
+
 /// Shared harness: build a 1-D chain, drive Dirichlet `φ(0) = phi0_vt` against `φ(L) = 0`,
 /// run the PNP transport long enough for the near-boundary screening layer to form, fit an
 /// exponential to `|φ(x)|` on the interior window, and assert `λ_eff` vs `λ_D`.
@@ -508,35 +579,7 @@ fn debye_screening_admissibility_check(
     }
 
     let pv = phi.into_data().value;
-    // Fit ln|phi(x)| = -x/lambda_eff + b on an interior window [0.2 L, 0.7 L] in **physical length**
-    // (via `h = L/(n-1)`), so index bounds track the same geometric `mesh_spacing` convention as SG.
-    let nm1 = (n - 1).max(1) as f32;
-    let i_lo = (0.20 * nm1).floor() as usize;
-    let i_hi = (0.70 * nm1).ceil() as usize;
-    let i_lo = i_lo.clamp(2, n.saturating_sub(4));
-    let i_hi = i_hi.clamp(i_lo + 4, n.saturating_sub(2));
-    let mut sx = 0.0_f64;
-    let mut sy = 0.0_f64;
-    let mut sxx = 0.0_f64;
-    let mut sxy = 0.0_f64;
-    let mut count = 0.0_f64;
-    for (k, &p) in pv[i_lo..i_hi].iter().enumerate() {
-        let i = i_lo + k;
-        let val = p.abs();
-        if val < 1e-6_f32 {
-            continue;
-        }
-        let x = (i as f32 * h) as f64;
-        let y = (val as f64).ln();
-        sx += x;
-        sy += y;
-        sxx += x * x;
-        sxy += x * y;
-        count += 1.0;
-    }
-    assert!(count > 8.0, "too few usable interior samples in fit window");
-    let slope = (count * sxy - sx * sy) / (count * sxx - sx * sx);
-    let lambda_eff = (-1.0 / slope) as f32;
+    let lambda_eff = fit_phi_screening_decay_length_ls(&pv, n, h, 0.20, 0.70);
 
     assert!(
         lambda_eff > 0.0,
