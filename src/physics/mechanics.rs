@@ -13,6 +13,9 @@
 //! autodiff flows through stiffness and geometry. It does **not** yet
 //! implement full 3D Voigt \(6\times6\) anisotropic shells, face-based curl operators, or per-edge
 //! cross-section tensors — those belong to later DEC refinements and require additional UMST feature banks.
+//! **Thin-plate Q1 hex** on the extruded-brick path (matrix **#2** / §R2.1) is verified in
+//! `tests/verification/mechanics_analytic.rs` (ratio-band regressions + ignored within-5% Kirchhoff gate),
+//! not in this bar-network module.
 //!
 //! Enable **`solver-experimental`** for [`VectorMechanicsSolver::solve_equilibrium_with_voigt_cauchy`] (same bar equilibrium; Cauchy stress via graph Voigt strain and isotropic Hooke).
 //!

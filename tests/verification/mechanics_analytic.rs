@@ -19,7 +19,9 @@
 //! `q L_x L_y` (Kirchhoff `q` convention). Locked-band Kirchhoff tests ([`plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band`])
 //! divide centre \(w\) by [`kirchhoff_centre_w_ssss`] under **mismatched** BCs; see
 //! [`PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN`] / [`PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX`] for the
-//! narrowed regression interval and BC-vs-reference note.
+//! narrowed regression interval and BC-vs-reference note. **`#[ignore]`**
+//! `plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate` documents matrix **#2** / §R2.1
+//! (within-5% **error** vs the same Kirchhoff reference) for when facet-SSSS BCs exist on the brick.
 //!
 //! formal_anchor: Literature  
 //! formal_citation: Timoshenko & Woinowsky-Krieger 1959 (plate tables); Bathe 2006 (Q1 hex); Hughes 2000 (shear locking)
@@ -61,8 +63,16 @@ fn kirchhoff_centre_w_ssss(q: f32, l: f32, h: f32, e: f32, nu: f32) -> f32 {
 const PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN: f32 = 1.10e-4;
 const PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX: f32 = 1.60e-4;
 
-/// Bottom face `u_z=0` plus minimal in-plane anchors on `z=0` so the 3D stiffness is positive-definite
-/// (avoids free rigid translations that stall PCG on fine Q1 hex plates).
+/// Bottom face **`u_z = 0` on every node with `iz == 0`** (full \(z=0\) plane), plus **two** in-plane
+/// Dirichlet anchors so the lattice is **positive-definite** (no free rigid motion in \(xy\) that
+/// stalls PCG on fine Q1 hex plates):
+/// * **`u_x = 0`** at \((i_x,i_y)=(\lfloor n_x/2\rfloor, 0)\) on `z=0`;
+/// * **`u_y = 0`** at \((0,\lfloor n_y/2\rfloor)\) on `z=0`.
+///
+/// This is **not** classical Kirchhoff **SSSS** (simply supported on all four in-plane edges of the
+/// mid-surface); spanwise edges are otherwise free in-plane. Compare matrix **#2** / follow-up §R2.1
+/// (within-5% vs `kirchhoff_centre_w_ssss`) and the ignored gate test
+/// `plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate`.
 fn plate_bottom_uz_mask(nx: usize, ny: usize, nz: usize) -> Vec<f32> {
     let nx1 = nx + 1;
     let ny1 = ny + 1;
@@ -542,6 +552,45 @@ fn plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band() {
         "expected locked Q1-hex centre deflection in narrowed w/w_K band [{}, {}]; ratio={ratio} (w={w_numerical}, w_k={w_kirchhoff})",
         PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN,
         PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX
+    );
+}
+
+/// **Matrix #2 / §R2.1 (planned):** centre top \(w\) vs **thin Kirchhoff square plate SSSS**
+/// [`kirchhoff_centre_w_ssss`] with **\(|w - w_K| / w_K \le 5\%\)** on the **same** brick path
+/// (`ExtrudedPlateMechanics` + Q1 hex + B-bar / transverse-shear centroid treatment as
+/// [`umst_manifold::physics::q1_hex_elasticity::hex_k_times_u_accumulate`]).
+///
+/// **Ignored** so default CI stays honest: [`plate_bottom_uz_mask`] uses a **full** bottom \(u_z=0\)
+/// plane and two in-plane pins — **not** facet-wise simply supported edges, so the numerical \(w\)
+/// remains far from \(w_K\) until a dedicated SSSS-compatible BC harness lands. Unignore only when
+/// closing §R2.1; until then, active coverage remains the **ratio-band** regressions above.
+///
+/// Uses **\(48^2\times 4\)** (heavier than the \(32^2\times 4\) locked-band case) for a stricter
+/// in-plane discretisation when exercising `--ignored` during BC / SRI work.
+#[test]
+#[ignore]
+fn plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate() {
+    let nx = 48_usize;
+    let ny = 48_usize;
+    let nz = 4_usize;
+    let lx = 1.0_f32;
+    let lz = 0.05_f32;
+    let q = 10_000.0_f32;
+    let e0 = 30e9_f32;
+    let nu = 0.2_f32;
+
+    let (w, res) = run_plate_case_details(nx, ny, nz, q, 1e-5);
+    assert!(
+        res < 1e-3,
+        "expected masked equilibrium residual <1e-3; got {res} (w={w})"
+    );
+    assert!(w.is_finite() && w > 0.0, "expected positive centre w; got {w}");
+
+    let w_k = kirchhoff_centre_w_ssss(q, lx, lz, e0, nu);
+    let rel_err = (w - w_k).abs() / w_k.max(1e-30);
+    assert!(
+        rel_err <= 0.05_f32,
+        "§R2.1 / matrix #2 gate: |w-w_K|/w_K <= 5% with Kirchhoff-consistent BCs on the brick; got rel_err={rel_err} (w={w}, w_K={w_k})"
     );
 }
 

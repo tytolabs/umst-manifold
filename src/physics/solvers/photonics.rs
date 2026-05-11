@@ -10,6 +10,12 @@
 //! primal reduction** of \(\nabla\times(\varepsilon_r^{-1}\nabla\times\cdot)\) on this skeleton,
 //! which equals the **scalar Helmholtz** stencil already used by [`PhotonicsHelmholtzSolver::solve_helmholtz`]
 //! (harmonic \(2/(\varepsilon_i+\varepsilon_{i+1})\) on half-links, \(1/h^2\) scaling, Dirichlet caps).
+//! **Tensor \(\varepsilon\) (stub):** `relative_permittivity` may be `[B,N,1]` (scalar \(\varepsilon_r\)) or
+//! **`[B,N,9]`** with row-major **3×3** symmetric storage per node
+//! \([\varepsilon_{xx},\varepsilon_{xy},\varepsilon_{xz},\varepsilon_{yx},\varepsilon_{yy},\varepsilon_{yz},\varepsilon_{zx},\varepsilon_{zy},\varepsilon_{zz}]\).
+//! The shipped **TE \(E_y\)** chain path uses **\(\varepsilon_{yy}\)** only (indices `4` in the 9-channel slice);
+//! off-diagonal coupling in Maxwell is **not** modelled — this is a documented reduction toward full tensor DEC.
+//!
 //! **Not implemented:** general **2D/3D** DEC with \(d_1\) (edge→face curl), dual mesh Hodge stars, or
 //! full vector edge unknowns — those require `faces_b2` and metric machinery beyond this module.
 //! Public deferral / next acceptance criteria: **`docs/Solver-Status.md`** section **DEFERRAL — Photonics**.
@@ -30,7 +36,7 @@
 //!   does **not** wire `faces_b2` into [`PhotonicsSolver`].
 //! - **Fresnel / Helmholtz MMS + curl–curl vs scalar checks:** [`tests/verification/photonics_fresnel.rs`](../../../tests/verification/photonics_fresnel.rs).
 //!   `two_half_spaces_fresnel_te_no_pml_matches_analytic` compares the discrete solve to a **Dirichlet-linear-bridged
-//!   continuum** Fresnel field (nodal LS) and asserts a **discrete-only `r_disc`** (two-point \( \pm k_1 \) fit after
+//!   continuum** Fresnel field (nodal LS) and asserts a **discrete-only `r_disc`** (multi-point LS fit of \( \pm k_1 \) waves after
 //!   bridge inversion) near the analytic Fresnel \(r\); tighter semi-infinite calibration remains optional follow-up.
 //!
 //! **Regression coverage (1-D only):** [`tests/verification/photonics_fresnel.rs`](../../../tests/verification/photonics_fresnel.rs)
@@ -87,6 +93,8 @@
 //! [`PhotonicsHelmholtzSolver::solve_helmholtz`] runs the discrete Helmholtz solve (tridiagonal
 //! complex Thomas) when the edge graph is a **single x-aligned chain** with uniform spacing;
 //! otherwise it logs a warning and returns zeros.
+
+#![cfg_attr(feature = "photonics", allow(dead_code))]
 
 #[cfg(feature = "photonics")]
 use burn::tensor::Shape;
@@ -229,6 +237,72 @@ struct UniformChain {
     order: Vec<i64>,
     len: usize,
     h: f32,
+}
+
+/// Row-major nodal **3×3** relative permittivity: channel **`4`** is \(\varepsilon_{yy}\) (TE stub).
+#[cfg(feature = "photonics")]
+const RELATIVE_PERMITTIVITY_CHANNELS_SCALAR: usize = 1;
+#[cfg(feature = "photonics")]
+const RELATIVE_PERMITTIVITY_CHANNELS_TENSOR3: usize = 9;
+#[cfg(feature = "photonics")]
+const EPS_TENSOR_YY: usize = 4;
+
+/// Extract per-node **real** \(\varepsilon_r\) for the TE \(E_y\) chain reduction: scalar channel **or**
+/// tensor channel layout `[B,N,9]` using **\(\varepsilon_{yy}\)** only ([`EPS_TENSOR_YY`]).
+#[cfg(feature = "photonics")]
+fn nodal_eps_r_real_for_te_chain<B: Backend<FloatElem = f32>>(
+    relative_permittivity: &Tensor<B, 3>,
+    batch: usize,
+    n: usize,
+) -> Option<Vec<f32>> {
+    let d = relative_permittivity.dims();
+    if d.len() != 3 || d[0] != batch || d[1] != n {
+        return None;
+    }
+    let flat = relative_permittivity.clone().into_data().value;
+    match d[2] {
+        RELATIVE_PERMITTIVITY_CHANNELS_SCALAR => {
+            if flat.len() != batch * n {
+                return None;
+            }
+            if batch != 1 {
+                return None;
+            }
+            Some(flat)
+        }
+        RELATIVE_PERMITTIVITY_CHANNELS_TENSOR3 => {
+            if flat.len() != batch * n * RELATIVE_PERMITTIVITY_CHANNELS_TENSOR3 {
+                return None;
+            }
+            if batch != 1 {
+                return None;
+            }
+            let mut v = Vec::with_capacity(n);
+            for i in 0..n {
+                let base = i * RELATIVE_PERMITTIVITY_CHANNELS_TENSOR3 + EPS_TENSOR_YY;
+                v.push(flat[base]);
+            }
+            Some(v)
+        }
+        _ => None,
+    }
+}
+
+#[cfg(feature = "photonics")]
+fn scalar_eps_channel_for_dec<B: Backend<FloatElem = f32>>(
+    relative_permittivity: Tensor<B, 3>,
+) -> Option<Tensor<B, 3>> {
+    let d = relative_permittivity.dims();
+    if d.len() != 3 || d[0] != 1 {
+        return None;
+    }
+    match d[2] {
+        RELATIVE_PERMITTIVITY_CHANNELS_SCALAR => Some(relative_permittivity),
+        RELATIVE_PERMITTIVITY_CHANNELS_TENSOR3 => {
+            Some(relative_permittivity.narrow(2, EPS_TENSOR_YY, 1))
+        }
+        _ => None,
+    }
 }
 
 fn pml_sigma_at(i: usize, n: usize, thick: usize, sigma_max: f32) -> f32 {
@@ -447,7 +521,7 @@ impl PhotonicsSolver {
     ///
     /// # Shapes (contract)
     /// - `e_field`: `[B, N, 3]` — electric field phasor components per node.
-    /// - `relative_permittivity`: `[B, N, 1]` — relative permittivity \(\varepsilon_r\) (real part; extend later for tensors / loss).
+    /// - `relative_permittivity`: `[B, N, 1]` **or** `[B, N, 9]` — scalar \(\varepsilon_r\) **or** row-major **3×3** per node; TE uses **\(\varepsilon_{yy}\)** only (see module docs). **`eps_r_imag`** remains `[B, N, 1]`.
     /// - `impressed_current`: `[B, N, 3]` — impressed current density \(\mathbf{J}\) (source term).
     /// - `edges_b1`: `[2, E]` — undirected edge pairs for the primal 1-skeleton (curl / gradient assembly).
     /// - Returns updated `e_field` `[B, N, 3]`.
@@ -495,14 +569,22 @@ impl PhotonicsSolver {
                 return e_field;
             }
             let n = d[1];
-            if relative_permittivity.dims()[1] != n
-                || eps_r_imag.dims()[1] != n
+            let pe = relative_permittivity.dims();
+            let pi = eps_r_imag.dims();
+            let perm_ok = pe.len() == 3
+                && pe[0] == d[0]
+                && pe[1] == n
+                && (pe[2] == RELATIVE_PERMITTIVITY_CHANNELS_SCALAR
+                    || pe[2] == RELATIVE_PERMITTIVITY_CHANNELS_TENSOR3);
+            let imag_ok = pi.len() == 3 && pi == [d[0], n, RELATIVE_PERMITTIVITY_CHANNELS_SCALAR];
+            if !perm_ok
+                || !imag_ok
                 || impressed_current.dims() != d
                 || coords_n3.dims() != [n, 3]
             {
                 tracing::warn!(
                     target: "umst_manifold::photonics",
-                    "solve_maxwell_curl_curl: shape mismatch (permittivity / coords); returning e_field unchanged"
+                    "solve_maxwell_curl_curl: shape mismatch (permittivity [B,N,1|9], imag [B,N,1], coords); returning e_field unchanged"
                 );
                 return e_field;
             }
@@ -525,7 +607,16 @@ impl PhotonicsSolver {
                 return e_field;
             }
 
-            let eps_rr = relative_permittivity.clone().into_data().value;
+            let eps_rr = match nodal_eps_r_real_for_te_chain(&relative_permittivity, d[0], n) {
+                Some(v) => v,
+                None => {
+                    tracing::warn!(
+                        target: "umst_manifold::photonics",
+                        "solve_maxwell_curl_curl: unsupported relative_permittivity layout; returning e_field unchanged"
+                    );
+                    return e_field;
+                }
+            };
             let eps_ri = eps_r_imag.clone().into_data().value;
             let j_flat = impressed_current.clone().into_data().value;
             let mut sr = vec![0.0_f32; n];
@@ -565,7 +656,7 @@ impl PhotonicsSolver {
 ///
 /// Interior nodes use \((1/h^2)\, d_0^\top \,\mathrm{diag}\bigl(2/(\varepsilon_{\mathrm{src}}+\varepsilon_{\mathrm{tgt}})\bigr)\, d_0 + k_0^2 I\) with [`primal_scalar_edge_increment`] as \(d_0\) and [`primal_divergence_from_edge_flux_topo`] as \(d_0^\top\). Endpoints use the same **Dirichlet identity** rows as [`PhotonicsHelmholtzSolver::solve_helmholtz`].
 ///
-/// **Scope:** \(B=1\), one \(E_y\) channel (`ey` shape `[1,N,1]`). Not a general 2D/3D \(d_1\) curl. Returns `None` if the graph is not a uniform x-monotone chain.
+/// **Scope:** \(B=1\), one \(E_y\) channel (`ey` shape `[1,N,1]`). `relative_permittivity` is **`[1,N,1]`** or **`[1,N,9]`** (TE uses **\(\varepsilon_{yy}\)** from the 9-channel slice). Not a general 2D/3D \(d_1\) curl. Returns `None` if the graph is not a uniform x-monotone chain.
 #[cfg(feature = "photonics")]
 pub fn apply_dec_te_curl_curl_chain_operator<B: Backend<FloatElem = f32>>(
     ey: Tensor<B, 3>,
@@ -579,9 +670,16 @@ pub fn apply_dec_te_curl_curl_chain_operator<B: Backend<FloatElem = f32>>(
         return None;
     }
     let n = d[1];
-    if relative_permittivity.dims() != [1, n, 1] || coords_n3.dims() != [n, 3] {
+    let pe = relative_permittivity.dims();
+    if coords_n3.dims() != [n, 3] {
         return None;
     }
+    if pe != [1, n, RELATIVE_PERMITTIVITY_CHANNELS_SCALAR]
+        && pe != [1, n, RELATIVE_PERMITTIVITY_CHANNELS_TENSOR3]
+    {
+        return None;
+    }
+    let eps_s = scalar_eps_channel_for_dec(relative_permittivity)?;
     let chain = extract_uniform_x_chain::<B>(n, &edges_b1, &coords_n3)?;
     let h = chain.h;
     let inv_h2 = 1.0 / (h * h);
@@ -590,7 +688,7 @@ pub fn apply_dec_te_curl_curl_chain_operator<B: Backend<FloatElem = f32>>(
 
     let topo = EdgeTopology::new(edges_b1);
     let d0 = primal_scalar_edge_increment(ey.clone(), &topo);
-    let (src_eps, tgt_eps) = topo.gather_endpoints(relative_permittivity);
+    let (src_eps, tgt_eps) = topo.gather_endpoints(eps_s);
     let denom = src_eps.add(tgt_eps).clamp_min(1e-12_f32);
     let inv_w = Tensor::<B, 3>::ones_like(&denom)
         .mul_scalar(2.0_f32)

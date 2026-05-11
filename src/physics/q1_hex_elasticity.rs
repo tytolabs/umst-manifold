@@ -31,7 +31,10 @@
 //! `tests/verification/mechanics_analytic.rs`) with bilinear-consistent top pressure
 //! ([`crate::physics::extruded_plate::ExtrudedPlateMechanics::body_force_top_uniform_pressure`],
 //! band \(1.1\times10^{-4}<w/w_K<1.6\times10^{-4}\)) and `docs/Solver-Status.md` defers full Kirchhoff
-//! SSSS on the brick — see mechanics row there.
+//! SSSS on the brick — see mechanics row there. The **`#[ignore]`** placeholder
+//! `plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate` documents the **within-5%** centre
+//! deflection acceptance vs the Kirchhoff SSSS centre formula (`kirchhoff_centre_w_ssss` in
+//! `tests/verification/mechanics_analytic.rs`) for matrix **#2** once BCs align.
 //!
 //! **Bounded follow-ups (avoid monolithic refactors):** optional **literal** separate
 //! \(\mathbf B_{\mathrm{dev}}^{\mathsf T}\mathbf D_{\mathrm{dev}}\mathbf B_{\mathrm{dev}}\) vs
