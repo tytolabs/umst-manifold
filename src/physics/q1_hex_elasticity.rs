@@ -7,20 +7,19 @@
 //! cells with `(nx+1)(ny+1)(nz+1)` nodes. Gauss integration uses the standard `2×2×2` rule on the
 //! reference cube \([-1,1]^3\).
 //!
-//! **B-bar / Selective Reduced Integration (SRI)** is used to cure shear locking in thin bending
-//! configurations: the volumetric part of the strain–displacement matrix `B_vol = (1/3) m mᵀ B` is
-//! replaced by its element-mean `B̄_vol` (equivalently, evaluated at the centroid via 1-point
-//! quadrature), while the deviatoric part `B_dev = B − B_vol` retains the full 2×2×2 rule.
-//! See Hughes 2000 §4.5 and Bathe 2006 §5.4.
+//! **B-bar / Selective Reduced Integration (SRI)** cures volumetric locking; **transverse shear**
+//! strains \(\gamma_{yz},\gamma_{xz}\) use **centroid** shape gradients at each \(2^3\) Gauss point
+//! (substituted strain, analogous to transverse shear under-integration). In-plane \(\gamma_{xy}\)
+//! stays full quadrature.
+//!
+//! Volumetric `B_vol = (1/3) m mᵀ B` is replaced by its element-mean `B̄_vol` (centroid); deviatoric
+//! normal strains retain the full \(2\times2\times2\) rule. See Hughes 2000 §4.5 and Bathe 2006 §5.4.
 //!
 //! ## Roadmap (R2.1 — mechanics / thin plate)
 //!
-//! **Shipped here:** a **B-bar** formulation on structured **right** Cartesian bricks: the
-//! volumetric part of the normal-strain operator uses **centroid** physical shape gradients
-//! (equivalent to replacing per–Gauss-point \( \mathbf B_{\mathrm{vol}} \) with its element mean /
-//! one-point quadrature on the volumetric trace), while deviatoric normal strains and **all shear
-//! strains** use the full \(2\times2\times2\) rule. [`hex_k_times_u_accumulate`] and
-//! [`hex_diagonal`] share this operator; PCG in [`hex_solve_pcg_masked`] is matrix-free on the same
+//! **Shipped here:** **B-bar** on volumetric normal strains **plus** centroid \(\gamma_{yz},\gamma_{xz}\)
+//! (transverse shear SRI); \(\gamma_{xy}\) remains full \(2\times2\times2\). [`hex_k_times_u_accumulate`]
+//! and [`hex_diagonal`] share this operator; PCG in [`hex_solve_pcg_masked`] is matrix-free on the same
 //! kernel. Isotropic \(\mathbf D(E,\nu)\) is assembled once per cell (not split into separate
 //! \(\mathbf D_{\mathrm{vol}}\) / \(\mathbf D_{\mathrm{dev}}\) quadrature loops).
 //!
@@ -36,10 +35,9 @@
 //! \(\mathbf B_{\mathrm{dev}}^{\mathsf T}\mathbf D_{\mathrm{dev}}\mathbf B_{\mathrm{dev}}\) vs
 //! \(\mathbf B_{\mathrm{vol}}^{\mathsf T}\mathbf D_{\mathrm{vol}}\mathbf B_{\mathrm{vol}}\)
 //! quadrature weighting (centroid vs full \(2^3\) tensor) if auditing shows mismatch with the
-//! current unified-\(D\) B-bar energy; **facet-wise** BC sets for SSSS parity; **transverse shear**
-//! under-integration or
-//! MITC-style enrichment if bending remains too stiff after BC alignment; **f64** accumulation path
-//! for the same stencil if f32 PCG limits masked residuals.
+//! current unified-\(D\) B-bar energy; **facet-wise** BC sets for SSSS parity;
+//! **MITC-style** enrichment or literal \(\mathbf D_{\mathrm{shear}}\) splits if further tuning is
+//! needed; **f64** accumulation path for the same stencil if f32 PCG limits masked residuals.
 //!
 //! formal_anchor: Literature
 //! formal_citation: Bathe 2006, *Finite Element Procedures*, §5.4 (hex elements); Hughes 2000, *The Finite Element Method*, §4.5 (B-bar / SRI)
@@ -250,6 +248,19 @@ fn bbar_times_u(gn: [[f32; 3]; 8], gn_bar: [[f32; 3]; 8], u24: &[f32; 24]) -> [f
     [exx + delta, eyy + delta, ezz + delta, e3, e4, e5]
 }
 
+/// [`bbar_times_u`] with \(\gamma_{yz},\gamma_{xz}\) from centroid gradients (`gn_bar`).
+fn bbar_times_u_transverse_shear_centroid(
+    gn: [[f32; 3]; 8],
+    gn_bar: [[f32; 3]; 8],
+    u24: &[f32; 24],
+) -> [f32; 6] {
+    let mut eps = bbar_times_u(gn, gn_bar, u24);
+    let eps_c = bbar_times_u(gn_bar, gn_bar, u24);
+    eps[4] = eps_c[4];
+    eps[5] = eps_c[5];
+    eps
+}
+
 #[allow(dead_code)]
 fn bt_times_sigma(gn: [[f32; 3]; 8], sig: &[f32; 6]) -> [f32; 24] {
     let mut f = [0.0_f32; 24];
@@ -270,9 +281,40 @@ fn bt_times_sigma(gn: [[f32; 3]; 8], sig: &[f32; 6]) -> [f32; 24] {
     f
 }
 
-/// B-bar transpose × stress: dot the deviatoric pointwise rows of B against σ for normal-strain
-/// rows, and use the averaged volumetric rows for the hydrostatic component. This is the
-/// adjoint of [`bbar_times_u`] and is essential for symmetry of `K_e = B̄ᵀ D B̄`.
+/// Adjoint of [`bbar_times_u_transverse_shear_centroid`]: same B-bar normal rows as
+/// [`bbar_t_times_sigma`]; \(\tau_{yz},\tau_{xz}\) scatter with centroid gradients.
+fn bbar_t_times_sigma_transverse_shear_centroid(
+    gn: [[f32; 3]; 8],
+    gn_bar: [[f32; 3]; 8],
+    sig: &[f32; 6],
+) -> [f32; 24] {
+    let mut f = [0.0_f32; 24];
+    let sxx = sig[0];
+    let syy = sig[1];
+    let szz = sig[2];
+    let sxy = sig[3];
+    let syz = sig[4];
+    let sxz = sig[5];
+    let sh = (sxx + syy + szz) / 3.0;
+    let dxx = sxx - sh;
+    let dyy = syy - sh;
+    let dzz = szz - sh;
+    for i in 0..8 {
+        let gx = gn[i][0];
+        let gy = gn[i][1];
+        let gz = gn[i][2];
+        let gxb = gn_bar[i][0];
+        let gyb = gn_bar[i][1];
+        let gzb = gn_bar[i][2];
+        f[i * 3] += gx * dxx + gy * sxy + gzb * sxz + gxb * sh;
+        f[i * 3 + 1] += gy * dyy + gx * sxy + gzb * syz + gyb * sh;
+        f[i * 3 + 2] += gz * dzz + gyb * syz + gxb * sxz + gzb * sh;
+    }
+    f
+}
+
+/// B-bar transpose × stress: adjoint of [`bbar_times_u`] (no transverse shear SRI).
+#[allow(dead_code)]
 fn bbar_t_times_sigma(gn: [[f32; 3]; 8], gn_bar: [[f32; 3]; 8], sig: &[f32; 6]) -> [f32; 24] {
     let mut f = [0.0_f32; 24];
     let sxx = sig[0];
@@ -374,9 +416,9 @@ pub fn hex_k_times_u_accumulate(
                                 continue;
                             };
                             let wdet = WG * WG * WG * detj;
-                            let eps = bbar_times_u(gn, gn_bar, &u24);
+                            let eps = bbar_times_u_transverse_shear_centroid(gn, gn_bar, &u24);
                             let sig = d_times_eps(&d, &eps);
-                            let fe = bbar_t_times_sigma(gn, gn_bar, &sig);
+                            let fe = bbar_t_times_sigma_transverse_shear_centroid(gn, gn_bar, &sig);
                             for k in 0..8 {
                                 let (ix, iy, iz) = match k {
                                     0 => (cx, cy, cz),
@@ -470,13 +512,13 @@ pub fn hex_diagonal(
                                 b[2][c0] = dgx;
                                 b[2][c0 + 1] = dgy;
                                 b[2][c0 + 2] = gz + dgz;
-                                // Shears (pointwise, unchanged)
+                                // γ_xy: full quadrature; γ_yz, γ_xz: centroid (matches accumulate).
                                 b[3][c0] = gy;
                                 b[3][c0 + 1] = gx;
-                                b[4][c0 + 1] = gz;
-                                b[4][c0 + 2] = gy;
-                                b[5][c0] = gz;
-                                b[5][c0 + 2] = gx;
+                                b[4][c0 + 1] = gzb;
+                                b[4][c0 + 2] = gyb;
+                                b[5][c0] = gzb;
+                                b[5][c0 + 2] = gxb;
                             }
                             for i in 0..24 {
                                 for j in 0..24 {

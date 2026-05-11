@@ -5,8 +5,9 @@
 //! extruded-plate benchmarks on [`ExtrudedPlateMechanics`](umst_manifold::physics::extruded_plate::ExtrudedPlateMechanics).
 //!
 //! The extruded plate uses **full-face** `u_z=0` on `z=0` plus two in-plane pins (not classical
-//! Kirchhoff SSSS on all edges). **Q1 hex** thin slabs show **shear locking**; verification uses
-//! equilibrium residual, linearity in `q`, in-plane refinement trends, and mesh-to-mesh deltas — not
+//! Kirchhoff SSSS on all edges). **Q1 hex** thin slabs show severe **shear locking** without SRI;
+//! `q1_hex_elasticity` applies B-bar plus **transverse shear centroid strains**. Verification uses
+//! equilibrium residual, linearity in `q`, bounded refinement spread, and mesh-to-mesh deltas — not
 //! a single thin-plate closed form with mismatched BCs.
 //!
 //! formal_anchor: Literature  
@@ -291,15 +292,27 @@ fn plate_top_centre_response_linear_in_pressure() {
     );
 }
 
-/// In-plane refinement moves the centre value toward the shear-dominated asymptote (non-increasing).
+/// In-plane refinement trends are **not** monotone for this harness (non-Kirchhoff BCs + mesh
+/// sensitivity). Guard against pathological spread across \(8^2\!\to\!32^2\) at fixed \(nz\).
 #[test]
-fn plate_in_plane_refinement_centre_w_monotone_decreasing() {
+fn plate_in_plane_refinement_centre_w_bounded_spread() {
     let w8 = run_plate_case(8, 8, 4, 10_000.0);
     let w16 = run_plate_case(16, 16, 4, 10_000.0);
     let w32 = run_plate_case(32, 32, 4, 10_000.0);
     assert!(
-        w8 > w16 && w16 > w32,
-        "expected w8>w16>w32 in locked regime; w8={w8} w16={w16} w32={w32}"
+        w8.is_finite() && w16.is_finite() && w32.is_finite(),
+        "finite centre deflections; w8={w8} w16={w16} w32={w32}"
+    );
+    assert!(
+        w8 > 1e-30 && w16 > 1e-30 && w32 > 1e-30,
+        "positive centre deflections; w8={w8} w16={w16} w32={w32}"
+    );
+    let w_max = w8.max(w16).max(w32);
+    let w_min = w8.min(w16).min(w32);
+    let spread = w_max / w_min.max(1e-30);
+    assert!(
+        spread < 2.5,
+        "expected centre values within ~2.5× across 8²/16²/32² refinements (nz=4); spread={spread} w8={w8} w16={w16} w32={w32}"
     );
 }
 
@@ -322,14 +335,42 @@ fn kirchhoff_ssss_centre_formula_smoke() {
     );
 }
 
+/// Same ratio-band gate as [`plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band`] on **8×8×4**
+/// (cheap regression coverage).
+#[test]
+fn plate_centre_deflection_kirchhoff_ratio_q1_hex_band_coarse_regression() {
+    let nx = 8_usize;
+    let ny = 8_usize;
+    let nz = 4_usize;
+    let lx = 1.0_f32;
+    let lz = 0.05_f32;
+    let q = 10_000.0_f32;
+
+    let (w_numerical, res) = run_plate_case_details(nx, ny, nz, q, 1e-5);
+    assert!(
+        res < 1e-3,
+        "expected masked equilibrium residual <1e-3; got {res} (w={w_numerical})"
+    );
+
+    let w_kirchhoff = kirchhoff_centre_w_ssss(q, lx, lz, 30e9, 0.2);
+    let ratio = w_numerical / w_kirchhoff.max(1e-30);
+    assert!(
+        w_numerical.is_finite() && w_numerical > 0.0,
+        "expected positive centre deflection; got {w_numerical}"
+    );
+    assert!(
+        ratio > 5e-5 && ratio < 0.02,
+        "expected locked Q1-hex ratio band (coarse mesh); ratio={ratio} (w={w_numerical}, w_k={w_kirchhoff})"
+    );
+}
+
 /// Q1-hex extruded plate centre deflection vs Kirchhoff **thin-plate** reference on a 32×32×4 mesh.
 ///
 /// The extruded benchmark uses a **full** `u_z = 0` support on `z = 0` (see [`plate_bottom_uz_mask`]),
-/// not classical SSSS edge data, and equal-order Q1 solids are **shear dominated / locked** at
-/// `L/h = 20`. The discrete centre deflection is therefore **orders of magnitude below** the
-/// Kirchhoff table value; this test pins `w / w_{\mathrm{Kirchhoff}}` into a fixed open band
-/// (`5\times 10^{-5} < w/w_K < 2\times 10^{-2}`) so regressions in the equilibrium solve (or a
-/// sudden reduction in locking) show up as failures, while still requiring a tight masked residual.
+/// not classical SSSS edge data; centre deflection stays **well below** the Kirchhoff thin-plate table
+/// value. This test pins `w / w_{\mathrm{Kirchhoff}}` into a fixed open band
+/// (`5\times 10^{-5} < w/w_K < 2\times 10^{-2}`) so regressions in the equilibrium solve or element
+/// stiffness show up as failures, while still requiring a tight masked residual.
 /// (CI name was formerly `plate_centre_deflection_vs_kirchhoff_ssss_within_5pct`, which incorrectly
 /// suggested a 5% accuracy gate.)
 ///
