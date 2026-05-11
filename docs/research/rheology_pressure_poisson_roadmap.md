@@ -5,7 +5,7 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 # Rheology: discrete pressure Poisson on `TopologicalLaplacian` (design roadmap)
 
-**Status:** design only — no implementation contract here. **Motivation:** unblock ignored developed-channel Chorin benchmarks and replace the surrogate RHS documented in [`Solver-Status.md`](../Solver-Status.md) (Rheology lane, R2.2). **Related deferrals:** module rustdoc “MAC + Poisson — integration points” in [`src/physics/solvers/rheology_flow.rs`](../../src/physics/solvers/rheology_flow.rs); harness notes in [`tests/verification/rheology_poiseuille.rs`](../../tests/verification/rheology_poiseuille.rs). **Capability index:** [`../PHYSICS_CAPABILITY_GAPS.md`](../PHYSICS_CAPABILITY_GAPS.md) (structural/material gaps; rheology pressure solve is tracked primarily under solver verification, not that list).
+**Status:** design + partial ship — **Jacobi-preconditioned CG** on \(-\mathcal{L}\) for \(\mathcal{L}\phi=b_h(u^\*)\) is implemented in [`rheology_flow.rs`](../../src/physics/solvers/rheology_flow.rs) (mean-free RHS, relative residual exit); this memo still records **MAC / open-\(x\) BC** follow-ons. **Motivation:** align developed-channel Chorin with plane Poiseuille once staggered divergence and inlet/outlet data are consistent with the split. **Related:** [`Solver-Status.md`](../Solver-Status.md) Rheology lane; harness notes in [`tests/verification/rheology_poiseuille.rs`](../../tests/verification/rheology_poiseuille.rs). **Capability index:** [`../PHYSICS_CAPABILITY_GAPS.md`](../PHYSICS_CAPABILITY_GAPS.md).
 
 ---
 
@@ -98,8 +98,8 @@ The rustdoc “MAC + Poisson” section ([`rheology_flow.rs`](../../src/physics/
 
 | Test / doc | Role |
 |------------|------|
-| [`chorin_steady_channel_64x16_vs_regularized_reference`](../../tests/verification/rheology_poiseuille.rs) | `#[ignore]` — steady developed channel vs regularized reference once Poisson + BCs land. |
-| [`chorin_developed_channel_centreline_vs_regularized_reference`](../../tests/verification/rheology_poiseuille.rs) | `#[ignore]` — centreline profile. |
+| [`chorin_steady_channel_64x16_vs_regularized_reference`](../../tests/verification/rheology_poiseuille.rs) | **`f02120d`:** **`research-stack`** smoke (**no `#[ignore]`**) — 100 substeps on **65×17**, finite ‖u‖/‖p‖ + ‖u‖∞ band; full multi-thousand-step steady **L²** vs regularized reference still deferred until MAC + open **x** BCs. |
+| [`chorin_developed_channel_centreline_vs_regularized_reference`](../../tests/verification/rheology_poiseuille.rs) | **`f02120d`:** **`research-stack`** smoke (**no `#[ignore]`**) — 80 steps, centreline finite and **≤** developed regularized Bingham reference (+ sanity on **p**); tight profile **L²** still deferred. |
 | [`chorin_surrogate_poisson_amplification_regression_guard`](../../tests/verification/rheology_poiseuille.rs) | Active guard on surrogate blow-up (65×17). |
 | [`Solver-Status.md`](../Solver-Status.md) §Verification scope item 7 + **Solver lanes — Rheology** | Public ship criteria and R2.2 follow-up pointer. |
 
