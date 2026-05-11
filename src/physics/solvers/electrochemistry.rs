@@ -19,8 +19,9 @@
 //!   nodes with harmonic edge weights \(\varepsilon_{i+\frac12}=\tfrac12(\varepsilon_i+\varepsilon_{i+1})\)
 //!   via `poisson_chain_net_charge_variable_eps_thomas` + **Thomas**; endpoint Dirichlet values come
 //!   from `electric_potential`. `try_solve_poisson_chain_thomas` accepts a **`rho_over_eps`** tensor
-//!   and reconstructs \(\rho_{e,i}=(\rho/\varepsilon)_i\,\varepsilon_i\) so the RHS matches
-//!   \(F(c^+-c^-)\). Non-chain graphs use explicit Jacobi-like relaxation (`POISSON_SUBSTEPS`). Minimal
+//!   and [`ElectroChemicalSolver::mesh_spacing`] \(h\): it reconstructs \(\rho_{e,i}=(\rho/\varepsilon)_i\,\varepsilon_i\)
+//!   and solves \(\mathcal{L}_{\mathrm{idx}}\Phi=-h^2\rho_e\) on interior nodes (same \(\mathcal{L}_{\mathrm{idx}}\) as
+//!   [`TopologicalLaplacian`] on the chain). Non-chain graphs use explicit Jacobi-like relaxation (`POISSON_SUBSTEPS`). Minimal
 //!   **monovalent** \(\rho_e\) (no fixed background charge, no multiply-charged species).
 //! - **Nernst–Planck**: **Scharfetter–Gummel** conservative edge flux (see `solve_pnp_split_step_experimental_with_refs` in this module)
 //!   \(J_e = (D_e/h_e)\,[c_a B(z\Delta\phi_{ba}) - c_b B(z\Delta\phi_{ab})]\) with \(\Delta\phi_{ba}=\phi_b-\phi_a\),
@@ -54,14 +55,15 @@
 //!   before the ratio stabilises—tight \(\Delta t\) / smaller drift or double precision are the
 //!   practical mitigations until a log-flux or exponential fitting formulation is added.
 //! - **`mesh_spacing` on the explicit split path:** SG flux uses \(J\propto D/h\) with
-//!   \(h=\) [`ElectroChemicalSolver::mesh_spacing`], while the Poisson Thomas / Jacobi blocks use the
-//!   same **unit-graph** harmonic-\(\varepsilon\) stencil at every mesh spacing (sources are \(\rho_e\)
-//!   reconstructed from `rho_over_eps`). That pairing is what
-//!   `tests/verification/pnp_debye_layer.rs::sg_flux_drift_scales_with_mesh_spacing_inverse` locks in.
-//!   Applying an extra \(1/h^2\) Laplacian rescaling on Poisson alone would **not** match the SG Bernoulli
-//!   edge increments and would double-count spacing until a fully coupled discrete formulation lands.
-//!   The implicit BE / Newton host path uses the **same** index-space \(\Phi\) block as this Poisson
-//!   (see `pnp_be_residual_vector_f64` and `fill_jacobian_linearized_sg_fickian`).
+//!   \(h=\) [`ElectroChemicalSolver::mesh_spacing`]. **Poisson:** the chain **Thomas** interior system is
+//!   the same harmonic-\(\varepsilon\) index stencil as [`TopologicalLaplacian`], with interior RHS
+//!   scaled by **`h²`** so \(\mathcal{L}_{\mathrm{idx}}\Phi = -h^2\rho_e\) matches
+//!   \(\nabla\!\cdot(\varepsilon\nabla\Phi)=-\rho_e\) on a uniform spacing \(h\); the non-chain **Jacobi**
+//!   surrogate uses **`(1/h^2)\,\texttt{lap\_phi} + \rho/\varepsilon`** (same discrete \(\Phi\) equation).
+//!   applies **`1/h²`** to the same \(\Phi\)-stencil in **`pnp_be_residual_vector_f64`** and
+//!   **`fill_jacobian_linearized_sg_fickian`**. **`h = 1`** recovers legacy unit-edge behaviour.
+//!   `tests/verification/pnp_debye_layer.rs::sg_flux_drift_scales_with_mesh_spacing_inverse` still
+//!   isolates SG **`J\propto 1/h`** at \(\rho=0\).
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
@@ -103,9 +105,9 @@ pub struct ElectroChemicalSolver {
     /// (variable `h` per edge) are deferred to the implicit-Newton step (Phase 3.3).
     ///
     /// **Coupled note:** the MVP **Poisson** chain Thomas solve uses the same harmonic-\(\varepsilon\)
-    /// stencil in **index space** (no extra `mesh_spacing` factor in the elliptic assembly today); see
-    /// module rustdoc above and `Solver-Status` electrochemistry lane. Ignored Debye exponential-fit gates
-    /// may still need schedule / window tuning before **`λ_eff ≈ λ_D`** — see tests.
+    /// stencil in **index space**, with interior RHS scaled by **`h²`** and the implicit BE **Poisson
+    /// residual / Jacobian** Laplacian scaled by **`1/h²`** (`h` = this field) so \(\nabla\!\cdot(\varepsilon\nabla\phi)\)
+    /// matches the SG **`J\propto D/h`** graph. Default **`1.0`** preserves legacy unit-edge tests.
     /// formal_anchor: Literature
     /// formal_citation: Scharfetter & Gummel 1969, IEEE TED 16:64
     /// formal_form: "J_e = (D_e/h) [c_s B(z F Δφ/RT) − c_t B(−z F Δφ/RT)]"
@@ -454,6 +456,7 @@ fn poisson_chain_net_charge_variable_eps_thomas(
     g1: f32,
     eps: &[f32],
     rho_net: &[f32],
+    interior_rhs_h_sq: f32,
     out: &mut [f32],
 ) {
     debug_assert_eq!(eps.len(), n);
@@ -493,6 +496,10 @@ fn poisson_chain_net_charge_variable_eps_thomas(
         b[m - 1] = -(eps_half[m - 2] + eps_half[m - 1]);
         rhs[m - 1] = -rho_net[n - 2] - eps_half[m - 1] * g1;
     }
+    let scale = interior_rhs_h_sq.max(0.0_f32);
+    for r in rhs.iter_mut() {
+        *r *= scale;
+    }
     c[m - 1] = 0.0_f32;
     let mut u = vec![0.0_f32; m];
     thomas_tridiagonal_solve(&a, &mut b, &c, &mut rhs, &mut u);
@@ -506,6 +513,7 @@ fn try_solve_poisson_chain_thomas<B: Backend<FloatElem = f32>>(
     rho_over_eps: Tensor<B, 3>,
     permittivity: Tensor<B, 3>,
     edges_b1: Tensor<B, 2, Int>,
+    mesh_spacing: f32,
 ) -> Option<Tensor<B, 3>> {
     let device = electric_potential.device();
     let pd = electric_potential.dims();
@@ -541,12 +549,14 @@ fn try_solve_poisson_chain_thomas<B: Backend<FloatElem = f32>>(
         for i in 0..n {
             rho_net[i] = rho_h[off + i] * eps_h[off + i].max(1e-30_f32);
         }
+        let h_sq = mesh_spacing.max(1e-30_f32).powi(2);
         poisson_chain_net_charge_variable_eps_thomas(
             n,
             g0,
             g1,
             &eps_h[off..off + stride],
             &rho_net,
+            h_sq,
             &mut out[off..off + stride],
         );
     }
@@ -672,10 +682,12 @@ fn solve_pnp_split_step_experimental_with_refs<B: Backend<FloatElem = f32>>(
         rho_over_eps.clone(),
         permittivity.clone(),
         edges_b1.clone(),
+        solver.mesh_spacing,
     ) {
         phi_t
     } else {
         let relax = POISSON_RELAX_SCALE * dt;
+        let inv_h_sq = 1.0_f32 / solver.mesh_spacing.max(1e-30_f32).powi(2);
         let mut phi_work = electric_potential.clone();
         for _ in 0..POISSON_SUBSTEPS {
             let lap_phi = TopologicalLaplacian::scalar_laplacian(
@@ -683,7 +695,7 @@ fn solve_pnp_split_step_experimental_with_refs<B: Backend<FloatElem = f32>>(
                 edges_b1.clone(),
                 mask_phi.clone(),
             );
-            let poisson_residual = lap_phi.add(rho_over_eps.clone());
+            let poisson_residual = lap_phi.mul_scalar(inv_h_sq).add(rho_over_eps.clone());
             phi_work = phi_work.sub(poisson_residual.mul_scalar(relax));
         }
         phi_work
@@ -805,6 +817,7 @@ fn poisson_chain_net_charge_variable_eps_thomas_f64(
     g1: f64,
     eps: &[f64],
     rho_net: &[f64],
+    interior_rhs_h_sq: f64,
     out: &mut [f64],
 ) {
     debug_assert_eq!(eps.len(), n);
@@ -843,6 +856,10 @@ fn poisson_chain_net_charge_variable_eps_thomas_f64(
         a[m - 1] = eps_half[m - 2];
         b[m - 1] = -(eps_half[m - 2] + eps_half[m - 1]);
         rhs[m - 1] = -rho_net[n - 2] - eps_half[m - 1] * g1;
+    }
+    let scale = interior_rhs_h_sq.max(0.0_f64);
+    for r in rhs.iter_mut() {
+        *r *= scale;
     }
     c[m - 1] = 0.0_f64;
     let mut u = vec![0.0_f64; m];
@@ -884,6 +901,7 @@ fn pnp_be_residual_vector_f64(
     let rt = solver.gas_const.max(1e-30_f32) as f64;
     let f_over_rt = f / rt;
     let h_inv = 1.0_f64 / solver.mesh_spacing.max(1e-30_f32) as f64;
+    let inv_h_sq = h_inv * h_inv;
     let mut eps_half = vec![0.0_f64; n.saturating_sub(1)];
     for i in 0..eps_half.len() {
         eps_half[i] = 0.5_f64 * (eps[i] + eps[i + 1]);
@@ -896,7 +914,7 @@ fn pnp_be_residual_vector_f64(
             let lap_eps =
                 eps_half[i] * (phi[i + 1] - phi[i]) - eps_half[i - 1] * (phi[i] - phi[i - 1]);
             let rho_net = f * (c_plus[i] - c_minus[i]);
-            r[i] = lap_eps + rho_net;
+            r[i] = lap_eps * inv_h_sq + rho_net;
         }
     }
     let mut j_plus_e = vec![0.0_f64; n.saturating_sub(1)];
@@ -1004,6 +1022,7 @@ fn fill_jacobian_linearized_sg_fickian(
     h_inv: f64,
 ) {
     jac.fill(0.0);
+    let inv_h_sq = h_inv * h_inv;
     let ip = |i: usize| i;
     let icp = |i: usize| n + i;
     let icm = |i: usize| 2 * n + i;
@@ -1014,9 +1033,9 @@ fn fill_jacobian_linearized_sg_fickian(
         } else {
             let eh_l = 0.5_f64 * (eps[i - 1] + eps[i]);
             let eh_r = 0.5_f64 * (eps[i] + eps[i + 1]);
-            jac[r * dim + ip(i - 1)] = eh_l;
-            jac[r * dim + r] = -(eh_l + eh_r);
-            jac[r * dim + ip(i + 1)] = eh_r;
+            jac[r * dim + ip(i - 1)] = eh_l * inv_h_sq;
+            jac[r * dim + r] = -(eh_l + eh_r) * inv_h_sq;
+            jac[r * dim + ip(i + 1)] = eh_r * inv_h_sq;
             jac[r * dim + icp(i)] = f;
             jac[r * dim + icm(i)] = -f;
         }
@@ -1099,6 +1118,8 @@ fn solve_newton_correction_linearized_sg_chain_f64(
     debug_assert_eq!(rhs.len(), n);
     debug_assert_eq!(u.len(), n);
 
+    let inv_h_sq = h_inv * h_inv;
+
     // δc+
     fill_fickian_species_tridiagonal_chain_f64(n, dt, d_plus, h_inv, a, b, c);
     rhs.copy_from_slice(&r[n..2 * n]);
@@ -1133,9 +1154,9 @@ fn solve_newton_correction_linearized_sg_chain_f64(
         } else {
             let eh_l = 0.5_f64 * (eps[i - 1] + eps[i]);
             let eh_r = 0.5_f64 * (eps[i] + eps[i + 1]);
-            a[i] = eh_l;
-            b[i] = -(eh_l + eh_r);
-            c[i] = eh_r;
+            a[i] = eh_l * inv_h_sq;
+            b[i] = -(eh_l + eh_r) * inv_h_sq;
+            c[i] = eh_r * inv_h_sq;
             rhs[i] = -r[i] - f * dcp[i] + f * dcm[i];
         }
     }
@@ -1242,7 +1263,8 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
         rho_net[i] = f * (c_plus_n[i] - c_minus_n[i]);
     }
     let mut phi = vec![0.0_f64; n];
-    poisson_chain_net_charge_variable_eps_thomas_f64(n, g0, g1, &eps, &rho_net, &mut phi);
+    let h_sq = (solver.mesh_spacing.max(1e-30_f32) as f64).powi(2);
+    poisson_chain_net_charge_variable_eps_thomas_f64(n, g0, g1, &eps, &rho_net, h_sq, &mut phi);
     let mut u = vec![0.0_f64; 3 * n];
     u[0..n].copy_from_slice(&phi);
     u[n..2 * n].copy_from_slice(&c_plus_n);
@@ -1428,7 +1450,15 @@ mod newton_chain_tests {
             rho_net[i] = f * (c_plus_n[i] - c_minus_n[i]);
         }
         let mut phi = vec![0.0_f64; n];
-        poisson_chain_net_charge_variable_eps_thomas_f64(n, g0, g1, &eps, &rho_net, &mut phi);
+        poisson_chain_net_charge_variable_eps_thomas_f64(
+            n,
+            g0,
+            g1,
+            &eps,
+            &rho_net,
+            (solver.mesh_spacing as f64).powi(2),
+            &mut phi,
+        );
         let mut u = vec![0.0_f64; 3 * n];
         u[0..n].copy_from_slice(&phi);
         u[n..2 * n].copy_from_slice(&c_plus_n);
@@ -1744,7 +1774,15 @@ mod newton_chain_tests {
             rho_net[i] = f * (c_plus_n[i] - c_minus_n[i]);
         }
         let mut phi = vec![0.0_f64; n];
-        poisson_chain_net_charge_variable_eps_thomas_f64(n, g0, g1, &eps, &rho_net, &mut phi);
+        poisson_chain_net_charge_variable_eps_thomas_f64(
+            n,
+            g0,
+            g1,
+            &eps,
+            &rho_net,
+            (solver.mesh_spacing as f64).powi(2),
+            &mut phi,
+        );
         let mut u = vec![0.0_f64; 3 * n];
         u[0..n].copy_from_slice(&phi);
         u[n..2 * n].copy_from_slice(&c_plus_n);
