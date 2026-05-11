@@ -164,11 +164,98 @@ fn chorin_single_step_finite_smoke() {
     );
 }
 
-/// **Regression guard (R2.2):** two Chorin steps on the **65×17** channel graph bracket the shipped
-/// surrogate pressure step’s large \(\|u\|_\infty\) jump on the **first** correction (order \(10^3\)–\(10^4\)
-/// over the predictor scale for the `dt` values below — see `chorin_steady_channel_64x16_vs_regularized_reference`).
-/// This is **not** a physics target; it locks the documented instability until a true discrete-divergence Poisson
-/// (or MAC) replaces the MVP in `rheology_flow.rs`.
+/// Uniform \(+x\) body force from rest: interior \(u^\*\) is spatially constant, so tangential mean-flux
+/// pressure RHS is **zero**; one Chorin step leaves interior \(u_x \approx \Delta t\,a_x\) after wall masking.
+#[cfg(feature = "rheology-bingham")]
+#[test]
+fn chorin_uniform_body_force_zero_pressure_rhs_uniform_interior_one_step() {
+    use burn::tensor::{Data, Int, Shape, Tensor};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+    use umst_manifold::physics::solvers::BinghamFlowSolver;
+
+    type B = NdArray<f32>;
+
+    const G: f32 = 1000.0;
+    const H: f32 = 0.05;
+    const MU: f32 = 50.0;
+    const TAU0: f32 = 20.0;
+    const RHO: f32 = 1000.0;
+
+    let nx = 7usize;
+    let ny = 7usize;
+    let n = nx * ny;
+    let dy = H / (ny - 1) as f32;
+
+    let mut edges_src: Vec<i64> = Vec::new();
+    let mut edges_tgt: Vec<i64> = Vec::new();
+    for j in 0..ny {
+        for i in 0..nx - 1 {
+            edges_src.push((j * nx + i) as i64);
+            edges_tgt.push((j * nx + i + 1) as i64);
+        }
+    }
+    for j in 0..ny - 1 {
+        for i in 0..nx {
+            edges_src.push((j * nx + i) as i64);
+            edges_tgt.push(((j + 1) * nx + i) as i64);
+        }
+    }
+    let mut edges = edges_src;
+    edges.extend(edges_tgt);
+    let e_ct = edges.len() / 2;
+    let dev = NdArrayDevice::Cpu;
+    let edges_b1: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(edges, Shape::new([2, e_ct])), &dev);
+
+    let batch = 1usize;
+    let mut mask = vec![1.0_f32; n];
+    for i in 0..nx {
+        mask[i] = 0.0;
+        mask[(ny - 1) * nx + i] = 0.0;
+    }
+    let wall_mask: Tensor<B, 3> =
+        Tensor::from_data(Data::new(mask, Shape::new([batch, n, 1])), &dev);
+
+    let velocity = Tensor::<B, 3>::zeros([batch, n, 3], &dev);
+    let pressure = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+    let yield_stress = Tensor::<B, 3>::ones([batch, n, 1], &dev).mul_scalar(TAU0);
+    let density = Tensor::<B, 3>::ones([batch, n, 1], &dev).mul_scalar(RHO);
+    let lambda_thix = Tensor::<B, 3>::ones([batch, n, 1], &dev);
+    let gx = G / RHO;
+    let gravity: Tensor<B, 1> =
+        Tensor::from_data(Data::new(vec![gx, 0.0_f32, 0.0_f32], Shape::new([3])), &dev);
+
+    let dt = 3e-6_f32;
+    let mut solver = BinghamFlowSolver::new(dt, MU);
+    solver.edge_length_scale = dy;
+    solver.t_rest_thix = BinghamFlowSolver::T_REST_NO_THIX;
+    solver.gamma_crit_thix = BinghamFlowSolver::GAMMA_CRIT_NO_THIX;
+
+    let (v, _p, _lam) = solver.step(
+        velocity,
+        pressure,
+        yield_stress,
+        density,
+        lambda_thix,
+        edges_b1,
+        gravity,
+    );
+    let mask3 = wall_mask.expand([batch, n, 3]);
+    let vals: Vec<f32> = v.mul(mask3).into_data().convert::<f32>().value;
+
+    let want_ux = dt * gx;
+    let tol = want_ux.abs() * 0.02_f32 + 1e-9_f32;
+    for j in 1..ny - 1 {
+        for i in 1..nx - 1 {
+            let id = (j * nx + i) * 3;
+            assert!((vals[id] - want_ux).abs() < tol);
+            assert!(vals[id + 1].abs() < tol && vals[id + 2].abs() < tol);
+        }
+    }
+}
+
+/// **Regression guard (verification #7):** two Chorin steps on **65×17** bound first-step \(\|u\|_\infty\)
+/// amplification vs predictor for two `dt` values under the tangential mean-flux pressure RHS.
 #[cfg(feature = "rheology-bingham")]
 #[test]
 fn chorin_surrogate_poisson_amplification_regression_guard() {
@@ -281,16 +368,18 @@ fn chorin_surrogate_poisson_amplification_regression_guard() {
     let ratio_small_dt = a1 / a0.max(eps_floor);
     let ratio_large_dt = b1 / b0.max(eps_floor);
 
-    // Bracket strong amplification on the first surrogate projection (wide band: f32 / per-dt detail).
-    const R_LO: f32 = 150.0;
-    const R_HI: f32 = 3.0e4;
+    // dt=1e-7 ~ O(10³); dt=1e-6 ~ O(10⁴) over predictor (f32 harness slack).
+    const R_SMALL_LO: f32 = 12.0;
+    const R_SMALL_HI: f32 = 2500.0;
+    const R_LARGE_LO: f32 = 1000.0;
+    const R_LARGE_HI: f32 = 2.5e4;
     assert!(
-        ratio_small_dt > R_LO && ratio_small_dt < R_HI,
-        "expected ~1e3 amplification for dt=1e-7; umax0={a0:.3e} umax1={a1:.3e} ratio={ratio_small_dt:.3e}"
+        ratio_small_dt > R_SMALL_LO && ratio_small_dt < R_SMALL_HI,
+        "expected bounded amplification for dt=1e-7; umax0={a0:.3e} umax1={a1:.3e} ratio={ratio_small_dt:.3e}"
     );
     assert!(
-        ratio_large_dt > R_LO && ratio_large_dt < R_HI,
-        "expected ~1e3 amplification for dt=1e-6; umax0={b0:.3e} umax1={b1:.3e} ratio={ratio_large_dt:.3e}"
+        ratio_large_dt > R_LARGE_LO && ratio_large_dt < R_LARGE_HI,
+        "expected bounded amplification for dt=1e-6; umax0={b0:.3e} umax1={b1:.3e} ratio={ratio_large_dt:.3e}"
     );
 
     // Both paths stay finite through step 1 (contrast with later NaN in the long ignored benchmark).
