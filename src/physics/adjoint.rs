@@ -60,8 +60,9 @@ impl AdjointCompliance {
         );
 
         let rho_inner = rho_autodiff.clone().inner();
+        let [batch, n, _rho_c] = rho_inner.dims();
         let displacement = Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::zeros(
-            rho_inner.dims(),
+            [batch, n, 3],
             &rho_inner.device(),
         );
         let e_node = rho_inner

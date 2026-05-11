@@ -58,10 +58,13 @@ impl TopologicalLaplacian {
         let edge_flow = raw_flow.mul(flow_coefficient);
 
         // 5. Scatter the flow back to the nodes (sum reduction) for divergence (Laplacian \Delta = d^* d).
-        // One scatter with concatenated (src, tgt) slots avoids Burn 0.13 autograd failures on chained
-        // `scatter().scatter()` when the edge count differs from the node count (typical 3-D grids).
-        let idx_cat = Tensor::cat(vec![src_indices, tgt_indices], 1);
-        let val_cat = Tensor::cat(vec![edge_flow.clone(), edge_flow.neg()], 1);
-        Tensor::<B, 3>::zeros_like(&x).scatter(1, idx_cat, val_cat)
+        // **Do not** concatenate `[src‖tgt]` into one `scatter` on large graphs: Burn 0.13 autograd can
+        // then mis-shape backward buffers (`[…,2E]` vs `[…,N]`, e.g. Striatus `40×40×4`). Two scatters
+        // from separate zero templates (then `add`) match the same sum while each scatter’s index axis
+        // stays length `E` — distinct from chained `scatter().scatter()` on one tensor, which failed
+        // historically on this codebase.
+        let to_src = Tensor::<B, 3>::zeros_like(&x).scatter(1, src_indices, edge_flow.clone());
+        let to_tgt = Tensor::<B, 3>::zeros_like(&x).scatter(1, tgt_indices, edge_flow.neg());
+        to_src.add(to_tgt)
     }
 }
