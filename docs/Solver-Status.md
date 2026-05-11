@@ -4,7 +4,7 @@ From the `umst-manifold/` tree in this workspace, the v0.4 solver-completion bri
 
 Public mapping of solver-facing modules to **lane** (`solver-stable` vs `solver-research` in `Cargo.toml`), **verification** tests, and notes.
 
-CI lint: `python3 scripts/check_solver_status.py` (optional `--check-paths` requires every ``tests/...`` path under **Verification** to exist in this repo).
+CI lint: `python3 scripts/check_solver_status.py` (optional `--check-paths` requires every ``tests/...`` path under **Verification** to exist in this repo; optional `--check-memo-links` checks track memo links and backticked ``docs/research/*.md`` paths).
 
 **Rule:** use “implemented” in prose below only where the listed **Verification** tests exercise the claim on CI (default `cargo test` path for stable rows; `--features solver-experimental` for research rows unless noted).
 

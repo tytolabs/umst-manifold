@@ -125,14 +125,14 @@ def _verification_paths(verification: str) -> list[str]:
     return out
 
 
-def _memo_link_targets(status_md: Path, body: str) -> list[tuple[str, Path]]:
+def _memo_link_targets(status_md: Path, root: Path, body: str) -> list[tuple[str, Path]]:
     """
     Return (display_ref, absolute_path) for each memo reference to verify.
     Markdown links are relative to docs/ (Solver-Status.md directory).
-    Backticked paths are repo-root-relative.
+    Backticked paths are resolved under ``root`` (repository root).
     """
     doc_dir = status_md.parent.resolve()
-    root = doc_dir.parent.resolve()
+    root_resolved = root.resolve()
     seen: set[tuple[str, str]] = set()
     out: list[tuple[str, Path]] = []
 
@@ -151,7 +151,7 @@ def _memo_link_targets(status_md: Path, body: str) -> list[tuple[str, Path]]:
         if key in seen:
             continue
         seen.add(key)
-        target = (root / rel).resolve()
+        target = (root_resolved / rel).resolve()
         out.append((rel, target))
 
     return out
@@ -178,6 +178,11 @@ def main() -> None:
         action="store_true",
         help="Require Verification-referenced tests/*.rs paths to exist under --root",
     )
+    ap.add_argument(
+        "--check-memo-links",
+        action="store_true",
+        help="Require research memo markdown links and docs/research/*.md backticks to exist",
+    )
     args = ap.parse_args()
     status_md: Path = args.status_md
     root: Path = args.root
@@ -185,6 +190,7 @@ def main() -> None:
         print(f"error: missing {status_md}", file=sys.stderr)
         sys.exit(1)
 
+    body = status_md.read_text(encoding="utf-8")
     rows = parse_solver_rows(status_md)
     errors = 0
     for solver, lane, verification, _notes in rows:
@@ -207,9 +213,23 @@ def main() -> None:
                     )
                     errors += 1
 
+    if args.check_memo_links:
+        for ref, target in _memo_link_targets(status_md, root, body):
+            if not target.is_file():
+                print(
+                    f"error: memo reference {ref!r} missing (expected {target})",
+                    file=sys.stderr,
+                )
+                errors += 1
+
     if errors:
         sys.exit(1)
-    extra = "stable lane + path references" if args.check_paths else "stable lane"
+    parts = ["stable lane"]
+    if args.check_paths:
+        parts.append("verification test paths")
+    if args.check_memo_links:
+        parts.append("research memo links")
+    extra = " + ".join(parts)
     print(f"OK: {status_md} ({len(rows)} table row(s); {extra})")
 
 
