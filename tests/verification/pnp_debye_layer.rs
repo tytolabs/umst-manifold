@@ -26,7 +26,8 @@
 // `solve_pnp_step_dispatch` (production path; falls back to explicit Picard if the chain helper
 // returns `None`). Direct `try_solve_pnp_backward_euler_newton_chain` remains for unit tests in
 // `electrochemistry.rs` and callers who bypass dispatch. Full nonlinear SG (`linearize_sg_fickian: false`)
-// uses a **node-major band** FD Jacobian, then **dense expand + elimination** on a \((3N)^2\) scratch buffer.
+// uses a **node-major band** FD Jacobian, then **pivot-safe band LU** on that envelope (a \((3N)^2\) dense
+// scratch is still allocated alongside the band factor buffer — see `electrochemistry` rustdoc).
 
 use approx::assert_relative_eq;
 use burn::tensor::{Data, Int, Shape, Tensor};
@@ -346,7 +347,7 @@ fn sg_flux_drift_scales_with_mesh_spacing_inverse() {
 
 /// Implicit Newton with **full SG** (`linearize_sg_fickian: false`) for dispatch smokes such as
 /// [`debye_implicit_dispatch_short_horizon_smoke`]. The host chain kernel assembles a **node-major band**
-/// finite-difference Jacobian and solves the Newton step via **dense expand + elimination** (see
+/// finite-difference Jacobian and solves the Newton step with **pivot-safe band LU** (see
 /// `electrochemistry` rustdoc). The long-horizon
 /// **`λ_D`** gates use [`debye_implicit_newton_linearized_sg_for_lambda_d_gate`] instead.
 fn debye_implicit_newton_context() -> NewtonPnpContext {
@@ -362,7 +363,7 @@ fn debye_implicit_newton_context() -> NewtonPnpContext {
 }
 
 /// One-step smoke: full nonlinear SG implicit Newton (`linearize_sg_fickian: false`) uses the host
-/// **band Jacobian + dense-expand Newton** path (optional [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`]
+/// **band Jacobian + pivot-safe band LU** Newton step (optional [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`]
 /// for bounded inners); residual L2 after solve stays small (same API as dispatch smokes).
 #[test]
 fn full_sg_implicit_newton_chain_backward_euler_residual_smoke() {
@@ -611,6 +612,96 @@ fn fit_phi_screening_decay_length_ls(
     );
     let slope = (count * sxy - sx * sy) / (count * sxx - sx * sx);
     (-1.0 / slope) as f32
+}
+
+/// **P1 — Poisson `h²` vs unit-graph index stencil:** on a uniform-\(\varepsilon\) chain with Dirichlet
+/// \(\Phi=0\) at both ends and **uniform** net charge \(\rho_e\), the Thomas interior system is the
+/// standard second-difference Laplacian in **index space** with RHS rows scaled by **`mesh_spacing²`**.
+/// With **`mesh_spacing = h = L/(N-1)`**, interior potentials match the discrete Green quadratic
+/// \(\Phi_i=\tfrac{1}{2} h^2 \rho_e\, i(N{-}1{-}i)\). With **`mesh_spacing = 1`**, the same \(\rho_e\) yields
+/// the **unit-edge** discrete solution \(\propto i(N{-}1{-}i)\) without the physical **`h²`** factor — the
+/// regression asserts both scalings, so coupled Debye harnesses that set **`mesh_spacing = h`** stay
+/// consistent with continuum length units in \(x_i=i\,h\).
+#[test]
+fn poisson_chain_uniform_rho_matches_h_squared_rhs_scaling() {
+    let dev = device();
+    let n = 31usize;
+    let edges = chain_edges(n);
+    let l_domain = 2.5_f32;
+    let h = l_domain / (n as f32 - 1.0);
+    let rho_e = 0.3_f32;
+    let c_plus = 1.0_f32 + 0.5 * rho_e;
+    let c_minus = 1.0_f32 - 0.5 * rho_e;
+    let mut c_flat = vec![0.0_f32; n * 2];
+    for i in 0..n {
+        c_flat[i * 2] = c_plus;
+        c_flat[i * 2 + 1] = c_minus;
+    }
+    let c = Tensor::<B, 3>::from_data(Data::new(c_flat, Shape::new([1, n, 2])), &dev);
+    let phi0 = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+    let eps = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let d = Tensor::<B, 3>::full([1, n, 2], 0.02_f32, &dev);
+
+    let solver_h = ElectroChemicalSolver {
+        faraday_const: 1.0_f32,
+        gas_const: 1.0_f32,
+        mesh_spacing: h,
+        coupling_picard_iters: 1,
+        ..Default::default()
+    };
+    let (phi_h, _) = solver_h.solve_pnp_step(
+        0.0_f32,
+        phi0.clone(),
+        c.clone(),
+        edges.clone(),
+        eps.clone(),
+        d.clone(),
+    );
+    let pv_h = phi_h.into_data().value;
+    let nm1 = (n - 1) as f32;
+    for (i, ph) in pv_h.iter().enumerate().take(n - 1).skip(1) {
+        let idx = i as f32;
+        let expected = 0.5_f32 * rho_e * h * h * idx * (nm1 - idx);
+        assert_relative_eq!(*ph, expected, epsilon = 2e-4_f32);
+    }
+
+    let solver_unit = ElectroChemicalSolver {
+        faraday_const: 1.0_f32,
+        gas_const: 1.0_f32,
+        mesh_spacing: 1.0_f32,
+        coupling_picard_iters: 1,
+        ..Default::default()
+    };
+    let (phi_u, _) = solver_unit.solve_pnp_step(0.0_f32, phi0, c, edges, eps, d);
+    let pv_u = phi_u.into_data().value;
+    for (i, pu) in pv_u.iter().enumerate().take(n - 1).skip(1) {
+        let idx = i as f32;
+        let expected_unit = 0.5_f32 * rho_e * idx * (nm1 - idx);
+        assert_relative_eq!(*pu, expected_unit, epsilon = 2e-4_f32);
+    }
+}
+
+/// **Regression:** if `|φ|` was sampled on **`x = i\,h_{\mathrm{phys}}`** but the LS fit uses **`h_{\mathrm{fit}} = 1`**
+/// (unit index), the inferred decay length is **not** comparable to continuum **`λ_D`** in physical length units.
+#[test]
+fn debye_ls_decay_length_miscalibrated_unit_index_abscissa_rescales_by_physical_h() {
+    let lambda_d = (1.0_f32 / (2.0_f32 * 1.0_f32 * 1.0_f32 * 1.0_f32)).sqrt();
+    let n = 160usize;
+    let l = 6.0_f32 * lambda_d;
+    let h_phys = l / (n as f32 - 1.0);
+    let mut pv = vec![0.0_f32; n];
+    for (i, slot) in pv.iter_mut().enumerate().take(n) {
+        let x = i as f32 * h_phys;
+        *slot = 0.36_f32 * (-x / lambda_d).exp();
+    }
+    let lambda_ok = fit_phi_screening_decay_length_ls(&pv, n, h_phys, 0.22_f32, 0.78_f32);
+    assert_relative_eq!(lambda_ok, lambda_d, epsilon = 0.035_f32);
+    let lambda_bad = fit_phi_screening_decay_length_ls(&pv, n, 1.0_f32, 0.22_f32, 0.78_f32);
+    let rel_bad = ((lambda_bad - lambda_d) / lambda_d).abs();
+    assert!(
+        rel_bad > 0.12_f32,
+        "LS with h_fit=1 on physically spaced φ should bias λ_eff vs λ_D; got λ_eff={lambda_bad}, λ_D={lambda_d}, rel={rel_bad}"
+    );
 }
 
 #[test]
