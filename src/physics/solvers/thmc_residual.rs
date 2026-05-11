@@ -952,6 +952,18 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     }
 
     /// Chains [`Self::one_damped_newton_step_with_quasi_static_r_u`] (`iterations >= 2`).
+    ///
+    /// **Stacked residual early exit** uses \(\|R\|_2\) from [`Self::residual_l2_including_quasi_static_r_u`]
+    /// (host-side scalar reads). Let \(\|R_0\|_2\) be the norm at the initial iterate.
+    ///
+    /// - When **`stacked_residual_l2_tolerance > 0`**, that predicate is **active** and requires
+    ///   \(\|R\|_2 <\) `stacked_residual_l2_tolerance` for an exit.
+    /// - When **`stacked_residual_relative_to_initial`** is **`Some(k)`** with **`k > 0`**, that
+    ///   predicate is **active** and requires \(\|R\|_2 < k\cdot \max(\|R_0\|_2,\varepsilon)\).
+    ///
+    /// Tolerance exit triggers only when **at least one** predicate is active and **every** active
+    /// predicate holds at the head iterate or after a completed damped Newton step. When no
+    /// predicate is active, always perform exactly `iterations` damped Newton steps.
     #[allow(clippy::too_many_arguments)]
     pub fn damped_newton_iterations_with_quasi_static_r_u(
         &self,
@@ -963,6 +975,8 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         iterations: usize,
         damping: f32,
         fd_eps: f32,
+        stacked_residual_l2_tolerance: f32,
+        stacked_residual_relative_to_initial: Option<f32>,
     ) -> Result<(ThmcState<B>, Vec<f32>), String> {
         if iterations < 2 {
             return Err(
@@ -978,6 +992,16 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             cross_section_area,
         )?);
 
+        let r0 = *norms.first().expect("non-empty");
+        if stacked_residual_newton_tol_met(
+            *norms.last().expect("non-empty"),
+            r0,
+            stacked_residual_l2_tolerance,
+            stacked_residual_relative_to_initial,
+        ) {
+            return Ok((trial.clone(), norms));
+        }
+
         let (mut current, _, after_first) = self.one_damped_newton_step_with_quasi_static_r_u(
             trial,
             coords_n3,
@@ -988,6 +1012,15 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             fd_eps,
         )?;
         norms.push(after_first);
+
+        if stacked_residual_newton_tol_met(
+            after_first,
+            r0,
+            stacked_residual_l2_tolerance,
+            stacked_residual_relative_to_initial,
+        ) {
+            return Ok((current, norms));
+        }
 
         for _ in 1..iterations {
             let (next, _, after) = self.one_damped_newton_step_with_quasi_static_r_u(
@@ -1001,9 +1034,42 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             )?;
             current = next;
             norms.push(after);
+            if stacked_residual_newton_tol_met(
+                after,
+                r0,
+                stacked_residual_l2_tolerance,
+                stacked_residual_relative_to_initial,
+            ) {
+                break;
+            }
         }
         Ok((current, norms))
     }
+}
+
+/// Stacked \(\|R\|_2\) Newton exit: every **active** tolerance predicate must hold (see
+/// [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]).
+#[cfg(feature = "thmc-coupled")]
+fn stacked_residual_newton_tol_met(
+    norm: f32,
+    r0: f32,
+    stacked_residual_l2_tolerance: f32,
+    stacked_residual_relative_to_initial: Option<f32>,
+) -> bool {
+    let mut any_active = false;
+    let mut all_pass = true;
+    if stacked_residual_l2_tolerance > 0.0_f32 {
+        any_active = true;
+        all_pass &= norm < stacked_residual_l2_tolerance;
+    }
+    if let Some(rt) = stacked_residual_relative_to_initial {
+        if rt > 0.0_f32 {
+            any_active = true;
+            let scale = r0.max(1e-30_f32);
+            all_pass &= norm < rt * scale;
+        }
+    }
+    any_active && all_pass
 }
 
 #[cfg(feature = "thmc-coupled")]

@@ -168,26 +168,31 @@ pub const HYDRATION_T_BOOST_PER_K: f32 = 0.02_f32;
 pub const HYDRATION_EXOTHERMIC_K_PER_ALPHA_RATE: f32 = 5.0_f32;
 
 /// Thermal plan: nodal temperature (and optional channels). Shape `[B, N, F_T]`.
+#[derive(Clone, Debug)]
 pub struct ThermalPlan<B: Backend> {
     pub temperature: Tensor<B, 3>,
 }
 
 /// Hydrologic plan: humidity / pore-fluid proxy. Shape `[B, N, F_h]`.
+#[derive(Clone, Debug)]
 pub struct HydrologicPlan<B: Backend> {
     pub humidity: Tensor<B, 3>,
 }
 
 /// Mechanical plan: displacement field. Shape `[B, N, 3]`.
+#[derive(Clone, Debug)]
 pub struct MechanicalPlan<B: Backend> {
     pub displacement: Tensor<B, 3>,
 }
 
 /// Chemical / hydration kinetics plan. Shape `[B, N, F_α]`.
+#[derive(Clone, Debug)]
 pub struct ChemicalPlan<B: Backend> {
     pub hydration_alpha: Tensor<B, 3>,
 }
 
 /// Coupled thermo-hydro-mechanical-chemical state: one tensor bundle per physics plan plus fracture and clock.
+#[derive(Clone, Debug)]
 pub struct ThmcState<B: Backend> {
     pub thermal: ThermalPlan<B>,
     pub hydro: HydrologicPlan<B>,
@@ -222,6 +227,12 @@ pub struct ThmcSolver {
     /// **Requires:** `batch == 1`, `[N,3]` SI `node_positions`, compatible `displacement_bc_mask`,
     /// stacked DOFs \(\le 64\), and **`drying_last_node_evaporation_k == 0`** (pure implicit diffusion \(R_h\)).
     /// Mutually exclusive with [`Self::implicit_t_alpha_newton`]. Default **`None`**.
+    ///
+    /// [`ThmcMonolithicNewtonConfig::tol`] /
+    /// [`ThmcMonolithicNewtonConfig::relative_tol`]: optional stacked \(\|R\|_2\)
+    /// early-exit predicates wired into
+    /// [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]
+    /// (host scalar reads after each residual evaluation).
     ///
     /// Call [`Self::step`] as usual, or [`Self::step_monolithic_implicit`] to assert this branch is configured.
     pub monolithic_thmc_newton: Option<ThmcMonolithicNewtonConfig>,
@@ -402,11 +413,12 @@ impl ThmcSolver {
             let f_t = state.thermal.temperature.dims()[2];
             let f_h = state.hydro.humidity.dims()[2];
             let f_a = state.chemical.hydration_alpha.dims()[2];
-            let m_dof =
-                ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, f_t, f_h, f_a);
+            let m_dof = ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(
+                n, f_t, f_h, f_a,
+            );
             if m_dof > 64 {
                 return Err(format!(
-                    "ThmcSolver::step: monolithic_thmc_newton exceeds dense-Jacobian cap (64 DOFs), got {m_dof}"
+                    "ThmcSolver::step: monolithic_thmc_newton stacked DOFs > 64 (dense Jacobian cap is 64), got {m_dof}"
                 ));
             }
         }
@@ -548,6 +560,8 @@ impl ThmcSolver {
                     mc.iterations,
                     mc.damping,
                     mc.fd_eps,
+                    mc.stacked_residual_l2_tolerance,
+                    mc.stacked_residual_relative_to_initial,
                 )?;
 
                 state.thermal.temperature = updated.thermal.temperature;
@@ -812,10 +826,19 @@ impl Default for ThmcImplicitTAlphaNewtonConfig {
 /// Wired from [`ThmcSolver::step`] when [`ThmcSolver::monolithic_thmc_newton`] is `Some` (requires `thmc-coupled`).
 #[derive(Clone, Debug, PartialEq)]
 pub struct ThmcMonolithicNewtonConfig {
+    /// Maximum damped Newton iterations on the stacked residual (each step rebuilds the dense FD Jacobian).
+    ///
     /// Must be **≥ 2** (matches the residual helper contract).
     pub iterations: usize,
     pub damping: f32,
     pub fd_eps: f32,
+    /// Stacked \(\|R\|_2\) **absolute** early exit: when **`> 0`**, require \(\|R\|_2\) **strictly below**
+    /// this value whenever this predicate is active (together with any active [`stacked_residual_relative_to_initial`](Self::stacked_residual_relative_to_initial)).
+    pub stacked_residual_l2_tolerance: f32,
+    /// Optional stacked \(\|R\|_2\) **relative** gate on the initial \(\|R_0\|_2\): when **`Some(k)`** with
+    /// **`k > 0`**, also require \(\|R\|_2 < k\cdot\max(\|R_0\|_2,\varepsilon)\). Every **enabled** tolerance
+    /// predicate must hold before early exit.
+    pub stacked_residual_relative_to_initial: Option<f32>,
 }
 
 impl Default for ThmcMonolithicNewtonConfig {
@@ -824,6 +847,8 @@ impl Default for ThmcMonolithicNewtonConfig {
             iterations: 4_usize,
             damping: 1.0_f32,
             fd_eps: 1.0e-5_f32,
+            stacked_residual_l2_tolerance: 0.0_f32,
+            stacked_residual_relative_to_initial: None,
         }
     }
 }

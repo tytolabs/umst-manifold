@@ -25,7 +25,8 @@
 // `#[cfg(feature = "...")]` for it — opt in at runtime via `pnp_implicit_newton_chain` +
 // `solve_pnp_step_dispatch` (production path; falls back to explicit Picard if the chain helper
 // returns `None`). Direct `try_solve_pnp_backward_euler_newton_chain` remains for unit tests in
-// `electrochemistry.rs` and callers who bypass dispatch.
+// `electrochemistry.rs` and callers who bypass dispatch. Full nonlinear SG (`linearize_sg_fickian: false`)
+// uses a **node-major band** FD Jacobian + **band LU** on the host chain kernel (no dense \((3N)^2\) buffer).
 
 use approx::assert_relative_eq;
 use burn::tensor::{Data, Int, Shape, Tensor};
@@ -343,6 +344,11 @@ fn sg_flux_drift_scales_with_mesh_spacing_inverse() {
 // λ_D ∝ 1/√c₀ scaling is deferred for a dedicated harness. The `pnp_screening_phi_decays_toward_bulk_smoke`
 // test still asserts qualitative screening under explicit Picard `solve_pnp_step`.
 
+/// Implicit Newton with **full SG** (`linearize_sg_fickian: false`) for dispatch smokes such as
+/// [`debye_implicit_dispatch_short_horizon_smoke`]. The host chain kernel assembles a **node-major band**
+/// finite-difference Jacobian and solves the Newton step via **dense expand + elimination** (see
+/// `electrochemistry` rustdoc). The long-horizon
+/// **`λ_D`** gates use [`debye_implicit_newton_linearized_sg_for_lambda_d_gate`] instead.
 fn debye_implicit_newton_context() -> NewtonPnpContext {
     NewtonPnpContext {
         max_newton_iters: 20,
@@ -351,7 +357,122 @@ fn debye_implicit_newton_context() -> NewtonPnpContext {
         fd_step: 1e-7,
         max_chain_nodes: 512,
         linearize_sg_fickian: false,
+        full_sg_frozen_jacobian_inner_iters: 1,
     }
+}
+
+/// One-step smoke: full nonlinear SG implicit Newton (`linearize_sg_fickian: false`) uses the host
+/// **band Jacobian + band LU** path (optional [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] for
+/// bounded inners); residual L2 after solve stays small (same API as dispatch smokes).
+#[test]
+fn full_sg_implicit_newton_chain_backward_euler_residual_smoke() {
+    let dev = device();
+    let n = 11usize;
+    let edges = chain_edges(n);
+    let mut c_flat = vec![0.0_f32; n * 2];
+    for i in 0..n {
+        let x = i as f32 / (n - 1) as f32;
+        c_flat[i * 2] = 1.0 + 0.02 * x;
+        c_flat[i * 2 + 1] = 1.0 - 0.02 * x;
+    }
+    let c_n = Tensor::<B, 3>::from_data(Data::new(c_flat, Shape::new([1, n, 2])), &dev);
+    let mut ph = vec![0.0_f32; n];
+    ph[0] = 0.015;
+    ph[n - 1] = 0.0;
+    let phi_n = Tensor::<B, 3>::from_data(Data::new(ph, Shape::new([1, n, 1])), &dev);
+    let eps = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let d = Tensor::<B, 3>::full([1, n, 2], 0.04_f32, &dev);
+    let solver = ElectroChemicalSolver {
+        faraday_const: 1.0_f32,
+        gas_const: 1.0e9_f32,
+        mesh_spacing: 1.0_f32,
+        ..Default::default()
+    };
+    let newton = NewtonPnpContext {
+        max_newton_iters: 60,
+        residual_tol_l2: 1e-9,
+        damping: 1.0,
+        fd_step: 1e-6,
+        max_chain_nodes: 128,
+        linearize_sg_fickian: false,
+        full_sg_frozen_jacobian_inner_iters: 1,
+    };
+    let dt = 1e-7_f32;
+    let out = solver.try_solve_pnp_backward_euler_newton_chain(
+        &newton,
+        dt,
+        phi_n.clone(),
+        c_n.clone(),
+        edges.clone(),
+        eps.clone(),
+        d.clone(),
+    );
+    let (phi_t, c_t) = out.expect("full-SG implicit Newton should succeed on small chain");
+    let res = pnp_backward_euler_residual_l2_chain_host_f64(
+        &solver, &newton, dt, &phi_t, &c_t, &c_n, &edges, &eps, &d,
+    )
+    .expect("residual probe");
+    assert!(
+        res < 2e-6_f64,
+        "expected small ‖R‖₂ after full-SG Newton, got {res:.3e}"
+    );
+}
+
+/// Dispatch smoke: full SG implicit Newton with **frozen Jacobian inner iterations** (`>1`) stays finite
+/// and keeps ‖R‖₂ small on the same small chain as
+/// [`full_sg_implicit_newton_chain_backward_euler_residual_smoke`].
+#[test]
+fn full_sg_implicit_newton_frozen_inner_iters_residual_smoke() {
+    let dev = device();
+    let n = 11usize;
+    let edges = chain_edges(n);
+    let mut c_flat = vec![0.0_f32; n * 2];
+    for i in 0..n {
+        let x = i as f32 / (n - 1) as f32;
+        c_flat[i * 2] = 1.0 + 0.02 * x;
+        c_flat[i * 2 + 1] = 1.0 - 0.02 * x;
+    }
+    let c_n = Tensor::<B, 3>::from_data(Data::new(c_flat, Shape::new([1, n, 2])), &dev);
+    let mut ph = vec![0.0_f32; n];
+    ph[0] = 0.015;
+    ph[n - 1] = 0.0;
+    let phi_n = Tensor::<B, 3>::from_data(Data::new(ph, Shape::new([1, n, 1])), &dev);
+    let eps = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let d = Tensor::<B, 3>::full([1, n, 2], 0.04_f32, &dev);
+    let solver = ElectroChemicalSolver {
+        faraday_const: 1.0_f32,
+        gas_const: 1.0e9_f32,
+        mesh_spacing: 1.0_f32,
+        ..Default::default()
+    };
+    let newton = NewtonPnpContext {
+        max_newton_iters: 40,
+        residual_tol_l2: 1e-9,
+        damping: 1.0,
+        fd_step: 1e-6,
+        max_chain_nodes: 128,
+        linearize_sg_fickian: false,
+        full_sg_frozen_jacobian_inner_iters: 4,
+    };
+    let dt = 1e-7_f32;
+    let out = solver.try_solve_pnp_backward_euler_newton_chain(
+        &newton,
+        dt,
+        phi_n.clone(),
+        c_n.clone(),
+        edges.clone(),
+        eps.clone(),
+        d.clone(),
+    );
+    let (phi_t, c_t) = out.expect("full-SG frozen-inner Newton should succeed");
+    let res = pnp_backward_euler_residual_l2_chain_host_f64(
+        &solver, &newton, dt, &phi_t, &c_t, &c_n, &edges, &eps, &d,
+    )
+    .expect("residual probe");
+    assert!(
+        res < 2e-4_f64,
+        "expected small ‖R‖₂ after frozen-inner full-SG Newton, got {res:.3e}"
+    );
 }
 
 /// Implicit Newton with **Fickian-linearised** SG flux inside the BE residual — matches the Debye–Hückel
@@ -367,6 +488,7 @@ fn debye_implicit_newton_linearized_sg_for_lambda_d_gate() -> NewtonPnpContext {
         fd_step: 1e-7,
         max_chain_nodes: 512,
         linearize_sg_fickian: true,
+        full_sg_frozen_jacobian_inner_iters: 1,
     }
 }
 
@@ -874,6 +996,7 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         fd_step: 1e-7,
         max_chain_nodes: 32,
         linearize_sg_fickian: true,
+        full_sg_frozen_jacobian_inner_iters: 1,
     };
     let solver_dispatch_small = ElectroChemicalSolver {
         faraday_const: 1.0_f32,

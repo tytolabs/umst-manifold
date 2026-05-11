@@ -16,12 +16,13 @@ use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::physics::laplacian::TopologicalLaplacian;
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::solvers::{
-    full_hydration_alpha_rate_tensor, mc2010_style_notional_shrink_strain, shrink_strain_from_saturation_loss,
-    shrink_strain_from_saturation_loss_tensor, spectral_tensile_psi_plus_from_strain,
-    strain_tensor_for_fracture_from_manifold, ChemicalPlan, HydrologicPlan, MechanicalPlan,
-    ThermalPlan, ThmcHydrationKinetics, ThmcImplicitEulerThermalHumidityHydrationResidual,
-    ThmcImplicitEulerThermalHydrationResidual, ThmcImplicitTAlphaNewtonConfig,
-    ThmcMonolithicImplicitUnknownLayout, ThmcMonolithicNewtonConfig, ThmcSolver, ThmcState,
+    full_hydration_alpha_rate_tensor, mc2010_style_notional_shrink_strain,
+    shrink_strain_from_saturation_loss, shrink_strain_from_saturation_loss_tensor,
+    spectral_tensile_psi_plus_from_strain, strain_tensor_for_fracture_from_manifold, ChemicalPlan,
+    HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics,
+    ThmcImplicitEulerThermalHumidityHydrationResidual, ThmcImplicitEulerThermalHydrationResidual,
+    ThmcImplicitTAlphaNewtonConfig, ThmcMonolithicImplicitUnknownLayout,
+    ThmcMonolithicNewtonConfig, ThmcSolver, ThmcState,
 };
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
@@ -1420,6 +1421,8 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
             2_usize,
             1.0_f32,
             1.0e-5_f32,
+            0.0_f32,
+            None,
         )
         .expect("two damped Newton iterations on (T,h,α,u) with quasi-static R_u");
     assert_eq!(norms.len(), 3);
@@ -1430,6 +1433,306 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
             "stacked ||R|| should drop: {} -> {}",
             norms[k],
             norms[k + 1]
+        );
+    }
+}
+
+/// Stacked \(\|R\|_2\) **`tol`** on [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]
+/// shortens the recorded norm trail once \(\|R\|_2\) drops below **`tol`** (same 2-node harness as
+/// [`thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes`]).
+#[test]
+fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
+    let d = dev();
+    let n = 2usize;
+    let manifold = chain_manifold(n);
+    let coords = manifold
+        .node_positions
+        .as_ref()
+        .expect("chain_manifold SI coords")
+        .clone();
+    let edges_b1 = manifold.edges_b1.clone();
+    let batch = 1usize;
+    let kinetics = ThmcHydrationKinetics::default();
+
+    let mut bm_data = vec![1.0_f32; n * 3];
+    bm_data[0] = 0.0_f32;
+    for i in 0..n {
+        bm_data[i * 3 + 1] = 0.0_f32;
+        bm_data[i * 3 + 2] = 0.0_f32;
+    }
+    let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([batch, n, 3])), &d);
+
+    let mut bf_data = vec![0.0_f32; n * batch * 3];
+    bf_data[(n - 1) * 3] = 2_000.0_f32;
+    let body_force = Tensor::from_data(Data::new(bf_data, Shape::new([batch, n, 3])), &d);
+
+    let dt = 0.02_f32;
+    let t_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let h_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.50_f32, 0.62_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let alpha_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_t = Tensor::<B, 3>::from_data(
+        Data::new(vec![299.5_f32, 305.0_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_h = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.51_f32, 0.63_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_alpha = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.33_f32, 0.56_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
+    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+        dt,
+        temperature_n: t_n,
+        humidity_n: h_n,
+        alpha_n,
+        displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        mechanics_placeholder_mass: 1.0_f32,
+        ru_shrinkage_water_cement_ratio: None,
+        edges_b1,
+        damage_m: damage_m.clone(),
+        kinetics,
+    };
+    let trial = ThmcState {
+        thermal: ThermalPlan {
+            temperature: trial_t,
+        },
+        hydro: HydrologicPlan { humidity: trial_h },
+        mechanical: MechanicalPlan {
+            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: trial_alpha,
+        },
+        damage: damage_m,
+        time: 0.0_f32,
+    };
+
+    let cross_section_area = 0.01_f32;
+    let max_iters = 5_usize;
+    let (_, norms_full) = assembler
+        .damped_newton_iterations_with_quasi_static_r_u(
+            &trial,
+            &coords,
+            &boundary_mask,
+            &body_force,
+            cross_section_area,
+            max_iters,
+            1.0_f32,
+            1.0e-5_f32,
+            0.0_f32,
+            None,
+        )
+        .expect("full fixed-count monolithic Newton");
+    assert_eq!(
+        norms_full.len(),
+        max_iters + 1,
+        "expected one norm head + one per Newton step"
+    );
+
+    let tol_exit = norms_full[2] + 0.05_f32 * (norms_full[1] - norms_full[2]).max(1e-30_f32);
+    assert!(
+        tol_exit > norms_full[2] && tol_exit < norms_full[1],
+        "sanity: tol between ||R|| after one and two Newton steps (got tol_exit={tol_exit}, n1={}, n2={})",
+        norms_full[1],
+        norms_full[2]
+    );
+
+    let (_, norms_early) = assembler
+        .damped_newton_iterations_with_quasi_static_r_u(
+            &trial,
+            &coords,
+            &boundary_mask,
+            &body_force,
+            cross_section_area,
+            max_iters,
+            1.0_f32,
+            1.0e-5_f32,
+            tol_exit,
+            None,
+        )
+        .expect("tol-triggered early exit");
+    assert!(
+        norms_early.len() < norms_full.len(),
+        "expected fewer norm samples when tol exits early: early={:?} full_len={}",
+        norms_early,
+        norms_full.len()
+    );
+    assert!(
+        *norms_early.last().expect("non-empty") < tol_exit,
+        "final ||R|| should sit below tol_exit"
+    );
+    for k in 0..norms_early.len().saturating_sub(1) {
+        assert!(
+            (norms_early[k + 1] - norms_full[k + 1]).abs()
+                < 1e-5_f32 * norms_full[k + 1].max(1.0_f32),
+            "prefix norms should match full run: k={k} early={} full={}",
+            norms_early[k + 1],
+            norms_full[k + 1]
+        );
+    }
+}
+
+/// Relative stacked \(\|R\|_2\) gate \(\|R\|_2 < k\|R_0\|_2\) with absolute tolerance disabled on
+/// [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]
+/// (same 2-node harness as [`thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail`]).
+#[test]
+fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() {
+    let d = dev();
+    let n = 2usize;
+    let manifold = chain_manifold(n);
+    let coords = manifold
+        .node_positions
+        .as_ref()
+        .expect("chain_manifold SI coords")
+        .clone();
+    let edges_b1 = manifold.edges_b1.clone();
+    let batch = 1usize;
+    let kinetics = ThmcHydrationKinetics::default();
+
+    let mut bm_data = vec![1.0_f32; n * 3];
+    bm_data[0] = 0.0_f32;
+    for i in 0..n {
+        bm_data[i * 3 + 1] = 0.0_f32;
+        bm_data[i * 3 + 2] = 0.0_f32;
+    }
+    let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([batch, n, 3])), &d);
+
+    let mut bf_data = vec![0.0_f32; n * batch * 3];
+    bf_data[(n - 1) * 3] = 2_000.0_f32;
+    let body_force = Tensor::from_data(Data::new(bf_data, Shape::new([batch, n, 3])), &d);
+
+    let dt = 0.02_f32;
+    let t_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let h_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.50_f32, 0.62_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let alpha_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_t = Tensor::<B, 3>::from_data(
+        Data::new(vec![299.5_f32, 305.0_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_h = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.51_f32, 0.63_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_alpha = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.33_f32, 0.56_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
+    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+        dt,
+        temperature_n: t_n,
+        humidity_n: h_n,
+        alpha_n,
+        displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        mechanics_placeholder_mass: 1.0_f32,
+        ru_shrinkage_water_cement_ratio: None,
+        edges_b1,
+        damage_m: damage_m.clone(),
+        kinetics,
+    };
+    let trial = ThmcState {
+        thermal: ThermalPlan {
+            temperature: trial_t,
+        },
+        hydro: HydrologicPlan { humidity: trial_h },
+        mechanical: MechanicalPlan {
+            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: trial_alpha,
+        },
+        damage: damage_m,
+        time: 0.0_f32,
+    };
+
+    let cross_section_area = 0.01_f32;
+    let max_iters = 5_usize;
+    let (_, norms_full) = assembler
+        .damped_newton_iterations_with_quasi_static_r_u(
+            &trial,
+            &coords,
+            &boundary_mask,
+            &body_force,
+            cross_section_area,
+            max_iters,
+            1.0_f32,
+            1.0e-5_f32,
+            0.0_f32,
+            None,
+        )
+        .expect("full fixed-count monolithic Newton");
+    assert_eq!(
+        norms_full.len(),
+        max_iters + 1,
+        "expected one norm head + one per Newton step"
+    );
+    let r0 = norms_full[0];
+    let n1 = norms_full[1];
+    let n2 = norms_full[2];
+    assert!(r0 > 1e-8_f32 && n2 < n1 && n1 < r0, "expected strictly decreasing ||R|| trail");
+    let k_rel = 0.5_f32 * (n2 / r0 + n1 / r0);
+    assert!(
+        n2 < k_rel * r0 && n1 >= k_rel * r0,
+        "sanity: relative gate exits after two Newton steps (r0={r0}, n1={n1}, n2={n2}, k_rel={k_rel})"
+    );
+
+    let (_, norms_rel) = assembler
+        .damped_newton_iterations_with_quasi_static_r_u(
+            &trial,
+            &coords,
+            &boundary_mask,
+            &body_force,
+            cross_section_area,
+            max_iters,
+            1.0_f32,
+            1.0e-5_f32,
+            0.0_f32,
+            Some(k_rel),
+        )
+        .expect("relative-tol-triggered early exit");
+    assert!(
+        norms_rel.len() < norms_full.len(),
+        "expected fewer norm samples when relative tol exits early: rel={:?} full_len={}",
+        norms_rel,
+        norms_full.len()
+    );
+    assert_eq!(
+        norms_rel.len(),
+        3,
+        "expected head + two Newton steps before relative exit"
+    );
+    assert!(
+        *norms_rel.last().expect("non-empty") < k_rel * r0,
+        "final ||R|| should sit below k_rel * ||R0||"
+    );
+    for k in 0..norms_rel.len().saturating_sub(1) {
+        assert!(
+            (norms_rel[k + 1] - norms_full[k + 1]).abs()
+                < 1e-5_f32 * norms_full[k + 1].max(1.0_f32),
+            "prefix norms should match full run: k={k} rel={} full={}",
+            norms_rel[k + 1],
+            norms_full[k + 1]
         );
     }
 }
@@ -1881,6 +2184,8 @@ fn thmc_step_monolithic_newton_errors_when_both_implicit_flags_set() {
             iterations: 4_usize,
             damping: 1.0_f32,
             fd_eps: 1.0e-5_f32,
+            stacked_residual_l2_tolerance: 0.0_f32,
+            stacked_residual_relative_to_initial: None,
         }),
         drying_last_node_evaporation_k: 0.0_f32,
         ..Default::default()
@@ -1966,6 +2271,8 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         iterations: 4_usize,
         damping: 1.0_f32,
         fd_eps: 1.0e-5_f32,
+        stacked_residual_l2_tolerance: 0.0_f32,
+        stacked_residual_relative_to_initial: None,
     };
 
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
@@ -2018,16 +2325,10 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
     let h_old = state0.hydro.humidity.clone();
     let alpha_n = state0.chemical.hydration_alpha.clone();
     let damage_m = damage.clone();
-    let lap_t = TopologicalLaplacian::scalar_laplacian(
-        t_old.clone(),
-        edges_b1.clone(),
-        damage_m.clone(),
-    );
-    let lap_h = TopologicalLaplacian::scalar_laplacian(
-        h_old.clone(),
-        edges_b1.clone(),
-        damage_m.clone(),
-    );
+    let lap_t =
+        TopologicalLaplacian::scalar_laplacian(t_old.clone(), edges_b1.clone(), damage_m.clone());
+    let lap_h =
+        TopologicalLaplacian::scalar_laplacian(h_old.clone(), edges_b1.clone(), damage_m.clone());
     let dt_lap_t = lap_t.mul_scalar(dt);
     let dt_lap_h = lap_h.mul_scalar(dt);
     let f_alpha_ch = alpha_n.dims()[2];
@@ -2056,9 +2357,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         [1, nn, 3] if nn == n => mask.clone().slice([0..1, 0..n, 0..3]).reshape([nn, 3]),
         _ => panic!("unexpected displacement_bc_mask dims {:?}", mask.dims()),
     };
-    let bm = bm_core
-        .unsqueeze_dim::<3>(0)
-        .expand::<3, _>([batch, n, 3]);
+    let bm = bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3]);
     let bf = Tensor::<B, 3>::zeros([batch, n, 3], &device);
     let inner_cfg = MechanicsInnerLoopConfig::default();
     let cross_section_area = 0.01_f32;
@@ -2074,7 +2373,8 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         .slice([0..batch, 0..n, 0..1])
         .clamp(1e-6_f32, 1.0_f32);
     let stiffness_e = alpha_bn1_pred.mul_scalar(kinetics.stiffness_e_scale_pa);
-    let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &device).add_scalar(kinetics.stiffness_nu);
+    let stiffness_nu =
+        Tensor::<B, 3>::zeros([batch, n, 1], &device).add_scalar(kinetics.stiffness_nu);
     let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
     let (u_predict, _) = VectorMechanicsSolver::solve_equilibrium(
         state0.mechanical.displacement.clone(),
@@ -2127,6 +2427,8 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
             mc.iterations,
             mc.damping,
             mc.fd_eps,
+            mc.stacked_residual_l2_tolerance,
+            mc.stacked_residual_relative_to_initial,
         )
         .expect("standalone monolithic Newton");
 
@@ -2138,7 +2440,14 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         .into_data()
         .value
         .iter()
-        .zip(updated_standalone.thermal.temperature.into_data().value.iter())
+        .zip(
+            updated_standalone
+                .thermal
+                .temperature
+                .into_data()
+                .value
+                .iter(),
+        )
     {
         assert!((a - b).abs() < eps, "T mismatch: {a} vs {b}");
     }
@@ -2189,6 +2498,119 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
     {
         assert!((a - b).abs() < eps, "u mismatch: {a} vs {b}");
     }
+
+    // [`ThmcMonolithicNewtonConfig::tol`] is forwarded into the dense helper with the same
+    // predictor as `step_experimental` (keep aligned with [`thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail`]).
+    let max_probe_iters = 5_usize;
+    let (_, norms_full) = assembler
+        .damped_newton_iterations_with_quasi_static_r_u(
+            &trial,
+            &coords_n3,
+            &bm,
+            &bf,
+            cross_section_area,
+            max_probe_iters,
+            mc.damping,
+            mc.fd_eps,
+            0.0_f32,
+            None,
+        )
+        .expect("probe monolithic Newton norm trail");
+    assert_eq!(norms_full.len(), max_probe_iters + 1);
+    let tol_exit = norms_full[2] + 0.05_f32 * (norms_full[1] - norms_full[2]).max(1e-30_f32);
+    assert!(
+        tol_exit > norms_full[2] && tol_exit < norms_full[1],
+        "sanity: tol between ||R|| after one and two Newton steps (tol_exit={tol_exit}, n1={}, n2={})",
+        norms_full[1],
+        norms_full[2]
+    );
+    let mc_early = ThmcMonolithicNewtonConfig {
+        iterations: max_probe_iters,
+        damping: mc.damping,
+        fd_eps: mc.fd_eps,
+        stacked_residual_l2_tolerance: tol_exit,
+        stacked_residual_relative_to_initial: None,
+    };
+    let solver_early = ThmcSolver {
+        monolithic_thmc_newton: Some(mc_early.clone()),
+        ..solver.clone()
+    };
+    let s_early = solver_early
+        .step(&Stub, clone_thmc_state(&state0), &manifold)
+        .expect("monolithic step with tol early exit");
+    let (updated_early, _) = assembler
+        .damped_newton_iterations_with_quasi_static_r_u(
+            &trial,
+            &coords_n3,
+            &bm,
+            &bf,
+            cross_section_area,
+            mc_early.iterations,
+            mc_early.damping,
+            mc_early.fd_eps,
+            mc_early.stacked_residual_l2_tolerance,
+            mc_early.stacked_residual_relative_to_initial,
+        )
+        .expect("standalone monolithic Newton with tol");
+
+    for (a, b) in s_early
+        .thermal
+        .temperature
+        .clone()
+        .into_data()
+        .value
+        .iter()
+        .zip(updated_early.thermal.temperature.into_data().value.iter())
+    {
+        assert!((a - b).abs() < eps, "early-exit T mismatch: {a} vs {b}");
+    }
+    for (a, b) in s_early
+        .hydro
+        .humidity
+        .clone()
+        .into_data()
+        .value
+        .iter()
+        .zip(updated_early.hydro.humidity.into_data().value.iter())
+    {
+        assert!((a - b).abs() < eps, "early-exit h mismatch: {a} vs {b}");
+    }
+    for (a, b) in s_early
+        .chemical
+        .hydration_alpha
+        .clone()
+        .into_data()
+        .value
+        .iter()
+        .zip(
+            updated_early
+                .chemical
+                .hydration_alpha
+                .into_data()
+                .value
+                .iter(),
+        )
+    {
+        assert!((a - b).abs() < eps, "early-exit alpha mismatch: {a} vs {b}");
+    }
+    for (a, b) in s_early
+        .mechanical
+        .displacement
+        .clone()
+        .into_data()
+        .value
+        .iter()
+        .zip(
+            updated_early
+                .mechanical
+                .displacement
+                .into_data()
+                .value
+                .iter(),
+        )
+    {
+        assert!((a - b).abs() < eps, "early-exit u mismatch: {a} vs {b}");
+    }
 }
 
 /// **Phase 5–6 integration:** on the same 2-node SI harness as
@@ -2222,6 +2644,8 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
         iterations: 4_usize,
         damping: 1.0_f32,
         fd_eps: 1.0e-5_f32,
+        stacked_residual_l2_tolerance: 0.0_f32,
+        stacked_residual_relative_to_initial: None,
     };
 
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
