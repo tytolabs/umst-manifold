@@ -56,7 +56,8 @@ fn kirchhoff_centre_w_ssss(q: f32, l: f32, h: f32, e: f32, nu: f32) -> f32 {
 /// **thin Kirchhoff square plate with all edges simply supported** (SSSS) — a different boundary-value
 /// problem. Residual-locked Q1 bending still undershoots \(w_K\) by \(\mathcal O(10^{-3})\) at
 /// \(L/h\!=\!20\); the band guards operator / load / PCG regressions, **not** a within-5% thin-plate
-/// claim (see v0.4 follow-up §R2.1).
+/// claim. Follow-up §R2.1 tracks the **planned** default-CI Kirchhoff **accuracy** gate once BC/SRI
+/// work aligns — this ratio band is **not** that milestone.
 const PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN: f32 = 1.10e-4;
 const PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX: f32 = 1.60e-4;
 
@@ -515,6 +516,7 @@ fn plate_centre_deflection_kirchhoff_ratio_q1_hex_band_coarse_regression() {
 /// improving the masked \(\|f-Ku\|\) check below.
 #[test]
 fn plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band() {
+    // w/w_K band: BC mismatch vs SSSS reference + shear locking (see module rustdoc); not §R2.1 closure.
     let nx = 32;
     let ny = 32;
     let nz = 4;
