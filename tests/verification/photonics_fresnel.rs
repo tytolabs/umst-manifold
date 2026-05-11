@@ -6,6 +6,12 @@
 //! **1-D uniform-chain** regressions only (including a piecewise \(\varepsilon_r\) profile and
 //! **`curl_curl_y_mode_matches_scalar_helmholtz_xy_embedded_chain`**: same path graph with
 //! **non-collinear** \((x,y,z)\) SI coordinates — still **not** a simplicial \(d_1\) patch solve).
+//! **Verification §6 increment:** [`umst_manifold::physics::solvers::photonics::dec_maxwell_assembly`]
+//! re-exports [`primal_d1_edge_flux_to_faces`](umst_manifold::physics::dec_primal::primal_d1_edge_flux_to_faces)
+//! on a **quad-split** `faces_b2` patch (same topology as `tests/dec_identities.rs`); plus
+//! **`solve_maxwell_curl_curl`** pass-through when the graph is **not** a uniform x-chain; and
+//! [`apply_dec_te_curl_curl_chain_operator`](umst_manifold::physics::solvers::photonics::apply_dec_te_curl_curl_chain_operator)
+//! vs hand stencil with **piecewise** \(\varepsilon_r\).
 //!
 //! Specification: `composer_prompts/v0.4_solver_completion_no_namesakes.md` (Track H).
 
@@ -15,8 +21,10 @@
 use approx::assert_relative_eq;
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
+use umst_manifold::physics::dec_primal::primal_scalar_edge_increment;
 use umst_manifold::physics::solvers::PhotonicsHelmholtzSolver;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
+use umst_manifold::physics::topology::EdgeTopology;
 
 type B = NdArray<f32>;
 
@@ -95,6 +103,7 @@ fn coords_line_x(n: usize, h: f32) -> Tensor<B, 2> {
 /// Same index-wise \(x = i h\) as [`coords_line_x`], with small smooth **y, z** so the chain is not
 /// collinear in \(\mathbb{R}^3\) while remaining **x-monotone** for the uniform-chain gate inside
 /// [`PhotonicsSolver::solve_maxwell_curl_curl`](umst_manifold::physics::solvers::PhotonicsSolver::solve_maxwell_curl_curl).
+#[allow(dead_code)] // harness reserved for future non-collinear chain regressions
 fn coords_xy_embedded_chain(n: usize, h: f32) -> Tensor<B, 2> {
     let dev = device();
     let mut v = Vec::with_capacity(n * 3);
@@ -107,6 +116,38 @@ fn coords_xy_embedded_chain(n: usize, h: f32) -> Tensor<B, 2> {
         v.push(1e-2_f32 * t.cos());
     }
     Tensor::from_data(Data::new(v, Shape::new([n, 3])), &dev)
+}
+
+/// Quad `0–1–2–3` with diagonal **`0→2`** (five edges, two CCW triangles) — same incidence as
+/// `dec_curl_d1_annihilates_gradient_quad_split_two_faces_burn` in `tests/dec_identities.rs`.
+fn quad_split_patch_tensors() -> (
+    Tensor<B, 2, Int>,
+    Tensor<B, 2, Int>,
+    EdgeTopology<B>,
+) {
+    let dev = device();
+    let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
+        Data::new(
+            vec![
+                0i64, 1, 2, 3, 0, //
+                1, 2, 3, 0, 2,
+            ],
+            Shape::new([2, 5]),
+        ),
+        &dev,
+    );
+    let faces_b2: Tensor<B, 2, Int> = Tensor::from_data(
+        Data::new(
+            vec![
+                0i64, 1, 4, 4, 2, 3, //
+                1, 1, -1, 1, 1, 1,
+            ],
+            Shape::new([2, 6]),
+        ),
+        &dev,
+    );
+    let topo = EdgeTopology::new(edges_b1.clone());
+    (edges_b1, faces_b2, topo)
 }
 
 fn cis32(theta: f32) -> C {
@@ -560,6 +601,148 @@ fn dec_te_primal_tensor_matches_chain_stencil() {
     let eps: Vec<C> = vec![C { re: 1.0, im: 0.0 }; n];
     let e_c: Vec<C> = eyv.iter().map(|&re| C { re, im: 0.0 }).collect();
     let stencil = apply_te_helmholtz_chain(n, h, k0, &eps, &e_c);
+
+    let got_v = got.into_data().value;
+    let mut mx = 0.0_f32;
+    for i in 0..n {
+        mx = mx.max((got_v[i] - stencil[i].re).abs());
+        mx = mx.max(stencil[i].im.abs());
+    }
+    assert_relative_eq!(mx, 0.0_f32, epsilon = 5e-5_f32, max_relative = 1.0);
+}
+
+
+/// [`primal_d1_edge_flux_to_faces`] imported through [`umst_manifold::physics::solvers::photonics::dec_maxwell_assembly`]
+/// annihilates \(d_0\omega\) on the quad-split patch (shared-edge `faces_b2` COO).
+#[test]
+fn dec_maxwell_assembly_quad_split_d1_annihilates_gradient_burn() {
+    use umst_manifold::physics::solvers::photonics::dec_maxwell_assembly::primal_d1_edge_flux_to_faces;
+
+    let dev = device();
+    let (_edges_b1, faces_b2, topo) = quad_split_patch_tensors();
+    let omega = [0.9_f32, -1.4, 2.2, 0.15];
+    let nodal = Tensor::from_data(
+        Data::new(
+            vec![omega[0], omega[1], omega[2], omega[3]],
+            Shape::new([1, 4, 1]),
+        ),
+        &dev,
+    );
+    let grad_on_edges = primal_scalar_edge_increment(nodal, &topo);
+    let d1_grad = primal_d1_edge_flux_to_faces(grad_on_edges, faces_b2, &[(0, 3), (3, 6)]);
+    let v: Vec<f32> = d1_grad.into_data().value;
+    assert_eq!(v.len(), 2);
+    assert_relative_eq!(v[0], 0.0_f32, epsilon = 1e-4_f32, max_relative = 1.0);
+    assert_relative_eq!(v[1], 0.0_f32, epsilon = 1e-4_f32, max_relative = 1.0);
+}
+
+/// Non-chain **2D patch** topology: [`PhotonicsSolver::solve_maxwell_curl_curl`] returns the
+/// incoming `e_field` unchanged (documented pass-through until vector curl–curl ships).
+#[test]
+fn solve_maxwell_curl_curl_pass_through_quad_split_not_chain() {
+    use umst_manifold::physics::solvers::PhotonicsSolver;
+
+    let dev = device();
+    let (edges_b1, _, _) = quad_split_patch_tensors();
+    let coords = Tensor::from_data(
+        Data::new(
+            vec![
+                0.0_f32, 0.0, 0.0, //
+                1.0, 0.0, 0.0, //
+                1.0, 1.0, 0.0, //
+                0.0, 1.0, 0.0,
+            ],
+            Shape::new([4, 3]),
+        ),
+        &dev,
+    );
+    let n = 4usize;
+    let mut e0 = vec![0.0_f32; n * 3];
+    for i in 0..n {
+        e0[i * 3] = 0.1 * i as f32;
+        e0[i * 3 + 1] = -0.25 + 0.07 * i as f32;
+        e0[i * 3 + 2] = 0.33 - 0.04 * i as f32;
+    }
+    let e_field = Tensor::<B, 3>::from_data(Data::new(e0, Shape::new([1, n, 3])), &dev);
+    let eps_r = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let eps_i = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+    let mut jdat = vec![0.0_f32; n * 3];
+    jdat[2] = 0.5;
+    jdat[2 * 3 + 2] = -0.5;
+    jdat[1 * 3 + 1] = 1.0;
+    let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
+    let cg = MechanicsInnerLoopConfig::default();
+    let ps = PhotonicsSolver {
+        frequency_hz: 1e9_f32,
+    };
+    let out = ps.solve_maxwell_curl_curl(
+        e_field.clone(),
+        eps_r,
+        eps_i,
+        j,
+        edges_b1,
+        coords,
+        &cg,
+    );
+    let vi = out.into_data().value;
+    let ei = e_field.into_data().value;
+    assert_eq!(vi.len(), ei.len());
+    let mut mx = 0.0_f32;
+    for k in 0..vi.len() {
+        mx = mx.max((vi[k] - ei[k]).abs());
+    }
+    assert_relative_eq!(mx, 0.0_f32, epsilon = 1e-6_f32, max_relative = 1.0);
+}
+
+/// Same check as [`dec_te_primal_tensor_matches_chain_stencil`], with **piecewise** \(\varepsilon_r\)
+/// on nodes (harmonic means on links via [`primal_scalar_edge_increment`] / divergence path).
+#[test]
+fn dec_te_primal_piecewise_eps_matches_chain_stencil() {
+    use umst_manifold::physics::solvers::photonics::apply_dec_te_curl_curl_chain_operator;
+
+    let dev = device();
+    let n = 43usize;
+    let h = 1.8e-3_f32;
+    let edges = chain_edges(n);
+    let coords = coords_line_x(n, h);
+    let f_hz = 1.7e9_f32;
+    let omega = 2.0 * core::f32::consts::PI * f_hz;
+    let k0 = omega / 2.998e8_f32;
+
+    let mut eyv = vec![0.0_f32; n];
+    for i in 0..n {
+        eyv[i] = ((i * 11) as f32 * 0.017_f32).cos();
+    }
+    let i0 = n / 5;
+    let i1 = 4 * n / 5;
+    let mut eps_flat = vec![0.0_f32; n];
+    let mut eps_c = vec![C::zero(); n];
+    for i in 0..n {
+        let er = if i < i0 {
+            1.2_f32
+        } else if i < i1 {
+            3.8_f32
+        } else {
+            2.3_f32
+        };
+        eps_flat[i] = er;
+        eps_c[i] = C { re: er, im: 0.0 };
+    }
+
+    let ey = Tensor::<B, 3>::from_data(Data::new(eyv.clone(), Shape::new([1, n, 1])), &dev);
+    let eps_r = Tensor::<B, 3>::from_data(Data::new(eps_flat, Shape::new([1, n, 1])), &dev);
+
+    let got = apply_dec_te_curl_curl_chain_operator(
+        ey.clone(),
+        eps_r,
+        edges.clone(),
+        coords.clone(),
+        f_hz,
+    )
+    .expect("uniform chain");
+
+    let e_c: Vec<C> = eyv.iter().map(|&re| C { re, im: 0.0 }).collect();
+    let stencil = apply_te_helmholtz_chain(n, h, k0, &eps_c, &e_c);
 
     let got_v = got.into_data().value;
     let mut mx = 0.0_f32;
