@@ -19,11 +19,15 @@
 //! - **\(R_u\) — mechanical:** equilibrium / momentum residual for displacement (stress divergence + body forces).
 //! - **\(R_\alpha\) — chemical / hydration:** hydration degree evolution residual (kinetics vs stored \(\alpha\)).
 //!
-//! **Monolithic Newton (Phase 5 — partial):** when [`ThmcSolver::monolithic_thmc_newton`] is `Some`,
-//! each outer pass replaces the split \((T,\alpha)\to h\to u\) sequence with dense damped Newton on the
+//! **Monolithic Newton (Phase 5 — partial, small graph only):** when [`ThmcSolver::monolithic_thmc_newton`] is `Some`,
+//! each outer pass replaces the split \((T,\alpha)\to h\to u\) sequence with **dense** damped Newton on the
 //! backward-Euler stacked unknowns including quasi-static \(R_u\)
-//! ([`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]).
-//! Krylov / large-DOF Jacobians and adaptive `dt` remain future work. Without that config, [`ThmcSolver::step`] is an
+//! ([`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]) **only
+//! while** field-major stacked DOFs \(\le\) [`crate::physics::solvers::THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] (**64**,
+//! unified post-**`3394b96`** — see [`docs/Solver-Status.md`](../../../docs/Solver-Status.md) §THMC and matrix **#8**).
+//! **No** shipped path performs dense Newton (or a dense Jacobian solve) **above** that cap. At production \(N\), the
+//! roadmap is **sparse or matrix-free Jacobians**, **Krylov–JFNK**, **AD-safe** residual-norm **‖R‖** exit criteria,
+//! and adaptive `dt` — not a larger dense stack. Without monolithic config, [`ThmcSolver::step`] is an
 //! **operator split** per outer `max_newton` pass: **(1)** advance **\(T\)** and **hydration \(\alpha\)** (explicit
 //! thermal Laplacian + exothermic coupling, or opt-in backward-Euler **\((T,\alpha)\)** damped Newton), **(2)**
 //! advance **humidity \(h\)** (topological Laplacian + optional tail drying), **(3)** quasi-static **bar \(u\)** when
@@ -74,7 +78,7 @@
 //!   **`state.mechanical.displacement`** and those coordinates (post-mechanics \(\varepsilon(\mathbf u)\)).
 //!   If positions are missing or not `[N,3]`, strain falls back to `matrix_features[.., 0, ..]` when shapes
 //!   align (`[N,F,3,3]` → `[B,N,3,3]`); otherwise zeros — same rule as
-//!   [`strain_tensor_for_fracture_from_manifold`] (public stub for cartridges / tests).
+//!   [`crate::physics::solvers::fracture_field::strain_tensor_for_fracture_from_manifold`] (public stub for cartridges / tests).
 
 #[cfg(feature = "thmc-coupled")]
 use burn::tensor::Int;
@@ -89,7 +93,8 @@ use crate::physics::laplacian::TopologicalLaplacian;
 use crate::physics::mechanics::VectorMechanicsSolver;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::fracture_field::{
-    strain_tensor_from_bar_network_displacement, PhaseFieldFractureSolver,
+    strain_tensor_for_fracture_from_manifold, strain_tensor_from_bar_network_displacement,
+    PhaseFieldFractureSolver,
 };
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc_residual::{
@@ -992,32 +997,6 @@ fn hydration_arrhenius_rate<B: Backend<FloatElem = f32>>(
         .exp()
         .mul(one_minus_a)
         .mul_scalar(k.arrhenius_prefactor_s)
-}
-
-/// **Non-embedding / cartridge stub:** strain fed to [`PhaseFieldFractureSolver::update_damage`] when
-/// [`UnifiedMaterialStateTensor::node_positions`] is missing or not `[N,3]`, matching the fracture tail of
-/// [`ThmcSolver::step`].
-///
-/// Reads `matrix_features` as `[N, F, 3, 3]` and takes channel `0`. Shape must satisfy `dims()[0] == n` and
-/// `dims()[1] >= 1`; otherwise returns zeros (still runs AT2 relaxation with zero tensile drive).
-#[cfg(feature = "thmc-coupled")]
-pub fn strain_tensor_for_fracture_from_manifold<B: Backend<FloatElem = f32>>(
-    manifold: &UnifiedMaterialStateTensor<B>,
-    batch: usize,
-    n: usize,
-    device: &B::Device,
-) -> Tensor<B, 4> {
-    let d = manifold.matrix_features.dims();
-    if d[0] == n && d[1] >= 1 {
-        manifold
-            .matrix_features
-            .clone()
-            .slice([0..n, 0..1, 0..3, 0..3])
-            .reshape([1, n, 3, 3])
-            .expand([batch, n, 3, 3])
-    } else {
-        Tensor::<B, 4>::zeros([batch, n, 3, 3], device)
-    }
 }
 
 /// Order-of-magnitude **notional** total shrinkage strain (dimensionless) aligned to CEB-FIP MC2010-style

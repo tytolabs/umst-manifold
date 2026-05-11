@@ -71,6 +71,10 @@
 //!   provider** `FnMut(&Tensor<B,3>) -> Tensor<B,4>` so call sites can inject refreshed **ε(d)**.
 //! - **Repo status (one place):** implemented vs multi-\(l_0\) Γ-limit / full staggered deferrals —
 //!   `docs/Solver-Status.md` → **DEFERRAL — Fracture** and table row `solvers::fracture_field`.
+//! - **Non-embedding / no bar strain:** [`strain_tensor_for_fracture_from_manifold`] reads
+//!   [`UnifiedMaterialStateTensor::matrix_features`] channel `0` into `[B,N,3,3]` when SI bar
+//!   kinematics are unavailable (zeros if shapes disagree). [`crate::physics::solvers::ThmcSolver::step`]
+//!   uses the same slice at its fracture tail when `node_positions` are missing or not `[N,3]`.
 //!
 //! ## `update_damage_staggered` backward compatibility
 //!
@@ -92,6 +96,9 @@ use crate::physics::mechanics::VectorMechanicsSolver;
 use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
 #[cfg(feature = "fracture-at2")]
 use crate::physics::topology::EdgeTopology;
+
+#[cfg(feature = "fracture-at2")]
+use crate::core::tensors::UnifiedMaterialStateTensor;
 
 #[cfg(feature = "fracture-at2")]
 use burn::tensor::{Data, Shape};
@@ -221,23 +228,49 @@ pub fn strain_tensor_for_fracture_after_mechanics<B: Backend<FloatElem = f32>>(
     strain_tensor_from_bar_network_displacement(u, coords_n3, edges_b1, n_nodes)
 }
 
+/// **Non-embedding / cartridge stub:** symmetric strain `[B, N, 3, 3]` fed to [`PhaseFieldFractureSolver::update_damage`]
+/// when SI `[N,3]` bar kinematics are unavailable — reads [`UnifiedMaterialStateTensor::matrix_features`]
+/// channel `0`.
+///
+/// Reads `matrix_features` as `[N, F, 3, 3]` and takes channel `0`. Shape must satisfy `dims()[0] == n` and
+/// `dims()[1] >= 1`; otherwise returns zeros (AT2 relaxation still runs with zero tensile drive).
 #[cfg(feature = "fracture-at2")]
+pub fn strain_tensor_for_fracture_from_manifold<B: Backend<FloatElem = f32>>(
+    manifold: &UnifiedMaterialStateTensor<B>,
+    batch: usize,
+    n: usize,
+    device: &B::Device,
+) -> Tensor<B, 4> {
+    let d = manifold.matrix_features.dims();
+    if d[0] == n && d[1] >= 1 {
+        manifold
+            .matrix_features
+            .clone()
+            .slice([0..n, 0..1, 0..3, 0..3])
+            .reshape([1, n, 3, 3])
+            .expand([batch, n, 3, 3])
+    } else {
+        Tensor::<B, 4>::zeros([batch, n, 3, 3], device)
+    }
+}
+
 /// Relaxation **outer** passes; each pass is one even-index half-step plus one odd-index half-step.
 /// Use an **odd** count on short path graphs: with red–black + per-pass clamp, an **even** total
 /// can align the terminal iterate with a near-checkerboard mode whose **global sum** underflows to
 /// 0 in `f32` while nodal values are not converged.
+#[cfg(feature = "fracture-at2")]
 const DAMAGE_RELAXATION_ITERS: usize = 17;
 
-#[cfg(feature = "fracture-at2")]
 /// Under-relaxation \(\omega\) on **each** parity half-step.
+#[cfg(feature = "fracture-at2")]
 const RELAXATION_OMEGA: f32 = 0.055;
 
-#[cfg(feature = "fracture-at2")]
 /// Cyclic Jacobi sweeps \((0,1)\to(0,2)\to(1,2)\) per sweep; enough for `f32` diagonal drift \(\ll 10^{-4}\|\varepsilon\|\) in typical strain ranges.
+#[cfg(feature = "fracture-at2")]
 const JACOBI_SWEEPS: usize = 18;
 
-#[cfg(feature = "fracture-at2")]
 /// Upper-triangle packing of symmetric strain per node (`[B,N,1]` each).
+#[cfg(feature = "fracture-at2")]
 type SymStrainPackBn1<B> = (
     Tensor<B, 3>,
     Tensor<B, 3>,

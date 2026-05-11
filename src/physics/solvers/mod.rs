@@ -7,6 +7,19 @@
 //! methods taking explicit **config** structs (see [`crate::physics::time_orchestration`])
 //! and returning updated [`burn::tensor::Tensor`]s only — no hidden buffers — so Burn
 //! autodiff sees a pure computational graph.
+//!
+//! ## Verification surfaces (solver lanes vs code)
+//! - **[`docs/Solver-Status.md`](../../../docs/Solver-Status.md)** — main solver table and **Solver lanes — THMC**
+//!   (implicit split vs monolithic guards, CI boundary, “still open at scale”).
+//! - **[`docs/VERIFICATION_COMPLETION_MATRIX.md`](../../../docs/VERIFICATION_COMPLETION_MATRIX.md)** — numbered
+//!   **#8** (THMC) maps follow-up §R3.1 goals to shipped hooks vs exact acceptance.
+//!
+//! **Post-`3394b96` THMC roadmap (honest):** commit **`3394b96`** aligned every THMC dense Newton / fail-fast guard on
+//! one constant — [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] (**64**). The shipped stack **does not** provide a dense
+//! Newton solve (nor a dense Jacobian factorisation) for **more than 64** stacked THMC unknowns. A production-scale
+//! monolithic step remains **sparse or matrix-free Jacobians**, **Krylov / JFNK**, and **AD-safe** termination on
+//! residual norms **‖R‖** (see Solver-Status §THMC and matrix **#8** blocker / next-slice text — do **not** read this as
+//! a >64 dense solve claim).
 
 pub mod acoustics;
 pub mod electrochemistry;
@@ -31,14 +44,12 @@ pub use fracture_field::PhaseFieldFractureSolver;
 #[cfg(feature = "fracture-at2")]
 pub use fracture_field::{
     spectral_tensile_psi_plus_from_strain, strain_tensor_for_fracture_after_mechanics,
-    strain_tensor_from_bar_network_displacement,
+    strain_tensor_for_fracture_from_manifold, strain_tensor_from_bar_network_displacement,
 };
 pub use photonics::{PhotonicsHelmholtzSolver, PhotonicsSolver};
 pub use rheology_flow::BinghamFlowSolver;
 #[cfg(feature = "thmc-coupled")]
 pub use thmc::full_hydration_alpha_rate_tensor;
-#[cfg(feature = "thmc-coupled")]
-pub use thmc::strain_tensor_for_fracture_from_manifold;
 #[cfg(feature = "thmc-coupled")]
 pub use thmc::{
     mc2010_style_notional_shrink_strain, shrink_strain_from_saturation_loss,

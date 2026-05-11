@@ -17,9 +17,13 @@
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 
-#[cfg(feature = "fracture-at2")]
-use umst_manifold::physics::solvers::spectral_tensile_psi_plus_from_strain;
 use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
+#[cfg(feature = "fracture-at2")]
+use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
+#[cfg(feature = "fracture-at2")]
+use umst_manifold::physics::solvers::{
+    spectral_tensile_psi_plus_from_strain, strain_tensor_for_fracture_from_manifold,
+};
 #[cfg(feature = "fracture-at2")]
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
@@ -581,11 +585,7 @@ fn at2_gamma_convergence_multi_ratio_psi_plus_schedule_smoke() {
     let exx: f32 = 0.08_f32;
     let psi_floor: f32 = 0.5_f32 * exx * exx * 0.99_f32;
     let l0: f32 = 0.04;
-    let schedule: [(f32, f32); 3] = [
-        (1.0 / 8.0, 0.005),
-        (1.0 / 4.0, 0.01),
-        (1.0 / 2.0, 0.02),
-    ];
+    let schedule: [(f32, f32); 3] = [(1.0 / 8.0, 0.005), (1.0 / 4.0, 0.01), (1.0 / 2.0, 0.02)];
     // τ_{Γ,j}: coupled ψ⁺ — coarsest ρ may sit slightly looser than the fixed-ratio triple in §7.2.
     let tau_gamma_by_rho: [f32; 3] = [0.55_f32, 0.55_f32, 0.58_f32];
 
@@ -692,11 +692,7 @@ fn at2_gamma_convergence_multi_ratio_psi_plus_outer_strain_ramp_smoke() {
     let outer_iters: usize = 32;
     let psi_floor: f32 = 0.5_f32 * exx_end * exx_end * 0.99_f32;
     let l0: f32 = 0.04;
-    let schedule: [(f32, f32); 3] = [
-        (1.0 / 8.0, 0.005),
-        (1.0 / 4.0, 0.01),
-        (1.0 / 2.0, 0.02),
-    ];
+    let schedule: [(f32, f32); 3] = [(1.0 / 8.0, 0.005), (1.0 / 4.0, 0.01), (1.0 / 2.0, 0.02)];
     // τ_{Γ,j}: ramped outer schedule (baseline rel_err ≈ {2e-3, 8e-3, 3.1e-2} on this harness).
     let tau_gamma_by_rho: [f32; 3] = [0.02_f32, 0.02_f32, 0.05_f32];
 
@@ -909,6 +905,97 @@ fn at2_gamma_convergence_psi_plus_nonzero_three_length_scales() {
             "expected D_h > Gc on each mesh with strong ψ⁺; got D_h={dh}"
         );
     }
+}
+
+/// Track 12 §7 — **`matrix_features`** path without SI bar equilibrium:
+/// [`strain_tensor_for_fracture_from_manifold`] lifts channel `0` to `[B,N,3,3]` and matches explicit
+/// uniaxial packing / [`spectral_tensile_psi_plus_from_strain`] totals; mismatched shapes fall back to zeros.
+#[cfg(feature = "fracture-at2")]
+#[test]
+fn at2_matrix_features_stub_matches_direct_strain_psi_plus_sanity() {
+    let dev = NdArrayDevice::Cpu;
+    let n = 4usize;
+    let batch = 1usize;
+    let exx = 0.061_f32;
+    let f = 5usize;
+    let coords: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(vec![0i64; n * 5], Shape::new([n, 5])), &dev);
+    let mut e = Vec::with_capacity((n - 1) * 2);
+    for i in 0..n - 1 {
+        e.push(i as i64);
+    }
+    for i in 0..n - 1 {
+        e.push((i + 1) as i64);
+    }
+    let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(Data::new(e, Shape::new([2, n - 1])), &dev);
+    let faces_b2: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(vec![0i64, 0i64], Shape::new([2, 1])), &dev);
+    let scalar_features = Tensor::<B, 2>::zeros([n, f], &dev);
+    let vector_features = Tensor::<B, 3>::zeros([n, 1, 3], &dev);
+    let mut mf = vec![0.0_f32; n * 9];
+    for i in 0..n {
+        mf[i * 9] = exx;
+    }
+    let matrix_features = Tensor::from_data(Data::new(mf, Shape::new([n, 1, 3, 3])), &dev);
+    let displacement_bc_mask = Tensor::<B, 3>::ones([n, 3, 1], &dev);
+    let policy_editable_mask = Tensor::<B, 2>::ones([n, 1], &dev);
+    let manifold = UnifiedMaterialStateTensor {
+        coords,
+        edges_b1,
+        faces_b2,
+        scalar_features,
+        vector_features,
+        matrix_features,
+        resolution_mm: [1.0, 1.0, 1.0],
+        node_positions: None,
+        displacement_bc_mask,
+        policy_editable_mask,
+    };
+
+    let eps_stub = strain_tensor_for_fracture_from_manifold::<B>(&manifold, batch, n, &dev);
+
+    let mut strain_data = vec![0.0_f32; batch * n * 9];
+    for nod in 0..n {
+        strain_data[nod * 9] = exx;
+    }
+    let eps_direct: Tensor<B, 4> =
+        Tensor::from_data(Data::new(strain_data, Shape::new([batch, n, 3, 3])), &dev);
+
+    let v1 = eps_stub.into_data().value;
+    let v2 = eps_direct.clone().into_data().value;
+    let max_abs = v1
+        .iter()
+        .zip(v2.iter())
+        .map(|(a, b)| (a - b).abs())
+        .fold(0.0_f32, f32::max);
+    assert!(
+        max_abs < 1e-6_f32,
+        "matrix_features stub strain must match explicit packing; max_abs={max_abs}"
+    );
+
+    let eps_stub_2 = strain_tensor_for_fracture_from_manifold::<B>(&manifold, batch, n, &dev);
+    let psi_s = spectral_tensile_psi_plus_from_strain(eps_stub_2);
+    let psi_d = spectral_tensile_psi_plus_from_strain(eps_direct);
+    let sum_s: f32 = psi_s.into_data().value.iter().sum();
+    let sum_d: f32 = psi_d.into_data().value.iter().sum();
+    assert!(
+        (sum_s - sum_d).abs() < 1e-5_f32,
+        "ψ⁺ totals must match; sum_stub={sum_s} sum_direct={sum_d}"
+    );
+
+    let mut bad = manifold.clone();
+    bad.matrix_features = Tensor::<B, 4>::zeros([n + 1, 1, 3, 3], &dev);
+    let eps_zero = strain_tensor_for_fracture_from_manifold::<B>(&bad, batch, n, &dev);
+    let zmax = eps_zero
+        .into_data()
+        .value
+        .iter()
+        .copied()
+        .fold(0.0_f32, f32::max);
+    assert!(
+        zmax < 1e-12_f32,
+        "expected zero fallback strain when matrix_features rows ≠ n; zmax={zmax}"
+    );
 }
 
 /// Phase 3.1 — staggered elasticity–damage loop owns the mechanics solve internally.
