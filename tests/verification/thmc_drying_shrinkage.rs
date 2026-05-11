@@ -2191,6 +2191,140 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
     }
 }
 
+/// **Phase 5–6 integration:** on the same 2-node SI harness as
+/// [`thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes`], the monolithic
+/// [`ThmcSolver::step`] path (via [`ThmcSolver::step_monolithic_implicit`]) drives the coupled backward-Euler
+/// residual \(\|R\|_2\) — including quasi-static \(R_u\) — **below** the norm evaluated at the **split**
+/// operator-step outcome from [`ThmcSolver::step`] with `monolithic_thmc_newton: None`.
+#[test]
+fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_nodes() {
+    let d = dev();
+    let n = 2usize;
+    let mut manifold = chain_manifold(n);
+    let mut bm_flat = vec![1.0_f32; n * 3];
+    bm_flat[0] = 0.0_f32;
+    for i in 0..n {
+        bm_flat[i * 3 + 1] = 0.0_f32;
+        bm_flat[i * 3 + 2] = 0.0_f32;
+    }
+    manifold.displacement_bc_mask =
+        Tensor::from_data(Data::new(bm_flat, Shape::new([n, 3, 1])), &d);
+
+    let coords_n3 = manifold
+        .node_positions
+        .as_ref()
+        .expect("chain SI coords")
+        .clone();
+    let batch = 1usize;
+    let kinetics = ThmcHydrationKinetics::default();
+    let dt = 0.02_f32;
+    let mc = ThmcMonolithicNewtonConfig {
+        iterations: 4_usize,
+        damping: 1.0_f32,
+        fd_eps: 1.0e-5_f32,
+    };
+
+    let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
+    let state0 = ThmcState {
+        thermal: ThermalPlan {
+            temperature: Tensor::<B, 3>::from_data(
+                Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
+                &d,
+            ),
+        },
+        hydro: HydrologicPlan {
+            humidity: Tensor::<B, 3>::from_data(
+                Data::new(vec![0.50_f32, 0.62_f32], Shape::new([1, n, 1])),
+                &d,
+            ),
+        },
+        mechanical: MechanicalPlan {
+            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: Tensor::<B, 3>::from_data(
+                Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
+                &d,
+            ),
+        },
+        damage: damage.clone(),
+        time: 0.0_f32,
+    };
+
+    let solver_split = ThmcSolver {
+        dt,
+        max_newton: 1_usize,
+        tol: 1e-3_f32,
+        hydration: kinetics.clone(),
+        drying_last_node_evaporation_k: 0.0_f32,
+        drying_ambient_h: 0.5_f32,
+        implicit_t_alpha_newton: None,
+        monolithic_thmc_newton: None,
+    };
+    let solver_mono = ThmcSolver {
+        monolithic_thmc_newton: Some(mc),
+        ..solver_split.clone()
+    };
+
+    let s_split = solver_split
+        .step(&Stub, clone_thmc_state(&state0), &manifold)
+        .expect("split step");
+    let s_mono = solver_mono
+        .step_monolithic_implicit(&Stub, clone_thmc_state(&state0), &manifold)
+        .expect("monolithic implicit step");
+
+    let mask = manifold.displacement_bc_mask.clone();
+    let bm_core = match mask.dims()[..] {
+        [nn, 3, 1] if nn == n => mask.reshape([nn, 3]),
+        [1, nn, 3] if nn == n => mask.clone().slice([0..1, 0..n, 0..3]).reshape([nn, 3]),
+        _ => panic!("unexpected displacement_bc_mask dims {:?}", mask.dims()),
+    };
+    let boundary_mask_bn3 = bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3]);
+    let body_force = Tensor::<B, 3>::zeros([batch, n, 3], &d);
+    let cross_section_area = 0.01_f32;
+
+    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+        dt,
+        temperature_n: state0.thermal.temperature.clone(),
+        humidity_n: state0.hydro.humidity.clone(),
+        alpha_n: state0.chemical.hydration_alpha.clone(),
+        displacement_n: state0.mechanical.displacement.clone(),
+        mechanics_placeholder_mass: 1.0_f32,
+        ru_shrinkage_water_cement_ratio: None,
+        edges_b1: manifold.edges_b1.clone(),
+        damage_m: damage.clone(),
+        kinetics: kinetics.clone(),
+    };
+
+    let r_split = assembler
+        .residual_l2_including_quasi_static_r_u(
+            &s_split,
+            &coords_n3,
+            &boundary_mask_bn3,
+            &body_force,
+            cross_section_area,
+        )
+        .expect("||R|| split");
+    let r_mono = assembler
+        .residual_l2_including_quasi_static_r_u(
+            &s_mono,
+            &coords_n3,
+            &boundary_mask_bn3,
+            &body_force,
+            cross_section_area,
+        )
+        .expect("||R|| monolithic");
+
+    assert!(
+        r_split > 1.0e-6_f32,
+        "split path should leave nontrivial coupled BE residual, got {r_split}"
+    );
+    assert!(
+        r_mono < r_split * 0.5_f32,
+        "expected monolithic ||R|| << split ||R||; mono={r_mono} split={r_split}"
+    );
+}
+
 /// Integration boundary: humidity transport in [`ThmcSolver::step`] uses `h_old + Δt Lap(h_old)` and
 /// does **not** branch on implicit vs explicit \((T,\alpha)\) — so one step yields identical `h` even when
 /// \(T,\alpha\) differ (monolithic THMC would couple \(h\) into the same implicit residual). Displacement
