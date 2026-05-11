@@ -91,6 +91,8 @@ def parse_solver_rows(status_md: Path) -> list[tuple[str, str, str, str]]:
     """
     Rows as (solver, lane, verification, notes) for the primary status table.
     Skips header and markdown separator rows.
+
+    Supports optional **Completion (%)** column after **Lane** (five-column table).
     """
     text = status_md.read_text(encoding="utf-8")
     lines = text.splitlines()
@@ -98,8 +100,10 @@ def parse_solver_rows(status_md: Path) -> list[tuple[str, str, str, str]]:
     if not found:
         print(f"error: no Solver/Lane/Verification table header in {status_md}", file=sys.stderr)
         sys.exit(1)
-    _, header_i = found
-    # Expect separator on next line
+    header_cells, header_i = found
+    has_completion_col = any(
+        "completion" in c.lower() and "%" in c for c in header_cells
+    )
     rows: list[tuple[str, str, str, str]] = []
     for line in lines[header_i + 2 :]:
         if not line.strip().startswith("|"):
@@ -107,10 +111,22 @@ def parse_solver_rows(status_md: Path) -> list[tuple[str, str, str, str]]:
         cells = _split_table_row(line)
         if _is_separator_row(cells):
             continue
-        if len(cells) < 4:
-            print(f"error: expected ≥4 columns, got {len(cells)}: {line!r}", file=sys.stderr)
-            sys.exit(1)
-        solver, lane, verification, notes = cells[0], cells[1], cells[2], cells[3]
+        if has_completion_col:
+            if len(cells) < 5:
+                print(f"error: expected ≥5 columns with Completion header, got {len(cells)}: {line!r}", file=sys.stderr)
+                sys.exit(1)
+            solver, lane, _completion, verification, notes = (
+                cells[0],
+                cells[1],
+                cells[2],
+                cells[3],
+                cells[4],
+            )
+        else:
+            if len(cells) < 4:
+                print(f"error: expected ≥4 columns, got {len(cells)}: {line!r}", file=sys.stderr)
+                sys.exit(1)
+            solver, lane, verification, notes = cells[0], cells[1], cells[2], cells[3]
         rows.append((solver, lane, verification, notes))
     return rows
 
