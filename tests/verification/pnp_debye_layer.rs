@@ -26,7 +26,7 @@
 // `solve_pnp_step_dispatch` (production path; falls back to explicit Picard if the chain helper
 // returns `None`). Direct `try_solve_pnp_backward_euler_newton_chain` remains for unit tests in
 // `electrochemistry.rs` and callers who bypass dispatch. Full nonlinear SG (`linearize_sg_fickian: false`)
-// uses a **node-major band** FD Jacobian + **band LU** on the host chain kernel (no dense \((3N)^2\) buffer).
+// uses a **node-major band** FD Jacobian, then **dense expand + elimination** on a \((3N)^2\) scratch buffer.
 
 use approx::assert_relative_eq;
 use burn::tensor::{Data, Int, Shape, Tensor};
@@ -362,8 +362,8 @@ fn debye_implicit_newton_context() -> NewtonPnpContext {
 }
 
 /// One-step smoke: full nonlinear SG implicit Newton (`linearize_sg_fickian: false`) uses the host
-/// **band Jacobian + band LU** path (optional [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] for
-/// bounded inners); residual L2 after solve stays small (same API as dispatch smokes).
+/// **band Jacobian + dense-expand Newton** path (optional [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`]
+/// for bounded inners); residual L2 after solve stays small (same API as dispatch smokes).
 #[test]
 fn full_sg_implicit_newton_chain_backward_euler_residual_smoke() {
     let dev = device();

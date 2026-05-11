@@ -53,10 +53,13 @@
 //!   only through \(\rho_e\) — the Newton correction uses **three Thomas solves** per iteration
 //!   (\(O(N)\) work). **Full nonlinear SG** (`linearize_sg_fickian: false`) uses **column finite differences**
 //!   on the same physics in **node-major** \((\phi_i,c^+_i,c^-_i)\) order, stored in a **fixed row band**
-//!   (\(kl,ku\) from nearest-neighbour coupling). When [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`]
-//!   is **`1`** (default), each Newton iteration **expands that band to dense** and factors with host Gaussian
-//!   elimination (**\(O((3N)^3)\)** per iteration). When **`>1`**, the host instead **factorises the band in place**
-//!   (**\(O(N\cdot bw^2)\)**) and reuses the factors for cheap inner triangular solves between Jacobian assemblies.
+//!   (\(kl,ku\) from nearest-neighbour coupling). Each Newton **correction** **expands that band into a dense
+//!   \((3N)\times(3N)\) scratch** and runs host Gaussian elimination (**\(O((3N)^3)\)** per correction). When
+//!   [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] is **`>1`**, one band assembly per outer Newton
+//!   iteration can be followed by several **inner** damped updates that **reuse the same frozen band entries**
+//!   (still re-expanding + eliminating each inner — same cubic cost, but **no extra column-FD probes** between
+//!   inners). In-place **band LU** helpers are kept for experiments only; they are **not** wired into production
+//!   Newton because they do not yet match this dense path on parity fixtures.
 //!   **Still open at large \(N\):** matrix-free / Krylov; general graphs (**Ring 2 R2.3**).
 //!   The default [`ElectroChemicalSolver::solve_pnp_step`] path remains explicit split.
 //! - **Mesh / extreme \(\Delta\phi\):** edge factor `h_inv` is now sourced from [`ElectroChemicalSolver::mesh_spacing`] (default `1.0` preserves the legacy dimensionless chain);
@@ -146,10 +149,10 @@ impl Default for ElectroChemicalSolver {
 
 /// Track 14 — implicit backward Euler Newton on a 1D chain: damping, tolerances, optional Fickian
 /// linearisation. **`linearize_sg_fickian: false`:** column finite-difference Jacobian for full SG in
-/// **node-major** band storage + **band LU with partial pivot** for the Newton step (**\(O(dim\cdot bw^2)\)**
-/// per factorisation; optional [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] **`>1`** reuses
-/// factors for extra triangular solves between assemblies). **`linearize_sg_fickian: true`:** analytic Jacobian structure with **three Thomas solves** per Newton step
-/// (\(O(N)\)), no \((3N)^2\) dense factorisation.
+/// **node-major** band storage, then **dense expand + Gaussian elimination** per Newton correction
+/// (**\(O((3N)^3)\)**; optional [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] **`>1`** reuses one
+/// assembled band across inner corrections without extra column FD). **`linearize_sg_fickian: true`:** analytic Jacobian structure with **three Thomas solves** per Newton step
+/// (\(O(N)\)), no \((3N)^3\) dense elimination.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct NewtonPnpContext {
     /// Maximum damped Newton iterations per call.
@@ -164,11 +167,11 @@ pub struct NewtonPnpContext {
     ///
     /// **Perf:** implicit Newton work is **\(O(\texttt{max\_newton\_iters}\cdot N)\)** per call when
     /// **`linearize_sg_fickian`** is **`true`** (three Thomas solves per iteration). When **`false`**, each
-    /// outer iteration assembles a **band** Jacobian (**\(O(N^2)\)** residual probes); when
-    /// [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] is **`1`**, the correction uses **dense expand +
-    /// elimination** (**\(O((3N)^3)\)** per iteration). When **`>1`**, the host **band-factorises** once per
-    /// assembly (**\(O(N\cdot bw^2)\)**) and reuses factors for inner triangular solves. Keep **`N`** within
-    /// this cap for interactive use.
+    /// outer iteration assembles a **band** Jacobian (**\(O(N^2)\)** column-FD probes when **J** is refreshed);
+    /// each Newton correction uses **dense expand + elimination** (**\(O((3N)^3)\)**). When
+    /// [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] is **`>1`**, inner sweeps **reuse the same
+    /// frozen band** between assemblies (fewer FD assemblies, same cubic cost per inner correction). Keep **`N`**
+    /// within this cap for interactive use.
     pub max_chain_nodes: usize,
     /// Use `B(z\Delta\phi)\equiv 1` in the SG flux (Fickian / **linear in \(c\)**) inside the implicit residual only.
     ///
@@ -182,11 +185,12 @@ pub struct NewtonPnpContext {
     /// **\(λ_D=1/\sqrt2\)** (\(\approx 4.25\times\) relative gap in baseline `--release` samples); see
     /// `tests/verification/pnp_debye_layer.rs` and `docs/Solver-Status.md`.
     pub linearize_sg_fickian: bool,
-    /// **Full SG only** (`linearize_sg_fickian: false`): after each band Jacobian **assembly**, reuse the
-    /// **band LU factors** for up to this many damped Newton corrections before the next assembly (still
-    /// within the same outer Newton iteration budget [`Self::max_newton_iters`]). **`1`** (default): classical
-    /// Newton. Values **`>1`**: inexact inner sweep — **triangular solves only** (no extra column FD). Clamped
-    /// to **`32`** in the host kernel.
+    /// **Full SG only** (`linearize_sg_fickian: false`): after each band Jacobian **assembly**, allow up to
+    /// this many damped Newton **corrections** before the next assembly (still within the same outer Newton
+    /// iteration budget [`Self::max_newton_iters`]). Each correction **dense-expands** the current band and
+    /// eliminates in scratch (**\(O((3N)^3)\)**). **`1`** (default): classical Newton (one correction per
+    /// assembly). Values **`>1`**: frozen-**J** inner sweep — **no extra column FD** between inners on the
+    /// same outer iteration. Clamped to **`32`** in the host kernel.
     pub full_sg_frozen_jacobian_inner_iters: u8,
 }
 
@@ -306,7 +310,9 @@ impl ElectroChemicalSolver {
 
     /// Fully implicit **backward Euler** step on \((\Phi,c^\pm)\) via **damped Newton** with a host
     /// `f64` Jacobian: **node-major band column finite differences**, then **dense expand + elimination**
-    /// when `linearize_sg_fickian` is **false**; when **`linearize_sg_fickian` is `true`** (Fickian-linearised SG / Debye–Hückel residual), each
+    /// when `linearize_sg_fickian` is **false** (including frozen-**J** inner sweeps when
+    /// [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] **`>1`** — same cubic work per inner, fewer FD assemblies).
+    /// When **`linearize_sg_fickian` is `true`** (Fickian-linearised SG / Debye–Hückel residual), each
     /// Newton correction uses **three Thomas solves** on the **sparse block structure** (no dense expand).
     /// **Only** when `edges_b1` is the MVP contiguous path
     /// `0\!-\!1\!-\!\cdots\!-\!(N-1)\` and `batch=1`; otherwise returns `None` (caller keeps split
@@ -1132,8 +1138,8 @@ fn row_band_lu_factorize_partial_pivot(
     for k in 0..n {
         let mut piv = k;
         let mut best = row_band_get(a, kl, ku, bw, k, k).abs();
-        // Column \(k\) is structurally zero in row \(i\) when \(i > k + k_l\) (lower bandwidth \(k_l\)).
-        let p1 = (k + kl).min(n - 1);
+        // Pivot search must include rows that can hold fill-in in column `k` (same bound as Schur updates).
+        let p1 = (k + kl + ku).min(n - 1);
         for p in (k + 1)..=p1 {
             let v = row_band_get(a, kl, ku, bw, p, k).abs();
             if v > best {
@@ -1149,7 +1155,7 @@ fn row_band_lu_factorize_partial_pivot(
             swap_pairs.push((k, piv));
         }
         let akk = row_band_get(a, kl, ku, bw, k, k);
-        let i1 = (k + kl).min(n - 1);
+        let i1 = (k + kl + ku).min(n - 1);
         for i in (k + 1)..=i1 {
             let aik = row_band_get(a, kl, ku, bw, i, k);
             if aik == 0.0_f64 {
@@ -1157,7 +1163,7 @@ fn row_band_lu_factorize_partial_pivot(
             }
             let m = aik / akk;
             row_band_set(a, kl, ku, bw, i, k, m);
-            let j_hi = (k + ku).min(i + ku).min(n - 1);
+            let j_hi = (k + kl + ku).min(i + ku).min(n - 1);
             for j in (k + 1)..=j_hi {
                 let v_ij = row_band_get(a, kl, ku, bw, i, j) - m * row_band_get(a, kl, ku, bw, k, j);
                 if j + kl >= i && j <= i + ku {
@@ -2308,7 +2314,7 @@ mod newton_chain_tests {
         assert!(nrf < 1e-3_f64, "post-f32 export BE residual, nrf={nrf:.3e}");
     }
 
-    /// Full SG (`linearize_sg_fickian: false`): band FD Jacobian + band LU host path converges on the same
+    /// Full SG (`linearize_sg_fickian: false`): band FD Jacobian + dense-expand Newton host path converges on the same
     /// small-chain tensor harness as [`try_solve_host_tensor_path_converges`].
     #[test]
     fn try_solve_host_tensor_full_sg_banded_newton_converges() {
@@ -2400,8 +2406,8 @@ mod newton_chain_tests {
         assert!(nrf < 1e-3_f64, "post-f32 export BE residual (full SG), nrf={nrf:.3e}");
     }
 
-    /// [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] **`>1`**: extra inners reuse band LU factors
-    /// on the same small-chain harness; must still return a finite low-residual state.
+    /// [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] **`>1`**: extra inners reuse a frozen band Jacobian
+    /// (dense expand each inner) on the same small-chain harness; must still return a finite low-residual state.
     #[test]
     fn try_solve_full_sg_frozen_jacobian_inner_iters_converges() {
         use burn::tensor::{Data, Int, Shape, Tensor};
