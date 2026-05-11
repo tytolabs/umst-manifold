@@ -2753,4 +2753,174 @@ mod newton_chain_tests {
             "dispatch implicit branch should match try_solve"
         );
     }
+
+    /// **Chain full-SG (`linearize_sg_fickian: false`)** at **`N=256`**: assemble the band Jacobian, time
+    /// **dense expand + Gauss** vs **experimental band LU** on the same Newton RHS (**`J\,\delta=-R`** in
+    /// node-major order), and **print** `max|δ_lu-δ_de|` — **not** a CI parity gate (band LU still diverges
+    /// from dense expand on the **N=17** fixture today). Run with **`--release`** for meaningful assembly/solve times:
+    ///
+    /// ```text
+    /// cargo test -p umst-manifold --features electrochemistry-pnp,solver-experimental \
+    ///   full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity \
+    ///   --release -- --ignored --nocapture
+    /// ```
+    #[test]
+    #[ignore = "slow — full-SG band FD Jacobian assembly at N=256; prints band LU vs dense-expand timings and δ mismatch"]
+    fn full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity() {
+        use std::time::Instant;
+
+        let n = 256_usize;
+        let solver = ElectroChemicalSolver {
+            faraday_const: 1.0_f32,
+            gas_const: 1.0_f32,
+            mesh_spacing: 0.11_f32,
+            ..Default::default()
+        };
+        let newton = NewtonPnpContext {
+            linearize_sg_fickian: false,
+            fd_step: 1e-6,
+            max_chain_nodes: 512,
+            ..Default::default()
+        };
+        let dt = 1.7e-4_f64;
+        let mut eps = vec![0.0_f64; n];
+        let mut d_plus = vec![0.0_f64; n];
+        let mut d_minus = vec![0.0_f64; n];
+        for i in 0..n {
+            let x = i as f64 / (n - 1) as f64;
+            eps[i] = 1.0 + 0.09 * (x - 0.4).powi(2);
+            d_plus[i] = 0.031 + 0.008 * x.sin();
+            d_minus[i] = 0.029 + 0.007 * (x * 1.9).cos();
+        }
+        let mut c_plus_n = vec![0.0_f64; n];
+        let mut c_minus_n = vec![0.0_f64; n];
+        for i in 0..n {
+            let x = i as f64 / (n - 1) as f64;
+            c_plus_n[i] = 1.0 + 0.06 * x;
+            c_minus_n[i] = 1.0 - 0.05 * x * x;
+        }
+        let g0 = 0.018_f64;
+        let g1 = -0.012_f64;
+        let mut u = vec![0.0_f64; 3 * n];
+        for i in 0..n {
+            u[i] = 0.012 * (i as f64 / n as f64).sin();
+            u[n + i] = c_plus_n[i] + 0.003 * ((i % 4) as f64);
+            u[2 * n + i] = c_minus_n[i] - 0.002 * ((i % 3) as f64);
+        }
+        u[0] = g0;
+        u[n - 1] = g1;
+        let r = pnp_be_residual_vector_f64(
+            &solver,
+            &newton,
+            dt,
+            &u[0..n],
+            &u[n..2 * n],
+            &u[2 * n..3 * n],
+            &c_plus_n,
+            &c_minus_n,
+            &eps,
+            &d_plus,
+            &d_minus,
+            g0,
+            g1,
+        );
+        let dim = 3 * n;
+        let kl_lu = PNP_CHAIN_FULL_SG_JAC_KL_LU;
+        let ku_lu = PNP_CHAIN_FULL_SG_JAC_KU_LU;
+        let bw_lu = PNP_CHAIN_FULL_SG_BW_LU;
+        let mut jac_band = vec![0.0_f64; dim * bw_lu];
+        let t_asm = Instant::now();
+        newton_fd_jacobian_full_sg_node_major_row_band(
+            &solver,
+            &newton,
+            dt,
+            &u,
+            &c_plus_n,
+            &c_minus_n,
+            &eps,
+            &d_plus,
+            &d_minus,
+            g0,
+            g1,
+            &r,
+            &mut jac_band,
+        );
+        let asm_s = t_asm.elapsed().as_secs_f64();
+
+        let mut jac_nm_dense = vec![0.0_f64; dim * dim];
+        for i_nm in 0..dim {
+            for j_nm in 0..dim {
+                jac_nm_dense[i_nm * dim + j_nm] =
+                    row_band_get(&jac_band, kl_lu, ku_lu, bw_lu, i_nm, j_nm);
+            }
+        }
+
+        let rhs0 = {
+            let mut rhs_nm = vec![0.0_f64; dim];
+            pnp_residual_fm_to_nm(&r, n, &mut rhs_nm);
+            for v in rhs_nm.iter_mut() {
+                *v = -*v;
+            }
+            rhs_nm
+        };
+
+        let mut rhs_lu = rhs0.clone();
+        let mut jac_lu_fact = vec![0.0_f64; dim * bw_lu];
+        let mut lu_swaps: Vec<(usize, usize)> = Vec::new();
+        let t_lu = Instant::now();
+        let ok_lu = solve_newton_correction_full_sg_row_band_via_band_lu(
+            &jac_band,
+            dim,
+            kl_lu,
+            ku_lu,
+            bw_lu,
+            &mut jac_lu_fact,
+            &mut lu_swaps,
+            &mut rhs_lu,
+        );
+        let lu_s = t_lu.elapsed().as_secs_f64();
+        assert!(ok_lu, "band LU linear solve");
+
+        let mut rhs_de = rhs0.clone();
+        let mut jac_dense_scratch = vec![0.0_f64; dim * dim];
+        let t_de = Instant::now();
+        let ok_de = solve_newton_correction_full_sg_row_band_via_dense_expand(
+            &jac_band,
+            dim,
+            kl_lu,
+            ku_lu,
+            bw_lu,
+            &mut jac_dense_scratch,
+            &mut rhs_de,
+        );
+        let de_s = t_de.elapsed().as_secs_f64();
+        assert!(ok_de, "dense-expand linear solve");
+
+        let max_nm: f64 = (0..dim)
+            .map(|i| (rhs_lu[i] - rhs_de[i]).abs())
+            .fold(0.0_f64, f64::max);
+
+        let lin_res = |dx_nm: &[f64]| -> f64 {
+            let mut mx = vec![0.0_f64; dim];
+            for i in 0..dim {
+                let mut s = 0.0_f64;
+                for j in 0..dim {
+                    s += jac_nm_dense[i * dim + j] * dx_nm[j];
+                }
+                mx[i] = s;
+            }
+            (0..dim)
+                .map(|i| (mx[i] - rhs0[i]).abs())
+                .fold(0.0_f64, f64::max)
+        };
+        let err_lu = lin_res(&rhs_lu);
+        let err_de = lin_res(&rhs_de);
+        eprintln!(
+            "full-SG N={n}: Jacobian assembly {asm_s:.3}s; band-LU solve {lu_s:.4}s; dense-expand solve {de_s:.4}s (dim={dim}); max|δ_lu-δ_de|={max_nm:.3e}; max|Jδ+R|_lu={err_lu:.3e} _de={err_de:.3e}"
+        );
+        assert!(
+            err_de < 1e-6_f64,
+            "dense-expand linear model max|J δ − (−R)|={err_de:.3e}"
+        );
+    }
 }
