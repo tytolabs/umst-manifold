@@ -5,7 +5,7 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 # Physics capability gaps (structural / materials modelling)
 
-This page summarizes **user-facing structural and materials scope** that sits **outside** the solver lanes and verification contracts in [`Solver-Status.md`](Solver-Status.md). It is a pointer index, not a substitute for that table or the v0.4 brief.
+This page summarizes **user-facing structural and materials scope** that sits **outside** the solver lanes and verification contracts in [`Solver-Status.md`](Solver-Status.md). It is a pointer index, not a substitute for that table or the v0.4 brief. Numbered ship checklist ↔ PR slices: [`VERIFICATION_COMPLETION_MATRIX.md`](VERIFICATION_COMPLETION_MATRIX.md); lane → memo → tests: [`VERIFICATION_SCOPE_INDEX.md`](VERIFICATION_SCOPE_INDEX.md).
 
 1. **Transient \(M_\mu\) (time-evolving stiffness / viscoelastic branch in solid mechanics)**  
    **Current shipped capability:** Quasi-static **bar-network equilibrium** with per-step elastic parameters (Young’s modulus reduced to edges, optional damage coupling on other paths) and THMC transport with **split** time stepping plus **research-partial** implicit Newton on the **thermal + hydration \(\alpha\)** block only (`ThmcImplicitTAlphaNewtonConfig`).  

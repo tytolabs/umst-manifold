@@ -325,6 +325,9 @@ impl VectorMechanicsSolver {
                 let ap_b = p_mask.clone().mul(ap_raw);
 
                 let rz = (r.clone().mul(z.clone())).sum();
+                if !rz.clone().into_scalar().is_finite() {
+                    break;
+                }
                 let pap = (p.clone().mul(ap_b.clone())).sum().clamp_min(1e-30_f32);
                 let alpha = rz.clone().div(pap).reshape([1, 1, 1]);
                 u_c = u_c.add(p.clone().mul(alpha.clone()));
@@ -352,6 +355,9 @@ impl VectorMechanicsSolver {
                 let beta = rz_next
                     .div(rz.clone().clamp_min(1e-30_f32))
                     .reshape([1, 1, 1]);
+                if !beta.clone().into_scalar().is_finite() {
+                    break;
+                }
                 p = z_next.clone().add(p.mul(beta));
                 r = r_next;
                 z = z_next;

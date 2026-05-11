@@ -99,8 +99,11 @@ impl AdjointCompliance {
         let topo = EdgeTopology::new(edges_b1.clone());
         let (rho_s, rho_t) = topo.gather_endpoints(rho_inner.clone());
         let rho_e = rho_s.add(rho_t).mul_scalar(0.5_f32);
+        // SIMP law uses ρ^p on [0,1]; continuation uses fractional p. Tiny negative ρ_e overshoots
+        // from f32 / projection can make ρ^(p−1) NaN — clamp to the physical domain for sensitivities.
+        let rho_e_law = rho_e.clone().clamp(0.0_f32, 1.0_f32);
 
-        let dk_drho = rho_e
+        let dk_drho = rho_e_law
             .clone()
             .powf_scalar(material.p - 1.0)
             .mul_scalar(material.p * (material.e0 - material.e_min));
@@ -119,7 +122,7 @@ impl AdjointCompliance {
         let rho_e_ad = rsa.add(rta).mul_scalar(0.5_f32);
 
         let ge_ad = Tensor::<B, 3>::from_inner(ge.clone());
-        let rho_e_det_ad = Tensor::<B, 3>::from_inner(rho_e.clone());
+        let rho_e_det_ad = Tensor::<B, 3>::from_inner(rho_e_law.clone());
 
         let lin_a = ge_ad.clone().mul(rho_e_ad).sum();
         let lin_b = ge_ad.mul(rho_e_det_ad).sum();
