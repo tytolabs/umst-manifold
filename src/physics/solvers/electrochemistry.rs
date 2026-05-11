@@ -1348,8 +1348,9 @@ fn solve_newton_correction_full_sg_row_band_via_band_lu(
 }
 
 /// Expand node-major row band storage to dense row-major `dim×dim`, then Gaussian-eliminate in place
-/// (same [`solve_dense_linear`] as Jacobian unit tests). **Perf:** **\(O(dim^3)\)** — **reference / tests**
-/// only; production full-SG chain Newton uses [`solve_newton_correction_full_sg_row_band_via_band_lu`].
+/// (same [`solve_dense_linear`] as Jacobian unit tests). **Perf:** **\(O(dim^3)\)** per correction — **production**
+/// full-SG chain Newton ([`try_solve_pnp_backward_euler_newton_chain`]) uses this path. Experimental
+/// [`solve_newton_correction_full_sg_row_band_via_band_lu`] does **not** yet match it on parity fixtures.
 #[cfg(feature = "electrochemistry-mvp")]
 fn solve_newton_correction_full_sg_row_band_via_dense_expand(
     jac_band: &[f64],
@@ -1640,8 +1641,7 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     let inner_cap_sg = (newton.full_sg_frozen_jacobian_inner_iters as usize).clamp(1, 32);
     let mut jac_band =
         (!newton.linearize_sg_fickian).then(|| vec![0.0_f64; dim * PNP_CHAIN_FULL_SG_BW_LU]);
-    let mut jac_dense_scratch =
-        (!newton.linearize_sg_fickian).then(|| vec![0.0_f64; dim * dim]);
+    let mut jac_dense_scratch = (!newton.linearize_sg_fickian).then(|| vec![0.0_f64; dim * dim]);
     let mut rhs_nm = vec![0.0_f64; dim];
     let mut thomas_a = vec![0.0_f64; n];
     let mut thomas_b = vec![0.0_f64; n];
@@ -2068,8 +2068,8 @@ mod newton_chain_tests {
 
     /// Full-SG (`linearize_sg_fickian: false`) **node-major band** FD Jacobian matches dense column FD;
     /// Newton correction from **band expanded to dense** matches the all-dense column-FD linear solve on **N=17**.
-    /// Production [`try_solve_pnp_backward_euler_newton_chain`] applies [`solve_newton_correction_full_sg_row_band_via_band_lu`]
-    /// (band-limited pivot vs full dense Gaussian — not numerically identical to this dense-expand reference).
+    /// **Production** [`try_solve_pnp_backward_euler_newton_chain`] uses the same
+    /// [`solve_newton_correction_full_sg_row_band_via_dense_expand`] path as this test.
     #[test]
     fn full_sg_newton_band_expand_dense_matches_dense_column_fd_reference() {
         let n = 17_usize;

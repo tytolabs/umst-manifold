@@ -750,18 +750,232 @@ mod tests {
         );
     }
 
+    /// P1 \#7 — **`solver-experimental`:** minimal path graph — dense grounded direct Poisson vs Jacobi-PCG.
+    #[cfg(feature = "solver-experimental")]
+    #[allow(clippy::needless_range_loop)]
+    #[test]
+    fn chorin_poisson_jacobi_cg_agrees_direct_grounded_chain() {
+        use super::solve_pressure_phi_jacobi_cg;
+        use crate::physics::laplacian::TopologicalLaplacian;
+        use burn::tensor::backend::Backend;
+
+        fn dense_laplacian_columns_from_tensor<B: Backend<FloatElem = f32>>(
+            n: usize,
+            edges_b1: Tensor<B, 2, Int>,
+            damage: Tensor<B, 3>,
+            batch: usize,
+            dev: &B::Device,
+        ) -> Vec<Vec<f64>> {
+            let mut l = vec![vec![0.0_f64; n]; n];
+            for j in 0..n {
+                let mut data = vec![0.0_f32; batch * n];
+                data[j] = 1.0_f32;
+                let ej = Tensor::<B, 3>::from_data(Data::new(data, Shape::new([batch, n, 1])), dev);
+                let col =
+                    TopologicalLaplacian::scalar_laplacian(ej, edges_b1.clone(), damage.clone());
+                let vals: Vec<f32> = col.into_data().convert::<f32>().value;
+                for i in 0..n {
+                    l[i][j] = f64::from(vals[i]);
+                }
+            }
+            l
+        }
+
+        fn symmetrize(l: &[Vec<f64>], n: usize) -> Vec<Vec<f64>> {
+            let mut s = vec![vec![0.0_f64; n]; n];
+            for i in 0..n {
+                for j in 0..n {
+                    s[i][j] = 0.5_f64 * (l[i][j] + l[j][i]);
+                }
+            }
+            s
+        }
+
+        fn solve_grounded_then_mean_free(l: &[Vec<f64>], b: &[f64]) -> Vec<f64> {
+            let n = b.len();
+            let m = n - 1;
+            let ridge = 1e-10_f64;
+            let mut a = vec![vec![0.0_f64; m]; m];
+            for i in 0..m {
+                for j in 0..m {
+                    a[i][j] = l[i][j];
+                }
+                a[i][i] += ridge;
+            }
+            let mut r = b[..m].to_vec();
+            gauss_jordan_pivot(&mut a, &mut r);
+            let mut phi = vec![0.0_f64; n];
+            phi[..m].copy_from_slice(&r[..m]);
+            phi[n - 1] = 0.0_f64;
+            let sum: f64 = phi.iter().sum();
+            for p in &mut phi {
+                *p -= sum / n as f64;
+            }
+            phi
+        }
+
+        fn gauss_jordan_pivot(a: &mut [Vec<f64>], b: &mut [f64]) {
+            let n = b.len();
+            for k in 0..n {
+                let mut piv = k;
+                let mut best = a[k][k].abs();
+                for i in k + 1..n {
+                    let v = a[i][k].abs();
+                    if v > best {
+                        best = v;
+                        piv = i;
+                    }
+                }
+                if piv != k {
+                    a.swap(k, piv);
+                    b.swap(k, piv);
+                }
+                let akk = a[k][k];
+                assert!(akk.abs() > 1e-18, "singular pivot at {k}");
+                for j in k..n {
+                    a[k][j] /= akk;
+                }
+                b[k] /= akk;
+                for i in 0..n {
+                    if i == k {
+                        continue;
+                    }
+                    let f = a[i][k];
+                    if f.abs() < 1e-30 {
+                        continue;
+                    }
+                    for j in k..n {
+                        a[i][j] -= f * a[k][j];
+                    }
+                    b[i] -= f * b[k];
+                }
+            }
+        }
+
+        let dev = NdArrayDevice::Cpu;
+        let batch = 1usize;
+        let n = 5usize;
+        let e_ct = 4usize;
+        let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
+            Data::new(vec![0i64, 1, 1, 2, 2, 3, 3, 4], Shape::new([2, e_ct])),
+            &dev,
+        );
+        let damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+
+        let l_raw = dense_laplacian_columns_from_tensor(n, edges_b1.clone(), damage.clone(), batch, &dev);
+        let l_sym = symmetrize(&l_raw, n);
+
+        let phi_seed = Tensor::<B, 3>::from_data(
+            Data::new(
+                vec![0.11_f32, -0.07, 0.02, -0.04, -0.02],
+                Shape::new([batch, n, 1]),
+            ),
+            &dev,
+        );
+        let mean = phi_seed.clone().sum_dim(1).div_scalar(n as f32);
+        let phi_true = phi_seed.sub(mean.reshape([batch, 1, 1]));
+        let phi_true_vals: Vec<f32> = phi_true.clone().into_data().convert::<f32>().value;
+        let phi_f64: Vec<f64> = phi_true_vals.iter().map(|&x| f64::from(x)).collect();
+
+        let mut lphi = vec![0.0_f64; n];
+        for i in 0..n {
+            for j in 0..n {
+                lphi[i] += l_sym[i][j] * phi_f64[j];
+            }
+        }
+        let sum_lp: f64 = lphi.iter().sum();
+        let b_mf: Vec<f64> = lphi.iter().map(|x| x - sum_lp / n as f64).collect();
+
+        let rhs_mf = Tensor::<B, 3>::from_data(
+            Data::new(
+                b_mf.iter().map(|&x| x as f32).collect::<Vec<_>>(),
+                Shape::new([batch, n, 1]),
+            ),
+            &dev,
+        );
+
+        let rhs_tensor = TopologicalLaplacian::scalar_laplacian(
+            phi_true.clone(),
+            edges_b1.clone(),
+            damage.clone(),
+        );
+        let rhs_mean = rhs_tensor.clone().sum_dim(1).div_scalar(n as f32);
+        let rhs_mf_tensor: Vec<f32> = rhs_tensor.sub(rhs_mean).into_data().convert::<f32>().value;
+        let mut max_rhs = 0.0_f32;
+        for i in 0..n {
+            max_rhs = max_rhs.max((rhs_mf_tensor[i] - b_mf[i] as f32).abs());
+        }
+        assert!(
+            max_rhs < 1e-4_f32,
+            "symmetrized dense L·φ should match tensor Laplacian; max|Δb|={max_rhs}"
+        );
+
+        let sol = solve_grounded_then_mean_free(&l_sym, &b_mf);
+        let phi_direct: Vec<f32> = sol.iter().map(|&x| x as f32).collect();
+
+        let phi_direct_t = Tensor::<B, 3>::from_data(
+            Data::new(phi_direct.clone(), Shape::new([batch, n, 1])),
+            &dev,
+        );
+        let lap_dir = TopologicalLaplacian::scalar_laplacian(
+            phi_direct_t,
+            edges_b1.clone(),
+            damage.clone(),
+        );
+        let lap_dir_mean = lap_dir.clone().sum_dim(1).div_scalar(n as f32);
+        let lap_dir_mf = lap_dir.sub(lap_dir_mean);
+        let rd = lap_dir_mf.sub(rhs_mf.clone());
+        let rd_n = rd.powf_scalar(2.0).sum().sqrt().into_scalar();
+        let bn = rhs_mf
+            .clone()
+            .powf_scalar(2.0)
+            .sum()
+            .sqrt()
+            .into_scalar()
+            .max(1e-20_f32);
+        assert!(
+            rd_n / bn < 2e-3_f32,
+            "dense grounded reference should satisfy mean-free Lφ≈b; rel={}",
+            rd_n / bn
+        );
+
+        let phi_cg =
+            solve_pressure_phi_jacobi_cg(rhs_mf.clone(), edges_b1.clone(), damage.clone(), batch, n);
+        let lap_cg = TopologicalLaplacian::scalar_laplacian(
+            phi_cg.clone(),
+            edges_b1.clone(),
+            damage.clone(),
+        );
+        let lap_cg_mean = lap_cg.clone().sum_dim(1).div_scalar(n as f32);
+        let lap_cg_mf = lap_cg.sub(lap_cg_mean);
+        let rc = lap_cg_mf.sub(rhs_mf.clone());
+        let rc_n = rc.powf_scalar(2.0).sum().sqrt().into_scalar();
+        assert!(
+            rc_n / bn < 5e-4_f32,
+            "Jacobi-PCG should satisfy mean-free Lφ≈b; rel={}",
+            rc_n / bn
+        );
+
+        let phi_cg_vals: Vec<f32> = phi_cg.into_data().convert::<f32>().value;
+        let mut max_abs = 0.0_f32;
+        for i in 0..n {
+            max_abs = max_abs.max((phi_cg_vals[i] - phi_direct[i]).abs());
+        }
+        assert!(
+            max_abs < 6e-2_f32,
+            "Jacobi-PCG φ should track direct solve; max|Δφ|={max_abs}"
+        );
+    }
+
     /// **P1 / verification \#7 — honest regression (`solver-experimental`):** on the same **5×5**
     /// quad channel as `chorin_single_step_finite_smoke`, compare the **legacy** surrogate RHS
     /// \(\sum_c \mathcal{L} u^\*_c\) to the **shipped** mean-free weak primal-divergence RHS, then
     /// Jacobi-PCG solves on \(-\mathcal{L}\). RHS differ; both reaches stay finite with modest residuals;
     /// \(\phi\) is not identical across RHS choices.
     #[cfg(feature = "solver-experimental")]
-    #[allow(clippy::needless_range_loop)]
     #[test]
     fn chorin_poisson_rhs_surrogate_vs_weak_divergence_tiny_channel() {
-        use super::{
-            chorin_pressure_rhs_mean_free_weak_divergence, solve_pressure_phi_jacobi_cg,
-        };
+        use super::{chorin_pressure_rhs_mean_free_weak_divergence, solve_pressure_phi_jacobi_cg};
         use crate::physics::laplacian::TopologicalLaplacian;
         use crate::physics::topology::EdgeTopology;
 
@@ -795,15 +1009,14 @@ mod tests {
         let batch = 1usize;
 
         let mut udat = vec![0.0_f32; batch * n * 3];
-        for idx in 0..(batch * n * 3) {
+        for (idx, u) in udat.iter_mut().enumerate() {
             let k = idx / 3;
             let c = idx % 3;
             let node = k % n;
             let base = ((node * 13 + c * 7) % 97) as f32 * 1e-2;
-            udat[idx] = base + (c as f32) * 0.03;
+            *u = base + (c as f32) * 0.03;
         }
-        let u_star =
-            Tensor::<B, 3>::from_data(Data::new(udat, Shape::new([batch, n, 3])), &dev);
+        let u_star = Tensor::<B, 3>::from_data(Data::new(udat, Shape::new([batch, n, 3])), &dev);
         let damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
         let flow_coeff = Tensor::<B, 3>::ones([batch, n_edges, 3], &dev);
 
@@ -819,11 +1032,8 @@ mod tests {
         let mut rhs_surr = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
         for c in 0..3 {
             let uc = u_star.clone().narrow(2, c, 1);
-            let lap_c = TopologicalLaplacian::scalar_laplacian(
-                uc,
-                edges_b1.clone(),
-                damage.clone(),
-            );
+            let lap_c =
+                TopologicalLaplacian::scalar_laplacian(uc, edges_b1.clone(), damage.clone());
             rhs_surr = rhs_surr.add(lap_c);
         }
         let sm = rhs_surr.clone().sum_dim(1).div_scalar(n as f32);
@@ -865,7 +1075,12 @@ mod tests {
                 .sum()
                 .sqrt()
                 .into_scalar();
-            let bn = rhs.powf_scalar(2.0).sum().sqrt().into_scalar().max(1e-30_f32);
+            let bn = rhs
+                .powf_scalar(2.0)
+                .sum()
+                .sqrt()
+                .into_scalar()
+                .max(1e-30_f32);
             rn / bn
         };
 
