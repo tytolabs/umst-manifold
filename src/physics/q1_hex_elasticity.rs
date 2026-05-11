@@ -30,7 +30,7 @@
 //! test (`plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band` in
 //! `tests/verification/mechanics_analytic.rs`) with bilinear-consistent top pressure
 //! ([`crate::physics::extruded_plate::ExtrudedPlateMechanics::body_force_top_uniform_pressure`],
-//! band \(10^{-4}<w/w_K<2\times10^{-3}\)) and `docs/Solver-Status.md` defers full Kirchhoff
+//! band \(1.1\times10^{-4}<w/w_K<1.6\times10^{-4}\)) and `docs/Solver-Status.md` defers full Kirchhoff
 //! SSSS on the brick — see mechanics row there.
 //!
 //! **Bounded follow-ups (avoid monolithic refactors):** optional **literal** separate

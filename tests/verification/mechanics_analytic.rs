@@ -16,7 +16,10 @@
 //! equilibrium residual, linearity in `q`, bounded refinement spread, and mesh-to-mesh deltas — not
 //! a single thin-plate closed form with mismatched BCs. Uniform top pressure uses
 //! [`ExtrudedPlateMechanics::body_force_top_uniform_pressure`] so total transverse load matches
-//! `q L_x L_y` (Kirchhoff `q` convention).
+//! `q L_x L_y` (Kirchhoff `q` convention). Locked-band Kirchhoff tests ([`plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band`])
+//! divide centre \(w\) by [`kirchhoff_centre_w_ssss`] under **mismatched** BCs; see
+//! [`PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN`] / [`PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX`] for the
+//! narrowed regression interval and BC-vs-reference note.
 //!
 //! formal_anchor: Literature  
 //! formal_citation: Timoshenko & Woinowsky-Krieger 1959 (plate tables); Bathe 2006 (Q1 hex); Hughes 2000 (shear locking)
@@ -44,6 +47,18 @@ fn kirchhoff_centre_w_ssss(q: f32, l: f32, h: f32, e: f32, nu: f32) -> f32 {
     let d = e * h.powi(3) / (12.0 * (1.0 - nu * nu).max(1e-30));
     0.00406 * q * l.powi(4) / d.max(1e-30)
 }
+
+/// Accepted range for centre \(w / w_{\mathrm{Kirchhoff\,SSSS}}\) on the **locked** Q1-hex extruded
+/// slab (`plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band` and coarse twin).
+///
+/// **FE BCs vs Kirchhoff reference:** the brick model uses **full** bottom-face \(u_z=0\) plus two
+/// in-plane pins on that face ([`plate_bottom_uz_mask`]). [`kirchhoff_centre_w_ssss`] is the classical
+/// **thin Kirchhoff square plate with all edges simply supported** (SSSS) — a different boundary-value
+/// problem. Residual-locked Q1 bending still undershoots \(w_K\) by \(\mathcal O(10^{-3})\) at
+/// \(L/h\!=\!20\); the band guards operator / load / PCG regressions, **not** a within-5% thin-plate
+/// claim (see v0.4 follow-up §R2.1).
+const PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN: f32 = 1.10e-4;
+const PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX: f32 = 1.60e-4;
 
 /// Bottom face `u_z=0` plus minimal in-plane anchors on `z=0` so the 3D stiffness is positive-definite
 /// (avoids free rigid translations that stall PCG on fine Q1 hex plates).
@@ -450,7 +465,8 @@ fn kirchhoff_ssss_centre_formula_smoke() {
 }
 
 /// Same ratio-band gate as [`plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band`] on **8×8×4**
-/// (cheap regression coverage).
+/// (cheap regression coverage). Uses [`PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN`] /
+/// [`PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX`] — see those constants for BC vs Kirchhoff reference.
 #[test]
 fn plate_centre_deflection_kirchhoff_ratio_q1_hex_band_coarse_regression() {
     let nx = 8_usize;
@@ -473,19 +489,24 @@ fn plate_centre_deflection_kirchhoff_ratio_q1_hex_band_coarse_regression() {
         "expected positive centre deflection; got {w_numerical}"
     );
     assert!(
-        ratio > 1e-4 && ratio < 2e-3,
+        ratio > PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN
+            && ratio < PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX,
         "expected locked Q1-hex ratio band (coarse mesh); ratio={ratio} (w={w_numerical}, w_k={w_kirchhoff})"
     );
 }
 
-/// Q1-hex extruded plate centre deflection vs Kirchhoff **thin-plate** reference on a 32×32×4 mesh.
+/// Q1-hex extruded plate centre deflection vs Kirchhoff **thin-plate SSSS** reference on a 32×32×4 mesh.
 ///
-/// The extruded benchmark uses a **full** `u_z = 0` support on `z = 0` (see [`plate_bottom_uz_mask`]),
-/// not classical SSSS edge data; centre deflection stays **well below** the Kirchhoff thin-plate table
-/// value. This test pins `w / w_{\mathrm{Kirchhoff}}` into a fixed open band
-/// (`10^{-4} < w/w_K < 2\times 10^{-3}`) with bilinear-consistent top pressure so regressions in the
-/// equilibrium solve, element stiffness, or load assembly show up as failures, while still
-/// requiring a tight masked residual.
+/// **BCs vs table value:** the extruded benchmark uses a **full** `u_z = 0` support on `z = 0` plus two
+/// in-plane pins (see [`plate_bottom_uz_mask`]). That is **not** classical Kirchhoff simply supported
+/// data on all four spanwise edges. With Q1 hex + current transverse-shear treatment, centre deflection
+/// stays **orders of magnitude below** the Kirchhoff SSSS centre formula [`kirchhoff_centre_w_ssss`]
+/// at the same \(q,L_x,h,E,\nu\) (shear locking / 3D–plate mismatch). This test pins
+/// `w / w_Kirchhoff` into the narrowed open band between [`PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN`]
+/// and [`PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX`] (approximately \(1.1\times10^{-4}<w/w_K<1.6\times10^{-4}\);
+/// reference f32 builds land near \(1.34\times10^{-4}\)) with bilinear-consistent top
+/// pressure so regressions in the equilibrium solve, element stiffness, or load assembly fail loudly,
+/// while still requiring a tight masked residual.
 /// (CI name was formerly `plate_centre_deflection_vs_kirchhoff_ssss_within_5pct`, which incorrectly
 /// suggested a 5% accuracy gate.)
 ///
@@ -514,8 +535,11 @@ fn plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band() {
         "expected positive centre deflection; got {w_numerical}"
     );
     assert!(
-        ratio > 1e-4 && ratio < 2e-3,
-        "expected locked Q1-hex centre deflection between ~1e-4 and 2e-3 × Kirchhoff thin-plate value; ratio={ratio} (w={w_numerical}, w_k={w_kirchhoff})"
+        ratio > PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN
+            && ratio < PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX,
+        "expected locked Q1-hex centre deflection in narrowed w/w_K band [{}, {}]; ratio={ratio} (w={w_numerical}, w_k={w_kirchhoff})",
+        PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN,
+        PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX
     );
 }
 

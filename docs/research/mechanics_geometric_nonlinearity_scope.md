@@ -99,7 +99,7 @@ Linearized buckling needs **geometric stiffness** (stress stiffening) or a fully
 
 **Current ratio-band CI (`plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band`)**
 
-- [ ] Pins **`w / w_Kirchhoff`** into fixed open band **`(10⁻⁴, 2×10⁻³)`** on the **32×32×4** extruded slab with **`ExtrudedPlateMechanics::body_force_top_uniform_pressure`** (total load **`q L_x L_y`**).
+- [ ] Pins **`w / w_Kirchhoff`** into fixed open band **`(1.1×10⁻⁴, 1.6×10⁻⁴)`** on the **32×32×4** extruded slab with **`ExtrudedPlateMechanics::body_force_top_uniform_pressure`** (total load **`q L_x L_y`**); coarse **8×8×4** twin uses the same numeric band.
 - [ ] Documents **locked Q1** behaviour: **not** a within-5% Kirchhoff accuracy claim; guards solve/residual/load regressions while \(w\) stays in the band.
 - [ ] Acknowledges **non-SSSS** brick setup (e.g. bottom `u_z=0` support vs classical edge data) per test rustdoc in `mechanics_analytic.rs`.
 
