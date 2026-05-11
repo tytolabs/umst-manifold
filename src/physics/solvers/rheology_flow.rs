@@ -862,7 +862,8 @@ mod tests {
         );
         let damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
 
-        let l_raw = dense_laplacian_columns_from_tensor(n, edges_b1.clone(), damage.clone(), batch, &dev);
+        let l_raw =
+            dense_laplacian_columns_from_tensor(n, edges_b1.clone(), damage.clone(), batch, &dev);
         let l_sym = symmetrize(&l_raw, n);
 
         let phi_seed = Tensor::<B, 3>::from_data(
@@ -917,11 +918,8 @@ mod tests {
             Data::new(phi_direct.clone(), Shape::new([batch, n, 1])),
             &dev,
         );
-        let lap_dir = TopologicalLaplacian::scalar_laplacian(
-            phi_direct_t,
-            edges_b1.clone(),
-            damage.clone(),
-        );
+        let lap_dir =
+            TopologicalLaplacian::scalar_laplacian(phi_direct_t, edges_b1.clone(), damage.clone());
         let lap_dir_mean = lap_dir.clone().sum_dim(1).div_scalar(n as f32);
         let lap_dir_mf = lap_dir.sub(lap_dir_mean);
         let rd = lap_dir_mf.sub(rhs_mf.clone());
@@ -939,8 +937,13 @@ mod tests {
             rd_n / bn
         );
 
-        let phi_cg =
-            solve_pressure_phi_jacobi_cg(rhs_mf.clone(), edges_b1.clone(), damage.clone(), batch, n);
+        let phi_cg = solve_pressure_phi_jacobi_cg(
+            rhs_mf.clone(),
+            edges_b1.clone(),
+            damage.clone(),
+            batch,
+            n,
+        );
         let lap_cg = TopologicalLaplacian::scalar_laplacian(
             phi_cg.clone(),
             edges_b1.clone(),

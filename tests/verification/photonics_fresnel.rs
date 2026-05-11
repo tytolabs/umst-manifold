@@ -177,7 +177,8 @@ fn quad_split_patch_tensors() -> (Tensor<B, 2, Int>, Tensor<B, 2, Int>, EdgeTopo
 /// Two CCW quads side-by-side sharing oriented edge **`1→4`** — same **`edges_b1` / `faces_b2`**
 /// incidence as `two_quads_shared_edge_faces_b2_and_topo` in `tests/dec_identities.rs`
 /// (assembled patch, **not** a hand-built uniform path).
-fn two_quads_shared_edge_patch_tensors() -> (Tensor<B, 2, Int>, Tensor<B, 2, Int>, EdgeTopology<B>) {
+fn two_quads_shared_edge_patch_tensors() -> (Tensor<B, 2, Int>, Tensor<B, 2, Int>, EdgeTopology<B>)
+{
     let dev = device();
     let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
         Data::new(
@@ -564,7 +565,12 @@ fn two_half_spaces_fresnel_te_no_pml_matches_analytic() {
     assert!(j_b > j_a && j_b < n_left, "probe layout for r_disc");
     let r_disc = fresnel_r_disc_two_point(&e_unb, j_a, j_b, h, k1, x_int)
         .expect("r_disc two-point system should be well-conditioned");
-    assert_relative_eq!(r_disc.re, r_analytic, epsilon = 6e-2_f32, max_relative = 0.25);
+    assert_relative_eq!(
+        r_disc.re,
+        r_analytic,
+        epsilon = 6e-2_f32,
+        max_relative = 0.25
+    );
     assert_relative_eq!(r_disc.im, 0.0_f32, epsilon = 6e-2_f32, max_relative = 1.0);
 }
 

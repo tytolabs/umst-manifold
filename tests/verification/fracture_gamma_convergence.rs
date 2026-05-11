@@ -17,9 +17,9 @@
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 
-use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
 #[cfg(feature = "fracture-at2")]
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
+use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
 #[cfg(feature = "fracture-at2")]
 use umst_manifold::physics::solvers::{
     spectral_tensile_psi_plus_from_strain, strain_tensor_for_fracture_from_manifold,
