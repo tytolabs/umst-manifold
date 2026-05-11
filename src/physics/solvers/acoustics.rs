@@ -295,6 +295,12 @@ fn step_wave_experimental<B: Backend<FloatElem = f32>>(
 /// unconditionally stable for the undamped second-order system. **Explicit** central-difference
 /// companions require `Δt ≤ CFL · Δx / c` with `c = √(E/ρ)` and `CFL` typically in `(0, 1]`.
 ///
+/// **Phase 3 / R2.4 note:** return-map checks that advance by `T = 2π/ω_h` with `ω_h` from the
+/// **spatial** semi-discrete stencil can still show **order-one** relative error vs the initial sinusoid
+/// at some mesh counts (e.g. **n = 128** in `tests/verification/acoustics_plane_wave.rs`): scaling the
+/// number of **fixed-Δt** substeps within that same `T` leaves the error almost unchanged, which points
+/// to **temporal** Newmark dispersion relative to the chosen `T`, not insufficient substeps alone.
+///
 /// formal_anchor: Literature  
 /// formal_citation: Newmark 1959; Hughes 2000, §9.1 (implicit Newmark for structural dynamics)
 pub struct AcousticNewmarkBar1dPeriodic {

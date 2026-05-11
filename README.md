@@ -83,12 +83,9 @@ End-to-end cartridge hookup: [`examples/basic_topology.rs`](examples/basic_topol
 
 ## Cartridge ecosystem
 
-The topology optimiser, paired with the concrete cartridge, recovers the Striatus principle in 200 iterations on a 4×4 m roof problem. See the cartridge GIF below (artefact path in that repository: `notebooks/_artifacts/striatus_emergence.gif`; build via `notebooks/_run_shell_demo.sh`). **v0.4-named** exports (`striatus_shell_v0.4.stl`, `striatus_shell_v0.4.print_ready.json`, etc.) are the brief’s targets — see [`docs/Solver-Status.md`](docs/Solver-Status.md) topology deferral — and may not exist on every checkout until those gates pass.
+The topology optimiser paired with the concrete cartridge is aimed at Striatus-class shell rib patterns; **Ring 1** in [`../composer_prompts/v0.4_phase_3_followup_for_composer.md`](../composer_prompts/v0.4_phase_3_followup_for_composer.md) states the public hero stays **v0.3** until B6/L closes and the **v0.4** artefact filenames exist on disk.
 
-<div align="center">
-<img src="https://raw.githubusercontent.com/tytolabs/umst-concrete-cartridge/main/notebooks/_artifacts/striatus_emergence.gif" alt="UMST shell topology optimization — 200 iterations to a Striatus-class rib pattern" width="820">
-<sub>The optimiser starts from a uniform 4 × 4 m × 0.1 m concrete slab and converges to a compression-favouring rib pattern in 200 iterations. The final frame overlays the principal-compression isostatics. Output STL is watertight and passes a 12 mm minimum-feature, 30° overhang check for direct 3D-concrete printing. See <a href="https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/Striatus.md">docs/Striatus.md</a> in the cartridge repository.</sub>
-</div>
+**Target filenames** (Track L in that brief; regenerate via `bash notebooks/_run_shell_demo.sh` from [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) when gates pass): `notebooks/_artifacts/striatus_emergence.gif`, `notebooks/_artifacts/striatus_shell_v0.4.stl`, `notebooks/_artifacts/striatus_shell_v0.4.print_ready.json`, optional `notebooks/_artifacts/striatus_shell_v0.4.obj`. A checkout may still list **v0.3-only** names under `notebooks/_artifacts/` (e.g. `striatus_shell_v0.3.*`) or lack the animation mesh exports entirely — **do not** treat GIF/STL as shipped until those paths exist and meet the deferral criteria in **[`docs/Solver-Status.md`](docs/Solver-Status.md) → DEFERRAL — Topology / shell (Tracks B + L)** (same deferral is mirrored under [`../umst-concrete-cartridge/docs/Solver-Status.md`](../umst-concrete-cartridge/docs/Solver-Status.md)). Narrative and artefact contract: [`docs/Striatus.md`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/Striatus.md) in the cartridge repository.
 
 ## Citation
 

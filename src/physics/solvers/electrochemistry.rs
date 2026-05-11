@@ -14,16 +14,14 @@
 //! behind `electrochemistry-mvp` / `solver-research`.
 //!
 //! ## Gaps vs full PNP / Scharfetter–Gummel (experimental path)
-//! - **Poisson**: on a **simple path chain** topology matching the MVP `edges_b1` layout (contiguous
-//!   nodes `0..N-1`, `N-1` edges), each sub-step solves the discrete surrogate
-//!   \(\mathcal{L}\Phi = -\rho_e/\varepsilon\) **exactly** (same \(\mathcal{L}\) as
-//!   [`TopologicalLaplacian::scalar_laplacian`] with unit damage) via the **Thomas algorithm** on the
-//!   tridiagonal interior system, with **Dirichlet values** taken from the incoming `electric_potential`
-//!   at the two endpoints. Non-chain graphs still use explicit Jacobi-like relaxation substeps (see
-//!   `POISSON_SUBSTEPS`). No \(\nabla\varepsilon\cdot\nabla\Phi\) term; \(\rho_e\) remains the minimal
-//!   **monovalent** net charge \(F(c^+ - c^-)\) (no fixed background charge, no multiply-charged
-//!   species). Variable-\(\varepsilon\) stiffness in the Laplacian operator is **not** implemented—only
-//!   nodal \(\rho_e/\varepsilon\) on the RHS.
+//! - **Poisson**: on a **simple path chain** (contiguous nodes `0..N-1`, `N-1` edges matching MVP
+//!   `edges_b1`), each sub-step solves **\(\nabla\cdot(\varepsilon\nabla\Phi)=-\rho_e\)** on interior
+//!   nodes with harmonic edge weights \(\varepsilon_{i+\frac12}=\tfrac12(\varepsilon_i+\varepsilon_{i+1})\)
+//!   via `poisson_chain_net_charge_variable_eps_thomas` + **Thomas**; endpoint Dirichlet values come
+//!   from `electric_potential`. `try_solve_poisson_chain_thomas` accepts a **`rho_over_eps`** tensor
+//!   and reconstructs \(\rho_{e,i}=(\rho/\varepsilon)_i\,\varepsilon_i\) so the RHS matches
+//!   \(F(c^+-c^-)\). Non-chain graphs use explicit Jacobi-like relaxation (`POISSON_SUBSTEPS`). Minimal
+//!   **monovalent** \(\rho_e\) (no fixed background charge, no multiply-charged species).
 //! - **Nernst–Planck**: **Scharfetter–Gummel** conservative edge flux (see `solve_pnp_split_step_experimental_with_refs` in this module)
 //!   \(J_e = (D_e/h_e)\,[c_a B(z\Delta\phi_{ba}) - c_b B(z\Delta\phi_{ab})]\) with \(\Delta\phi_{ba}=\phi_b-\phi_a\),
 //!   Bernoulli \(B(x)=x/(e^x-1)\) (Taylor form for \(|x|\ll 1\)), assembled with
@@ -41,10 +39,11 @@
 //!   or set [`ElectroChemicalSolver::pnp_implicit_newton_chain`] and use [`ElectroChemicalSolver::solve_pnp_step_dispatch`]
 //!   (same `None` default as today: explicit Picard path only).
 //! - **Track 14 (chain-only implicit BE):** [`ElectroChemicalSolver::try_solve_pnp_backward_euler_newton_chain`]
-//!   solves the **fully implicit backward Euler** residual \(R_\Phi=\mathcal{L}\Phi+\rho_e(c)/\varepsilon\),
-//!   \(R_c=(c-c^n)/\Delta t+\nabla\!\cdot J_{\mathrm{SG}}(\Phi,c)\) on a **contiguous path** using host
-//!   `f64` dense Jacobians (finite differences) + damped Newton — for verification / stiff regimes;
-//!   the default [`ElectroChemicalSolver::solve_pnp_step`] path remains explicit split.
+//!   solves the **fully implicit backward Euler** residual with the same **variable-\(\varepsilon\)** chain
+//!   Poisson block as the host helper `pnp_be_residual_vector_f64` (harmonic \(\varepsilon\) on edges) plus SG NP rows,
+//!   on a **contiguous path** using host `f64` **dense** finite-difference Jacobians + damped Newton when
+//!   `linearize_sg_fickian` is **false** (banded sparse Jacobian per **Ring 2 R2.3** is still open). The
+//!   default [`ElectroChemicalSolver::solve_pnp_step`] path remains explicit split.
 //! - **Mesh / extreme \(\Delta\phi\):** edge factor `h_inv` is now sourced from [`ElectroChemicalSolver::mesh_spacing`] (default `1.0` preserves the legacy dimensionless chain);
 //!   Bernoulli uses `exp` on \(|z F\Delta\phi/(RT)|\); very large \(|pe|\) can **saturate** `f32::exp`
 //!   before the ratio stabilises—tight \(\Delta t\) / smaller drift or double precision are the

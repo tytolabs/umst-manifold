@@ -268,6 +268,7 @@ impl VectorMechanicsSolver {
         // amplify rounding noise once `‖r‖` is tiny → NaNs in downstream compliance. Cap iterations at
         // the (scalar) unknown count per row; this is only an upper bound—ill-conditioning can still
         // require the caller to raise `max_cg_iterations` for accuracy on large graphs.
+        // `cg_tolerance` / `pcg_tolerance` are not read here: this loop always runs `max_it` iterations.
         let max_it = inner_cfg
             .max_cg_iterations
             .max(1)

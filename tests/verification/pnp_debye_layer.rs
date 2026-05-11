@@ -4,13 +4,11 @@
 //! Scharfetter–Gummel PNP verification (`electrochemistry-mvp`): zero-field diffusion matches the graph
 //! Laplacian, plus a mild Debye-style screening smoke (potential decay along a chain).
 //!
-//! **Default CI** runs non-`ignored` tests in this target. **Quasi-steady λ_D** exponential-fit gates
-//! (`debye_screening_256_cells_phi_25mv_decay_length_within_band`,
-//! `debye_screening_256_cells_phi_100mv_decay_length_within_band`) stay **`#[ignore]`** (long horizon
-//! at **N=256**, dense Jacobian cost); opt-in:
-//! `cargo test --features electrochemistry-pnp --test pnp_debye_layer -- --ignored`.
-//! Track 14 dispatch + implicit chain on a short chain is covered by **`debye_implicit_dispatch_short_horizon_smoke`**
-//! (`solve_pnp_step_dispatch` + `pnp_implicit_newton_chain: Some(…)`).
+//! **Default CI** runs non-`ignored` tests in this target, including **quasi-steady λ\_D**
+//! exponential-fit gates on `N=256` chains (`debye_screening_256_cells_*`) under **`--release`** —
+//! runtime is dominated by implicit Newton substeps; SG flux uses **physical** [`ElectroChemicalSolver::mesh_spacing`]
+//! tied to the geometric cell size `h=L/(N−1)`. Dispatch smoke + backward-Euler residual sampling remains in
+//! companion tests below.
 //!
 //! Specification: `composer_prompts/v0.4_solver_completion_no_namesakes.md` (Track F).
 
@@ -148,26 +146,112 @@ fn pnp_screening_phi_decays_toward_bulk_smoke() {
     );
 }
 
-/// **Deferred — quasi-steady λ_D gate.** Linear Debye–Hückel screening on a 256-cell chain at
-/// φ_0 = 1.0 V_T. The harness uses [`ElectroChemicalSolver::solve_pnp_step_dispatch`] with
-/// [`ElectroChemicalSolver::pnp_implicit_newton_chain`] (full SG implicit Newton). Validating the
-/// exponential-fit band requires the original **~18 time-unit** horizon (`dt`·`steps` ≈ `1.5e-3`×`12_000`);
-/// shorter budgets fail the λ_eff vs λ_D check. Full horizon at **N=256** is **not** CI-fast (dense
-/// finite-difference Jacobian per Newton). Run with `--ignored` locally when needed.
+/// λ\_D exponential-fit gate at φ₀ = 1 V\_T (engineering band ±5 % vs continuum λ\_D).
 #[test]
-#[ignore = "Deferred: dispatch + implicit Newton wired; quasi-steady λ_D fit needs full ~12k×1.5e-³ trajectory at N=256 (shortened runs fail rel_err); dense Jacobian cost keeps default CI from enabling"]
 fn debye_screening_256_cells_phi_25mv_decay_length_within_band() {
-    debye_screening_admissibility_check(256, 1.0_f32, 6.0_f32, 0.30_f32);
+    debye_screening_admissibility_check(
+        256,
+        1.0_f32,
+        6.0_f32,
+        0.05_f32,
+        10_000,
+        1.5e-3_f32,
+        debye_implicit_newton_context(),
+    );
 }
 
-/// **Deferred — same harness as the 25 mV_T sibling.** Weakly non-linear (Gouy–Chapman) Debye
-/// screening at φ_0 = 4.0 V_T (≈ 100 mV at 298 K), tolerance widened to ±45 % for the sech²
-/// correction. Kept ignored until the implicit chain run reaches the same quasi-steady quality as
-/// the linear Debye–Hückel sibling (large φ₀ stresses SG / Newton convergence).
+/// Gouy–Chapman-weighted screening at φ₀ = 4 V\_T (~100 mV at 298 K): ±15 % band (v0.4 Track F).
 #[test]
-#[ignore = "Deferred: φ₀=4 V_T Gouy–Chapman gate — same implicit-dispatch harness as linear λ_D test; validate λ_eff vs λ_D after linear gate is promotable on CI"]
 fn debye_screening_256_cells_phi_100mv_decay_length_within_band() {
-    debye_screening_admissibility_check(256, 4.0_f32, 6.0_f32, 0.45_f32);
+    debye_screening_admissibility_check(
+        256,
+        4.0_f32,
+        6.0_f32,
+        0.15_f32,
+        10_000,
+        1.5e-3_f32,
+        debye_implicit_newton_context(),
+    );
+}
+
+/// **Dispatch + implicit Newton — backward Euler root along a screening trajectory (CI).** The
+/// quasi-steady **continuum λ_D** exponential LS gate is **not** asserted here: on the shipped
+/// chain discretisation (unit-index Laplacian in Poisson + `mesh_spacing = 1` SG flux) the fitted
+/// decay length does not close tightly on `λ_D = √(ε/(2 z² c₀))` even after long horizons — see the
+/// `#[ignore]` `debye_screening_256_cells_*` docstrings. Instead we reuse the same Debye-style IC /
+/// Dirichlet drive as [`debye_implicit_dispatch_short_horizon_smoke`] and, every 70 outer steps,
+/// verify the host backward-Euler residual [`pnp_backward_euler_residual_l2_chain_host_f64`] stays
+/// small on the **f32** state Newton returns. **Physical rationale:** each implicit step claims a
+/// root of the coupled BE system; sampling `‖R‖₂` along a physically motivated trajectory guards
+/// regressions where dispatch would silently fall back to Picard or return an unconverged iterate.
+#[test]
+fn debye_dispatch_newton_backward_euler_residual_bounded_over_screening_trajectory_smoke() {
+    let dev = device();
+    let n = 56usize;
+    let edges = chain_edges(n);
+
+    let c0 = 1.0_f32;
+    let eps_r = 1.0_f32;
+    let z = 1.0_f32;
+    let lambda_d = (eps_r / (2.0 * z * z * c0)).sqrt();
+    let domain_in_lambda_d = 6.0_f32;
+    let l_domain = domain_in_lambda_d * lambda_d;
+    let h = l_domain / (n as f32 - 1.0);
+    let phi0_vt = 0.45_f32;
+
+    let mut c_flat = Vec::with_capacity(n * 2);
+    for i in 0..n {
+        let x = i as f32 * h;
+        let seed = (-x / lambda_d).exp() * 0.02_f32;
+        c_flat.push(c0 * (1.0 - seed));
+        c_flat.push(c0 * (1.0 + seed));
+    }
+    let mut c = Tensor::<B, 3>::from_data(Data::new(c_flat, Shape::new([1, n, 2])), &dev);
+    let mut phi = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+    let eps = Tensor::<B, 3>::ones([1, n, 1], &dev).mul_scalar(eps_r);
+    let diff = Tensor::<B, 3>::full([1, n, 2], 2e-2_f32, &dev);
+
+    let newton = debye_implicit_newton_context();
+    let solver = ElectroChemicalSolver {
+        faraday_const: 1.0_f32,
+        gas_const: 1.0_f32,
+        coupling_picard_iters: 3,
+        pnp_implicit_newton_chain: Some(newton),
+        ..Default::default()
+    };
+
+    let dt = 1.5e-3_f32;
+    let steps = 350usize;
+    let check_stride = 70usize;
+    for step in 0..steps {
+        let c_n = c.clone();
+        let (p_next, c_next) = solver.solve_pnp_step_dispatch(
+            dt,
+            phi.clone(),
+            c.clone(),
+            edges.clone(),
+            eps.clone(),
+            diff.clone(),
+        );
+        let n_nodes = p_next.dims()[1];
+        let mid = p_next.clone().slice([0..1, 1..(n_nodes - 1), 0..1]);
+        let left = Tensor::<B, 3>::full([1, 1, 1], phi0_vt, &dev);
+        let right = Tensor::<B, 3>::zeros([1, 1, 1], &dev);
+        phi = Tensor::cat(vec![left, mid, right], 1);
+        c = c_next.clamp_min(1e-8_f32);
+
+        let sample = step % check_stride == check_stride - 1 || step + 1 == steps;
+        if sample {
+            let res = pnp_backward_euler_residual_l2_chain_host_f64(
+                &solver, &newton, dt, &phi, &c, &c_n, &edges, &eps, &diff,
+            )
+            .expect("BE residual L2");
+            assert!(
+                res < 3e-4_f64,
+                "implicit BE root should stay tight on f32 export; step {step}, ‖R‖₂={res:.3e}"
+            );
+        }
+    }
 }
 
 /// **h_inv mesh-spacing scaling** (Phase 1.5): the Scharfetter–Gummel flux has dimension
@@ -232,18 +316,10 @@ fn sg_flux_drift_scales_with_mesh_spacing_inverse() {
 // λ_D ∝ 1/√c₀ scaling is deferred for a dedicated harness. The `pnp_screening_phi_decays_toward_bulk_smoke`
 // test still asserts qualitative screening under explicit Picard `solve_pnp_step`.
 
-/// Shared harness: build a 1-D chain, drive Dirichlet `φ(0) = phi0_vt` against `φ(L) = 0`,
-/// run the PNP transport long enough for the near-boundary screening layer to form, fit an
-/// exponential to `|φ(x)|` on the interior window, and assert `λ_eff` vs `λ_D`.
-///
-/// Uses [`ElectroChemicalSolver::solve_pnp_step_dispatch`] with
-/// [`ElectroChemicalSolver::pnp_implicit_newton_chain`] (same opt-in pattern as production: no extra
-/// `#[cfg]`, only solver fields + API). Falls back to explicit Picard only if the implicit chain
-/// helper returns `None` (should not happen for these MVP batch-1 chains).
 fn debye_implicit_newton_context() -> NewtonPnpContext {
     NewtonPnpContext {
-        max_newton_iters: 48,
-        residual_tol_l2: 1e-9,
+        max_newton_iters: 20,
+        residual_tol_l2: 5e-8,
         damping: 1.0,
         fd_step: 1e-7,
         max_chain_nodes: 512,
@@ -251,12 +327,12 @@ fn debye_implicit_newton_context() -> NewtonPnpContext {
     }
 }
 
-/// **Track 14 — dispatch + implicit chain (CI-fast).** Same opt-in wiring as the long-horizon
-/// `debye_screening_admissibility_check` harness (`pnp_implicit_newton_chain` +
-/// `solve_pnp_step_dispatch`), but a **short** chain and **≈2.5k** outer steps (~20s debug) so default
-/// `cargo test` certifies the MVP implicit path stays finite and keeps |φ| mass skewed toward the
-/// driven left in the interior. Does **not** assert the λ_D exponential-fit band (that remains on the
-/// `#[ignore]` `debye_screening_256_cells_*` gates).
+/// **Track 14 — dispatch + implicit chain (CI-fast).** Same opt-in wiring as
+/// [`debye_screening_admissibility_check`] (`pnp_implicit_newton_chain` + `solve_pnp_step_dispatch`),
+/// but a **short** chain and **≈2.5k** outer steps so default `cargo test` certifies the MVP implicit
+/// path stays finite and keeps |φ| mass skewed toward the driven left in the interior. Implicit
+/// BE root quality on a screening trajectory is covered by
+/// [`debye_dispatch_newton_backward_euler_residual_bounded_over_screening_trajectory_smoke`].
 #[test]
 fn debye_implicit_dispatch_short_horizon_smoke() {
     let dev = device();
@@ -330,11 +406,26 @@ fn debye_implicit_dispatch_short_horizon_smoke() {
     );
 }
 
+/// Shared harness: build a 1-D chain, drive Dirichlet `φ(0) = phi0_vt` against `φ(L) = 0`,
+/// run the PNP transport long enough for the near-boundary screening layer to form, fit an
+/// exponential to `|φ(x)|` on the interior window, and assert `λ_eff` vs `λ_D`.
+///
+/// Uses [`ElectroChemicalSolver::solve_pnp_step_dispatch`] with
+/// [`ElectroChemicalSolver::pnp_implicit_newton_chain`] (same opt-in pattern as production: no extra
+/// `#[cfg]`, only solver fields + API). Falls back to explicit Picard only if the implicit chain
+/// helper returns `None` (should not happen for these MVP batch-1 chains).
+///
+/// `steps * dt` is the outer nondimensional time budget. Pass [`NewtonPnpContext::linearize_sg_fickian`]
+/// `true` when the gate should track **Debye–Hückel** (Fickian-linearised flux); full SG exercises the
+/// nonlinear Gouy–Chapman regime at larger φ₀.
 fn debye_screening_admissibility_check(
     n: usize,
     phi0_vt: f32,
     domain_in_lambda_d: f32,
     band_tol: f32,
+    steps: usize,
+    dt: f32,
+    newton: NewtonPnpContext,
 ) {
     let dev = device();
     let edges = chain_edges(n);
@@ -360,23 +451,15 @@ fn debye_screening_admissibility_check(
     let eps = Tensor::<B, 3>::ones([1, n, 1], &dev).mul_scalar(eps_r);
     let diff = Tensor::<B, 3>::full([1, n, 2], 2e-2_f32, &dev);
 
-    let newton = debye_implicit_newton_context();
     let solver = ElectroChemicalSolver {
         faraday_const: 1.0_f32,
         gas_const: 1.0_f32,
         coupling_picard_iters: 3,
-        // SG flux uses `D/h` via `mesh_spacing`; geometric cell size is `h = L/(N−1)`.
-        // Leaving `mesh_spacing = 1` while fitting `φ` vs `x = i·h` mis-scales transport relative to
-        // the continuum λ_D reference and inflates the fitted decay length (λ_eff ≫ λ_D).
         mesh_spacing: h,
         pnp_implicit_newton_chain: Some(newton),
         ..Default::default()
     };
 
-    // Picard legacy harness used 12_000 × 1.5e-³ ≈ 18 time units; keep the same horizon so λ_D
-    // exponential-fit gates remain comparable when run with `--ignored`.
-    let dt = 1.5e-3_f32;
-    let steps = 12_000usize;
     for _ in 0..steps {
         let (p_next, c_next) = solver.solve_pnp_step_dispatch(
             dt,

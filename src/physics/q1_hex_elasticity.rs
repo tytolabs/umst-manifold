@@ -13,6 +13,34 @@
 //! quadrature), while the deviatoric part `B_dev = B − B_vol` retains the full 2×2×2 rule.
 //! See Hughes 2000 §4.5 and Bathe 2006 §5.4.
 //!
+//! ## Roadmap (R2.1 — mechanics / thin plate)
+//!
+//! **Shipped here:** a **B-bar** formulation on structured **right** Cartesian bricks: the
+//! volumetric part of the normal-strain operator uses **centroid** physical shape gradients
+//! (equivalent to replacing per–Gauss-point \( \mathbf B_{\mathrm{vol}} \) with its element mean /
+//! one-point quadrature on the volumetric trace), while deviatoric normal strains and **all shear
+//! strains** use the full \(2\times2\times2\) rule. [`hex_k_times_u_accumulate`] and
+//! [`hex_diagonal`] share this operator; PCG in [`hex_solve_pcg_masked`] is matrix-free on the same
+//! kernel. Isotropic \(\mathbf D(E,\nu)\) is assembled once per cell (not split into separate
+//! \(\mathbf D_{\mathrm{vol}}\) / \(\mathbf D_{\mathrm{dev}}\) quadrature loops).
+//!
+//! **Still open vs v0.4 R2.1 acceptance:** a strict **thin-plate Kirchhoff** gate
+//! (\(\approx 5\%\) error to the SSSS centre formula at \(L/h\approx 20\)) requires **consistent
+//! plate BCs on the brick** (classical simply supported edges), not the extruded-plate harness’s
+//! full-face \(u_z=0\) plus in-plane pins. Until that harness exists, CI keeps a **ratio band**
+//! test (`plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band` in
+//! `tests/verification/mechanics_analytic.rs`) and `docs/Solver-Status.md` defers full Kirchhoff
+//! SSSS on the brick — see mechanics row there.
+//!
+//! **Bounded follow-ups (avoid monolithic refactors):** optional **literal** separate
+//! \(\mathbf B_{\mathrm{dev}}^{\mathsf T}\mathbf D_{\mathrm{dev}}\mathbf B_{\mathrm{dev}}\) vs
+//! \(\mathbf B_{\mathrm{vol}}^{\mathsf T}\mathbf D_{\mathrm{vol}}\mathbf B_{\mathrm{vol}}\)
+//! quadrature weighting (centroid vs full \(2^3\) tensor) if auditing shows mismatch with the
+//! current unified-\(D\) B-bar energy; **facet-wise** BC sets for SSSS parity; **transverse shear**
+//! under-integration or
+//! MITC-style enrichment if bending remains too stiff after BC alignment; **f64** accumulation path
+//! for the same stencil if f32 PCG limits masked residuals.
+//!
 //! formal_anchor: Literature
 //! formal_citation: Bathe 2006, *Finite Element Procedures*, §5.4 (hex elements); Hughes 2000, *The Finite Element Method*, §4.5 (B-bar / SRI)
 //! formal_form: \(\int_{Ω^e} \mathbf B^{\mathsf T}\mathbf D\mathbf B\,\mathrm dΩ\,\mathbf u^e = \mathbf f^e\) with isotropic \(\mathbf D(E,\nu)\) in Voigt form; volumetric block uses \(\bar{\mathbf B}_{\text{vol}}\) (element-mean) and deviatoric block uses pointwise \(\mathbf B_{\text{dev}}\).

@@ -164,6 +164,142 @@ fn chorin_single_step_finite_smoke() {
     );
 }
 
+/// **Regression guard (R2.2):** two Chorin steps on the **65×17** channel graph bracket the shipped
+/// surrogate pressure step’s large \(\|u\|_\infty\) jump on the **first** correction (order \(10^3\)–\(10^4\)
+/// over the predictor scale for the `dt` values below — see `chorin_steady_channel_64x16_vs_regularized_reference`).
+/// This is **not** a physics target; it locks the documented instability until a true discrete-divergence Poisson
+/// (or MAC) replaces the MVP in `rheology_flow.rs`.
+#[cfg(feature = "rheology-bingham")]
+#[test]
+fn chorin_surrogate_poisson_amplification_regression_guard() {
+    use burn::tensor::{Data, Int, Shape, Tensor};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+    use umst_manifold::physics::solvers::BinghamFlowSolver;
+
+    type B = NdArray<f32>;
+
+    const G: f32 = 1000.0;
+    const H: f32 = 0.05;
+    const MU: f32 = 50.0;
+    const TAU0: f32 = 20.0;
+    const RHO: f32 = 1000.0;
+
+    let nx = 65usize;
+    let ny = 17usize;
+    let n = nx * ny;
+    let dy = H / (ny - 1) as f32;
+
+    let mut edges_src: Vec<i64> = Vec::new();
+    let mut edges_tgt: Vec<i64> = Vec::new();
+    for j in 0..ny {
+        for i in 0..nx - 1 {
+            edges_src.push((j * nx + i) as i64);
+            edges_tgt.push((j * nx + i + 1) as i64);
+        }
+    }
+    for j in 0..ny - 1 {
+        for i in 0..nx {
+            edges_src.push((j * nx + i) as i64);
+            edges_tgt.push(((j + 1) * nx + i) as i64);
+        }
+    }
+    let mut edges = edges_src;
+    edges.extend(edges_tgt);
+    let e_ct = edges.len() / 2;
+    assert_eq!(e_ct, (nx - 1) * ny + (ny - 1) * nx);
+
+    let dev = NdArrayDevice::Cpu;
+    let edges_b1: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(edges, Shape::new([2, e_ct])), &dev);
+
+    let batch = 1usize;
+    let mut mask = vec![1.0_f32; n];
+    for i in 0..nx {
+        mask[i] = 0.0;
+        mask[(ny - 1) * nx + i] = 0.0;
+    }
+    let wall_mask: Tensor<B, 3> =
+        Tensor::from_data(Data::new(mask, Shape::new([batch, n, 1])), &dev);
+
+    let ax = G / RHO;
+    let gravity: Tensor<B, 1> =
+        Tensor::from_data(Data::new(vec![ax, 0.0_f32, 0.0_f32], Shape::new([3])), &dev);
+
+    let yield_stress = Tensor::<B, 3>::ones([batch, n, 1], &dev).mul_scalar(TAU0);
+    let density = Tensor::<B, 3>::ones([batch, n, 1], &dev).mul_scalar(RHO);
+    let lambda_thix = Tensor::<B, 3>::ones([batch, n, 1], &dev);
+
+    let run_two_steps = |dt: f32| -> (f32, f32) {
+        let vel_data = vec![0.0_f32; batch * n * 3];
+        let mut velocity =
+            Tensor::<B, 3>::from_data(Data::new(vel_data, Shape::new([batch, n, 3])), &dev);
+        let mut pressure = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+
+        let mut solver = BinghamFlowSolver::new(dt, MU);
+        solver.edge_length_scale = dy;
+        solver.t_rest_thix = BinghamFlowSolver::T_REST_NO_THIX;
+        solver.gamma_crit_thix = BinghamFlowSolver::GAMMA_CRIT_NO_THIX;
+
+        let mask3 = wall_mask.clone().expand([batch, n, 3]);
+
+        let (v0, p0, _lam) = solver.step(
+            velocity,
+            pressure.clone(),
+            yield_stress.clone(),
+            density.clone(),
+            lambda_thix.clone(),
+            edges_b1.clone(),
+            gravity.clone(),
+        );
+        velocity = v0.mul(mask3.clone());
+        pressure = p0;
+        let umax0 = velocity.clone().abs().max().into_scalar();
+
+        let (v1, _p1, _lam2) = solver.step(
+            velocity,
+            pressure.clone(),
+            yield_stress.clone(),
+            density.clone(),
+            lambda_thix.clone(),
+            edges_b1.clone(),
+            gravity.clone(),
+        );
+        let umax1 = v1.mul(mask3).abs().max().into_scalar();
+
+        (umax0, umax1)
+    };
+
+    let (a0, a1) = run_two_steps(1e-7_f32);
+    let (b0, b1) = run_two_steps(1e-6_f32);
+
+    assert!(
+        a0.is_finite() && a1.is_finite() && b0.is_finite() && b1.is_finite(),
+        "expected finite speeds; dt=1e-7: umax0={a0:.3e} umax1={a1:.3e}; dt=1e-6: umax0={b0:.3e} umax1={b1:.3e}"
+    );
+
+    let eps_floor = 1e-30_f32;
+    let ratio_small_dt = a1 / a0.max(eps_floor);
+    let ratio_large_dt = b1 / b0.max(eps_floor);
+
+    // Bracket strong amplification on the first surrogate projection (wide band: f32 / per-dt detail).
+    const R_LO: f32 = 150.0;
+    const R_HI: f32 = 3.0e4;
+    assert!(
+        ratio_small_dt > R_LO && ratio_small_dt < R_HI,
+        "expected ~1e3 amplification for dt=1e-7; umax0={a0:.3e} umax1={a1:.3e} ratio={ratio_small_dt:.3e}"
+    );
+    assert!(
+        ratio_large_dt > R_LO && ratio_large_dt < R_HI,
+        "expected ~1e3 amplification for dt=1e-6; umax0={b0:.3e} umax1={b1:.3e} ratio={ratio_large_dt:.3e}"
+    );
+
+    // Both paths stay finite through step 1 (contrast with later NaN in the long ignored benchmark).
+    assert!(
+        a1 < 1.0 && b1 < 1.0,
+        "sanity: pre-explosion speeds < 1 m/s here; a1={a1:.3e} b1={b1:.3e}"
+    );
+}
+
 /// Explicit one-step Roussel \(\lambda\) update matches hand-derived Euler under \(\dot\gamma=0\).
 #[cfg(feature = "rheology-bingham")]
 #[test]

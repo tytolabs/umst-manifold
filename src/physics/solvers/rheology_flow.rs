@@ -57,6 +57,24 @@
 //!
 //! ## Default builds (`solver-experimental` **off**)
 //! Returns `(velocity, pressure, lambda_thix)` unchanged so `cargo test` stays green.
+//!
+//! ## R2.2 — Honest scope (DEFERRAL — Rheology, Track J)
+//! **In scope today:** explicit predictor + **surrogate** pressure correction (Richardson on the graph
+//! Laplacian with an RHS built from **three scalar Laplacians** of \(u^\*\) — not the discrete
+//! divergence \(\nabla_h\!\cdot u^\*\) of a staggered/incompressible discretization); wall BCs as
+//! **external** nodal masks in tests; Bingham + optional Roussel \(\lambda\) on the same 1-skeleton.
+//!
+//! **Out of scope / not CI-certified:** developed **2D** channel flow matching plane Poiseuille
+//! (Bingham or Newtonian) on the full **64×16** cell graph; inlet/outlet pressure drop as a **consistent**
+//! open boundary with this split; claims of convergence to [`plane_bingham_poiseuille_u`] or the
+//! regularized quadrature profile without replacing the pressure step.
+//!
+//! **Known numerical boundary:** on the **65×17** channel scaffold with uniform body force
+//! \(a_x=\Delta p/\rho\) matching `rheology_poiseuille` SI defaults, the surrogate projection produces
+//! **large** \(\mathcal O(10^3\!-\!10^4)\) growth in \(\|u\|_\infty\) **relative to the predictor**
+//! on the first correction step (and quickly blows up further — see `tests/verification/rheology_poiseuille.rs`:
+//! ignored steady benchmark + active two-step `chorin_surrogate_poisson_amplification_regression_guard`).
+//! Steady vs analytic comparisons stay deferred until a true pressure Poisson (or MAC-type) RHS/BC story replaces this MVP.
 
 #[cfg(feature = "rheology-bingham")]
 use crate::physics::dec_primal::{
