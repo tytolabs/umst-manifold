@@ -254,6 +254,58 @@ fn dirichlet_zero_linear_bridge(e: &[C], n: usize) -> Vec<C> {
     out
 }
 
+/// Undo [`dirichlet_zero_linear_bridge`]: recover the pre-bridge samples from bridged values.
+#[inline]
+fn invert_dirichlet_linear_bridge(bridged: &[C], e_end0: C, e_end1: C, n: usize) -> Vec<C> {
+    let inv = 1.0_f32 / (n - 1).max(1) as f32;
+    let mut out = Vec::with_capacity(n);
+    for j in 0..n {
+        let s = j as f32 * inv;
+        let b = C::add(C::scale(1.0 - s, e_end0), C::scale(s, e_end1));
+        out.push(C::add(bridged[j], b));
+    }
+    out
+}
+
+/// Discrete-only Fresnel reflection estimate on the **left** bulk using
+/// \(E \approx a\,\mathrm e^{i k_1 (x-x_I)} + b\,\mathrm e^{-i k_1 (x-x_I)}\) at two interior nodes.
+/// Returns `b/a` when the local \(2\times2\) complex system is well-conditioned.
+fn fresnel_r_disc_two_point(
+    e_left_unbridged: &[C],
+    j_a: usize,
+    j_b: usize,
+    h: f32,
+    k1: f32,
+    x_interface: f32,
+) -> Option<C> {
+    if j_a >= e_left_unbridged.len() || j_b >= e_left_unbridged.len() {
+        return None;
+    }
+    let x_a = j_a as f32 * h;
+    let x_b = j_b as f32 * h;
+    let z_a = cis32(k1 * (x_a - x_interface));
+    let z_b = cis32(k1 * (x_b - x_interface));
+    let inv_za = C::div(C { re: 1.0, im: 0.0 }, z_a);
+    let inv_zb = C::div(C { re: 1.0, im: 0.0 }, z_b);
+    // [z_a, inv_za; z_b, inv_zb] [a; b] = [u_a; u_b]
+    let u_a = e_left_unbridged[j_a];
+    let u_b = e_left_unbridged[j_b];
+    let det = C::sub(C::mul(z_a, inv_zb), C::mul(z_b, inv_za));
+    let den = det.re * det.re + det.im * det.im;
+    if den < 1e-20_f32 {
+        return None;
+    }
+    let det_a = C::sub(C::mul(u_a, inv_zb), C::mul(u_b, inv_za));
+    let det_b = C::sub(C::mul(z_a, u_b), C::mul(z_b, u_a));
+    let a = C::div(det_a, det);
+    let b = C::div(det_b, det);
+    let a_mag = a.re * a.re + a.im * a.im;
+    if a_mag < 1e-16_f32 {
+        return None;
+    }
+    Some(C::div(b, a))
+}
+
 /// Same TE stencil as production (`inv_eps = 2/(ε_i+ε_{i+1})`, uniform `h`).
 fn apply_te_helmholtz_chain(n: usize, h: f32, k0: f32, eps: &[C], e: &[C]) -> Vec<C> {
     let inv_h2 = 1.0 / (h * h);
@@ -498,9 +550,22 @@ fn two_half_spaces_fresnel_te_no_pml_matches_analytic() {
         let di = sol[i].im - e_ex[i].im;
         max_err = max_err.max((dr * dr + di * di).sqrt());
     }
-    assert_relative_eq!(max_err, 0.0_f32, epsilon = 9e-2_f32);
+    assert_relative_eq!(max_err, 0.0_f32, epsilon = 7.5e-2_f32);
 
     assert_relative_eq!(r_analytic, -1.0_f32 / 3.0_f32, epsilon = 1e-6_f32);
+
+    // Discrete-only reflection: invert the Dirichlet linear bridge on the solved field, then fit
+    // (+k₁) / (−k₁) amplitudes at two left-bulk nodes (see `fresnel_r_disc_two_point`).
+    let e_unb = invert_dirichlet_linear_bridge(&sol, e_pw[0], e_pw[n - 1], n);
+    let x_int = n_left as f32 * h;
+    let k1 = k0 * n1;
+    let j_a = (n_left / 4).max(2) + 2;
+    let j_b = n_left.saturating_sub(4).saturating_sub(n_left / 8);
+    assert!(j_b > j_a && j_b < n_left, "probe layout for r_disc");
+    let r_disc = fresnel_r_disc_two_point(&e_unb, j_a, j_b, h, k1, x_int)
+        .expect("r_disc two-point system should be well-conditioned");
+    assert_relative_eq!(r_disc.re, r_analytic, epsilon = 6e-2_f32, max_relative = 0.25);
+    assert_relative_eq!(r_disc.im, 0.0_f32, epsilon = 6e-2_f32, max_relative = 1.0);
 }
 
 /// `PhotonicsSolver::solve_maxwell_curl_curl` (minimal primal-chain DEC + Thomas) matches

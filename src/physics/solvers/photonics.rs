@@ -30,8 +30,8 @@
 //!   does **not** wire `faces_b2` into [`PhotonicsSolver`].
 //! - **Fresnel / Helmholtz MMS + curl–curl vs scalar checks:** [`tests/verification/photonics_fresnel.rs`](../../../tests/verification/photonics_fresnel.rs).
 //!   `two_half_spaces_fresnel_te_no_pml_matches_analytic` compares the discrete solve to a **Dirichlet-linear-bridged
-//!   continuum** Fresnel field (loose nodal LS); a **discrete-only `r_disc`** gate and tighter semi-infinite
-//!   calibration remain deferred in that doc section.
+//!   continuum** Fresnel field (nodal LS) and asserts a **discrete-only `r_disc`** (two-point \( \pm k_1 \) fit after
+//!   bridge inversion) near the analytic Fresnel \(r\); tighter semi-infinite calibration remains optional follow-up.
 //!
 //! **Regression coverage (1-D only):** [`tests/verification/photonics_fresnel.rs`](../../../tests/verification/photonics_fresnel.rs)
 //! asserts that `solve_maxwell_curl_curl` and `solve_helmholtz` return the same \(E_y\) on a uniform
