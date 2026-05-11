@@ -30,7 +30,8 @@ pub use electrochemistry::{ElectroChemicalSolver, NewtonPnpContext};
 pub use fracture_field::PhaseFieldFractureSolver;
 #[cfg(feature = "fracture-at2")]
 pub use fracture_field::{
-    strain_tensor_for_fracture_after_mechanics, strain_tensor_from_bar_network_displacement,
+    spectral_tensile_psi_plus_from_strain, strain_tensor_for_fracture_after_mechanics,
+    strain_tensor_from_bar_network_displacement,
 };
 pub use photonics::{PhotonicsHelmholtzSolver, PhotonicsSolver};
 pub use rheology_flow::BinghamFlowSolver;
@@ -42,9 +43,11 @@ pub use thmc::{
     ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics,
     ThmcImplicitTAlphaNewtonConfig, ThmcSolver, ThmcState,
 };
-#[cfg(feature = "thmc-coupled")]
-pub use thmc_residual::ThmcImplicitEulerThermalHydrationResidual;
 pub use thmc_residual::{ResidualThmc, ThmcMonolithicImplicitUnknownLayout};
+#[cfg(feature = "thmc-coupled")]
+pub use thmc_residual::{
+    ThmcImplicitEulerThermalHumidityHydrationResidual, ThmcImplicitEulerThermalHydrationResidual,
+};
 pub use topology_solver::{
     DensityNet, TopologyOptimizer, TopologyOptimizerStub, TopologySolver, TopologySolverConfig,
 };

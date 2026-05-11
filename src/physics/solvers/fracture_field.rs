@@ -683,6 +683,16 @@ fn tensile_strain_energy_density_spectral_jacobi<B: Backend<FloatElem = f32>>(
         .mul_scalar(0.5_f32)
 }
 
+/// Scalar spectral tensile energy density \(\psi^+\) per node — **same** map as inside
+/// [`PhaseFieldFractureSolver::update_damage`] (Jacobi sweeps on symmetric strain). Intended for
+/// verification harnesses (Track 12 §7.2 drive sanity).
+#[cfg(feature = "fracture-at2")]
+pub fn spectral_tensile_psi_plus_from_strain<B: Backend<FloatElem = f32>>(
+    strain: Tensor<B, 4>,
+) -> Tensor<B, 3> {
+    tensile_strain_energy_density_spectral_jacobi(strain)
+}
+
 #[cfg(all(test, feature = "fracture-at2"))]
 mod fracture_at2_tests {
     use burn::tensor::{Data, Shape, Tensor};

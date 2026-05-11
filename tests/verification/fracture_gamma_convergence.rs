@@ -10,13 +10,15 @@
 //! half-steps on the graph Laplacian (see solver module docs). With `--features fracture-at2`:
 //! `update_damage_smoke_tiny_chain` (finite \(d\); `outer_iterations == 1` with a fixed-strain
 //! provider matches [`PhaseFieldFractureSolver::update_damage`]); `at2_surface_energy_scale_matches_gc_order_of_magnitude` (order-of-magnitude
-//! \(G_c/l\cdot\bar d\) on the tiny chain); `at2_gc_linear_scaling_smoke` (doubling \(G_c\) at fixed \((l,\varepsilon)\): \(\bar d\) stays same order and \(G_c/l\cdot\bar d\) tracks \(\Delta G_c\) loosely — explicit sweep, **not** the Γ-limit scaling of \(G_c\) in the sharp-interface sense); **`at2_gamma_convergence_three_length_scales`** — three \((l_0,h)\) pairs with fixed \(h/l_0=\tfrac14\), \(\psi^+\!=0\), exponential damage seed at mid-span; discrete AT2 surface functional \(D_h\) has **relative error &lt; 2%** vs **`Gc`** on each mesh and **does not worsen** across refinement (successive errors within **`10^{-3}`**, fixed-strain relaxation with 32 outer passes — not a coupled mechanics \(\psi^+\) benchmark).
+//! \(G_c/l\cdot\bar d\) on the tiny chain); `at2_gc_linear_scaling_smoke` (doubling \(G_c\) at fixed \((l,\varepsilon)\): \(\bar d\) stays same order and \(G_c/l\cdot\bar d\) tracks \(\Delta G_c\) loosely — explicit sweep, **not** the Γ-limit scaling of \(G_c\) in the sharp-interface sense); **`at2_gamma_convergence_three_length_scales`** — three \((l_0,h)\) pairs with fixed \(h/l_0=\tfrac14\), \(\psi^+\!=0\), exponential damage seed at mid-span; discrete AT2 surface functional \(D_h\) has **relative error &lt; 2%** vs **`Gc`** on each mesh and **does not worsen** across refinement (successive errors within **`10^{-3}`**, fixed-strain relaxation with 32 outer passes — not a coupled mechanics \(\psi^+\) benchmark); **`at2_gamma_convergence_psi_plus_nonzero_three_length_scales`** (Track 12 §7.2) — same triple with uniform tensile \(\varepsilon_{xx}\), **`spectral_tensile_psi_plus_from_strain`** drive sanity, widened \(\tau_\Gamma\), non-worsening errors, and \(D_h > G_c\) vs the pure-surface optimum.
 //!
-//! **Harness:** shared **`discrete_at2_bar_surface_energy_1d`** + **`at2_discrete_surface_functional_toy_chain_matches_hand_total`** (guards the \(D_h\) sum used by **`at2_gamma_convergence_three_length_scales`**). **Research backlog** (acceptance formulas + proposed test names for \(\psi^+\), multi-ratio \((l_0,h)\), stagger dissipation, THMC within-step stagger): [`docs/research/v0.4_track12_staggered_fracture_mechanics.md`](../../docs/research/v0.4_track12_staggered_fracture_mechanics.md) §7.
+//! **Harness:** shared **`discrete_at2_bar_surface_energy_1d`** + **`at2_discrete_surface_functional_toy_chain_matches_hand_total`** (guards the \(D_h\) sum used by **`at2_gamma_convergence_three_length_scales`**). **Research backlog** (multi-ratio \((l_0,h)\), stagger dissipation, THMC within-step stagger): [`docs/research/v0.4_track12_staggered_fracture_mechanics.md`](../../docs/research/v0.4_track12_staggered_fracture_mechanics.md) §7.
 
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 
+#[cfg(feature = "fracture-at2")]
+use umst_manifold::physics::solvers::spectral_tensile_psi_plus_from_strain;
 use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
 #[cfg(feature = "fracture-at2")]
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
@@ -471,6 +473,125 @@ fn at2_gamma_convergence_three_length_scales() {
         "error must not increase between mid→fine: {:?}",
         errors
     );
+}
+
+/// Track 12 §7.2 — same three \((l_0,h)\) pairs and \(D_h\) functional as
+/// [`at2_gamma_convergence_three_length_scales`], but with **nonzero** spectral tensile drive from a
+/// uniform uniaxial \(\varepsilon_{xx}\) so `update_damage` perturbs the exponential seed (fixed-strain
+/// relaxation, 32 passes). **\(\tau_\Gamma\)** is widened vs the \(\psi^+\!=0\) harness (2%): coupled
+/// tensile drive raises \(D_h\) above the sharp \(G_c\) surface-only optimum; we still gate **non-worsening**
+/// successive relative errors and assert \(\max_i \psi^+_i\) from the same Jacobi map as the solver.
+#[cfg(feature = "fracture-at2")]
+#[test]
+fn at2_gamma_convergence_psi_plus_nonzero_three_length_scales() {
+    let dev = NdArrayDevice::Cpu;
+    let length_l: f32 = 5.0;
+    let gc_val: f32 = 1.0;
+    // Uniform axial tension: ψ⁺ = ½ ε_max² per node (aligned principal axis).
+    let exx: f32 = 0.08_f32;
+    let psi_floor: f32 = 0.5_f32 * exx * exx * 0.99_f32;
+
+    let pairs: [(f32, f32); 3] = [(0.04, 0.01), (0.02, 0.005), (0.01, 0.0025)];
+    let mut errors: Vec<f32> = Vec::with_capacity(pairs.len());
+    let mut d_hs: Vec<f32> = Vec::with_capacity(pairs.len());
+
+    for (l0, h) in pairs.iter().copied() {
+        let n: usize = ((length_l / h).ceil() as usize) + 1;
+        let e_ct: usize = n - 1;
+        let batch: usize = 1;
+
+        let mut edge_data = Vec::with_capacity(2 * e_ct);
+        for i in 0..e_ct {
+            edge_data.push(i as i64);
+        }
+        for i in 0..e_ct {
+            edge_data.push((i + 1) as i64);
+        }
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(edge_data, Shape::new([2, e_ct])), &dev);
+
+        let mut d_init = vec![0.0_f32; n];
+        let centre = length_l * 0.5;
+        for (i, slot) in d_init.iter_mut().enumerate().take(n) {
+            let x = (i as f32) * h;
+            *slot = (-((x - centre).abs()) / l0).exp();
+        }
+        let damage = Tensor::<B, 3>::from_data(Data::new(d_init, Shape::new([batch, n, 1])), &dev);
+
+        let mut strain_data = vec![0.0_f32; batch * n * 9];
+        for nod in 0..n {
+            let base = nod * 9;
+            strain_data[base] = exx;
+        }
+        let strain: Tensor<B, 4> =
+            Tensor::from_data(Data::new(strain_data, Shape::new([batch, n, 3, 3])), &dev);
+
+        let psi_tensor = spectral_tensile_psi_plus_from_strain(strain.clone());
+        let max_psi: f32 = psi_tensor
+            .clone()
+            .into_data()
+            .value
+            .iter()
+            .copied()
+            .fold(0.0_f32, f32::max);
+        assert!(
+            max_psi >= psi_floor,
+            "drive sanity: max ψ⁺ should match uniaxial tensile map; max_psi={max_psi} floor={psi_floor}"
+        );
+
+        let fracture_energy_gc = Tensor::from_data(
+            Data::new(vec![gc_val; batch * n], Shape::new([batch, n, 1])),
+            &dev,
+        );
+
+        let solver = PhaseFieldFractureSolver { length_scale: l0 };
+        let mut d_curr = damage.clone();
+        for _ in 0..32 {
+            d_curr = solver.update_damage(
+                strain.clone(),
+                d_curr,
+                fracture_energy_gc.clone(),
+                edges_b1.clone(),
+            );
+        }
+
+        let d_vals: Vec<f32> = d_curr.into_data().value;
+        let d_h = discrete_at2_bar_surface_energy_1d(&d_vals, h, l0, gc_val);
+        let err = (d_h - gc_val).abs() / gc_val;
+        d_hs.push(d_h);
+        errors.push(err);
+        eprintln!(
+            "Γ ψ⁺: l0={l0:.4} h={h:.4} N={n} D_h={d_h:.4} rel_err={err:.4} max_psi={max_psi:.6}"
+        );
+    }
+
+    // Wider band than ψ⁺≡0: tensile drive couples into damage; D_h need not sit at the sharp `Gc` optimum.
+    const TAU_GAMMA_PSI: f32 = 0.55_f32;
+    for (i, &err) in errors.iter().enumerate() {
+        assert!(
+            err < TAU_GAMMA_PSI,
+            "Γ-type relative error too large at pair {i}: D_h={} rel_err={err} (cap {TAU_GAMMA_PSI})",
+            d_hs[i]
+        );
+    }
+    assert!(
+        errors[1] <= errors[0] + 1e-3,
+        "error must not increase between coarse→mid: {:?}",
+        errors
+    );
+    assert!(
+        errors[2] <= errors[1] + 1e-3,
+        "error must not increase between mid→fine: {:?}",
+        errors
+    );
+
+    // Coupled drive lifts the discrete surface measure above the ψ⁺≡0 optimum (`D_h ≈ Gc`).
+    for dh in &d_hs {
+        assert!(
+            *dh > gc_val + 5e-3_f32,
+            "expected D_h > Gc on each mesh with strong ψ⁺; got D_h={dh}"
+        );
+    }
 }
 
 /// Phase 3.1 — staggered elasticity–damage loop owns the mechanics solve internally.
