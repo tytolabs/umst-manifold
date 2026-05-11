@@ -59,7 +59,7 @@
 //!   [`solve_newton_correction_full_sg_row_band_via_dense_expand`]) — this is what [`try_solve_pnp_backward_euler_newton_chain`] ships. When
 //!   [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] is **`>1`**, inners **reuse the same frozen band**
 //!   entries while re-expanding each inner (**no extra column-FD probes** between inners).
-//!   **Pivot-safe band LU** ([`solve_newton_correction_full_sg_row_band_via_band_lu`]) is implemented (**\(O(dim\cdot bw^2)\)**) but **not** wired into [`try_solve_pnp_backward_euler_newton_chain`] (production uses dense expand only). Default-CI [`full_sg_newton_band_expand_dense_matches_dense_column_fd_reference`] checks band assembly + dense-expand **δ** vs all-dense column FD on **N=17**. **`#[ignore]`** [`full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity`] prints LU vs dense-expand timings and **`max|δ_lu−δ_de|`** without asserting LU parity.
+//!   **Pivot-safe band LU** ([`solve_newton_correction_full_sg_row_band_via_band_lu`]) is implemented (**\(O(dim\cdot bw^2)\)**) but **not** wired into [`try_solve_pnp_backward_euler_newton_chain`] (production uses dense expand only). Default-CI [`full_sg_newton_band_expand_dense_matches_dense_column_fd_reference`] checks band assembly + dense-expand **δ** vs all-dense column FD on **N=17**; [`full_sg_newton_dense_expand_matches_direct_gaussian_multi_n`] locks dense-expand **δ** vs direct Gaussian on the expanded Jacobian at **N ∈ {17,33,49,65,81}**. **`#[ignore]`** [`full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity`] prints LU vs dense-expand timings and **`max|δ_lu−δ_de|`** without asserting LU parity.
 //!   **Still open at large \(N\):** band LU parity across **N**, matrix-free / Krylov, or trimming the **`(3N)²`** scratch;
 //!   general graphs (**Ring 2 R2.3**).
 //!   The default [`ElectroChemicalSolver::solve_pnp_step`] path remains explicit split.
@@ -2342,6 +2342,133 @@ mod newton_chain_tests {
             "expected J*dx ≈ -R (full SG), max|Jx+R|={lin_err:.3e}"
         );
     }
+
+    /// Multi-**N** regression: [`solve_newton_correction_full_sg_row_band_via_dense_expand`] matches
+    /// [`solve_dense_linear`] on the **fully expanded** band Jacobian (same pivot order as production inner solve).
+    #[test]
+    fn full_sg_newton_dense_expand_matches_direct_gaussian_multi_n() {
+        let ns = [17_usize, 33, 49, 65, 81];
+        let solver = ElectroChemicalSolver {
+            faraday_const: 1.0_f32,
+            gas_const: 1.0_f32,
+            mesh_spacing: 0.11_f32,
+            ..Default::default()
+        };
+        let newton = NewtonPnpContext {
+            linearize_sg_fickian: false,
+            fd_step: 1e-6,
+            ..Default::default()
+        };
+        let dt = 1.7e-4_f64;
+        let kl_lu = PNP_CHAIN_FULL_SG_JAC_KL_LU;
+        let ku_lu = PNP_CHAIN_FULL_SG_JAC_KU_LU;
+        let bw_lu = PNP_CHAIN_FULL_SG_BW_LU;
+
+        for &n in &ns {
+            let mut eps = vec![0.0_f64; n];
+            let mut d_plus = vec![0.0_f64; n];
+            let mut d_minus = vec![0.0_f64; n];
+            for i in 0..n {
+                let x = i as f64 / (n - 1) as f64;
+                eps[i] = 1.0 + 0.09 * (x - 0.4).powi(2);
+                d_plus[i] = 0.031 + 0.008 * x.sin();
+                d_minus[i] = 0.029 + 0.007 * (x * 1.9).cos();
+            }
+            let mut c_plus_n = vec![0.0_f64; n];
+            let mut c_minus_n = vec![0.0_f64; n];
+            for i in 0..n {
+                let x = i as f64 / (n - 1) as f64;
+                c_plus_n[i] = 1.0 + 0.06 * x;
+                c_minus_n[i] = 1.0 - 0.05 * x * x;
+            }
+            let g0 = 0.018_f64;
+            let g1 = -0.012_f64;
+            let mut u = vec![0.0_f64; 3 * n];
+            for i in 0..n {
+                u[i] = 0.012 * (i as f64 / n as f64).sin();
+                u[n + i] = c_plus_n[i] + 0.003 * ((i % 4) as f64);
+                u[2 * n + i] = c_minus_n[i] - 0.002 * ((i % 3) as f64);
+            }
+            u[0] = g0;
+            u[n - 1] = g1;
+            let r = pnp_be_residual_vector_f64(
+                &solver,
+                &newton,
+                dt,
+                &u[0..n],
+                &u[n..2 * n],
+                &u[2 * n..3 * n],
+                &c_plus_n,
+                &c_minus_n,
+                &eps,
+                &d_plus,
+                &d_minus,
+                g0,
+                g1,
+            );
+            let dim = 3 * n;
+            let mut jac_band = vec![0.0_f64; dim * bw_lu];
+            newton_fd_jacobian_full_sg_node_major_row_band(
+                &solver,
+                &newton,
+                dt,
+                &u,
+                &c_plus_n,
+                &c_minus_n,
+                &eps,
+                &d_plus,
+                &d_minus,
+                g0,
+                g1,
+                &r,
+                &mut jac_band,
+            );
+
+            let mut rhs_nm = vec![0.0_f64; dim];
+            pnp_residual_fm_to_nm(&r, n, &mut rhs_nm);
+            for v in rhs_nm.iter_mut() {
+                *v = -*v;
+            }
+            let rhs_gauss = rhs_nm.clone();
+
+            let mut jac_dense_scratch = vec![0.0_f64; dim * dim];
+            let mut rhs_de = rhs_nm;
+            assert!(
+                solve_newton_correction_full_sg_row_band_via_dense_expand(
+                    &jac_band,
+                    dim,
+                    kl_lu,
+                    ku_lu,
+                    bw_lu,
+                    &mut jac_dense_scratch,
+                    &mut rhs_de,
+                ),
+                "dense-expand Newton correction N={n}"
+            );
+
+            let mut a_full = vec![0.0_f64; dim * dim];
+            for i_nm in 0..dim {
+                for j_nm in 0..dim {
+                    a_full[i_nm * dim + j_nm] =
+                        row_band_get(&jac_band, kl_lu, ku_lu, bw_lu, i_nm, j_nm);
+                }
+            }
+            let mut x_gauss = rhs_gauss;
+            assert!(
+                solve_dense_linear(dim, &mut a_full, &mut x_gauss),
+                "direct Gaussian on expanded Jacobian N={n}"
+            );
+
+            let max_dx: f64 = (0..dim)
+                .map(|i| (rhs_de[i] - x_gauss[i]).abs())
+                .fold(0.0_f64, f64::max);
+            assert!(
+                max_dx < 1e-11_f64,
+                "N={n}: dense-expand δ vs direct Gaussian max_abs={max_dx:.3e}"
+            );
+        }
+    }
+
 
     #[test]
     fn try_solve_host_tensor_path_converges() {
