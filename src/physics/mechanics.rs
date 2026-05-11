@@ -207,6 +207,11 @@ impl VectorMechanicsSolver {
     /// \(R_u = P(\mathbf f_{\mathrm{ext}} - K(P\mathbf u))\) for the packed axial bar network (`P` =
     /// `boundary_mask`). Used by THMC at a trial displacement. **Not** the scalar **`acoustics-newmark`**
     /// periodic-bar wave path (verification **#10**).
+    ///
+    /// Optional `edge_shrink_strain_increment` \([B,E,1]\): dimensionless **increment** of free shrink
+    /// strain along each edge (THMC notional hook). Elastic axial elongation uses
+    /// \(\delta L_{\mathrm{el}} = \delta L_{\mathrm{geom}} - \varepsilon_{\Delta}\,L\) before the \(k_e\)
+    /// spring law.
     #[cfg(feature = "thmc-coupled")]
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn projected_bar_equilibrium_residual<B: Backend<FloatElem = f32>>(
@@ -218,6 +223,7 @@ impl VectorMechanicsSolver {
         damage: Tensor<B, 3>,
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
+        edge_shrink_strain_increment: Option<Tensor<B, 3>>,
     ) -> Tensor<B, 3> {
         let batch = stiffness.dims()[0];
         let n_v = coords.dims()[0];
@@ -265,6 +271,8 @@ impl VectorMechanicsSolver {
             &src_indices,
             &tgt_indices,
             n_v,
+            edge_shrink_strain_increment.as_ref(),
+            &edge_len,
         );
         boundary_mask.mul(body_force.sub(ku))
     }
@@ -352,9 +360,17 @@ impl VectorMechanicsSolver {
             let mut u_c = u.clone().slice([b..b + 1, 0..n_v, 0..3]);
 
             let u_emb = Self::embed_batch_row(&template, b, n_v, u_c.clone());
-            let ku_b =
-                Self::bar_matvec(u_emb, &k_axial, &edge_unit, &src_indices, &tgt_indices, n_v)
-                    .slice([b..b + 1, 0..n_v, 0..3]);
+            let ku_b = Self::bar_matvec(
+                u_emb,
+                &k_axial,
+                &edge_unit,
+                &src_indices,
+                &tgt_indices,
+                n_v,
+                None,
+                &edge_len,
+            )
+            .slice([b..b + 1, 0..n_v, 0..3]);
             let mut r = p_mask.clone().mul(f_b.clone().sub(ku_b));
 
             let rhs_norm = f_b
@@ -384,9 +400,17 @@ impl VectorMechanicsSolver {
 
             for _ in 0..max_it {
                 let p_emb = Self::embed_batch_row(&template, b, n_v, p.clone());
-                let ap_raw =
-                    Self::bar_matvec(p_emb, &k_axial, &edge_unit, &src_indices, &tgt_indices, n_v)
-                        .slice([b..b + 1, 0..n_v, 0..3]);
+                let ap_raw = Self::bar_matvec(
+                    p_emb,
+                    &k_axial,
+                    &edge_unit,
+                    &src_indices,
+                    &tgt_indices,
+                    n_v,
+                    None,
+                    &edge_len,
+                )
+                .slice([b..b + 1, 0..n_v, 0..3]);
                 let ap_b = p_mask.clone().mul(ap_raw);
 
                 let rz = (r.clone().mul(z.clone())).sum();
@@ -404,6 +428,8 @@ impl VectorMechanicsSolver {
                     &src_indices,
                     &tgt_indices,
                     n_v,
+                    None,
+                    &edge_len,
                 )
                 .slice([b..b + 1, 0..n_v, 0..3]);
                 let r_next = p_mask.clone().mul(f_b.clone().sub(ku_next));
@@ -578,6 +604,7 @@ impl VectorMechanicsSolver {
         (u, stress)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn bar_matvec<B: Backend<FloatElem = f32>>(
         u: Tensor<B, 3>,
         k_axial: &Tensor<B, 3>,
@@ -585,16 +612,21 @@ impl VectorMechanicsSolver {
         src_indices: &Tensor<B, 3, Int>,
         tgt_indices: &Tensor<B, 3, Int>,
         n_v: usize,
+        edge_shrink_strain_increment: Option<&Tensor<B, 3>>,
+        edge_len: &Tensor<B, 3>,
     ) -> Tensor<B, 3> {
         let batch = u.dims()[0];
         let device = u.device();
         let u_src = u.clone().gather(1, src_indices.clone());
         let u_tgt = u.clone().gather(1, tgt_indices.clone());
         let du = u_src.sub(u_tgt);
-        let elong = du
+        let mut elong = du
             .mul(edge_unit.clone())
             .sum_dim(2)
             .reshape([batch, k_axial.dims()[1], 1]);
+        if let Some(ess) = edge_shrink_strain_increment {
+            elong = elong.sub(ess.clone().mul(edge_len.clone()));
+        }
         let axial = elong.mul(k_axial.clone());
         let f_vec = edge_unit.clone().mul(axial);
 
@@ -889,7 +921,7 @@ mod tests {
             .sub(d_on_edges)
             .powf_scalar(2.0)
             .add_scalar(DAMAGE_REG);
-        let k_axial = e_on_edges.mul_scalar(a).div(edge_len).mul(dmg);
+        let k_axial = e_on_edges.mul_scalar(a).div(edge_len.clone()).mul(dmg);
 
         let ku = VectorMechanicsSolver::bar_matvec(
             u.clone(),
@@ -898,6 +930,8 @@ mod tests {
             &src_indices,
             &tgt_indices,
             n,
+            None,
+            &edge_len,
         );
         let res = bf.sub(ku).mul(boundary_mask.clone());
         let res_max = res.clone().abs().max().into_scalar();
@@ -1010,7 +1044,7 @@ mod tests {
             .sub(d_on_edges)
             .powf_scalar(2.0)
             .add_scalar(DAMAGE_REG);
-        let k_axial = e_on_edges.mul_scalar(a_sec).div(edge_len).mul(dmg);
+        let k_axial = e_on_edges.mul_scalar(a_sec).div(edge_len.clone()).mul(dmg);
 
         let pack_idx: Vec<usize> = (1..n).map(|node| node * 3).collect();
         let m = pack_idx.len();
@@ -1026,6 +1060,8 @@ mod tests {
                 &src_indices,
                 &tgt_indices,
                 n,
+                None,
+                &edge_len,
             );
             let ku_flat = ku.into_data().value;
             for i in 0..m {

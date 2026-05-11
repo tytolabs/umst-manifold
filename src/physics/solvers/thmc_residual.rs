@@ -34,13 +34,15 @@ use burn::tensor::Shape;
 use burn::tensor::Tensor;
 
 #[cfg(feature = "thmc-coupled")]
+use crate::physics::dec_operators::DecEdgeOperators;
+#[cfg(feature = "thmc-coupled")]
 use crate::physics::laplacian::TopologicalLaplacian;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::mechanics::VectorMechanicsSolver;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc::{
-    full_hydration_alpha_rate_tensor, ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan,
-    ThmcHydrationKinetics, ThmcState,
+    full_hydration_alpha_rate_tensor, shrink_strain_from_saturation_loss_tensor, ChemicalPlan,
+    HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics, ThmcState,
 };
 
 #[cfg(not(feature = "thmc-coupled"))]
@@ -365,6 +367,9 @@ pub struct ThmcImplicitEulerThermalHumidityHydrationResidual<B: Backend<FloatEle
     pub displacement_n: Tensor<B, 3>,
     /// Scalar \(m\) in \(R_u = m(\mathbf u - \mathbf u^n)\) (layout / FD scale hook; not physical mass).
     pub mechanics_placeholder_mass: f32,
+    /// Optional `w/c` for notional drying-shrink **increment** in [`Self::evaluate_quasi_static_r_u`]
+    /// (coupling plan §4 Phase 4). `None` preserves shrink-free elastic \(R_u\).
+    pub ru_shrinkage_water_cement_ratio: Option<f32>,
     pub edges_b1: Tensor<B, 2, Int>,
     pub damage_m: Tensor<B, 3>,
     pub kinetics: ThmcHydrationKinetics,
@@ -493,6 +498,10 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     /// \(P(\mathbf f_{\mathrm{ext}} - K(\alpha)\,\mathbf u)\) using the same \(\alpha\mapsto E\) rule as
     /// [`super::thmc::ThmcSolver::step_experimental`](super::thmc::ThmcSolver) and
     /// [`VectorMechanicsSolver::projected_bar_equilibrium_residual`].
+    ///
+    /// **Phase 4 (optional):** when [`Self::ru_shrinkage_water_cement_ratio`] is `Some(w/c)\), a notional
+    /// shrink-strain **increment** along edges (trial vs `humidity_n` saturation deficit, edge-averaged)
+    /// enters the axial bar law as an eigenstrain in [`VectorMechanicsSolver::projected_bar_equilibrium_residual`].
     pub fn evaluate_quasi_static_r_u(
         &self,
         trial: &ThmcState<B>,
@@ -536,6 +545,37 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             .clone()
             .slice([0..batch, 0..n, 0..1])
             .clamp(1e-6_f32, 1.0_f32);
+
+        let edge_shrink_strain_increment = if let Some(wc) = self.ru_shrinkage_water_cement_ratio {
+            let h = trial.hydro.humidity.clone();
+            let h_n = self.humidity_n.clone();
+            if h.dims() != [batch, n, 1] {
+                return Err(format!(
+                    "evaluate_quasi_static_r_u: trial humidity dims {:?} != [{batch}, {n}, 1]",
+                    h.dims()
+                ));
+            }
+            if h_n.dims() != [batch, n, 1] {
+                return Err(format!(
+                    "evaluate_quasi_static_r_u: humidity^n dims {:?} != [{batch}, {n}, 1]",
+                    h_n.dims()
+                ));
+            }
+            let ones_h = Tensor::<B, 3>::ones(h.dims(), &device);
+            let ones_hn = Tensor::<B, 3>::ones(h_n.dims(), &device);
+            let loss_t = ones_h.sub(h).clamp(0.0_f32, 1.0_f32);
+            let loss_n = ones_hn.sub(h_n).clamp(0.0_f32, 1.0_f32);
+            let eps_t = shrink_strain_from_saturation_loss_tensor(loss_t, wc, alpha_bn1.clone());
+            let eps_n = shrink_strain_from_saturation_loss_tensor(loss_n, wc, alpha_bn1.clone());
+            let delta_node = eps_t.sub(eps_n);
+            Some(DecEdgeOperators::arithmetic_mean_on_edges(
+                delta_node,
+                self.edges_b1.clone(),
+            ))
+        } else {
+            None
+        };
+
         let stiffness_e = alpha_bn1.mul_scalar(self.kinetics.stiffness_e_scale_pa);
         let stiffness_nu =
             Tensor::<B, 3>::zeros([batch, n, 1], &device).add_scalar(self.kinetics.stiffness_nu);
@@ -549,6 +589,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             self.damage_m.clone(),
             boundary_mask_bn3.clone(),
             cross_section_area,
+            edge_shrink_strain_increment,
         ))
     }
 
@@ -721,24 +762,203 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     }
 
     /// Same contract as [`ThmcImplicitEulerThermalHydrationResidual::damped_newton_iterations`], on \((T,h,\alpha)\).
-    pub fn damped_newton_iterations(
+        for _ in 1..iterations {
+            let (next, _, after) = self.one_damped_newton_step(&current, damping, fd_eps)?;
+            current = next;
+            norms.push(after);
+        }
+        Ok((current, norms))
+    }
+
+    /// **Coupling plan §4 Phase 3:** one damped Newton step on field-major \((T,h,\alpha,\mathbf u)\)
+    /// with quasi-static bar \(R_u\) from [`Self::evaluate_quasi_static_r_u`].
+    ///
+    /// Dense forward-difference Jacobian on the stacked unknown (cap `M \le 64`, batch 1).
+    /// `damage` / `time` on `trial` are preserved.
+    pub fn one_damped_newton_step_with_quasi_static_r_u(
         &self,
         trial: &ThmcState<B>,
+        coords_n3: &Tensor<B, 2>,
+        boundary_mask_bn3: &Tensor<B, 3>,
+        body_force: &Tensor<B, 3>,
+        cross_section_area: f32,
+        damping: f32,
+        fd_eps: f32,
+    ) -> Result<(ThmcState<B>, f32, f32), String> {
+        const MAX_DOFS: usize = 64;
+        if !(damping > 0.0_f32 && damping <= 1.0_f32) {
+            return Err(
+                "one_damped_newton_step_with_quasi_static_r_u: damping must lie in (0, 1]".into(),
+            );
+        }
+        if fd_eps <= 0.0_f32 {
+            return Err("one_damped_newton_step_with_quasi_static_r_u: fd_eps must be positive".into());
+        }
+
+        let t_dims = trial.thermal.temperature.dims();
+        let h_dims = trial.hydro.humidity.dims();
+        let a_dims = trial.chemical.hydration_alpha.dims();
+        let u_dims = trial.mechanical.displacement.dims();
+        if t_dims[0] != 1 {
+            return Err(format!(
+                "one_damped_newton_step_with_quasi_static_r_u: batch must be 1, got {}",
+                t_dims[0]
+            ));
+        }
+        if t_dims != h_dims
+            || t_dims[0] != a_dims[0]
+            || t_dims[1] != a_dims[1]
+            || u_dims != [t_dims[0], t_dims[1], 3]
+        {
+            return Err(
+                "one_damped_newton_step_with_quasi_static_r_u: T, h, α, u batch/node/shape mismatch"
+                    .into(),
+            );
+        }
+
+        let n = t_dims[1];
+        let f_t = t_dims[2];
+        let f_h = h_dims[2];
+        let f_a = a_dims[2];
+        let m = ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, f_t, f_h, f_a);
+        if m > MAX_DOFS {
+            return Err(format!(
+                "one_damped_newton_step_with_quasi_static_r_u: {} stacked DOFs exceeds cap {}",
+                m, MAX_DOFS
+            ));
+        }
+
+        let device = trial.thermal.temperature.device();
+        let norm_before = self.residual_l2_including_quasi_static_r_u(
+            trial,
+            coords_n3,
+            boundary_mask_bn3,
+            body_force,
+            cross_section_area,
+        )?;
+        let r0 = self.stacked_flat_residual_field_major_quasi_static(
+            trial,
+            coords_n3,
+            boundary_mask_bn3,
+            body_force,
+            cross_section_area,
+        )?;
+
+        let mut packed = flatten_four_fields(
+            &trial.thermal.temperature,
+            &trial.hydro.humidity,
+            &trial.chemical.hydration_alpha,
+            &trial.mechanical.displacement,
+        );
+        if packed.len() != m || r0.len() != m {
+            return Err(
+                "one_damped_newton_step_with_quasi_static_r_u: internal flatten length mismatch".into(),
+            );
+        }
+
+        let t_shape = [t_dims[0], t_dims[1], t_dims[2]];
+        let h_shape = [h_dims[0], h_dims[1], h_dims[2]];
+        let a_shape = [a_dims[0], a_dims[1], a_dims[2]];
+        let u_shape = [u_dims[0], u_dims[1], u_dims[2]];
+
+        let mut jac = vec![0.0_f32; m * m];
+        for j in 0..m {
+            let eps_j = fd_eps * (1.0_f32 + packed[j].abs());
+            packed[j] += eps_j;
+            let pert = trial_from_packed_four(
+                trial,
+                &device,
+                &packed,
+                t_shape,
+                h_shape,
+                a_shape,
+                u_shape,
+            );
+            packed[j] -= eps_j;
+            let r_pert = self.stacked_flat_residual_field_major_quasi_static(
+                &pert,
+                coords_n3,
+                boundary_mask_bn3,
+                body_force,
+                cross_section_area,
+            )?;
+            for i in 0..m {
+                jac[i * m + j] = (r_pert[i] - r0[i]) / eps_j;
+            }
+        }
+
+        let mut rhs: Vec<f32> = r0.iter().map(|x| -x).collect();
+        let delta = gauss_jordan_solve(&mut jac, &mut rhs, m)?;
+        for k in 0..m {
+            packed[k] += damping * delta[k];
+        }
+
+        let new_trial = trial_from_packed_four(
+            trial,
+            &device,
+            &packed,
+            t_shape,
+            h_shape,
+            a_shape,
+            u_shape,
+        );
+        let norm_after = self.residual_l2_including_quasi_static_r_u(
+            &new_trial,
+            coords_n3,
+            boundary_mask_bn3,
+            body_force,
+            cross_section_area,
+        )?;
+        Ok((new_trial, norm_before, norm_after))
+    }
+
+    /// Chains [`Self::one_damped_newton_step_with_quasi_static_r_u`] (`iterations >= 2`).
+    pub fn damped_newton_iterations_with_quasi_static_r_u(
+        &self,
+        trial: &ThmcState<B>,
+        coords_n3: &Tensor<B, 2>,
+        boundary_mask_bn3: &Tensor<B, 3>,
+        body_force: &Tensor<B, 3>,
+        cross_section_area: f32,
         iterations: usize,
         damping: f32,
         fd_eps: f32,
     ) -> Result<(ThmcState<B>, Vec<f32>), String> {
         if iterations < 2 {
-            return Err("damped_newton_iterations (T,h,α): iterations must be >= 2".into());
+            return Err(
+                "damped_newton_iterations_with_quasi_static_r_u: iterations must be >= 2".into(),
+            );
         }
         let mut norms: Vec<f32> = Vec::with_capacity(iterations + 1);
-        norms.push(self.residual_l2(trial)?);
+        norms.push(self.residual_l2_including_quasi_static_r_u(
+            trial,
+            coords_n3,
+            boundary_mask_bn3,
+            body_force,
+            cross_section_area,
+        )?);
 
-        let (mut current, _, after_first) = self.one_damped_newton_step(trial, damping, fd_eps)?;
+        let (mut current, _, after_first) = self.one_damped_newton_step_with_quasi_static_r_u(
+            trial,
+            coords_n3,
+            boundary_mask_bn3,
+            body_force,
+            cross_section_area,
+            damping,
+            fd_eps,
+        )?;
         norms.push(after_first);
 
         for _ in 1..iterations {
-            let (next, _, after) = self.one_damped_newton_step(&current, damping, fd_eps)?;
+            let (next, _, after) = self.one_damped_newton_step_with_quasi_static_r_u(
+                &current,
+                coords_n3,
+                boundary_mask_bn3,
+                body_force,
+                cross_section_area,
+                damping,
+                fd_eps,
+            )?;
             current = next;
             norms.push(after);
         }

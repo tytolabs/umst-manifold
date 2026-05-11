@@ -15,10 +15,11 @@ use umst_manifold::core::tensors::{MixTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::physics::solvers::{
     mc2010_style_notional_shrink_strain, shrink_strain_from_saturation_loss,
-    spectral_tensile_psi_plus_from_strain, strain_tensor_for_fracture_from_manifold, ChemicalPlan,
-    HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics,
-    ThmcImplicitEulerThermalHumidityHydrationResidual, ThmcImplicitEulerThermalHydrationResidual,
-    ThmcImplicitTAlphaNewtonConfig, ThmcMonolithicImplicitUnknownLayout, ThmcSolver, ThmcState,
+    shrink_strain_from_saturation_loss_tensor, spectral_tensile_psi_plus_from_strain,
+    strain_tensor_for_fracture_from_manifold, ChemicalPlan, HydrologicPlan, MechanicalPlan,
+    ThermalPlan, ThmcHydrationKinetics, ThmcImplicitEulerThermalHumidityHydrationResidual,
+    ThmcImplicitEulerThermalHydrationResidual, ThmcImplicitTAlphaNewtonConfig,
+    ThmcMonolithicImplicitUnknownLayout, ThmcSolver, ThmcState,
 };
 
 type B = NdArray<f32>;
@@ -598,6 +599,7 @@ fn thmc_implicit_euler_t_h_alpha_residual_humidity_matches_brute_force_two_nodes
         alpha_n: alpha_n.clone(),
         displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
         mechanics_placeholder_mass: 1.0_f32,
+        ru_shrinkage_water_cement_ratio: None,
         edges_b1: manifold.edges_b1.clone(),
         damage_m: damage_m.clone(),
         kinetics: kinetics.clone(),
@@ -734,6 +736,7 @@ fn thmc_implicit_euler_t_h_alpha_u_placeholder_r_u_and_flat_layout_two_nodes() {
             &d,
         ),
         mechanics_placeholder_mass: mass,
+        ru_shrinkage_water_cement_ratio: None,
         edges_b1: manifold.edges_b1.clone(),
         damage_m: damage_m.clone(),
         kinetics,
@@ -862,6 +865,7 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
         alpha_n: alpha_hydr.clone(),
         displacement_n: Tensor::<B, 3>::zeros([batch, n, 3], &d),
         mechanics_placeholder_mass: 0.0_f32,
+        ru_shrinkage_water_cement_ratio: None,
         edges_b1,
         damage_m: damage.clone(),
         kinetics,
@@ -915,6 +919,299 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
     );
 }
 
+/// [`shrink_strain_from_saturation_loss_tensor`] matches the scalar closure channel-wise.
+#[test]
+fn shrink_strain_from_saturation_loss_tensor_matches_scalar() {
+    let d = dev();
+    let loss = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.0_f32, 0.31_f32, 1.0_f32], Shape::new([1, 3, 1])),
+        &d,
+    );
+    let alpha = Tensor::<B, 3>::full([1, 3, 1], 0.68_f32, &d);
+    let got = shrink_strain_from_saturation_loss_tensor(loss.clone(), 0.42_f32, alpha);
+    let gv = got.into_data().value;
+    let lv = loss.into_data().value;
+    for i in 0..3 {
+        let want = shrink_strain_from_saturation_loss(lv[i], 0.42_f32, 0.68_f32);
+        assert!(
+            (gv[i] - want).abs() < 2e-7_f32,
+            "i={i} got {} want {}",
+            gv[i],
+            want
+        );
+    }
+}
+
+/// **Coupling plan §4 Phase 4:** when \(h^{\mathrm{trial}}=h^n\), shrink increment vanishes and
+/// \(\|R_u(u^\star)\|/\|Pf\|\) stays at the Phase 1 equilibrium parity level.
+#[test]
+fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() {
+    use umst_manifold::physics::mechanics::VectorMechanicsSolver;
+    use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
+
+    let d = dev();
+    let n = 2usize;
+    let manifold = chain_manifold(n);
+    let coords = manifold
+        .node_positions
+        .as_ref()
+        .expect("chain_manifold SI coords")
+        .clone();
+    let edges_b1 = manifold.edges_b1.clone();
+    let batch = 1usize;
+    let kinetics = ThmcHydrationKinetics::default();
+
+    let mut bm_data = vec![1.0_f32; n * 3];
+    bm_data[0] = 0.0_f32;
+    for i in 0..n {
+        bm_data[i * 3 + 1] = 0.0_f32;
+        bm_data[i * 3 + 2] = 0.0_f32;
+    }
+    let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([batch, n, 3])), &d);
+
+    let mut bf_data = vec![0.0_f32; n * batch * 3];
+    bf_data[(n - 1) * 3] = 2_000.0_f32;
+    let body_force = Tensor::from_data(Data::new(bf_data, Shape::new([batch, n, 3])), &d);
+
+    let alpha_hydr = Tensor::<B, 3>::full([batch, n, 1], 0.72_f32, &d);
+    let alpha_bn1 = alpha_hydr
+        .clone()
+        .slice([0..batch, 0..n, 0..1])
+        .clamp(1e-6_f32, 1.0_f32);
+    let stiffness_e = alpha_bn1.mul_scalar(kinetics.stiffness_e_scale_pa);
+    let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &d).add_scalar(kinetics.stiffness_nu);
+    let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
+
+    let damage = Tensor::<B, 3>::zeros([batch, n, 1], &d);
+    let u0 = Tensor::<B, 3>::zeros([batch, n, 3], &d);
+    let inner_cfg = MechanicsInnerLoopConfig {
+        max_cg_iterations: 400,
+        cg_tolerance: 1e-8,
+        pcg_tolerance: 1e-8,
+        use_preconditioner: true,
+        max_equilibrium_substeps: 1,
+    };
+    let cross_section_area = 0.01_f32;
+    let (u_star, _) = VectorMechanicsSolver::solve_equilibrium(
+        u0,
+        coords.clone(),
+        stiffness,
+        body_force.clone(),
+        edges_b1.clone(),
+        damage.clone(),
+        boundary_mask.clone(),
+        cross_section_area,
+        &inner_cfg,
+    );
+
+    let h_shared = 0.58_f32;
+    let dt = 0.02_f32;
+    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+        dt,
+        temperature_n: Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d),
+        humidity_n: Tensor::<B, 3>::full([batch, n, 1], h_shared, &d),
+        alpha_n: alpha_hydr.clone(),
+        displacement_n: Tensor::<B, 3>::zeros([batch, n, 3], &d),
+        mechanics_placeholder_mass: 0.0_f32,
+        ru_shrinkage_water_cement_ratio: Some(0.4_f32),
+        edges_b1,
+        damage_m: damage.clone(),
+        kinetics,
+    };
+    let trial = ThmcState {
+        thermal: ThermalPlan {
+            temperature: Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
+        },
+        hydro: HydrologicPlan {
+            humidity: Tensor::<B, 3>::full([batch, n, 1], h_shared, &d),
+        },
+        mechanical: MechanicalPlan {
+            displacement: u_star,
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: alpha_hydr,
+        },
+        damage,
+        time: 0.0_f32,
+    };
+
+    let r_u = assembler
+        .evaluate_quasi_static_r_u(
+            &trial,
+            &coords,
+            &boundary_mask,
+            &body_force,
+            cross_section_area,
+        )
+        .expect("evaluate_quasi_static_r_u");
+
+    let pf = boundary_mask.clone().mul(body_force.clone());
+    let nf = pf
+        .clone()
+        .mul(pf.clone())
+        .sum()
+        .into_scalar()
+        .sqrt()
+        .max(1e-12_f32);
+    let nr = r_u
+        .clone()
+        .mul(r_u.clone())
+        .sum()
+        .into_scalar()
+        .sqrt()
+        .max(0.0_f32);
+    let rel = nr / nf;
+    assert!(
+        rel < 2e-4_f32,
+        "||R_u||/||Pf|| too large with flat humidity shrink hook: nr={nr} nf={nf} rel={rel}"
+    );
+}
+
+/// **Phase 4:** additional drying (\(h^{\mathrm{trial}}<h^n\)) increases \(\|R_u\|_2\) at fixed \(u^\star\)
+/// when the shrink increment hook is enabled.
+#[test]
+fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_node_chain() {
+    use umst_manifold::physics::mechanics::VectorMechanicsSolver;
+    use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
+
+    let d = dev();
+    let n = 2usize;
+    let manifold = chain_manifold(n);
+    let coords = manifold
+        .node_positions
+        .as_ref()
+        .expect("chain_manifold SI coords")
+        .clone();
+    let edges_b1 = manifold.edges_b1.clone();
+    let batch = 1usize;
+    let kinetics = ThmcHydrationKinetics::default();
+
+    let mut bm_data = vec![1.0_f32; n * 3];
+    bm_data[0] = 0.0_f32;
+    for i in 0..n {
+        bm_data[i * 3 + 1] = 0.0_f32;
+        bm_data[i * 3 + 2] = 0.0_f32;
+    }
+    let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([batch, n, 3])), &d);
+
+    let mut bf_data = vec![0.0_f32; n * batch * 3];
+    bf_data[(n - 1) * 3] = 2_000.0_f32;
+    let body_force = Tensor::from_data(Data::new(bf_data, Shape::new([batch, n, 3])), &d);
+
+    let alpha_hydr = Tensor::<B, 3>::full([batch, n, 1], 0.72_f32, &d);
+    let alpha_bn1 = alpha_hydr
+        .clone()
+        .slice([0..batch, 0..n, 0..1])
+        .clamp(1e-6_f32, 1.0_f32);
+    let stiffness_e = alpha_bn1.mul_scalar(kinetics.stiffness_e_scale_pa);
+    let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &d).add_scalar(kinetics.stiffness_nu);
+    let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
+
+    let damage = Tensor::<B, 3>::zeros([batch, n, 1], &d);
+    let u0 = Tensor::<B, 3>::zeros([batch, n, 3], &d);
+    let inner_cfg = MechanicsInnerLoopConfig {
+        max_cg_iterations: 400,
+        cg_tolerance: 1e-8,
+        pcg_tolerance: 1e-8,
+        use_preconditioner: true,
+        max_equilibrium_substeps: 1,
+    };
+    let cross_section_area = 0.01_f32;
+    let (u_star, _) = VectorMechanicsSolver::solve_equilibrium(
+        u0,
+        coords.clone(),
+        stiffness,
+        body_force.clone(),
+        edges_b1.clone(),
+        damage.clone(),
+        boundary_mask.clone(),
+        cross_section_area,
+        &inner_cfg,
+    );
+
+    let dt = 0.02_f32;
+    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+        dt,
+        temperature_n: Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d),
+        humidity_n: Tensor::<B, 3>::full([batch, n, 1], 0.62_f32, &d),
+        alpha_n: alpha_hydr.clone(),
+        displacement_n: Tensor::<B, 3>::zeros([batch, n, 3], &d),
+        mechanics_placeholder_mass: 0.0_f32,
+        ru_shrinkage_water_cement_ratio: Some(0.4_f32),
+        edges_b1: edges_b1.clone(),
+        damage_m: damage.clone(),
+        kinetics: kinetics.clone(),
+    };
+
+    let l2_vec = |t: Tensor<B, 3>| -> f32 {
+        t.into_data()
+            .value
+            .iter()
+            .map(|x| x * x)
+            .sum::<f32>()
+            .sqrt()
+    };
+
+    let trial_flat = ThmcState {
+        thermal: ThermalPlan {
+            temperature: Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
+        },
+        hydro: HydrologicPlan {
+            humidity: Tensor::<B, 3>::full([batch, n, 1], 0.62_f32, &d),
+        },
+        mechanical: MechanicalPlan {
+            displacement: u_star.clone(),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: alpha_hydr.clone(),
+        },
+        damage: damage.clone(),
+        time: 0.0_f32,
+    };
+    let r_flat = assembler
+        .evaluate_quasi_static_r_u(
+            &trial_flat,
+            &coords,
+            &boundary_mask,
+            &body_force,
+            cross_section_area,
+        )
+        .expect("evaluate_quasi_static_r_u flat humidity");
+    let n_flat = l2_vec(r_flat);
+
+    let trial_dry = ThmcState {
+        thermal: ThermalPlan {
+            temperature: Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
+        },
+        hydro: HydrologicPlan {
+            humidity: Tensor::<B, 3>::full([batch, n, 1], 0.22_f32, &d),
+        },
+        mechanical: MechanicalPlan {
+            displacement: u_star,
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: alpha_hydr,
+        },
+        damage,
+        time: 0.0_f32,
+    };
+    let r_dry = assembler
+        .evaluate_quasi_static_r_u(
+            &trial_dry,
+            &coords,
+            &boundary_mask,
+            &body_force,
+            cross_section_area,
+        )
+        .expect("evaluate_quasi_static_r_u dry humidity");
+    let n_dry = l2_vec(r_dry);
+
+    assert!(
+        n_dry > n_flat + 200.0_f32,
+        "expected drier humidity to raise ||R_u||₂: n_flat={n_flat} n_dry={n_dry}"
+    );
+}
+
 /// **Coupling plan §4 Phase 2:** four-block quasi-static \(R_u\) assembly — combined L² matches
 /// \(\sqrt{\sum_i \texttt{flat}[i]^2}\) and \(\sqrt{\|R_{T,h,\alpha}\|^2+\|R_u\|^2}\) on a 2-node chain.
 #[test]
@@ -953,6 +1250,7 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
         alpha_n: alpha_hydr.clone(),
         displacement_n: Tensor::<B, 3>::zeros([batch, n, 3], &d),
         mechanics_placeholder_mass: 1.0_f32,
+        ru_shrinkage_water_cement_ratio: None,
         edges_b1,
         damage_m: damage_m.clone(),
         kinetics,
@@ -1069,6 +1367,7 @@ fn thmc_implicit_euler_t_h_alpha_multi_newton_monotone_stacked_residual_norm() {
         alpha_n,
         displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
         mechanics_placeholder_mass: 1.0_f32,
+        ru_shrinkage_water_cement_ratio: None,
         edges_b1: manifold.edges_b1.clone(),
         damage_m: damage_m.clone(),
         kinetics,

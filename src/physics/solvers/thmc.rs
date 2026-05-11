@@ -777,3 +777,16 @@ pub fn shrink_strain_from_saturation_loss(
         * hydration_alpha.sqrt().clamp(0.2_f32, 1.0_f32);
     coeff * humidity_loss_01.clamp(0.0_f32, 1.0_f32)
 }
+
+/// Nodal tensor analogue of [`shrink_strain_from_saturation_loss`] (same clamps, elementwise).
+#[cfg(feature = "thmc-coupled")]
+pub fn shrink_strain_from_saturation_loss_tensor<B: Backend<FloatElem = f32>>(
+    humidity_loss_01: Tensor<B, 3>,
+    water_cement_ratio: f32,
+    hydration_alpha: Tensor<B, 3>,
+) -> Tensor<B, 3> {
+    let w = (water_cement_ratio / 0.4_f32).clamp(0.5_f32, 1.2_f32);
+    let alpha_term = hydration_alpha.sqrt().clamp(0.2_f32, 1.0_f32);
+    let coeff = alpha_term.mul_scalar(1.1e-3_f32 * w);
+    coeff.mul(humidity_loss_01.clamp(0.0_f32, 1.0_f32))
+}
