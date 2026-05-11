@@ -29,6 +29,17 @@ jobs:
           fi
           echo "OK: README.md has $lines lines"
 
+  # Track K: lint Solver-Status.md (stable rows + optional path existence).
+  solver-status:
+    name: solver status (docs/Solver-Status.md)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: check_solver_status.py (--check-paths)
+        run: |
+          set -euo pipefail
+          python3 scripts/check_solver_status.py --check-paths
+
   # Required job: build the library + run tests on the CPU backend.
   # Stays green on a vanilla GitHub runner without GPU/system libraries.
   build-test:
@@ -48,6 +59,47 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
 
+  # PR gate: solver-stable lane per Cargo.toml (topology-density-evolution + statistical-mechanics-vinet; mechanics/fracture/Johnson live under solver-research).
+  solver-stable-pr:
+    name: solver-stable tests (PR)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo test --features solver-stable
+        run: cargo test --verbose --features solver-stable
+
+  # PR gate (v0.4 Track K): compile full union without running research-only benchmarks here.
+  solver-research-check-pr:
+    name: cargo check solver-stable,solver-research (PR)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo check --features solver-stable,solver-research
+        run: cargo check --verbose --all-targets --features solver-stable,solver-research
+
+  # v0.4 brief Track K: union lane on default branch (stable + research), release tests.
+  research-stack:
+    name: solver-stable + solver-research tests (main, release)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo test --release --features solver-stable,solver-research (retry ×1)
+        run: |
+          set -euo pipefail
+          if ! cargo test --verbose --release --features solver-stable,solver-research; then
+            echo "retry once after possible flake..."
+            cargo test --verbose --release --features solver-stable,solver-research
+          fi
+
   # Advisory jobs: report quality issues but do not block the merge.
   lint:
     name: clippy + rustfmt (advisory)
@@ -62,4 +114,4 @@ jobs:
       - name: rustfmt
         run: cargo fmt --all -- --check
       - name: clippy
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --all-targets --features solver-stable -- -D warnings

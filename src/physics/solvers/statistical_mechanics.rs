@@ -1,21 +1,50 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-//! Statistical-mechanics → continuum bridge (Phase 9) — **MVP scaffold**.
+//! Statistical-mechanics → continuum bridge (Phase 9) — **research-phase placeholder**.
 //!
 //! This module pins the **tensor contract** for lifting atomistic or coarse-grained potentials
 //! (here: Lennard-Jones-style parameters) to **macroscopic thermodynamic intensities** used by
 //! DEC / mechanics cartridges: an isotropic **bulk modulus** \(K\) and a **grand-canonical surface
 //! energy** \(\gamma_{\mathrm{gc}}\) (interface free energy per area at fixed chemical potential).
 //!
-//! ## Intended physics (not implemented in MVP)
+//! ## Intended physics (deferred implementations)
 //! - Map dispersive/repulsive scales \((\varepsilon, \sigma)\) — or an equivalent pair of LJ
 //!   knobs — through a specified reference state (density, temperature, cutoff scheme) to \(K\)
 //!   via virial / fluctuation formulas or a calibrated EOS bridge.
 //! - Obtain \(\gamma_{\mathrm{gc}}\) from interface widening, Kirkwood–Buff-style excess
 //!   quantities, or direct coexistence grand-potential differences; all deferred to later phases.
 //!
-//! ## MVP behavior
+//! ## Stable lane vs this module
+//!
+//! Feature `statistical-mechanics-vinet` (in `solver-stable`) runs **Vinet scalar EOS** regression
+//! tests in `tests/verification/statmech_vinet_eos.rs` only. That harness does **not** call this
+//! module; [`upscale_potentials`] uses a **dimensionally motivated placeholder** — scaling is
+//! locked by `tests/verification/statmech_lj_bridge_contract.rs`, while **Johnson (1993) LJ EOS**
+//! `f64` reference checks (`statmech_lj_johnson_eos_reference`) document that this placeholder is
+//! **not** a calibrated virial / EOS bridge.
+//!
+//! **Reference (f64, not Burn):** Johnson–Zollweg–Gubbins (1993) reduced LJ pressure and bulk
+//! modulus checks live in [`super::lj_johnson_1993_reference`] and
+//! `tests/verification/statmech_lj_johnson_eos_reference.rs`.
+//!
+//! With feature **`statistical-mechanics-johnson-reference`**, [`bulk_modulus_from_lj_state_johnson1993`]
+//! is also exposed here as an optional counterpart to [`upscale_potentials`] (still Burn `f32`
+//! placeholder). Without the feature, use [`super::lj_johnson_1993_reference::bulk_modulus_from_lj_state_johnson1993`].
+//!
+//! ## Why Johnson is not compiled into [`upscale_potentials`]
+//!
+//! The Burn bridge contract is **`[B, 2]` → `(K, γ_gc)`** with columns \((\varepsilon, \sigma)\) only.
+//! The JZG (1993) isothermal bulk modulus needs **reduced state** \((\rho^*, T^*)\) in addition to
+//! \((\varepsilon, \sigma)\) to form \(K^*\), then \(K_T = (\varepsilon/\sigma^3)\,K^*\). There is no
+//! \((\rho^*, T^*)\) channel in the tensor API and no agreed default reference state, so wiring the
+//! reference EOS **inside** [`upscale_potentials`] would hide physics or break type clarity. With the
+//! opt-in feature, compare scalars side-by-side (see unit tests below and
+//! `tests/verification/statmech_lj_johnson_eos_reference.rs`). **`upscale_potentials` stays partial:**
+//! analytic placeholder for \(K\) and \(\gamma_{\mathrm{gc}}\) until a stateful bridge lands.
+//!
+//! ## Placeholder behaviour
+//!
 //! [`upscale_potentials`] applies a **simple analytic placeholder** (dimensionless prefactors ×
 //! powers of \(\varepsilon\) and \(\sigma\)) so outputs are **finite, non-trivial**, and remain
 //! fully differentiable in Burn. This is not a calibrated EOS; it only preserves the intended
@@ -87,6 +116,17 @@ pub fn upscale_potentials<B: Backend<FloatElem = f32>>(
     StatisticalBridge.upscale_potentials(lennard_jones_params)
 }
 
+/// Johnson (1993) reduced bulk modulus `K*(ρ*, T*)` — **opt-in** re-export from the `f64` reference lane.
+///
+/// Does **not** replace [`upscale_potentials`]; compare numerically at a chosen `(ρ*, T*)` and map
+/// to physical `K` with [`super::lj_johnson_1993_reference::bulk_modulus_from_reduced`].
+#[cfg(feature = "statistical-mechanics-johnson-reference")]
+#[inline]
+#[must_use]
+pub fn bulk_modulus_from_lj_state_johnson1993(rho_star: f64, t_star: f64) -> f64 {
+    super::lj_johnson_1993_reference::bulk_modulus_from_lj_state_johnson1993(rho_star, t_star)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -135,5 +175,51 @@ mod tests {
 
         assert!(k_v.iter().all(|x| x.is_finite() && *x > 0.0));
         assert!(g_v.iter().all(|x| x.is_finite() && *x > 0.0));
+    }
+
+    #[cfg(feature = "statistical-mechanics-johnson-reference")]
+    #[test]
+    fn bulk_modulus_johnson1993_statmech_reexport_matches_lj_reference() {
+        let rho = 0.2_f64;
+        let t = 2.0_f64;
+        assert_abs_diff_eq!(
+            bulk_modulus_from_lj_state_johnson1993(rho, t),
+            super::super::lj_johnson_1993_reference::bulk_modulus_from_lj_state_johnson1993(rho, t),
+            epsilon = 1.0e-12
+        );
+    }
+
+    /// Johnson EOS physical \(K_T\) at a fixed \((\rho^*, T^*)\) vs Burn placeholder \(K \propto \varepsilon/\sigma^3\).
+    ///
+    /// Documents that [`upscale_potentials`] cannot match the reference without \((\rho^*, T^*)\) inputs.
+    #[cfg(feature = "statistical-mechanics-johnson-reference")]
+    #[test]
+    fn upscale_placeholder_bulk_modulus_documented_gap_vs_johnson_scalar_path() {
+        use super::super::lj_johnson_1993_reference::bulk_modulus_from_reduced;
+
+        let t_star = 2.0_f64;
+        let rho_star = 0.2_f64;
+        let epsilon = 1.0_f64;
+        let sigma = 0.8_f64;
+
+        let k_star = bulk_modulus_from_lj_state_johnson1993(rho_star, t_star);
+        let k_johnson = bulk_modulus_from_reduced(k_star, epsilon, sigma);
+
+        let dev = NdArrayDevice::Cpu;
+        let lj: Tensor<B, 2> = Tensor::from_data(
+            Data::new(
+                vec![epsilon as f32, sigma as f32],
+                Shape::new([1, 2]),
+            ),
+            &dev,
+        );
+        let (k_tensor, _) = upscale_potentials(lj);
+        let k_placeholder = f64::from(k_tensor.into_data().value[0]);
+
+        let rel = ((k_placeholder - k_johnson) / k_johnson).abs();
+        assert!(
+            rel > 0.2,
+            "expected placeholder K to disagree strongly with JZG-derived K_T at this state (rel_err={rel})"
+        );
     }
 }

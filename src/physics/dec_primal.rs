@@ -32,9 +32,9 @@ pub fn primal_divergence_from_edge_flux<B: Backend>(
     tgt_indices: Tensor<B, 3, Int>,
     nodal_zeros_template: &Tensor<B, 3>,
 ) -> Tensor<B, 3> {
-    Tensor::<B, 3>::zeros_like(nodal_zeros_template)
-        .scatter(1, src_indices, edge_flux.clone())
-        .scatter(1, tgt_indices, edge_flux.neg())
+    let idx_cat = Tensor::cat(vec![src_indices, tgt_indices], 1);
+    let val_cat = Tensor::cat(vec![edge_flux.clone(), edge_flux.neg()], 1);
+    Tensor::<B, 3>::zeros_like(nodal_zeros_template).scatter(1, idx_cat, val_cat)
 }
 
 /// Same as [`primal_divergence_from_edge_flux`], but indices are derived from `topo` and channel count from `edge_flux`.

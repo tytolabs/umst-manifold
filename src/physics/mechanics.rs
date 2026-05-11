@@ -205,7 +205,7 @@ impl VectorMechanicsSolver {
     }
 
     #[allow(clippy::too_many_arguments, clippy::type_complexity)]
-    fn packed_bar_network_equilibrium<B: Backend<FloatElem = f32>>(
+    pub(crate) fn packed_bar_network_equilibrium<B: Backend<FloatElem = f32>>(
         displacement: Tensor<B, 3>,
         coords: Tensor<B, 2>,
         stiffness: Tensor<B, 3>,
@@ -286,20 +286,32 @@ impl VectorMechanicsSolver {
                 Self::bar_matvec(u_emb, &k_axial, &edge_unit, &src_indices, &tgt_indices, n_v)
                     .slice([b..b + 1, 0..n_v, 0..3]);
             let mut r = p_mask.clone().mul(f_b.clone().sub(ku_b));
-            let mut p = r.clone();
+
+            let k_b = k_axial.clone().slice([b..b + 1, 0..n_edges, 0..1]);
+            let eu_b = edge_unit.clone().slice([b..b + 1, 0..n_edges, 0..3]);
+            let diag_bn3 =
+                Self::assemble_bar_network_diagonal_bn3(k_b, eu_b, edges_b1.clone(), n_v);
+
+            let mut z = if inner_cfg.use_preconditioner {
+                p_mask
+                    .clone()
+                    .mul(r.clone().div(diag_bn3.clone().clamp_min(1e-18_f32)))
+            } else {
+                r.clone()
+            };
+            let mut p = z.clone();
 
             for _ in 0..max_it {
                 let p_emb = Self::embed_batch_row(&template, b, n_v, p.clone());
                 let ap_raw =
                     Self::bar_matvec(p_emb, &k_axial, &edge_unit, &src_indices, &tgt_indices, n_v)
                         .slice([b..b + 1, 0..n_v, 0..3]);
-                // Projected operator \(P K P\) on the free subspace: mask after the matvec so
-                // `pᵀ (P K P) p` matches the constrained Galerkin pairings used in packed CG.
                 let ap_b = p_mask.clone().mul(ap_raw);
-                let rs = (r.clone().mul(r.clone())).sum();
+
+                let rz = (r.clone().mul(z.clone())).sum();
                 let pap = (p.clone().mul(ap_b.clone())).sum().clamp_min(1e-30_f32);
-                let alpha = rs.clone().div(pap).reshape([1, 1, 1]);
-                u_c = u_c.add(p.clone().mul(alpha));
+                let alpha = rz.clone().div(pap).reshape([1, 1, 1]);
+                u_c = u_c.add(p.clone().mul(alpha.clone()));
                 let u_emb2 = Self::embed_batch_row(&template, b, n_v, u_c.clone());
                 let ku_next = Self::bar_matvec(
                     u_emb2,
@@ -311,12 +323,22 @@ impl VectorMechanicsSolver {
                 )
                 .slice([b..b + 1, 0..n_v, 0..3]);
                 let r_next = p_mask.clone().mul(f_b.clone().sub(ku_next));
-                let rs_next = (r_next.clone().mul(r_next.clone())).sum();
-                let beta = rs_next
-                    .div(rs.clone().clamp_min(1e-30_f32))
+
+                let z_next = if inner_cfg.use_preconditioner {
+                    p_mask
+                        .clone()
+                        .mul(r_next.clone().div(diag_bn3.clone().clamp_min(1e-18_f32)))
+                } else {
+                    r_next.clone()
+                };
+
+                let rz_next = (r_next.clone().mul(z_next.clone())).sum();
+                let beta = rz_next
+                    .div(rz.clone().clamp_min(1e-30_f32))
                     .reshape([1, 1, 1]);
-                p = r_next.clone().add(p.mul(beta));
+                p = z_next.clone().add(p.mul(beta));
                 r = r_next;
+                z = z_next;
             }
 
             u = u.slice_assign([b..b + 1, 0..n_v, 0..3], u_c);
@@ -491,6 +513,28 @@ impl VectorMechanicsSolver {
             .scatter(1, tgt_indices.clone(), f_vec.neg())
     }
 
+    /// Diagonal entries of the bar stiffness operator on \(\mathbb{R}^{3N}\): per node / axis
+    /// \(\sum_{e\ni i} k_e \hat{t}_{e,d}^2\) (used for Jacobi preconditioning).
+    fn assemble_bar_network_diagonal_bn3<B: Backend<FloatElem = f32>>(
+        k_axial: Tensor<B, 3>,
+        edge_unit: Tensor<B, 3>,
+        edges_b1: Tensor<B, 2, Int>,
+        n_v: usize,
+    ) -> Tensor<B, 3> {
+        let batch = k_axial.dims()[0];
+        let n_e = k_axial.dims()[1];
+        debug_assert_eq!(edge_unit.dims(), [batch, n_e, 3]);
+        let device = k_axial.device();
+        let t2 = edge_unit.powf_scalar(2.0);
+        let contrib = k_axial.mul(t2);
+        let topo = EdgeTopology::new(edges_b1);
+        let src_ix = topo.expand_src_gather_indices(batch, 3);
+        let tgt_ix = topo.expand_tgt_gather_indices(batch, 3);
+        Tensor::<B, 3>::zeros([batch, n_v, 3], &device)
+            .scatter(1, src_ix, contrib.clone())
+            .scatter(1, tgt_ix, contrib)
+    }
+
     fn nodal_stress_from_bars<B: Backend<FloatElem = f32>>(
         u: Tensor<B, 3>,
         k_axial: &Tensor<B, 3>,
@@ -533,6 +577,43 @@ impl VectorMechanicsSolver {
             .scatter(1, tgt9, flat);
 
         acc.reshape([batch, n_v, 3, 3])
+    }
+}
+
+/// Self-weight nodal body force with Bruyneel–Duysinx mass penalty \(m(\rho)=\rho^q\) decoupled from SIMP stiffness \(p\).
+///
+/// formal_anchor: Literature  
+/// formal_citation: Bruyneel & Duysinx 2005, Struct. Multidisc. Optim. 29:245-256  
+/// formal_form: \(\mathbf f = \rho^q\,V_{\mathrm{voxel}}\,g\,\hat{\mathbf d}\) with unit direction \(\hat{\mathbf d}\)
+#[cfg(feature = "topology-density-evolution")]
+#[derive(Clone, Copy, Debug)]
+pub struct SelfWeightConfig {
+    /// Downward acceleration magnitude (positive e.g. `9.81`); combined with [`Self::direction`].
+    pub gravity_m_s2: f32,
+    pub voxel_volume_m3: f32,
+    pub mass_penalty_q: f32,
+    pub direction: [f32; 3],
+}
+
+#[cfg(feature = "topology-density-evolution")]
+impl SelfWeightConfig {
+    /// Per-node body force `[B,N,3]` matching `rho_projected` `[B,N,1]`.
+    pub fn body_force<B: Backend<FloatElem = f32>>(
+        &self,
+        rho_projected: Tensor<B, 3>,
+    ) -> Tensor<B, 3> {
+        let [dx, dy, dz] = self.direction;
+        let mag = (dx * dx + dy * dy + dz * dz).sqrt().max(1e-30);
+        let ux = dx / mag;
+        let uy = dy / mag;
+        let uz = dz / mag;
+        let m = rho_projected
+            .powf_scalar(self.mass_penalty_q)
+            .mul_scalar(self.voxel_volume_m3 * self.gravity_m_s2);
+        let fx = m.clone().mul_scalar(ux);
+        let fy = m.clone().mul_scalar(uy);
+        let fz = m.mul_scalar(uz);
+        Tensor::cat(vec![fx, fy, fz], 2)
     }
 }
 
@@ -663,6 +744,8 @@ mod tests {
             max_cg_iterations: 500,
             // Tight enough that packed CG’s `‖r‖₂ / ‖f‖₂` clears the residual assertion below in f32.
             cg_tolerance: 1e-8,
+            pcg_tolerance: 1e-8,
+            use_preconditioner: true,
             max_equilibrium_substeps: 1,
         };
 
@@ -1023,6 +1106,8 @@ mod tests {
         let cfg = MechanicsInnerLoopConfig {
             max_cg_iterations: 500,
             cg_tolerance: 1e-8_f32,
+            pcg_tolerance: 1e-8_f32,
+            use_preconditioner: true,
             max_equilibrium_substeps: 1,
         };
 

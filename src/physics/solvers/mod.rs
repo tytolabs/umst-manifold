@@ -11,19 +11,40 @@
 pub mod acoustics;
 pub mod electrochemistry;
 pub mod fracture_field;
+/// Johnson–Zollweg–Gubbins (1993) LJ EOS — `f64` reference (teqp-aligned); not the Burn bridge.
+pub mod lj_johnson_1993_reference;
 pub mod photonics;
 pub mod rheology_flow;
 pub mod statistical_mechanics;
 pub mod thmc;
+pub mod thmc_residual;
 pub mod topology_solver;
 
 pub use crate::physics::mechanics::VectorMechanicsSolver;
 pub use acoustics::AcousticWaveSolver;
-pub use electrochemistry::ElectroChemicalSolver;
+#[cfg(feature = "acoustics-newmark")]
+pub use acoustics::{AcousticNewmarkBar1dPeriodic, AcousticNewmarkBar1dWork};
+#[cfg(feature = "electrochemistry-mvp")]
+pub use electrochemistry::pnp_backward_euler_residual_l2_chain_host_f64;
+pub use electrochemistry::{ElectroChemicalSolver, NewtonPnpContext};
+#[cfg(feature = "fracture-at2")]
+pub use fracture_field::{
+    strain_tensor_for_fracture_after_mechanics, strain_tensor_from_bar_network_displacement,
+};
 pub use fracture_field::PhaseFieldFractureSolver;
-pub use photonics::PhotonicsSolver;
+pub use photonics::{PhotonicsHelmholtzSolver, PhotonicsSolver};
 pub use rheology_flow::BinghamFlowSolver;
-pub use thmc::{ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcSolver, ThmcState};
+#[cfg(feature = "thmc-coupled")]
+pub use thmc::full_hydration_alpha_rate_tensor;
+#[cfg(feature = "thmc-coupled")]
+pub use thmc::{mc2010_style_notional_shrink_strain, shrink_strain_from_saturation_loss};
+pub use thmc::{
+    ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics,
+    ThmcImplicitTAlphaNewtonConfig, ThmcSolver, ThmcState,
+};
+pub use thmc_residual::ResidualThmc;
+#[cfg(feature = "thmc-coupled")]
+pub use thmc_residual::ThmcImplicitEulerThermalHydrationResidual;
 pub use topology_solver::{
     DensityNet, TopologyOptimizer, TopologyOptimizerStub, TopologySolver, TopologySolverConfig,
 };

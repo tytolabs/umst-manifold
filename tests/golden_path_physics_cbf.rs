@@ -418,6 +418,7 @@ fn golden_path_thmc_experimental_then_cbf_apply_physics() {
         dt: 0.01,
         max_newton: 3,
         tol: 1e-2,
+        ..Default::default()
     });
     let state_out = orchestrator
         .run_plan_step(&EmptyCartridge, state, &manifold)

@@ -12,6 +12,10 @@
 //!     row-sum being zero).
 //!   - The Hodge Laplacian is symmetric: `Δ = Δᵀ`.
 //!   - The discrete Stokes identity holds on a triangle.
+//!   - **Photonics / Track 15 prerequisite:** on one oriented triangle, the discrete edge curl
+//!     \(d_1\) applied to the gradient \(d_0 \omega\) vanishes (\(d_1 \circ d_0 = 0\)), matching
+//!     [`docs/Solver-Status.md`](../docs/Solver-Status.md) DEFERRAL — Photonics (single-triangle
+//!     DEC curl operator sanity before `faces_b2` production wiring).
 
 use approx::assert_abs_diff_eq;
 
@@ -119,6 +123,35 @@ fn stokes_triangle() {
 
     let total: f32 = d_omega.iter().sum();
     assert_abs_diff_eq!(total, 0.0, epsilon = 1.0e-6);
+}
+
+/// Discrete \(d_1\) on the sole triangular face: CCW boundary walk uses all three ring edges with
+/// coefficient \(+1\) ([`ring_b1`] orients edges \(0\!\to\!1\), \(1\!\to\!2\), \(2\!\to\!0\)).
+fn triangle_d1_times_edge(edge_vals: &[f32; 3]) -> f32 {
+    edge_vals[0] + edge_vals[1] + edge_vals[2]
+}
+
+#[test]
+fn dec_curl_d1_annihilates_gradient_on_triangle() {
+    // d_1(d_0 ω) = 0 for scalar ω on vertices — discrete analogue of curl(grad f) = 0.
+    let n = 3;
+    let b1 = ring_b1(n);
+    let b1t = transpose(&b1);
+
+    let omega = [1.2_f32, -0.5, 3.1];
+    let mut grad_on_edges = vec![0.0_f32; n];
+    for e in 0..n {
+        for v in 0..n {
+            grad_on_edges[e] += b1t[e][v] * omega[v];
+        }
+    }
+
+    let curl_sum = triangle_d1_times_edge(&[
+        grad_on_edges[0],
+        grad_on_edges[1],
+        grad_on_edges[2],
+    ]);
+    assert_abs_diff_eq!(curl_sum, 0.0, epsilon = 1.0e-5);
 }
 
 #[test]

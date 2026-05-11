@@ -277,3 +277,327 @@ fn step_wave_experimental<B: Backend<FloatElem = f32>>(
 
     (u_next, v_next, acc_next)
 }
+
+// --- 1-D periodic bar (dispersion / energy benchmarks) -------------------------------------------
+
+#[cfg(feature = "acoustics-newmark")]
+#[derive(Debug, Clone)]
+/// Implicit Newmark-β integrator for the **1-D periodic** continuum model `ρ ∂²u/∂t² = E ∂²u/∂x²`
+/// on a uniform grid (central finite-difference stiffness, lumped nodal mass `m = ρ Δx`).
+///
+/// This path captures **spatial coupling** along the bar; it complements [`AcousticWaveSolver::step_wave`],
+/// which applies a purely nodal 3×3 contraction intended for DEC / coupling hooks and does **not**
+/// assemble a graph Laplacian.
+///
+/// **Discretisation:** `(K u)_i = (E/Δx²) (2 u_i − u_{i−1} − u_{i+1})` with periodic indices.
+///
+/// **Stability (documentation):** the average-acceleration Newmark pair `(β, γ) = (¼, ½)` is
+/// unconditionally stable for the undamped second-order system. **Explicit** central-difference
+/// companions require `Δt ≤ CFL · Δx / c` with `c = √(E/ρ)` and `CFL` typically in `(0, 1]`.
+///
+/// formal_anchor: Literature  
+/// formal_citation: Newmark 1959; Hughes 2000, §9.1 (implicit Newmark for structural dynamics)
+pub struct AcousticNewmarkBar1dPeriodic {
+    /// Number of grid points (cells = `n` on `[0, L)` with periodic wrap).
+    pub n: usize,
+    /// Domain length `L` (m).
+    pub length: f32,
+    /// Young's modulus `E` (Pa).
+    pub youngs_modulus: f32,
+    /// Mass density `ρ` (kg/m³).
+    pub density: f32,
+    pub newmark_beta: f32,
+    pub newmark_gamma: f32,
+}
+
+#[cfg(feature = "acoustics-newmark")]
+#[derive(Debug)]
+/// Workspace reused across [`AcousticNewmarkBar1dPeriodic::step`] calls (Cholesky factor for fixed `Δt`).
+pub struct AcousticNewmarkBar1dWork {
+    /// Lower-triangular Cholesky factor of `S = M + β Δt² K` in **f64** (row-major, lower triangle).
+    chol: Vec<f64>,
+    ku: Vec<f32>,
+    u_tilde: Vec<f32>,
+    rhs: Vec<f32>,
+    sol_y: Vec<f64>,
+    sol_x: Vec<f64>,
+    last_dt: f32,
+}
+
+#[cfg(feature = "acoustics-newmark")]
+impl AcousticNewmarkBar1dPeriodic {
+    pub fn dx(&self) -> f32 {
+        self.length / self.n as f32
+    }
+
+    pub fn wave_speed(&self) -> f32 {
+        (self.youngs_modulus / self.density).sqrt()
+    }
+
+    pub fn workspace(&self) -> AcousticNewmarkBar1dWork {
+        let n = self.n;
+        AcousticNewmarkBar1dWork {
+            chol: vec![0.0_f64; n * n],
+            ku: vec![0.0_f32; n],
+            u_tilde: vec![0.0_f32; n],
+            rhs: vec![0.0_f32; n],
+            sol_y: vec![0.0_f64; n],
+            sol_x: vec![0.0_f64; n],
+            last_dt: -1.0_f32,
+        }
+    }
+
+    /// Total mechanical energy `½ Σ m u̇² + ½ uᵀ K u` for the discrete periodic bar.
+    pub fn mechanical_energy(&self, u: &[f32], v: &[f32]) -> f32 {
+        debug_assert_eq!(u.len(), self.n);
+        debug_assert_eq!(v.len(), self.n);
+        let dx = self.dx();
+        let m = self.density * dx;
+        let mut ke = 0.0_f32;
+        for &vi in v {
+            ke += 0.5_f32 * m * vi * vi;
+        }
+        self.elastic_energy(u) + ke
+    }
+
+    /// Elastic energy `½ uᵀ K u` with the periodic stiffness above.
+    pub fn elastic_energy(&self, u: &[f32]) -> f32 {
+        debug_assert_eq!(u.len(), self.n);
+        let mut ku = vec![0.0_f32; self.n];
+        apply_k_periodic_1d(u, self.youngs_modulus, self.dx(), self.n, &mut ku);
+        0.5_f32 * dot(u, &ku)
+    }
+
+    /// Advance one implicit Newmark step (`M ü + K u = 0`, undamped).
+    pub fn step(
+        &self,
+        ws: &mut AcousticNewmarkBar1dWork,
+        dt: f32,
+        u: &mut [f32],
+        v: &mut [f32],
+        a: &mut [f32],
+    ) {
+        debug_assert_eq!(u.len(), self.n);
+        debug_assert_eq!(v.len(), self.n);
+        debug_assert_eq!(a.len(), self.n);
+
+        self.prepare(ws, dt);
+
+        let beta = self.newmark_beta;
+        let gamma = self.newmark_gamma;
+        let dt2 = dt * dt;
+        let half_minus_beta = 0.5_f32 - beta;
+
+        let acc_n: Vec<f32> = a.to_vec();
+        for i in 0..self.n {
+            ws.u_tilde[i] = u[i] + dt * v[i] + dt2 * half_minus_beta * acc_n[i];
+        }
+        apply_k_periodic_1d(
+            &ws.u_tilde,
+            self.youngs_modulus,
+            self.dx(),
+            self.n,
+            &mut ws.ku,
+        );
+        for i in 0..self.n {
+            ws.rhs[i] = -ws.ku[i];
+        }
+        cholesky_solve_lower64(&ws.chol, self.n, &ws.rhs, &mut ws.sol_y, &mut ws.sol_x, a);
+
+        for i in 0..self.n {
+            u[i] += dt * v[i] + dt2 * (half_minus_beta * acc_n[i] + beta * a[i]);
+        }
+        for i in 0..self.n {
+            v[i] += dt * ((1.0_f32 - gamma) * acc_n[i] + gamma * a[i]);
+        }
+    }
+
+    fn prepare(&self, ws: &mut AcousticNewmarkBar1dWork, dt: f32) {
+        if (ws.last_dt - dt).abs() <= 1e-12_f32.max(dt * 1e-7_f32) && ws.last_dt >= 0.0_f32 {
+            return;
+        }
+        let dx = self.dx() as f64;
+        let m_node = self.density as f64 * dx;
+        let alpha =
+            self.newmark_beta as f64 * (dt as f64).powi(2) * self.youngs_modulus as f64 / (dx * dx);
+        fill_system_matrix_s64(&mut ws.chol, self.n, m_node, alpha);
+        cholesky_decompose_lower64(&mut ws.chol, self.n).expect("SPD system matrix");
+        ws.last_dt = dt;
+    }
+}
+
+#[cfg(feature = "acoustics-newmark")]
+fn dot(a: &[f32], b: &[f32]) -> f32 {
+    a.iter().zip(b.iter()).map(|(&x, &y)| x * y).sum()
+}
+
+#[cfg(feature = "acoustics-newmark")]
+fn apply_k_periodic_1d(u: &[f32], e: f32, dx: f32, n: usize, out: &mut [f32]) {
+    let c = e / (dx * dx);
+    for i in 0..n {
+        let im = if i == 0 { n - 1 } else { i - 1 };
+        let ip = if i + 1 == n { 0 } else { i + 1 };
+        out[i] = c * (2.0_f32 * u[i] - u[im] - u[ip]);
+    }
+}
+
+#[cfg(feature = "acoustics-newmark")]
+fn fill_system_matrix_s64(mat: &mut [f64], n: usize, m: f64, alpha: f64) {
+    debug_assert_eq!(mat.len(), n * n);
+    mat.fill(0.0_f64);
+    for i in 0..n {
+        mat[i * n + i] = m + 2.0_f64 * alpha;
+        let ip = (i + 1) % n;
+        let im = (i + n - 1) % n;
+        mat[i * n + ip] = -alpha;
+        mat[i * n + im] = -alpha;
+    }
+}
+
+#[cfg(feature = "acoustics-newmark")]
+fn cholesky_decompose_lower64(a: &mut [f64], n: usize) -> Result<(), ()> {
+    for i in 0..n {
+        for j in 0..=i {
+            let mut sum = a[i * n + j];
+            for k in 0..j {
+                sum -= a[i * n + k] * a[j * n + k];
+            }
+            if i == j {
+                if sum <= 1e-30_f64 {
+                    return Err(());
+                }
+                a[i * n + j] = sum.sqrt();
+            } else {
+                let d = a[j * n + j];
+                if d.abs() < 1e-30_f64 {
+                    return Err(());
+                }
+                a[i * n + j] = sum / d;
+            }
+        }
+        for j in (i + 1)..n {
+            a[i * n + j] = 0.0_f64;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "acoustics-newmark")]
+fn cholesky_solve_lower64(
+    l: &[f64],
+    n: usize,
+    b: &[f32],
+    y: &mut [f64],
+    x: &mut [f64],
+    a_out: &mut [f32],
+) {
+    for i in 0..n {
+        let mut s = b[i] as f64;
+        for k in 0..i {
+            s -= l[i * n + k] * y[k];
+        }
+        let d = l[i * n + i];
+        y[i] = s / d;
+    }
+    for i in (0..n).rev() {
+        let mut s = y[i];
+        for k in (i + 1)..n {
+            s -= l[k * n + i] * x[k];
+        }
+        let d = l[i * n + i];
+        x[i] = s / d;
+    }
+    for i in 0..n {
+        a_out[i] = x[i] as f32;
+    }
+}
+
+#[cfg(all(test, feature = "acoustics-newmark"))]
+mod cholesky_residual_tests {
+    use super::*;
+
+    fn matvec64(s: &[f64], n: usize, x: &[f64], y: &mut [f64]) {
+        for i in 0..n {
+            let mut sum = 0.0_f64;
+            for j in 0..n {
+                sum += s[i * n + j] * x[j];
+            }
+            y[i] = sum;
+        }
+    }
+
+    fn residual_norm64(s: &[f64], n: usize, x: &[f64], b: &[f64]) -> f64 {
+        let mut ax = vec![0.0_f64; n];
+        matvec64(s, n, x, &mut ax);
+        let mut r = 0.0_f64;
+        for i in 0..n {
+            let d = ax[i] - b[i];
+            r += d * d;
+        }
+        r.sqrt()
+    }
+
+    #[test]
+    fn cholesky_solve_matches_system_matrix() {
+        let n = 32_usize;
+        let dx = 1.0_f64 / n as f64;
+        let m_node = 1.0_f64 * dx;
+        let dt = 0.001_f64;
+        let beta = 0.25_f64;
+        let e = 1.0_f64;
+        let alpha = beta * dt * dt * e / (dx * dx);
+        let mut s = vec![0.0_f64; n * n];
+        fill_system_matrix_s64(&mut s, n, m_node, alpha);
+        let s_orig = s.clone();
+        cholesky_decompose_lower64(&mut s, n).expect("cholesky");
+        let mut b = vec![0.0_f32; n];
+        b[0] = 1.0_f32;
+        let mut y = vec![0.0_f64; n];
+        let mut x = vec![0.0_f64; n];
+        let mut x_out = vec![0.0_f32; n];
+        cholesky_solve_lower64(&s, n, &b, &mut y, &mut x, &mut x_out);
+        let mut b64 = vec![0.0_f64; n];
+        b64[0] = 1.0_f64;
+        let mut x64 = vec![0.0_f64; n];
+        for i in 0..n {
+            x64[i] = x_out[i] as f64;
+        }
+        let res = residual_norm64(&s_orig, n, &x64, &b64);
+        assert!(
+            res < 1e-8_f64,
+            "Cholesky residual ||S x - b|| too large: {res}"
+        );
+    }
+
+    #[test]
+    fn cholesky_solve_matches_system_matrix_n128() {
+        let n = 128_usize;
+        let dx = 1.0_f64 / n as f64;
+        let m_node = 1.0_f64 * dx;
+        let dt = (1.0_f64 / n as f64) / 1000.0_f64;
+        let beta = 0.25_f64;
+        let e = 1.0_f64;
+        let alpha = beta * dt * dt * e / (dx * dx);
+        let mut s = vec![0.0_f64; n * n];
+        fill_system_matrix_s64(&mut s, n, m_node, alpha);
+        let s_orig = s.clone();
+        cholesky_decompose_lower64(&mut s, n).expect("cholesky");
+        let mut b = vec![0.0_f32; n];
+        b[0] = 1.0_f32;
+        let mut y = vec![0.0_f64; n];
+        let mut x = vec![0.0_f64; n];
+        let mut x_out = vec![0.0_f32; n];
+        cholesky_solve_lower64(&s, n, &b, &mut y, &mut x, &mut x_out);
+        let mut b64 = vec![0.0_f64; n];
+        b64[0] = 1.0_f64;
+        let mut x64 = vec![0.0_f64; n];
+        for i in 0..n {
+            x64[i] = x_out[i] as f64;
+        }
+        let res = residual_norm64(&s_orig, n, &x64, &b64);
+        assert!(
+            res < 1e-6_f64,
+            "Cholesky residual n=128 ||S x - b|| too large: {res}"
+        );
+    }
+}

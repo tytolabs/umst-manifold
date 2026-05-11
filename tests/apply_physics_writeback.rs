@@ -188,6 +188,7 @@ fn apply_physics_thmc_step_errors_without_thmc_coupled() {
         dt: 0.01,
         max_newton: 1,
         tol: 1e-6,
+        ..Default::default()
     };
     let cartridge = EmptyCartridge;
     match solver.step(&cartridge, state, &manifold) {

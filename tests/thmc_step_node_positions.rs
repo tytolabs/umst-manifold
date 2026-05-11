@@ -111,6 +111,7 @@ mod thmc_ok {
             dt: 0.01_f32,
             max_newton: 2_usize,
             tol: 1e-3_f32,
+            ..Default::default()
         };
         let out = solver.step(&Stub, state, &umst);
         assert!(out.is_ok(), "expected Ok, got {:?}", out.err());

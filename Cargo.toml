@@ -21,11 +21,19 @@ categories = ["science", "mathematics", "simulation"]
 default = ["ndarray"]
 # CPU backend — always builds in CI without system libraries.
 ndarray = []
+# macOS: link Apple Accelerate (vecLib) for BLAS-heavy matmul; forward-only to burn-ndarray.
+blas-accelerate = ["burn-ndarray/blas-accelerate"]
 # GPU backend via WGPU. Requires Vulkan/Metal toolchain locally; not enabled in CI.
 wgpu = ["burn/wgpu"]
 # Optimiser / training utilities.
 train = ["burn/train"]
-# --- Opt-in solver scaffolds (granular) ---
+# --- Opt-in solver scaffolds (granular) — Track I lane names + cfg-stable implementation flags ---
+# Implementation cfg for photonics (`#[cfg(feature = "photonics")]`). Prefer `photonics-fdfd` in lane lists.
+photonics = []
+# Canonical photonics lane name (Track I). Forwards to `photonics` until cfg is renamed in-tree.
+photonics-fdfd = ["photonics"]
+# Deprecated — prefer `photonics-fdfd`. Remove in v0.5.
+photonics-scaffold = ["photonics-fdfd"]
 # AT2-style phase-field damage relaxation (`PhaseFieldFractureSolver`).
 fracture-at2 = []
 # Implicit Newmark-β tensor wave step (`AcousticsSolver::step_wave`).
@@ -34,25 +42,35 @@ acoustics-newmark = []
 topology-density-evolution = []
 # Coupled THMC Newton / explicit transport scaffold (`ThmcSolver::step`); pulls fracture for post-loop damage.
 thmc-coupled = ["fracture-at2"]
-# Poisson–Nernst–Planck-style electrochemistry MVP.
+# Implementation cfg for PNP (`#[cfg(feature = "electrochemistry-mvp")]`). Prefer `electrochemistry-pnp` in lane lists.
 electrochemistry-mvp = []
+# Canonical electrochemistry lane name (Track I). Forwards to `electrochemistry-mvp` until cfg is renamed.
+electrochemistry-pnp = ["electrochemistry-mvp"]
 # Bar-network equilibrium + graph Voigt strain → Cauchy stress (`solve_equilibrium_with_voigt_cauchy`).
 mechanics-voigt-cauchy = []
+# Discrete-adjoint mechanics (Track A); forwards to `mechanics-voigt-cauchy` until cfg splits.
+mechanics-adjoint = ["mechanics-voigt-cauchy"]
 # Bingham / projection flow on the graph (`BinghamFlowSolver::step`).
 rheology-bingham = []
-# Photonics / Helmholtz-style driver scaffold (`PhotonicsDriver::step_field`).
-photonics-scaffold = []
-# Meta: enable every opt-in solver slice (backward compatible with prior `solver-experimental` workflows).
-solver-experimental = [
+# Stable-lane marker: Vinet EOS integration test (`statmech_vinet_eos`) only — not the LJ bridge in `statistical_mechanics.rs`. No module `#[cfg]` yet — reserved for v0.5 split.
+statistical-mechanics-vinet = []
+# Opt-in: `statistical_mechanics::bulk_modulus_from_lj_state_johnson1993` re-export (JZG 1993 `f64` reference); default builds omit this symbol from the bridge module.
+statistical-mechanics-johnson-reference = []
+# Verified analytic / iterative kernels with passing benchmarks (PR CI). Expand as benchmarks land (Track I).
+solver-stable = ["topology-density-evolution", "statistical-mechanics-vinet"]
+# Real kernels under active verification or with documented limitations (`main`-branch CI expectations in v0.4 brief).
+solver-research = [
     "fracture-at2",
     "acoustics-newmark",
-    "topology-density-evolution",
     "thmc-coupled",
-    "electrochemistry-mvp",
-    "mechanics-voigt-cauchy",
+    "electrochemistry-pnp",
+    "mechanics-adjoint",
     "rheology-bingham",
-    "photonics-scaffold",
+    "photonics-fdfd",
+    "statistical-mechanics-johnson-reference",
 ]
+# Meta: full opt-in stack (union of lanes; backward compatible with prior `solver-experimental` workflows).
+solver-experimental = ["solver-stable", "solver-research"]
 # Declared for `check-cfg` / conditional compilation in tests and downstream crates (may be empty).
 information_density = []
 # CI / workspace: same as full `solver-experimental`.
@@ -61,6 +79,7 @@ solver-tests = ["solver-experimental"]
 [dependencies]
 burn = { version = "0.13.0", default-features = false }
 burn-ndarray = "0.13.0"
+tracing = "0.1"
 # Pin: burn 0.13's burn-core calls bincode 2.0.0-rc.3 APIs not present in bincode 2.0.0+.
 bincode = "=2.0.0-rc.3"
 # Pin: burn-train → tracing-appender → time; 0.3.47+ declares rustc 1.88+ (blocks common toolchains).
@@ -70,6 +89,8 @@ num-traits = "0.2"
 
 [dev-dependencies]
 approx = "0.5"
+num-complex = "0.4"
+burn = { version = "0.13.0", default-features = false, features = ["std", "train", "autodiff"] }
 burn-ndarray = "0.13.0"
 
 [lib]
@@ -79,3 +100,65 @@ path = "src/lib.rs"
 [[example]]
 name = "basic_topology"
 path = "examples/basic_topology.rs"
+
+[[test]]
+name = "fracture_gamma_convergence"
+path = "tests/verification/fracture_gamma_convergence.rs"
+
+[[test]]
+name = "staggered_fracture_mechanics_chain"
+path = "tests/verification/staggered_fracture_mechanics_chain.rs"
+required-features = ["fracture-at2"]
+
+[[test]]
+name = "staggered_ud_loop_milestone"
+path = "tests/verification/staggered_ud_loop_milestone.rs"
+required-features = ["fracture-at2"]
+
+[[test]]
+name = "acoustics_plane_wave"
+path = "tests/verification/acoustics_plane_wave.rs"
+required-features = ["acoustics-newmark"]
+
+[[test]]
+name = "mechanics_analytic"
+path = "tests/verification/mechanics_analytic.rs"
+
+[[test]]
+name = "adjoint_compliance_analytic"
+path = "tests/verification/adjoint_compliance_analytic.rs"
+
+[[test]]
+name = "statmech_vinet_eos"
+path = "tests/verification/statmech_vinet_eos.rs"
+
+[[test]]
+name = "statmech_lj_bridge_contract"
+path = "tests/verification/statmech_lj_bridge_contract.rs"
+
+[[test]]
+name = "statmech_lj_johnson_eos_reference"
+path = "tests/verification/statmech_lj_johnson_eos_reference.rs"
+
+[[test]]
+name = "pnp_debye_layer"
+path = "tests/verification/pnp_debye_layer.rs"
+required-features = ["electrochemistry-pnp"]
+
+[[test]]
+name = "thmc_drying_shrinkage"
+path = "tests/verification/thmc_drying_shrinkage.rs"
+required-features = ["thmc-coupled"]
+
+[[test]]
+name = "rheology_poiseuille"
+path = "tests/verification/rheology_poiseuille.rs"
+
+[[test]]
+name = "photonics_fresnel"
+path = "tests/verification/photonics_fresnel.rs"
+required-features = ["photonics-fdfd"]
+
+[[test]]
+name = "photonics_curl_curl_stub_default_build"
+path = "tests/verification/photonics_curl_curl_stub_default_build.rs"

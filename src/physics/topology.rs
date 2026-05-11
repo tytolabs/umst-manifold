@@ -5,8 +5,11 @@
 
 //! Primal 1-skeleton topology for DEC / graph operators.
 //!
-//! Centralizes `edges_b1` layout `[2, E]` (source row, target row) and the repeated
-//! `slice → reshape → expand` gather-index pattern so solvers stay thin.
+//! Centralizes `edges_b1` layout `[2, E]` (row `0` = all source ids, row `1` = all targets) and the
+//! repeated `slice → reshape → expand` gather-index pattern so solvers stay thin.
+//!
+//! **Storage:** Burn’s ndarray backend uses **row-major** contiguous layout: flattened `value` is
+//! `[src_0 … src_{E-1}, tgt_0 … tgt_{E-1}]`, not interleaved `[src_0,tgt_0,…]`.
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 

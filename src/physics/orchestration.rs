@@ -121,6 +121,7 @@ mod tests {
             dt: 0.01,
             max_newton: 4,
             tol: 1e-4,
+            ..Default::default()
         });
         assert!((o.thmc.dt - 0.01).abs() < f32::EPSILON);
         assert_eq!(o.thmc.max_newton, 4);

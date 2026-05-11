@@ -37,6 +37,10 @@ impl Default for SimulationClocks {
 pub struct MechanicsInnerLoopConfig {
     pub max_cg_iterations: usize,
     pub cg_tolerance: f32,
+    /// Same scale as [`Self::cg_tolerance`] for preconditioned residual reporting (alias for tuning PCG).
+    pub pcg_tolerance: f32,
+    /// Apply diagonal (Jacobi) preconditioning in the projected CG loop (`z = M⁻¹ r`).
+    pub use_preconditioner: bool,
     /// Reserved when multiple mechanic passes are needed per chem step.
     pub max_equilibrium_substeps: u32,
 }
@@ -46,6 +50,8 @@ impl Default for MechanicsInnerLoopConfig {
         Self {
             max_cg_iterations: 200,
             cg_tolerance: 1e-6,
+            pcg_tolerance: 1e-6,
+            use_preconditioner: true,
             max_equilibrium_substeps: 1,
         }
     }

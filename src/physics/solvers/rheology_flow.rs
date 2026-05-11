@@ -3,9 +3,21 @@
 
 #![allow(clippy::single_range_in_vec_init)]
 
-//! Bingham / projection CFD on the graph (Phase 3) — **MVP** behind `solver-experimental`.
+//! Bingham / projection CFD on the graph (experimental `rheology-bingham`).
 //!
-//! ## Chorin-style split (MVP)
+//! ## Audit memo (Track E)
+//! - **Steady vs transient:** [`plane_bingham_poiseuille_u`](crate::physics::rheology_analytic) is the
+//!   **steady** parallel-plate reference; [`BinghamFlowSolver::step`] is an explicit Chorin split on a
+//!   graph — no claim of convergence to that steady profile without inlet/outlet BCs and a proper
+//!   pressure Poisson (see deferrals in `tests/verification/rheology_poiseuille.rs`).
+//! - **Grid / BC consistency:** Channel smokes pass [`BinghamFlowSolver::edge_length_scale`] as the
+//!   wall-normal spacing so \(\dot\gamma \sim |\Delta u|/h\) matches SI; wall velocity is enforced
+//!   **outside** the solver via a nodal mask (not embedded in `step`).
+//! - **NaN pitfalls:** `BINGHAM_EPS` regularizes \(\dot\gamma\); `rho_e`, `deg_n`, and `du_mag` use
+//!   clamps to avoid div-by-zero; interior **zero-velocity** with frozen-λ defaults can still make
+//!   \(\tau_0/\dot\gamma\) large — watch `f32` overflow if \(\tau_0\) and `dt` are extreme.
+//!
+//! ## Chorin-style split
 //! 1. **Predictor** \(u^\*\): explicit integration of body force, pressure gradient, and viscous
 //!    acceleration. Per-component viscous diffusion could call
 //!    [`crate::physics::laplacian::TopologicalLaplacian::scalar_laplacian`] three times on
@@ -22,8 +34,8 @@
 //! 4. **Pressure update**: \(p \leftarrow p + \phi\).
 //!
 //! ## Bingham regularization
-//! Per edge: \(\dot\gamma = \|\Delta u\| / h\) with **normalized** edge length \(h\equiv 1\) when
-//! physical lengths are not threaded through `edges_b1` (cartridge can supply metric scaling later).
+//! Per edge: \(\dot\gamma = \|\Delta u\| / h\) with edge scale \(h=\) [`BinghamFlowSolver::edge_length_scale`]
+//! (dynamic viscosity routing can supply wall-normal spacing for channel benchmarks).
 //! \(\eta = \mu + \tau_0 / (\dot\gamma + \varepsilon)\), \(\nu = \eta/\rho\) on the edge.
 //!
 //! ## Thixotropy (Roussel-type \(\lambda\))
@@ -53,16 +65,12 @@ use crate::physics::dec_primal::{
 #[cfg(feature = "rheology-bingham")]
 use crate::physics::laplacian::TopologicalLaplacian;
 #[cfg(feature = "rheology-bingham")]
+use crate::physics::rheology_analytic::RHEOLOGY_FLOW_BINGHAM_EPS as BINGHAM_EPS;
+#[cfg(feature = "rheology-bingham")]
 use crate::physics::topology::EdgeTopology;
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
-#[cfg(feature = "rheology-bingham")]
-/// Regularization \(\varepsilon\) in \(\eta = \mu + \tau_0/(\dot\gamma+\varepsilon)\).
-const BINGHAM_EPS: f32 = 1e-5;
-#[cfg(feature = "rheology-bingham")]
-/// Normalized 1-skeleton edge length when physical `dx` is not available on `edges_b1`.
-const EDGE_LENGTH_UNIT: f32 = 1.0;
 #[cfg(feature = "rheology-bingham")]
 /// Richardson iterations for \(\mathcal{L}\phi \approx \mathrm{RHS}\).
 const POISSON_ITERS: usize = 28;
@@ -76,6 +84,11 @@ const THIX_PARAM_EPS: f32 = 1e-12;
 pub struct BinghamFlowSolver {
     pub dt: f32,
     pub mu_plastic: f32,
+    /// Effective mesh spacing for shear rate \(|\dot\gamma|\approx |\Delta u|/h\) on edges [m].
+    ///
+    /// Default `1.0` preserves legacy normalized-graph behaviour. Channel benchmarks pass the
+    /// wall-normal cell height so regularized Bingham viscosity matches SI scales.
+    pub edge_length_scale: f32,
     /// Roussel rest time \(t_\mathrm{rest}\) [s] in \(\mathrm{d}\lambda/\mathrm{d}t=(1-\lambda)/t_\mathrm{rest}-\cdots\).
     ///
     /// Default [`BinghamFlowSolver::T_REST_NO_THIX`] makes \((1-\lambda)/t_\mathrm{rest}\approx 0\) in `f32`
@@ -98,6 +111,7 @@ impl BinghamFlowSolver {
         Self {
             dt,
             mu_plastic,
+            edge_length_scale: 1.0,
             t_rest_thix: Self::T_REST_NO_THIX,
             gamma_crit_thix: Self::GAMMA_CRIT_NO_THIX,
         }
@@ -201,10 +215,8 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
         .reshape([batch, n_edges, 1]);
     let du_mag = du_mag_sq.sqrt();
 
-    let gamma_dot = du_mag
-        .clone()
-        .div_scalar(EDGE_LENGTH_UNIT)
-        .add_scalar(BINGHAM_EPS);
+    let h_edge = solver.edge_length_scale.max(1e-30_f32);
+    let gamma_dot = du_mag.clone().div_scalar(h_edge).add_scalar(BINGHAM_EPS);
 
     // Nodal |γ̇|: mean over incident edges (scatter-sum / degree).
     let ones_e = Tensor::<B, 3>::ones_like(&gamma_dot);

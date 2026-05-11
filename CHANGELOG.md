@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Helmholtz PDE density filter (`topology_filter`), Heaviside projection with continuation, Bruyneel–Duysinx self-weight q-norm, augmented Lagrangian volume constraint, extruded-plate mechanics scaffold, and integration tests (`topology_filter`, `heaviside_projection`, `self_weight_topology`, `aug_lagrangian_volume`, `extruded_plate_mechanics`) — all behind `solver-experimental` / `solver-tests`.
+- Striatus-class shell storyline in the concrete cartridge: `optimize_shell_3d`, hero GIF `notebooks/_artifacts/striatus_emergence.gif`, and print-ready STL export (`docs/Striatus.md` in that repository).
+
 ## [0.1.0] — 2026-05-07
 
 ### Added

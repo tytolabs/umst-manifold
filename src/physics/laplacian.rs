@@ -57,9 +57,11 @@ impl TopologicalLaplacian {
         let raw_flow = x_tgt.sub(x_src);
         let edge_flow = raw_flow.mul(flow_coefficient);
 
-        // 5. Scatter the flow back to the nodes (sum reduction) for divergence (Laplacian \Delta = d^* d)
-        Tensor::<B, 3>::zeros_like(&x)
-            .scatter(1, src_indices, edge_flow.clone())
-            .scatter(1, tgt_indices, edge_flow.neg())
+        // 5. Scatter the flow back to the nodes (sum reduction) for divergence (Laplacian \Delta = d^* d).
+        // One scatter with concatenated (src, tgt) slots avoids Burn 0.13 autograd failures on chained
+        // `scatter().scatter()` when the edge count differs from the node count (typical 3-D grids).
+        let idx_cat = Tensor::cat(vec![src_indices, tgt_indices], 1);
+        let val_cat = Tensor::cat(vec![edge_flow.clone(), edge_flow.neg()], 1);
+        Tensor::<B, 3>::zeros_like(&x).scatter(1, idx_cat, val_cat)
     }
 }
