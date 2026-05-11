@@ -19,6 +19,32 @@ Public mapping of solver-facing modules to **lane** (`solver-stable` vs `solver-
 | **Green on default CI** | `shell_topology_rib_pattern_quick` | `cargo test -p umst-concrete-cartridge --test shell_topology_rib_pattern --features solver-experimental` (add `--release` for faster numerics if desired). **Quick harness (2026-05-11):** default **9×8×3**, **≤20** Adam outers (`UMST_RIB_QUICK` default), roof ramp **r=0.55** at **96 Pa** nodal scale, Heaviside **β=28**, **`DensityNet`** width **56**, Adam **0.0075**; **greyness** = roof-slice `mean(4ρ(1−ρ))` on **post–volume-projection** ρ, asserted **<** `4·vf·(1−vf)−0.008` at measured **vf** (release sample **vf≈0.15**, **greyness≈0.490**, **g_uni=0.510**, **c1/c0≈0.47**, **xy_var≈5.6×10⁻⁴**). Full B6 **`<0.15`** on **volume** mean at **40²×4 / 200** outers remains on **`shell_topology_rib_pattern_full_v04`**. |
 | **`#[ignore]` full Striatus B6** | `shell_topology_rib_pattern_full_v04` | Set **`UMST_SHELL_RIB_PATTERN=1`**, then `cargo test -p umst-concrete-cartridge --test shell_topology_rib_pattern --features solver-experimental shell_topology_rib_pattern_full_v04 --release -- --ignored`. Put **`--release` on the `cargo test` side** (before `--`); flags after `--` are forwarded to the test binary and are not compile profiles. |
 
+<span id="p0-runbook-b6"></span>
+
+### P0 runbook — `shell_topology_rib_pattern_full_v04` (B6, honest)
+
+**Purpose:** one Striatus-scale **B6** proof attempt (**40×40×4**, Burn seed **42**); default CI remains **`shell_topology_rib_pattern_quick`**.
+
+**Environment — 200 Adam outers:** **`UMST_SHELL_RIB_PATTERN=1`** (required). Use **`UMST_SHELL_RIB_FULL_ITERS=200`** or omit it — the harness **defaults to 200** (clamped **1…200**). Values **< 200** are **smoke only**: the test **skips** greyness / planar-variance / compliance-ratio gates and only checks finite metrics + a loose VF band.
+
+**Command (`--release` must sit on the `cargo test` argv, before `--`):**
+
+```bash
+cd umst-concrete-cartridge
+export UMST_SHELL_RIB_PATTERN=1
+export UMST_SHELL_RIB_FULL_ITERS=200   # optional; default 200 when unset
+cargo test -p umst-concrete-cartridge --test shell_topology_rib_pattern \
+  --features solver-experimental shell_topology_rib_pattern_full_v04 --release -- --ignored
+```
+
+Uniform roof (match **`optimize_shell_3d`** with ramp off): prefix the same command with **`UMST_SHELL_ROOF_RAMP=0`**. Harness default when **`UMST_SHELL_ROOF_RAMP` is unset** is the gentle **x** ramp at **`UMST_SHELL_ROOF_RAMP_F`** (default **0.2**) — see **[2026-05-11 greyness vs roof-ramp defaults (honest)](#2026-05-11-greyness-vs-roof-ramp-defaults-honest)**.
+
+**Greyness target:** B6 asserts **volume**-mean **`mean(4ρ(1−ρ)) < 0.15`** on the final **post–volume-projection** nodal **ρ** (`crates/umst-concrete-cartridge/tests/shell_topology_rib_pattern.rs`, **`greyness_mean`** on **`last_rho`**). Last in-repo documented **200**-outer **`--release`** value was **~0.51** (finite **~7655 s** wall) — **not** a pass; see **Solver lanes — Topology / shell** → [2026-05-11 greyness vs roof-ramp defaults (honest)](#2026-05-11-greyness-vs-roof-ramp-defaults-honest) for roof semantics and honesty.
+
+**`gates_track_b8` path (Track L / B8 rollup):** boolean **`gates_track_b8_all_pass`** lives in **`notebooks/_artifacts/striatus_shell_v0.4.print_ready.json`** (paths relative to **`umst-concrete-cartridge/`** repo root in a sibling checkout). It is emitted by **`notebooks/export_print_ready.py`**; **`notebooks/tests/test_print_ready.py`** (or **`python notebooks/test_print_ready.py`**) reads the same field — **`test_print_ready_track_b8_topology_gates`** **skips** when false unless **`UMST_REQUIRE_B8=1`**.
+
+Cartridge-side mirror (deep links / Striatus pipeline): [`../../umst-concrete-cartridge/docs/Solver-Status.md`](../../umst-concrete-cartridge/docs/Solver-Status.md) — same P0 / Track B / Track L / B8 story.
+
 **Full B6:** **40×40×4**, **200** Adam outers by default; **`UMST_SHELL_RIB_FULL_ITERS`** (clamped **1…200**) shortens the loop for smoke only — **one outer** still runs the full Striatus-scale **forward + autodiff backward** and can take **many CPU minutes** in `--release**, and **does not** satisfy the brief greyness / compliance-ratio gates (those need the full **200**-outer schedule). Budget **hours** for the default **200**-outer proof on a typical workstation unless noted otherwise. **Greyness / roof (2026-05-11 log + today's defaults):** see **Solver lanes — Topology / shell → [2026-05-11 greyness vs roof-ramp defaults (honest)](#2026-05-11-greyness-vs-roof-ramp-defaults-honest)** — last documented **200**-outer **`--release`** miss **~0.51** vs **< 0.15** (**finite**, **~7655 s**); short smokes show **`c1`** improves with **x** ramp more than greyness; **no** fresh **200**-outer in-repo proof that greyness clears.
 
 **Rule:** use “implemented” in prose below only where the listed **Verification** tests exercise the claim on CI (default `cargo test` path for stable rows; `--features solver-experimental` for research rows unless noted).
@@ -256,7 +282,7 @@ Uniform roof like **`optimize_shell_3d`** with ramp unset: prefix **`UMST_SHELL_
 | --- | --- |
 | Emergence animation | `notebooks/_artifacts/striatus_emergence.gif` |
 | Mesh export (v0.4 name) | `notebooks/_artifacts/striatus_shell_v0.4.stl` |
-| Print-ready JSON (B7 / B8 / L) | `notebooks/_artifacts/striatus_shell_v0.4.print_ready.json` |
+| Print-ready JSON (B7 / B8 / L); **`gates_track_b8_all_pass`** | `notebooks/_artifacts/striatus_shell_v0.4.print_ready.json` |
 | Optional mesh | `notebooks/_artifacts/striatus_shell_v0.4.obj` |
 
 **Anti-goal (brief):** do **not** commit `crates/umst-concrete-cartridge/examples/_artifacts/shell/iter_*.npy` — only final **`striatus_emergence.gif`**, **`striatus_shell_v0.4.stl`**, and **`striatus_shell_v0.4.print_ready.json`** are intended as committed artefacts (plus optional `.obj`).
@@ -272,6 +298,34 @@ rm -rf notebooks/_artifacts/frames notebooks/_artifacts/striatus_emergence.gif
 UMST_SHELL_DUMP_ITER=1 UMST_SHELL_DUMP_STRIDE=10 UMST_SHELL_ITERS=200 \
     bash notebooks/_run_shell_demo.sh
 ```
+
+### Copy-paste overnight — 40×40×4 × 200 outers (Track L, no `iter_*.npy`)
+
+Single block: **`notebooks/_run_shell_demo.sh`** ends with **`notebooks/export_print_ready.py`** (same `PYTHON` as the GIF/STL steps). Rust uses **`--release`** inside the script (`cargo run --release … optimize_shell_3d`).
+
+```bash
+cd umst-concrete-cartridge
+rm -f crates/umst-concrete-cartridge/examples/_artifacts/shell/iter_*.npy
+
+export UMST_SHELL_NX=40 UMST_SHELL_NY=40 UMST_SHELL_NZ=4 UMST_SHELL_ITERS=200
+export UMST_SHELL_DUMP_ITER=0 UMST_SHELL_DUMP_STRIDE=10
+export UMST_SHELL_SELF_WEIGHT=0
+# Roof in optimize_shell_3d: only literal UMST_SHELL_ROOF_RAMP=1 enables x ramp (UMST_SHELL_ROOF_RAMP_F default 0.2).
+# unset / omitted => uniform roof pressure (differs from B6 full harness — see “2026-05-11 greyness” below).
+
+bash notebooks/_run_shell_demo.sh 2>&1 | tee shell_track_l_40cube4_i200.log
+```
+
+**Artefacts (relative to `umst-concrete-cartridge/`):**
+
+| Step | Path |
+| --- | --- |
+| Rust manifest + density | `crates/umst-concrete-cartridge/examples/_artifacts/shell/manifest.json`, `…/final.npy` |
+| GIF / STL / print-ready | `notebooks/_artifacts/striatus_emergence.gif`, `notebooks/_artifacts/striatus_shell_v0.4.stl`, `notebooks/_artifacts/striatus_shell_v0.4.print_ready.json` |
+
+If the Python stack stops early, re-run exporter only from the same cwd: `python3 notebooks/export_print_ready.py` (needs Trimesh + graph engines — see operator notes below).
+
+(`optimize_shell_3d` + **`manifest.json`** record **`burn_seed`: 42**, **`symmetry_xy`**, **`sym_period`**, **`dump_stride`**, **`iters`**, roof/self-weight / vol-loop flags — use the manifest beside **`final.npy`** for **ρ-span** / export forensics.)
 
 **Rust-only overnight (GIF/STL off, from `optimize_shell_3d` rustdoc):** from **`umst-concrete-cartridge/`**, after removing stale **`iter_*.npy`**: `UMST_SHELL_NX=40 UMST_SHELL_NY=40 UMST_SHELL_NZ=4 UMST_SHELL_ITERS=200 UMST_SHELL_DUMP_ITER=0 cargo run --release -p umst-concrete-cartridge --example optimize_shell_3d --features 'solver-experimental render' 2>&1 | tee shell_opt_40cube4_i200.log` — then run **`bash notebooks/_run_shell_demo.sh`** when you need GIF/STL/JSON, or chain **`render_shell_gif.py`** → **`export_print_ready.py`** on an existing **`final.npy`**.
 
@@ -300,7 +354,7 @@ UMST_SHELL_DUMP_ITER=1 UMST_SHELL_DUMP_STRIDE=10 UMST_SHELL_ITERS=200 \
 | Smoke / determinism | `crates/umst-concrete-cartridge/tests/shell_demo_smoke.rs` |
 | Rib-pattern test (B6) | `crates/umst-concrete-cartridge/tests/shell_topology_rib_pattern.rs` — **`shell_topology_rib_pattern_full_v04`** (brief / **200** outers): **40 × 40 × 4**, seed **42**, end volume fraction **±1 %** of `target_vf = 0.15`; **volume** greyness **mean(4ρ(1−ρ)) < 0.15**; spatial variance of **ρ** over **xy** **> 0.1**; compliance at end **<** compliance at iter **1 × 0.6**. **`shell_topology_rib_pattern_quick`** (default CI): compact grid and **roof-slice** greyness **<** `4·vf·(1−vf)−0.008` — see **Track B6** table. |
 
-**Track B8 (brief “all of”):** (1) `shell_demo_smoke` passes; (2) `shell_topology_rib_pattern` at **40 × 40 × 4**; (3) GIF shows rib formation (subjective; objective backup: variance/genus checks); (4) **`striatus_shell_v0.4.print_ready.json`** has **`genus ≥ 1`** AND **`variance ≥ 0.1`** AND **`volume_fraction ∈ [0.10, 0.25]`**.
+**Track B8 (brief “all of”):** (1) `shell_demo_smoke` passes; (2) `shell_topology_rib_pattern` at **40 × 40 × 4**; (3) GIF shows rib formation (subjective; objective backup: variance/genus checks); (4) **`striatus_shell_v0.4.print_ready.json`** has **`genus ≥ 1`** AND **`variance ≥ 0.1`** AND **`volume_fraction ∈ [0.10, 0.25]`** AND rollup boolean **`gates_track_b8_all_pass`** (see **[P0 runbook](#p0-runbook-b6)** / **`export_print_ready.py`**).
 
 
 ## Track J — documentation honesty (v0.4 brief)
@@ -311,6 +365,4 @@ Cross-check: **[`../../composer_prompts/v0.4_solver_completion_no_namesakes.md`]
 - **J2.** [`README.md`](../README.md) summarizes solver maturity and links here plus the v0.4 brief at [`../../composer_prompts/v0.4_solver_completion_no_namesakes.md`](../../composer_prompts/v0.4_solver_completion_no_namesakes.md) (correct relative URL from this `docs/` file when `composer_prompts/` sits beside `umst-manifold/` in the parent workspace). [`README.md`](../README.md) uses `../composer_prompts/...` for that brief because it is one directory shallower.
 - **J3.** Short index: [`PROOF-STATUS.md`](PROOF-STATUS.md) — one row per main-table solver with **`lane`**, **`benchmark_test`**, and **`verification_status`** (`mechanised` \| `analytic-benchmark` \| `literature` \| `none`); stable rows must not leave **`benchmark_test`** empty. Extended verification notes and research-track pointers stay in this file.
 - **J4.** [`References.bib`](References.bib) holds a Track-J bibliography skeleton (Bendsøe–Sigmund, Allaire, Sigmund 1997, Stolpe–Svanberg, Scharfetter–Gummel, Buckingham, Roussel et al., Manzano et al., CEB-FIP Model Code 2010, Wangler et al.); extend with DOIs and page-accurate metadata as solver rustdoc cites them.
-
-nd page-accurate metadata as solver rustdoc cites them.
 
