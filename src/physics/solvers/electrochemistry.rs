@@ -295,21 +295,28 @@ const POISSON_RELAX_SCALE: f32 = 5e-2;
 const POISSON_SUBSTEPS: usize = 12;
 
 /// Bernoulli function \(B(x)=x/(e^x-1)\) for Scharfetter–Gummel fluxes (symmetrised for \(x<0\) via \(B(x)=B(|x|)+\min(0,x)\)).
+/// Uses `f64` exponentials so large \(|z F\Delta\phi/(RT)|\) does not saturate `f32::exp` before the ratio stabilises.
+#[cfg(feature = "electrochemistry-mvp")]
+fn bernoulli_b_elem_f32(x: f32) -> f32 {
+    let xd = x as f64;
+    let u = xd.abs().max(0.0);
+    let b_pos = if u < 1e-4_f64 {
+        1.0_f64 - u * 0.5_f64 + u * u / 12.0_f64 - u.powi(4) / 720.0_f64
+    } else {
+        let exp_u = u.exp();
+        let denom = (exp_u - 1.0_f64).max(1e-30_f64);
+        u / denom
+    };
+    (b_pos + xd.min(0.0_f64)) as f32
+}
+
 #[cfg(feature = "electrochemistry-mvp")]
 fn bernoulli_b<B: Backend<FloatElem = f32>>(x: Tensor<B, 3>) -> Tensor<B, 3> {
-    let u = x.clone().abs().clamp_min(0.0_f32);
-    let small = u.clone().lower_elem(1e-4_f32);
-    let u2 = u.clone().mul(u.clone());
-    let u4 = u2.clone().mul(u2.clone());
-    let taylor = Tensor::<B, 3>::ones_like(&u)
-        .sub(u.clone().mul_scalar(0.5_f32))
-        .add(u2.mul_scalar(1.0_f32 / 12.0_f32))
-        .sub(u4.mul_scalar(1.0_f32 / 720.0_f32));
-    let exp_u = u.clone().exp();
-    let denom = exp_u.clone().sub_scalar(1.0_f32).clamp_min(1e-30_f32);
-    let ratio = u.clone().div(denom);
-    let b_pos = ratio.mask_where(small, taylor);
-    b_pos.add(x.clamp_max(0.0_f32))
+    let device = x.device();
+    let dims = x.dims();
+    let v = x.into_data().value;
+    let out: Vec<f32> = v.into_iter().map(bernoulli_b_elem_f32).collect();
+    Tensor::from_data(Data::new(out, Shape::new(dims)), &device)
 }
 
 /// Flattened `edges_b1` host layout `[src_0…src_{E-1}, tgt_0…tgt_{E-1}]` for shape `[2, E]`.
@@ -370,6 +377,7 @@ fn thomas_tridiagonal_solve(a: &[f32], b: &mut [f32], c: &[f32], r: &mut [f32], 
 
 /// Discrete Poisson \(\mathcal{L}\phi = -\rho\) on a path with \(\phi_0=g_0\), \(\phi_{n-1}=g_1\) (same \(\mathcal{L}\) as [`TopologicalLaplacian`] on the chain, damage `1`).
 #[cfg(feature = "electrochemistry-mvp")]
+#[allow(dead_code)] // Superseded by [`poisson_chain_net_charge_variable_eps_thomas`] for uniform-\(\varepsilon\) parity checks.
 fn poisson_path_dirichlet_thomas(n: usize, g0: f32, g1: f32, rho: &[f32], out: &mut [f32]) {
     debug_assert_eq!(rho.len(), n);
     debug_assert_eq!(out.len(), n);
@@ -404,11 +412,65 @@ fn poisson_path_dirichlet_thomas(n: usize, g0: f32, g1: f32, rho: &[f32], out: &
     out[1..(m + 1)].copy_from_slice(&u[..m]);
 }
 
+/// Same discrete operator as [`poisson_chain_net_charge_variable_eps_thomas_f64`] in `f32`.
+#[cfg(feature = "electrochemistry-mvp")]
+fn poisson_chain_net_charge_variable_eps_thomas(
+    n: usize,
+    g0: f32,
+    g1: f32,
+    eps: &[f32],
+    rho_net: &[f32],
+    out: &mut [f32],
+) {
+    debug_assert_eq!(eps.len(), n);
+    debug_assert_eq!(rho_net.len(), n);
+    debug_assert_eq!(out.len(), n);
+    out[0] = g0;
+    if n <= 1 {
+        return;
+    }
+    out[n - 1] = g1;
+    if n == 2 {
+        return;
+    }
+    let mut eps_half = vec![0.0_f32; n - 1];
+    for i in 0..n - 1 {
+        eps_half[i] = 0.5_f32 * (eps[i] + eps[i + 1]);
+    }
+    let m = n - 2;
+    let mut a = vec![0.0_f32; m];
+    let mut b = vec![0.0_f32; m];
+    let mut c = vec![0.0_f32; m];
+    let mut rhs = vec![0.0_f32; m];
+    if m == 1 {
+        b[0] = -(eps_half[0] + eps_half[1]);
+        rhs[0] = -rho_net[1] - eps_half[0] * g0 - eps_half[1] * g1;
+    } else {
+        b[0] = -(eps_half[0] + eps_half[1]);
+        c[0] = eps_half[1];
+        rhs[0] = -rho_net[1] - eps_half[0] * g0;
+        for k in 1..m - 1 {
+            a[k] = eps_half[k];
+            b[k] = -(eps_half[k] + eps_half[k + 1]);
+            c[k] = eps_half[k + 1];
+            rhs[k] = -rho_net[k + 1];
+        }
+        a[m - 1] = eps_half[m - 2];
+        b[m - 1] = -(eps_half[m - 2] + eps_half[m - 1]);
+        rhs[m - 1] = -rho_net[n - 2] - eps_half[m - 1] * g1;
+    }
+    c[m - 1] = 0.0_f32;
+    let mut u = vec![0.0_f32; m];
+    thomas_tridiagonal_solve(&a, &mut b, &c, &mut rhs, &mut u);
+    out[1..(m + 1)].copy_from_slice(&u[..m]);
+}
+
 /// If `edges_b1` is a contiguous path on `0..n-1`, returns Poisson solution tensor; otherwise `None`.
 #[cfg(feature = "electrochemistry-mvp")]
 fn try_solve_poisson_chain_thomas<B: Backend<FloatElem = f32>>(
     electric_potential: Tensor<B, 3>,
     rho_over_eps: Tensor<B, 3>,
+    permittivity: Tensor<B, 3>,
     edges_b1: Tensor<B, 2, Int>,
 ) -> Option<Tensor<B, 3>> {
     let device = electric_potential.device();
@@ -434,17 +496,23 @@ fn try_solve_poisson_chain_thomas<B: Backend<FloatElem = f32>>(
     }
     let phi_h = electric_potential.into_data().value;
     let rho_h = rho_over_eps.into_data().value;
+    let eps_h = permittivity.into_data().value;
     let mut out = vec![0.0_f32; batch * n * fc];
     let stride = n * fc;
     for b in 0..batch {
         let off = b * stride;
         let g0 = phi_h[off];
         let g1 = phi_h[off + (n - 1) * fc];
-        poisson_path_dirichlet_thomas(
+        let mut rho_net = vec![0.0_f32; n];
+        for i in 0..n {
+            rho_net[i] = rho_h[off + i] * eps_h[off + i].max(1e-30_f32);
+        }
+        poisson_chain_net_charge_variable_eps_thomas(
             n,
             g0,
             g1,
-            &rho_h[off..off + stride],
+            &eps_h[off..off + stride],
+            &rho_net,
             &mut out[off..off + stride],
         );
     }
@@ -562,12 +630,13 @@ fn solve_pnp_split_step_experimental_with_refs<B: Backend<FloatElem = f32>>(
     let c_minus = ion_concentration_trial.clone().narrow(2, 1, 1);
     let rho_e = c_plus.sub(c_minus).mul_scalar(solver.faraday_const);
 
-    let eps_safe = permittivity.clamp_min(1e-30_f32);
+    let eps_safe = permittivity.clone().clamp_min(1e-30_f32);
     let rho_over_eps = rho_e.div(eps_safe);
 
     let phi_next = if let Some(phi_t) = try_solve_poisson_chain_thomas(
         electric_potential.clone(),
         rho_over_eps.clone(),
+        permittivity.clone(),
         edges_b1.clone(),
     ) {
         phi_t
@@ -656,6 +725,7 @@ fn thomas_tridiagonal_solve_f64(a: &[f64], b: &mut [f64], c: &[f64], r: &mut [f6
 }
 
 #[cfg(feature = "electrochemistry-mvp")]
+#[allow(dead_code)] // Legacy \(\nabla^2\phi=-\rho\); chain Poisson uses [`poisson_chain_net_charge_variable_eps_thomas_f64`].
 fn poisson_path_dirichlet_thomas_f64(n: usize, g0: f64, g1: f64, rho: &[f64], out: &mut [f64]) {
     debug_assert_eq!(rho.len(), n);
     debug_assert_eq!(out.len(), n);
@@ -687,6 +757,62 @@ fn poisson_path_dirichlet_thomas_f64(n: usize, g0: f64, g1: f64, rho: &[f64], ou
     }
     let mut u = vec![0.0_f64; m];
     thomas_tridiagonal_solve_f64(&a, &mut b, &c, &mut r, &mut u);
+    out[1..(m + 1)].copy_from_slice(&u[..m]);
+}
+
+/// Dirichlet Poisson on a unit-spaced chain with **spatially varying** nodal \(\varepsilon\):
+/// \(\nabla\cdot(\varepsilon\nabla\phi)= -\rho_{\mathrm{net}}\) with \(\rho_{\mathrm{net}} = F(c^+-c^-)\).
+/// Edge halves \(\varepsilon_{i+1/2}=\tfrac12(\varepsilon_i+\varepsilon_{i+1})\). When \(\varepsilon\) is
+/// uniform, this matches the legacy stencil \(\nabla^2\phi=-\rho/\varepsilon\) with \(\rho_{\mathrm{net}}=\rho_e\).
+#[cfg(feature = "electrochemistry-mvp")]
+fn poisson_chain_net_charge_variable_eps_thomas_f64(
+    n: usize,
+    g0: f64,
+    g1: f64,
+    eps: &[f64],
+    rho_net: &[f64],
+    out: &mut [f64],
+) {
+    debug_assert_eq!(eps.len(), n);
+    debug_assert_eq!(rho_net.len(), n);
+    debug_assert_eq!(out.len(), n);
+    out[0] = g0;
+    if n <= 1 {
+        return;
+    }
+    out[n - 1] = g1;
+    if n == 2 {
+        return;
+    }
+    let mut eps_half = vec![0.0_f64; n - 1];
+    for i in 0..n - 1 {
+        eps_half[i] = 0.5_f64 * (eps[i] + eps[i + 1]);
+    }
+    let m = n - 2;
+    let mut a = vec![0.0_f64; m];
+    let mut b = vec![0.0_f64; m];
+    let mut c = vec![0.0_f64; m];
+    let mut rhs = vec![0.0_f64; m];
+    if m == 1 {
+        b[0] = -(eps_half[0] + eps_half[1]);
+        rhs[0] = -rho_net[1] - eps_half[0] * g0 - eps_half[1] * g1;
+    } else {
+        b[0] = -(eps_half[0] + eps_half[1]);
+        c[0] = eps_half[1];
+        rhs[0] = -rho_net[1] - eps_half[0] * g0;
+        for k in 1..m - 1 {
+            a[k] = eps_half[k];
+            b[k] = -(eps_half[k] + eps_half[k + 1]);
+            c[k] = eps_half[k + 1];
+            rhs[k] = -rho_net[k + 1];
+        }
+        a[m - 1] = eps_half[m - 2];
+        b[m - 1] = -(eps_half[m - 2] + eps_half[m - 1]);
+        rhs[m - 1] = -rho_net[n - 2] - eps_half[m - 1] * g1;
+    }
+    c[m - 1] = 0.0_f64;
+    let mut u = vec![0.0_f64; m];
+    thomas_tridiagonal_solve_f64(&a, &mut b, &c, &mut rhs, &mut u);
     out[1..(m + 1)].copy_from_slice(&u[..m]);
 }
 
@@ -724,13 +850,19 @@ fn pnp_be_residual_vector_f64(
     let rt = solver.gas_const.max(1e-30_f32) as f64;
     let f_over_rt = f / rt;
     let h_inv = 1.0_f64 / solver.mesh_spacing.max(1e-30_f32) as f64;
+    let mut eps_half = vec![0.0_f64; n.saturating_sub(1)];
+    for i in 0..eps_half.len() {
+        eps_half[i] = 0.5_f64 * (eps[i] + eps[i + 1]);
+    }
     let mut r = vec![0.0_f64; 3 * n];
     for i in 0..n {
         if i == 0 || i + 1 == n {
             r[i] = phi[i] - if i == 0 { g0 } else { g1 };
         } else {
-            let lap = phi[i - 1] - 2.0 * phi[i] + phi[i + 1];
-            r[i] = lap + f * (c_plus[i] - c_minus[i]) / eps[i].max(1e-30_f64);
+            let lap_eps =
+                eps_half[i] * (phi[i + 1] - phi[i]) - eps_half[i - 1] * (phi[i] - phi[i - 1]);
+            let rho_net = f * (c_plus[i] - c_minus[i]);
+            r[i] = lap_eps + rho_net;
         }
     }
     let mut j_plus_e = vec![0.0_f64; n.saturating_sub(1)];
@@ -845,11 +977,13 @@ fn fill_jacobian_linearized_sg_fickian(
         if i == 0 || i + 1 == n {
             jac[r * dim + r] = 1.0;
         } else {
-            jac[r * dim + ip(i - 1)] = 1.0;
-            jac[r * dim + r] = -2.0;
-            jac[r * dim + ip(i + 1)] = 1.0;
-            jac[r * dim + icp(i)] = f / eps[i].max(1e-30_f64);
-            jac[r * dim + icm(i)] = -f / eps[i].max(1e-30_f64);
+            let eh_l = 0.5_f64 * (eps[i - 1] + eps[i]);
+            let eh_r = 0.5_f64 * (eps[i] + eps[i + 1]);
+            jac[r * dim + ip(i - 1)] = eh_l;
+            jac[r * dim + r] = -(eh_l + eh_r);
+            jac[r * dim + ip(i + 1)] = eh_r;
+            jac[r * dim + icp(i)] = f;
+            jac[r * dim + icm(i)] = -f;
         }
     }
     for ch in 0..2usize {
@@ -960,12 +1094,12 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     }
     let f = solver.faraday_const as f64;
     let h_inv = 1.0_f64 / solver.mesh_spacing.max(1e-30_f32) as f64;
-    let mut rho_over_eps = vec![0.0_f64; n];
+    let mut rho_net = vec![0.0_f64; n];
     for i in 0..n {
-        rho_over_eps[i] = f * (c_plus_n[i] - c_minus_n[i]) / eps[i].max(1e-30_f64);
+        rho_net[i] = f * (c_plus_n[i] - c_minus_n[i]);
     }
     let mut phi = vec![0.0_f64; n];
-    poisson_path_dirichlet_thomas_f64(n, g0, g1, &rho_over_eps, &mut phi);
+    poisson_chain_net_charge_variable_eps_thomas_f64(n, g0, g1, &eps, &rho_net, &mut phi);
     let mut u = vec![0.0_f64; 3 * n];
     u[0..n].copy_from_slice(&phi);
     u[n..2 * n].copy_from_slice(&c_plus_n);
@@ -1121,12 +1255,12 @@ mod newton_chain_tests {
         }
         let f = solver.faraday_const as f64;
         let h_inv = 1.0_f64 / solver.mesh_spacing as f64;
-        let mut rho_over_eps = vec![0.0_f64; n];
+        let mut rho_net = vec![0.0_f64; n];
         for i in 0..n {
-            rho_over_eps[i] = f * (c_plus_n[i] - c_minus_n[i]) / eps[i];
+            rho_net[i] = f * (c_plus_n[i] - c_minus_n[i]);
         }
         let mut phi = vec![0.0_f64; n];
-        poisson_path_dirichlet_thomas_f64(n, g0, g1, &rho_over_eps, &mut phi);
+        poisson_chain_net_charge_variable_eps_thomas_f64(n, g0, g1, &eps, &rho_net, &mut phi);
         let mut u = vec![0.0_f64; 3 * n];
         u[0..n].copy_from_slice(&phi);
         u[n..2 * n].copy_from_slice(&c_plus_n);
@@ -1336,12 +1470,12 @@ mod newton_chain_tests {
         }
         let f = solver.faraday_const as f64;
         let h_inv = 1.0_f64 / solver.mesh_spacing as f64;
-        let mut rho_over_eps = vec![0.0_f64; n];
+        let mut rho_net = vec![0.0_f64; n];
         for i in 0..n {
-            rho_over_eps[i] = f * (c_plus_n[i] - c_minus_n[i]) / eps[i];
+            rho_net[i] = f * (c_plus_n[i] - c_minus_n[i]);
         }
         let mut phi = vec![0.0_f64; n];
-        poisson_path_dirichlet_thomas_f64(n, g0, g1, &rho_over_eps, &mut phi);
+        poisson_chain_net_charge_variable_eps_thomas_f64(n, g0, g1, &eps, &rho_net, &mut phi);
         let mut u = vec![0.0_f64; 3 * n];
         u[0..n].copy_from_slice(&phi);
         u[n..2 * n].copy_from_slice(&c_plus_n);

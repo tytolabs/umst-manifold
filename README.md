@@ -12,6 +12,18 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 **Repository:** [github.com/tytolabs/umst-manifold](https://github.com/tytolabs/umst-manifold)
 
+## Solver maturity
+
+Public **lane** (`solver-stable` vs `solver-research` / experimental features) and **verification** test paths: **[`docs/Solver-Status.md`](docs/Solver-Status.md)**. Short per-solver index with `verification_status` / `benchmark_test`: **[`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md)**. v0.4 documentation targets and Track J checklist: **[`../composer_prompts/v0.4_solver_completion_no_namesakes.md`](../composer_prompts/v0.4_solver_completion_no_namesakes.md)** when this repo sits beside `composer_prompts/` (MaOS-Workspace layout).
+
+### Stable (`solver-stable`)
+
+- **`solvers::topology_solver`** — density / topology evolution smoke and filters; see table row for `tests/topology_*.rs` paths.
+
+### Research (`solver-experimental` / feature-gated)
+
+- **Mechanics + adjoint** (`mechanics`, `adjoint`), **fracture**, **acoustics**, **electrochemistry (PNP)**, **photonics (FDFD)**, **rheology**, **THMC**, **statistical mechanics** — each row lists `tests/verification/*.rs` paths and DEFERRAL notes for partial vs deferred scope. Do not treat a kernel as CI-“implemented” beyond what that row states.
+
 ## Build and test
 
 ```bash
@@ -22,11 +34,12 @@ cargo test
 
 GPU backend (local Vulkan/Metal): `cargo build --features wgpu`. Solver integration tests: `cargo test --features solver-tests`.
 
-Solver lane / verification table: [`docs/Solver-Status.md`](docs/Solver-Status.md). **Solver maturity:** treat that table as the source of truth for `solver-stable` vs `solver-research` lanes and CI-backed claims; full v0.4 documentation targets (including Track J) are spelled out in the parent-workspace brief [`../composer_prompts/v0.4_solver_completion_no_namesakes.md`](../composer_prompts/v0.4_solver_completion_no_namesakes.md) when this checkout sits beside `composer_prompts/` (MaOS-Workspace layout). GitHub Actions runs the stricter check on every PR (`solver-status` job in [`.github/workflows/rust.yml`](.github/workflows/rust.yml)). Locally, from `umst-manifold/`, assert that every **stable** row documents non-empty verification and that `tests/*.rs` paths in that column exist:
+**v0.4 shell / Striatus** artefact filenames, B6/L gates, and “do not claim v0.4 complete until …” honesty live under **DEFERRAL — Topology / shell** in [`docs/Solver-Status.md`](docs/Solver-Status.md) (and the sibling cartridge [`../umst-concrete-cartridge/docs/Solver-Status.md`](../umst-concrete-cartridge/docs/Solver-Status.md)). Release-blocker vs `#[ignore]` ring order: [`../composer_prompts/v0.4_phase_3_followup_for_composer.md`](../composer_prompts/v0.4_phase_3_followup_for_composer.md).
+
+CI lint (`solver-status` job in [`.github/workflows/rust.yml`](.github/workflows/rust.yml)) and recommended local parity:
 
 ```bash
-python3 scripts/check_solver_status.py
-python3 scripts/check_solver_status.py --check-paths
+python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set
 ```
 
 ## Toolchain
@@ -70,7 +83,7 @@ End-to-end cartridge hookup: [`examples/basic_topology.rs`](examples/basic_topol
 
 ## Cartridge ecosystem
 
-The topology optimiser, paired with the concrete cartridge, recovers the Striatus principle in 200 iterations on a 4×4 m roof problem. See the cartridge GIF below (artefact path in that repository: `notebooks/_artifacts/striatus_emergence.gif`; build via `notebooks/_run_shell_demo.sh`).
+The topology optimiser, paired with the concrete cartridge, recovers the Striatus principle in 200 iterations on a 4×4 m roof problem. See the cartridge GIF below (artefact path in that repository: `notebooks/_artifacts/striatus_emergence.gif`; build via `notebooks/_run_shell_demo.sh`). **v0.4-named** exports (`striatus_shell_v0.4.stl`, `striatus_shell_v0.4.print_ready.json`, etc.) are the brief’s targets — see [`docs/Solver-Status.md`](docs/Solver-Status.md) topology deferral — and may not exist on every checkout until those gates pass.
 
 <div align="center">
 <img src="https://raw.githubusercontent.com/tytolabs/umst-concrete-cartridge/main/notebooks/_artifacts/striatus_emergence.gif" alt="UMST shell topology optimization — 200 iterations to a Striatus-class rib pattern" width="820">

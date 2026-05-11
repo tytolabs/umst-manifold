@@ -22,6 +22,10 @@ Usage (from ``umst-manifold/``)::
     python3 scripts/check_solver_status.py --check-paths
     python3 scripts/check_solver_status.py --check-paths --check-memo-links
     python3 scripts/check_solver_status.py --check-paths --check-statmech-verification-set
+    python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set
+
+Crate-local GitHub Actions ``solver-status`` job runs the last command above (see ``.github/workflows/rust.yml``).
+Formatting / Clippy use the separate ``lint`` job.
 
 With a custom doc path::
 

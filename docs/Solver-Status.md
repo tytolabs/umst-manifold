@@ -4,7 +4,7 @@ From the `umst-manifold/` tree in this workspace, the v0.4 solver-completion bri
 
 Public mapping of solver-facing modules to **lane** (`solver-stable` vs `solver-research` in `Cargo.toml`), **verification** tests, and notes.
 
-CI lint (`.github/workflows/rust.yml` `solver-status` job): `python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set` — **Verification** test paths exist; track memo links and backticked ``docs/research/*.md`` paths exist; the `solvers::statistical_mechanics` row lists the full `statmech_*` verification set (see script docstring).
+**CI** (`.github/workflows/rust.yml`): **`solver-status`** — `python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set` (**Verification** test paths exist; memo links to `research/*.md` beside this file and backticked ``docs/research/*.md`` paths under the repo root exist; the `solvers::statistical_mechanics` row lists the full `statmech_*` verification set — see `scripts/check_solver_status.py` docstring). **`lint`** (merge gate) — `cargo fmt --all -- --check` and `cargo clippy --all-targets --features solver-experimental -- -D warnings` (same feature union as meta `solver-tests` / v0.4 ship checklist). **`research-stack`** — `cargo test --verbose --release --features solver-experimental` with one retry on failure; runs on pushes to `main` and on `workflow_dispatch`.
 
 **Rule:** use “implemented” in prose below only where the listed **Verification** tests exercise the claim on CI (default `cargo test` path for stable rows; `--features solver-experimental` for research rows unless noted).
 
@@ -28,8 +28,8 @@ Cross-check: **[`../../composer_prompts/v0.4_solver_completion_no_namesakes.md`]
 
 - **J1.** This document’s table is the public solver ↔ lane ↔ verification mapping; prose uses “implemented” only where the **Verification** column matches the CI rule in the header.
 - **J2.** [`README.md`](../README.md) summarizes solver maturity and links here plus the v0.4 brief at [`../../composer_prompts/v0.4_solver_completion_no_namesakes.md`](../../composer_prompts/v0.4_solver_completion_no_namesakes.md) (correct relative URL from this `docs/` file when `composer_prompts/` sits beside `umst-manifold/` in the parent workspace). [`README.md`](../README.md) uses `../composer_prompts/...` for that brief because it is one directory shallower.
-- **J3.** Short index: [`PROOF-STATUS.md`](PROOF-STATUS.md) (full deferrals and research-track notes stay in this file).
-- **J4.** `References.bib` is **not** in this repository yet; add entries as solver rustdoc picks up formal citations per the brief.
+- **J3.** Short index: [`PROOF-STATUS.md`](PROOF-STATUS.md) — one row per main-table solver with **`lane`**, **`benchmark_test`**, and **`verification_status`** (`mechanised` \| `analytic-benchmark` \| `literature` \| `none`); stable rows must not leave **`benchmark_test`** empty. Full deferrals and research-track notes stay in this file.
+- **J4.** [`References.bib`](References.bib) holds a Track-J bibliography skeleton (Bendsøe–Sigmund, Allaire, Sigmund 1997, Stolpe–Svanberg, Scharfetter–Gummel, Buckingham, Roussel et al., Manzano et al., CEB-FIP Model Code 2010, Wangler et al.); extend with DOIs and page-accurate metadata as solver rustdoc cites them.
 
 
 ## Research tracks (v0.4 follow-on)
@@ -84,9 +84,9 @@ Numbered research memos under `docs/research/` (`v0.4_track12_staggered_fracture
 
 **Still open:** DEC-assembled vector curl–curl on **2D/3D** patches (\(d_1\) / face topology); tensor permittivity; tighter Fresnel field match vs a **discrete** semi-infinite reference (current CI test uses bridged continuum target and a relaxed LS band).
 
-**Incremental:** [`tests/dec_identities.rs::dec_curl_d1_annihilates_gradient_on_triangle`](../tests/dec_identities.rs) asserts \(d_1(d_0\omega)=0\) on one oriented 3-cycle (hand-built \(d_1\) row consistent with CCW `ring_b1`). Does **not** exercise Burn `faces_b2` or [`PhotonicsSolver::solve_maxwell_curl_curl`](../src/physics/solvers/photonics.rs).
+**Closed partial — discrete DEC triangle (not photonics solve path):** [`tests/dec_identities.rs`](../tests/dec_identities.rs) ships **`dec_curl_d1_annihilates_gradient_on_triangle_faces_b2_burn`** (\(d_1(d_0\omega)=0\) through synthetic **`edges_b1`/`faces_b2`** COO tensors and Burn gather/scatter in [`dec_primal`](../src/physics/dec_primal.rs)) and **`dec_primal_d1_adjoint_identity_single_triangle_burn`** (unweighted \(d_1\) / \(d_1^\top\) Frobenius adjoint on the same face **COO**). **`dec_curl_d1_annihilates_gradient_on_triangle`** is the dense **`ring_b1`** matmul companion on the **same** CCW 3-cycle (hand-coded face sum); it is not the only annihilation check. None of these call [`PhotonicsSolver::solve_maxwell_curl_curl`](../src/physics/solvers/photonics.rs) or lift incidence from a full mesh assembly.
 
-**Next PR acceptance criteria:** (1) tighten `two_half_spaces_fresnel_te_no_pml_matches_analytic` LS margin and/or add discrete `r_disc`-only comparison; (2) DEC curl operator unit tests on a single triangle/cube patch **wired through production incidence tensors** (`faces_b2` / metric), building on the discrete identity above.
+**Next PR acceptance criteria:** (1) tighten `two_half_spaces_fresnel_te_no_pml_matches_analytic` LS margin and/or add discrete `r_disc`-only comparison; (2) extend DEC curl / adjoint coverage to **metric-weighted** operators and/or **cube** patches with **`faces_b2` (and higher)** populated from **assembled graph / manifold state**, beyond the hand-authored single-triangle **COO** used above — toward wiring full **2D/3D** vector curl–curl in photonics.
 
 
 ## DEFERRAL — Acoustics

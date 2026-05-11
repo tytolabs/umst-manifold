@@ -2,6 +2,7 @@
 
 **Scope:** `umst-manifold` and `umst-concrete-cartridge` aligned to the nine-phase solver plan in `composer-plans/umst_bleeding_edge_solvers.md`.  
 **Canonical solver verification (lanes, features, CI-backed claims):** [`docs/Solver-Status.md`](docs/Solver-Status.md) — when this audit disagrees with that file on implementation status, **trust Solver-Status** and treat stale gap bullets below as narrative debt unless marked historical.  
+**v0.4 release prioritization (Rings 1–3, shell B6/L, ignored gates):** [`../composer_prompts/v0.4_phase_3_followup_for_composer.md`](../composer_prompts/v0.4_phase_3_followup_for_composer.md) — narrative only; solver rows and **DEFERRAL** sections in Solver-Status remain authoritative.  
 **Effort key:** S = small (≤~1 dev-day), M = medium (~2–5 days), L = large (multi-week / research-grade).
 
 ---
@@ -15,7 +16,7 @@ These items were previously called out as inconsistent or missing; the current `
 | **`edges_b1` layout** | **Resolved** — canonical Burn row-major `[2, E]` (all sources, then all targets); enforced via [`EdgeTopology`](src/physics/topology.rs) and documented in [`mechanics`](src/physics/mechanics.rs) tests. |
 | **CG packed solve** | **Resolved** — equilibrium uses **packed** conjugate gradient on free DOFs in [`VectorMechanicsSolver::solve_equilibrium`](src/physics/mechanics.rs) (not tensor-masked CG on the full vector). |
 | **CBF \(k_{\mathrm{phys}}\)** | **Resolved** — [`ThermodynamicCBF::k_phys_dint_to_joules`](src/ai/cbf.rs) scales dissipation to joules; covered by [`tests/cbf.rs`](tests/cbf.rs). |
-| **THMC hydration (explicit Euler)** | **Resolved at scaffold level** — [`ThmcSolver::step`](src/physics/solvers/thmc.rs) advances `hydration_alpha` with explicit Euler + Arrhenius placeholder. **Refinement:** outer Newton loop on thermal/hydraulic residuals \(R_T+R_h\) vs `tol` (not monolithic implicit Jacobian). **Still NOT DONE:** coupled implicit Jacobian, adaptive \(dt\) at Phase‑5 plan scope |
+| **THMC hydration (explicit Euler)** | **Resolved at scaffold level** — [`ThmcSolver::step`](src/physics/solvers/thmc.rs) advances `hydration_alpha` with explicit Euler + Arrhenius placeholder. **Refinement:** outer split iterations on transport + mechanics until split residual norms vs `tol`; **research partial:** implicit backward-Euler **Newton on \((T,\alpha)\) only** (`ThmcImplicitTAlphaNewtonConfig`, dense FD Jacobian on tiny chains — Solver-Status **DEFERRAL — THMC**); humidity stays on the explicit split. **Still NOT DONE:** monolithic stacked THMC Newton–Krylov / JFNK, adaptive \(dt\) at Phase‑5 plan scope |
 | **`ai::info_gain` module** | **Resolved** — [`src/ai/info_gain.rs`](src/ai/info_gain.rs) + unit tests (MSE / nodal flattening helpers). Still **not** mutual information or Landauer‑certified bits; epistemic table below still applies for true MI and sensor fusion.
 | **Mechanics unit tests** | **Green** — `chain_bar_reduced_k_matches_tridiagonal`, `voigt_strain_and_hooke_shear_free_analytic`, and `one_d_bar_tip_displacement` **pass** on the default profile and with **`--features solver-tests`** (including the free‑DOF equilibrium relative L2 residual bound); see **Verification: Cargo tests**. |
 | **Manifold golden-path integration** | **Partial** — [`tests/golden_path_physics_cbf.rs`](tests/golden_path_physics_cbf.rs): mechanics row runs [`ManifoldGateway`](src/ai/ppo.rs) + [`apply_physics_to_umst`](src/core/apply_physics.rs); experimental row runs [`TopologyPhysicsOrchestrator::run_plan_step`](src/physics/orchestration.rs) + [`ThermodynamicCBF`](src/ai/cbf.rs) + merge (no cross-crate cartridge). |
@@ -52,7 +53,7 @@ Plan reference: [`composer-plans/umst_bleeding_edge_solvers.md`](../composer-pla
 | **3** | Bingham Navier–Stokes + Chorin + thixotropy | **Research:** Poiseuille / Chorin smokes + 64×16 edge scaffold **verified**; **plan gaps:** steady benchmark vs analytic on full lattice, surrogate pressure Poisson, inlet/outlet BCs (see Solver-Status **DEFERRAL — Rheology**) | `umst-manifold` | **L** |
 | **4** | Neural-SIMP + augmented Lagrangian + sensitivity filter | `DensityNet` / `TopologyOptimizer`: differentiable forward when **`solver-experimental`**; **plan gaps:** full MBB / crisp projection / filter loop as in composer plan | `umst-manifold` | **M** |
 | **4** | `topology_solver` density-on-sheaf evolution | **Stable lane:** heat-equation / SIMP-adjacent evolution with **`tests/topology_continuation.rs`**, **`tests/topology_filter.rs`** (`topology-density-evolution`) — see Solver-Status; **plan gap:** sheaf density evolution beyond current stable scope | `umst-manifold` | **M** |
-| **5** | Monolithic THMC Newton + autodiff Jacobian + adaptive \(dt\) | [`ThmcSolver::step`](src/physics/solvers/thmc.rs): explicit transport + hydration + quasi-static mechanics + **outer Newton** on \(R_T+R_h\); **research partial:** implicit \(T\)–\(\alpha\) block + one Newton step **verified** on tiny chains (Solver-Status); **plan gaps:** fully coupled implicit Newton–Krylov, adaptive \(dt\) | `umst-manifold` | **L** |
+| **5** | Monolithic THMC Newton + autodiff Jacobian + adaptive \(dt\) | [`ThmcSolver::step`](src/physics/solvers/thmc.rs): explicit transport + hydration + quasi-static mechanics + **outer split iterations** until split residuals vs `tol`; **research partial:** implicit backward-Euler **Newton on \((T,\alpha)\) only** **verified** on tiny chains (Solver-Status **DEFERRAL — THMC**; humidity explicit, not in that Newton branch); **plan gaps:** fully coupled implicit Newton–Krylov, adaptive \(dt\) | `umst-manifold` | **L** |
 | **5** | Rheology inside same tick as THMC | Orchestrator: Bingham **not** folded into `ThmcSolver::step` | `umst-manifold` | **M** |
 | **6** | PNP + Poisson + Scharfetter–Gummel | **Research:** SG NP + Thomas Poisson on MVP chains; implicit backward-Euler + damped Newton **optional** chain API; explicit Picard remains default on general path — see Solver-Status **DEFERRAL — Electrochemistry**; **plan gaps:** SG-style coupling + implicit Newton on **general graphs**, variable \(\varepsilon\), large-\(|z\Delta\phi|\) robustness | `umst-manifold` | **L** |
 | **7** | Frequency-domain Maxwell curl–curl on DEC | **Research (`photonics-fdfd`):** scalar TE FDFD Helmholtz, Thomas+PML, chain **`solve_maxwell_curl_curl`** vs scalar Helmholtz + **`photonics_fresnel`** — verified; **plan gaps:** full **2D/3D** DEC vector curl–curl, tensor permittivity, tighter Fresnel calibration (Solver-Status **DEFERRAL — Photonics**) | `umst-manifold` | **L** |
@@ -77,12 +78,21 @@ Plan reference: [`composer-plans/umst_bleeding_edge_solvers.md`](../composer-pla
 
 Workspace root [`.github/workflows/rust-solvers.yml`](../.github/workflows/rust-solvers.yml) (MaOS-Workspace) triggers on changes under **`umst-manifold/**`**, **`umst-concrete-cartridge/**`**, or the workflow file. Two jobs:
 
-1. **`umst-manifold-rust`** — `working-directory: umst-manifold`: **physics Host-tensor guard** (`scripts/check_physics_no_gradient_break.sh`), **`dtolnay/rust-toolchain@stable` with `toolchain: 1.88`**, **`cargo fmt --check`**, **`cargo clippy --all-targets -- -D warnings`**, **`cargo test`**, **`cargo test --features solver-tests`** (no separate `--all-features` step in CI; run locally per **Verification** table).
+1. **`umst-manifold-rust`** — `working-directory: umst-manifold`: **physics Host-tensor guard** (`scripts/check_physics_no_gradient_break.sh`), **`dtolnay/rust-toolchain@stable` with `toolchain: 1.88`**, **`cargo fmt --check`**, **`cargo clippy --all-targets -- -D warnings`**, **`cargo test`**, **`cargo test --features solver-tests`** (no **`--all-features`** step in this workflow; run locally per **Verification** table).
 2. **`cartridge`** — `working-directory: umst-concrete-cartridge`: same toolchain pin when both `umst-manifold/Cargo.toml` and `umst-concrete-cartridge/Cargo.toml` exist (`hashFiles` guards); **`cargo fmt --check`**, **`cargo clippy`**, **`cargo test`**.
 
-**Readiness note:** On the P0 verification snapshot, **`cargo test --features solver-tests` passes** in `umst-manifold` (see **Verification**). CI still depends on the workflow’s **1.88** pin matching **`rust-toolchain.toml`** / transitive MSRV.
+**Readiness note:** On the P0 verification snapshot, **`cargo test --features solver-tests` passes** in `umst-manifold` (see **Verification**). Root CI still depends on the workflow’s **1.88** pin matching **`rust-toolchain.toml`** / transitive MSRV.
 
-The crate-local [`.github/workflows/rust.yml`](.github/workflows/rust.yml) also uses **stable** for build/test; its `rustfmt` / clippy job is marked **advisory** (`continue-on-error: true`), so **root `rust-solvers.yml` is the stricter fmt + solver-tests gate** for monorepo CI.
+Crate-local [`.github/workflows/rust.yml`](.github/workflows/rust.yml) (this tree’s GitHub Actions) uses **`dtolnay/rust-toolchain@stable`** for build/test jobs. Besides the **advisory** `lint` job (`continue-on-error: true`: **`cargo fmt --check`**, **`cargo clippy --all-targets --features solver-stable -- -D warnings`**), it runs:
+
+1. **`readme-sanity`** — minimum `README.md` line count.
+2. **`solver-status`** — **`python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set`** on `docs/Solver-Status.md`.
+3. **`build-test`** — **`cargo build`**, **`cargo build --examples`**, **`cargo test`** (default features).
+4. **`solver-stable-pr`** (pull requests only) — **`cargo test --features solver-stable`**.
+5. **`solver-research-check-pr`** (pull requests only) — **`cargo check --all-targets --features solver-stable,solver-research`**.
+6. **`research-stack`** (pushes to **`main`** only) — **`cargo test --release --features solver-stable,solver-research`** with one retry on failure.
+
+**Relationship:** root **`rust-solvers.yml`** is the **hard** fmt/clippy gate plus **`cargo test --features solver-tests`** (meta-feature = full **`solver-experimental`** union). Crate-local **`rust.yml`** adds **Solver-Status** validation and **lane-split** tests/checks (`solver-stable` / `solver-stable,solver-research`); only **`lint`** is advisory there.
 
 ---
 
@@ -90,8 +100,8 @@ The crate-local [`.github/workflows/rust.yml`](.github/workflows/rust.yml) also 
 
 | Gap | Owner crate | Effort |
 |-----|-------------|--------|
-| Root `rust-solvers.yml` **solver-tests** step: `cargo test --features solver-tests` is **green** on the P0 verification snapshot | `umst-manifold` | **S** |
-| Per-crate workflow does **not** run `solver-tests`; **root** `rust-solvers.yml` does — align expectations when debugging CI only on `umst-manifold/.github` | `umst-manifold` | **S** |
+| Root `rust-solvers.yml` **`cargo test --features solver-tests`** is **green** on the P0 verification snapshot | `umst-manifold` | **S** |
+| Crate-local **`rust.yml`** does **not** pass the **`solver-tests`** Cargo flag; it runs **`solver-stable`** and **`solver-stable,solver-research`** by job. For the **full experimental union** (same feature graph as **`solver-tests`**), use **root** `rust-solvers.yml` or run **`cargo test --features solver-tests`** locally | `umst-manifold` | **S** |
 | `wgpu` backend optional; **not exercised** in CI (Metal/Vulkan variance) | `umst-manifold` | **S** |
 | `bincode = "=2.0.0-rc.3"` pin — upgrade path tied to `burn` compatibility | `umst-manifold`, `umst-concrete-cartridge` | **S** |
 | Plan mentions MMS / conservation / regression suites — **not** wired as named CI steps beyond default tests | `umst-manifold` | **M** |
@@ -125,26 +135,28 @@ The crate-local [`.github/workflows/rust.yml`](.github/workflows/rust.yml) also 
 - **2026-05-10:** Synced phase rows and **Deferred work** with repo-verified composer refinements (mechanics CPU path, THMC Newton residuals, `optimize_step` behind **`solver-experimental`**, electro drift, policy mask); refreshed **`composer-plans/umst_solver_refinements.md`** phase verdicts.
 - **2026-05-10:** **Verification** section rename; **CI readiness** updated for dual-job `rust-solvers.yml` + cartridge path filters; epistemic table + **Cartridge / publish** README rows aligned with **`information_density` / η** wiring and in-tree README disclosure; P1 checklist split (information density vs emergence); new P0 ticks for cartridge CI + README.
 - **2026-05-11:** **Plan phases 1–9**, **Verification** intro, **Deferred work** (P3/P4), and **Sorted issue index** (P2) updated so stale claims (e.g. photonics stub, SG absent, topology_solver “scaffold only”) match CI-backed truth in [`docs/Solver-Status.md`](docs/Solver-Status.md); that doc is **canonical** for solver/module status. Earlier history entries **superseded as verification authority** by Solver-Status where they conflict on phases 2–9.
+- **2026-05-11:** **CI readiness** / P0 bullets aligned with crate-local [`.github/workflows/rust.yml`](.github/workflows/rust.yml) (jobs, `check_solver_status.py` flags, `research-stack` features) and corrected root **`rust-solvers.yml`** scope (no **`--all-features`** step).
+- **2026-05-11:** THMC rows and refinement checklist aligned with Solver-Status **DEFERRAL — THMC** (implicit Newton on **\((T,\alpha)\)** only; explicit humidity split); added pointer to [`v0.4_phase_3_followup_for_composer.md`](../composer_prompts/v0.4_phase_3_followup_for_composer.md) for Ring 1–3 prioritization.
 
 ---
 
 ## Deferred work
 
-In `Cargo.toml`, `solver-experimental` groups the leaf features `fracture-at2`, `acoustics-newmark`, `topology-density-evolution`, `thmc-coupled`, `electrochemistry-pnp`, `mechanics-voigt-cauchy`, `rheology-bingham`, and `photonics-fdfd`; `solver-tests` enables that umbrella.
+In `Cargo.toml`, **`solver-stable`** / **`solver-research`** declare lane features (stable includes `topology-density-evolution`, `statistical-mechanics-vinet`; research includes `fracture-at2`, `acoustics-newmark`, `thmc-coupled`, `electrochemistry-pnp`, `photonics-fdfd`, and related flags); **`solver-experimental`** unions both lanes; **`solver-tests`** aliases **`solver-experimental`**. Crate-local **`rust.yml`** runs **`solver-stable`** and **`solver-stable,solver-research`** by job — see **CI readiness** — while **root** `rust-solvers.yml` invokes **`solver-tests`** by name.
 
 ### P0 — CI, format, tests
 
 - **MSRV / pins:** `rust-toolchain.toml` pins **rustc 1.88** (full optional graph / `--all-features`; see file header). `Cargo.toml` pins **`bincode = "=2.0.0-rc.3"`** (Burn 0.13 API surface) and **`time = "=0.3.40"`** (newer `time` pulls MSRV above common toolchains). Do not relax pins without checking Burn and transitive MSRV.
-- [x] Keep root `rust-solvers.yml` gate green: `cargo fmt`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`, `cargo test --features solver-tests`, `cargo test --all-features` (verified `rustc 1.88.0` / `rustup run 1.88`; see **Toolchain** PATH note).
+- [x] Keep root `rust-solvers.yml` gate green: `cargo fmt`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`, `cargo test --features solver-tests` (verified `rustc 1.88.0` / `rustup run 1.88`; see **Toolchain** PATH note). **`cargo test --all-features`** is **local / verification-table** scope only — not a `rust-solvers.yml` step.
 - [x] Root `rust-solvers.yml` **`cartridge`** job: `fmt` / `clippy` / `cargo test` in `umst-concrete-cartridge/` when both crate manifests exist (`hashFiles` guards); workflow `paths` include `umst-concrete-cartridge/**`.
 - [x] Manifold **`README.md`** discloses reserved Zenodo DOI until v0.1.0 deposit (**Citing this work**); cartridge README documents live dataset Zenodo for calibration CSVs.
-- [ ] Track crate-local `umst-manifold/.github/workflows/rust.yml` (advisory) vs root strict gate when debugging CI-only failures.
+- [ ] Track crate-local `umst-manifold/.github/workflows/rust.yml` (**required** `solver-status` + lane jobs vs **advisory** `lint` only) vs root **`rust-solvers.yml`** strict **`solver-tests` + 1.88** gate when debugging CI-only failures.
 - [ ] Add or promote MMS / conservation / regression suites to explicit CI steps when harness exists (currently implicit in default tests only).
 
 ### Refinements verified in code ([`composer-plans/umst_solver_refinements.md`](../composer-plans/umst_solver_refinements.md))
 
 - [x] **Mechanics CPU fallback removed** from production solver — packed/tensor CG + `bar_matvec`; `.into_data()` only under `#[cfg(test)]` (`src/physics/mechanics.rs`).
-- [x] **THMC Newton outer loop** — iterate transport + mechanics; exit when \(R_T+R_h<\) `tol` or warn on exhaustion (`src/physics/solvers/thmc.rs`).
+- [x] **THMC outer split loop** — iterate transport + mechanics until split residual norms vs `tol` or warn on exhaustion; implicit damped Newton applies to the backward-Euler **\((T,\alpha)\)** block only when configured — humidity stays explicit (see Solver-Status **DEFERRAL — THMC**) (`src/physics/solvers/thmc.rs`).
 - [x] **TopologyOptimizer `optimize_step`** — full differentiable forward (DensityNet → SIMP → equilibrium) when **`solver-experimental`**; without it, no-arg `optimize_step(&mut self)` remains `{}` (`src/ai/topology.rs`).
 - [x] **Electrochemistry drift** — Nernst–Planck drift surrogate `j_drift` using discrete \(\Delta\Phi\) (`lap_phi`) (`src/physics/solvers/electrochemistry.rs`).
 - [x] **Policy mask** — `UnifiedMaterialStateTensor::apply_policy_mask` / `project_all_scalars` (`src/core/tensors.rs`).
@@ -190,7 +202,7 @@ In `Cargo.toml`, `solver-experimental` groups the leaf features `fracture-at2`, 
 
 ### P0 — Correctness / CI
 
-1. Reconcile manifold-local [`.github/workflows/rust.yml`](.github/workflows/rust.yml) (advisory `continue-on-error`) with the stricter root [`rust-solvers.yml`](../.github/workflows/rust-solvers.yml) gate when debugging CI-only failures (**Deferred work** § P0; **CI readiness**).
+1. Reconcile manifold-local [`.github/workflows/rust.yml`](.github/workflows/rust.yml) (**PR:** `solver-stable` + research `cargo check`; **`main`:** `research-stack`; **advisory:** `lint` only) with the stricter root [`rust-solvers.yml`](../.github/workflows/rust-solvers.yml) **`solver-tests` + 1.88** gate when debugging CI-only failures (**Deferred work** § P0; **CI readiness**).
 2. Add or promote MMS / conservation / named regression suites to explicit CI steps once a harness exists; today the main signal is default `cargo test` (**Deferred work** § P0; **Toolchain** table).
 3. Keep developer `PATH` / rustup ordering consistent with the **1.88** workflow pin so `rust-toolchain.toml` actually applies (`rustup run 1.88 cargo …` if Homebrew `cargo` shadows rustup) (**Toolchain** table).
 4. `wgpu` optional backend is not exercised in CI (Metal/Vulkan variance) (**Toolchain** table).

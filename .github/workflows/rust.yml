@@ -86,28 +86,27 @@ jobs:
       - name: cargo check --features solver-stable,solver-research
         run: cargo check --verbose --all-targets --features solver-stable,solver-research
 
-  # v0.4 brief Track K: union lane on default branch (stable + research), release tests.
+  # v0.4 brief Track K: full experimental stack on default branch (same feature union as PR check), release tests.
   research-stack:
-    name: solver-stable + solver-research tests (main, release)
+    name: solver-experimental tests (main, release)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: cargo test --release --features solver-stable,solver-research (retry ×1)
+      - name: cargo test --release --features solver-experimental (retry ×1)
         run: |
           set -euo pipefail
-          if ! cargo test --verbose --release --features solver-stable,solver-research; then
+          if ! cargo test --verbose --release --features solver-experimental; then
             echo "retry once after possible flake..."
-            cargo test --verbose --release --features solver-stable,solver-research
+            cargo test --verbose --release --features solver-experimental
           fi
 
-  # Advisory jobs: report quality issues but do not block the merge.
+  # PR / push gate: rustfmt + clippy on the full solver-experimental graph (v0.4 acceptance; matches meta `solver-tests`).
   lint:
-    name: clippy + rustfmt (advisory)
+    name: rustfmt + clippy
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -117,4 +116,4 @@ jobs:
       - name: rustfmt
         run: cargo fmt --all -- --check
       - name: clippy
-        run: cargo clippy --all-targets --features solver-stable -- -D warnings
+        run: cargo clippy --all-targets --features solver-experimental -- -D warnings
