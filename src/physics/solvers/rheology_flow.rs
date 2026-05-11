@@ -94,7 +94,10 @@
 //!   fluxes here; today everything stays nodal on `edges_b1`.
 //! - **Poisson RHS:** Shipped path uses [`primal_divergence_from_edge_flux_topo`] on scalar flux \(q_e f_c\)
 //!   derived from \(u^\*\) (tangential mean; see “Chorin-style split” §2). A MAC staggered \(\nabla_h\!\cdot u^\*\)
-//!   on face fluxes remains a future swap-in.
+//!   on face fluxes remains a future swap-in. **M7 milestone (both `rheology-bingham` and `solver-experimental`):**
+//!   [`chorin_pressure_rhs_mean_free_weak_divergence_mac_upstream_face_flux`] and
+//!   [`chorin_open_x_chain_end_cap_flux_rhs_mean_free`] are small, opt-in building blocks toward that swap-in /
+//!   open-\(x\) data — not yet wired into [`step_experimental`].
 //! - **Poisson solve:** Shipped path uses **Jacobi-preconditioned CG** on \(-\mathcal{L}\) (see
 //!   [`solve_pressure_phi_jacobi_cg`]); a chain **Thomas** fast lane when topology is a 1-D path remains a future
 //!   swap-in — compare electrochemistry Poisson helpers.
@@ -435,6 +438,83 @@ fn chorin_pressure_rhs_mean_free_weak_divergence<B: Backend<FloatElem = f32>>(
     n_edges: usize,
     n: usize,
 ) -> (Tensor<B, 3>, Tensor<B, 3>) {
+    chorin_pressure_rhs_mean_free_weak_divergence_inner(
+        u_star,
+        topo,
+        flow_coeff,
+        batch,
+        n_edges,
+        n,
+        false,
+    )
+}
+
+/// **M7 (incremental MAC lane):** same weak primal divergence routing as
+/// [`chorin_pressure_rhs_mean_free_weak_divergence`], but scalar edge transport uses the **upstream
+/// (source-node) face value** \(q_e=(u^\*_{\mathrm{src}}\cdot\hat t)\,f_c\) instead of the tangential
+/// mean \((\bar u^\*\cdot\hat t)\,f_c\). Documented proxy for staggered face-stored normal flux on
+/// quasi-1-D channels; the shipped Chorin step still uses the tangential-mean contract.
+#[cfg(all(feature = "rheology-bingham", feature = "solver-experimental"))]
+#[cfg_attr(not(test), allow(dead_code))]
+pub(crate) fn chorin_pressure_rhs_mean_free_weak_divergence_mac_upstream_face_flux<
+    B: Backend<FloatElem = f32>,
+>(
+    u_star: Tensor<B, 3>,
+    topo: &EdgeTopology<B>,
+    flow_coeff: Tensor<B, 3>,
+    batch: usize,
+    n_edges: usize,
+    n: usize,
+) -> (Tensor<B, 3>, Tensor<B, 3>) {
+    chorin_pressure_rhs_mean_free_weak_divergence_inner(
+        u_star,
+        topo,
+        flow_coeff,
+        batch,
+        n_edges,
+        n,
+        true,
+    )
+}
+
+/// **M7 (incremental open-\(x\) lane):** mean-free nodal source from a **balanced end-cap flux**
+/// \(+J\) at `left_id` and \(-J\) at `right_id` (same scatter sign story as a single oriented edge
+/// in [`primal_divergence_from_edge_flux_topo`]). Row-sum is already zero, so the mean-free pass is
+/// a no-op for one batch; it remains the correct gauge hook when composing with other mean-centred RHS pieces.
+#[cfg(all(feature = "rheology-bingham", feature = "solver-experimental"))]
+#[cfg_attr(not(test), allow(dead_code))]
+pub(crate) fn chorin_open_x_chain_end_cap_flux_rhs_mean_free<B: Backend<FloatElem = f32>>(
+    batch: usize,
+    n_nodes: usize,
+    left_id: usize,
+    right_id: usize,
+    cap_flux: f32,
+    device: &B::Device,
+) -> Tensor<B, 3> {
+    debug_assert!(left_id < n_nodes && right_id < n_nodes);
+    let mut vals = vec![0.0_f32; batch * n_nodes];
+    for b in 0..batch {
+        vals[b * n_nodes + left_id] += cap_flux;
+        vals[b * n_nodes + right_id] -= cap_flux;
+    }
+    let t = Tensor::<B, 3>::from_data(
+        burn::tensor::Data::new(vals, burn::tensor::Shape::new([batch, n_nodes, 1])),
+        device,
+    );
+    let mean = t.clone().sum_dim(1).div_scalar(n_nodes as f32);
+    t.sub(mean)
+}
+
+#[cfg(feature = "rheology-bingham")]
+fn chorin_pressure_rhs_mean_free_weak_divergence_inner<B: Backend<FloatElem = f32>>(
+    u_star: Tensor<B, 3>,
+    topo: &EdgeTopology<B>,
+    flow_coeff: Tensor<B, 3>,
+    batch: usize,
+    n_edges: usize,
+    n: usize,
+    mac_upstream_face_flux: bool,
+) -> (Tensor<B, 3>, Tensor<B, 3>) {
     let ch3 = 3usize;
     let du_s = primal_scalar_edge_increment(u_star.clone(), topo);
     let du_s_mag_sq = du_s
@@ -452,12 +532,19 @@ fn chorin_pressure_rhs_mean_free_weak_divergence<B: Backend<FloatElem = f32>>(
     let src_ix3 = topo.expand_src_gather_indices(batch, ch3);
     let tgt_ix3 = topo.expand_tgt_gather_indices(batch, ch3);
     let u_src3 = u_star.clone().gather(1, src_ix3);
-    let u_tgt3 = u_star.clone().gather(1, tgt_ix3);
-    let u_mean_edge = u_src3.add(u_tgt3).div_scalar(2.0_f32);
-    let q_edge = u_mean_edge
-        .mul(t_hat_s.clone())
-        .sum_dim(2)
-        .reshape([batch, n_edges, 1]);
+    let q_edge = if mac_upstream_face_flux {
+        u_src3
+            .mul(t_hat_s.clone())
+            .sum_dim(2)
+            .reshape([batch, n_edges, 1])
+    } else {
+        let u_tgt3 = u_star.clone().gather(1, tgt_ix3);
+        let u_mean_edge = u_src3.add(u_tgt3).div_scalar(2.0_f32);
+        u_mean_edge
+            .mul(t_hat_s.clone())
+            .sum_dim(2)
+            .reshape([batch, n_edges, 1])
+    };
     let fc1 = flow_coeff.narrow(2, 0, 1);
     let flux_scalar_edge = q_edge.mul(fc1);
     let u_star_x0 = u_star.narrow(2, 0, 1);
@@ -1108,5 +1195,125 @@ mod tests {
 
         assert!(phi_div.abs().max().into_scalar().is_finite());
         assert!(phi_surr.abs().max().into_scalar().is_finite());
+    }
+
+    /// **M7 — MAC upstream face flux** differs from tangential-mean transport on a short +x chain.
+    #[cfg(feature = "solver-experimental")]
+    #[test]
+    fn m7_mac_upstream_face_flux_rhs_differs_from_tangential_mean_on_chain() {
+        use super::{
+            chorin_pressure_rhs_mean_free_weak_divergence,
+            chorin_pressure_rhs_mean_free_weak_divergence_mac_upstream_face_flux,
+        };
+        use crate::physics::topology::EdgeTopology;
+
+        let dev = NdArrayDevice::Cpu;
+        let batch = 1usize;
+        let n = 5usize;
+        let e_ct = 4usize;
+        let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
+            Data::new(vec![0i64, 1, 2, 3, 1, 2, 3, 4], Shape::new([2, e_ct])),
+            &dev,
+        );
+        let topo = EdgeTopology::new(edges_b1.clone());
+        let n_edges = topo.n_edges();
+        let flow_coeff = Tensor::<B, 3>::ones([batch, n_edges, 3], &dev);
+
+        let mut vel = vec![0.0_f32; batch * n * 3];
+        for i in 0..n {
+            vel[i * 3] = (i * i) as f32 * 0.1;
+            vel[i * 3 + 1] = 0.03 * i as f32;
+        }
+        let u_star = Tensor::<B, 3>::from_data(Data::new(vel, Shape::new([batch, n, 3])), &dev);
+
+        let rhs_mean = chorin_pressure_rhs_mean_free_weak_divergence(
+            u_star.clone(),
+            &topo,
+            flow_coeff.clone(),
+            batch,
+            n_edges,
+            n,
+        )
+        .0;
+        let rhs_mac = chorin_pressure_rhs_mean_free_weak_divergence_mac_upstream_face_flux(
+            u_star,
+            &topo,
+            flow_coeff,
+            batch,
+            n_edges,
+            n,
+        )
+        .0;
+
+        let mn = rhs_mean
+            .clone()
+            .powf_scalar(2.0)
+            .sum()
+            .sqrt()
+            .into_scalar()
+            .max(1e-30_f32);
+        let diff = rhs_mac.sub(rhs_mean);
+        let dn = diff.powf_scalar(2.0).sum().sqrt().into_scalar();
+        assert!(
+            dn / mn > 0.02_f32,
+            "MAC upstream q_e should materially change the Poisson RHS on this chain; rel||Δb||/||b_mean||={}",
+            dn / mn
+        );
+    }
+
+    /// **M7 — open-\(x\) end-cap flux** is mean-free and perturbs the graph Poisson increment vs the base RHS alone.
+    #[cfg(feature = "solver-experimental")]
+    #[test]
+    fn m7_open_x_end_cap_flux_mean_free_and_shifts_poisson_phi() {
+        use super::{
+            chorin_open_x_chain_end_cap_flux_rhs_mean_free,
+            chorin_pressure_rhs_mean_free_weak_divergence,
+            solve_pressure_phi_jacobi_cg,
+        };
+        use crate::physics::topology::EdgeTopology;
+
+        let dev = NdArrayDevice::Cpu;
+        let batch = 1usize;
+        let n = 5usize;
+        let e_ct = 4usize;
+        let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
+            Data::new(vec![0i64, 1, 2, 3, 1, 2, 3, 4], Shape::new([2, e_ct])),
+            &dev,
+        );
+        let topo = EdgeTopology::new(edges_b1.clone());
+        let n_edges = topo.n_edges();
+        let flow_coeff = Tensor::<B, 3>::ones([batch, n_edges, 3], &dev);
+        let damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+
+        let mut vel = vec![0.0_f32; batch * n * 3];
+        for i in 0..n {
+            vel[i * 3] = (i * i) as f32 * 0.1;
+            vel[i * 3 + 1] = 0.03 * i as f32;
+        }
+        let u_star = Tensor::<B, 3>::from_data(Data::new(vel, Shape::new([batch, n, 3])), &dev);
+
+        let rhs_base = chorin_pressure_rhs_mean_free_weak_divergence(
+            u_star,
+            &topo,
+            flow_coeff,
+            batch,
+            n_edges,
+            n,
+        )
+        .0;
+        let rhs_cap =
+            chorin_open_x_chain_end_cap_flux_rhs_mean_free(batch, n, 0, n - 1, 0.07_f32, &dev);
+        let row_sum = rhs_cap.clone().sum_dim(1).abs().max().into_scalar();
+        assert!(row_sum < 1e-5_f32, "end-cap pattern should be mean-free; max|Σ b|={row_sum}");
+
+        let rhs_sum = rhs_base.clone().add(rhs_cap.clone());
+        let phi0 = solve_pressure_phi_jacobi_cg(rhs_base, edges_b1.clone(), damage.clone(), batch, n);
+        let phi1 = solve_pressure_phi_jacobi_cg(rhs_sum, edges_b1.clone(), damage.clone(), batch, n);
+        let dphi = phi1.sub(phi0);
+        let dphi_n = dphi.powf_scalar(2.0).sum().sqrt().into_scalar();
+        assert!(
+            dphi_n > 1e-6_f32,
+            "open-x cap increment should shift φ; ||Δφ||={dphi_n}"
+        );
     }
 }
