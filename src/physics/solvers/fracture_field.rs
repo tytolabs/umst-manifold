@@ -442,7 +442,7 @@ impl PhaseFieldFractureSolver {
             );
 
             #[cfg(feature = "fracture-at2")]
-            let should_break = outer_stopping_should_break(
+            let should_break = outer_stopping_hit_or(
                 outer.stopping,
                 &d_before,
                 &damage,
@@ -451,7 +451,7 @@ impl PhaseFieldFractureSolver {
                 Some(&mut prev_psi_mean),
             );
             #[cfg(not(feature = "fracture-at2"))]
-            let should_break = outer_stopping_should_break(
+            let should_break = outer_stopping_hit_or(
                 outer.stopping,
                 &d_before,
                 &damage,
@@ -607,7 +607,7 @@ impl PhaseFieldFractureSolver {
                 edges_b1.clone(),
             );
 
-            if outer_stopping_should_break(
+            if outer_stopping_hit_or(
                 stop,
                 &d_before,
                 &d,
