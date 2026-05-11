@@ -27,6 +27,10 @@ pub struct UnifiedMaterialStateTensor<B: Backend> {
     /// B1 Boundary Matrix: Nodes to Edges (1-cells). Required for gradients (flow).
     pub edges_b1: Tensor<B, 2, burn::tensor::Int>,
     /// B2 Boundary Matrix: Edges to Faces (2-cells). Required for curl (vorticity/stress).
+    /// **Layout:** shape `[2, K]` — row `0` = global edge index, row `1` = signed incidence `±1`
+    /// per column; partition columns into faces via
+    /// [`crate::physics::dec_primal::primal_d1_edge_flux_to_faces`]. Many 1-D call sites still use a
+    /// placeholder (`[2, 1]`) until 2-cells exist.
     pub faces_b2: Tensor<B, 2, burn::tensor::Int>,
 
     // --- 3. The Features: E(3)-Equivariant Property Spaces ---

@@ -21,6 +21,7 @@ Usage (from ``umst-manifold/``)::
     python3 scripts/check_solver_status.py
     python3 scripts/check_solver_status.py --check-paths
     python3 scripts/check_solver_status.py --check-paths --check-memo-links
+    python3 scripts/check_solver_status.py --check-paths --check-statmech-verification-set
 
 With a custom doc path::
 
@@ -40,6 +41,15 @@ _VERIF_PATH_RE = re.compile(r"`(tests/[^`]+\.rs)`|(tests/[A-Za-z0-9_./-]+\.rs)")
 _MEMO_MARKDOWN_LINK_RE = re.compile(r"\]\((research/[A-Za-z0-9_./-]+\.md)\)")
 # Inline `` `docs/research/foo.md` `` references anywhere in the status doc.
 _DOCS_RESEARCH_BACKTICK_RE = re.compile(r"`(docs/research/[A-Za-z0-9_./-]+\.md)`")
+
+# `docs/Solver-Status.md` row `solvers::statistical_mechanics` — Verification must cite all three
+# `statmech_*` integration tests (DEFERRAL — Statistical mechanics). Kept in sync with that table.
+_STATMECH_SOLVER_ROW_MARK = "statistical_mechanics"
+_STATMECH_VERIFICATION_PATHS: tuple[str, ...] = (
+    "tests/verification/statmech_vinet_eos.rs",
+    "tests/verification/statmech_lj_bridge_contract.rs",
+    "tests/verification/statmech_lj_johnson_eos_reference.rs",
+)
 
 
 def _split_table_row(line: str) -> list[str]:
@@ -125,6 +135,37 @@ def _verification_paths(verification: str) -> list[str]:
     return out
 
 
+def _check_statmech_verification_set(rows: list[tuple[str, str, str, str]]) -> int:
+    """
+    Ensure the statistical-mechanics solver row lists every expected ``statmech_*.rs`` path.
+
+    Returns a count of errors emitted to stderr.
+    """
+    errors = 0
+    statmech_row: tuple[str, str, str, str] | None = None
+    for solver, lane, verification, _notes in rows:
+        if _STATMECH_SOLVER_ROW_MARK in solver:
+            statmech_row = (solver, lane, verification, _notes)
+            break
+    if statmech_row is None:
+        print(
+            "error: --check-statmech-verification-set: no table row whose Solver cell contains "
+            f"{_STATMECH_SOLVER_ROW_MARK!r}",
+            file=sys.stderr,
+        )
+        return 1
+    _solver, _lane, verification, _notes = statmech_row
+    for rel in _STATMECH_VERIFICATION_PATHS:
+        if rel not in verification:
+            print(
+                "error: --check-statmech-verification-set: statistical mechanics Verification cell "
+                f"must mention {rel!r} (backticks optional)",
+                file=sys.stderr,
+            )
+            errors += 1
+    return errors
+
+
 def _memo_link_targets(status_md: Path, root: Path, body: str) -> list[tuple[str, Path]]:
     """
     Return (display_ref, absolute_path) for each memo reference to verify.
@@ -183,6 +224,15 @@ def main() -> None:
         action="store_true",
         help="Require research memo markdown links and docs/research/*.md backticks to exist",
     )
+    ap.add_argument(
+        "--check-statmech-verification-set",
+        action="store_true",
+        help=(
+            "Require the statistical_mechanics table row Verification cell to list all "
+            "`statmech_vinet_eos`, `statmech_lj_bridge_contract`, and "
+            "`statmech_lj_johnson_eos_reference` test paths (see DEFERRAL — Statistical mechanics)"
+        ),
+    )
     args = ap.parse_args()
     status_md: Path = args.status_md
     root: Path = args.root
@@ -213,6 +263,9 @@ def main() -> None:
                     )
                     errors += 1
 
+    if args.check_statmech_verification_set:
+        errors += _check_statmech_verification_set(rows)
+
     if args.check_memo_links:
         for ref, target in _memo_link_targets(status_md, root, body):
             if not target.is_file():
@@ -229,6 +282,8 @@ def main() -> None:
         parts.append("verification test paths")
     if args.check_memo_links:
         parts.append("research memo links")
+    if args.check_statmech_verification_set:
+        parts.append("statmech verification path set")
     extra = " + ".join(parts)
     print(f"OK: {status_md} ({len(rows)} table row(s); {extra})")
 

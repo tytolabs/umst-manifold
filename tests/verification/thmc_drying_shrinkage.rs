@@ -294,8 +294,7 @@ fn bar_network_strain_matches_strain_tensor_for_fracture_after_mechanics() {
         cross_section_area,
         &cfg,
     );
-    let eps_from_u =
-        strain_tensor_from_bar_network_displacement(u_eq, coords, edges_b1.clone(), n);
+    let eps_from_u = strain_tensor_from_bar_network_displacement(u_eq, coords, edges_b1.clone(), n);
 
     let v1 = eps_one_shot.into_data().value;
     let v2 = eps_from_u.into_data().value;
@@ -535,9 +534,7 @@ fn thmc_t_alpha_newton_residual_preserves_hydro_mechanics_fields() {
         kinetics,
     };
     let h_vals = vec![0.71_f32, 0.84_f32];
-    let disp_vals: Vec<f32> = (0..n * 3)
-        .map(|k| 0.01_f32 * (1 + k) as f32)
-        .collect();
+    let disp_vals: Vec<f32> = (0..n * 3).map(|k| 0.01_f32 * (1 + k) as f32).collect();
     let trial = ThmcState {
         thermal: ThermalPlan {
             temperature: trial_t,
@@ -770,6 +767,73 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
         t_diff + a_diff > 1.0e-4_f32,
         "expected implicit (T,α) Newton to differ from explicit split; |ΔT|₁+|Δα|₁ sum = {}",
         t_diff + a_diff
+    );
+}
+
+/// Integration boundary: humidity transport in [`ThmcSolver::step`] uses `h_old + Δt Lap(h_old)` and
+/// does **not** branch on implicit vs explicit \((T,\alpha)\) — so one step yields identical `h` even when
+/// \(T,\alpha\) differ (monolithic THMC would couple \(h\) into the same implicit residual). Displacement
+/// can still differ when [`UnifiedMaterialStateTensor::node_positions`] drives mechanics because stiffness
+/// scales with post-block \(\alpha\).
+#[test]
+fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
+    let d = dev();
+    let n = 2usize;
+    let manifold = chain_manifold(n);
+    let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
+    let state0 = ThmcState {
+        thermal: ThermalPlan {
+            temperature: Tensor::<B, 3>::from_data(
+                Data::new(vec![301.0_f32, 289.0_f32], Shape::new([1, n, 1])),
+                &d,
+            ),
+        },
+        hydro: HydrologicPlan {
+            humidity: Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
+        },
+        mechanical: MechanicalPlan {
+            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: Tensor::<B, 3>::from_data(
+                Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
+                &d,
+            ),
+        },
+        damage: damage.clone(),
+        time: 0.0_f32,
+    };
+
+    let kinetics = ThmcHydrationKinetics::default();
+    let solver_explicit = ThmcSolver {
+        dt: 0.08_f32,
+        max_newton: 1_usize,
+        tol: 1e-3_f32,
+        hydration: kinetics.clone(),
+        drying_last_node_evaporation_k: 0.0_f32,
+        drying_ambient_h: 0.5_f32,
+        implicit_t_alpha_newton: None,
+    };
+    let solver_implicit = ThmcSolver {
+        implicit_t_alpha_newton: Some(ThmcImplicitTAlphaNewtonConfig {
+            iterations: 4_usize,
+            damping: 1.0_f32,
+            fd_eps: 1.0e-5_f32,
+        }),
+        ..solver_explicit.clone()
+    };
+
+    let s_exp = solver_explicit
+        .step(&Stub, clone_thmc_state(&state0), &manifold)
+        .expect("explicit step");
+    let s_imp = solver_implicit
+        .step(&Stub, clone_thmc_state(&state0), &manifold)
+        .expect("implicit (T,α) Newton step");
+
+    assert_eq!(
+        s_exp.hydro.humidity.into_data().value,
+        s_imp.hydro.humidity.into_data().value,
+        "humidity transport must not depend on implicit vs explicit (T,α) branch"
     );
 }
 

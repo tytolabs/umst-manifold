@@ -172,11 +172,7 @@ pub fn strain_tensor_from_bar_network_displacement<B: Backend<FloatElem = f32>>(
     let u_tgt = u.gather(1, tgt3);
     let edge_disp = u_tgt.sub(u_src);
     let eps_v = VectorMechanicsSolver::voigt_strain_from_edge_displacement(
-        edge_disp,
-        edge_unit,
-        edge_len,
-        edges_b1,
-        n_nodes,
+        edge_disp, edge_unit, edge_len, edges_b1, n_nodes,
     );
     symmetric_strain_tensor_from_graph_voigt6(eps_v)
 }

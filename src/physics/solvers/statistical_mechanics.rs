@@ -207,10 +207,7 @@ mod tests {
 
         let dev = NdArrayDevice::Cpu;
         let lj: Tensor<B, 2> = Tensor::from_data(
-            Data::new(
-                vec![epsilon as f32, sigma as f32],
-                Shape::new([1, 2]),
-            ),
+            Data::new(vec![epsilon as f32, sigma as f32], Shape::new([1, 2])),
             &dev,
         );
         let (k_tensor, _) = upscale_potentials(lj);

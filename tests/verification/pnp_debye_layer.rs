@@ -9,7 +9,9 @@
 #![cfg(feature = "electrochemistry-mvp")]
 // Track 14 MVP-chain implicit Newton lives behind the same feature; there is no additional
 // `#[cfg(feature = "...")]` for it — opt in at runtime via `pnp_implicit_newton_chain` +
-// `solve_pnp_step_dispatch` (or `try_solve_pnp_backward_euler_newton_chain`).
+// `solve_pnp_step_dispatch` (production path; falls back to explicit Picard if the chain helper
+// returns `None`). Direct `try_solve_pnp_backward_euler_newton_chain` remains for unit tests in
+// `electrochemistry.rs` and callers who bypass dispatch.
 
 use approx::assert_relative_eq;
 use burn::tensor::{Data, Int, Shape, Tensor};
@@ -279,8 +281,11 @@ fn debye_screening_admissibility_check(
         ..Default::default()
     };
 
-    let dt = 1.5e-3_f32;
-    let steps = 12_000usize;
+    // Implicit backward Euler can take larger `dt` than the legacy explicit Picard split for the same
+    // stability margin; keep approximate physical horizon τ ≈ dt·steps ~ 18 (units matching the prior
+    // Picard harness) while limiting CI runtime (dense Newton Jacobian scales with chain length).
+    let dt = 2.25e-2_f32;
+    let steps = 800usize;
     for _ in 0..steps {
         let (p_next, c_next) = solver.solve_pnp_step_dispatch(
             dt,
@@ -560,6 +565,10 @@ fn picard_convergence_smoke() {
 ///
 /// The test **fails** if the small-`dt` split vs implicit agreement breaks (guards accidental
 /// regression of the Newton path toward the split discretisation).
+///
+/// Implicit steps use [`ElectroChemicalSolver::solve_pnp_step_dispatch`] with
+/// [`ElectroChemicalSolver::pnp_implicit_newton_chain`] (same production opt-in as the Debye
+/// harness), not a bare [`ElectroChemicalSolver::try_solve_pnp_backward_euler_newton_chain`] call.
 #[test]
 fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
     let dev = device();
@@ -580,7 +589,7 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
     let phi_n = Tensor::<B, 3>::from_data(Data::new(ph, Shape::new([1, n, 1])), &dev);
     let eps = Tensor::<B, 3>::ones([1, n, 1], &dev);
     let d = Tensor::<B, 3>::full([1, n, 2], 0.04_f32, &dev);
-    let solver = ElectroChemicalSolver {
+    let solver_split = ElectroChemicalSolver {
         faraday_const: 1.0_f32,
         gas_const: 1.0e9_f32,
         mesh_spacing: 1.0_f32,
@@ -594,20 +603,32 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         max_chain_nodes: 32,
         linearize_sg_fickian: true,
     };
+    let solver_dispatch_small = ElectroChemicalSolver {
+        faraday_const: 1.0_f32,
+        gas_const: 1.0e9_f32,
+        mesh_spacing: 1.0_f32,
+        pnp_implicit_newton_chain: Some(newton),
+        ..Default::default()
+    };
     let dt_small = 1e-7_f32;
-    let (phi_i, c_i) = solver
-        .try_solve_pnp_backward_euler_newton_chain(
-            &newton,
-            dt_small,
-            phi_n.clone(),
-            c_n.clone(),
-            edges.clone(),
-            eps.clone(),
-            d.clone(),
-        )
-        .expect("implicit Newton chain solve");
+    let (phi_i, c_i) = solver_dispatch_small.solve_pnp_step_dispatch(
+        dt_small,
+        phi_n.clone(),
+        c_n.clone(),
+        edges.clone(),
+        eps.clone(),
+        d.clone(),
+    );
     let be_res = pnp_backward_euler_residual_l2_chain_host_f64(
-        &solver, &newton, dt_small, &phi_i, &c_i, &c_n, &edges, &eps, &d,
+        &solver_dispatch_small,
+        &newton,
+        dt_small,
+        &phi_i,
+        &c_i,
+        &c_n,
+        &edges,
+        &eps,
+        &d,
     )
     .expect("BE residual norm");
     // Host Newton converges in f64 to ‖R‖₂ ≪ 1e-6 before tensor export; re-evaluating R on f32
@@ -616,7 +637,7 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         be_res < 5e-4_f64,
         "implicit BE residual (f32 state) should stay small, got L2={be_res}"
     );
-    let (phi_s, c_s) = solver.solve_pnp_step(
+    let (phi_s, c_s) = solver_split.solve_pnp_step(
         dt_small,
         phi_n.clone(),
         c_n.clone(),
@@ -637,26 +658,38 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         residual_tol_l2: 1e-10,
         ..newton
     };
-    let (phi_if, c_if) = solver
-        .try_solve_pnp_backward_euler_newton_chain(
-            &newton_fin,
-            dt_fin,
-            phi_n.clone(),
-            c_n.clone(),
-            edges.clone(),
-            eps.clone(),
-            d.clone(),
-        )
-        .expect("implicit Newton finite dt");
+    let solver_dispatch_fin = ElectroChemicalSolver {
+        faraday_const: 1.0_f32,
+        gas_const: 1.0e9_f32,
+        mesh_spacing: 1.0_f32,
+        pnp_implicit_newton_chain: Some(newton_fin),
+        ..Default::default()
+    };
+    let (phi_if, c_if) = solver_dispatch_fin.solve_pnp_step_dispatch(
+        dt_fin,
+        phi_n.clone(),
+        c_n.clone(),
+        edges.clone(),
+        eps.clone(),
+        d.clone(),
+    );
     let be_fin = pnp_backward_euler_residual_l2_chain_host_f64(
-        &solver, &newton, dt_fin, &phi_if, &c_if, &c_n, &edges, &eps, &d,
+        &solver_dispatch_fin,
+        &newton,
+        dt_fin,
+        &phi_if,
+        &c_if,
+        &c_n,
+        &edges,
+        &eps,
+        &d,
     )
     .expect("BE residual finite dt");
     assert!(
         be_fin < 5e-6_f64,
         "implicit solution should satisfy BE residual at finite dt, got {be_fin}"
     );
-    let (phi_sf, c_sf) = solver.solve_pnp_step(dt_fin, phi_n, c_n, edges, eps, d);
+    let (phi_sf, c_sf) = solver_split.solve_pnp_step(dt_fin, phi_n, c_n, edges, eps, d);
     let gap = max_abs_diff(&phi_if, &phi_sf).max(max_abs_diff(&c_if, &c_sf));
     assert!(
         gap > 1e-8_f32,

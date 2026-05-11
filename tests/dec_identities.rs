@@ -15,9 +15,19 @@
 //!   - **Photonics / Track 15 prerequisite:** on one oriented triangle, the discrete edge curl
 //!     \(d_1\) applied to the gradient \(d_0 \omega\) vanishes (\(d_1 \circ d_0 = 0\)), matching
 //!     [`docs/Solver-Status.md`](../docs/Solver-Status.md) DEFERRAL — Photonics (single-triangle
-//!     DEC curl operator sanity before `faces_b2` production wiring).
+//!     DEC curl sanity; [`dec_curl_d1_annihilates_gradient_on_triangle_faces_b2_burn`] uses
+//!     [`umst_manifold::physics::dec_primal::primal_d1_edge_flux_to_faces`] with production-shaped
+//!     [`faces_b2`](umst_manifold::core::tensors::UnifiedMaterialStateTensor::faces_b2)).
 
 use approx::assert_abs_diff_eq;
+use burn::tensor::{Data, Int, Shape, Tensor};
+use burn_ndarray::{NdArray, NdArrayDevice};
+use umst_manifold::physics::dec_primal::{
+    primal_d1_edge_flux_to_faces, primal_scalar_edge_increment,
+};
+use umst_manifold::physics::topology::EdgeTopology;
+
+type NdB = NdArray<f32>;
 
 /// Build a signed vertex-edge incidence matrix for a ring on `n` vertices.
 /// Edge `e` connects vertex `e` (tail) to vertex `(e + 1) mod n` (head).
@@ -146,12 +156,47 @@ fn dec_curl_d1_annihilates_gradient_on_triangle() {
         }
     }
 
-    let curl_sum = triangle_d1_times_edge(&[
-        grad_on_edges[0],
-        grad_on_edges[1],
-        grad_on_edges[2],
-    ]);
+    let curl_sum = triangle_d1_times_edge(&[grad_on_edges[0], grad_on_edges[1], grad_on_edges[2]]);
     assert_abs_diff_eq!(curl_sum, 0.0, epsilon = 1.0e-5);
+}
+
+#[test]
+fn dec_curl_d1_annihilates_gradient_on_triangle_faces_b2_burn() {
+    // Same identity as `dec_curl_d1_annihilates_gradient_on_triangle`, but d₀ and d₁ go through
+    // `edges_b1` + `faces_b2` tensors and Burn gather/scatter (`DEFERRAL — Photonics`, Next PR (2)).
+    let dev = NdArrayDevice::default();
+    let edges_b1: Tensor<NdB, 2, Int> = Tensor::from_data(
+        Data::new(
+            vec![
+                0i64, 1, 2, // sources
+                1, 2, 0, // targets — CCW ring 0→1→2→0
+            ],
+            Shape::new([2, 3]),
+        ),
+        &dev,
+    );
+    // One triangular face: boundary walk uses edges 0,1,2 with orientation matching `edges_b1`.
+    let faces_b2: Tensor<NdB, 2, Int> = Tensor::from_data(
+        Data::new(
+            vec![
+                0i64, 1, 2, // edge ids
+                1, 1, 1, // signs (+1 each)
+            ],
+            Shape::new([2, 3]),
+        ),
+        &dev,
+    );
+    let topo = EdgeTopology::new(edges_b1);
+    let omega = [1.2_f32, -0.5, 3.1];
+    let nodal = Tensor::from_data(
+        Data::new(vec![omega[0], omega[1], omega[2]], Shape::new([1, 3, 1])),
+        &dev,
+    );
+    let grad_on_edges = primal_scalar_edge_increment(nodal, &topo);
+    let d1_grad = primal_d1_edge_flux_to_faces(grad_on_edges, faces_b2, &[(0, 3)]);
+    let v: Vec<f32> = d1_grad.into_data().value;
+    assert_eq!(v.len(), 1);
+    assert_abs_diff_eq!(v[0], 0.0, epsilon = 1.0e-4);
 }
 
 #[test]

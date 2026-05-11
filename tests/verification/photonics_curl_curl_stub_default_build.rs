@@ -62,7 +62,9 @@ mod photonics_off {
         j[3 * (n / 2) + 1] = 1.0_f32;
         let j = Tensor::<B, 3>::from_data(Data::new(j, Shape::new([1, n, 3])), &dev);
         let cg = MechanicsInnerLoopConfig::default();
-        let ps = PhotonicsSolver { frequency_hz: 1e9_f32 };
+        let ps = PhotonicsSolver {
+            frequency_hz: 1e9_f32,
+        };
 
         let out = ps.solve_maxwell_curl_curl(e_field, eps_r, eps_i, j, edges, coords, &cg);
 

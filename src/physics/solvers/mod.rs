@@ -27,11 +27,11 @@ pub use acoustics::{AcousticNewmarkBar1dPeriodic, AcousticNewmarkBar1dWork};
 #[cfg(feature = "electrochemistry-mvp")]
 pub use electrochemistry::pnp_backward_euler_residual_l2_chain_host_f64;
 pub use electrochemistry::{ElectroChemicalSolver, NewtonPnpContext};
+pub use fracture_field::PhaseFieldFractureSolver;
 #[cfg(feature = "fracture-at2")]
 pub use fracture_field::{
     strain_tensor_for_fracture_after_mechanics, strain_tensor_from_bar_network_displacement,
 };
-pub use fracture_field::PhaseFieldFractureSolver;
 pub use photonics::{PhotonicsHelmholtzSolver, PhotonicsSolver};
 pub use rheology_flow::BinghamFlowSolver;
 #[cfg(feature = "thmc-coupled")]
