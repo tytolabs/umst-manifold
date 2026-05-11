@@ -41,7 +41,7 @@ Uniform roof (match **`optimize_shell_3d`** with ramp off): prefix the same comm
 
 **Greyness target:** B6 asserts **volume**-mean **`mean(4ρ(1−ρ)) < 0.15`** on the final **post–volume-projection** nodal **ρ** (`crates/umst-concrete-cartridge/tests/shell_topology_rib_pattern.rs`, **`greyness_mean`** on **`last_rho`**). Last in-repo documented **200**-outer **`--release`** value was **~0.51** (finite **~7655 s** wall) — **not** a pass; see **Solver lanes — Topology / shell** → [2026-05-11 greyness vs roof-ramp defaults (honest)](#2026-05-11-greyness-vs-roof-ramp-defaults-honest) for roof semantics and honesty.
 
-**`gates_track_b8` path (Track L / B8 rollup):** boolean **`gates_track_b8_all_pass`** lives in **`notebooks/_artifacts/striatus_shell_v0.4.print_ready.json`** (paths relative to **`umst-concrete-cartridge/`** repo root in a sibling checkout). It is emitted by **`notebooks/export_print_ready.py`**; **`notebooks/tests/test_print_ready.py`** (or **`python notebooks/test_print_ready.py`**) reads the same field — **`test_print_ready_track_b8_topology_gates`** **skips** when false unless **`UMST_REQUIRE_B8=1`**.
+**`gates_track_b8` path (Track L / B8 rollup):** boolean **`gates_track_b8_all_pass`** lives in **`notebooks/_artifacts/striatus_shell_v0.4.print_ready.json`** (paths relative to **`umst-concrete-cartridge/`** repo root in a sibling checkout). It is emitted by **`notebooks/export_print_ready.py`**; **`notebooks/tests/test_print_ready.py`** (or **`python notebooks/test_print_ready.py`**) reads the same field — **`test_print_ready_track_b8_topology_gates`** **skips** when false unless **`UMST_REQUIRE_B8=1`**. **Profiling:** peak GPU VRAM or unified-memory figures are **not** part of default CI or this status table — cite them only from an explicit profiling task or hardware note.
 
 **`gates_track_b8_all_pass` semantics:** in **`notebooks/export_print_ready.py`** (sibling **`umst-concrete-cartridge/`** checkout), the rollup is exactly **`gate_topo_complexity_b7` ∧ `gate_volume_fraction_mesh_b7` ∧ `gate_density_xy_variance_b8`**. It is **`true` only when all three are `true`**; do **not** hand-edit the rollup (or the three gate booleans) out of sync with the numeric fields — re-run the exporter on a **`final.npy`** / STL that actually meets the thresholds.
 
@@ -50,6 +50,30 @@ Uniform roof (match **`optimize_shell_3d`** with ramp off): prefix the same comm
 - **`m1-l` (Track L committed artefacts):** in the sibling cartridge checkout, **`notebooks/_artifacts/striatus_emergence.gif`**, **`striatus_shell_v0.4.stl`**, and **`striatus_shell_v0.4.print_ready.json`** are present. **`test_striatus_stl_feasibility`** passes (watertight, winding-consistent, overhang, feature-size). **Brief Track L mesh acceptance** (genus **≥ 1**, marching-cubes volume fraction **∈ [0.10, 0.25]**) is **not** met on the committed sidecar — see **`m1-b8`**.
 - **`m1-b8` (B8 rollup blocked):** committed **`striatus_shell_v0.4.print_ready.json`** has **`gates_track_b8_all_pass`: false** because all three gates fail: **`gate_topo_complexity_b7`** false (largest closed orientable genus **0**, χ **2**), **`gate_volume_fraction_mesh_b7`** false (mesh volume fraction in bbox **≈ 0.98** vs band **[0.10, 0.25]**), **`gate_density_xy_variance_b8`** false (planar density variance **≪ 0.1**). **`UMST_REQUIRE_B8=1 pytest notebooks/tests/test_print_ready.py`** **fails** until a full **40×40×4**, **200**-outer Track L regeneration (**`notebooks/_run_shell_demo.sh`** overnight block in that repo) yields a sidecar with all three gates **true**.
 
+
+
+### Appendix — `UMST_SHELL_*` reference (Matrix #1 / B6 full harness + Striatus demo)
+
+Quick index for **`shell_topology_rib_pattern_full_v04`** (`#[ignore]`; set **`UMST_SHELL_RIB_PATTERN=1`**) and overlapping **`optimize_shell_3d`** / **`notebooks/_run_shell_demo.sh`** env vars.
+
+| Variable | Scope | Default | Notes |
+| --- | --- | --- | --- |
+| **`UMST_SHELL_RIB_PATTERN`** | Ignored B6 test gate | — | Must be **`1`** or the test refuses to run. |
+| **`UMST_SHELL_RIB_FULL_ITERS`** | Full B6 harness | **200** | Clamped **1…200**; **< 200** skips greyness / **`xy_var`** / compliance-drop asserts (smoke). |
+| **`UMST_SHELL_ADAM_LR`** | Full B6 harness only | **0.005** | Burn Adam learning rate on outers with finite scaled loss (clamped **1e−7…0.25**). |
+| **`UMST_SHELL_GREY_LAMBDA`** | Full B6 harness only | **0** | If **`> 0`**, adds **`λ·mean(4ρ(1−ρ))`** to the scaled compliance loss (experimental de-greying); **unset/`0`** preserves historical behaviour. |
+| **`UMST_SHELL_SELF_WEIGHT`** | Full B6 + demo | **off** | **`1`** enables gravity (**risky** at Striatus **N** with **f32** PCG). |
+| **`UMST_SHELL_VOL_LOOP`** | Full B6 + demo | **on** | **`0`** skips in-loop **`VolumeProjection`**. |
+| **`UMST_SHELL_PCG`** | Full B6 + demo | **on** | Jacobi preconditioner for bar PCG. |
+| **`UMST_SHELL_MAX_CG`** | Full B6 + demo | **2000** | PCG budget (**also** capped by **`3N`** in equilibrium). |
+| **`UMST_SHELL_E_MIN_REL`** | Full B6 + demo | **1e−3** | Void stiffness floor **`E_min / E₀`**. |
+| **`UMST_SHELL_HELM`** | Full B6 + demo | **off** | **Only** literal **`=1`** enables Helmholtz on the Burn tape. |
+| **`UMST_SHELL_ROOF_RAMP`** | Full B6 vs **`optimize_shell_3d`** | see Topology § | Harness: **`0`** uniform roof; **unset** / other → ramp at **`UMST_SHELL_ROOF_RAMP_F`**. Example **`optimize_shell_3d`**: **only** **`=1`** enables ramp — **unset ≠ harness unset** (see [greyness vs roof-ramp](#2026-05-11-greyness-vs-roof-ramp-defaults-honest)). |
+| **`UMST_SHELL_ROOF_RAMP_F`** | Full B6 + demo | **0.2** | **\(w = 1 + r\,i_x/n_x\)** when ramp is on. |
+| **`UMST_SHELL_NX` / `NY` / `NZ`** | Demo / quick CI | varies | Full harness fixes **40×40×4**; **`optimize_shell_3d`** clamps env grid. |
+| **`UMST_SHELL_ITERS`** | Demo | — | Track L / B8 regeneration expects **200** on **40×40×4** for meaningful **`final.npy`**. |
+
+**Adam NaN / Inf outers (scaled loss):** Total loss is **`surrogate / c_raw[iter1]`** plus optional **`λ·mean(4ρ(1−ρ))`**. Non-finite values **skip Adam** that outer (weights unchanged); the test counts skips and **`eprintln!`** a summary when **`adam_skipped > 0`**. Distinct from iter‑1 **`c_raw`** non-finite (**panic**). Mitigate with **`UMST_SHELL_ADAM_LR`**, **`UMST_SHELL_MAX_CG`**, **`UMST_SHELL_E_MIN_REL`**, **`UMST_SHELL_SELF_WEIGHT=0`**, **`UMST_SHELL_HELM=0`**, or small **`UMST_SHELL_GREY_LAMBDA`** experiments — not an acceptance substitute until a **200**-outer run clears **greyness < 0.15**.
 
 Cartridge-side mirror (deep links / Striatus pipeline): [`../../umst-concrete-cartridge/docs/Solver-Status.md`](../../umst-concrete-cartridge/docs/Solver-Status.md) — same P0 / Track B / Track L / B8 story.
 
