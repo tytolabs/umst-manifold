@@ -32,7 +32,7 @@ Numbered files under `docs/research/` (`v0.4_track12_staggered_fracture_mechanic
 
 - **12 — Fracture / AT2:** [memo](research/v0.4_track12_staggered_fracture_mechanics.md). Partial implementation in listed fracture tests; §7 lists proposed **`#[test]`** names for future Γ-type and coupling work.
 - **13 — THMC:** [Newton / JFNK memo](research/v0.4_track13_monolithic_newton_thmc.md); [monolithic THMC + mechanics coupling plan](research/v0.4_track13_monolithic_thmc_mechanics_coupling_plan.md). Partial: backward-Euler **\((T,\alpha)\)** residual + damped Newton smoke on tiny chains; Phase 1–2 stacked-\(u\) bookkeeping + quasi-static \(R_u\) assembly tests above; **Phase 3** dense Newton on \((T,h,\alpha,\mathbf u)\) with quasi-static \(R_u\) (`thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes`); **Phase 4** shrink-increment hook in `evaluate_quasi_static_r_u` (optional `ru_shrinkage_water_cement_ratio`) + tests named in the THMC table row.
-- **14 — Electrochemistry:** [memo](research/v0.4_track14_implicit_newton_pnp.md). Partial: Picard path + MVP-chain implicit Newton dispatch (`solve_pnp_step_dispatch`).
+- **14 — Electrochemistry:** [memo](research/v0.4_track14_implicit_newton_pnp.md). Partial: Picard path + MVP-chain implicit Newton dispatch (`solve_pnp_step_dispatch`); quasi-steady **`debye_screening_256_cells_*`** λ_D LS gates on default CI (**`8a2163a`**, no **`#[ignore]`**).
 - **15 — Photonics:** [memo](research/v0.4_track15_dec_curl_curl_photonics.md). Partial: 1-D TE chain reductions in `photonics_fresnel.rs`.
 - **16 — Statistical mechanics:** [memo](research/v0.4_track16_virial_lj_bridge.md). Partial: Johnson reference + documented placeholder gap vs `upscale_potentials`.
 
