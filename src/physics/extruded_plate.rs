@@ -23,6 +23,11 @@
 //! tables even when the discrete equilibrium residual is tiny. Do not read thin-plate analytic
 //! values off this solid element without reduced integration / plate theory extensions.
 //!
+//! For **uniform transverse pressure** `q` (force per top-surface area) compared to Kirchhoff
+//! formulas that use total load `q L_x L_y`, assemble the top-face nodal `f_z` with
+//! [`ExtrudedPlateMechanics::body_force_top_uniform_pressure`]. Applying a constant `-q dx dy` at
+//! every top node over-counts load by a factor `(nx+1)(ny+1)/(nx ny)`.
+//!
 //! Enabled with **`topology-density-evolution`** / **`solver-experimental`**.
 
 use burn::tensor::{backend::Backend, Data, Int, Shape, Tensor};
@@ -154,6 +159,36 @@ impl ExtrudedPlateMechanics {
             Tensor::from_data(Data::new(u, Shape::new([1, n, 3])), &device);
         let voigt = Tensor::<B, 3>::zeros([batch, n, 6], &device);
         (u_tensor, voigt)
+    }
+
+    /// Nodal body-force vector `[N,3]` (flat `3N`) for **uniform pressure** `q` on the top face
+    /// `z = nz dz`: bilinear-consistent lumping on the `(nx+1)(ny+1)` top nodes so
+    /// `sum_i f_z(i) = -q L_x L_y` with `L_x = nx dx`, `L_y = ny dy`.
+    #[must_use]
+    pub fn body_force_top_uniform_pressure(&self, q: f32) -> Vec<f32> {
+        let nx1 = self.nx + 1;
+        let ny1 = self.ny + 1;
+        let n = nx1 * ny1 * (self.nz + 1);
+        let mut bf = vec![0.0_f32; n * 3];
+        let iz = self.nz;
+        let cell = q * self.dx * self.dy;
+        for iy in 0..=self.ny {
+            let ay = if iy == 0 || iy == self.ny {
+                0.5_f32
+            } else {
+                1.0_f32
+            };
+            for ix in 0..=self.nx {
+                let ax = if ix == 0 || ix == self.nx {
+                    0.5_f32
+                } else {
+                    1.0_f32
+                };
+                let nid = ix + iy * nx1 + iz * nx1 * ny1;
+                bf[nid * 3 + 2] = -cell * ax * ay;
+            }
+        }
+        bf
     }
 
     fn node_coords_n3<B: Backend<FloatElem = f32>>(&self, device: &B::Device) -> Tensor<B, 2> {

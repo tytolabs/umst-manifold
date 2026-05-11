@@ -8,7 +8,9 @@
 //! Kirchhoff SSSS on all edges). **Q1 hex** thin slabs show severe **shear locking** without SRI;
 //! `q1_hex_elasticity` applies B-bar plus **transverse shear centroid strains**. Verification uses
 //! equilibrium residual, linearity in `q`, bounded refinement spread, and mesh-to-mesh deltas — not
-//! a single thin-plate closed form with mismatched BCs.
+//! a single thin-plate closed form with mismatched BCs. Uniform top pressure uses
+//! [`ExtrudedPlateMechanics::body_force_top_uniform_pressure`] so total transverse load matches
+//! `q L_x L_y` (Kirchhoff `q` convention).
 //!
 //! formal_anchor: Literature  
 //! formal_citation: Timoshenko & Woinowsky-Krieger 1959 (plate tables); Bathe 2006 (Q1 hex); Hughes 2000 (shear locking)
@@ -35,30 +37,6 @@ type B = NdArray<f32>;
 fn kirchhoff_centre_w_ssss(q: f32, l: f32, h: f32, e: f32, nu: f32) -> f32 {
     let d = e * h.powi(3) / (12.0 * (1.0 - nu * nu).max(1e-30));
     0.00406 * q * l.powi(4) / d.max(1e-30)
-}
-
-/// Top-face nodal loads matching the extruded-plate demo: `f_z = -q\,\Delta x\,\Delta y` on each top node.
-fn body_force_top_pressure_extruded_style(
-    nx: usize,
-    ny: usize,
-    nz: usize,
-    q: f32,
-    dx: f32,
-    dy: f32,
-) -> Vec<f32> {
-    let nx1 = nx + 1;
-    let ny1 = ny + 1;
-    let n = nx1 * ny1 * (nz + 1);
-    let mut bf = vec![0.0_f32; n * 3];
-    let iz = nz;
-    let fz = -q * dx * dy;
-    for iy in 0..=ny {
-        for ix in 0..=nx {
-            let nid = ix + iy * nx1 + iz * nx1 * ny1;
-            bf[nid * 3 + 2] = fz;
-        }
-    }
-    bf
 }
 
 /// Bottom face `u_z=0` plus minimal in-plane anchors on `z=0` so the 3D stiffness is positive-definite
@@ -251,7 +229,7 @@ fn run_plate_case_details(
         use_preconditioner: true,
         max_equilibrium_substeps: 1,
     };
-    let bf = body_force_top_pressure_extruded_style(nx, ny, nz, q, dx, dy);
+    let bf = plate.body_force_top_uniform_pressure(q);
     let body = Tensor::from_data(Data::new(bf.clone(), Shape::new([1, n, 3])), &dev);
     let (u, _) = plate.solve_equilibrium(rho, body, bm, mat, &cfg);
     let w = centre_top_uz(&u, nx, ny, nz);
@@ -326,6 +304,32 @@ fn plate_q1_hex_small_mesh_center_deflection_positive() {
 }
 
 #[test]
+fn plate_top_uniform_pressure_total_z_matches_q_area() {
+    let nx = 8_usize;
+    let ny = 8_usize;
+    let nz = 4_usize;
+    let q = 10_000.0_f32;
+    let lx = 1.0_f32;
+    let ly = 1.0_f32;
+    let plate = ExtrudedPlateMechanics {
+        nx,
+        ny,
+        nz,
+        dx: lx / nx as f32,
+        dy: ly / ny as f32,
+        dz: 0.05_f32 / nz as f32,
+    };
+    let bf = plate.body_force_top_uniform_pressure(q);
+    let sum_fz: f32 = (0..plate.n_nodes()).map(|i| bf[i * 3 + 2]).sum();
+    let expected = -q * lx * ly;
+    let err = (sum_fz - expected).abs() / expected.abs().max(1e-30);
+    assert!(
+        err < 1e-5,
+        "sum of top nodal f_z should be -q*Lx*Ly; got {sum_fz} expected {expected} (rel_err={err})"
+    );
+}
+
+#[test]
 fn kirchhoff_ssss_centre_formula_smoke() {
     // Table value scale check only — not compared to the Q1 hex extruded slab (see module docs).
     let w = kirchhoff_centre_w_ssss(10_000.0, 1.0, 0.05, 30e9, 0.2);
@@ -359,7 +363,7 @@ fn plate_centre_deflection_kirchhoff_ratio_q1_hex_band_coarse_regression() {
         "expected positive centre deflection; got {w_numerical}"
     );
     assert!(
-        ratio > 5e-5 && ratio < 0.02,
+        ratio > 1e-4 && ratio < 2e-3,
         "expected locked Q1-hex ratio band (coarse mesh); ratio={ratio} (w={w_numerical}, w_k={w_kirchhoff})"
     );
 }
@@ -369,8 +373,9 @@ fn plate_centre_deflection_kirchhoff_ratio_q1_hex_band_coarse_regression() {
 /// The extruded benchmark uses a **full** `u_z = 0` support on `z = 0` (see [`plate_bottom_uz_mask`]),
 /// not classical SSSS edge data; centre deflection stays **well below** the Kirchhoff thin-plate table
 /// value. This test pins `w / w_{\mathrm{Kirchhoff}}` into a fixed open band
-/// (`5\times 10^{-5} < w/w_K < 2\times 10^{-2}`) so regressions in the equilibrium solve or element
-/// stiffness show up as failures, while still requiring a tight masked residual.
+/// (`10^{-4} < w/w_K < 2\times 10^{-3}`) with bilinear-consistent top pressure so regressions in the
+/// equilibrium solve, element stiffness, or load assembly show up as failures, while still
+/// requiring a tight masked residual.
 /// (CI name was formerly `plate_centre_deflection_vs_kirchhoff_ssss_within_5pct`, which incorrectly
 /// suggested a 5% accuracy gate.)
 ///
@@ -399,8 +404,8 @@ fn plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band() {
         "expected positive centre deflection; got {w_numerical}"
     );
     assert!(
-        ratio > 5e-5 && ratio < 0.02,
-        "expected locked Q1-hex centre deflection between ~5e-5 and 0.02 × Kirchhoff thin-plate value; ratio={ratio} (w={w_numerical}, w_k={w_kirchhoff})"
+        ratio > 1e-4 && ratio < 2e-3,
+        "expected locked Q1-hex centre deflection between ~1e-4 and 2e-3 × Kirchhoff thin-plate value; ratio={ratio} (w={w_numerical}, w_k={w_kirchhoff})"
     );
 }
 

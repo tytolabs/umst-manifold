@@ -11,19 +11,6 @@ use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
 type B = NdArray<f32>;
 
-fn build_body_top_pressure(nx: usize, ny: usize, nz: usize, q: f32, dx: f32, dy: f32) -> Vec<f32> {
-    let n = (nx + 1) * (ny + 1) * (nz + 1);
-    let mut bf = vec![0.0f32; n * 3];
-    let iz_top = nz;
-    for iy in 0..=ny {
-        for ix in 0..=nx {
-            let nid = ix + iy * (nx + 1) + iz_top * (nx + 1) * (ny + 1);
-            bf[nid * 3 + 2] = -q * dx * dy;
-        }
-    }
-    bf
-}
-
 fn corner_pin_mask(nx: usize, ny: usize, nz: usize) -> Vec<f32> {
     let n = (nx + 1) * (ny + 1) * (nz + 1);
     let mut bm = vec![1.0f32; n * 3];
@@ -89,12 +76,12 @@ fn extruded_plate_response_is_linear_in_pressure() {
         max_equilibrium_substeps: 1,
     };
 
-    let b1 = build_body_top_pressure(nx, ny, nz, 500.0, dx, dy);
+    let b1 = plate.body_force_top_uniform_pressure(500.0);
     let body1 = Tensor::from_data(Data::new(b1, Shape::new([1, n, 3])), &dev);
     let (u1, _) = plate.solve_equilibrium(rho.clone(), body1, bm.clone(), mat, &cfg);
     let w1 = center_top_uz(&u1, nx, ny, nz);
 
-    let b2 = build_body_top_pressure(nx, ny, nz, 1000.0, dx, dy);
+    let b2 = plate.body_force_top_uniform_pressure(1000.0);
     let body2 = Tensor::from_data(Data::new(b2, Shape::new([1, n, 3])), &dev);
     let (u2, _) = plate.solve_equilibrium(rho, body2, bm, mat, &cfg);
     let w2 = center_top_uz(&u2, nx, ny, nz);

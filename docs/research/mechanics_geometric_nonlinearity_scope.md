@@ -99,8 +99,8 @@ Linearized buckling needs **geometric stiffness** (stress stiffening) or a fully
 
 **Current ratio-band CI (`plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band`)**
 
-- [ ] Pins **`w / w_Kirchhoff`** into fixed open band **`(5×10⁻⁵, 0.02)`** on the **32×32×4** extruded slab with documented loads/materials.
-- [ ] Documents **locked Q1** behaviour: **not** a within-5% Kirchhoff accuracy claim; guards solve/residual regressions while \(w\) stays in the band.
+- [ ] Pins **`w / w_Kirchhoff`** into fixed open band **`(10⁻⁴, 2×10⁻³)`** on the **32×32×4** extruded slab with **`ExtrudedPlateMechanics::body_force_top_uniform_pressure`** (total load **`q L_x L_y`**).
+- [ ] Documents **locked Q1** behaviour: **not** a within-5% Kirchhoff accuracy claim; guards solve/residual/load regressions while \(w\) stays in the band.
 - [ ] Acknowledges **non-SSSS** brick setup (e.g. bottom `u_z=0` support vs classical edge data) per test rustdoc in `mechanics_analytic.rs`.
 
 - THMC / fracture use **post-mechanics** small-strain tensors on the bar path — see THMC and fracture lanes in [`Solver-Status.md`](../Solver-Status.md); they inherit the **same** kinematic limitations stated here.
