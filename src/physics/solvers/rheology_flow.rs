@@ -422,6 +422,51 @@ fn solve_pressure_phi_jacobi_cg<B: Backend<FloatElem = f32>>(
     Tensor::zeros_like(&rhs)
 }
 
+/// Shipped Chorin pressure Poisson RHS (verification \#7): mean-free weak primal divergence of
+/// scalar tangential mean flux \(q_e=(\bar u^*\!\cdot\hat t)f_c\) (see module rustdoc §2).
+///
+/// Returns `(rhs, \hat t)` with \(\hat t\) the **same** edge unit tangents used in the Helmholtz projection.
+#[cfg(feature = "rheology-bingham")]
+fn chorin_pressure_rhs_mean_free_weak_divergence<B: Backend<FloatElem = f32>>(
+    u_star: Tensor<B, 3>,
+    topo: &EdgeTopology<B>,
+    flow_coeff: Tensor<B, 3>,
+    batch: usize,
+    n_edges: usize,
+    n: usize,
+) -> (Tensor<B, 3>, Tensor<B, 3>) {
+    let ch3 = 3usize;
+    let du_s = primal_scalar_edge_increment(u_star.clone(), topo);
+    let du_s_mag_sq = du_s
+        .clone()
+        .powf_scalar(2.0)
+        .sum_dim(2)
+        .reshape([batch, n_edges, 1]);
+    let du_s_mag = du_s_mag_sq
+        .sqrt()
+        .add_scalar(BINGHAM_EPS)
+        .clamp_min(BINGHAM_EPS);
+    let du_s_mag3 = du_s_mag.expand([batch, n_edges, ch3]);
+    let t_hat_s = du_s.div(du_s_mag3);
+
+    let src_ix3 = topo.expand_src_gather_indices(batch, ch3);
+    let tgt_ix3 = topo.expand_tgt_gather_indices(batch, ch3);
+    let u_src3 = u_star.clone().gather(1, src_ix3);
+    let u_tgt3 = u_star.clone().gather(1, tgt_ix3);
+    let u_mean_edge = u_src3.add(u_tgt3).div_scalar(2.0_f32);
+    let q_edge = u_mean_edge
+        .mul(t_hat_s.clone())
+        .sum_dim(2)
+        .reshape([batch, n_edges, 1]);
+    let fc1 = flow_coeff.narrow(2, 0, 1);
+    let flux_scalar_edge = q_edge.mul(fc1);
+    let u_star_x0 = u_star.narrow(2, 0, 1);
+    let rhs = primal_divergence_from_edge_flux_topo(flux_scalar_edge, topo, &u_star_x0);
+    let rhs_mean = rhs.clone().sum_dim(1).div_scalar(n as f32);
+    let rhs = rhs.sub(rhs_mean);
+    (rhs, t_hat_s)
+}
+
 #[cfg(feature = "rheology-bingham")]
 #[allow(clippy::too_many_arguments)]
 fn step_experimental<B: Backend<FloatElem = f32>>(
@@ -452,8 +497,6 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
     let ch1 = 1usize;
     let src_ix1 = topo.expand_src_gather_indices(batch, ch1);
     let tgt_ix1 = topo.expand_tgt_gather_indices(batch, ch1);
-    let src_ix3 = topo.expand_src_gather_indices(batch, ch3);
-    let tgt_ix3 = topo.expand_tgt_gather_indices(batch, ch3);
 
     let damage_src = damage.clone().gather(1, src_ix1.clone());
     let damage_tgt = damage.clone().gather(1, tgt_ix1.clone());
@@ -537,34 +580,14 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
     let u_star = velocity.add(momentum.mul_scalar(dt));
 
     // --- Pressure Poisson RHS: weak divergence of q_e = (ū*·t̂) f_c (reuse t̂ in projection) ---
-    let du_s = primal_scalar_edge_increment(u_star.clone(), &topo);
-    let du_s_mag_sq = du_s
-        .clone()
-        .powf_scalar(2.0)
-        .sum_dim(2)
-        .reshape([batch, n_edges, 1]);
-    let du_s_mag = du_s_mag_sq
-        .sqrt()
-        .add_scalar(BINGHAM_EPS)
-        .clamp_min(BINGHAM_EPS);
-    let du_s_mag3 = du_s_mag.expand([batch, n_edges, ch3]);
-    let t_hat_s = du_s.div(du_s_mag3);
-
-    let u_src3 = u_star.clone().gather(1, src_ix3.clone());
-    let u_tgt3 = u_star.clone().gather(1, tgt_ix3.clone());
-    let u_mean_edge = u_src3.add(u_tgt3).div_scalar(2.0_f32);
-    let q_edge = u_mean_edge
-        .mul(t_hat_s.clone())
-        .sum_dim(2)
-        .reshape([batch, n_edges, 1]);
-    let fc1 = flow_coeff.clone().narrow(2, 0, 1);
-    let flux_scalar_edge = q_edge.mul(fc1);
-    let u_star_x0 = u_star.clone().narrow(2, 0, 1);
-    let rhs = primal_divergence_from_edge_flux_topo(flux_scalar_edge, &topo, &u_star_x0);
-    // Neumann graph Laplacian has a constant null space; remove the nodal mean from \(b\) so
-    // Krylov / gauge-fixed solves stay compatible (avoids NaN blow-up on multi-step Chorin).
-    let rhs_mean = rhs.clone().sum_dim(1).div_scalar(n as f32);
-    let rhs = rhs.sub(rhs_mean);
+    let (rhs, t_hat_s) = chorin_pressure_rhs_mean_free_weak_divergence(
+        u_star.clone(),
+        &topo,
+        flow_coeff.clone(),
+        batch,
+        n_edges,
+        n,
+    );
 
     let phi = solve_pressure_phi_jacobi_cg(rhs, edges_b1.clone(), damage.clone(), batch, n);
 

@@ -66,9 +66,9 @@ fn analytic_no_slip_when_yield_exceeds_wall_stress() {
 
 /// Few Chorin substeps on a **tiny** lattice stay finite (projection + Bingham viscosity under body force).
 ///
-/// Steady 64×16 Poiseuille matching is deferred: the surrogate Poisson solve and lack of dedicated
-/// inlet/outlet BCs in [`BinghamFlowSolver`] make long-run centreline error meaningless until Track E
-/// hardens the pressure step (see `composer_prompts/v0.4_solver_completion_no_namesakes.md`).
+/// Steady 64×16 Poiseuille matching is deferred: lack of dedicated inlet/outlet BCs (and no MAC staggered
+/// pressure yet) in [`BinghamFlowSolver`] make long-run centreline error meaningless until Track E hardens
+/// open boundaries (see `composer_prompts/v0.4_solver_completion_no_namesakes.md`).
 #[cfg(feature = "rheology-bingham")]
 #[test]
 fn chorin_single_step_finite_smoke() {
@@ -316,17 +316,15 @@ fn weak_primal_divergence_scalar_flux_has_zero_global_sum_on_quad_channel() {
     );
 }
 
-/// **Regression guard (verification \#7, historical test name):** two Chorin steps on **65×17** bound
-/// first-step \(\|u\|_\infty\) growth under the tangential mean-flux Poisson RHS plus **momentum-consistent**
-/// projection (`rheology_flow.rs`: `mean(φ)=0` gauge; subtract \(\Delta t\cdot\mathrm{div}(-(\Delta\phi)\hat t/\rho)\)
-/// using the same edge flux routing as the pressure-gradient predictor — see
-/// `docs/research/rheology_pressure_poisson_roadmap.md` §4). The pressure increment uses **Jacobi-PCG** on
-/// \(-\mathcal{L}\) (see `TopologicalLaplacian::scalar_laplacian_neg_opposite_diag`).
+/// **Regression guard (verification \#7, historical test name `chorin_surrogate_poisson_*`):** two Chorin
+/// steps on **65×17** bound first-step \(\|u\|_\infty\) growth under the **discrete graph Poisson** step
+/// (tangential mean-flux RHS and **Jacobi-PCG** on \(-\mathcal{L}\); same operator as
+/// [`TopologicalLaplacian::scalar_laplacian`]) plus **momentum-consistent** projection (`rheology_flow.rs`).
 ///
-/// The legacy **unscaled** tangent projection paired with the triple-Laplacian surrogate produced
-/// \(\mathcal O(10^3\!-\!10^4)\) amplification (dt-independent blow-up on long runs). The shipped \#7 path
-/// instead yields **O(1)** step-0→1 growth on this harness; bounds below catch regressions back toward
-/// surrogate-scale amplification.
+/// The legacy **triple-Laplacian** \(\sum_c \mathcal{L}u^\*_c\) surrogate paired with **unscaled** tangent
+/// projection produced \(\mathcal O(10^3\!-\!10^4)\) amplification. The shipped \#7 path yields **O(1)**
+/// step-0→1 growth here; bounds catch regressions toward surrogate-scale blow-up. Tiny-grid **direct vs CG**
+/// on the graph Laplacian: `chorin_poisson_jacobi_cg_agrees_direct_grounded_chain` in `rheology_flow.rs`.
 #[cfg(feature = "rheology-bingham")]
 #[test]
 fn chorin_surrogate_poisson_amplification_regression_guard() {
