@@ -58,8 +58,9 @@
 //!   [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] is **`>1`**, one band assembly per outer Newton
 //!   iteration can be followed by several **inner** damped updates that **reuse the same frozen band entries**
 //!   (still re-expanding + eliminating each inner — same cubic cost, but **no extra column-FD probes** between
-//!   inners). In-place **band LU** helpers are kept for experiments only; they are **not** wired into production
-//!   Newton because they do not yet match this dense path on parity fixtures.
+//!   inners). In-place **band LU** helpers match the dense expand path on
+//!   [`full_sg_chain_n17_band_lu_vs_dense_expand_newton_increment_parity`] but are **not** wired into production
+//!   **`try_solve_pnp_backward_euler_newton_chain`** yet.
 //!   **Still open at large \(N\):** matrix-free / Krylov; general graphs (**Ring 2 R2.3**).
 //!   The default [`ElectroChemicalSolver::solve_pnp_step`] path remains explicit split.
 //! - **Mesh / extreme \(\Delta\phi\):** edge factor `h_inv` is now sourced from [`ElectroChemicalSolver::mesh_spacing`] (default `1.0` preserves the legacy dimensionless chain);
@@ -1306,9 +1307,10 @@ fn newton_fd_jacobian_full_sg_node_major_row_band(
 /// (same [`solve_dense_linear`] as Jacobian unit tests). **Perf:** **\(O(dim^3)\)** per solve — used for
 /// every full-SG Newton correction on the **chain** host path (including **frozen-Jacobian** inner sweeps:
 /// the band is held fixed while **\(J\)** is re-expanded into scratch each inner iteration). **Band LU**
-/// helpers ([`row_band_lu_factorize_partial_pivot`], [`row_band_lu_solve_factored`]) are retained for
-/// experiments only; they are **not** wired into production Newton because they do not yet match this
-/// dense elimination on parity fixtures.
+/// helpers ([`row_band_lu_factorize_partial_pivot`], [`row_band_lu_solve_factored`]) match this dense path on
+/// the **`newton_chain_tests`** harness [`full_sg_chain_n17_band_lu_vs_dense_expand_newton_increment_parity`]
+/// (default CI with `electrochemistry-pnp`); they remain **experimental** and are **not** wired into production
+/// **`try_solve_pnp_backward_euler_newton_chain`** yet.
 #[cfg(feature = "electrochemistry-mvp")]
 fn solve_newton_correction_full_sg_row_band_via_dense_expand(
     jac_band: &[f64],
