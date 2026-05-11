@@ -8,6 +8,7 @@
 //! **non-collinear** \((x,y,z)\) SI coordinates — still **not** a simplicial \(d_1\) patch solve).
 //! **Verification §6 increment:** [`umst_manifold::physics::solvers::photonics::dec_maxwell_assembly`]
 //! re-exports [`primal_d1_edge_flux_to_faces`](umst_manifold::physics::dec_primal::primal_d1_edge_flux_to_faces)
+//! and [`primal_d1_transpose_face_flux_to_edges`](umst_manifold::physics::dec_primal::primal_d1_transpose_face_flux_to_edges)
 //! on a **quad-split** `faces_b2` patch (same topology as `tests/dec_identities.rs`); plus
 //! **`solve_maxwell_curl_curl`** pass-through when the graph is **not** a uniform x-chain; and
 //! [`apply_dec_te_curl_curl_chain_operator`](umst_manifold::physics::solvers::photonics::apply_dec_te_curl_curl_chain_operator)
@@ -78,6 +79,11 @@ fn device() -> NdArrayDevice {
     NdArrayDevice::default()
 }
 
+/// Frobenius inner \(\langle a,b\rangle = \sum a\,b\) on matching `[B,N,C]` tensors (Burn).
+fn tensor_inner_b3(a: Tensor<B, 3>, b: Tensor<B, 3>) -> f32 {
+    a.mul(b).sum().into_scalar()
+}
+
 fn chain_edges(n: usize) -> Tensor<B, 2, Int> {
     let e = n - 1;
     let mut v = Vec::with_capacity(2 * e);
@@ -103,7 +109,6 @@ fn coords_line_x(n: usize, h: f32) -> Tensor<B, 2> {
 /// Same index-wise \(x = i h\) as [`coords_line_x`], with small smooth **y, z** so the chain is not
 /// collinear in \(\mathbb{R}^3\) while remaining **x-monotone** for the uniform-chain gate inside
 /// [`PhotonicsSolver::solve_maxwell_curl_curl`](umst_manifold::physics::solvers::PhotonicsSolver::solve_maxwell_curl_curl).
-#[allow(dead_code)] // harness reserved for future non-collinear chain regressions
 fn coords_xy_embedded_chain(n: usize, h: f32) -> Tensor<B, 2> {
     let dev = device();
     let mut v = Vec::with_capacity(n * 3);
@@ -498,6 +503,59 @@ fn curl_curl_y_mode_matches_scalar_helmholtz() {
     assert_relative_eq!(mx, 0.0_f32, epsilon = 1e-4_f32);
 }
 
+/// Same parity as [`curl_curl_y_mode_matches_scalar_helmholtz`], with **non-collinear** SI
+/// \((x,y,z)\) on the same path graph ([`coords_xy_embedded_chain`]) — still a 1-D chain gate, not a
+/// simplicial \(d_1\) patch solve.
+#[test]
+fn curl_curl_y_mode_matches_scalar_helmholtz_xy_embedded_chain() {
+    use umst_manifold::physics::solvers::PhotonicsSolver;
+
+    let dev = device();
+    let n = 41usize;
+    let h = 1e-3_f32;
+    let edges = chain_edges(n);
+    let coords = coords_xy_embedded_chain(n, h);
+    let center = n / 2;
+    let mut jdat = vec![0.0_f32; n * 3];
+    jdat[center * 3 + 1] = 1.0_f32;
+    let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
+    let e0 = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+    let eps_r = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let eps_i = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+    let f_hz = 1e9_f32;
+    let cg = MechanicsInnerLoopConfig::default();
+
+    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let e_cc = ps.solve_maxwell_curl_curl(
+        e0.clone(),
+        eps_r.clone(),
+        eps_i.clone(),
+        j.clone(),
+        edges.clone(),
+        coords.clone(),
+        &cg,
+    );
+
+    let helm = PhotonicsHelmholtzSolver {
+        frequency_hz: f_hz,
+        pml_thickness: 0,
+        pml_max_sigma: 0.0,
+    };
+    let jy = j.narrow(2, 1, 1);
+    let jy_im = Tensor::<B, 3>::zeros_like(&jy);
+    let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg);
+
+    let ey_cc = e_cc.narrow(2, 1, 1);
+    let v_cc = ey_cc.into_data().value;
+    let v_h = ey_h.into_data().value;
+    assert_eq!(v_cc.len(), v_h.len());
+    let mut mx = 0.0_f32;
+    for i in 0..v_cc.len() {
+        mx = mx.max((v_cc[i] - v_h[i]).abs());
+    }
+    assert_relative_eq!(mx, 0.0_f32, epsilon = 1e-4_f32);
+}
+
 /// Same operator identity as [`curl_curl_y_mode_matches_scalar_helmholtz`], but with a **non-uniform**
 /// relative permittivity on nodes (three bulk values along the chain). This stresses harmonic means
 /// \(2/(\varepsilon_i+\varepsilon_{i+1})\) on interior links; it does **not** extend the proof to 2D/3D DEC.
@@ -629,6 +687,36 @@ fn dec_maxwell_assembly_quad_split_d1_annihilates_gradient_burn() {
     assert_eq!(v.len(), 2);
     assert_relative_eq!(v[0], 0.0_f32, epsilon = 1e-4_f32, max_relative = 1.0);
     assert_relative_eq!(v[1], 0.0_f32, epsilon = 1e-4_f32, max_relative = 1.0);
+}
+
+/// [`primal_d1_transpose_face_flux_to_edges`] via [`umst_manifold::physics::solvers::photonics::dec_maxwell_assembly`]:
+/// discrete adjoint \(\langle d_1 u, w\rangle = \langle u, d_1^\top w\rangle\) on the quad-split patch
+/// (same tensors / ranges as [`dec_primal_d1_adjoint_identity_quad_split_two_faces_burn`] in `dec_identities.rs`).
+#[test]
+fn dec_maxwell_assembly_quad_split_d1_adjoint_identity_burn() {
+    use umst_manifold::physics::solvers::photonics::dec_maxwell_assembly::{
+        primal_d1_edge_flux_to_faces, primal_d1_transpose_face_flux_to_edges,
+    };
+
+    let dev = device();
+    let (_edges_b1, faces_b2, _) = quad_split_patch_tensors();
+    let ranges = [(0usize, 3usize), (3usize, 6usize)];
+    let u = Tensor::from_data(
+        Data::new(
+            vec![0.55_f32, -0.2, 1.05, -0.9, 0.3],
+            Shape::new([1, 5, 1]),
+        ),
+        &dev,
+    );
+    let w = Tensor::from_data(
+        Data::new(vec![0.4_f32, -0.65], Shape::new([1, 2, 1])),
+        &dev,
+    );
+    let d1u = primal_d1_edge_flux_to_faces(u.clone(), faces_b2.clone(), &ranges);
+    let lhs = tensor_inner_b3(d1u, w.clone());
+    let d1t_w = primal_d1_transpose_face_flux_to_edges(w, faces_b2, &ranges, &u);
+    let rhs = tensor_inner_b3(u.clone(), d1t_w);
+    assert_relative_eq!(lhs, rhs, epsilon = 1e-4_f32, max_relative = 1.0);
 }
 
 /// Non-chain **2D patch** topology: [`PhotonicsSolver::solve_maxwell_curl_curl`] returns the
