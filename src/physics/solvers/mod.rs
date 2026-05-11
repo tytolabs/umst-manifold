@@ -38,6 +38,8 @@ pub use rheology_flow::BinghamFlowSolver;
 #[cfg(feature = "thmc-coupled")]
 pub use thmc::full_hydration_alpha_rate_tensor;
 #[cfg(feature = "thmc-coupled")]
+pub use thmc::strain_tensor_for_fracture_from_manifold;
+#[cfg(feature = "thmc-coupled")]
 pub use thmc::{mc2010_style_notional_shrink_strain, shrink_strain_from_saturation_loss};
 pub use thmc::{
     ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics,

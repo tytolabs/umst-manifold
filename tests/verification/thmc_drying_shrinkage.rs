@@ -14,7 +14,8 @@ use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::tensors::{MixTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::physics::solvers::{
-    mc2010_style_notional_shrink_strain, shrink_strain_from_saturation_loss, ChemicalPlan,
+    mc2010_style_notional_shrink_strain, shrink_strain_from_saturation_loss,
+    spectral_tensile_psi_plus_from_strain, strain_tensor_for_fracture_from_manifold, ChemicalPlan,
     HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics,
     ThmcImplicitEulerThermalHumidityHydrationResidual, ThmcImplicitEulerThermalHydrationResidual,
     ThmcImplicitTAlphaNewtonConfig, ThmcMonolithicImplicitUnknownLayout, ThmcSolver, ThmcState,
@@ -93,6 +94,47 @@ fn chain_manifold(n: usize) -> UnifiedMaterialStateTensor<B> {
         matrix_features,
         resolution_mm: [1.0, 1.0, 1.0],
         node_positions,
+        displacement_bc_mask,
+        policy_editable_mask,
+    }
+}
+
+/// Same 1-D chain topology as [`chain_manifold`], but **no** SI `node_positions`; optional uniform
+/// uniaxial \(\varepsilon_{xx}\) in `matrix_features[.., 0, 0, 0]` for the non-embedding fracture path.
+fn chain_manifold_matrix_path(n: usize, exx: f32) -> UnifiedMaterialStateTensor<B> {
+    let d = dev();
+    let f = 5usize;
+    let coords: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(vec![0i64; n * 5], Shape::new([n, 5])), &d);
+    let mut e = Vec::with_capacity((n - 1) * 2);
+    for i in 0..n - 1 {
+        e.push(i as i64);
+    }
+    for i in 0..n - 1 {
+        e.push((i + 1) as i64);
+    }
+    let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(Data::new(e, Shape::new([2, n - 1])), &d);
+    let faces_b2: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(vec![0i64, 0i64], Shape::new([2, 1])), &d);
+    let scalar_features = Tensor::<B, 2>::zeros([n, f], &d);
+    let vector_features = Tensor::<B, 3>::zeros([n, 1, 3], &d);
+    let mut mf = vec![0.0_f32; n * 9];
+    for i in 0..n {
+        let b = i * 9;
+        mf[b] = exx;
+    }
+    let matrix_features = Tensor::from_data(Data::new(mf, Shape::new([n, 1, 3, 3])), &d);
+    let displacement_bc_mask = Tensor::<B, 3>::ones([n, 3, 1], &d);
+    let policy_editable_mask = Tensor::<B, 2>::ones([n, 1], &d);
+    UnifiedMaterialStateTensor {
+        coords,
+        edges_b1,
+        faces_b2,
+        scalar_features,
+        vector_features,
+        matrix_features,
+        resolution_mm: [1.0, 1.0, 1.0],
+        node_positions: None,
         displacement_bc_mask,
         policy_editable_mask,
     }
@@ -312,6 +354,89 @@ fn bar_network_strain_matches_strain_tensor_for_fracture_after_mechanics() {
     assert!(
         max_abs < 1e-4_f32 * scale,
         "strain tensor mismatch: max_abs={max_abs} scale={scale}"
+    );
+}
+
+/// **P1 / Track 12:** without `[N,3]` SI embedding, [`ThmcSolver::step`] feeds AT2 from
+/// `matrix_features[..,0,..]` (public [`strain_tensor_for_fracture_from_manifold`] stub).
+#[test]
+fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
+    let d = dev();
+    let n = 3usize;
+    let batch = 1usize;
+    let exx = 0.05_f32;
+    let manifold = chain_manifold_matrix_path(n, exx);
+
+    let eps = strain_tensor_for_fracture_from_manifold(&manifold, batch, n, &d);
+    let psi = spectral_tensile_psi_plus_from_strain(eps);
+    let psi_sum: f32 = psi.into_data().value.iter().sum();
+    assert!(
+        psi_sum > 1e-12_f32,
+        "expected positive ψ⁺ from matrix stub; psi_sum={psi_sum}"
+    );
+
+    let mk_state = |damage: Tensor<B, 3>| ThmcState {
+        thermal: ThermalPlan {
+            temperature: Tensor::<B, 3>::full([batch, n, 1], 293.15_f32, &d),
+        },
+        hydro: HydrologicPlan {
+            humidity: Tensor::<B, 3>::full([batch, n, 1], 0.9_f32, &d),
+        },
+        mechanical: MechanicalPlan {
+            displacement: Tensor::<B, 3>::zeros([batch, n, 3], &d),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &d),
+        },
+        damage,
+        time: 0.0_f32,
+    };
+
+    let solver = ThmcSolver {
+        dt: 0.01_f32,
+        max_newton: 1_usize,
+        tol: 1e-2_f32,
+        hydration: ThmcHydrationKinetics::default(),
+        drying_last_node_evaporation_k: 0.0_f32,
+        drying_ambient_h: 0.5_f32,
+        implicit_t_alpha_newton: None,
+    };
+
+    let s_tension = solver
+        .step(
+            &Stub,
+            mk_state(Tensor::<B, 3>::zeros([batch, n, 1], &d)),
+            &manifold,
+        )
+        .expect("THMC step Ok");
+    let max_d_tension = s_tension
+        .damage
+        .clone()
+        .into_data()
+        .value
+        .iter()
+        .copied()
+        .fold(0.0_f32, f32::max);
+
+    let manifold_flat = chain_manifold_matrix_path(n, 0.0_f32);
+    let s_flat = solver
+        .step(
+            &Stub,
+            mk_state(Tensor::<B, 3>::zeros([batch, n, 1], &d)),
+            &manifold_flat,
+        )
+        .expect("THMC step Ok");
+    let max_d_flat = s_flat
+        .damage
+        .into_data()
+        .value
+        .iter()
+        .copied()
+        .fold(0.0_f32, f32::max);
+
+    assert!(
+        max_d_tension > max_d_flat + 1e-6_f32,
+        "expected tensile matrix_features to raise damage vs zero-strain control; max_d_tension={max_d_tension} max_d_flat={max_d_flat}"
     );
 }
 

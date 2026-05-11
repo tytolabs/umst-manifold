@@ -67,7 +67,8 @@
 //!   [`crate::physics::solvers::fracture_field::strain_tensor_from_bar_network_displacement`] built from
 //!   **`state.mechanical.displacement`** and those coordinates (post-mechanics \(\varepsilon(\mathbf u)\)).
 //!   If positions are missing or not `[N,3]`, strain falls back to `matrix_features[.., 0, ..]` when shapes
-//!   align (`[N,F,3,3]` → `[B,N,3,3]`); otherwise zeros (documented).
+//!   align (`[N,F,3,3]` → `[B,N,3,3]`); otherwise zeros — same rule as
+//!   [`strain_tensor_for_fracture_from_manifold`] (public stub for cartridges / tests).
 
 #[cfg(feature = "thmc-coupled")]
 use burn::tensor::Int;
@@ -519,10 +520,10 @@ impl ThmcSolver {
                     n,
                 )
             } else {
-                strain_tensor_from_manifold::<B>(manifold, batch, n, &device)
+                strain_tensor_for_fracture_from_manifold::<B>(manifold, batch, n, &device)
             }
         } else {
-            strain_tensor_from_manifold::<B>(manifold, batch, n, &device)
+            strain_tensor_for_fracture_from_manifold::<B>(manifold, batch, n, &device)
         };
         let gc = Tensor::<B, 3>::ones([batch, n, 1], &device);
         let fracture = PhaseFieldFractureSolver { length_scale: 1.0 };
@@ -718,12 +719,14 @@ fn hydration_arrhenius_rate<B: Backend<FloatElem = f32>>(
         .mul_scalar(k.arrhenius_prefactor_s)
 }
 
-/// Symmetric strain \(\varepsilon\) per node for [`PhaseFieldFractureSolver::update_damage`].
+/// **Non-embedding / cartridge stub:** strain fed to [`PhaseFieldFractureSolver::update_damage`] when
+/// [`UnifiedMaterialStateTensor::node_positions`] is missing or not `[N,3]`, matching the fracture tail of
+/// [`ThmcSolver::step`].
 ///
-/// Prefers `manifold.matrix_features[.., 0, ..]` reshaped to `[B, N, 3, 3]`. If `N` or channel count disagrees,
-/// returns zeros (still runs AT2 relaxation with zero tensile drive).
+/// Reads `matrix_features` as `[N, F, 3, 3]` and takes channel `0`. Shape must satisfy `dims()[0] == n` and
+/// `dims()[1] >= 1`; otherwise returns zeros (still runs AT2 relaxation with zero tensile drive).
 #[cfg(feature = "thmc-coupled")]
-fn strain_tensor_from_manifold<B: Backend<FloatElem = f32>>(
+pub fn strain_tensor_for_fracture_from_manifold<B: Backend<FloatElem = f32>>(
     manifold: &UnifiedMaterialStateTensor<B>,
     batch: usize,
     n: usize,
