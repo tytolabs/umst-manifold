@@ -13,6 +13,8 @@
 //! **`solve_maxwell_curl_curl`** pass-through when the graph is **not** a uniform x-chain; and
 //! [`apply_dec_te_curl_curl_chain_operator`](umst_manifold::physics::solvers::photonics::apply_dec_te_curl_curl_chain_operator)
 //! vs hand stencil with **piecewise** \(\varepsilon_r\).
+//! **Verification #6 (metric + TE field split):** [`curl_curl_y_mode_matches_scalar_helmholtz_affine_x_metric_preserves_ex_ez`]
+//! — affine SI \(x\) (\(x_j=x_0+jh\)) stresses difference-based **`h`** in [`solve_maxwell_curl_curl`]; **`E_x`,`E_z`** unchanged.
 //! **Verification #6:** [`apply_dec_te_curl_curl_chain_operator_none_on_quad_split_expanded_patch`] —
 //! quad-split patch (\(E=5\), \(N=4\)) rejects the chain extractor (memo
 //! [`docs/research/v0.4_track15_dec_curl_curl_photonics.md`](../../docs/research/v0.4_track15_dec_curl_curl_photonics.md) §1).
@@ -103,6 +105,17 @@ fn coords_line_x(n: usize, h: f32) -> Tensor<B, 2> {
     let mut v = Vec::with_capacity(n * 3);
     for i in 0..n {
         v.push(i as f32 * h);
+        v.push(0.0);
+        v.push(0.0);
+    }
+    Tensor::from_data(Data::new(v, Shape::new([n, 3])), &device())
+}
+
+/// Affine uniform spacing on \(x\): \(x_j = x_0 + j h\) (same **`h`** inference as [`coords_line_x`] via successive differences).
+fn coords_affine_line_x(n: usize, x0: f32, h: f32) -> Tensor<B, 2> {
+    let mut v = Vec::with_capacity(n * 3);
+    for i in 0..n {
+        v.push(x0 + i as f32 * h);
         v.push(0.0);
         v.push(0.0);
     }
@@ -496,6 +509,84 @@ fn curl_curl_y_mode_matches_scalar_helmholtz() {
     let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg);
 
     let ey_cc = e_cc.narrow(2, 1, 1);
+    let v_cc = ey_cc.into_data().value;
+    let v_h = ey_h.into_data().value;
+    assert_eq!(v_cc.len(), v_h.len());
+    let mut mx = 0.0_f32;
+    for i in 0..v_cc.len() {
+        mx = mx.max((v_cc[i] - v_h[i]).abs());
+    }
+    assert_relative_eq!(mx, 0.0_f32, epsilon = 1e-4_f32);
+}
+
+/// Affine SI \(x\) coordinates (\(x_j = x_0 + j h\)) so mesh spacing [**`h`**](../../src/physics/solvers/photonics.rs)
+/// is inferred from **differences only**; TE **`E_y`** still matches [`PhotonicsHelmholtzSolver::solve_helmholtz`], and
+/// **`E_x`,`E_z`** from `e_field` are **unchanged** (orthogonal components pass through the TE reduction in
+/// [`PhotonicsSolver::solve_maxwell_curl_curl`](../../src/physics/solvers/photonics.rs)).
+#[test]
+fn curl_curl_y_mode_matches_scalar_helmholtz_affine_x_metric_preserves_ex_ez() {
+    use umst_manifold::physics::solvers::PhotonicsSolver;
+
+    let dev = device();
+    let n = 41usize;
+    let h = 1e-3_f32;
+    let x0 = 1.28e2_f32;
+    let edges = chain_edges(n);
+    let coords = coords_affine_line_x(n, x0, h);
+
+    let mut e0 = vec![0.0_f32; n * 3];
+    for i in 0..n {
+        let t = i as f32 * 0.21_f32;
+        e0[i * 3] = 0.31_f32 * t.sin();
+        e0[i * 3 + 2] = -0.19_f32 * t.cos();
+    }
+    let center = n / 2;
+    let mut jdat = vec![0.0_f32; n * 3];
+    jdat[center * 3 + 1] = 1.0_f32;
+    let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
+    let e_field = Tensor::<B, 3>::from_data(Data::new(e0, Shape::new([1, n, 3])), &dev);
+    let eps_r = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let eps_i = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+    let f_hz = 1e9_f32;
+    let cg = MechanicsInnerLoopConfig::default();
+
+    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let e_cc = ps.solve_maxwell_curl_curl(
+        e_field.clone(),
+        eps_r.clone(),
+        eps_i.clone(),
+        j.clone(),
+        edges.clone(),
+        coords.clone(),
+        &cg,
+    );
+
+    let helm = PhotonicsHelmholtzSolver {
+        frequency_hz: f_hz,
+        pml_thickness: 0,
+        pml_max_sigma: 0.0,
+    };
+    let jy = j.narrow(2, 1, 1);
+    let jy_im = Tensor::<B, 3>::zeros_like(&jy);
+    let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg);
+
+    let ex_cc = e_cc.clone().narrow(2, 0, 1);
+    let ey_cc = e_cc.clone().narrow(2, 1, 1);
+    let ez_cc = e_cc.clone().narrow(2, 2, 1);
+    let ex_in = e_field.clone().narrow(2, 0, 1);
+    let ez_in = e_field.narrow(2, 2, 1);
+
+    let v_ex_cc = ex_cc.into_data().value;
+    let v_ex_in = ex_in.into_data().value;
+    let v_ez_cc = ez_cc.into_data().value;
+    let v_ez_in = ez_in.into_data().value;
+    let mut mx_pass = 0.0_f32;
+    for i in 0..v_ex_cc.len() {
+        mx_pass = mx_pass.max((v_ex_cc[i] - v_ex_in[i]).abs());
+        mx_pass = mx_pass.max((v_ez_cc[i] - v_ez_in[i]).abs());
+    }
+    assert_relative_eq!(mx_pass, 0.0_f32, epsilon = 1e-6_f32, max_relative = 1.0);
+
     let v_cc = ey_cc.into_data().value;
     let v_h = ey_h.into_data().value;
     assert_eq!(v_cc.len(), v_h.len());
