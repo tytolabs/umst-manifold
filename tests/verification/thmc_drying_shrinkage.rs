@@ -790,6 +790,119 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
     );
 }
 
+/// **Coupling plan §4 Phase 2:** four-block quasi-static \(R_u\) assembly — combined L² matches
+/// \(\sqrt{\sum_i \texttt{flat}[i]^2}\) and \(\sqrt{\|R_{T,h,\alpha}\|^2+\|R_u\|^2}\) on a 2-node chain.
+#[test]
+fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
+    let d = dev();
+    let n = 2usize;
+    let manifold = chain_manifold(n);
+    let coords = manifold
+        .node_positions
+        .as_ref()
+        .expect("chain_manifold SI coords")
+        .clone();
+    let edges_b1 = manifold.edges_b1.clone();
+    let batch = 1usize;
+    let kinetics = ThmcHydrationKinetics::default();
+
+    let mut bm_data = vec![1.0_f32; n * 3];
+    bm_data[0] = 0.0_f32;
+    for i in 0..n {
+        bm_data[i * 3 + 1] = 0.0_f32;
+        bm_data[i * 3 + 2] = 0.0_f32;
+    }
+    let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([batch, n, 3])), &d);
+
+    let mut bf_data = vec![0.0_f32; n * batch * 3];
+    bf_data[(n - 1) * 3] = 2_000.0_f32;
+    let body_force = Tensor::from_data(Data::new(bf_data, Shape::new([batch, n, 3])), &d);
+
+    let dt = 0.02_f32;
+    let alpha_hydr = Tensor::<B, 3>::full([batch, n, 1], 0.72_f32, &d);
+    let damage_m = Tensor::<B, 3>::zeros([batch, n, 1], &d);
+    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+        dt,
+        temperature_n: Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d),
+        humidity_n: Tensor::<B, 3>::full([batch, n, 1], 0.6_f32, &d),
+        alpha_n: alpha_hydr.clone(),
+        displacement_n: Tensor::<B, 3>::zeros([batch, n, 3], &d),
+        mechanics_placeholder_mass: 1.0_f32,
+        edges_b1,
+        damage_m: damage_m.clone(),
+        kinetics,
+    };
+    let trial = ThmcState {
+        thermal: ThermalPlan {
+            temperature: Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
+        },
+        hydro: HydrologicPlan {
+            humidity: Tensor::<B, 3>::full([batch, n, 1], 0.55_f32, &d),
+        },
+        mechanical: MechanicalPlan {
+            displacement: Tensor::<B, 3>::zeros([batch, n, 3], &d),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: alpha_hydr,
+        },
+        damage: damage_m,
+        time: 0.0_f32,
+    };
+
+    let cross_section_area = 0.01_f32;
+    let l2_full = assembler
+        .residual_l2_including_quasi_static_r_u(
+            &trial,
+            &coords,
+            &boundary_mask,
+            &body_force,
+            cross_section_area,
+        )
+        .expect("l2 quasi-static four blocks");
+
+    let flat = assembler
+        .stacked_flat_residual_field_major_quasi_static(
+            &trial,
+            &coords,
+            &boundary_mask,
+            &body_force,
+            cross_section_area,
+        )
+        .expect("flat quasi-static");
+    let sum_sq: f32 = flat.iter().map(|x| x * x).sum();
+    let l2_from_flat = sum_sq.max(0.0_f32).sqrt();
+    assert!(
+        (l2_full - l2_from_flat).abs() < 1e-5_f32,
+        "L2 mismatch: combined {} vs from flat {}",
+        l2_full,
+        l2_from_flat
+    );
+
+    let l2_scalar = assembler.residual_l2(&trial).expect("l2 scalar blocks");
+    let (_r_t, _r_h, _r_alpha, r_u) = assembler
+        .assemble_with_quasi_static_r_u(
+            &trial,
+            &coords,
+            &boundary_mask,
+            &body_force,
+            cross_section_area,
+        )
+        .expect("assemble four blocks quasi-static");
+    let ru_sq = r_u
+        .clone()
+        .mul(r_u.clone())
+        .sum()
+        .into_scalar()
+        .max(0.0_f32);
+    let l2_from_parts = (l2_scalar * l2_scalar + ru_sq).max(0.0_f32).sqrt();
+    assert!(
+        (l2_full - l2_from_parts).abs() < 1e-5_f32,
+        "L2 mismatch: combined {} vs sqrt(||R_T:h:a||^2+||R_u||^2) {}",
+        l2_full,
+        l2_from_parts
+    );
+}
+
 /// Field-major \((T,h,\alpha)\) damped Newton: stacked \(\|R\|_2\) decreases over multiple iterations
 /// (track 13 increment toward monolithic THMC — still **no** \(R_u\) / no `ThmcSolver` wiring).
 #[test]

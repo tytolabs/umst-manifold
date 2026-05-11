@@ -350,8 +350,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHydrationResidual<B> {
 /// with diagonal lumped scale `mechanics_placeholder_mass` \(m\) (default `1`). This is **not** the
 /// quasi-static bar-network \(R_u\) from the mechanics coupling plan §2.4 — it exists so field-major
 /// \([\mathrm{vec}(R_T);\mathrm{vec}(R_h);\mathrm{vec}(R_\alpha);\mathrm{vec}(R_u)]\) matches
-/// [`ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`] before Phase 1
-/// `evaluate_r_u` lands.
+/// [`ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`] for layout-only checks.
+/// For physical \(R_u\), use [`Self::evaluate_quasi_static_r_u`] /
+/// [`Self::assemble_with_quasi_static_r_u`] (plan §4 Phase 1–2).
 #[cfg(feature = "thmc-coupled")]
 #[derive(Clone, Debug)]
 pub struct ThmcImplicitEulerThermalHumidityHydrationResidual<B: Backend<FloatElem = f32>> {
@@ -549,6 +550,66 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             boundary_mask_bn3.clone(),
             cross_section_area,
         ))
+    }
+
+    /// **Coupling plan §4 Phase 2:** \((R_T,R_h,R_\alpha,R_u)\) with \(R_u\) from
+    /// [`Self::evaluate_quasi_static_r_u`].
+    #[allow(clippy::type_complexity)]
+    pub fn assemble_with_quasi_static_r_u(
+        &self,
+        trial: &ThmcState<B>,
+        coords_n3: &Tensor<B, 2>,
+        boundary_mask_bn3: &Tensor<B, 3>,
+        body_force: &Tensor<B, 3>,
+        cross_section_area: f32,
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>), String> {
+        let (r_t, r_h, r_alpha) = self.assemble(trial)?;
+        let r_u = self.evaluate_quasi_static_r_u(
+            trial,
+            coords_n3,
+            boundary_mask_bn3,
+            body_force,
+            cross_section_area,
+        )?;
+        Ok((r_t, r_h, r_alpha, r_u))
+    }
+
+    /// Field-major flat stack using [`Self::assemble_with_quasi_static_r_u`].
+    pub fn stacked_flat_residual_field_major_quasi_static(
+        &self,
+        trial: &ThmcState<B>,
+        coords_n3: &Tensor<B, 2>,
+        boundary_mask_bn3: &Tensor<B, 3>,
+        body_force: &Tensor<B, 3>,
+        cross_section_area: f32,
+    ) -> Result<Vec<f32>, String> {
+        let (r_t, r_h, r_a, r_u) = self.assemble_with_quasi_static_r_u(
+            trial,
+            coords_n3,
+            boundary_mask_bn3,
+            body_force,
+            cross_section_area,
+        )?;
+        Ok(flatten_four_residuals(&r_t, &r_h, &r_a, &r_u))
+    }
+
+    /// Combined L² of all four blocks with quasi-static \(R_u\).
+    pub fn residual_l2_including_quasi_static_r_u(
+        &self,
+        trial: &ThmcState<B>,
+        coords_n3: &Tensor<B, 2>,
+        boundary_mask_bn3: &Tensor<B, 3>,
+        body_force: &Tensor<B, 3>,
+        cross_section_area: f32,
+    ) -> Result<f32, String> {
+        let (r_t, r_h, r_a, r_u) = self.assemble_with_quasi_static_r_u(
+            trial,
+            coords_n3,
+            boundary_mask_bn3,
+            body_force,
+            cross_section_area,
+        )?;
+        Ok(combined_four_residual_l2(&r_t, &r_h, &r_a, &r_u))
     }
 
     /// \(\sqrt{\|R_T\|_2^2 + \|R_h\|_2^2 + \|R_\alpha\|_2^2}\) (memo §B stacked norm, truncated to scalar blocks).
