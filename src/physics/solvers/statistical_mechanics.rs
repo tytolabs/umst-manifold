@@ -118,7 +118,10 @@ impl StatisticalBridge {
     /// - \(\gamma_{\mathrm{gc}} = \texttt{ANALYTIC\_SURFACE\_ENERGY\_SCALE} \cdot \varepsilon / \sigma^2\) → `[B, 1]`
     ///
     /// **`lennard_jones_params` is not validated** beyond reading `dims()[0]`; callers must supply
-    /// `[B, 2]` until explicit asserts are added. Division by \(\sigma\) follows tensor math (no extra
+    /// **`[B, 2]`** (contract **v1**). A future stateful bridge may take **`[B, 4]`**
+    /// \((\varepsilon,\sigma,\rho^*,T^*)\) or a second tensor for \((\rho^*,T^*)\); until then, reduced
+    /// state is **not** part of this signature.
+    /// Division by \(\sigma\) follows tensor math (no extra
     /// clamp); avoid \(\sigma \to 0\) in training if gradients should stay well-behaved.
     pub fn upscale_potentials<B: Backend<FloatElem = f32>>(
         &self,
@@ -142,6 +145,10 @@ impl StatisticalBridge {
 ///
 /// Prefer this free function when no `StatisticalBridge` instance is already in scope; it
 /// delegates to [`StatisticalBridge::upscale_potentials`] on a [`StatisticalBridge`] value.
+///
+/// **Contract (v1):** argument is **`[B, 2]`** \((\varepsilon,\sigma)\) only. A future bridge may add
+/// **`[B, 4]`** or a companion state tensor for \((\rho^*,T^*)\); that is **not** in this signature yet
+/// (see module rustdoc).
 #[inline]
 pub fn upscale_potentials<B: Backend<FloatElem = f32>>(
     lennard_jones_params: Tensor<B, 2>,

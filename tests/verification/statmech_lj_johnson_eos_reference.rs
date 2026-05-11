@@ -125,3 +125,21 @@ fn johnson_lj1993_alphar_finite_on_reference_isotherm() {
         assert!(a.is_finite(), "alphar not finite at rho*={rho_star}");
     }
 }
+
+/// `statistical-mechanics-johnson-reference` re-export: \(K^*\) matches \(\rho^* (\partial P^*/\partial \rho^*)_{T^*}\)
+/// on the JZG (1993) surface (compressibility / virial-style definition).
+#[cfg(feature = "statistical-mechanics-johnson-reference")]
+#[test]
+fn statmech_johnson_reexport_k_star_matches_rho_dp_drho_virial_definition() {
+    use umst_manifold::physics::solvers::statistical_mechanics::bulk_modulus_from_lj_state_johnson1993;
+
+    let t_star = 2.0_f64;
+    let rho_star = 0.35_f64;
+    const H_DELTA: f64 = 1.0e-6_f64;
+    let p_plus = johnson_lj1993_pressure_reduced(t_star, rho_star + H_DELTA, H_RHO);
+    let p_minus = johnson_lj1993_pressure_reduced(t_star, rho_star - H_DELTA, H_RHO);
+    let k_virial = rho_star * (p_plus - p_minus) / (2.0 * H_DELTA);
+
+    let k_reexport = bulk_modulus_from_lj_state_johnson1993(rho_star, t_star);
+    assert_abs_diff_eq!(k_reexport, k_virial, epsilon = 1.0e-8_f64);
+}
