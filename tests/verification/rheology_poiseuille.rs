@@ -15,6 +15,9 @@
 //! `chorin_steady_channel_64x16_vs_regularized_reference` (CI finite-speed smoke on **65×17**).
 //! Long-run centreline \(L^2\) / plug-width vs the regularized 1-D reference stays deferred pending
 //! open \(x\) boundary conditions — see **`docs/Solver-Status.md`** (**DEFERRAL — Rheology**).
+//! **Manual harness:** `chorin_channel_65x17_longrun_wall_normal_l2_vs_regularized_reference` (**`#[ignore]`**)
+//! records discrete wall-normal \(L^2(u_x)\) vs the steady regularized 1-D profile after many steps
+//! when **`UMST_RUN_CHORIN_LONGRUN_L2=1`** (optional **`UMST_CHORIN_LONGRUN_STEPS`**, default **2000**).
 //! Legacy surrogate Poisson produced **dt-independent** \(\mathcal O(10^3)\) amplification per step on **65×17**;
 //! **verification \#7** plus **Jacobi-PCG** pressure (`rheology_flow.rs`) stabilizes short horizons
 //! (`chorin_channel_65x17_thirty_substeps_remain_finite`, `chorin_surrogate_poisson_amplification_regression_guard`).
@@ -916,6 +919,176 @@ fn chorin_steady_channel_64x16_vs_regularized_reference() {
     assert!(
         umax < 0.006_f32,
         "expected sub-developed centreline scale after {max_steps} small steps; umax={umax:.3e}"
+    );
+}
+
+/// **Long-run profile \(L^2\) harness (opt-in):** same **65×17** wall-masked Chorin setup as
+/// [`chorin_steady_channel_64x16_vs_regularized_reference`], but **many** explicit steps, then a
+/// discrete wall-normal \(L^2\) mismatch of \(u_x\) against the **steady** regularized 1-D Bingham
+/// reference on the **mid-length** column (\(x=L/2\)).
+///
+/// **Honesty:** the shipped graph Chorin channel uses **periodic-ish** streamwise connectivity without
+/// dedicated **open** \(x\) inlet/outlet data, and no **MAC** staggered split — so this \(L^2\) is **not**
+/// claimed as a ship gate. The harness exists to (1) prove **multi-thousand-step** finiteness under the
+/// Jacobi-PCG pressure path, and (2) print a reproducible **relative** \(L^2\) metric for regression
+/// triage until MAC / open-\(x\) work lands (`docs/research/rheology_pressure_poisson_roadmap.md` §2–3).
+///
+/// **Run:** `UMST_RUN_CHORIN_LONGRUN_L2=1` and `cargo test -p umst-manifold --features rheology-bingham,solver-experimental --release chorin_channel_65x17_longrun_wall_normal_l2_vs_regularized_reference -- --ignored --exact`
+/// (put `--release` before `--`; optional `UMST_CHORIN_LONGRUN_STEPS` overrides default **2000**).
+#[cfg(feature = "rheology-bingham")]
+#[test]
+#[ignore = "slow (~2000 Chorin steps): set UMST_RUN_CHORIN_LONGRUN_L2=1; optional UMST_CHORIN_LONGRUN_STEPS; prefer --release"]
+fn chorin_channel_65x17_longrun_wall_normal_l2_vs_regularized_reference() {
+    use std::env;
+
+    if env::var("UMST_RUN_CHORIN_LONGRUN_L2").ok().as_deref() != Some("1") {
+        panic!(
+            "This harness is ignored by default. Export UMST_RUN_CHORIN_LONGRUN_L2=1, then run with --ignored --exact."
+        );
+    }
+
+    use burn::tensor::{Data, Int, Shape, Tensor};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+    use umst_manifold::physics::solvers::BinghamFlowSolver;
+
+    type B = NdArray<f32>;
+
+    const G: f32 = 1000.0;
+    const H: f32 = 0.05;
+    const L: f32 = 0.5;
+    const MU: f32 = 50.0;
+    const TAU0: f32 = 20.0;
+    const RHO: f32 = 1000.0;
+
+    let max_steps: usize = env::var("UMST_CHORIN_LONGRUN_STEPS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .filter(|&n| n >= 100)
+        .unwrap_or(2000);
+
+    let nx = 65usize;
+    let ny = 17usize;
+    let n = nx * ny;
+    let _dx = L / (nx - 1) as f32;
+    let dy = H / (ny - 1) as f32;
+    let half = 0.5 * H;
+
+    let mut edges_src: Vec<i64> = Vec::new();
+    let mut edges_tgt: Vec<i64> = Vec::new();
+    for j in 0..ny {
+        for i in 0..nx - 1 {
+            edges_src.push((j * nx + i) as i64);
+            edges_tgt.push((j * nx + i + 1) as i64);
+        }
+    }
+    for j in 0..ny - 1 {
+        for i in 0..nx {
+            edges_src.push((j * nx + i) as i64);
+            edges_tgt.push(((j + 1) * nx + i) as i64);
+        }
+    }
+    let mut edges = edges_src;
+    edges.extend(edges_tgt);
+    let e_ct = edges.len() / 2;
+
+    let dev = NdArrayDevice::Cpu;
+    let edges_b1: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(edges, Shape::new([2, e_ct])), &dev);
+
+    let batch = 1usize;
+    let mut mask = vec![1.0_f32; n];
+    for i in 0..nx {
+        mask[i] = 0.0;
+        mask[(ny - 1) * nx + i] = 0.0;
+    }
+    let wall_mask: Tensor<B, 3> =
+        Tensor::from_data(Data::new(mask, Shape::new([batch, n, 1])), &dev);
+
+    let vel_data = vec![0.0_f32; batch * n * 3];
+    let mut velocity =
+        Tensor::<B, 3>::from_data(Data::new(vel_data, Shape::new([batch, n, 3])), &dev);
+    let mut pressure = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+    let yield_stress = Tensor::<B, 3>::ones([batch, n, 1], &dev).mul_scalar(TAU0);
+    let density = Tensor::<B, 3>::ones([batch, n, 1], &dev).mul_scalar(RHO);
+    let lambda_thix = Tensor::<B, 3>::ones([batch, n, 1], &dev);
+
+    let ax = G / RHO;
+    let gravity: Tensor<B, 1> =
+        Tensor::from_data(Data::new(vec![ax, 0.0_f32, 0.0_f32], Shape::new([3])), &dev);
+
+    let dt = 1e-7_f32;
+    let mut solver = BinghamFlowSolver::new(dt, MU);
+    solver.edge_length_scale = dy;
+    solver.t_rest_thix = BinghamFlowSolver::T_REST_NO_THIX;
+    solver.gamma_crit_thix = BinghamFlowSolver::GAMMA_CRIT_NO_THIX;
+
+    let mask3 = wall_mask.expand([batch, n, 3]);
+    for step in 0..max_steps {
+        let (v, p, _lam) = solver.step(
+            velocity,
+            pressure.clone(),
+            yield_stress.clone(),
+            density.clone(),
+            lambda_thix.clone(),
+            edges_b1.clone(),
+            gravity.clone(),
+        );
+        velocity = v.mul(mask3.clone());
+        pressure = p;
+        let umax = velocity.clone().abs().max().into_scalar();
+        if !umax.is_finite() {
+            panic!("Chorin diverged (non-finite u) at step {step}");
+        }
+    }
+
+    let pmax = pressure.abs().max().into_scalar();
+    assert!(
+        pmax.is_finite(),
+        "pressure should stay finite after {max_steps} steps; pmax={pmax:.3e}"
+    );
+
+    let i_mid = (nx - 1) / 2;
+    let vel_flat: Vec<f32> = velocity.into_data().convert::<f32>().value;
+    let n_quad = 256_usize;
+    let mut sum_sq_err = 0.0_f32;
+    let mut sum_sq_ref = 0.0_f32;
+    let mut count = 0_usize;
+    for j in 1..ny - 1 {
+        let y = -half + j as f32 * dy;
+        let u_ref = plane_regularized_bingham_poiseuille_u_sample(
+            y,
+            G,
+            H,
+            MU,
+            TAU0,
+            RHEOLOGY_FLOW_BINGHAM_EPS,
+            n_quad,
+        );
+        assert!(
+            u_ref.is_finite(),
+            "reference u at y={y} should be finite"
+        );
+        let id = j * nx + i_mid;
+        let u_num = vel_flat[id * 3];
+        assert!(u_num.is_finite(), "numeric u_x at j={j} should be finite");
+        let d = u_num - u_ref;
+        sum_sq_err += d * d;
+        sum_sq_ref += u_ref * u_ref;
+        count += 1;
+    }
+    let l2_err = (sum_sq_err / count as f32).sqrt();
+    let l2_ref = (sum_sq_ref / count as f32).sqrt().max(1e-12);
+    let rel_l2 = l2_err / l2_ref;
+
+    eprintln!(
+        "[chorin longrun L2] steps={max_steps} wall-normal interior nodes={count} \
+         ‖u_x-u_ref‖_2={l2_err:.4e} ‖u_ref‖_2={l2_ref:.4e} rel_L2={rel_l2:.4e} \
+         (not a ship criterion until open-x/MAC; see test docstring)"
+    );
+
+    assert!(
+        rel_l2.is_finite() && rel_l2 < 1e4,
+        "relative L2 should stay finite and below loose sanity cap; rel_L2={rel_l2}"
     );
 }
 
