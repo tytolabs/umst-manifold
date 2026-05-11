@@ -2499,7 +2499,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         assert!((a - b).abs() < eps, "u mismatch: {a} vs {b}");
     }
 
-    // [`ThmcMonolithicNewtonConfig::tol`] is forwarded into the dense helper with the same
+    // [`ThmcMonolithicNewtonConfig::stacked_residual_l2_tolerance`] is forwarded into the dense helper with the same
     // predictor as `step_experimental` (keep aligned with [`thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail`]).
     let max_probe_iters = 5_usize;
     let (_, norms_full) = assembler
