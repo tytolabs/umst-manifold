@@ -285,15 +285,15 @@ fn sg_flux_drift_scales_with_mesh_spacing_inverse() {
     let mut c_flat = Vec::with_capacity(n * 2);
     for i in 0..n {
         let x = (i as f32 - 0.5 * n as f32) / (n as f32 * 0.2);
-        let bump = (-x * x).exp() * 0.3_f32;
+        let bump = (-x * x).exp() * 1.5_f32;
         c_flat.push(1.0_f32 + bump);
         c_flat.push(1.0_f32 + bump);
     }
     let c0 = Tensor::<B, 3>::from_data(Data::new(c_flat, Shape::new([1, n, 2])), &dev);
     let phi0 = Tensor::<B, 3>::zeros([1, n, 1], &dev);
     let eps = Tensor::<B, 3>::ones([1, n, 1], &dev);
-    let d = Tensor::<B, 3>::full([1, n, 2], 0.02_f32, &dev);
-    let dt = 5e-4_f32;
+    let d = Tensor::<B, 3>::full([1, n, 2], 0.08_f32, &dev);
+    let dt = 2e-3_f32;
 
     let solver_h1 = ElectroChemicalSolver {
         mesh_spacing: 1.0_f32,
@@ -508,10 +508,13 @@ fn debye_screening_admissibility_check(
     }
 
     let pv = phi.into_data().value;
-    // Fit ln|phi(x)| = -x/lambda_eff + b on interior window [0.2 L, 0.7 L] where the boundary-layer
-    // dominates and the Dirichlet far-field hasn't kicked in yet. Use simple least squares.
-    let i_lo = (0.20 * n as f32) as usize;
-    let i_hi = (0.70 * n as f32) as usize;
+    // Fit ln|phi(x)| = -x/lambda_eff + b on an interior window [0.2 L, 0.7 L] in **physical length**
+    // (via `h = L/(n-1)`), so index bounds track the same geometric `mesh_spacing` convention as SG.
+    let nm1 = (n - 1).max(1) as f32;
+    let i_lo = (0.20 * nm1).floor() as usize;
+    let i_hi = (0.70 * nm1).ceil() as usize;
+    let i_lo = i_lo.clamp(2, n.saturating_sub(4));
+    let i_hi = i_hi.clamp(i_lo + 4, n.saturating_sub(2));
     let mut sx = 0.0_f64;
     let mut sy = 0.0_f64;
     let mut sxx = 0.0_f64;

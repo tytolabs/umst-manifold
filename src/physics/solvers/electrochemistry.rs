@@ -102,10 +102,10 @@ pub struct ElectroChemicalSolver {
     /// existing tests; physical-units callers should pass actual edge length. Non-uniform meshes
     /// (variable `h` per edge) are deferred to the implicit-Newton step (Phase 3.3).
     ///
-    /// **Coupled note:** the MVP **Poisson** chain Thomas solve applies the same harmonic-\(\varepsilon\)
-    /// stencil in index space, scaled by **`1/h²`** with \(h=\) `mesh_spacing`, so the elliptic block matches
-    /// SG flux scaling when **`mesh_spacing`** is the geometric cell length **`L/(N-1)`**. Ignored Debye
-    /// exponential-fit gates may still need schedule / window tuning before **`λ_eff ≈ λ_D`** — see tests.
+    /// **Coupled note:** the MVP **Poisson** chain Thomas solve uses the same harmonic-\(\varepsilon\)
+    /// stencil in **index space** (no extra `mesh_spacing` factor in the elliptic assembly today); see
+    /// module rustdoc above and `Solver-Status` electrochemistry lane. Ignored Debye exponential-fit gates
+    /// may still need schedule / window tuning before **`λ_eff ≈ λ_D`** — see tests.
     /// formal_anchor: Literature
     /// formal_citation: Scharfetter & Gummel 1969, IEEE TED 16:64
     /// formal_form: "J_e = (D_e/h) [c_s B(z F Δφ/RT) − c_t B(−z F Δφ/RT)]"
@@ -506,7 +506,6 @@ fn try_solve_poisson_chain_thomas<B: Backend<FloatElem = f32>>(
     rho_over_eps: Tensor<B, 3>,
     permittivity: Tensor<B, 3>,
     edges_b1: Tensor<B, 2, Int>,
-    _mesh_spacing: f32,
 ) -> Option<Tensor<B, 3>> {
     let device = electric_potential.device();
     let pd = electric_potential.dims();
@@ -673,11 +672,11 @@ fn solve_pnp_split_step_experimental_with_refs<B: Backend<FloatElem = f32>>(
         rho_over_eps.clone(),
         permittivity.clone(),
         edges_b1.clone(),
-        solver.mesh_spacing,
     ) {
         phi_t
     } else {
         let relax = POISSON_RELAX_SCALE * dt;
+        let inv_h_sq = 1.0_f32 / solver.mesh_spacing.max(1e-30_f32).powi(2);
         let mut phi_work = electric_potential.clone();
         for _ in 0..POISSON_SUBSTEPS {
             let lap_phi = TopologicalLaplacian::scalar_laplacian(
@@ -685,7 +684,7 @@ fn solve_pnp_split_step_experimental_with_refs<B: Backend<FloatElem = f32>>(
                 edges_b1.clone(),
                 mask_phi.clone(),
             );
-            let poisson_residual = lap_phi.add(rho_over_eps.clone());
+            let poisson_residual = lap_phi.mul_scalar(inv_h_sq).add(rho_over_eps.clone());
             phi_work = phi_work.sub(poisson_residual.mul_scalar(relax));
         }
         phi_work
@@ -796,7 +795,7 @@ fn poisson_path_dirichlet_thomas_f64(n: usize, g0: f64, g1: f64, rho: &[f64], ou
     out[1..(m + 1)].copy_from_slice(&u[..m]);
 }
 
-/// Dirichlet Poisson on a **unit-spaced** path chain with **spatially varying** nodal \(\varepsilon\):
+/// Dirichlet Poisson on a unit-spaced chain with **spatially varying** nodal \(\varepsilon\):
 /// \(\nabla\cdot(\varepsilon\nabla\phi)= -\rho_{\mathrm{net}}\) with \(\rho_{\mathrm{net}} = F(c^+-c^-)\).
 /// Edge halves \(\varepsilon_{i+1/2}=\tfrac12(\varepsilon_i+\varepsilon_{i+1})\). When \(\varepsilon\) is
 /// uniform, this matches the legacy stencil \(\nabla^2\phi=-\rho/\varepsilon\) with \(\rho_{\mathrm{net}}=\rho_e\).
@@ -807,7 +806,6 @@ fn poisson_chain_net_charge_variable_eps_thomas_f64(
     g1: f64,
     eps: &[f64],
     rho_net: &[f64],
-    inv_h_sq: f64,
     out: &mut [f64],
 ) {
     debug_assert_eq!(eps.len(), n);
