@@ -3,6 +3,16 @@
 
 //! Track 13 — implicit THMC residual assembly for Newton / JFNK.
 //!
+//! **Solver status / matrix:** authoritative lane notes live in **[`docs/Solver-Status.md`](../../../docs/Solver-Status.md)**
+//! (**Solver lanes — THMC**); numbered scope and acceptance vs next PR slice in
+//! **[`docs/VERIFICATION_COMPLETION_MATRIX.md`](../../../docs/VERIFICATION_COMPLETION_MATRIX.md)** row **#8**.
+//!
+//! **Post-`3394b96` cap (dense Newton only):** all THMC paths that build a **dense** forward-difference Jacobian or
+//! dense damped Newton on stacked implicit unknowns share [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] (**64**) — see
+//! commit **`3394b96`**. There is **no** in-tree dense monolithic THMC Newton for **> 64** stacked DOFs; large-\(N\)
+//! monolith work is explicitly the **sparse / matrix-free Jacobian + Krylov–JFNK** direction with **AD-safe** ways to
+//! gate on **‖R‖** at scale (Solver-Status / matrix **#8** “still open” and blocker rows).
+//!
 //! **Milestone (v0.4):** [`ThmcImplicitEulerThermalHydrationResidual`] implements the **backward Euler**
 //! discrete residual for the **thermal + hydration \(\alpha\)** sub-block on the graph Laplacian used
 //! by [`crate::physics::solvers::thmc::ThmcSolver`]:
@@ -80,9 +90,13 @@ pub trait ResidualThmc<B: Backend<FloatElem = f32>> {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct ThmcMonolithicImplicitUnknownLayout;
 
-/// Upper bound on stacked-unknown count for dense forward-difference Newton across THMC implicit
-/// helpers and the monolithic / implicit-(T,α) fail-fast guards in
-/// [`crate::physics::solvers::thmc::ThmcSolver`].
+/// Upper bound on stacked-unknown count for **dense** forward-difference Newton across THMC implicit
+/// helpers and the monolithic / implicit-(T,α) fail-fast guards in [`crate::physics::solvers::thmc::ThmcSolver`].
+///
+/// **Single source of truth since `3394b96`:** every shipped dense-Newton THMC path clamps or errors at this value
+/// — there is **no** dense solve for more than **64** stacked DOFs. Production monolithic THMC at large \(N\) is
+/// **not** “the same dense code with a bigger cap”; it is the **sparse / JFNK / AD-safe ‖R‖** roadmap documented in
+/// [`docs/Solver-Status.md`](../../../docs/Solver-Status.md) §THMC and [`docs/VERIFICATION_COMPLETION_MATRIX.md`](../../../docs/VERIFICATION_COMPLETION_MATRIX.md) **#8**.
 pub const THMC_DENSE_NEWTON_MAX_STACKED_DOFS: usize = 64;
 
 impl ThmcMonolithicImplicitUnknownLayout {
