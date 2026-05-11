@@ -2,7 +2,7 @@
 # Feature names match `[features]` in Cargo.toml.
 [build]
 rustflags = [
-    '--check-cfg=cfg(feature,values("acoustics-newmark","electrochemistry-mvp","electrochemistry-pnp","fracture-at2","information_density","mechanics-adjoint","mechanics-voigt-cauchy","photonics","photonics-fdfd","photonics-scaffold","rheology-bingham","solver-experimental","solver-research","solver-stable","solver-tests","statistical-mechanics-johnson-reference","statistical-mechanics-vinet","thmc-coupled","topology-density-evolution","mac-fast","blas-accelerate"))',
+    '--check-cfg=cfg(feature,values("acoustics-newmark","electrochemistry-mvp","electrochemistry-pnp","fracture-at2","information_density","mechanics-adjoint","mechanics-voigt-cauchy","photonics","photonics-fdfd","photonics-scaffold","rheology-bingham","rheology_poisson_richardson_fallback","solver-experimental","solver-research","solver-stable","solver-tests","statistical-mechanics-johnson-reference","statistical-mechanics-vinet","thmc-coupled","topology-density-evolution","mac-fast","blas-accelerate"))',
 ]
 
 # macOS convenience aliases. Use `cargo mt test ...` / `cargo mt run ...` to get Accelerate-backed

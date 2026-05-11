@@ -63,6 +63,8 @@ mechanics-voigt-cauchy = []
 mechanics-adjoint = ["mechanics-voigt-cauchy"]
 # Bingham / projection flow on the graph (`BinghamFlowSolver::step`).
 rheology-bingham = []
+# Always-on Richardson relaxation fallback for Chorin graph Poisson (see `rheology_flow.rs`).
+rheology_poisson_richardson_fallback = []
 # Stable-lane marker: Vinet EOS integration test (`statmech_vinet_eos`) only — not the LJ bridge in `statistical_mechanics.rs`. No module `#[cfg]` yet — reserved for v0.5 split.
 statistical-mechanics-vinet = []
 # Opt-in: `statistical_mechanics::bulk_modulus_from_lj_state_johnson1993` re-export (JZG 1993 `f64` reference); default builds omit this symbol from the bridge module.
