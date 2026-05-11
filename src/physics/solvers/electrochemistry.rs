@@ -58,11 +58,8 @@
 //!   [`solve_newton_correction_full_sg_row_band_via_dense_expand`]) — this is what [`try_solve_pnp_backward_euler_newton_chain`] ships. When
 //!   [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] is **`>1`**, inners **reuse the same frozen band**
 //!   entries while re-expanding each inner (**no extra column-FD probes** between inners).
-//!   **Pivot-safe band LU** ([`solve_newton_correction_full_sg_row_band_via_band_lu`]) is experimental and
-//!   does **not** yet match dense expand on parity fixtures. Default-CI
-//!   [`full_sg_newton_band_expand_dense_matches_dense_column_fd_reference`] checks band assembly + dense expand **δ**
-//!   vs all-dense column FD on **N=17**.
-//!   **Still open at large \(N\):** band LU parity or matrix-free / Krylov; merge duplicate buffers if needed;
+//!   **Pivot-safe band LU** ([`solve_newton_correction_full_sg_row_band_via_band_lu`]) is implemented (**\(O(dim\cdot bw^2)\)**) but **not** wired into [`try_solve_pnp_backward_euler_newton_chain`] (production uses dense expand only). Default-CI [`full_sg_newton_band_expand_dense_matches_dense_column_fd_reference`] checks band assembly + dense-expand **δ** vs all-dense column FD on **N=17**. **`#[ignore]`** [`full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity`] prints LU vs dense-expand timings and **`max|δ_lu−δ_de|`** without asserting LU parity.
+//!   **Still open at large \(N\):** band LU parity across **N**, matrix-free / Krylov, or trimming the **`(3N)²`** scratch;
 //!   general graphs (**Ring 2 R2.3**).
 //!   The default [`ElectroChemicalSolver::solve_pnp_step`] path remains explicit split.
 //! - **Mesh / extreme \(\Delta\phi\):** edge factor `h_inv` is now sourced from [`ElectroChemicalSolver::mesh_spacing`] (default `1.0` preserves the legacy dimensionless chain);
@@ -1350,7 +1347,7 @@ fn solve_newton_correction_full_sg_row_band_via_band_lu(
 /// Expand node-major row band storage to dense row-major `dim×dim`, then Gaussian-eliminate in place
 /// (same [`solve_dense_linear`] as Jacobian unit tests). **Perf:** **\(O(dim^3)\)** per correction — **production**
 /// full-SG chain Newton ([`try_solve_pnp_backward_euler_newton_chain`]) uses this path. Experimental
-/// [`solve_newton_correction_full_sg_row_band_via_band_lu`] does **not** yet match it on parity fixtures.
+/// [`solve_newton_correction_full_sg_row_band_via_band_lu`] exists (**\(O(dim\cdot bw^2)\)**) but is **not** selected in [`try_solve_pnp_backward_euler_newton_chain`]. LU vs dense-expand **δ** is compared only in the **`#[ignore]`** [`full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity`] harness (prints **`max|δ_lu−δ_de|`**).
 #[cfg(feature = "electrochemistry-mvp")]
 fn solve_newton_correction_full_sg_row_band_via_dense_expand(
     jac_band: &[f64],
