@@ -203,7 +203,20 @@ pub struct ThmcState<B: Backend> {
     pub time: f32,
 }
 
-/// Newton / block solver controls for coupled stepping.
+/// Coupled **thermo–hydro–mechanical–chemical** stepper for one material graph (`thmc-coupled`).
+///
+/// [`Self::step`] advances [`ThmcState`] on a [`UnifiedMaterialStateTensor`] topology: by default an
+/// **operator split** (thermal + hydration, then humidity, then optional bar equilibrium, then
+/// fracture damage once). Optional Newton paths replace parts of that split — see
+/// [`Self::implicit_t_alpha_newton`] and [`Self::monolithic_thmc_newton`].
+///
+/// **Fail-fast guards (monolithic branch):** when [`Self::monolithic_thmc_newton`] is `Some`,
+/// [`Self::step`] returns `Err` before any inner solve if `batch != 1`, `node_positions` is not
+/// `[N,3]`, [`Self::drying_last_node_evaporation_k`] is positive (monolithic \(R_h\) is pure BE
+/// diffusion), [`Self::implicit_t_alpha_newton`] is also set, `iterations < 2`, or
+/// [`ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`] for the live
+/// `(N, F_T, F_h, F_α)` exceeds **64** (dense Jacobian workspace cap — same as the standalone
+/// `(T,\alpha)` implicit helper).
 #[derive(Clone, Debug)]
 pub struct ThmcSolver {
     pub dt: f32,
@@ -824,6 +837,15 @@ impl Default for ThmcImplicitTAlphaNewtonConfig {
 /// \(R_u\) — [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`].
 ///
 /// Wired from [`ThmcSolver::step`] when [`ThmcSolver::monolithic_thmc_newton`] is `Some` (requires `thmc-coupled`).
+///
+/// **Scope:** each Newton iteration builds a **dense** finite-difference Jacobian in host workspace
+/// sized for at most **64** stacked unknowns per batch (see
+/// [`ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`]). Larger problems must
+/// use the split path until a sparse or matrix-free stack lands. **Mutually exclusive** with
+/// [`ThmcSolver::implicit_t_alpha_newton`]. Requires facet drying sink
+/// [`ThmcSolver::drying_last_node_evaporation_k`] **== 0** so \(R_h\) matches the implicit diffusion
+/// residual assembled in `thmc_residual`. Integration tests live in
+/// `tests/verification/thmc_drying_shrinkage.rs` (`thmc_step_monolithic_*`, …).
 #[derive(Clone, Debug, PartialEq)]
 pub struct ThmcMonolithicNewtonConfig {
     /// Maximum damped Newton iterations on the stacked residual (each step rebuilds the dense FD Jacobian).

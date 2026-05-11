@@ -2238,6 +2238,51 @@ fn thmc_step_monolithic_newton_errors_when_drying_sink_enabled() {
     );
 }
 
+/// Monolithic dense Newton **fail-fast** before inner work when stacked DOFs exceed the **64** cap.
+///
+/// For scalar channels \(F_T=F_h=F_\alpha=1\), [`ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`]
+/// is \(6N\); **`N = 11`** ⇒ **66** \(>\) **64** (first layout crossing the guard).
+#[test]
+fn thmc_step_monolithic_newton_errors_when_stacked_dof_count_exceeds_64() {
+    let d = dev();
+    let n = 11usize;
+    assert!(
+        ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, 1, 1, 1) > 64,
+        "test expects N such that stacked DOFs exceed dense cap"
+    );
+    let manifold = chain_manifold(n);
+    let state0 = ThmcState {
+        thermal: ThermalPlan {
+            temperature: Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
+        },
+        hydro: HydrologicPlan {
+            humidity: Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
+        },
+        mechanical: MechanicalPlan {
+            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
+        },
+        damage: Tensor::<B, 3>::zeros([1, n, 1], &d),
+        time: 0.0_f32,
+    };
+    let solver = ThmcSolver {
+        drying_last_node_evaporation_k: 0.0_f32,
+        monolithic_thmc_newton: Some(ThmcMonolithicNewtonConfig::default()),
+        implicit_t_alpha_newton: None,
+        ..Default::default()
+    };
+    let err = match solver.step(&Stub, state0, &manifold) {
+        Ok(_) => panic!("expected stacked DOF cap error"),
+        Err(e) => e,
+    };
+    assert!(
+        err.contains("stacked DOFs > 64"),
+        "unexpected error: {err}"
+    );
+}
+
 /// **Phase 5 integration:** [`ThmcSolver::step`] monolithic branch matches a standalone call to
 /// [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]
 /// when the predictor block matches `thmc.rs` `step_experimental` (keep in sync on edits).
