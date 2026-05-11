@@ -41,7 +41,7 @@ Numbered files under `docs/research/` (`v0.4_track12_staggered_fracture_mechanic
 
 Single checklist of **open verification / ship items** (solver-by-solver); solver-lane sections below hold acceptance detail and commands without repeating this list verbatim.
 
-1. **Topology / shell (Tracks B + L):** Run **`shell_topology_rib_pattern_full_v04`** at **40×40×4** (documented NaN / bar-network CG conditioning); commit Track L artefacts (`striatus_emergence.gif`, `striatus_shell_v0.4.stl`, `striatus_shell_v0.4.print_ready.json`, optional `.obj`) and satisfy Track B8 — regeneration command and paths under **Solver lanes — Topology / shell**. **Track L demo (cartridge):** `notebooks/_run_shell_demo.sh` from **`umst-concrete-cartridge/`** repo root (env `UMST_SHELL_DUMP_ITER` / `UMST_SHELL_DUMP_STRIDE` / `UMST_SHELL_ITERS`; optional `UMST_SHELL_*` stability knobs — **`../../umst-concrete-cartridge/docs/Solver-Status.md`** §Topology / shell + `optimize_shell_3d` rustdoc).
+1. **Topology / shell (Tracks B + L):** Run **`shell_topology_rib_pattern_full_v04`** at **40×40×4** (documented NaN / bar-network CG conditioning); commit Track L artefacts (`striatus_emergence.gif`, `striatus_shell_v0.4.stl`, `striatus_shell_v0.4.print_ready.json`, optional `.obj`) and satisfy Track B8 — regeneration command and paths under **Solver lanes — Topology / shell**. **Track L demo (cartridge):** `notebooks/_run_shell_demo.sh` from **`umst-concrete-cartridge/`** repo root (env `UMST_SHELL_DUMP_ITER` / `UMST_SHELL_DUMP_STRIDE` / `UMST_SHELL_ITERS`; optional `UMST_SHELL_*` stability knobs — **`../../umst-concrete-cartridge/docs/Solver-Status.md`** §Topology / shell + `optimize_shell_3d` rustdoc). **Shell demo operator notes** (pitfalls: short `UMST_SHELL_ITERS`, self-weight, stale `iter_*.npy` / manifest, Trimesh deps): see **Solver lanes — Topology / shell** → *Shell demo — operator notes* below and the mirrored bullets in [`../../umst-concrete-cartridge/docs/Solver-Status.md`](../../umst-concrete-cartridge/docs/Solver-Status.md) (*Shell demo — operator notes* under Track L).
 2. **Mechanics (plates):** Move Q1 hex SRI toward the Kirchhoff target in the completion brief versus today’s **`plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band`** ratio band ([follow-up §R2.1](../../composer_prompts/v0.4_phase_3_followup_for_composer.md#r21--q1-hex-sri-for-kirchhoff-plate-5-gate)).
 3. **Fracture:** Γ-limit with driven **ψ⁺**; broader **(l₀,h)** schedules; within-step THMC **u↔d** stagger; embedding / `matrix_features` when no bar solve — memo §2.3 / §7.
 4. **Acoustics:** Align **`plane_wave_return_map_n128_documented_phase_slip_band`** with default return-map gates **`plane_wave_return_map_n64_l2_within_two_percent`**, **`plane_wave_return_map_n100_l2_within_two_percent`**, or revise brief mesh count — **Solver lanes — Acoustics**.
@@ -227,6 +227,14 @@ rm -rf notebooks/_artifacts/frames notebooks/_artifacts/striatus_emergence.gif
 UMST_SHELL_DUMP_ITER=1 UMST_SHELL_DUMP_STRIDE=10 UMST_SHELL_ITERS=200 \
     bash notebooks/_run_shell_demo.sh
 ```
+
+**Shell demo — operator notes (`_run_shell_demo.sh` + Python)** — mirror of [cartridge `Solver-Status.md` §Track L](../../umst-concrete-cartridge/docs/Solver-Status.md) (*Shell demo — operator notes*):
+
+- **`UMST_SHELL_ITERS=5`** (or any smaller value) only shortens the Rust loop; it does **not** fix **`loss=NaN`** at iter 1 when the forward adjoint path is unstable with **self-weight** on the **40×40×4** slab.
+- **`notebooks/_run_shell_demo.sh`** exports **`UMST_SHELL_SELF_WEIGHT=0`** by default (traction + roof pressure) so **`f32`** PCG + adjoint usually stays finite; override in the environment only if you accept self-weight risk.
+- Remove stale **`iter_*.npy`** when changing grid or dump settings — otherwise **`render_shell_gif.py`** may take the iter branch and **`ValueError`** on reshape vs **`manifest.json`** (`find …/shell -name 'iter_*.npy' -delete`).
+- If **`manifest.json`** and **`final.npy`** disagree (stale manifest), **`render_shell_gif.py`** raises **`final.npy size … != grid …`**; re-run **`optimize_shell_3d`** once to align.
+- **`export_print_ready.py`** needs Trimesh graph engines: **`uv pip install --python .venv/bin/python networkx scipy`** (otherwise **`ImportError: no graph engines available!`**).
 
 **Track L acceptance (brief):** `notebooks/_artifacts/striatus_emergence.gif` exists, **≤ 5 MB**, **≥ 30 frames**; `notebooks/_artifacts/striatus_shell_v0.4.stl` exists, **≤ 8 MB**, watertight, **`genus ≥ 1`**, **`volume_fraction ∈ [0.10, 0.25]`**; commit GIF and STL to git.
 
