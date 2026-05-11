@@ -23,6 +23,9 @@
 //! \(d_1(d_0\omega)\) via [`dec_maxwell_assembly`](umst_manifold::physics::solvers::photonics::dec_maxwell_assembly),
 //! [`primal_divergence_from_edge_flux_topo`] on the edge increment, then photonics **non-chain** `None` /
 //! [`PhotonicsSolver::solve_maxwell_curl_curl`] pass-through.
+//! **Verification #6 (tensor ε stub):** [`curl_curl_y_mode_matches_scalar_helmholtz_piecewise_eps_tensor_yy`] —
+//! `[1,N,9]` row-major nodal **3×3** with **\(\varepsilon_{yy}\)** (isotropic diagonal in that test) matching scalar **`[1,N,1]`**
+//! on [`PhotonicsHelmholtzSolver::solve_helmholtz`] / [`PhotonicsSolver::solve_maxwell_curl_curl`].
 //!
 //! Specification: `composer_prompts/v0.4_solver_completion_no_namesakes.md` (Track H).
 
@@ -32,6 +35,7 @@
 use approx::assert_relative_eq;
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
+use num_complex::Complex32;
 use umst_manifold::physics::dec_primal::{
     primal_divergence_from_edge_flux_topo, primal_scalar_edge_increment,
 };
@@ -307,6 +311,54 @@ fn fresnel_r_disc_two_point(
     Some(C::div(b, a))
 }
 
+/// Multi-point **least squares** estimate of `b/a` for \(E \approx a\,\mathrm e^{i k_1 (x-x_I)} + b\,\mathrm e^{-i k_1 (x-x_I)}\)
+/// on the **left** bulk (`j h` coordinates, same as [`coords_line_x`]). More stable than [`fresnel_r_disc_two_point`] near the interface.
+fn fresnel_r_disc_ls_left_bulk(
+    e_left_unbridged: &[C],
+    probe_js: &[usize],
+    h: f32,
+    k1: f32,
+    x_interface: f32,
+) -> Option<C> {
+    if probe_js.len() < 2 {
+        return None;
+    }
+    let mut m = 0usize;
+    let mut g01 = Complex32::new(0.0, 0.0);
+    let mut r0 = Complex32::new(0.0, 0.0);
+    let mut r1 = Complex32::new(0.0, 0.0);
+    for &j in probe_js {
+        if j >= e_left_unbridged.len() {
+            return None;
+        }
+        let x = j as f32 * h;
+        let phase = k1 * (x - x_interface);
+        let z = Complex32::new(phase.cos(), phase.sin());
+        let u = Complex32::new(e_left_unbridged[j].re, e_left_unbridged[j].im);
+        m += 1;
+        g01 += z.conj() * z.conj();
+        r0 += z.conj() * u;
+        r1 += z * u;
+    }
+    let g00 = m as f32;
+    let det = g00 * g00 - g01.norm_sqr();
+    if det.abs() < 1e-20_f32 {
+        return None;
+    }
+    let numer_a = r0 * g00 - g01 * r1;
+    let numer_b = Complex32::new(g00, 0.0) * r1 - g01.conj() * r0;
+    let a = numer_a / det;
+    let b = numer_b / det;
+    if a.norm() < 1e-18_f32 {
+        return None;
+    }
+    let rb = b / a;
+    Some(C {
+        re: rb.re,
+        im: rb.im,
+    })
+}
+
 /// Same TE stencil as production (`inv_eps = 2/(ε_i+ε_{i+1})`, uniform `h`).
 fn apply_te_helmholtz_chain(n: usize, h: f32, k0: f32, eps: &[C], e: &[C]) -> Vec<C> {
     let inv_h2 = 1.0 / (h * h);
@@ -556,22 +608,39 @@ fn two_half_spaces_fresnel_te_no_pml_matches_analytic() {
     assert_relative_eq!(r_analytic, -1.0_f32 / 3.0_f32, epsilon = 1e-6_f32);
 
     // Discrete-only reflection: invert the Dirichlet linear bridge on the solved field, then fit
-    // (+k₁) / (−k₁) amplitudes at two left-bulk nodes (see `fresnel_r_disc_two_point`).
+    // (+k₁) / (−k₁) amplitudes via multi-point LS (fallback: [`fresnel_r_disc_two_point`]).
     let e_unb = invert_dirichlet_linear_bridge(&sol, e_pw[0], e_pw[n - 1], n);
     let x_int = n_left as f32 * h;
     let k1 = k0 * n1;
-    let j_a = (n_left / 4).max(2) + 2;
-    let j_b = n_left.saturating_sub(4).saturating_sub(n_left / 8);
-    assert!(j_b > j_a && j_b < n_left, "probe layout for r_disc");
-    let r_disc = fresnel_r_disc_two_point(&e_unb, j_a, j_b, h, k1, x_int)
-        .expect("r_disc two-point system should be well-conditioned");
+    let lo = (n_left / 8).max(2);
+    let hi = n_left.saturating_sub(n_left / 8 + 1);
+    let mut probes: Vec<usize> = Vec::new();
+    if hi > lo {
+        for t in 0..5 {
+            let j = lo + (t * (hi - lo)) / 4;
+            if j < n_left {
+                probes.push(j);
+            }
+        }
+    }
+    let r_disc = fresnel_r_disc_ls_left_bulk(&e_unb, &probes, h, k1, x_int)
+        .or_else(|| {
+            let j_a = (n_left / 4).max(2) + 2;
+            let j_b = n_left.saturating_sub(4).saturating_sub(n_left / 8);
+            if j_b > j_a && j_b < n_left {
+                fresnel_r_disc_two_point(&e_unb, j_a, j_b, h, k1, x_int)
+            } else {
+                None
+            }
+        })
+        .expect("r_disc LS / two-point system should be well-conditioned");
     assert_relative_eq!(
         r_disc.re,
         r_analytic,
-        epsilon = 6e-2_f32,
-        max_relative = 0.25
+        epsilon = 3.5e-2_f32,
+        max_relative = 0.2
     );
-    assert_relative_eq!(r_disc.im, 0.0_f32, epsilon = 6e-2_f32, max_relative = 1.0);
+    assert_relative_eq!(r_disc.im, 0.0_f32, epsilon = 4.5e-2_f32, max_relative = 1.0);
 }
 
 /// `PhotonicsSolver::solve_maxwell_curl_curl` (minimal primal-chain DEC + Thomas) matches
@@ -810,6 +879,84 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_piecewise_eps() {
     let jy = j.narrow(2, 1, 1);
     let jy_im = Tensor::<B, 3>::zeros_like(&jy);
     let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg);
+
+    let ey_cc = e_cc.narrow(2, 1, 1);
+    let v_cc = ey_cc.into_data().value;
+    let v_h = ey_h.into_data().value;
+    assert_eq!(v_cc.len(), v_h.len());
+    let mut mx = 0.0_f32;
+    for i in 0..v_cc.len() {
+        mx = mx.max((v_cc[i] - v_h[i]).abs());
+    }
+    assert_relative_eq!(mx, 0.0_f32, epsilon = 1e-4_f32);
+}
+
+/// Same as [`curl_curl_y_mode_matches_scalar_helmholtz_piecewise_eps`], but `relative_permittivity`
+/// is **`[1,N,9]`** with **isotropic diagonal** \(\varepsilon_{xx}=\varepsilon_{yy}=\varepsilon_{zz}\)
+/// on each node (off-diagonals zero). TE reduction uses the tensor's \(\varepsilon_{yy}\) entry
+/// (row-major 3×3, index **4** per [`photonics`](umst_manifold::physics::solvers::photonics)); scalar Helmholtz
+/// uses **`[1,N,1]`** with the same nodal values — parity locks the tensor layout on
+/// [`PhotonicsSolver::solve_maxwell_curl_curl`].
+#[test]
+fn curl_curl_y_mode_matches_scalar_helmholtz_piecewise_eps_tensor_yy() {
+    use umst_manifold::physics::solvers::PhotonicsSolver;
+
+    let dev = device();
+    let n = 53usize;
+    let h = 8e-4_f32;
+    let edges = chain_edges(n);
+    let coords = coords_line_x(n, h);
+    let i0 = n / 7;
+    let i1 = 5 * n / 7;
+    let mut eps_flat = vec![0.0_f32; n];
+    for i in 0..n {
+        eps_flat[i] = if i < i0 {
+            1.15_f32
+        } else if i < i1 {
+            4.6_f32
+        } else {
+            2.05_f32
+        };
+    }
+
+    let mut eps9 = vec![0.0_f32; n * 9];
+    for i in 0..n {
+        let e = eps_flat[i];
+        let b = i * 9;
+        eps9[b] = e;
+        eps9[b + 4] = e;
+        eps9[b + 8] = e;
+    }
+
+    let mut jdat = vec![0.0_f32; n * 3];
+    jdat[(n / 3) * 3 + 1] = 1.0_f32;
+    let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
+    let e0 = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+    let eps_r_tensor = Tensor::<B, 3>::from_data(Data::new(eps9, Shape::new([1, n, 9])), &dev);
+    let eps_r_scalar = Tensor::<B, 3>::from_data(Data::new(eps_flat, Shape::new([1, n, 1])), &dev);
+    let eps_i = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+    let f_hz = 2.2e9_f32;
+    let cg = MechanicsInnerLoopConfig::default();
+
+    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let e_cc = ps.solve_maxwell_curl_curl(
+        e0.clone(),
+        eps_r_tensor,
+        eps_i.clone(),
+        j.clone(),
+        edges.clone(),
+        coords.clone(),
+        &cg,
+    );
+
+    let helm = PhotonicsHelmholtzSolver {
+        frequency_hz: f_hz,
+        pml_thickness: 0,
+        pml_max_sigma: 0.0,
+    };
+    let jy = j.narrow(2, 1, 1);
+    let jy_im = Tensor::<B, 3>::zeros_like(&jy);
+    let (ey_h, _) = helm.solve_helmholtz(eps_r_scalar, eps_i, jy, jy_im, edges, coords, &cg);
 
     let ey_cc = e_cc.narrow(2, 1, 1);
     let v_cc = ey_cc.into_data().value;
