@@ -24,9 +24,13 @@
 //!    `[B,N,1]` slices; here we instead apply one **edge-assembled** divergence of
 //!    \(\nu_e \,\mathrm{d}_0 u\) so **Bingham-regularized** kinematic viscosity \(\nu_e=\eta_e/\rho_e\)
 //!    varies per edge (matches the gather/scatter pattern of the scalar Laplacian).
-//! 2. **Pressure Poisson surrogate**: solve \(\mathcal{L}\phi \approx \nabla\cdot u^\*\) where
-//!    \(\mathcal{L}\) is [`TopologicalLaplacian::scalar_laplacian`]. RHS uses the **same surrogate**
-//!    as three Laplacians summed on \(u^\*\) components (documented approximation on the 1-skeleton).
+//! 2. **Pressure Poisson (graph v0 — divergence RHS)**: solve \(\mathcal{L}\phi \approx b_h(u^\*)\) where
+//!    \(\mathcal{L}\) is [`TopologicalLaplacian::scalar_laplacian`] and \(b_h\) is the **weak primal divergence**
+//!    of the scalar tangential mean flux \(q_e=(\bar u^\*\!\cdot\hat t)f_c\) with \(\bar u^\*\) the edge mean of
+//!    \(u^\*\), \(\hat t\) the unit tangent from [`primal_scalar_edge_increment`] on \(u^\*\), and \(f_c\) the
+//!    fracture flow coefficient (see `docs/research/rheology_pressure_poisson_roadmap.md` §2). This **replaces**
+//!    the legacy \(\sum_c \mathcal{L}u^\*_c\) surrogate. \(\mathcal{L}\) remains the graph Laplacian — not a
+//!    MAC staggered operator — until that lane lands.
 //!    Fixed-count Richardson iterations (no tolerance) smooth \(\phi\).
 //! 3. **Projection**: subtract an edge-tangent discrete gradient of \(\phi\) (built from
 //!    [`primal_scalar_edge_increment`](crate::physics::dec_primal::primal_scalar_edge_increment))
@@ -59,22 +63,21 @@
 //! Returns `(velocity, pressure, lambda_thix)` unchanged so `cargo test` stays green.
 //!
 //! ## R2.2 — Honest scope (DEFERRAL — Rheology, Track J)
-//! **In scope today:** explicit predictor + **surrogate** pressure correction (Richardson on the graph
-//! Laplacian with an RHS built from **three scalar Laplacians** of \(u^\*\) — not the discrete
-//! divergence \(\nabla_h\!\cdot u^\*\) of a staggered/incompressible discretization); wall BCs as
-//! **external** nodal masks in tests; Bingham + optional Roussel \(\lambda\) on the same 1-skeleton.
+//! **In scope today:** explicit predictor + pressure correction (Richardson on the graph Laplacian with an
+//! RHS built from the **weak primal divergence** of tangential mean edge flux — a graph-only discrete
+//! source, not a full MAC \(\nabla_h\!\cdot u^\*\)); wall BCs as **external** nodal masks in tests; Bingham +
+//! optional Roussel \(\lambda\) on the same 1-skeleton.
 //!
 //! **Out of scope / not CI-certified:** developed **2D** channel flow matching plane Poiseuille
 //! (Bingham or Newtonian) on the full **64×16** cell graph; inlet/outlet pressure drop as a **consistent**
 //! open boundary with this split; claims of convergence to [`plane_bingham_poiseuille_u`] or the
 //! regularized quadrature profile without replacing the pressure step.
 //!
-//! **Known numerical boundary:** on the **65×17** channel scaffold with uniform body force
-//! \(a_x=\Delta p/\rho\) matching `rheology_poiseuille` SI defaults, the surrogate projection produces
-//! **large** \(\mathcal O(10^3\!-\!10^4)\) growth in \(\|u\|_\infty\) **relative to the predictor**
-//! on the first correction step (and quickly blows up further — see `tests/verification/rheology_poiseuille.rs`:
-//! ignored steady benchmark + active two-step `chorin_surrogate_poisson_amplification_regression_guard`).
-//! Steady vs analytic comparisons stay deferred until a true pressure Poisson (or MAC-type) RHS/BC story replaces this MVP.
+//! **Known numerical boundary:** the legacy \(\sum_c \mathcal{L}u^\*_c\) surrogate produced \(\mathcal O(10^3\!-\!10^4)\)
+//! first-step \(\|u\|_\infty\) amplification on the **65×17** SI channel harness. The **tangential mean-flux**
+//! divergence RHS (verification #7) yields \(\mathcal O(10^3)\) at `dt=10^{-7}` and \(\mathcal O(10^4)\) at
+//! `dt=10^{-6}` — see `chorin_surrogate_poisson_amplification_regression_guard`.
+//! Steady vs analytic comparisons stay deferred until MAC / cell-centred Poisson + open BCs replace the graph Laplacian operator.
 //!
 //! ## MAC + Poisson — integration points (R2.2, design note)
 //! Ring 2 **R2.2** calls for real pressure Poisson (or MAC) on the developed channel; this module stays on the
@@ -83,11 +86,9 @@
 //! - **After the predictor:** `step_experimental` forms `u_star` from explicit momentum (body, viscous,
 //!   pressure-gradient acceleration). A MAC predictor would typically commit **face-normal** provisional
 //!   fluxes here; today everything stays nodal on `edges_b1`.
-//! - **Poisson RHS vs surrogate:** The block `L(u*_x)+L(u*_y)+L(u*_z)` ([`TopologicalLaplacian::scalar_laplacian`])
-//!   approximates a divergence source; a consistent pressure Poisson should use the **discrete divergence**
-//!   of `u_star`, e.g. via [`primal_divergence_from_edge_flux_topo`] on an edge flux assembled from `u_star`
-//!   (and, with staggering, from face velocities once defined). That replaces the triple-Laplacian RHS while
-//!   keeping the same graph operators.
+//! - **Poisson RHS:** Shipped path uses [`primal_divergence_from_edge_flux_topo`] on scalar flux \(q_e f_c\)
+//!   derived from \(u^\*\) (tangential mean; see “Chorin-style split” §2). A MAC staggered \(\nabla_h\!\cdot u^\*\)
+//!   on face fluxes remains a future swap-in.
 //! - **Poisson solve:** The Richardson loop on **phi** uses the same [`TopologicalLaplacian`] as the operator
 //!   \(\mathcal{L}\); swapping in Jacobi/SOR/CG iterations (or a chain **Thomas** path when topology is a
 //!   path — compare electrochemistry Poisson helpers) is the natural upgrade path without new assembly theory.
@@ -241,6 +242,8 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
     let ch1 = 1usize;
     let src_ix1 = topo.expand_src_gather_indices(batch, ch1);
     let tgt_ix1 = topo.expand_tgt_gather_indices(batch, ch1);
+    let src_ix3 = topo.expand_src_gather_indices(batch, ch3);
+    let tgt_ix3 = topo.expand_tgt_gather_indices(batch, ch3);
 
     let damage_src = damage.clone().gather(1, src_ix1.clone());
     let damage_tgt = damage.clone().gather(1, tgt_ix1.clone());
@@ -323,27 +326,8 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
 
     let u_star = velocity.add(momentum.mul_scalar(dt));
 
-    // --- Poisson surrogate for φ: L φ ≈ sum_c L(u*_c) ---
-    let uxs = u_star.clone().narrow(2, 0, 1);
-    let uys = u_star.clone().narrow(2, 1, 1);
-    let uzs = u_star.clone().narrow(2, 2, 1);
-
-    let lx = TopologicalLaplacian::scalar_laplacian(uxs, edges_b1.clone(), damage.clone());
-    let ly = TopologicalLaplacian::scalar_laplacian(uys, edges_b1.clone(), damage.clone());
-    let lz = TopologicalLaplacian::scalar_laplacian(uzs, edges_b1.clone(), damage.clone());
-    let rhs = lx.add(ly).add(lz);
-
-    let mut phi = Tensor::<B, 3>::zeros([batch, n, 1], &device);
-    for _ in 0..POISSON_ITERS {
-        let lphi =
-            TopologicalLaplacian::scalar_laplacian(phi.clone(), edges_b1.clone(), damage.clone());
-        phi = phi.add(rhs.clone().sub(lphi).mul_scalar(POISSON_OMEGA));
-    }
-
-    // Projection: subtract divergence of ( (φ_j-φ_i) ê ), ê ≈ tangent from u*.
-    let dphi = primal_scalar_edge_increment(phi.clone(), &topo);
+    // --- Pressure Poisson RHS: weak divergence of q_e = (ū*·t̂) f_c (reuse t̂ in projection) ---
     let du_s = primal_scalar_edge_increment(u_star.clone(), &topo);
-
     let du_s_mag_sq = du_s
         .clone()
         .powf_scalar(2.0)
@@ -355,6 +339,28 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
         .clamp_min(BINGHAM_EPS);
     let du_s_mag3 = du_s_mag.expand([batch, n_edges, ch3]);
     let t_hat_s = du_s.div(du_s_mag3);
+
+    let u_src3 = u_star.clone().gather(1, src_ix3.clone());
+    let u_tgt3 = u_star.clone().gather(1, tgt_ix3.clone());
+    let u_mean_edge = u_src3.add(u_tgt3).div_scalar(2.0_f32);
+    let q_edge = u_mean_edge
+        .mul(t_hat_s.clone())
+        .sum_dim(2)
+        .reshape([batch, n_edges, 1]);
+    let fc1 = flow_coeff.clone().narrow(2, 0, 1);
+    let flux_scalar_edge = q_edge.mul(fc1);
+    let u_star_x0 = u_star.clone().narrow(2, 0, 1);
+    let rhs = primal_divergence_from_edge_flux_topo(flux_scalar_edge, &topo, &u_star_x0);
+
+    let mut phi = Tensor::<B, 3>::zeros([batch, n, 1], &device);
+    for _ in 0..POISSON_ITERS {
+        let lphi =
+            TopologicalLaplacian::scalar_laplacian(phi.clone(), edges_b1.clone(), damage.clone());
+        phi = phi.add(rhs.clone().sub(lphi).mul_scalar(POISSON_OMEGA));
+    }
+
+    // Projection: subtract divergence of ( (φ_j-φ_i) ê ), ê ≈ tangent from u* (t_hat_s above).
+    let dphi = primal_scalar_edge_increment(phi.clone(), &topo);
 
     let dphi3 = dphi.expand([batch, n_edges, ch3]);
     let proj_flux = dphi3.mul(t_hat_s).mul(fc3);
