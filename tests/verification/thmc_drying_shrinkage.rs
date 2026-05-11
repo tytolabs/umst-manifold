@@ -1143,14 +1143,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
         kinetics: kinetics.clone(),
     };
 
-    let l2_vec = |t: Tensor<B, 3>| -> f32 {
-        t.into_data()
-            .value
-            .iter()
-            .map(|x| x * x)
-            .sum::<f32>()
-            .sqrt()
-    };
+    let l2_vec = |t: Tensor<B, 3>| -> f32 { t.clone().mul(t.clone()).sum().into_scalar().sqrt() };
 
     let trial_flat = ThmcState {
         thermal: ThermalPlan {
