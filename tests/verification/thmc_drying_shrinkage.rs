@@ -16,8 +16,8 @@ use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::physics::solvers::{
     mc2010_style_notional_shrink_strain, shrink_strain_from_saturation_loss, ChemicalPlan,
     HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics,
-    ThmcImplicitEulerThermalHydrationResidual, ThmcImplicitTAlphaNewtonConfig, ThmcSolver,
-    ThmcState,
+    ThmcImplicitEulerThermalHumidityHydrationResidual, ThmcImplicitEulerThermalHydrationResidual,
+    ThmcImplicitTAlphaNewtonConfig, ThmcMonolithicImplicitUnknownLayout, ThmcSolver, ThmcState,
 };
 
 type B = NdArray<f32>;
@@ -428,6 +428,192 @@ fn thmc_implicit_euler_t_alpha_residual_matches_brute_force_two_nodes() {
             "node {i}: R_alpha got {} want {}",
             ra[i],
             want_ra
+        );
+    }
+}
+
+/// Stacked implicit-Euler \((T,h,\alpha)\): \(R_h = h - h^n - \Delta t\,\mathcal{L}_h(h)\) matches hand
+/// Laplacian on the same 2-node chain as [`thmc_implicit_euler_t_alpha_residual_matches_brute_force_two_nodes`].
+#[test]
+fn thmc_implicit_euler_t_h_alpha_residual_humidity_matches_brute_force_two_nodes() {
+    let d = dev();
+    let n = 2usize;
+    let manifold = chain_manifold(n);
+    let dt = 0.02_f32;
+    let kinetics = ThmcHydrationKinetics::default();
+    let t_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let h_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.52_f32, 0.61_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let alpha_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_t = Tensor::<B, 3>::from_data(
+        Data::new(vec![299.5_f32, 305.0_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_h = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.50_f32, 0.63_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_alpha = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.33_f32, 0.56_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
+    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+        dt,
+        temperature_n: t_n.clone(),
+        humidity_n: h_n.clone(),
+        alpha_n: alpha_n.clone(),
+        edges_b1: manifold.edges_b1.clone(),
+        damage_m: damage_m.clone(),
+        kinetics: kinetics.clone(),
+    };
+    let trial = ThmcState {
+        thermal: ThermalPlan {
+            temperature: trial_t.clone(),
+        },
+        hydro: HydrologicPlan {
+            humidity: trial_h.clone(),
+        },
+        mechanical: MechanicalPlan {
+            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: trial_alpha.clone(),
+        },
+        damage: damage_m.clone(),
+        time: 0.0_f32,
+    };
+    let (r_t, r_h, r_alpha) = assembler.assemble(&trial).expect("assemble");
+
+    let t = trial_t.into_data().value;
+    let h = trial_h.into_data().value;
+    let a = trial_alpha.into_data().value;
+    let tn = t_n.into_data().value;
+    let hn = h_n.into_data().value;
+    let an = alpha_n.into_data().value;
+    let lap0_t = t[1] - t[0];
+    let lap1_t = t[0] - t[1];
+    let lap0_h = h[1] - h[0];
+    let lap1_h = h[0] - h[1];
+    let rt = r_t.into_data().value;
+    let rh = r_h.into_data().value;
+    let ra = r_alpha.into_data().value;
+    for i in 0..n {
+        let lap_t_i = if i == 0 { lap0_t } else { lap1_t };
+        let lap_h_i = if i == 0 { lap0_h } else { lap1_h };
+        let d_alpha = kinetics.alpha_rate_scalar(a[i], t[i]);
+        let exo = d_alpha * kinetics.exothermic_k_per_alpha_rate * dt;
+        let want_rt = t[i] - tn[i] - dt * lap_t_i - exo;
+        let want_rh = h[i] - hn[i] - dt * lap_h_i;
+        let want_ra = a[i] - an[i] - dt * d_alpha;
+        assert!(
+            (rt[i] - want_rt).abs() < 1e-5_f32,
+            "node {i}: R_T got {} want {}",
+            rt[i],
+            want_rt
+        );
+        assert!(
+            (rh[i] - want_rh).abs() < 1e-5_f32,
+            "node {i}: R_h got {} want {}",
+            rh[i],
+            want_rh
+        );
+        assert!(
+            (ra[i] - want_ra).abs() < 1e-5_f32,
+            "node {i}: R_alpha got {} want {}",
+            ra[i],
+            want_ra
+        );
+    }
+
+    assert_eq!(
+        ThmcMonolithicImplicitUnknownLayout::field_major_scalar_transport_hydration_dof_count(
+            n, 1, 1, 1
+        ),
+        6
+    );
+    assert_eq!(
+        ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, 1, 1, 1),
+        6 + n * ThmcMonolithicImplicitUnknownLayout::MECHANICAL_DISP_PER_NODE
+    );
+}
+
+/// Field-major \((T,h,\alpha)\) damped Newton: stacked \(\|R\|_2\) decreases over multiple iterations
+/// (track 13 increment toward monolithic THMC — still **no** \(R_u\) / no `ThmcSolver` wiring).
+#[test]
+fn thmc_implicit_euler_t_h_alpha_multi_newton_monotone_stacked_residual_norm() {
+    let d = dev();
+    let n = 2usize;
+    let manifold = chain_manifold(n);
+    let dt = 0.02_f32;
+    let kinetics = ThmcHydrationKinetics::default();
+    let t_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let h_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.50_f32, 0.62_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let alpha_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_t = Tensor::<B, 3>::from_data(
+        Data::new(vec![299.5_f32, 305.0_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_h = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.51_f32, 0.63_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_alpha = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.33_f32, 0.56_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
+    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+        dt,
+        temperature_n: t_n,
+        humidity_n: h_n,
+        alpha_n,
+        edges_b1: manifold.edges_b1.clone(),
+        damage_m: damage_m.clone(),
+        kinetics,
+    };
+    let trial = ThmcState {
+        thermal: ThermalPlan {
+            temperature: trial_t,
+        },
+        hydro: HydrologicPlan { humidity: trial_h },
+        mechanical: MechanicalPlan {
+            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: trial_alpha,
+        },
+        damage: damage_m,
+        time: 0.0_f32,
+    };
+    let (_final, norms) = assembler
+        .damped_newton_iterations(&trial, 2_usize, 1.0_f32, 1.0e-5_f32)
+        .expect("two damped Newton iterations on (T,h,α)");
+    assert_eq!(norms.len(), 3);
+    assert!(norms[0] > 1e-8_f32, "nontrivial R0={}", norms[0]);
+    for k in 0..2 {
+        assert!(
+            norms[k + 1] < norms[k] * 0.999_f32,
+            "stacked ||R|| should drop: {} -> {}",
+            norms[k],
+            norms[k + 1]
         );
     }
 }
