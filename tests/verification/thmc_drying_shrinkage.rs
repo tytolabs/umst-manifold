@@ -447,6 +447,79 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
     );
 }
 
+/// **Striatus-scale integration (stub path):** central finite difference of max post-step damage
+/// w.r.t. uniform `matrix_features[..,0,0,0]` tensile stub — same no-SI wiring as
+/// [`thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding`], without claiming full
+/// bar-mechanics reverse mode.
+#[test]
+fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
+    let d = dev();
+    let n = 3usize;
+    let batch = 1usize;
+    let exx0 = 0.05_f32;
+    let h = 1e-4_f32;
+
+    let mk_state = |damage: Tensor<B, 3>| ThmcState {
+        thermal: ThermalPlan {
+            temperature: Tensor::<B, 3>::full([batch, n, 1], 293.15_f32, &d),
+        },
+        hydro: HydrologicPlan {
+            humidity: Tensor::<B, 3>::full([batch, n, 1], 0.9_f32, &d),
+        },
+        mechanical: MechanicalPlan {
+            displacement: Tensor::<B, 3>::zeros([batch, n, 3], &d),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &d),
+        },
+        damage,
+        time: 0.0_f32,
+    };
+
+    let max_damage_after_step = |exx: f32| -> f32 {
+        let solver = ThmcSolver {
+            dt: 0.01_f32,
+            max_newton: 1_usize,
+            tol: 1e-2_f32,
+            hydration: ThmcHydrationKinetics::default(),
+            drying_last_node_evaporation_k: 0.0_f32,
+            drying_ambient_h: 0.5_f32,
+            implicit_t_alpha_newton: None,
+            monolithic_thmc_newton: None,
+        };
+        let manifold = chain_manifold_matrix_path(n, exx);
+        let s = solver
+            .step(
+                &Stub,
+                mk_state(Tensor::<B, 3>::zeros([batch, n, 1], &d)),
+                &manifold,
+            )
+            .expect("THMC step Ok");
+        s.damage
+            .into_data()
+            .value
+            .iter()
+            .copied()
+            .fold(0.0_f32, f32::max)
+    };
+
+    let f0 = max_damage_after_step(exx0);
+    let fp = max_damage_after_step(exx0 + h);
+    let fm = max_damage_after_step(exx0 - h);
+    let fd_central = (fp - fm) / (2.0_f32 * h);
+    let fd_backward = (fp - f0) / h;
+    assert!(f0.is_finite() && fp.is_finite() && fm.is_finite());
+    assert!(
+        fp > f0 + 1e-8_f32 && fp > fm + 1e-8_f32,
+        "expected damage to increase with tensile stub in neighborhood; f0={f0} fp={fp} fm={fm}"
+    );
+    let scale = fd_central.abs().max(fd_backward.abs()).max(1e-12_f32);
+    assert!(
+        (fd_central - fd_backward).abs() < 0.2_f32 * scale.max(1.0_f32),
+        "central vs backward FD mismatch: fd_central={fd_central} fd_backward={fd_backward}"
+    );
+}
+
 /// Piecewise derivative of [`ThmcHydrationKinetics::alpha_rate_scalar`] w.r.t. `temperature_k`
 /// (matches the scalar implementation’s `max` / `clamp` semantics).
 fn alpha_rate_scalar_dt_analytic(k: &ThmcHydrationKinetics, alpha: f32, temperature_k: f32) -> f32 {

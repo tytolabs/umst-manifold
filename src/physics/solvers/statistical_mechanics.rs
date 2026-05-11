@@ -59,7 +59,7 @@
 //!    \(K_T=(\varepsilon/\sigma^3)K^*\) via [`super::lj_johnson_1993_reference::bulk_modulus_from_reduced`].
 //! 3. **Today's [`upscale_potentials`]:** **`[B,2]`** keeps the analytic placeholder; **`[B,4]`** rows
 //!    \((\varepsilon,\sigma,\rho^*,T^*)\) set **`K`** from the Johnson (1993) **`f64`** surface (host
-//!    row loop, **`f32`** storage) via [`physical_bulk_modulus_johnson1993`]. **`γ_gc`** remains the
+//!    row loop over **Burn column slices** (`[…,0..1]` … `[…,3..4]`), **`f32`** storage) via [`physical_bulk_modulus_johnson1993`]. **`γ_gc`** remains the
 //!    same \(\varepsilon/\sigma^2\) placeholder from the first two columns. The **`[B,4]`** branch is
 //!    **not** AD-safe (constants materialised with [`Tensor::from_data`]); differentiable EOS in Burn
 //!    is still future work.
@@ -152,19 +152,25 @@ impl StatisticalBridge {
             let surface_energy_gc = eps.div(sig_sq).mul_scalar(ANALYTIC_SURFACE_ENERGY_SCALE);
             (bulk_modulus, surface_energy_gc)
         } else if cols == 4 {
-            let row_vals: Vec<f32> = lennard_jones_params.clone().into_data().value;
-            assert_eq!(
-                row_vals.len(),
-                batch * 4,
-                "upscale_potentials [B,4]: flat length mismatch"
-            );
+            // Johnson (1993) `K_T` path: read LJ knobs + reduced state (rho*,T*) via explicit column slices.
+            let eps_c = lennard_jones_params.clone().slice([0..batch, 0..1]);
+            let sig_c = lennard_jones_params.clone().slice([0..batch, 1..2]);
+            let rho_c = lennard_jones_params.clone().slice([0..batch, 2..3]);
+            let t_c = lennard_jones_params.clone().slice([0..batch, 3..4]);
+            let eps_v: Vec<f32> = eps_c.into_data().value;
+            let sig_v: Vec<f32> = sig_c.into_data().value;
+            let rho_v: Vec<f32> = rho_c.into_data().value;
+            let t_v: Vec<f32> = t_c.into_data().value;
+            debug_assert_eq!(eps_v.len(), batch);
+            debug_assert_eq!(sig_v.len(), batch);
+            debug_assert_eq!(rho_v.len(), batch);
+            debug_assert_eq!(t_v.len(), batch);
             let mut k_host = Vec::with_capacity(batch);
             for i in 0..batch {
-                let o = i * 4;
-                let epsilon = f64::from(row_vals[o]);
-                let sigma = f64::from(row_vals[o + 1]);
-                let rho_star = f64::from(row_vals[o + 2]);
-                let t_star = f64::from(row_vals[o + 3]);
+                let epsilon = f64::from(eps_v[i]);
+                let sigma = f64::from(sig_v[i]);
+                let rho_star = f64::from(rho_v[i]);
+                let t_star = f64::from(t_v[i]);
                 let k_t = physical_bulk_modulus_johnson1993(rho_star, t_star, epsilon, sigma);
                 k_host.push(k_t as f32);
             }
@@ -375,6 +381,31 @@ mod tests {
                 epsilon = 1.0e-5
             );
         }
+    }
+
+    /// **`[B,4]`** Johnson path is equivalent to evaluating on **`Tensor::cat`** of the same column slices.
+    #[test]
+    fn upscale_potentials_b4_johnson_matches_cat_of_column_slices() {
+        let dev = NdArrayDevice::Cpu;
+        let batch = 2usize;
+        let lj: Tensor<B, 2> = Tensor::from_data(
+            Data::new(
+                vec![
+                    1.0_f32, 0.9_f32, 0.15_f32, 2.5_f32, 0.5_f32, 1.1_f32, 0.22_f32, 2.0_f32,
+                ],
+                Shape::new([batch, 4]),
+            ),
+            &dev,
+        );
+        let (k_full, g_full) = upscale_potentials(lj.clone());
+        let eps = lj.clone().slice([0..batch, 0..1]);
+        let sig = lj.clone().slice([0..batch, 1..2]);
+        let rho = lj.clone().slice([0..batch, 2..3]);
+        let tstar = lj.clone().slice([0..batch, 3..4]);
+        let lj_cat = Tensor::cat(vec![eps, sig, rho, tstar], 1);
+        let (k_cat, g_cat) = upscale_potentials(lj_cat);
+        assert_eq!(k_full.into_data().value, k_cat.into_data().value);
+        assert_eq!(g_full.into_data().value, g_cat.into_data().value);
     }
 
     /// Documents that **`[B,2]`** [`upscale_potentials`] placeholder \(K\) disagrees with Johnson \(K_T\)

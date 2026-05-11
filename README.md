@@ -28,7 +28,7 @@ Public **lane** (`solver-stable` vs `solver-research` / experimental features) a
 
 Aligned with [`docs/VERIFICATION_COMPLETION_MATRIX.md`](docs/VERIFICATION_COMPLETION_MATRIX.md) row **#10** *Next concrete PR slice* and the expanded bullets in [`docs/Solver-Status.md`](docs/Solver-Status.md) (**Verification scope** → *Matrix PR slices — item #10*):
 
-- **Slice A — Transient vs quasi-static:** shipped mechanics is **quasi-static** `VectorMechanicsSolver::solve_equilibrium` on the bar-network 1-skeleton. **`acoustics-newmark`** + `tests/verification/acoustics_plane_wave.rs` certify a **scalar** 1-D periodic bar Newmark semi-discrete operator — **not** vector 3D solid transient elasticity on the mechanics graph.
+- **Slice A — Transient vs quasi-static:** shipped mechanics is **quasi-static** `VectorMechanicsSolver::solve_equilibrium` on the bar-network 1-skeleton. **`acoustics-newmark`** + `tests/verification/acoustics_plane_wave.rs` certify a **scalar** 1-D periodic bar Newmark semi-discrete operator — **not** vector 3D solid transient elasticity on the mechanics graph. There is still **no** default-CI **2-DOF vector** mechanics-graph transient harness (see `Solver-Status` matrix PR slice **#10**).
 - **Slice B — Contact:** no contact constraints, collision, or inter-body Coulomb friction in the shipped stack — deferral and physics scope live in [`docs/research/contact_mechanics_scope.md`](docs/research/contact_mechanics_scope.md).
 
 ## Build and test
