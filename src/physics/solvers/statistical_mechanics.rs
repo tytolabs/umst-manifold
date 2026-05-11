@@ -43,6 +43,33 @@
 //! `tests/verification/statmech_lj_johnson_eos_reference.rs`). **`upscale_potentials` stays partial:**
 //! analytic placeholder for \(K\) and \(\gamma_{\mathrm{gc}}\) until a stateful bridge lands.
 //!
+//! ## Path sketch: virial / Johnson EOS → [`upscale_potentials`] (target, not current Burn wiring)
+//!
+//! 1. **Virial / simulation:** pair forces → pressure \(P(\rho,T)\) (or \(P^*\) in reduced LJ units) →
+//!    isothermal bulk modulus \(K_T=\rho(\partial P/\partial\rho)_T\) at the **same** cutoff / tail
+//!    protocol as the label data.
+//! 2. **Johnson (1993) reference lane (`f64`):** analytic reduced EOS gives \(P^*(\rho^*,T^*)\) and
+//!    \(K^*=\rho^*(\partial P^*/\partial\rho^*)_{T^*}\); physical modulus
+//!    \(K_T=(\varepsilon/\sigma^3)K^*\) via [`super::lj_johnson_1993_reference::bulk_modulus_from_reduced`].
+//! 3. **Today's [`upscale_potentials`]:** reads only **`[B,2]`** \((\varepsilon,\sigma)\); no \(\rho^*,T^*\),
+//!    so steps (1–2) cannot run inside this tensor without an **extended row** (see below).
+//!
+//! ### Tensor channel design \((\rho^*,T^*)\)
+//!
+//! Forward-looking options (Solver-Status **DEFERRAL — Statistical mechanics**):
+//! - **Wide row:** `lennard_jones_params` shaped **`[B, 4]`** with columns
+//!   \((\varepsilon,\sigma,\rho^*,T^*)\) (or SI \(\rho,T\) with documented normalization), then slice
+//!   \(\varepsilon,\sigma\) for scaling and \(\rho^*,T^*\) for the EOS / virial surrogate inside Burn.
+//! - **Twin tensors:** keep **`[B,2]`** for \((\varepsilon,\sigma)\) and add **`[B,2]`** for
+//!   \((\rho^*,T^*)\) (or \((\rho,T)\)) to a new method on [`StatisticalBridge`] so types stay explicit.
+//!
+//! ### Feature gate sketch
+//!
+//! - **Default:** only the Burn placeholder [`upscale_potentials`] compiles; no Johnson symbol on this module.
+//! - **`statistical-mechanics-johnson-reference`:** adds [`bulk_modulus_from_lj_state_johnson1993`] (`f64`,
+//!   reduced \(K^*\)) for scalar parity vs integration tests; still does **not** extend the **`[B,2]`**
+//!   tensor. Shipping Johnson **inside** the differentiable map is gated on the extended state API above.
+//!
 //! ## Placeholder behaviour
 //!
 //! [`upscale_potentials`] applies a **simple analytic placeholder** (dimensionless prefactors ×
@@ -127,6 +154,22 @@ pub fn bulk_modulus_from_lj_state_johnson1993(rho_star: f64, t_star: f64) -> f64
     super::lj_johnson_1993_reference::bulk_modulus_from_lj_state_johnson1993(rho_star, t_star)
 }
 
+/// Johnson \(K^*(\rho^*,T^*)\) composed with \((\varepsilon,\sigma)\) scaling → physical \(K_T\).
+///
+/// Test-only helper: documents the scalar path that will eventually align with an extended Burn tensor
+/// once \((\rho^*,T^*)\) rows exist beside \((\varepsilon,\sigma)\).
+#[cfg(all(test, feature = "statistical-mechanics-johnson-reference"))]
+#[must_use]
+fn physical_bulk_modulus_johnson1993_scalar_bridge(
+    rho_star: f64,
+    t_star: f64,
+    epsilon: f64,
+    sigma: f64,
+) -> f64 {
+    let k_star = bulk_modulus_from_lj_state_johnson1993(rho_star, t_star);
+    super::lj_johnson_1993_reference::bulk_modulus_from_reduced(k_star, epsilon, sigma)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -179,6 +222,23 @@ mod tests {
 
     #[cfg(feature = "statistical-mechanics-johnson-reference")]
     #[test]
+    fn physical_bulk_modulus_johnson1993_scalar_bridge_matches_reduced_map() {
+        let rho = 0.2_f64;
+        let t = 2.0_f64;
+        let e = 1.0_f64;
+        let s = 0.8_f64;
+        let k_star = bulk_modulus_from_lj_state_johnson1993(rho, t);
+        let via_reduced =
+            super::super::lj_johnson_1993_reference::bulk_modulus_from_reduced(k_star, e, s);
+        assert_abs_diff_eq!(
+            super::physical_bulk_modulus_johnson1993_scalar_bridge(rho, t, e, s),
+            via_reduced,
+            epsilon = 1.0e-15
+        );
+    }
+
+    #[cfg(feature = "statistical-mechanics-johnson-reference")]
+    #[test]
     fn bulk_modulus_johnson1993_statmech_reexport_matches_lj_reference() {
         let rho = 0.2_f64;
         let t = 2.0_f64;
@@ -195,15 +255,14 @@ mod tests {
     #[cfg(feature = "statistical-mechanics-johnson-reference")]
     #[test]
     fn upscale_placeholder_bulk_modulus_documented_gap_vs_johnson_scalar_path() {
-        use super::super::lj_johnson_1993_reference::bulk_modulus_from_reduced;
-
         let t_star = 2.0_f64;
         let rho_star = 0.2_f64;
         let epsilon = 1.0_f64;
         let sigma = 0.8_f64;
 
-        let k_star = bulk_modulus_from_lj_state_johnson1993(rho_star, t_star);
-        let k_johnson = bulk_modulus_from_reduced(k_star, epsilon, sigma);
+        let k_johnson = super::physical_bulk_modulus_johnson1993_scalar_bridge(
+            rho_star, t_star, epsilon, sigma,
+        );
 
         let dev = NdArrayDevice::Cpu;
         let lj: Tensor<B, 2> = Tensor::from_data(

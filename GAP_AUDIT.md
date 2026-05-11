@@ -2,6 +2,7 @@
 
 **Scope:** `umst-manifold` and `umst-concrete-cartridge` aligned to the nine-phase solver plan in `composer-plans/umst_bleeding_edge_solvers.md`.  
 **Canonical solver verification (lanes, features, CI-backed claims):** [`docs/Solver-Status.md`](docs/Solver-Status.md) — when this audit disagrees with that file on implementation status, **trust Solver-Status** and treat stale gap bullets below as narrative debt unless marked historical.  
+**Structural / materials scope outside solver lanes (transient \(M_\mu\), geometric NL, compressive plasticity, contact):** [`docs/PHYSICS_CAPABILITY_GAPS.md`](docs/PHYSICS_CAPABILITY_GAPS.md) — short index only; no duplication here.  
 **v0.4 release prioritization (Rings 1–3, shell B6/L, ignored gates):** [`../composer_prompts/v0.4_phase_3_followup_for_composer.md`](../composer_prompts/v0.4_phase_3_followup_for_composer.md) — narrative only; solver rows and **DEFERRAL** sections in Solver-Status remain authoritative.  
 **Effort key:** S = small (≤~1 dev-day), M = medium (~2–5 days), L = large (multi-week / research-grade).
 

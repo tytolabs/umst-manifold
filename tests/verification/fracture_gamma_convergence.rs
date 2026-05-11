@@ -12,7 +12,7 @@
 //! provider matches [`PhaseFieldFractureSolver::update_damage`]); `at2_surface_energy_scale_matches_gc_order_of_magnitude` (order-of-magnitude
 //! \(G_c/l\cdot\bar d\) on the tiny chain); `at2_gc_linear_scaling_smoke` (doubling \(G_c\) at fixed \((l,\varepsilon)\): \(\bar d\) stays same order and \(G_c/l\cdot\bar d\) tracks \(\Delta G_c\) loosely — explicit sweep, **not** the Γ-limit scaling of \(G_c\) in the sharp-interface sense); **`at2_gamma_convergence_three_length_scales`** — three \((l_0,h)\) pairs with fixed \(h/l_0=\tfrac14\), \(\psi^+\!=0\), exponential damage seed at mid-span; discrete AT2 surface functional \(D_h\) has **relative error &lt; 2%** vs **`Gc`** on each mesh and **does not worsen** across refinement (successive errors within **`10^{-3}`**, fixed-strain relaxation with 32 outer passes — not a coupled mechanics \(\psi^+\) benchmark).
 //!
-//! **Deferred:** Γ-limit **with driven elasticity** (\(\psi^+\!\neq 0\)), systematic multi-ratio \((l_0,h)\) tables, and dissipation certificates on staggered \(u\!\leftrightarrow\!d\) chains beyond this fixed-strain profile check. **Full THMC within-step stagger** and **`update_damage`-only** orchestration limits remain as in **`docs/Solver-Status.md`** (**DEFERRAL — Fracture**).
+//! **Harness:** shared **`discrete_at2_bar_surface_energy_1d`** + **`at2_discrete_surface_functional_toy_chain_matches_hand_total`** (guards the \(D_h\) sum used by **`at2_gamma_convergence_three_length_scales`**). **Research backlog** (acceptance formulas + proposed test names for \(\psi^+\), multi-ratio \((l_0,h)\), stagger dissipation, THMC within-step stagger): [`docs/research/v0.4_track12_staggered_fracture_mechanics.md`](../../docs/research/v0.4_track12_staggered_fracture_mechanics.md) §7.
 
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
@@ -22,6 +22,38 @@ use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
 type B = NdArray<f32>;
+
+/// Discrete AT2 **1-D bar** surface functional (same definition as `at2_gamma_convergence_three_length_scales`):
+///
+/// \\[
+/// D_h = G_c \\sum_{i=0}^{N-1} \\frac{d_i^2\\,h}{2\\ell_0}
+///     + G_c \\sum_{i=0}^{N-2} \\frac{\\ell_0}{2}\\left(\\frac{d_{i+1}-d_i}{h}\\right)^2 h \\,.
+/// \\]
+#[cfg(feature = "fracture-at2")]
+fn discrete_at2_bar_surface_energy_1d(d_vals: &[f32], h: f32, l0: f32, gc_val: f32) -> f32 {
+    let n = d_vals.len();
+    let mut d_h = 0.0_f32;
+    for &d in d_vals {
+        d_h += d.powi(2) * h / (2.0 * l0);
+    }
+    for i in 0..(n - 1) {
+        let grad = (d_vals[i + 1] - d_vals[i]) / h;
+        d_h += (l0 / 2.0) * grad.powi(2) * h;
+    }
+    d_h * gc_val
+}
+
+/// Regression on the closed-form discrete sum: \(N=3\), \(h=\ell_0=1\), \(G_c=2\), \(d=(0.5,1,0.5)\) gives \(D_h=2\).
+#[cfg(feature = "fracture-at2")]
+#[test]
+fn at2_discrete_surface_functional_toy_chain_matches_hand_total() {
+    let d = [0.5_f32, 1.0, 0.5];
+    let d_h = discrete_at2_bar_surface_energy_1d(&d, 1.0, 1.0, 2.0);
+    assert!(
+        (d_h - 2.0).abs() < 1e-5,
+        "hand total should be 2.0; got {d_h}"
+    );
+}
 
 #[test]
 fn update_damage_smoke_tiny_chain() {
@@ -413,16 +445,7 @@ fn at2_gamma_convergence_three_length_scales() {
         }
 
         let d_vals: Vec<f32> = d_curr.into_data().value;
-        let mut d_h: f32 = 0.0;
-        #[allow(clippy::needless_range_loop)]
-        for i in 0..n {
-            d_h += d_vals[i].powi(2) * h / (2.0 * l0);
-        }
-        for i in 0..(n - 1) {
-            let grad = (d_vals[i + 1] - d_vals[i]) / h;
-            d_h += (l0 / 2.0) * grad.powi(2) * h;
-        }
-        d_h *= gc_val;
+        let d_h = discrete_at2_bar_surface_energy_1d(&d_vals, h, l0, gc_val);
         let err = (d_h - gc_val).abs() / gc_val;
         d_hs.push(d_h);
         errors.push(err);

@@ -48,6 +48,15 @@
 //!   Bernoulli uses `exp` on \(|z F\Delta\phi/(RT)|\); very large \(|pe|\) can **saturate** `f32::exp`
 //!   before the ratio stabilises—tight \(\Delta t\) / smaller drift or double precision are the
 //!   practical mitigations until a log-flux or exponential fitting formulation is added.
+//! - **`mesh_spacing` vs chain Poisson (honesty for \(\lambda_{\mathrm{eff}}\) gates):** SG flux uses
+//!   \(J\propto D/h\) with \(h=\) [`ElectroChemicalSolver::mesh_spacing`]. The Debye admissibility harness
+//!   (`tests/verification/pnp_debye_layer.rs`) sets **`mesh_spacing = L/(N-1)`** to match the geometric
+//!   cell length. The path-chain **Poisson** Thomas block is assembled in **index space** on unit graph
+//!   edges (same stencil family as the explicit chain Laplacian — **no** explicit overall `1/h^2`
+//!   factor tied to [`ElectroChemicalSolver::mesh_spacing`]). Coupling that Poisson discretisation to SG
+//!   with physical \(h\) is therefore **not** the same as a single continuum scaling in \(x\); fitted
+//!   **`λ_eff`** from \(|\phi(x)|\) can sit **\(\mathcal O(1)\)** away from continuum
+//!   **`λ_D = \sqrt{\varepsilon/(2 z^2 c_0)}\)** in `--release` long-horizon samples (e.g. **\(λ_{\mathrm{eff}}\approx 3.71\)** vs **\(λ_D=1/\sqrt2\approx 0.707\)** for the shipped \(N=256\) gate recipe) until discrete screening / window calibration lands — see `docs/Solver-Status.md` electrochemistry lane.
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
@@ -87,6 +96,12 @@ pub struct ElectroChemicalSolver {
     /// Setting `mesh_spacing = 1.0` (default) reproduces the legacy unit-edge convention used by
     /// existing tests; physical-units callers should pass actual edge length. Non-uniform meshes
     /// (variable `h` per edge) are deferred to the implicit-Newton step (Phase 3.3).
+    ///
+    /// **Coupled note:** the MVP **Poisson** chain solve uses a **unit-graph** discrete
+    /// \(\nabla\cdot(\varepsilon\nabla\phi)\) stencil (not rescaled by this field). For Debye-length
+    /// exponential-fit gates, set `mesh_spacing` to the same geometric **`h = L/(N-1)`** used to map
+    /// node index to physical \(x\); that aligns SG with the fit abscissa but does **not** alone force
+    /// **`λ_eff ≈ λ_D`** — see module **Gaps** bullet on **`λ_eff` vs `λ_D`**.
     /// formal_anchor: Literature
     /// formal_citation: Scharfetter & Gummel 1969, IEEE TED 16:64
     /// formal_form: "J_e = (D_e/h) [c_s B(z F Δφ/RT) − c_t B(−z F Δφ/RT)]"
@@ -128,6 +143,15 @@ pub struct NewtonPnpContext {
     /// Refuse the host solve when `N_nodes` exceeds this cap (safety).
     pub max_chain_nodes: usize,
     /// Use `B(z\Delta\phi)\equiv 1` in the SG flux (Fickian / **linear in \(c\)**) inside the implicit residual only.
+    ///
+    /// **Debye \(\lambda_D\) gates:** set **`true`** so the implicit residual matches the **Debye–Hückel**
+    /// linear transport limit (same limit as continuum **`λ_D = \sqrt{\varepsilon/(2 z^2 c_0)}\)** in the
+    /// reference) and so Newton can use the **analytic** Jacobian (`fill_jacobian_linearized_sg_fickian`)
+    /// instead of dense FD columns. This **does not** imply the fitted discrete decay length
+    /// **`λ_eff`** from long-horizon simulations closes on **`λ_D`** on the current chain Poisson +
+    /// interior LS window — measured **`#[ignore]`** harnesses still show **\(λ_{\mathrm{eff}}\approx 3.71\)** vs
+    /// **\(λ_D=1/\sqrt2\)** (\(\approx 4.25\times\) relative gap in baseline `--release` samples); see
+    /// `tests/verification/pnp_debye_layer.rs` and `docs/Solver-Status.md`.
     pub linearize_sg_fickian: bool,
 }
 

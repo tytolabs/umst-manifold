@@ -47,7 +47,7 @@ _MEMO_MARKDOWN_LINK_RE = re.compile(r"\]\((research/[A-Za-z0-9_./-]+\.md)\)")
 _DOCS_RESEARCH_BACKTICK_RE = re.compile(r"`(docs/research/[A-Za-z0-9_./-]+\.md)`")
 
 # `docs/Solver-Status.md` row `solvers::statistical_mechanics` — Verification must cite all three
-# `statmech_*` integration tests (DEFERRAL — Statistical mechanics). Kept in sync with that table.
+# `statmech_*` integration tests (see **Solver lanes — Statistical mechanics** in that doc). Kept in sync with that table.
 _STATMECH_SOLVER_ROW_MARK = "statistical_mechanics"
 _STATMECH_VERIFICATION_PATHS: tuple[str, ...] = (
     "tests/verification/statmech_vinet_eos.rs",
@@ -234,7 +234,7 @@ def main() -> None:
         help=(
             "Require the statistical_mechanics table row Verification cell to list all "
             "`statmech_vinet_eos`, `statmech_lj_bridge_contract`, and "
-            "`statmech_lj_johnson_eos_reference` test paths (see DEFERRAL — Statistical mechanics)"
+            "`statmech_lj_johnson_eos_reference` test paths (see Solver-Status Statistical mechanics lane)"
         ),
     )
     args = ap.parse_args()

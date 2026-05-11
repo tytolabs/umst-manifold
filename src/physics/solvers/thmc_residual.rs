@@ -19,7 +19,8 @@
 //! applies one damped Newton update \(U \leftarrow U - \omega J^{-1} R\).
 //! [`ThmcImplicitEulerThermalHydrationResidual::damped_newton_iterations`] chains that step **≥ 2**
 //! times (fresh Jacobian each iteration). Track 13 stepping stone toward full JFNK; humidity and
-//! mechanics remain out of scope here. See `docs/research/v0.4_track13_monolithic_newton_thmc.md`.
+//! mechanics remain out of scope here. See `docs/research/v0.4_track13_monolithic_newton_thmc.md`
+//! (appendix **§ Implementation blueprint** for stacked-unknown layout and batched constraints).
 
 use burn::tensor::backend::Backend;
 
@@ -62,6 +63,51 @@ pub trait ResidualThmc<B: Backend<FloatElem = f32>> {
     fn evaluate_residual(&self, trial: &ThmcState<B>) -> Result<(), String> {
         let _ = trial;
         Err("ResidualThmc::evaluate_residual not implemented".into())
+    }
+}
+
+/// Field-major flattened unknown layout for a **future** monolithic THMC Newton–Krylov stack.
+///
+/// Zero-sized **documentation / const-fn anchor** only — no runtime state. Matches the stacked
+/// \((T,\alpha)\) ordering used in [`ThmcImplicitEulerThermalHydrationResidual::one_damped_newton_step`]
+/// (thermal `vec`, then hydration \(\alpha\) `vec`) when extended with \(h\) and \(\mathbf u\) blocks.
+///
+/// See `docs/research/v0.4_track13_monolithic_newton_thmc.md` appendix **§ Implementation blueprint**.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct ThmcMonolithicImplicitUnknownLayout;
+
+impl ThmcMonolithicImplicitUnknownLayout {
+    /// Displacement components per node (`MechanicalPlan`: `[B, N, 3]`).
+    pub const MECHANICAL_DISP_PER_NODE: usize = 3;
+
+    /// Scalar DOFs for **one** batch index: \(N F_T + N F_h + N F_\alpha + 3N\).
+    pub const fn field_major_stacked_dof_count(
+        n_nodes: usize,
+        f_temperature: usize,
+        f_humidity: usize,
+        f_hydration_alpha: usize,
+    ) -> usize {
+        n_nodes * f_temperature
+            + n_nodes * f_humidity
+            + n_nodes * f_hydration_alpha
+            + n_nodes * Self::MECHANICAL_DISP_PER_NODE
+    }
+
+    /// Flattened length for `batch` independent roots (no cross-batch coupling in \(R\)).
+    pub const fn batched_flat_len(
+        batch: usize,
+        n_nodes: usize,
+        f_temperature: usize,
+        f_humidity: usize,
+        f_hydration_alpha: usize,
+    ) -> usize {
+        batch
+            * Self::field_major_stacked_dof_count(
+                n_nodes,
+                f_temperature,
+                f_humidity,
+                f_hydration_alpha,
+            )
     }
 }
 

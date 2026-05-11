@@ -47,7 +47,13 @@ impl HelmholtzFilter {
     ) -> Tensor<B, 3> {
         let dx_safe = dx.max(1e-30);
         let scale = (self.radius / dx_safe).powi(2);
-        let max_it = self.max_cg_iterations.max(400);
+        // Honour the constructor iteration count. A previous `max(..., 400)` floor forced **400**
+        // Richardson steps even when callers passed **240** (e.g. Striatus shell examples). On
+        // **Burn Autodiff** backends that many scatter-heavy Laplacian updates can accumulate
+        // roundoff into **NaN** on large 3-D hex graphs while the same operator stays finite on
+        // plain `NdArray`. Callers that need a hard convergence floor should pass an explicit
+        // `max_cg_iterations` (tests use 12_000 on a 1-D chain).
+        let max_it = self.max_cg_iterations.max(1);
         let tol_use = self.cg_tolerance.max(1e-8);
         let damage = Tensor::<B, 3>::zeros_like(&rho);
         helmholtz_stationary(rho, edges_b1, damage, scale, max_it, tol_use)

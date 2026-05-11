@@ -42,9 +42,9 @@ pub use thmc::{
     ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics,
     ThmcImplicitTAlphaNewtonConfig, ThmcSolver, ThmcState,
 };
-pub use thmc_residual::ResidualThmc;
 #[cfg(feature = "thmc-coupled")]
 pub use thmc_residual::ThmcImplicitEulerThermalHydrationResidual;
+pub use thmc_residual::{ResidualThmc, ThmcMonolithicImplicitUnknownLayout};
 pub use topology_solver::{
     DensityNet, TopologyOptimizer, TopologyOptimizerStub, TopologySolver, TopologySolverConfig,
 };

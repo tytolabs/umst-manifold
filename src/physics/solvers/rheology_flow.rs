@@ -88,7 +88,7 @@
 //!   of `u_star`, e.g. via [`primal_divergence_from_edge_flux_topo`] on an edge flux assembled from `u_star`
 //!   (and, with staggering, from face velocities once defined). That replaces the triple-Laplacian RHS while
 //!   keeping the same graph operators.
-//! - **Poisson solve:** The Richardson loop on **phi** uses the same [`TopologicalLaplacian`](crate::physics::laplacian::TopologicalLaplacian) as the operator
+//! - **Poisson solve:** The Richardson loop on **phi** uses the same [`TopologicalLaplacian`] as the operator
 //!   \(\mathcal{L}\); swapping in Jacobi/SOR/CG iterations (or a chain **Thomas** path when topology is a
 //!   path — compare electrochemistry Poisson helpers) is the natural upgrade path without new assembly theory.
 //! - **Projection:** Edge increments [`primal_scalar_edge_increment`] / tangent projection of \(\nabla\phi\)

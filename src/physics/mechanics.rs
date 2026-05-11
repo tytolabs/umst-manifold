@@ -268,15 +268,19 @@ impl VectorMechanicsSolver {
         // amplify rounding noise once `‖r‖` is tiny → NaNs in downstream compliance. Cap iterations at
         // the (scalar) unknown count per row; this is only an upper bound—ill-conditioning can still
         // require the caller to raise `max_cg_iterations` for accuracy on large graphs.
-        // `cg_tolerance` / `pcg_tolerance` are not read here: this loop always runs `max_it` iterations.
+        // `cg_tolerance` / `pcg_tolerance`: used for **relative** residual early exit
+        // \(\|P r\|_2 \le \texttt{tol}\,\|P f\|_2\) with \(\texttt{tol}=\max(\texttt{pcg\_tolerance},\texttt{cg\_tolerance})\).
+        // If the tolerance is never met, the loop still runs up to `max_it` iterations (legacy cap).
         let max_it = inner_cfg
             .max_cg_iterations
             .max(1)
             .min(n_v.saturating_mul(3).max(1));
+        let rel_tol = inner_cfg.pcg_tolerance.max(inner_cfg.cg_tolerance).max(0.0);
 
         // Projected CG on \(\{u = P u\}\) with \(P=\) `boundary_mask`: each step uses `bar_matvec`
         // on batch tensors with a single nonzero row so gradients flow through `k_axial` / `edge_unit`.
-        // Fixed iteration count avoids control-flow coupling to scalar convergence reads.
+        // Early exit uses the **projected** residual \(r=P(f-Ku)\); the adjoint path does not differentiate
+        // through PCG iterations, only through the converged \(u\) feeding the discrete surrogate.
         for b in 0..batch {
             let p_mask = boundary_mask.clone().slice([b..b + 1, 0..n_v, 0..3]);
             let f_b = body_force.clone().slice([b..b + 1, 0..n_v, 0..3]);
@@ -287,6 +291,17 @@ impl VectorMechanicsSolver {
                 Self::bar_matvec(u_emb, &k_axial, &edge_unit, &src_indices, &tgt_indices, n_v)
                     .slice([b..b + 1, 0..n_v, 0..3]);
             let mut r = p_mask.clone().mul(f_b.clone().sub(ku_b));
+
+            let rhs_norm = f_b
+                .clone()
+                .mul(p_mask.clone())
+                .powf_scalar(2.0)
+                .sum()
+                .sqrt()
+                .into_scalar()
+                .max(1e-30_f32);
+            let abs_tol = rel_tol * rhs_norm;
+            let use_tol_exit = rel_tol > 0.0;
 
             let k_b = k_axial.clone().slice([b..b + 1, 0..n_edges, 0..1]);
             let eu_b = edge_unit.clone().slice([b..b + 1, 0..n_edges, 0..3]);
@@ -340,6 +355,11 @@ impl VectorMechanicsSolver {
                 p = z_next.clone().add(p.mul(beta));
                 r = r_next;
                 z = z_next;
+
+                let r_norm = r.clone().powf_scalar(2.0).sum().sqrt().into_scalar();
+                if use_tol_exit && r_norm <= abs_tol {
+                    break;
+                }
             }
 
             u = u.slice_assign([b..b + 1, 0..n_v, 0..3], u_c);
