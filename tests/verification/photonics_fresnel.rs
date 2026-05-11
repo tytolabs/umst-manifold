@@ -18,6 +18,11 @@
 //! **Verification #6:** [`apply_dec_te_curl_curl_chain_operator_none_on_quad_split_expanded_patch`] —
 //! quad-split patch (\(E=5\), \(N=4\)) rejects the chain extractor (memo
 //! [`docs/research/v0.4_track15_dec_curl_curl_photonics.md`](../../docs/research/v0.4_track15_dec_curl_curl_photonics.md) §1).
+//! **Verification #6 (assembled two-quad):** [`assembled_two_quads_dec_primal_photonics_maxwell_deferred`]
+//! — six-node / nine-edge **`faces_b2`** mesh (same incidence as `tests/dec_identities.rs`):
+//! \(d_1(d_0\omega)\) via [`dec_maxwell_assembly`](umst_manifold::physics::solvers::photonics::dec_maxwell_assembly),
+//! [`primal_divergence_from_edge_flux_topo`] on the edge increment, then photonics **non-chain** `None` /
+//! [`PhotonicsSolver::solve_maxwell_curl_curl`] pass-through.
 //!
 //! Specification: `composer_prompts/v0.4_solver_completion_no_namesakes.md` (Track H).
 
@@ -27,7 +32,9 @@
 use approx::assert_relative_eq;
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
-use umst_manifold::physics::dec_primal::primal_scalar_edge_increment;
+use umst_manifold::physics::dec_primal::{
+    primal_divergence_from_edge_flux_topo, primal_scalar_edge_increment,
+};
 use umst_manifold::physics::solvers::PhotonicsHelmholtzSolver;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 use umst_manifold::physics::topology::EdgeTopology;
@@ -160,6 +167,35 @@ fn quad_split_patch_tensors() -> (Tensor<B, 2, Int>, Tensor<B, 2, Int>, EdgeTopo
                 1, 1, -1, 1, 1, 1,
             ],
             Shape::new([2, 6]),
+        ),
+        &dev,
+    );
+    let topo = EdgeTopology::new(edges_b1.clone());
+    (edges_b1, faces_b2, topo)
+}
+
+/// Two CCW quads side-by-side sharing oriented edge **`1→4`** — same **`edges_b1` / `faces_b2`**
+/// incidence as `two_quads_shared_edge_faces_b2_and_topo` in `tests/dec_identities.rs`
+/// (assembled patch, **not** a hand-built uniform path).
+fn two_quads_shared_edge_patch_tensors() -> (Tensor<B, 2, Int>, Tensor<B, 2, Int>, EdgeTopology<B>) {
+    let dev = device();
+    let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
+        Data::new(
+            vec![
+                0i64, 1, 2, 5, 4, 3, 0, 1, 1, //
+                1, 2, 5, 4, 3, 0, 4, 5, 4,
+            ],
+            Shape::new([2, 9]),
+        ),
+        &dev,
+    );
+    let faces_b2: Tensor<B, 2, Int> = Tensor::from_data(
+        Data::new(
+            vec![
+                0i64, 8, 6, 6, 4, 5, 1, 2, 7, 7, 3, 8, //
+                1, 1, -1, 1, 1, 1, 1, 1, -1, 1, 1, -1,
+            ],
+            Shape::new([2, 12]),
         ),
         &dev,
     );
@@ -881,6 +917,100 @@ fn solve_maxwell_curl_curl_pass_through_quad_split_not_chain() {
         frequency_hz: 1e9_f32,
     };
     let out = ps.solve_maxwell_curl_curl(e_field.clone(), eps_r, eps_i, j, edges_b1, coords, &cg);
+    let vi = out.into_data().value;
+    let ei = e_field.into_data().value;
+    assert_eq!(vi.len(), ei.len());
+    let mut mx = 0.0_f32;
+    for k in 0..vi.len() {
+        mx = mx.max((vi[k] - ei[k]).abs());
+    }
+    assert_relative_eq!(mx, 0.0_f32, epsilon = 1e-6_f32, max_relative = 1.0);
+}
+
+/// **Verification #6 — assembled two-quad strip:** six-node / nine-edge **`faces_b2`** incidence
+/// (same as `dec_curl_d1_annihilates_gradient_two_quads_shared_edge_burn` in `tests/dec_identities.rs`)
+/// exercises [`primal_scalar_edge_increment`](umst_manifold::physics::dec_primal::primal_scalar_edge_increment),
+/// photonics [`dec_maxwell_assembly::primal_d1_edge_flux_to_faces`](umst_manifold::physics::solvers::photonics::dec_maxwell_assembly),
+/// [`primal_divergence_from_edge_flux_topo`](umst_manifold::physics::dec_primal::primal_divergence_from_edge_flux_topo) on \(d_0\omega\),
+/// then [`apply_dec_te_curl_curl_chain_operator`](umst_manifold::physics::solvers::photonics::apply_dec_te_curl_curl_chain_operator) **`None`**
+/// and [`PhotonicsSolver::solve_maxwell_curl_curl`](umst_manifold::physics::solvers::PhotonicsSolver::solve_maxwell_curl_curl) pass-through
+/// (documented deferral for non-uniform-chain topologies).
+#[test]
+fn assembled_two_quads_dec_primal_photonics_maxwell_deferred() {
+    use umst_manifold::physics::solvers::photonics::{
+        apply_dec_te_curl_curl_chain_operator, dec_maxwell_assembly::primal_d1_edge_flux_to_faces,
+    };
+    use umst_manifold::physics::solvers::PhotonicsSolver;
+
+    let dev = device();
+    let (edges_b1, faces_b2, topo) = two_quads_shared_edge_patch_tensors();
+    let omega = [0.5_f32, -0.9, 1.7, 0.2, -1.1, 0.35];
+    let nodal = Tensor::from_data(
+        Data::new(
+            vec![omega[0], omega[1], omega[2], omega[3], omega[4], omega[5]],
+            Shape::new([1, 6, 1]),
+        ),
+        &dev,
+    );
+    let grad_on_edges = primal_scalar_edge_increment(nodal.clone(), &topo);
+    let ranges = [(0usize, 3usize), (3, 6), (6, 9), (9, 12)];
+    let d1_grad = primal_d1_edge_flux_to_faces(grad_on_edges.clone(), faces_b2.clone(), &ranges);
+    let v: Vec<f32> = d1_grad.into_data().value;
+    assert_eq!(v.len(), 4);
+    for x in v {
+        assert_relative_eq!(x, 0.0_f32, epsilon = 1e-4_f32, max_relative = 1.0);
+    }
+
+    let div = primal_divergence_from_edge_flux_topo(grad_on_edges, &topo, &nodal);
+    assert_eq!(div.dims(), [1, 6, 1]);
+    let div_v = div.into_data().value;
+    assert!(div_v.iter().copied().all(f32::is_finite));
+
+    let coords = Tensor::from_data(
+        Data::new(
+            vec![
+                0.0_f32, 1.0, 0.0, //
+                1.0, 1.0, 0.0, //
+                2.0, 1.0, 0.0, //
+                0.0, 0.0, 0.0, //
+                1.0, 0.0, 0.0, //
+                2.0, 0.0, 0.0,
+            ],
+            Shape::new([6, 3]),
+        ),
+        &dev,
+    );
+    let n = 6usize;
+    let ey = Tensor::<B, 3>::from_data(
+        Data::new(
+            vec![0.2_f32, -0.11, 0.37, 0.05, -0.29, 0.18],
+            Shape::new([1, n, 1]),
+        ),
+        &dev,
+    );
+    let eps_r = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let f_hz = 1.5e9_f32;
+
+    let chain_mv =
+        apply_dec_te_curl_curl_chain_operator(ey, eps_r, edges_b1.clone(), coords.clone(), f_hz);
+    assert!(
+        chain_mv.is_none(),
+        "two-quad assembled strip must not use the uniform-chain TE curl–curl matvec"
+    );
+
+    let mut e0 = vec![0.0_f32; n * 3];
+    for i in 0..n {
+        e0[i * 3] = 0.11 * i as f32;
+        e0[i * 3 + 1] = -0.19 + 0.06 * i as f32;
+        e0[i * 3 + 2] = 0.27 - 0.03 * i as f32;
+    }
+    let e_field = Tensor::<B, 3>::from_data(Data::new(e0, Shape::new([1, n, 3])), &dev);
+    let eps_r3 = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let eps_i = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+    let j = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+    let cg = MechanicsInnerLoopConfig::default();
+    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let out = ps.solve_maxwell_curl_curl(e_field.clone(), eps_r3, eps_i, j, edges_b1, coords, &cg);
     let vi = out.into_data().value;
     let ei = e_field.into_data().value;
     assert_eq!(vi.len(), ei.len());
