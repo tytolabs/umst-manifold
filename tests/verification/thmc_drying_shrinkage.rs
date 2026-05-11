@@ -1510,6 +1510,113 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
     }
 }
 
+/// One damped Newton step on the monolithic \((T,h,\alpha,\mathbf u)\) quasi-static path; with
+/// **`solver-experimental`**, the inner linear solve uses JFNK + host **GMRES** (see
+/// [`ThmcImplicitEulerThermalHumidityHydrationResidual::one_damped_newton_step_with_quasi_static_r_u`]).
+/// Same 2-node harness as [`thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes`].
+#[cfg(feature = "solver-experimental")]
+#[test]
+fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() {
+    let d = dev();
+    let n = 2usize;
+    let manifold = chain_manifold(n);
+    let coords = manifold
+        .node_positions
+        .as_ref()
+        .expect("chain_manifold SI coords")
+        .clone();
+    let edges_b1 = manifold.edges_b1.clone();
+    let batch = 1usize;
+    let kinetics = ThmcHydrationKinetics::default();
+
+    let mut bm_data = vec![1.0_f32; n * 3];
+    bm_data[0] = 0.0_f32;
+    for i in 0..n {
+        bm_data[i * 3 + 1] = 0.0_f32;
+        bm_data[i * 3 + 2] = 0.0_f32;
+    }
+    let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([batch, n, 3])), &d);
+
+    let mut bf_data = vec![0.0_f32; n * batch * 3];
+    bf_data[(n - 1) * 3] = 2_000.0_f32;
+    let body_force = Tensor::from_data(Data::new(bf_data, Shape::new([batch, n, 3])), &d);
+
+    let dt = 0.02_f32;
+    let t_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let h_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.50_f32, 0.62_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let alpha_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_t = Tensor::<B, 3>::from_data(
+        Data::new(vec![299.5_f32, 305.0_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_h = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.51_f32, 0.63_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let trial_alpha = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.33_f32, 0.56_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
+    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+        dt,
+        temperature_n: t_n,
+        humidity_n: h_n,
+        alpha_n,
+        displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        mechanics_placeholder_mass: 1.0_f32,
+        ru_shrinkage_water_cement_ratio: None,
+        edges_b1,
+        damage_m: damage_m.clone(),
+        kinetics,
+    };
+    let trial = ThmcState {
+        thermal: ThermalPlan {
+            temperature: trial_t,
+        },
+        hydro: HydrologicPlan { humidity: trial_h },
+        mechanical: MechanicalPlan {
+            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: trial_alpha,
+        },
+        damage: damage_m,
+        time: 0.0_f32,
+    };
+
+    let cross_section_area = 0.01_f32;
+    let (_final, norm_before, norm_after) = assembler
+        .one_damped_newton_step_with_quasi_static_r_u(
+            &trial,
+            &coords,
+            &boundary_mask,
+            &body_force,
+            cross_section_area,
+            1.0_f32,
+            1.0e-5_f32,
+        )
+        .expect(
+            "one damped Newton step with quasi-static R_u (JFNK inner under solver-experimental)",
+        );
+    assert!(norm_before > 1e-8_f32, "nontrivial R0={}", norm_before);
+    assert!(
+        norm_after < norm_before * 0.999_f32,
+        "stacked ||R|| should drop: {} -> {}",
+        norm_before,
+        norm_after
+    );
+}
+
 /// Stacked \(\|R\|_2\) **`tol`** on [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]
 /// shortens the recorded norm trail once \(\|R\|_2\) drops below **`tol`** (same 2-node harness as
 /// [`thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes`]).
