@@ -31,6 +31,8 @@ pub mod rheology_flow;
 pub mod statistical_mechanics;
 pub mod thmc;
 pub mod thmc_residual;
+#[cfg(all(feature = "thmc-coupled", feature = "solver-experimental"))]
+pub mod thmc_jfnk;
 pub mod topology_solver;
 
 pub use crate::physics::mechanics::VectorMechanicsSolver;
@@ -45,6 +47,7 @@ pub use fracture_field::PhaseFieldFractureSolver;
 pub use fracture_field::{
     spectral_tensile_psi_plus_from_strain, strain_tensor_for_fracture_after_mechanics,
     strain_tensor_for_fracture_from_manifold, strain_tensor_from_bar_network_displacement,
+    StaggeredDamageOuterLoopConfig, StaggeredFractureConfig, StaggeredOuterDamageStopCriteria,
 };
 pub use photonics::{PhotonicsHelmholtzSolver, PhotonicsSolver};
 pub use rheology_flow::BinghamFlowSolver;

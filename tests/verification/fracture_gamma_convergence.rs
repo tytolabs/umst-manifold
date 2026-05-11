@@ -12,7 +12,7 @@
 //! provider matches [`PhaseFieldFractureSolver::update_damage`]); `at2_surface_energy_scale_matches_gc_order_of_magnitude` (order-of-magnitude
 //! \(G_c/l\cdot\bar d\) on the tiny chain); `at2_gc_linear_scaling_smoke` (doubling \(G_c\) at fixed \((l,\varepsilon)\): \(\bar d\) stays same order and \(G_c/l\cdot\bar d\) tracks \(\Delta G_c\) loosely — explicit sweep, **not** the Γ-limit scaling of \(G_c\) in the sharp-interface sense); **`at2_gamma_convergence_three_length_scales`** — three \((l_0,h)\) pairs with fixed \(h/l_0=\tfrac14\), \(\psi^+\equiv 0\), exponential damage seed at mid-span; discrete AT2 surface functional \(D_h\) has **relative error &lt; 2%** vs **`Gc`** on each mesh and **does not worsen** across refinement (successive errors within **`10^{-3}`**, fixed-strain relaxation with 32 outer passes — not a coupled mechanics \(\psi^+\) benchmark); **`at2_gamma_convergence_psi_plus_nonzero_three_length_scales`** (Track 12 §7.2) — same triple with uniform tensile \(\varepsilon_{xx}\), **`spectral_tensile_psi_plus_from_strain`** drive sanity, widened \(\tau_\Gamma\), non-worsening errors, and \(D_h > G_c\) vs the pure-surface optimum.
 //!
-//! **Harness:** shared **`discrete_at2_bar_surface_energy_1d`** + **`at2_discrete_surface_functional_toy_chain_matches_hand_total`** (guards the \(D_h\) sum used by **`at2_gamma_convergence_three_length_scales`**). **`at2_gamma_convergence_multi_ratio_schedule_smoke`** (Track 12 §7.3): fixed \(\ell_0\), \(\rho=h/\ell_0\in\{1/8,1/4,1/2\}\), same \(\psi^+\equiv 0\) exponential seed and 32-pass relaxation as [`at2_gamma_convergence_three_length_scales`]. **`at2_gamma_convergence_multi_ratio_psi_plus_schedule_smoke`** (Track 12 §7.3.1): same \(\rho\) rows as §7.3 with **uniform tensile** \(\varepsilon_{xx}\), **`spectral_tensile_psi_plus_from_strain`** drive sanity, widened \(\tau_\Gamma\) per row, and \(D_h>G_c\) vs the pure-surface optimum. **`at2_gamma_convergence_multi_ratio_psi_plus_outer_strain_ramp_smoke`** (Track 12 §7.3.2): identical multi-\(\rho\) meshing as §7.3.1 but **`PhaseFieldFractureSolver::update_damage_staggered`** with a **linear outer ramp** of \(\varepsilon_{xx}\) (nonzero schedule across 32 outers); final-drive \(\psi^+\) sanity, \(\tau_{\Gamma,j}\) on \(D_h\), and \(D_h>G_c\) vs the surface-only optimum. **Research backlog** (stagger dissipation, THMC within-step stagger): [`docs/research/v0.4_track12_staggered_fracture_mechanics.md`](../../docs/research/v0.4_track12_staggered_fracture_mechanics.md) §7.
+//! **Harness:** shared **`discrete_at2_bar_surface_energy_1d`** + **`at2_discrete_surface_functional_toy_chain_matches_hand_total`** (guards the \(D_h\) sum used by **`at2_gamma_convergence_three_length_scales`**). **`at2_gamma_convergence_multi_ratio_schedule_smoke`** (Track 12 §7.3): fixed \(\ell_0\), \(\rho=h/\ell_0\in\{1/8,1/4,1/2\}\), same \(\psi^+\equiv 0\) exponential seed and 32-pass relaxation as [`at2_gamma_convergence_three_length_scales`]. **`at2_gamma_convergence_multi_ratio_psi_plus_schedule_smoke`** (Track 12 §7.3.1): same \(\rho\) rows as §7.3 with **uniform tensile** \(\varepsilon_{xx}\), **`spectral_tensile_psi_plus_from_strain`** drive sanity, widened \(\tau_\Gamma\) per row, and \(D_h>G_c\) vs the pure-surface optimum. **`at2_gamma_convergence_multi_ratio_psi_plus_outer_strain_ramp_smoke`** (Track 12 §7.3.2): identical multi-\(\rho\) meshing as §7.3.1 but **`PhaseFieldFractureSolver::update_damage_staggered`** with a **linear outer ramp** of \(\varepsilon_{xx}\) (nonzero schedule across 32 outers); final-drive \(\psi^+\) sanity, \(\tau_{\Gamma,j}\) on \(D_h\), and \(D_h>G_c\) vs the surface-only optimum. **Track 12 §7.4** — outer stopping (`update_damage_staggered_with_outer_cfg`, `StaggeredFractureConfig::outer_stopping`): **`at2_staggered_outer_cfg_fixed_iters_matches_legacy`**, **`at2_staggered_outer_loose_damage_linf_one_pass`**, **`at2_staggered_outer_rel_psi_loose_two_passes`**, **`at2_solve_staggered_mechanics_outer_loose_stopping_one_pass`**, **`staggered_mechanics_outer_damage_stop_matches_long_budget`**. **Research backlog** (stagger dissipation, THMC within-step stagger): [`docs/research/v0.4_track12_staggered_fracture_mechanics.md`](../../docs/research/v0.4_track12_staggered_fracture_mechanics.md) §7.
 
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
@@ -23,6 +23,7 @@ use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
 #[cfg(feature = "fracture-at2")]
 use umst_manifold::physics::solvers::{
     spectral_tensile_psi_plus_from_strain, strain_tensor_for_fracture_from_manifold,
+    StaggeredFractureConfig, StaggeredOuterDamageStopCriteria,
 };
 #[cfg(feature = "fracture-at2")]
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
@@ -1004,7 +1005,6 @@ fn at2_matrix_features_stub_matches_direct_strain_psi_plus_sanity() {
 #[cfg(feature = "fracture-at2")]
 #[test]
 fn staggered_fracture_compliance_monotone_increasing() {
-    use umst_manifold::physics::solvers::fracture_field::StaggeredFractureConfig;
     use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
 
     let dev = NdArrayDevice::Cpu;
@@ -1066,6 +1066,7 @@ fn staggered_fracture_compliance_monotone_increasing() {
         gc: 0.01,
         length_scale: 0.05,
         kappa_reg: 1e-6,
+        outer_stopping: StaggeredOuterDamageStopCriteria::default(),
     };
     let (u0, _d0) = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
         coords.clone(),
@@ -1092,6 +1093,7 @@ fn staggered_fracture_compliance_monotone_increasing() {
             gc: 0.01,
             length_scale: 0.05,
             kappa_reg: 1e-6,
+            outer_stopping: StaggeredOuterDamageStopCriteria::default(),
         };
         let (u_k, d_k) = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
             coords.clone(),
@@ -1130,5 +1132,380 @@ fn staggered_fracture_compliance_monotone_increasing() {
             w[1] >= w[0] - 1e-4,
             "compliance must be monotone non-decreasing; got sequence {compliances:?}"
         );
+    }
+}
+
+
+#[cfg(feature = "fracture-at2")]
+#[test]
+fn at2_staggered_outer_cfg_fixed_iters_matches_legacy() {
+    use burn::tensor::Int;
+    use umst_manifold::physics::solvers::{PhaseFieldFractureSolver, StaggeredDamageOuterLoopConfig};
+
+    let dev = NdArrayDevice::Cpu;
+    let batch = 1usize;
+    let n = 3usize;
+    let e_ct = 2usize;
+    let edges_b1: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(vec![0i64, 1, 1, 2], Shape::new([2, e_ct])), &dev);
+    let exx = 1e-3_f32;
+    let mut strain_data = vec![0.0_f32; batch * n * 3 * 3];
+    for nod in 0..n {
+        let base = (batch * nod) * 9;
+        strain_data[base] = exx;
+        strain_data[base + 4] = 0.0;
+        strain_data[base + 8] = 0.0;
+    }
+    let strain: Tensor<B, 4> =
+        Tensor::from_data(Data::new(strain_data, Shape::new([batch, n, 3, 3])), &dev);
+
+    let damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+    let fracture_energy_gc = Tensor::from_data(
+        Data::new(vec![150.0_f32; batch * n], Shape::new([batch, n, 1])),
+        &dev,
+    );
+    let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
+    let strain_a = strain.clone();
+    let d_legacy = solver.update_damage_staggered(
+        move |_d: &Tensor<B, 3>| strain_a.clone(),
+        damage.clone(),
+        fracture_energy_gc.clone(),
+        edges_b1.clone(),
+        4,
+    );
+    let strain_b = strain.clone();
+    let d_cfg = solver.update_damage_staggered_with_outer_cfg(
+        move |_d: &Tensor<B, 3>| strain_b.clone(),
+        damage,
+        fracture_energy_gc,
+        edges_b1,
+        StaggeredDamageOuterLoopConfig::fixed_iters(4),
+    );
+    assert_eq!(
+        d_legacy.into_data().value,
+        d_cfg.into_data().value,
+        "fixed_iters outer cfg must match legacy staggered loop"
+    );
+}
+
+#[cfg(feature = "fracture-at2")]
+#[test]
+fn at2_staggered_outer_loose_damage_linf_one_pass() {
+    use burn::tensor::Int;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+    use umst_manifold::physics::solvers::{
+        PhaseFieldFractureSolver, StaggeredDamageOuterLoopConfig, StaggeredOuterDamageStopCriteria,
+    };
+
+    let dev = NdArrayDevice::Cpu;
+    let batch = 1usize;
+    let n = 3usize;
+    let e_ct = 2usize;
+    let edges_b1: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(vec![0i64, 1, 1, 2], Shape::new([2, e_ct])), &dev);
+    let exx = 1e-3_f32;
+    let mut strain_data = vec![0.0_f32; batch * n * 3 * 3];
+    for nod in 0..n {
+        let base = (batch * nod) * 9;
+        strain_data[base] = exx;
+        strain_data[base + 4] = 0.0;
+        strain_data[base + 8] = 0.0;
+    }
+    let strain: Tensor<B, 4> =
+        Tensor::from_data(Data::new(strain_data, Shape::new([batch, n, 3, 3])), &dev);
+
+    let damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+    let fracture_energy_gc = Tensor::from_data(
+        Data::new(vec![150.0_f32; batch * n], Shape::new([batch, n, 1])),
+        &dev,
+    );
+    let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
+    let calls = Arc::new(AtomicUsize::new(0));
+    let calls_f = calls.clone();
+    let strain_c = strain.clone();
+    let _ = solver.update_damage_staggered_with_outer_cfg(
+        move |_d: &Tensor<B, 3>| {
+            calls_f.fetch_add(1, Ordering::Relaxed);
+            strain_c.clone()
+        },
+        damage,
+        fracture_energy_gc,
+        edges_b1,
+        StaggeredDamageOuterLoopConfig {
+            max_outer_iterations: 50,
+            stopping: StaggeredOuterDamageStopCriteria {
+                tol_damage_linf: Some(10.0),
+                tol_strain_linf: None,
+                tol_rel_degraded_psi_mean: None,
+            },
+        },
+    );
+    assert_eq!(
+        calls.load(Ordering::Relaxed),
+        1,
+        "loose damage gate should stop after first outer pass"
+    );
+}
+
+#[cfg(feature = "fracture-at2")]
+#[test]
+fn at2_staggered_outer_rel_psi_loose_two_passes() {
+    use burn::tensor::Int;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+    use umst_manifold::physics::solvers::{
+        PhaseFieldFractureSolver, StaggeredDamageOuterLoopConfig, StaggeredOuterDamageStopCriteria,
+    };
+
+    let dev = NdArrayDevice::Cpu;
+    let batch = 1usize;
+    let n = 3usize;
+    let e_ct = 2usize;
+    let edges_b1: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(vec![0i64, 1, 1, 2], Shape::new([2, e_ct])), &dev);
+    let exx = 1e-3_f32;
+    let mut strain_data = vec![0.0_f32; batch * n * 3 * 3];
+    for nod in 0..n {
+        let base = (batch * nod) * 9;
+        strain_data[base] = exx;
+        strain_data[base + 4] = 0.0;
+        strain_data[base + 8] = 0.0;
+    }
+    let strain: Tensor<B, 4> =
+        Tensor::from_data(Data::new(strain_data, Shape::new([batch, n, 3, 3])), &dev);
+
+    let damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+    let fracture_energy_gc = Tensor::from_data(
+        Data::new(vec![150.0_f32; batch * n], Shape::new([batch, n, 1])),
+        &dev,
+    );
+    let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
+    let calls = Arc::new(AtomicUsize::new(0));
+    let calls_f = calls.clone();
+    let strain_c = strain.clone();
+    let _ = solver.update_damage_staggered_with_outer_cfg(
+        move |_d: &Tensor<B, 3>| {
+            calls_f.fetch_add(1, Ordering::Relaxed);
+            strain_c.clone()
+        },
+        damage,
+        fracture_energy_gc,
+        edges_b1,
+        StaggeredDamageOuterLoopConfig {
+            max_outer_iterations: 2,
+            stopping: StaggeredOuterDamageStopCriteria {
+                tol_damage_linf: None,
+                tol_strain_linf: None,
+                tol_rel_degraded_psi_mean: Some(1e30),
+            },
+        },
+    );
+    assert_eq!(
+        calls.load(Ordering::Relaxed),
+        2,
+        "with no early exits, strain_fn should run for each scheduled outer pass"
+    );
+}
+
+#[cfg(feature = "fracture-at2")]
+#[allow(clippy::type_complexity)]
+fn staggered_mechanics_bar_fixture() -> (
+    Tensor<B, 2>,
+    Tensor<B, 2, Int>,
+    Tensor<B, 3>,
+    Tensor<B, 3>,
+    Tensor<B, 3>,
+) {
+    use burn::tensor::Int;
+
+    let dev = NdArrayDevice::Cpu;
+    let batch = 1usize;
+    let n = 20usize;
+    let e_ct = n - 1;
+    let length_l: f32 = 1.0;
+    let h = length_l / ((n - 1) as f32);
+
+    let mut coords_data = Vec::with_capacity(n * 3);
+    for i in 0..n {
+        coords_data.push(i as f32 * h);
+        coords_data.push(0.0);
+        coords_data.push(0.0);
+    }
+    let coords: Tensor<B, 2> = Tensor::from_data(Data::new(coords_data, Shape::new([n, 3])), &dev);
+
+    let mut edges = Vec::with_capacity(2 * e_ct);
+    for eid in 0..e_ct {
+        edges.push(eid as i64);
+    }
+    for eid in 0..e_ct {
+        edges.push((eid + 1) as i64);
+    }
+    let edges_b1: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(edges, Shape::new([2, e_ct])), &dev);
+
+    let force: f32 = 0.1;
+    let mut bf_data = vec![0.0_f32; n * 3];
+    bf_data[(n - 1) * 3] = force;
+    let body_force = Tensor::from_data(Data::new(bf_data, Shape::new([batch, n, 3])), &dev);
+
+    let mut bm_data = vec![0.0_f32; n * 3];
+    for i in 1..n {
+        bm_data[i * 3] = 1.0;
+    }
+    let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([batch, n, 3])), &dev);
+
+    let rho_node = Tensor::<B, 3>::ones([batch, n, 1], &dev);
+
+    (coords, edges_b1, body_force, boundary_mask, rho_node)
+}
+
+#[cfg(feature = "fracture-at2")]
+#[test]
+fn at2_solve_staggered_mechanics_outer_loose_stopping_one_pass() {
+    use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
+
+    let (coords, edges_b1, body_force, boundary_mask, rho_node) = staggered_mechanics_bar_fixture();
+
+    let cg = MechanicsInnerLoopConfig {
+        max_cg_iterations: 400,
+        cg_tolerance: 1e-8,
+        pcg_tolerance: 1e-8,
+        use_preconditioner: true,
+        max_equilibrium_substeps: 1,
+    };
+
+    let cross_section_area = 0.01_f32;
+    let e0: f32 = 1.0;
+
+    let cfg_one = StaggeredFractureConfig {
+        outer_iters: 1,
+        damage_relaxation_passes: 1,
+        gc: 0.01,
+        length_scale: 0.05,
+        kappa_reg: 1e-6,
+        outer_stopping: StaggeredOuterDamageStopCriteria::default(),
+    };
+
+    let cfg_stop = StaggeredFractureConfig {
+        outer_iters: 30,
+        damage_relaxation_passes: 1,
+        gc: 0.01,
+        length_scale: 0.05,
+        kappa_reg: 1e-6,
+        outer_stopping: StaggeredOuterDamageStopCriteria {
+            tol_damage_linf: Some(10.0),
+            tol_strain_linf: None,
+            tol_rel_degraded_psi_mean: None,
+        },
+    };
+
+    let (u1, d1) = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
+        coords.clone(),
+        edges_b1.clone(),
+        body_force.clone(),
+        boundary_mask.clone(),
+        rho_node.clone(),
+        e0,
+        cross_section_area,
+        &cg,
+        cfg_one,
+    );
+    let (u2, d2) = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
+        coords,
+        edges_b1,
+        body_force,
+        boundary_mask,
+        rho_node,
+        e0,
+        cross_section_area,
+        &cg,
+        cfg_stop,
+    );
+    let v1 = u1.into_data().value;
+    let v2 = u2.into_data().value;
+    let tol = 1e-4_f32;
+    for i in 0..v1.len() {
+        assert!((v1[i] - v2[i]).abs() < tol, "u mismatch at {i}");
+    }
+    let w1 = d1.into_data().value;
+    let w2 = d2.into_data().value;
+    for i in 0..w1.len() {
+        assert!((w1[i] - w2[i]).abs() < tol, "d mismatch at {i}");
+    }
+}
+
+#[cfg(feature = "fracture-at2")]
+#[test]
+fn staggered_mechanics_outer_damage_stop_matches_long_budget() {
+    use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
+
+    let (coords, edges_b1, body_force, boundary_mask, rho_node) = staggered_mechanics_bar_fixture();
+
+    let cg = MechanicsInnerLoopConfig {
+        max_cg_iterations: 400,
+        cg_tolerance: 1e-8,
+        pcg_tolerance: 1e-8,
+        use_preconditioner: true,
+        max_equilibrium_substeps: 1,
+    };
+
+    let cross_section_area = 0.01_f32;
+    let e0: f32 = 1.0;
+
+    let cfg_long = StaggeredFractureConfig {
+        outer_iters: 8,
+        damage_relaxation_passes: 1,
+        gc: 0.01,
+        length_scale: 0.05,
+        kappa_reg: 1e-6,
+        outer_stopping: StaggeredOuterDamageStopCriteria::default(),
+    };
+
+    let cfg_inactive_stop = StaggeredFractureConfig {
+        outer_iters: 8,
+        damage_relaxation_passes: 1,
+        gc: 0.01,
+        length_scale: 0.05,
+        kappa_reg: 1e-6,
+        outer_stopping: StaggeredOuterDamageStopCriteria {
+            tol_damage_linf: Some(-1.0),
+            tol_strain_linf: None,
+            tol_rel_degraded_psi_mean: None,
+        },
+    };
+
+    let (u_long, d_long) = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
+        coords.clone(),
+        edges_b1.clone(),
+        body_force.clone(),
+        boundary_mask.clone(),
+        rho_node.clone(),
+        e0,
+        cross_section_area,
+        &cg,
+        cfg_long,
+    );
+    let (u_s, d_s) = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
+        coords,
+        edges_b1,
+        body_force,
+        boundary_mask,
+        rho_node,
+        e0,
+        cross_section_area,
+        &cg,
+        cfg_inactive_stop,
+    );
+    let tol = 1e-4_f32;
+    let v1 = u_long.into_data().value;
+    let v2 = u_s.into_data().value;
+    for i in 0..v1.len() {
+        assert!((v1[i] - v2[i]).abs() < tol, "u mismatch at {i}");
+    }
+    let w1 = d_long.into_data().value;
+    let w2 = d_s.into_data().value;
+    for i in 0..w1.len() {
+        assert!((w1[i] - w2[i]).abs() < tol, "d mismatch at {i}");
     }
 }

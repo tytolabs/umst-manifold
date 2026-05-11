@@ -103,6 +103,43 @@ use crate::core::tensors::UnifiedMaterialStateTensor;
 #[cfg(feature = "fracture-at2")]
 use burn::tensor::{Data, Shape};
 
+/// Optional early exit for staggered damage outers and
+/// [`PhaseFieldFractureSolver::solve_staggered_with_mechanics`].
+///
+/// Every tolerance field that is `Some` must pass **in the same outer pass** (logical **AND**);
+/// omitted fields are ignored. The relative \((1-d)^2\psi^+\) mean gate requires feature
+/// **`fracture-at2`** (otherwise it is ignored at runtime). Track 12 memo §3.3.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct StaggeredOuterDamageStopCriteria {
+    pub tol_damage_linf: Option<f32>,
+    pub tol_strain_linf: Option<f32>,
+    pub tol_rel_degraded_psi_mean: Option<f32>,
+}
+
+impl StaggeredOuterDamageStopCriteria {
+    pub fn any_enabled(self) -> bool {
+        self.tol_damage_linf.is_some()
+            || self.tol_strain_linf.is_some()
+            || self.tol_rel_degraded_psi_mean.is_some()
+    }
+}
+
+/// Budget and stopping for [`PhaseFieldFractureSolver::update_damage_staggered_with_outer_cfg`].
+#[derive(Clone, Copy, Debug)]
+pub struct StaggeredDamageOuterLoopConfig {
+    pub max_outer_iterations: usize,
+    pub stopping: StaggeredOuterDamageStopCriteria,
+}
+
+impl StaggeredDamageOuterLoopConfig {
+    pub fn fixed_iters(n: usize) -> Self {
+        Self {
+            max_outer_iterations: n,
+            stopping: StaggeredOuterDamageStopCriteria::default(),
+        }
+    }
+}
+
 /// Configuration for the staggered elasticity–damage outer loop in
 /// [`PhaseFieldFractureSolver::solve_staggered_with_mechanics`].
 #[derive(Clone, Copy, Debug)]
@@ -120,6 +157,9 @@ pub struct StaggeredFractureConfig {
     pub length_scale: f32,
     /// Regularization floor on degraded stiffness `g(d) = (1−d)² + k_reg`.
     pub kappa_reg: f32,
+    /// Optional early exit after each damage update (same AND predicate as
+    /// [`PhaseFieldFractureSolver::update_damage_staggered_with_stop`]).
+    pub outer_stopping: StaggeredOuterDamageStopCriteria,
 }
 
 /// Maps graph Voigt strain `[B, N, 6]` from [`VectorMechanicsSolver::voigt_strain_from_edge_displacement`]
@@ -333,8 +373,8 @@ impl PhaseFieldFractureSolver {
     /// strain and the initial damage. See module section **update_damage_staggered backward compatibility**.
     pub fn update_damage_staggered<B, F>(
         &self,
-        mut strain_fn: F,
-        mut damage: Tensor<B, 3>,
+        strain_fn: F,
+        damage: Tensor<B, 3>,
         fracture_energy_gc: Tensor<B, 3>,
         edges_b1: Tensor<B, 2, Int>,
         outer_iterations: usize,
@@ -343,16 +383,115 @@ impl PhaseFieldFractureSolver {
         B: Backend<FloatElem = f32>,
         F: FnMut(&Tensor<B, 3>) -> Tensor<B, 4>,
     {
-        for _ in 0..outer_iterations {
+        self.update_damage_staggered_with_outer_cfg(
+            strain_fn,
+            damage,
+            fracture_energy_gc,
+            edges_b1,
+            StaggeredDamageOuterLoopConfig::fixed_iters(outer_iterations),
+        )
+    }
+
+    pub fn update_damage_staggered_with_outer_cfg<B, F>(
+        &self,
+        mut strain_fn: F,
+        mut damage: Tensor<B, 3>,
+        fracture_energy_gc: Tensor<B, 3>,
+        edges_b1: Tensor<B, 2, Int>,
+        outer: StaggeredDamageOuterLoopConfig,
+    ) -> Tensor<B, 3>
+    where
+        B: Backend<FloatElem = f32>,
+        F: FnMut(&Tensor<B, 3>) -> Tensor<B, 4>,
+    {
+        let outer = {
+            #[cfg(not(feature = "fracture-at2"))]
+            {
+                StaggeredDamageOuterLoopConfig {
+                    max_outer_iterations: outer.max_outer_iterations,
+                    stopping: StaggeredOuterDamageStopCriteria {
+                        tol_rel_degraded_psi_mean: None,
+                        ..outer.stopping
+                    },
+                }
+            }
+            #[cfg(feature = "fracture-at2")]
+            {
+                outer
+            }
+        };
+
+        if outer.max_outer_iterations == 0 {
+            return damage;
+        }
+
+        let mut prev_strain: Option<Tensor<B, 4>> = None;
+        #[cfg(feature = "fracture-at2")]
+        let mut prev_psi_mean: Option<f32> = None;
+
+        for _ in 0..outer.max_outer_iterations {
+            let d_before = damage.clone();
             let strain_k = strain_fn(&damage);
+            let prev_s = prev_strain.as_ref();
+
             damage = self.update_damage(
-                strain_k,
+                strain_k.clone(),
                 damage,
                 fracture_energy_gc.clone(),
                 edges_b1.clone(),
             );
+
+            #[cfg(feature = "fracture-at2")]
+            let should_break = outer_stopping_should_break(
+                outer.stopping,
+                &d_before,
+                &damage,
+                &strain_k,
+                prev_s,
+                Some(&mut prev_psi_mean),
+            );
+            #[cfg(not(feature = "fracture-at2"))]
+            let should_break = outer_stopping_should_break(
+                outer.stopping,
+                &d_before,
+                &damage,
+                &strain_k,
+                prev_s,
+                None,
+            );
+
+            prev_strain = Some(strain_k);
+
+            if should_break {
+                break;
+            }
         }
         damage
+    }
+
+    pub fn update_damage_staggered_with_stop<B, F>(
+        &self,
+        strain_fn: F,
+        damage: Tensor<B, 3>,
+        fracture_energy_gc: Tensor<B, 3>,
+        edges_b1: Tensor<B, 2, Int>,
+        max_outer_iterations: usize,
+        stop: StaggeredOuterDamageStopCriteria,
+    ) -> Tensor<B, 3>
+    where
+        B: Backend<FloatElem = f32>,
+        F: FnMut(&Tensor<B, 3>) -> Tensor<B, 4>,
+    {
+        self.update_damage_staggered_with_outer_cfg(
+            strain_fn,
+            damage,
+            fracture_energy_gc,
+            edges_b1,
+            StaggeredDamageOuterLoopConfig {
+                max_outer_iterations,
+                stopping: stop,
+            },
+        )
     }
 
     /// Staggered elasticity–damage alternation that owns the mechanics solve internally.
@@ -415,6 +554,10 @@ impl PhaseFieldFractureSolver {
         let mut d = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
         let mut u = Tensor::<B, 3>::zeros([batch, n, 3], &dev);
 
+        let stop = config.outer_stopping;
+        let mut prev_strain: Option<Tensor<B, 4>> = None;
+        let mut prev_psi_mean: Option<f32> = None;
+
         for _outer in 0..config.outer_iters {
             // Multiplicative degradation g(d) = (1-d)^2 + k_reg applied to per-node E_young.
             // VectorMechanicsSolver also applies its own internal degradation via the `damage`
@@ -454,12 +597,97 @@ impl PhaseFieldFractureSolver {
                 n,
             );
             let strain4 = symmetric_strain_tensor_from_graph_voigt6(eps_v);
+            let d_before = d.clone();
+            let prev_s = prev_strain.as_ref();
 
-            d = solver.update_damage(strain4, d, gc_field.clone(), edges_b1.clone());
+            d = solver.update_damage(
+                strain4.clone(),
+                d,
+                gc_field.clone(),
+                edges_b1.clone(),
+            );
+
+            if outer_stopping_should_break(
+                stop,
+                &d_before,
+                &d,
+                &strain4,
+                prev_s,
+                Some(&mut prev_psi_mean),
+            ) {
+                break;
+            }
+            prev_strain = Some(strain4);
         }
 
         (u, d)
     }
+}
+
+#[cfg(feature = "fracture-at2")]
+fn degraded_psi_mean_scalar<B: Backend<FloatElem = f32>>(
+    strain: Tensor<B, 4>,
+    damage: Tensor<B, 3>,
+) -> f32 {
+    let psi = tensile_strain_energy_density_spectral_jacobi(strain);
+    let one_m = Tensor::<B, 3>::ones_like(&damage).sub(damage);
+    let weighted = one_m.clone().mul(one_m).mul(psi);
+    let [b, n, _] = weighted.dims();
+    let denom = (b * n).max(1) as f32;
+    weighted.sum().into_scalar() / denom
+}
+
+fn outer_stopping_hit_or<B: Backend<FloatElem = f32>>(
+    stop: StaggeredOuterDamageStopCriteria,
+    d_before: &Tensor<B, 3>,
+    d_after: &Tensor<B, 3>,
+    strain_curr: &Tensor<B, 4>,
+    prev_strain: Option<&Tensor<B, 4>>,
+    prev_psi_mean: Option<&mut Option<f32>>,
+) -> bool {
+    if !stop.any_enabled() {
+        return false;
+    }
+    let mut hit = false;
+    if let Some(tol) = stop.tol_damage_linf {
+        let inc = d_after
+            .clone()
+            .sub(d_before.clone())
+            .abs()
+            .max()
+            .into_scalar();
+        if inc < tol {
+            hit = true;
+        }
+    }
+    if let Some(tol) = stop.tol_strain_linf {
+        if let Some(ps) = prev_strain {
+            let ds = strain_curr
+                .clone()
+                .sub(ps.clone())
+                .abs()
+                .max()
+                .into_scalar();
+            if ds < tol {
+                hit = true;
+            }
+        }
+    }
+    #[cfg(feature = "fracture-at2")]
+    if let (Some(tol), Some(slot)) = (stop.tol_rel_degraded_psi_mean, prev_psi_mean) {
+        let cur = degraded_psi_mean_scalar(strain_curr.clone(), d_after.clone());
+        let psi_hit = match *slot {
+            None => false,
+            Some(prev) => (cur - prev).abs() / (prev.abs() + 1e-30_f32) < tol,
+        };
+        *slot = Some(cur);
+        if psi_hit {
+            hit = true;
+        }
+    }
+    #[cfg(not(feature = "fracture-at2"))]
+    let _ = prev_psi_mean;
+    hit
 }
 
 #[cfg(feature = "fracture-at2")]
