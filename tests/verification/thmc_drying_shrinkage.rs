@@ -13,14 +13,17 @@ use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::tensors::{MixTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
+use umst_manifold::physics::laplacian::TopologicalLaplacian;
+use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::solvers::{
-    mc2010_style_notional_shrink_strain, shrink_strain_from_saturation_loss,
+    full_hydration_alpha_rate_tensor, mc2010_style_notional_shrink_strain, shrink_strain_from_saturation_loss,
     shrink_strain_from_saturation_loss_tensor, spectral_tensile_psi_plus_from_strain,
     strain_tensor_for_fracture_from_manifold, ChemicalPlan, HydrologicPlan, MechanicalPlan,
     ThermalPlan, ThmcHydrationKinetics, ThmcImplicitEulerThermalHumidityHydrationResidual,
     ThmcImplicitEulerThermalHydrationResidual, ThmcImplicitTAlphaNewtonConfig,
-    ThmcMonolithicImplicitUnknownLayout, ThmcSolver, ThmcState,
+    ThmcMonolithicImplicitUnknownLayout, ThmcMonolithicNewtonConfig, ThmcSolver, ThmcState,
 };
+use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
 type B = NdArray<f32>;
 
@@ -188,6 +191,7 @@ fn thmc_drying_shrinkage_within_mc2010_notional_band() {
         drying_last_node_evaporation_k: 0.35_f32,
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
+        monolithic_thmc_newton: None,
     };
     let mut s = state;
     for _ in 0..560 {
@@ -401,6 +405,7 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
         drying_last_node_evaporation_k: 0.0_f32,
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
+        monolithic_thmc_newton: None,
     };
 
     let s_tension = solver
@@ -1802,6 +1807,7 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
         drying_last_node_evaporation_k: 0.0_f32,
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
+        monolithic_thmc_newton: None,
     };
     let solver_implicit = ThmcSolver {
         implicit_t_alpha_newton: Some(ThmcImplicitTAlphaNewtonConfig {
@@ -1840,6 +1846,349 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
         "expected implicit (T,α) Newton to differ from explicit split; |ΔT|₁+|Δα|₁ sum = {}",
         t_diff + a_diff
     );
+}
+
+/// Phase 5 guard: [`ThmcSolver::monolithic_thmc_newton`] cannot be combined with [`ThmcImplicitTAlphaNewtonConfig`].
+#[test]
+fn thmc_step_monolithic_newton_errors_when_both_implicit_flags_set() {
+    let d = dev();
+    let n = 2usize;
+    let manifold = chain_manifold(n);
+    let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
+    let state0 = ThmcState {
+        thermal: ThermalPlan {
+            temperature: Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
+        },
+        hydro: HydrologicPlan {
+            humidity: Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
+        },
+        mechanical: MechanicalPlan {
+            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
+        },
+        damage: damage.clone(),
+        time: 0.0_f32,
+    };
+    let solver = ThmcSolver {
+        implicit_t_alpha_newton: Some(ThmcImplicitTAlphaNewtonConfig {
+            iterations: 3_usize,
+            damping: 1.0_f32,
+            fd_eps: 1.0e-5_f32,
+        }),
+        monolithic_thmc_newton: Some(ThmcMonolithicNewtonConfig {
+            iterations: 4_usize,
+            damping: 1.0_f32,
+            fd_eps: 1.0e-5_f32,
+        }),
+        drying_last_node_evaporation_k: 0.0_f32,
+        ..Default::default()
+    };
+    let err = match solver.step(&Stub, state0, &manifold) {
+        Ok(_) => panic!("expected mutual exclusion error"),
+        Err(e) => e,
+    };
+    assert!(
+        err.contains("mutually exclusive"),
+        "unexpected error: {err}"
+    );
+}
+
+/// Monolithic \(R_h\) is pure implicit diffusion; facet drying closure is rejected.
+#[test]
+fn thmc_step_monolithic_newton_errors_when_drying_sink_enabled() {
+    let d = dev();
+    let n = 2usize;
+    let manifold = chain_manifold(n);
+    let state0 = ThmcState {
+        thermal: ThermalPlan {
+            temperature: Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
+        },
+        hydro: HydrologicPlan {
+            humidity: Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
+        },
+        mechanical: MechanicalPlan {
+            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
+        },
+        damage: Tensor::<B, 3>::zeros([1, n, 1], &d),
+        time: 0.0_f32,
+    };
+    let solver = ThmcSolver {
+        drying_last_node_evaporation_k: 0.1_f32,
+        monolithic_thmc_newton: Some(ThmcMonolithicNewtonConfig::default()),
+        implicit_t_alpha_newton: None,
+        ..Default::default()
+    };
+    let err = match solver.step(&Stub, state0, &manifold) {
+        Ok(_) => panic!("expected drying sink incompatibility"),
+        Err(e) => e,
+    };
+    assert!(
+        err.contains("drying_last_node_evaporation_k"),
+        "unexpected error: {err}"
+    );
+}
+
+/// **Phase 5 integration:** [`ThmcSolver::step`] monolithic branch matches a standalone call to
+/// [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]
+/// when the predictor block matches `thmc.rs` `step_experimental` (keep in sync on edits).
+///
+/// Uses the same BC mask pattern as [`thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes`]
+/// (all \(y,z\) clamped; \(u_x\) free at the loaded end only) so the dense Jacobian is well-conditioned.
+#[test]
+fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
+    let d = dev();
+    let n = 2usize;
+    let mut manifold = chain_manifold(n);
+    let mut bm_flat = vec![1.0_f32; n * 3];
+    bm_flat[0] = 0.0_f32;
+    for i in 0..n {
+        bm_flat[i * 3 + 1] = 0.0_f32;
+        bm_flat[i * 3 + 2] = 0.0_f32;
+    }
+    manifold.displacement_bc_mask =
+        Tensor::from_data(Data::new(bm_flat, Shape::new([n, 3, 1])), &d);
+
+    let coords_n3 = manifold
+        .node_positions
+        .as_ref()
+        .expect("chain SI coords")
+        .clone();
+    let edges_b1 = manifold.edges_b1.clone();
+    let batch = 1usize;
+    let kinetics = ThmcHydrationKinetics::default();
+    let dt = 0.02_f32;
+    let mc = ThmcMonolithicNewtonConfig {
+        iterations: 4_usize,
+        damping: 1.0_f32,
+        fd_eps: 1.0e-5_f32,
+    };
+
+    let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
+    let t_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let h_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.50_f32, 0.62_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let alpha_n = Tensor::<B, 3>::from_data(
+        Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
+        &d,
+    );
+    let state0 = ThmcState {
+        thermal: ThermalPlan {
+            temperature: t_n.clone(),
+        },
+        hydro: HydrologicPlan {
+            humidity: h_n.clone(),
+        },
+        mechanical: MechanicalPlan {
+            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: alpha_n.clone(),
+        },
+        damage: damage.clone(),
+        time: 0.0_f32,
+    };
+
+    let solver = ThmcSolver {
+        dt,
+        max_newton: 1_usize,
+        tol: 1e-3_f32,
+        hydration: kinetics.clone(),
+        drying_last_node_evaporation_k: 0.0_f32,
+        drying_ambient_h: 0.5_f32,
+        implicit_t_alpha_newton: None,
+        monolithic_thmc_newton: Some(mc.clone()),
+    };
+    let s_step = solver
+        .step(&Stub, clone_thmc_state(&state0), &manifold)
+        .expect("monolithic step");
+
+    // --- Mirror `step_experimental` monolithic predictor + standalone Newton ---
+    let device = state0.thermal.temperature.device();
+    let t_old = state0.thermal.temperature.clone();
+    let h_old = state0.hydro.humidity.clone();
+    let alpha_n = state0.chemical.hydration_alpha.clone();
+    let damage_m = damage.clone();
+    let lap_t = TopologicalLaplacian::scalar_laplacian(
+        t_old.clone(),
+        edges_b1.clone(),
+        damage_m.clone(),
+    );
+    let lap_h = TopologicalLaplacian::scalar_laplacian(
+        h_old.clone(),
+        edges_b1.clone(),
+        damage_m.clone(),
+    );
+    let dt_lap_t = lap_t.mul_scalar(dt);
+    let dt_lap_h = lap_h.mul_scalar(dt);
+    let f_alpha_ch = alpha_n.dims()[2];
+    let t_bn1 = t_old.clone().slice([0..batch, 0..n, 0..1]);
+    let temperature_for_alpha = if f_alpha_ch == 1 {
+        t_bn1
+    } else {
+        t_bn1.expand::<3, _>([batch, n, f_alpha_ch])
+    };
+    let d_alpha = full_hydration_alpha_rate_tensor(
+        &kinetics,
+        alpha_n.clone(),
+        temperature_for_alpha,
+        &device,
+    );
+    let f_t_ch = t_old.dims()[2];
+    let exo = d_alpha
+        .clone()
+        .slice([0..batch, 0..n, 0..1])
+        .mul_scalar(kinetics.exothermic_k_per_alpha_rate * dt)
+        .expand::<3, _>([batch, n, f_t_ch]);
+
+    let mask = manifold.displacement_bc_mask.clone();
+    let bm_core = match mask.dims()[..] {
+        [nn, 3, 1] if nn == n => mask.reshape([nn, 3]),
+        [1, nn, 3] if nn == n => mask.clone().slice([0..1, 0..n, 0..3]).reshape([nn, 3]),
+        _ => panic!("unexpected displacement_bc_mask dims {:?}", mask.dims()),
+    };
+    let bm = bm_core
+        .unsqueeze_dim::<3>(0)
+        .expand::<3, _>([batch, n, 3]);
+    let bf = Tensor::<B, 3>::zeros([batch, n, 3], &device);
+    let inner_cfg = MechanicsInnerLoopConfig::default();
+    let cross_section_area = 0.01_f32;
+
+    let t_predict = t_old.clone().add(dt_lap_t.clone()).add(exo.clone());
+    let h_predict = h_old.clone().add(dt_lap_h.clone());
+    let alpha_predict = alpha_n
+        .clone()
+        .add(d_alpha.clone().mul_scalar(dt))
+        .clamp(0.0_f32, 1.0_f32);
+    let alpha_bn1_pred = alpha_predict
+        .clone()
+        .slice([0..batch, 0..n, 0..1])
+        .clamp(1e-6_f32, 1.0_f32);
+    let stiffness_e = alpha_bn1_pred.mul_scalar(kinetics.stiffness_e_scale_pa);
+    let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &device).add_scalar(kinetics.stiffness_nu);
+    let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
+    let (u_predict, _) = VectorMechanicsSolver::solve_equilibrium(
+        state0.mechanical.displacement.clone(),
+        coords_n3.clone(),
+        stiffness,
+        bf.clone(),
+        edges_b1.clone(),
+        damage_m.clone(),
+        bm.clone(),
+        cross_section_area,
+        &inner_cfg,
+    );
+
+    let trial = ThmcState {
+        thermal: ThermalPlan {
+            temperature: t_predict,
+        },
+        hydro: HydrologicPlan {
+            humidity: h_predict,
+        },
+        mechanical: MechanicalPlan {
+            displacement: u_predict,
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: alpha_predict,
+        },
+        damage: state0.damage.clone(),
+        time: state0.time,
+    };
+
+    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+        dt,
+        temperature_n: t_old.clone(),
+        humidity_n: h_old.clone(),
+        alpha_n: alpha_n.clone(),
+        displacement_n: state0.mechanical.displacement.clone(),
+        mechanics_placeholder_mass: 1.0_f32,
+        ru_shrinkage_water_cement_ratio: None,
+        edges_b1: edges_b1.clone(),
+        damage_m: damage_m.clone(),
+        kinetics: kinetics.clone(),
+    };
+    let (updated_standalone, _) = assembler
+        .damped_newton_iterations_with_quasi_static_r_u(
+            &trial,
+            &coords_n3,
+            &bm,
+            &bf,
+            cross_section_area,
+            mc.iterations,
+            mc.damping,
+            mc.fd_eps,
+        )
+        .expect("standalone monolithic Newton");
+
+    let eps = 5e-5_f32;
+    for (a, b) in s_step
+        .thermal
+        .temperature
+        .clone()
+        .into_data()
+        .value
+        .iter()
+        .zip(updated_standalone.thermal.temperature.into_data().value.iter())
+    {
+        assert!((a - b).abs() < eps, "T mismatch: {a} vs {b}");
+    }
+    for (a, b) in s_step
+        .hydro
+        .humidity
+        .clone()
+        .into_data()
+        .value
+        .iter()
+        .zip(updated_standalone.hydro.humidity.into_data().value.iter())
+    {
+        assert!((a - b).abs() < eps, "h mismatch: {a} vs {b}");
+    }
+    for (a, b) in s_step
+        .chemical
+        .hydration_alpha
+        .clone()
+        .into_data()
+        .value
+        .iter()
+        .zip(
+            updated_standalone
+                .chemical
+                .hydration_alpha
+                .into_data()
+                .value
+                .iter(),
+        )
+    {
+        assert!((a - b).abs() < eps, "alpha mismatch: {a} vs {b}");
+    }
+    for (a, b) in s_step
+        .mechanical
+        .displacement
+        .clone()
+        .into_data()
+        .value
+        .iter()
+        .zip(
+            updated_standalone
+                .mechanical
+                .displacement
+                .into_data()
+                .value
+                .iter(),
+        )
+    {
+        assert!((a - b).abs() < eps, "u mismatch: {a} vs {b}");
+    }
 }
 
 /// Integration boundary: humidity transport in [`ThmcSolver::step`] uses `h_old + Δt Lap(h_old)` and
@@ -1885,6 +2234,7 @@ fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
         drying_last_node_evaporation_k: 0.0_f32,
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
+        monolithic_thmc_newton: None,
     };
     let solver_implicit = ThmcSolver {
         implicit_t_alpha_newton: Some(ThmcImplicitTAlphaNewtonConfig {
@@ -1951,6 +2301,7 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
         drying_last_node_evaporation_k: 0.0_f32,
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
+        monolithic_thmc_newton: None,
     };
     let solver_implicit = ThmcSolver {
         implicit_t_alpha_newton: Some(ThmcImplicitTAlphaNewtonConfig {

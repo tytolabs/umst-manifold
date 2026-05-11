@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-//! Monolithic THMC coupling (Phase 5) — **orchestration skeleton**.
+//! Monolithic THMC coupling — operator-split **`ThmcSolver::step`** with optional implicit Newton blocks.
 //!
 //! **Solver status:** [`docs/Solver-Status.md`](../../../docs/Solver-Status.md) — deferred-index **THMC** bullet and
 //! table row `solvers::thmc` (`ThmcSolver`, feature `thmc-coupled`, `tests/verification/thmc_drying_shrinkage.rs`).
@@ -19,9 +19,11 @@
 //! - **\(R_u\) — mechanical:** equilibrium / momentum residual for displacement (stress divergence + body forces).
 //! - **\(R_\alpha\) — chemical / hydration:** hydration degree evolution residual (kinetics vs stored \(\alpha\)).
 //!
-//! **Monolithic Newton (Track G — not yet implemented):** a true implicit step solves \(R(U^{k+1})=0\) with
-//! consistent linearisation (analytic diagonal blocks + finite-difference band for off-diagonals) and a
-//! preconditioned Krylov solve on the coupled increment. The current [`ThmcSolver::step`] path is an
+//! **Monolithic Newton (Phase 5 — partial):** when [`ThmcSolver::monolithic_thmc_newton`] is `Some`,
+//! each outer pass replaces the split \((T,\alpha)\to h\to u\) sequence with dense damped Newton on the
+//! backward-Euler stacked unknowns including quasi-static \(R_u\)
+//! ([`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]).
+//! Krylov / large-DOF Jacobians and adaptive `dt` remain future work. Without that config, [`ThmcSolver::step`] is an
 //! **operator split** per outer `max_newton` pass: **(1)** advance **\(T\)** and **hydration \(\alpha\)** (explicit
 //! thermal Laplacian + exothermic coupling, or opt-in backward-Euler **\((T,\alpha)\)** damped Newton), **(2)**
 //! advance **humidity \(h\)** (topological Laplacian + optional tail drying), **(3)** quasi-static **bar \(u\)** when
@@ -43,8 +45,12 @@
 //! same sub-step as \(T\) (explicit or implicit BE block). Fracture runs **once** after all outer passes.
 //! Coupled Jacobians and cartridge closures remain future work. **No** global finite-difference or AD
 //! Jacobian is assembled on [`ThmcSolver::step`]; `max_newton` only repeats the same operator-split pattern
-//! (diagnostic residuals only—no full THMC Newton correction). The optional dense Jacobian for \((T,\alpha)\)
-//! applies only when [`ThmcSolver::implicit_t_alpha_newton`] is `Some` (feature `thmc-coupled`).
+//! (diagnostic residuals only—no full THMC Newton correction) **unless** [`ThmcSolver::implicit_t_alpha_newton`] or
+//! [`ThmcSolver::monolithic_thmc_newton`] is `Some` — see below. The optional dense Jacobian for \((T,\alpha)\)
+//! applies only when [`ThmcSolver::implicit_t_alpha_newton`] is `Some` (feature `thmc-coupled`). **Phase 5:** when
+//! [`ThmcSolver::monolithic_thmc_newton`] is `Some`, each outer pass runs
+//! [`crate::physics::solvers::thmc_residual::ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`] instead of the
+//! split \((T,\alpha)\to h\to u\) sequence (small graphs only — see struct rustdoc).
 //!
 //! **Calibration surface (cross-ref Solver-Status THMC):** [`ThmcHydrationKinetics`] bundles Arrhenius /
 //! exothermic / T-boost / mechanics **E** scale defaults (same shipped numbers as the legacy
@@ -86,7 +92,10 @@ use crate::physics::solvers::fracture_field::{
     strain_tensor_from_bar_network_displacement, PhaseFieldFractureSolver,
 };
 #[cfg(feature = "thmc-coupled")]
-use crate::physics::solvers::thmc_residual::ThmcImplicitEulerThermalHydrationResidual;
+use crate::physics::solvers::thmc_residual::{
+    ThmcImplicitEulerThermalHumidityHydrationResidual, ThmcImplicitEulerThermalHydrationResidual,
+    ThmcMonolithicImplicitUnknownLayout,
+};
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
 
@@ -207,6 +216,15 @@ pub struct ThmcSolver {
     /// Newton on the backward-Euler \((T,\alpha)\) residual ([`ThmcImplicitTAlphaNewtonConfig`]).
     /// Default **`None`**: legacy explicit split (unchanged behaviour).
     pub implicit_t_alpha_newton: Option<ThmcImplicitTAlphaNewtonConfig>,
+    /// Opt-in **Phase 5** dense damped Newton on backward-Euler \((T,h,\alpha,\mathbf u)\) with
+    /// quasi-static bar \(R_u\) ([`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]).
+    ///
+    /// **Requires:** `batch == 1`, `[N,3]` SI `node_positions`, compatible `displacement_bc_mask`,
+    /// stacked DOFs \(\le 64\), and **`drying_last_node_evaporation_k == 0`** (pure implicit diffusion \(R_h\)).
+    /// Mutually exclusive with [`Self::implicit_t_alpha_newton`]. Default **`None`**.
+    ///
+    /// Call [`Self::step`] as usual, or [`Self::step_monolithic_implicit`] to assert this branch is configured.
+    pub monolithic_thmc_newton: Option<ThmcMonolithicNewtonConfig>,
 }
 
 impl Default for ThmcSolver {
@@ -219,6 +237,7 @@ impl Default for ThmcSolver {
             drying_last_node_evaporation_k: 0.0_f32,
             drying_ambient_h: 0.5_f32,
             implicit_t_alpha_newton: None,
+            monolithic_thmc_newton: None,
         }
     }
 }
@@ -258,6 +277,7 @@ impl ThmcSolver {
                 self.drying_last_node_evaporation_k,
                 self.drying_ambient_h,
                 self.implicit_t_alpha_newton.clone(),
+                self.monolithic_thmc_newton.clone(),
             );
             let _ = (cartridge, manifold);
             drop(state);
@@ -266,6 +286,35 @@ impl ThmcSolver {
                     .to_string(),
             )
         }
+    }
+
+    /// One coupled THMC step using the **Phase 5** monolithic backward-Euler Newton path only.
+    ///
+    /// Equivalent to [`Self::step`] after configuring [`Self::monolithic_thmc_newton`] with
+    /// [`ThmcMonolithicNewtonConfig`]; this entrypoint returns `Err` if that field is `None` so call sites
+    /// can assert the dense \((T,h,\alpha,\mathbf u)\) + quasi-static \(R_u\) branch is intended.
+    ///
+    /// **Requires** `thmc-coupled` (same as [`Self::step`]). See [`Self::monolithic_thmc_newton`] for geometry
+    /// and `drying_last_node_evaporation_k == 0` constraints.
+    #[cfg(feature = "thmc-coupled")]
+    #[must_use = "THMC state advance must be consumed or propagated; ignoring the result drops the updated physics bundle"]
+    pub fn step_monolithic_implicit<B, C>(
+        &self,
+        cartridge: &C,
+        state: ThmcState<B>,
+        manifold: &UnifiedMaterialStateTensor<B>,
+    ) -> Result<ThmcState<B>, String>
+    where
+        B: Backend<FloatElem = f32>,
+        C: IScienceCartridge<B>,
+    {
+        if self.monolithic_thmc_newton.is_none() {
+            return Err(
+                "ThmcSolver::step_monolithic_implicit: monolithic_thmc_newton must be Some(ThmcMonolithicNewtonConfig { .. })"
+                    .into(),
+            );
+        }
+        self.step(cartridge, state, manifold)
     }
 
     /// Implicit-step Jacobian hook reserved for autodiff-backed Newton (experimental only).
@@ -315,6 +364,53 @@ impl ThmcSolver {
             _ => state.damage.clone().slice([0..batch, 0..n, 0..1]),
         };
 
+        if self.monolithic_thmc_newton.is_some() && self.implicit_t_alpha_newton.is_some() {
+            return Err(
+                "ThmcSolver::step: monolithic_thmc_newton and implicit_t_alpha_newton are mutually exclusive; set one to None"
+                    .into(),
+            );
+        }
+
+        if let Some(mc) = self.monolithic_thmc_newton.as_ref() {
+            if mc.iterations < 2 {
+                return Err(
+                    "ThmcSolver::step: monolithic_thmc_newton.iterations must be >= 2".into(),
+                );
+            }
+            if batch != 1 {
+                return Err(format!(
+                    "ThmcSolver::step: monolithic_thmc_newton requires batch size 1, got {batch}"
+                ));
+            }
+            let coords_ok = manifold
+                .node_positions
+                .as_ref()
+                .map(|p| p.dims() == [n, 3])
+                .unwrap_or(false);
+            if !coords_ok {
+                return Err(
+                    "ThmcSolver::step: monolithic_thmc_newton requires manifold.node_positions with shape [N,3]"
+                        .into(),
+                );
+            }
+            if self.drying_last_node_evaporation_k > 0.0_f32 {
+                return Err(
+                    "ThmcSolver::step: monolithic_thmc_newton requires drying_last_node_evaporation_k == 0 (pure implicit diffusion R_h)"
+                        .into(),
+                );
+            }
+            let f_t = state.thermal.temperature.dims()[2];
+            let f_h = state.hydro.humidity.dims()[2];
+            let f_a = state.chemical.hydration_alpha.dims()[2];
+            let m_dof =
+                ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, f_t, f_h, f_a);
+            if m_dof > 64 {
+                return Err(format!(
+                    "ThmcSolver::step: monolithic_thmc_newton exceeds dense-Jacobian cap (64 DOFs), got {m_dof}"
+                ));
+            }
+        }
+
         let mut _last_total_residual_tensor: Option<Tensor<B, 3>> = None;
 
         // Fixed outer Newton iterations: residual norms stay on-device (no `.into_scalar()`);
@@ -362,6 +458,114 @@ impl ThmcSolver {
                 .expand::<3, _>([batch, n, f_t_ch]);
 
             let alpha_n = state.chemical.hydration_alpha.clone();
+
+            if let Some(mc) = self.monolithic_thmc_newton.as_ref() {
+                let coords_n3 = manifold
+                    .node_positions
+                    .as_ref()
+                    .expect("monolithic: [N,3] positions validated before loop");
+                let mask = manifold.displacement_bc_mask.clone();
+                let bm_core = match mask.dims()[..] {
+                    [nn, 3, 1] if nn == n => mask.reshape([nn, 3]),
+                    [1, nn, 3] if nn == n => {
+                        mask.clone().slice([0..1, 0..n, 0..3]).reshape([nn, 3])
+                    }
+                    _ => {
+                        return Err(format!(
+                            "ThmcSolver::step: displacement_bc_mask dims {:?} incompatible with N={n} (expected [N,3,1] or [1,N,3])",
+                            mask.dims()
+                        ));
+                    }
+                };
+                let bm = bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3]);
+                let bf = Tensor::<B, 3>::zeros([batch, n, 3], &device);
+                let inner_cfg = MechanicsInnerLoopConfig::default();
+                let cross_section_area = 0.01_f32;
+
+                let t_predict = t_old.clone().add(dt_lap_t.clone()).add(exo.clone());
+                let h_predict = h_old.clone().add(dt_lap_h.clone());
+                let alpha_predict = alpha_n
+                    .clone()
+                    .add(d_alpha.clone().mul_scalar(self.dt))
+                    .clamp(0.0_f32, 1.0_f32);
+
+                let alpha_bn1_pred = alpha_predict
+                    .clone()
+                    .slice([0..batch, 0..n, 0..1])
+                    .clamp(1e-6_f32, 1.0_f32);
+                let stiffness_e = alpha_bn1_pred.mul_scalar(self.hydration.stiffness_e_scale_pa);
+                let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &device)
+                    .add_scalar(self.hydration.stiffness_nu);
+                let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
+                let (u_predict, _) = VectorMechanicsSolver::solve_equilibrium(
+                    state.mechanical.displacement.clone(),
+                    coords_n3.clone(),
+                    stiffness,
+                    bf.clone(),
+                    edges_b1.clone(),
+                    damage_m.clone(),
+                    bm.clone(),
+                    cross_section_area,
+                    &inner_cfg,
+                );
+
+                let trial = ThmcState {
+                    thermal: ThermalPlan {
+                        temperature: t_predict,
+                    },
+                    hydro: HydrologicPlan {
+                        humidity: h_predict,
+                    },
+                    mechanical: MechanicalPlan {
+                        displacement: u_predict,
+                    },
+                    chemical: ChemicalPlan {
+                        hydration_alpha: alpha_predict,
+                    },
+                    damage: state.damage.clone(),
+                    time: state.time,
+                };
+
+                let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+                    dt: self.dt,
+                    temperature_n: t_old.clone(),
+                    humidity_n: h_old.clone(),
+                    alpha_n: alpha_n.clone(),
+                    displacement_n: state.mechanical.displacement.clone(),
+                    mechanics_placeholder_mass: 1.0_f32,
+                    ru_shrinkage_water_cement_ratio: None,
+                    edges_b1: edges_b1.clone(),
+                    damage_m: damage_m.clone(),
+                    kinetics: self.hydration.clone(),
+                };
+
+                let (updated, _) = assembler.damped_newton_iterations_with_quasi_static_r_u(
+                    &trial,
+                    coords_n3,
+                    &bm,
+                    &bf,
+                    cross_section_area,
+                    mc.iterations,
+                    mc.damping,
+                    mc.fd_eps,
+                )?;
+
+                state.thermal.temperature = updated.thermal.temperature;
+                state.hydro.humidity = updated.hydro.humidity;
+                state.chemical.hydration_alpha = updated.chemical.hydration_alpha;
+                state.mechanical.displacement = updated.mechanical.displacement;
+
+                let r_t = state
+                    .thermal
+                    .temperature
+                    .clone()
+                    .sub(t_old)
+                    .sub(dt_lap_t)
+                    .abs();
+                let r_h = state.hydro.humidity.clone().sub(h_old).sub(dt_lap_h).abs();
+                _last_total_residual_tensor = Some(r_t.add(r_h));
+                continue;
+            }
 
             if let Some(im_cfg) = self.implicit_t_alpha_newton.as_ref() {
                 if batch != 1 {
@@ -596,6 +800,28 @@ impl Default for ThmcImplicitTAlphaNewtonConfig {
     fn default() -> Self {
         Self {
             iterations: 3_usize,
+            damping: 1.0_f32,
+            fd_eps: 1.0e-5_f32,
+        }
+    }
+}
+
+/// Opt-in **Phase 5** damped Newton on backward-Euler \((T,h,\alpha,\mathbf u)\) with quasi-static bar
+/// \(R_u\) — [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`].
+///
+/// Wired from [`ThmcSolver::step`] when [`ThmcSolver::monolithic_thmc_newton`] is `Some` (requires `thmc-coupled`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct ThmcMonolithicNewtonConfig {
+    /// Must be **≥ 2** (matches the residual helper contract).
+    pub iterations: usize,
+    pub damping: f32,
+    pub fd_eps: f32,
+}
+
+impl Default for ThmcMonolithicNewtonConfig {
+    fn default() -> Self {
+        Self {
+            iterations: 4_usize,
             damping: 1.0_f32,
             fd_eps: 1.0e-5_f32,
         }

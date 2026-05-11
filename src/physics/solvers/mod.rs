@@ -46,7 +46,7 @@ pub use thmc::{
 };
 pub use thmc::{
     ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics,
-    ThmcImplicitTAlphaNewtonConfig, ThmcSolver, ThmcState,
+    ThmcImplicitTAlphaNewtonConfig, ThmcMonolithicNewtonConfig, ThmcSolver, ThmcState,
 };
 pub use thmc_residual::{ResidualThmc, ThmcMonolithicImplicitUnknownLayout};
 #[cfg(feature = "thmc-coupled")]
