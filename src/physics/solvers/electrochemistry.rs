@@ -26,7 +26,8 @@
 //!   from `electric_potential`. `try_solve_poisson_chain_thomas` accepts a **`rho_over_eps`** tensor
 //!   and [`ElectroChemicalSolver::mesh_spacing`] \(h\): it reconstructs \(\rho_{e,i}=(\rho/\varepsilon)_i\,\varepsilon_i\)
 //!   and solves \(\mathcal{L}_{\mathrm{idx}}\Phi=-h^2\rho_e\) on interior nodes (same \(\mathcal{L}_{\mathrm{idx}}\) as
-//!   [`TopologicalLaplacian`] on the chain). Non-chain graphs use explicit Jacobi-like relaxation (`POISSON_SUBSTEPS`). Minimal
+//!   [`TopologicalLaplacian`] on the chain). Non-chain graphs use **Jacobi-preconditioned CG** on the graph Laplacian
+//!   ([`poisson_graph_uniform_laplacian_jacobi_pcg`]). Minimal
 //!   **monovalent** \(\rho_e\) (no fixed background charge, no multiply-charged species).
 //! - **Nernst–Planck**: **Scharfetter–Gummel** conservative edge flux (see `solve_pnp_split_step_experimental_with_refs` in this module)
 //!   \(J_e = (D_e/h_e)\,[c_a B(z\Delta\phi_{ba}) - c_b B(z\Delta\phi_{ab})]\) with \(\Delta\phi_{ba}=\phi_b-\phi_a\),
@@ -70,8 +71,9 @@
 //!   \(h=\) [`ElectroChemicalSolver::mesh_spacing`]. **Poisson:** the chain **Thomas** interior system is
 //!   the same harmonic-\(\varepsilon\) index stencil as [`TopologicalLaplacian`], with interior RHS
 //!   scaled by **`h²`** so \(\mathcal{L}_{\mathrm{idx}}\Phi = -h^2\rho_e\) matches
-//!   \(\nabla\!\cdot(\varepsilon\nabla\Phi)=-\rho_e\) on a uniform spacing \(h\); the non-chain **Jacobi**
-//!   surrogate uses **`(1/h^2)\,\texttt{lap\_phi} + \rho/\varepsilon`** (same discrete \(\Phi\) equation).
+//!   \(\nabla\!\cdot(\varepsilon\nabla\Phi)=-\rho_e\) on a uniform spacing \(h\); the non-chain **graph PCG**
+//!   surrogate solves \(\mathcal{L}\phi=-h^2\rho_e/\varepsilon\) with [`poisson_graph_uniform_laplacian_jacobi_pcg`]
+//!   (same \(\mathcal{L}\) as [`TopologicalLaplacian`] with damage `1`; mean gauge). The implicit BE residual
 //!   applies **`1/h²`** to the same \(\Phi\)-stencil in **`pnp_be_residual_vector_f64`** and
 //!   **`fill_jacobian_linearized_sg_fickian`**. **`h = 1`** recovers legacy unit-edge behaviour.
 //!   `tests/verification/pnp_debye_layer.rs::sg_flux_drift_scales_with_mesh_spacing_inverse` still
@@ -357,13 +359,108 @@ impl ElectroChemicalSolver {
 }
 
 #[cfg(feature = "electrochemistry-mvp")]
-/// Dimensionless multiplier for explicit Poisson relaxation (stability vs `dt`) on **non-chain** graphs.
-const POISSON_RELAX_SCALE: f32 = 5e-2;
-
-/// Sub-relaxations toward a quasi-steady Poisson surrogate per NP sub-step when the graph is **not**
-/// a recognised unit path (explicit stabilisation fallback).
+const POISSON_GRAPH_PCG_REL_TOL: f32 = 5e-5_f32;
 #[cfg(feature = "electrochemistry-mvp")]
-const POISSON_SUBSTEPS: usize = 12;
+const POISSON_GRAPH_PCG_MAX_IT: usize = 4096;
+
+/// Jacobi-preconditioned CG on the graph scalar Laplacian \(\mathcal{L}\): solve \(\mathcal{L}\phi=\texttt{rhs}\)
+/// (same sign as the split surrogate steady state `lap_phi/h² + ρ/ε = 0` \(\Leftrightarrow\) \(\mathcal{L}\phi=-h^2(\rho/\varepsilon)\)).
+/// Uses the same \(-\mathcal{L}\) Jacobi–PCG pattern as the Chorin pressure Poisson in `rheology_flow`
+/// (`solve_pressure_phi_jacobi_cg`); subtracts the per-batch node mean once at the end.
+#[cfg(feature = "electrochemistry-mvp")]
+pub(crate) fn poisson_graph_uniform_laplacian_jacobi_pcg<B: Backend<FloatElem = f32>>(
+    phi_initial: Tensor<B, 3>,
+    rhs: Tensor<B, 3>,
+    edges_b1: Tensor<B, 2, Int>,
+    damage: Tensor<B, 3>,
+    batch: usize,
+    n: usize,
+) -> Tensor<B, 3> {
+    let rhs_abs_max = rhs.clone().abs().max().into_scalar();
+    if !rhs_abs_max.is_finite() {
+        return phi_initial;
+    }
+    let rhs_norm = rhs
+        .clone()
+        .powf_scalar(2.0)
+        .sum()
+        .sqrt()
+        .into_scalar()
+        .max(1e-30_f32);
+    if !rhs_norm.is_finite() || rhs_norm < 1e-24_f32 {
+        return phi_initial;
+    }
+
+    let diag_a =
+        TopologicalLaplacian::scalar_laplacian_neg_opposite_diag(edges_b1.clone(), damage.clone());
+    let diag_inv = diag_a.clamp_min(1e-14_f32).recip();
+
+    let mut phi = phi_initial;
+    let lap0 = TopologicalLaplacian::scalar_laplacian(phi.clone(), edges_b1.clone(), damage.clone());
+    let mut r = lap0.sub(rhs.clone());
+
+    let mut z = r.clone().mul(diag_inv.clone());
+    let mut p = z.clone();
+    let mut rz_old = r.clone().mul(z.clone()).sum().into_scalar().max(1e-40_f32);
+    if !rz_old.is_finite() {
+        return phi;
+    }
+
+    let max_it = n.saturating_mul(10).clamp(256, POISSON_GRAPH_PCG_MAX_IT);
+
+    for _ in 0..max_it {
+        let lp = TopologicalLaplacian::scalar_laplacian(p.clone(), edges_b1.clone(), damage.clone());
+        let ap = lp.neg();
+        let p_ap = p.clone().mul(ap.clone()).sum().into_scalar();
+        if !p_ap.is_finite() || p_ap <= 1e-40_f32 {
+            break;
+        }
+        let alpha = (rz_old / p_ap).clamp(-1e4_f32, 1e4_f32);
+        if !alpha.is_finite() {
+            break;
+        }
+
+        phi = phi.add(p.clone().mul_scalar(alpha));
+        let phi_mx = phi.clone().abs().max().into_scalar();
+        if !phi_mx.is_finite() {
+            break;
+        }
+
+        r = r.sub(ap.mul_scalar(alpha));
+
+        let res_norm = r.clone().powf_scalar(2.0).sum().sqrt().into_scalar();
+        if !res_norm.is_finite() {
+            break;
+        }
+        if res_norm / rhs_norm < POISSON_GRAPH_PCG_REL_TOL {
+            break;
+        }
+
+        z = r.clone().mul(diag_inv.clone());
+        let rz_new = r.clone().mul(z.clone()).sum().into_scalar();
+        if !rz_new.is_finite() {
+            break;
+        }
+
+        let beta = if rz_old > 1e-40_f32 {
+            (rz_new / rz_old).clamp(0.0_f32, 1e6_f32)
+        } else {
+            0.0_f32
+        };
+        if !beta.is_finite() {
+            break;
+        }
+        p = z.clone().add(p.mul_scalar(beta));
+        rz_old = rz_new.max(1e-40_f32);
+    }
+
+    let phi_mean = phi
+        .clone()
+        .sum_dim(1)
+        .div_scalar(n as f32)
+        .reshape([batch, 1, 1]);
+    phi.sub(phi_mean)
+}
 
 /// Bernoulli function \(B(x)=x/(e^x-1)\) for Scharfetter–Gummel fluxes (symmetrised for \(x<0\) via \(B(x)=B(|x|)+\min(0,x)\)).
 /// Uses `f64` exponentials so large \(|z F\Delta\phi/(RT)|\) does not saturate `f32::exp` before the ratio stabilises.
@@ -721,19 +818,18 @@ fn solve_pnp_split_step_experimental_with_refs<B: Backend<FloatElem = f32>>(
     ) {
         phi_t
     } else {
-        let relax = POISSON_RELAX_SCALE * dt;
-        let inv_h_sq = 1.0_f32 / solver.mesh_spacing.max(1e-30_f32).powi(2);
-        let mut phi_work = electric_potential.clone();
-        for _ in 0..POISSON_SUBSTEPS {
-            let lap_phi = TopologicalLaplacian::scalar_laplacian(
-                phi_work.clone(),
-                edges_b1.clone(),
-                mask_phi.clone(),
-            );
-            let poisson_residual = lap_phi.mul_scalar(inv_h_sq).add(rho_over_eps.clone());
-            phi_work = phi_work.sub(poisson_residual.mul_scalar(relax));
-        }
-        phi_work
+        let h_sq = solver.mesh_spacing.max(1e-30_f32).powi(2);
+        let rhs_lap = rho_over_eps.neg().mul_scalar(h_sq);
+        let batch = electric_potential.dims()[0];
+        let n = electric_potential.dims()[1];
+        poisson_graph_uniform_laplacian_jacobi_pcg(
+            electric_potential.clone(),
+            rhs_lap,
+            edges_b1.clone(),
+            mask_phi.clone(),
+            batch,
+            n,
+        )
     };
 
     // Scharfetter–Gummel drift–diffusion flux on each edge, per species channel.
@@ -2918,6 +3014,74 @@ mod newton_chain_tests {
         assert!(
             err_de < 1e-6_f64,
             "dense-expand linear model max|J δ − (−R)|={err_de:.3e}"
+        );
+    }
+
+    /// **Smallest non-chain tree** (4 nodes, 3 edges): Jacobi–PCG on [`TopologicalLaplacian`] reduces
+    /// \(\|\mathcal{L}\phi-\text{rhs}\|_2/\|\text{rhs}\|_2\) for a manufactured harmonic \(\phi^\star\).
+    #[test]
+    fn poisson_graph_pcg_four_node_star_reduces_laplacian_residual() {
+        use burn::tensor::{Data, Int, Shape, Tensor};
+        use burn_ndarray::{NdArray, NdArrayDevice};
+        type B = NdArray<f32>;
+        let dev = NdArrayDevice::Cpu;
+        let n = 4_usize;
+        let batch = 1_usize;
+        let ev = vec![
+            0_i64, 0, 0, //
+            1, 2, 3,
+        ];
+        let edges = Tensor::<B, 2, Int>::from_data(Data::new(ev, Shape::new([2, 3])), &dev);
+        let damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+        let phi_star = Tensor::<B, 3>::from_data(
+            Data::new(
+                vec![0.0_f32, 1.0_f32, -1.0_f32, 0.0_f32],
+                Shape::new([batch, n, 1]),
+            ),
+            &dev,
+        );
+        let rhs = TopologicalLaplacian::scalar_laplacian(
+            phi_star.clone(),
+            edges.clone(),
+            damage.clone(),
+        );
+        let phi0 = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+        let phi_sol = super::poisson_graph_uniform_laplacian_jacobi_pcg(
+            phi0,
+            rhs.clone(),
+            edges.clone(),
+            damage.clone(),
+            batch,
+            n,
+        );
+        let lap_sol =
+            TopologicalLaplacian::scalar_laplacian(phi_sol.clone(), edges.clone(), damage.clone());
+        let rn = lap_sol
+            .sub(rhs.clone())
+            .powf_scalar(2.0)
+            .sum()
+            .sqrt()
+            .into_scalar();
+        let bn = rhs
+            .powf_scalar(2.0)
+            .sum()
+            .sqrt()
+            .into_scalar()
+            .max(1e-30_f32);
+        let rel = rn / bn;
+        assert!(
+            rel < 2e-3_f32,
+            "PCG relative Laplacian residual too large: rel={rel:.3e}"
+        );
+        let mean_star = phi_star.clone().sum_dim(1).div_scalar(n as f32);
+        let mean_sol = phi_sol.clone().sum_dim(1).div_scalar(n as f32);
+        let d = phi_sol
+            .sub(phi_star.clone())
+            .sub(mean_sol.sub(mean_star));
+        let mx = d.abs().max().into_scalar();
+        assert!(
+            mx < 5e-2_f32,
+            "PCG solution should match manufactured φ up to gauge; max_abs={mx:.3e}"
         );
     }
 }
