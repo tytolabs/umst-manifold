@@ -12,7 +12,7 @@
 //! provider matches [`PhaseFieldFractureSolver::update_damage`]); `at2_surface_energy_scale_matches_gc_order_of_magnitude` (order-of-magnitude
 //! \(G_c/l\cdot\bar d\) on the tiny chain); `at2_gc_linear_scaling_smoke` (doubling \(G_c\) at fixed \((l,\varepsilon)\): \(\bar d\) stays same order and \(G_c/l\cdot\bar d\) tracks \(\Delta G_c\) loosely — explicit sweep, **not** the Γ-limit scaling of \(G_c\) in the sharp-interface sense); **`at2_gamma_convergence_three_length_scales`** — three \((l_0,h)\) pairs with fixed \(h/l_0=\tfrac14\), \(\psi^+\equiv 0\), exponential damage seed at mid-span; discrete AT2 surface functional \(D_h\) has **relative error &lt; 2%** vs **`Gc`** on each mesh and **does not worsen** across refinement (successive errors within **`10^{-3}`**, fixed-strain relaxation with 32 outer passes — not a coupled mechanics \(\psi^+\) benchmark); **`at2_gamma_convergence_psi_plus_nonzero_three_length_scales`** (Track 12 §7.2) — same triple with uniform tensile \(\varepsilon_{xx}\), **`spectral_tensile_psi_plus_from_strain`** drive sanity, widened \(\tau_\Gamma\), non-worsening errors, and \(D_h > G_c\) vs the pure-surface optimum.
 //!
-//! **Harness:** shared **`discrete_at2_bar_surface_energy_1d`** + **`at2_discrete_surface_functional_toy_chain_matches_hand_total`** (guards the \(D_h\) sum used by **`at2_gamma_convergence_three_length_scales`**). **`at2_gamma_convergence_multi_ratio_schedule_smoke`** (Track 12 §7.3): fixed \(\ell_0\), \(\rho=h/\ell_0\in\{1/8,1/4,1/2\}\), same \(\psi^+\equiv 0\) exponential seed and 32-pass relaxation as [`at2_gamma_convergence_three_length_scales`]. **Research backlog** (stagger dissipation, THMC within-step stagger): [`docs/research/v0.4_track12_staggered_fracture_mechanics.md`](../../docs/research/v0.4_track12_staggered_fracture_mechanics.md) §7.
+//! **Harness:** shared **`discrete_at2_bar_surface_energy_1d`** + **`at2_discrete_surface_functional_toy_chain_matches_hand_total`** (guards the \(D_h\) sum used by **`at2_gamma_convergence_three_length_scales`**). **`at2_gamma_convergence_multi_ratio_schedule_smoke`** (Track 12 §7.3): fixed \(\ell_0\), \(\rho=h/\ell_0\in\{1/8,1/4,1/2\}\), same \(\psi^+\equiv 0\) exponential seed and 32-pass relaxation as [`at2_gamma_convergence_three_length_scales`]. **`at2_gamma_convergence_multi_ratio_psi_plus_schedule_smoke`** (Track 12 §7.3.1): same \(\rho\) rows as §7.3 with **uniform tensile** \(\varepsilon_{xx}\), **`spectral_tensile_psi_plus_from_strain`** drive sanity, widened \(\tau_\Gamma\) per row, and \(D_h>G_c\) vs the pure-surface optimum. **Research backlog** (stagger dissipation, THMC within-step stagger): [`docs/research/v0.4_track12_staggered_fracture_mechanics.md`](../../docs/research/v0.4_track12_staggered_fracture_mechanics.md) §7.
 
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
@@ -562,6 +562,115 @@ fn at2_gamma_convergence_multi_ratio_schedule_smoke() {
         assert!(
             err < tau_j,
             "ρ={rho}: |D_h-Gc|/Gc = {err} exceeds τ_j={tau_j} (D_h={d_h})"
+        );
+    }
+}
+
+/// Track 12 §7.3.1 — same \(\rho=h/\ell_0\) schedule and discrete \(D_h\) harness as
+/// [`at2_gamma_convergence_multi_ratio_schedule_smoke`], but with **nonzero** uniform \(\varepsilon_{xx}\)
+/// (spectral tensile \(\psi^+\) drive). Per-\(\rho\) **\(\tau_{\Gamma,j}\)** are documented in-test (same order
+/// of magnitude as §7.2’s widened band, not the 2% \(\psi^+\!\equiv 0\) multi-\(\rho\) caps). Asserts
+/// **`max_i \psi^+_i`** from the Jacobi map and \(D_h > G_c + 10^{-3}\) on each mesh (tensile drive lifts
+/// dissipation above the sharp surface-only optimum; finest \(\rho\) rows may sit only \(\mathcal O(10^{-3})\) above **`Gc`**).
+#[cfg(feature = "fracture-at2")]
+#[test]
+fn at2_gamma_convergence_multi_ratio_psi_plus_schedule_smoke() {
+    let dev = NdArrayDevice::Cpu;
+    let length_l: f32 = 5.0;
+    let gc_val: f32 = 1.0;
+    let exx: f32 = 0.08_f32;
+    let psi_floor: f32 = 0.5_f32 * exx * exx * 0.99_f32;
+    let l0: f32 = 0.04;
+    let schedule: [(f32, f32); 3] = [
+        (1.0 / 8.0, 0.005),
+        (1.0 / 4.0, 0.01),
+        (1.0 / 2.0, 0.02),
+    ];
+    // τ_{Γ,j}: coupled ψ⁺ — coarsest ρ may sit slightly looser than the fixed-ratio triple in §7.2.
+    let tau_gamma_by_rho: [f32; 3] = [0.55_f32, 0.55_f32, 0.58_f32];
+
+    for (j, &tau_j) in tau_gamma_by_rho.iter().enumerate() {
+        let rho = schedule[j].0;
+        let h = schedule[j].1;
+        assert!(
+            ((h / l0) - rho).abs() < 1e-5,
+            "schedule row inconsistent: h/l0={} rho={rho}",
+            h / l0
+        );
+
+        let n: usize = ((length_l / h).ceil() as usize) + 1;
+        let e_ct: usize = n - 1;
+        let batch: usize = 1;
+
+        let mut edge_data = Vec::with_capacity(2 * e_ct);
+        for i in 0..e_ct {
+            edge_data.push(i as i64);
+        }
+        for i in 0..e_ct {
+            edge_data.push((i + 1) as i64);
+        }
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(edge_data, Shape::new([2, e_ct])), &dev);
+
+        let mut d_init = vec![0.0_f32; n];
+        let centre = length_l * 0.5;
+        for (i, slot) in d_init.iter_mut().enumerate().take(n) {
+            let x = (i as f32) * h;
+            *slot = (-((x - centre).abs()) / l0).exp();
+        }
+        let damage = Tensor::<B, 3>::from_data(Data::new(d_init, Shape::new([batch, n, 1])), &dev);
+
+        let mut strain_data = vec![0.0_f32; batch * n * 9];
+        for nod in 0..n {
+            let base = nod * 9;
+            strain_data[base] = exx;
+        }
+        let strain: Tensor<B, 4> =
+            Tensor::from_data(Data::new(strain_data, Shape::new([batch, n, 3, 3])), &dev);
+
+        let psi_tensor = spectral_tensile_psi_plus_from_strain(strain.clone());
+        let max_psi: f32 = psi_tensor
+            .clone()
+            .into_data()
+            .value
+            .iter()
+            .copied()
+            .fold(0.0_f32, f32::max);
+        assert!(
+            max_psi >= psi_floor,
+            "ρ={rho}: drive sanity max ψ⁺ vs floor; max_psi={max_psi} floor={psi_floor}"
+        );
+
+        let fracture_energy_gc = Tensor::from_data(
+            Data::new(vec![gc_val; batch * n], Shape::new([batch, n, 1])),
+            &dev,
+        );
+
+        let solver = PhaseFieldFractureSolver { length_scale: l0 };
+        let mut d_curr = damage.clone();
+        for _ in 0..32 {
+            d_curr = solver.update_damage(
+                strain.clone(),
+                d_curr,
+                fracture_energy_gc.clone(),
+                edges_b1.clone(),
+            );
+        }
+
+        let d_vals: Vec<f32> = d_curr.into_data().value;
+        let d_h = discrete_at2_bar_surface_energy_1d(&d_vals, h, l0, gc_val);
+        let err = (d_h - gc_val).abs() / gc_val;
+        eprintln!(
+            "multi-ρ ψ⁺: ρ={rho:.4} h={h:.4} N={n} D_h={d_h:.4} rel_err={err:.4} τ_Γ,j={tau_j} max_psi={max_psi:.6}"
+        );
+        assert!(
+            err < tau_j,
+            "ρ={rho}: |D_h-Gc|/Gc = {err} exceeds τ_Γ,j={tau_j} (D_h={d_h})"
+        );
+        // Finest ρ row can sit just above `Gc` (surface-dominated); keep a small strict margin.
+        assert!(
+            d_h > gc_val + 1e-3_f32,
+            "ρ={rho}: expected D_h > Gc + 1e-3 with tensile ψ⁺; D_h={d_h}"
         );
     }
 }
