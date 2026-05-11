@@ -63,6 +63,12 @@
 //! - **Twin tensors:** keep **`[B,2]`** for \((\varepsilon,\sigma)\) and add **`[B,2]`** for
 //!   \((\rho^*,T^*)\) (or \((\rho,T)\)) to a new method on [`StatisticalBridge`] so types stay explicit.
 //!
+//! **Scalar bridge today (always-on `f64`):** [`physical_bulk_modulus_johnson1993`] and
+//! [`relative_placeholder_bulk_modulus_gap_vs_johnson1993`] compose Johnson \(K^*\) with
+//! \((\varepsilon,\sigma)\) and compare the analytic placeholder \(C_K\varepsilon/\sigma^3\) to that
+//! physical \(K_T\). They do **not** call [`upscale_potentials`]; Burn `f32` rows can differ at
+//! ~\(10^{-7}\) relative scale from the closed-form placeholder.
+//!
 //! ### Feature gate sketch
 //!
 //! - **Default:** only the Burn placeholder [`upscale_potentials`] compiles; no Johnson symbol on this module.
@@ -154,20 +160,40 @@ pub fn bulk_modulus_from_lj_state_johnson1993(rho_star: f64, t_star: f64) -> f64
     super::lj_johnson_1993_reference::bulk_modulus_from_lj_state_johnson1993(rho_star, t_star)
 }
 
-/// Johnson \(K^*(\rho^*,T^*)\) composed with \((\varepsilon,\sigma)\) scaling → physical \(K_T\).
+/// Johnson reduced \(K^*(\rho^*,T^*)\) composed with \((\varepsilon,\sigma)\) → physical isothermal \(K_T\).
 ///
-/// Test-only helper: documents the scalar path that will eventually align with an extended Burn tensor
-/// once \((\rho^*,T^*)\) rows exist beside \((\varepsilon,\sigma)\).
-#[cfg(all(test, feature = "statistical-mechanics-johnson-reference"))]
+/// Delegates to [`super::lj_johnson_1993_reference`]; same scalar a future extended **`[B,4]`** (or
+/// twin-tensor) Burn row would evaluate once \((\rho^*,T^*)\) sits beside \((\varepsilon,\sigma)\).
+#[inline]
 #[must_use]
-fn physical_bulk_modulus_johnson1993_scalar_bridge(
+pub fn physical_bulk_modulus_johnson1993(
     rho_star: f64,
     t_star: f64,
     epsilon: f64,
     sigma: f64,
 ) -> f64 {
-    let k_star = bulk_modulus_from_lj_state_johnson1993(rho_star, t_star);
+    let k_star =
+        super::lj_johnson_1993_reference::bulk_modulus_from_lj_state_johnson1993(rho_star, t_star);
     super::lj_johnson_1993_reference::bulk_modulus_from_reduced(k_star, epsilon, sigma)
+}
+
+/// Relative error \(\lvert K_{\mathrm{ph}} - K_{\mathrm{J}}\rvert / \lvert K_{\mathrm{J}}\rvert\) between
+/// the **analytic** placeholder \(K_{\mathrm{ph}} = C_K\,\varepsilon/\sigma^3\) ([`ANALYTIC_BULK_MODULUS_SCALE`])
+/// and Johnson \(K_{\mathrm{J}}\) = [`physical_bulk_modulus_johnson1993`].
+///
+/// [`upscale_potentials`] uses the same formula in `f32`; expect \(\mathcal O(10^{-7})\) relative drift
+/// vs this `f64` value at typical parameters.
+#[inline]
+#[must_use]
+pub fn relative_placeholder_bulk_modulus_gap_vs_johnson1993(
+    rho_star: f64,
+    t_star: f64,
+    epsilon: f64,
+    sigma: f64,
+) -> f64 {
+    let k_j = physical_bulk_modulus_johnson1993(rho_star, t_star, epsilon, sigma);
+    let k_ph = f64::from(ANALYTIC_BULK_MODULUS_SCALE) * epsilon / sigma.powi(3);
+    ((k_ph - k_j) / k_j).abs()
 }
 
 #[cfg(test)]
@@ -220,19 +246,37 @@ mod tests {
         assert!(g_v.iter().all(|x| x.is_finite() && *x > 0.0));
     }
 
-    #[cfg(feature = "statistical-mechanics-johnson-reference")]
     #[test]
-    fn physical_bulk_modulus_johnson1993_scalar_bridge_matches_reduced_map() {
+    fn physical_bulk_modulus_johnson1993_matches_reduced_composition() {
         let rho = 0.2_f64;
         let t = 2.0_f64;
         let e = 1.0_f64;
         let s = 0.8_f64;
-        let k_star = bulk_modulus_from_lj_state_johnson1993(rho, t);
+        let k_star =
+            super::super::lj_johnson_1993_reference::bulk_modulus_from_lj_state_johnson1993(rho, t);
         let via_reduced =
             super::super::lj_johnson_1993_reference::bulk_modulus_from_reduced(k_star, e, s);
         assert_abs_diff_eq!(
-            super::physical_bulk_modulus_johnson1993_scalar_bridge(rho, t, e, s),
+            super::physical_bulk_modulus_johnson1993(rho, t, e, s),
             via_reduced,
+            epsilon = 1.0e-15
+        );
+    }
+
+    #[test]
+    fn relative_placeholder_gap_matches_manual_supercritical_state() {
+        let rho_star = 0.2_f64;
+        let t_star = 2.0_f64;
+        let epsilon = 1.0_f64;
+        let sigma = 0.8_f64;
+        let k_j = super::physical_bulk_modulus_johnson1993(rho_star, t_star, epsilon, sigma);
+        let k_ph = f64::from(ANALYTIC_BULK_MODULUS_SCALE) * epsilon / sigma.powi(3);
+        let manual = ((k_ph - k_j) / k_j).abs();
+        assert_abs_diff_eq!(
+            super::relative_placeholder_bulk_modulus_gap_vs_johnson1993(
+                rho_star, t_star, epsilon, sigma,
+            ),
+            manual,
             epsilon = 1.0e-15
         );
     }
@@ -260,7 +304,7 @@ mod tests {
         let epsilon = 1.0_f64;
         let sigma = 0.8_f64;
 
-        let k_johnson = super::physical_bulk_modulus_johnson1993_scalar_bridge(
+        let rel = super::relative_placeholder_bulk_modulus_gap_vs_johnson1993(
             rho_star, t_star, epsilon, sigma,
         );
 
@@ -271,11 +315,13 @@ mod tests {
         );
         let (k_tensor, _) = upscale_potentials(lj);
         let k_placeholder = f64::from(k_tensor.into_data().value[0]);
+        let k_johnson = super::physical_bulk_modulus_johnson1993(rho_star, t_star, epsilon, sigma);
+        let rel_tensor = ((k_placeholder - k_johnson) / k_johnson).abs();
 
-        let rel = ((k_placeholder - k_johnson) / k_johnson).abs();
         assert!(
             rel > 0.2,
             "expected placeholder K to disagree strongly with JZG-derived K_T at this state (rel_err={rel})"
         );
+        assert_abs_diff_eq!(rel, rel_tensor, epsilon = 5.0e-4_f64);
     }
 }

@@ -9,6 +9,10 @@
 //! compare the two document **expected disagreement** until a differentiable bridge replaces the
 //! placeholder.
 //!
+//! Scalar Johnson physical \(K_T\) for side-by-side checks lives in
+//! [`umst_manifold::physics::solvers::statistical_mechanics::physical_bulk_modulus_johnson1993`] and
+//! [`umst_manifold::physics::solvers::statistical_mechanics::relative_placeholder_bulk_modulus_gap_vs_johnson1993`].
+//!
 //! formal_citation: Johnson, Zollweg & Gubbins (1993), *Mol. Phys.* **78**, 591–618.
 
 use approx::assert_abs_diff_eq;
@@ -19,7 +23,10 @@ use umst_manifold::physics::solvers::lj_johnson_1993_reference::{
     johnson_lj1993_bulk_modulus_reduced_numerical, johnson_lj1993_compressibility_factor,
     johnson_lj1993_dalphar_drho, johnson_lj1993_pressure_reduced,
 };
-use umst_manifold::physics::solvers::statistical_mechanics::upscale_potentials;
+use umst_manifold::physics::solvers::statistical_mechanics::{
+    physical_bulk_modulus_johnson1993, relative_placeholder_bulk_modulus_gap_vs_johnson1993,
+    upscale_potentials,
+};
 
 type B = NdArray<f32>;
 
@@ -64,6 +71,21 @@ fn johnson_lj1993_eos_bulk_modulus_reduced_numerical_self_consistent() {
 }
 
 #[test]
+fn physical_bulk_modulus_johnson1993_statmech_bridge_matches_lj_reference() {
+    let rho_star = 0.2_f64;
+    let t_star = 2.0_f64;
+    let epsilon = 1.0_f64;
+    let sigma = 0.8_f64;
+    let k_star = bulk_modulus_from_lj_state_johnson1993(rho_star, t_star);
+    let want = bulk_modulus_from_reduced(k_star, epsilon, sigma);
+    assert_abs_diff_eq!(
+        physical_bulk_modulus_johnson1993(rho_star, t_star, epsilon, sigma),
+        want,
+        epsilon = 1.0e-12
+    );
+}
+
+#[test]
 fn placeholder_upscale_bulk_modulus_disagrees_with_johnson_reference_documented() {
     // Supercritical single-phase fluid branch (homogeneous). Use moderate `ρ*` where `K*` is not
     // ≈ 1 so the placeholder `K ∝ ε/σ³` (state-independent) is far from `K_T` from the EOS.
@@ -74,6 +96,9 @@ fn placeholder_upscale_bulk_modulus_disagrees_with_johnson_reference_documented(
     let k_star = bulk_modulus_from_lj_state_johnson1993(rho_star, t_star);
     let k_johnson = bulk_modulus_from_reduced(k_star, epsilon, sigma);
 
+    let gap =
+        relative_placeholder_bulk_modulus_gap_vs_johnson1993(rho_star, t_star, epsilon, sigma);
+
     let dev = NdArrayDevice::Cpu;
     let lj: Tensor<B, 2> = Tensor::from_data(
         Data::new(vec![epsilon as f32, sigma as f32], Shape::new([1, 2])),
@@ -82,12 +107,13 @@ fn placeholder_upscale_bulk_modulus_disagrees_with_johnson_reference_documented(
     let (k_tensor, _) = upscale_potentials(lj);
     let k_placeholder = f64::from(k_tensor.into_data().value[0]);
 
-    let rel = ((k_placeholder - k_johnson) / k_johnson).abs();
+    let rel_tensor = ((k_placeholder - k_johnson) / k_johnson).abs();
     assert!(
-        rel > 0.2,
-        "expected placeholder K to disagree strongly with JZG-derived K_T at this state (rel_err={rel}); \
+        gap > 0.2,
+        "expected analytic placeholder K to disagree strongly with JZG-derived K_T at this state (gap={gap}); \
          replace placeholder with bridge before expecting agreement"
     );
+    assert_abs_diff_eq!(gap, rel_tensor, epsilon = 5.0e-4_f64);
 }
 
 #[test]
