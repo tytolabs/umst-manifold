@@ -1047,11 +1047,14 @@ const PNP_CHAIN_FULL_SG_JAC_KU_PHYS: usize = 5;
 
 /// Wider row envelope for partial-pivot band LU fill-in (same row-major layout as assembly).
 #[cfg(feature = "electrochemistry-mvp")]
-const PNP_CHAIN_FULL_SG_JAC_KL_LU: usize = PNP_CHAIN_FULL_SG_JAC_KL_PHYS + PNP_CHAIN_FULL_SG_JAC_KU_PHYS;
+const PNP_CHAIN_FULL_SG_JAC_KL_LU: usize =
+    PNP_CHAIN_FULL_SG_JAC_KL_PHYS + PNP_CHAIN_FULL_SG_JAC_KU_PHYS;
 #[cfg(feature = "electrochemistry-mvp")]
-const PNP_CHAIN_FULL_SG_JAC_KU_LU: usize = PNP_CHAIN_FULL_SG_JAC_KL_PHYS + PNP_CHAIN_FULL_SG_JAC_KU_PHYS;
+const PNP_CHAIN_FULL_SG_JAC_KU_LU: usize =
+    PNP_CHAIN_FULL_SG_JAC_KL_PHYS + PNP_CHAIN_FULL_SG_JAC_KU_PHYS;
 #[cfg(feature = "electrochemistry-mvp")]
-const PNP_CHAIN_FULL_SG_BW_LU: usize = PNP_CHAIN_FULL_SG_JAC_KL_LU + PNP_CHAIN_FULL_SG_JAC_KU_LU + 1;
+const PNP_CHAIN_FULL_SG_BW_LU: usize =
+    PNP_CHAIN_FULL_SG_JAC_KL_LU + PNP_CHAIN_FULL_SG_JAC_KU_LU + 1;
 
 #[cfg(feature = "electrochemistry-mvp")]
 #[inline]
@@ -1138,8 +1141,8 @@ fn row_band_lu_factorize_partial_pivot(
     for k in 0..n {
         let mut piv = k;
         let mut best = row_band_get(a, kl, ku, bw, k, k).abs();
-        // Pivot search must include rows that can hold fill-in in column `k` (same bound as Schur updates).
-        let p1 = (k + kl + ku).min(n - 1);
+        // Pivot search: only rows i <= k + k_l can be structurally nonzero below the diagonal in column k.
+        let p1 = (k + kl).min(n - 1);
         for p in (k + 1)..=p1 {
             let v = row_band_get(a, kl, ku, bw, p, k).abs();
             if v > best {
@@ -1155,7 +1158,7 @@ fn row_band_lu_factorize_partial_pivot(
             swap_pairs.push((k, piv));
         }
         let akk = row_band_get(a, kl, ku, bw, k, k);
-        let i1 = (k + kl + ku).min(n - 1);
+        let i1 = (k + kl).min(n - 1);
         for i in (k + 1)..=i1 {
             let aik = row_band_get(a, kl, ku, bw, i, k);
             if aik == 0.0_f64 {
@@ -1163,9 +1166,10 @@ fn row_band_lu_factorize_partial_pivot(
             }
             let m = aik / akk;
             row_band_set(a, kl, ku, bw, i, k, m);
-            let j_hi = (k + kl + ku).min(i + ku).min(n - 1);
+            let j_hi = (k + ku).min(i + ku).min(n - 1);
             for j in (k + 1)..=j_hi {
-                let v_ij = row_band_get(a, kl, ku, bw, i, j) - m * row_band_get(a, kl, ku, bw, k, j);
+                let v_ij =
+                    row_band_get(a, kl, ku, bw, i, j) - m * row_band_get(a, kl, ku, bw, k, j);
                 if j + kl >= i && j <= i + ku {
                     row_band_set(a, kl, ku, bw, i, j, v_ij);
                 }
@@ -1593,8 +1597,8 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     u[2 * n..3 * n].copy_from_slice(&c_minus_n);
     let dim = 3 * n;
     let inner_cap_sg = (newton.full_sg_frozen_jacobian_inner_iters as usize).clamp(1, 32);
-    let mut jac_band = (!newton.linearize_sg_fickian)
-        .then(|| vec![0.0_f64; dim * PNP_CHAIN_FULL_SG_BW_LU]);
+    let mut jac_band =
+        (!newton.linearize_sg_fickian).then(|| vec![0.0_f64; dim * PNP_CHAIN_FULL_SG_BW_LU]);
     let mut jac_dense_scratch = (!newton.linearize_sg_fickian).then(|| vec![0.0_f64; dim * dim]);
     let mut rhs_nm = vec![0.0_f64; dim];
     let mut thomas_a = vec![0.0_f64; n];
@@ -1638,19 +1642,8 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
                 .as_mut()
                 .expect("band Jacobian buffer for full-SG FD Newton");
             newton_fd_jacobian_full_sg_node_major_row_band(
-                solver,
-                newton,
-                dt64,
-                &u,
-                &c_plus_n,
-                &c_minus_n,
-                &eps,
-                &d_plus,
-                &d_minus,
-                g0,
-                g1,
-                &r,
-                jac,
+                solver, newton, dt64, &u, &c_plus_n, &c_minus_n, &eps, &d_plus, &d_minus, g0, g1,
+                &r, jac,
             );
             pnp_residual_fm_to_nm(&r, n, &mut rhs_nm);
             for v in rhs_nm.iter_mut() {
@@ -1680,19 +1673,8 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
                 .as_mut()
                 .expect("dense expand buffer for full-SG Newton");
             newton_fd_jacobian_full_sg_node_major_row_band(
-                solver,
-                newton,
-                dt64,
-                &u,
-                &c_plus_n,
-                &c_minus_n,
-                &eps,
-                &d_plus,
-                &d_minus,
-                g0,
-                g1,
-                &r,
-                jac,
+                solver, newton, dt64, &u, &c_plus_n, &c_minus_n, &eps, &d_plus, &d_minus, g0, g1,
+                &r, jac,
             );
             let mut r_work = r;
             let mut ok_all = true;
@@ -2177,7 +2159,10 @@ mod newton_chain_tests {
         }
         let mut x_dense: Vec<f64> = r.iter().map(|v| -*v).collect();
         let mut a_work = jac_dense.clone();
-        assert!(solve_dense_linear(dim, &mut a_work, &mut x_dense), "dense solve");
+        assert!(
+            solve_dense_linear(dim, &mut a_work, &mut x_dense),
+            "dense solve"
+        );
         let mut rhs_nm = vec![0.0_f64; dim];
         pnp_residual_fm_to_nm(&r, n, &mut rhs_nm);
         for v in rhs_nm.iter_mut() {
@@ -2403,7 +2388,10 @@ mod newton_chain_tests {
             &solver, &newton, dt64, &phi_v, &cp, &cm, &cpn, &cmn, &epsv, &dp, &dm, g0, g1,
         );
         let nrf = vec_l2(&r);
-        assert!(nrf < 1e-3_f64, "post-f32 export BE residual (full SG), nrf={nrf:.3e}");
+        assert!(
+            nrf < 1e-3_f64,
+            "post-f32 export BE residual (full SG), nrf={nrf:.3e}"
+        );
     }
 
     /// [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] **`>1`**: extra inners reuse a frozen band Jacobian
