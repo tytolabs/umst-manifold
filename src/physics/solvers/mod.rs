@@ -48,7 +48,9 @@ pub use thmc::{
     ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics,
     ThmcImplicitTAlphaNewtonConfig, ThmcMonolithicNewtonConfig, ThmcSolver, ThmcState,
 };
-pub use thmc_residual::{ResidualThmc, ThmcMonolithicImplicitUnknownLayout};
+pub use thmc_residual::{
+    ResidualThmc, ThmcMonolithicImplicitUnknownLayout, THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
+};
 #[cfg(feature = "thmc-coupled")]
 pub use thmc_residual::{
     ThmcImplicitEulerThermalHumidityHydrationResidual, ThmcImplicitEulerThermalHydrationResidual,

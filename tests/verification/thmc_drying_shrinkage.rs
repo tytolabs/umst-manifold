@@ -22,7 +22,7 @@ use umst_manifold::physics::solvers::{
     HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics,
     ThmcImplicitEulerThermalHumidityHydrationResidual, ThmcImplicitEulerThermalHydrationResidual,
     ThmcImplicitTAlphaNewtonConfig, ThmcMonolithicImplicitUnknownLayout,
-    ThmcMonolithicNewtonConfig, ThmcSolver, ThmcState,
+    ThmcMonolithicNewtonConfig, ThmcSolver, ThmcState, THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
 };
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
@@ -1690,7 +1690,10 @@ fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() 
     let r0 = norms_full[0];
     let n1 = norms_full[1];
     let n2 = norms_full[2];
-    assert!(r0 > 1e-8_f32 && n2 < n1 && n1 < r0, "expected strictly decreasing ||R|| trail");
+    assert!(
+        r0 > 1e-8_f32 && n2 < n1 && n1 < r0,
+        "expected strictly decreasing ||R|| trail"
+    );
     let k_rel = 0.5_f32 * (n2 / r0 + n1 / r0);
     assert!(
         n2 < k_rel * r0 && n1 >= k_rel * r0,
@@ -2238,16 +2241,18 @@ fn thmc_step_monolithic_newton_errors_when_drying_sink_enabled() {
     );
 }
 
-/// Monolithic dense Newton **fail-fast** before inner work when stacked DOFs exceed the **64** cap.
+/// Monolithic dense Newton **fail-fast** before inner work when stacked DOFs exceed
+/// [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`].
 ///
 /// For scalar channels \(F_T=F_h=F_\alpha=1\), [`ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`]
-/// is \(6N\); **`N = 11`** ⇒ **66** \(>\) **64** (first layout crossing the guard).
+/// is \(6N\); **`N = 11`** is the first layout with \(6N >\) [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] at the default cap.
 #[test]
 fn thmc_step_monolithic_newton_errors_when_stacked_dof_count_exceeds_64() {
     let d = dev();
     let n = 11usize;
     assert!(
-        ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, 1, 1, 1) > 64,
+        ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, 1, 1, 1)
+            > THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
         "test expects N such that stacked DOFs exceed dense cap"
     );
     let manifold = chain_manifold(n);
@@ -2277,10 +2282,7 @@ fn thmc_step_monolithic_newton_errors_when_stacked_dof_count_exceeds_64() {
         Ok(_) => panic!("expected stacked DOF cap error"),
         Err(e) => e,
     };
-    assert!(
-        err.contains("stacked DOFs > 64"),
-        "unexpected error: {err}"
-    );
+    assert!(err.contains("stacked DOFs > 64"), "unexpected error: {err}");
 }
 
 /// **Phase 5 integration:** [`ThmcSolver::step`] monolithic branch matches a standalone call to

@@ -80,6 +80,11 @@ pub trait ResidualThmc<B: Backend<FloatElem = f32>> {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct ThmcMonolithicImplicitUnknownLayout;
 
+/// Upper bound on stacked-unknown count for dense forward-difference Newton across THMC implicit
+/// helpers and the monolithic / implicit-(T,α) fail-fast guards in
+/// [`crate::physics::solvers::thmc::ThmcSolver`].
+pub const THMC_DENSE_NEWTON_MAX_STACKED_DOFS: usize = 64;
+
 impl ThmcMonolithicImplicitUnknownLayout {
     /// Displacement components per node (`MechanicalPlan`: `[B, N, 3]`).
     pub const MECHANICAL_DISP_PER_NODE: usize = 3;
@@ -214,7 +219,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHydrationResidual<B> {
     /// - **Linear solve:** Gauss–Jordan elimination with partial pivoting on the dense system
     ///   \(J\,\delta = -R\) (host `f32`, intended for small chains / verification only).
     /// - **Scope:** requires `trial.thermal.temperature.dims()[0] == 1` and
-    ///   `n (f_T + f_\alpha) \le 64` (hard cap).
+    ///   `n (f_T + f_\alpha) \le` [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] (hard cap).
     ///
     /// Returns `(updated_trial, \|R\|_2 \text{ before}, \|R\|_2 \text{ after})`. Hydro / mechanics /
     /// damage / time on `trial` are preserved; only `temperature` and `hydration_alpha` change.
@@ -228,7 +233,6 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHydrationResidual<B> {
         damping: f32,
         fd_eps: f32,
     ) -> Result<(ThmcState<B>, f32, f32), String> {
-        const MAX_DOFS: usize = 64;
         if !(damping > 0.0_f32 && damping <= 1.0_f32) {
             return Err("one_damped_newton_step: damping must lie in (0, 1]".into());
         }
@@ -252,10 +256,10 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHydrationResidual<B> {
         let f_t = t_dims[2];
         let f_a = a_dims[2];
         let m = n * f_t + n * f_a;
-        if m > MAX_DOFS {
+        if m > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
             return Err(format!(
                 "one_damped_newton_step: {} stacked DOFs exceeds cap {}",
-                m, MAX_DOFS
+                m, THMC_DENSE_NEWTON_MAX_STACKED_DOFS
             ));
         }
 
@@ -677,7 +681,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     /// \([\mathrm{vec}(T), \mathrm{vec}(h), \mathrm{vec}(\alpha)]\) — same leading layout as
     /// [`ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`] before displacements.
     ///
-    /// Batch must be **1**; `n (F_T+F_h+F_\alpha) \le 64`. Displacement / damage / time on `trial`
+    /// Batch must be **1**; `n (F_T+F_h+F_\alpha) \le` [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`]. Displacement / damage / time on `trial`
     /// are preserved.
     pub fn one_damped_newton_step(
         &self,
@@ -685,7 +689,6 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         damping: f32,
         fd_eps: f32,
     ) -> Result<(ThmcState<B>, f32, f32), String> {
-        const MAX_DOFS: usize = 64;
         if !(damping > 0.0_f32 && damping <= 1.0_f32) {
             return Err("one_damped_newton_step (T,h,α): damping must lie in (0, 1]".into());
         }
@@ -716,10 +719,10 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             ThmcMonolithicImplicitUnknownLayout::field_major_scalar_transport_hydration_dof_count(
                 n, f_t, f_h, f_a,
             );
-        if m > MAX_DOFS {
+        if m > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
             return Err(format!(
                 "one_damped_newton_step (T,h,α): {} stacked DOFs exceeds cap {}",
-                m, MAX_DOFS
+                m, THMC_DENSE_NEWTON_MAX_STACKED_DOFS
             ));
         }
 
@@ -803,7 +806,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     /// **Coupling plan §4 Phase 3:** one damped Newton step on field-major \((T,h,\alpha,\mathbf u)\)
     /// with quasi-static bar \(R_u\) from [`Self::evaluate_quasi_static_r_u`].
     ///
-    /// Dense forward-difference Jacobian on the stacked unknown (full layout cap `M \le 64`, batch 1).
+    /// Dense forward-difference Jacobian on the stacked unknown (full layout cap `M \le` [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`], batch 1).
     /// Displacement entries where `boundary_mask == 0` are **held fixed** (excluded from the reduced
     /// Newton system) so the Jacobian is not singular on Dirichlet rows of \(R_u\).
     /// `damage` / `time` on `trial` are preserved.
@@ -818,7 +821,6 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         damping: f32,
         fd_eps: f32,
     ) -> Result<(ThmcState<B>, f32, f32), String> {
-        const MAX_DOFS: usize = 64;
         if !(damping > 0.0_f32 && damping <= 1.0_f32) {
             return Err(
                 "one_damped_newton_step_with_quasi_static_r_u: damping must lie in (0, 1]".into(),
@@ -857,10 +859,10 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         let f_a = a_dims[2];
         let m =
             ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, f_t, f_h, f_a);
-        if m > MAX_DOFS {
+        if m > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
             return Err(format!(
                 "one_damped_newton_step_with_quasi_static_r_u: {} stacked DOFs exceeds cap {}",
-                m, MAX_DOFS
+                m, THMC_DENSE_NEWTON_MAX_STACKED_DOFS
             ));
         }
 
@@ -903,10 +905,10 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         if m_a == 0 {
             return Err("one_damped_newton_step_with_quasi_static_r_u: zero active DOFs".into());
         }
-        if m_a > MAX_DOFS {
+        if m_a > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
             return Err(format!(
                 "one_damped_newton_step_with_quasi_static_r_u: {} active DOFs exceeds cap {}",
-                m_a, MAX_DOFS
+                m_a, THMC_DENSE_NEWTON_MAX_STACKED_DOFS
             ));
         }
         let red_map: Vec<usize> = (0..m).filter(|&j| active[j]).collect();

@@ -94,7 +94,7 @@ use crate::physics::solvers::fracture_field::{
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc_residual::{
     ThmcImplicitEulerThermalHumidityHydrationResidual, ThmcImplicitEulerThermalHydrationResidual,
-    ThmcMonolithicImplicitUnknownLayout,
+    ThmcMonolithicImplicitUnknownLayout, THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
 };
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
@@ -215,7 +215,7 @@ pub struct ThmcState<B: Backend> {
 /// `[N,3]`, [`Self::drying_last_node_evaporation_k`] is positive (monolithic \(R_h\) is pure BE
 /// diffusion), [`Self::implicit_t_alpha_newton`] is also set, `iterations < 2`, or
 /// [`ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`] for the live
-/// `(N, F_T, F_h, F_α)` exceeds **64** (dense Jacobian workspace cap — same as the standalone
+/// `(N, F_T, F_h, F_α)` exceeds [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] (dense Jacobian workspace cap — same as the standalone
 /// `(T,\alpha)` implicit helper).
 #[derive(Clone, Debug)]
 pub struct ThmcSolver {
@@ -238,7 +238,7 @@ pub struct ThmcSolver {
     /// quasi-static bar \(R_u\) ([`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]).
     ///
     /// **Requires:** `batch == 1`, `[N,3]` SI `node_positions`, compatible `displacement_bc_mask`,
-    /// stacked DOFs \(\le 64\), and **`drying_last_node_evaporation_k == 0`** (pure implicit diffusion \(R_h\)).
+    /// stacked DOFs \(\le\) [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`], and **`drying_last_node_evaporation_k == 0`** (pure implicit diffusion \(R_h\)).
     /// Mutually exclusive with [`Self::implicit_t_alpha_newton`]. Default **`None`**.
     ///
     /// [`ThmcMonolithicNewtonConfig::stacked_residual_l2_tolerance`] /
@@ -429,9 +429,10 @@ impl ThmcSolver {
             let m_dof = ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(
                 n, f_t, f_h, f_a,
             );
-            if m_dof > 64 {
+            if m_dof > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
                 return Err(format!(
-                    "ThmcSolver::step: monolithic_thmc_newton stacked DOFs > 64 (dense Jacobian cap is 64), got {m_dof}"
+                    "ThmcSolver::step: monolithic_thmc_newton stacked DOFs > {cap} (dense Jacobian cap is {cap}), got {m_dof}",
+                    cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
                 ));
             }
         }
@@ -608,9 +609,10 @@ impl ThmcSolver {
                 let f_t_dof = state.thermal.temperature.dims()[2];
                 let f_a_dof = f_alpha_ch;
                 let stacked = n * f_t_dof + n * f_a_dof;
-                if stacked > 64 {
+                if stacked > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
                     return Err(format!(
-                        "ThmcSolver::step: implicit (T,α) Newton exceeds dense-Jacobian cap (64 DOFs), got {stacked}"
+                        "ThmcSolver::step: implicit (T,α) Newton exceeds dense-Jacobian cap ({cap} DOFs), got {stacked}",
+                        cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
                     ));
                 }
 
@@ -813,7 +815,7 @@ impl Default for ThmcNewtonConfig {
 /// usual explicit thermal increment + explicit hydration \(\alpha\) update with a Newton solve on
 /// the same analytic residual used in verification tests. Humidity, mechanics, and fracture
 /// substeps are unchanged. **Requires** `thmc-coupled` (otherwise [`ThmcSolver::step`] does not run
-/// this path); `batch` must be **1** and stacked \((T,\alpha)\) DOFs \(\le 64\).
+/// this path); `batch` must be **1** and stacked \((T,\alpha)\) DOFs \(\le\) [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`].
 #[derive(Clone, Debug, PartialEq)]
 pub struct ThmcImplicitTAlphaNewtonConfig {
     /// Chains `ThmcImplicitEulerThermalHydrationResidual::damped_newton_iterations` in `thmc_residual.rs` — must be
@@ -839,7 +841,7 @@ impl Default for ThmcImplicitTAlphaNewtonConfig {
 /// Wired from [`ThmcSolver::step`] when [`ThmcSolver::monolithic_thmc_newton`] is `Some` (requires `thmc-coupled`).
 ///
 /// **Scope:** each Newton iteration builds a **dense** finite-difference Jacobian in host workspace
-/// sized for at most **64** stacked unknowns per batch (see
+/// sized for at most [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] stacked unknowns per batch (see
 /// [`ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`]). Larger problems must
 /// use the split path until a sparse or matrix-free stack lands. **Mutually exclusive** with
 /// [`ThmcSolver::implicit_t_alpha_newton`]. Requires facet drying sink
