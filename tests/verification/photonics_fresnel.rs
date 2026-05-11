@@ -595,7 +595,7 @@ fn two_half_spaces_fresnel_te_no_pml_matches_analytic() {
         let d = C::sub(res[i], rhs_j[i]);
         rnorm = rnorm.max((d.re * d.re + d.im * d.im).sqrt());
     }
-    assert_relative_eq!(rnorm, 0.0_f32, epsilon = 8e-3_f32, max_relative = 1.0);
+    assert_relative_eq!(rnorm, 0.0_f32, epsilon = 6e-3_f32, max_relative = 1.0);
 
     let mut max_err: f32 = 0.0;
     for i in 0..n {
@@ -603,7 +603,7 @@ fn two_half_spaces_fresnel_te_no_pml_matches_analytic() {
         let di = sol[i].im - e_ex[i].im;
         max_err = max_err.max((dr * dr + di * di).sqrt());
     }
-    assert_relative_eq!(max_err, 0.0_f32, epsilon = 7.5e-2_f32);
+    assert_relative_eq!(max_err, 0.0_f32, epsilon = 6.8e-2_f32);
 
     assert_relative_eq!(r_analytic, -1.0_f32 / 3.0_f32, epsilon = 1e-6_f32);
 
@@ -637,10 +637,10 @@ fn two_half_spaces_fresnel_te_no_pml_matches_analytic() {
     assert_relative_eq!(
         r_disc.re,
         r_analytic,
-        epsilon = 3.5e-2_f32,
+        epsilon = 3e-2_f32,
         max_relative = 0.2
     );
-    assert_relative_eq!(r_disc.im, 0.0_f32, epsilon = 4.5e-2_f32, max_relative = 1.0);
+    assert_relative_eq!(r_disc.im, 0.0_f32, epsilon = 4e-2_f32, max_relative = 1.0);
 }
 
 /// `PhotonicsSolver::solve_maxwell_curl_curl` (minimal primal-chain DEC + Thomas) matches
