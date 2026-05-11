@@ -762,6 +762,22 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     }
 
     /// Same contract as [`ThmcImplicitEulerThermalHydrationResidual::damped_newton_iterations`], on \((T,h,\alpha)\).
+    pub fn damped_newton_iterations(
+        &self,
+        trial: &ThmcState<B>,
+        iterations: usize,
+        damping: f32,
+        fd_eps: f32,
+    ) -> Result<(ThmcState<B>, Vec<f32>), String> {
+        if iterations < 2 {
+            return Err("damped_newton_iterations (T,h,α): iterations must be >= 2".into());
+        }
+        let mut norms: Vec<f32> = Vec::with_capacity(iterations + 1);
+        norms.push(self.residual_l2(trial)?);
+
+        let (mut current, _, after_first) = self.one_damped_newton_step(trial, damping, fd_eps)?;
+        norms.push(after_first);
+
         for _ in 1..iterations {
             let (next, _, after) = self.one_damped_newton_step(&current, damping, fd_eps)?;
             current = next;
@@ -775,6 +791,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     ///
     /// Dense forward-difference Jacobian on the stacked unknown (cap `M \le 64`, batch 1).
     /// `damage` / `time` on `trial` are preserved.
+    #[allow(clippy::too_many_arguments)]
     pub fn one_damped_newton_step_with_quasi_static_r_u(
         &self,
         trial: &ThmcState<B>,
@@ -792,7 +809,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             );
         }
         if fd_eps <= 0.0_f32 {
-            return Err("one_damped_newton_step_with_quasi_static_r_u: fd_eps must be positive".into());
+            return Err(
+                "one_damped_newton_step_with_quasi_static_r_u: fd_eps must be positive".into(),
+            );
         }
 
         let t_dims = trial.thermal.temperature.dims();
@@ -820,7 +839,8 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         let f_t = t_dims[2];
         let f_h = h_dims[2];
         let f_a = a_dims[2];
-        let m = ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, f_t, f_h, f_a);
+        let m =
+            ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, f_t, f_h, f_a);
         if m > MAX_DOFS {
             return Err(format!(
                 "one_damped_newton_step_with_quasi_static_r_u: {} stacked DOFs exceeds cap {}",
@@ -852,7 +872,8 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         );
         if packed.len() != m || r0.len() != m {
             return Err(
-                "one_damped_newton_step_with_quasi_static_r_u: internal flatten length mismatch".into(),
+                "one_damped_newton_step_with_quasi_static_r_u: internal flatten length mismatch"
+                    .into(),
             );
         }
 
@@ -865,15 +886,8 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         for j in 0..m {
             let eps_j = fd_eps * (1.0_f32 + packed[j].abs());
             packed[j] += eps_j;
-            let pert = trial_from_packed_four(
-                trial,
-                &device,
-                &packed,
-                t_shape,
-                h_shape,
-                a_shape,
-                u_shape,
-            );
+            let pert =
+                trial_from_packed_four(trial, &device, &packed, t_shape, h_shape, a_shape, u_shape);
             packed[j] -= eps_j;
             let r_pert = self.stacked_flat_residual_field_major_quasi_static(
                 &pert,
@@ -893,15 +907,8 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             packed[k] += damping * delta[k];
         }
 
-        let new_trial = trial_from_packed_four(
-            trial,
-            &device,
-            &packed,
-            t_shape,
-            h_shape,
-            a_shape,
-            u_shape,
-        );
+        let new_trial =
+            trial_from_packed_four(trial, &device, &packed, t_shape, h_shape, a_shape, u_shape);
         let norm_after = self.residual_l2_including_quasi_static_r_u(
             &new_trial,
             coords_n3,
@@ -913,6 +920,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     }
 
     /// Chains [`Self::one_damped_newton_step_with_quasi_static_r_u`] (`iterations >= 2`).
+    #[allow(clippy::too_many_arguments)]
     pub fn damped_newton_iterations_with_quasi_static_r_u(
         &self,
         trial: &ThmcState<B>,
@@ -1056,6 +1064,62 @@ fn trial_from_packed_three<B: Backend<FloatElem = f32>>(
         hydro: HydrologicPlan { humidity: h_new },
         mechanical: MechanicalPlan {
             displacement: base.mechanical.displacement.clone(),
+        },
+        chemical: ChemicalPlan {
+            hydration_alpha: a_new,
+        },
+        damage: base.damage.clone(),
+        time: base.time,
+    }
+}
+
+#[cfg(feature = "thmc-coupled")]
+fn flatten_four_fields<B: Backend<FloatElem = f32>>(
+    t: &Tensor<B, 3>,
+    h: &Tensor<B, 3>,
+    alpha: &Tensor<B, 3>,
+    disp: &Tensor<B, 3>,
+) -> Vec<f32> {
+    let mut v = flatten_three_fields(t, h, alpha);
+    v.extend(disp.clone().into_data().value);
+    v
+}
+
+#[cfg(feature = "thmc-coupled")]
+fn trial_from_packed_four<B: Backend<FloatElem = f32>>(
+    base: &ThmcState<B>,
+    device: &B::Device,
+    u: &[f32],
+    t_shape: [usize; 3],
+    h_shape: [usize; 3],
+    a_shape: [usize; 3],
+    u_shape: [usize; 3],
+) -> ThmcState<B> {
+    let nt: usize = t_shape.iter().product();
+    let nh: usize = h_shape.iter().product();
+    let na: usize = a_shape.iter().product();
+    let nu: usize = u_shape.iter().product();
+    let t_new = Tensor::from_data(Data::new(u[..nt].to_vec(), Shape::new(t_shape)), device);
+    let h_new = Tensor::from_data(
+        Data::new(u[nt..nt + nh].to_vec(), Shape::new(h_shape)),
+        device,
+    );
+    let a_new = Tensor::from_data(
+        Data::new(u[nt + nh..nt + nh + na].to_vec(), Shape::new(a_shape)),
+        device,
+    );
+    let disp_new = Tensor::from_data(
+        Data::new(
+            u[nt + nh + na..nt + nh + na + nu].to_vec(),
+            Shape::new(u_shape),
+        ),
+        device,
+    );
+    ThmcState {
+        thermal: ThermalPlan { temperature: t_new },
+        hydro: HydrologicPlan { humidity: h_new },
+        mechanical: MechanicalPlan {
+            displacement: disp_new,
         },
         chemical: ChemicalPlan {
             hydration_alpha: a_new,

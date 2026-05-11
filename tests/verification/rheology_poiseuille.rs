@@ -256,6 +256,63 @@ fn chorin_uniform_body_force_zero_pressure_rhs_uniform_interior_one_step() {
     }
 }
 
+/// [`primal_divergence_from_edge_flux_topo`](umst_manifold::physics::dec_primal::primal_divergence_from_edge_flux_topo)
+/// on a scalar edge field has **zero global nodal sum** (oriented telescoping): the discrete compatibility
+/// condition for a pure-Neumann graph Poisson on the tangential mean-flux pressure RHS in
+/// [`BinghamFlowSolver::step`](umst_manifold::physics::solvers::BinghamFlowSolver).
+#[cfg(feature = "rheology-bingham")]
+#[test]
+fn weak_primal_divergence_scalar_flux_has_zero_global_sum_on_quad_channel() {
+    use burn::tensor::{Data, Int, Shape, Tensor};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+    use umst_manifold::physics::dec_primal::primal_divergence_from_edge_flux_topo;
+    use umst_manifold::physics::topology::EdgeTopology;
+
+    type B = NdArray<f32>;
+
+    let nx = 5usize;
+    let ny = 5usize;
+    let mut edges_src: Vec<i64> = Vec::new();
+    let mut edges_tgt: Vec<i64> = Vec::new();
+    for j in 0..ny {
+        for i in 0..nx - 1 {
+            edges_src.push((j * nx + i) as i64);
+            edges_tgt.push((j * nx + i + 1) as i64);
+        }
+    }
+    for j in 0..ny - 1 {
+        for i in 0..nx {
+            edges_src.push((j * nx + i) as i64);
+            edges_tgt.push(((j + 1) * nx + i) as i64);
+        }
+    }
+    let mut edges = edges_src;
+    edges.extend(edges_tgt);
+    let e_ct = edges.len() / 2;
+    let dev = NdArrayDevice::Cpu;
+    let edges_b1: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(edges, Shape::new([2, e_ct])), &dev);
+
+    let batch = 1usize;
+    let topo = EdgeTopology::new(edges_b1.clone());
+    let n_edges = topo.n_edges();
+    assert_eq!(e_ct, n_edges);
+
+    let mut flux = vec![0.0_f32; batch * n_edges];
+    for (i, slot) in flux.iter_mut().enumerate() {
+        *slot = ((i * 17 + 31) % 100) as f32 * 1e-4_f32;
+    }
+    let flux_e: Tensor<B, 3> =
+        Tensor::from_data(Data::new(flux, Shape::new([batch, n_edges, 1])), &dev);
+    let template_x = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+    let div = primal_divergence_from_edge_flux_topo(flux_e, &topo, &template_x);
+    let s: f32 = div.sum().into_scalar();
+    assert!(
+        s.abs() < 1e-5,
+        "expected zero global sum of weak primal divergence, got {s}"
+    );
+}
+
 /// **Regression guard (verification \#7, historical test name):** two Chorin steps on **65×17** bound
 /// first-step \(\|u\|_\infty\) growth under the tangential mean-flux Poisson RHS plus **momentum-consistent**
 /// projection (`rheology_flow.rs`: `mean(φ)=0` gauge; subtract \(\Delta t\cdot\mathrm{div}(-(\Delta\phi)\hat t/\rho)\)
