@@ -23,20 +23,22 @@
 
 pub mod acoustics;
 pub mod electrochemistry;
+pub mod fixed_point;
 pub mod fracture_field;
+pub mod krylov_host;
 /// Johnson–Zollweg–Gubbins (1993) LJ EOS — `f64` reference (teqp-aligned); not the Burn bridge.
 pub mod lj_johnson_1993_reference;
 pub mod photonics;
 pub mod rheology_flow;
 pub mod statistical_mechanics;
 pub mod thmc;
-pub mod thmc_residual;
-#[cfg(all(feature = "thmc-coupled", feature = "solver-experimental"))]
+#[cfg(feature = "solver-experimental")]
 pub mod thmc_jfnk;
+pub mod thmc_residual;
 pub mod topology_solver;
 
 pub use crate::physics::mechanics::VectorMechanicsSolver;
-pub use acoustics::AcousticWaveSolver;
+pub use acoustics::{AcousticBarNetwork, AcousticGmresConfig, AcousticWaveSolver};
 #[cfg(feature = "acoustics-newmark")]
 pub use acoustics::{AcousticNewmarkBar1dPeriodic, AcousticNewmarkBar1dWork};
 #[cfg(feature = "electrochemistry-mvp")]
@@ -49,7 +51,7 @@ pub use fracture_field::{
     strain_tensor_for_fracture_from_manifold, strain_tensor_from_bar_network_displacement,
     StaggeredDamageOuterLoopConfig, StaggeredFractureConfig, StaggeredOuterDamageStopCriteria,
 };
-pub use photonics::{PhotonicsHelmholtzSolver, PhotonicsSolver};
+pub use photonics::{PhotonicsDecFacesPatch, PhotonicsHelmholtzSolver, PhotonicsSolver};
 pub use rheology_flow::BinghamFlowSolver;
 #[cfg(feature = "thmc-coupled")]
 pub use thmc::full_hydration_alpha_rate_tensor;
