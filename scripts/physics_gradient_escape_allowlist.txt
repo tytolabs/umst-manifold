@@ -1,18 +1,47 @@
 # Files listed here may contain `into_data` / `into_scalar` after explicit audit only.
 # Goal: no *new* silent Host tensor escapes in physics — new hits must use Burn ops or join this list with rationale.
 #
-# REVIEWED 2026-05-10: `mechanics.rs` — `#[cfg(test)]` modules use Host reads for numerical assertions;
-# the default equilibrium path uses tensor CG + `bar_matvec` scatter (no `into_data` in non-test code).
-# Re-audit if new non-test `into_data` appears.
+# E4 (`fp-sort-io-monad-audit`, 2026-05-11): per-file tier tags (ConvergenceRequired / Diagnostic / HostBridge / TestOnly)
+# are summarized in docs/FP_CATEGORICAL_BURN.md § "E4 — physics src/physics/ tier tags".
+#
+# REVIEWED 2026-05-11; E4 (`fp-sort-io-monad-audit`): `into_data()` only in `#[cfg(test)]` — tensor equality asserts
+# comparing `run_plan_step` vs `fold_plan_step` and empty-fold no-op; no production host sync.
+src/physics/orchestration.rs
+# REVIEWED 2026-05-11; E4 (`fp-sort-io-monad-audit`): **HostBridge** — `BarMatvecOperator::apply_vec` feeds host GMRES;
+# one narrowed batch-row slice, `reshape([3N])`, then `into_data().value` (no extra full-batch host read).
+src/physics/operator.rs
+# REVIEWED 2026-05-10; E4 2026-05-11 (`fp-sort-io-monad-audit`): production packed PCG uses per-iter
+# `.into_scalar()` for `rhs_norm`, `rz`/`β` finiteness, `‖r‖` exit — ConvergenceRequired (do not blanket-remove).
+# `#[cfg(test)]` / feature-gated tests use `into_data` for asserts — TestOnly. Re-audit if new non-test `into_data` appears.
 src/physics/mechanics.rs
-# REVIEWED 2026-05-10: Matches live only under #[cfg(test)] mod tests — Host reads for assertions.
-# Re-audit if non-test code is added to these modules.
-src/physics/solvers/rheology_flow.rs
+# REVIEWED 2026-05-12; E4: **HostBridge** (virial / EOS table materialization, `into_data` slices) + **TestOnly** parity asserts;
+# see docs/FP_CATEGORICAL_BURN.md §F. Re-audit if `[B,4]` production path regains per-row host materialization.
 src/physics/solvers/statistical_mechanics.rs
-# REVIEWED 2026-05-10: `into_scalar` only aggregates thermal/hydrologic Newton residuals (R_T+R_h) for
-# convergence tests and logging — explicit Euler transport makes this a control-flow diagnostic, not an
-# autodiff training hot path. Re-audit if additional Host escapes appear outside the Newton loop.
+# REVIEWED 2026-05-12; E4: inner CG + L2 telemetry `.into_scalar()` (ConvergenceRequired — telemetry only per module rustdoc);
+# additional grep hits are rustdoc / line comments. No live `into_data` in this file at purge audit.
 src/physics/solvers/thmc.rs
-# REVIEWED 2026-05-10: `into_data` only in #[cfg(test)] / #[cfg(all(test, feature))] modules for rho assertions.
-# Re-audit if non-test Host reads appear.
-src/physics/solvers/topology_solver.rs
+# REVIEWED 2026-05-11 (`electrochemistry.rs`): CG inner-loop scalars, Newton/stopping reductions, and repeated 1-D host staging (`into_data().value`)
+# for PNP sub-problems — intentional solver math + structural CPU bridge; see docs/FP_CATEGORICAL_BURN.md §A–C.
+src/physics/solvers/electrochemistry.rs
+# REVIEWED 2026-05-11: FDFD-style host assembly — full `into_data().value` for ε, sources, mesh layout; structural bridge.
+# Re-audit if hot loops gain new full-vector syncs.
+src/physics/solvers/photonics.rs
+# REVIEWED 2026-05-11: ‖R‖²-style `into_scalar` stacks + `into_data` residual stitching for host GMRES/dense paths;
+# module docs cover AD/stopping semantics. Re-audit if train-time autodiff crosses these predicates.
+src/physics/solvers/thmc_residual.rs
+# REVIEWED 2026-05-11: fracture-at2 outer-loop stopping (`into_scalar`) plus tests/diagnostics using `into_data().value`.
+src/physics/solvers/fracture_field.rs
+# REVIEWED 2026-05-12; E4: **HostBridge** — three `into_data().value` pulls (`rho`, body force, mask) feed `q1_hex_elasticity::hex_solve_pcg_masked` on host `Vec`.
+# **LeakCandidate (deferred, `exec-solver-purge`):** collapsing these without a device-native Q1-hex operator + parity would be a large numerics project — see FP_CATEGORICAL_BURN.md § *exec-solver-purge*.
+src/physics/extruded_plate.rs
+# REVIEWED 2026-05-11; E4 (`fp-sort-io-monad-audit`): `c_pad` uses `Tensor::from_inner(comp)` so surrogate keeps ∂/∂u
+# through compliance; one `comp.into_scalar()` remains for `(surrogate, c_raw)` API — Diagnostic, not Krylov-inner-loop burn.
+src/physics/adjoint.rs
+# REVIEWED 2026-05-12: **HostBridge** (`acoustics-newmark`) — `pack_bn3_to_flat` stages one batch row to host `Vec<f32>`
+# for `krylov_host::gmres_f32_try` (narrowed slice + `reshape([3N])` + `into_data().value`); inner physics stays tensor until Krylov.
+# `#[cfg(test)]` blocks use `into_data` for scalar asserts — TestOnly.
+src/physics/solvers/acoustics.rs
+# REVIEWED 2026-05-12: **TestOnly** — `into_data().value` only under `#[cfg(all(test, feature = "topology-density-evolution"))]` for Helmholtz / Laplacian residual asserts (see FP_CATEGORICAL_BURN.md E4).
+src/physics/topology_filter.rs
+# REVIEWED 2026-05-12: **Diagnostic** — one `max().into_scalar()` in `dec_primal_max_abs_d1_of_scalar_gradient` (DEC witness for photonics / identity checks); not inner Krylov.
+src/physics/dec_primal.rs

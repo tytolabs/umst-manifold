@@ -86,6 +86,22 @@ jobs:
       - name: cargo check --features solver-stable,solver-research
         run: cargo check --verbose --all-targets --features solver-stable,solver-research
 
+  # Optional PR signal: Phase A physics guard + full solver-experimental test matrix (see docs/CI_GAP_NOTES.md).
+  # continue-on-error: not a merge gate; branch protection should keep requiring build-test / lint / solver-* only.
+  solver-experimental-pr-optional:
+    name: solver-experimental + physics guard (PR, optional)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: physics Host-tensor guard
+        run: bash scripts/check_physics_no_gradient_break.sh
+      - name: cargo test --features solver-experimental --no-fail-fast (optional)
+        run: cargo test --verbose --features solver-experimental --no-fail-fast
+
   # v0.4 brief Track K: full experimental stack on default branch (same feature union as PR check), release tests.
   research-stack:
     name: solver-experimental tests (main, release)
