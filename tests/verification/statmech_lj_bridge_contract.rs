@@ -26,7 +26,7 @@ fn lj_bridge_scaling_non_regression() {
         ),
         &dev,
     );
-    let (k, gamma) = upscale_potentials(lj);
+    let (k, gamma) = upscale_potentials(lj).unwrap();
     let kv = k.into_data().value;
     let gv = gamma.into_data().value;
     let c_k = ANALYTIC_BULK_MODULUS_SCALE;
