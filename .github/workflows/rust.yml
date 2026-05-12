@@ -86,6 +86,23 @@ jobs:
       - name: cargo check --features solver-stable,solver-research
         run: cargo check --verbose --all-targets --features solver-stable,solver-research
 
+  # v0.4 Phase-4a: dedicated solver-research verification crates (brief gate 4 lane; see docs/Solver-Status.md).
+  phase4-verification-pr:
+    name: Phase-4 verification tests (--release, PR)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo test --release (THMC / photonics DEC brick / statmech Johnson upscale)
+        run: |
+          set -euo pipefail
+          cargo test --verbose --release --features solver-research --test thmc_monolithic_newton_chain
+          cargo test --verbose --release --features solver-research,photonics-fdfd --test photonics_curl_curl_2d_patch
+          cargo test --verbose --release --features solver-research,photonics-fdfd --test photonics_curl_curl_3d_brick
+          cargo test --verbose --release --features solver-research --test statmech_lj_johnson_upscale_bridge
+
   # Optional PR signal: Phase A physics guard + full solver-experimental test matrix (see docs/CI_GAP_NOTES.md).
   # continue-on-error: not a merge gate; branch protection should keep requiring build-test / lint / solver-* only.
   solver-experimental-pr-optional:
