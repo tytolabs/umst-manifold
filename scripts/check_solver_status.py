@@ -250,10 +250,9 @@ def main() -> None:
         "--check-statmech-verification-set",
         action="store_true",
         help=(
-            "Require the statistical_mechanics table row Verification cell to list all "
-            "`statmech_vinet_eos`, `statmech_lj_bridge_contract`, "
-            "`statmech_lj_johnson_eos_reference`, and `statmech_mechanics_fracture_bridge` test paths "
-            "(see Solver-Status Statistical mechanics lane)"
+            "Require the statistical_mechanics table row Verification cell to list every path in "
+            "the canonical statmech set (see `_STATMECH_VERIFICATION_PATHS` in this script — "
+            "vinet, lj bridge, johnson eos reference, johnson upscale bridge, mechanics fracture bridge)"
         ),
     )
     args = ap.parse_args()
