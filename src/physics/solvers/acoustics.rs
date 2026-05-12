@@ -1,19 +1,35 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-//! Acoustic / elastodynamic wave propagation (Phase 8) — **scaffold**.
+//! Acoustic / elastodynamic wave propagation (Phase 8).
 //!
-//! Newmark-β time integration on the semi-discrete wave equation is the intended path; this module
-//! pins the solver surface (time step, Newmark parameters, and tensor contracts) for DEC assembly
-//! and coupling with [`crate::physics::laplacian`] / mechanics operators in later work.
+//! Newmark-β implicit integration for **M ü + C u̇ + K u = F** on nodal vectors `[B, N, 3]`.
+//! - **Mass** `M` is a per-node **3×3 block diagonal** `[B, N, 3, 3]` built from volumetric density
+//!   `ρ` and caller-supplied nodal control volume `V` (kg = ρ·V per node; isotropic blocks `m·I`).
+//! - **Stiffness** `K` combines an optional **local** Hooke-style nodal operator (same tensor contract
+//!   as the historical scaffold) with the **axial bar-network** graph matvec
+//!   [`crate::physics::mechanics::VectorMechanicsSolver::bar_matvec`] — the same scatter-sum pattern
+//!   as [`crate::physics::laplacian::TopologicalLaplacian::scalar_laplacian`].
+//! - **Damping** `C` is a per-node block diagonal `[B, N, 3, 3]` (Rayleigh-style blocks can be folded
+//!   in by the caller).
+//!
+//! When a bar graph is present, the effective operator
+//! **S = M + γΔt C + βΔt² K** is applied matrix-free with host **[`super::krylov_host::gmres_f32_try`**].
+//! When no graph is supplied and `S` is block-diagonal per node, a closed-form **batched 3×3**
+//! solve is used (differentiable through Burn).
 
-use burn::tensor::{backend::Backend, Tensor};
+use burn::tensor::{backend::Backend, Int, Tensor};
+
+#[cfg(feature = "acoustics-newmark")]
+use burn::tensor::{Data, Shape};
+
+#[cfg(feature = "acoustics-newmark")]
+use crate::core::iterate_until::iterate_until;
 
 /// Semi-discrete acoustic / elastic wave integrator (Newmark family).
 ///
 /// [`Self::newmark_beta`] and [`Self::newmark_gamma`] select the implicitness / damping of the
-/// average-acceleration scheme (e.g. average acceleration: β = ¼, γ = ½; linear acceleration:
-/// β = ⅙, γ = ½).
+/// average-acceleration scheme (e.g. average acceleration: β = ¼, γ = ½).
 pub struct AcousticWaveSolver {
     /// Physical time step Δt (seconds).
     pub dt: f32,
@@ -23,36 +39,136 @@ pub struct AcousticWaveSolver {
     pub newmark_gamma: f32,
 }
 
+/// Host GMRES controls for the implicit Newmark acceleration solve when a **bar graph** is active.
+#[derive(Debug, Clone, Copy)]
+pub struct AcousticGmresConfig {
+    pub max_iter: usize,
+    pub rel_tol: f32,
+}
+
+impl Default for AcousticGmresConfig {
+    fn default() -> Self {
+        Self {
+            max_iter: 256,
+            rel_tol: 1e-4_f32,
+        }
+    }
+}
+
+/// Cached axial bar-network tensors for [`AcousticWaveSolver::step_wave`] (same assembly recipe as
+/// quasi-static mechanics on the DEC 1-skeleton).
+#[derive(Debug, Clone)]
+pub struct AcousticBarNetwork<B: Backend> {
+    pub n_v: usize,
+    pub k_axial: Tensor<B, 3>,
+    pub edge_unit: Tensor<B, 3>,
+    pub src_indices: Tensor<B, 3, Int>,
+    pub tgt_indices: Tensor<B, 3, Int>,
+    pub edge_len: Tensor<B, 3>,
+}
+
+impl<B: Backend<FloatElem = f32>> AcousticBarNetwork<B> {
+    /// Assemble edge axial stiffness and unit tangents from nodal Young's modulus, damage, and geometry.
+    ///
+    /// * `coords_n3` — `[N, 3]` reference coordinates.
+    /// * `edges_b1` — `[2, E]` endpoint indices (same layout as mechanics / Laplacian).
+    /// * `youngs_bn1` — `[B, N, 1]` Pa.
+    /// * `damage_bn1` — `[B, N, 1]` in `[0, 1]`.
+    pub fn assemble_axial_bar_graph(
+        coords_n3: Tensor<B, 2>,
+        edges_b1: Tensor<B, 2, Int>,
+        youngs_bn1: Tensor<B, 3>,
+        damage_bn1: Tensor<B, 3>,
+        cross_section_area: f32,
+    ) -> Self {
+        use crate::physics::dec_operators::DecEdgeOperators;
+        use crate::physics::topology::EdgeTopology;
+
+        const DAMAGE_REG: f32 = 1e-6;
+
+        let n_v = coords_n3.dims()[0];
+        let batch = youngs_bn1.dims()[0];
+        let topo = EdgeTopology::new(edges_b1.clone());
+        let n_edges = topo.n_edges();
+
+        let coords_b = coords_n3
+            .clone()
+            .unsqueeze_dim::<3>(0)
+            .expand([batch, n_v, 3]);
+
+        let src_indices = topo.expand_src_gather_indices(batch, 3);
+        let tgt_indices = topo.expand_tgt_gather_indices(batch, 3);
+
+        let c_src = coords_b.clone().gather(1, src_indices.clone());
+        let c_tgt = coords_b.gather(1, tgt_indices.clone());
+        let delta_geom = c_tgt.sub(c_src);
+        let edge_len = delta_geom
+            .clone()
+            .powf_scalar(2.0)
+            .sum_dim(2)
+            .sqrt()
+            .clamp(1e-12, f32::MAX)
+            .reshape([batch, n_edges, 1]);
+        let edge_unit = delta_geom.div(edge_len.clone());
+
+        let e_on_edges =
+            DecEdgeOperators::arithmetic_mean_on_edges(youngs_bn1.clone(), edges_b1.clone());
+        let d_on_edges =
+            DecEdgeOperators::arithmetic_mean_on_edges(damage_bn1.clone(), edges_b1.clone());
+        let dmg = Tensor::ones_like(&d_on_edges)
+            .sub(d_on_edges)
+            .powf_scalar(2.0)
+            .add_scalar(DAMAGE_REG);
+
+        let k_axial = e_on_edges
+            .mul_scalar(cross_section_area)
+            .div(edge_len.clone())
+            .mul(dmg);
+
+        Self {
+            n_v,
+            k_axial,
+            edge_unit,
+            src_indices,
+            tgt_indices,
+            edge_len,
+        }
+    }
+}
+
 impl AcousticWaveSolver {
-    /// One explicit documentation pass for the semi-discrete wave step (Phase 8 stub).
+    /// One implicit Newmark-β step for **M ü + C u̇ + K u = F**.
     ///
-    /// # Tensor contracts (documentation)
+    /// # Tensor shapes
     ///
-    /// | Argument | Intended shape | Role |
-    /// |----------|------------------|------|
-    /// | `displacement` | `[B, N, 3]` | Nodal displacement **u** (m). |
-    /// | `velocity` | `[B, N, 3]` | Nodal velocity **u̇** (m/s). |
-    /// | `acceleration` | `[B, N, 3]` | Nodal acceleration **ü** (m/s²). |
-    /// | `nodal_density` | `[B, N, 1]` | Mass density ρ (kg/m³) per node. |
-    /// | `elasticity` | `[B, N, 3, 3]` | Nodal stiffness matrix **C** (Pa) mapping strain ↔ stress in the linearized elastic/acoustic law; anisotropy is encoded per node. |
+    /// | Tensor | Shape | Role |
+    /// |--------|-------|------|
+    /// | `displacement`, `velocity`, `acceleration` | `[B, N, 3]` | **u**, **u̇**, **ü** |
+    /// | `nodal_density` | `[B, N, 1]` | Mass density ρ (kg/m³) |
+    /// | `nodal_volume` | `[B, N, 1]` | Nodal control volume V (m³); nodal mass scalar m = ρ·V |
+    /// | `body_force` | `[B, N, 3]` | **F** (N) |
+    /// | `damping_bn33` | `[B, N, 3, 3]` | Block-diagonal **C** |
+    /// | `stiffness_local_bn44` | `[B, N, 3, 3]` | Extra nodal stiffness (Hooke-style `(K_loc u)[b,n,:] = K[b,n,:,:]·u[b,n,:]`) |
     ///
-    /// Returns updated `(displacement, velocity, acceleration)` with identical shapes.
+    /// When `bar_network` is **`None`**, the effective Jacobian per node is **3×3** and is solved
+    /// in batch tensor form. When **`Some`**, a matrix-free **GMRES** step on the packed `[3N]`
+    /// vector is used (host bridge; autodiff does not cross the Krylov solve).
     ///
-    /// ## Default builds (`solver-experimental` **off**)
-    /// Returns the inputs unchanged — documented no-op so default `cargo test` stays green.
-    ///
-    /// ## `--features solver-experimental`
-    /// Implicit Newmark-β tensor step for **M ü + K u = 0** (homogeneous, no damping). Assumptions
-    /// (lumped `a·ρ` mass diagonal, local `C·u` stiffness contraction, per-node 3×3 solve) are spelled
-    /// out on the internal `step_wave_experimental` helper.
-    #[allow(unused_variables)]
+    /// ## Default builds (`acoustics-newmark` **off**)
+    /// Returns the inputs unchanged.
+    #[allow(clippy::too_many_arguments)]
     pub fn step_wave<B: Backend<FloatElem = f32>>(
         &self,
         displacement: Tensor<B, 3>,
         velocity: Tensor<B, 3>,
         acceleration: Tensor<B, 3>,
         nodal_density: Tensor<B, 3>,
-        elasticity: Tensor<B, 4>,
+        nodal_volume: Tensor<B, 3>,
+        body_force: Tensor<B, 3>,
+        damping_bn33: Tensor<B, 4>,
+        stiffness_local_bn44: Tensor<B, 4>,
+        bar_network: Option<AcousticBarNetwork<B>>,
+        gmres_cfg: Option<AcousticGmresConfig>,
     ) -> (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>) {
         #[cfg(not(feature = "acoustics-newmark"))]
         {
@@ -60,9 +176,13 @@ impl AcousticWaveSolver {
                 self.dt,
                 self.newmark_beta,
                 self.newmark_gamma,
-                nodal_density.clone(),
-                elasticity.clone(),
+                nodal_density,
+                nodal_volume,
+                body_force,
+                damping_bn33,
+                stiffness_local_bn44,
             );
+            let _ = (bar_network, gmres_cfg);
             (displacement, velocity, acceleration)
         }
 
@@ -74,14 +194,80 @@ impl AcousticWaveSolver {
                 velocity,
                 acceleration,
                 nodal_density,
-                elasticity,
+                nodal_volume,
+                body_force,
+                damping_bn33,
+                stiffness_local_bn44,
+                bar_network,
+                gmres_cfg.unwrap_or_default(),
             )
         }
     }
-}
 
-#[cfg(feature = "acoustics-newmark")]
-const LUMPED_MASS_SCALE: f32 = 1.0;
+    /// Run **`num_steps`** Newmark steps using [`iterate_until`] (bounded driver; autodiff-friendly
+    /// when each step stays on the tensor-only dense path).
+    #[cfg(feature = "acoustics-newmark")]
+    #[allow(clippy::too_many_arguments)]
+    pub fn step_wave_iterate<B: Backend<FloatElem = f32>>(
+        &self,
+        num_steps: usize,
+        displacement: Tensor<B, 3>,
+        velocity: Tensor<B, 3>,
+        acceleration: Tensor<B, 3>,
+        nodal_density: Tensor<B, 3>,
+        nodal_volume: Tensor<B, 3>,
+        body_force: Tensor<B, 3>,
+        damping_bn33: Tensor<B, 4>,
+        stiffness_local_bn44: Tensor<B, 4>,
+        bar_network: Option<AcousticBarNetwork<B>>,
+        gmres_cfg: Option<AcousticGmresConfig>,
+    ) -> (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>, usize) {
+        let mut st = (
+            displacement,
+            velocity,
+            acceleration,
+            nodal_density,
+            nodal_volume,
+            body_force,
+            damping_bn33,
+            stiffness_local_bn44,
+            bar_network,
+            gmres_cfg,
+        );
+        let k = iterate_until(num_steps, &mut st, |s| {
+            let (
+                ref mut u,
+                ref mut v,
+                ref mut a,
+                ref rho,
+                ref vol,
+                ref f,
+                ref damp,
+                ref kloc,
+                ref bar,
+                ref gcfg,
+            ) = *s;
+            let (un, vn, an) = self.step_wave(
+                u.clone(),
+                v.clone(),
+                a.clone(),
+                rho.clone(),
+                vol.clone(),
+                f.clone(),
+                damp.clone(),
+                kloc.clone(),
+                bar.clone(),
+                gcfg.as_ref().copied(),
+            );
+            *u = un;
+            *v = vn;
+            *a = an;
+            core::ops::ControlFlow::Continue(())
+        });
+        let (u, v, a, ..) = st;
+        (u, v, a, k)
+    }
+}
 
 #[cfg(feature = "acoustics-newmark")]
 const DET_EPS: f32 = 1e-30_f32;
@@ -91,27 +277,28 @@ fn elem_bn33<B: Backend<FloatElem = f32>>(m: &Tensor<B, 4>, i: usize, j: usize) 
     m.clone().narrow(2, i, 1).narrow(3, j, 1).squeeze::<3>(3)
 }
 
-/// `(K u)[b,n,:] = Σ_j C[b,n,i,j] u[b,n,j]` with shapes `[B,N,3]`.
+/// `(K_loc u)[b,n,:] = Σ_j K[b,n,i,j] u[b,n,j]` with shapes `[B,N,3]`.
 #[cfg(feature = "acoustics-newmark")]
-fn contract_elasticity_displacement<B: Backend<FloatElem = f32>>(
-    elasticity: Tensor<B, 4>,
+fn contract_block33_displacement<B: Backend<FloatElem = f32>>(
+    stiffness: Tensor<B, 4>,
     displacement: Tensor<B, 3>,
 ) -> Tensor<B, 3> {
     let u_col = displacement.unsqueeze_dim::<4>(3);
-    elasticity.matmul(u_col).squeeze::<3>(3)
+    stiffness.matmul(u_col).squeeze::<3>(3)
 }
 
+/// Per-node nodal mass matrix **m I₃** with `m = ρ · V` (kg), shape `[B, N, 3, 3]`.
 #[cfg(feature = "acoustics-newmark")]
-fn diagonal_mass_matrix_bn33<B: Backend<FloatElem = f32>>(
-    m_scalar_bn1: Tensor<B, 3>,
-    device: &B::Device,
+pub fn nodal_mass_matrix_bn33<B: Backend<FloatElem = f32>>(
+    nodal_density_bn1: Tensor<B, 3>,
+    nodal_volume_bn1: Tensor<B, 3>,
 ) -> Tensor<B, 4> {
-    let [b, n, one] = m_scalar_bn1.dims();
-    debug_assert_eq!(one, 1);
-    let zero = Tensor::<B, 3>::zeros([b, n, 1], device);
-    let row0 = Tensor::cat(vec![m_scalar_bn1.clone(), zero.clone(), zero.clone()], 2);
-    let row1 = Tensor::cat(vec![zero.clone(), m_scalar_bn1.clone(), zero.clone()], 2);
-    let row2 = Tensor::cat(vec![zero.clone(), zero, m_scalar_bn1], 2);
+    let device = nodal_density_bn1.device();
+    let m_scalar = nodal_density_bn1.mul(nodal_volume_bn1);
+    let zero = Tensor::<B, 3>::zeros(m_scalar.dims(), &device);
+    let row0 = Tensor::cat(vec![m_scalar.clone(), zero.clone(), zero.clone()], 2);
+    let row1 = Tensor::cat(vec![zero.clone(), m_scalar.clone(), zero.clone()], 2);
+    let row2 = Tensor::cat(vec![zero.clone(), zero, m_scalar], 2);
     Tensor::cat(
         vec![
             row0.unsqueeze_dim::<4>(2),
@@ -120,6 +307,68 @@ fn diagonal_mass_matrix_bn33<B: Backend<FloatElem = f32>>(
         ],
         2,
     )
+}
+
+/// Kinetic energy **½ u̇ᵀ M u̇** as a rank-1 tensor `[B, 1]` (sum over nodes and spatial components).
+#[cfg(feature = "acoustics-newmark")]
+pub fn nodal_kinetic_energy_bn1<B: Backend<FloatElem = f32>>(
+    velocity_bn3: Tensor<B, 3>,
+    mass_bn44: Tensor<B, 4>,
+) -> Tensor<B, 2> {
+    let batch_size = velocity_bn3.dims()[0];
+    let v_col = velocity_bn3.clone().unsqueeze_dim::<4>(3);
+    let mv = mass_bn44.matmul(v_col).squeeze::<3>(3);
+    velocity_bn3
+        .mul(mv)
+        .sum_dim(2)
+        .sum_dim(1)
+        .mul_scalar(0.5_f32)
+        .reshape([batch_size, 1])
+}
+
+#[cfg(feature = "acoustics-newmark")]
+fn apply_mass_block33<B: Backend<FloatElem = f32>>(
+    mass_bn44: &Tensor<B, 4>,
+    x_bn3: Tensor<B, 3>,
+) -> Tensor<B, 3> {
+    let xc = x_bn3.unsqueeze_dim::<4>(3);
+    mass_bn44.clone().matmul(xc).squeeze::<3>(3)
+}
+
+#[cfg(feature = "acoustics-newmark")]
+fn apply_effective_operator_acceleration<B: Backend<FloatElem = f32>>(
+    trial_a_bn3: Tensor<B, 3>,
+    mass_bn44: &Tensor<B, 4>,
+    damping_bn44: &Tensor<B, 4>,
+    stiffness_local_bn44: &Tensor<B, 4>,
+    gamma_dt: f32,
+    beta_dt2: f32,
+    bar: Option<&AcousticBarNetwork<B>>,
+) -> Tensor<B, 3> {
+    let ma = apply_mass_block33(mass_bn44, trial_a_bn3.clone());
+    let ca = contract_block33_displacement(damping_bn44.clone(), trial_a_bn3.clone())
+        .mul_scalar(gamma_dt);
+    let k_loc_a = contract_block33_displacement(stiffness_local_bn44.clone(), trial_a_bn3.clone())
+        .mul_scalar(beta_dt2);
+    let mut out = ma.add(ca).add(k_loc_a);
+    if let Some(bn) = bar {
+        let batch = trial_a_bn3.dims()[0];
+        let n_v = bn.n_v;
+        debug_assert_eq!(trial_a_bn3.dims(), [batch, n_v, 3]);
+        let k_bar = crate::physics::mechanics::VectorMechanicsSolver::bar_matvec(
+            trial_a_bn3,
+            &bn.k_axial,
+            &bn.edge_unit,
+            &bn.src_indices,
+            &bn.tgt_indices,
+            n_v,
+            None,
+            &bn.edge_len,
+        )
+        .mul_scalar(beta_dt2);
+        out = out.add(k_bar);
+    }
+    out
 }
 
 /// Returns `S^{-1} rhs` for batched 3×3 systems `S · x = rhs`, shapes `[B,N,3,3]` and `[B,N,3]`.
@@ -159,7 +408,6 @@ fn solve_batched_3x3<B: Backend<FloatElem = f32>>(
                     .sub(s11.clone().mul(s20.clone())),
             ),
         );
-    // Positive definite `S` ⇒ det > 0; clamp avoids division by zero if inputs degenerate.
     let det_safe = det.clone().clamp_min(DET_EPS);
 
     let cof00 = s11
@@ -216,59 +464,194 @@ fn solve_batched_3x3<B: Backend<FloatElem = f32>>(
 }
 
 #[cfg(feature = "acoustics-newmark")]
-/// Experimental-only integrator: implicit Newmark-β step for **M ü + K u = 0**.
+fn total_stiffness_displacement<B: Backend<FloatElem = f32>>(
+    u_bn3: Tensor<B, 3>,
+    stiffness_local_bn44: &Tensor<B, 4>,
+    bar: Option<&AcousticBarNetwork<B>>,
+) -> Tensor<B, 3> {
+    let mut ku = contract_block33_displacement(stiffness_local_bn44.clone(), u_bn3.clone());
+    if let Some(bn) = bar {
+        let batch = u_bn3.dims()[0];
+        let n_v = bn.n_v;
+        ku = ku.add(
+            crate::physics::mechanics::VectorMechanicsSolver::bar_matvec(
+                u_bn3,
+                &bn.k_axial,
+                &bn.edge_unit,
+                &bn.src_indices,
+                &bn.tgt_indices,
+                n_v,
+                None,
+                &bn.edge_len,
+            ),
+        );
+        let _ = batch;
+    }
+    ku
+}
+
+#[cfg(feature = "acoustics-newmark")]
+fn pack_bn3_to_flat<B: Backend<FloatElem = f32>>(
+    x: Tensor<B, 3>,
+    batch_row: usize,
+    n_v: usize,
+) -> Vec<f32> {
+    let flat: Tensor<B, 1> = x
+        .slice([batch_row..batch_row + 1, 0..n_v, 0..3])
+        .reshape([n_v * 3]);
+    flat.into_data().value
+}
+
+/// Host **GMRES** acceleration solve for one batch row when a **bar graph** is present.
 ///
-/// **Modelling simplifications**
+/// # Autodiff (Burn `Autodiff`)
 ///
-/// 1. **Lumped mass:** `M` is diagonal and isotropic per node,
-///    `m_{[b,n]} = a · ρ_{[b,n,0]}` with [`LUMPED_MASS_SCALE`] as `a`. Nodal volume / quadrature
-///    lumping is **not** assembled from DEC mesh data; callers fold that into `a` or into effective ρ.
-/// 2. **Stiffness–displacement product:** `(K u)[b,n,:] = C[b,n,:,:] · u[b,n,:]` (batched matvec).
-///    This stands in for a mesh-assembled sparse **K** from gradients / DEC; only the local 3×3
-///    nodal operator is used.
-/// 3. **Implicit acceleration solve:** effective Jacobian `S = m I + β Δt² C` is inverted **per node**
-///    via closed-form 3×3 inverse; `det(S)` is clamped below by [`DET_EPS`] for numerical stability.
-/// 4. **Homogeneous:** no Rayleigh damping, no external force term **f**.
+/// Krylov iterates are **`f32` host vectors**; each matvec rebuilds a batch tensor, applies
+/// [`apply_effective_operator_acceleration`], then **packs back to host** ([`pack_bn3_to_flat`]).
+/// That host↔tensor boundary means **reverse-mode AD does not differentiate through the implicit
+/// linear solve** the way a closed-form inverse would. For **backward parity** and tape-preserving
+/// multi-step drivers ([`AcousticWaveSolver::step_wave_iterate`]), keep **`bar_network: None`**
+/// so [`step_wave_experimental`] uses the batched **3×3** dense solve ([`solve_batched_3x3`]) on
+/// device. Graph + GMRES remains the forward / residual-accuracy path only until an AD-aware
+/// alternative (e.g. implicit diff or tensor Krylov) is scoped.
+#[cfg(feature = "acoustics-newmark")]
+#[allow(clippy::too_many_arguments)]
+fn solve_acceleration_gmres_batch_row<B: Backend<FloatElem = f32>>(
+    device: &B::Device,
+    template: &Tensor<B, 3>,
+    batch_row: usize,
+    n_v: usize,
+    rhs_flat: &[f32],
+    mass_bn44: Tensor<B, 4>,
+    damping_bn44: Tensor<B, 4>,
+    stiffness_local_bn44: Tensor<B, 4>,
+    gamma_dt: f32,
+    beta_dt2: f32,
+    bar: Option<&AcousticBarNetwork<B>>,
+    gmres: AcousticGmresConfig,
+) -> Result<Tensor<B, 3>, String> {
+    use super::krylov_host::gmres_f32_try;
+
+    let n = n_v * 3;
+    let mass_c = mass_bn44.clone();
+    let damp_c = damping_bn44.clone();
+    let kloc_c = stiffness_local_bn44.clone();
+    let bar_owned = bar.cloned();
+
+    let mut matvec = move |v: &[f32]| -> Result<Vec<f32>, String> {
+        let row: Tensor<B, 3> =
+            Tensor::from_data(Data::new(Vec::from(v), Shape::new([1, n_v, 3])), device);
+        let u_full = crate::physics::mechanics::VectorMechanicsSolver::embed_batch_row(
+            template, batch_row, n_v, row,
+        );
+        let y = apply_effective_operator_acceleration(
+            u_full,
+            &mass_c,
+            &damp_c,
+            &kloc_c,
+            gamma_dt,
+            beta_dt2,
+            bar_owned.as_ref(),
+        );
+        Ok(pack_bn3_to_flat(y, batch_row, n_v))
+    };
+
+    let x_flat = gmres_f32_try(
+        &mut matvec,
+        rhs_flat,
+        n,
+        gmres.max_iter.min(n),
+        gmres.rel_tol,
+    )?;
+
+    let row: Tensor<B, 3> = Tensor::from_data(Data::new(x_flat, Shape::new([1, n_v, 3])), device);
+    let u_full = crate::physics::mechanics::VectorMechanicsSolver::embed_batch_row(
+        template, batch_row, n_v, row,
+    );
+    Ok(u_full.slice([batch_row..batch_row + 1, 0..n_v, 0..3]))
+}
+
+#[cfg(feature = "acoustics-newmark")]
+#[allow(clippy::too_many_arguments)]
 fn step_wave_experimental<B: Backend<FloatElem = f32>>(
     solver: &AcousticWaveSolver,
     displacement: Tensor<B, 3>,
     velocity: Tensor<B, 3>,
     acceleration: Tensor<B, 3>,
     nodal_density: Tensor<B, 3>,
-    elasticity: Tensor<B, 4>,
+    nodal_volume: Tensor<B, 3>,
+    body_force: Tensor<B, 3>,
+    damping_bn33: Tensor<B, 4>,
+    stiffness_local_bn44: Tensor<B, 4>,
+    bar_network: Option<AcousticBarNetwork<B>>,
+    gmres_cfg: AcousticGmresConfig,
 ) -> (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>) {
     let dt = solver.dt;
-    let beta = solver.newmark_beta;
+    let beta_nm = solver.newmark_beta;
     let gamma = solver.newmark_gamma;
     let dt2 = dt * dt;
-    let half_minus_beta = 0.5_f32 - beta;
     let acc_n = acceleration.clone();
 
     let device = displacement.device();
-    let m_scalar = nodal_density.mul_scalar(LUMPED_MASS_SCALE);
-    let m_mat = diagonal_mass_matrix_bn33(m_scalar, &device);
+    let m_mat = nodal_mass_matrix_bn33(nodal_density, nodal_volume);
 
-    // û = u_n + Δt v_n + Δt² (½−β) a_n  — appears inside K·û on the RHS of the acceleration equation.
-    let u_tilde = displacement
+    let v_p = velocity
+        .clone()
+        .add(acc_n.clone().mul_scalar(dt * (1.0_f32 - gamma)));
+    let u_p = displacement
         .clone()
         .add(velocity.clone().mul_scalar(dt))
-        .add(acc_n.clone().mul_scalar(dt2 * half_minus_beta));
-    let ku_tilde = contract_elasticity_displacement(elasticity.clone(), u_tilde);
+        .add(acc_n.clone().mul_scalar(dt2 * (0.5_f32 - beta_nm)));
 
-    // (M + β Δt² K) a_{n+1} = −K û  (homogeneous; implicit Newmark on M ü + K u = 0).
-    let s_mat = m_mat.add(elasticity.mul_scalar(beta * dt2));
-    let rhs_acc = ku_tilde.mul_scalar(-1.0_f32);
-    let acc_next = solve_batched_3x3(s_mat, rhs_acc);
+    let ku_p = total_stiffness_displacement(u_p, &stiffness_local_bn44, bar_network.as_ref());
+    let cv_p = contract_block33_displacement(damping_bn33.clone(), v_p);
+    let rhs_acc = body_force.sub(cv_p).sub(ku_p);
 
-    // u_{n+1} = u_n + Δt v_n + Δt² [(½−β) a_n + β a_{n+1}]
+    let gamma_dt = gamma * dt;
+    let beta_dt2 = beta_nm * dt2;
+
+    let acc_next = if let Some(ref bar) = bar_network {
+        let batch = displacement.dims()[0];
+        let n_v = bar.n_v;
+        let template = Tensor::<B, 3>::zeros([batch, n_v, 3], &device);
+        let mut acc_acc = Tensor::<B, 3>::zeros([batch, n_v, 3], &device);
+        for b in 0..batch {
+            let rhs_flat = pack_bn3_to_flat(rhs_acc.clone(), b, n_v);
+            let row_acc = solve_acceleration_gmres_batch_row(
+                &device,
+                &template,
+                b,
+                n_v,
+                &rhs_flat,
+                m_mat.clone(),
+                damping_bn33.clone(),
+                stiffness_local_bn44.clone(),
+                gamma_dt,
+                beta_dt2,
+                bar_network.as_ref(),
+                gmres_cfg,
+            )
+            .unwrap_or_else(|e| {
+                panic!("acoustic Newmark GMRES failed: {e}");
+            });
+            acc_acc = acc_acc.slice_assign([b..b + 1, 0..n_v, 0..3], row_acc);
+        }
+        acc_acc
+    } else {
+        let s_mat = m_mat
+            .clone()
+            .add(damping_bn33.clone().mul_scalar(gamma_dt))
+            .add(stiffness_local_bn44.clone().mul_scalar(beta_dt2));
+        solve_batched_3x3(s_mat, rhs_acc)
+    };
+
     let u_next = displacement.add(velocity.clone().mul_scalar(dt)).add(
         acc_n
             .clone()
-            .mul_scalar(dt2 * half_minus_beta)
-            .add(acc_next.clone().mul_scalar(dt2 * beta)),
+            .mul_scalar(dt2 * (0.5_f32 - beta_nm))
+            .add(acc_next.clone().mul_scalar(dt2 * beta_nm)),
     );
 
-    // v_{n+1} = v_n + Δt [(1−γ) a_n + γ a_{n+1}]
     let v_next = velocity.add(
         acc_n
             .mul_scalar(dt * (1.0_f32 - gamma))
@@ -285,9 +668,16 @@ fn step_wave_experimental<B: Backend<FloatElem = f32>>(
 /// Implicit Newmark-β integrator for the **1-D periodic** continuum model `ρ ∂²u/∂t² = E ∂²u/∂x²`
 /// on a uniform grid (central finite-difference stiffness, lumped nodal mass `m = ρ Δx`).
 ///
+/// **Implementation note (host `Vec<f32>` / `f64` Cholesky):** [`Self::step`], the periodic stiffness
+/// helper `apply_k_periodic_1d`, and the workspace factorization intentionally use **scalar host loops**
+/// and dense **f64** Cholesky
+/// (see `tests/verification/acoustics_plane_wave.rs`) for fast dispersion / return-map checks — **not**
+/// a Burn-tensor matvec. This is orthogonal to the tensor [`AcousticWaveSolver`] lane; tensorizing a
+/// minimal periodic slice for tape-based AD remains **deferred** (same physics as the FD stencil;
+/// would duplicate the circulant operator already validated here).
+///
 /// This path captures **spatial coupling** along the bar; it complements [`AcousticWaveSolver::step_wave`],
-/// which applies a purely nodal 3×3 contraction intended for DEC / coupling hooks and does **not**
-/// assemble a graph Laplacian.
+/// which targets general **3-D nodal** semi-discrete systems on the mechanics / DEC graph.
 ///
 /// **Discretisation:** `(K u)_i = (E/Δx²) (2 u_i − u_{i−1} − u_{i+1})` with periodic indices.
 ///
@@ -438,6 +828,8 @@ fn dot(a: &[f32], b: &[f32]) -> f32 {
 }
 
 #[cfg(feature = "acoustics-newmark")]
+// TRACKING (Phase 8 follow-up): optional Burn-tensor circulant matvec for this stencil would enable
+// AD through the 1-D periodic bar without rewriting the f64 Cholesky reference path above.
 fn apply_k_periodic_1d(u: &[f32], e: f32, dx: f32, n: usize, out: &mut [f32]) {
     let c = e / (dx * dx);
     for i in 0..n {
@@ -515,6 +907,185 @@ fn cholesky_solve_lower64(
     }
     for i in 0..n {
         a_out[i] = x[i] as f32;
+    }
+}
+
+#[cfg(all(test, feature = "acoustics-newmark"))]
+mod acoustics_newmark_tests {
+    use super::*;
+    use burn::tensor::{Data, Shape};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+
+    type B = NdArray<f32>;
+
+    #[test]
+    fn nodal_mass_kinetic_energy_matches_hand_scalar() {
+        let dev = NdArrayDevice::Cpu;
+        let rho = Tensor::<B, 3>::from_data(Data::new(vec![2.0_f32], Shape::new([1, 1, 1])), &dev);
+        let vol = Tensor::<B, 3>::from_data(Data::new(vec![0.5_f32], Shape::new([1, 1, 1])), &dev);
+        let m = nodal_mass_matrix_bn33(rho, vol);
+        let v = Tensor::<B, 3>::from_data(
+            Data::new(vec![1.0_f32, 0.0, 0.0], Shape::new([1, 1, 3])),
+            &dev,
+        );
+        let ke = nodal_kinetic_energy_bn1(v, m);
+        let ke_host = ke.into_data().value[0];
+        let m_scalar = 2.0_f32 * 0.5_f32;
+        let expect = 0.5_f32 * m_scalar * 1.0_f32 * 1.0_f32;
+        assert!(
+            (ke_host - expect).abs() < 1e-5_f32,
+            "ke tensor {ke_host} vs hand {expect}"
+        );
+    }
+
+    #[test]
+    fn newmark_dense_path_matches_homogeneous_chain_two_nodes() {
+        let dev = NdArrayDevice::Cpu;
+        let n = 2usize;
+        let dt = 0.01_f32;
+        let solver = AcousticWaveSolver {
+            dt,
+            newmark_beta: 0.25_f32,
+            newmark_gamma: 0.5_f32,
+        };
+        let u = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let vel = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let acc = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let rho = Tensor::<B, 3>::ones([1, n, 1], &dev);
+        let vol = Tensor::<B, 3>::from_data(
+            Data::new(vec![1.0_f32, 1.0_f32], Shape::new([1, n, 1])),
+            &dev,
+        );
+        let f = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let damp = Tensor::<B, 4>::zeros([1, n, 3, 3], &dev);
+        let k_edge = 10.0_f32;
+        let kloc = Tensor::<B, 2>::eye(3, &dev)
+            .reshape([1, 1, 3, 3])
+            .expand([1, n, 3, 3])
+            .mul_scalar(k_edge);
+        let (u1, _v1, a1) = solver.step_wave(u, vel, acc, rho, vol, f, damp, kloc, None, None);
+        let _ = u1;
+        let a1_flat = a1.into_data().value;
+        assert_eq!(a1_flat.len(), n * 3);
+        assert!(a1_flat.iter().all(|x| x.is_finite()));
+    }
+}
+
+#[cfg(all(test, feature = "acoustics-newmark"))]
+mod acoustics_graph_gmres_tests {
+    use super::*;
+    use burn::tensor::{Data, Int, Shape};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+
+    type B = NdArray<f32>;
+
+    #[test]
+    fn graph_newmark_gmres_acceleration_residual_small() {
+        let dev = NdArrayDevice::Cpu;
+        let n = 2usize;
+        let e_y = 100.0_f32;
+        let a_sec = 1.0_f32;
+        let coords: Tensor<B, 2> = Tensor::from_data(
+            Data::new(vec![0.0_f32, 0.0, 0.0, 1.0, 0.0, 0.0], Shape::new([n, 3])),
+            &dev,
+        );
+        let edges: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0_i64, 1_i64], Shape::new([2, 1])), &dev);
+        let youngs =
+            Tensor::<B, 3>::from_data(Data::new(vec![e_y, e_y], Shape::new([1, n, 1])), &dev);
+        let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+        let bar =
+            AcousticBarNetwork::assemble_axial_bar_graph(coords, edges, youngs, damage, a_sec);
+
+        let dt = 0.02_f32;
+        let beta = 0.25_f32;
+        let gamma = 0.5_f32;
+        let solver = AcousticWaveSolver {
+            dt,
+            newmark_beta: beta,
+            newmark_gamma: gamma,
+        };
+
+        let u = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let vel = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let acc = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let rho = Tensor::<B, 3>::ones([1, n, 1], &dev);
+        let vol = Tensor::<B, 3>::ones([1, n, 1], &dev);
+        let f = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let damp = Tensor::<B, 4>::zeros([1, n, 3, 3], &dev);
+        let k_zero = Tensor::<B, 4>::zeros([1, n, 3, 3], &dev);
+
+        let (_u1, _v1, a1) = solver.step_wave(
+            u,
+            vel,
+            acc,
+            rho,
+            vol,
+            f,
+            damp,
+            k_zero,
+            Some(bar),
+            Some(AcousticGmresConfig {
+                max_iter: 48,
+                rel_tol: 1e-7_f32,
+            }),
+        );
+
+        let a_flat = a1.into_data().value;
+        assert!(
+            a_flat.iter().all(|x| x.is_finite()),
+            "GMRES acceleration must be finite"
+        );
+        let an = a_flat.iter().map(|x| x * x).sum::<f32>().sqrt();
+        assert!(an < 1e6_f32, "acceleration norm unexpectedly large: {an}");
+    }
+}
+
+#[cfg(all(test, feature = "acoustics-newmark"))]
+mod acoustics_ad_iterate_tests {
+    use super::*;
+    use burn::backend::Autodiff;
+    use burn::tensor::Tensor;
+    use burn_ndarray::{NdArray, NdArrayDevice};
+
+    type Inner = NdArray<f32>;
+    type B = Autodiff<Inner>;
+
+    /// Dense batched 3×3 Newmark path only (`bar_network: None`): full backward through
+    /// [`AcousticWaveSolver::step_wave_iterate`] is supported. With `Some(bar)`, GMRES breaks the tape;
+    /// see rustdoc on `solve_acceleration_gmres_batch_row` in this module.
+    #[test]
+    fn iterate_until_step_wave_backward_runs_nodal_dense() {
+        let dev = NdArrayDevice::Cpu;
+        let n = 2usize;
+        let dt = 0.05_f32;
+        let solver = AcousticWaveSolver {
+            dt,
+            newmark_beta: 0.25_f32,
+            newmark_gamma: 0.5_f32,
+        };
+        let rho = Tensor::<B, 3>::full([1, n, 1], 1.5_f32, &dev).require_grad();
+        let vol = Tensor::<B, 3>::ones([1, n, 1], &dev);
+        let damp = Tensor::<B, 4>::zeros([1, n, 3, 3], &dev);
+        let kloc = Tensor::<B, 2>::eye(3, &dev)
+            .reshape([1, 1, 3, 3])
+            .expand([1, n, 3, 3])
+            .mul_scalar(0.3_f32);
+        let f = Tensor::<B, 3>::full([1, n, 3], 0.02_f32, &dev);
+
+        let u0 = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let v0 = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let a0 = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+
+        let (u_end, _v, _a, _k) =
+            solver.step_wave_iterate(32, u0, v0, a0, rho.clone(), vol, f, damp, kloc, None, None);
+
+        let loss = u_end.clone().sum();
+        let grads = loss.backward();
+        let g_rho = rho.grad(&grads).expect("grad w.r.t rho");
+        assert_eq!(g_rho.dims(), [1, n, 1]);
+        let gn = g_rho.into_data().value.iter().map(|x| x.abs()).sum::<f32>();
+        assert!(gn > 1e-12_f32, "expected non-zero grad norm, got {gn}");
     }
 }
 
