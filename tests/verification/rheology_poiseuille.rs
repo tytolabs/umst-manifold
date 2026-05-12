@@ -20,7 +20,7 @@
 //! when **`UMST_RUN_CHORIN_LONGRUN_L2=1`** (optional **`UMST_CHORIN_LONGRUN_STEPS`**, default **2000**).
 //! Legacy surrogate Poisson produced **dt-independent** \(\mathcal O(10^3)\) amplification per step on **65×17**;
 //! **verification \#7** plus **Jacobi-PCG** pressure (`rheology_flow.rs`) stabilizes short horizons
-//! (`chorin_channel_65x17_thirty_substeps_remain_finite`, `chorin_surrogate_poisson_amplification_regression_guard`).
+//! (`chorin_channel_65x17_thirty_substeps_remain_finite`, `chorin_jacobi_pcg_step_velocity_amplification_regression_guard`).
 //! With **`solver-experimental`**, `rheology_flow` also runs `chorin_poisson_rhs_surrogate_vs_weak_divergence_tiny_channel`
 //! (5×5): legacy surrogate RHS vs shipped weak-divergence RHS — same graph Laplacian, different \(b_h\).
 //!
@@ -321,7 +321,7 @@ fn weak_primal_divergence_scalar_flux_has_zero_global_sum_on_quad_channel() {
     );
 }
 
-/// **Regression guard (verification \#7, historical test name):** two Chorin steps on **65×17** bound
+/// **Regression guard (verification \#7):** two Chorin steps on **65×17** bound
 /// first-step \(\|u\|_\infty\) growth under the tangential mean-flux Poisson RHS plus **momentum-consistent**
 /// projection (`rheology_flow.rs`: `mean(φ)=0` gauge; subtract \(\Delta t\cdot\mathrm{div}(-(\Delta\phi)\hat t/\rho)\)
 /// using the same edge flux routing as the pressure-gradient predictor — see
@@ -336,7 +336,7 @@ fn weak_primal_divergence_scalar_flux_has_zero_global_sum_on_quad_channel() {
 /// compares legacy \(\sum_c\mathcal{L}u^\*_c\) vs shipped divergence RHS on **5×5** (same operator, different \(b_h\)).
 #[cfg(feature = "rheology-bingham")]
 #[test]
-fn chorin_surrogate_poisson_amplification_regression_guard() {
+fn chorin_jacobi_pcg_step_velocity_amplification_regression_guard() {
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
     use umst_manifold::physics::solvers::BinghamFlowSolver;
