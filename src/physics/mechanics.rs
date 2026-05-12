@@ -15,7 +15,8 @@
 //! cross-section tensors — those belong to later DEC refinements and require additional UMST feature banks.
 //! **Thin-plate Q1 hex** on the extruded-brick path (matrix **#2** / §R2.1) is verified in
 //! `tests/verification/mechanics_analytic.rs` (ratio-band regressions + ignored within-5% Kirchhoff gate),
-//! not in this bar-network module.
+//! not in this bar-network module. **`extruded_plate`** / **`q1_hex_elasticity`** compile when either
+//! **`topology-density-evolution`** or **`mechanics-voigt-cauchy`** is enabled (`src/physics/mod.rs`).
 //!
 //! Enable **`solver-experimental`** for [`VectorMechanicsSolver::solve_equilibrium_with_voigt_cauchy`] (same bar equilibrium; Cauchy stress via graph Voigt strain and isotropic Hooke).
 //!
@@ -196,7 +197,7 @@ impl VectorMechanicsSolver {
     }
 
     /// Embed a single batch row `[1, n_v, 3]` into `[batch, n_v, 3]` with zeros elsewhere (for `bar_matvec`).
-    fn embed_batch_row<B: Backend<FloatElem = f32>>(
+    pub(crate) fn embed_batch_row<B: Backend<FloatElem = f32>>(
         template: &Tensor<B, 3>,
         batch_idx: usize,
         n_v: usize,

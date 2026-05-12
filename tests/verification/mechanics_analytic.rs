@@ -19,16 +19,48 @@
 //! `q L_x L_y` (Kirchhoff `q` convention). Locked-band Kirchhoff tests ([`plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band`])
 //! divide centre \(w\) by [`kirchhoff_centre_w_ssss`] under **mismatched** BCs; see
 //! [`PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN`] / [`PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX`] for the
-//! narrowed regression interval and BC-vs-reference note. **`#[ignore]`**
-//! `plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate` documents matrix **#2** / §R2.1
-//! (within-5% **error** vs the same Kirchhoff reference) for when facet-SSSS BCs exist on the brick.
+//! narrowed regression interval and BC-vs-reference note. The **`#[ignore]`** gate
+//! [`plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate`] (matrix **#2** / §R2.1 — within-5%
+//! centre **error** vs [`kirchhoff_centre_w_ssss`] when BCs match SSSS on the brick) is documented in the
+//! **Ignored harness** subsection below with the exact `cargo test` lines.
 //!
 //! formal_anchor: Literature  
 //! formal_citation: Timoshenko & Woinowsky-Krieger 1959 (plate tables); Bathe 2006 (Q1 hex); Hughes 2000 (shear locking)
 //!
-//! Requires `topology-density-evolution` (included in `solver-stable`).
+//! Builds when **`topology-density-evolution`** or **`mechanics-voigt-cauchy`** is enabled (see
+//! `#[cfg(any(...))]` on this file and on `extruded_plate` / `q1_hex_elasticity` in `src/physics/mod.rs`).
+//! **`solver-stable`** enables the former; **`cargo test --release -p umst-manifold --features mechanics-voigt-cauchy`**
+//! exercises the same sources without pulling the topology optimizer feature.
+//!
+//! ## Ignored harness (matrix **#2** / §R2.1)
+//!
+//! [`plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate`] stays **`#[ignore]`** so default CI does not
+//! assert within-5% Kirchhoff centre deflection on the current extruded-plate BCs (full bottom \(u_z=0\) plus two
+//! in-plane pins — not facet-wise SSSS). Mirror rheology’s pattern: run manually while closing §R2.1.
+//!
+//! ```text
+//! UMST_MECHANICS_R21_GATE=1 cargo test -p umst-manifold --features mechanics-voigt-cauchy --test mechanics_analytic -- --ignored
+//! ```
+//!
+//! Without **`UMST_MECHANICS_R21_GATE=1`**, running **`--ignored`** panics with an instruction message (same pattern as
+//! rheology long-run harness). The assertion remains **expected to fail** until facet-wise SSSS BC work closes §R2.1.
+//!
+//! Single-test filter (same feature):
+//!
+//! ```text
+//! UMST_MECHANICS_R21_GATE=1 cargo test -p umst-manifold --features mechanics-voigt-cauchy --test mechanics_analytic plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate -- --ignored --exact
+//! ```
+//!
+//! **Phase 1A** thin-plate **`#[ignore]`** (no env gate): [`plate_centre_deflection_kirchhoff_ssss_q1_hex_within_five_percent`]
+//! — **32²×4**, **h/L=0.02**; see that test’s **`#[ignore = "..."]`** for measured residual and VERIFY line.
+//!
+//! The merge verify line (`cargo test -p umst-manifold --test mechanics_analytic -- --ignored`) only applies when this
+//! integration test binary is built (**`mechanics-voigt-cauchy`**, **`topology-density-evolution`**, or bundles such as **`solver-stable`** / **`solver-experimental`**).
 
-#![cfg(feature = "topology-density-evolution")]
+#![cfg(any(
+    feature = "topology-density-evolution",
+    feature = "mechanics-voigt-cauchy"
+))]
 #![allow(clippy::too_many_arguments)]
 
 use burn::tensor::{Data, Int, Shape, Tensor};
@@ -326,17 +358,17 @@ fn packed_bar_network_equilibrium_uniform_axial_strain_tip_load_distinct_from_ac
     }
 }
 
-fn run_plate_case_details(
+fn run_plate_case_details_ext(
     nx: usize,
     ny: usize,
     nz: usize,
+    lx: f32,
+    ly: f32,
+    lz: f32,
     q: f32,
     cg_tolerance: f32,
 ) -> (f32, f32) {
     let dev = NdArrayDevice::Cpu;
-    let lx = 1.0_f32;
-    let ly = 1.0_f32;
-    let lz = 0.05_f32;
     let dx = lx / nx as f32;
     let dy = ly / ny as f32;
     let dz = lz / nz as f32;
@@ -375,6 +407,16 @@ fn run_plate_case_details(
         nx, ny, nz, dx, dy, dz, mat.nu, &e_cell, &bf, &mask_flat, &u_flat,
     );
     (w, rel)
+}
+
+fn run_plate_case_details(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    q: f32,
+    cg_tolerance: f32,
+) -> (f32, f32) {
+    run_plate_case_details_ext(nx, ny, nz, 1.0_f32, 1.0_f32, 0.05_f32, q, cg_tolerance)
 }
 
 #[inline]
@@ -555,6 +597,46 @@ fn plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band() {
     );
 }
 
+/// Phase **1A** / §R2.1 thin-plate probe: **\(32\times32\times4\)** Q1 hex, **\(h/L=0.02\)**
+/// (\(L_x=L_y=1\) m, \(h=0.02\) m), **\(\alpha=0.00406\)** in [`kirchhoff_centre_w_ssss`], same locked
+/// bottom + in-plane pins as [`plate_bottom_uz_mask`] (**not** facet-wise Kirchhoff SSSS).
+///
+/// **`#[ignore]`:** `--release` sample (2026-05-12) on this brick path: **\(|w-w_K|/w_K \approx 0.999997\)**
+/// with \(w \approx 6.7\times10^{-9}\,\mathrm{m}\), \(w_K \approx 1.95\times10^{-3}\,\mathrm{m}\) — BC mismatch
+/// and thin solid Q1 response vs Kirchhoff SSSS table. Unignore when **\(\le 5\%\)** clears.
+///
+/// **VERIFY:** `cargo test --release -p umst-manifold --features mechanics-voigt-cauchy --test mechanics_analytic plate_centre_deflection_kirchhoff_ssss_q1_hex_within_five_percent -- --ignored --exact`
+#[test]
+#[ignore = "Phase 1A §R2.1: rel_err≈0.999997 (w≈6.7e-9 m, w_K≈1.95e-3 m) at 32²×4 h/L=0.02 — VERIFY: cargo test --release -p umst-manifold --features mechanics-voigt-cauchy --test mechanics_analytic plate_centre_deflection_kirchhoff_ssss_q1_hex_within_five_percent -- --ignored --exact"]
+fn plate_centre_deflection_kirchhoff_ssss_q1_hex_within_five_percent() {
+    let nx = 32_usize;
+    let ny = 32_usize;
+    let nz = 4_usize;
+    let lx = 1.0_f32;
+    let ly = 1.0_f32;
+    let lz = 0.02_f32;
+    let q = 10_000.0_f32;
+    let e0 = 30e9_f32;
+    let nu = 0.2_f32;
+
+    let (w, res) = run_plate_case_details_ext(nx, ny, nz, lx, ly, lz, q, 1e-5);
+    assert!(
+        res < 1e-3,
+        "expected masked equilibrium residual <1e-3; got {res} (w={w})"
+    );
+    assert!(
+        w.is_finite() && w > 0.0,
+        "expected positive centre w; got {w}"
+    );
+
+    let w_k = kirchhoff_centre_w_ssss(q, lx, lz, e0, nu);
+    let rel_err = (w - w_k).abs() / w_k.max(1e-30);
+    assert!(
+        rel_err <= 0.05_f32,
+        "expected |w-w_K|/w_K <= 5% at h/L=0.02 on 32²×4 mesh; rel_err={rel_err} w={w} w_K={w_k}"
+    );
+}
+
 /// **Matrix #2 / §R2.1 (planned):** centre top \(w\) vs **thin Kirchhoff square plate SSSS**
 /// [`kirchhoff_centre_w_ssss`] with **\(|w - w_K| / w_K \le 5\%\)** on the **same** brick path
 /// (`ExtrudedPlateMechanics` + Q1 hex + B-bar / transverse-shear centroid treatment as
@@ -568,8 +650,16 @@ fn plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band() {
 /// Uses **\(48^2\times 4\)** (heavier than the \(32^2\times 4\) locked-band case) for a stricter
 /// in-plane discretisation when exercising `--ignored` during BC / SRI work.
 #[test]
-#[ignore]
+#[ignore = "§R2.1 / matrix #2: set UMST_MECHANICS_R21_GATE=1 — VERIFY: cargo test -p umst-manifold --features mechanics-voigt-cauchy --test mechanics_analytic -- --ignored (or topology-density-evolution / solver-stable); assertion fails until SSSS BC harness lands"]
 fn plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate() {
+    use std::env;
+
+    if env::var("UMST_MECHANICS_R21_GATE").ok().as_deref() != Some("1") {
+        panic!(
+            "Ignored §R2.1 Kirchhoff gate: export UMST_MECHANICS_R21_GATE=1, enable mechanics-voigt-cauchy or topology-density-evolution, then run with --ignored --exact (see module rustdoc). Expect assertion failure until SSSS BC work lands."
+        );
+    }
+
     let nx = 48_usize;
     let ny = 48_usize;
     let nz = 4_usize;
@@ -584,7 +674,10 @@ fn plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate() {
         res < 1e-3,
         "expected masked equilibrium residual <1e-3; got {res} (w={w})"
     );
-    assert!(w.is_finite() && w > 0.0, "expected positive centre w; got {w}");
+    assert!(
+        w.is_finite() && w > 0.0,
+        "expected positive centre w; got {w}"
+    );
 
     let w_k = kirchhoff_centre_w_ssss(q, lx, lz, e0, nu);
     let rel_err = (w - w_k).abs() / w_k.max(1e-30);

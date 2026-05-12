@@ -28,7 +28,8 @@
 //! [`ExtrudedPlateMechanics::body_force_top_uniform_pressure`]. Applying a constant `-q dx dy` at
 //! every top node over-counts load by a factor `(nx+1)(ny+1)/(nx ny)`.
 //!
-//! Enabled with **`topology-density-evolution`** / **`solver-experimental`**.
+//! Enabled with **`topology-density-evolution`**, **`mechanics-voigt-cauchy`**, or bundles that
+//! include either (e.g. **`solver-stable`** / **`solver-experimental`**).
 
 use burn::tensor::{backend::Backend, Data, Int, Shape, Tensor};
 
