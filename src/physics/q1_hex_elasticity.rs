@@ -449,6 +449,85 @@ pub fn hex_k_times_u_accumulate(
     }
 }
 
+/// Integrated strain energy per hex cell:
+/// \(U_e = \tfrac12 \int_{\Omega^e} \boldsymbol\varepsilon^{\mathsf T}\mathbf D\boldsymbol\varepsilon \,\mathrm d\Omega\)
+/// using the same B-bar / transverse-shear centroid operator as [`hex_k_times_u_accumulate`].
+///
+/// `energy_out.len()` must equal `nx * ny * nz`; overwritten cell-major `(cx,cy,cz)`.
+pub fn hex_cell_strain_energy(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    u: &[f32],
+    energy_out: &mut [f32],
+) {
+    let nx1 = nx + 1;
+    let ny1 = ny + 1;
+    let n_cells = nx * ny * nz;
+    debug_assert_eq!(e_cell.len(), n_cells);
+    debug_assert_eq!(u.len(), nx1 * ny1 * (nz + 1) * 3);
+    debug_assert_eq!(energy_out.len(), n_cells);
+    energy_out.fill(0.0_f32);
+
+    for cz in 0..nz {
+        for cy in 0..ny {
+            for cx in 0..nx {
+                let c = cx + cy * nx + cz * nx * ny;
+                let e = e_cell[c].max(1e-30_f32);
+                let d = build_d_voigt(e, nu);
+                let x_corner = cell_corner_coords(cx, cy, cz, dx, dy, dz);
+                let mut u24 = [0.0_f32; 24];
+                for (k, _corner) in CORNER_XI.iter().enumerate() {
+                    let (ix, iy, iz) = match k {
+                        0 => (cx, cy, cz),
+                        1 => (cx + 1, cy, cz),
+                        2 => (cx + 1, cy + 1, cz),
+                        3 => (cx, cy + 1, cz),
+                        4 => (cx, cy, cz + 1),
+                        5 => (cx + 1, cy, cz + 1),
+                        6 => (cx + 1, cy + 1, cz + 1),
+                        7 => (cx, cy + 1, cz + 1),
+                        _ => unreachable!(),
+                    };
+                    let nid = idx_node(nx1, ny1, ix, iy, iz);
+                    u24[k * 3] = u[nid * 3];
+                    u24[k * 3 + 1] = u[nid * 3 + 1];
+                    u24[k * 3 + 2] = u[nid * 3 + 2];
+                }
+                let Some((gn_bar, _det_c)) = physical_shape_gradients(x_corner, 0.0, 0.0, 0.0)
+                else {
+                    continue;
+                };
+                let mut u_acc = 0.0_f32;
+                for &sg in &GAUSS1D {
+                    for &tg in &GAUSS1D {
+                        for &zg in &GAUSS1D {
+                            let Some((gn, detj)) = physical_shape_gradients(x_corner, sg, tg, zg)
+                            else {
+                                continue;
+                            };
+                            let wdet = WG * WG * WG * detj;
+                            let eps = bbar_times_u_transverse_shear_centroid(gn, gn_bar, &u24);
+                            let sig = d_times_eps(&d, &eps);
+                            let mut de = 0.0_f32;
+                            for i in 0..6 {
+                                de += eps[i] * sig[i];
+                            }
+                            u_acc += 0.5_f32 * de * wdet;
+                        }
+                    }
+                }
+                energy_out[c] = u_acc;
+            }
+        }
+    }
+}
+
 /// Assembled diagonal of `K` (free rows) for Jacobi preconditioning.
 pub fn hex_diagonal(
     nx: usize,
