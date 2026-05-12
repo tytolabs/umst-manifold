@@ -10,11 +10,11 @@
 //!
 //! Policy weights use **AdamW**-style tensor updates (Burn-default \(\beta_1,\beta_2,\varepsilon\), weight decay)
 //! so [`AdjointNeuralODE::backward_adjoint`] gradients flow into [`AdjointNeuralODE::policy_weights`] without
-//! `.into_scalar()` / `.into_data()` on the hot path. A separate [`burn::module::Module`] plus [`burn::optim::Optimizer`]
+//! `.into_scalar()` / `.into_data()` on the hot path. A separate `burn::module::Module` plus `burn::optim::Optimizer`
 //! path over the same flattened weights is intentionally **not** supported here (see [`crate::ai::adjoint`] F1.4).
 //!
 //! **F1.4:** The supported optimization surface is **AdamW on the flat `policy_weights` vector** paired
-//! with [`AdjointNeuralODE`], not a separate Burn [`Module`] + [`burn::optim::Optimizer`] over the same
+//! with [`AdjointNeuralODE`], not a separate Burn `Module` + `burn::optim::Optimizer` over the same
 //! parameters (see module notes in [`crate::ai::adjoint`]).
 
 use crate::ai::adjoint::AdjointNeuralODE;
@@ -144,4 +144,101 @@ fn adamw_step_policy<B: Backend<FloatElem = f32>>(
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::BurnLiquidPPOAgent;
+    use crate::ai::ppo::ManifoldGateway;
+    use crate::core::tensors::{MixTensor, UnifiedMaterialStateTensor};
+    use crate::core::traits::{IScienceCartridge, PhysicalResult};
+    use burn::tensor::backend::Backend;
+    use burn::tensor::{Data, Int, Shape, Tensor};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+
+    type B = NdArray<f32>;
+
+    fn device() -> NdArrayDevice {
+        NdArrayDevice::default()
+    }
+
+    fn tiny_umst() -> UnifiedMaterialStateTensor<B> {
+        let dev = device();
+        let n = 2usize;
+        let f = 5usize;
+        let coords: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64; n * 5], Shape::new([n, 5])), &dev);
+        let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
+            Data::new(vec![0i64, 1i64, 1i64, 0i64], Shape::new([2, 2])),
+            &dev,
+        );
+        let faces_b2: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64, 0i64], Shape::new([2, 1])), &dev);
+        let scalar_features = Tensor::<B, 2>::zeros([n, f], &dev);
+        let vector_features = Tensor::<B, 3>::zeros([n, 1, 3], &dev);
+        let matrix_features = Tensor::<B, 4>::zeros([n, 1, 3, 3], &dev);
+        UnifiedMaterialStateTensor {
+            coords,
+            edges_b1,
+            faces_b2,
+            scalar_features,
+            vector_features,
+            matrix_features,
+            resolution_mm: [1.0, 1.0, 1.0],
+            node_positions: None,
+            displacement_bc_mask: Tensor::<B, 3>::ones([1, n, 3], &dev),
+            policy_editable_mask: Tensor::<B, 2>::ones([n, 1], &dev),
+        }
+    }
+
+    struct PpoChainStubCartridge;
+
+    impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoChainStubCartridge {
+        fn compute_all(&self, mix: &MixTensor<Bk>) -> PhysicalResult<Bk> {
+            let d = mix.fractions.device();
+            PhysicalResult {
+                free_energy: Tensor::zeros([1, 1], &d),
+                dissipation: Tensor::zeros([1, 1], &d),
+                safety_margin: Tensor::zeros([1, 1], &d),
+                cost: Tensor::zeros([1, 1], &d),
+                damage: Tensor::zeros([1, 1], &d),
+                temperature_delta: None,
+                #[cfg(feature = "information_density")]
+                information_density: Tensor::zeros([1, 1], &d),
+            }
+        }
+
+        fn compute_topology(&self, m: &UnifiedMaterialStateTensor<Bk>) -> PhysicalResult<Bk> {
+            let d = m.scalar_features.device();
+            let n = m.scalar_features.dims()[0];
+            PhysicalResult {
+                free_energy: Tensor::zeros([1, n], &d),
+                dissipation: Tensor::zeros([1, n], &d),
+                safety_margin: Tensor::zeros([1, n], &d),
+                cost: Tensor::zeros([1, n], &d),
+                damage: Tensor::zeros([1, n], &d),
+                temperature_delta: None,
+                #[cfg(feature = "information_density")]
+                information_density: Tensor::zeros([1, n], &d),
+            }
+        }
+    }
+
+    /// Striatus Gate — PPO ↔ gateway ↔ finite backward surrogate (`adjoint`) smoke (default features).
+    #[test]
+    fn burn_liquid_ppo_step_finite_backward_chain_smoke() {
+        let dev = device();
+        let gateway = ManifoldGateway::new(PpoChainStubCartridge, 300.0_f64, 1.0e-12_f64);
+        let mut agent = BurnLiquidPPOAgent::new(gateway);
+        let state = tiny_umst();
+
+        let info = Tensor::<B, 1>::full([1], 0.01_f32, &dev);
+        let dt_rat = Tensor::<B, 1>::full([1], 1.0_f32, &dev);
+        let w0 = agent.ode_solver.policy_weights.clone().into_data().value[0];
+        let out = agent.step_and_learn(state, 0.0_f32, 1.0_f32, info, dt_rat);
+        assert!(out.is_ok(), "expected Ok, got {:?}", out.err());
+        let w1 = agent.ode_solver.policy_weights.clone().into_data().value[0];
+        assert!(w0.is_finite() && w1.is_finite(), "weights must stay finite");
+        assert_ne!(
+            w0, w1,
+            "AdamW should move policy_weights after finite backward surrogate"
+        );
+    }
+}

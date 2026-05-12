@@ -6,7 +6,9 @@
 //! Discrete Exterior Calculus identities on the 1-skeleton.
 //!
 //! These tests assert the two foundational identities the manifold
-//! relies on for conservation of mass and energy:
+//! relies on for conservation of mass and energy. Adjoint / annihilation checks also witness
+//! **naturality** of the primal DEC operators under fixed `edges_b1` / `faces_b2`: only cochain
+//! values vary, while the linear maps stay the same morphism.
 //!
 //!   - `d ∘ d = 0` on a closed chain (verified via the Hodge Laplacian
 //!     row-sum being zero).
@@ -27,13 +29,18 @@
 //!   - **Patch assembly increment:** **two** quad splits side-by-side sharing **`1→4`** (four
 //!     triangles, nine edges) — [`dec_curl_d1_annihilates_gradient_two_quads_shared_edge_burn`],
 //!     [`dec_primal_d1_adjoint_identity_two_quads_shared_edge_burn`].
+//!   - **Volumetric 3D topology slice (matrix #6 — boundary only):** canonical tet **skin**
+//!     [`umst_manifold::physics::dec_primal::canonical_tetrahedron_boundary_dec_coo`] —
+//!     [`dec_curl_d1_annihilates_gradient_tetrahedron_boundary_burn`],
+//!     [`dec_primal_d1_adjoint_identity_tetrahedron_boundary_burn`] (not a volume interior mesh or
+//!     [`PhotonicsSolver`] path).
 
 use approx::assert_abs_diff_eq;
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::physics::dec_primal::{
-    primal_d1_edge_flux_to_faces, primal_d1_transpose_face_flux_to_edges,
-    primal_scalar_edge_increment,
+    canonical_tetrahedron_boundary_dec_coo, primal_d1_edge_flux_to_faces,
+    primal_d1_transpose_face_flux_to_edges, primal_scalar_edge_increment,
 };
 use umst_manifold::physics::topology::EdgeTopology;
 
@@ -212,6 +219,69 @@ fn dec_curl_d1_annihilates_gradient_on_triangle_faces_b2_burn() {
 /// Unweighted Frobenius inner product \(\langle a, b\rangle = \sum_{b,n,c} a\,b\) on matching `[B,N,C]`.
 fn tensor_inner(a: Tensor<NdB, 3>, b: Tensor<NdB, 3>) -> f32 {
     a.mul(b).sum().into_scalar()
+}
+
+fn tetrahedron_boundary_tensors(
+    dev: &NdArrayDevice,
+) -> (Tensor<NdB, 2, Int>, Tensor<NdB, 2, Int>, EdgeTopology<NdB>) {
+    let coo = canonical_tetrahedron_boundary_dec_coo();
+    let edges_b1: Tensor<NdB, 2, Int> = Tensor::from_data(
+        Data::new(coo.edges_b1_flat.to_vec(), Shape::new([2, 6])),
+        dev,
+    );
+    let faces_b2: Tensor<NdB, 2, Int> = Tensor::from_data(
+        Data::new(coo.faces_b2_flat.to_vec(), Shape::new([2, 12])),
+        dev,
+    );
+    let topo = EdgeTopology::new(edges_b1.clone());
+    (faces_b2, edges_b1, topo)
+}
+
+#[test]
+fn dec_curl_d1_annihilates_gradient_tetrahedron_boundary_burn() {
+    let dev = NdArrayDevice::default();
+    let (faces_b2, edges_b1, topo) = tetrahedron_boundary_tensors(&dev);
+    assert_eq!(edges_b1.dims(), [2, 6]);
+    assert_eq!(faces_b2.dims(), [2, 12]);
+    let omega = [0.4_f32, -1.2, 0.85, 0.05];
+    let nodal = Tensor::from_data(
+        Data::new(
+            vec![omega[0], omega[1], omega[2], omega[3]],
+            Shape::new([1, 4, 1]),
+        ),
+        &dev,
+    );
+    let grad_on_edges = primal_scalar_edge_increment(nodal, &topo);
+    let ranges = canonical_tetrahedron_boundary_dec_coo().face_column_ranges;
+    let d1_grad = primal_d1_edge_flux_to_faces(grad_on_edges, faces_b2, &ranges);
+    let v: Vec<f32> = d1_grad.into_data().value;
+    assert_eq!(v.len(), 4);
+    for x in v {
+        assert_abs_diff_eq!(x, 0.0, epsilon = 1.0e-4);
+    }
+}
+
+#[test]
+fn dec_primal_d1_adjoint_identity_tetrahedron_boundary_burn() {
+    let dev = NdArrayDevice::default();
+    let (faces_b2, _edges_b1, _topo) = tetrahedron_boundary_tensors(&dev);
+    let ranges = canonical_tetrahedron_boundary_dec_coo().face_column_ranges;
+    let u = Tensor::from_data(
+        Data::new(
+            vec![0.5_f32, -0.3, 0.9, -0.2, 0.15, -0.45],
+            Shape::new([1, 6, 1]),
+        ),
+        &dev,
+    );
+    let w = Tensor::from_data(
+        Data::new(vec![0.25_f32, -0.4, 0.55, -0.1], Shape::new([1, 4, 1])),
+        &dev,
+    );
+    let d1u = primal_d1_edge_flux_to_faces(u.clone(), faces_b2.clone(), &ranges);
+    let lhs = tensor_inner(d1u, w.clone());
+    let d1t_w = primal_d1_transpose_face_flux_to_edges(w, faces_b2, &ranges, &u);
+    let rhs = tensor_inner(u.clone(), d1t_w);
+    assert_abs_diff_eq!(lhs, rhs, epsilon = 1.0e-5);
 }
 
 #[test]

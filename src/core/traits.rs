@@ -1,6 +1,24 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
+//! Cartridge traits and thermodynamic summaries (`maos-fp-categorical-v04` / `fp-v04-traits-category`).
+//!
+//! # Categorical vocabulary (design sketch)
+//!
+//! - **Objects:** [`crate::core::tensors::MixTensor`] (homogeneous bulk) and
+//!   [`crate::core::tensors::UnifiedMaterialStateTensor`] (topology-carrying UMST) are the primary
+//!   *state carriers* solvers and cartridges reason about.
+//! - **Morphisms:** [`IScienceCartridge`] is the stable **material-law port**—two evaluation heads
+//!   (`compute_all`, `compute_topology`) from those objects into [`PhysicalResult`]. Orchestrated
+//!   graph stepping lives in [`crate::physics::orchestration`] and [`crate::physics::solvers`], not
+//!   in this trait (cartridge stays a functor *into* thermodynamic summaries).
+//! - **Second law at the interface:** [`PhysicalResult`] exposes `free_energy`, `dissipation`, and
+//!   related sparse fields so merge, CBF, and RL paths can audit **dissipative consistency** as a
+//!   policy invariant; concrete constitutive closures must populate those tensors consistently with
+//!   their numerical schemes.
+//!
+//! Longer note (objects / solvers / composition table): `docs/Category-of-Material-Updates.md`.
+
 use crate::core::tensors::{MixTensor, UnifiedMaterialStateTensor};
 use burn::tensor::{backend::Backend, Tensor};
 
@@ -29,7 +47,10 @@ pub struct PhysicalResult<B: Backend> {
     pub information_density: Tensor<B, 2>,
 }
 
-/// The core interface that any Material Engine (Concrete, Supercap, Steel) must implement.
+/// Material-law port: bulk and topology evaluation into [`PhysicalResult`] (no THMC stepping here).
+///
+/// Implementations map **objects** ([`MixTensor`], [`UnifiedMaterialStateTensor`]) to the
+/// thermodynamic summary **morphism** consumed by orchestration and [`crate::core::apply_physics`].
 pub trait IScienceCartridge<B: Backend> {
     /// Standard homogeneous forward pass (0D/1D). Evaluates the bulk material.
     fn compute_all(&self, mix: &MixTensor<B>) -> PhysicalResult<B>;

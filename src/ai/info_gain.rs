@@ -37,7 +37,9 @@
 //! [`crate::ai::ppo::ManifoldGateway::evaluate_topology_step`] and
 //! [`crate::ai::cbf::ThermodynamicCBF::verify_tensor_update`] consume a batch vector
 //! `Tensor<B, 1>` whose elements are **fed into the Landauer branch as “bits resolved” only by
-//! convention of the caller**. Until a real MI (or otherwise justified) estimator is wired in,
+//! convention of the caller**; the same method batch-sums **`d_int`** for the Clausius–Duhem material
+//! branch (see [`ThermodynamicCBF::k_phys_dint_to_joules`](crate::ai::cbf::ThermodynamicCBF::k_phys_dint_to_joules)).
+//! Until a real MI (or otherwise justified) estimator is wired in,
 //! call sites should treat [`suggested_info_gain_from_state_delta`] as a **non-negative,
 //! differentiable magnitude** for development — and document any rescaling at the integration
 //! boundary.

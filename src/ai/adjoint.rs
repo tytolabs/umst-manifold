@@ -7,7 +7,7 @@
 //!
 //! Policy training here is **`AdjointNeuralODE::policy_weights` as a flat rank‑1 tensor** with
 //! hand‑rolled **AdamW‑style** tensor updates in [`crate::ai::liquid_ppo`] (first/second moment on
-//! the same vector shape as `dL_dtheta`). A Burn [`burn::module::Module`] + [`burn::optim::Optimizer`]
+//! the same vector shape as `dL_dtheta`). A Burn `burn::module::Module` + `burn::optim::Optimizer`
 //! wrapper around those weights is **not** the supported path today; callers should treat
 //! **tensor AdamW on `policy_weights`** as the stable, autodiff‑compatible contract until a
 //! refactor explicitly migrates to `Module` + `Optimizer`.
@@ -26,18 +26,26 @@
 //! The backward pass assumes an augmented ODE whose sensitivities require **−λᵀ ∂f/∂z** and **−λᵀ ∂f/∂θ**
 //! for \(\dot z = f_\theta(z,t)\). Multiple cartridges or solver phases are **not** yet assembled into one
 //! coupled Jacobian here—cross-block coupling (thermal ↔ rheology ↔ damage, experimental summaries
-//! overwritten upstream, etc.) means this stub **does not** yet supply a faithful multi-physics adjoint until
+//! overwritten upstream, etc.) means this path **does not** yet supply a faithful multi-physics adjoint until
 //! those interfaces expose consistent derivatives end-to-end.
+//!
+//! **Finite backward (surrogate):** [`AdjointNeuralODE::backward_adjoint`] runs a **fixed small**
+//! number of explicit backward-time tensor steps (no unbounded loops) so PPO smoke and AdamW updates
+//! exercise real arithmetic on `policy_weights`, `dL_dz`, and `dt_sim_dt_global`. This is still a
+//! **surrogate** \(dL/d\theta\), not a discretised continuous adjoint of the forward pass.
 
 #![allow(non_snake_case)]
 
 use std::marker::PhantomData;
 
 use crate::core::tensors::UnifiedMaterialStateTensor;
-use burn::tensor::{backend::Backend, Tensor};
+use burn::tensor::{backend::Backend, Shape, Tensor};
 
 /// Placeholder policy vector size \(P\) for [`AdjointNeuralODE::policy_weights`] / adjoint gradients.
 pub const ADJOINT_POLICY_DIM: usize = 1024;
+
+/// Fixed backward-time substeps for [`AdjointNeuralODE::backward_adjoint`] (finite-horizon surrogate).
+const ADJOINT_BACKWARD_STEPS: usize = 10;
 
 /// Augmented state tensor for the Adjoint Method.
 /// \mathbf{a}(t) = [\mathbf{z}(t), \mathbf{\lambda}(t), \frac{\partial L}{\partial \theta}]
@@ -108,19 +116,30 @@ impl<B: Backend<FloatElem = f32>> AdjointNeuralODE<B> {
         dL_dz: Tensor<B, 1>,
         t_start: f32,
         t_end: f32,
-        _dt_sim_dt_global: Tensor<B, 1>,
+        dt_sim_dt_global: Tensor<B, 1>,
     ) -> Tensor<B, 1> {
-        let device = dL_dz.device();
-        let _batch_size = dL_dz.dims()[0];
-        let steps = 10;
-        let _dt = (t_end - t_start) / steps as f32;
+        let batch = dL_dz.dims()[0].max(1) as f32;
+        let avg_seed = dL_dz.sum_dim(0).div_scalar(batch);
+        let seed = avg_seed
+            .clone()
+            .reshape([1])
+            .expand(Shape::new([ADJOINT_POLICY_DIM]));
 
-        for _step in (0..steps).rev() {
-            let _ = (_dt, _batch_size);
+        let dil = dt_sim_dt_global.sum_dim(0).div_scalar(batch);
+        let dil_bc = dil.reshape([1]).expand(Shape::new([ADJOINT_POLICY_DIM]));
+
+        let steps = ADJOINT_BACKWARD_STEPS.max(1);
+        let dt = ((t_end - t_start).abs() / steps as f32).max(1e-8);
+
+        let theta = self.policy_weights.clone();
+        let mut acc = Tensor::zeros_like(&theta);
+        for k in (0..steps).rev() {
+            let w = 1.0_f32 / (k + 1) as f32;
+            let drive_theta = theta.clone().mul_scalar(dt * w);
+            let drive_dil = dil_bc.clone().mul_scalar(1e-3_f32 * dt * w);
+            acc = acc.add(drive_theta).add(drive_dil);
         }
 
-        let nbatch = dL_dz.dims()[0] as f32;
-        let avg_seed = dL_dz.sum_dim(0).div_scalar(nbatch);
-        Tensor::<B, 1>::ones([ADJOINT_POLICY_DIM], &device).mul(avg_seed)
+        acc.mul(seed)
     }
 }

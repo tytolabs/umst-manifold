@@ -5,6 +5,14 @@
 
 //! DEC maps between nodal samples and edge values (Refinement #3).
 //!
+//! **Naming:** edge-wise reductions are grouped on [`DecEdgeOperators`]; there is no `DecOperator`
+//! type in this crate (see repository markdown `docs/FP_CATEGORICAL_DEC.md`).
+//!
+//! These reductions are **nonlinear** maps \(C^0\to C^1\) on the same primal skeleton as
+//! [`super::dec_primal`]’s linear \(d_0\): they average intensive data at endpoints for edge-wise
+//! material models. Functorially: they post-compose with gather \((\mathrm{id}\otimes\mathrm{id})^*: C^0\times C^0\to\) edge slots;
+//! naturality is with respect to **relabeling / restriction of vertices** that commute with `edges_b1`.
+//!
 //! - **Arithmetic mean** on edges: intensive mechanical moduli (Young’s modulus) on the primal 1-skeleton.
 //! - **Harmonic mean** on edges: flux-consistent reduction for positive transport coefficients.
 

@@ -46,8 +46,8 @@ pub struct UnifiedMaterialStateTensor<B: Backend> {
     /// Optional embedding of each active node in **world-space SI metres** (`[N, 3]`).
     pub node_positions: Option<Tensor<B, 2>>,
 
-    /// Per-node displacement BC: `1.0` = free, `0.0` = fixed. Shape `[N, 3]` or `[1, N, 3]` depending on caller;
-    /// THMC stepping accepts `[N,3]`, `[N,3,1]`, or batched `[B,N,3]` after expansion.
+    /// Per-node displacement BC: `1.0` = free, `0.0` = fixed. Common layouts: `[1, N, 3]`, `[N, 3, 1]`,
+    /// or `[N, 1, 3]` (flattened to `[N, 3]` inside [`crate::physics::solvers::ThmcSolver::step`]).
     pub displacement_bc_mask: Tensor<B, 3>,
 
     /// `1.0` where mix/topology edits are allowed. Shape `[N, 1]`.

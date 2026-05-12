@@ -81,12 +81,8 @@ impl<B: Backend<FloatElem = f32>> F32VecLinearOperator for BarMatvecOperator<B> 
             Data::new(Vec::from(v), Shape::new([1, self.n_v, 3])),
             &device,
         );
-        let u_full = VectorMechanicsSolver::embed_batch_row(
-            &self.template,
-            self.batch_row,
-            self.n_v,
-            row,
-        );
+        let u_full =
+            VectorMechanicsSolver::embed_batch_row(&self.template, self.batch_row, self.n_v, row);
         let ku = VectorMechanicsSolver::bar_matvec(
             u_full,
             &self.k_axial,
@@ -99,11 +95,7 @@ impl<B: Backend<FloatElem = f32>> F32VecLinearOperator for BarMatvecOperator<B> 
         );
         // One device→host materialisation for host GMRES (`NdArray` slice is already narrowed).
         let row: Tensor<B, 1> = ku
-            .slice([
-                self.batch_row..self.batch_row + 1,
-                0..self.n_v,
-                0..3,
-            ])
+            .slice([self.batch_row..self.batch_row + 1, 0..self.n_v, 0..3])
             .reshape([self.n_v * 3]);
         row.into_data().value
     }

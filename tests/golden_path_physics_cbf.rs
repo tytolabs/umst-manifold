@@ -321,7 +321,7 @@ fn golden_path_mechanics_physical_result_cbf_apply_physics() {
     assert_tensor2_finite(&pr.damage, "damage");
 
     let mut cbf = ThermodynamicCBF::new(300.0_f64, 1.0e-12_f64);
-    let d_int = pr.dissipation.clone().sum_dim(1).reshape([1]);
+    let d_int = pr.dissipation.clone().sum_dim(1).squeeze(1);
     let info_gain = Tensor::<B, 1>::zeros([1], &dev);
     let erasure = cbf
         .verify_tensor_update(d_int, info_gain.clone())
