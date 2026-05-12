@@ -5,6 +5,18 @@
 
 //! Primal-chain DEC primitives: incidence-style scatter without material laws.
 //!
+//! ## Functoriality / naturality (discrete spaces)
+//!
+//! Hold the oriented **primal** skeleton \((V,E,F,\ldots)\) fixed (`edges_b1`, optional `faces_b2`).
+//! Nodal tensors are 0-cochains \(C^0\); edge tensors are 1-cochains \(C^1\); face tensors are 2-cochains
+//! \(C^2\). Each primitive here is a **linear** map between these finite-dimensional section spaces
+//! determined only by topology and orientation — a morphism in the diagram of chain groups. Varying the
+//! input cochain while keeping indices fixed is therefore the action of a **natural** family (identity
+//! on morphisms in the usual “only indices change” sense for DEC software). [`primal_d1_edge_flux_to_faces`]
+//! and [`primal_d1_transpose_face_flux_to_edges`] are adjoints under unweighted Frobenius pairings; see
+//! `tests/dec_identities.rs` for Burn-level checks. Metric / Hodge post-scaling belongs in physics callers,
+//! not in this topology-only layer.
+//!
 //! ## Invariants
 //! - Topology follows [`super::topology::EdgeTopology`] (`edges_b1` shape `[2, E]`).
 //! - For constant nodal data, `primal_divergence_from_edge_flux(d_0 x, …)` has **zero row-sum**
@@ -17,6 +29,14 @@
 //! (half-open column slices). Metric/Hodge weights on 2-cells are **not** applied here — topology only.
 //! The transpose [`primal_d1_transpose_face_flux_to_edges`] scatters face potentials back to edges with
 //! the same signs (Euclidean-weight adjoint of \(d_1\) for unweighted inner products).
+//!
+//! ## Volumetric 3D topology hook (matrix **#6** slice)
+//! [`canonical_tetrahedron_boundary_dec_coo`] materialises the **oriented boundary 2-chain** (four
+//! triangles) of a single canonical **3-simplex** with vertices `0…3` and six globally indexed
+//! directed edges — the same **`faces_b2` / `edges_b1`** COO contract as material tensors. This is
+//! **surface-only** (the **skin** of one tet); it does **not** assemble interior facets of a volume
+//! mesh or call photonics — it exists so tests and future mesh loaders can share one **closed**
+//! volumetric **primal** boundary pattern without duplicating hand-authored COO.
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
@@ -165,4 +185,61 @@ pub fn primal_d1_transpose_face_flux_to_edges<B: Backend>(
         }
     }
     acc
+}
+
+/// Maximum absolute face value of \(d_1(d_0 \omega)\) for a scalar \(\omega\) on vertices (primal DEC).
+///
+/// For a **closed** oriented 2-chain encoded in `faces_b2` / `face_column_ranges` consistent with
+/// `edges_b1` (same COO contract as [`crate::core::tensors::UnifiedMaterialStateTensor::faces_b2`]),
+/// this should be **≈ 0** up to float noise — see Burn checks in `tests/dec_identities.rs`
+/// (`dec_curl_d1_annihilates_gradient_*`). The photonics `faces_b2` patch path uses this as a
+/// **cheap incidence witness** before attempting a patch curl–curl solve.
+#[must_use]
+pub fn dec_primal_max_abs_d1_of_scalar_gradient<B: Backend<FloatElem = f32>>(
+    nodal_omega: Tensor<B, 3>,
+    topo: &EdgeTopology<B>,
+    faces_b2: Tensor<B, 2, Int>,
+    face_column_ranges: &[(usize, usize)],
+) -> f32 {
+    let g = primal_scalar_edge_increment(nodal_omega, topo);
+    let d1g = primal_d1_edge_flux_to_faces(g, faces_b2, face_column_ranges);
+    d1g.abs().max().into_scalar()
+}
+
+/// Host-side **`edges_b1` / `faces_b2`** for the **closed oriented boundary** of one canonical tetrahedron.
+///
+/// Vertices are **`0,1,2,3`**. Six directed edges (global ids **0…5**):
+/// `0→1`, `0→2`, `0→3`, `1→2`, `1→3`, `2→3`. Four triangular faces (boundary of the 3-simplex) use
+/// column ranges **`(0,3)`, `(3,6)`, `(6,9)`, `(9,12)`** — three signed edge columns per face, same
+/// storage as [`crate::core::tensors::UnifiedMaterialStateTensor::faces_b2`].
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct CanonicalTetrahedronBoundaryDecCoo {
+    /// Row-major **`[2, 6]`** data: six sources then six targets (`edges_b1` contract).
+    pub edges_b1_flat: [i64; 12],
+    /// Row-major **`[2, 12]`** data: twelve edge indices then twelve signs in **`{-1, +1}`**.
+    pub faces_b2_flat: [i64; 24],
+    /// Half-open column slices into **`faces_b2_flat`** — one per boundary triangle.
+    pub face_column_ranges: [(usize, usize); 4],
+}
+
+/// Returns fixed **topology-only** COO for the **skin** of a single **positively oriented** tet
+/// (`\det(v_1-v_0,v_2-v_0,v_3-v_0)>0` in \(\mathbb{R}^3\) when embedded with that vertex order).
+///
+/// Boundary walks are chosen so **`dec_primal_max_abs_d1_of_scalar_gradient`** is ~**0** on random
+/// nodal data (closed simplicial surface — discrete **`d_1\!\circ\!d_0=0`** witness). Does **not**
+/// allocate; safe to call from tests or mesh glue code.
+#[must_use]
+pub fn canonical_tetrahedron_boundary_dec_coo() -> CanonicalTetrahedronBoundaryDecCoo {
+    CanonicalTetrahedronBoundaryDecCoo {
+        edges_b1_flat: [
+            0, 0, 0, 1, 1, 2, //
+            1, 2, 3, 2, 3, 3,
+        ],
+        // Face opposite 0: 1→2 (+e3), 2→3 (+e5), 3→1 (−e4); opposite 1: 0→2, 2→3, 3→0; …
+        faces_b2_flat: [
+            3, 5, 4, 1, 5, 2, 0, 4, 2, 0, 3, 1, //
+            1, 1, -1, 1, 1, -1, 1, 1, -1, 1, 1, -1,
+        ],
+        face_column_ranges: [(0, 3), (3, 6), (6, 9), (9, 12)],
+    }
 }

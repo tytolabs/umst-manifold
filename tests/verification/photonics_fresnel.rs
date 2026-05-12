@@ -386,12 +386,7 @@ fn dec_patch_tensor_identity_curl_leg_matches_scalar_operator_quad_split() {
             &ranges,
         );
         for i in 0..dim {
-            assert_relative_eq!(
-                y_t[i],
-                y_s[i],
-                epsilon = 2e-5_f32,
-                max_relative = 1e-4_f32
-            );
+            assert_relative_eq!(y_t[i], y_s[i], epsilon = 2e-5_f32, max_relative = 1e-4_f32);
         }
     }
 }
@@ -546,7 +541,10 @@ fn dec_patch_offdiag_tensor_eps_changes_curl_leg_matvec_quad_split() {
     for i in 0..dim {
         mx = mx.max((y_id[i] - y_od[i]).abs());
     }
-    assert!(mx > 1e-4_f32, "expected curl-leg tensor coupling to move matvec (max abs diff {mx:.3e})");
+    assert!(
+        mx > 1e-4_f32,
+        "expected curl-leg tensor coupling to move matvec (max abs diff {mx:.3e})"
+    );
 }
 
 /// Two CCW quads side-by-side sharing oriented edge **`1→4`** — same **`edges_b1` / `faces_b2`**
@@ -2605,21 +2603,23 @@ fn quarter_wave_stack_n10_reflectivity_above_0p95() {
     let layer_qw = |n: f64| -> [[Complex64; 2]; 2] {
         let i_n = Complex64::new(0.0_f64, n);
         let i_over_n = Complex64::new(0.0_f64, 1.0_f64 / n);
-        [[Complex64::from(0.0), i_over_n], [i_n, Complex64::from(0.0)]]
+        [
+            [Complex64::from(0.0), i_over_n],
+            [i_n, Complex64::from(0.0)],
+        ]
     };
-    let mat_mul =
-        |a: &[[Complex64; 2]; 2], b: &[[Complex64; 2]; 2]| -> [[Complex64; 2]; 2] {
+    let mat_mul = |a: &[[Complex64; 2]; 2], b: &[[Complex64; 2]; 2]| -> [[Complex64; 2]; 2] {
+        [
             [
-                [
-                    a[0][0] * b[0][0] + a[0][1] * b[1][0],
-                    a[0][0] * b[0][1] + a[0][1] * b[1][1],
-                ],
-                [
-                    a[1][0] * b[0][0] + a[1][1] * b[1][0],
-                    a[1][0] * b[0][1] + a[1][1] * b[1][1],
-                ],
-            ]
-        };
+                a[0][0] * b[0][0] + a[0][1] * b[1][0],
+                a[0][0] * b[0][1] + a[0][1] * b[1][1],
+            ],
+            [
+                a[1][0] * b[0][0] + a[1][1] * b[1][0],
+                a[1][0] * b[0][1] + a[1][1] * b[1][1],
+            ],
+        ]
+    };
 
     let n_h = 2.0_f64;
     let n_l = 1.0_f64;

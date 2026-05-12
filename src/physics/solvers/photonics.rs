@@ -571,7 +571,9 @@ pub const UNIFORM_BRICK_TETRAHEDRON_BOUNDARY_FACE_RANGES: [(usize, usize); 4] =
 /// SI vertex coordinates are scaled by `cell_h` (metres); the patch lies in the \(z=0\) plane with
 /// \(x\in[0,2h]\), \(y\in[0,h]\).
 #[cfg(feature = "photonics")]
-pub fn photonics_uniform_brick_two_quad_strip_tensors<B: Backend<FloatElem = f32, IntElem = i64>>(
+pub fn photonics_uniform_brick_two_quad_strip_tensors<
+    B: Backend<FloatElem = f32, IntElem = i64>,
+>(
     cell_h: f32,
     device: &B::Device,
 ) -> (Tensor<B, 2, Int>, Tensor<B, 2, Int>, Tensor<B, 2>) {
@@ -599,12 +601,24 @@ pub fn photonics_uniform_brick_two_quad_strip_tensors<B: Backend<FloatElem = f32
     let coords = Tensor::from_data(
         Data::new(
             vec![
-                0.0_f32 * h, 1.0 * h, 0.0, //
-                1.0 * h, 1.0 * h, 0.0, //
-                2.0 * h, 1.0 * h, 0.0, //
-                0.0 * h, 0.0 * h, 0.0, //
-                1.0 * h, 0.0 * h, 0.0, //
-                2.0 * h, 0.0 * h, 0.0,
+                0.0_f32 * h,
+                1.0 * h,
+                0.0, //
+                1.0 * h,
+                1.0 * h,
+                0.0, //
+                2.0 * h,
+                1.0 * h,
+                0.0, //
+                0.0 * h,
+                0.0 * h,
+                0.0, //
+                1.0 * h,
+                0.0 * h,
+                0.0, //
+                2.0 * h,
+                0.0 * h,
+                0.0,
             ],
             Shape::new([6, 3]),
         ),
@@ -618,16 +632,22 @@ pub fn photonics_uniform_brick_two_quad_strip_tensors<B: Backend<FloatElem = f32
 /// [`crate::physics::dec_primal::canonical_tetrahedron_boundary_dec_coo`]. Passes `dec_patch_topology_valid_for_solve`
 /// when wired into [`PhotonicsSolver::solve_maxwell_curl_curl`] with [`PhotonicsDecFacesPatch`].
 #[cfg(feature = "photonics")]
-pub fn photonics_uniform_brick_tetrahedron_boundary_tensors<B: Backend<FloatElem = f32, IntElem = i64>>(
+pub fn photonics_uniform_brick_tetrahedron_boundary_tensors<
+    B: Backend<FloatElem = f32, IntElem = i64>,
+>(
     cell_h: f32,
     device: &B::Device,
 ) -> (Tensor<B, 2, Int>, Tensor<B, 2, Int>, Tensor<B, 2>) {
     let h = cell_h.max(1e-9_f32);
     let coo = crate::physics::dec_primal::canonical_tetrahedron_boundary_dec_coo();
-    let edges_b1: Tensor<B, 2, Int> =
-        Tensor::from_data(Data::new(coo.edges_b1_flat.to_vec(), Shape::new([2, 6])), device);
-    let faces_b2: Tensor<B, 2, Int> =
-        Tensor::from_data(Data::new(coo.faces_b2_flat.to_vec(), Shape::new([2, 12])), device);
+    let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
+        Data::new(coo.edges_b1_flat.to_vec(), Shape::new([2, 6])),
+        device,
+    );
+    let faces_b2: Tensor<B, 2, Int> = Tensor::from_data(
+        Data::new(coo.faces_b2_flat.to_vec(), Shape::new([2, 12])),
+        device,
+    );
     let coords = Tensor::from_data(
         Data::new(
             vec![
@@ -734,10 +754,9 @@ fn dec_patch_topology_valid_for_solve<B: Backend<FloatElem = f32>>(
     }
 
     let device = edges_b1.device();
-    let mut omega_v = vec![0.0_f32; n];
-    for i in 0..n {
-        omega_v[i] = (i as f32).mul_add(0.37, -1.1).sin();
-    }
+    let omega_v: Vec<f32> = (0..n)
+        .map(|i| (i as f32).mul_add(0.37, -1.1).sin())
+        .collect();
     let nodal = Tensor::<B, 3>::from_data(Data::new(omega_v, Shape::new([1, n, 1])), &device);
     let topo = EdgeTopology::new(edges_b1.clone());
     let mx = dec_primal_max_abs_d1_of_scalar_gradient(
@@ -874,11 +893,7 @@ impl PhotonicsSolver {
                 && (pe[2] == RELATIVE_PERMITTIVITY_CHANNELS_SCALAR
                     || pe[2] == RELATIVE_PERMITTIVITY_CHANNELS_TENSOR3);
             let imag_ok = pi.len() == 3 && pi == [d[0], n, RELATIVE_PERMITTIVITY_CHANNELS_SCALAR];
-            if !perm_ok
-                || !imag_ok
-                || impressed_current.dims() != d
-                || coords_n3.dims() != [n, 3]
-            {
+            if !perm_ok || !imag_ok || impressed_current.dims() != d || coords_n3.dims() != [n, 3] {
                 tracing::warn!(
                     target: "umst_manifold::photonics",
                     "solve_maxwell_curl_curl: shape mismatch (permittivity [B,N,1|9], imag [B,N,1], coords); returning e_field unchanged"
@@ -1082,8 +1097,7 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
     dim: usize,
 ) -> Option<Vec<f32>> {
     const REL_TOL: f32 = 1e-7_f32;
-    let max_iter = PHOTONICS_DEC_PATCH_KRYLOV_MAX_ITERS
-        .min(dim.saturating_mul(8).max(64));
+    let max_iter = PHOTONICS_DEC_PATCH_KRYLOV_MAX_ITERS.min(dim.saturating_mul(8).max(64));
 
     let mut x = vec![0.0_f32; dim];
     let mut r = vec![0.0_f32; dim];
@@ -1323,8 +1337,7 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
     dim: usize,
 ) -> Option<Vec<f32>> {
     const REL_TOL: f32 = 1e-7_f32;
-    let max_iter = PHOTONICS_DEC_PATCH_KRYLOV_MAX_ITERS
-        .min(dim.saturating_mul(8).max(64));
+    let max_iter = PHOTONICS_DEC_PATCH_KRYLOV_MAX_ITERS.min(dim.saturating_mul(8).max(64));
 
     let mut x = vec![0.0_f32; dim];
     let mut r = vec![0.0_f32; dim];
@@ -1447,8 +1460,7 @@ pub fn dec_patch_operator_apply_gauged_stacked_lossy(
     );
 
     let k02 = k0 * k0;
-    for i in 0..n {
-        let sim = eps_imag[i];
+    for (i, sim) in eps_imag.iter().copied().enumerate().take(n) {
         for c in 0..3usize {
             let ix = 3 * i + c;
             yr[ix] -= k02 * sim * xi[ix];
@@ -1544,11 +1556,7 @@ enum DecPatchCsrInnerEnv {
 #[cfg(feature = "photonics")]
 fn dec_patch_csr_inner_env_mode() -> DecPatchCsrInnerEnv {
     match std::env::var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER") {
-        Ok(s)
-            if s == "0"
-                || s.eq_ignore_ascii_case("off")
-                || s.eq_ignore_ascii_case("false") =>
-        {
+        Ok(s) if s == "0" || s.eq_ignore_ascii_case("off") || s.eq_ignore_ascii_case("false") => {
             DecPatchCsrInnerEnv::Off
         }
         Ok(s)
@@ -2266,8 +2274,8 @@ pub mod dec_maxwell_assembly {
 #[cfg(all(test, feature = "photonics"))]
 mod photonics_matrix_six_honesty_tests {
     use super::{
-        photonics_dec_patch_uses_metric_dual_edge_hodge, PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY,
-        PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT,
+        photonics_dec_patch_uses_metric_dual_edge_hodge,
+        PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY, PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT,
     };
 
     #[test]
@@ -2294,11 +2302,13 @@ mod photonics_matrix_six_honesty_tests {
 #[cfg(all(test, feature = "photonics"))]
 mod photonics_sparse_csr_cg_parity_tests {
     use super::{
-        dec_patch_coo_sort_merge_f32, dec_patch_csr_coo_matvec_f32, dec_patch_csr_from_sorted_coo_f32,
-        dec_patch_csr_matvec_f32, dec_patch_maxwell_gauged_operator_csr_coo, dec_patch_operator_apply_gauged,
+        dec_patch_coo_sort_merge_f32, dec_patch_csr_coo_matvec_f32,
+        dec_patch_csr_from_sorted_coo_f32, dec_patch_csr_matvec_f32,
+        dec_patch_maxwell_gauged_operator_csr_coo, dec_patch_operator_apply_gauged,
         solve_maxwell_dec_patch_conjugate_gradient, solve_maxwell_dec_patch_conjugate_gradient_csr,
     };
 
+    #[allow(clippy::type_complexity)]
     fn quad_split_host_layout() -> (
         usize,
         usize,
@@ -2346,7 +2356,8 @@ mod photonics_sparse_csr_cg_parity_tests {
 
     #[test]
     fn dec_patch_csr_matvec_matches_coo_and_operator_quad_split() {
-        let (n, n_e, src, tgt, coords, faces_edge, faces_sign, ranges, k0, _) = quad_split_host_layout();
+        let (n, n_e, src, tgt, coords, faces_edge, faces_sign, ranges, k0, _) =
+            quad_split_host_layout();
         let ones_eps = vec![1.0_f32; n];
         let dim = 3 * n;
         let coo = dec_patch_maxwell_gauged_operator_csr_coo(
@@ -2366,10 +2377,9 @@ mod photonics_sparse_csr_cg_parity_tests {
         let merged = dec_patch_coo_sort_merge_f32(&coo);
         let (rp, ci, va) = dec_patch_csr_from_sorted_coo_f32(dim, &merged).expect("csr");
 
-        let mut xv = vec![0.0_f32; dim];
-        for i in 0..dim {
-            xv[i] = ((i * 17 + 3) as f32 * 0.013).sin();
-        }
+        let xv: Vec<f32> = (0..dim)
+            .map(|i| ((i * 17 + 3) as f32 * 0.013).sin())
+            .collect();
         let mut y_coo = vec![0.0_f32; dim];
         let mut y_csr = vec![0.0_f32; dim];
         let mut y_op = vec![0.0_f32; dim];
@@ -2409,7 +2419,8 @@ mod photonics_sparse_csr_cg_parity_tests {
 
     #[test]
     fn dec_patch_csr_cg_matches_matrix_free_cg_quad_split() {
-        let (n, n_e, src, tgt, coords, faces_edge, faces_sign, ranges, k0, b) = quad_split_host_layout();
+        let (n, n_e, src, tgt, coords, faces_edge, faces_sign, ranges, k0, b) =
+            quad_split_host_layout();
         let ones_eps = vec![1.0_f32; n];
         let dim = 3 * n;
         let coo = dec_patch_maxwell_gauged_operator_csr_coo(
@@ -2445,8 +2456,8 @@ mod photonics_sparse_csr_cg_parity_tests {
             dim,
         )
         .expect("matrix-free cg");
-        let x_csr = solve_maxwell_dec_patch_conjugate_gradient_csr(&rp, &ci, &va, &b, dim)
-            .expect("csr cg");
+        let x_csr =
+            solve_maxwell_dec_patch_conjugate_gradient_csr(&rp, &ci, &va, &b, dim).expect("csr cg");
 
         let mut mx = 0.0_f32;
         for i in 0..dim {
