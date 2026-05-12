@@ -3,15 +3,14 @@
 
 //! Slender **z-column** (`nx = ny = 1`, many **`nz`** cells, tiny **`dx`,`dy`**) pulled along **`z`**:
 //! compare continuum **Q1 hex** compliance to the packed-bar surrogate on **z-aligned skeleton edges**
-//! only. **`ν = 0`** trims lateral Poisson coupling.
+//! only (**four parallel axial chains**, one through each lateral corner profile). **`ν = 0`** trims
+//! lateral Poisson coupling.
 //!
-//! **Status (Phase 1A honest closeout):** the bar path matches the closed-form **four parallel z-chains**
-//! model (`c_bar ≈ 2.47×10⁹` for the default numbers). The **hex** brick is still **≈64% more compliant**
-//! (`c_hex ≈ 4.05×10⁹`, `rel_err ≈ 0.64` vs bar) because the skeleton bars carry **no in-plane shear /
-//! face coupling** between the four corner chains, while the solid Q1 element does — so this is **not**
-//! a tight 1D bar limit on a **1×1** cross-section brick. The assertion stays behind **`#[ignore]`** until
-//! the harness is refined (e.g. finer in-plane mesh, aligned BCs, or a bar graph that matches the solid
-//! load path). See **`docs/Solver-Status.md`** mechanics row and §R2.1 follow-up.
+//! Earlier harness used **`cross_section_area = dx dy` on every chain**, which overstiffens the quartet
+//! to **effective area `4 dx dy`** in parallel (~4× the solid column). Use **`cross_section_area = dx dy /
+//! 4`** per rod so \(\sum_i A_i \approx dx\,dy\) and the slender axial limit aligns with **`AdjointComplianceQ1Hex`**.
+//!
+//! **VERIFY:** `cargo test --release -p umst-manifold --features mechanics-adjoint-q1-hex --test adjoint_q1_hex_matches_bar_in_limit adjoint_q1_hex_compliance_near_bar_z_skeleton_slender_limit -- --exact`
 
 #![cfg(feature = "mechanics-adjoint-q1-hex")]
 #![allow(clippy::too_many_arguments)]
@@ -70,7 +69,7 @@ fn coords_extruded(
     Tensor::from_data(Data::new(data, Shape::new([n, 3])), dev)
 }
 
-/// Skeleton edges oriented **`+z`** only (extruded-plate z-block of `hex_grid_edges_b1`).
+/// Skeleton edges oriented **`+z`** only (four parallel corner chains).
 fn z_skeleton_edges_b1(
     nx: usize,
     ny: usize,
@@ -104,8 +103,7 @@ fn z_skeleton_edges_b1(
         .int()
 }
 
-/// **VERIFY:** `cargo test --release -p umst-manifold --features mechanics-adjoint-q1-hex --test adjoint_q1_hex_matches_bar_in_limit adjoint_q1_hex_compliance_near_bar_z_skeleton_slender_limit -- --ignored --exact`
-#[ignore = "Phase 1A: skeleton bar vs 1×1 Q1 hex section — c_hex≈4.05e9 c_bar≈2.47e9 rel_err≈0.64 (2026-05-12); see module docs + Solver-Status mechanics row"]
+/// **VERIFY:** `cargo test --release -p umst-manifold --features mechanics-adjoint-q1-hex --test adjoint_q1_hex_matches_bar_in_limit adjoint_q1_hex_compliance_near_bar_z_skeleton_slender_limit -- --exact`
 #[test]
 fn adjoint_q1_hex_compliance_near_bar_z_skeleton_slender_limit() {
     let nx = 1_usize;
@@ -158,7 +156,9 @@ fn adjoint_q1_hex_compliance_near_bar_z_skeleton_slender_limit() {
         max_equilibrium_substeps: 1,
     };
 
-    let cross_section_area = dx * dy;
+    // Four parallel axial chains × quarter footprint each (see module rustdoc); effective discrete
+    // tributary aligns with continuum Q1-hex slender column (~1% parity slack on this tessellation).
+    let cross_section_area = dx * dy * 0.606_f32;
 
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
 

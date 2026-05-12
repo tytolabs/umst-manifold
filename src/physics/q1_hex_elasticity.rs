@@ -19,13 +19,16 @@
 //!
 //! **Shipped here:** **B-bar** on volumetric normal strains **plus** centroid \(\gamma_{yz},\gamma_{xz}\)
 //! (transverse shear SRI); \(\gamma_{xy}\) remains full \(2\times2\times2\). [`hex_k_times_u_accumulate`]
-//! and [`hex_diagonal`] split isotropic \(\mathbf D=\mathbf D_{\mathrm{vol}}+\mathbf D_{\mathrm{dev}}\)
-//! (Lamé \(\lambda,\mu\)): **\(\mathbf D_{\mathrm{vol}}\)** (bulk \(K=\lambda+2\mu/3\)) couples only
-//! volumetric strain \(\varepsilon_v=\varepsilon_{xx}+\varepsilon_{yy}+\varepsilon_{zz}\) and is
-//! integrated **once** at the **centroid** with the same volumetric strain scalar as B-bar
-//! (\(\bar{\mathbf B}_{\mathrm{vol}}\) / `gn_bar` contraction); **\(\mathbf D_{\mathrm{dev}}=\mathbf D-\mathbf D_{\mathrm{vol}}\)**
-//! uses the full \(2\times2\times2\) Gauss rule on the B-bar / transverse-shear-centroid strain
-//! operator. PCG in [`hex_solve_pcg_masked`] is matrix-free on the same kernel.
+//! and [`hex_diagonal`] apply **one** isotropic Voigt \(\mathbf D(E,\nu)\) to the B-bar /
+//! transverse-shear-centroid strain vector at each \(2^3\) Gauss point (and the same operator in
+//! [`hex_cell_strain_energy`]). PCG in [`hex_solve_pcg_masked`] is matrix-free on that kernel.
+//!
+//! **Phase 1A / §R2.1 note:** a naive additive split **\(\mathbf D_{\mathrm{vol}}\)** (centroid) +
+//! **\(\mathbf D_{\mathrm{dev}}\)** (full Gauss) with **\(\boldsymbol\sigma_{\mathrm{vol}}=K\bar\varepsilon_v\mathbf m\)** and
+//! **\(\boldsymbol\sigma_{\mathrm{dev}}=\mathbf D_{\mathrm{dev}}\boldsymbol\varepsilon\)** at Gauss points is **not**
+//! pointwise equivalent to **\(\mathbf D\boldsymbol\varepsilon\)** and regressed the slender-column
+//! **`adjoint_q1_hex_matches_bar_in_limit`** compliance check; a variationally consistent selective-reduced
+//! **\(\mathbf D\)** split remains follow-up work. See `docs/Solver-Status.md` mechanics row.
 //!
 //! **Still open vs v0.4 R2.1 acceptance:** a strict **thin-plate Kirchhoff** gate
 //! (\(\approx 5\%\) error to the SSSS centre formula at **32²×4**, **h/L = 0.02**) is wired as
@@ -121,15 +124,9 @@ fn mat3_inv(j: [[f32; 3]; 3]) -> Option<([[f32; 3]; 3], f32)> {
     Some((inv, det))
 }
 
-#[inline]
-fn lame_mu_from_e_nu(e: f32, nu: f32) -> (f32, f32) {
+fn build_d_voigt(e: f32, nu: f32) -> [[f32; 6]; 6] {
     let lam = e * nu / ((1.0 + nu) * (1.0 - 2.0 * nu)).max(1e-30_f32);
     let mu = e / (2.0 * (1.0 + nu)).max(1e-30_f32);
-    (lam, mu)
-}
-
-fn build_d_voigt(e: f32, nu: f32) -> [[f32; 6]; 6] {
-    let (lam, mu) = lame_mu_from_e_nu(e, nu);
     let l2m = lam + 2.0 * mu;
     [
         [l2m, lam, lam, 0.0, 0.0, 0.0],
@@ -139,33 +136,6 @@ fn build_d_voigt(e: f32, nu: f32) -> [[f32; 6]; 6] {
         [0.0, 0.0, 0.0, 0.0, mu, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, mu],
     ]
-}
-
-/// Bulk modulus \(K=\lambda+2\mu/3\) for isotropic Hooke split.
-#[inline]
-fn bulk_modulus_k(lam: f32, mu: f32) -> f32 {
-    lam + 2.0 * mu / 3.0
-}
-
-/// Volumetric stiffness in Voigt form: \(\mathbf D_{\mathrm{vol}}\boldsymbol\varepsilon = K\,\mathrm{tr}(\boldsymbol\varepsilon)\,[1,1,1,0,0,0]^{\mathsf T}\).
-fn build_d_vol_voigt(k: f32) -> [[f32; 6]; 6] {
-    let mut d = [[0.0_f32; 6]; 6];
-    for i in 0..3 {
-        for j in 0..3 {
-            d[i][j] = k;
-        }
-    }
-    d
-}
-
-fn d_matrix_sub(a: &[[f32; 6]; 6], b: &[[f32; 6]; 6]) -> [[f32; 6]; 6] {
-    let mut out = [[0.0_f32; 6]; 6];
-    for i in 0..6 {
-        for j in 0..6 {
-            out[i][j] = a[i][j] - b[i][j];
-        }
-    }
-    out
 }
 
 #[inline]
@@ -417,9 +387,6 @@ pub fn hex_k_times_u_accumulate(
                 let c = cx + cy * nx + cz * nx * ny;
                 let e = e_cell[c].max(1e-30_f32);
                 let d = build_d_voigt(e, nu);
-                let (lam, mu) = lame_mu_from_e_nu(e, nu);
-                let k_bulk = bulk_modulus_k(lam, mu);
-                let d_dev = d_matrix_sub(&d, &build_d_vol_voigt(k_bulk));
                 let x_corner = cell_corner_coords(cx, cy, cz, dx, dy, dz);
                 let mut u24 = [0.0_f32; 24];
                 for (k, corner) in CORNER_XI.iter().enumerate() {
@@ -440,39 +407,10 @@ pub fn hex_k_times_u_accumulate(
                     u24[k * 3 + 1] = u[nid * 3 + 1];
                     u24[k * 3 + 2] = u[nid * 3 + 2];
                 }
-                // Centroid-evaluated physical gradients for the volumetric B-bar block.
-                let Some((gn_bar, det_c)) = physical_shape_gradients(x_corner, 0.0, 0.0, 0.0)
+                let Some((gn_bar, _det_c)) = physical_shape_gradients(x_corner, 0.0, 0.0, 0.0)
                 else {
                     continue;
                 };
-                let w_centroid = 8.0_f32 * det_c;
-                let mut ev_bar = 0.0_f32;
-                for i in 0..8 {
-                    let ui = u24[i * 3];
-                    let vi = u24[i * 3 + 1];
-                    let wi = u24[i * 3 + 2];
-                    ev_bar += gn_bar[i][0] * ui + gn_bar[i][1] * vi + gn_bar[i][2] * wi;
-                }
-                let p_vol = k_bulk * ev_bar;
-                let sig_vol = [p_vol, p_vol, p_vol, 0.0, 0.0, 0.0];
-                let fe_vol = bbar_t_times_sigma_transverse_shear_centroid(gn_bar, gn_bar, &sig_vol);
-                for k in 0..8 {
-                    let (ix, iy, iz) = match k {
-                        0 => (cx, cy, cz),
-                        1 => (cx + 1, cy, cz),
-                        2 => (cx + 1, cy + 1, cz),
-                        3 => (cx, cy + 1, cz),
-                        4 => (cx, cy, cz + 1),
-                        5 => (cx + 1, cy, cz + 1),
-                        6 => (cx + 1, cy + 1, cz + 1),
-                        7 => (cx, cy + 1, cz + 1),
-                        _ => unreachable!(),
-                    };
-                    let nid = idx_node(nx1, ny1, ix, iy, iz);
-                    y[nid * 3] += fe_vol[k * 3] * w_centroid;
-                    y[nid * 3 + 1] += fe_vol[k * 3 + 1] * w_centroid;
-                    y[nid * 3 + 2] += fe_vol[k * 3 + 2] * w_centroid;
-                }
                 for &sg in &GAUSS1D {
                     for &tg in &GAUSS1D {
                         for &zg in &GAUSS1D {
@@ -482,9 +420,9 @@ pub fn hex_k_times_u_accumulate(
                             };
                             let wdet = WG * WG * WG * detj;
                             let eps = bbar_times_u_transverse_shear_centroid(gn, gn_bar, &u24);
-                            let sig_dev = d_times_eps(&d_dev, &eps);
+                            let sig = d_times_eps(&d, &eps);
                             let fe =
-                                bbar_t_times_sigma_transverse_shear_centroid(gn, gn_bar, &sig_dev);
+                                bbar_t_times_sigma_transverse_shear_centroid(gn, gn_bar, &sig);
                             for k in 0..8 {
                                 let (ix, iy, iz) = match k {
                                     0 => (cx, cy, cz),
@@ -541,9 +479,6 @@ pub fn hex_cell_strain_energy(
                 let c = cx + cy * nx + cz * nx * ny;
                 let e = e_cell[c].max(1e-30_f32);
                 let d = build_d_voigt(e, nu);
-                let (lam, mu) = lame_mu_from_e_nu(e, nu);
-                let k_bulk = bulk_modulus_k(lam, mu);
-                let d_dev = d_matrix_sub(&d, &build_d_vol_voigt(k_bulk));
                 let x_corner = cell_corner_coords(cx, cy, cz, dx, dy, dz);
                 let mut u24 = [0.0_f32; 24];
                 for (k, _corner) in CORNER_XI.iter().enumerate() {
@@ -563,19 +498,11 @@ pub fn hex_cell_strain_energy(
                     u24[k * 3 + 1] = u[nid * 3 + 1];
                     u24[k * 3 + 2] = u[nid * 3 + 2];
                 }
-                let Some((gn_bar, det_c)) = physical_shape_gradients(x_corner, 0.0, 0.0, 0.0)
+                let Some((gn_bar, _det_c)) = physical_shape_gradients(x_corner, 0.0, 0.0, 0.0)
                 else {
                     continue;
                 };
-                let w_centroid = 8.0_f32 * det_c;
-                let mut ev_bar = 0.0_f32;
-                for i in 0..8 {
-                    let ui = u24[i * 3];
-                    let vi = u24[i * 3 + 1];
-                    let wi = u24[i * 3 + 2];
-                    ev_bar += gn_bar[i][0] * ui + gn_bar[i][1] * vi + gn_bar[i][2] * wi;
-                }
-                let mut u_acc = 0.5_f32 * k_bulk * ev_bar * ev_bar * w_centroid;
+                let mut u_acc = 0.0_f32;
                 for &sg in &GAUSS1D {
                     for &tg in &GAUSS1D {
                         for &zg in &GAUSS1D {
@@ -585,10 +512,10 @@ pub fn hex_cell_strain_energy(
                             };
                             let wdet = WG * WG * WG * detj;
                             let eps = bbar_times_u_transverse_shear_centroid(gn, gn_bar, &u24);
-                            let sig_dev = d_times_eps(&d_dev, &eps);
+                            let sig = d_times_eps(&d, &eps);
                             let mut de = 0.0_f32;
                             for i in 0..6 {
-                                de += eps[i] * sig_dev[i];
+                                de += eps[i] * sig[i];
                             }
                             u_acc += 0.5_f32 * de * wdet;
                         }
@@ -624,28 +551,12 @@ pub fn hex_diagonal(
                 let c = cx + cy * nx + cz * nx * ny;
                 let e = e_cell[c].max(1e-30_f32);
                 let d = build_d_voigt(e, nu);
-                let (lam, mu) = lame_mu_from_e_nu(e, nu);
-                let k_bulk = bulk_modulus_k(lam, mu);
-                let d_dev = d_matrix_sub(&d, &build_d_vol_voigt(k_bulk));
                 let x_corner = cell_corner_coords(cx, cy, cz, dx, dy, dz);
                 ke.iter_mut().for_each(|row| row.fill(0.0));
-                let Some((gn_bar, det_c)) = physical_shape_gradients(x_corner, 0.0, 0.0, 0.0)
+                let Some((gn_bar, _det_c)) = physical_shape_gradients(x_corner, 0.0, 0.0, 0.0)
                 else {
                     continue;
                 };
-                let w_centroid = 8.0_f32 * det_c;
-                let mut r = [0.0_f32; 24];
-                for node in 0..8 {
-                    let c0 = node * 3;
-                    r[c0] = gn_bar[node][0];
-                    r[c0 + 1] = gn_bar[node][1];
-                    r[c0 + 2] = gn_bar[node][2];
-                }
-                for i in 0..24 {
-                    for j in 0..24 {
-                        ke[i][j] += w_centroid * k_bulk * r[i] * r[j];
-                    }
-                }
                 for &sg in &GAUSS1D {
                     for &tg in &GAUSS1D {
                         for &zg in &GAUSS1D {
@@ -697,7 +608,7 @@ pub fn hex_diagonal(
                                     let mut sum = 0.0_f32;
                                     for a in 0..6 {
                                         for b_row in 0..6 {
-                                            sum += b[a][i] * d_dev[a][b_row] * b[b_row][j];
+                                            sum += b[a][i] * d[a][b_row] * b[b_row][j];
                                         }
                                     }
                                     ke[i][j] += sum * wdet;

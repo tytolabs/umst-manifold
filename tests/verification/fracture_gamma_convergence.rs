@@ -1135,12 +1135,13 @@ fn staggered_fracture_compliance_monotone_increasing() {
     }
 }
 
-
 #[cfg(feature = "fracture-at2")]
 #[test]
 fn at2_staggered_outer_cfg_fixed_iters_matches_legacy() {
     use burn::tensor::Int;
-    use umst_manifold::physics::solvers::{PhaseFieldFractureSolver, StaggeredDamageOuterLoopConfig};
+    use umst_manifold::physics::solvers::{
+        PhaseFieldFractureSolver, StaggeredDamageOuterLoopConfig,
+    };
 
     let dev = NdArrayDevice::Cpu;
     let batch = 1usize;

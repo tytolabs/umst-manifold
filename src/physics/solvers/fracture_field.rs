@@ -19,17 +19,22 @@
 //!   `sign`, `mask_where`, …) on each \(3\times3\) block, so the diagonals converge to the
 //!   eigenvalue multiset. Same \(\psi^+\) as from sorted \(\lambda_i\) because it is symmetric in
 //!   the three eigenvalues.
+//! - **Gap 1 (MaOS v0.4 plan):** Cyclic spectral **Jacobi** and inner **damage relaxation** use
+//!   explicit `for` loops, not [`crate::physics::solvers::fixed_point::repeat_controlled`]. That
+//!   combinator's `FnMut` closure does not compose cleanly with per-iteration owned [`Tensor`]
+//!   reassignment in Burn (E0507 / move-out-of-capture); `Option` carriers were only a workaround
+//!   and are avoided here — **Resolved / WontFix** for this pattern.
 //! - Degradation (for documentation / future tight coupling with mechanics):
 //!   \(g(d) = (1-d)^2 + \eta\).
 //! - AT2-style nodal field: `Gc/l · d − Gc · l · Δ d ≈ 2(1-d) ψ⁺` with `Δ` from
 //!   [`crate::physics::laplacian::TopologicalLaplacian::scalar_laplacian`] on `edges_b1`.
-//! - Irreversibility `max(d_old, d_{trial})`, then clamp to `[0, 1]`.
+//! - Irreversibility `max(d_old, d_{trial})`, then clamp to `\[0, 1\]`.
 //!
 //! ## Inner damage relaxation (Jacobi + graph Laplacian)
 //!
 //! A plain Jacobi step on \((Gc/l - Gc\,l\,\Delta)\,d \approx 2(1-d)\psi^+\) can **checkerboard**
 //! on 1D chains (odd/even mode), which shows up as alternating **global sums** in `f32` smoke tests.
-//! We combine **smaller** \(\omega\), **node-parity red–black** half-steps, a **`[0,1]` clamp once
+//! We combine **smaller** \(\omega\), **node-parity red–black** half-steps, a **`\[0,1\]` clamp once
 //! per outer pair**, and an **odd** number of outer passes on short chains (see `DAMAGE_RELAXATION_ITERS`)
 //! so a terminal near-checkerboard state does not cancel the integrated damage to **0** in `f32`.
 //!
@@ -59,8 +64,8 @@
 //! ## Known limitations (v0.4 / Track C)
 //!
 //! - **No in-module elasticity:** [`PhaseFieldFractureSolver::update_damage`] does not call mechanics;
-//!   packaged **post-mechanics** strain for orchestrators is [`strain_tensor_for_fracture_after_mechanics`]
-//!   / [`strain_tensor_from_bar_network_displacement`] (feature `fracture-at2`); full staggered outer
+//!   packaged **post-mechanics** strain for orchestrators is `strain_tensor_for_fracture_after_mechanics`
+//!   / `strain_tensor_from_bar_network_displacement` (feature `fracture-at2`); full staggered outer
 //!   loops outside THMC still require callers to refresh **ε** after each equilibrium solve when they
 //!   do not use [`crate::physics::solvers::ThmcSolver::step`].
 //! - **Stiffness degradation** \(g(d) = (1-d)^2 + \eta\) is documented for future mechanical
@@ -71,8 +76,8 @@
 //!   provider** `FnMut(&Tensor<B,3>) -> Tensor<B,4>` so call sites can inject refreshed **ε(d)**.
 //! - **Repo status (one place):** implemented vs multi-\(l_0\) Γ-limit / full staggered deferrals —
 //!   `docs/Solver-Status.md` → **DEFERRAL — Fracture** and table row `solvers::fracture_field`.
-//! - **Non-embedding / no bar strain:** [`strain_tensor_for_fracture_from_manifold`] reads
-//!   [`UnifiedMaterialStateTensor::matrix_features`] channel `0` into `[B,N,3,3]` when SI bar
+//! - **Non-embedding / no bar strain:** `strain_tensor_for_fracture_from_manifold` reads
+//!   [`crate::core::tensors::UnifiedMaterialStateTensor::matrix_features`] channel `0` into `[B,N,3,3]` when SI bar
 //!   kinematics are unavailable (zeros if shapes disagree). [`crate::physics::solvers::ThmcSolver::step`]
 //!   uses the same slice at its fracture tail when `node_positions` are missing or not `[N,3]`.
 //!
@@ -88,6 +93,9 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use core::ops::ControlFlow;
+
+use crate::core::iterate_until::iterate_until;
 #[cfg(feature = "fracture-at2")]
 use crate::physics::laplacian::TopologicalLaplacian;
 #[cfg(feature = "fracture-at2")]
@@ -104,7 +112,7 @@ use crate::core::tensors::UnifiedMaterialStateTensor;
 use burn::tensor::{Data, Shape};
 
 /// Optional early exit for staggered damage outers and
-/// [`PhaseFieldFractureSolver::solve_staggered_with_mechanics`].
+/// `PhaseFieldFractureSolver::solve_staggered_with_mechanics`.
 ///
 /// Every tolerance field that is `Some` must pass **in the same outer pass** (logical **AND**);
 /// omitted fields are ignored. The relative \((1-d)^2\psi^+\) mean gate requires feature
@@ -141,7 +149,7 @@ impl StaggeredDamageOuterLoopConfig {
 }
 
 /// Configuration for the staggered elasticity–damage outer loop in
-/// [`PhaseFieldFractureSolver::solve_staggered_with_mechanics`].
+/// `PhaseFieldFractureSolver::solve_staggered_with_mechanics`.
 #[derive(Clone, Copy, Debug)]
 pub struct StaggeredFractureConfig {
     /// Number of outer staggered alternations (`u_k` ↔ `d_k`).
@@ -160,6 +168,24 @@ pub struct StaggeredFractureConfig {
     /// Optional early exit after each damage update (same AND predicate as
     /// [`PhaseFieldFractureSolver::update_damage_staggered_with_stop`]).
     pub outer_stopping: StaggeredOuterDamageStopCriteria,
+}
+
+/// Scales a uniform **`Gc`** tensor (`[B,1]`) by \(\gamma_{\mathrm{gc}}/\gamma_{\mathrm{ref}}\) from
+/// [`crate::physics::solvers::statistical_mechanics::upscale_potentials`] with reference
+/// [`crate::physics::solvers::statistical_mechanics::GAMMA_GC_REF_VIADU_F32`] — Milestone **2.4**
+/// sub-grid → macro fracture **threshold / auxiliary** hook (orchestrator applies; not inside
+/// [`PhaseFieldFractureSolver::update_damage`] by default).
+#[cfg(feature = "fracture-at2")]
+pub fn gc_bn1_scaled_by_statmech_gamma_ratio<B: Backend<FloatElem = f32>>(
+    gc_base_bn1: Tensor<B, 2>,
+    lennard_jones_params_b4: Tensor<B, 2>,
+) -> Result<Tensor<B, 2>, String> {
+    use crate::physics::solvers::statistical_mechanics::{
+        upscale_potentials, GAMMA_GC_REF_VIADU_F32,
+    };
+    let (_, gamma) = upscale_potentials(lennard_jones_params_b4).map_err(|e| e.to_string())?;
+    let ratio = gamma.div_scalar(GAMMA_GC_REF_VIADU_F32);
+    Ok(gc_base_bn1.mul(ratio))
 }
 
 /// Maps graph Voigt strain `[B, N, 6]` from [`VectorMechanicsSolver::voigt_strain_from_edge_displacement`]
@@ -233,7 +259,7 @@ pub fn strain_tensor_from_bar_network_displacement<B: Backend<FloatElem = f32>>(
 /// `coords_n3` / `edges_b1` (re-derived edge geometry from coordinates).
 ///
 /// **Scope:** documented **fresh \(\varepsilon(\mathbf u)\)** after one mechanics solve
-/// (see `docs/research/v0.4_track12_staggered_fracture_mechanics.md`). [`ThmcSolver::step`] uses
+/// (see `docs/research/v0.4_track12_staggered_fracture_mechanics.md`). [`ThmcSolver::step`](crate::physics::solvers::thmc::ThmcSolver::step) uses
 /// [`strain_tensor_from_bar_network_displacement`] on `state.mechanical.displacement` when SI
 /// `node_positions` are present (see `thmc` module docs).
 #[cfg(feature = "fracture-at2")]
@@ -395,7 +421,7 @@ impl PhaseFieldFractureSolver {
     pub fn update_damage_staggered_with_outer_cfg<B, F>(
         &self,
         mut strain_fn: F,
-        mut damage: Tensor<B, 3>,
+        damage: Tensor<B, 3>,
         fracture_energy_gc: Tensor<B, 3>,
         edges_b1: Tensor<B, 2, Int>,
         outer: StaggeredDamageOuterLoopConfig,
@@ -425,48 +451,62 @@ impl PhaseFieldFractureSolver {
             return damage;
         }
 
-        let mut prev_strain: Option<Tensor<B, 4>> = None;
-        #[cfg(feature = "fracture-at2")]
-        let mut prev_psi_mean: Option<f32> = None;
+        struct StaggeredOuterState<BB: Backend<FloatElem = f32>> {
+            damage: Option<Tensor<BB, 3>>,
+            prev_strain: Option<Tensor<BB, 4>>,
+            #[cfg_attr(not(feature = "fracture-at2"), allow(dead_code))]
+            prev_psi_mean: Option<f32>,
+        }
 
-        for _ in 0..outer.max_outer_iterations {
-            let d_before = damage.clone();
-            let strain_k = strain_fn(&damage);
-            let prev_s = prev_strain.as_ref();
+        let mut st = StaggeredOuterState::<B> {
+            damage: Some(damage),
+            prev_strain: None,
+            prev_psi_mean: None,
+        };
 
-            damage = self.update_damage(
+        iterate_until(outer.max_outer_iterations, &mut st, |st| {
+            let strain_k = strain_fn(st.damage.as_ref().expect("staggered outer damage"));
+            let d_before = st.damage.as_ref().expect("staggered outer damage").clone();
+            let prev_s = st.prev_strain.as_ref();
+
+            let d_in = st.damage.take().expect("staggered outer damage");
+            st.damage = Some(self.update_damage(
                 strain_k.clone(),
-                damage,
+                d_in,
                 fracture_energy_gc.clone(),
                 edges_b1.clone(),
-            );
+            ));
+
+            let d_after = st.damage.as_ref().expect("staggered outer damage");
 
             #[cfg(feature = "fracture-at2")]
             let should_break = outer_stopping_should_break(
                 outer.stopping,
                 &d_before,
-                &damage,
+                d_after,
                 &strain_k,
                 prev_s,
-                Some(&mut prev_psi_mean),
+                Some(&mut st.prev_psi_mean),
             );
             #[cfg(not(feature = "fracture-at2"))]
             let should_break = outer_stopping_should_break(
                 outer.stopping,
                 &d_before,
-                &damage,
+                d_after,
                 &strain_k,
                 prev_s,
                 None,
             );
 
-            prev_strain = Some(strain_k);
+            st.prev_strain = Some(strain_k);
 
             if should_break {
-                break;
+                ControlFlow::Break(())
+            } else {
+                ControlFlow::Continue(())
             }
-        }
-        damage
+        });
+        st.damage.take().expect("staggered outer damage after loop")
     }
 
     pub fn update_damage_staggered_with_stop<B, F>(
@@ -551,19 +591,32 @@ impl PhaseFieldFractureSolver {
             length_scale: config.length_scale,
         };
 
-        let mut d = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
-        let mut u = Tensor::<B, 3>::zeros([batch, n, 3], &dev);
-
         let stop = config.outer_stopping;
-        let mut prev_strain: Option<Tensor<B, 4>> = None;
-        let mut prev_psi_mean: Option<f32> = None;
 
-        for _outer in 0..config.outer_iters {
+        struct MechanicsOuterState<B0>
+        where
+            B0: Backend<FloatElem = f32>,
+        {
+            u: Tensor<B0, 3>,
+            d: Option<Tensor<B0, 3>>,
+            prev_strain: Option<Tensor<B0, 4>>,
+            prev_psi_mean: Option<f32>,
+        }
+
+        let mut st = MechanicsOuterState::<B> {
+            u: Tensor::<B, 3>::zeros([batch, n, 3], &dev),
+            d: Some(Tensor::<B, 3>::zeros([batch, n, 1], &dev)),
+            prev_strain: None,
+            prev_psi_mean: None,
+        };
+
+        iterate_until(config.outer_iters, &mut st, |st| {
             // Multiplicative degradation g(d) = (1-d)^2 + k_reg applied to per-node E_young.
             // VectorMechanicsSolver also applies its own internal degradation via the `damage`
             // argument; to avoid double counting we pass damage=0 to mechanics and instead bake
             // g(d) into the effective stiffness tensor.
-            let one_minus_d = Tensor::<B, 3>::ones_like(&d).sub(d.clone());
+            let d_ref = st.d.as_ref().expect("mechanics staggered damage");
+            let one_minus_d = Tensor::<B, 3>::ones_like(d_ref).sub(d_ref.clone());
             let g_of_d = one_minus_d
                 .clone()
                 .mul(one_minus_d)
@@ -573,7 +626,7 @@ impl PhaseFieldFractureSolver {
 
             let zero_damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
             let (u_k, _stress) = VectorMechanicsSolver::solve_equilibrium(
-                u.clone(),
+                st.u.clone(),
                 coords_n3.clone(),
                 stiffness,
                 body_force.clone(),
@@ -583,11 +636,11 @@ impl PhaseFieldFractureSolver {
                 cross_section_area,
                 cg,
             );
-            u = u_k;
+            st.u = u_k;
 
             // Per-edge axial strain -> nodal symmetric strain tensor via Voigt scatter.
-            let u_src = u.clone().gather(1, src3.clone());
-            let u_tgt = u.clone().gather(1, tgt3.clone());
+            let u_src = st.u.clone().gather(1, src3.clone());
+            let u_tgt = st.u.clone().gather(1, tgt3.clone());
             let edge_disp = u_tgt.sub(u_src);
             let eps_v = VectorMechanicsSolver::voigt_strain_from_edge_displacement(
                 edge_disp,
@@ -597,30 +650,37 @@ impl PhaseFieldFractureSolver {
                 n,
             );
             let strain4 = symmetric_strain_tensor_from_graph_voigt6(eps_v);
-            let d_before = d.clone();
-            let prev_s = prev_strain.as_ref();
+            let d_before = st.d.as_ref().expect("mechanics staggered damage").clone();
+            let prev_s = st.prev_strain.as_ref();
 
-            d = solver.update_damage(
+            let d_in = st.d.take().expect("mechanics staggered damage");
+            st.d = Some(solver.update_damage(
                 strain4.clone(),
-                d,
+                d_in,
                 gc_field.clone(),
                 edges_b1.clone(),
-            );
+            ));
+
+            let d_after = st.d.as_ref().expect("mechanics staggered damage");
 
             if outer_stopping_should_break(
                 stop,
                 &d_before,
-                &d,
+                d_after,
                 &strain4,
                 prev_s,
-                Some(&mut prev_psi_mean),
+                Some(&mut st.prev_psi_mean),
             ) {
-                break;
+                return ControlFlow::Break(());
             }
-            prev_strain = Some(strain4);
-        }
+            st.prev_strain = Some(strain4);
+            ControlFlow::Continue(())
+        });
 
-        (u, d)
+        (
+            st.u,
+            st.d.take().expect("mechanics staggered damage after loop"),
+        )
     }
 }
 
@@ -710,6 +770,37 @@ fn node_parity_masks_b_n1<B: Backend<FloatElem = f32>>(
     (mask_even, mask_odd)
 }
 
+/// One outer damage-relaxation pass: even parity half-step, odd half-step, then `[0,1]` clamp.
+#[cfg(feature = "fracture-at2")]
+fn damage_relaxation_one_iteration<B: Backend<FloatElem = f32>>(
+    d: Tensor<B, 3>,
+    l: f32,
+    gc: Tensor<B, 3>,
+    edges_b1: Tensor<B, 2, Int>,
+    mask_even: Tensor<B, 3>,
+    mask_odd: Tensor<B, 3>,
+    psi_plus: Tensor<B, 3>,
+) -> Tensor<B, 3> {
+    let l = l.max(1e-12);
+    let lap_d = TopologicalLaplacian::scalar_laplacian(d.clone(), edges_b1.clone(), d.clone());
+    let one_minus_d = Tensor::<B, 3>::ones_like(&d).sub(d.clone());
+    let drive = one_minus_d.mul(psi_plus.clone()).mul_scalar(2.0);
+    let lin = gc.clone().div_scalar(l).mul(d.clone());
+    let grad_term = gc.clone().mul_scalar(l).mul(lap_d);
+    let residual = lin.sub(drive).sub(grad_term);
+    let mut d = d.sub(residual.mul_scalar(RELAXATION_OMEGA).mul(mask_even));
+
+    let lap_d = TopologicalLaplacian::scalar_laplacian(d.clone(), edges_b1.clone(), d.clone());
+    let one_minus_d = Tensor::<B, 3>::ones_like(&d).sub(d.clone());
+    let drive = one_minus_d.mul(psi_plus.clone()).mul_scalar(2.0);
+    let lin = gc.clone().div_scalar(l).mul(d.clone());
+    let grad_term = gc.clone().mul_scalar(l).mul(lap_d);
+    let residual = lin.sub(drive).sub(grad_term);
+    d = d.sub(residual.mul_scalar(RELAXATION_OMEGA).mul(mask_odd));
+
+    d.clamp(0.0_f32, 1.0_f32)
+}
+
 #[cfg(feature = "fracture-at2")]
 fn update_damage_experimental<B: Backend<FloatElem = f32>>(
     solver: &PhaseFieldFractureSolver,
@@ -728,23 +819,15 @@ fn update_damage_experimental<B: Backend<FloatElem = f32>>(
 
     let mut d = damage_old.clone();
     for _ in 0..DAMAGE_RELAXATION_ITERS {
-        let lap_d = TopologicalLaplacian::scalar_laplacian(d.clone(), edges_b1.clone(), d.clone());
-        let one_minus_d = Tensor::<B, 3>::ones_like(&d).sub(d.clone());
-        let drive = one_minus_d.mul(psi_plus.clone()).mul_scalar(2.0);
-        let lin = gc.clone().div_scalar(l).mul(d.clone());
-        let grad_term = gc.clone().mul_scalar(l).mul(lap_d);
-        let residual = lin.sub(drive).sub(grad_term);
-        d = d.sub(residual.mul_scalar(RELAXATION_OMEGA).mul(mask_even.clone()));
-
-        let lap_d = TopologicalLaplacian::scalar_laplacian(d.clone(), edges_b1.clone(), d.clone());
-        let one_minus_d = Tensor::<B, 3>::ones_like(&d).sub(d.clone());
-        let drive = one_minus_d.mul(psi_plus.clone()).mul_scalar(2.0);
-        let lin = gc.clone().div_scalar(l).mul(d.clone());
-        let grad_term = gc.clone().mul_scalar(l).mul(lap_d);
-        let residual = lin.sub(drive).sub(grad_term);
-        d = d.sub(residual.mul_scalar(RELAXATION_OMEGA).mul(mask_odd.clone()));
-
-        d = d.clamp(0.0_f32, 1.0_f32);
+        d = damage_relaxation_one_iteration(
+            d,
+            l,
+            gc.clone(),
+            edges_b1.clone(),
+            mask_even.clone(),
+            mask_odd.clone(),
+            psi_plus.clone(),
+        );
     }
 
     let out = d.max_pair(damage_old.clone()).clamp(0.0_f32, 1.0_f32);
@@ -1200,8 +1283,8 @@ mod fracture_at2_tests {
         use std::sync::atomic::{AtomicUsize, Ordering};
         use std::sync::Arc;
 
-        use crate::physics::solvers::PhaseFieldFractureSolver;
         use crate::physics::solvers::fracture_field::StaggeredOuterDamageStopCriteria;
+        use crate::physics::solvers::PhaseFieldFractureSolver;
         use burn::tensor::Int;
 
         let dev = NdArrayDevice::Cpu;
@@ -1279,10 +1362,10 @@ mod fracture_at2_tests {
 
     #[test]
     fn update_damage_staggered_outer_cfg_matches_with_stop() {
-        use crate::physics::solvers::PhaseFieldFractureSolver;
         use crate::physics::solvers::fracture_field::{
             StaggeredDamageOuterLoopConfig, StaggeredOuterDamageStopCriteria,
         };
+        use crate::physics::solvers::PhaseFieldFractureSolver;
         use burn::tensor::Int;
 
         let dev = NdArrayDevice::Cpu;

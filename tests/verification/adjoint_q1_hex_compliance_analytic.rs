@@ -110,7 +110,8 @@ fn adjoint_q1_hex_gradient_matches_finite_difference_plate_8x8x2() {
     let bf_data = plate.body_force_top_uniform_pressure(5000.0_f32);
     let bm_data = plate_bottom_uz_mask(nx, ny, nz);
 
-    let body_force = Tensor::<Inner, 3>::from_data(Data::new(bf_data.clone(), Shape::new([1, n, 3])), &dev);
+    let body_force =
+        Tensor::<Inner, 3>::from_data(Data::new(bf_data.clone(), Shape::new([1, n, 3])), &dev);
     let boundary_mask =
         Tensor::<Inner, 3>::from_data(Data::new(bm_data.clone(), Shape::new([1, n, 3])), &dev);
 
@@ -137,7 +138,8 @@ fn adjoint_q1_hex_gradient_matches_finite_difference_plate_8x8x2() {
     let nid_p = ix_p + iy_p * nx1 + iz_p * nx1 * ny1;
 
     let rho_ad =
-        Tensor::<AD, 3>::from_data(Data::new(rho_flat.clone(), Shape::new([1, n, 1])), &dev).require_grad();
+        Tensor::<AD, 3>::from_data(Data::new(rho_flat.clone(), Shape::new([1, n, 1])), &dev)
+            .require_grad();
 
     let (surrogate, _c_raw) = AdjointComplianceQ1Hex::forward_and_loss(
         rho_ad.clone(),
