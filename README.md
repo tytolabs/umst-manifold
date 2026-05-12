@@ -75,6 +75,7 @@ The default build exposes DEC / sheaf plumbing, equilibrium mechanics on free de
 ## Reference
 
 - Formal notation and cartridge interface: [`docs/Mathematical-Foundations.md`](docs/Mathematical-Foundations.md)
+- Burn host-sync / solver hot-path audit (`into_scalar`, `into_data`): [`docs/FP_CATEGORICAL_BURN.md`](docs/FP_CATEGORICAL_BURN.md)
 - Detailed gap list (spec vs. implementation): [`GAP_AUDIT.md`](GAP_AUDIT.md)
 
 ## Example
