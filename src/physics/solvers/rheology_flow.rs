@@ -212,10 +212,10 @@ impl BinghamFlowSolver {
     /// Returns `(velocity_new, pressure_new, lambda_thix_new)` with same ranks as inputs.
     ///
     /// ## Default builds (`solver-experimental` **off**)
-    /// Returns inputs unchanged (documented no-op / Phase 3 stub for downstream wiring tests).
+    /// Returns inputs unchanged (documented no-op placeholder for downstream wiring tests).
     ///
     /// ## `--features solver-experimental`
-    /// Runs the Chorin MVP documented in this module and one explicit Roussel step on \(\lambda\).
+    /// Runs the documented Chorin **baseline** fractional-step projection in this module and one explicit Roussel step on \(\lambda\).
     #[allow(unused_variables, clippy::too_many_arguments)]
     pub fn step<B: Backend<FloatElem = f32>>(
         &self,
@@ -262,7 +262,10 @@ impl Default for BinghamFlowSolver {
 /// **fixed iteration count** on a lazy tensor graph, with early exit when the \(\ell_2\) relative residual
 /// `Tensor::all_close` check against **`POISSON_CG_REL_TOL`** succeeds (no explicit host scalar reads in this module).
 #[cfg(feature = "rheology-bingham")]
-#[cfg_attr(not(feature = "rheology_poisson_richardson_fallback"), allow(dead_code))]
+#[cfg_attr(
+    not(feature = "rheology_poisson_richardson_fallback"),
+    allow(dead_code)
+)]
 fn solve_pressure_phi_richardson_fallback<B: Backend<FloatElem = f32>>(
     rhs: Tensor<B, 3>,
     edges_b1: Tensor<B, 2, Int>,
@@ -312,18 +315,12 @@ fn solve_pressure_phi_richardson_fallback<B: Backend<FloatElem = f32>>(
 fn jacobi_pressure_phi_step<B: Backend<FloatElem = f32>>(
     s: &mut JacobiPressurePhiState<B>,
 ) -> ControlFlow<(), ()> {
-    let lp = TopologicalLaplacian::scalar_laplacian(
-        s.p.clone(),
-        s.edges_b1.clone(),
-        s.damage.clone(),
-    );
+    let lp =
+        TopologicalLaplacian::scalar_laplacian(s.p.clone(), s.edges_b1.clone(), s.damage.clone());
     let ap = lp.neg();
     let p_ap = s.p.clone().mul(ap.clone()).sum().clamp_min(1e-40_f32);
     let alpha = s.rz_old.clone().div(p_ap).clamp(-1e4_f32, 1e4_f32);
-    let alpha3 = alpha
-        .clone()
-        .reshape([1, 1, 1])
-        .expand([s.batch, s.n, 1]);
+    let alpha3 = alpha.clone().reshape([1, 1, 1]).expand([s.batch, s.n, 1]);
     s.phi = s.phi.clone().add(s.p.clone().mul(alpha3.clone()));
     s.r = s.r.clone().sub(ap.mul(alpha3));
 
@@ -340,10 +337,7 @@ fn jacobi_pressure_phi_step<B: Backend<FloatElem = f32>>(
         .clone()
         .div(s.rz_old.clone().clamp_min(1e-40_f32))
         .clamp(0.0_f32, 1e6_f32);
-    let beta3 = beta
-        .clone()
-        .reshape([1, 1, 1])
-        .expand([s.batch, s.n, 1]);
+    let beta3 = beta.clone().reshape([1, 1, 1]).expand([s.batch, s.n, 1]);
     s.p = s.z.clone().add(s.p.clone().mul(beta3));
     s.rz_old = rz_new.clamp_min(1e-40_f32);
     ControlFlow::Continue(())
@@ -427,13 +421,7 @@ fn chorin_pressure_rhs_mean_free_weak_divergence<B: Backend<FloatElem = f32>>(
     n: usize,
 ) -> (Tensor<B, 3>, Tensor<B, 3>) {
     chorin_pressure_rhs_mean_free_weak_divergence_inner(
-        u_star,
-        topo,
-        flow_coeff,
-        batch,
-        n_edges,
-        n,
-        false,
+        u_star, topo, flow_coeff, batch, n_edges, n, false,
     )
 }
 
@@ -455,13 +443,7 @@ pub(crate) fn chorin_pressure_rhs_mean_free_weak_divergence_mac_upstream_face_fl
     n: usize,
 ) -> (Tensor<B, 3>, Tensor<B, 3>) {
     chorin_pressure_rhs_mean_free_weak_divergence_inner(
-        u_star,
-        topo,
-        flow_coeff,
-        batch,
-        n_edges,
-        n,
-        true,
+        u_star, topo, flow_coeff, batch, n_edges, n, true,
     )
 }
 
@@ -834,11 +816,7 @@ mod tests {
             TopologicalLaplacian::scalar_laplacian(phi.clone(), edges_b1.clone(), damage.clone());
         let res = lap_phi.sub(rhs_mf.clone());
         let z1 = Tensor::<B, 1>::zeros([1], &dev);
-        let bn = rhs_mf
-            .powf_scalar(2.0)
-            .sum()
-            .sqrt()
-            .clamp_min(1e-20_f32);
+        let bn = rhs_mf.powf_scalar(2.0).sum().sqrt().clamp_min(1e-20_f32);
         let rel = res.powf_scalar(2.0).sum().sqrt().div(bn);
         assert!(
             rel.all_close(z1, None, Some(5e-4_f64)),
@@ -860,8 +838,7 @@ mod tests {
     fn chorin_poisson_rhs_surrogate_vs_weak_divergence_tiny_channel() {
         use super::{
             chorin_pressure_rhs_mean_free_surrogate_sum_laplacian,
-            chorin_pressure_rhs_mean_free_weak_divergence,
-            solve_pressure_phi_jacobi_cg,
+            chorin_pressure_rhs_mean_free_weak_divergence, solve_pressure_phi_jacobi_cg,
         };
         use crate::physics::laplacian::TopologicalLaplacian;
         use crate::physics::topology::EdgeTopology;
@@ -969,11 +946,18 @@ mod tests {
             n,
         );
 
-        assert!(phi_div.clone().all_close(phi_div.clone(), None, Some(0.0_f64)));
-        assert!(phi_sur.clone().all_close(phi_sur.clone(), None, Some(0.0_f64)));
+        assert!(phi_div
+            .clone()
+            .all_close(phi_div.clone(), None, Some(0.0_f64)));
+        assert!(phi_sur
+            .clone()
+            .all_close(phi_sur.clone(), None, Some(0.0_f64)));
 
-        let lap_div =
-            TopologicalLaplacian::scalar_laplacian(phi_div.clone(), edges_b1.clone(), damage.clone());
+        let lap_div = TopologicalLaplacian::scalar_laplacian(
+            phi_div.clone(),
+            edges_b1.clone(),
+            damage.clone(),
+        );
         let res_div = lap_div.sub(rhs_div);
         let rn_div_t = res_div.powf_scalar(2.0).sum().sqrt().div(bd_t.clone());
         assert!(
@@ -981,20 +965,18 @@ mod tests {
             "φ_div should approximately solve Lφ=b_div"
         );
 
-        let lap_sur =
-            TopologicalLaplacian::scalar_laplacian(phi_sur.clone(), edges_b1.clone(), damage.clone());
+        let lap_sur = TopologicalLaplacian::scalar_laplacian(
+            phi_sur.clone(),
+            edges_b1.clone(),
+            damage.clone(),
+        );
         let bs_t = rhs_sur
             .clone()
             .powf_scalar(2.0)
             .sum()
             .sqrt()
             .clamp_min(1e-30_f32);
-        let rn_sur_t = lap_sur
-            .sub(rhs_sur)
-            .powf_scalar(2.0)
-            .sum()
-            .sqrt()
-            .div(bs_t);
+        let rn_sur_t = lap_sur.sub(rhs_sur).powf_scalar(2.0).sum().sqrt().div(bs_t);
         assert!(
             rn_sur_t.all_close(z1.clone(), None, Some(1e-2_f64)),
             "φ_sur should approximately solve Lφ=b_sur"
@@ -1002,11 +984,7 @@ mod tests {
 
         let dphi = phi_sur.sub(phi_div.clone());
         let dphi_n = dphi.powf_scalar(2.0).sum().sqrt();
-        let phi_dn = phi_div
-            .powf_scalar(2.0)
-            .sum()
-            .sqrt()
-            .clamp_min(1e-30_f32);
+        let phi_dn = phi_div.powf_scalar(2.0).sum().sqrt().clamp_min(1e-30_f32);
         let rat = dphi_n.div(phi_dn);
         let tail_phi = rat
             .sub(Tensor::<B, 1>::full([1], 1e-4_f32, &dev))
@@ -1056,12 +1034,7 @@ mod tests {
         )
         .0;
         let rhs_mac = chorin_pressure_rhs_mean_free_weak_divergence_mac_upstream_face_flux(
-            u_star,
-            &topo,
-            flow_coeff,
-            batch,
-            n_edges,
-            n,
+            u_star, &topo, flow_coeff, batch, n_edges, n,
         )
         .0;
 
@@ -1088,8 +1061,7 @@ mod tests {
     fn m7_open_x_end_cap_flux_mean_free_and_shifts_poisson_phi() {
         use super::{
             chorin_open_x_chain_end_cap_flux_rhs_mean_free,
-            chorin_pressure_rhs_mean_free_weak_divergence,
-            solve_pressure_phi_jacobi_cg,
+            chorin_pressure_rhs_mean_free_weak_divergence, solve_pressure_phi_jacobi_cg,
         };
         use crate::physics::topology::EdgeTopology;
 
@@ -1114,12 +1086,7 @@ mod tests {
         let u_star = Tensor::<B, 3>::from_data(Data::new(vel, Shape::new([batch, n, 3])), &dev);
 
         let rhs_base = chorin_pressure_rhs_mean_free_weak_divergence(
-            u_star,
-            &topo,
-            flow_coeff,
-            batch,
-            n_edges,
-            n,
+            u_star, &topo, flow_coeff, batch, n_edges, n,
         )
         .0;
         let rhs_cap =
@@ -1133,8 +1100,10 @@ mod tests {
         );
 
         let rhs_sum = rhs_base.clone().add(rhs_cap.clone());
-        let phi0 = solve_pressure_phi_jacobi_cg(rhs_base, edges_b1.clone(), damage.clone(), batch, n);
-        let phi1 = solve_pressure_phi_jacobi_cg(rhs_sum, edges_b1.clone(), damage.clone(), batch, n);
+        let phi0 =
+            solve_pressure_phi_jacobi_cg(rhs_base, edges_b1.clone(), damage.clone(), batch, n);
+        let phi1 =
+            solve_pressure_phi_jacobi_cg(rhs_sum, edges_b1.clone(), damage.clone(), batch, n);
         let dphi = phi1.sub(phi0);
         let dphi_n = dphi.powf_scalar(2.0).sum().sqrt();
         let ztol = Tensor::<B, 1>::zeros([1], &dev);

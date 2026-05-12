@@ -19,7 +19,7 @@
 //! behind `electrochemistry-mvp` / `solver-research`.
 //!
 //! ## Gaps vs full PNP / Scharfetter–Gummel (experimental path)
-//! - **Poisson**: on a **simple path chain** (contiguous nodes `0..N-1`, `N-1` edges matching MVP
+//! - **Poisson**: on a **simple path chain** (contiguous nodes `0..N-1`, `N-1` edges matching the
 //!   `edges_b1`), each sub-step solves **\(\nabla\cdot(\varepsilon\nabla\Phi)=-\rho_e\)** on interior
 //!   nodes with harmonic edge weights \(\varepsilon_{i+\frac12}=\tfrac12(\varepsilon_i+\varepsilon_{i+1})\)
 //!   via `poisson_chain_net_charge_variable_eps_thomas` + **Thomas**; endpoint Dirichlet values come
@@ -49,7 +49,7 @@
 //!   [`ElectroChemicalSolver::coupling_picard_tol_delta_phi_linf`] / [`ElectroChemicalSolver::coupling_picard_tol_delta_phi_l2`]
 //!   on successive \(\Phi\) alone. Implementation: `solve_pnp_step_experimental` — **Picard only**;
 //!   it does **not** invoke [`NewtonPnpContext`] or the host Newton kernel. For implicit BE + Newton
-//!   on MVP chains, call [`ElectroChemicalSolver::try_solve_pnp_backward_euler_newton_chain`] directly,
+//!   on contiguous path-chain graphs, call [`ElectroChemicalSolver::try_solve_pnp_backward_euler_newton_chain`] directly,
 //!   or set [`ElectroChemicalSolver::pnp_implicit_newton_chain`] and use [`ElectroChemicalSolver::solve_pnp_step_dispatch`]
 //!   (same `None` default as today: explicit Picard path only).
 //! - **Track 14 (chain-only implicit BE):** [`ElectroChemicalSolver::try_solve_pnp_backward_euler_newton_chain`]
@@ -130,7 +130,7 @@ pub struct ElectroChemicalSolver {
     /// existing tests; physical-units callers should pass actual edge length. Non-uniform meshes
     /// (variable `h` per edge) are deferred to the implicit-Newton step (Phase 3.3).
     ///
-    /// **Coupled note:** the MVP **Poisson** chain Thomas solve uses the same harmonic-\(\varepsilon\)
+    /// **Coupled note:** the **Poisson path-chain Thomas** solve uses the same harmonic-\(\varepsilon\)
     /// stencil in **index space**, with interior RHS scaled by **`h²`** and the implicit BE **Poisson
     /// residual / Jacobian** Laplacian scaled by **`1/h²`** (`h` = this field) so \(\nabla\!\cdot(\varepsilon\nabla\phi)\)
     /// matches the SG **`J\propto D/h`** graph. Default **`1.0`** preserves legacy unit-edge tests.
@@ -139,10 +139,10 @@ pub struct ElectroChemicalSolver {
     /// formal_form: "J_e = (D_e/h) [c_s B(z F Δφ/RT) − c_t B(−z F Δφ/RT)]"
     pub mesh_spacing: f32,
     /// When **`Some`**, [`ElectroChemicalSolver::solve_pnp_step_dispatch`] first attempts Track 14
-    /// **implicit backward Euler + damped Newton** on MVP path chains (same contract as
+    /// **implicit backward Euler + damped Newton** on path-chain graphs (same contract as
     /// [`Self::try_solve_pnp_backward_euler_newton_chain`]); on failure (`None` from that helper —
     /// non-chain graph, `batch≠1`, etc.) it falls back to explicit [`Self::solve_pnp_step`].
-    /// Default **`None`**: dispatch matches the historical MVP behaviour (Picard / split explicit only).
+    /// Default **`None`**: dispatch matches the historical **Picard / split-explicit** behaviour only.
     pub pnp_implicit_newton_chain: Option<NewtonPnpContext>,
 }
 
@@ -236,7 +236,7 @@ impl Default for NewtonPnpContext {
 
 impl ElectroChemicalSolver {
     /// One explicit coupled PNP sub-step (`dt` is the explicit time increment). Path-chain Poisson
-    /// uses a **Thomas** solve when `edges_b1` matches the MVP contiguous chain; otherwise Jacobi
+    /// uses a **Thomas** solve when `edges_b1` matches the **contiguous** path chain layout; otherwise Jacobi
     /// substeps. [`ElectroChemicalSolver::coupling_picard_iters`] \(>1\) runs **Picard** outer sweeps
     /// with optional L∞ / \(\max|\Delta\Phi|\) / \(\|\Delta\Phi\|_2\) early stop (see `solve_pnp_step_experimental`)
     /// — still not a monolithic implicit Newton step (see module **Gaps**).
@@ -252,7 +252,7 @@ impl ElectroChemicalSolver {
     /// Returns `(electric_potential, ion_concentration)` unchanged.
     ///
     /// ## `--features electrochemistry-mvp` / `solver-experimental`
-    /// - **Poisson:** on an MVP-style **path chain** (`0\!-\!1\!-\!\cdots\!-\!(N-1)\)` with `N-1` edges),
+    /// - **Poisson:** on a **path chain** (`0\!-\!1\!-\!\cdots\!-\!(N-1)\)` with `N-1` edges),
     ///   one **Thomas** solve of \(\mathcal{L}\Phi=-\rho_e/\varepsilon\) with endpoint values taken from
     ///   `electric_potential`; otherwise Jacobi-like relaxation substeps (see module **Gaps**).
     /// - **NP (Scharfetter–Gummel):** conservative edge flux with Bernoulli stabilisation; explicit Euler
@@ -292,7 +292,7 @@ impl ElectroChemicalSolver {
     /// [`Self::try_solve_pnp_backward_euler_newton_chain`] first; otherwise returns the same result
     /// as [`Self::solve_pnp_step`] (explicit split + Picard via `solve_pnp_step_experimental`).
     ///
-    /// Without the MVP feature, tensors are returned unchanged (same as [`Self::solve_pnp_step`]).
+    /// Without the **`electrochemistry-mvp`** feature flag enabled, tensors are returned unchanged (same as [`Self::solve_pnp_step`]).
     #[allow(unused_variables)]
     pub fn solve_pnp_step_dispatch<B: Backend<FloatElem = f32>>(
         &self,
@@ -340,7 +340,7 @@ impl ElectroChemicalSolver {
     /// [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`] **`>1`** — same **\(O(dim^3)\)** work per inner, fewer FD assemblies).
     /// When **`linearize_sg_fickian` is `true`** (Fickian-linearised SG / Debye–Hückel residual), each
     /// Newton correction uses **three Thomas solves** on the **sparse block structure** (no dense expand).
-    /// **Only** when `edges_b1` is the MVP contiguous path
+    /// **Only** when `edges_b1` is the **contiguous** path
     /// `0\!-\!1\!-\!\cdots\!-\!(N-1)\` and `batch=1`; otherwise returns `None` (caller keeps split
     /// [`Self::solve_pnp_step`]).
     ///
@@ -2037,7 +2037,8 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
         !newton.linearize_sg_fickian && (inner_cap_sg > 1 || !newton.full_sg_correction_use_gmres);
     let mut jac_band =
         alloc_full_sg_band_dense.then(|| vec![0.0_f64; dim * PNP_CHAIN_FULL_SG_BW_LU]);
-    let mut jac_lu_scratch = alloc_full_sg_band_dense.then(|| vec![0.0_f64; dim * PNP_CHAIN_FULL_SG_BW_LU]);
+    let mut jac_lu_scratch =
+        alloc_full_sg_band_dense.then(|| vec![0.0_f64; dim * PNP_CHAIN_FULL_SG_BW_LU]);
     let mut jac_dense_scratch = alloc_full_sg_band_dense.then(|| vec![0.0_f64; dim * dim]);
     let mut band_lu_swaps = alloc_full_sg_band_dense.then(|| Vec::<(usize, usize)>::new());
     let mut rhs_nm = vec![0.0_f64; dim];

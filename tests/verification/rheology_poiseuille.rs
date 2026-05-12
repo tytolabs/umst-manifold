@@ -1064,10 +1064,7 @@ fn chorin_channel_65x17_longrun_wall_normal_l2_vs_regularized_reference() {
             RHEOLOGY_FLOW_BINGHAM_EPS,
             n_quad,
         );
-        assert!(
-            u_ref.is_finite(),
-            "reference u at y={y} should be finite"
-        );
+        assert!(u_ref.is_finite(), "reference u at y={y} should be finite");
         let id = j * nx + i_mid;
         let u_num = vel_flat[id * 3];
         assert!(u_num.is_finite(), "numeric u_x at j={j} should be finite");
