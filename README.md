@@ -51,21 +51,7 @@ This crate hosts **solvers, DEC operators, and `IScienceCartridge` hooks** — m
 - **Sampling / sweep verification (this repo):** `cargo test --features solver-stable` (PR gate) and `cargo test --features solver-tests` for the full experimental matrix; keep [`docs/Solver-Status.md`](docs/Solver-Status.md) aligned with `python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set`.
 - **64-channel pipeline figure (tensor layout teaser):** [`docs/assets/fig1_teaser.png`](docs/assets/fig1_teaser.png) (light) / [`docs/assets/fig1_teaser_dark.png`](docs/assets/fig1_teaser_dark.png) (dark) — static overview of the unified tensor stack rendered in-repo.
 
-Design-space **Pareto counts and multi-objective exploration** for the thermodynamic-gated learner are documented in the companion draft `main_v4.tex` (*Thermodynamic Design Exploration*, Table `tab:results_design`); that TeX source is **not** vendored inside this repository (see **Research context**).
-
-## Research context (companion manuscripts)
-
-Paths below are **not** in the default [`umst-manifold`](https://github.com/tytolabs/umst-manifold) clone; they appear in internal multi-project checkouts under a sibling `UMST-Papers/` tree (parent directory name varies).
-
-| Path (under `UMST-Papers/`) | Contents |
-|-----------------------------|----------|
-| `arxiv_2_v4/main_v4.tex` | Draft UMST manuscript: §Method (tensor, gate, complexity), §Experiments including *Thermodynamic Design Exploration* / `tab:results_design`, *Ablation Studies* (`tab:ablation`), *Robustness \& Sensitivity Analysis*. |
-| `arxiv_2_v4/tables/ssot_rust_d1_d4.tex` | SSOT tables for Rust vs D1–D4 evaluation splits. |
-| `iros paper 2 final files/iros2026_paper/Paper2_Final_IROS2026_anonymous.tex` | IROS-track paper: *Epistemic Proxy Selection*, *Experiments* (proxy effort / field sampling narrative). |
-| `iros paper 2 final files/iros2026_paper/Paper2_Supplementary_anonymous.tex` | Supplementary derivations and extended admissibility discussion. |
-| `iros paper 2 final files/iros2026_reproducibility_package/` | Reproducibility tree (prototype-era `pareto_design_benchmark.rs`, experiment harnesses). |
-
-Historical Pareto tables in the public prototype line: **[`umst-prototype-2a`](https://github.com/tytolabs/umst-prototype-2a)**.
+Design-space **Pareto counts and multi-objective exploration** for the thermodynamic-gated learner are not vendored here as LaTeX sources; for related historical benchmark tables and design tooling in the public prototype line, see **[`umst-prototype-2a`](https://github.com/tytolabs/umst-prototype-2a)**.
 
 ## Everyday solver commands
 
