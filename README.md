@@ -8,32 +8,40 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 
-The Unified Material-State Tensor (UMST) Manifold is a computational framework for representing and evolving complex physical systems. By treating heterogeneous materials—their mechanical, thermal, chemical, and topological states—as a single continuous differentiable space, the manifold enables unified physical reasoning.
-
-It provides the substrate for discrete exterior calculus (DEC) operators, thermodynamic admissibility gating, and adjoint-friendly evolution. It is designed to host domain-specific constitutive models ("cartridges") within a verified, mathematically rigorous environment.
+**UMST Manifold** is a differentiable spatiotemporal substrate for heterogeneous materials: one unified state tensor, discrete exterior calculus (DEC) operators, graph- and lattice-based solvers, and control-barrier–style thermodynamic gating—implemented in **Rust** on the **Burn** stack with **`burn-ndarray`** as the default execution path. Domain science plugs in through the **`IScienceCartridge`** surface; the crate ships equilibrium mechanics, adjoint hooks, topology evolution, and an opt-in solver stack grouped into explicit **Cargo feature lanes**.
 
 ![UMST 64-Tensor Pipeline (Light)](docs/assets/fig1_teaser.png#gh-light-mode-only)
 ![UMST 64-Tensor Pipeline (Dark)](docs/assets/fig1_teaser_dark.png#gh-dark-mode-only)
 
-## Why UMST Manifold?
+## Core idea
 
-1. **Unified State (`UMST`):** A single 64-channel tensor tracks mechanics, thermals, hydration, and cost simultaneously across the entire domain.
-2. **Adjoint-Ready:** Backpropagate through PDEs (Poisson-Nernst-Planck, Phase-Field Fracture) to perform gradient-based topology optimization.
-3. **Hardware-Accelerated:** Built on Rust + Burn. Runs on CPU (Accelerate/OpenBLAS) or GPU (WGPU/Metal/Vulkan).
-4. **Thermodynamically Safe:** Built-in Control Barrier Functions (CBFs) ensure 100% physically admissible states during AI/ML loops.
+- **Unified state (`UMST`):** A fixed-width tensor channelization carries mechanical, thermal, chemical, and auxiliary signals across a mesh or graph so constitutive updates and PDE-style operators share one representation.
+- **Differentiable evolution:** Burn autodiff wires through the tensor paths that tests exercise; adjoint and optimization-facing code paths are first-class alongside forward solvers.
+- **DEC + physics kernels:** Sheaf/DEC plumbing, mechanics on free degrees of freedom, fracture and transport scaffolds, and specialized kernels (topology, acoustics, THMC, electrochemistry, photonics, rheology, statistical mechanics) compile behind granular `#[cfg(feature = "...")]` flags—see [`docs/Solver-Status.md`](docs/Solver-Status.md) for the solver ↔ lane ↔ verification mapping.
 
-## Scope & Cartridge Ecosystem
+## Solver architecture (feature lanes)
 
-The default build exposes DEC / sheaf plumbing, equilibrium mechanics on free degrees of freedom, thermodynamic control-barrier gating, adjoint hooks, and the `IScienceCartridge` surface. With `solver-experimental`, additional forward and coupled solves compile and run where wired.
+Lanes are **meta-features** in [`Cargo.toml`](Cargo.toml); names and inclusion sets are authoritative there and summarized in [`docs/Solver-Status.md`](docs/Solver-Status.md).
+
+| Lane | Role |
+|------|------|
+| **`solver-stable`** | `topology-density-evolution`, `statistical-mechanics-vinet` — narrow-CI kernels with declared verification tests. |
+| **`solver-research`** | Opt-in kernels: fracture (`fracture-at2`), acoustics (`acoustics-newmark`), coupled THMC (`thmc-coupled`), Poisson–Nernst–Planck (`electrochemistry-pnp`), mechanics + discrete adjoint (`mechanics-adjoint`, `mechanics-adjoint-q1-hex`), Bingham flow (`rheology-bingham`), FDFD-style photonics (`photonics-fdfd`), Johnson-reference statistical mechanics (`statistical-mechanics-johnson-reference`), … |
+| **`solver-experimental`** | **`solver-stable` ∪ `solver-research`** — full opt-in union (backward-compatible umbrella). |
+| **`solver-tests`** | Same dependency graph as **`solver-experimental`** — used for CI solver coverage and `check-cfg` surfaces. |
+
+Canonical feature names forward to legacy `#[cfg]` names where needed (e.g. **`photonics-fdfd`** → **`photonics`**; **`electrochemistry-pnp`** → **`electrochemistry-mvp`**). Deprecated alias **`photonics-scaffold`** resolves to **`photonics-fdfd`**.
+
+## Cartridge ecosystem
 
 | Cartridge | Domain | Status |
 |-----------|--------|--------|
-| [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) | Cementitious materials, RC topology | **Active** |
-| `umst-supercap-cartridge` | Structural batteries, ion transport | *In-Progress* |
+| [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) | Cementitious materials, RC and shell topology | **Active** |
+| `umst-supercap-cartridge` | Structural batteries, ion transport | In progress |
 
-Striatus-class shell demos and artefact contracts live in the **[umst-concrete-cartridge](https://github.com/tytolabs/umst-concrete-cartridge)** repo; shell topology, print-ready gates, and open roadmap items: **[`docs/Solver-Status.md`](docs/Solver-Status.md)** and [`docs/Striatus.md`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/Striatus.md) (cartridge). 
+Striatus-class shell workflows, artefact contracts, and print-ready gates live in the **concrete cartridge** repository (`docs/Striatus.md`, `docs/Solver-Status.md` there). Manifold-side solver verification remains indexed in **`docs/Solver-Status.md`** here.
 
-## Build and Test
+## Build, test, CI parity
 
 ```bash
 cd umst-manifold
@@ -41,53 +49,54 @@ cargo build
 cargo test
 ```
 
-GPU backend (local Vulkan/Metal): `cargo build --features wgpu`. 
-Solver integration tests: `cargo test --features solver-tests`.
+- **Solver integration tests:** `cargo test --features solver-tests` (same feature graph as **`solver-experimental`**).
+- **GPU (`wgpu`):** The **`wgpu`** feature selects Burn’s WGPU backend; on the pinned **Burn 0.13** line this path fails to compile on current stable Rust because of upstream `burn-jit` derive defaults—CPU builds use **`ndarray`**; on Apple Silicon, **`mac-fast`** (`ndarray` + **`blas-accelerate`**) is the supported fast path until Burn is upgraded or patched.
 
-CI lint (`solver-status` job in [`.github/workflows/rust.yml`](.github/workflows/rust.yml)) and recommended local parity:
+CI (`.github/workflows/rust.yml`): **README sanity** (minimum length), **`solver-status`** (`python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set`), **default `cargo build` / examples / `cargo test`**, PR **`cargo test --features solver-stable`**, PR **`cargo check --all-targets --features solver-stable,solver-research`**, PR **Phase-4 `--release`** slices (THMC monolithic Newton chain; photonics curl–curl 2D/3D; statistical-mechanics Johnson upscale bridge), **`cargo fmt`** + **`cargo clippy --all-targets --features solver-experimental -D warnings`** on Rust **1.88**, **`cargo test --release --features solver-experimental`** on `main` (single retry), plus an **optional** PR job for the full experimental test matrix and a physics host-tensor guard script.
+
+Local parity with the docs linter:
+
 ```bash
 python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set
 ```
 
-## Toolchain & Acceleration
+## Toolchain and CPU acceleration
 
-**Rust 1.88** — pinned in [`rust-toolchain.toml`](rust-toolchain.toml). Use `rustup default 1.88` to match CI.
+**Rust 1.88** — [`rust-toolchain.toml`](rust-toolchain.toml). The package **`rust-version`** in [`Cargo.toml`](Cargo.toml) remains the declared MSRV floor for default-feature builds; optional dependency paths used under **`--all-features`** require the pinned toolchain in practice.
 
-**CPU matmul (macOS / Apple Silicon):**
-Use `cargo build --features blas-accelerate` to enable Apple Accelerate. 
-*Note: Cap BLAS threads to avoid oversubscription: `export VECLIB_MAXIMUM_THREADS=$(sysctl -n hw.perflevel0.logicalcpu)`.*
+**Apple Accelerate (macOS):** `cargo build --features blas-accelerate` or the umbrella `cargo build --features mac-fast`. Cap BLAS threads to match core count, e.g. `export VECLIB_MAXIMUM_THREADS=$(sysctl -n hw.perflevel0.logicalcpu)`.
 
-## Cargo Features
+## Selected Cargo features
 
 | Feature | Purpose |
-|--------|---------|
+|---------|---------|
 | `ndarray` (default) | CPU tensors via `burn-ndarray`. |
-| `blas-accelerate` | CPU matmul via Apple Accelerate on macOS. |
-| `wgpu` | GPU tensors via Burn/WGPU. |
+| `blas-accelerate` | vecLib/Accelerate-backed matmul on macOS (forwarded to `burn-ndarray`). |
+| `mac-fast` | `ndarray` + `blas-accelerate` convenience bundle. |
+| `wgpu` | Burn WGPU backend (non-building on pinned Burn 0.13 + current stable; see above). |
 | `train` | Burn training utilities. |
-| `solver-experimental` | Umbrella flag: enables PDE solver scaffolds (damage, THMC, electrochemistry, etc.). |
-| `solver-tests` | Same dependency graph as `solver-experimental`; used for CI solver coverage. |
+| `solver-stable`, `solver-research`, `solver-experimental`, `solver-tests` | Solver lane umbrellas (see table). |
+| Granular solver flags | `fracture-at2`, `acoustics-newmark`, `thmc-coupled`, `electrochemistry-pnp`, `mechanics-voigt-cauchy`, `mechanics-adjoint`, `mechanics-adjoint-q1-hex`, `rheology-bingham`, `topology-density-evolution`, `photonics-fdfd`, `statistical-mechanics-vinet`, `statistical-mechanics-johnson-reference`, … — full matrix in `[features]` in [`Cargo.toml`](Cargo.toml). |
 
-Individual flags (`fracture-at2`, `acoustics-newmark`, `thmc-coupled`, `electrochemistry-pnp`, `mechanics-voigt-cauchy`, `rheology-bingham`, `topology-density-evolution`, `photonics-fdfd`; legacy aliases `electrochemistry-mvp`, `photonics-scaffold`) select subsets; see `[features]` in `Cargo.toml`.
+## Quick start: `IScienceCartridge`
 
-## Quick Start: The IScienceCartridge Interface
+Domain cartridges implement **`IScienceCartridge`** to supply constitutive closures into the manifold’s operators and solvers. End-to-end wiring: [`examples/basic_topology.rs`](examples/basic_topology.rs).
 
-Domain code implements the `IScienceCartridge` trait to bridge bulk material science into the manifold's DEC solvers. See [`examples/basic_topology.rs`](examples/basic_topology.rs) for an end-to-end hookup.
+## Reference
 
-## Reference & Verification
+- **Notation and foundations:** [`docs/Mathematical-Foundations.md`](docs/Mathematical-Foundations.md)
+- **Solver lanes, verification paths, CI contract:** [`docs/Solver-Status.md`](docs/Solver-Status.md)
+- **Formal proof index (Track J3):** [`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md)
+- **Gap audit:** [`GAP_AUDIT.md`](GAP_AUDIT.md)
+- **Lean formalization (separate repo):** [umst-formal](https://github.com/tytolabs/umst-formal)
 
-- **Formal notation & Math:** [`docs/Mathematical-Foundations.md`](docs/Mathematical-Foundations.md)
-- **Solver Maturity & Verification:** [`docs/Solver-Status.md`](docs/Solver-Status.md) and [`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md)
-- **Detailed Gap List:** [`GAP_AUDIT.md`](GAP_AUDIT.md)
-- **Lean Proofs:** [umst-formal](https://github.com/tytolabs/umst-formal)
-
-*v0.4 brief checklist (when `composer_prompts/` sits beside this repo): **[`../composer_prompts/v0.4_solver_completion_no_namesakes.md`](../composer_prompts/v0.4_solver_completion_no_namesakes.md)**.*
+When `composer_prompts/` sits beside this checkout: [`../composer_prompts/v0.4_solver_completion_no_namesakes.md`](../composer_prompts/v0.4_solver_completion_no_namesakes.md).
 
 ## Citation
 
-Prefer [`CITATION.cff`](CITATION.cff) or the repository URL above for bibliographic metadata.
+[`CITATION.cff`](CITATION.cff) and the repository URL carry bibliographic metadata.
 
-## Contributing & License
+## Contributing and license
 
-Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Security reports: [`SECURITY.md`](SECURITY.md).
+[`CONTRIBUTING.md`](CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), [`SECURITY.md`](SECURITY.md).  
 Released under the [MIT License](LICENSE). © 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO.
