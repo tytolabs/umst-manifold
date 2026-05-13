@@ -146,8 +146,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Pin to rust-toolchain.toml so rustfmt/clippy install on the same toolchain cargo uses.
       - uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: "1.88"
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
       - name: rustfmt
