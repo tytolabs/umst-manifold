@@ -41,13 +41,38 @@ Canonical feature names forward to legacy `#[cfg]` names where needed (e.g. **`p
 
 Striatus-class shell workflows, artefact contracts, and print-ready gates live in the **concrete cartridge** repository (`docs/Striatus.md`, `docs/Solver-Status.md` there). Manifold-side solver verification remains indexed in **`docs/Solver-Status.md`** here.
 
-## Example tasks
+## Grounded examples (mix, Pareto, sampling)
+
+This crate hosts **solvers, DEC operators, and `IScienceCartridge` hooks** — mix JSON, calibration CSVs, notebooks, and headline metric tables ship in **[`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge)**. Below, manifold commands point to **in-repo** sources; mix calibration and Pareto-style **dataset metric tables** are exercised there.
+
+- **Cartridge boundary (`IScienceCartridge` minimal host):** `cargo run --example basic_topology` — read [`examples/basic_topology.rs`](examples/basic_topology.rs) alongside [`docs/Mathematical-Foundations.md`](docs/Mathematical-Foundations.md) for how unified tensors enter operator graphs.
+- **Mechanics + adjoint lane (topology / compliance workflows used by the concrete cartridge):** enable `mechanics-adjoint` (via `solver-research` / `solver-experimental`) per [`docs/Solver-Status.md`](docs/Solver-Status.md); end-to-end RC beam and shell drivers live in [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) (`optimize_rc_beam`, `optimize_shell_3d`, [`notebooks/README.md`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/notebooks/README.md)), with the animated strut-and-tie artefact at [`docs/assets/beam_strut_and_tie.gif`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/assets/beam_strut_and_tie.gif).
+- **Mix calibration and tabular trade space (downstream repo):** `umst predict` / `umst audit` and [`results/canonical/table_per_dataset_metrics.csv`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/results/canonical/table_per_dataset_metrics.csv) document per-profile MAE/RMSE/R² on bundled CSVs; [`results/canonical/README.md`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/results/canonical/README.md) explains regeneration. Differentiable mix–cost wiring for multi-objective stepping: [`cost.rs`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/crates/umst-concrete-cartridge/src/physics/cost.rs) in the cartridge.
+- **Sampling / sweep verification (this repo):** `cargo test --features solver-stable` (PR gate) and `cargo test --features solver-tests` for the full experimental matrix; keep [`docs/Solver-Status.md`](docs/Solver-Status.md) aligned with `python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set`.
+- **64-channel pipeline figure (tensor layout teaser):** [`docs/assets/fig1_teaser.png`](docs/assets/fig1_teaser.png) (light) / [`docs/assets/fig1_teaser_dark.png`](docs/assets/fig1_teaser_dark.png) (dark) — static overview of the unified tensor stack rendered in-repo.
+
+Design-space **Pareto counts and multi-objective exploration** for the thermodynamic-gated learner are documented in the companion draft `main_v4.tex` (*Thermodynamic Design Exploration*, Table `tab:results_design`); that TeX source is **not** vendored inside this repository (see **Research context**).
+
+## Research context (companion manuscripts)
+
+Paths below are **not** in the default [`umst-manifold`](https://github.com/tytolabs/umst-manifold) clone; they appear in internal multi-project checkouts under a sibling `UMST-Papers/` tree (parent directory name varies).
+
+| Path (under `UMST-Papers/`) | Contents |
+|-----------------------------|----------|
+| `arxiv_2_v4/main_v4.tex` | Draft UMST manuscript: §Method (tensor, gate, complexity), §Experiments including *Thermodynamic Design Exploration* / `tab:results_design`, *Ablation Studies* (`tab:ablation`), *Robustness \& Sensitivity Analysis*. |
+| `arxiv_2_v4/tables/ssot_rust_d1_d4.tex` | SSOT tables for Rust vs D1–D4 evaluation splits. |
+| `iros paper 2 final files/iros2026_paper/Paper2_Final_IROS2026_anonymous.tex` | IROS-track paper: *Epistemic Proxy Selection*, *Experiments* (proxy effort / field sampling narrative). |
+| `iros paper 2 final files/iros2026_paper/Paper2_Supplementary_anonymous.tex` | Supplementary derivations and extended admissibility discussion. |
+| `iros paper 2 final files/iros2026_reproducibility_package/` | Reproducibility tree (prototype-era `pareto_design_benchmark.rs`, experiment harnesses). |
+
+Historical Pareto tables in the public prototype line: **[`umst-prototype-2a`](https://github.com/tytolabs/umst-prototype-2a)**.
+
+## Everyday solver commands
 
 - **Default CPU stack:** `cargo build` then `cargo test` at the repo root (matches CI `build-test` on ndarray).
 - **Stable solver lane:** `cargo test --features solver-stable` (topology-density-evolution + statistical-mechanics-vinet; PR gate on pull requests).
-- **Shipped walkthrough binary:** `cargo run --example basic_topology` — minimal **`IScienceCartridge`** wiring; source walkthrough in [`examples/basic_topology.rs`](examples/basic_topology.rs) (see **Quick start: `IScienceCartridge`** below).
 - **Docs + path contract:** `python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set` (same flags as the **`solver-status`** CI job).
-- **Experimental solver union (heavy):** `cargo test --features solver-tests` (same feature graph as **`solver-experimental`**; use for broad verification locally or on `main`-style CI).
+- **Experimental solver union (heavy):** `cargo test --features solver-tests` (same feature graph as **`solver-experimental`**).
 - **Lint like merge-ready Rust:** `cargo fmt --check` and `cargo clippy --all-targets --features solver-experimental -- -D warnings` on the pinned toolchain ([`rust-toolchain.toml`](rust-toolchain.toml); CI uses Rust **1.88**).
 
 ## Surfaces & entrypoints
