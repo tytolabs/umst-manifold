@@ -435,7 +435,9 @@ fn run_plate_case_details_ext_inner(
     let rho = Tensor::<B, 3>::full([1, n, 1], 1.0, &dev);
     let mask_flat = match bottom_mask {
         PlateBottomUzMaskKind::FullBottomFaceUz => plate_bottom_uz_mask(nx, ny, nz),
-        PlateBottomUzMaskKind::SsssBottomEdgesUz => plate_bottom_uz_mask_ssss_edges_only(nx, ny, nz),
+        PlateBottomUzMaskKind::SsssBottomEdgesUz => {
+            plate_bottom_uz_mask_ssss_edges_only(nx, ny, nz)
+        }
     };
     let bm = Tensor::from_data(Data::new(mask_flat.clone(), Shape::new([1, n, 3])), &dev);
     let mat = ElasticMaterial {

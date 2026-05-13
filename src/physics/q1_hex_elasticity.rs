@@ -421,8 +421,7 @@ pub fn hex_k_times_u_accumulate(
                             let wdet = WG * WG * WG * detj;
                             let eps = bbar_times_u_transverse_shear_centroid(gn, gn_bar, &u24);
                             let sig = d_times_eps(&d, &eps);
-                            let fe =
-                                bbar_t_times_sigma_transverse_shear_centroid(gn, gn_bar, &sig);
+                            let fe = bbar_t_times_sigma_transverse_shear_centroid(gn, gn_bar, &sig);
                             for k in 0..8 {
                                 let (ix, iy, iz) = match k {
                                     0 => (cx, cy, cz),
