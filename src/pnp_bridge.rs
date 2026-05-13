@@ -9,9 +9,9 @@
 //! with a no-op passthrough until a learned surrogate is wired in.
 
 #[cfg(feature = "electrochemistry-pnp")]
-use burn::tensor::{backend::Backend, Int, Tensor};
-#[cfg(feature = "electrochemistry-pnp")]
 use crate::physics::solvers::electrochemistry::ElectroChemicalSolver;
+#[cfg(feature = "electrochemistry-pnp")]
+use burn::tensor::{backend::Backend, Int, Tensor};
 
 /// Placeholder **PNP surrogate** step: same arguments and rank-3 tensor contract as
 /// [`ElectroChemicalSolver::solve_pnp_step`](crate::physics::solvers::electrochemistry::ElectroChemicalSolver::solve_pnp_step);
