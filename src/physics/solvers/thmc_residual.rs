@@ -13,38 +13,47 @@
 //! monolith work is explicitly the **sparse / matrix-free Jacobian + Krylov–JFNK** direction with **AD-safe** ways to
 //! gate on **‖R‖** at scale (Solver-Status / matrix **#8** “still open” and blocker rows).
 //!
-//! **Milestone (v0.4):** [`ThmcImplicitEulerThermalHydrationResidual`] implements the **backward Euler**
+//! **Milestone (v0.4):** `ThmcImplicitEulerThermalHydrationResidual` (feature `thmc-coupled`) implements the **backward Euler**
 //! discrete residual for the **thermal + hydration \(\alpha\)** sub-block on the graph Laplacian used
 //! by [`crate::physics::solvers::thmc::ThmcSolver`]:
 //! \[
 //! R_T = T - T^n - \Delta t\,\bigl(\mathcal{L}(T) + q_{\mathrm{exo}}\,\dot\alpha(\alpha,T)\bigr),\qquad
 //! R_\alpha = \alpha - \alpha^n - \Delta t\,\dot\alpha(\alpha,T),
 //! \]
-//! with \(\dot\alpha\) from [`crate::physics::solvers::thmc::full_hydration_alpha_rate_tensor`]
+//! with \(\dot\alpha\) from `crate::physics::solvers::thmc::full_hydration_alpha_rate_tensor`
 //! ([`crate::physics::solvers::thmc::ThmcHydrationKinetics`]). Humidity, mechanics, and fracture are
 //! **out of scope** for this struct.
 //!
-//! **Damped Newton on \((T,\alpha)\) (feature `thmc-coupled`):** [`ThmcImplicitEulerThermalHydrationResidual::one_damped_newton_step`]
+//! **Damped Newton on \((T,\alpha)\) (feature `thmc-coupled`):** `ThmcImplicitEulerThermalHydrationResidual::one_damped_newton_step`
 //! builds a dense forward-difference Jacobian on a **small** stacked state (cap on total DOFs) and
 //! applies one damped Newton update \(U \leftarrow U - \omega J^{-1} R\).
-//! [`ThmcImplicitEulerThermalHydrationResidual::damped_newton_iterations`] chains that step **≥ 2**
+//! `ThmcImplicitEulerThermalHydrationResidual::damped_newton_iterations` chains that step **≥ 2**
 //! times (fresh Jacobian each iteration). Track 13 stepping stone toward full JFNK; humidity and
 //! mechanics remain out of scope here. See `docs/research/v0.4_track13_monolithic_newton_thmc.md`
 //! (appendix **§ Implementation blueprint** for stacked-unknown layout and batched constraints).
 //!
 //! **Shipped (`thmc-coupled` + `solver-experimental`):** one monolithic quasi-static Newton step may use
-//! **matrix-free** reduced FD + host **`f32` GMRES** (dense fallback); chained iterations use a **dense** inner solve.
+//! **matrix-free** reduced FD + host **`f32` GMRES** via `solvers::thmc_jfnk::gmres_f32_try` and a **single**
+//! fallible matvec (`ThmcImplicitEulerThermalHumidityHydrationResidual::quasi_static_reduced_directional_fd_matvec`);
+//! `solvers::thmc_jfnk::gmres_f32` is not used on this path (see `thmc_jfnk` module docs: closure vs `dyn`). Dense
+//! Gauss–Jordan remains the fallback; chained iterations use a **dense** inner solve.
 //!
 //! ## Follow-up (**`m8-scale-ad`**): AD-safe stacked ‖R‖
 //!
-//! Newton early-exit predicates today reduce ‖R‖₂ via host scalar reads (`into_data` /
-//! elementwise accumulation). That pattern **does not commute with autodiff** through the stopping
-//! test: treat it as a **scale-out** item — re-express ‖R‖₂ as a **pure Burn subgraph**
-//! (sum of squares on the stacked residual tensors → `sqrt`) for differentiable outer loops, or gate
-//! on a **smooth surrogate** residual proxy.
+//! Stacked ‖R‖₂ is built as a **pure Burn subgraph** (sum of squares → `clamp_min` → `sqrt`) on the
+//! residual blocks. **Host sync** for `f32` reporting (`Vec<f32>` trails, public `residual_l2` APIs)
+//! prefers [`tensor1_f32_thmc`] (`into_data` on a rank‑1 tensor). **Acceptable debt (ConvergenceRequired —
+//! telemetry only):** an equivalent rank‑1 `.into_scalar()` read for the same L2 / Newton outer scopes is
+//! in the same tier; **do not** blanket-remove those reductions, and **do not** push them into **hot inner
+//! micro-loops** (tight per-iteration Krylov paths — see [`docs/FP_CATEGORICAL_BURN.md`](../../../docs/FP_CATEGORICAL_BURN.md)).
+//! Newton early-exit predicates use [`Tensor::lower_elem`] + [`Tensor::all`] with a single
+//! [`tensor1_bool_thmc`] read (electrochemistry Picard pattern). Full AD through outer loops remains a
+//! **scale-out** item if stricter graph purity is required.
 
 use burn::tensor::backend::Backend;
 
+#[cfg(feature = "thmc-coupled")]
+use burn::tensor::Bool;
 #[cfg(feature = "thmc-coupled")]
 use burn::tensor::Data;
 #[cfg(feature = "thmc-coupled")]
@@ -67,10 +76,32 @@ use crate::physics::solvers::thmc::{
 };
 
 #[cfg(all(feature = "thmc-coupled", feature = "solver-experimental"))]
-use super::thmc_jfnk::gmres_f32;
+use super::krylov_host::gmres_f32_try;
 
 #[cfg(not(feature = "thmc-coupled"))]
 use super::thmc::ThmcState;
+
+/// Rank‑1 `f32` tensor → host scalar via [`Tensor::into_data`] (single-element read).
+///
+/// **ConvergenceRequired — telemetry only:** same classification as a rank‑1 `.into_scalar()` for L2 residual /
+/// Newton reporting; keep these reads at **outer** damped-Newton / JFNK scopes, not in **hot inner micro-loops**.
+#[cfg(feature = "thmc-coupled")]
+#[inline]
+fn tensor1_f32_thmc<B: Backend<FloatElem = f32>>(t: Tensor<B, 1>) -> f32 {
+    t.into_data().value[0]
+}
+
+/// Single-element rank‑1 bool tensor → host `bool` via [`Tensor::into_data`].
+#[cfg(feature = "thmc-coupled")]
+#[inline]
+fn tensor1_bool_thmc<B: Backend<FloatElem = f32>>(t: Tensor<B, 1, Bool>) -> bool {
+    t.into_data().value[0]
+}
+
+/// Return bundle for [`ThmcImplicitEulerThermalHumidityHydrationResidual::one_damped_newton_step_qs_r_u_inner`]
+/// (updated trial + stacked ‖R‖₂ before/after as rank‑1 tensors).
+#[cfg(feature = "thmc-coupled")]
+type QsRuNewtonStepTensors<B> = (ThmcState<B>, Tensor<B, 1>, Tensor<B, 1>);
 
 /// Coupled implicit backward-Euler residual \(R(U)=U-U^n-\Delta t\,F(U)\) for THMC.
 ///
@@ -97,7 +128,7 @@ pub trait ResidualThmc<B: Backend<FloatElem = f32>> {
 /// Field-major flattened unknown layout for a **future** monolithic THMC Newton–Krylov stack.
 ///
 /// Zero-sized **documentation / const-fn anchor** only — no runtime state. Matches the stacked
-/// \((T,\alpha)\) ordering used in [`ThmcImplicitEulerThermalHydrationResidual::one_damped_newton_step`]
+/// \((T,\alpha)\) ordering used in `ThmcImplicitEulerThermalHydrationResidual::one_damped_newton_step`
 /// (thermal `vec`, then hydration \(\alpha\) `vec`) when extended with \(h\) and \(\mathbf u\) blocks.
 ///
 /// See `docs/research/v0.4_track13_monolithic_newton_thmc.md` appendix **§ Implementation blueprint**.
@@ -150,7 +181,7 @@ impl ThmcMonolithicImplicitUnknownLayout {
     /// Field-major length of the **scalar transport + hydration** prefix \((T,h,\alpha)\) before \(\mathbf u\).
     ///
     /// \(\texttt{n\_nodes}\cdot(F_T+F_h+F_\alpha)\); consistent with the leading blocks of
-    /// [`Self::field_major_stacked_dof_count`] (same ordering as [`ThmcImplicitEulerThermalHumidityHydrationResidual`]).
+    /// [`Self::field_major_stacked_dof_count`] (same ordering as `ThmcImplicitEulerThermalHumidityHydrationResidual`).
     pub const fn field_major_scalar_transport_hydration_dof_count(
         n_nodes: usize,
         f_temperature: usize,
@@ -529,11 +560,11 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     /// **Coupling plan §4 Phase 1 — quasi-static bar \(R_u\):**
     /// \(P(\mathbf f_{\mathrm{ext}} - K(\alpha)\,\mathbf u)\) using the same \(\alpha\mapsto E\) rule as
     /// [`super::thmc::ThmcSolver::step_experimental`](super::thmc::ThmcSolver) and
-    /// [`VectorMechanicsSolver::projected_bar_equilibrium_residual`].
+    /// `VectorMechanicsSolver::projected_bar_equilibrium_residual` (crate-private helper on the mechanics solver).
     ///
     /// **Phase 4 (optional):** when [`Self::ru_shrinkage_water_cement_ratio`] is `Some(w/c)\), a notional
     /// shrink-strain **increment** along edges (trial vs `humidity_n` saturation deficit, edge-averaged)
-    /// enters the axial bar law as an eigenstrain in [`VectorMechanicsSolver::projected_bar_equilibrium_residual`].
+    /// enters the axial bar law as an eigenstrain in `VectorMechanicsSolver::projected_bar_equilibrium_residual`.
     ///
     /// **Dirichlet tail:** on components where `boundary_mask` is zero, adds
     /// [`Self::mechanics_placeholder_mass`]\(\cdot(\mathbf u-\mathbf u^n)\) so constrained displacement
@@ -831,6 +862,59 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         Ok((current, norms))
     }
 
+    /// Reduced directional finite-difference matvec \(v \mapsto (R(u+\sigma v)-R(u))/\sigma\) on active DOFs
+    /// for [`Self::stacked_flat_residual_field_major_quasi_static`], feeding `solvers::thmc_jfnk::gmres_f32_try`.
+    ///
+    /// **Single** matrix-free Jacobian–vector product for the quasi-static monolithic Newton inner solve;
+    /// matches the σ-scaling and residual stack used in the dense column FD branch of
+    /// [`Self::one_damped_newton_step_qs_r_u_inner`].
+    #[cfg(all(feature = "thmc-coupled", feature = "solver-experimental"))]
+    #[allow(clippy::too_many_arguments)]
+    fn quasi_static_reduced_directional_fd_matvec(
+        &self,
+        v_red: &[f32],
+        u_base: &[f32],
+        red_map: &[usize],
+        r0: &[f32],
+        fd_eps: f32,
+        trial: &ThmcState<B>,
+        device: &B::Device,
+        coords_n3: &Tensor<B, 2>,
+        boundary_mask_bn3: &Tensor<B, 3>,
+        body_force: &Tensor<B, 3>,
+        cross_section_area: f32,
+        t_shape: [usize; 3],
+        h_shape: [usize; 3],
+        a_shape: [usize; 3],
+        u_shape: [usize; 3],
+    ) -> Result<Vec<f32>, String> {
+        let m_a = red_map.len();
+        let v_norm_sq: f32 = v_red.iter().map(|x| x * x).sum();
+        let v_norm = v_norm_sq.sqrt();
+        if v_norm < 1e-30_f32 {
+            return Ok(vec![0.0_f32; m_a]);
+        }
+        let u_sup = red_map
+            .iter()
+            .map(|&j| u_base[j].abs())
+            .fold(0.0_f32, f32::max);
+        let sigma = fd_eps * (1.0_f32 + u_sup) / v_norm.max(1e-30_f32);
+        let mut pert = u_base.to_vec();
+        for (jr, &ji) in red_map.iter().enumerate() {
+            pert[ji] += sigma * v_red[jr];
+        }
+        let trial_p =
+            trial_from_packed_four(trial, device, &pert, t_shape, h_shape, a_shape, u_shape);
+        let r_s = self.stacked_flat_residual_field_major_quasi_static(
+            &trial_p,
+            coords_n3,
+            boundary_mask_bn3,
+            body_force,
+            cross_section_area,
+        )?;
+        Ok(red_map.iter().map(|&i| (r_s[i] - r0[i]) / sigma).collect())
+    }
+
     /// **Coupling plan §4 Phase 3:** one damped Newton step on field-major \((T,h,\alpha,\mathbf u)\)
     /// with quasi-static bar \(R_u\) from [`Self::evaluate_quasi_static_r_u`].
     ///
@@ -856,7 +940,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         damping: f32,
         fd_eps: f32,
         matrix_free_inner: bool,
-    ) -> Result<(ThmcState<B>, f32, f32), String> {
+    ) -> Result<QsRuNewtonStepTensors<B>, String> {
         if !(damping > 0.0_f32 && damping <= 1.0_f32) {
             return Err(
                 "one_damped_newton_step_with_quasi_static_r_u: damping must lie in (0, 1]".into(),
@@ -906,20 +990,15 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         }
 
         let device = trial.thermal.temperature.device();
-        let norm_before = self.residual_l2_including_quasi_static_r_u(
+        let (r_t0, r_h0, r_a0, r_u0) = self.assemble_with_quasi_static_r_u(
             trial,
             coords_n3,
             boundary_mask_bn3,
             body_force,
             cross_section_area,
         )?;
-        let r0 = self.stacked_flat_residual_field_major_quasi_static(
-            trial,
-            coords_n3,
-            boundary_mask_bn3,
-            body_force,
-            cross_section_area,
-        )?;
+        let norm_before_t = combined_four_residual_l2_tensor(&r_t0, &r_h0, &r_a0, &r_u0);
+        let r0 = flatten_four_residuals(&r_t0, &r_h0, &r_a0, &r_u0);
 
         let mut packed = flatten_four_fields(
             &trial.thermal.temperature,
@@ -958,39 +1037,26 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             if matrix_free_inner {
                 let u_base = packed.clone();
                 let rhs: Vec<f32> = r0_red.iter().map(|x| -x).collect();
-                let matvec = |v_red: &[f32]| -> Vec<f32> {
-                    let v_norm_sq: f32 = v_red.iter().map(|x| x * x).sum();
-                    let v_norm = v_norm_sq.sqrt();
-                    if v_norm < 1e-30_f32 {
-                        return vec![0.0_f32; m_a];
-                    }
-                    let u_sup = red_map
-                        .iter()
-                        .map(|&j| u_base[j].abs())
-                        .fold(0.0_f32, f32::max);
-                    let sigma = fd_eps * (1.0_f32 + u_sup) / v_norm.max(1e-30_f32);
-                    let mut pert = u_base.clone();
-                    for (jr, &ji) in red_map.iter().enumerate() {
-                        pert[ji] += sigma * v_red[jr];
-                    }
-                    let trial_p = trial_from_packed_four(
-                        trial, &device, &pert, t_shape, h_shape, a_shape, u_shape,
-                    );
-                    let r_s = self
-                        .stacked_flat_residual_field_major_quasi_static(
-                            &trial_p,
-                            coords_n3,
-                            boundary_mask_bn3,
-                            body_force,
-                            cross_section_area,
-                        )
-                        .expect("GMRES matvec: stacked_flat_residual_field_major_quasi_static");
-                    red_map
-                        .iter()
-                        .map(|&i| (r_s[i] - r0[i]) / sigma)
-                        .collect()
+                let matvec = |v_red: &[f32]| {
+                    self.quasi_static_reduced_directional_fd_matvec(
+                        v_red,
+                        &u_base,
+                        &red_map,
+                        &r0,
+                        fd_eps,
+                        trial,
+                        &device,
+                        coords_n3,
+                        boundary_mask_bn3,
+                        body_force,
+                        cross_section_area,
+                        t_shape,
+                        h_shape,
+                        a_shape,
+                        u_shape,
+                    )
                 };
-                if let Ok(d) = gmres_f32(matvec, &rhs, m_a, m_a.saturating_add(12), 2e-3_f32) {
+                if let Ok(d) = gmres_f32_try(matvec, &rhs, m_a, m_a.saturating_add(12), 2e-3_f32) {
                     return Ok(d);
                 }
             }
@@ -1000,8 +1066,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
                 let j_full = red_map[j_r];
                 let eps_j = fd_eps * (1.0_f32 + packed[j_full].abs());
                 packed[j_full] += eps_j;
-                let pert =
-                    trial_from_packed_four(trial, &device, &packed, t_shape, h_shape, a_shape, u_shape);
+                let pert = trial_from_packed_four(
+                    trial, &device, &packed, t_shape, h_shape, a_shape, u_shape,
+                );
                 packed[j_full] -= eps_j;
                 let r_pert = self.stacked_flat_residual_field_major_quasi_static(
                     &pert,
@@ -1026,18 +1093,19 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
 
         let new_trial =
             trial_from_packed_four(trial, &device, &packed, t_shape, h_shape, a_shape, u_shape);
-        let norm_after = self.residual_l2_including_quasi_static_r_u(
+        let (r_t1, r_h1, r_a1, r_u1) = self.assemble_with_quasi_static_r_u(
             &new_trial,
             coords_n3,
             boundary_mask_bn3,
             body_force,
             cross_section_area,
         )?;
-        Ok((new_trial, norm_before, norm_after))
+        let norm_after_t = combined_four_residual_l2_tensor(&r_t1, &r_h1, &r_a1, &r_u1);
+        Ok((new_trial, norm_before_t, norm_after_t))
     }
 
     /// Public entrypoint: one damped Newton step; **`solver-experimental`** enables matrix-free **GMRES**
-    /// on this call path only (see [`Self::one_damped_newton_step_qs_r_u_inner`]).
+    /// on this call path only (see private helper `one_damped_newton_step_qs_r_u_inner`).
     #[allow(clippy::too_many_arguments)]
     pub fn one_damped_newton_step_with_quasi_static_r_u(
         &self,
@@ -1059,12 +1127,15 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             fd_eps,
             true,
         )
+        .map(|(trial, nb, na)| (trial, tensor1_f32_thmc(nb), tensor1_f32_thmc(na)))
     }
 
     /// Chains [`Self::one_damped_newton_step_with_quasi_static_r_u`] (`iterations >= 2`).
     ///
-    /// **Stacked residual early exit** uses \(\|R\|_2\) from [`Self::residual_l2_including_quasi_static_r_u`]
-    /// (host-side scalar reads). Let \(\|R_0\|_2\) be the norm at the initial iterate.
+    /// **Stacked residual early exit** uses \(\|R\|_2\) built on-device; tolerance checks are
+    /// [`Tensor::lower_elem`] + [`Tensor::all`] with a single [`tensor1_bool_thmc`] host read per test
+    /// (see [`stacked_residual_newton_tol_met_tensor`]). [`Self::residual_l2_including_quasi_static_r_u`]
+    /// still reports the same norm value via [`tensor1_f32_thmc`] when a scalar is required for callers.
     ///
     /// - When **`stacked_residual_l2_tolerance > 0`**, that predicate is **active** and requires
     ///   \(\|R\|_2 <\) `stacked_residual_l2_tolerance` for an exit.
@@ -1075,8 +1146,8 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     /// predicate holds at the head iterate or after a completed damped Newton step. When no
     /// predicate is active, always perform exactly `iterations` damped Newton steps.
     ///
-    /// **Follow-up (`m8-scale-ad`):** ‖R‖ predicates use host scalar reductions and do not commute with
-    /// autodiff through the stopping test; re-express ‖R‖ in Burn for differentiable outer loops (see module rustdoc).
+    /// **Follow-up (`m8-scale-ad`):** remaining `tensor1_f32_thmc` / `tensor1_bool_thmc` reads sync a
+    /// single element for `Vec<f32>` reporting and branch control; keep them at these outer scopes.
     #[allow(clippy::too_many_arguments)]
     pub fn damped_newton_iterations_with_quasi_static_r_u(
         &self,
@@ -1097,25 +1168,26 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             );
         }
         let mut norms: Vec<f32> = Vec::with_capacity(iterations + 1);
-        norms.push(self.residual_l2_including_quasi_static_r_u(
+        let (r_t0, r_h0, r_a0, r_u0) = self.assemble_with_quasi_static_r_u(
             trial,
             coords_n3,
             boundary_mask_bn3,
             body_force,
             cross_section_area,
-        )?);
-
-        let r0 = *norms.first().expect("non-empty");
-        if stacked_residual_newton_tol_met(
-            *norms.last().expect("non-empty"),
-            r0,
+        )?;
+        let norm0_t = combined_four_residual_l2_tensor(&r_t0, &r_h0, &r_a0, &r_u0);
+        let r0_t = norm0_t.clone();
+        norms.push(tensor1_f32_thmc(norm0_t.clone()));
+        if stacked_residual_newton_tol_met_tensor(
+            &norm0_t,
+            &r0_t,
             stacked_residual_l2_tolerance,
             stacked_residual_relative_to_initial,
         ) {
             return Ok((trial.clone(), norms));
         }
 
-        let (mut current, _, after_first) = self.one_damped_newton_step_qs_r_u_inner(
+        let (mut current, _, after_first_t) = self.one_damped_newton_step_qs_r_u_inner(
             trial,
             coords_n3,
             boundary_mask_bn3,
@@ -1125,11 +1197,11 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             fd_eps,
             false,
         )?;
-        norms.push(after_first);
+        norms.push(tensor1_f32_thmc(after_first_t.clone()));
 
-        if stacked_residual_newton_tol_met(
-            after_first,
-            r0,
+        if stacked_residual_newton_tol_met_tensor(
+            &after_first_t,
+            &r0_t,
             stacked_residual_l2_tolerance,
             stacked_residual_relative_to_initial,
         ) {
@@ -1137,7 +1209,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         }
 
         for _ in 1..iterations {
-            let (next, _, after) = self.one_damped_newton_step_qs_r_u_inner(
+            let (next, _, after_t) = self.one_damped_newton_step_qs_r_u_inner(
                 &current,
                 coords_n3,
                 boundary_mask_bn3,
@@ -1148,10 +1220,10 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
                 false,
             )?;
             current = next;
-            norms.push(after);
-            if stacked_residual_newton_tol_met(
-                after,
-                r0,
+            norms.push(tensor1_f32_thmc(after_t.clone()));
+            if stacked_residual_newton_tol_met_tensor(
+                &after_t,
+                &r0_t,
                 stacked_residual_l2_tolerance,
                 stacked_residual_relative_to_initial,
             ) {
@@ -1164,27 +1236,46 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
 
 /// Stacked \(\|R\|_2\) Newton exit: every **active** tolerance predicate must hold (see
 /// [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]).
+///
+/// Uses lazy comparisons `norm - bound < 0` (strict `<` on scalars) with one [`tensor1_bool_thmc`]
+/// read per active predicate, then ANDs on the host.
 #[cfg(feature = "thmc-coupled")]
-fn stacked_residual_newton_tol_met(
-    norm: f32,
-    r0: f32,
+fn stacked_residual_newton_tol_met_tensor<B: Backend<FloatElem = f32>>(
+    norm: &Tensor<B, 1>,
+    r0: &Tensor<B, 1>,
     stacked_residual_l2_tolerance: f32,
     stacked_residual_relative_to_initial: Option<f32>,
 ) -> bool {
+    let device = norm.device();
     let mut any_active = false;
     let mut all_pass = true;
     if stacked_residual_l2_tolerance > 0.0_f32 {
         any_active = true;
-        all_pass &= norm < stacked_residual_l2_tolerance;
+        let tol_t = Tensor::<B, 1>::zeros([1], &device).add_scalar(stacked_residual_l2_tolerance);
+        let ok_abs = tensor1_bool_thmc(norm.clone().sub(tol_t).lower_elem(0.0_f32).all());
+        all_pass &= ok_abs;
     }
     if let Some(rt) = stacked_residual_relative_to_initial {
         if rt > 0.0_f32 {
             any_active = true;
-            let scale = r0.max(1e-30_f32);
-            all_pass &= norm < rt * scale;
+            let bound = r0.clone().clamp_min(1e-30_f32).mul_scalar(rt);
+            let ok_rel = tensor1_bool_thmc(norm.clone().sub(bound).lower_elem(0.0_f32).all());
+            all_pass &= ok_rel;
         }
     }
     any_active && all_pass
+}
+
+#[cfg(feature = "thmc-coupled")]
+fn combined_three_residual_l2_tensor<B: Backend<FloatElem = f32>>(
+    r_t: &Tensor<B, 3>,
+    r_h: &Tensor<B, 3>,
+    r_a: &Tensor<B, 3>,
+) -> Tensor<B, 1> {
+    let sum_sq = r_t.clone().mul(r_t.clone()).sum()
+        + r_h.clone().mul(r_h.clone()).sum()
+        + r_a.clone().mul(r_a.clone()).sum();
+    sum_sq.clamp_min(0.0_f32).sqrt()
 }
 
 #[cfg(feature = "thmc-coupled")]
@@ -1193,24 +1284,36 @@ fn combined_three_residual_l2<B: Backend<FloatElem = f32>>(
     r_h: &Tensor<B, 3>,
     r_a: &Tensor<B, 3>,
 ) -> f32 {
-    let s = r_t.clone().mul(r_t.clone()).sum().into_scalar()
-        + r_h.clone().mul(r_h.clone()).sum().into_scalar()
-        + r_a.clone().mul(r_a.clone()).sum().into_scalar();
-    s.max(0.0_f32).sqrt()
+    tensor1_f32_thmc(combined_three_residual_l2_tensor(r_t, r_h, r_a))
 }
 
 #[cfg(feature = "thmc-coupled")]
+/// On-device ‖(R_T,R_h,R_α,R_u)‖₂ as a rank‑1 tensor (Burn subgraph; no host sync).
+fn combined_four_residual_l2_tensor<B: Backend<FloatElem = f32>>(
+    r_t: &Tensor<B, 3>,
+    r_h: &Tensor<B, 3>,
+    r_a: &Tensor<B, 3>,
+    r_u: &Tensor<B, 3>,
+) -> Tensor<B, 1> {
+    let sum_sq = r_t.clone().mul(r_t.clone()).sum()
+        + r_h.clone().mul(r_h.clone()).sum()
+        + r_a.clone().mul(r_a.clone()).sum()
+        + r_u.clone().mul(r_u.clone()).sum();
+    sum_sq.clamp_min(0.0_f32).sqrt()
+}
+
+#[cfg(feature = "thmc-coupled")]
+/// Host `f32` ‖(R_T,R_h,R_α,R_u)‖₂ for Newton / logging (**ConvergenceRequired — telemetry only**).
+///
+/// Implemented via [`combined_four_residual_l2_tensor`] + [`tensor1_f32_thmc`]; callers comparing
+/// stacked norms across refactors should prefer this name over ad‑hoc renames of the tensor helper.
 fn combined_four_residual_l2<B: Backend<FloatElem = f32>>(
     r_t: &Tensor<B, 3>,
     r_h: &Tensor<B, 3>,
     r_a: &Tensor<B, 3>,
     r_u: &Tensor<B, 3>,
 ) -> f32 {
-    let s = r_t.clone().mul(r_t.clone()).sum().into_scalar()
-        + r_h.clone().mul(r_h.clone()).sum().into_scalar()
-        + r_a.clone().mul(r_a.clone()).sum().into_scalar()
-        + r_u.clone().mul(r_u.clone()).sum().into_scalar();
-    s.max(0.0_f32).sqrt()
+    tensor1_f32_thmc(combined_four_residual_l2_tensor(r_t, r_h, r_a, r_u))
 }
 
 #[cfg(feature = "thmc-coupled")]
@@ -1380,13 +1483,20 @@ impl<B: Backend<FloatElem = f32>> ResidualThmc<B>
 }
 
 #[cfg(feature = "thmc-coupled")]
+fn combined_residual_l2_tensor<B: Backend<FloatElem = f32>>(
+    r_t: &Tensor<B, 3>,
+    r_a: &Tensor<B, 3>,
+) -> Tensor<B, 1> {
+    let sum_sq = r_t.clone().mul(r_t.clone()).sum() + r_a.clone().mul(r_a.clone()).sum();
+    sum_sq.clamp_min(0.0_f32).sqrt()
+}
+
+#[cfg(feature = "thmc-coupled")]
 fn combined_residual_l2<B: Backend<FloatElem = f32>>(
     r_t: &Tensor<B, 3>,
     r_a: &Tensor<B, 3>,
 ) -> f32 {
-    let s = r_t.clone().mul(r_t.clone()).sum().into_scalar()
-        + r_a.clone().mul(r_a.clone()).sum().into_scalar();
-    s.max(0.0_f32).sqrt()
+    tensor1_f32_thmc(combined_residual_l2_tensor(r_t, r_a))
 }
 
 #[cfg(feature = "thmc-coupled")]

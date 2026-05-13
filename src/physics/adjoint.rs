@@ -7,6 +7,12 @@
 //! PCG never enters the autodiff tape. Sensitivities w.r.t. \(\rho\) use the Lagrangian surrogate
 //! from Bendsoe & Sigmund / Allaire (linear elasticity, self-adjoint).
 //!
+//! ## Inner equilibrium
+//!
+//! With feature **`mechanics-adjoint`** (e.g. **`solver-experimental`**), the forward pass still uses
+//! [`VectorMechanicsSolver::packed_bar_network_equilibrium`] on the inner (non-autodiff) backend so
+//! iterative PCG stays off the Burn tape.
+//!
 //! formal_anchor: Literature  
 //! formal_citation: Bendsoe & Sigmund 2003, §1.2.2; Allaire 2007, §4.4  
 //! formal_form: \(\mathrm{d}c/\mathrm{d}\rho_e = -(\partial k_e/\partial\rho_e)\,\Delta_e^2\) with
@@ -115,7 +121,6 @@ impl AdjointCompliance {
             .mul_scalar(-1.0_f32);
 
         let comp = masked_dot(&body_force, &u, &boundary_mask);
-        let c_raw = comp.sum().into_scalar();
 
         let edges_ad = Tensor::<B, 2, Int>::from_inner(edges_b1.clone());
         let topo_ad = EdgeTopology::new(edges_ad);
@@ -127,8 +132,12 @@ impl AdjointCompliance {
 
         let lin_a = ge_ad.clone().mul(rho_e_ad).sum();
         let lin_b = ge_ad.mul(rho_e_det_ad).sum();
-        let c_pad = Tensor::<B, 1>::full([1], c_raw, &rho_autodiff.device());
+        // Keep total compliance on the autodiff tape (avoid `Tensor::full` from a host `f32`, which
+        // would sever ∂(surrogate)/∂u through the compliance term). Single scalar sync remains for
+        // the `(surrogate, c_raw)` API boundary.
+        let c_pad = Tensor::<B, 1>::from_inner(comp.clone());
         let surrogate = lin_a.sub(lin_b).add(c_pad).reshape([1]);
+        let c_raw = comp.into_scalar();
 
         (surrogate, c_raw)
     }

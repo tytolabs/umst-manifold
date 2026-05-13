@@ -36,13 +36,13 @@
 //! ([`plane_regularized_bingham_poiseuille_u_centreline`], [`plane_regularized_bingham_poiseuille_u_sample`]).
 //! Use [`RHEOLOGY_FLOW_BINGHAM_EPS`] for \(\varepsilon\) parity with `rheology_flow.rs`.
 
-/// Regularization \(\varepsilon\) [1/s]; kept identical to [`crate::physics::solvers::BinghamFlowSolver`]'s ε (`rheology_flow.rs`).
+/// Regularization \(\varepsilon\) \[1/s\]; kept identical to [`crate::physics::solvers::BinghamFlowSolver`]'s ε (`rheology_flow.rs`).
 pub const RHEOLOGY_FLOW_BINGHAM_EPS: f32 = 1e-5;
 
-/// Axial velocity [m/s] at wall-normal position `y` [m] from the mid-plane.
+/// Axial velocity \[m/s\] at wall-normal position `y` \[m\] from the mid-plane.
 ///
-/// `g` is the streamwise pressure-drop magnitude \(g=-\partial p/\partial x\) [Pa/m].
-/// `h` is the full plate spacing [m]. `mu` is dynamic viscosity [Pa·s], `tau0` yield stress [Pa].
+/// `g` is the streamwise pressure-drop magnitude \(g=-\partial p/\partial x\) \[Pa/m\].
+/// `h` is the full plate spacing \[m\]. `mu` is dynamic viscosity \[Pa·s\], `tau0` yield stress \[Pa\].
 pub fn plane_bingham_poiseuille_u(y: f32, g: f32, h: f32, mu: f32, tau0: f32) -> f32 {
     if mu <= 0.0 || mu.is_nan() {
         return f32::NAN;
@@ -65,7 +65,7 @@ pub fn plane_bingham_poiseuille_u(y: f32, g: f32, h: f32, mu: f32, tau0: f32) ->
     (g_pos / (2.0 * mu)) * (half * half - y * y) - tau0 * (half - ay) / mu
 }
 
-/// Half-width of the unyielded plug region from the mid-plane, \(y_p = \tau_0 / g\) [m].
+/// Half-width of the unyielded plug region from the mid-plane, \(y_p = \tau_0 / g\) \[m\].
 pub fn plane_bingham_plug_half_width(tau0: f32, g: f32) -> f32 {
     tau0 / g.max(1e-30)
 }
@@ -117,7 +117,7 @@ where
     h * sum
 }
 
-/// Mid-plane velocity \(u(0)\) [m/s] for steady regularized Bingham Poiseuille (trapezoid quadrature on half-channel).
+/// Mid-plane velocity \(u(0)\) \[m/s\] for steady regularized Bingham Poiseuille (trapezoid quadrature on half-channel).
 ///
 /// `n_quad` is the number of **segments** on \([0,H/2]\) (use ≥ 8 for coarse checks). Invalid parameters yield `f32::NAN`.
 pub fn plane_regularized_bingham_poiseuille_u_centreline(
@@ -144,7 +144,7 @@ pub fn plane_regularized_bingham_poiseuille_u_centreline(
     }
 }
 
-/// Sample \(u(y)\) [m/s] with \(y\) [m] from mid-plane; profile is even in \(y\).
+/// Sample \(u(y)\) \[m/s\] with \(y\) \[m\] from mid-plane; profile is even in \(y\).
 ///
 /// Uses dense-grid integration \(u(|y|)=\int_{|y|}^{H/2} x(g\xi)\,\mathrm d\xi\).
 pub fn plane_regularized_bingham_poiseuille_u_sample(

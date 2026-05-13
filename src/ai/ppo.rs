@@ -3,6 +3,23 @@
 
 //! PPO gateway and reward wiring.
 //!
+//! ## IO barrier (lazy solver cores, **maos-fp-categorical-v04**)
+//!
+//! Treat [`ManifoldGateway`] as the **policy-facing boundary** between differentiable
+//! physics (cartridge / solver stacks) and scalar **host** decisions:
+//!
+//! - **On-device reductions**: `dissipation.sum_dim(1)`, `free_energy` / reward reductions use
+//!   `sum_dim` / `mean_dim` and return [`Tensor`]s — no `.into_scalar()` on the reward path here.
+//! - **Deliberate scalar sync**: [`ThermodynamicCBF::verify_tensor_update`](crate::ai::cbf::ThermodynamicCBF::verify_tensor_update)
+//!   sums `info_gain` and batch-summed `d_int`, then performs the **two** `.into_scalar()` reductions
+//!   per topology step so Landauer erasure, Clausius–Duhem dissipation credit, and energy bookkeeping
+//!   run in ordinary `f64` control flow (see that method’s docs). That is the canonical **bits +
+//!   dissipation → host** read for this stack; keep additional `.into_scalar()` out of inner solver
+//!   iterations unless required for numerics or convergence tests.
+//! - **File / JSON**: this crate does not load UMST from disk; any serialization or filesystem
+//!   I/O belongs in cartridges or upstream runners — keep solver kernels free of `std::fs` so
+//!   they stay composable and lazy-friendly.
+//!
 //! Nodal diagnostics: [`crate::core::emergence::nodal_defect_tensor`],
 //! [`crate::core::emergence::combine_nodal_for_reward`]; grid hotspots:
 //! [`crate::core::emergence::EmergenceMonitor`].
@@ -13,7 +30,7 @@
 //! thermodynamic CBF gate unchanged.
 //!
 //! With the **`information_density`** crate feature, [`ManifoldGateway::eta`] adds
-//! **η · mean(information_density)** from [`PhysicalResult::information_density`](crate::core::traits::PhysicalResult::information_density)
+//! **η · mean(information_density)** from the optional `information_density` field on [`PhysicalResult`]
 //! the same way. Default **η = 0** preserves the reward without that term.
 
 use crate::ai::cbf::ThermodynamicCBF;
@@ -21,7 +38,12 @@ use crate::core::traits::{IScienceCartridge, PhysicalResult};
 use burn::tensor::{backend::Backend, Tensor};
 
 /// The Gateway interface for Thermodynamic Topology Optimization.
-/// It wraps the physical Cartridges and enforces the Thermodynamic CBF.
+///
+/// It wraps physical cartridges and enforces the Thermodynamic CBF. As an **IO barrier**:
+/// [`Self::evaluate_topology_step`] keeps spatial economics on the tensor graph and performs the
+/// only required **host scalar** extractions for mutual-information bits and batch-summed `d_int`
+/// inside [`ThermodynamicCBF::verify_tensor_update`](crate::ai::cbf::ThermodynamicCBF::verify_tensor_update)
+/// (not in the cartridge’s Newton / CG inner loops).
 pub struct ManifoldGateway<B: Backend, C: IScienceCartridge<B>> {
     pub cartridge: C,
     pub cbf: ThermodynamicCBF,
@@ -33,7 +55,7 @@ pub struct ManifoldGateway<B: Backend, C: IScienceCartridge<B>> {
     /// feature enabled, when non-zero the scalar reward adds `η * mean_voxels(information_density)` per
     /// batch row (same reduction pattern as [`Self::zeta`] on `safety_margin`).
     /// **Default 0** in [`Self::new`]; ignored when the feature is off (field is not compiled into
-    /// [`PhysicalResult`](crate::core::traits::PhysicalResult)).
+    /// [`PhysicalResult`]).
     pub eta: f32,
     _backend: std::marker::PhantomData<B>,
 }

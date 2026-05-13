@@ -1,0 +1,94 @@
+# FP gap backlog (discovery)
+
+**Scan date:** 2026-05-11 (**FP-001 closure 2026-05-12:** **`row_band_l_forward_swapped_rhs`** applied pivot swaps to the RHS in **reverse** elimination order; corrected to **forward** order (matches interleaved row swaps in [`solve_dense_linear`](../src/physics/solvers/electrochemistry.rs)). **`PNP_CHAIN_FULL_SG_JAC_KL_LU` / `KU_LU`** widened to **`3·17−1`** so the **N=17** fixture (`dim=51`) uses a full strip for pivot+fill; **`solve_newton_correction_full_sg_row_band_via_band_lu`** now runs real in-place band LU (no delegation). **Still open:** tight **`(kl,ku)=(kl_phys+ku_phys,·)`** band LU at **large** `dim` without `(3N)²` dense scratch; LAPACK `DGBTRF`/`DGBTRS` + `LDAB` narrative remains on `row_band_lu_factorize_partial_pivot` (**ladder 1c/1d** unchanged).  
+**Roots:** `umst-manifold/`, `umst-concrete-cartridge/` (workspace; primary crate `umst-concrete-cartridge`).  
+**Lint counts (optional, 2026-05-11 refresh):** **Clippy** (`umst-manifold/`, `cargo clippy --all-targets --features solver-experimental -- -D warnings`): **0** warnings (exit **0**). **Rustdoc** (`RUSTDOCFLAGS='-D warnings'`): **0** on `cargo doc -p umst-manifold --no-deps`, on `--document-private-items`, on `--document-private-items --features solver-experimental`, and on `cd umst-concrete-cartridge && cargo doc -p umst-concrete-cartridge --no-deps` (all exit **0**; intra-doc text adjusted for cfg-gated `thmc_jfnk`, feature-gated photonics helpers, private Newton/GMRES symbols in electrochemistry / `operator` / `mechanics` / `adjoint` / `thmc_residual`).  
+**Commands run (2026-05-11 refresh):** `cargo clippy --all-targets --features solver-experimental -- -D warnings` (`umst-manifold/`, exit **0**); `cargo test -p umst-manifold --lib --features solver-experimental` → **93** passed, **1** ignored, exit **0**; `python3 umst-manifold/scripts/check_solver_status.py` → **OK** (9 rows); `bash umst-manifold/scripts/check_physics_no_gradient_break.sh` (workspace root) → exit **0**; `RUSTDOCFLAGS='-D warnings' cargo doc -p umst-manifold --no-deps` → exit **0**; `RUSTDOCFLAGS='-D warnings' cargo doc -p umst-manifold --no-deps --document-private-items` → exit **0**; `RUSTDOCFLAGS='-D warnings' cargo doc -p umst-manifold --no-deps --document-private-items --features solver-experimental` → exit **0**; `cd umst-concrete-cartridge && RUSTDOCFLAGS='-D warnings' cargo doc -p umst-concrete-cartridge --no-deps` → exit **0**; `grep` over `umst-manifold/src/**/*.rs` and `umst-concrete-cartridge/crates/umst-concrete-cartridge/src/**/*.rs` for `TODO|FIXME|unimplemented!|panic!|expect(`.
+
+---
+
+## Errors / failures
+
+| Area | Severity | Evidence |
+|------|-----------|----------|
+| **PNP full-SG inner solve (dense-expand vs band LU)** | **Monitoring / research** (CI: **N=17** band-LU parity **green**) | **Production** path in [`try_solve_pnp_backward_euler_newton_chain`](../src/physics/solvers/electrochemistry.rs) remains **dense expand + `solve_dense_linear`**. **`solve_newton_correction_full_sg_row_band_via_band_lu`** now performs **in-place** [`row_band_lu_factorize_partial_pivot`](../src/physics/solvers/electrochemistry.rs) + solve (no delegation); **`full_sg_newton_band_lu_matches_dense_expand_n17_fixture`** locks **δ** vs dense-expand on the canonical fixture. **Root cause (2026-05-12):** RHS permutation must replay pivot swaps in the **same** order as elimination (was reversed in **`row_band_l_forward_swapped_rhs`**); plus static LU envelope **`kl=ku=3·17−1`** for **`dim=51`**. **Still research:** tight production **`(kl,ku)`** vs dense at **large** **`dim`**; blind packed-row swaps vs [`row_band_swap_rows`](../src/physics/solvers/electrochemistry.rs). **`#[ignore]`** **`full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity`** — assembly + dense-expand wall-clock; band-LU **δ** vs dense-expand **not** expected to match at **N=256** under the static envelope. |
+| **Gradient-escape guard script** | **CI / hygiene** (policy, not rustc) | Re-run: `bash umst-manifold/scripts/check_physics_no_gradient_break.sh` from workspace root. **Latest ladder (2026-05-11):** exit **0** (`OK: physics gradient escape check passed`). When red, it reports `into_data().value` / `into_scalar()` patterns **not** on `physics_gradient_escape_allowlist.txt` (see script output for file paths).
+| **`check_solver_status.py`** | OK | `umst-manifold/scripts/check_solver_status.py` → `OK: .../docs/Solver-Status.md` (9 rows; stable lane). **Not present** under `umst-concrete-cartridge/scripts/`. |
+| **`cargo clippy --all-targets --features solver-experimental -- -D warnings`** | OK | **umst-manifold** (2026-05-11 sample from `umst-manifold/`): clean. **Cartridge:** re-run from `umst-concrete-cartridge/` as needed; prior full-matrix notes still treat both roots as clean under `-D warnings`. |
+| **`cargo test` default slice** | OK | **umst-manifold** default: all targets passed in scan. **umst-concrete-cartridge** default: all passed. |
+| **`cargo test --features solver-experimental` (cartridge)** | OK | All passed (includes slower `shell_topology_rib_pattern_quick`). |
+
+---
+
+## Warnings / drift
+
+| Kind | umst-manifold | umst-concrete-cartridge |
+|------|----------------|-------------------------|
+| **Clippy `-D warnings`** | Clean (default + `solver-experimental`) | Clean (`-p umst-concrete-cartridge`, both slices) |
+| **Rustdoc `-D warnings`** | **Public** `cargo doc -p umst-manifold --no-deps`: **clean**. **`--document-private-items`** (default features): **clean**. **`--document-private-items` + `--features solver-experimental`:** **clean** (2026-05-11 refresh: cfg-gated `thmc_jfnk` / photonics predicate / private Newton–GMRES symbols use monospace or qualified prose so default `cargo doc` does not resolve missing items). | **Clean** — `cd umst-concrete-cartridge && RUSTDOCFLAGS='-D warnings' cargo doc -p umst-concrete-cartridge --no-deps` → exit **0** (older “**34** errors” reports are **stale** for this tree). |
+| **`src/` grep** `TODO\|FIXME\|unimplemented!\|panic!\|expect(` | **32** hits across **8** files under `umst-manifold/src/` (mostly `.expect(` in solver paths; `panic!` in `orchestration.rs` fold mismatch; **no** `TODO`/`FIXME`/`unimplemented!` literals in `src/`). | **1** hit under `umst-concrete-cartridge/crates/umst-concrete-cartridge/src/`: `TODO_FORMAL` in a doc comment in `calibration.rs` (no `panic!`/`expect(` matches in that tree slice as of this scan). |
+
+---
+
+## End-condition / numeric parity gaps
+
+1. **Dense-expand production inner solve:** **`full_sg_newton_band_expand_dense_matches_dense_column_fd_reference`** and **`full_sg_newton_dense_expand_matches_direct_gaussian_multi_n`** lock **dense-expand** **δ** against column-FD / expanded Gaussian references on CI-sized **N**. Treat regressions here as **blocking** for `solver-experimental` electrochemistry lib tests.
+2. **Band LU entry point (FP-001, 2026-05-12):** **`solve_newton_correction_full_sg_row_band_via_band_lu`** now runs **in-place** band LU + triangular solve; **`full_sg_newton_band_lu_matches_dense_expand_n17_fixture`** asserts **δ** vs dense-expand on the **N=17** fixture (**green** under `solver-experimental`). **Root causes addressed:** **(a)** RHS pivot swaps must mirror elimination order (**forward** through **`swap_pairs`**, not reverse — see [`row_band_l_forward_swapped_rhs`](../src/physics/solvers/electrochemistry.rs)). **(b)** Static LU envelope **`kl = ku = 3·17−1`** so **`dim = 3·17`** is a full strip (same pivot/fill story as ladder **1c**). **Still open (monitoring / next PR):** tight **`(kl,ku) = (kl_phys+ku_phys, ·)`** at **large** **`dim`** without widening to **`dim−1`** or LAPACK **`LDAB`**, and **`O(dim·bw²)`** vs **`(3N)²`** trade-offs. **Ladder (1)** tests **`fp001_*`** still document pivot-window vs dense, envelope widening, and [`row_band_swap_rows`](../src/physics/solvers/electrochemistry.rs) vs naive buffer swaps. **Ladder (1b):** rustdoc on [`row_band_lu_factorize_partial_pivot`](../src/physics/solvers/electrochemistry.rs) links Netlib **`DGBTRF`** / **`DGBTRS`**. **Ladder (1c/1d):** unchanged Gaussian parity slices. **Next:** optional **`lapack-band`** / **`dgbtrf`** path, or **dim-dependent** envelope policy for large chains.
+3. **Cartridge `solver-experimental`**: no new numeric failures observed; shell rib **full** test remains intentionally `#[ignore]` (slow B6).
+
+---
+
+## Low-hanging FP wins
+
+- **Rustdoc brackets:** Escape tensor-shape text like **`[B,E,1]`** in doc comments (`mechanics.rs`) so rustdoc does not treat it as an intra-doc link; audit other bracketed shape tokens under **`--document-private-items --features solver-experimental`**.
+- **Cfg-gated rustdoc links:** Use `#[cfg_attr(docsrs, doc(cfg(feature = "...")))]` or conditional doc links for methods only present under `solver-experimental` / `mechanics-voigt-cauchy` (e.g. `mechanics.rs`, `topology.rs`).
+- **Cartridge rustdoc:** No outstanding **`-D warnings`** failures on **`cargo doc -p umst-concrete-cartridge --no-deps`** as of 2026-05-11; if redundant-link lints reappear, apply compiler hints in `pipeline/physical_summary.rs` and siblings.
+- **If** a strict **band-LU vs dense-expand** Jacobian linearisation test is reintroduced, strip debug **`eprintln!`** once green (avoid noisy CI logs).
+- **`expect`/`panic` triage:** Map hot-path `.expect(` to typed `Result` where callers can recover; keep `debug_assert!` / `unreachable!` only after invariants are documented (electrochemistry / THMC / acoustics clusters).
+
+---
+
+## Ignored tests (triage)
+
+Honest opt-in harnesses (default CI skips). Optional runs **do not** upgrade verification-matrix rows unless the row’s **Exact acceptance criterion** explicitly covers that harness — **no** implied closure from “ignored test executed.”
+
+| Harness | cwd | Environment | Command (representative) | Honest note |
+|--------|-----|---------------|---------------------------|-------------|
+| **Mechanics R2.1 Kirchhoff brick gate** | `umst-manifold/` | `UMST_MECHANICS_R21_GATE=1` | `UMST_MECHANICS_R21_GATE=1 cargo test -p umst-manifold --test mechanics_analytic plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate -- --ignored --exact` | **`#[ignore]`** carries rationale on the attribute. Gate stays off default CI until **SSSS-on-brick** / topology-density paths align with matrix **#2**; **expect possible assertion failure** until that harness lands — run is for wiring/triage, **not** an acceptance pass. |
+| **Electrochemistry N=256 band LU vs dense-expand** | `umst-manifold/` | none | `cargo test -p umst-manifold --lib --features electrochemistry-pnp,solver-experimental full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity --release -- --ignored --nocapture` | **Diagnostic / timing:** Jacobian assembly + dense-expand solve wall-clock at large **N**. **`via_band_lu`** is real band LU; static **`(kl,ku)`** is **not** **`dim−1`** at **N=256**, so printed **`max|δ_lu−δ_de|`** is **not** a parity metric — use for assembly / dense-expand timing triage. |
+| **Rheology Chorin long-run wall-normal L²** | `umst-manifold/` | `UMST_RUN_CHORIN_LONGRUN_L2=1`; optional `UMST_CHORIN_LONGRUN_STEPS` (≥100, default **2000**) | `UMST_RUN_CHORIN_LONGRUN_L2=1 cargo test -p umst-manifold --features rheology-bingham,solver-experimental --release chorin_channel_65x17_longrun_wall_normal_l2_vs_regularized_reference -- --ignored --exact` | Requires **`rheology-bingham`**. Long multi-step finiteness + printed **relative L²** metric for regression triage; **not** claimed as a ship gate (streamwise connectivity / no MAC — see rustdoc on the test). |
+| **Shell Track B6 full (`shell_topology_rib_pattern_full_v04`)** | `umst-concrete-cartridge/` | `UMST_SHELL_RIB_PATTERN=1`; optional **`UMST_SHELL_RIB_FULL_ITERS`** (1…200; **<200** skips strict greyness/compliance asserts); full **`UMST_SHELL_*`** surface in test module docs | `UMST_SHELL_RIB_PATTERN=1 cargo test -p umst-concrete-cartridge --test shell_topology_rib_pattern --features solver-experimental shell_topology_rib_pattern_full_v04 --release -- --ignored` (`--release` **before** `--`) | **Heavy** Striatus-scale slab (**40×40×4**, **200** outers by default). Running proves the opt-in path builds and executes; **does not** assert Track B6 rollup / print-ready gates **pass** — CI signal remains **`shell_topology_rib_pattern_quick`**. |
+
+**Other intentional ignores:** `umst-concrete-cartridge` `tests/proof_status_doc.rs` (`proof_status_refresh_markdown_on_disk`) — regenerates `docs/PROOF-STATUS.md`; run only after editing formal-status lines. **`MaOS-Core`** `sigma_moe_key_inventory` — requires **`MAOS_MOE_WEIGHTS`** directory (see attribute).
+
+---
+
+## Suggested Cursor todos
+
+**Merge alignment:** [`CURSOR_TODO_MERGE_FP_GAPS.md`](CURSOR_TODO_MERGE_FP_GAPS.md) lists **14** rows (`fp_001` … `fp_015` except **`fp_004`**, folded with closed workspace todo **`gap-ci-physics-allowlist`**). **FP-001** ↔ **`fp_001`**: **N=17 CI parity closed** — **`solve_newton_correction_full_sg_row_band_via_band_lu`** is in-place band LU; **`full_sg_newton_band_lu_matches_dense_expand_n17_fixture`** **green** (RHS swap order + widened **`kl=ku=3·17−1`**). **Monitoring:** large-**`dim`** tight-envelope band LU vs dense / LAPACK **`LDAB`** story remains. Re-run lib count after edits: **`cargo test -p umst-manifold --lib --features electrochemistry-pnp,solver-experimental`** → **110** passed / **1** ignored.
+
+| `id` | `status` | `content (one line)` | `verify` |
+|------|----------|-------------------------|----------|
+| FP-001 | **Monitoring** (N=17 **closed**) | **`solve_newton_correction_full_sg_row_band_via_band_lu`:** in-place **`row_band_lu_factorize_partial_pivot`** + **`row_band_lu_solve_factored`** on a copy of the band Jacobian (no dense-expand delegation). **`full_sg_newton_band_lu_matches_dense_expand_n17_fixture`:** **δ** vs **`solve_newton_correction_full_sg_row_band_via_dense_expand`** (**green** under **`solver-experimental`**, which enables **`electrochemistry-mvp`**). **Shipped fixes (2026-05-12):** **`row_band_l_forward_swapped_rhs`** — apply **`swap_pairs` in elimination order** (was reversed). **`PNP_CHAIN_FULL_SG_JAC_KL_LU` / `KU_LU` = `3·17−1`** — full strip for **`dim=51`**. **Still watch:** tight **`(kl,ku)`** at **large** **`dim`**, **`(3N)²`** vs band work, optional **`dgbtrf`**. **Ladder (1…1d):** **`fp001_*`** + rustdoc. | `cargo test -p umst-manifold --lib --features solver-experimental full_sg_newton` → **3** passed; `cargo test -p umst-manifold --lib --features solver-experimental fp001_` → **5** passed; optional ignored **`full_sg_chain_n256_...`** (timing; **δ** parity **not** claimed) |
+| FP-002 | **Open** | Add row-column invariant checks (apply `J` to random `x` via band vs dense) in tests or debug-only asserts. | Same electrochemistry filters + optional `RUST_LOG` / single-`N` debug test |
+| FP-003 | **Open** | After FP-001, if a LU Jacobian-residual unit test exists again, remove stray **`eprintln!`**. | Match test name filter to whatever LU linearisation test lands in-tree |
+| FP-004 | **Open** | Audit `physics_gradient_escape_allowlist.txt`: either justify + add audited paths or refactor hotspots to tensor-native reductions. *(Merge doc omits **`fp_004`**; same hygiene as closed **`gap-ci-physics-allowlist`**.)* | `bash umst-manifold/scripts/check_physics_no_gradient_break.sh` |
+| FP-005 | **Open** | Batch-fix manifold rustdoc: escape tensor-shape brackets, fix cfg-scoped links, remove broken `[]` pseudo-links — hardening even though **`--document-private-items` + `solver-experimental`** is **0** warnings today. | `RUSTDOCFLAGS='-D warnings' cargo doc -p umst-manifold --no-deps` (baseline) then `--document-private-items` and, separately, `--document-private-items --features solver-experimental` |
+| FP-006 | **Open** | Fix cfg-sensitive intra-doc links in `mechanics.rs` / `topology.rs` (split docs or `doc(alias)`). | `RUSTDOCFLAGS='-D warnings' cargo doc -p umst-manifold --no-deps --document-private-items --features solver-experimental` |
+| FP-007 | **Open** | Guard / harden `electrochemistry.rs` private-helper rustdoc (qualified paths vs plain text; **0** `rustdoc` warnings on 2026-05-11 refresh — same slice as FP-005/006). | Same as FP-006 command |
+| FP-008 | **Open** | Re-audit cartridge rustdoc under `-D warnings` if docs regress (current tree: **0** errors on `cargo doc -p umst-concrete-cartridge --no-deps`). | `cd umst-concrete-cartridge && RUSTDOCFLAGS='-D warnings' cargo doc -p umst-concrete-cartridge --no-deps` |
+| FP-009 | **Open** | Replace `StatisticalBridge::upscale_potentials` `panic!` on bad dims with `Result` or `debug_assert` + fallible API per project convention. | `cargo test -p umst-manifold statistical_mechanics` |
+| FP-010 | **Open** | Review electrochemistry `.expect(` chain in tensor host Newton; return `Option`/`Result` to callers where feasible. | `cargo clippy -p umst-manifold --features solver-experimental -- -D warnings` |
+| FP-011 | **Open** | Cartridge bundled-calibration load path: ensure failures surface as **`Result`** with preserved context (re-audit if `panic!` reappears). | `cargo test -p umst-concrete-cartridge` |
+| FP-012 | **Open** | Add `scripts/check_solver_status.py` to cartridge **or** document “run from manifold sibling” in cartridge README (pick one; avoid duplicate drift). | Single source of truth + one CI snippet |
+| FP-013 | **Open** | Add CI matrix entry: `cargo test -p umst-manifold --features solver-experimental --no-fail-fast` (or ensure lib green first) + physics gradient script. | GitLab/GitHub CI green |
+| FP-014 | **Open** | Mechanics analytic gate: keep **`#[ignore = "..."]`** + backlog § ignored runbook aligned with `mechanics_analytic.rs` / matrix **#2** deferrals. | `UMST_MECHANICS_R21_GATE=1` + filter from backlog § ignored |
+| FP-015 | **Open** | Optional nightly: `--release` ignored electrochemistry **N=256** harness (assembly + dense-expand wall-clock; band-LU **δ** vs dense-expand **not** a claimed metric under static envelope). | Manual / scheduled log artefact |
+
+**Suggested todo count:** **15** (`FP-001` … `FP-015`).
+
+**Top 3 priorities**
+
+1. **FP-001** — **N=17** band-LU **δ** parity **closed**; **monitor** large-**N** envelope / LAPACK follow-on (production remains dense-expand).  
+2. **FP-004** — Keep `check_physics_no_gradient_break.sh` green when editing gradient-escape hotspots (allowlist + refactors).
+3. **FP-005 / FP-006 / FP-007** — rustdoc **hardening** (bracket false-links, cfg-scoped docs): all checked **`cargo doc`** slices report **0** `rustdoc` warnings on **2026-05-11** refresh (manifold public, manifold `--document-private-items --features solver-experimental`, cartridge public); keep FP-005…007 as preventative work if CI expands doc gates.

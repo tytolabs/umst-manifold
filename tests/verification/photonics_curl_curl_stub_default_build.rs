@@ -66,7 +66,7 @@ mod photonics_off {
             frequency_hz: 1e9_f32,
         };
 
-        let out = ps.solve_maxwell_curl_curl(e_field, eps_r, eps_i, j, edges, coords, &cg);
+        let out = ps.solve_maxwell_curl_curl(e_field, eps_r, eps_i, j, edges, coords, &cg, None);
 
         let got = out.into_data().value;
         assert_eq!(got.len(), e0.len());

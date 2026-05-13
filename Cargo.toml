@@ -61,6 +61,8 @@ electrochemistry-pnp = ["electrochemistry-mvp"]
 mechanics-voigt-cauchy = []
 # Discrete-adjoint mechanics (Track A); forwards to `mechanics-voigt-cauchy` until cfg splits.
 mechanics-adjoint = ["mechanics-voigt-cauchy"]
+# Q1-hex discrete-adjoint compliance (`AdjointComplianceQ1Hex`); requires structured hex lattice module.
+mechanics-adjoint-q1-hex = ["topology-density-evolution"]
 # Bingham / projection flow on the graph (`BinghamFlowSolver::step`).
 rheology-bingham = []
 # Always-on Richardson relaxation fallback for Chorin graph Poisson (see `rheology_flow.rs`).
@@ -78,6 +80,7 @@ solver-research = [
     "thmc-coupled",
     "electrochemistry-pnp",
     "mechanics-adjoint",
+    "mechanics-adjoint-q1-hex",
     "rheology-bingham",
     "photonics-fdfd",
     "statistical-mechanics-johnson-reference",
@@ -142,6 +145,16 @@ name = "adjoint_compliance_analytic"
 path = "tests/verification/adjoint_compliance_analytic.rs"
 
 [[test]]
+name = "adjoint_q1_hex_compliance_analytic"
+path = "tests/verification/adjoint_q1_hex_compliance_analytic.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
+name = "adjoint_q1_hex_matches_bar_in_limit"
+path = "tests/verification/adjoint_q1_hex_matches_bar_in_limit.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
 name = "statmech_vinet_eos"
 path = "tests/verification/statmech_vinet_eos.rs"
 
@@ -154,6 +167,10 @@ name = "statmech_lj_johnson_eos_reference"
 path = "tests/verification/statmech_lj_johnson_eos_reference.rs"
 
 [[test]]
+name = "statmech_lj_johnson_upscale_bridge"
+path = "tests/verification/statmech_lj_johnson_upscale_bridge.rs"
+
+[[test]]
 name = "pnp_debye_layer"
 path = "tests/verification/pnp_debye_layer.rs"
 required-features = ["electrochemistry-pnp"]
@@ -164,12 +181,27 @@ path = "tests/verification/thmc_drying_shrinkage.rs"
 required-features = ["thmc-coupled"]
 
 [[test]]
+name = "thmc_monolithic_newton_chain"
+path = "tests/verification/thmc_monolithic_newton_chain.rs"
+required-features = ["thmc-coupled"]
+
+[[test]]
 name = "rheology_poiseuille"
 path = "tests/verification/rheology_poiseuille.rs"
 
 [[test]]
 name = "photonics_fresnel"
 path = "tests/verification/photonics_fresnel.rs"
+required-features = ["photonics-fdfd"]
+
+[[test]]
+name = "photonics_curl_curl_2d_patch"
+path = "tests/verification/photonics_curl_curl_2d_patch.rs"
+required-features = ["photonics-fdfd"]
+
+[[test]]
+name = "photonics_curl_curl_3d_brick"
+path = "tests/verification/photonics_curl_curl_3d_brick.rs"
 required-features = ["photonics-fdfd"]
 
 [[test]]

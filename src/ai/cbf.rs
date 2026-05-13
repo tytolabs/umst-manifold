@@ -18,6 +18,12 @@ pub struct ThermodynamicCBF {
     pub temperature_k: f64,
     /// Available energy budget for the PPO agent, sourced from the external thermodynamic budget source.
     pub available_credit_joules: f64,
+    /// Converts the **batch sum** of integrated dissipation `d_int` (cartridge-native `f32` units from
+    /// [`PhysicalResult::dissipation`](crate::core::traits::PhysicalResult::dissipation) reductions)
+    /// into additional joule-equivalent entropy production for the Clausius–Duhem check in
+    /// [`Self::verify_tensor_update`]. Defaults to `1.0` (identity bridge); set per cartridge when
+    /// dissipation is calibrated to SI. See `docs/DISSIPATION_CBF_AUDIT.md`.
+    pub k_phys_dint_to_joules: f64,
 }
 
 impl ThermodynamicCBF {
@@ -25,6 +31,7 @@ impl ThermodynamicCBF {
         Self {
             temperature_k,
             available_credit_joules: initial_credit_joules,
+            k_phys_dint_to_joules: 1.0,
         }
     }
 
@@ -78,10 +85,15 @@ impl ThermodynamicCBF {
 
     /// Processes a full batch gradient step to ensure gradient descent directions
     /// do not push the topology into a physically invalid state.
-    /// Uses Burn tensor reductions to calculate batch entropy.
+    ///
+    /// **Scalar / host barrier:** sums `info_gain` and **`d_int`** then performs deliberate
+    /// `.into_scalar()` syncs for the [`crate::ai::ppo::ManifoldGateway`] stack — total resolved bits
+    /// and batch-summed dissipation become `f64` for Landauer cost, material entropy bookkeeping, and
+    /// credit deduction. Prefer keeping other solver paths free of per-iteration `.into_scalar()` unless
+    /// a kernel truly needs a host scalar for control flow.
     pub fn verify_tensor_update<B: Backend>(
         &mut self,
-        _d_int: Tensor<B, 1>,
+        d_int: Tensor<B, 1>,
         info_gain: Tensor<B, 1>,
     ) -> Result<f64, String> {
         // Compute precise bits resolved via tensor sum reduction
@@ -89,10 +101,15 @@ impl ThermodynamicCBF {
         let sum_bits_tensor = info_gain.sum();
         let total_bits_resolved = sum_bits_tensor.into_scalar().to_f64().unwrap_or(0.0);
 
-        // Note: Real D_int to entropy conversion would use material specific heat capacity.
-        // For the exact thermodynamic barrier, we require the scalar extraction of bits.
-        // Assume minimal entropy production for purely informational transitions.
-        let entropy_production = self.calculate_landauer_cost(total_bits_resolved) * 1.05; // 5% physical loss margin
+        // Batch-summed integrated dissipation (gateway convention: one CBF scalar per topology step).
+        let d_sum = d_int.sum().into_scalar().to_f64().unwrap_or(0.0);
+        let d_sum_nonneg = d_sum.max(0.0);
+        let dissipation_entropy_joules = self.k_phys_dint_to_joules * d_sum_nonneg;
+
+        // Landauer floor (informational branch) plus irreversible material entropy from `d_int`.
+        // The 5% margin remains a small conservative cushion on the Landauer term alone.
+        let landauer_floor = self.calculate_landauer_cost(total_bits_resolved) * 1.05;
+        let entropy_production = landauer_floor + dissipation_entropy_joules;
 
         self.verify_and_deduct_update(entropy_production, total_bits_resolved)
     }

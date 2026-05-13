@@ -12,6 +12,11 @@
 //!   is performed.
 
 use approx::assert_relative_eq;
+use burn::tensor::Tensor;
+use burn_ndarray::{NdArray, NdArrayDevice};
+use umst_manifold::ai::cbf::ThermodynamicCBF;
+
+type B = NdArray<f32>;
 
 const K_BOLTZMANN: f64 = 1.380649e-23;
 
@@ -49,4 +54,38 @@ fn budget_decreases_under_admissible_work() {
     }
     let expected_remaining = 1.0e-15_f64 - (steps as f64) * work_per_step;
     assert_relative_eq!(budget, expected_remaining, max_relative = 1.0e-9);
+}
+
+#[test]
+fn verify_tensor_update_clamps_negative_d_int() {
+    let dev = NdArrayDevice::default();
+    let mut cbf = ThermodynamicCBF::new(300.0_f64, 1.0e-12_f64);
+    cbf.k_phys_dint_to_joules = 1.0;
+    let d_int = Tensor::<B, 1>::from_floats([-1.0e6_f32], &dev);
+    let info_gain = Tensor::<B, 1>::from_floats([0.0_f32], &dev);
+    cbf.verify_tensor_update(d_int, info_gain)
+        .expect("negative d_int must not inflate CD violation after clamp");
+}
+
+#[test]
+fn verify_tensor_update_credit_deduction_independent_of_d_int() {
+    let dev = NdArrayDevice::default();
+    let credit0 = 1.0e-9_f64;
+    let mut cbf_a = ThermodynamicCBF::new(300.0_f64, credit0);
+    cbf_a.k_phys_dint_to_joules = 0.0;
+    let mut cbf_b = ThermodynamicCBF::new(300.0_f64, credit0);
+    cbf_b.k_phys_dint_to_joules = 100.0;
+    let bits = Tensor::<B, 1>::from_floats([4.0_f32], &dev);
+    let d_zero = Tensor::<B, 1>::from_floats([0.0_f32], &dev);
+    let d_big = Tensor::<B, 1>::from_floats([1.0e6_f32], &dev);
+    let cost_a = cbf_a.verify_tensor_update(d_zero, bits.clone()).unwrap();
+    let credit_after_a = cbf_a.available_credit_joules;
+    let cost_b = cbf_b.verify_tensor_update(d_big, bits).unwrap();
+    assert_relative_eq!(cost_a, cost_b, epsilon = 1e-30, max_relative = 1e-9);
+    assert_relative_eq!(
+        credit_after_a,
+        cbf_b.available_credit_joules,
+        epsilon = 1e-30,
+        max_relative = 1e-9
+    );
 }

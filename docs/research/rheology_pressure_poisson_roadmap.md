@@ -81,7 +81,7 @@ The following maps the **target** split onto the existing [`step_experimental`](
 
 4. **Pressure update** — `pressure_new = pressure + phi` (unchanged contract).
 
-**Regression policy:** When a true Poisson ships, revisit [`chorin_surrogate_poisson_amplification_regression_guard`](../../tests/verification/rheology_poiseuille.rs) — either retire or replace with a stability band on the **new** solve.
+**Regression policy:** When a true Poisson ships, revisit [`chorin_jacobi_pcg_step_velocity_amplification_regression_guard`](../../tests/verification/rheology_poiseuille.rs) — either retire or replace with a stability band on the **new** solve.
 
 ---
 
@@ -100,7 +100,7 @@ The rustdoc “MAC + Poisson” section ([`rheology_flow.rs`](../../src/physics/
 |------------|------|
 | [`chorin_steady_channel_64x16_vs_regularized_reference`](../../tests/verification/rheology_poiseuille.rs) | **`f02120d`:** **`research-stack`** smoke (**no `#[ignore]`**) — 100 substeps on **65×17**, finite ‖u‖/‖p‖ + ‖u‖∞ band; full multi-thousand-step steady **L²** vs regularized reference still deferred until MAC + open **x** BCs. |
 | [`chorin_developed_channel_centreline_vs_regularized_reference`](../../tests/verification/rheology_poiseuille.rs) | **`f02120d`:** **`research-stack`** smoke (**no `#[ignore]`**) — 80 steps, centreline finite and **≤** developed regularized Bingham reference (+ sanity on **p**); tight profile **L²** still deferred. |
-| [`chorin_surrogate_poisson_amplification_regression_guard`](../../tests/verification/rheology_poiseuille.rs) | CI guard (historical name): two-step ‖u‖∞ bracket on **65×17** catches regression toward legacy surrogate-scale amplification; shipped RHS is weak primal divergence + momentum-consistent projection. **`solver-experimental`:** [`chorin_poisson_rhs_surrogate_vs_weak_divergence_tiny_channel`](../../src/physics/solvers/rheology_flow.rs) compares legacy \(\sum_c\mathcal{L}u^\*_c\) vs shipped divergence RHS on **5×5**. |
+| [`chorin_jacobi_pcg_step_velocity_amplification_regression_guard`](../../tests/verification/rheology_poiseuille.rs) | CI guard (historical name): two-step ‖u‖∞ bracket on **65×17** catches regression toward legacy surrogate-scale amplification; shipped RHS is weak primal divergence + momentum-consistent projection. **`solver-experimental`:** [`chorin_poisson_rhs_surrogate_vs_weak_divergence_tiny_channel`](../../src/physics/solvers/rheology_flow.rs) compares legacy \(\sum_c\mathcal{L}u^\*_c\) vs shipped divergence RHS on **5×5**. |
 | [`Solver-Status.md`](../Solver-Status.md) §Verification scope item 7 + **Solver lanes — Rheology** | Public ship criteria and R2.2 follow-up pointer. |
 
 ---

@@ -32,7 +32,7 @@ pub const SCALAR_HYDRATION_ALPHA: usize = 2;
 /// Nodal temperature (physical units are cartridge-defined; often °C on the concrete path), column `3`.
 pub const SCALAR_TEMPERATURE: usize = 3;
 
-/// Continuum / phase-field damage \(d \in [0,1]\), column `4`.
+/// Continuum / phase-field damage \(d \in \[0,1\]\), column `4`.
 pub const SCALAR_DAMAGE: usize = 4;
 
 /// Optional per-node fracture energy \(G_c\) [J/m²] for phase-field / cohesive models, column `5`.

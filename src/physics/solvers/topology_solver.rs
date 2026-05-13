@@ -9,7 +9,7 @@
 //!
 //! **Relation to [`crate::ai::topology::TopologyOptimizer`]**: the optimizer runs Neural-SIMP training
 //! forwards (density net \(\rightarrow\) SIMP modulus \(\rightarrow\) equilibrium) and does not own a
-//! persistent \(\rho\) buffer. Use [`TopologySolver::set_rho_from_optimizer`] (behind
+//! persistent \(\rho\) buffer. Use `TopologySolver::set_rho_from_optimizer` (behind
 //! **`topology-density-evolution`**, also enabled via **`solver-experimental`** /
 //! **`solver-tests`**) to copy network output into this physics-side state, then diffuse /
 //! mask-filter \(\rho\) without duplicating the training loop.
@@ -57,7 +57,7 @@ impl<B: Backend<FloatElem = f32>> TopologySolver<B> {
     /// **and** mechanics BCs do not fix every translational DOF on that node (product of the three
     /// `boundary_mask` channels; shape `[B, N, 3]`, `1` = free).
     ///
-    /// Result shape `[B, N, 1]`, suitable for blending with [`blend_masked_update`].
+    /// Result shape `[B, N, 1]`, suitable for blending with [`TopologySolver::blend_masked_update`].
     pub fn combined_edit_mask(
         boundary_mask: Tensor<B, 3>,
         policy_editable_mask: Tensor<B, 2>,
@@ -190,13 +190,14 @@ mod tests {
         let policy = Tensor::<B, 2>::ones([n, 1], &dev);
 
         solver.step_density_diffusion(0.2, edges_b1, damage, boundary_mask, policy);
-        let v: Vec<f32> = solver.rho.into_data().value;
-        for x in v {
-            assert!(
-                (x - 0.5).abs() < 1e-5,
-                "uniform rho should be harmonic / stationary, got {x}"
-            );
-        }
+        let expected = Tensor::<B, 3>::full([1, n, 1], 0.5, &dev);
+        assert!(
+            solver
+                .rho
+                .clone()
+                .all_close(expected, Some(1e-5), Some(1e-6)),
+            "uniform rho should be harmonic / stationary"
+        );
     }
 
     #[test]
@@ -212,11 +213,13 @@ mod tests {
         let policy = Tensor::<B, 2>::ones([n, 1], &dev);
 
         solver.step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy);
-        let v: Vec<f32> = solver.rho.into_data().value;
+        let expected = Tensor::<B, 3>::full([1, n, 1], 0.5, &dev);
         assert!(
-            (v[0] - 0.5).abs() < 1e-4 && (v[1] - 0.5).abs() < 1e-4,
-            "expected ~0.5, got {:?}",
-            v
+            solver
+                .rho
+                .clone()
+                .all_close(expected, Some(1e-4), Some(1e-5)),
+            "expected ~0.5 equilibrium on two-node bar"
         );
     }
 
@@ -235,16 +238,30 @@ mod tests {
         let policy = Tensor::from_data(Data::new(pol, Shape::new([n, 1])), &dev);
 
         solver.step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy);
-        let v: Vec<f32> = solver.rho.into_data().value;
+        let rho = solver.rho.clone();
+        let n0 = rho.clone().slice([0..1, 0..1, 0..1]);
+        let n1 = rho.slice([0..1, 1..2, 0..1]);
+        let one = Tensor::<B, 3>::ones([1, 1, 1], &dev);
         assert!(
-            (v[0] - 1.0).abs() < 1e-5,
-            "node 0 should stay fixed by policy mask, got {}",
-            v[0]
+            n0.all_close(
+                Tensor::<B, 3>::full([1, 1, 1], 1.0, &dev),
+                Some(1e-5),
+                Some(1e-6)
+            ),
+            "node 0 should stay fixed by policy mask"
         );
         assert!(
-            v[1] > 0.0 && v[1] < 1.0,
-            "node 1 should evolve, got {}",
-            v[1]
+            n1.clone()
+                .greater_elem(0.0_f32)
+                .float()
+                .all_close(one.clone(), Some(0.0), Some(0.0)),
+            "node 1 should evolve (rho > 0)"
+        );
+        assert!(
+            n1.lower_elem(1.0_f32)
+                .float()
+                .all_close(one, Some(0.0), Some(0.0)),
+            "node 1 should evolve (rho < 1)"
         );
     }
 
@@ -265,16 +282,24 @@ mod tests {
         let policy = Tensor::<B, 2>::ones([n, 1], &dev);
 
         solver.step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy);
-        let v: Vec<f32> = solver.rho.into_data().value;
+        let rho = solver.rho.clone();
+        let fixed = rho.clone().slice([0..1, 1..2, 0..1]);
+        let free = rho.slice([0..1, 0..1, 0..1]);
         assert!(
-            (v[1] - 0.3).abs() < 1e-5,
-            "fully fixed node should keep rho, got {}",
-            v[1]
+            fixed.all_close(
+                Tensor::<B, 3>::full([1, 1, 1], 0.3, &dev),
+                Some(1e-5),
+                Some(1e-6)
+            ),
+            "fully fixed node should keep rho"
         );
         assert!(
-            (v[0] - 0.65).abs() < 1e-4,
-            "free node should diffuse toward neighbor, got {}",
-            v[0]
+            free.all_close(
+                Tensor::<B, 3>::full([1, 1, 1], 0.65, &dev),
+                Some(1e-4),
+                Some(1e-5)
+            ),
+            "free node should diffuse toward neighbor"
         );
     }
 
@@ -310,13 +335,14 @@ mod tests {
         );
         assert_eq!(pre_calls.get(), 1);
         assert_eq!(post_calls.get(), 1);
-        let v: Vec<f32> = solver.rho.into_data().value;
-        for x in v {
-            assert!(
-                (x - 0.5).abs() < 1e-4,
-                "uniform rho stationary under diffusion, got {x}"
-            );
-        }
+        let expected = Tensor::<B, 3>::full([1, n, 1], 0.5, &dev);
+        assert!(
+            solver
+                .rho
+                .clone()
+                .all_close(expected, Some(1e-4), Some(1e-5)),
+            "uniform rho stationary under diffusion"
+        );
     }
 }
 
@@ -339,11 +365,9 @@ mod optimizer_sync_tests {
             TopologySolverConfig::default(),
         );
         solver.set_rho_from_optimizer(&opt, coords);
-        let a: Vec<f32> = rho_direct.into_data().value;
-        let b: Vec<f32> = solver.rho.clone().into_data().value;
-        assert_eq!(a.len(), b.len());
-        for (x, y) in a.iter().zip(b.iter()) {
-            assert!((x - y).abs() < 1e-6, "rho mismatch: {x} vs {y}");
-        }
+        assert!(
+            rho_direct.all_close(solver.rho.clone(), Some(1e-6), Some(1e-7)),
+            "set_rho_from_optimizer must match pseudo_density_at_coords"
+        );
     }
 }

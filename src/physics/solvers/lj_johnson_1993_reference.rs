@@ -24,14 +24,14 @@
 //!
 //! - **Single-phase homogeneous fluid** checks should pick states outside the vapor–liquid dome
 //!   (e.g. supercritical `T*` well above `T_c* ≈ 1.32`) unless coexistence is explicitly intended.
-//! - **`[B, 2]`** [`super::statistical_mechanics::upscale_potentials`] rows use placeholder \(K\) only
-//!   (no EOS call in that branch). **`[B, 4]`** rows \((\varepsilon,\sigma,\rho^*,T^*)\) obtain **`K`**
-//!   via [`super::statistical_mechanics::physical_bulk_modulus_johnson1993`] (this module). Feature
-//!   **`statistical-mechanics-johnson-reference`** adds an optional reduced-\(K^*\) scalar re-export on
-//!   `statistical_mechanics` for parity checks. **Convenience:** [`bulk_modulus_from_lj_state_johnson1993`]
+//! - **`[B, 2]`** [`crate::physics::solvers::statistical_mechanics::upscale_potentials`] rows use placeholder \(K\) only
+//!   (no EOS call in that branch). **`[B, 4]`** rows \((\varepsilon,\sigma,\rho^*,T^*)\) obtain **`K_T`**
+//!   from the **third-order virial surrogate** in [`crate::physics::solvers::statistical_mechanics`] (Burn `f32`).
+//!   Feature **`statistical-mechanics-johnson-reference`** adds an optional reduced-\(K^*\) scalar re-export on
+//!   `statistical_mechanics` for parity checks. **Convenience:** `bulk_modulus_from_lj_state_johnson1993`
 //!   returns reduced `K*` for comparisons.
-//! - **`γ_gc`** in [`super::statistical_mechanics::upscale_potentials`] remains a placeholder until an
-//!   interface-resolved route exists.
+//! - **`γ_gc`** in [`crate::physics::solvers::statistical_mechanics::upscale_potentials`] uses a documented
+//!   Kirkwood–Buff / coexistence **scalar proxy** on **`[B,4]`** (see that module).
 //! - **Protocol:** the JZG (1993) analytic surface — not truncated/shifted MD with a particular
 //!   `r_c`; do not equate to cut-and-shifted simulation columns without an explicit mapping layer.
 

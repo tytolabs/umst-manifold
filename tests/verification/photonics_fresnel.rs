@@ -3,9 +3,20 @@
 
 //! FDFD Helmholtz verification (`photonics`): MMS on a Dirichlet line, two-media continuum Fresnel
 //! MMS without PML, plus interface/stack smokes with PML on. Curl–curl vs Helmholtz checks are
-//! **1-D uniform-chain** regressions only (including a piecewise \(\varepsilon_r\) profile and
+//! **1-D uniform-chain** regressions (including a piecewise \(\varepsilon_r\) profile and
 //! **`curl_curl_y_mode_matches_scalar_helmholtz_xy_embedded_chain`**: same path graph with
 //! **non-collinear** \((x,y,z)\) SI coordinates — still **not** a simplicial \(d_1\) patch solve).
+//! **Verification §6 — DEC patch (`PhotonicsDecFacesPatch`):** **`solve_maxwell_dec_patch_quad_split_pin_residual_tight`**,
+//! **`solve_maxwell_dec_patch_quad_split_tensor_eps_residual`**, **`solve_maxwell_dec_patch_quad_split_embedded_r3_residual`**,
+//! **`solve_maxwell_dec_patch_two_quads_strip_residual`**, **`solve_maxwell_dec_patch_quad_split_scalar_eps_imag_stacked_residual`**,
+//! **`dec_patch_gauged_csr_coo_matvec_matches_operator_quad_split`**, **`solve_maxwell_dec_patch_quad_split_lossless_auto_csr_matches_dense_csr_inner_off`**,
+//! **`solve_maxwell_curl_curl_dec_patch_csr_inner_matches_dense_quad_split`**
+//! — `solve_maxwell_curl_curl` **small dense** vector DEC on **2D** simplicial patches embedded in **\(\mathbb{R}^3\)** (see `PhotonicsSolver` rustdoc);
+//! the stacked-residual test exercises **nodal scalar `eps_r_imag`** via a stacked-real \(2\cdot 3N\) host solve (matrix **#6** still partial); the COO test is a **sparse-pattern harness**; **CSR matvec CG** is the **default** lossless inner solve when \(N\le\) `PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY` with **`UMST_PHOTONICS_DEC_PATCH_CSR_INNER=auto`** (unset); set **`UMST_PHOTONICS_DEC_PATCH_CSR_INNER=off`** for dense-Gauss–Jordan reference in the parity test; **`UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV=1`** still skips dense fallback for harness-only comparisons; lib `dec_patch_csr_*` parity tests cover COO/CSR consistency.
+//! **m6-dec / \(\star_1\):** **`dec_patch_primal_edge_lengths_si_quad_split_matches_geometry`** — SI primal edge lengths;
+//! **`dec_patch_diagonal_star1_quad_split_matches_primal_lengths`** — diagonal \(\star_1\) lump from those lengths;
+//! [`photonics_dec_patch_uses_metric_dual_edge_hodge`] is **`true`** (curl leg uses symmetric \(\sqrt{\star_1}\) sandwich; matrix **#6** still **50%**).
+//! **m6-dec / tensor curl leg (Whitney trace):** **`dec_patch_tensor_identity_curl_leg_matches_scalar_operator_quad_split`**, **`dec_patch_maxwell_natural_operator_symmetric_frobenius_quad_split_tensor_offdiag`**, **`dec_patch_offdiag_tensor_eps_changes_curl_leg_matvec_quad_split`** — **`[N,9]`** patches apply symmetrized **edge-averaged** **3×3** \(\varepsilon\) to the midpoint field before \(t\cdot\) into \(d_1\) (scalar **`[N,1]`** path unchanged); matrix **#6** completion bin stays **50%** until production volumetrics / \(\varepsilon^{-1}\) curl constitutive / BCs ship.
 //! **Verification §6 increment:** [`umst_manifold::physics::solvers::photonics::dec_maxwell_assembly`]
 //! re-exports [`primal_d1_edge_flux_to_faces`](umst_manifold::physics::dec_primal::primal_d1_edge_flux_to_faces)
 //! and [`primal_d1_transpose_face_flux_to_edges`](umst_manifold::physics::dec_primal::primal_d1_transpose_face_flux_to_edges)
@@ -176,6 +187,364 @@ fn quad_split_patch_tensors() -> (Tensor<B, 2, Int>, Tensor<B, 2, Int>, EdgeTopo
     );
     let topo = EdgeTopology::new(edges_b1.clone());
     (edges_b1, faces_b2, topo)
+}
+
+/// **Verification #6 — m6-dec / \(\star_1\):** [`dec_patch_primal_edge_lengths_si`](umst_manifold::physics::solvers::photonics::dec_patch_primal_edge_lengths_si)
+/// matches Euclidean segment lengths on the quad-split patch (feeds [`dec_patch_diagonal_star1_primal_edge_length_lumped_si`];
+/// matrix **#6** remains **partial** — no **100%** production claim).
+#[test]
+fn dec_patch_primal_edge_lengths_si_quad_split_matches_geometry() {
+    use umst_manifold::physics::solvers::photonics::{
+        dec_patch_primal_edge_lengths_si, photonics_dec_patch_uses_metric_dual_edge_hodge,
+    };
+
+    assert!(photonics_dec_patch_uses_metric_dual_edge_hodge());
+
+    let (edges_b1, _, _) = quad_split_patch_tensors();
+    let edges = edges_b1.into_data().value;
+    let n_e = edges.len() / 2;
+    let src: Vec<i64> = edges[..n_e].to_vec();
+    let tgt: Vec<i64> = edges[n_e..].to_vec();
+    let n = 4usize;
+    let coords: Vec<f32> = vec![
+        0.0, 0.0, 0.0, //
+        1.0, 0.0, 0.0, //
+        1.0, 1.0, 0.0, //
+        0.0, 1.0, 0.0,
+    ];
+    let lens = dec_patch_primal_edge_lengths_si(n, n_e, &src, &tgt, &coords);
+    assert_eq!(lens.len(), 5);
+    assert_relative_eq!(lens[0], 1.0_f32, epsilon = 1e-5, max_relative = 1e-5);
+    assert_relative_eq!(lens[1], 1.0_f32, epsilon = 1e-5, max_relative = 1e-5);
+    assert_relative_eq!(lens[2], 1.0_f32, epsilon = 1e-5, max_relative = 1e-5);
+    assert_relative_eq!(lens[3], 1.0_f32, epsilon = 1e-5, max_relative = 1e-5);
+    assert_relative_eq!(
+        lens[4],
+        core::f32::consts::SQRT_2,
+        epsilon = 1e-5,
+        max_relative = 1e-5
+    );
+}
+
+/// Diagonal \(\star_1\) entries equal clamped primal lengths on the quad-split patch.
+#[test]
+fn dec_patch_diagonal_star1_quad_split_matches_primal_lengths() {
+    use umst_manifold::physics::solvers::photonics::{
+        dec_patch_diagonal_star1_primal_edge_length_lumped_si, dec_patch_primal_edge_lengths_si,
+    };
+
+    let (edges_b1, _, _) = quad_split_patch_tensors();
+    let edges = edges_b1.into_data().value;
+    let n_e = edges.len() / 2;
+    let src: Vec<i64> = edges[..n_e].to_vec();
+    let tgt: Vec<i64> = edges[n_e..].to_vec();
+    let n = 4usize;
+    let coords: Vec<f32> = vec![
+        0.0, 0.0, 0.0, //
+        1.0, 0.0, 0.0, //
+        1.0, 1.0, 0.0, //
+        0.0, 1.0, 0.0,
+    ];
+    let lens = dec_patch_primal_edge_lengths_si(n, n_e, &src, &tgt, &coords);
+    let s1 = dec_patch_diagonal_star1_primal_edge_length_lumped_si(&lens);
+    assert_eq!(s1.len(), lens.len());
+    for i in 0..s1.len() {
+        assert_relative_eq!(s1[i], lens[i], epsilon = 1e-7, max_relative = 1e-7);
+    }
+}
+
+/// Frobenius symmetry of the **DEC patch** Maxwell natural operator on the quad-split patch (metric \(\star_1\) leg included).
+#[test]
+fn dec_patch_maxwell_natural_operator_symmetric_frobenius_quad_split() {
+    use umst_manifold::physics::solvers::photonics::dec_patch_maxwell_natural_matvec_flat;
+
+    let (edges_b1, faces_b2, _) = quad_split_patch_tensors();
+    let ranges: [(usize, usize); 2] = [(0, 3), (3, 6)];
+    let edges = edges_b1.into_data().value;
+    let n_e = edges.len() / 2;
+    let src: Vec<i64> = edges[..n_e].to_vec();
+    let tgt: Vec<i64> = edges[n_e..].to_vec();
+    let n = 4usize;
+    let coords: Vec<f32> = vec![
+        0.0, 0.0, 0.0, //
+        1.0, 0.0, 0.0, //
+        1.0, 1.0, 0.0, //
+        0.0, 1.0, 0.0,
+    ];
+    let faces_flat = faces_b2.into_data().value;
+    let kc = faces_flat.len() / 2;
+    let fe: Vec<i64> = faces_flat[..kc].to_vec();
+    let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
+    let k0 = 0.37_f32;
+    let eps = vec![1.0_f32; n];
+    let dim = 3 * n;
+
+    let matvec = |x: &[f32], y: &mut [f32]| {
+        dec_patch_maxwell_natural_matvec_flat(
+            x,
+            y,
+            n,
+            n_e,
+            &src,
+            &tgt,
+            &coords,
+            k0,
+            Some(&eps),
+            None,
+            &fe,
+            &fs,
+            &ranges,
+        );
+    };
+
+    let mut cols = vec![vec![0.0_f32; dim]; dim];
+    for j in 0..dim {
+        let mut ej = vec![0.0_f32; dim];
+        ej[j] = 1.0_f32;
+        matvec(&ej, &mut cols[j]);
+    }
+
+    let mut asym = 0.0_f32;
+    for i in 0..dim {
+        for j in 0..dim {
+            let aij = cols[j][i];
+            let aji = cols[i][j];
+            asym = asym.max((aij - aji).abs());
+        }
+    }
+    assert_relative_eq!(asym, 0.0_f32, epsilon = 1e-5_f32, max_relative = 1.0_f32);
+}
+
+/// Row-major **3×3 identity** per node (`[N,9]`) — [`dec_patch_operator_apply_gauged`] must match scalar **ones**
+/// on the quad-split patch (tensor path only changes the curl leg when \(\varepsilon\neq I\)).
+#[test]
+fn dec_patch_tensor_identity_curl_leg_matches_scalar_operator_quad_split() {
+    use umst_manifold::physics::solvers::photonics::dec_patch_operator_apply_gauged;
+
+    let (edges_b1, faces_b2, _) = quad_split_patch_tensors();
+    let ranges: [(usize, usize); 2] = [(0, 3), (3, 6)];
+    let edges = edges_b1.into_data().value;
+    let n_e = edges.len() / 2;
+    let src: Vec<i64> = edges[..n_e].to_vec();
+    let tgt: Vec<i64> = edges[n_e..].to_vec();
+    let n = 4usize;
+    let coords: Vec<f32> = vec![
+        0.0, 0.0, 0.0, //
+        1.0, 0.0, 0.0, //
+        1.0, 1.0, 0.0, //
+        0.0, 1.0, 0.0,
+    ];
+    let faces_flat = faces_b2.into_data().value;
+    let kc = faces_flat.len() / 2;
+    let fe: Vec<i64> = faces_flat[..kc].to_vec();
+    let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
+    let k0 = 0.41_f32;
+    let ones = vec![1.0_f32; n];
+    let mut eps9 = vec![0.0_f32; n * 9];
+    for i in 0..n {
+        let b = i * 9;
+        eps9[b] = 1.0;
+        eps9[b + 4] = 1.0;
+        eps9[b + 8] = 1.0;
+    }
+    let dim = 3 * n;
+    for trial in 0..4usize {
+        let mut x = vec![0.0_f32; dim];
+        for i in 0..dim {
+            x[i] = (((i + trial * 11) as f32) * 0.09_f32).sin();
+        }
+        let mut y_s = vec![0.0_f32; dim];
+        let mut y_t = vec![0.0_f32; dim];
+        dec_patch_operator_apply_gauged(
+            &x,
+            &mut y_s,
+            n,
+            n_e,
+            &src,
+            &tgt,
+            &coords,
+            k0,
+            Some(&ones),
+            None,
+            &fe,
+            &fs,
+            &ranges,
+        );
+        dec_patch_operator_apply_gauged(
+            &x,
+            &mut y_t,
+            n,
+            n_e,
+            &src,
+            &tgt,
+            &coords,
+            k0,
+            None,
+            Some(&eps9),
+            &fe,
+            &fs,
+            &ranges,
+        );
+        for i in 0..dim {
+            assert_relative_eq!(y_t[i], y_s[i], epsilon = 2e-5_f32, max_relative = 1e-4_f32);
+        }
+    }
+}
+
+/// Frobenius symmetry with **nodal tensor** \(\varepsilon\) including **off-diagonal** symmetric entries.
+#[test]
+fn dec_patch_maxwell_natural_operator_symmetric_frobenius_quad_split_tensor_offdiag() {
+    use umst_manifold::physics::solvers::photonics::dec_patch_maxwell_natural_matvec_flat;
+
+    let (edges_b1, faces_b2, _) = quad_split_patch_tensors();
+    let ranges: [(usize, usize); 2] = [(0, 3), (3, 6)];
+    let edges = edges_b1.into_data().value;
+    let n_e = edges.len() / 2;
+    let src: Vec<i64> = edges[..n_e].to_vec();
+    let tgt: Vec<i64> = edges[n_e..].to_vec();
+    let n = 4usize;
+    let coords: Vec<f32> = vec![
+        0.0, 0.0, 0.0, //
+        1.0, 0.0, 0.0, //
+        1.0, 1.0, 0.0, //
+        0.0, 1.0, 0.0,
+    ];
+    let faces_flat = faces_b2.into_data().value;
+    let kc = faces_flat.len() / 2;
+    let fe: Vec<i64> = faces_flat[..kc].to_vec();
+    let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
+    let k0 = 0.29_f32;
+    let mut eps9 = vec![0.0_f32; n * 9];
+    for i in 0..n {
+        let b = i * 9;
+        eps9[b] = 1.15 + 0.02 * i as f32;
+        eps9[b + 1] = 0.08;
+        eps9[b + 3] = 0.08;
+        eps9[b + 4] = 1.25 + 0.03 * i as f32;
+        eps9[b + 5] = 0.05;
+        eps9[b + 7] = 0.05;
+        eps9[b + 8] = 1.05 + 0.04 * i as f32;
+    }
+    let dim = 3 * n;
+
+    let matvec = |x: &[f32], y: &mut [f32]| {
+        dec_patch_maxwell_natural_matvec_flat(
+            x,
+            y,
+            n,
+            n_e,
+            &src,
+            &tgt,
+            &coords,
+            k0,
+            None,
+            Some(&eps9),
+            &fe,
+            &fs,
+            &ranges,
+        );
+    };
+
+    let mut cols = vec![vec![0.0_f32; dim]; dim];
+    for j in 0..dim {
+        let mut ej = vec![0.0_f32; dim];
+        ej[j] = 1.0_f32;
+        matvec(&ej, &mut cols[j]);
+    }
+
+    let mut asym = 0.0_f32;
+    for i in 0..dim {
+        for j in 0..dim {
+            let aij = cols[j][i];
+            let aji = cols[i][j];
+            asym = asym.max((aij - aji).abs());
+        }
+    }
+    assert_relative_eq!(asym, 0.0_f32, epsilon = 2e-4_f32, max_relative = 1.0_f32);
+}
+
+/// **\(k_0=0\)** so the mass term vanishes; identical **diagonal** tensor entries but added **off-diagonal**
+/// symmetric \(\varepsilon\) must change the natural matvec (curl leg) relative to identity tensor.
+#[test]
+fn dec_patch_offdiag_tensor_eps_changes_curl_leg_matvec_quad_split() {
+    use umst_manifold::physics::solvers::photonics::dec_patch_maxwell_natural_matvec_flat;
+
+    let (edges_b1, faces_b2, _) = quad_split_patch_tensors();
+    let ranges: [(usize, usize); 2] = [(0, 3), (3, 6)];
+    let edges = edges_b1.into_data().value;
+    let n_e = edges.len() / 2;
+    let src: Vec<i64> = edges[..n_e].to_vec();
+    let tgt: Vec<i64> = edges[n_e..].to_vec();
+    let n = 4usize;
+    let coords: Vec<f32> = vec![
+        0.0, 0.0, 0.0, //
+        1.0, 0.0, 0.0, //
+        1.0, 1.0, 0.0, //
+        0.0, 1.0, 0.0,
+    ];
+    let faces_flat = faces_b2.into_data().value;
+    let kc = faces_flat.len() / 2;
+    let fe: Vec<i64> = faces_flat[..kc].to_vec();
+    let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
+    let k0 = 0.0_f32;
+    let mut id9 = vec![0.0_f32; n * 9];
+    let mut od9 = vec![0.0_f32; n * 9];
+    for i in 0..n {
+        let b = i * 9;
+        id9[b] = 1.0;
+        id9[b + 4] = 1.0;
+        id9[b + 8] = 1.0;
+        od9[b] = 1.0;
+        od9[b + 1] = 0.55;
+        od9[b + 3] = 0.55;
+        od9[b + 4] = 1.0;
+        od9[b + 8] = 1.0;
+    }
+    let dim = 3 * n;
+    let mut x = vec![0.0_f32; dim];
+    for i in 0..dim {
+        x[i] = ((i as f32) * 0.21_f32).sin() + 0.03 * (i as f32);
+    }
+    let mut y_id = vec![0.0_f32; dim];
+    let mut y_od = vec![0.0_f32; dim];
+    dec_patch_maxwell_natural_matvec_flat(
+        &x,
+        &mut y_id,
+        n,
+        n_e,
+        &src,
+        &tgt,
+        &coords,
+        k0,
+        None,
+        Some(&id9),
+        &fe,
+        &fs,
+        &ranges,
+    );
+    dec_patch_maxwell_natural_matvec_flat(
+        &x,
+        &mut y_od,
+        n,
+        n_e,
+        &src,
+        &tgt,
+        &coords,
+        k0,
+        None,
+        Some(&od9),
+        &fe,
+        &fs,
+        &ranges,
+    );
+    let mut mx = 0.0_f32;
+    for i in 0..dim {
+        mx = mx.max((y_id[i] - y_od[i]).abs());
+    }
+    assert!(
+        mx > 1e-4_f32,
+        "expected curl-leg tensor coupling to move matvec (max abs diff {mx:.3e})"
+    );
 }
 
 /// Two CCW quads side-by-side sharing oriented edge **`1→4`** — same **`edges_b1` / `faces_b2`**
@@ -673,6 +1042,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz() {
         edges.clone(),
         coords.clone(),
         &cg,
+        None,
     );
 
     let helm = PhotonicsHelmholtzSolver {
@@ -735,6 +1105,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_affine_x_metric_preserves_ex_ez() {
         edges.clone(),
         coords.clone(),
         &cg,
+        None,
     );
 
     let helm = PhotonicsHelmholtzSolver {
@@ -804,6 +1175,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_xy_embedded_chain() {
         edges.clone(),
         coords.clone(),
         &cg,
+        None,
     );
 
     let helm = PhotonicsHelmholtzSolver {
@@ -869,6 +1241,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_piecewise_eps() {
         edges.clone(),
         coords.clone(),
         &cg,
+        None,
     );
 
     let helm = PhotonicsHelmholtzSolver {
@@ -947,6 +1320,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_piecewise_eps_tensor_yy() {
         edges.clone(),
         coords.clone(),
         &cg,
+        None,
     );
 
     let helm = PhotonicsHelmholtzSolver {
@@ -1134,7 +1508,16 @@ fn solve_maxwell_curl_curl_pass_through_quad_split_not_chain() {
     let ps = PhotonicsSolver {
         frequency_hz: 1e9_f32,
     };
-    let out = ps.solve_maxwell_curl_curl(e_field.clone(), eps_r, eps_i, j, edges_b1, coords, &cg);
+    let out = ps.solve_maxwell_curl_curl(
+        e_field.clone(),
+        eps_r,
+        eps_i,
+        j,
+        edges_b1,
+        coords,
+        &cg,
+        None,
+    );
     let vi = out.into_data().value;
     let ei = e_field.into_data().value;
     assert_eq!(vi.len(), ei.len());
@@ -1143,6 +1526,845 @@ fn solve_maxwell_curl_curl_pass_through_quad_split_not_chain() {
         mx = mx.max((vi[k] - ei[k]).abs());
     }
     assert_relative_eq!(mx, 0.0_f32, epsilon = 1e-6_f32, max_relative = 1.0);
+}
+
+/// **Verification #6 — DEC patch solve:** quad-split **\(N=4\), \(E=5\)** with [`PhotonicsDecFacesPatch`]
+/// exercises [`PhotonicsSolver::solve_maxwell_curl_curl`] **beyond** the uniform x-chain: host dense
+/// vector solve + **gauge pin** at node `0`; residual check uses [`dec_patch_maxwell_natural_matvec_flat`].
+#[test]
+fn solve_maxwell_dec_patch_quad_split_pin_residual_tight() {
+    use umst_manifold::physics::solvers::photonics::dec_patch_maxwell_natural_matvec_flat;
+    use umst_manifold::physics::solvers::{PhotonicsDecFacesPatch, PhotonicsSolver};
+
+    let dev = device();
+    let (edges_b1, faces_b2, _) = quad_split_patch_tensors();
+    let ranges: [(usize, usize); 2] = [(0, 3), (3, 6)];
+    let patch = PhotonicsDecFacesPatch {
+        faces_b2: &faces_b2,
+        face_column_ranges: &ranges,
+    };
+    let coords = Tensor::from_data(
+        Data::new(
+            vec![
+                0.0_f32, 0.0, 0.0, //
+                1.0, 0.0, 0.0, //
+                1.0, 1.0, 0.0, //
+                0.0, 1.0, 0.0,
+            ],
+            Shape::new([4, 3]),
+        ),
+        &dev,
+    );
+    let n = 4usize;
+    let e_field = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+    let eps_r = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let eps_i = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+    let mut jdat = vec![0.0_f32; n * 3];
+    jdat[5] = 0.02;
+    jdat[11] = -0.015;
+    let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
+    let cg = MechanicsInnerLoopConfig::default();
+    let f_hz = 2.4e9_f32;
+    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let sol = ps.solve_maxwell_curl_curl(
+        e_field.clone(),
+        eps_r,
+        eps_i,
+        j.clone(),
+        edges_b1.clone(),
+        coords.clone(),
+        &cg,
+        Some(&patch),
+    );
+    let x = sol.into_data().value;
+    let dim = 3 * n;
+    let mut y = vec![0.0_f32; dim];
+    let edges = edges_b1.into_data().value;
+    let n_e = edges.len() / 2;
+    let src: Vec<i64> = edges[..n_e].to_vec();
+    let tgt: Vec<i64> = edges[n_e..].to_vec();
+    let coords_v = coords.into_data().value;
+    let faces_flat = faces_b2.into_data().value;
+    let kc = faces_flat.len() / 2;
+    let fe: Vec<i64> = faces_flat[..kc].to_vec();
+    let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
+    let omega = core::f32::consts::TAU * f_hz;
+    let k0 = omega / 2.998e8_f32;
+    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let scale_j = omega * mu0;
+    let jv = j.into_data().value;
+    let ones_eps = vec![1.0_f32; n];
+    dec_patch_maxwell_natural_matvec_flat(
+        &x,
+        &mut y,
+        n,
+        n_e,
+        &src,
+        &tgt,
+        &coords_v,
+        k0,
+        Some(&ones_eps),
+        None,
+        &fe,
+        &fs,
+        &ranges,
+    );
+    let e0 = e_field.into_data().value;
+    for r in 0..3 {
+        assert_relative_eq!(x[r], e0[r], epsilon = 1e-4_f32, max_relative = 1.0);
+    }
+    for r in 3..dim {
+        let br = scale_j * jv[r];
+        assert_relative_eq!(y[r], br, epsilon = 5e-3_f32, max_relative = 0.02);
+    }
+}
+
+/// **m6-dec — CSR inner default (`auto`):** unset `UMST_PHOTONICS_DEC_PATCH_CSR_INNER` runs **CSR matvec CG** first on the
+/// lossless quad-split patch; **`UMST_PHOTONICS_DEC_PATCH_CSR_INNER=off`** forces dense Gauss–Jordan — fields must agree.
+#[test]
+fn solve_maxwell_dec_patch_quad_split_lossless_auto_csr_matches_dense_csr_inner_off() {
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    let _guard = ENV_LOCK.lock().expect("env test lock poisoned");
+
+    use umst_manifold::physics::solvers::{PhotonicsDecFacesPatch, PhotonicsSolver};
+
+    let restore_csr = std::env::var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER").ok();
+    let restore_force = std::env::var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV").ok();
+
+    let dev = device();
+    let (edges_b1, faces_b2, _) = quad_split_patch_tensors();
+    let ranges: [(usize, usize); 2] = [(0, 3), (3, 6)];
+    let patch = PhotonicsDecFacesPatch {
+        faces_b2: &faces_b2,
+        face_column_ranges: &ranges,
+    };
+    let coords = Tensor::from_data(
+        Data::new(
+            vec![
+                0.0_f32, 0.0, 0.0, //
+                1.0, 0.0, 0.0, //
+                1.0, 1.0, 0.0, //
+                0.0, 1.0, 0.0,
+            ],
+            Shape::new([4, 3]),
+        ),
+        &dev,
+    );
+    let n = 4usize;
+    let e_field = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+    let eps_r = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let eps_i = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+    let mut jdat = vec![0.0_f32; n * 3];
+    jdat[5] = 0.02;
+    jdat[11] = -0.015;
+    let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
+    let cg = MechanicsInnerLoopConfig::default();
+    let f_hz = 2.4e9_f32;
+    let ps = PhotonicsSolver { frequency_hz: f_hz };
+
+    std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV");
+    std::env::set_var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER", "off");
+    let sol_dense = ps.solve_maxwell_curl_curl(
+        e_field.clone(),
+        eps_r.clone(),
+        eps_i.clone(),
+        j.clone(),
+        edges_b1.clone(),
+        coords.clone(),
+        &cg,
+        Some(&patch),
+    );
+
+    std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER");
+    let sol_auto = ps.solve_maxwell_curl_curl(
+        e_field,
+        eps_r,
+        eps_i,
+        j,
+        edges_b1,
+        coords,
+        &cg,
+        Some(&patch),
+    );
+
+    match restore_csr {
+        Some(ref v) => std::env::set_var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER", v),
+        None => std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER"),
+    }
+    match restore_force {
+        Some(ref v) => std::env::set_var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV", v),
+        None => std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV"),
+    }
+
+    let vd = sol_dense.into_data().value;
+    let va = sol_auto.into_data().value;
+    let mut mx = 0.0_f32;
+    for k in 0..vd.len() {
+        mx = mx.max((vd[k] - va[k]).abs());
+    }
+    assert_relative_eq!(mx, 0.0_f32, epsilon = 5e-4_f32, max_relative = 1.0);
+}
+
+/// **m6-dec — CSR inner Krylov wiring:** `UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV=1` skips dense Gauss–Jordan fallback so the
+/// lossless patch path stays on **CSR matvec CG**; the field matches the default **`auto`** driver on the quad-split harness.
+#[test]
+fn solve_maxwell_curl_curl_dec_patch_csr_inner_matches_dense_quad_split() {
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    let _guard = ENV_LOCK.lock().expect("env test lock poisoned");
+
+    use umst_manifold::physics::solvers::photonics::dec_patch_maxwell_natural_matvec_flat;
+    use umst_manifold::physics::solvers::{PhotonicsDecFacesPatch, PhotonicsSolver};
+
+    let restore_force = std::env::var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV").ok();
+    let restore_csr = std::env::var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER").ok();
+
+    let dev = device();
+    let (edges_b1, faces_b2, _) = quad_split_patch_tensors();
+    let ranges: [(usize, usize); 2] = [(0, 3), (3, 6)];
+    let patch = PhotonicsDecFacesPatch {
+        faces_b2: &faces_b2,
+        face_column_ranges: &ranges,
+    };
+    let coords = Tensor::from_data(
+        Data::new(
+            vec![
+                0.0_f32, 0.0, 0.0, //
+                1.0, 0.0, 0.0, //
+                1.0, 1.0, 0.0, //
+                0.0, 1.0, 0.0,
+            ],
+            Shape::new([4, 3]),
+        ),
+        &dev,
+    );
+    let n = 4usize;
+    let e_field = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+    let eps_r = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let eps_i = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+    let mut jdat = vec![0.0_f32; n * 3];
+    jdat[5] = 0.02;
+    jdat[11] = -0.015;
+    let j = Tensor::<B, 3>::from_data(Data::new(jdat.clone(), Shape::new([1, n, 3])), &dev);
+    let cg = MechanicsInnerLoopConfig::default();
+    let f_hz = 2.4e9_f32;
+    let ps = PhotonicsSolver { frequency_hz: f_hz };
+
+    std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV");
+    std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER");
+    let sol_dense = ps.solve_maxwell_curl_curl(
+        e_field.clone(),
+        eps_r.clone(),
+        eps_i.clone(),
+        j.clone(),
+        edges_b1.clone(),
+        coords.clone(),
+        &cg,
+        Some(&patch),
+    );
+
+    std::env::set_var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV", "1");
+    let sol_csr_path = ps.solve_maxwell_curl_curl(
+        e_field.clone(),
+        eps_r.clone(),
+        eps_i.clone(),
+        j.clone(),
+        edges_b1.clone(),
+        coords.clone(),
+        &cg,
+        Some(&patch),
+    );
+
+    match restore_force {
+        Some(ref v) => std::env::set_var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV", v),
+        None => std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV"),
+    }
+    match restore_csr {
+        Some(ref v) => std::env::set_var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER", v),
+        None => std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER"),
+    }
+
+    let vd = sol_dense.into_data().value;
+    let vc = sol_csr_path.into_data().value;
+    let mut mx = 0.0_f32;
+    for k in 0..vd.len() {
+        mx = mx.max((vd[k] - vc[k]).abs());
+    }
+    assert_relative_eq!(mx, 0.0_f32, epsilon = 5e-4_f32, max_relative = 1.0);
+
+    let dim = 3 * n;
+    let mut y = vec![0.0_f32; dim];
+    let edges = edges_b1.into_data().value;
+    let n_e = edges.len() / 2;
+    let src: Vec<i64> = edges[..n_e].to_vec();
+    let tgt: Vec<i64> = edges[n_e..].to_vec();
+    let coords_v = coords.into_data().value;
+    let faces_flat = faces_b2.into_data().value;
+    let kc = faces_flat.len() / 2;
+    let fe: Vec<i64> = faces_flat[..kc].to_vec();
+    let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
+    let omega = core::f32::consts::TAU * f_hz;
+    let k0 = omega / 2.998e8_f32;
+    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let scale_j = omega * mu0;
+    let jv = j.into_data().value;
+    let ones_eps = vec![1.0_f32; n];
+    dec_patch_maxwell_natural_matvec_flat(
+        &vc,
+        &mut y,
+        n,
+        n_e,
+        &src,
+        &tgt,
+        &coords_v,
+        k0,
+        Some(&ones_eps),
+        None,
+        &fe,
+        &fs,
+        &ranges,
+    );
+    let e0 = e_field.into_data().value;
+    for r in 0..3 {
+        assert_relative_eq!(vc[r], e0[r], epsilon = 1e-4_f32, max_relative = 1.0);
+    }
+    for r in 3..dim {
+        let br = scale_j * jv[r];
+        assert_relative_eq!(y[r], br, epsilon = 5e-3_f32, max_relative = 0.02);
+    }
+}
+
+/// **Verification #6 — lossy scalar \(\varepsilon''\) on patch:** same quad-split as
+/// [`solve_maxwell_dec_patch_quad_split_pin_residual_tight`], with small nodal **`eps_r_imag`**.
+/// [`PhotonicsSolver::solve_maxwell_curl_curl`] returns **\(\Re\mathbf{E}\)** (imaginary block discarded on tensor API);
+/// this test checks agreement with [`photonics_dec_patch_dense_stacked_lossy_solution_vectors`] and stacked residual.
+#[test]
+fn solve_maxwell_dec_patch_quad_split_scalar_eps_imag_stacked_residual() {
+    use umst_manifold::physics::solvers::photonics::{
+        dec_patch_operator_apply_gauged_stacked_lossy,
+        photonics_dec_patch_dense_stacked_lossy_solution_vectors,
+    };
+    use umst_manifold::physics::solvers::{PhotonicsDecFacesPatch, PhotonicsSolver};
+
+    let dev = device();
+    let (edges_b1, faces_b2, _) = quad_split_patch_tensors();
+    let ranges: [(usize, usize); 2] = [(0, 3), (3, 6)];
+    let patch = PhotonicsDecFacesPatch {
+        faces_b2: &faces_b2,
+        face_column_ranges: &ranges,
+    };
+    let coords = Tensor::from_data(
+        Data::new(
+            vec![
+                0.0_f32, 0.0, 0.0, //
+                1.0, 0.0, 0.0, //
+                1.0, 1.0, 0.0, //
+                0.0, 1.0, 0.0,
+            ],
+            Shape::new([4, 3]),
+        ),
+        &dev,
+    );
+    let n = 4usize;
+    let e_field = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+    let eps_r = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let mut eps_im = vec![0.0_f32; n];
+    eps_im[1] = 0.02;
+    eps_im[2] = 0.015;
+    let eps_i = Tensor::<B, 3>::from_data(Data::new(eps_im.clone(), Shape::new([1, n, 1])), &dev);
+    let mut jdat = vec![0.0_f32; n * 3];
+    jdat[5] = 0.02;
+    jdat[11] = -0.015;
+    let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
+    let cg = MechanicsInnerLoopConfig::default();
+    let f_hz = 2.4e9_f32;
+    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let sol = ps.solve_maxwell_curl_curl(
+        e_field.clone(),
+        eps_r.clone(),
+        eps_i.clone(),
+        j.clone(),
+        edges_b1.clone(),
+        coords.clone(),
+        &cg,
+        Some(&patch),
+    );
+    let x_api = sol.into_data().value;
+
+    let dim = 3 * n;
+    let edges = edges_b1.clone().into_data().value;
+    let n_e = edges.len() / 2;
+    let src: Vec<i64> = edges[..n_e].to_vec();
+    let tgt: Vec<i64> = edges[n_e..].to_vec();
+    let coords_v = coords.clone().into_data().value;
+    let faces_flat = faces_b2.clone().into_data().value;
+    let kc = faces_flat.len() / 2;
+    let fe: Vec<i64> = faces_flat[..kc].to_vec();
+    let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
+    let omega = core::f32::consts::TAU * f_hz;
+    let k0 = omega / 2.998e8_f32;
+    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let scale_j = omega * mu0;
+    let jv = j.into_data().value;
+    let mut b = vec![0.0_f32; dim];
+    for i in 0..n {
+        for c in 0..3usize {
+            b[3 * i + c] = scale_j * jv[3 * i + c];
+        }
+    }
+    let e0 = e_field.into_data().value;
+    b[..3].copy_from_slice(&e0[..3]);
+
+    let ones_eps = vec![1.0_f32; n];
+    let (er, ei) = photonics_dec_patch_dense_stacked_lossy_solution_vectors(
+        n,
+        n_e,
+        &src,
+        &tgt,
+        &coords_v,
+        k0,
+        Some(&ones_eps),
+        None,
+        &eps_im,
+        &fe,
+        &fs,
+        &ranges,
+        &b,
+    )
+    .expect("stacked lossy dense solve");
+
+    for k in 0..dim {
+        assert_relative_eq!(x_api[k], er[k], epsilon = 1e-4_f32, max_relative = 1e-3);
+    }
+
+    let dim2 = 2 * dim;
+    let mut x_stack = vec![0.0_f32; dim2];
+    x_stack[..dim].copy_from_slice(&er);
+    x_stack[dim..].copy_from_slice(&ei);
+    let mut y_stack = vec![0.0_f32; dim2];
+    let mut b_stack = vec![0.0_f32; dim2];
+    b_stack[..dim].copy_from_slice(&b);
+    b_stack[dim..dim + 3].fill(0.0_f32);
+    dec_patch_operator_apply_gauged_stacked_lossy(
+        &x_stack,
+        &mut y_stack,
+        n,
+        n_e,
+        &src,
+        &tgt,
+        &coords_v,
+        k0,
+        Some(&ones_eps),
+        None,
+        &eps_im,
+        &fe,
+        &fs,
+        &ranges,
+    );
+    let mut rn = 0.0_f32;
+    for k in 0..dim2 {
+        let d = y_stack[k] - b_stack[k];
+        rn += d * d;
+    }
+    rn = rn.sqrt();
+    let bn = b_stack
+        .iter()
+        .map(|&t| t * t)
+        .sum::<f32>()
+        .sqrt()
+        .max(1e-20_f32);
+    assert!(
+        rn / bn < 5e-5_f32,
+        "stacked lossy residual rel={} (abs {})",
+        rn / bn,
+        rn
+    );
+}
+
+/// **Verification #6 — sparse COO harness (real gauged patch operator):** column-wise probes build a
+/// **COO** matrix whose matvec matches [`dec_patch_operator_apply_gauged`]; asserts **nnz** stays well
+/// below **\((3N)^2\)** on the quad-split patch (harness toward sparse factorization — **not** shipped inner solve).
+#[test]
+fn dec_patch_gauged_csr_coo_matvec_matches_operator_quad_split() {
+    use umst_manifold::physics::solvers::photonics::{
+        dec_patch_csr_coo_matvec_f32, dec_patch_maxwell_gauged_operator_csr_coo,
+        dec_patch_operator_apply_gauged,
+    };
+
+    let dev = device();
+    let (edges_b1, faces_b2, _) = quad_split_patch_tensors();
+    let ranges: [(usize, usize); 2] = [(0, 3), (3, 6)];
+    let coords: Tensor<B, 2> = Tensor::from_data(
+        Data::new(
+            vec![
+                0.0_f32, 0.0, 0.0, //
+                1.0, 0.0, 0.0, //
+                1.0, 1.0, 0.0, //
+                0.0, 1.0, 0.0,
+            ],
+            Shape::new([4, 3]),
+        ),
+        &dev,
+    );
+    let n = 4usize;
+    let edges = edges_b1.into_data().value;
+    let n_e = edges.len() / 2;
+    let src: Vec<i64> = edges[..n_e].to_vec();
+    let tgt: Vec<i64> = edges[n_e..].to_vec();
+    let coords_v = coords.into_data().value;
+    let faces_flat = faces_b2.into_data().value;
+    let kc = faces_flat.len() / 2;
+    let fe: Vec<i64> = faces_flat[..kc].to_vec();
+    let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
+    let f_hz = 2.4e9_f32;
+    let omega = core::f32::consts::TAU * f_hz;
+    let k0 = omega / 2.998e8_f32;
+    let ones_eps = vec![1.0_f32; n];
+    let drop_tol = 1e-8_f32;
+    let coo = dec_patch_maxwell_gauged_operator_csr_coo(
+        n,
+        n_e,
+        &src,
+        &tgt,
+        &coords_v,
+        k0,
+        Some(&ones_eps),
+        None,
+        &fe,
+        &fs,
+        &ranges,
+        drop_tol,
+    );
+    let dim = 3 * n;
+    let dense_cap = dim * dim;
+    assert!(
+        coo.len() < dense_cap,
+        "expected sparse COO (nnz={}) << dense {}",
+        coo.len(),
+        dense_cap
+    );
+    // Regression band: stencil + gauge rows stay O(dim) on this mesh (nnz ≈ 150–220 observed).
+    assert!(
+        coo.len() <= 22 * dim,
+        "nnz regression: len={} dim={}",
+        coo.len(),
+        dim
+    );
+
+    let mut x = vec![0.0_f32; dim];
+    let mut y_ref = vec![0.0_f32; dim];
+    let mut y_csr = vec![0.0_f32; dim];
+    for trial in 0..5usize {
+        for i in 0..dim {
+            x[i] = (((i + trial * 7) as f32) * 0.13_f32).sin();
+        }
+        dec_patch_operator_apply_gauged(
+            &x,
+            &mut y_ref,
+            n,
+            n_e,
+            &src,
+            &tgt,
+            &coords_v,
+            k0,
+            Some(&ones_eps),
+            None,
+            &fe,
+            &fs,
+            &ranges,
+        );
+        dec_patch_csr_coo_matvec_f32(&coo, &x, &mut y_csr);
+        for i in 0..dim {
+            assert_relative_eq!(
+                y_csr[i],
+                y_ref[i],
+                epsilon = 1e-4_f32,
+                max_relative = 1e-3_f32
+            );
+        }
+    }
+}
+
+/// **Verification #6 — tensor \(\varepsilon\) on patch:** same quad-split topology with **anisotropic**
+/// diagonal **\([1,N,9]\)** nodal tensor; [`solve_maxwell_curl_curl`] with [`PhotonicsDecFacesPatch`] runs
+/// and satisfies the same **pinned** natural-row residual check.
+#[test]
+fn solve_maxwell_dec_patch_quad_split_tensor_eps_residual() {
+    use umst_manifold::physics::solvers::photonics::dec_patch_maxwell_natural_matvec_flat;
+    use umst_manifold::physics::solvers::{PhotonicsDecFacesPatch, PhotonicsSolver};
+
+    let dev = device();
+    let (edges_b1, faces_b2, _) = quad_split_patch_tensors();
+    let ranges: [(usize, usize); 2] = [(0, 3), (3, 6)];
+    let patch = PhotonicsDecFacesPatch {
+        faces_b2: &faces_b2,
+        face_column_ranges: &ranges,
+    };
+    let coords = Tensor::from_data(
+        Data::new(
+            vec![
+                0.0_f32, 0.0, 0.0, //
+                1.0, 0.0, 0.0, //
+                1.0, 1.0, 0.0, //
+                0.0, 1.0, 0.0,
+            ],
+            Shape::new([4, 3]),
+        ),
+        &dev,
+    );
+    let n = 4usize;
+    let mut eps9 = vec![0.0_f32; n * 9];
+    for i in 0..n {
+        eps9[i * 9] = 1.1 + 0.03 * i as f32;
+        eps9[i * 9 + 4] = 1.4 + 0.05 * i as f32;
+        eps9[i * 9 + 8] = 1.2 + 0.04 * i as f32;
+    }
+    let eps_r = Tensor::<B, 3>::from_data(Data::new(eps9, Shape::new([1, n, 9])), &dev);
+    let eps_flat = eps_r.clone().into_data().value;
+    let eps_i = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+    let e_field = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+    let mut jdat = vec![0.0_f32; n * 3];
+    jdat[8] = 0.01;
+    let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
+    let cg = MechanicsInnerLoopConfig::default();
+    let f_hz = 1.1e9_f32;
+    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let sol = ps.solve_maxwell_curl_curl(
+        e_field.clone(),
+        eps_r,
+        eps_i,
+        j.clone(),
+        edges_b1.clone(),
+        coords.clone(),
+        &cg,
+        Some(&patch),
+    );
+    let x = sol.into_data().value;
+    let dim = 3 * n;
+    let mut y = vec![0.0_f32; dim];
+    let edges = edges_b1.into_data().value;
+    let n_e = edges.len() / 2;
+    let src: Vec<i64> = edges[..n_e].to_vec();
+    let tgt: Vec<i64> = edges[n_e..].to_vec();
+    let coords_v = coords.into_data().value;
+    let faces_flat = faces_b2.into_data().value;
+    let kc = faces_flat.len() / 2;
+    let fe: Vec<i64> = faces_flat[..kc].to_vec();
+    let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
+    let omega = core::f32::consts::TAU * f_hz;
+    let k0 = omega / 2.998e8_f32;
+    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let scale_j = omega * mu0;
+    let jv = j.into_data().value;
+    dec_patch_maxwell_natural_matvec_flat(
+        &x,
+        &mut y,
+        n,
+        n_e,
+        &src,
+        &tgt,
+        &coords_v,
+        k0,
+        None,
+        Some(&eps_flat),
+        &fe,
+        &fs,
+        &ranges,
+    );
+    let e0 = e_field.into_data().value;
+    for r in 0..3 {
+        assert_relative_eq!(x[r], e0[r], epsilon = 1e-4_f32, max_relative = 1.0);
+    }
+    for r in 3..dim {
+        let br = scale_j * jv[r];
+        assert_relative_eq!(y[r], br, epsilon = 5e-3_f32, max_relative = 0.02);
+    }
+}
+
+/// **Verification #6 — \(\mathbb{R}^3\) embedding:** same quad-split **incidence** with **non-planar**
+/// SI coordinates (slanted patch); DEC tangents and \(d_1\) use full **3D** edge vectors.
+#[test]
+fn solve_maxwell_dec_patch_quad_split_embedded_r3_residual() {
+    use umst_manifold::physics::solvers::photonics::dec_patch_maxwell_natural_matvec_flat;
+    use umst_manifold::physics::solvers::{PhotonicsDecFacesPatch, PhotonicsSolver};
+
+    let dev = device();
+    let (edges_b1, faces_b2, _) = quad_split_patch_tensors();
+    let ranges: [(usize, usize); 2] = [(0, 3), (3, 6)];
+    let patch = PhotonicsDecFacesPatch {
+        faces_b2: &faces_b2,
+        face_column_ranges: &ranges,
+    };
+    let coords = Tensor::from_data(
+        Data::new(
+            vec![
+                0.0_f32, 0.0, 0.0, //
+                1.0, 0.1, -0.05, //
+                1.0, 1.0, 0.12, //
+                0.05, 1.0, -0.03,
+            ],
+            Shape::new([4, 3]),
+        ),
+        &dev,
+    );
+    let n = 4usize;
+    let e_field = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+    let eps_r = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let eps_i = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+    let mut jdat = vec![0.0_f32; n * 3];
+    jdat[7] = 0.03;
+    let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
+    let cg = MechanicsInnerLoopConfig::default();
+    let f_hz = 3.0e9_f32;
+    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let sol = ps.solve_maxwell_curl_curl(
+        e_field.clone(),
+        eps_r,
+        eps_i,
+        j.clone(),
+        edges_b1.clone(),
+        coords.clone(),
+        &cg,
+        Some(&patch),
+    );
+    let x = sol.into_data().value;
+    let dim = 3 * n;
+    let mut y = vec![0.0_f32; dim];
+    let edges = edges_b1.into_data().value;
+    let n_e = edges.len() / 2;
+    let src: Vec<i64> = edges[..n_e].to_vec();
+    let tgt: Vec<i64> = edges[n_e..].to_vec();
+    let coords_v = coords.into_data().value;
+    let faces_flat = faces_b2.into_data().value;
+    let kc = faces_flat.len() / 2;
+    let fe: Vec<i64> = faces_flat[..kc].to_vec();
+    let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
+    let omega = core::f32::consts::TAU * f_hz;
+    let k0 = omega / 2.998e8_f32;
+    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let scale_j = omega * mu0;
+    let jv = j.into_data().value;
+    let ones_eps = vec![1.0_f32; n];
+    dec_patch_maxwell_natural_matvec_flat(
+        &x,
+        &mut y,
+        n,
+        n_e,
+        &src,
+        &tgt,
+        &coords_v,
+        k0,
+        Some(&ones_eps),
+        None,
+        &fe,
+        &fs,
+        &ranges,
+    );
+    let e0 = e_field.into_data().value;
+    for r in 0..3 {
+        assert_relative_eq!(x[r], e0[r], epsilon = 1e-4_f32, max_relative = 1.0);
+    }
+    for r in 3..dim {
+        let br = scale_j * jv[r];
+        assert_relative_eq!(y[r], br, epsilon = 5e-3_f32, max_relative = 0.02);
+    }
+}
+
+/// **Verification #6 — two-quad strip:** six-node patch with [`PhotonicsDecFacesPatch`] (same
+/// `faces_b2` as [`assembled_two_quads_dec_primal_photonics_maxwell_deferred`]) — **solve** path (not pass-through).
+#[test]
+fn solve_maxwell_dec_patch_two_quads_strip_residual() {
+    use umst_manifold::physics::solvers::photonics::dec_patch_maxwell_natural_matvec_flat;
+    use umst_manifold::physics::solvers::{PhotonicsDecFacesPatch, PhotonicsSolver};
+
+    let dev = device();
+    let (edges_b1, faces_b2, _) = two_quads_shared_edge_patch_tensors();
+    let ranges: [(usize, usize); 4] = [(0, 3), (3, 6), (6, 9), (9, 12)];
+    let patch = PhotonicsDecFacesPatch {
+        faces_b2: &faces_b2,
+        face_column_ranges: &ranges,
+    };
+    let coords = Tensor::from_data(
+        Data::new(
+            vec![
+                0.0_f32, 1.0, 0.0, //
+                1.0, 1.0, 0.0, //
+                2.0, 1.0, 0.0, //
+                0.0, 0.0, 0.0, //
+                1.0, 0.0, 0.0, //
+                2.0, 0.0, 0.0,
+            ],
+            Shape::new([6, 3]),
+        ),
+        &dev,
+    );
+    let n = 6usize;
+    let e_field = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+    let eps_r = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let eps_i = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+    let mut jdat = vec![0.0_f32; n * 3];
+    jdat[10] = 0.01;
+    jdat[16] = -0.008;
+    let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
+    let cg = MechanicsInnerLoopConfig::default();
+    let f_hz = 1.8e9_f32;
+    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let sol = ps.solve_maxwell_curl_curl(
+        e_field.clone(),
+        eps_r,
+        eps_i,
+        j.clone(),
+        edges_b1.clone(),
+        coords.clone(),
+        &cg,
+        Some(&patch),
+    );
+    let x = sol.into_data().value;
+    let dim = 3 * n;
+    let mut y = vec![0.0_f32; dim];
+    let edges = edges_b1.into_data().value;
+    let n_e = edges.len() / 2;
+    let src: Vec<i64> = edges[..n_e].to_vec();
+    let tgt: Vec<i64> = edges[n_e..].to_vec();
+    let coords_v = coords.into_data().value;
+    let faces_flat = faces_b2.into_data().value;
+    let kc = faces_flat.len() / 2;
+    let fe: Vec<i64> = faces_flat[..kc].to_vec();
+    let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
+    let omega = core::f32::consts::TAU * f_hz;
+    let k0 = omega / 2.998e8_f32;
+    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let scale_j = omega * mu0;
+    let jv = j.into_data().value;
+    let ones_eps = vec![1.0_f32; n];
+    dec_patch_maxwell_natural_matvec_flat(
+        &x,
+        &mut y,
+        n,
+        n_e,
+        &src,
+        &tgt,
+        &coords_v,
+        k0,
+        Some(&ones_eps),
+        None,
+        &fe,
+        &fs,
+        &ranges,
+    );
+    let e0 = e_field.into_data().value;
+    for r in 0..3 {
+        assert_relative_eq!(x[r], e0[r], epsilon = 1e-4_f32, max_relative = 1.0);
+    }
+    for r in 3..dim {
+        let br = scale_j * jv[r];
+        assert_relative_eq!(y[r], br, epsilon = 8e-3_f32, max_relative = 0.03);
+    }
 }
 
 /// **Verification #6 — assembled two-quad strip:** six-node / nine-edge **`faces_b2`** incidence
@@ -1228,7 +2450,16 @@ fn assembled_two_quads_dec_primal_photonics_maxwell_deferred() {
     let j = Tensor::<B, 3>::zeros([1, n, 3], &dev);
     let cg = MechanicsInnerLoopConfig::default();
     let ps = PhotonicsSolver { frequency_hz: f_hz };
-    let out = ps.solve_maxwell_curl_curl(e_field.clone(), eps_r3, eps_i, j, edges_b1, coords, &cg);
+    let out = ps.solve_maxwell_curl_curl(
+        e_field.clone(),
+        eps_r3,
+        eps_i,
+        j,
+        edges_b1,
+        coords,
+        &cg,
+        None,
+    );
     let vi = out.into_data().value;
     let ei = e_field.into_data().value;
     assert_eq!(vi.len(), ei.len());
@@ -1359,6 +2590,57 @@ fn fresnel_interface_standing_wave_proxy() {
     assert!(
         swr_proxy > 0.08 && swr_proxy < 0.95,
         "expected oscillating |E|² in vacuum window (swr_proxy={swr_proxy}, |r|²_analytic={r2_target})"
+    );
+}
+
+/// Analytic normal-incidence reflectivity **\(|r|^2\)** for **10×(H+L)** quarter-wave bilayers (**\(n_\mathrm H=2\)**,
+/// **\(n_\mathrm L=1\)**) between semi-infinite **\(n_0=n_s=1\)** media via ABCD transfer matrices (δ = π/2 per layer).
+/// **Purpose:** deterministic high-reflectivity gate independent of FEM/PML meshes (`quarter_wave_stack_high_reflectivity` remains a numerical smoke).
+#[test]
+fn quarter_wave_stack_n10_reflectivity_above_0p95() {
+    use num_complex::Complex64;
+
+    let layer_qw = |n: f64| -> [[Complex64; 2]; 2] {
+        let i_n = Complex64::new(0.0_f64, n);
+        let i_over_n = Complex64::new(0.0_f64, 1.0_f64 / n);
+        [
+            [Complex64::from(0.0), i_over_n],
+            [i_n, Complex64::from(0.0)],
+        ]
+    };
+    let mat_mul = |a: &[[Complex64; 2]; 2], b: &[[Complex64; 2]; 2]| -> [[Complex64; 2]; 2] {
+        [
+            [
+                a[0][0] * b[0][0] + a[0][1] * b[1][0],
+                a[0][0] * b[0][1] + a[0][1] * b[1][1],
+            ],
+            [
+                a[1][0] * b[0][0] + a[1][1] * b[1][0],
+                a[1][0] * b[0][1] + a[1][1] * b[1][1],
+            ],
+        ]
+    };
+
+    let n_h = 2.0_f64;
+    let n_l = 1.0_f64;
+    let bilayer = mat_mul(&layer_qw(n_h), &layer_qw(n_l));
+    let mut m = [
+        [Complex64::new(1.0, 0.0), Complex64::new(0.0, 0.0)],
+        [Complex64::new(0.0, 0.0), Complex64::new(1.0, 0.0)],
+    ];
+    for _ in 0..10 {
+        m = mat_mul(&m, &bilayer);
+    }
+
+    let n0 = 1.0_f64;
+    let ns = 1.0_f64;
+    let b = m[0][0] + m[0][1] * ns;
+    let c = m[1][0] + m[1][1] * ns;
+    let r = (b * n0 - c) / (b * n0 + c);
+    let rr = r.norm_sqr() as f32;
+    assert!(
+        rr > 0.95_f32,
+        "expected |r|² > 0.95 for n=10 QW stack (analytic transfer matrix), got {rr}"
     );
 }
 

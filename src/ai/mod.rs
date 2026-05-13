@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
+//! RL / topology orchestration. Policy boundary: [`ppo::ManifoldGateway`] documents the
+//! **IO barrier** (tensor reductions vs [`cbf::ThermodynamicCBF`] scalar sync); solver cores should
+//! stay lazy and avoid host reads in inner loops where possible.
+
 pub mod adjoint;
 pub mod cbf;
 pub mod info_gain;

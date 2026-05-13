@@ -4,7 +4,8 @@
 //! Monolithic THMC coupling — operator-split **`ThmcSolver::step`** with optional implicit Newton blocks.
 //!
 //! **Solver status:** [`docs/Solver-Status.md`](../../../docs/Solver-Status.md) — deferred-index **THMC** bullet and
-//! table row `solvers::thmc` (`ThmcSolver`, feature `thmc-coupled`, `tests/verification/thmc_drying_shrinkage.rs`).
+//! table row `solvers::thmc` (`ThmcSolver`, feature `thmc-coupled`, `tests/verification/thmc_drying_shrinkage.rs`,
+//! `tests/verification/thmc_monolithic_newton_chain.rs` — Track **G** / Phase **4A** stacked Newton on a 1D chain).
 //! What is verified there vs. placeholder/deferred here stays in that file; this module is the implementation anchor.
 //!
 //! Full design: implicit Euler + Newton on coupled residuals; sub-calls to transport
@@ -22,7 +23,7 @@
 //! **Monolithic Newton (Phase 5 — partial, small graph only):** when [`ThmcSolver::monolithic_thmc_newton`] is `Some`,
 //! each outer pass replaces the split \((T,\alpha)\to h\to u\) sequence with **dense** damped Newton on the
 //! backward-Euler stacked unknowns including quasi-static \(R_u\)
-//! ([`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]) **only
+//! (`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`) **only
 //! while** field-major stacked DOFs \(\le\) [`crate::physics::solvers::THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] (**64**,
 //! unified post-**`3394b96`** — see [`docs/Solver-Status.md`](../../../docs/Solver-Status.md) §THMC and matrix **#8**).
 //! **No** shipped path performs dense Newton (or a dense Jacobian solve) **above** that cap. At production \(N\), the
@@ -32,11 +33,11 @@
 //! thermal Laplacian + exothermic coupling, or opt-in backward-Euler **\((T,\alpha)\)** damped Newton), **(2)**
 //! advance **humidity \(h\)** (topological Laplacian + optional tail drying), **(3)** quasi-static **bar \(u\)** when
 //! `[N,3]` `node_positions` and the BC mask allow — then repeat for diagnostics; **after** the outer loop,
-//! **once**, [`PhaseFieldFractureSolver::update_damage`]. Transport Laplacians use **`damage` frozen at step
+//! **once**, [`super::fracture_field::PhaseFieldFractureSolver::update_damage`]. Transport Laplacians use **`damage` frozen at step
 //! entry** for every pass (no within-step \(u\!\leftrightarrow\!d\) stagger). This is **not** a Jacobian–Newton
 //! solve on the fully coupled residual. **Opt-in (feature `thmc-coupled`):** set
 //! [`ThmcSolver::implicit_t_alpha_newton`] to replace the explicit \(T\) + \(\alpha\) updates **per outer pass**
-//! with multi-step damped Newton on the backward-Euler \((T,\alpha)\) block ([`crate::physics::solvers::thmc_residual::ThmcImplicitEulerThermalHydrationResidual`]).
+//! with multi-step damped Newton on the backward-Euler \((T,\alpha)\) block (`ThmcImplicitEulerThermalHydrationResidual`).
 //! Default **`None`** preserves the legacy split. **Milestone:** the
 //! `ThmcImplicitEulerThermalHydrationResidual` type in `thmc_residual.rs` assembles the backward-Euler
 //! residual for the **\(T\)–\(\alpha\)** block only; see `tests/verification/thmc_drying_shrinkage.rs`.
@@ -44,7 +45,8 @@
 //! **Thermal / hydrologic residual tensors (diagnostic):** after each outer pass,
 //! \(R_T=|T_{\mathrm{new}}-T_{\mathrm{old}}-\Delta t\,\mathrm{lap}_T|\),
 //! \(R_h=|h_{\mathrm{new}}-h_{\mathrm{old}}-\Delta t\,\mathrm{lap}_h|\) (nodal tensors; **no** `.into_scalar()` reduction on the
-//! hot path). Early exit on \(\|R\|<\) `tol` would require a device sync — omitted for autodiff-safe control flow.
+//! hot path). Early exit on \(\|R\|<\) `tol` would require a device sync — omitted for autodiff-safe control flow
+//! (see [`docs/FP_CATEGORICAL_BURN.md`](../../../docs/FP_CATEGORICAL_BURN.md) § *Hotspots* — operator-split THMC vs CG helper).
 //! Mechanics remains a **standalone** equilibrium solve per pass (after \(h\)); **\(\alpha\)** is updated in the
 //! same sub-step as \(T\) (explicit or implicit BE block). Fracture runs **once** after all outer passes.
 //! Coupled Jacobians and cartridge closures remain future work. **No** global finite-difference or AD
@@ -53,7 +55,7 @@
 //! [`ThmcSolver::monolithic_thmc_newton`] is `Some` — see below. The optional dense Jacobian for \((T,\alpha)\)
 //! applies only when [`ThmcSolver::implicit_t_alpha_newton`] is `Some` (feature `thmc-coupled`). **Phase 5:** when
 //! [`ThmcSolver::monolithic_thmc_newton`] is `Some`, each outer pass runs
-//! [`crate::physics::solvers::thmc_residual::ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`] instead of the
+//! `ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u` instead of the
 //! split \((T,\alpha)\to h\to u\) sequence (small graphs only — see struct rustdoc).
 //!
 //! **Calibration surface (cross-ref Solver-Status THMC):** [`ThmcHydrationKinetics`] bundles Arrhenius /
@@ -64,21 +66,21 @@
 //! ## Coupled stepping (`thmc-coupled`; also enabled via `solver-research` / `solver-experimental` meta-features)
 //! Per outer pass (see ordering above): **`damage` for Laplacian weights is fixed at step entry** (not updated between passes).
 //! - **\(T\) and hydration \(\alpha\) (first):** thermal [`crate::physics::laplacian::TopologicalLaplacian`] on \(T\) with that mask;
-//!   exothermic heat \(\propto \dot\alpha\); then either explicit Euler on \(T\) and explicit \(\alpha \leftarrow \mathrm{clip}_{[0,1]}\bigl(\alpha + \Delta t\,f(\alpha,T)\bigr)\)
+//!   exothermic heat \(\propto \dot\alpha\); then either explicit Euler on \(T\) and explicit \(\alpha \leftarrow \mathrm{clip}_{\[0,1\]}\bigl(\alpha + \Delta t\,f(\alpha,T)\bigr)\)
 //!   with Arrhenius-style \(f\) (`HYDRATION_ARRHENIUS_PREFACTOR_S`, …), or opt-in backward-Euler Newton on the coupled \((T,\alpha)\) block only.
 //!   Temperature driving \(f\) uses **`state.thermal.temperature`** (first channel, broadcast), **kelvin**.
 //! - **Humidity \(h\) (second):** same Laplacian on \(h\) with the **same** step-entry damage mask; explicit Euler plus optional tail drying.
 //! - **Mechanics \(u\) (third):** [`crate::physics::mechanics::VectorMechanicsSolver`] when [`crate::core::tensors::UnifiedMaterialStateTensor::node_positions`]
 //!   is `[N,3]` **SI metres** and shape-valid; otherwise the equilibrium sub-solve is **skipped**.
 //!   Integer [`crate::core::tensors::UnifiedMaterialStateTensor::coords`] remain sparse spacetime indices `[N,5]` only.
-//! - **Fracture:** [`PhaseFieldFractureSolver::update_damage`] runs after the outer Newton loop. When SI
+//! - **Fracture:** [`super::fracture_field::PhaseFieldFractureSolver::update_damage`] runs after the outer Newton loop. When SI
 //!   [`UnifiedMaterialStateTensor::node_positions`] are present as `[N,3]` (same `N` as state) and the
 //!   displacement BC mask is compatible so the bar equilibrium sub-step runs, strain fed to fracture is
-//!   [`crate::physics::solvers::fracture_field::strain_tensor_from_bar_network_displacement`] built from
+//!   `strain_tensor_from_bar_network_displacement` built from
 //!   **`state.mechanical.displacement`** and those coordinates (post-mechanics \(\varepsilon(\mathbf u)\)).
 //!   If positions are missing or not `[N,3]`, strain falls back to `matrix_features[.., 0, ..]` when shapes
 //!   align (`[N,F,3,3]` → `[B,N,3,3]`); otherwise zeros — same rule as
-//!   [`crate::physics::solvers::fracture_field::strain_tensor_for_fracture_from_manifold`] (public stub for cartridges / tests).
+//!   `strain_tensor_for_fracture_from_manifold` (public stub for cartridges / tests).
 
 #[cfg(feature = "thmc-coupled")]
 use burn::tensor::Int;
@@ -138,7 +140,7 @@ impl Default for ThmcHydrationKinetics {
 }
 
 impl ThmcHydrationKinetics {
-    /// Scalar Arrhenius rate \(f(\alpha,T)\) (1/s) matching the tensor path in [`hydration_arrhenius_rate`].
+    /// Scalar Arrhenius rate \(f(\alpha,T)\) (1/s) matching the tensor path in `hydration_arrhenius_rate`.
     #[must_use]
     pub fn alpha_rate_scalar(&self, alpha: f32, temperature_k: f32) -> f32 {
         let one_m = (1.0_f32 - alpha).max(0.0_f32);
@@ -219,8 +221,8 @@ pub struct ThmcState<B: Backend> {
 /// [`Self::step`] returns `Err` before any inner solve if `batch != 1`, `node_positions` is not
 /// `[N,3]`, [`Self::drying_last_node_evaporation_k`] is positive (monolithic \(R_h\) is pure BE
 /// diffusion), [`Self::implicit_t_alpha_newton`] is also set, `iterations < 2`, or
-/// [`ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`] for the live
-/// `(N, F_T, F_h, F_α)` exceeds [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] (dense Jacobian workspace cap — same as the standalone
+/// [`crate::physics::solvers::ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`] for the live
+/// `(N, F_T, F_h, F_α)` exceeds [`crate::physics::solvers::THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] (dense Jacobian workspace cap — same as the standalone
 /// `(T,\alpha)` implicit helper).
 #[derive(Clone, Debug)]
 pub struct ThmcSolver {
@@ -233,26 +235,26 @@ pub struct ThmcSolver {
     /// after the Laplacian humidity update, \(h_{N-1} \leftarrow h_{N-1} - \Delta t\,k\,(h_{N-1}-h_\infty)\).
     /// Intended for 1D drying-facet benchmarks (`tests/verification/thmc_drying_shrinkage.rs`).
     pub drying_last_node_evaporation_k: f32,
-    /// Ambient humidity in \([0,1]\) paired with [`Self::drying_last_node_evaporation_k`].
+    /// Ambient humidity in \(\[0,1\]\) paired with [`Self::drying_last_node_evaporation_k`].
     pub drying_ambient_h: f32,
     /// When `Some`, replace the explicit \(T\) + \(\alpha\) split **once per outer pass** with damped
     /// Newton on the backward-Euler \((T,\alpha)\) residual ([`ThmcImplicitTAlphaNewtonConfig`]).
     /// Default **`None`**: legacy explicit split (unchanged behaviour).
     pub implicit_t_alpha_newton: Option<ThmcImplicitTAlphaNewtonConfig>,
     /// Opt-in **Phase 5** dense damped Newton on backward-Euler \((T,h,\alpha,\mathbf u)\) with
-    /// quasi-static bar \(R_u\) ([`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]).
+    /// quasi-static bar \(R_u\) (`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`).
     ///
     /// **Requires:** `batch == 1`, `[N,3]` SI `node_positions`, compatible `displacement_bc_mask`,
-    /// stacked DOFs \(\le\) [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`], and **`drying_last_node_evaporation_k == 0`** (pure implicit diffusion \(R_h\)).
+    /// stacked DOFs \(\le\) [`crate::physics::solvers::THMC_DENSE_NEWTON_MAX_STACKED_DOFS`], and **`drying_last_node_evaporation_k == 0`** (pure implicit diffusion \(R_h\)).
     /// Mutually exclusive with [`Self::implicit_t_alpha_newton`]. Default **`None`**.
     ///
     /// [`ThmcMonolithicNewtonConfig::stacked_residual_l2_tolerance`] /
     /// [`ThmcMonolithicNewtonConfig::stacked_residual_relative_to_initial`]: optional stacked \(\|R\|_2\)
     /// early-exit predicates wired into
-    /// [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]
+    /// `ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`
     /// (host scalar reads after each residual evaluation).
     ///
-    /// Call [`Self::step`] as usual, or [`Self::step_monolithic_implicit`] to assert this branch is configured.
+    /// Call [`Self::step`] as usual, or `Self::step_monolithic_implicit` to assert this branch is configured.
     pub monolithic_thmc_newton: Option<ThmcMonolithicNewtonConfig>,
 }
 
@@ -498,12 +500,13 @@ impl ThmcSolver {
                 let mask = manifold.displacement_bc_mask.clone();
                 let bm_core = match mask.dims()[..] {
                     [nn, 3, 1] if nn == n => mask.reshape([nn, 3]),
+                    [nn, 1, 3] if nn == n => mask.clone().reshape([nn, 3]),
                     [1, nn, 3] if nn == n => {
                         mask.clone().slice([0..1, 0..n, 0..3]).reshape([nn, 3])
                     }
                     _ => {
                         return Err(format!(
-                            "ThmcSolver::step: displacement_bc_mask dims {:?} incompatible with N={n} (expected [N,3,1] or [1,N,3])",
+                            "ThmcSolver::step: displacement_bc_mask dims {:?} incompatible with N={n} (expected [N,3,1], [N,1,3], or [1,N,3])",
                             mask.dims()
                         ));
                     }
@@ -691,12 +694,13 @@ impl ThmcSolver {
                     let mask = manifold.displacement_bc_mask.clone();
                     let bm_core = match mask.dims()[..] {
                         [nn, 3, 1] if nn == n => mask.reshape([nn, 3]),
+                        [nn, 1, 3] if nn == n => mask.clone().reshape([nn, 3]),
                         [1, nn, 3] if nn == n => {
                             mask.clone().slice([0..1, 0..n, 0..3]).reshape([nn, 3])
                         }
                         _ => {
                             return Err(format!(
-                                "ThmcSolver::step: displacement_bc_mask dims {:?} incompatible with N={n} (expected [N,3,1] or [1,N,3])",
+                                "ThmcSolver::step: displacement_bc_mask dims {:?} incompatible with N={n} (expected [N,3,1], [N,1,3], or [1,N,3])",
                                 mask.dims()
                             ));
                         }
@@ -820,7 +824,7 @@ impl Default for ThmcNewtonConfig {
 /// usual explicit thermal increment + explicit hydration \(\alpha\) update with a Newton solve on
 /// the same analytic residual used in verification tests. Humidity, mechanics, and fracture
 /// substeps are unchanged. **Requires** `thmc-coupled` (otherwise [`ThmcSolver::step`] does not run
-/// this path); `batch` must be **1** and stacked \((T,\alpha)\) DOFs \(\le\) [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`].
+/// this path); `batch` must be **1** and stacked \((T,\alpha)\) DOFs \(\le\) [`crate::physics::solvers::THMC_DENSE_NEWTON_MAX_STACKED_DOFS`].
 #[derive(Clone, Debug, PartialEq)]
 pub struct ThmcImplicitTAlphaNewtonConfig {
     /// Chains `ThmcImplicitEulerThermalHydrationResidual::damped_newton_iterations` in `thmc_residual.rs` — must be
@@ -841,13 +845,13 @@ impl Default for ThmcImplicitTAlphaNewtonConfig {
 }
 
 /// Opt-in **Phase 5** damped Newton on backward-Euler \((T,h,\alpha,\mathbf u)\) with quasi-static bar
-/// \(R_u\) — [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`].
+/// \(R_u\) — `ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`.
 ///
 /// Wired from [`ThmcSolver::step`] when [`ThmcSolver::monolithic_thmc_newton`] is `Some` (requires `thmc-coupled`).
 ///
 /// **Scope:** each Newton iteration builds a **dense** finite-difference Jacobian in host workspace
-/// sized for at most [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] stacked unknowns per batch (see
-/// [`ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`]). Larger problems must
+/// sized for at most [`crate::physics::solvers::THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] stacked unknowns per batch (see
+/// [`crate::physics::solvers::ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`]). Larger problems must
 /// use the split path until a sparse or matrix-free stack lands. **Mutually exclusive** with
 /// [`ThmcSolver::implicit_t_alpha_newton`]. Requires facet drying sink
 /// [`ThmcSolver::drying_last_node_evaporation_k`] **== 0** so \(R_h\) matches the implicit diffusion
@@ -891,6 +895,15 @@ impl ThmcSolver {
     /// \(R = (T_k - T_{\mathrm{old}})/\Delta t - \kappa\,\mathcal{L}(T_k)\) after iteration `k`.
     /// `residual_norms[0]` is the norm at the initial guess (`T_old`).
     ///
+    /// **Device sync (E4 / [`docs/FP_CATEGORICAL_BURN.md`](../../../docs/FP_CATEGORICAL_BURN.md)):** CG coefficients
+    /// \(\alpha_k\), \(\beta_k\) stay **tensor-native** (broadcast `reshape`, same pattern as packed mechanics PCG).
+    /// **ConvergenceRequired — telemetry only:** `.into_scalar()` hits are limited to **L2 residual telemetry**
+    /// (each iteration’s \(\|r\|_2\) pushed to `residual_norms`) and the **tol** branch reads that `Vec<f32>` —
+    /// not per-iteration scalars for \(\alpha\) / \(\beta\) (avoid host reductions in **hot inner micro-loops**
+    /// beyond this contract). Stacked THMC Newton / JFNK ‖R‖₂ reporting uses the same tier in
+    /// [`thmc_residual`](crate::physics::solvers::thmc_residual) (rank‑1 `into_data` via `tensor1_f32_thmc`;
+    /// equivalent `.into_scalar()` there remains acceptable **outer** telemetry debt — see that module’s rustdoc).
+    ///
     /// **Boundary mask** (`[B,N,1]`): nodes with value `0` are treated as Dirichlet; their
     /// increment is zeroed (locking them to `T_old`) and they are excluded from the convergence
     /// norm so clamped DOFs do not pollute it. The CG residual `r = b - A x` is mathematically
@@ -926,31 +939,44 @@ impl ThmcSolver {
         // Residual r = (b - A x) * mask  (mask = 1 on free DOFs, 0 on Dirichlet)
         let mut r = b.clone().sub(a_op(x.clone())).mul(boundary_mask.clone());
         let mut p = r.clone();
-        let mut rs_old = r.clone().mul(r.clone()).sum().into_scalar();
+        let mut rs_old_t = r.clone().mul(r.clone()).sum();
 
         let mut residual_norms: Vec<f32> = Vec::with_capacity(cfg.max_iterations + 1);
-        residual_norms.push(rs_old.max(0.0_f32).sqrt());
+        residual_norms.push(
+            rs_old_t
+                .clone()
+                .clamp_min(0.0_f32)
+                .sqrt()
+                .into_scalar()
+                .max(0.0_f32),
+        );
 
+        let bc_shape = [dims[0], 1, 1];
         for _ in 0..cfg.max_iterations {
             if *residual_norms.last().expect("non-empty") < cfg.residual_tolerance {
                 break;
             }
             let ap = a_op(p.clone()).mul(boundary_mask.clone());
-            let p_ap = p.clone().mul(ap.clone()).sum().into_scalar();
-            if p_ap.abs() < 1.0e-30_f32 {
-                break;
-            }
-            let alpha = (rs_old / p_ap) * cfg.damping;
-            x = x.add(p.clone().mul_scalar(alpha));
-            r = r.sub(ap.mul_scalar(alpha)).mul(boundary_mask.clone());
-            let rs_new = r.clone().mul(r.clone()).sum().into_scalar();
-            residual_norms.push(rs_new.max(0.0_f32).sqrt());
-            if rs_old.abs() < 1.0e-30_f32 {
-                break;
-            }
-            let beta = rs_new / rs_old;
-            p = r.clone().add(p.mul_scalar(beta));
-            rs_old = rs_new;
+            let pap = p.clone().mul(ap.clone()).sum().clamp_min(1.0e-30_f32);
+            let alpha_t = rs_old_t.clone().div(pap).mul_scalar(cfg.damping);
+            let alpha_bc = alpha_t.reshape(bc_shape);
+            x = x.add(p.clone().mul(alpha_bc.clone()));
+            r = r.sub(ap.mul(alpha_bc)).mul(boundary_mask.clone());
+            let rs_new_t = r.clone().mul(r.clone()).sum();
+            residual_norms.push(
+                rs_new_t
+                    .clone()
+                    .clamp_min(0.0_f32)
+                    .sqrt()
+                    .into_scalar()
+                    .max(0.0_f32),
+            );
+            let beta_t = rs_new_t
+                .clone()
+                .div(rs_old_t.clone().clamp_min(1.0e-30_f32));
+            let beta_bc = beta_t.reshape(bc_shape);
+            p = r.clone().add(p.mul(beta_bc));
+            rs_old_t = rs_new_t;
         }
 
         (x, residual_norms)
@@ -958,7 +984,7 @@ impl ThmcSolver {
 }
 
 /// Full tensor hydration rate \(\dot\alpha(\alpha,T)\) used in [`ThmcSolver::step`] and implicit residuals:
-/// Arrhenius core [`hydration_arrhenius_rate`] times the high-temperature boost factor.
+/// Arrhenius core `hydration_arrhenius_rate` times the high-temperature boost factor.
 #[cfg(feature = "thmc-coupled")]
 pub fn full_hydration_alpha_rate_tensor<B: Backend<FloatElem = f32>>(
     k: &ThmcHydrationKinetics,
@@ -1017,7 +1043,7 @@ pub fn mc2010_style_notional_shrink_strain(
     1.05e-3_f32 * w * a.sqrt() * (1.0 - rh) * t
 }
 
-/// Maps **saturation deficit** \((h_{\mathrm{init}}-h)\in[0,1]\) on an exposed facet to a shrink strain
+/// Maps **saturation deficit** \((h_{\mathrm{init}}-h)\in\[0,1\]\) on an exposed facet to a shrink strain
 /// increment scale used with the THMC humidity proxy (verification hook — coefficients track
 /// [`mc2010_style_notional_shrink_strain`] order of magnitude).
 #[cfg(feature = "thmc-coupled")]

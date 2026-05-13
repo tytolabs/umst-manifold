@@ -10,9 +10,9 @@
 //! **Return-map timing:** [`semi_discrete_omega`] supplies **Ω** with \(\Omega^2=\lambda_K/m\) on the periodic
 //! stencil (not the stencil dispersion \(\omega_{\mathrm{disp}}=(2c/\Delta x)|\sin(k\Delta x/2)|\) alone — that
 //! omits the lumped \(1/\Delta x\) from \(m=\rho\Delta x\) and mis-times \(T\) by \(\mathcal O(1/\sqrt{\Delta x})\)).
-//! **[`AcousticWaveSolver`](umst_manifold::physics::solvers::AcousticWaveSolver)** stays graph-free nodal
-//! contraction (Track D in `composer_prompts/v0.4_solver_completion_no_namesakes.md`). See
-//! **`docs/Solver-Status.md`** (Acoustics). **Not** vector quasi-static **`packed_bar_network_equilibrium`**
+//! **[`AcousticWaveSolver`](umst_manifold::physics::solvers::AcousticWaveSolver)** implements implicit
+//! Newmark on nodal tensors with optional bar-graph stiffness (host GMRES) plus a dense per-node path.
+//! See **`docs/Solver-Status.md`** (Acoustics). **Not** vector quasi-static **`packed_bar_network_equilibrium`**
 //! (mechanics graph); cross-check honesty vs Solver-Status **#10** and
 //! **`packed_bar_network_equilibrium_uniform_axial_strain_tip_load_distinct_from_acoustic_newmark_bar_path`**
 //! in `tests/verification/mechanics_analytic.rs`.

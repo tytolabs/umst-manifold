@@ -10,6 +10,10 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: write
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -18,7 +22,7 @@ jobs:
     name: README sanity
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - name: README sanity (catch accidental wipes)
         run: |
           set -euo pipefail
@@ -34,7 +38,7 @@ jobs:
     name: solver status (docs/Solver-Status.md)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - name: check_solver_status.py (paths + memos + statmech set)
         run: |
           set -euo pipefail
@@ -49,7 +53,7 @@ jobs:
     name: build & test (ndarray backend)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
 
@@ -68,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: cargo test --features solver-stable
@@ -80,11 +84,44 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: cargo check --features solver-stable,solver-research
         run: cargo check --verbose --all-targets --features solver-stable,solver-research
+
+  # v0.4 Phase-4a: dedicated solver-research verification crates (brief gate 4 lane; see docs/Solver-Status.md).
+  phase4-verification-pr:
+    name: Phase-4 verification tests (--release, PR)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo test --release (THMC / photonics DEC brick / statmech Johnson upscale)
+        run: |
+          set -euo pipefail
+          cargo test --verbose --release --features solver-research --test thmc_monolithic_newton_chain
+          cargo test --verbose --release --features solver-research,photonics-fdfd --test photonics_curl_curl_2d_patch
+          cargo test --verbose --release --features solver-research,photonics-fdfd --test photonics_curl_curl_3d_brick
+          cargo test --verbose --release --features solver-research --test statmech_lj_johnson_upscale_bridge
+
+  # Optional PR signal: Phase A physics guard + full solver-experimental test matrix (see docs/CI_GAP_NOTES.md).
+  # continue-on-error: not a merge gate; branch protection should keep requiring build-test / lint / solver-* only.
+  solver-experimental-pr-optional:
+    name: solver-experimental + physics guard (PR, optional)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: physics Host-tensor guard
+        run: bash scripts/check_physics_no_gradient_break.sh
+      - name: cargo test --features solver-experimental --no-fail-fast (optional)
+        run: cargo test --verbose --features solver-experimental --no-fail-fast
 
   # v0.4 brief Track K: full experimental stack on default branch (same feature union as PR check), release tests.
   research-stack:
@@ -92,7 +129,7 @@ jobs:
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: cargo test --release --features solver-experimental (retry ×1)
@@ -108,7 +145,7 @@ jobs:
     name: rustfmt + clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy

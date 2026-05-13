@@ -13,7 +13,7 @@
 //! agree. **Poisson** on the chain uses the harmonic-\(\varepsilon\) index stencil with interior Thomas RHS
 //! scaled by **`h²`** and the implicit BE \(\Phi\) rows scaled by **`1/h²`**, matching the non-chain Jacobi
 //! surrogate (`lap·(1/h²)+ρ/ε`) and SG **`J∝D/h`** (see `electrochemistry` rustdoc). A **tail-heavy LS window**
-//! (`≈0.58…0.97` of the interior index range) brings **`λ_eff`** into **±11 %** (25 mV / DH-style drive) and
+//! (`≈0.58…0.97` of the interior index range) brings **`λ_eff`** into **±10 %** (25 mV / DH-style drive) and
 //! **±15 %** (100 mV / larger φ₀) of **`λ_D`**.
 //! Companion smokes (orthogonal **`mesh_spacing = 1`** dispatch path): [`debye_dispatch_newton_backward_euler_residual_bounded_over_screening_trajectory_smoke`],
 //! [`debye_implicit_dispatch_short_horizon_smoke`].
@@ -26,8 +26,9 @@
 // `solve_pnp_step_dispatch` (production path; falls back to explicit Picard if the chain helper
 // returns `None`). Direct `try_solve_pnp_backward_euler_newton_chain` remains for unit tests in
 // `electrochemistry.rs` and callers who bypass dispatch. Full nonlinear SG (`linearize_sg_fickian: false`)
-// uses a **node-major band** FD Jacobian, then **dense expand + Gauss** on a **(3N)²** scratch for each
-// Newton correction (see `electrochemistry` rustdoc).
+// uses a **node-major band** FD Jacobian by default, then **dense expand + Gauss** on a **(3N)²** scratch
+// for each Newton correction; set [`NewtonPnpContext::full_sg_correction_use_gmres`] for a matrix-free GMRES
+// inner correction (see `electrochemistry` rustdoc).
 
 use approx::assert_relative_eq;
 use burn::tensor::{Data, Int, Shape, Tensor};
@@ -167,7 +168,8 @@ fn pnp_screening_phi_decays_toward_bulk_smoke() {
     );
 }
 
-/// λ\_D exponential-fit gate (**±11 %** vs continuum **`λ_D`**, tail LS window). Long-horizon **`N=256`**
+/// λ\_D exponential-fit gate (**±10 %** vs continuum **`λ_D`**, tail LS window — ~9–10% bias remains at **N=256**;
+/// a **±5 %** target is deferred until the exponential fit / horizon is retuned). Long-horizon **`N=256`**
 /// screening — prefer **`--release`** locally (see module docs).
 #[test]
 fn debye_screening_256_cells_phi_25mv_decay_length_within_band() {
@@ -175,7 +177,7 @@ fn debye_screening_256_cells_phi_25mv_decay_length_within_band() {
         256,
         1.0_f32,
         6.0_f32,
-        0.11_f32,
+        0.10_f32,
         10_000,
         1.5e-3_f32,
         debye_implicit_newton_linearized_sg_for_lambda_d_gate(),
@@ -347,8 +349,8 @@ fn sg_flux_drift_scales_with_mesh_spacing_inverse() {
 
 /// Implicit Newton with **full SG** (`linearize_sg_fickian: false`) for dispatch smokes such as
 /// [`debye_implicit_dispatch_short_horizon_smoke`]. The host chain kernel assembles a **node-major band**
-/// finite-difference Jacobian and solves the Newton step with **pivot-safe band LU** (see
-/// `electrochemistry` rustdoc). The long-horizon
+/// finite-difference Jacobian and solves the Newton step with **dense expand + [`solve_dense_linear`]**
+/// (see `electrochemistry` rustdoc). The long-horizon
 /// **`λ_D`** gates use [`debye_implicit_newton_linearized_sg_for_lambda_d_gate`] instead.
 fn debye_implicit_newton_context() -> NewtonPnpContext {
     NewtonPnpContext {
@@ -359,11 +361,12 @@ fn debye_implicit_newton_context() -> NewtonPnpContext {
         max_chain_nodes: 512,
         linearize_sg_fickian: false,
         full_sg_frozen_jacobian_inner_iters: 1,
+        full_sg_correction_use_gmres: false,
     }
 }
 
 /// One-step smoke: full nonlinear SG implicit Newton (`linearize_sg_fickian: false`) uses the host
-/// **band Jacobian + pivot-safe band LU** Newton step (optional [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`]
+/// **band Jacobian + dense-expand Gaussian** Newton step (optional [`NewtonPnpContext::full_sg_frozen_jacobian_inner_iters`]
 /// for bounded inners); residual L2 after solve stays small (same API as dispatch smokes).
 #[test]
 fn full_sg_implicit_newton_chain_backward_euler_residual_smoke() {
@@ -397,6 +400,7 @@ fn full_sg_implicit_newton_chain_backward_euler_residual_smoke() {
         max_chain_nodes: 128,
         linearize_sg_fickian: false,
         full_sg_frozen_jacobian_inner_iters: 1,
+        full_sg_correction_use_gmres: false,
     };
     let dt = 1e-7_f32;
     let out = solver.try_solve_pnp_backward_euler_newton_chain(
@@ -454,6 +458,7 @@ fn full_sg_implicit_newton_frozen_inner_iters_residual_smoke() {
         max_chain_nodes: 128,
         linearize_sg_fickian: false,
         full_sg_frozen_jacobian_inner_iters: 4,
+        full_sg_correction_use_gmres: false,
     };
     let dt = 1e-7_f32;
     let out = solver.try_solve_pnp_backward_euler_newton_chain(
@@ -480,7 +485,7 @@ fn full_sg_implicit_newton_frozen_inner_iters_residual_smoke() {
 /// limit used for the continuum **`λ_D`** reference and uses the **dense analytic Jacobian** path (no column FD),
 /// so long `N=256` screening trajectories stay CI-tractable. Together with **`mesh_spacing = h`**, Poisson
 /// **`h²`** interior RHS scaling, and the tail-heavy LS window in **`debye_screening_admissibility_check`**,
-/// **`λ_eff`** is asserted within **±11 %** / **±15 %** of **`λ_D`** on the shipped **`debye_screening_256_cells_*`** gates.
+/// **`λ_eff`** is asserted within **±10 %** / **±15 %** of **`λ_D`** on the shipped **`debye_screening_256_cells_*`** gates.
 fn debye_implicit_newton_linearized_sg_for_lambda_d_gate() -> NewtonPnpContext {
     NewtonPnpContext {
         max_newton_iters: 24,
@@ -490,6 +495,7 @@ fn debye_implicit_newton_linearized_sg_for_lambda_d_gate() -> NewtonPnpContext {
         max_chain_nodes: 512,
         linearize_sg_fickian: true,
         full_sg_frozen_jacobian_inner_iters: 1,
+        full_sg_correction_use_gmres: false,
     }
 }
 
@@ -1088,6 +1094,7 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         max_chain_nodes: 32,
         linearize_sg_fickian: true,
         full_sg_frozen_jacobian_inner_iters: 1,
+        full_sg_correction_use_gmres: false,
     };
     let solver_dispatch_small = ElectroChemicalSolver {
         faraday_const: 1.0_f32,

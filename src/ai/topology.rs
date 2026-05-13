@@ -10,7 +10,7 @@
 //! Future wiring: sensitivity filtering on `edges_b1`, coupling to
 //! [`crate::physics::mechanics::VectorMechanicsSolver`] and [`crate::ai::adjoint::AdjointNeuralODE`].
 //! Differentiable optimization loops live behind **`topology-density-evolution`** /
-//! **`solver-experimental`** — see [`TopologyOptimizer::optimize_step`] for DensityNet → SIMP →
+//! **`solver-experimental`** — see `TopologyOptimizer::optimize_step` for DensityNet → SIMP →
 //! equilibrium without `.into_scalar()` on the forward path.
 
 use burn::module::Module;
@@ -123,7 +123,7 @@ pub struct SimpComplianceStepResult<B: Backend> {
 /// (`[N,3]` passed into the solver); \(\rho\) and \(E_{\mathrm{eff}}\) remain batch-wise `[B,N,…]`.
 ///
 /// `e_base_bn1` must be `[B, N, 1]` (Young’s modulus factor before SIMP penalization). Poisson’s ratio
-/// column is set to `0.3` (same layout as [`TopologyOptimizer::optimize_step`]; reserved for continuum
+/// column is set to `0.3` (same layout as `TopologyOptimizer::optimize_step`; reserved for continuum
 /// coupling in the bar solver).
 #[cfg(feature = "topology-density-evolution")]
 #[allow(clippy::too_many_arguments)]
@@ -394,10 +394,10 @@ impl AugmentedLagrangianVolume {
 }
 
 #[cfg(feature = "topology-density-evolution")]
-/// Volume-preserving projection onto \(\{\rho \in [0,1]^{B\times N} : \text{mean}_b(\rho)=V^\*\}\)
+/// Volume-preserving projection onto \(\{\rho \in \[0,1\]^{B\times N} : \text{mean}_b(\rho)=V^\*\}\)
 /// per batch \(b\) (mean over node and channel dims). Finds \(\lambda\) with bisection such that
 /// \(\rho \leftarrow \mathrm{clamp}(\rho + \lambda,\,0,\,1)\) has batch-wise mean \(V^\*\); \(\lambda\) is
-/// bracketed in \([-1,1]\) when \(\rho\in[0,1]\) (see [`Self::project`]).
+/// bracketed in \(\[-1,1\]\) when \(\rho\in\[0,1\]\) (see [`Self::project`]).
 ///
 /// formal_anchor: Track B2 — `composer_prompts/v0.4_solver_completion_no_namesakes.md`
 #[derive(Clone, Debug)]

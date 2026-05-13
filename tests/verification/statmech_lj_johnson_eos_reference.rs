@@ -5,8 +5,11 @@
 //!
 //! Implements analytic reduced `P*(ρ*, T*)` and isothermal `K* = ρ* ∂P*/∂ρ*` via numerical
 //! derivatives for verification. The Burn bridge [`upscale_potentials`] uses **`[B,2]`** placeholder
-//! **`K`** (expected **disagreement** vs Johnson at the same \((\varepsilon,\sigma)\) without state) and
-//! **`[B,4]`** rows that set **`K`** from this EOS (see `upscale_potentials_b4_matches_physical_bulk_modulus_johnson1993`).
+//! **`K`** (expected **disagreement** vs Johnson at the same \((\varepsilon,\sigma)\) without state).
+//! **`[B,4]`** rows obtain **`K_T`** from the **third-order virial surrogate** in `statistical_mechanics`
+//! (Johnson remains a **`f64`** cross-check — see `upscale_potentials_b4_k_order_matches_johnson_at_dilute_rho`).
+//! Matrix **#9** honesty: **`γ_gc`** on **`[B,4]`** uses a **Kirkwood–Buff-style scalar proxy** with
+//! \((\rho^*,T^*)\) — see `upscale_potentials_b4_gamma_gc_depends_on_rho_t_star_state`.
 //!
 //! Scalar Johnson physical \(K_T\) for side-by-side checks lives in
 //! [`umst_manifold::physics::solvers::statistical_mechanics::physical_bulk_modulus_johnson1993`] and
@@ -103,7 +106,7 @@ fn placeholder_upscale_bulk_modulus_disagrees_with_johnson_reference_documented(
         Data::new(vec![epsilon as f32, sigma as f32], Shape::new([1, 2])),
         &dev,
     );
-    let (k_tensor, _) = upscale_potentials(lj);
+    let (k_tensor, _) = upscale_potentials(lj).unwrap();
     let k_placeholder = f64::from(k_tensor.into_data().value[0]);
 
     let rel_tensor = ((k_placeholder - k_johnson) / k_johnson).abs();
@@ -115,22 +118,15 @@ fn placeholder_upscale_bulk_modulus_disagrees_with_johnson_reference_documented(
     assert_abs_diff_eq!(gap, rel_tensor, epsilon = 5.0e-4_f64);
 }
 
-/// **`[B,4]`** extended row: tensor **`K`** matches scalar Johnson \(K_T\) (matrix **#9** slice).
+/// **`[B,4]`** virial **`K`** tracks Johnson order-of-magnitude in the **dilute** branch (\(\rho^*=0.02\)).
 #[test]
-fn upscale_potentials_b4_matches_physical_bulk_modulus_johnson1993() {
+fn upscale_potentials_b4_k_order_matches_johnson_at_dilute_rho() {
     let dev = NdArrayDevice::Cpu;
     let t_star = 2.0_f64;
-    let rho_star = 0.2_f64;
+    let rho_star = 0.02_f64;
     let epsilon = 1.0_f64;
     let sigma = 0.8_f64;
-    // `upscale_potentials` reads row scalars as `f32` then promotes to `f64` for Johnson; match that
-    // so the reference is not evaluated on slightly different reduced state than the tensor path.
-    let want = physical_bulk_modulus_johnson1993(
-        f64::from(rho_star as f32),
-        f64::from(t_star as f32),
-        f64::from(epsilon as f32),
-        f64::from(sigma as f32),
-    );
+    let k_j = physical_bulk_modulus_johnson1993(rho_star, t_star, epsilon, sigma);
     let lj: Tensor<B, 2> = Tensor::from_data(
         Data::new(
             vec![epsilon as f32, sigma as f32, rho_star as f32, t_star as f32],
@@ -138,9 +134,38 @@ fn upscale_potentials_b4_matches_physical_bulk_modulus_johnson1993() {
         ),
         &dev,
     );
-    let (k_tensor, _) = upscale_potentials(lj);
+    let (k_tensor, _) = upscale_potentials(lj).unwrap();
     let got = f64::from(k_tensor.into_data().value[0]);
-    assert_abs_diff_eq!(got, want, epsilon = 1.0e-5_f64);
+    let ratio = got / k_j;
+    assert!(
+        ratio > 0.25 && ratio < 4.0,
+        "expected virial K_T within order-one band of Johnson at dilute rho*={rho_star}; ratio={ratio}"
+    );
+}
+
+/// **`[B,4]`** — **`γ_gc`** depends on \((\rho^*,T^*)\) via the KB-style proxy (not \(\varepsilon/\sigma^2\) only).
+#[test]
+fn upscale_potentials_b4_gamma_gc_depends_on_rho_t_star_state() {
+    let dev = NdArrayDevice::Cpu;
+    let epsilon = 1.1_f32;
+    let sigma = 0.85_f32;
+    let lj4_a: Tensor<B, 2> = Tensor::from_data(
+        Data::new(vec![epsilon, sigma, 0.12_f32, 1.4_f32], Shape::new([1, 4])),
+        &dev,
+    );
+    let lj4_b: Tensor<B, 2> = Tensor::from_data(
+        Data::new(vec![epsilon, sigma, 0.55_f32, 2.8_f32], Shape::new([1, 4])),
+        &dev,
+    );
+    let (_, g4a) = upscale_potentials(lj4_a).unwrap();
+    let (_, g4b) = upscale_potentials(lj4_b).unwrap();
+    let g4av = g4a.into_data().value[0];
+    let g4bv = g4b.into_data().value[0];
+    assert!(
+        (g4av - g4bv).abs() > 1.0e-5_f32,
+        "expected gamma_gc to vary with (rho*,T*); got {g4av} vs {g4bv}"
+    );
+    assert!(g4av.is_finite() && g4bv.is_finite());
 }
 
 #[test]

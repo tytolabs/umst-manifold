@@ -3,6 +3,7 @@
 
 pub mod apply_physics;
 pub mod emergence;
+pub mod iterate_until;
 pub mod tensors;
 pub mod traits;
 pub mod umst_schema;

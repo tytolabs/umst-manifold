@@ -19,28 +19,27 @@
 //!
 //! **Shipped here:** **B-bar** on volumetric normal strains **plus** centroid \(\gamma_{yz},\gamma_{xz}\)
 //! (transverse shear SRI); \(\gamma_{xy}\) remains full \(2\times2\times2\). [`hex_k_times_u_accumulate`]
-//! and [`hex_diagonal`] share this operator; PCG in [`hex_solve_pcg_masked`] is matrix-free on the same
-//! kernel. Isotropic \(\mathbf D(E,\nu)\) is assembled once per cell (not split into separate
-//! \(\mathbf D_{\mathrm{vol}}\) / \(\mathbf D_{\mathrm{dev}}\) quadrature loops).
+//! and [`hex_diagonal`] apply **one** isotropic Voigt \(\mathbf D(E,\nu)\) to the B-bar /
+//! transverse-shear-centroid strain vector at each \(2^3\) Gauss point (and the same operator in
+//! [`hex_cell_strain_energy`]). PCG in [`hex_solve_pcg_masked`] is matrix-free on that kernel.
+//!
+//! **Phase 1A / §R2.1 note:** a naive additive split **\(\mathbf D_{\mathrm{vol}}\)** (centroid) +
+//! **\(\mathbf D_{\mathrm{dev}}\)** (full Gauss) with **\(\boldsymbol\sigma_{\mathrm{vol}}=K\bar\varepsilon_v\mathbf m\)** and
+//! **\(\boldsymbol\sigma_{\mathrm{dev}}=\mathbf D_{\mathrm{dev}}\boldsymbol\varepsilon\)** at Gauss points is **not**
+//! pointwise equivalent to **\(\mathbf D\boldsymbol\varepsilon\)** and regressed the slender-column
+//! **`adjoint_q1_hex_matches_bar_in_limit`** compliance check; a variationally consistent selective-reduced
+//! **\(\mathbf D\)** split remains follow-up work. See `docs/Solver-Status.md` mechanics row.
 //!
 //! **Still open vs v0.4 R2.1 acceptance:** a strict **thin-plate Kirchhoff** gate
-//! (\(\approx 5\%\) error to the SSSS centre formula at \(L/h\approx 20\)) requires **consistent
-//! plate BCs on the brick** (classical simply supported edges), not the extruded-plate harness’s
-//! full-face \(u_z=0\) plus in-plane pins. Until that harness exists, CI keeps a **ratio band**
-//! test (`plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band` in
-//! `tests/verification/mechanics_analytic.rs`) with bilinear-consistent top pressure
-//! ([`crate::physics::extruded_plate::ExtrudedPlateMechanics::body_force_top_uniform_pressure`],
-//! band \(1.1\times10^{-4}<w/w_K<1.6\times10^{-4}\)) and `docs/Solver-Status.md` defers full Kirchhoff
-//! SSSS on the brick — see mechanics row there. The **`#[ignore]`** placeholder
-//! `plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate` documents the **within-5%** centre
-//! deflection acceptance vs the Kirchhoff SSSS centre formula (`kirchhoff_centre_w_ssss` in
-//! `tests/verification/mechanics_analytic.rs`) for matrix **#2** once BCs align.
+//! (\(\approx 5\%\) error to the SSSS centre formula at **32²×4**, **h/L = 0.02**) is wired as
+//! `plate_centre_deflection_kirchhoff_ssss_q1_hex_within_five_percent` in
+//! `tests/verification/mechanics_analytic.rs` but remains **`#[ignore]`** with measured residual on
+//! the extruded-plate BC harness (full-face \(u_z=0\) plus in-plane pins — not facet-wise SSSS).
+//! Default CI keeps the **ratio band** test (`plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band`)
+//! and the env-gated **`plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate`**; see
+//! `docs/Solver-Status.md` mechanics row.
 //!
-//! **Bounded follow-ups (avoid monolithic refactors):** optional **literal** separate
-//! \(\mathbf B_{\mathrm{dev}}^{\mathsf T}\mathbf D_{\mathrm{dev}}\mathbf B_{\mathrm{dev}}\) vs
-//! \(\mathbf B_{\mathrm{vol}}^{\mathsf T}\mathbf D_{\mathrm{vol}}\mathbf B_{\mathrm{vol}}\)
-//! quadrature weighting (centroid vs full \(2^3\) tensor) if auditing shows mismatch with the
-//! current unified-\(D\) B-bar energy; **facet-wise** BC sets for SSSS parity;
+//! **Bounded follow-ups (avoid monolithic refactors):** **facet-wise** BC sets for SSSS parity;
 //! **MITC-style** enrichment or literal \(\mathbf D_{\mathrm{shear}}\) splits if further tuning is
 //! needed; **f64** accumulation path for the same stencil if f32 PCG limits masked residuals.
 //!
@@ -408,7 +407,6 @@ pub fn hex_k_times_u_accumulate(
                     u24[k * 3 + 1] = u[nid * 3 + 1];
                     u24[k * 3 + 2] = u[nid * 3 + 2];
                 }
-                // Centroid-evaluated physical gradients for the volumetric B-bar block.
                 let Some((gn_bar, _det_c)) = physical_shape_gradients(x_corner, 0.0, 0.0, 0.0)
                 else {
                     continue;
@@ -444,6 +442,85 @@ pub fn hex_k_times_u_accumulate(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/// Integrated strain energy per hex cell:
+/// \(U_e = \tfrac12 \int_{\Omega^e} \boldsymbol\varepsilon^{\mathsf T}\mathbf D\boldsymbol\varepsilon \,\mathrm d\Omega\)
+/// using the same B-bar / transverse-shear centroid operator as [`hex_k_times_u_accumulate`].
+///
+/// `energy_out.len()` must equal `nx * ny * nz`; overwritten cell-major `(cx,cy,cz)`.
+pub fn hex_cell_strain_energy(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    u: &[f32],
+    energy_out: &mut [f32],
+) {
+    let nx1 = nx + 1;
+    let ny1 = ny + 1;
+    let n_cells = nx * ny * nz;
+    debug_assert_eq!(e_cell.len(), n_cells);
+    debug_assert_eq!(u.len(), nx1 * ny1 * (nz + 1) * 3);
+    debug_assert_eq!(energy_out.len(), n_cells);
+    energy_out.fill(0.0_f32);
+
+    for cz in 0..nz {
+        for cy in 0..ny {
+            for cx in 0..nx {
+                let c = cx + cy * nx + cz * nx * ny;
+                let e = e_cell[c].max(1e-30_f32);
+                let d = build_d_voigt(e, nu);
+                let x_corner = cell_corner_coords(cx, cy, cz, dx, dy, dz);
+                let mut u24 = [0.0_f32; 24];
+                for (k, _corner) in CORNER_XI.iter().enumerate() {
+                    let (ix, iy, iz) = match k {
+                        0 => (cx, cy, cz),
+                        1 => (cx + 1, cy, cz),
+                        2 => (cx + 1, cy + 1, cz),
+                        3 => (cx, cy + 1, cz),
+                        4 => (cx, cy, cz + 1),
+                        5 => (cx + 1, cy, cz + 1),
+                        6 => (cx + 1, cy + 1, cz + 1),
+                        7 => (cx, cy + 1, cz + 1),
+                        _ => unreachable!(),
+                    };
+                    let nid = idx_node(nx1, ny1, ix, iy, iz);
+                    u24[k * 3] = u[nid * 3];
+                    u24[k * 3 + 1] = u[nid * 3 + 1];
+                    u24[k * 3 + 2] = u[nid * 3 + 2];
+                }
+                let Some((gn_bar, _det_c)) = physical_shape_gradients(x_corner, 0.0, 0.0, 0.0)
+                else {
+                    continue;
+                };
+                let mut u_acc = 0.0_f32;
+                for &sg in &GAUSS1D {
+                    for &tg in &GAUSS1D {
+                        for &zg in &GAUSS1D {
+                            let Some((gn, detj)) = physical_shape_gradients(x_corner, sg, tg, zg)
+                            else {
+                                continue;
+                            };
+                            let wdet = WG * WG * WG * detj;
+                            let eps = bbar_times_u_transverse_shear_centroid(gn, gn_bar, &u24);
+                            let sig = d_times_eps(&d, &eps);
+                            let mut de = 0.0_f32;
+                            for i in 0..6 {
+                                de += eps[i] * sig[i];
+                            }
+                            u_acc += 0.5_f32 * de * wdet;
+                        }
+                    }
+                }
+                energy_out[c] = u_acc;
             }
         }
     }
