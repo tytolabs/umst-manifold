@@ -61,9 +61,9 @@ impl ThermodynamicCBF {
         // 2. Check Global Thermodynamic Limits (Economic/Computational Bound)
 
         if erasure_cost > self.available_credit_joules {
+            let avail = self.available_credit_joules;
             return Err(format!(
-                "REJECTED: Insufficient Global Energy Credit. Required {} J, Available {} J.",
-                erasure_cost, self.available_credit_joules
+                "REJECTED: Insufficient Global Energy Credit. Required {erasure_cost} J, Available {avail} J.",
             ));
         }
 
@@ -72,8 +72,7 @@ impl ThermodynamicCBF {
         let generalized_entropy = entropy_production_joules - erasure_cost;
         if generalized_entropy < 0.0 {
             return Err(format!(
-                "REJECTED: Clausius-Duhem Violation. Generalized entropy {} < 0.",
-                generalized_entropy
+                "REJECTED: Clausius-Duhem Violation. Generalized entropy {generalized_entropy} < 0.",
             ));
         }
 

@@ -1083,7 +1083,7 @@ mod fracture_at2_tests {
         let d = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
         let lap = TopologicalLaplacian::scalar_laplacian(d.clone(), edges_b1.clone(), d.clone());
         for &x in lap.into_data().value.iter() {
-            assert!(x.is_finite(), "laplacian non-finite: {}", x);
+            assert!(x.is_finite(), "laplacian non-finite: {x}");
         }
     }
 

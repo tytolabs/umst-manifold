@@ -316,9 +316,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHydrationResidual<B> {
         let f_a = a_dims[2];
         let m = n * f_t + n * f_a;
         if m > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
+            let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
             return Err(format!(
-                "one_damped_newton_step: {} stacked DOFs exceeds cap {}",
-                m, THMC_DENSE_NEWTON_MAX_STACKED_DOFS
+                "one_damped_newton_step: {m} stacked DOFs exceeds cap {cap}",
             ));
         }
 
@@ -779,9 +779,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
                 n, f_t, f_h, f_a,
             );
         if m > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
+            let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
             return Err(format!(
-                "one_damped_newton_step (T,h,α): {} stacked DOFs exceeds cap {}",
-                m, THMC_DENSE_NEWTON_MAX_STACKED_DOFS
+                "one_damped_newton_step (T,h,α): {m} stacked DOFs exceeds cap {cap}",
             ));
         }
 
@@ -983,9 +983,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         let m =
             ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, f_t, f_h, f_a);
         if m > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
+            let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
             return Err(format!(
-                "one_damped_newton_step_with_quasi_static_r_u: {} stacked DOFs exceeds cap {}",
-                m, THMC_DENSE_NEWTON_MAX_STACKED_DOFS
+                "one_damped_newton_step_with_quasi_static_r_u: {m} stacked DOFs exceeds cap {cap}",
             ));
         }
 
@@ -1024,9 +1024,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
             return Err("one_damped_newton_step_with_quasi_static_r_u: zero active DOFs".into());
         }
         if m_a > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
+            let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
             return Err(format!(
-                "one_damped_newton_step_with_quasi_static_r_u: {} active DOFs exceeds cap {}",
-                m_a, THMC_DENSE_NEWTON_MAX_STACKED_DOFS
+                "one_damped_newton_step_with_quasi_static_r_u: {m_a} active DOFs exceeds cap {cap}",
             ));
         }
         let red_map: Vec<usize> = (0..m).filter(|&j| active[j]).collect();
@@ -1400,8 +1400,7 @@ fn field_major_newton_active_mask<B: Backend<FloatElem = f32>>(
     let dm = boundary_mask_bn3.dims();
     if dm[0] != 1 || dm[1] != n || dm[2] != 3 {
         return Err(format!(
-            "field_major_newton_active_mask: boundary_mask dims {:?}, expected [1, {n}, 3]",
-            dm
+            "field_major_newton_active_mask: boundary_mask dims {dm:?}, expected [1, {n}, 3]",
         ));
     }
     let m = ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, f_t, f_h, f_a);

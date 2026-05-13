@@ -723,9 +723,7 @@ fn plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band() {
     assert!(
         ratio > PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN
             && ratio < PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX,
-        "expected locked Q1-hex centre deflection in narrowed w/w_K band [{}, {}]; ratio={ratio} (w={w_numerical}, w_k={w_kirchhoff})",
-        PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN,
-        PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX
+        "expected locked Q1-hex centre deflection in narrowed w/w_K band [{PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MIN}, {PLATE_Q1_HEX_LOCKED_KIRCHHOFF_RATIO_MAX}]; ratio={ratio} (w={w_numerical}, w_k={w_kirchhoff})",
     );
 }
 

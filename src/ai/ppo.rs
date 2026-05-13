@@ -142,7 +142,7 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
             }
             Err(e) => {
                 // The CBF rejected the state
-                Err(format!("Transition Rejected by CBF: {}", e))
+                Err(format!("Transition Rejected by CBF: {e}"))
             }
         }
     }

@@ -119,7 +119,7 @@ fn displacement_bc_batch<Bk: Backend<FloatElem = f32>>(
             .unsqueeze_dim::<3>(0)
             .expand([batch, n, 3])
     } else {
-        panic!("unexpected displacement_bc_mask dims {:?} for N={n}", d);
+        panic!("unexpected displacement_bc_mask dims {d:?} for N={n}");
     }
 }
 

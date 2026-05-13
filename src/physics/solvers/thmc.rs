@@ -437,9 +437,9 @@ impl ThmcSolver {
                 n, f_t, f_h, f_a,
             );
             if m_dof > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
+                let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
                 return Err(format!(
                     "ThmcSolver::step: monolithic_thmc_newton stacked DOFs > {cap} (dense Jacobian cap is {cap}), got {m_dof}",
-                    cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
                 ));
             }
         }
@@ -618,9 +618,9 @@ impl ThmcSolver {
                 let f_a_dof = f_alpha_ch;
                 let stacked = n * f_t_dof + n * f_a_dof;
                 if stacked > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
+                    let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
                     return Err(format!(
                         "ThmcSolver::step: implicit (T,α) Newton exceeds dense-Jacobian cap ({cap} DOFs), got {stacked}",
-                        cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
                     ));
                 }
 

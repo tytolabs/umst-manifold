@@ -869,9 +869,7 @@ fn thmc_implicit_euler_t_h_alpha_u_placeholder_r_u_and_flat_layout_two_nodes() {
     let l2_from_parts = (l2_scalar * l2_scalar + ru_sq).max(0.0_f32).sqrt();
     assert!(
         (l2_full - l2_from_parts).abs() < 1e-5_f32,
-        "stacked L2: full {} vs sqrt(||R_T:h:a||^2+||R_u||^2) {}",
-        l2_full,
-        l2_from_parts
+        "stacked L2: full {l2_full} vs sqrt(||R_T:h:a||^2+||R_u||^2) {l2_from_parts}",
     );
 }
 
@@ -1368,9 +1366,7 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
     let l2_from_flat = sum_sq.max(0.0_f32).sqrt();
     assert!(
         (l2_full - l2_from_flat).abs() < 1e-5_f32,
-        "L2 mismatch: combined {} vs from flat {}",
-        l2_full,
-        l2_from_flat
+        "L2 mismatch: combined {l2_full} vs from flat {l2_from_flat}",
     );
 
     let l2_scalar = assembler.residual_l2(&trial).expect("l2 scalar blocks");
@@ -1392,9 +1388,7 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
     let l2_from_parts = (l2_scalar * l2_scalar + ru_sq).max(0.0_f32).sqrt();
     assert!(
         (l2_full - l2_from_parts).abs() < 1e-5_f32,
-        "L2 mismatch: combined {} vs sqrt(||R_T:h:a||^2+||R_u||^2) {}",
-        l2_full,
-        l2_from_parts
+        "L2 mismatch: combined {l2_full} vs sqrt(||R_T:h:a||^2+||R_u||^2) {l2_from_parts}",
     );
 }
 
@@ -1608,12 +1602,10 @@ fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() 
         .expect(
             "one damped Newton step with quasi-static R_u (JFNK inner under solver-experimental)",
         );
-    assert!(norm_before > 1e-8_f32, "nontrivial R0={}", norm_before);
+    assert!(norm_before > 1e-8_f32, "nontrivial R0={norm_before}");
     assert!(
         norm_after < norm_before * 0.999_f32,
-        "stacked ||R|| should drop: {} -> {}",
-        norm_before,
-        norm_after
+        "stacked ||R|| should drop: {norm_before} -> {norm_after}",
     );
 }
 
@@ -3206,8 +3198,7 @@ fn thermal_implicit_newton_residual_decreases_monotonically() {
     let last = *norms.last().expect("non-empty");
     assert!(
         last < 1.0e-6_f32,
-        "final residual {last} did not reach 1e-6 (log = {:?})",
-        norms
+        "final residual {last} did not reach 1e-6 (log = {norms:?})",
     );
 }
 

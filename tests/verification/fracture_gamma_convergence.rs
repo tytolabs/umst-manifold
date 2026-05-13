@@ -110,11 +110,10 @@ fn update_damage_smoke_tiny_chain() {
     #[cfg(feature = "fracture-at2")]
     {
         for &x in d_new.clone().into_data().value.iter() {
-            assert!(x.is_finite(), "expected finite damage; got {}", x);
+            assert!(x.is_finite(), "expected finite damage; got {x}");
             assert!(
                 (0.0..=1.0).contains(&x),
-                "expected damage in [0,1]; got {}",
-                x
+                "expected damage in [0,1]; got {x}",
             );
         }
         // `outer_iterations == 1` + fixed strain provider matches a single inner relaxation.
@@ -462,21 +461,19 @@ fn at2_gamma_convergence_three_length_scales() {
     // Acceptance (matches `docs/Solver-Status.md` OPEN ROADMAP ITEM — Fracture): relative `|D_h − Gc|/Gc` &lt; 2% on
     // each mesh (ψ⁺=0 seed profile); successive relative errors non-worsening within `1e-3` (not strict decay).
     for (i, &err) in errors.iter().enumerate() {
+        let d_h = d_hs[i];
         assert!(
             err < 0.02,
-            "Γ-conv error too large at pair {i}: D_h={} rel_err={err}",
-            d_hs[i]
+            "Γ-conv error too large at pair {i}: D_h={d_h} rel_err={err}",
         );
     }
     assert!(
         errors[1] <= errors[0] + 1e-3,
-        "error must not increase between coarse→mid: {:?}",
-        errors
+        "error must not increase between coarse→mid: {errors:?}",
     );
     assert!(
         errors[2] <= errors[1] + 1e-3,
-        "error must not increase between mid→fine: {:?}",
-        errors
+        "error must not increase between mid→fine: {errors:?}",
     );
 }
 
@@ -882,21 +879,19 @@ fn at2_gamma_convergence_psi_plus_nonzero_three_length_scales() {
     // Wider band than ψ⁺≡0: tensile drive couples into damage; D_h need not sit at the sharp `Gc` optimum.
     const TAU_GAMMA_PSI: f32 = 0.55_f32;
     for (i, &err) in errors.iter().enumerate() {
+        let d_h = d_hs[i];
         assert!(
             err < TAU_GAMMA_PSI,
-            "Γ-type relative error too large at pair {i}: D_h={} rel_err={err} (cap {TAU_GAMMA_PSI})",
-            d_hs[i]
+            "Γ-type relative error too large at pair {i}: D_h={d_h} rel_err={err} (cap {TAU_GAMMA_PSI})",
         );
     }
     assert!(
         errors[1] <= errors[0] + 1e-3,
-        "error must not increase between coarse→mid: {:?}",
-        errors
+        "error must not increase between coarse→mid: {errors:?}",
     );
     assert!(
         errors[2] <= errors[1] + 1e-3,
-        "error must not increase between mid→fine: {:?}",
-        errors
+        "error must not increase between mid→fine: {errors:?}",
     );
 
     // Coupled drive lifts the discrete surface measure above the ψ⁺≡0 optimum (`D_h ≈ Gc`).

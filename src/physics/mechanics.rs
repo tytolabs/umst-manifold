@@ -1088,9 +1088,7 @@ mod tests {
                 };
                 assert!(
                     (val - expected).abs() < k_edge * 1e-4_f32,
-                    "K[{i},{j}] got {} expected {}",
-                    val,
-                    expected
+                    "K[{i},{j}] got {val} expected {expected}",
                 );
             }
         }
