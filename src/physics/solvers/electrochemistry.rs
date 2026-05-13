@@ -1707,6 +1707,7 @@ fn solve_newton_correction_full_sg_row_band_via_band_lu(
 /// [`solve_newton_correction_full_sg_row_band_via_dense_expand`] if factorisation fails (envelope too
 /// narrow for **`dim`**, or pivot breakdown).
 #[cfg(feature = "electrochemistry-mvp")]
+#[allow(clippy::too_many_arguments)]
 fn solve_newton_correction_full_sg_row_band_band_lu_or_dense_expand(
     jac_band: &[f64],
     dim: usize,
@@ -2040,7 +2041,7 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     let mut jac_lu_scratch =
         alloc_full_sg_band_dense.then(|| vec![0.0_f64; dim * PNP_CHAIN_FULL_SG_BW_LU]);
     let mut jac_dense_scratch = alloc_full_sg_band_dense.then(|| vec![0.0_f64; dim * dim]);
-    let mut band_lu_swaps = alloc_full_sg_band_dense.then(|| Vec::<(usize, usize)>::new());
+    let mut band_lu_swaps = alloc_full_sg_band_dense.then(Vec::<(usize, usize)>::new);
     let mut rhs_nm = vec![0.0_f64; dim];
     let mut thomas_a = vec![0.0_f64; n];
     let mut thomas_b = vec![0.0_f64; n];
@@ -2516,7 +2517,7 @@ mod newton_chain_tests {
         let ku = 2 * w;
         let bw = kl + ku + 1;
         assert!(
-            bw >= 3 * w + 1,
+            bw > 3 * w,
             "bw={bw} should admit the LAPACK LDAB lower-bound narrative for static KL=KU=w ({lb})",
             lb = 3 * w + 1
         );
