@@ -169,7 +169,7 @@ fn pnp_screening_phi_decays_toward_bulk_smoke() {
 }
 
 /// λ\_D exponential-fit gate (**±10 %** vs continuum **`λ_D`**, tail LS window — ~9–10% bias remains at **N=256**;
-/// a **±5 %** target is deferred until the exponential fit / horizon is retuned). Long-horizon **`N=256`**
+/// a **±5 %** target is open until the exponential fit / horizon is retuned). Long-horizon **`N=256`**
 /// screening — prefer **`--release`** locally (see module docs).
 #[test]
 fn debye_screening_256_cells_phi_25mv_decay_length_within_band() {
@@ -344,7 +344,7 @@ fn sg_flux_drift_scales_with_mesh_spacing_inverse() {
 }
 
 // NOTE: A `debye_screening_inversely_scales_with_sqrt_concentration` test was attempted; structural
-// λ_D ∝ 1/√c₀ scaling is deferred for a dedicated harness. The `pnp_screening_phi_decays_toward_bulk_smoke`
+// λ_D ∝ 1/√c₀ scaling is open for a dedicated harness. The `pnp_screening_phi_decays_toward_bulk_smoke`
 // test still asserts qualitative screening under explicit Picard `solve_pnp_step`.
 
 /// Implicit Newton with **full SG** (`linearize_sg_fickian: false`) for dispatch smokes such as

@@ -16,7 +16,7 @@
 //!   - The discrete Stokes identity holds on a triangle.
 //!   - **Photonics / Track 15 prerequisite:** on one oriented triangle, the discrete edge curl
 //!     \(d_1\) applied to the gradient \(d_0 \omega\) vanishes (\(d_1 \circ d_0 = 0\)), matching
-//!     [`docs/Solver-Status.md`](../docs/Solver-Status.md) DEFERRAL — Photonics (single-triangle
+//!     [`docs/Solver-Status.md`](../docs/Solver-Status.md) OPEN ROADMAP ITEM — Photonics (single-triangle
 //!     DEC curl sanity; [`dec_curl_d1_annihilates_gradient_on_triangle_faces_b2_burn`] uses
 //!     [`umst_manifold::physics::dec_primal::primal_d1_edge_flux_to_faces`] with production-shaped
 //!     [`faces_b2`](umst_manifold::core::tensors::UnifiedMaterialStateTensor::faces_b2).
@@ -180,7 +180,7 @@ fn dec_curl_d1_annihilates_gradient_on_triangle() {
 #[test]
 fn dec_curl_d1_annihilates_gradient_on_triangle_faces_b2_burn() {
     // Same identity as `dec_curl_d1_annihilates_gradient_on_triangle`, but d₀ and d₁ go through
-    // `edges_b1` + `faces_b2` tensors and Burn gather/scatter (`DEFERRAL — Photonics`, Next PR (2)).
+    // `edges_b1` + `faces_b2` tensors and Burn gather/scatter (`OPEN ROADMAP ITEM — Photonics`, Next PR (2)).
     let dev = NdArrayDevice::default();
     let edges_b1: Tensor<NdB, 2, Int> = Tensor::from_data(
         Data::new(

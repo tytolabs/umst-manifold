@@ -43,7 +43,9 @@ pub use acoustics::{AcousticBarNetwork, AcousticGmresConfig, AcousticWaveSolver}
 pub use acoustics::{AcousticNewmarkBar1dPeriodic, AcousticNewmarkBar1dWork};
 #[cfg(feature = "electrochemistry-mvp")]
 pub use electrochemistry::pnp_backward_euler_residual_l2_chain_host_f64;
-pub use electrochemistry::{ElectroChemicalSolver, NewtonPnpContext};
+#[cfg(feature = "electrochemistry-pnp")]
+pub use electrochemistry::ElectroChemicalSolver;
+pub use electrochemistry::NewtonPnpContext;
 pub use fracture_field::PhaseFieldFractureSolver;
 #[cfg(feature = "fracture-at2")]
 pub use fracture_field::{

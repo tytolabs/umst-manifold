@@ -6,7 +6,7 @@
 //! formal_citation: Vinet et al., *J. Phys. C* **19** (1986) L467.
 //!
 //! **Verified (stable lane):** closed-form Vinet isothermal pressure vs volume (this file).
-//! **Deferred (research):** `solvers::statistical_mechanics::upscale_potentials` — LJ→continuum
+//! **Open (research):** `solvers::statistical_mechanics::upscale_potentials` — LJ→continuum
 //! bridge placeholder only; not exercised here.
 
 /// Isothermal Vinet pressure (GPa) from \(V/V_0\) and ambient \(K_0\), \(K_0'\).

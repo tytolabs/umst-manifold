@@ -19,7 +19,7 @@
 //! **Not production-complete:** circumcentric/barycentric **dual** Hodge refinement, **sparse assembled**
 //! Maxwell at scale (the shipped patch path uses **CSR matvec CG** as the default lossless inner solve when \(N\le\) [`PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY`] with **`UMST_PHOTONICS_DEC_PATCH_CSR_INNER=auto`**, **O(dim²)** COO assembly — **dense Gauss–Jordan** only as fallback under [`PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT`] when CSR fails or CSR is **`off`** — else **matrix-free CG** up to [`PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV`]),
 //! **complex** \(\varepsilon\) / PML on **`faces_b2`** patches, and general volumetric **BC**s beyond the
-//! gauge **pin** remain open (see **DEFERRAL — Photonics**).
+//! gauge **pin** remain open (see **OPEN ROADMAP ITEM — Photonics**).
 //! **Verification matrix row #6** ([`VERIFICATION_COMPLETION_MATRIX.md`](../../../docs/VERIFICATION_COMPLETION_MATRIX.md))
 //! therefore stays **partial** (**50%** bin in [`Solver-Status.md`](../../../docs/Solver-Status.md)) until
 //! full dual-mesh metrics, **sparse factorizations / preconditioners** at production \(N\),

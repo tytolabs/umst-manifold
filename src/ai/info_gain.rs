@@ -3,7 +3,7 @@
 
 //! Epistemic **surrogates** for topology / policy gateways.
 //!
-//! # Deferred work
+//! # Open work
 //!
 //! **Today:** batch **scalar** mean-squared-delta surrogates ([`suggested_info_gain_from_state_delta`],
 //! [`suggested_info_gain_from_batched_nodal_scalars`]) — cheap, differentiable hooks for gateways

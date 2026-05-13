@@ -4,7 +4,7 @@
 //! Γ-convergence / phase-field fracture verification.
 //!
 //! Specification: `composer_prompts/v0.4_solver_completion_no_namesakes.md`. Repo table + full
-//! status: `docs/Solver-Status.md` → **Phase-field fracture: implemented vs deferred**.
+//! status: `docs/Solver-Status.md` → **Phase-field fracture: implemented vs open**.
 //!
 //! **Implemented (this harness + `fracture_field.rs`):** inner AT2 damage relaxation uses **red–black**
 //! half-steps on the graph Laplacian (see solver module docs). With `--features fracture-at2`:
@@ -459,7 +459,7 @@ fn at2_gamma_convergence_three_length_scales() {
         eprintln!("Γ-conv: l0={l0:.4} h={h:.4} N={n} D_h={d_h:.4} rel_err={err:.4}");
     }
 
-    // Acceptance (matches `docs/Solver-Status.md` DEFERRAL — Fracture): relative `|D_h − Gc|/Gc` &lt; 2% on
+    // Acceptance (matches `docs/Solver-Status.md` OPEN ROADMAP ITEM — Fracture): relative `|D_h − Gc|/Gc` &lt; 2% on
     // each mesh (ψ⁺=0 seed profile); successive relative errors non-worsening within `1e-3` (not strict decay).
     for (i, &err) in errors.iter().enumerate() {
         assert!(

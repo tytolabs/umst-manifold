@@ -10,7 +10,7 @@
 //!   **steady** parallel-plate reference; [`BinghamFlowSolver::step`] is an explicit Chorin split on a
 //!   graph — no claim of convergence to that steady profile without inlet/outlet BCs (and typically a
 //!   staggered MAC pressure) even though the pressure increment solves \(\mathcal{L}\phi=b_h\) with **Jacobi-PCG**
-//!   (see deferrals in `tests/verification/rheology_poiseuille.rs`).
+//!   (see open roadmap items in `tests/verification/rheology_poiseuille.rs`).
 //! - **Grid / BC consistency:** Channel smokes pass [`BinghamFlowSolver::edge_length_scale`] as the
 //!   wall-normal spacing so \(\dot\gamma \sim |\Delta u|/h\) matches SI; wall velocity is enforced
 //!   **outside** the solver via a nodal mask (not embedded in `step`).
@@ -29,7 +29,7 @@
 //!    \(\mathcal{L}\) is [`TopologicalLaplacian::scalar_laplacian`] and \(b_h\) is the **weak primal divergence**
 //!    of the scalar tangential mean flux \(q_e=(\bar u^\*\!\cdot\hat t)f_c\) (see `docs/research/rheology_pressure_poisson_roadmap.md` §2–4). This **replaces** the legacy \(\sum_c \mathcal{L}u^\*_c\) surrogate.
 //!    The roadmap’s explicit \(\tilde b = b_h/\Delta t\) scaling note on this graph-only lane remains
-//!    **deferred** for a MAC / staggered RHS pairing (see `docs/research/rheology_pressure_poisson_roadmap.md` §2–4).
+//!    **open** for a MAC / staggered RHS pairing (see `docs/research/rheology_pressure_poisson_roadmap.md` §2–4).
 //!    \(\mathcal{L}\) remains the graph Laplacian — not a MAC staggered operator — until that lane lands.
 //!    The linear solve is **Jacobi-preconditioned CG** on \(A=-\mathcal{L}\), \(b=-b_h\) (SPD on the mean-free
 //!    subspace), early exit when \(\|r\|_2/\|b\|_2\) satisfies `Tensor::all_close` against zero at **`POISSON_CG_REL_TOL`**
@@ -67,7 +67,7 @@
 //! ## Default builds (`solver-experimental` **off**)
 //! Returns `(velocity, pressure, lambda_thix)` unchanged so `cargo test` stays green.
 //!
-//! ## R2.2 — Honest scope (DEFERRAL — Rheology, Track J)
+//! ## R2.2 — Honest scope (OPEN ROADMAP ITEM — Rheology, Track J)
 //! **In scope today:** explicit predictor + pressure correction (**Jacobi-PCG** on \(-\mathcal{L}\) with an
 //! RHS built from the **weak primal divergence** of tangential mean edge flux — a graph-only discrete
 //! source, not a full MAC \(\nabla_h\!\cdot u^\*\)); wall BCs as **external** nodal masks in tests; Bingham +
@@ -84,7 +84,7 @@
 //! on \(-\mathcal{L}\) and a **pressure-gradient flux template** projection scaled by \(\Delta t\) (plus `mean(φ)=0` gauge).
 //! CI brackets the resulting step-0→1 amplification in `chorin_jacobi_pcg_step_velocity_amplification_regression_guard`
 //! (historical name).
-//! Steady vs analytic comparisons stay deferred until inlet/outlet BCs plus a MAC or cell-centred pressure solve land.
+//! Steady vs analytic comparisons stay open until inlet/outlet BCs plus a MAC or cell-centred pressure solve land.
 //!
 //! ## MAC + Poisson — integration points (R2.2, design note)
 //! Ring 2 **R2.2** calls for MAC or cell-centred pressure on the developed channel; this module ships **graph**
@@ -108,7 +108,7 @@
 //!
 //! **Scope:** Wiring **2D channel MAC + consistent divergence BCs** is **not** a small patch on this scaffold
 //! (well beyond a sub-hundred-line swap). Treat the bullets above as **documentation of insertion points** until
-//! a dedicated pressure solve + boundary module ships — see **DEFERRAL — Rheology** in `docs/Solver-Status.md`.
+//! a dedicated pressure solve + boundary module ships — see **OPEN ROADMAP ITEM — Rheology** in `docs/Solver-Status.md`.
 
 #[cfg(feature = "rheology-bingham")]
 use crate::physics::dec_primal::{

@@ -12,7 +12,7 @@
 //! with \(B_2^*\) a **Mayer second-virial surrogate** (polynomial in \(1/T^*\) fitted to the
 //! numerical Mayer integral on \(T^*\in[1,5]\)) and \(B_3^*\) a **positive Padé surrogate**
 //! \(1.2/(T^*+0.15)\) clamped to \([0.08,1.5]\) — a **differentiable** third-density correction
-//! (not the full triangle Mayer integral; see **Deferrals** below).
+//! (not the full triangle Mayer integral; see **Open roadmap items** below).
 //!
 //! Isothermal bulk stiffness uses
 //! \[
@@ -55,7 +55,7 @@
 //! Reference normalisation for mechanics / fracture scaling:
 //! **`VIADU_K_REF_F32`**, **`GAMMA_GC_REF_VIADU_F32`** at \((\varepsilon,\sigma,\rho^*,T^*)=(1,1,0.2,2)\).
 //!
-//! ## Deferrals
+//! ## Open roadmap items
 //!
 //! - Full **Mayer \(B_3^*\)** triangle integral and MD / Johnson dense-fluid agreement at
 //!   \(\rho^* \gtrsim 0.15\): truncated virial is a **surrogate**; tighten vs Johnson or MD on a
@@ -114,7 +114,7 @@ fn lj_mayer_b2_star_coeffs() -> (f32, f32, f32, f32) {
 }
 
 /// Third-virial **surrogate** \(B_3^*(T^*)\): `clamp(0.08, 1.2/(T*+0.15), 1.5)` — positive, monotone
-/// decreasing in \(T^*\); **not** the full Mayer \(B_3^*\) cluster integral (see module deferrals).
+/// decreasing in \(T^*\); **not** the full Mayer \(B_3^*\) cluster integral (see module open roadmap items).
 #[inline]
 pub fn lj_virial_b3_star_surrogate_scalar(t_star: f32) -> f32 {
     (1.2 / (t_star + 0.15)).clamp(0.08, 1.5)

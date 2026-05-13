@@ -128,7 +128,7 @@ pub struct ElectroChemicalSolver {
     /// dimension `[D]·[c]/[h]`, so the divergence has dimension `[D]·[c]/[h]²` — matching `∇·J`.
     /// Setting `mesh_spacing = 1.0` (default) reproduces the legacy unit-edge convention used by
     /// existing tests; physical-units callers should pass actual edge length. Non-uniform meshes
-    /// (variable `h` per edge) are deferred to the implicit-Newton step (Phase 3.3).
+    /// (variable `h` per edge) are open to the implicit-Newton step (Phase 3.3).
     ///
     /// **Coupled note:** the **Poisson path-chain Thomas** solve uses the same harmonic-\(\varepsilon\)
     /// stencil in **index space**, with interior RHS scaled by **`h²`** and the implicit BE **Poisson

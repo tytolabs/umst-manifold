@@ -75,7 +75,7 @@ impl<B: Backend> EmergenceMonitor<B> {
 /// * `edges_b1` — optional `[2, E]` (row 0 = sources, row 1 = targets), same as [`crate::physics::laplacian::TopologicalLaplacian`]
 /// * `node_positions` — optional `[N, 3]` for physical edge lengths; if [`None`], \(L_e \equiv 1\)
 ///
-/// # Deferral
+/// # Open roadmap item
 /// Without `edges_b1`, no primal gradient on the graph is defined; returns `nodal_dissipation` unchanged.
 pub fn nodal_defect_tensor<B: Backend>(
     nodal_dissipation: Tensor<B, 3>,

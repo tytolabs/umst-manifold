@@ -2374,7 +2374,7 @@ fn solve_maxwell_dec_patch_two_quads_strip_residual() {
 /// [`primal_divergence_from_edge_flux_topo`](umst_manifold::physics::dec_primal::primal_divergence_from_edge_flux_topo) on \(d_0\omega\),
 /// then [`apply_dec_te_curl_curl_chain_operator`](umst_manifold::physics::solvers::photonics::apply_dec_te_curl_curl_chain_operator) **`None`**
 /// and [`PhotonicsSolver::solve_maxwell_curl_curl`](umst_manifold::physics::solvers::PhotonicsSolver::solve_maxwell_curl_curl) pass-through
-/// (documented deferral for non-uniform-chain topologies).
+/// (documented open roadmap item for non-uniform-chain topologies).
 #[test]
 fn assembled_two_quads_dec_primal_photonics_maxwell_deferred() {
     use umst_manifold::physics::solvers::photonics::{

@@ -4,3 +4,4 @@
 pub mod ai;
 pub mod core;
 pub mod physics;
+pub mod pnp_bridge;

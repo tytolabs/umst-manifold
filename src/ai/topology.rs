@@ -493,7 +493,7 @@ impl BetaContinuation {
 
 #[cfg(feature = "topology-density-evolution")]
 /// Simplified **gradient** smoothing on the primal graph (not Sigmund’s full mesh-independence
-/// filter with density weights and \(w_{ej}=\max(0,r_{\min}-\mathrm{dist})\); that formula is deferred).
+/// filter with density weights and \(w_{ej}=\max(0,r_{\min}-\mathrm{dist})\); that formula is open).
 ///
 /// Here: each node receives the arithmetic mean of **neighbor** values (1‑hop via `edges_b1`),
 /// then \(\mathbf g \leftarrow (1-\gamma)\mathbf g + \gamma \overline{\mathbf g}_{\mathcal N}\).

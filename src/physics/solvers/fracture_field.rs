@@ -74,8 +74,8 @@
 //! - [`PhaseFieldFractureSolver::update_damage_staggered`] does **not** run mechanics solves; it
 //!   only composes multiple [`PhaseFieldFractureSolver::update_damage`] calls with a **strain
 //!   provider** `FnMut(&Tensor<B,3>) -> Tensor<B,4>` so call sites can inject refreshed **ε(d)**.
-//! - **Repo status (one place):** implemented vs multi-\(l_0\) Γ-limit / full staggered deferrals —
-//!   `docs/Solver-Status.md` → **DEFERRAL — Fracture** and table row `solvers::fracture_field`.
+//! - **Repo status (one place):** implemented vs multi-\(l_0\) Γ-limit / full staggered open roadmap items —
+//!   `docs/Solver-Status.md` → **OPEN ROADMAP ITEM — Fracture** and table row `solvers::fracture_field`.
 //! - **Non-embedding / no bar strain:** `strain_tensor_for_fracture_from_manifold` reads
 //!   [`crate::core::tensors::UnifiedMaterialStateTensor::matrix_features`] channel `0` into `[B,N,3,3]` when SI bar
 //!   kinematics are unavailable (zeros if shapes disagree). [`crate::physics::solvers::ThmcSolver::step`]

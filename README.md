@@ -8,15 +8,32 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 
-**Unified Material-State Tensor (UMST) manifold** — a Rust / Burn substrate for differentiable material physics on a graph 1-skeleton: discrete exterior calculus operators, thermodynamic admissibility gating, and adjoint-friendly evolution. Intended for researchers and engineers integrating domain cartridges (constitutive models) with conserved fluxes and verified state wrappers.
+The Unified Material-State Tensor (UMST) Manifold is a computational framework for representing and evolving complex physical systems. By treating heterogeneous materials—their mechanical, thermal, chemical, and topological states—as a single continuous differentiable space, the manifold enables unified physical reasoning.
 
-**Repository:** [github.com/tytolabs/umst-manifold](https://github.com/tytolabs/umst-manifold)
+It provides the substrate for discrete exterior calculus (DEC) operators, thermodynamic admissibility gating, and adjoint-friendly evolution. It is designed to host domain-specific constitutive models ("cartridges") within a verified, mathematically rigorous environment.
 
-## Solver maturity
+![UMST 64-Tensor Pipeline (Light)](docs/assets/fig1_teaser.png#gh-light-mode-only)
+![UMST 64-Tensor Pipeline (Dark)](docs/assets/fig1_teaser_dark.png#gh-dark-mode-only)
 
-Lanes (`solver-stable` vs `solver-research`), verification paths, completion matrix alignment, and honest deferrals (including topology / shell and matrix **#10** scope): **[`docs/Solver-Status.md`](docs/Solver-Status.md)**. Per-solver index: **[`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md)**. v0.4 brief checklist (when `composer_prompts/` sits beside this repo): **[`../composer_prompts/v0.4_solver_completion_no_namesakes.md`](../composer_prompts/v0.4_solver_completion_no_namesakes.md)**.
+## Why UMST Manifold?
 
-## Build and test
+1. **Unified State (`UMST`):** A single 64-channel tensor tracks mechanics, thermals, hydration, and cost simultaneously across the entire domain.
+2. **Adjoint-Ready:** Backpropagate through PDEs (Poisson-Nernst-Planck, Phase-Field Fracture) to perform gradient-based topology optimization.
+3. **Hardware-Accelerated:** Built on Rust + Burn. Runs on CPU (Accelerate/OpenBLAS) or GPU (WGPU/Metal/Vulkan).
+4. **Thermodynamically Safe:** Built-in Control Barrier Functions (CBFs) ensure 100% physically admissible states during AI/ML loops.
+
+## Scope & Cartridge Ecosystem
+
+The default build exposes DEC / sheaf plumbing, equilibrium mechanics on free degrees of freedom, thermodynamic control-barrier gating, adjoint hooks, and the `IScienceCartridge` surface. With `solver-experimental`, additional forward and coupled solves compile and run where wired.
+
+| Cartridge | Domain | Status |
+|-----------|--------|--------|
+| [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) | Cementitious materials, RC topology | **Active** |
+| `umst-supercap-cartridge` | Structural batteries, ion transport | *In-Progress* |
+
+Striatus-class shell demos and artefact contracts live in the **[umst-concrete-cartridge](https://github.com/tytolabs/umst-concrete-cartridge)** repo; shell topology, print-ready gates, and open roadmap items: **[`docs/Solver-Status.md`](docs/Solver-Status.md)** and [`docs/Striatus.md`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/Striatus.md) (cartridge). 
+
+## Build and Test
 
 ```bash
 cd umst-manifold
@@ -24,66 +41,53 @@ cargo build
 cargo test
 ```
 
-GPU backend (local Vulkan/Metal): `cargo build --features wgpu`. Solver integration tests: `cargo test --features solver-tests`.
-
-Shell topology and print-ready gates (cartridge artefacts, **B6**/**B8**/**L**): **[`docs/Solver-Status.md`](docs/Solver-Status.md)**; cartridge mirror: [`../umst-concrete-cartridge/docs/Solver-Status.md`](../umst-concrete-cartridge/docs/Solver-Status.md).
+GPU backend (local Vulkan/Metal): `cargo build --features wgpu`. 
+Solver integration tests: `cargo test --features solver-tests`.
 
 CI lint (`solver-status` job in [`.github/workflows/rust.yml`](.github/workflows/rust.yml)) and recommended local parity:
-
 ```bash
 python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set
 ```
 
-## Toolchain
+## Toolchain & Acceleration
 
-**Rust 1.88** — pinned in [`rust-toolchain.toml`](rust-toolchain.toml). Match CI with `rustup default 1.88` or `cargo +1.88 build` if your global default differs. The `rust-version` field in `Cargo.toml` marks a lower bound for minimal feature sets; use the pinned toolchain for `--all-features` builds.
+**Rust 1.88** — pinned in [`rust-toolchain.toml`](rust-toolchain.toml). Use `rustup default 1.88` to match CI.
 
-**CPU matmul (macOS / Apple Silicon):** optional `cargo build --features blas-accelerate` enables `burn-ndarray`’s `blas-accelerate` (Accelerate via `blas-src`). Cap BLAS threads to avoid oversubscription: **`VECLIB_MAXIMUM_THREADS`** (e.g. `export VECLIB_MAXIMUM_THREADS=$(sysctl -n hw.perflevel0.logicalcpu 2>/dev/null || sysctl -n hw.logicalcpu)`), or **`OPENBLAS_NUM_THREADS`** when using an OpenBLAS-linked stack.
+**CPU matmul (macOS / Apple Silicon):**
+Use `cargo build --features blas-accelerate` to enable Apple Accelerate. 
+*Note: Cap BLAS threads to avoid oversubscription: `export VECLIB_MAXIMUM_THREADS=$(sysctl -n hw.perflevel0.logicalcpu)`.*
 
-## Cargo features
+## Cargo Features
 
 | Feature | Purpose |
 |--------|---------|
 | `ndarray` (default) | CPU tensors via `burn-ndarray`. |
-| `blas-accelerate` | CPU matmul via Apple Accelerate on macOS (optional). |
+| `blas-accelerate` | CPU matmul via Apple Accelerate on macOS. |
 | `wgpu` | GPU tensors via Burn/WGPU. |
 | `train` | Burn training utilities. |
-| `solver-experimental` | Umbrella flag: all opt-in solver scaffolds (damage, THMC, electrochemistry, mechanics variants, etc.). |
+| `solver-experimental` | Umbrella flag: enables PDE solver scaffolds (damage, THMC, electrochemistry, etc.). |
 | `solver-tests` | Same dependency graph as `solver-experimental`; used for CI solver coverage. |
 
-Individual flags (`fracture-at2`, `acoustics-newmark`, `thmc-coupled`, `electrochemistry-pnp`, `mechanics-voigt-cauchy`, `rheology-bingham`, `topology-density-evolution`, `photonics-fdfd`; legacy aliases `electrochemistry-mvp`, `photonics-scaffold`) select subsets; see `[features]` in [`Cargo.toml`](Cargo.toml).
+Individual flags (`fracture-at2`, `acoustics-newmark`, `thmc-coupled`, `electrochemistry-pnp`, `mechanics-voigt-cauchy`, `rheology-bingham`, `topology-density-evolution`, `photonics-fdfd`; legacy aliases `electrochemistry-mvp`, `photonics-scaffold`) select subsets; see `[features]` in `Cargo.toml`.
 
-## Scope
+## Quick Start: The IScienceCartridge Interface
 
-The default build exposes DEC / sheaf plumbing, equilibrium mechanics on free degrees of freedom, thermodynamic control-barrier gating, adjoint hooks, and the `IScienceCartridge` surface. With `solver-experimental`, additional forward and coupled solves compile and run where wired; coverage and production readiness vary by module.
+Domain code implements the `IScienceCartridge` trait to bridge bulk material science into the manifold's DEC solvers. See [`examples/basic_topology.rs`](examples/basic_topology.rs) for an end-to-end hookup.
 
-## Reference
+## Reference & Verification
 
-- Formal notation and cartridge interface: [`docs/Mathematical-Foundations.md`](docs/Mathematical-Foundations.md)
-- Burn host-sync / solver hot-path audit (`into_scalar`, `into_data`): [`docs/FP_CATEGORICAL_BURN.md`](docs/FP_CATEGORICAL_BURN.md)
-- Detailed gap list (spec vs. implementation): [`GAP_AUDIT.md`](GAP_AUDIT.md)
+- **Formal notation & Math:** [`docs/Mathematical-Foundations.md`](docs/Mathematical-Foundations.md)
+- **Solver Maturity & Verification:** [`docs/Solver-Status.md`](docs/Solver-Status.md) and [`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md)
+- **Detailed Gap List:** [`GAP_AUDIT.md`](GAP_AUDIT.md)
+- **Lean Proofs:** [umst-formal](https://github.com/tytolabs/umst-formal)
 
-## Example
-
-End-to-end cartridge hookup: [`examples/basic_topology.rs`](examples/basic_topology.rs)
-
-## Related repositories
-
-| Project | Role |
-|--------|------|
-| [umst-concrete-cartridge](https://github.com/tytolabs/umst-concrete-cartridge) | Cementitious constitutive cartridge |
-| [umst-formal](https://github.com/tytolabs/umst-formal) | Companion formal developments |
-
-## Cartridge ecosystem
-
-Striatus-class shell demos and artefact contracts live in the **[umst-concrete-cartridge](https://github.com/tytolabs/umst-concrete-cartridge)** repo; shell topology, print-ready gates, and deferrals: **[`docs/Solver-Status.md`](docs/Solver-Status.md)** and [`docs/Striatus.md`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/Striatus.md) (cartridge). **Track L** filenames (`striatus_emergence.gif`, `striatus_shell_v0.4.*`) may be present while **`gates_track_b8_all_pass`** stays **false** in the committed sidecar — do not treat shell topology as “closed” until that rollup and the opt-in **B6** story in `Solver-Status` are satisfied.
+*v0.4 brief checklist (when `composer_prompts/` sits beside this repo): **[`../composer_prompts/v0.4_solver_completion_no_namesakes.md`](../composer_prompts/v0.4_solver_completion_no_namesakes.md)**.*
 
 ## Citation
 
 Prefer [`CITATION.cff`](CITATION.cff) or the repository URL above for bibliographic metadata.
 
-## Contributing · security · license
+## Contributing & License
 
-Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Security reports: [`SECURITY.md`](SECURITY.md) (not public issues).
-
+Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Security reports: [`SECURITY.md`](SECURITY.md).
 Released under the [MIT License](LICENSE). © 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO.

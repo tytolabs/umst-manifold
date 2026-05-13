@@ -6,15 +6,15 @@
 //!
 //! Full specification: `composer_prompts/v0.4_solver_completion_no_namesakes.md` (Track E).
 //!
-//! **Deferrals:** (1) The brief’s sample numbers \(H=0.05\) m, \(g=1\) kPa/m, \(\tau_0=80\) Pa yield
+//! **Open roadmap items:** (1) The brief’s sample numbers \(H=0.05\) m, \(g=1\) kPa/m, \(\tau_0=80\) Pa yield
 //! \(\tau_\mathrm{wall}=gH/2 < \tau_0\) — no steady flow; benchmarks use \(\tau_0=20\) Pa so a plug
 //! exists inside the channel. (2) Wangler / Roussel **yield-stress vs time** (\(A_\mathrm{thix}\)) is
 //! not the same constitutive path as the shipped \(\lambda\)-ODE in [`BinghamFlowSolver`] — a separate
-//! calibration test is deferred until that tie-in exists. (3) Developed-channel Chorin vs analytic:
+//! calibration test is open until that tie-in exists. (3) Developed-channel Chorin vs analytic:
 //! `chorin_developed_channel_centreline_vs_regularized_reference` (CI centreline smoke) and
 //! `chorin_steady_channel_64x16_vs_regularized_reference` (CI finite-speed smoke on **65×17**).
-//! Long-run centreline \(L^2\) / plug-width vs the regularized 1-D reference stays deferred pending
-//! open \(x\) boundary conditions — see **`docs/Solver-Status.md`** (**DEFERRAL — Rheology**).
+//! Long-run centreline \(L^2\) / plug-width vs the regularized 1-D reference stays open pending
+//! open \(x\) boundary conditions — see **`docs/Solver-Status.md`** (**OPEN ROADMAP ITEM — Rheology**).
 //! **Manual harness:** `chorin_channel_65x17_longrun_wall_normal_l2_vs_regularized_reference` (**`#[ignore]`**)
 //! records discrete wall-normal \(L^2(u_x)\) vs the steady regularized 1-D profile after many steps
 //! when **`UMST_RUN_CHORIN_LONGRUN_L2=1`** (optional **`UMST_CHORIN_LONGRUN_STEPS`**, default **2000**).
@@ -71,7 +71,7 @@ fn analytic_no_slip_when_yield_exceeds_wall_stress() {
 
 /// Few Chorin substeps on a **tiny** lattice stay finite (projection + Bingham viscosity under body force).
 ///
-/// Steady 64×16 Poiseuille matching is deferred: lack of dedicated inlet/outlet BCs (and no MAC staggered
+/// Steady 64×16 Poiseuille matching is open: lack of dedicated inlet/outlet BCs (and no MAC staggered
 /// pressure yet) in [`BinghamFlowSolver`] make long-run centreline error meaningless until Track E hardens
 /// open boundaries (see `composer_prompts/v0.4_solver_completion_no_namesakes.md`).
 #[cfg(feature = "rheology-bingham")]
@@ -686,7 +686,7 @@ fn regularized_1d_reference_near_buckingham_small_epsilon() {
 /// **Developed-channel smoke (CI):** **80** wall-masked Chorin steps on the **65×17** SI harness; centreline
 /// \(u_x\) at \((x=L/2, y=0)\) stays **finite**, non-negative, and **below** the regularized Bingham
 /// **fully-developed** centreline (early-time flow is sub-developed). Tight \(L^2\) vs the 1-D reference remains
-/// \(L^2\) vs the 1-D reference across the full wall-normal profile remains deferred pending open \(x\) BCs.
+/// \(L^2\) vs the 1-D reference across the full wall-normal profile remains open pending open \(x\) BCs.
 ///
 /// Pressure Poisson uses **Jacobi-PCG** on \(-\mathcal{L}\) in [`BinghamFlowSolver`](`umst_manifold::physics::solvers::BinghamFlowSolver`)
 /// (`rheology_flow.rs`).
@@ -807,7 +807,7 @@ fn chorin_developed_channel_centreline_vs_regularized_reference() {
 /// **Phase 2.1 (CI smoke)** — **100** Chorin substeps on the **65×17** SI channel (same layout as the
 /// historical steady benchmark). With **Jacobi-PCG** pressure (`rheology_flow.rs`), fields stay **finite**
 /// and \(\|u\|_\infty\) stays small on this horizon. A full multi-thousand-step steady \(L^2\) / plug-width
-/// benchmark remains **opt-in** (heavy); see `docs/Solver-Status.md` (**DEFERRAL — Rheology**).
+/// benchmark remains **opt-in** (heavy); see `docs/Solver-Status.md` (**OPEN ROADMAP ITEM — Rheology**).
 ///
 /// **Deviation from brief**: \(\tau_0=20\) Pa (see sibling tests) so a finite analytic profile exists.
 #[cfg(feature = "rheology-bingham")]

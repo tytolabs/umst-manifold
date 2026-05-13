@@ -673,7 +673,7 @@ fn step_wave_experimental<B: Backend<FloatElem = f32>>(
 /// and dense **f64** Cholesky
 /// (see `tests/verification/acoustics_plane_wave.rs`) for fast dispersion / return-map checks — **not**
 /// a Burn-tensor matvec. This is orthogonal to the tensor [`AcousticWaveSolver`] lane; tensorizing a
-/// minimal periodic slice for tape-based AD remains **deferred** (same physics as the FD stencil;
+/// minimal periodic slice for tape-based AD remains **open** (same physics as the FD stencil;
 /// would duplicate the circulant operator already validated here).
 ///
 /// This path captures **spatial coupling** along the bar; it complements [`AcousticWaveSolver::step_wave`],

@@ -3,10 +3,10 @@
 
 //! Monolithic THMC coupling — operator-split **`ThmcSolver::step`** with optional implicit Newton blocks.
 //!
-//! **Solver status:** [`docs/Solver-Status.md`](../../../docs/Solver-Status.md) — deferred-index **THMC** bullet and
+//! **Solver status:** [`docs/Solver-Status.md`](../../../docs/Solver-Status.md) — open-index **THMC** bullet and
 //! table row `solvers::thmc` (`ThmcSolver`, feature `thmc-coupled`, `tests/verification/thmc_drying_shrinkage.rs`,
 //! `tests/verification/thmc_monolithic_newton_chain.rs` — Track **G** / Phase **4A** stacked Newton on a 1D chain).
-//! What is verified there vs. placeholder/deferred here stays in that file; this module is the implementation anchor.
+//! What is verified there vs. placeholder/open here stays in that file; this module is the implementation anchor.
 //!
 //! Full design: implicit Euler + Newton on coupled residuals; sub-calls to transport
 //! ([`crate::physics::protocols::ScalarTransport`]), mechanics ([`crate::physics::protocols::MechanicsEquilibrium`]),
@@ -60,7 +60,7 @@
 //!
 //! **Calibration surface (cross-ref Solver-Status THMC):** [`ThmcHydrationKinetics`] bundles Arrhenius /
 //! exothermic / T-boost / mechanics **E** scale defaults (same shipped numbers as the legacy
-//! `HYDRATION_*` module constants). Cartridge-backed calibration and the deferred monolithic Jacobian
+//! `HYDRATION_*` module constants). Cartridge-backed calibration and the open monolithic Jacobian
 //! remain future work.
 //!
 //! ## Coupled stepping (`thmc-coupled`; also enabled via `solver-research` / `solver-experimental` meta-features)

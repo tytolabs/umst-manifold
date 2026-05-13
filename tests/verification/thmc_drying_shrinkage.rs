@@ -2063,7 +2063,7 @@ fn thmc_implicit_euler_t_alpha_one_newton_lowers_residual_norm() {
 /// updates only `(T,\alpha)`; trial humidity and displacement are preserved — the shipped
 /// [`ThmcImplicitTAlphaNewtonConfig`] path gates the same `(T,\alpha)` block inside [`ThmcSolver::step`]
 /// while \(h\) and quasi-static \(u\) follow the legacy explicit / outer-pass ordering. A fully coupled
-/// implicit residual \(R(U)=0\) over \(T,h,\alpha,u\) remains **DEFERRAL — THMC** / track 13 memo.
+/// implicit residual \(R(U)=0\) over \(T,h,\alpha,u\) remains **OPEN ROADMAP ITEM — THMC** / track 13 memo.
 #[test]
 fn thmc_t_alpha_newton_residual_preserves_hydro_mechanics_fields() {
     let d = dev();
