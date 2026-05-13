@@ -41,6 +41,39 @@ Canonical feature names forward to legacy `#[cfg]` names where needed (e.g. **`p
 
 Striatus-class shell workflows, artefact contracts, and print-ready gates live in the **concrete cartridge** repository (`docs/Striatus.md`, `docs/Solver-Status.md` there). Manifold-side solver verification remains indexed in **`docs/Solver-Status.md`** here.
 
+## Example tasks
+
+- **Default CPU stack:** `cargo build` then `cargo test` at the repo root (matches CI `build-test` on ndarray).
+- **Stable solver lane:** `cargo test --features solver-stable` (topology-density-evolution + statistical-mechanics-vinet; PR gate on pull requests).
+- **Shipped walkthrough binary:** `cargo run --example basic_topology` — minimal **`IScienceCartridge`** wiring; source walkthrough in [`examples/basic_topology.rs`](examples/basic_topology.rs) (see **Quick start: `IScienceCartridge`** below).
+- **Docs + path contract:** `python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set` (same flags as the **`solver-status`** CI job).
+- **Experimental solver union (heavy):** `cargo test --features solver-tests` (same feature graph as **`solver-experimental`**; use for broad verification locally or on `main`-style CI).
+- **Lint like merge-ready Rust:** `cargo fmt --check` and `cargo clippy --all-targets --features solver-experimental -- -D warnings` on the pinned toolchain ([`rust-toolchain.toml`](rust-toolchain.toml); CI uses Rust **1.88**).
+
+## Surfaces & entrypoints
+
+| Surface | Best for | Copy-paste | Prerequisites |
+|--------|----------|------------|-----------------|
+| **Rust library** (`umst_manifold`) | Embedding DEC/solvers, cartridge backends, custom physics | Add a path or git dependency on this crate; enable feature lanes from [`Cargo.toml`](Cargo.toml). | **Rust 1.88** for parity with CI; `rust-version` in `Cargo.toml` is the declared MSRV floor for default-feature builds. |
+| **Cargo tests** | Regression, solver proofs, lane coverage | `cargo test` · `cargo test --features solver-stable` · `cargo test --features solver-tests` | Same toolchain; CPU-only (`ndarray` default). |
+| **Cargo examples** | One-file integration narrative | `cargo run --example basic_topology` | Default features unless you extend the example locally. |
+| **Python · MCP · Docker · end-user CLI** | Notebooks, agent tools, container deploy, calibration CLI | Not shipped here — use **[`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge)** (`crates/umst-py`, `crates/umst-mcp`, `crates/umst-cli`, root `Dockerfile` / `docker-compose.yml`). | That workspace pins the same **Rust 1.88** line for CI alignment. |
+
+## Choose your path
+
+- **Library / cartridge author:** Depend on `umst-manifold`, pick **`solver-stable`** vs **`solver-research`** / **`solver-experimental`** from [`Cargo.toml`](Cargo.toml); cross-check rows in [`docs/Solver-Status.md`](docs/Solver-Status.md) before enabling a kernel.
+- **Application engineer:** Start from [`examples/basic_topology.rs`](examples/basic_topology.rs) and the default `cargo test` surface; graduate to `--features solver-stable` when you touch stable-lane solvers.
+- **Researcher / repro / paper track:** Read [`docs/Solver-Status.md`](docs/Solver-Status.md) for lane ↔ verification ↔ CI mapping; run `scripts/check_solver_status.py` with the flags above before changing solver tables or memo links.
+- **Integrator / product:** Consume this crate from Rust, or mount domain logic through **[`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge)** for Python, MCP, Docker, and the `umst` CLI — the manifold stays library-centric.
+
+## For agents
+
+- **Repo root:** treat the checkout directory of this repository as the working root for all `cargo` / `python3` commands unless a doc says otherwise.
+- **Read first:** [`README.md`](README.md) (this file), [`Cargo.toml`](Cargo.toml) `[features]`, [`docs/Solver-Status.md`](docs/Solver-Status.md), [`.github/workflows/rust.yml`](.github/workflows/rust.yml) (job names: **README sanity**, **solver status**, **build & test (ndarray backend)**, **solver-stable tests (PR)**, …).
+- **Safe, no-GPU commands:** `cargo build`, `cargo test`, `cargo test --features solver-stable`, `cargo run --example basic_topology`, `python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set`.
+- **Before editing:** scan [`docs/Solver-Status.md`](docs/Solver-Status.md) and run `check_solver_status.py` before changing solver feature tables, `tests/verification/`, or lane-related `#[cfg(feature = "...")]` blocks.
+- **No Python or MCP in-tree:** agent-facing notebooks, PyO3, and MCP stdio live only under **`umst-concrete-cartridge`**; do not assume `maturin` or MCP manifests exist here.
+
 ## Build, test, CI parity
 
 ```bash
