@@ -34,7 +34,7 @@ fn clamped_bottom_z_face_all_dof(nx: usize, ny: usize, nz: usize) -> Vec<f32> {
     let mut m = vec![1.0_f32; n * 3];
     for iy in 0..=ny {
         for ix in 0..=nx {
-            let nid = ix + iy * nx1 + 0usize * nx1 * ny1;
+            let nid = ix + iy * nx1; // z = 0 face (iz = 0)
             m[nid * 3] = 0.0;
             m[nid * 3 + 1] = 0.0;
             m[nid * 3 + 2] = 0.0;
