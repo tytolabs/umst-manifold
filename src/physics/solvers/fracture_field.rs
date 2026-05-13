@@ -19,7 +19,7 @@
 //!   `sign`, `mask_where`, …) on each \(3\times3\) block, so the diagonals converge to the
 //!   eigenvalue multiset. Same \(\psi^+\) as from sorted \(\lambda_i\) because it is symmetric in
 //!   the three eigenvalues.
-//! - **Gap 1 (MaOS v0.4 plan):** Cyclic spectral **Jacobi** and inner **damage relaxation** use
+//! - **Gap 1 (v0.4 plan / roadmap):** Cyclic spectral **Jacobi** and inner **damage relaxation** use
 //!   explicit `for` loops, not [`crate::physics::solvers::fixed_point::repeat_controlled`]. That
 //!   combinator's `FnMut` closure does not compose cleanly with per-iteration owned [`Tensor`]
 //!   reassignment in Burn (E0507 / move-out-of-capture); `Option` carriers were only a workaround

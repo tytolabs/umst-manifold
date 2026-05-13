@@ -9,7 +9,7 @@
 //! composition happen in concrete solver modules and [`crate::physics::orchestration`]; the marker
 //! trait keeps dispatch monomorphized while documenting the categorical “typed morphism” boundary.
 //!
-//! See `docs/Category-of-Material-Updates.md` (`maos-fp-categorical-v04`).
+//! See `docs/Category-of-Material-Updates.md` (`fp-categorical-v04`).
 
 use burn::tensor::backend::Backend;
 

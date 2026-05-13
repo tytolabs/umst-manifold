@@ -3,7 +3,7 @@
 
 //! PPO gateway and reward wiring.
 //!
-//! ## IO barrier (lazy solver cores, **maos-fp-categorical-v04**)
+//! ## IO barrier (lazy solver cores, **fp-categorical-v04**)
 //!
 //! Treat [`ManifoldGateway`] as the **policy-facing boundary** between differentiable
 //! physics (cartridge / solver stacks) and scalar **host** decisions:

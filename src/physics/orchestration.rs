@@ -51,7 +51,7 @@
 //!   (`dissipation`, `free_energy`, …) via cartridge + merge paths—keep numerical dissipation
 //!   consistent with the same step that updates damage/temperature channels.
 //!
-//! Epic cross-ref: `maos-fp-categorical-v04`.
+//! Epic cross-ref: `fp-categorical-v04`.
 
 use std::ops::ControlFlow;
 
@@ -62,7 +62,7 @@ use crate::core::traits::IScienceCartridge;
 use crate::physics::solvers::fixed_point::repeat_controlled;
 use crate::physics::solvers::{ThmcSolver, ThmcState};
 
-/// Back-compat alias used in MaOS v0.4 executive briefs (`PhysicsOrchestrator` ↔ topology plan driver).
+/// Back-compat alias used in v0.4 planning notes (`PhysicsOrchestrator` ↔ topology plan driver).
 pub type PhysicsOrchestrator = TopologyPhysicsOrchestrator;
 
 /// One named intent in a topology physics **plan** folded by [`TopologyPhysicsOrchestrator::fold_plan_step`].

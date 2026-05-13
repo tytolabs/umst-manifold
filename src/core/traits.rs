@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-//! Cartridge traits and thermodynamic summaries (`maos-fp-categorical-v04` / `fp-v04-traits-category`).
+//! Cartridge traits and thermodynamic summaries (`fp-categorical-v04` / `fp-v04-traits-category`).
 //!
 //! # Categorical vocabulary (design sketch)
 //!
