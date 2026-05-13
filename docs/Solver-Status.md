@@ -6,6 +6,23 @@
 
 From the `umst-manifold/` tree in this workspace, the v0.4 solver-completion brief is **`../../composer_prompts/v0.4_solver_completion_no_namesakes.md`** (the same relative path from `umst-manifold/docs/`).
 
+## Pending registry (canonical sources)
+
+**YAML close-out rows (authoritative):** [`MULTI_AGENT_GAP_CLOSURE_PLAN.md`](MULTI_AGENT_GAP_CLOSURE_PLAN.md) frontmatter `todos:` — update the table below when that file’s `id` / `status` fields change.
+
+**Swarm dispatch (MaOS-Workspace layout only):** [`../../MAOS_V04_SWARM_TODO_2026_05_12.md`](../../MAOS_V04_SWARM_TODO_2026_05_12.md) — waves **A–E** and task IDs; keep long narratives there or in this file’s solver lanes, not in repo `README.md` files.
+
+### `MULTI_AGENT_GAP_CLOSURE_PLAN.md` — snapshot verified 2026-05-13
+
+| `id` | `status` in plan frontmatter | Notes |
+| --- | --- | --- |
+| `closeout-m1-b6` | `pending` | Full **B6** harness at Striatus scale (`shell_topology_rib_pattern_full_v04` / plan prose). |
+| `closeout-m1-b8` | `pending` | **`gates_track_b8_all_pass`** in sibling cartridge `notebooks/_artifacts/striatus_shell_v0.4.print_ready.json`. |
+| `closeout-m1-l` | `completed-with-residual` | Track **L** artefacts per plan; Ring‑1 still gated on **B8** rollup (plan §Todo registry). |
+| `closeout-int-striatus` | `pending` | Coupled cartridge `verify_striatus_coupled_gates.sh` + rollup per plan. |
+
+**Wave D / E (from swarm pack §4):** after **Wave C** (`phase2-b6-200outer`), **Wave D** runs `phase2-export-sidecar-true` then `phase3-striatus-strict`; **Wave E** is `phase5-final-ci` — see [`MAOS_V04_SWARM_TODO_2026_05_12.md`](../../MAOS_V04_SWARM_TODO_2026_05_12.md).
+
 For planned **solver multithreading** (rayon hot-loops, BLAS interaction, feature surface), see the [v0.4 multithreading brief](../../composer_prompts/v0.4_multithreading_solver_parallelisation.md).
 
 Public mapping of solver-facing modules to **lane** (`solver-stable` vs `solver-research` in `Cargo.toml`), **verification** tests, and notes.
