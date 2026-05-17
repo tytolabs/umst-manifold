@@ -8,6 +8,9 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Formal Status](https://img.shields.io/badge/Formal_Verification-Track_J3-blue.svg)](docs/PROOF-STATUS.md)
+[![Cartridge: concrete](https://img.shields.io/badge/cartridge-concrete-C9A27A)](https://github.com/tytolabs/umst-concrete-cartridge)
+
+> Release notes in [CHANGELOG.md](CHANGELOG.md).
 
 > *Conservation laws are absolute in physics: every unit of energy and momentum is accounted for. Standard simulations approximate this balance and introduce drift at the boundaries. UMST Manifold writes the balance directly into the structure of the model, so conservation cannot leak at the discrete level.*
 
@@ -367,6 +370,14 @@ New physical domains plug in by implementing **`IScienceCartridge`** — no mani
 - **Formal proofs anchor; they do not block.** Lean obligations live in [`umst-formal`](https://github.com/tytolabs/umst-formal) and document the kernel's invariants. Day-to-day kernel work doesn't wait on a Lean discharge — but the moment a kernel change breaks a proven invariant, the next CI run catches it. Anchor, not gate, turned out to be the productive pattern.
 
 The manifold is a substrate. Its value shows up in what gets built on top of it.
+
+---
+
+### Related
+
+- [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) — applied cementitious physics mounted on this manifold
+- [**UMST Formal**](https://github.com/tytolabs/umst-formal) — Lean 4 / Coq proof anchors (Track J3) for the conservation laws
+- [**UMST Formal Double-Slit**](https://github.com/tytolabs/umst-formal-double-slit) — quantum-information proofs anchoring the Thermodynamic CBF
 
 ---
 
