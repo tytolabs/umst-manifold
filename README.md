@@ -9,7 +9,7 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Formal Status](https://img.shields.io/badge/Formal_Verification-Track_J3-blue.svg)](docs/PROOF-STATUS.md)
 
-> *"There is a certain irony in teaching a machine to 'hallucinate' art, only to ask it to build a bridge and watch the bridge collapse. Nature cannot be fooled by probability. We do not ask the engine to guess how a structure behaves. We bind it to the unforgiving reality of exact calculus and gate it with thermodynamics. The algorithm learns because the mathematics offer it no other choice."*
+> *"You can teach a machine to paint a picture or write a poem, but if you ask it to build a bridge, the physics will show no mercy to its imagination. We do not let our models guess. We bind them to the exact conservation of Discrete Exterior Calculus. The machine learns because the math leaves it no other option."*
 
 **UMST Manifold** is a unified, differentiable physics engine grounded in exact mathematical conservation. It provides the spatiotemporal substrate—the universal game board—upon which materials are simulated, evolved, and optimized. Implemented in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes its physics to domain closures via the strict mathematical plugin system known as the **`IScienceCartridge`**.
 
