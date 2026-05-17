@@ -31,18 +31,24 @@ We reject both. We use **Discrete Exterior Calculus (DEC)**.
 ### 1.1 The Mathematical Topology of Conservation
 Think of DEC as mapping physics onto a network of nodes where it is mathematically impossible to lose or leak energy. Mass in equals mass out, perfectly. The boundary operators form exact mathematical loops (cochain complexes). Mass and energy conservation are not approximated; they are guaranteed by the algebraic structure of the graph itself:
 
-$$\partial_p \circ \partial_{p+1} = 0 \quad \Longleftrightarrow \quad d^{p+1} \circ d^p = 0$$
+```math
+\partial_p \circ \partial_{p+1} = 0 \quad \Longleftrightarrow \quad d^{p+1} \circ d^p = 0
+```
 
 Where $d^p$ is the exterior derivative mapping $p$-cochains to $(p+1)$-cochains. Because the boundary of a boundary is always empty ($\partial \circ \partial = 0$), the physical flux across any closed loop is guaranteed to be zero.
 
 ### 1.2 The Thermodynamic Gate
 Our engine features a **Thermodynamic Control Barrier Function (CBF)**. Before an AI agent or optimization loop proposes a new structural shape or material state, the system calculates the exact physical energy cost of deleting or changing that information via **Landauer's erasure limit**:
 
-$$\Delta E \geq k_B T \ln 2$$
+```math
+\Delta E \geq k_B T \ln 2
+```
 
 Simultaneously, the state updates are evaluated against the local **Clausius-Duhem inequality** to enforce non-negative entropy generation:
 
-$$\theta \gamma = \theta \dot{s} - \dot{u} + \frac{1}{\rho}\boldsymbol{\sigma}:\mathbf{d} - \frac{1}{\rho\theta}\mathbf{q}\cdot\nabla\theta \geq 0$$
+```math
+\theta \gamma = \theta \dot{s} - \dot{u} + \frac{1}{\rho}\boldsymbol{\sigma}:\mathbf{d} - \frac{1}{\rho\theta}\mathbf{q}\cdot\nabla\theta \geq 0
+```
 
 Where $\theta$ is temperature, $s$ is entropy, $u$ is internal energy, $\boldsymbol{\sigma}$ is the stress tensor, $\mathbf{d}$ is the strain rate tensor, and $\mathbf{q}$ is the heat flux vector. If the proposed change violates this gate, it is hard-rejected by the compiler and the runtime. 
 
@@ -55,7 +61,7 @@ We do not use LLMs for physics guessing. We use exact adjoint gradients—runnin
 This Manifold is a pure library. It cares nothing for the specific material you map onto it. Because it is universally grounded, it serves multiple domains. Find your category below to see how the engine composes truth for your specific needs.
 
 <details>
-<summary><b>📐 1. The Formalists (Mathematicians, Theoretical Physicists, Formal Grounding Enthusiasts)</b></summary>
+<summary><b>1. The Formalists (Mathematicians, Theoretical Physicists, Formal Grounding Enthusiasts)</b></summary>
 
 **Your Interest:** You care about mathematical invariants, exact conservation, and provable truths.
 **How UMST Composes:** We utilize Discrete Exterior Calculus (DEC) to form exact cochain complexes on a sparse combinatorial graph. 
@@ -63,7 +69,7 @@ This Manifold is a pure library. It cares nothing for the specific material you 
 </details>
 
 <details>
-<summary><b>🤖 2. The Embody-ers (Robotics Engineers, Physical AI Experts, Agentic Systems Designers)</b></summary>
+<summary><b>2. The Embody-ers (Robotics Engineers, Physical AI Experts, Agentic Systems Designers)</b></summary>
 
 **Your Interest:** You are building autonomous agents that need to manipulate the physical world without making catastrophic, unphysical mistakes.
 **How UMST Composes:** The Manifold acts as the rigid physical boundary for your agentic fabrication workflows. Through the Thermodynamic Control Barrier Function, the AI is gated from hallucinating.
@@ -71,7 +77,7 @@ This Manifold is a pure library. It cares nothing for the specific material you 
 </details>
 
 <details>
-<summary><b>🏗️ 3. The Builders (Structural & Civil Engineers, Architects, Systems Architects)</b></summary>
+<summary><b>3. The Builders (Structural & Civil Engineers, Architects, Systems Architects)</b></summary>
 
 **Your Interest:** You need to design complex, load-bearing structures that are optimized for weight, cost, and safety.
 **How UMST Composes:** We use Neural-SIMP topology optimization, powered by Adjoint reverse-mode gradients. The engine traces forces backward through time to evolve the shape of a material automatically.
@@ -79,7 +85,7 @@ This Manifold is a pure library. It cares nothing for the specific material you 
 </details>
 
 <details>
-<summary><b>🧪 4. The Alchemists (Material Researchers, DIY Tinkerers, Bio-chemical Intelligence Experts)</b></summary>
+<summary><b>4. The Alchemists (Material Researchers, DIY Tinkerers, Bio-chemical Intelligence Experts)</b></summary>
 
 **Your Interest:** You are inventing new materials, biochemical substrates, or testing industrial supplier alternatives, and you need to know how they behave.
 **How UMST Composes:** You implement the `IScienceCartridge` interface, providing constitutive relations as localized sheaf closures over the DEC cell complexes. All state variables (thermal, mechanical, chemical) are mapped directly into the 64-channel Unified Material State Tensor.
