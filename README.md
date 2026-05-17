@@ -8,16 +8,59 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 
-**UMST Manifold** is a differentiable spatiotemporal substrate for heterogeneous materials: one unified material state tensor, discrete exterior calculus (DEC) operators, graph- and lattice-based solvers, and control-barrier–style thermodynamic gating—implemented in **Rust** on the **Burn** stack with **`burn-ndarray`** as the default execution path. Domain science plugs in through the **`IScienceCartridge`** surface; the crate ships equilibrium mechanics, adjoint hooks, topology evolution, and an opt-in solver stack grouped into explicit **Cargo feature lanes**.
+> *"Intelligence without physical consequence is just an expensive hallucination. We do not ask the engine to guess how a structure behaves. We bind it to the unforgiving reality of Discrete Exterior Calculus and gate it with thermodynamics. The algorithm learns because the mathematics offer it no other choice."*
+
+**UMST Manifold** is a unified, differentiable physics engine grounded in exact mathematical conservation. It provides the spatiotemporal substrate—the universal game board—upon which materials are simulated and optimized. Implemented in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes its physics to domain closures via the **`IScienceCartridge`** trait.
+
+If you are looking for the applied intelligence engine for cementitious materials (concrete design, 3D printing, structural topology), see the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) repository. 
 
 ![UMST 64-Tensor Pipeline (Light)](docs/assets/fig1_teaser.png#gh-light-mode-only)
 ![UMST 64-Tensor Pipeline (Dark)](docs/assets/fig1_teaser_dark.png#gh-dark-mode-only)
 
-## Core idea
+## The Inevitable Truth of the Architecture
 
-- **Unified material state tensor (`UMST`):** A fixed-width layout threads mechanical, thermal, chemical, and auxiliary signals through a mesh or graph as one material state—constitutive updates and PDE-style operators share the same tensor representation.
-- **Differentiable evolution:** Burn autodiff wires through the tensor paths that tests exercise; adjoint and optimization-facing code paths are first-class alongside forward solvers.
-- **DEC + physics kernels:** Sheaf/DEC plumbing, mechanics on free degrees of freedom, fracture and transport scaffolds, and specialized kernels (topology, acoustics, THMC, electrochemistry, photonics, rheology, statistical mechanics) compile behind granular `#[cfg(feature = "...")]` flags—see [`docs/Solver-Status.md`](docs/Solver-Status.md) for the solver ↔ lane ↔ verification mapping.
+Traditional Finite Element Methods (FEM) approximate reality, leaking energy at boundaries. Traditional Deep Learning guesses reality, hallucinating unphysical states. We reject both.
+
+UMST Manifold operates on a sparse combinatorial graph using **Discrete Exterior Calculus (DEC)**. Boundary operators form exact cochain complexes. Mass and energy conservation are not approximated; they are guaranteed by the graph topology itself.
+
+- **The Thermodynamic Gate (CBF):** We compute Landauer's erasure bounds and the Clausius–Duhem inequality at runtime. If an AI agent attempts to evolve a topology that violates the Second Law of Thermodynamics, the compiler and runtime reject it. We do not use LLMs for physics guessing; we use exact adjoint gradients propagating backwards through time.
+- **Cross-Domain Impact:** The Manifold cares nothing for the domain mapped onto it. It enables agentic AI fabrication, differentiable form-finding (Neural-SIMP), and multi-physics coupling (THMC, Electrochemistry, Photonics) inside a single unified tensor.
+
+## Exhaustive Architecture Topology
+
+The composition of this repository is strictly functional. Every file serves an unavoidable purpose.
+
+```text
+umst-manifold/
+├── Cargo.toml               # The core Rust manifest and feature lane flags
+├── src/
+│   ├── core/                # The axiomatic foundation
+│   │   ├── tensors.rs       # The 64-channel Unified Material State Tensor (UMST)
+│   │   ├── traits.rs        # IScienceCartridge: The functor interface for domain mounting
+│   │   └── emergence.rs     # Dissipation diagnostics and nodal defect tensors
+│   ├── physics/             # The exact DEC solvers
+│   │   ├── mechanics.rs     # Voigt-Cauchy equilibrium with PCG inner solves
+│   │   ├── orchestration.rs # Fold-based solver step composition
+│   │   ├── dec_primal.rs    # Core discrete differential geometry operators (d0, d1)
+│   │   └── solvers/         # Heavy domain kernels (fracture, photonics, acoustics, thmc)
+│   └── ai/                  # The intelligence layer
+│       ├── ppo.rs           # ManifoldGateway: Safety margin and info density rewards
+│       ├── cbf.rs           # ThermodynamicCBF: Landauer erasure cost gating
+│       ├── adjoint.rs       # AdjointNeuralODE: O(1) memory reverse-mode gradients
+│       └── topology.rs      # Neural-SIMP topology optimization via density networks
+├── tests/                   # Inescapable verification
+│   └── verification/        # Golden path regressions and thermodynamic proofs
+├── examples/
+│   └── basic_topology.rs    # Minimal host integration showing DEC invariant verification
+├── scripts/
+│   ├── check_solver_status.py               # Enforces documentation-to-code alignment
+│   ├── check_physics_no_gradient_break.sh   # CI gate: Asserts gradients flow backward perfectly
+│   └── physics_gradient_escape_allowlist.txt # Explicit bounds for non-differentiable operations
+└── docs/
+    ├── Mathematical-Foundations.md # The underlying calculus and sheaf theory
+    ├── Solver-Status.md            # The honest completion status of every physics solver
+    └── PROOF-STATUS.md             # Formal Coq/Lean proof anchors
+```
 
 ## Solver architecture (feature lanes)
 
