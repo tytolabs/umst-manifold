@@ -165,8 +165,6 @@ umst-manifold/
 
 ---
 
----
-
 ## 5. Advanced Continuous Solver Specifications
 
 To bridge the gap between microscopic physics and macroscopic design, the manifold embeds a suite of high-fidelity, native tensor solvers (`src/physics/solvers/`). These run directly on Burn's differentiable GPU/CPU graphs.
