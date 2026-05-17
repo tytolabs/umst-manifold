@@ -11,9 +11,9 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 > *In nature, conservation is absolute: when a force pushes against a material, every single unit of energy and momentum is accounted for, down to the atomic bonds. Standard computer simulations try to approximate this balance, which introduces subtle leaks at the boundaries. We built a system where the physical balance is written directly into the structure of the model, making it mathematically impossible for conservation laws to leak or fail.*
 
-**UMST Manifold** is a unified, differentiable physics engine grounded in exact mathematical conservation. It provides the spatiotemporal substrate—the universal game board—upon which materials are simulated, evolved, and optimized. Implemented in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes its physics to domain closures via the strict mathematical plugin system known as the **`IScienceCartridge`**.
+**UMST Manifold** is a unified, differentiable physics engine that acts like a mathematically perfect game board. On this board, material simulations can be run, optimized, and evolved without losing a single unit of force or matter. Built in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes its spatial physics to custom material engines (like concrete, metal, or polymers) through a secure, plug-and-play mathematical connector called the **`IScienceCartridge`**.
 
-If you are looking for the applied intelligence engine specifically built for cementitious materials (concrete design, 3D printing, structural topology), see the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) repository. 
+If you are looking for the applied materials engine specifically built for cementitious systems (concrete design, 3D printing, structural topology), see the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) repository. 
 
 ![UMST 64-Tensor Pipeline (Light)](docs/assets/fig1_teaser.png#gh-light-mode-only)
 ![UMST 64-Tensor Pipeline (Dark)](docs/assets/fig1_teaser_dark.png#gh-dark-mode-only)
@@ -24,10 +24,10 @@ If you are looking for the applied intelligence engine specifically built for ce
 
 Simulating physical materials has historically forced a trade-off. Traditional engineering packages slice shapes into simple geometric blocks, which works but inevitably introduces numerical leaks at the boundaries. Modern statistical models attempt to recognize patterns from massive datasets, but lack the physical constraints to prevent unphysical predictions. 
 
-The UMST Manifold resolves this by using **Discrete Exterior Calculus (DEC)**—a mathematical framework that maps physical equations directly onto networks of nodes, guaranteeing that mass, momentum, and energy balance perfectly at every step.
+The UMST Manifold resolves this by mapping physical equations directly onto networks of nodes using a framework called **Discrete Exterior Calculus (DEC)**. This mathematical approach guarantees that mass, momentum, and energy balance perfectly at every step, rendering physical conservation leaks algebraically impossible.
 
 ### 1.1 The Mathematical Topology of Conservation
-Think of DEC as mapping physics onto a network of nodes where it is mathematically impossible to lose or leak energy. Mass in equals mass out, perfectly. The boundary operators form exact mathematical loops (cochain complexes). Mass and energy conservation are not approximated; they are guaranteed by the algebraic structure of the graph itself:
+Think of mapping physics onto a network of connected nodes where energy and forces travel along closed mathematical loops (called **cochain complexes**). Mass and energy conservation are not estimated; they are guaranteed by the geometric structure of the network itself:
 
 ```math
 \partial_p \circ \partial_{p+1} = 0 \quad \Longleftrightarrow \quad d^{p+1} \circ d^p = 0
@@ -36,7 +36,7 @@ Think of DEC as mapping physics onto a network of nodes where it is mathematical
 Where $d^p$ is the exterior derivative mapping $p$-cochains to $(p+1)$-cochains. Because the boundary of a boundary is always empty ($\partial \circ \partial = 0$), the physical flux across any closed loop is guaranteed to be zero.
 
 ### 1.2 The Thermodynamic Gate
-Our engine features a **Thermodynamic Control Barrier Function (CBF)**. Before an AI agent or optimization loop proposes a new structural shape or material state, the system calculates the exact physical energy cost of deleting or changing that information via **Landauer's erasure limit**:
+Before an AI agent or design system can propose a new shape or material mix, our built-in physical checkpoint—the **Thermodynamic Control Barrier Function (CBF)**—calculates the exact energy required to make that change. According to physics, erasing or changing information always costs a tiny, unavoidable amount of heat (known as **Landauer's erasure limit**):
 
 ```math
 \Delta E \geq k_B T \ln 2
@@ -52,7 +52,7 @@ Where $\theta$ is temperature, $s$ is entropy, $u$ is internal energy, $\boldsym
 
 ### 1.3 The Policy Gateway: Mutual Information & Thermodynamic PPO Rewards
 
-The manifold communicates with reinforcement learning agents through a high-performance input/output boundary called the **`ManifoldGateway`** (`src/ai/ppo.rs`). This gateway prevents host-side synchronization bottlenecks by keeping all multi-dimensional spatial calculations directly on the GPU/device memory. It extracts only a single pair of scalar reductions (internal dissipation and mutual information bits) per step.
+To let smart design algorithms (reinforcement learning agents) optimize shapes without slowing down the simulation, the system communicates through a high-speed boundary called the **`ManifoldGateway`** (`src/ai/ppo.rs`). This boundary keeps all heavy spatial math directly on the graphics hardware (GPU). Instead of moving massive grids of data back and forth, it extracts only two simple physical numbers per step: the internal friction (dissipation) and the physical information gained (mutual information bits).
 
 *   **Mutual Information (MI) Observations:** The active learning loop monitors structural state transitions through the mutual information gained ($\Delta I$) during physical integration steps.
 *   **The Landauer Erasure Gating:** As the observer gains information bits, the environment pays a strict physical cost for information erasure ($k_B T \ln(2) \cdot \Delta I$). If the structural dissipation ($d_{\text{int}}$) cannot cover this physical cost, the Thermodynamic CBF rejects the state transition, preventing unphysical path generation.
