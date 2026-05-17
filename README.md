@@ -48,9 +48,25 @@ Simultaneously, the state updates are evaluated against the local **Clausius-Duh
 \theta \gamma = \theta \dot{s} - \dot{u} + \frac{1}{\rho}\boldsymbol{\sigma}:\mathbf{d} - \frac{1}{\rho\theta}\mathbf{q}\cdot\nabla\theta \geq 0
 ```
 
-Where $\theta$ is temperature, $s$ is entropy, $u$ is internal energy, $\boldsymbol{\sigma}$ is the stress tensor, $\mathbf{d}$ is the strain rate tensor, and $\mathbf{q}$ is the heat flux vector. If the proposed change violates this gate, it is hard-rejected by the compiler and the runtime. 
+Where $\theta$ is temperature, $s$ is entropy, $u$ is internal energy, $\boldsymbol{\sigma}$ is the stress tensor, $\mathbf{d}$ is the strain rate tensor, and $\mathbf{q}$ is the heat flux vector. If the proposed change violates this gate, it is hard-rejected by the runtime. 
 
-We do not use LLMs for physics guessing. We use exact adjoint gradients—running the simulation of a failure backwards through time—to trace the exact, mathematically undeniable cause of a structural weakness, and correct it.
+### 1.3 The Policy Gateway: Mutual Information & Thermodynamic PPO Rewards
+
+The manifold communicates with reinforcement learning agents through a high-performance input/output boundary called the **`ManifoldGateway`** (`src/ai/ppo.rs`). This gateway prevents host-side synchronization bottlenecks by keeping all multi-dimensional spatial calculations directly on the GPU/device memory. It extracts only a single pair of scalar reductions (internal dissipation and mutual information bits) per step.
+
+*   **Mutual Information (MI) Observations:** The active learning loop monitors structural state transitions through the mutual information gained ($\Delta I$) during physical integration steps.
+*   **The Landauer Erasure Gating:** As the observer gains information bits, the environment pays a strict physical cost for information erasure ($k_B T \ln(2) \cdot \Delta I$). If the structural dissipation ($d_{\text{int}}$) cannot cover this physical cost, the Thermodynamic CBF rejects the state transition, preventing unphysical path generation.
+*   **Thermodynamically Gated Rewards:** The verified state is assigned a scalar reward computed on-device using a balanced physical-chemical objective:
+    
+    ```math
+    R = \alpha \cdot \text{Free Energy} - \beta \cdot \text{Dissipation} - \gamma \cdot \text{Carbon Cost} - \text{Erasure Cost}
+    ```
+    
+*   **Axiomatic Reward Tuning:** The gateway exposes two explicit, dimensionless scaling factors to align agent policies with structural priorities:
+    *   **Safety Margin Scaling ($\zeta$):** Adds the mean spatial structural safety margin per batch, directing the policy toward high structural failure reserves.
+    *   **Information Density Scaling ($\eta$):** Encourages the policy to maximize localized mutual information density, causing the optimizer to automatically focus material density along active stress and load transmission paths.
+
+We use exact adjoint gradients—running the simulation of a failure backwards through time—to trace the exact, mathematically undeniable cause of a structural weakness, and correct it.
 
 ---
 
