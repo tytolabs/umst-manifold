@@ -28,10 +28,23 @@ Second, Modern Deep Learning, which throws massive amounts of data at a neural n
 
 We reject both. We use **Discrete Exterior Calculus (DEC)**. 
 
-Think of DEC as mapping physics onto a network of nodes where it is mathematically impossible to lose or leak energy. Mass in equals mass out, perfectly. The boundary operators form exact mathematical loops (cochain complexes). Mass and energy conservation are not approximated; they are guaranteed by the structure of the graph itself.
+### 1.1 The Mathematical Topology of Conservation
+Think of DEC as mapping physics onto a network of nodes where it is mathematically impossible to lose or leak energy. Mass in equals mass out, perfectly. The boundary operators form exact mathematical loops (cochain complexes). Mass and energy conservation are not approximated; they are guaranteed by the algebraic structure of the graph itself:
 
-### The Thermodynamic Gate
-Intelligence without a physical toll is a parlor trick. Our engine features a **Thermodynamic Control Barrier Function**. Before an AI agent or optimization loop proposes a new structural shape or material state, the system calculates the exact physical energy cost of deleting or changing that information (Landauer's erasure bounds). If the proposed change violates the Second Law of Thermodynamics, it is hard-rejected by the compiler and the runtime. 
+$$\partial_p \circ \partial_{p+1} = 0 \quad \Longleftrightarrow \quad d^{p+1} \circ d^p = 0$$
+
+Where $d^p$ is the exterior derivative mapping $p$-cochains to $(p+1)$-cochains. Because the boundary of a boundary is always empty ($\partial \circ \partial = 0$), the physical flux across any closed loop is guaranteed to be zero.
+
+### 1.2 The Thermodynamic Gate
+Our engine features a **Thermodynamic Control Barrier Function (CBF)**. Before an AI agent or optimization loop proposes a new structural shape or material state, the system calculates the exact physical energy cost of deleting or changing that information via **Landauer's erasure limit**:
+
+$$\Delta E \geq k_B T \ln 2$$
+
+Simultaneously, the state updates are evaluated against the local **Clausius-Duhem inequality** to enforce non-negative entropy generation:
+
+$$\theta \gamma = \theta \dot{s} - \dot{u} + \frac{1}{\rho}\boldsymbol{\sigma}:\mathbf{d} - \frac{1}{\rho\theta}\mathbf{q}\cdot\nabla\theta \geq 0$$
+
+Where $\theta$ is temperature, $s$ is entropy, $u$ is internal energy, $\boldsymbol{\sigma}$ is the stress tensor, $\mathbf{d}$ is the strain rate tensor, and $\mathbf{q}$ is the heat flux vector. If the proposed change violates this gate, it is hard-rejected by the compiler and the runtime. 
 
 We do not use LLMs for physics guessing. We use exact adjoint gradients—running the simulation of a failure backwards through time—to trace the exact, mathematically undeniable cause of a structural weakness, and correct it.
 
