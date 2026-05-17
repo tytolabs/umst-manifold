@@ -200,6 +200,15 @@ umst-manifold/
 
 To bridge the gap between microscopic physics and macroscopic design, the manifold embeds a suite of high-fidelity, native tensor solvers (`src/physics/solvers/`). These run directly on Burn's differentiable GPU/CPU graphs.
 
+| Continuous Solver | Governing Physical Equations | Active Crate Module | Spatial / Design Output | Formal Verification Anchor |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Ionic Electrochemistry** | Poisson-Boltzmann-Nernst-Planck (PBNP) | `solvers/electrochemistry.rs` | Local multi-species ionic concentration fields ($C_i$), dynamic boundary potential ($\Phi$). | Lean 4 Theorem `PBNP_Conserves` |
+| **2. Photonics / EM Waves** | Frequency-Domain Maxwell Curl (FDFD) | `solvers/photonics.rs` | Steady-state electric field distribution ($E$), localized scattering coefficients ($S_{ij}$). | Coq Lemma `Maxwell_Curl_Nil` |
+| **3. Phase-Field Fracture** | Coupled Elastic Strain Energy & Damage Phase | `solvers/fracture_field.rs` | Continuous damage field ($d$), dynamic crack propagation trajectories, localized strain energy release rates. | Lean 4 Theorem `Fracture_Energy_Bounded` |
+| **4. Acoustics & Vibration** | Anisotropic Elastic Wave (Vlasov-Cauchy) | `solvers/acoustics.rs` | Dynamic spatial sound pressure displacement ($\mathbf{u}$), boundary reflections, absorption spectra. | Coq Lemma `Wave_Conservation_Invariant` |
+| **5. Non-Newtonian Flow** | Herschel-Bulkley Viscoplastic Fluid Yield | `solvers/rheology_flow.rs` | Yield stress front velocity vectors ($\mathbf{u}$), localized thixotropic structural viscosity ($\eta$). | Lean 4 Theorem `Bingham_Flow_Stable` |
+| **6. Coupled THMC Residual** | Jacobian-Free Newton-Krylov Matrix-Free GMRES | `solvers/thmc.rs` & `solvers/thmc_residual.rs` | Interlinked heat ($\theta$), moisture saturation ($S_w$), mechanical strain ($\varepsilon$), and chemical hydration ($\alpha$). | Coq Lemma `JFNK_THMC_Residual_Bounded` |
+
 <details>
 <summary><b>1. Multi-Species Ionic Electrochemistry</b> (Nernst-Planck-Poisson)</summary>
 
