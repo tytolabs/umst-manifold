@@ -9,7 +9,7 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Formal Status](https://img.shields.io/badge/Formal_Verification-Track_J3-blue.svg)](docs/PROOF-STATUS.md)
 
-> *Physical systems require exact, topological conservation of energy and momentum. The UMST Manifold enforces Discrete Exterior Calculus directly on cochain complexes over sparse combinatorial graphs—rendering conservation laws as topological invariants rather than numerical approximations.*
+> *In nature, conservation is absolute: when a force pushes against a material, every single unit of energy and momentum is accounted for, down to the atomic bonds. Standard computer simulations try to approximate this balance, which introduces subtle leaks at the boundaries. We built a system where the physical balance is written directly into the structure of the model, making it mathematically impossible for conservation laws to leak or fail.*
 
 **UMST Manifold** is a unified, differentiable physics engine grounded in exact mathematical conservation. It provides the spatiotemporal substrate—the universal game board—upon which materials are simulated, evolved, and optimized. Implemented in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes its physics to domain closures via the strict mathematical plugin system known as the **`IScienceCartridge`**.
 
@@ -22,9 +22,9 @@ If you are looking for the applied intelligence engine specifically built for ce
 
 ## 1. The Core Philosophy: Why Everything Else Leaks
 
-Traditional numerical simulations approximate physical conservation laws through spatial discretization schemes that frequently introduce numerical dissipation and boundary leakage. Conversely, unconstrained empirical approximations lack the mathematical bounds necessary to prevent unphysical states. 
+Simulating physical materials has historically forced a trade-off. Traditional engineering packages slice shapes into simple geometric blocks, which works but inevitably introduces numerical leaks at the boundaries. Modern statistical models attempt to recognize patterns from massive datasets, but lack the physical constraints to prevent unphysical predictions. 
 
-The UMST Manifold guarantees exact conservation by design using **Discrete Exterior Calculus (DEC)**. 
+The UMST Manifold resolves this by using **Discrete Exterior Calculus (DEC)**—a mathematical framework that maps physical equations directly onto networks of nodes, guaranteeing that mass, momentum, and energy balance perfectly at every step.
 
 ### 1.1 The Mathematical Topology of Conservation
 Think of DEC as mapping physics onto a network of nodes where it is mathematically impossible to lose or leak energy. Mass in equals mass out, perfectly. The boundary operators form exact mathematical loops (cochain complexes). Mass and energy conservation are not approximated; they are guaranteed by the algebraic structure of the graph itself:
