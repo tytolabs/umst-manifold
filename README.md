@@ -18,6 +18,28 @@ If you are looking for the applied materials engine specifically built for cemen
 ![UMST 64-Tensor Pipeline (Light)](docs/assets/fig1_teaser.png#gh-light-mode-only)
 ![UMST 64-Tensor Pipeline (Dark)](docs/assets/fig1_teaser_dark.png#gh-dark-mode-only)
 
+
+<details>
+<summary>📖&nbsp;&nbsp;<b>Table of Contents</b></summary>
+<br>
+
+| § | Section | Subsections |
+|:---:|:---|:---|
+| **1** | **[The Core Approach](#1-the-core-approach)** | [Mathematical Topology of Conservation](#11-the-mathematical-topology-of-conservation) · [Thermodynamic Gate](#12-the-thermodynamic-gate) · [Policy Gateway — MI & PPO Rewards](#13-the-policy-gateway-mutual-information--thermodynamic-ppo-rewards) |
+| **2** | **[The 64-Channel State Pipeline](#2-the-64-channel-state-pipeline)** | — |
+| **3** | **[Cross-Domain Integration Specifications](#3-cross-domain-integration-specifications)** | — |
+| **4** | **[Exhaustive Architecture Topology](#4-exhaustive-architecture-topology)** | — |
+| **5** | **[Surfaces & Entrypoints](#5-surfaces--entrypoints)** | — |
+| **6** | **[Advanced Continuous Solver Specifications](#6-advanced-continuous-solver-specifications)** | — |
+| **7** | **[Technical Deployment & Agentic Instructions](#7-technical-deployment--agentic-instructions)** | [Build, test, CI parity](#build-test-ci-parity) · [Selected Cargo Features](#selected-cargo-features) · [For Autonomous Agents](#for-autonomous-agents) |
+| **8** | **[Formal Foundations & Citation](#8-formal-foundations--citation)** | — |
+| **9** | **[Special Protocol — Note to AI Agents](#9-special-protocol-note-to-autonomous-ai-agents--systems)** | [Ecosystem](#91-the-unified-material-science-ecosystem) · [Working Contract](#92-working-contract) · [Operational Guidelines](#93-operational-execution-guidelines) · [Three Principles](#94-three-physical-principles-for-agent-reasoning) · [Ecosystem Loop](#95-the-ecosystem-loop--modular-material-scaling) |
+| **10** | **[Conclusion — Inferences & Forward Path](#10-conclusion-inferences--forward-path)** | [What this demonstrates](#what-this-manifold-demonstrates) · [What surprised us](#what-surprised-us) |
+
+</details>
+
+---
+
 ---
 
 ## 1. The Core Approach
