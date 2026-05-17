@@ -58,14 +58,14 @@ We do not use LLMs for physics guessing. We use exact adjoint gradients—runnin
 
 ## 2. Who Are You? (Domain Navigation Matrix)
 
-This Manifold is a pure library. It cares nothing for the specific material you map onto it. Because it is universally grounded, it serves multiple domains. Find your category below to see how the engine composes truth for your specific needs.
+This Manifold is a pure library. It cares nothing for the specific material you map onto it. Because it is universally grounded, it serves multiple domains. Find your category below to see how the engine functions for your specific needs.
 
 <details>
 <summary><b>1. The Formalists (Mathematicians, Theoretical Physicists, Formal Grounding Enthusiasts)</b></summary>
 
-**Your Interest:** You care about mathematical invariants, exact conservation, and provable truths.
+**Your Interest:** You care about mathematical invariants, exact conservation, and formal proofs.
 **How UMST Composes:** We utilize Discrete Exterior Calculus (DEC) to form exact cochain complexes on a sparse combinatorial graph. 
-**The Truthful Outcome:** You get a physics substrate where mass, momentum, and energy conservation are topological guarantees, not numerical approximations. Our Rust implementations are mapped to formal Lean/Coq theorems (Track J3), providing provable anchors for every calculation.
+**Outcome:** A physics substrate where mass, momentum, and energy conservation are topological guarantees, not numerical approximations. Our Rust implementations are mapped to formal Lean/Coq theorems (Track J3), providing provable anchors for every calculation.
 </details>
 
 <details>
@@ -73,7 +73,7 @@ This Manifold is a pure library. It cares nothing for the specific material you 
 
 **Your Interest:** You are building autonomous agents that need to manipulate the physical world without making catastrophic, unphysical mistakes.
 **How UMST Composes:** The Manifold acts as the rigid physical boundary for your agentic fabrication workflows. Through the Thermodynamic Control Barrier Function, the AI is gated from hallucinating.
-**The Truthful Outcome:** Your multi-agent systems can query the physical stability of a 3D-printing extrusion path in real-time, receiving gradients that guide them safely toward thermodynamically viable structures. The robot cannot build what the universe will not permit.
+**Outcome:** Your multi-agent systems can query the physical stability of a 3D-printing extrusion path in real-time, receiving gradients that guide them safely toward thermodynamically viable structures. The robot cannot build what the universe will not permit.
 </details>
 
 <details>
@@ -81,7 +81,7 @@ This Manifold is a pure library. It cares nothing for the specific material you 
 
 **Your Interest:** You need to design complex, load-bearing structures that are optimized for weight, cost, and safety.
 **How UMST Composes:** We use Neural-SIMP topology optimization, powered by Adjoint reverse-mode gradients. The engine traces forces backward through time to evolve the shape of a material automatically.
-**The Truthful Outcome:** You receive the exact, mathematically optimal shape to hold a specific load, calculated without the memory-explosions of traditional topology solvers, all running efficiently on standard CPU hardware.
+**Outcome:** You receive the exact, mathematically optimal shape to hold a specific load, calculated without the memory-explosions of traditional topology solvers, all running efficiently on standard CPU hardware.
 </details>
 
 <details>
@@ -89,7 +89,7 @@ This Manifold is a pure library. It cares nothing for the specific material you 
 
 **Your Interest:** You are inventing new materials, biochemical substrates, or testing industrial supplier alternatives, and you need to know how they behave.
 **How UMST Composes:** You implement the `IScienceCartridge` interface, providing constitutive relations as localized sheaf closures over the DEC cell complexes. All state variables (thermal, mechanical, chemical) are mapped directly into the 64-channel Unified Material State Tensor.
-**The Truthful Outcome:** True multi-physics coupling. When thermal fields evolve, the structural stiffness and chemical kinetics update synchronously within a single tensor operation. You supply the localized reaction equations; the manifold guarantees exact spatial gradients and physical consistency.
+**Outcome:** True multi-physics coupling. When thermal fields evolve, the structural stiffness and chemical kinetics update synchronously within a single tensor operation. You supply the localized reaction equations; the manifold guarantees exact spatial gradients and physical consistency.
 </details>
 
 ---
@@ -121,7 +121,7 @@ umst-manifold/
 ├── examples/
 │   └── basic_topology.rs    # Minimal host integration: Proving DEC mass conservation locally.
 ├── scripts/
-│   ├── check_solver_status.py               # Enforces documentation-to-code truth alignment.
+│   ├── check_solver_status.py               # Enforces consistency between documentation and code.
 │   ├── check_physics_no_gradient_break.sh   # CI gate: Asserts gradients flow backward perfectly through time.
 │   └── physics_gradient_escape_allowlist.txt # Explicit bounds for operations that cannot be differentiated.
 └── docs/
@@ -145,9 +145,9 @@ umst-manifold/
 
 ## 5. Technical Deployment & Agentic Instructions
 
-If you are an application engineer, architect, or data scientist looking for Python bindings, MCP servers, or JSON/CSV contracts, **do not linger here.** Proceed to the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) to interact with the deployed intelligence.
+If you are an application engineer, architect, or data scientist looking for Python bindings, MCP servers, or JSON/CSV contracts, **do not linger here.** Proceed to the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) to interact with the deployed engine.
 
-If you are building atop the Manifold, here is the unvarnished deployment truth:
+If you are building atop the Manifold, here is the technical deployment reference:
 
 ### Build, test, CI parity
 ```bash
@@ -157,7 +157,7 @@ cargo test
 ```
 
 - **Solver integration tests:** `cargo test --features solver-tests` (same feature graph as `solver-experimental`).
-- **GPU (`wgpu`):** The `wgpu` feature selects Burn’s WGPU backend; on the pinned **Burn 0.13** line this path fails to compile on current stable Rust because of upstream `burn-jit` derive defaults. **CPU builds use `ndarray` as the path of truth.** On Apple Silicon, `mac-fast` (`ndarray` + `blas-accelerate`) is the supported fast path.
+- **GPU (`wgpu`):** The `wgpu` feature selects Burn’s WGPU backend; on the pinned **Burn 0.13** line this path fails to compile on current stable Rust because of upstream `burn-jit` derive defaults. **CPU builds use `ndarray` as the reference execution backend.** On Apple Silicon, `mac-fast` (`ndarray` + `blas-accelerate`) is the supported fast path.
 
 ### Selected Cargo Features
 We group solvers into explicit feature lanes to manage compile times and dependencies.
