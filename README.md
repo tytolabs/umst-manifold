@@ -9,7 +9,7 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Formal Status](https://img.shields.io/badge/Formal_Verification-Track_J3-blue.svg)](docs/PROOF-STATUS.md)
 
-> *"Statistical learning models approximate spatial patterns, which fails when applied to structural mechanics under critical loads. A physical structure requires exact, topological conservation of energy and momentum. Instead of training neural networks to guess state variables, we enforce Discrete Exterior Calculus directly on the discrete structural graph—rendering conservation laws as compile-time topological invariants."*
+> *Physical systems require exact, topological conservation of energy and momentum. The UMST Manifold enforces Discrete Exterior Calculus directly on cochain complexes over sparse combinatorial graphs—rendering conservation laws as topological invariants rather than numerical approximations.*
 
 **UMST Manifold** is a unified, differentiable physics engine grounded in exact mathematical conservation. It provides the spatiotemporal substrate—the universal game board—upon which materials are simulated, evolved, and optimized. Implemented in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes its physics to domain closures via the strict mathematical plugin system known as the **`IScienceCartridge`**.
 
@@ -22,11 +22,9 @@ If you are looking for the applied intelligence engine specifically built for ce
 
 ## 1. The Core Philosophy: Why Everything Else Leaks
 
-If you want to simulate a physical material, you have historically had two bad options. 
-First, traditional Finite Element Methods (FEM), which approximate reality by cutting it into tiny blocks. It works, but it leaks energy at the boundaries because nature isn't made of perfectly square approximations. 
-Second, Modern Deep Learning, which throws massive amounts of data at a neural network and hopes it learns "physics" by recognizing patterns. It doesn't; it just learns how to confidently hallucinate unphysical states.
+Traditional numerical simulations approximate physical conservation laws through spatial discretization schemes that frequently introduce numerical dissipation and boundary leakage. Conversely, unconstrained empirical approximations lack the mathematical bounds necessary to prevent unphysical states. 
 
-We reject both. We use **Discrete Exterior Calculus (DEC)**. 
+The UMST Manifold guarantees exact conservation by design using **Discrete Exterior Calculus (DEC)**. 
 
 ### 1.1 The Mathematical Topology of Conservation
 Think of DEC as mapping physics onto a network of nodes where it is mathematically impossible to lose or leak energy. Mass in equals mass out, perfectly. The boundary operators form exact mathematical loops (cochain complexes). Mass and energy conservation are not approximated; they are guaranteed by the algebraic structure of the graph itself:
