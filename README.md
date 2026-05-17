@@ -9,9 +9,9 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Formal Status](https://img.shields.io/badge/Formal_Verification-Track_J3-blue.svg)](docs/PROOF-STATUS.md)
 
-> *In nature, conservation is absolute: when a force pushes against a material, every single unit of energy and momentum is accounted for, down to the atomic bonds. Standard computer simulations try to approximate this balance, which introduces subtle leaks at the boundaries. We built a system where the physical balance is written directly into the structure of the model, making it mathematically impossible for conservation laws to leak or fail.*
+> *Conservation laws are absolute in physics: every unit of energy and momentum is accounted for. Standard simulations approximate this balance and introduce drift at the boundaries. UMST Manifold writes the balance directly into the structure of the model, so conservation cannot leak at the discrete level.*
 
-**UMST Manifold** is a unified, differentiable physics engine that acts like a mathematically perfect game board. On this board, material simulations can be run, optimized, and evolved without losing a single unit of force or matter. Built in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes its spatial physics to custom material engines (like concrete, metal, or polymers) through a secure, plug-and-play mathematical connector called the **`IScienceCartridge`**.
+**UMST Manifold** is a unified, differentiable physics engine. Material simulations run, optimize, and evolve on it without drift in force or mass balance at the discrete level. Built in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes its spatial physics to domain-specific material engines (concrete, metals, polymers) through the **`IScienceCartridge`** trait.
 
 If you are looking for the applied materials engine specifically built for cementitious systems (concrete design, 3D printing, structural topology), see the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) repository. 
 
@@ -48,7 +48,7 @@ $$
 \theta \gamma = \theta \dot{s} - \dot{u} + \frac{1}{\rho}\boldsymbol{\sigma}:\mathbf{d} - \frac{1}{\rho\theta}\mathbf{q}\cdot\nabla\theta \geq 0
 $$
 
-Where $\theta$ is temperature, $s$ is entropy, $u$ is internal energy, $\boldsymbol{\sigma}$ is the stress tensor, $\mathbf{d}$ is the strain rate tensor, and $\mathbf{q}$ is the heat flux vector. If the proposed change violates this gate, it is hard-rejected by the runtime. 
+Where $\theta$ is temperature, $s$ is entropy, $u$ is internal energy, $\boldsymbol{\sigma}$ is the stress tensor, $\mathbf{d}$ is the strain rate tensor, and $\mathbf{q}$ is the heat flux vector. If the proposed change violates this gate, the runtime rejects the transition before it commits to state. 
 
 ### 1.3 The Policy Gateway: Mutual Information & Thermodynamic PPO Rewards
 
@@ -66,7 +66,7 @@ To let smart design algorithms (reinforcement learning agents) optimize shapes w
     *   **Safety Margin Scaling ($\zeta$):** Adds the mean spatial structural safety margin per batch, directing the policy toward high structural failure reserves.
     *   **Information Density Scaling ($\eta$):** Encourages the policy to maximize localized mutual information density, causing the optimizer to automatically focus material density along active stress and load transmission paths.
 
-We use exact adjoint gradients—running the simulation of a failure backwards through time—to trace the exact, mathematically undeniable cause of a structural weakness, and correct it.
+We use exact adjoint gradients—running the simulation backwards through time—to trace the precise cause of a structural weakness and correct it.
 
 
 ---
@@ -149,15 +149,15 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 
 ## 4. Exhaustive Architecture Topology
 
-The composition of this repository is strictly functional. Every file serves an unavoidable purpose, resulting in a testable outcome.
+The repository is organized functionally — each file maps to a specific role in the solver, gate, or verification pipeline.
 
 ```text
 umst-manifold/
 ├── Cargo.toml               # The core Rust manifest and feature lane flags.
 ├── src/
-│   ├── core/                # The axiomatic foundation.
+│   ├── core/                # Foundational tensors and traits.
 │   │   ├── tensors.rs       # The 64-channel UMST: The data structure holding heat, stress, and chemistry simultaneously.
-│   │   ├── traits.rs        # IScienceCartridge: The plugin interface ensuring domain chemistry inherits perfect gradients.
+│   │   ├── traits.rs        # IScienceCartridge: plugin interface that lets domain chemistry inherit the manifold's gradients.
 │   │   └── emergence.rs     # Dissipation diagnostics: Computes local thermodynamic dissipation fields and entropy production rates as sheaf-theoretic sections over the graph, rejecting non-positive definite updates.
 │   ├── physics/             # The exact DEC solvers.
 │   │   ├── mechanics.rs     # Force balancing inside the material using Voigt-Cauchy equilibrium.
@@ -169,7 +169,7 @@ umst-manifold/
 │       ├── cbf.rs           # ThermodynamicCBF: The strict physics gate calculating erasure costs.
 │       ├── adjoint.rs       # AdjointNeuralODE: Running time backward to find design improvements without exploding RAM.
 │       └── topology.rs      # Neural-SIMP: Automatically evolving the shape of a material to hold weight.
-├── tests/                   # Inescapable verification.
+├── tests/                   # Solver regression and golden-path verification.
 │   └── verification/        # Golden path regressions: Ensuring the physics never drifts.
 ├── examples/
 │   └── basic_topology.rs    # Minimal host integration: Proving DEC mass conservation locally.
@@ -179,7 +179,7 @@ umst-manifold/
 │   └── physics_gradient_escape_allowlist.txt # Explicit bounds for operations that cannot be differentiated.
 └── docs/
     ├── Mathematical-Foundations.md # The underlying calculus preventing FEM approximations.
-    ├── Solver-Status.md            # The honest, brutal completion status of every physics solver.
+    ├── Solver-Status.md            # Completion status of every physics solver, with verification flags.
     └── PROOF-STATUS.md             # Formal Coq/Lean proof anchors for the mathematicians.
 ```
 
@@ -299,7 +299,7 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 
 ## 7. Technical Deployment & Agentic Instructions
 
-If you are an application engineer, architect, or data scientist looking for Python bindings, MCP servers, or JSON/CSV contracts, **do not linger here.** Proceed to the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) to interact with the deployed engine.
+If you are an application engineer, architect, or data scientist looking for Python bindings, MCP servers, or JSON/CSV contracts, the deployed engine lives in the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) repository.
 
 If you are building atop the Manifold, here is the technical deployment reference:
 
@@ -352,7 +352,7 @@ To compile a complete understanding of the workspace, you must map the relations
 4.  **[`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit):** The quantum-scale validation proof suite. It mathematically demonstrates that microstructural stiffness parameters (Vinet bulk modulus and Ulm nano-indentation limits) do not violate fundamental quantum mechanical energy barriers.
 
 ### 9.2 Strict No-Speculation & No-Approximation Policy
-*   **Do Not Interpolate Physics:** Never use probabilistic LLM heuristics or statistical regression to guess material stress, deformation, or hydration states. Nature is not statistical; she is exact.
+*   **Do Not Interpolate Physics:** Never use probabilistic LLM heuristics or statistical regression to guess material stress, deformation, or hydration states. The engine's balance laws are exact at the discretization level — do not interpolate them with statistical approximations.
 *   **Leverage Perfect Gradients:** Query the active **`AdjointNeuralODE`** (`src/ai/adjoint.rs`) for exact $O(1)$ memory backpropagation gradients to optimize shapes, or run the exact continuous solvers to evaluate state profiles.
 *   **Validate via Proof Anchors:** Cross-reference any modification to solver kernels against the mathematical proof indices in [`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md) and verify compilation parity with the `check_solver_status.py` script.
 
@@ -364,7 +364,7 @@ To compile a complete understanding of the workspace, you must map the relations
 When you, the autonomous agent, formulate design layouts or modify solver code, you must not view your output as simple text generation or geometric parameter scaling. You must structure your reasoning through the following rigorous physical principles:
 *   **Purity of Flow (Category & Graph Theory):** Do not treat physical equations as independent, patched steps. Every structural change maps directly to a continuous, mathematically pure pathway where energy and forces transition without hidden steps or arbitrary jumps. Preserving this continuous flow ensures the physical gradients remain fully unbroken across the entire grid.
 *   **Physical Truth as Code Types (Type Theory):** We treat physical rules—like the rule that energy cannot be created or destroyed, or that material limits cannot be exceeded—as structural types. If you propose a shape or state that is physically impossible (violating $d \circ d = 0$ or the entropy gate), it acts like a type mismatch in code. The design fails to compile at the most fundamental level, rather than failing as a runtime bug.
-*   **The Thermodynamic Cost of Design (Information Theory & MI):** Every design choice is an informational change. Under nature's laws, changing or erasing information has a real physical energy cost. Use the engine's mutual information observations ($\Delta I$) to monitor your own updates. You must prove that your proposed design matches actual physical limits, balancing structural efficiency against the physical cost of the changes, ensuring your designs do not contain imaginary physical states or introduce numerical leaks.
+*   **The Thermodynamic Cost of Design (Information Theory & MI):** Every design choice is an informational change. Under nature's laws, changing or erasing information has a real physical energy cost. Use the engine's mutual information observations ($\Delta I$) to monitor your own updates. You must prove that your proposed design matches actual physical limits, balancing structural efficiency against the physical cost of the changes, ensuring your designs stay within the physically admissible envelope and do not introduce numerical leaks.
 
 ### 9.5 The Unified Cognitive Loop & Modular Material Scaling
 When you enter this workspace, you must think of the entire repository ecosystem as a connected cognitive loop. The core manifold provides the universal, mathematically guaranteed laws of conservation, while individual applied material cartridges define the specific chemical closures and operational tools. 
@@ -379,7 +379,7 @@ graph TD
     end
     subgraph "Applied Material Cartridges"
         D["Active MCP Tools<br/>(predict_strength, audit_mix)"] --> E["Robotic Kinematic Mapping<br/>(IK / FK Corrections)"]
-        E --> F["Zero-Hallucination Voxel<br/>Gradient Optimization"]
+        E --> F["Physics-Gated Voxel<br/>Gradient Optimization"]
     end
     subgraph "Modular Material Scaling"
         G["Aerospace Metal<br/>Cartridge"] -.->|IScienceCartridge| C
@@ -409,7 +409,7 @@ graph TD
 - **Proofs:** extend Track J3 from $d \circ d = 0$ closure to per-solver energy bounds (priority: `fracture_field`, `thmc_residual`).
 - **Cartridge expansion:** beyond cement, the next planned cartridges are bio-polymers and recycled aggregate composites — both stress the same `IScienceCartridge` contract and will surface any remaining substrate assumptions.
 
-The manifold is a *substrate*, not a product. Its value is in what compiles against it.
+The manifold is a substrate. Its value shows up in what gets built on top of it.
 
 ---
 
