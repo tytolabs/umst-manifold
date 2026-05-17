@@ -73,7 +73,7 @@ Where <picture><source media="(prefers-color-scheme: dark)" srcset="https://late
 
 ### 1.3 The Policy Gateway: Mutual Information & Thermodynamic PPO Rewards
 
-To let smart design algorithms (reinforcement learning agents) optimize shapes without slowing down the simulation, the system communicates through a high-speed boundary called the **`ManifoldGateway`** (`src/ai/ppo.rs`). This boundary keeps all heavy spatial math directly on the graphics hardware (GPU). Instead of moving massive grids of data back and forth, it extracts only two simple physical numbers per step: the internal friction (dissipation) and the physical information gained (mutual information bits).
+To let design algorithms (reinforcement-learning agents) optimize shapes without copying full state grids per step, the system exposes a narrow boundary called the **`ManifoldGateway`** (`src/ai/ppo.rs`). Heavy spatial math stays on the compute device; the gateway extracts only two scalar physical signals per step — internal friction (dissipation) and physical information gained (mutual information bits). The win here is data-movement parsimony, not wall-clock real-time.
 
 *   **Mutual Information (MI) Observations:** The active learning loop monitors structural state transitions through the mutual information gained (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\Delta%20I"><img alt="\Delta I" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\Delta%20I" style="vertical-align:middle"></picture>) during physical integration steps.
 *   **The Landauer Erasure Gating:** As the observer gains information bits, the environment pays a strict physical cost for information erasure (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;k_B%20T%20\ln(2)%20\cdot%20\Delta%20I"><img alt="k_B T \ln(2) \cdot \Delta I" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;k_B%20T%20\ln(2)%20\cdot%20\Delta%20I" style="vertical-align:middle"></picture>). If the structural dissipation (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;d_{\text{int}}"><img alt="d_{\text{int}}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;d_{\text{int}}" style="vertical-align:middle"></picture>) cannot cover this physical cost, the Thermodynamic CBF rejects the state transition, preventing unphysical path generation.
@@ -117,11 +117,11 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 <details>
 <summary><b>2. Autonomous Control & Embodied AI</b> (Robotics Engineers, Physical AI Architects)</summary>
 
-*   **Domain Focus:** Gated agent execution, physical safety limits, and real-time path planning validation.
+*   **Domain Focus:** Gated agent execution, physical safety limits, and path-planning validation against thermodynamic constraints.
 
-*   **Solver Composition:** Hooks directly into the Thermodynamic Control Barrier Function (CBF) and local entropy generation metrics to dynamically filter agent action trajectories.
+*   **Solver Composition:** Hooks directly into the Thermodynamic Control Barrier Function (CBF) and local entropy-generation metrics to filter agent action trajectories.
 
-*   **Computational Outcome:** Embodied agents and robotic controllers can evaluate spatial path feasibility (e.g., 3D-printing trajectories) against thermodynamic stability limits in real-time, receiving exact gradient steps to correct path drift.
+*   **Computational Outcome:** Agents and robotic controllers evaluate spatial path feasibility (e.g., 3D-printing trajectories) against thermodynamic stability limits and receive exact gradient steps to correct path drift. The per-step latency tracks the solver kernel selected — sub-second on small grids; minutes on full shell topology runs (see [`docs/Solver-Status.md`](docs/Solver-Status.md)).
 </details>
 
 <details>
@@ -341,7 +341,7 @@ Four active repositories make up the stack:
 
 ### 9.3 Operational Execution Guidelines
 *   **Local Execution:** Run `cargo test --workspace` or execute single examples like `cargo run --example basic_topology` to verify changes.
-*   **Out-of-Process Scaling:** To prevent local compute bottlenecks, utilize the Model Context Protocol (MCP) server inside `umst-mcp` to stream physical voxel states to high-performance, WGPU-accelerated cloud deployment instances via WebSockets.
+*   **Out-of-Process Scaling:** Use the Model Context Protocol (MCP) server inside `umst-mcp` to stream physical voxel states to remote compute over WebSockets. (The `wgpu` GPU backend is gated by an upstream Burn 0.13 issue — see §7 below; cloud paths run on CPU `ndarray` today.)
 
 ### 9.4 Three Physical Principles for Agent Reasoning
 Design and solver edits read cleaner when held to three principles:
