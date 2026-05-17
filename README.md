@@ -87,7 +87,7 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 
 *   **Solver Composition:** Employs Neural-SIMP topology solvers paired with exact Adjoint ODE gradients to trace structural sensitivities backward through the spatial domain.
 
-*   **Computational Outcome:** Generation of mathematically optimal structural geometries optimized for custom load profiles, computed with linear memory scaling ($O(1)$) suitable for standard CPU execution.
+*   **Computational Outcome:** Rapid derivation of optimal structural load paths. While the forward PDE solvers scale with the spatial mesh discretization ($O(N)$), the Adjoint Neural ODE backpropagation bypasses dense BPTT activation caching—yielding a constant $O(1)$ memory footprint over integration time steps, rendering complex dynamic topology optimization highly feasible on standard CPU hardware.
 </details>
 
 <details>
