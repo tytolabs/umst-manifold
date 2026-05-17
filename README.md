@@ -9,7 +9,7 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Formal Status](https://img.shields.io/badge/Formal_Verification-Track_J3-blue.svg)](docs/PROOF-STATUS.md)
 
-> *"You can teach a machine to paint a picture or write a poem, but if you ask it to build a bridge, the physics will show no mercy to its imagination. We do not let our models guess. We bind them to the exact conservation of Discrete Exterior Calculus. The machine learns because the math leaves it no other option."*
+> *"Generative AI models operate on probability, which works for generating text or images but fails for structures under load. A physical bridge does not tolerate approximation; it requires exact conservation of mass, energy, and momentum. We do not use neural networks to predict behavior. We enforce Discrete Exterior Calculus directly on the structural graph so the math balances perfectly at runtime."*
 
 **UMST Manifold** is a unified, differentiable physics engine grounded in exact mathematical conservation. It provides the spatiotemporal substrate—the universal game board—upon which materials are simulated, evolved, and optimized. Implemented in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes its physics to domain closures via the strict mathematical plugin system known as the **`IScienceCartridge`**.
 
