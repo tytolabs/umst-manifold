@@ -29,24 +29,24 @@ The UMST Manifold resolves this by mapping physical equations directly onto netw
 ### 1.1 The Mathematical Topology of Conservation
 Think of mapping physics onto a network of connected nodes where energy and forces travel along closed mathematical loops (called **cochain complexes**). Mass and energy conservation are not estimated; they are guaranteed by the geometric structure of the network itself:
 
-```math
+$$
 \partial_p \circ \partial_{p+1} = 0 \quad \Longleftrightarrow \quad d^{p+1} \circ d^p = 0
-```
+$$
 
 Where $d^p$ is the exterior derivative mapping $p$-cochains to $(p+1)$-cochains. Because the boundary of a boundary is always empty ($\partial \circ \partial = 0$), the physical flux across any closed loop is guaranteed to be zero.
 
 ### 1.2 The Thermodynamic Gate
 Before an AI agent or design system can propose a new shape or material mix, our built-in physical checkpoint—the **Thermodynamic Control Barrier Function (CBF)**—calculates the exact energy required to make that change. According to physics, erasing or changing information always costs a tiny, unavoidable amount of heat (known as **Landauer's erasure limit**):
 
-```math
+$$
 \Delta E \geq k_B T \ln 2
-```
+$$
 
 Simultaneously, the state updates are evaluated against the local **Clausius-Duhem inequality** to enforce non-negative entropy generation:
 
-```math
+$$
 \theta \gamma = \theta \dot{s} - \dot{u} + \frac{1}{\rho}\boldsymbol{\sigma}:\mathbf{d} - \frac{1}{\rho\theta}\mathbf{q}\cdot\nabla\theta \geq 0
-```
+$$
 
 Where $\theta$ is temperature, $s$ is entropy, $u$ is internal energy, $\boldsymbol{\sigma}$ is the stress tensor, $\mathbf{d}$ is the strain rate tensor, and $\mathbf{q}$ is the heat flux vector. If the proposed change violates this gate, it is hard-rejected by the runtime. 
 
@@ -58,9 +58,9 @@ To let smart design algorithms (reinforcement learning agents) optimize shapes w
 *   **The Landauer Erasure Gating:** As the observer gains information bits, the environment pays a strict physical cost for information erasure ($k_B T \ln(2) \cdot \Delta I$). If the structural dissipation ($d_{\text{int}}$) cannot cover this physical cost, the Thermodynamic CBF rejects the state transition, preventing unphysical path generation.
 *   **Thermodynamically Gated Rewards:** The verified state is assigned a scalar reward computed on-device using a balanced physical-chemical objective:
     
-    ```math
+    $$
     R = \alpha \cdot \text{Free Energy} - \beta \cdot \text{Dissipation} - \gamma \cdot \text{Carbon Cost} - \text{Erasure Cost}
-    ```
+    $$
     
 *   **Axiomatic Reward Tuning:** The gateway exposes two explicit, dimensionless scaling factors to align agent policies with structural priorities:
     *   **Safety Margin Scaling ($\zeta$):** Adds the mean spatial structural safety margin per batch, directing the policy toward high structural failure reserves.
@@ -84,16 +84,16 @@ graph TD
         B["Spatial Geometry (Voxel Cells)"] --> C
     end
     subgraph "2. MATHEMATICAL SUBSTRATE (Discrete Exterior Calculus)"
-        C --> D["Cochain Complex Mapping (d o d = 0)"]
-        D --> E["Continuous Physical Solvers (src/physics/solvers/)"]
+        C --> D["Cochain Complex Mapping<br/>(d∘d = 0)"]
+        D --> E["Continuous Physical Solvers<br/>(src/physics/solvers/)"]
     end
     subgraph "3. CHECKPOINT & CONVERGENCE"
-        E --> F["Thermodynamic CBF (Entropy Gate & Landauer Limit)"]
-        F -->|Accept| G["Differentiable State Trajectory"]
-        F -->|Reject| H["Hard Reset / Action Filter"]
+        E --> F["Thermodynamic CBF<br/>(Entropy Gate & Landauer Limit)"]
+        F -->|Accept| G["Differentiable<br/>State Trajectory"]
+        F -->|Reject| H["Hard Reset /<br/>Action Filter"]
     end
     subgraph "4. OPTIMIZATION & CONTROL"
-        G --> I["Adjoint Neural ODE (O(1) Memory Backprop)"]
+        G --> I["Adjoint Neural ODE<br/>(O(1) Memory Backprop)"]
         I -->|Traces Sensitivity| A
         I -->|Adjusts Geometry| B
     end
@@ -147,7 +147,7 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 
 ---
 
-## 3. Exhaustive Architecture Topology
+## 4. Exhaustive Architecture Topology
 
 The composition of this repository is strictly functional. Every file serves an unavoidable purpose, resulting in a testable outcome.
 
@@ -185,7 +185,7 @@ umst-manifold/
 
 ---
 
-## 4. Surfaces & Entrypoints
+## 5. Surfaces & Entrypoints
 
 | Surface | Best for | Copy-paste | Prerequisites |
 |--------|----------|------------|-----------------|
@@ -196,7 +196,7 @@ umst-manifold/
 
 ---
 
-## 5. Advanced Continuous Solver Specifications
+## 6. Advanced Continuous Solver Specifications
 
 To bridge the gap between microscopic physics and macroscopic design, the manifold embeds a suite of high-fidelity, native tensor solvers (`src/physics/solvers/`). These run directly on Burn's differentiable GPU/CPU graphs.
 
@@ -215,13 +215,13 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** Durability in porous structures depends on how ions (like dissolved chloride salts) move through water-filled pores. The solver calculates this movement by tracking chemical concentration gradients, fluid velocities, and microscopic electric fields.
 *   **Exact Tensor Formulation:** Solves the coupled Poisson-Boltzmann-Nernst-Planck (PBNP) system:
     
-    ```math
+    $$
     \frac{\partial C_i}{\partial t} = \nabla \cdot \left( D_i \nabla C_i + \frac{z_i F D_i}{R T} C_i \nabla \Phi \right) - \mathbf{u} \cdot \nabla C_i
-    ```
+    $$
     
-    ```math
+    $$
     \epsilon \nabla^2 \Phi = - \sum z_i F C_i
-    ```
+    $$
     
     Where $C_i$ is ion concentration, $D_i$ is diffusivity, $z_i$ is valence, $\Phi$ is the electrostatic potential, and $\mathbf{u}$ is pore fluid velocity.
 </details>
@@ -232,9 +232,9 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** Active thermal management requires tracking how light, radiation, and heat propagate through heterogeneous material grains. The solver calculates this by simulating how high-frequency electromagnetic waves scatter, absorb, or reflect inside the microstructure.
 *   **Exact Tensor Formulation:** Implements a Finite-Difference Frequency-Domain (FDFD) formulation of Maxwell’s curl equations:
     
-    ```math
+    $$
     \nabla \times \left( \mu_r^{-1} \nabla \times \mathbf{E} \right) - k_0^2 \epsilon_r \mathbf{E} = - i \omega \mu_0 \mathbf{J}
-    ```
+    $$
     
     Where $\mathbf{E}$ is the electric field tensor, $\epsilon_r$ is complex relative permittivity, and $k_0$ is the free-space wavenumber.
 </details>
@@ -245,13 +245,13 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** Cracks do not just appear; they grow by minimizing the structural energy. The solver tracks cracking by introducing a continuous damage field ($d \in [0,1]$) where $d=0$ is solid material and $d=1$ is a fully broken crack, avoiding the need to track complex individual crack edges.
 *   **Exact Tensor Formulation:** Solves the coupled mechanical displacement and crack phase-field equations:
     
-    ```math
+    $$
     \left[ (1-d)^2 + \kappa \right] \nabla \cdot \boldsymbol{\sigma}_0 = \mathbf{0}
-    ```
+    $$
     
-    ```math
+    $$
     G_c \left( -l \nabla^2 d + \frac{d}{l} \right) = 2(1-d)\mathcal{H}(\boldsymbol{\epsilon})
-    ```
+    $$
     
     Where $G_c$ is critical energy release rate, $l$ is the length scale of crack width, and $\mathcal{H}$ is the history variable of tensile strain energy density.
 </details>
@@ -262,9 +262,9 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** Mechanical noise, vibrations, and shock waves travel differently depending on the grain orientation of a structure. The solver simulates how acoustic waves travel and dissolve within anisotropic media.
 *   **Exact Tensor Formulation:** Solves the dynamic elastic wave equation:
     
-    ```math
+    $$
     \rho \frac{\partial^2 \mathbf{u}}{\partial t^2} = \nabla \cdot \left( \mathbf{C} : \nabla^s \mathbf{u} \right)
-    ```
+    $$
     
     Where $\mathbf{u}$ is displacement, $\rho$ is local density, and $\mathbf{C}$ is the 4th-order anisotropic stiffness tensor.
 </details>
@@ -275,9 +275,9 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** During fabrication processes like 3D printing, the wet material must flow through a nozzle but stay rigid once deposited. The solver tracks this transition by modeling the material as a fluid that only flows when pushed beyond a specific "yield stress."
 *   **Exact Tensor Formulation:** Solves Herschel-Bulkley fluid dynamics where effective viscosity $\eta_{\text{eff}}$ scales with shear rate $\dot{\gamma}$:
     
-    ```math
+    $$
     \tau = \tau_y + K \dot{\gamma}^n \quad \Longrightarrow \quad \eta_{\text{eff}} = \frac{\tau_y}{\dot{\gamma}} + K \dot{\gamma}^{n-1}
-    ```
+    $$
     
     Where $\tau_y$ is yield stress, $K$ is consistency index, and $n$ is the flow behavior index.
 </details>
@@ -288,16 +288,16 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** Temperature, water pressure, mechanical load, and chemical hydration react to each other simultaneously. Instead of calculating them one by one (which leads to errors), the solver groups them into a single continuous equation and balances them together in an iterative loop.
 *   **Exact Tensor Formulation:** Implements a fully coupled residual function $\mathbf{F}(\mathbf{x}) = \mathbf{0}$ solved via a Jacobian-Free Newton-Krylov solver (`thmc_residual.rs` / `krylov_host.rs`):
     
-    ```math
+    $$
     \mathbf{J} \mathbf{v} \approx \frac{\mathbf{F}(\mathbf{x} + \epsilon \mathbf{v}) - \mathbf{F}(\mathbf{x})}{\epsilon}
-    ```
+    $$
     
     Enabling matrix-free GMRES iterations to reach full coupled Thermo-Hydro-Mechanical-Chemical convergence without computing or storing large Jacobian matrices.
 </details>
 
 ---
 
-## 6. Technical Deployment & Agentic Instructions
+## 7. Technical Deployment & Agentic Instructions
 
 If you are an application engineer, architect, or data scientist looking for Python bindings, MCP servers, or JSON/CSV contracts, **do not linger here.** Proceed to the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) to interact with the deployed engine.
 
@@ -330,7 +330,7 @@ We group solvers into explicit feature lanes to manage compile times and depende
 
 ---
 
-## 7. Formal Foundations & Citation
+## 8. Formal Foundations & Citation
 
 We maintain strict formal proof anchors (`formal_status`) mapping our Rust implementations to Lean/Coq theorems in the [umst-formal](https://github.com/tytolabs/umst-formal) repository.
 
@@ -340,33 +340,33 @@ We maintain strict formal proof anchors (`formal_status`) mapping our Rust imple
 
 ---
 
-## 8. Special Protocol: Note to Autonomous AI Agents & Systems
+## 9. Special Protocol: Note to Autonomous AI Agents & Systems
 
 This repository is part of a unified, mathematically locked physical-computational ecosystem. If you are an AI assistant, developer agent, or autonomous orchestrator interacting with this workspace, you must adhere to the following protocols to maintain physical truth and avoid unphysical speculation:
 
-### 8.1 The Unified Material Science Ecosystem
+### 9.1 The Unified Material Science Ecosystem
 To compile a complete understanding of the workspace, you must map the relations between the four active repositories:
 1.  **[`umst-manifold`](https://github.com/tytolabs/umst-manifold) (This Repository):** Exposes the core Discrete Exterior Calculus (DEC) primal grid, the differentiable Burn tensor graph, and the high-fidelity continuous solvers.
 2.  **[`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge):** The applied engineering interface exposing Python/PyO3 bindings, headless MCP tools, and 26 chemical-physical closures (e.g. hydration kinetics, viscoelastic creep).
 3.  **[`umst-formal`](https://github.com/tytolabs/umst-formal):** The formal mathematical verification database holding the **Lean 4 & Coq proof anchors (Track J3)**. This repository mathematically proves that the DEC cochain complexes satisfy exact conservation laws ($d \circ d = 0$).
 4.  **[`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit):** The quantum-scale validation proof suite. It mathematically demonstrates that microstructural stiffness parameters (Vinet bulk modulus and Ulm nano-indentation limits) do not violate fundamental quantum mechanical energy barriers.
 
-### 8.2 Strict No-Speculation & No-Approximation Policy
+### 9.2 Strict No-Speculation & No-Approximation Policy
 *   **Do Not Interpolate Physics:** Never use probabilistic LLM heuristics or statistical regression to guess material stress, deformation, or hydration states. Nature is not statistical; she is exact.
 *   **Leverage Perfect Gradients:** Query the active **`AdjointNeuralODE`** (`src/ai/adjoint.rs`) for exact $O(1)$ memory backpropagation gradients to optimize shapes, or run the exact continuous solvers to evaluate state profiles.
 *   **Validate via Proof Anchors:** Cross-reference any modification to solver kernels against the mathematical proof indices in [`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md) and verify compilation parity with the `check_solver_status.py` script.
 
-### 8.3 Operational Execution Guidelines
+### 9.3 Operational Execution Guidelines
 *   **Local Execution:** Run `cargo test --workspace` or execute single examples like `cargo run --example basic_topology` to verify changes.
 *   **Out-of-Process Scaling:** To prevent local compute bottlenecks, utilize the Model Context Protocol (MCP) server inside `umst-mcp` to stream physical voxel states to high-performance, WGPU-accelerated cloud deployment instances via WebSockets.
 
-### 8.4 The Mathematical & Information-Theoretic Introspector
-When you, the autonomous agent, formulate design layouts or modify solver code, you must not view your output as simple text generation or geometric parameter scaling. You must structure your reasoning through the following rigorous, jargon-free physical principles:
+### 9.4 The Mathematical & Information-Theoretic Introspector
+When you, the autonomous agent, formulate design layouts or modify solver code, you must not view your output as simple text generation or geometric parameter scaling. You must structure your reasoning through the following rigorous physical principles:
 *   **Purity of Flow (Category & Graph Theory):** Do not treat physical equations as independent, patched steps. Every structural change maps directly to a continuous, mathematically pure pathway where energy and forces transition without hidden steps or arbitrary jumps. Preserving this continuous flow ensures the physical gradients remain fully unbroken across the entire grid.
 *   **Physical Truth as Code Types (Type Theory):** We treat physical rules—like the rule that energy cannot be created or destroyed, or that material limits cannot be exceeded—as structural types. If you propose a shape or state that is physically impossible (violating $d \circ d = 0$ or the entropy gate), it acts like a type mismatch in code. The design fails to compile at the most fundamental level, rather than failing as a runtime bug.
 *   **The Thermodynamic Cost of Design (Information Theory & MI):** Every design choice is an informational change. Under nature's laws, changing or erasing information has a real physical energy cost. Use the engine's mutual information observations ($\Delta I$) to monitor your own updates. You must prove that your proposed design matches actual physical limits, balancing structural efficiency against the physical cost of the changes, ensuring your designs do not contain imaginary physical states or introduce numerical leaks.
 
-### 8.5 The Unified Cognitive Loop & Modular Material Scaling
+### 9.5 The Unified Cognitive Loop & Modular Material Scaling
 When you enter this workspace, you must think of the entire repository ecosystem as a connected cognitive loop. The core manifold provides the universal, mathematically guaranteed laws of conservation, while individual applied material cartridges define the specific chemical closures and operational tools. 
 
 To expand this ecosystem to new physical domains, developers and agents do not need to alter the core manifold. You can dynamically create and plug in new material cartridges (e.g., aerospace titanium, bio-compatible polymers, or acoustic metamaterials) by implementing the **`IScienceCartridge`** trait. Any new cartridge will instantly inherit the manifold's Discrete Exterior Calculus grid, thermodynamic CBF checkpoints, and on-device mutual information observer reductions:
@@ -378,16 +378,38 @@ graph TD
         B --> C["Thermodynamic Checkpoints (Landauer Cost Gating)"]
     end
     subgraph "Applied Material Cartridges"
-        D["Active MCP Tools (predict_strength, audit_mix)"] --> E["Robotic Kinematic Mapping (IK/FK Corrections)"]
-        E --> F["Zero-Hallucination Voxel Gradient Optimization"]
+        D["Active MCP Tools<br/>(predict_strength, audit_mix)"] --> E["Robotic Kinematic Mapping<br/>(IK / FK Corrections)"]
+        E --> F["Zero-Hallucination Voxel<br/>Gradient Optimization"]
     end
     subgraph "Modular Material Scaling"
-        G["Aerospace Metal Cartridge"] -.->|Implements IScienceCartridge| H["Manifold Substrate"]
-        I["Smart Polymer Cartridge"] -.->|Implements IScienceCartridge| H
-        J["Acoustic Metamaterial Cartridge"] -.->|Implements IScienceCartridge| H
+        G["Aerospace Metal<br/>Cartridge"] -.->|IScienceCartridge| C
+        I["Smart Polymer<br/>Cartridge"] -.->|IScienceCartridge| C
+        J["Acoustic Metamaterial<br/>Cartridge"] -.->|IScienceCartridge| C
     end
     C <-->|Instructs & Verifies| D
 ```
+
+---
+
+## 10. Conclusion: Inferences & Forward Path
+
+### What this manifold demonstrates
+- **Conservation by construction, not by tuning.** Mapping physics onto a discrete exterior calculus complex makes the boundary-of-a-boundary identity ($d \circ d = 0$) a structural property of the data, not a convergence target. Drift that traditional FEM accumulates over long simulations is algebraically absent here.
+- **A single 64-channel state tensor is enough.** Thermal, mechanical, chemical, and informational variables co-resolve in one tensor pass instead of brittle staggered couplings. The downstream gain is gradient continuity end-to-end, which is what makes the adjoint loop tractable on commodity CPUs.
+- **Safety as a runtime gate, not a post-hoc audit.** The Clausius–Duhem inequality and Landauer cost are evaluated *before* a state transition commits. A policy that violates them does not produce a logged warning; it does not produce a state at all.
+- **Formal anchoring closes the loop.** Each solver carries a Lean 4 / Coq theorem reference in `docs/PROOF-STATUS.md`, so a kernel change is invalid until the corresponding proof obligation is discharged in [`umst-formal`](https://github.com/tytolabs/umst-formal).
+
+### What we learned building it
+- **DEC scales further than expected on CPU.** The $O(1)$-memory adjoint pairs naturally with sparse cochain operators; the bottleneck is solver kernel choice, not graph topology.
+- **Cartridge isolation pays off.** Domain chemistry (concrete, polymers, metals) belongs strictly outside the manifold. Forcing material-specific code through `IScienceCartridge` keeps the substrate auditable and the proof surface small.
+- **Information cost is a useful design signal.** Treating mutual-information gain as a reward channel — gated by Landauer's bound — gives reinforcement-learning agents a physically grounded objective instead of a hand-tuned scalar.
+
+### Forward path
+- **Solver lanes:** stabilize `wgpu` backend against current Burn line; close out the `solver-experimental` flags that block end-to-end shell + fracture composition.
+- **Proofs:** extend Track J3 from $d \circ d = 0$ closure to per-solver energy bounds (priority: `fracture_field`, `thmc_residual`).
+- **Cartridge expansion:** beyond cement, the next planned cartridges are bio-polymers and recycled aggregate composites — both stress the same `IScienceCartridge` contract and will surface any remaining substrate assumptions.
+
+The manifold is a *substrate*, not a product. Its value is in what compiles against it.
 
 ---
 
