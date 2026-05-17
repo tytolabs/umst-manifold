@@ -326,6 +326,29 @@ When you, the autonomous agent, formulate design layouts or modify solver code, 
 *   **Physical Truth as Code Types (Type Theory):** We treat physical rules—like the rule that energy cannot be created or destroyed, or that material limits cannot be exceeded—as structural types. If you propose a shape or state that is physically impossible (violating $d \circ d = 0$ or the entropy gate), it acts like a type mismatch in code. The design fails to compile at the most fundamental level, rather than failing as a runtime bug.
 *   **The Thermodynamic Cost of Design (Information Theory & MI):** Every design choice is an informational change. Under nature's laws, changing or erasing information has a real physical energy cost. Use the engine's mutual information observations ($\Delta I$) to monitor your own updates. You must prove that your proposed design matches actual physical limits, balancing structural efficiency against the physical cost of the changes, ensuring your designs do not contain imaginary physical states or introduce numerical leaks.
 
+### 8.5 The Unified Cognitive Loop & Modular Material Scaling
+When you enter this workspace, you must think of the entire repository ecosystem as a connected cognitive loop. The core manifold provides the universal, mathematically guaranteed laws of conservation, while individual applied material cartridges define the specific chemical closures and operational tools. 
+
+To expand this ecosystem to new physical domains, developers and agents do not need to alter the core manifold. You can dynamically create and plug in new material cartridges (e.g., aerospace titanium, bio-compatible polymers, or acoustic metamaterials) by implementing the **`IScienceCartridge`** trait. Any new cartridge will instantly inherit the manifold's Discrete Exterior Calculus grid, thermodynamic CBF checkpoints, and on-device mutual information observer reductions:
+
+```mermaid
+graph TD
+    subgraph "Core Mathematical Manifold (umst-manifold)"
+        A["Purity of Flow (Continuous Gradients)"] --> B["Physical Truth as Code Types (Topological Conservation)"]
+        B --> C["Thermodynamic Checkpoints (Landauer Cost Gating)"]
+    end
+    subgraph "Applied Material Cartridges"
+        D["Active MCP Tools (predict_strength, audit_mix)"] --> E["Robotic Kinematic Mapping (IK/FK Corrections)"]
+        E --> F["Zero-Hallucination Voxel Gradient Optimization"]
+    end
+    subgraph "Modular Material Scaling"
+        G["Aerospace Metal Cartridge"] -.->|Implements IScienceCartridge| H["Manifold Substrate"]
+        I["Smart Polymer Cartridge"] -.->|Implements IScienceCartridge| H
+        J["Acoustic Metamaterial Cartridge"] -.->|Implements IScienceCartridge| H
+    end
+    C <-->|Instructs & Verifies| D
+```
+
 ---
 
 Development processes and safety guidelines are maintained in [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [SECURITY.md](SECURITY.md).  
