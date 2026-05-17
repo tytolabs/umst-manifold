@@ -9,7 +9,7 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Formal Status](https://img.shields.io/badge/Formal_Verification-Track_J3-blue.svg)](docs/PROOF-STATUS.md)
 
-> *"Generative AI models operate on probability, which works for generating text or images but fails for structures under load. A physical bridge does not tolerate approximation; it requires exact conservation of mass, energy, and momentum. We do not use neural networks to predict behavior. We enforce Discrete Exterior Calculus directly on the structural graph so the math balances perfectly at runtime."*
+> *"Statistical learning models approximate spatial patterns, which fails when applied to structural mechanics under critical loads. A physical structure requires exact, topological conservation of energy and momentum. Instead of training neural networks to guess state variables, we enforce Discrete Exterior Calculus directly on the discrete structural graph—rendering conservation laws as compile-time topological invariants."*
 
 **UMST Manifold** is a unified, differentiable physics engine grounded in exact mathematical conservation. It provides the spatiotemporal substrate—the universal game board—upon which materials are simulated, evolved, and optimized. Implemented in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes its physics to domain closures via the strict mathematical plugin system known as the **`IScienceCartridge`**.
 
@@ -82,8 +82,8 @@ This Manifold is a pure library. It cares nothing for the specific material you 
 <summary><b>🧪 4. The Alchemists (Material Researchers, DIY Tinkerers, Bio-chemical Intelligence Experts)</b></summary>
 
 **Your Interest:** You are inventing new materials, biochemical substrates, or testing industrial supplier alternatives, and you need to know how they behave.
-**How UMST Composes:** You implement the `IScienceCartridge`. This is a strict mathematical plugin system. You write the specific chemistry or mechanics of your material, and plug it into the Manifold. All signals (heat, stress, chemistry) are threaded through the 64-channel Unified Material State Tensor.
-**The Truthful Outcome:** True multi-physics coupling. When heat changes in your custom material, the structural strength and chemical state react synchronously. You provide the chemistry; the manifold guarantees the physics.
+**How UMST Composes:** You implement the `IScienceCartridge` interface, providing constitutive relations as localized sheaf closures over the DEC cell complexes. All state variables (thermal, mechanical, chemical) are mapped directly into the 64-channel Unified Material State Tensor.
+**The Truthful Outcome:** True multi-physics coupling. When thermal fields evolve, the structural stiffness and chemical kinetics update synchronously within a single tensor operation. You supply the localized reaction equations; the manifold guarantees exact spatial gradients and physical consistency.
 </details>
 
 ---
@@ -99,7 +99,7 @@ umst-manifold/
 │   ├── core/                # The axiomatic foundation.
 │   │   ├── tensors.rs       # The 64-channel UMST: The data structure holding heat, stress, and chemistry simultaneously.
 │   │   ├── traits.rs        # IScienceCartridge: The plugin interface ensuring domain chemistry inherits perfect gradients.
-│   │   └── emergence.rs     # Dissipation diagnostics: Tracks entropy to ensure thermodynamics are respected.
+│   │   └── emergence.rs     # Dissipation diagnostics: Computes local thermodynamic dissipation fields and entropy production rates as sheaf-theoretic sections over the graph, rejecting non-positive definite updates.
 │   ├── physics/             # The exact DEC solvers.
 │   │   ├── mechanics.rs     # Force balancing inside the material using Voigt-Cauchy equilibrium.
 │   │   ├── orchestration.rs # Fold-based solver step composition.
