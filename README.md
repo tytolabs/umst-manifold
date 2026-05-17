@@ -56,40 +56,48 @@ We do not use LLMs for physics guessing. We use exact adjoint gradients—runnin
 
 ---
 
-## 2. Who Are You? (Domain Navigation Matrix)
+## 2. Cross-Domain Integration Specifications
 
-This Manifold is a pure library. It cares nothing for the specific material you map onto it. Because it is universally grounded, it serves multiple domains. Find your category below to see how the engine functions for your specific needs.
+This Manifold is a pure library. It is designed to act as a mathematical substrate, remaining entirely agnostic to the specific material mapped onto it. Find your domain below to see how the engine handles your integration requirements:
 
 <details>
-<summary><b>1. The Formalists (Mathematicians, Theoretical Physicists, Formal Grounding Enthusiasts)</b></summary>
+<summary><b>1. Mathematical Foundations & Formal Grounding</b> (Mathematicians, Theoretical Physicists)</summary>
 
-**Your Interest:** You care about mathematical invariants, exact conservation, and formal proofs.
-**How UMST Composes:** We utilize Discrete Exterior Calculus (DEC) to form exact cochain complexes on a sparse combinatorial graph. 
-**Outcome:** A physics substrate where mass, momentum, and energy conservation are topological guarantees, not numerical approximations. Our Rust implementations are mapped to formal Lean/Coq theorems (Track J3), providing provable anchors for every calculation.
+*   **Domain Focus:** Mathematical invariants, topological conservation laws, and formal physical proofs.
+
+*   **Solver Composition:** Exposes Discrete Exterior Calculus (DEC) primitives to construct exact cochain complexes over sparse combinatorial graphs.
+
+*   **Computational Outcome:** A spatial substrate where mass, momentum, and energy conservation are guaranteed algebraically by the graph topology rather than bounded by numerical float approximations. Rust modules map directly to formal Lean/Coq proof references (Track J3).
 </details>
 
 <details>
-<summary><b>2. The Embody-ers (Robotics Engineers, Physical AI Experts, Agentic Systems Designers)</b></summary>
+<summary><b>2. Autonomous Control & Embodied AI</b> (Robotics Engineers, Physical AI Architects)</summary>
 
-**Your Interest:** You are building autonomous agents that need to manipulate the physical world without making catastrophic, unphysical mistakes.
-**How UMST Composes:** The Manifold acts as the rigid physical boundary for your agentic fabrication workflows. Through the Thermodynamic Control Barrier Function, the AI is gated from hallucinating.
-**Outcome:** Your multi-agent systems can query the physical stability of a 3D-printing extrusion path in real-time, receiving gradients that guide them safely toward thermodynamically viable structures. The robot cannot build what the universe will not permit.
+*   **Domain Focus:** Gated agent execution, physical safety limits, and real-time path planning validation.
+
+*   **Solver Composition:** Hooks directly into the Thermodynamic Control Barrier Function (CBF) and local entropy generation metrics to dynamically filter agent action trajectories.
+
+*   **Computational Outcome:** Embodied agents and robotic controllers can evaluate spatial path feasibility (e.g., 3D-printing trajectories) against thermodynamic stability limits in real-time, receiving exact gradient steps to correct path drift.
 </details>
 
 <details>
-<summary><b>3. The Builders (Structural & Civil Engineers, Architects, Systems Architects)</b></summary>
+<summary><b>3. Structural Dynamics & Topology Optimization</b> (Civil & Structural Engineers, Architects)</summary>
 
-**Your Interest:** You need to design complex, load-bearing structures that are optimized for weight, cost, and safety.
-**How UMST Composes:** We use Neural-SIMP topology optimization, powered by Adjoint reverse-mode gradients. The engine traces forces backward through time to evolve the shape of a material automatically.
-**Outcome:** You receive the exact, mathematically optimal shape to hold a specific load, calculated without the memory-explosions of traditional topology solvers, all running efficiently on standard CPU hardware.
+*   **Domain Focus:** Load-bearing efficiency, material minimization, and structural optimization under static/dynamic loads.
+
+*   **Solver Composition:** Employs Neural-SIMP topology solvers paired with exact Adjoint ODE gradients to trace structural sensitivities backward through the spatial domain.
+
+*   **Computational Outcome:** Generation of mathematically optimal structural geometries optimized for custom load profiles, computed with linear memory scaling ($O(1)$) suitable for standard CPU execution.
 </details>
 
 <details>
-<summary><b>4. The Alchemists (Material Researchers, DIY Tinkerers, Bio-chemical Intelligence Experts)</b></summary>
+<summary><b>4. Constitutive Materials Chemistry</b> (Materials Scientists, Bio-chemical Researchers)</summary>
 
-**Your Interest:** You are inventing new materials, biochemical substrates, or testing industrial supplier alternatives, and you need to know how they behave.
-**How UMST Composes:** You implement the `IScienceCartridge` interface, providing constitutive relations as localized sheaf closures over the DEC cell complexes. All state variables (thermal, mechanical, chemical) are mapped directly into the 64-channel Unified Material State Tensor.
-**Outcome:** True multi-physics coupling. When thermal fields evolve, the structural stiffness and chemical kinetics update synchronously within a single tensor operation. You supply the localized reaction equations; the manifold guarantees exact spatial gradients and physical consistency.
+*   **Domain Focus:** Custom multi-physics coupling, chemical kinetics, and localized state evolution.
+
+*   **Solver Composition:** Inherits the `IScienceCartridge` interface to define localized constitutive relations mapped directly onto the 64-channel Unified Material State Tensor.
+
+*   **Computational Outcome:** Synchronous, coupled solver execution where thermal, chemical, and mechanical variables react concurrently within single tensor operations, automatically inheriting the manifold's spatial gradients.
 </details>
 
 ---
