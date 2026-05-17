@@ -165,7 +165,101 @@ umst-manifold/
 
 ---
 
-## 5. Technical Deployment & Agentic Instructions
+---
+
+## 5. Advanced Continuous Solver Specifications
+
+To bridge the gap between microscopic physics and macroscopic design, the manifold embeds a suite of high-fidelity, native tensor solvers (`src/physics/solvers/`). These run directly on Burn's differentiable GPU/CPU graphs.
+
+<details>
+<summary><b>1. Multi-Species Ionic Electrochemistry</b> (Nernst-Planck-Poisson)</summary>
+
+*   **Physical Concept:** Durability in porous structures depends on how ions (like dissolved chloride salts) move through water-filled pores. The solver calculates this movement by tracking chemical concentration gradients, fluid velocities, and microscopic electric fields.
+*   **Exact Tensor Formulation:** Solves the coupled Poisson-Boltzmann-Nernst-Planck (PBNP) system:
+    
+    ```math
+    \frac{\partial C_i}{\partial t} = \nabla \cdot \left( D_i \nabla C_i + \frac{z_i F D_i}{R T} C_i \nabla \Phi \right) - \mathbf{u} \cdot \nabla C_i
+    ```
+    
+    ```math
+    \epsilon \nabla^2 \Phi = - \sum z_i F C_i
+    ```
+    
+    Where $C_i$ is ion concentration, $D_i$ is diffusivity, $z_i$ is valence, $\Phi$ is the electrostatic potential, and $\mathbf{u}$ is pore fluid velocity.
+</details>
+
+<details>
+<summary><b>2. Electromagnetic & Radiative Transport</b> (Photonics FDFD)</summary>
+
+*   **Physical Concept:** Active thermal management requires tracking how light, radiation, and heat propagate through heterogeneous material grains. The solver calculates this by simulating how high-frequency electromagnetic waves scatter, absorb, or reflect inside the microstructure.
+*   **Exact Tensor Formulation:** Implements a Finite-Difference Frequency-Domain (FDFD) formulation of Maxwell’s curl equations:
+    
+    ```math
+    \nabla \times \left( \mu_r^{-1} \nabla \times \mathbf{E} \right) - k_0^2 \epsilon_r \mathbf{E} = - i \omega \mu_0 \mathbf{J}
+    ```
+    
+    Where $\mathbf{E}$ is the electric field tensor, $\epsilon_r$ is complex relative permittivity, and $k_0$ is the free-space wavenumber.
+</details>
+
+<details>
+<summary><b>3. Coupled Phase-Field Fracture</b> (Cracking Dynamics)</summary>
+
+*   **Physical Concept:** Cracks do not just appear; they grow by minimizing the structural energy. The solver tracks cracking by introducing a continuous damage field ($d \in [0,1]$) where $d=0$ is solid material and $d=1$ is a fully broken crack, avoiding the need to track complex individual crack edges.
+*   **Exact Tensor Formulation:** Solves the coupled mechanical displacement and crack phase-field equations:
+    
+    ```math
+    \left[ (1-d)^2 + \kappa \right] \nabla \cdot \boldsymbol{\sigma}_0 = \mathbf{0}
+    ```
+    
+    ```math
+    G_c \left( -l \nabla^2 d + \frac{d}{l} \right) = 2(1-d)\mathcal{H}(\boldsymbol{\epsilon})
+    ```
+    
+    Where $G_c$ is critical energy release rate, $l$ is the length scale of crack width, and $\mathcal{H}$ is the history variable of tensile strain energy density.
+</details>
+
+<details>
+<summary><b>4. Anisotropic Acoustics & Wave Dynamics</b> (Sound Propagation)</summary>
+
+*   **Physical Concept:** Mechanical noise, vibrations, and shock waves travel differently depending on the grain orientation of a structure. The solver simulates how acoustic waves travel and dissolve within anisotropic media.
+*   **Exact Tensor Formulation:** Solves the dynamic elastic wave equation:
+    
+    ```math
+    \rho \frac{\partial^2 \mathbf{u}}{\partial t^2} = \nabla \cdot \left( \mathbf{C} : \nabla^s \mathbf{u} \right)
+    ```
+    
+    Where $\mathbf{u}$ is displacement, $\rho$ is local density, and $\mathbf{C}$ is the 4th-order anisotropic stiffness tensor.
+</details>
+
+<details>
+<summary><b>5. Non-Newtonian Extrusion Rheology</b> (Herschel-Bulkley Flows)</summary>
+
+*   **Physical Concept:** During fabrication processes like 3D printing, the wet material must flow through a nozzle but stay rigid once deposited. The solver tracks this transition by modeling the material as a fluid that only flows when pushed beyond a specific "yield stress."
+*   **Exact Tensor Formulation:** Solves Herschel-Bulkley fluid dynamics where effective viscosity $\eta_{\text{eff}}$ scales with shear rate $\dot{\gamma}$:
+    
+    ```math
+    \tau = \tau_y + K \dot{\gamma}^n \quad \Longrightarrow \quad \eta_{\text{eff}} = \frac{\tau_y}{\dot{\gamma}} + K \dot{\gamma}^{n-1}
+    ```
+    
+    Where $\tau_y$ is yield stress, $K$ is consistency index, and $n$ is the flow behavior index.
+</details>
+
+<details>
+<summary><b>6. Coupled Jacobian-Free Newton-Krylov (JFNK) THMC Solver</b> (Multi-Physics Convergence)</summary>
+
+*   **Physical Concept:** Temperature, water pressure, mechanical load, and chemical hydration react to each other simultaneously. Instead of calculating them one by one (which leads to errors), the solver groups them into a single continuous equation and balances them together in an iterative loop.
+*   **Exact Tensor Formulation:** Implements a fully coupled residual function $\mathbf{F}(\mathbf{x}) = \mathbf{0}$ solved via a Jacobian-Free Newton-Krylov solver (`thmc_residual.rs` / `krylov_host.rs`):
+    
+    ```math
+    \mathbf{J} \mathbf{v} \approx \frac{\mathbf{F}(\mathbf{x} + \epsilon \mathbf{v}) - \mathbf{F}(\mathbf{x})}{\epsilon}
+    ```
+    
+    Enabling matrix-free GMRES iterations to reach full coupled Thermo-Hydro-Mechanical-Chemical convergence without computing or storing large Jacobian matrices.
+</details>
+
+---
+
+## 6. Technical Deployment & Agentic Instructions
 
 If you are an application engineer, architect, or data scientist looking for Python bindings, MCP servers, or JSON/CSV contracts, **do not linger here.** Proceed to the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) to interact with the deployed engine.
 
@@ -198,7 +292,7 @@ We group solvers into explicit feature lanes to manage compile times and depende
 
 ---
 
-## 6. Formal Foundations & Citation
+## 7. Formal Foundations & Citation
 
 We maintain strict formal proof anchors (`formal_status`) mapping our Rust implementations to Lean/Coq theorems in the [umst-formal](https://github.com/tytolabs/umst-formal) repository.
 
