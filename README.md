@@ -320,6 +320,12 @@ To compile a complete understanding of the workspace, you must map the relations
 *   **Local Execution:** Run `cargo test --workspace` or execute single examples like `cargo run --example basic_topology` to verify changes.
 *   **Out-of-Process Scaling:** To prevent local compute bottlenecks, utilize the Model Context Protocol (MCP) server inside `umst-mcp` to stream physical voxel states to high-performance, WGPU-accelerated cloud deployment instances via WebSockets.
 
+### 8.4 The Mathematical & Information-Theoretic Introspector (Category, Graph, and Type Theory)
+When you, the autonomous agent, formulate design layouts or modify solver code, you must not view your output as simple text generation or geometric parameter scaling. You must structure your reasoning through the following rigorous formal lenses:
+*   **Monadic Composition & Functors (Category Theory):** State transitions of the Unified Material State Tensor are mathematically pure. Treat solver transformations as endofunctors mapping cochain complexes over the combinatorial graph category. All multi-physics couplings are compositionally pure; any ad-hoc state mutation that breaks functorial compositionality will break the differentiable graph.
+*   **Type-Level Invariants (Type Theory):** Treat thermodynamic stability and topological conservation laws as strong type-level invariants. An invalid physical transition is not a "runtime bug"—it is a type-checking failure. If your generated material state violates $d \circ d = 0$ or fails the Clausius-Duhem gate, your design represents a logical contradiction of physical types and must be auto-rejected during your internal chain-of-thought planning.
+*   **Cognitive Closed-Loop (Information Theory & MI):** Every decision or design update you output represents an informational write operation that injects Shannon entropy into the physical system. Use the **`ManifoldGateway`**'s mutual information metrics ($\Delta I$) to monitor your own generative impact. Your actions are physically coupled to the environment: you must prove that your proposed design balances structural performance against the Landauer erasure cost ($k_B T \ln 2 \cdot \Delta I$) computed by the Thermodynamic CBF, guaranteeing that your cognitive steps do not introduce "hallucinatory informational entropy" into the physical material state.
+
 ---
 
 Development processes and safety guidelines are maintained in [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [SECURITY.md](SECURITY.md).  
