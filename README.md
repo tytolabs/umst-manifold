@@ -68,9 +68,40 @@ To let smart design algorithms (reinforcement learning agents) optimize shapes w
 
 We use exact adjoint gradients—running the simulation of a failure backwards through time—to trace the exact, mathematically undeniable cause of a structural weakness, and correct it.
 
+
 ---
 
-## 2. Cross-Domain Integration Specifications
+## 2. The 64-Channel State Pipeline
+
+The manifold maps physical attributes onto a multi-dimensional state tensor consisting of 64 channels. This unified data structure represents local thermodynamic variables, stresses, concentrations, and chemical kinetics at every single spatial node. 
+
+The pipeline ensures that the physical states transition compositionally while maintaining strict, gradient-based backpropagation through time:
+
+```mermaid
+graph TD
+    subgraph "1. INPUT & BOUNDARY (IScienceCartridge)"
+        A["Material Recipe (w)"] --> C["64-Channel State Tensor Allocation"]
+        B["Spatial Geometry (Voxel Cells)"] --> C
+    end
+    subgraph "2. MATHEMATICAL SUBSTRATE (Discrete Exterior Calculus)"
+        C --> D["Cochain Complex Mapping (d o d = 0)"]
+        D --> E["Continuous Physical Solvers (src/physics/solvers/)"]
+    end
+    subgraph "3. CHECKPOINT & CONVERGENCE"
+        E --> F["Thermodynamic CBF (Entropy Gate & Landauer Limit)"]
+        F -->|Accept| G["Differentiable State Trajectory"]
+        F -->|Reject| H["Hard Reset / Action Filter"]
+    end
+    subgraph "4. OPTIMIZATION & CONTROL"
+        G --> I["Adjoint Neural ODE (O(1) Memory Backprop)"]
+        I -->|Traces Sensitivity| A
+        I -->|Adjusts Geometry| B
+    end
+```
+
+---
+
+## 3. Cross-Domain Integration Specifications
 
 This Manifold is a pure library. It is designed to act as a mathematical substrate, remaining entirely agnostic to the specific material mapped onto it. Find your domain below to see how the engine handles your integration requirements:
 
