@@ -344,11 +344,6 @@ To expand this ecosystem to new physical domains, developers and agents do not n
 - **Cartridge isolation pays off.** Domain chemistry (concrete, polymers, metals) belongs strictly outside the manifold. Forcing material-specific code through `IScienceCartridge` keeps the substrate auditable and the proof surface small.
 - **Information cost is a useful design signal.** Treating mutual-information gain as a reward channel — gated by Landauer's bound — gives reinforcement-learning agents a physically grounded objective instead of a hand-tuned scalar.
 
-### Forward path
-- **Solver lanes:** stabilize `wgpu` backend against current Burn line; close out the `solver-experimental` flags that block end-to-end shell + fracture composition.
-- **Proofs:** extend Track J3 from $d \circ d = 0$ closure to per-solver energy bounds (priority: `fracture_field`, `thmc_residual`).
-- **Cartridge expansion:** beyond cement, the next planned cartridges are bio-polymers and recycled aggregate composites — both stress the same `IScienceCartridge` contract and will surface any remaining substrate assumptions.
-
 The manifold is a substrate. Its value shows up in what gets built on top of it.
 
 ---
