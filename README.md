@@ -29,24 +29,18 @@ The UMST Manifold resolves this by mapping physical equations directly onto netw
 ### 1.1 The Mathematical Topology of Conservation
 Think of mapping physics onto a network of connected nodes where energy and forces travel along closed mathematical loops (called **cochain complexes**). Mass and energy conservation are not estimated; they are guaranteed by the geometric structure of the network itself:
 
-$$
-\partial_p \circ \partial_{p+1} = 0 \quad \Longleftrightarrow \quad d^{p+1} \circ d^p = 0
-$$
+<p align="center"><img src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D&space;\partial_p%20\circ%20\partial_{p+1}%20=%200%20\quad%20\Longleftrightarrow%20\quad%20d^{p+1}%20\circ%20d^p%20=%200" alt="\partial_p \circ \partial_{p+1} = 0 \quad \Longleftrightarrow \quad d^{p+1} \cir…"/></p>
 
 Where $d^p$ is the exterior derivative mapping $p$-cochains to $(p+1)$-cochains. Because the boundary of a boundary is always empty ($\partial \circ \partial = 0$), the physical flux across any closed loop is guaranteed to be zero.
 
 ### 1.2 The Thermodynamic Gate
 Before an AI agent or design system can propose a new shape or material mix, our built-in physical checkpoint—the **Thermodynamic Control Barrier Function (CBF)**—calculates the exact energy required to make that change. According to physics, erasing or changing information always costs a tiny, unavoidable amount of heat (known as **Landauer's erasure limit**):
 
-$$
-\Delta E \geq k_B T \ln 2
-$$
+<p align="center"><img src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D&space;\Delta%20E%20\geq%20k_B%20T%20\ln%202" alt="\Delta E \geq k_B T \ln 2"/></p>
 
 Simultaneously, the state updates are evaluated against the local **Clausius-Duhem inequality** to enforce non-negative entropy generation:
 
-$$
-\theta \gamma = \theta \dot{s} - \dot{u} + \frac{1}{\rho}\boldsymbol{\sigma}:\mathbf{d} - \frac{1}{\rho\theta}\mathbf{q}\cdot\nabla\theta \geq 0
-$$
+<p align="center"><img src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D&space;\theta%20\gamma%20=%20\theta%20\dot{s}%20-%20\dot{u}%20+%20\frac{1}{\rho}\boldsymbol{\sigma}:\mathbf{d}%20-%20\frac{1}{\rho\theta}\mathbf{q}\cdot\nabla\theta%20\geq%200" alt="\theta \gamma = \theta \dot{s} - \dot{u} + \frac{1}{\rho}\boldsymbol{\sigma}:\ma…"/></p>
 
 Where $\theta$ is temperature, $s$ is entropy, $u$ is internal energy, $\boldsymbol{\sigma}$ is the stress tensor, $\mathbf{d}$ is the strain rate tensor, and $\mathbf{q}$ is the heat flux vector. If the proposed change violates this gate, the runtime rejects the transition before it commits to state. 
 
@@ -58,9 +52,7 @@ To let smart design algorithms (reinforcement learning agents) optimize shapes w
 *   **The Landauer Erasure Gating:** As the observer gains information bits, the environment pays a strict physical cost for information erasure ($k_B T \ln(2) \cdot \Delta I$). If the structural dissipation ($d_{\text{int}}$) cannot cover this physical cost, the Thermodynamic CBF rejects the state transition, preventing unphysical path generation.
 *   **Thermodynamically Gated Rewards:** The verified state is assigned a scalar reward computed on-device using a balanced physical-chemical objective:
     
-    $$
-    R = \alpha \cdot \text{Free Energy} - \beta \cdot \text{Dissipation} - \gamma \cdot \text{Carbon Cost} - \text{Erasure Cost}
-    $$
+    <p align="center"><img src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D&space;R%20=%20\alpha%20\cdot%20\text{Free%20Energy}%20-%20\beta%20\cdot%20\text{Dissipation}%20-%20\gamma%20\cdot%20\text{Carbon%20Cost}%20-%20\text{Erasure%20Cost}" alt="R = \alpha \cdot \text{Free Energy} - \beta \cdot \text{Dissipation} - \gamma \c…"/></p>
     
 *   **Axiomatic Reward Tuning:** The gateway exposes two explicit, dimensionless scaling factors to align agent policies with structural priorities:
     *   **Safety Margin Scaling ($\zeta$):** Adds the mean spatial structural safety margin per batch, directing the policy toward high structural failure reserves.
@@ -77,27 +69,7 @@ The manifold maps physical attributes onto a multi-dimensional state tensor cons
 
 The pipeline ensures that the physical states transition compositionally while maintaining strict, gradient-based backpropagation through time:
 
-```mermaid
-graph TD
-    subgraph "1. INPUT & BOUNDARY (IScienceCartridge)"
-        A["Material Recipe (w)"] --> C["64-Channel State Tensor Allocation"]
-        B["Spatial Geometry (Voxel Cells)"] --> C
-    end
-    subgraph "2. MATHEMATICAL SUBSTRATE (Discrete Exterior Calculus)"
-        C --> D["Cochain Complex Mapping<br/>(d∘d = 0)"]
-        D --> E["Continuous Physical Solvers<br/>(src/physics/solvers/)"]
-    end
-    subgraph "3. CHECKPOINT & CONVERGENCE"
-        E --> F["Thermodynamic CBF<br/>(Entropy Gate & Landauer Limit)"]
-        F -->|Accept| G["Differentiable<br/>State Trajectory"]
-        F -->|Reject| H["Hard Reset /<br/>Action Filter"]
-    end
-    subgraph "4. OPTIMIZATION & CONTROL"
-        G --> I["Adjoint Neural ODE<br/>(O(1) Memory Backprop)"]
-        I -->|Traces Sensitivity| A
-        I -->|Adjusts Geometry| B
-    end
-```
+<p align="center"><img src="https://mermaid.ink/svg/eyJjb2RlIjoiZ3JhcGggVERcbiAgICBzdWJncmFwaCBcIjEuIElOUFVUICYgQk9VTkRBUlkgKElTY2llbmNlQ2FydHJpZGdlKVwiXG4gICAgICAgIEFbXCJNYXRlcmlhbCBSZWNpcGUgKHcpXCJdIC0tPiBDW1wiNjQtQ2hhbm5lbCBTdGF0ZSBUZW5zb3IgQWxsb2NhdGlvblwiXVxuICAgICAgICBCW1wiU3BhdGlhbCBHZW9tZXRyeSAoVm94ZWwgQ2VsbHMpXCJdIC0tPiBDXG4gICAgZW5kXG4gICAgc3ViZ3JhcGggXCIyLiBNQVRIRU1BVElDQUwgU1VCU1RSQVRFIChEaXNjcmV0ZSBFeHRlcmlvciBDYWxjdWx1cylcIlxuICAgICAgICBDIC0tPiBEW1wiQ29jaGFpbiBDb21wbGV4IE1hcHBpbmc8YnIvPihkXHUyMjE4ZCA9IDApXCJdXG4gICAgICAgIEQgLS0-IEVbXCJDb250aW51b3VzIFBoeXNpY2FsIFNvbHZlcnM8YnIvPihzcmMvcGh5c2ljcy9zb2x2ZXJzLylcIl1cbiAgICBlbmRcbiAgICBzdWJncmFwaCBcIjMuIENIRUNLUE9JTlQgJiBDT05WRVJHRU5DRVwiXG4gICAgICAgIEUgLS0-IEZbXCJUaGVybW9keW5hbWljIENCRjxici8-KEVudHJvcHkgR2F0ZSAmIExhbmRhdWVyIExpbWl0KVwiXVxuICAgICAgICBGIC0tPnxBY2NlcHR8IEdbXCJEaWZmZXJlbnRpYWJsZTxici8-U3RhdGUgVHJhamVjdG9yeVwiXVxuICAgICAgICBGIC0tPnxSZWplY3R8IEhbXCJIYXJkIFJlc2V0IC88YnIvPkFjdGlvbiBGaWx0ZXJcIl1cbiAgICBlbmRcbiAgICBzdWJncmFwaCBcIjQuIE9QVElNSVpBVElPTiAmIENPTlRST0xcIlxuICAgICAgICBHIC0tPiBJW1wiQWRqb2ludCBOZXVyYWwgT0RFPGJyLz4oTygxKSBNZW1vcnkgQmFja3Byb3ApXCJdXG4gICAgICAgIEkgLS0-fFRyYWNlcyBTZW5zaXRpdml0eXwgQVxuICAgICAgICBJIC0tPnxBZGp1c3RzIEdlb21ldHJ5fCBCXG4gICAgZW5kIn0" alt="1. INPUT & BOUNDARY (IScienceCartridge)"/></p>
 
 ---
 
@@ -215,13 +187,9 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** Durability in porous structures depends on how ions (like dissolved chloride salts) move through water-filled pores. The solver calculates this movement by tracking chemical concentration gradients, fluid velocities, and microscopic electric fields.
 *   **Exact Tensor Formulation:** Solves the coupled Poisson-Boltzmann-Nernst-Planck (PBNP) system:
     
-    $$
-    \frac{\partial C_i}{\partial t} = \nabla \cdot \left( D_i \nabla C_i + \frac{z_i F D_i}{R T} C_i \nabla \Phi \right) - \mathbf{u} \cdot \nabla C_i
-    $$
+    <p align="center"><img src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D&space;\frac{\partial%20C_i}{\partial%20t}%20=%20\nabla%20\cdot%20\left(%20D_i%20\nabla%20C_i%20+%20\frac{z_i%20F%20D_i}{R%20T}%20C_i%20\nabla%20\Phi%20\right)%20-%20\mathbf{u}%20\cdot%20\nabla%20C_i" alt="\frac{\partial C_i}{\partial t} = \nabla \cdot \left( D_i \nabla C_i + \frac{z_i…"/></p>
     
-    $$
-    \epsilon \nabla^2 \Phi = - \sum z_i F C_i
-    $$
+    <p align="center"><img src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D&space;\epsilon%20\nabla^2%20\Phi%20=%20-%20\sum%20z_i%20F%20C_i" alt="\epsilon \nabla^2 \Phi = - \sum z_i F C_i"/></p>
     
     Where $C_i$ is ion concentration, $D_i$ is diffusivity, $z_i$ is valence, $\Phi$ is the electrostatic potential, and $\mathbf{u}$ is pore fluid velocity.
 </details>
@@ -232,9 +200,7 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** Active thermal management requires tracking how light, radiation, and heat propagate through heterogeneous material grains. The solver calculates this by simulating how high-frequency electromagnetic waves scatter, absorb, or reflect inside the microstructure.
 *   **Exact Tensor Formulation:** Implements a Finite-Difference Frequency-Domain (FDFD) formulation of Maxwell’s curl equations:
     
-    $$
-    \nabla \times \left( \mu_r^{-1} \nabla \times \mathbf{E} \right) - k_0^2 \epsilon_r \mathbf{E} = - i \omega \mu_0 \mathbf{J}
-    $$
+    <p align="center"><img src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D&space;\nabla%20\times%20\left(%20\mu_r^{-1}%20\nabla%20\times%20\mathbf{E}%20\right)%20-%20k_0^2%20\epsilon_r%20\mathbf{E}%20=%20-%20i%20\omega%20\mu_0%20\mathbf{J}" alt="\nabla \times \left( \mu_r^{-1} \nabla \times \mathbf{E} \right) - k_0^2 \epsilo…"/></p>
     
     Where $\mathbf{E}$ is the electric field tensor, $\epsilon_r$ is complex relative permittivity, and $k_0$ is the free-space wavenumber.
 </details>
@@ -245,13 +211,9 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** Cracks do not just appear; they grow by minimizing the structural energy. The solver tracks cracking by introducing a continuous damage field ($d \in [0,1]$) where $d=0$ is solid material and $d=1$ is a fully broken crack, avoiding the need to track complex individual crack edges.
 *   **Exact Tensor Formulation:** Solves the coupled mechanical displacement and crack phase-field equations:
     
-    $$
-    \left[ (1-d)^2 + \kappa \right] \nabla \cdot \boldsymbol{\sigma}_0 = \mathbf{0}
-    $$
+    <p align="center"><img src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D&space;\left[%20(1-d)^2%20+%20\kappa%20\right]%20\nabla%20\cdot%20\boldsymbol{\sigma}_0%20=%20\mathbf{0}" alt="\left[ (1-d)^2 + \kappa \right] \nabla \cdot \boldsymbol{\sigma}_0 = \mathbf{0}"/></p>
     
-    $$
-    G_c \left( -l \nabla^2 d + \frac{d}{l} \right) = 2(1-d)\mathcal{H}(\boldsymbol{\epsilon})
-    $$
+    <p align="center"><img src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D&space;G_c%20\left(%20-l%20\nabla^2%20d%20+%20\frac{d}{l}%20\right)%20=%202(1-d)\mathcal{H}(\boldsymbol{\epsilon})" alt="G_c \left( -l \nabla^2 d + \frac{d}{l} \right) = 2(1-d)\mathcal{H}(\boldsymbol{\…"/></p>
     
     Where $G_c$ is critical energy release rate, $l$ is the length scale of crack width, and $\mathcal{H}$ is the history variable of tensile strain energy density.
 </details>
@@ -262,9 +224,7 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** Mechanical noise, vibrations, and shock waves travel differently depending on the grain orientation of a structure. The solver simulates how acoustic waves travel and dissolve within anisotropic media.
 *   **Exact Tensor Formulation:** Solves the dynamic elastic wave equation:
     
-    $$
-    \rho \frac{\partial^2 \mathbf{u}}{\partial t^2} = \nabla \cdot \left( \mathbf{C} : \nabla^s \mathbf{u} \right)
-    $$
+    <p align="center"><img src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D&space;\rho%20\frac{\partial^2%20\mathbf{u}}{\partial%20t^2}%20=%20\nabla%20\cdot%20\left(%20\mathbf{C}%20:%20\nabla^s%20\mathbf{u}%20\right)" alt="\rho \frac{\partial^2 \mathbf{u}}{\partial t^2} = \nabla \cdot \left( \mathbf{C}…"/></p>
     
     Where $\mathbf{u}$ is displacement, $\rho$ is local density, and $\mathbf{C}$ is the 4th-order anisotropic stiffness tensor.
 </details>
@@ -275,9 +235,7 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** During fabrication processes like 3D printing, the wet material must flow through a nozzle but stay rigid once deposited. The solver tracks this transition by modeling the material as a fluid that only flows when pushed beyond a specific "yield stress."
 *   **Exact Tensor Formulation:** Solves Herschel-Bulkley fluid dynamics where effective viscosity $\eta_{\text{eff}}$ scales with shear rate $\dot{\gamma}$:
     
-    $$
-    \tau = \tau_y + K \dot{\gamma}^n \quad \Longrightarrow \quad \eta_{\text{eff}} = \frac{\tau_y}{\dot{\gamma}} + K \dot{\gamma}^{n-1}
-    $$
+    <p align="center"><img src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D&space;\tau%20=%20\tau_y%20+%20K%20\dot{\gamma}^n%20\quad%20\Longrightarrow%20\quad%20\eta_{\text{eff}}%20=%20\frac{\tau_y}{\dot{\gamma}}%20+%20K%20\dot{\gamma}^{n-1}" alt="\tau = \tau_y + K \dot{\gamma}^n \quad \Longrightarrow \quad \eta_{\text{eff}} =…"/></p>
     
     Where $\tau_y$ is yield stress, $K$ is consistency index, and $n$ is the flow behavior index.
 </details>
@@ -288,9 +246,7 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** Temperature, water pressure, mechanical load, and chemical hydration react to each other simultaneously. Instead of calculating them one by one (which leads to errors), the solver groups them into a single continuous equation and balances them together in an iterative loop.
 *   **Exact Tensor Formulation:** Implements a fully coupled residual function $\mathbf{F}(\mathbf{x}) = \mathbf{0}$ solved via a Jacobian-Free Newton-Krylov solver (`thmc_residual.rs` / `krylov_host.rs`):
     
-    $$
-    \mathbf{J} \mathbf{v} \approx \frac{\mathbf{F}(\mathbf{x} + \epsilon \mathbf{v}) - \mathbf{F}(\mathbf{x})}{\epsilon}
-    $$
+    <p align="center"><img src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D&space;\mathbf{J}%20\mathbf{v}%20\approx%20\frac{\mathbf{F}(\mathbf{x}%20+%20\epsilon%20\mathbf{v})%20-%20\mathbf{F}(\mathbf{x})}{\epsilon}" alt="\mathbf{J} \mathbf{v} \approx \frac{\mathbf{F}(\mathbf{x} + \epsilon \mathbf{v})…"/></p>
     
     Enabling matrix-free GMRES iterations to reach full coupled Thermo-Hydro-Mechanical-Chemical convergence without computing or storing large Jacobian matrices.
 </details>
@@ -371,23 +327,7 @@ When you enter this workspace, you must think of the entire repository ecosystem
 
 To expand this ecosystem to new physical domains, developers and agents do not need to alter the core manifold. You can dynamically create and plug in new material cartridges (e.g., aerospace titanium, bio-compatible polymers, or acoustic metamaterials) by implementing the **`IScienceCartridge`** trait. Any new cartridge will instantly inherit the manifold's Discrete Exterior Calculus grid, thermodynamic CBF checkpoints, and on-device mutual information observer reductions:
 
-```mermaid
-graph TD
-    subgraph "Core Mathematical Manifold (umst-manifold)"
-        A["Purity of Flow (Continuous Gradients)"] --> B["Physical Truth as Code Types (Topological Conservation)"]
-        B --> C["Thermodynamic Checkpoints (Landauer Cost Gating)"]
-    end
-    subgraph "Applied Material Cartridges"
-        D["Active MCP Tools<br/>(predict_strength, audit_mix)"] --> E["Robotic Kinematic Mapping<br/>(IK / FK Corrections)"]
-        E --> F["Physics-Gated Voxel<br/>Gradient Optimization"]
-    end
-    subgraph "Modular Material Scaling"
-        G["Aerospace Metal<br/>Cartridge"] -.->|IScienceCartridge| C
-        I["Smart Polymer<br/>Cartridge"] -.->|IScienceCartridge| C
-        J["Acoustic Metamaterial<br/>Cartridge"] -.->|IScienceCartridge| C
-    end
-    C <-->|Instructs & Verifies| D
-```
+<p align="center"><img src="https://mermaid.ink/svg/eyJjb2RlIjoiZ3JhcGggVERcbiAgICBzdWJncmFwaCBcIkNvcmUgTWF0aGVtYXRpY2FsIE1hbmlmb2xkICh1bXN0LW1hbmlmb2xkKVwiXG4gICAgICAgIEFbXCJQdXJpdHkgb2YgRmxvdyAoQ29udGludW91cyBHcmFkaWVudHMpXCJdIC0tPiBCW1wiUGh5c2ljYWwgVHJ1dGggYXMgQ29kZSBUeXBlcyAoVG9wb2xvZ2ljYWwgQ29uc2VydmF0aW9uKVwiXVxuICAgICAgICBCIC0tPiBDW1wiVGhlcm1vZHluYW1pYyBDaGVja3BvaW50cyAoTGFuZGF1ZXIgQ29zdCBHYXRpbmcpXCJdXG4gICAgZW5kXG4gICAgc3ViZ3JhcGggXCJBcHBsaWVkIE1hdGVyaWFsIENhcnRyaWRnZXNcIlxuICAgICAgICBEW1wiQWN0aXZlIE1DUCBUb29sczxici8-KHByZWRpY3Rfc3RyZW5ndGgsIGF1ZGl0X21peClcIl0gLS0-IEVbXCJSb2JvdGljIEtpbmVtYXRpYyBNYXBwaW5nPGJyLz4oSUsgLyBGSyBDb3JyZWN0aW9ucylcIl1cbiAgICAgICAgRSAtLT4gRltcIlBoeXNpY3MtR2F0ZWQgVm94ZWw8YnIvPkdyYWRpZW50IE9wdGltaXphdGlvblwiXVxuICAgIGVuZFxuICAgIHN1YmdyYXBoIFwiTW9kdWxhciBNYXRlcmlhbCBTY2FsaW5nXCJcbiAgICAgICAgR1tcIkFlcm9zcGFjZSBNZXRhbDxici8-Q2FydHJpZGdlXCJdIC0uLT58SVNjaWVuY2VDYXJ0cmlkZ2V8IENcbiAgICAgICAgSVtcIlNtYXJ0IFBvbHltZXI8YnIvPkNhcnRyaWRnZVwiXSAtLi0-fElTY2llbmNlQ2FydHJpZGdlfCBDXG4gICAgICAgIEpbXCJBY291c3RpYyBNZXRhbWF0ZXJpYWw8YnIvPkNhcnRyaWRnZVwiXSAtLi0-fElTY2llbmNlQ2FydHJpZGdlfCBDXG4gICAgZW5kXG4gICAgQyA8LS0-fEluc3RydWN0cyAmIFZlcmlmaWVzfCBEIn0" alt="Core Mathematical Manifold (umst-manifold)"/></p>
 
 ---
 
