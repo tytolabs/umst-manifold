@@ -31,7 +31,7 @@ If you are looking for the applied materials engine specifically built for cemen
 | Section | Subsections & jumps |
 |:---|:---|
 | **Foundations** | |
-| [1. The core approach](#1-the-core-approach) | [1.1 Mathematical topology of conservation](#11-the-mathematical-topology-of-conservation) · [1.2 Thermodynamic gate](#12-the-thermodynamic-gate) · [1.3 Policy gateway (PPO / MI)](#13-the-policy-gateway-mutual-information--thermodynamic-ppo-rewards) |
+| [1. The core approach](#1-the-core-approach) | [1.1 Mathematical topology of conservation](#11-the-mathematical-topology-of-conservation) · [1.2 Thermodynamic gate](#12-the-thermodynamic-gate) · [1.3 Policy gateway (PPO / MI)](#13-the-policy-gateway-mutual-information--thermodynamic-ppo-rewards) · [1.4 Grounding contract](#14-grounding-contract-constants-proofs-and-second-law-composition) |
 | [2. Unified material state pipeline](#2-unified-material-state-pipeline-umst-carrier) | [2.1 Lane map (64 scalars today)](#21-lane-map-64-scalars-today) · [2.2 Composition, DEC, and gradients](#22-composition-dec-and-gradients) · [2.3 Extensibility](#23-extensibility-carriers-lanes-and-versions) |
 | [3. Cross-domain integration](#3-cross-domain-integration-specifications) | *Per-audience blocks are collapsible under §3.* |
 | [4. Architecture topology](#4-exhaustive-architecture-topology) | [Tree (collapsible)](#4-exhaustive-architecture-topology) |
@@ -96,6 +96,13 @@ To let design algorithms (reinforcement-learning agents) optimize shapes without
 
 We use exact adjoint gradients—running the simulation backwards through time—to trace the precise cause of a structural weakness and correct it.
 
+### 1.4 Grounding contract: constants, proofs, and second-law composition
+
+**Second law as the compositional spine.** Discrete steps do not “mostly” respect physics: they are **admissible or rejected**. The local **Clausius–Duhem** inequality (§1.2) enforces **non-negative entropy production** together with stress, heat flux, and internal variables; the **thermodynamic CBF** and **Landauer** bookkeeping cap what an observer or policy may erase without paying dissipation. **Composition** is explicit: **DEC** gives **d ∘ d = 0** on fluxes so conservation is algebraic under mesh refinement; continuous solvers and cartridge closures are composed as **typed steps** in the orchestration fold; each proposed transition must satisfy the **same** second-law-shaped gate (or it never becomes state). Scaling to larger models or longer horizons does not relax that contract—it repeats it at every commit point.
+
+**Constants are derived or grounded — not silent knobs.** Numerical coefficients in kernels either follow from **closed-form constitutive relations** and dimensional analysis, appear as **documented calibration inputs** with a paper/trail in [`docs/Solver-Status.md`](docs/Solver-Status.md) and companion docs, or are pinned with **explicit regression tolerances** in CI scripts. Nothing is “just a float”: if it moves, a human or formal obligation should say why.
+
+**“Proven” means traceable invariants, not vibes.** Conservation structure is **mathematical** (cochain topology). Solver-specific claims are tied to **Lean 4 / Coq anchors** in [`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md) where the Track J3 pipeline applies, and to **regression tests** and `scripts/check_solver_status.py` so documentation, `#[cfg(feature)]` lanes, and proof tables stay aligned. Where a proof is still staged, the code path is labelled honestly in Solver-Status — we do not conflate “compiled” with “discharged in Lean.”
 
 ---
 
@@ -367,6 +374,7 @@ Four active repositories make up the stack:
 
 ### 9.2 Working Contract
 *   **No statistical interpolation of physics.** Material stress, deformation, and hydration states come from the solvers — not from heuristics or regression.
+*   **Second law + composition are non-negotiable.** Treat every integration step as subject to the same entropy-balance and admissibility story as in [§1.4](#14-grounding-contract-constants-proofs-and-second-law-composition): compose operators, do not stack hacks that bypass the gate.
 *   **Use the exact gradients.** Query **`AdjointNeuralODE`** (`src/ai/adjoint.rs`) for <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;O(1)"><img alt="O(1)" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;O(1)" style="vertical-align:middle"></picture>-memory backpropagation; run the continuous solvers for state profiles.
 *   **Validate against proof anchors.** Any solver-kernel change is checked against [`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md) via `check_solver_status.py`.
 
