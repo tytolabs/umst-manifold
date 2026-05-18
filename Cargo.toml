@@ -28,13 +28,8 @@ blas-accelerate = ["burn-ndarray/blas-accelerate"]
 # `cargo test --features mac-fast` or `cargo build --features mac-fast`.
 # Apple Accelerate auto-threads BLAS across P-cores, so PCG / matmul-heavy paths use the M-series silicon.
 mac-fast = ["ndarray", "blas-accelerate"]
-# GPU backend via WGPU (Metal on macOS, Vulkan on Linux). BROKEN IN BURN 0.13.2: pulls in
-# `burn-jit 0.13.2` which has `#[derive(Default)]` on enums lacking `#[default]` annotation —
-# stable Rust ≥ 1.81 refuses to compile it. Fix paths: (B) patch burn-jit via `[patch.crates-io]`
-# + refactor 41 hardcoded `NdArray<f32>` backend types across the codebase + audit autodiff scatter
-# coverage; (C) upgrade Burn to 0.14+ (breaking API change across ~600 call sites). See
-# `composer_prompts/v0.4_multithreading_solver_parallelisation.md` § "Future track — wgpu / Metal GPU".
-# Until then, prefer `mac-fast` (Accelerate-threaded BLAS + rayon-parallel hot loops) for M-series speedup.
+# Optional GPU backend via WGPU (Metal on macOS, Vulkan on Linux). Not enabled in default CI;
+# keep portable validation on `ndarray`. If you turn this on, validate against your pinned Rust + Burn line locally.
 wgpu = ["burn/wgpu"]
 # Optimiser / training utilities.
 train = ["burn/train"]

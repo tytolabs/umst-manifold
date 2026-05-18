@@ -22,7 +22,7 @@ This page is the **authoritative** mapping from solver surfaces to **Cargo featu
 
 **Canonical vs cfg names:** e.g. **`photonics-fdfd`** forwards to **`photonics`** for `#[cfg]`; **`electrochemistry-pnp`** forwards to **`electrochemistry-mvp`**. Deprecated alias **`photonics-scaffold`** → **`photonics-fdfd`**.
 
-**GPU:** `wgpu` remains documented in `Cargo.toml` as **broken** on the pinned Burn 0.13 line for recent stable Rust; local throughput on Apple Silicon is usually **`mac-fast`** (Accelerate) rather than WGPU until an upgrade lands.
+**GPU:** Optional `wgpu` is not exercised in CI; portable builds and throughput work use **`ndarray`** (and **`mac-fast`** on Apple Silicon where applicable).
 
 ---
 

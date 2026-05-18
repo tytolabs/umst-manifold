@@ -25,7 +25,7 @@ If you are looking for the applied materials engine specifically built for cemen
 
 <!-- readme:table-of-contents -->
 <details>
-<summary><b>Table of contents</b> (detailed map + read checklist)</summary>
+<summary><b>Table of contents</b> (detailed map + outline)</summary>
 <br>
 
 **Top-level map**
@@ -34,56 +34,58 @@ If you are looking for the applied materials engine specifically built for cemen
 |:---|:---|
 | Foundations | [§1](#1-the-core-approach) · [§2](#2-unified-material-state-pipeline-umst-carrier) · [§3](#3-cross-domain-integration-specifications) |
 | Architecture & surfaces | [§4](#4-exhaustive-architecture-topology) · [§5](#5-surfaces--entrypoints) |
-| Solvers & ops | [§6](#6-advanced-continuous-solver-specifications) · [§7](#7-technical-deployment--agentic-instructions) · [§8](#8-formal-foundations--citation) |
-| Agents & wrap-up | [§9](#9-special-protocol-note-to-autonomous-ai-agents--systems) · [§10](#10-conclusion-inferences--forward-path) · [Related](#related) |
+| Solvers & ops | [§6](#6-advanced-continuous-solver-specifications) · [§7](#7-technical-deployment--agentic-instructions) · [§8](#8-formal-foundations-and-citation) |
+| Agents & wrap-up | [§9](#9-special-protocol-note-to-autonomous-ai-agents--systems) · [§10](#10-conclusion-inferences--forward-path) · [Related](#related-repositories) |
 
-**Detailed checklist** — tick as you read (subsections link to headings; blocks without anchors are listed under their parent §).
+**Detailed outline** — each line links to a heading anchor where one exists; lines marked *(collapsible)* open a `<details>` block under that section (no separate URL).
 
-- [ ] [§1 The Core Approach](#1-the-core-approach)
-  - [ ] [1.1 The Mathematical Topology of Conservation](#11-the-mathematical-topology-of-conservation)
-  - [ ] [1.2 The Thermodynamic Gate](#12-the-thermodynamic-gate)
-  - [ ] [1.3 The Policy Gateway: Mutual Information & Thermodynamic PPO Rewards](#13-the-policy-gateway-mutual-information--thermodynamic-ppo-rewards)
-  - [ ] [1.4 Grounding contract: constants, proofs, and second-law composition](#14-grounding-contract-constants-proofs-and-second-law-composition)
-- [ ] [§2 Unified material state pipeline (UMST carrier)](#2-unified-material-state-pipeline-umst-carrier)
-  - [ ] [2.1 Lane map (64 scalars today)](#21-lane-map-64-scalars-today)
-  - [ ] [2.2 Composition, DEC, and gradients](#22-composition-dec-and-gradients)
-  - [ ] [2.3 Extensibility (carriers, lanes, and versions)](#23-extensibility-carriers-lanes-and-versions)
-  - [ ] End-to-flow diagram (mermaid) at end of §2
-- [ ] [§3 Cross-Domain Integration Specifications](#3-cross-domain-integration-specifications)
-  - [ ] *Dropdown* — Mathematical Foundations & Formal Grounding
-  - [ ] *Dropdown* — Autonomous Control & Embodied AI
-  - [ ] *Dropdown* — Structural Dynamics & Topology Optimization
-  - [ ] *Dropdown* — Constitutive Materials Chemistry
-- [ ] [§4 Exhaustive Architecture Topology](#4-exhaustive-architecture-topology)
-  - [ ] *Dropdown* — Repository tree (`umst-manifold/` paths)
-- [ ] [§5 Surfaces & Entrypoints](#5-surfaces--entrypoints)
-- [ ] [§6 Advanced Continuous Solver Specifications](#6-advanced-continuous-solver-specifications)
-  - [ ] Summary table (Ionic electrochemistry → JFNK THMC)
-  - [ ] *Dropdown* — Multi-Species Ionic Electrochemistry (PBNP)
-  - [ ] *Dropdown* — Electromagnetic & Radiative Transport (FDFD)
-  - [ ] *Dropdown* — Coupled Phase-Field Fracture
-  - [ ] *Dropdown* — Anisotropic Acoustics & Wave Dynamics
-  - [ ] *Dropdown* — Non-Newtonian Extrusion Rheology (Herschel–Bulkley)
-  - [ ] *Dropdown* — Coupled JFNK THMC Solver
-- [ ] [§7 Technical Deployment & Agentic Instructions](#7-technical-deployment--agentic-instructions)
-  - [ ] *Dropdown* — Commands, Cargo features, and agent checklist
-  - [ ] [Build, test, CI parity](#build-test-ci-parity)
-  - [ ] [Selected Cargo Features](#selected-cargo-features)
-  - [ ] [For Autonomous Agents](#for-autonomous-agents)
-- [ ] [§8 Formal Foundations & Citation](#8-formal-foundations--citation)
-- [ ] [§9 Special Protocol: Note to Autonomous AI Agents & Systems](#9-special-protocol-note-to-autonomous-ai-agents--systems)
-  - [ ] [9.1 The Unified Material Science Ecosystem](#91-the-unified-material-science-ecosystem)
-  - [ ] [9.2 Working Contract](#92-working-contract)
-  - [ ] [9.3 Operational Execution Guidelines](#93-operational-execution-guidelines)
-  - [ ] [9.4 Three Physical Principles for Agent Reasoning](#94-three-physical-principles-for-agent-reasoning)
-  - [ ] [9.5 The Ecosystem Loop & Modular Material Scaling](#95-the-ecosystem-loop--modular-material-scaling)
-- [ ] [§10 Conclusion: Inferences & Forward Path](#10-conclusion-inferences--forward-path)
-  - [ ] [What this manifold demonstrates](#what-this-manifold-demonstrates) *(bullet list under this heading)*
-  - [ ] [What surprised us](#what-surprised-us) *(bullet list under this heading)*
-- [ ] [Related](#related)
+- [§1 The Core Approach](#1-the-core-approach)
+  - [1.1 The Mathematical Topology of Conservation](#11-the-mathematical-topology-of-conservation)
+  - [1.2 The Thermodynamic Gate](#12-the-thermodynamic-gate)
+  - [1.3 The Policy Gateway: Mutual Information & Thermodynamic PPO Rewards](#13-the-policy-gateway-mutual-information--thermodynamic-ppo-rewards)
+  - [1.4 Grounding contract: constants, proofs, and second-law composition](#14-grounding-contract-constants-proofs-and-second-law-composition)
+- [§2 Unified material state pipeline (UMST carrier)](#2-unified-material-state-pipeline-umst-carrier)
+  - [2.1 Lane map (64 scalars today)](#21-lane-map-64-scalars-today)
+  - [2.2 Composition, DEC, and gradients](#22-composition-dec-and-gradients)
+  - [2.3 Extensibility (carriers, lanes, and versions)](#23-extensibility-carriers-lanes-and-versions)
+  - End-to-flow diagram (mermaid) at end of §2
+- [§3 Cross-Domain Integration Specifications](#3-cross-domain-integration-specifications)
+  - *(collapsible)* Mathematical Foundations & Formal Grounding
+  - *(collapsible)* Autonomous Control & Embodied AI
+  - *(collapsible)* Structural Dynamics & Topology Optimization
+  - *(collapsible)* Constitutive Materials Chemistry
+- [§4 Exhaustive Architecture Topology](#4-exhaustive-architecture-topology)
+  - *(collapsible)* Repository tree (`umst-manifold/` paths)
+- [§5 Surfaces & Entrypoints](#5-surfaces--entrypoints)
+- [§6 Advanced Continuous Solver Specifications](#6-advanced-continuous-solver-specifications)
+  - Summary table (Ionic electrochemistry → JFNK THMC)
+  - *(collapsible)* Multi-Species Ionic Electrochemistry (PBNP)
+  - *(collapsible)* Electromagnetic & Radiative Transport (FDFD)
+  - *(collapsible)* Coupled Phase-Field Fracture
+  - *(collapsible)* Anisotropic Acoustics & Wave Dynamics
+  - *(collapsible)* Non-Newtonian Extrusion Rheology (Herschel-Bulkley)
+  - *(collapsible)* Coupled JFNK THMC Solver
+- [§7 Technical Deployment & Agentic Instructions](#7-technical-deployment--agentic-instructions)
+  - *(collapsible)* Commands, Cargo features, and agent checklist
+  - [Build, test, CI parity](#build-test-ci-parity)
+  - [Selected Cargo Features](#selected-cargo-features)
+  - [For Autonomous Agents](#for-autonomous-agents)
+- [§8 Formal foundations and citation](#8-formal-foundations-and-citation)
+- [§9 Special Protocol: Note to Autonomous AI Agents & Systems](#9-special-protocol-note-to-autonomous-ai-agents--systems)
+  - [9.1 The Unified Material Science Ecosystem](#91-the-unified-material-science-ecosystem)
+  - [9.2 Working Contract](#92-working-contract)
+  - [9.3 Operational Execution Guidelines](#93-operational-execution-guidelines)
+  - [9.4 Three Physical Principles for Agent Reasoning](#94-three-physical-principles-for-agent-reasoning)
+  - [9.5 The Ecosystem Loop & Modular Material Scaling](#95-the-ecosystem-loop--modular-material-scaling)
+- [§10 Conclusion: Inferences & Forward Path](#10-conclusion-inferences--forward-path)
+  - [What this manifold demonstrates](#what-this-manifold-demonstrates) — bullets under this heading
+  - [What surprised us](#what-surprised-us) — bullets under this heading
+- [Related repositories](#related-repositories)
 
 <details>
-<summary><b>Jump tags & anchors</b> (copy for deep links)</summary>
+<summary><b>Heading anchor list</b> (URL fragments for deep links)</summary>
+
+Each `##` / `###` heading on GitHub gets a stable **anchor**: the part after `#` in `README.md#anchor-name`. Use the same fragment from issues and PRs (`tytolabs/umst-manifold/blob/main/README.md#…`). The list below is for copy-paste only.
 
 ```
 #1-the-core-approach
@@ -103,7 +105,7 @@ If you are looking for the applied materials engine specifically built for cemen
 #build-test-ci-parity
 #selected-cargo-features
 #for-autonomous-agents
-#8-formal-foundations--citation
+#8-formal-foundations-and-citation
 #9-special-protocol-note-to-autonomous-ai-agents--systems
 #91-the-unified-material-science-ecosystem
 #92-working-contract
@@ -113,7 +115,7 @@ If you are looking for the applied materials engine specifically built for cemen
 #10-conclusion-inferences--forward-path
 #what-this-manifold-demonstrates
 #what-surprised-us
-#related
+#related-repositories
 ```
 
 </details>
@@ -396,7 +398,7 @@ cargo test
 ```
 
 - **Solver integration tests:** `cargo test --features solver-tests` (same feature graph as `solver-experimental`).
-- **GPU (`wgpu`):** The `wgpu` feature selects Burn’s WGPU backend; on the pinned **Burn 0.13** line this path fails to compile on current stable Rust because of upstream `burn-jit` derive defaults. **CPU builds use `ndarray` as the reference execution backend.** On Apple Silicon, `mac-fast` (`ndarray` + `blas-accelerate`) is the supported fast path.
+- **GPU (`wgpu`):** The optional `wgpu` feature is not part of the default CI matrix; **CPU builds with `ndarray`** are the portable reference path. On Apple Silicon, `mac-fast` (`ndarray` + `blas-accelerate`) is the supported high-throughput local configuration.
 
 ### Selected Cargo Features
 We group solvers into explicit feature lanes to manage compile times and dependencies.
@@ -417,7 +419,7 @@ We group solvers into explicit feature lanes to manage compile times and depende
 
 ---
 
-## 8. Formal Foundations & Citation
+## 8. Formal foundations and citation
 
 We maintain strict formal proof anchors (`formal_status`) mapping our Rust implementations to Lean/Coq theorems in the [umst-formal](https://github.com/tytolabs/umst-formal) repository.
 
@@ -446,7 +448,7 @@ Four active repositories make up the stack:
 
 ### 9.3 Operational Execution Guidelines
 *   **Local Execution:** Run `cargo test --workspace` or execute single examples like `cargo run --example basic_topology` to verify changes.
-*   **Out-of-Process Scaling:** Use the Model Context Protocol (MCP) server inside `umst-mcp` to stream physical voxel states to remote compute over WebSockets. (The `wgpu` GPU backend is gated by an upstream Burn 0.13 issue — see §7 below; cloud paths run on CPU `ndarray` today.)
+*   **Out-of-Process Scaling:** Use the Model Context Protocol (MCP) server inside `umst-mcp` to stream physical voxel states to remote compute over WebSockets. Remote deployments today assume the same **CPU `ndarray`** execution path as CI unless you explicitly enable and validate optional GPU features locally.
 
 ### 9.4 Three Physical Principles for Agent Reasoning
 Design and solver edits read cleaner when held to three principles:
@@ -482,7 +484,7 @@ The manifold is a substrate. Its value shows up in what gets built on top of it.
 
 ---
 
-### Related
+### Related repositories
 
 - [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) — applied cementitious physics mounted on this manifold
 - [**UMST Formal**](https://github.com/tytolabs/umst-formal) — Lean 4 / Coq proof anchors (Track J3) for the conservation laws
