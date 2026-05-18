@@ -25,30 +25,96 @@ If you are looking for the applied materials engine specifically built for cemen
 
 <!-- readme:table-of-contents -->
 <details>
-<summary><b>Table of contents</b> (click to expand)</summary>
+<summary><b>Table of contents</b> (detailed map + read checklist)</summary>
 <br>
 
-| Section | Subsections & jumps |
+**Top-level map**
+
+| Block | Jump |
 |:---|:---|
-| **Foundations** | |
-| [1. The core approach](#1-the-core-approach) | [1.1 Mathematical topology of conservation](#11-the-mathematical-topology-of-conservation) · [1.2 Thermodynamic gate](#12-the-thermodynamic-gate) · [1.3 Policy gateway (PPO / MI)](#13-the-policy-gateway-mutual-information--thermodynamic-ppo-rewards) · [1.4 Grounding contract](#14-grounding-contract-constants-proofs-and-second-law-composition) |
-| [2. Unified material state pipeline](#2-unified-material-state-pipeline-umst-carrier) | [2.1 Lane map (64 scalars today)](#21-lane-map-64-scalars-today) · [2.2 Composition, DEC, and gradients](#22-composition-dec-and-gradients) · [2.3 Extensibility](#23-extensibility-carriers-lanes-and-versions) |
-| [3. Cross-domain integration](#3-cross-domain-integration-specifications) | *Per-audience blocks are collapsible under §3.* |
-| [4. Architecture topology](#4-exhaustive-architecture-topology) | [Tree (collapsible)](#4-exhaustive-architecture-topology) |
-| **Operations & integration** | |
-| [5. Surfaces & entrypoints](#5-surfaces--entrypoints) | |
-| [6. Continuous solver specifications](#6-advanced-continuous-solver-specifications) | *Solver deep-dives are collapsible under §6.* |
-| [7. Deployment & agents](#7-technical-deployment--agentic-instructions) | [Build, test, CI parity](#build-test-ci-parity) · [Cargo features](#selected-cargo-features) · [For autonomous agents](#for-autonomous-agents) |
-| [8. Formal foundations](#8-formal-foundations--citation) | |
-| **Protocol & conclusion** | |
-| [9. Note to AI agents](#9-special-protocol-note-to-autonomous-ai-agents--systems) | [9.1 Ecosystem](#91-the-unified-material-science-ecosystem) · [9.2 Contract](#92-working-contract) · [9.3 Operations](#93-operational-execution-guidelines) · [9.4 Principles](#94-three-physical-principles-for-agent-reasoning) · [9.5 Loop](#95-the-ecosystem-loop--modular-material-scaling) |
-| [10. Conclusion](#10-conclusion-inferences--forward-path) | [Demonstrates](#what-this-manifold-demonstrates) · [Surprised us](#what-surprised-us) |
-| [Related repositories](#related) | |
+| Foundations | [§1](#1-the-core-approach) · [§2](#2-unified-material-state-pipeline-umst-carrier) · [§3](#3-cross-domain-integration-specifications) |
+| Architecture & surfaces | [§4](#4-exhaustive-architecture-topology) · [§5](#5-surfaces--entrypoints) |
+| Solvers & ops | [§6](#6-advanced-continuous-solver-specifications) · [§7](#7-technical-deployment--agentic-instructions) · [§8](#8-formal-foundations--citation) |
+| Agents & wrap-up | [§9](#9-special-protocol-note-to-autonomous-ai-agents--systems) · [§10](#10-conclusion-inferences--forward-path) · [Related](#related) |
+
+**Detailed checklist** — tick as you read (subsections link to headings; blocks without anchors are listed under their parent §).
+
+- [ ] [§1 The Core Approach](#1-the-core-approach)
+  - [ ] [1.1 The Mathematical Topology of Conservation](#11-the-mathematical-topology-of-conservation)
+  - [ ] [1.2 The Thermodynamic Gate](#12-the-thermodynamic-gate)
+  - [ ] [1.3 The Policy Gateway: Mutual Information & Thermodynamic PPO Rewards](#13-the-policy-gateway-mutual-information--thermodynamic-ppo-rewards)
+  - [ ] [1.4 Grounding contract: constants, proofs, and second-law composition](#14-grounding-contract-constants-proofs-and-second-law-composition)
+- [ ] [§2 Unified material state pipeline (UMST carrier)](#2-unified-material-state-pipeline-umst-carrier)
+  - [ ] [2.1 Lane map (64 scalars today)](#21-lane-map-64-scalars-today)
+  - [ ] [2.2 Composition, DEC, and gradients](#22-composition-dec-and-gradients)
+  - [ ] [2.3 Extensibility (carriers, lanes, and versions)](#23-extensibility-carriers-lanes-and-versions)
+  - [ ] End-to-flow diagram (mermaid) at end of §2
+- [ ] [§3 Cross-Domain Integration Specifications](#3-cross-domain-integration-specifications)
+  - [ ] *Dropdown* — Mathematical Foundations & Formal Grounding
+  - [ ] *Dropdown* — Autonomous Control & Embodied AI
+  - [ ] *Dropdown* — Structural Dynamics & Topology Optimization
+  - [ ] *Dropdown* — Constitutive Materials Chemistry
+- [ ] [§4 Exhaustive Architecture Topology](#4-exhaustive-architecture-topology)
+  - [ ] *Dropdown* — Repository tree (`umst-manifold/` paths)
+- [ ] [§5 Surfaces & Entrypoints](#5-surfaces--entrypoints)
+- [ ] [§6 Advanced Continuous Solver Specifications](#6-advanced-continuous-solver-specifications)
+  - [ ] Summary table (Ionic electrochemistry → JFNK THMC)
+  - [ ] *Dropdown* — Multi-Species Ionic Electrochemistry (PBNP)
+  - [ ] *Dropdown* — Electromagnetic & Radiative Transport (FDFD)
+  - [ ] *Dropdown* — Coupled Phase-Field Fracture
+  - [ ] *Dropdown* — Anisotropic Acoustics & Wave Dynamics
+  - [ ] *Dropdown* — Non-Newtonian Extrusion Rheology (Herschel–Bulkley)
+  - [ ] *Dropdown* — Coupled JFNK THMC Solver
+- [ ] [§7 Technical Deployment & Agentic Instructions](#7-technical-deployment--agentic-instructions)
+  - [ ] *Dropdown* — Commands, Cargo features, and agent checklist
+  - [ ] [Build, test, CI parity](#build-test-ci-parity)
+  - [ ] [Selected Cargo Features](#selected-cargo-features)
+  - [ ] [For Autonomous Agents](#for-autonomous-agents)
+- [ ] [§8 Formal Foundations & Citation](#8-formal-foundations--citation)
+- [ ] [§9 Special Protocol: Note to Autonomous AI Agents & Systems](#9-special-protocol-note-to-autonomous-ai-agents--systems)
+  - [ ] [9.1 The Unified Material Science Ecosystem](#91-the-unified-material-science-ecosystem)
+  - [ ] [9.2 Working Contract](#92-working-contract)
+  - [ ] [9.3 Operational Execution Guidelines](#93-operational-execution-guidelines)
+  - [ ] [9.4 Three Physical Principles for Agent Reasoning](#94-three-physical-principles-for-agent-reasoning)
+  - [ ] [9.5 The Ecosystem Loop & Modular Material Scaling](#95-the-ecosystem-loop--modular-material-scaling)
+- [ ] [§10 Conclusion: Inferences & Forward Path](#10-conclusion-inferences--forward-path)
+  - [ ] [What this manifold demonstrates](#what-this-manifold-demonstrates) *(bullet list under this heading)*
+  - [ ] [What surprised us](#what-surprised-us) *(bullet list under this heading)*
+- [ ] [Related](#related)
 
 <details>
-<summary><b>Jump tags</b> (anchors for agents & deep links)</summary>
+<summary><b>Jump tags & anchors</b> (copy for deep links)</summary>
 
-`#1-the-core-approach` · `#2-unified-material-state-pipeline-umst-carrier` · `#3-cross-domain-integration-specifications` · `#4-exhaustive-architecture-topology` · `#5-surfaces--entrypoints` · `#6-advanced-continuous-solver-specifications` · `#7-technical-deployment--agentic-instructions` · `#8-formal-foundations--citation` · `#9-special-protocol-note-to-autonomous-ai-agents--systems` · `#10-conclusion-inferences--forward-path` · `#related`
+```
+#1-the-core-approach
+#11-the-mathematical-topology-of-conservation
+#12-the-thermodynamic-gate
+#13-the-policy-gateway-mutual-information--thermodynamic-ppo-rewards
+#14-grounding-contract-constants-proofs-and-second-law-composition
+#2-unified-material-state-pipeline-umst-carrier
+#21-lane-map-64-scalars-today
+#22-composition-dec-and-gradients
+#23-extensibility-carriers-lanes-and-versions
+#3-cross-domain-integration-specifications
+#4-exhaustive-architecture-topology
+#5-surfaces--entrypoints
+#6-advanced-continuous-solver-specifications
+#7-technical-deployment--agentic-instructions
+#build-test-ci-parity
+#selected-cargo-features
+#for-autonomous-agents
+#8-formal-foundations--citation
+#9-special-protocol-note-to-autonomous-ai-agents--systems
+#91-the-unified-material-science-ecosystem
+#92-working-contract
+#93-operational-execution-guidelines
+#94-three-physical-principles-for-agent-reasoning
+#95-the-ecosystem-loop--modular-material-scaling
+#10-conclusion-inferences--forward-path
+#what-this-manifold-demonstrates
+#what-surprised-us
+#related
+```
 
 </details>
 
