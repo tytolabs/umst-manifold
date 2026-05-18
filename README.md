@@ -5,6 +5,7 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 # UMST Manifold: The Universal Physics Board
 
+<!-- readme:status -->
 [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Formal Status](https://img.shields.io/badge/Formal_Verification-Track_J3-blue.svg)](docs/PROOF-STATUS.md)
@@ -18,30 +19,38 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 If you are looking for the applied materials engine specifically built for cementitious systems (concrete design, 3D printing, structural topology), see the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) repository. 
 
-![UMST 64-Tensor Pipeline (Light)](docs/assets/fig1_teaser.png#gh-light-mode-only)
-![UMST 64-Tensor Pipeline (Dark)](docs/assets/fig1_teaser_dark.png#gh-dark-mode-only)
+<!-- readme:hero-figure -->
+![UMST unified state pipeline — UMST carrier (light)](docs/assets/fig1_teaser.png#gh-light-mode-only)
+![UMST unified state pipeline — UMST carrier (dark)](docs/assets/fig1_teaser_dark.png#gh-dark-mode-only)
 
-
+<!-- readme:table-of-contents -->
 <details>
-<summary><b>Table of Contents</b></summary>
+<summary><b>Table of contents</b> (click to expand)</summary>
 <br>
 
-| Section | Subsections |
+| Section | Subsections & jumps |
 |:---|:---|
 | **Foundations** | |
-| [1. The Core Approach](#1-the-core-approach) | [Mathematical Topology of Conservation](#11-the-mathematical-topology-of-conservation) · [Thermodynamic Gate](#12-the-thermodynamic-gate) · [Policy Gateway](#13-the-policy-gateway-mutual-information--thermodynamic-ppo-rewards) |
-| [2. The 64-Channel State Pipeline](#2-the-64-channel-state-pipeline) | |
-| [3. Cross-Domain Integration Specifications](#3-cross-domain-integration-specifications) | |
-| [4. Exhaustive Architecture Topology](#4-exhaustive-architecture-topology) | |
-| **Operations & Integration** | |
-| [5. Surfaces & Entrypoints](#5-surfaces--entrypoints) | |
-| [6. Advanced Continuous Solver Specifications](#6-advanced-continuous-solver-specifications) | |
-| [7. Technical Deployment & Agentic Instructions](#7-technical-deployment--agentic-instructions) | [Build, test, CI parity](#build-test-ci-parity) · [Selected Cargo Features](#selected-cargo-features) · [For Autonomous Agents](#for-autonomous-agents) |
-| [8. Formal Foundations & Citation](#8-formal-foundations--citation) | |
-| **Protocol & Conclusion** | |
-| [9. Special Protocol: Note to AI Agents](#9-special-protocol-note-to-autonomous-ai-agents--systems) | [Ecosystem](#91-the-unified-material-science-ecosystem) · [Working Contract](#92-working-contract) · [Operational Guidelines](#93-operational-execution-guidelines) · [Three Principles](#94-three-physical-principles-for-agent-reasoning) · [Ecosystem Loop](#95-the-ecosystem-loop--modular-material-scaling) |
-| [10. Conclusion: Inferences & Forward Path](#10-conclusion-inferences--forward-path) | [What this manifold demonstrates](#what-this-manifold-demonstrates) · [What surprised us](#what-surprised-us) |
+| [1. The core approach](#1-the-core-approach) | [1.1 Mathematical topology of conservation](#11-the-mathematical-topology-of-conservation) · [1.2 Thermodynamic gate](#12-the-thermodynamic-gate) · [1.3 Policy gateway (PPO / MI)](#13-the-policy-gateway-mutual-information--thermodynamic-ppo-rewards) |
+| [2. Unified material state pipeline](#2-unified-material-state-pipeline-umst-carrier) | [2.1 Lane map (64 scalars today)](#21-lane-map-64-scalars-today) · [2.2 Composition, DEC, and gradients](#22-composition-dec-and-gradients) · [2.3 Extensibility](#23-extensibility-carriers-lanes-and-versions) |
+| [3. Cross-domain integration](#3-cross-domain-integration-specifications) | *Per-audience blocks are collapsible under §3.* |
+| [4. Architecture topology](#4-exhaustive-architecture-topology) | [Tree (collapsible)](#4-exhaustive-architecture-topology) |
+| **Operations & integration** | |
+| [5. Surfaces & entrypoints](#5-surfaces--entrypoints) | |
+| [6. Continuous solver specifications](#6-advanced-continuous-solver-specifications) | *Solver deep-dives are collapsible under §6.* |
+| [7. Deployment & agents](#7-technical-deployment--agentic-instructions) | [Build, test, CI parity](#build-test-ci-parity) · [Cargo features](#selected-cargo-features) · [For autonomous agents](#for-autonomous-agents) |
+| [8. Formal foundations](#8-formal-foundations--citation) | |
+| **Protocol & conclusion** | |
+| [9. Note to AI agents](#9-special-protocol-note-to-autonomous-ai-agents--systems) | [9.1 Ecosystem](#91-the-unified-material-science-ecosystem) · [9.2 Contract](#92-working-contract) · [9.3 Operations](#93-operational-execution-guidelines) · [9.4 Principles](#94-three-physical-principles-for-agent-reasoning) · [9.5 Loop](#95-the-ecosystem-loop--modular-material-scaling) |
+| [10. Conclusion](#10-conclusion-inferences--forward-path) | [Demonstrates](#what-this-manifold-demonstrates) · [Surprised us](#what-surprised-us) |
 | [Related repositories](#related) | |
+
+<details>
+<summary><b>Jump tags</b> (anchors for agents & deep links)</summary>
+
+`#1-the-core-approach` · `#2-unified-material-state-pipeline-umst-carrier` · `#3-cross-domain-integration-specifications` · `#4-exhaustive-architecture-topology` · `#5-surfaces--entrypoints` · `#6-advanced-continuous-solver-specifications` · `#7-technical-deployment--agentic-instructions` · `#8-formal-foundations--citation` · `#9-special-protocol-note-to-autonomous-ai-agents--systems` · `#10-conclusion-inferences--forward-path` · `#related`
+
+</details>
 
 </details>
 
@@ -90,11 +99,23 @@ We use exact adjoint gradients—running the simulation backwards through time�
 
 ---
 
-## 2. The 64-Channel State Pipeline
+## 2. Unified material state pipeline (UMST carrier)
 
-The manifold maps physical attributes onto a multi-dimensional state tensor consisting of 64 channels. This unified data structure represents local thermodynamic variables, stresses, concentrations, and chemical kinetics at every single spatial node. 
+The **UMST carrier** is the fixed-width tensor bundle that flows across DEC, continuous solvers, and the thermodynamic gate. **Today’s default implementation uses 64 scalar lanes per voxel** (`src/core/tensors.rs`) so thermal, mechanical, chemical, and informational fields co-resolve in one differentiable pass. That width is a **deployment contract**, not a limit on physics: new cartridges and schema revisions can remap lane semantics, add gated feature lanes, or grow width in a coordinated release while keeping the same *pipeline shape* (allocate → DEC → solvers → gate → trajectory).
 
-The pipeline ensures that the physical states transition compositionally while maintaining strict, gradient-based backpropagation through time:
+### 2.1 Lane map (64 scalars today)
+
+Each spatial degree of freedom carries the full local state vector. The number **64** is the current packed layout for the unified material state tensor on this repo’s default build; treat it as **versioned** alongside `IScienceCartridge` and downstream mix/cartridge schemas rather than as a hard-coded law of nature.
+
+### 2.2 Composition, DEC, and gradients
+
+States transition **compositionally**: exterior calculus enforces discrete conservation, continuous solvers lift local constitutive physics, and the thermodynamic gate admits or rejects transitions before they commit. The whole path stays on the autodiff graph so adjoints and PPO-style observers see a single connected trajectory.
+
+### 2.3 Extensibility (carriers, lanes, and versions)
+
+**Cartridges** (cementitious, metallic, polymer, …) plug in through **`IScienceCartridge`**: they supply closures and parameters without forking the DEC substrate. **Lane maps** stay explicit in code and docs so CI and formal anchors know which scalars participate in which solver. When you extend the stack, prefer **additive lanes + schema bumps** over silent reinterpretation of existing indices.
+
+End-to-end flow (same diagram as before; labels read “UMST carrier” in prose above):
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://mermaid.ink/svg/eyJjb2RlIjoiZ3JhcGggVERcbiAgICBzdWJncmFwaCBcIjEuIElOUFVUICYgQk9VTkRBUlkgKElTY2llbmNlQ2FydHJpZGdlKVwiXG4gICAgICAgIEFbXCJNYXRlcmlhbCBSZWNpcGUgKHcpXCJdIC0tPiBDW1wiNjQtQ2hhbm5lbCBTdGF0ZSBUZW5zb3IgQWxsb2NhdGlvblwiXVxuICAgICAgICBCW1wiU3BhdGlhbCBHZW9tZXRyeSAoVm94ZWwgQ2VsbHMpXCJdIC0tPiBDXG4gICAgZW5kXG4gICAgc3ViZ3JhcGggXCIyLiBNQVRIRU1BVElDQUwgU1VCU1RSQVRFIChEaXNjcmV0ZSBFeHRlcmlvciBDYWxjdWx1cylcIlxuICAgICAgICBDIC0tPiBEW1wiQ29jaGFpbiBDb21wbGV4IE1hcHBpbmc8YnIvPihkXHUyMjE4ZCA9IDApXCJdXG4gICAgICAgIEQgLS0-IEVbXCJDb250aW51b3VzIFBoeXNpY2FsIFNvbHZlcnM8YnIvPihzcmMvcGh5c2ljcy9zb2x2ZXJzLylcIl1cbiAgICBlbmRcbiAgICBzdWJncmFwaCBcIjMuIENIRUNLUE9JTlQgJiBDT05WRVJHRU5DRVwiXG4gICAgICAgIEUgLS0-IEZbXCJUaGVybW9keW5hbWljIENCRjxici8-KEVudHJvcHkgR2F0ZSAmIExhbmRhdWVyIExpbWl0KVwiXVxuICAgICAgICBGIC0tPnxBY2NlcHR8IEdbXCJEaWZmZXJlbnRpYWJsZTxici8-U3RhdGUgVHJhamVjdG9yeVwiXVxuICAgICAgICBGIC0tPnxSZWplY3R8IEhbXCJIYXJkIFJlc2V0IC88YnIvPkFjdGlvbiBGaWx0ZXJcIl1cbiAgICBlbmRcbiAgICBzdWJncmFwaCBcIjQuIE9QVElNSVpBVElPTiAmIENPTlRST0xcIlxuICAgICAgICBHIC0tPiBJW1wiQWRqb2ludCBOZXVyYWwgT0RFPGJyLz4oTygxKSBNZW1vcnkgQmFja3Byb3ApXCJdXG4gICAgICAgIEkgLS0-fFRyYWNlcyBTZW5zaXRpdml0eXwgQVxuICAgICAgICBJIC0tPnxBZGp1c3RzIEdlb21ldHJ5fCBCXG4gICAgZW5kIiwibWVybWFpZCI6IntcInRoZW1lXCI6IFwiZGFya1wifSJ9"><img alt="1. INPUT & BOUNDARY (IScienceCartridge)" src="https://mermaid.ink/svg/eyJjb2RlIjoiZ3JhcGggVERcbiAgICBzdWJncmFwaCBcIjEuIElOUFVUICYgQk9VTkRBUlkgKElTY2llbmNlQ2FydHJpZGdlKVwiXG4gICAgICAgIEFbXCJNYXRlcmlhbCBSZWNpcGUgKHcpXCJdIC0tPiBDW1wiNjQtQ2hhbm5lbCBTdGF0ZSBUZW5zb3IgQWxsb2NhdGlvblwiXVxuICAgICAgICBCW1wiU3BhdGlhbCBHZW9tZXRyeSAoVm94ZWwgQ2VsbHMpXCJdIC0tPiBDXG4gICAgZW5kXG4gICAgc3ViZ3JhcGggXCIyLiBNQVRIRU1BVElDQUwgU1VCU1RSQVRFIChEaXNjcmV0ZSBFeHRlcmlvciBDYWxjdWx1cylcIlxuICAgICAgICBDIC0tPiBEW1wiQ29jaGFpbiBDb21wbGV4IE1hcHBpbmc8YnIvPihkXHUyMjE4ZCA9IDApXCJdXG4gICAgICAgIEQgLS0-IEVbXCJDb250aW51b3VzIFBoeXNpY2FsIFNvbHZlcnM8YnIvPihzcmMvcGh5c2ljcy9zb2x2ZXJzLylcIl1cbiAgICBlbmRcbiAgICBzdWJncmFwaCBcIjMuIENIRUNLUE9JTlQgJiBDT05WRVJHRU5DRVwiXG4gICAgICAgIEUgLS0-IEZbXCJUaGVybW9keW5hbWljIENCRjxici8-KEVudHJvcHkgR2F0ZSAmIExhbmRhdWVyIExpbWl0KVwiXVxuICAgICAgICBGIC0tPnxBY2NlcHR8IEdbXCJEaWZmZXJlbnRpYWJsZTxici8-U3RhdGUgVHJhamVjdG9yeVwiXVxuICAgICAgICBGIC0tPnxSZWplY3R8IEhbXCJIYXJkIFJlc2V0IC88YnIvPkFjdGlvbiBGaWx0ZXJcIl1cbiAgICBlbmRcbiAgICBzdWJncmFwaCBcIjQuIE9QVElNSVpBVElPTiAmIENPTlRST0xcIlxuICAgICAgICBHIC0tPiBJW1wiQWRqb2ludCBOZXVyYWwgT0RFPGJyLz4oTygxKSBNZW1vcnkgQmFja3Byb3ApXCJdXG4gICAgICAgIEkgLS0-fFRyYWNlcyBTZW5zaXRpdml0eXwgQVxuICAgICAgICBJIC0tPnxBZGp1c3RzIEdlb21ldHJ5fCBCXG4gICAgZW5kIiwibWVybWFpZCI6IntcInRoZW1lXCI6IFwiZGVmYXVsdFwifSJ9" style="max-width:100%;height:auto"></picture></p>
 
@@ -139,7 +160,7 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 
 *   **Domain Focus:** Custom multi-physics coupling, chemical kinetics, and localized state evolution.
 
-*   **Solver Composition:** Inherits the `IScienceCartridge` interface to define localized constitutive relations mapped directly onto the 64-channel Unified Material State Tensor.
+*   **Solver Composition:** Inherits the `IScienceCartridge` interface to define localized constitutive relations mapped directly onto the **64-lane UMST carrier** (unified material state tensor; width is versioned — see [§2](#2-unified-material-state-pipeline-umst-carrier)).
 
 *   **Computational Outcome:** Synchronous, coupled solver execution where thermal, chemical, and mechanical variables react concurrently within single tensor operations, automatically inheriting the manifold's spatial gradients.
 </details>
@@ -150,12 +171,15 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 
 The repository is organized functionally — each file maps to a specific role in the solver, gate, or verification pipeline.
 
+<details>
+<summary><b>Repository tree</b> (paths & roles)</summary>
+
 ```text
 umst-manifold/
 ├── Cargo.toml               # The core Rust manifest and feature lane flags.
 ├── src/
 │   ├── core/                # Foundational tensors and traits.
-│   │   ├── tensors.rs       # The 64-channel UMST: The data structure holding heat, stress, and chemistry simultaneously.
+│   │   ├── tensors.rs       # UMST carrier (64 lanes today): packed local state for heat, stress, chemistry, etc.
 │   │   ├── traits.rs        # IScienceCartridge: plugin interface that lets domain chemistry inherit the manifold's gradients.
 │   │   └── emergence.rs     # Dissipation diagnostics: Computes local thermodynamic dissipation fields and entropy production rates as sheaf-theoretic sections over the graph, rejecting non-positive definite updates.
 │   ├── physics/             # The exact DEC solvers.
@@ -181,6 +205,8 @@ umst-manifold/
     ├── Solver-Status.md            # Completion status of every physics solver, with verification flags.
     └── PROOF-STATUS.md             # Formal Coq/Lean proof anchors for the mathematicians.
 ```
+
+</details>
 
 ---
 
@@ -286,6 +312,9 @@ If you are an application engineer, architect, or data scientist looking for Pyt
 
 If you are building atop the Manifold, here is the technical deployment reference:
 
+<details>
+<summary><b>Commands, Cargo features, and agent checklist</b></summary>
+
 ### Build, test, CI parity
 ```bash
 cd umst-manifold
@@ -310,6 +339,8 @@ We group solvers into explicit feature lanes to manage compile times and depende
 - **Repo root:** treat the checkout directory of this repository as the working root for all `cargo` / `python3` commands.
 - **Safe, no-GPU commands:** `cargo build`, `cargo test`, `cargo test --features solver-stable`, `cargo run --example basic_topology`, `python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set`.
 - **Before editing:** scan [`docs/Solver-Status.md`](docs/Solver-Status.md) and run `check_solver_status.py` before changing solver feature tables or `#[cfg(feature = "...")]` blocks.
+
+</details>
 
 ---
 
@@ -362,13 +393,13 @@ New physical domains plug in by implementing **`IScienceCartridge`** — no mani
 
 ### What this manifold demonstrates
 - **Conservation by construction, not by tuning.** Mapping physics onto a discrete exterior calculus complex makes the boundary-of-a-boundary identity (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;d%20\circ%20d%20=%200"><img alt="d \circ d = 0" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;d%20\circ%20d%20=%200" style="vertical-align:middle"></picture>) a structural property of the data, not a convergence target. Drift that traditional FEM accumulates over long simulations is algebraically absent here.
-- **A single 64-channel state tensor is enough.** Thermal, mechanical, chemical, and informational variables co-resolve in one tensor pass instead of brittle staggered couplings. The downstream gain is gradient continuity end-to-end, which is what makes the adjoint loop tractable on commodity CPUs.
+- **A single 64-lane UMST carrier is enough.** Thermal, mechanical, chemical, and informational variables co-resolve in one tensor pass instead of brittle staggered couplings. The downstream gain is gradient continuity end-to-end, which is what makes the adjoint loop tractable on commodity CPUs.
 - **Safety as a runtime gate, not a post-hoc audit.** The Clausius–Duhem inequality and Landauer cost are evaluated *before* a state transition commits. A policy that violates them does not produce a logged warning; it does not produce a state at all.
 - **Formal anchoring closes the loop.** Each solver carries a Lean 4 / Coq theorem reference in `docs/PROOF-STATUS.md`, so a kernel change is invalid until the corresponding proof obligation is discharged in [`umst-formal`](https://github.com/tytolabs/umst-formal).
 
 ### What surprised us
 - **Architects can author a physics substrate.** Discrete Exterior Calculus has a reputation as a graduate-numerical-analysis specialty. It isn't. Once you stop fighting tensor-index notation and start thinking in cochains, the manifold reads like a parametric modifier graph — the same mental model architects already use. Two architects wrote and trained the kernel.
-- **Rust was the discipline we needed, not the speed.** Earlier prototypes in Python and JAX leaked gradients silently through monkey-patched operators; nothing alerted us until convergence quietly stopped meaning what we thought. Moving to Burn + Rust forced every kernel to declare its differentiability contract at the type level. Most of the *"MaOS works"* claim is downstream of compiler-checked variance, not algorithmic novelty.
+- **Rust was the discipline we needed, not the speed.** Earlier prototypes in Python and JAX leaked gradients silently through monkey-patched operators; nothing alerted us until convergence quietly stopped meaning what we thought. Moving to Burn + Rust forced every kernel to declare its differentiability contract at the type level. Most of the reliability we ship is downstream of compiler-checked variance and DEC admissibility, not algorithmic novelty.
 - **The hard part was orchestration, not the math.** 25 engines coexisting under `IScienceCartridge` only works because solver composition is a fold over a typed step graph, not a chain of side-effects. The largest single kernel diff of 2025 wasn't a new solver — it was rewriting orchestration.
 - **The CBF earned its keep as semantics, not certification.** Adding the thermodynamic gate to the *runtime* — rather than only to a post-hoc proof — changed what the program does, which proved more valuable than what it can prove. Rejected transitions don't become logged warnings; they cease to exist as state.
 - **Formal proofs anchor; they do not block.** Lean obligations live in [`umst-formal`](https://github.com/tytolabs/umst-formal) and document the kernel's invariants. Day-to-day kernel work doesn't wait on a Lean discharge — but the moment a kernel change breaks a proven invariant, the next CI run catches it. Anchor, not gate, turned out to be the productive pattern.
