@@ -12,15 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### 2026-05-29 closure (`main` @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437))
+### 2026-05-29 closure (wave pin [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437); narrative sync [`8b97af7`](https://github.com/tytolabs/umst-manifold/commit/8b97af7))
 
 Plain-language snapshot for this wave — read the bullets below for detail.
 
-- **God-grade stack** landed in [`2a28eb5`](https://github.com/tytolabs/umst-manifold/commit/2a28eb5) (unified catalog lock, gate evaluators, manifest/orchestrator, `verify_umst_stack.sh`, drift CI). Follow-up commits through **`fe22437`** fixed rustfmt, pinned-catalog fallbacks, W8 integration-test skips without a sibling cartridge checkout, and **clippy `-D warnings`** on CI stable (`manual_contains` in `witness_priority.rs`).
-- **Proof inventory pin:** **119 / 119** Lean modules; digest **`0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227`** (`0697014f…` in logs). This is a **fingerprint lock**, not “every module runs on the hot path.”
-- **In-repo automation:** **16 / 16** checklist rows green on last full `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` run (2026-05-29). That is **not** org publish and **not** hot-path 100% (**~26%** primary / **~15%** unified by design).
+- **God-grade stack** landed in [`2a28eb5`](https://github.com/tytolabs/umst-manifold/commit/2a28eb5) (unified catalog lock, gate evaluators, manifest/orchestrator, `verify_umst_stack.sh`, drift CI). Follow-up commits through **`fe22437`** fixed rustfmt, pinned-catalog fallbacks, W8 integration-test skips without a sibling cartridge checkout, and **clippy `-D warnings`** on CI stable (`manual_contains` in `witness_priority.rs`). Docs alignment for **G-02 closed** is [`8b97af7`](https://github.com/tytolabs/umst-manifold/commit/8b97af7).
+- **Proof inventory pin:** **119 / 119** Lean modules (dual-pin v2: primary fiber **69** + secondary **62**); digest **`0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227`** (`0697014f…` in logs). This is a **fingerprint lock**, not “every module runs on the hot path” — do **not** cite **69** as the live catalog module count.
+- **In-repo automation:** **16 / 16** checklist rows green on last full `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` run (2026-05-29). That is **not** the same as org-wide cartridge CI completion and **not** hot-path 100% (**~26%** primary / **~15%** unified by design).
 - **W8 Phase 1 — done:** manifest API and `manifest-bridge` surface are on **`main`** @ **`fe22437`**; manifold GitHub CI green ([run 26649667467](https://github.com/tytolabs/umst-manifold/actions/runs/26649667467)).
 - **G-02 — done (cartridge):** `umst-concrete-cartridge` pins git **`rev = fe22437`**, removes workspace `[patch]`, and runs `cargo test -p umst-concrete-cartridge --features manifest-bridge` in GHA — remote digest-grounded facade tests without monorepo sibling.
+- **Scoped blockers (v1):** **G-03** supercap remote `manifest-bridge` (optional) and **FFI** horizon (G-26); hot-path **~26%** remains by design.
 
 **Impact:** Unified **119-module** catalog export pins at build time (digest `0697014f…`); runtime gates reject inadmissible transitions without replaying Lean on the hot path — cartridges inherit digest parity via `manifest-bridge` / `IScienceCartridge`. Hot-path wiring remains **~26%** (18/69 primary) by design.
 
