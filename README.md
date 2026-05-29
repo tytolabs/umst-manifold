@@ -17,6 +17,12 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 **UMST Manifold** is a unified, differentiable physics engine. Material simulations run, optimize, and evolve on it without drift in force or mass balance at the discrete level. Built in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes its spatial physics to domain-specific material engines (concrete, metals, polymers) through the **`IScienceCartridge`** trait.
 
+
+<!-- readme:god-grade-status -->
+**Completion (verified 2026-05-21T21:58:12Z):** [single % table](docs/GOD_GRADE_PROGRESS_VERIFIED.md#headline-percentages-ssot--one-table) — plan **100%**, god-grade weighted **~84%**, this verify bundle **100%**. Master command: `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` ([`docs/COMPLETION_TRUTH.md`](docs/COMPLETION_TRUTH.md)).
+
+**Stack thread (catalog → manifold → cartridge):** [`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit) exports the **unified 119-module Lean catalog** (`cross_repo_merge: true`) → this repo pins `artifacts/catalog.lock.json` and runs DEC + god-grade witnesses → [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) and sibling [`umst-supercap-cartridge`](../umst-supercap-cartridge) mount domain physics on `IScienceCartridge`. Normative order and philosophy: [GOD_GRADE_WITNESS_LADDER § Proof library · gate law · MI envelope · no Rust axioms](docs/GOD_GRADE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms).
+
 If you are looking for the applied materials engine specifically built for cementitious systems (concrete design, 3D printing, structural topology), see the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) repository. 
 
 <!-- readme:hero-figure -->
@@ -398,6 +404,7 @@ cargo test
 ```
 
 - **Solver integration tests:** `cargo test --features solver-tests` (same feature graph as `solver-experimental`).
+- **Gate HTTP shim (`gate_server`):** `cargo test -p umst-manifold --features gate-server-bin --test gate_server_http` (also builds the `--bin gate_server` target via the same flag; **`gate-server`** forwards to **`gate-server-bin`**).
 - **GPU (`wgpu`):** The optional `wgpu` feature is not part of the default CI matrix; **CPU builds with `ndarray`** are the portable reference path. On Apple Silicon, `mac-fast` (`ndarray` + `blas-accelerate`) is the supported high-throughput local configuration.
 
 ### Selected Cargo Features
@@ -409,6 +416,22 @@ We group solvers into explicit feature lanes to manage compile times and depende
 | `mac-fast` | `ndarray` + `blas-accelerate` convenience bundle. |
 | `solver-stable`, `solver-research`, `solver-experimental`, `solver-tests` | Solver lane umbrellas. |
 | Granular solver flags | `fracture-at2`, `acoustics-newmark`, `thmc-coupled`, `electrochemistry-pnp`, `mechanics-adjoint` — single kernel pulls in `Cargo.toml`. |
+| `gate-server-bin` (+ alias `gate-server`) | Enables `cargo run … --bin gate_server` (`POST /gate` JSON); Powers/Parrott mix gate lives in **`crate::gate::http_manifest`**. |
+| `manifest-bridge` | Downstream hook for cartridges re-exporting `umst_manifold::manifest::*` (declare-only; verify on sibling cartridge). |
+| `manifold-manifest` | Typed manifest façade (`UmstManifest`, catalog hash advisory). |
+| `manifold-gate` | Transition gate trait surface for host/cartridge parity (pairs with `manifest-bridge` on concrete). |
+
+### Stack verification (`verify_umst_stack.sh`)
+
+From the crate root, gate parity and optional Lean export digest checks:
+
+```bash
+bash scripts/verify_umst_stack.sh
+export UMST_REQUIRE_FORMAL_EXPORT=1   # fail if umst-formal-double-slit export missing
+bash scripts/verify_umst_stack.sh
+```
+
+Monorepo layout: sibling `../umst-formal-double-slit` or `UMST_FORMAL_ROOT`. Full command matrix: [`docs/VERIFY.md`](docs/VERIFY.md). Workspace root shortcut: [`VERIFY.md`](../VERIFY.md) (MaOS-Workspace).
 
 ### For Autonomous Agents
 - **Repo root:** treat the checkout directory of this repository as the working root for all `cargo` / `python3` commands.
@@ -426,6 +449,23 @@ We maintain strict formal proof anchors (`formal_status`) mapping our Rust imple
 - **Notation and foundations:** [`docs/Mathematical-Foundations.md`](docs/Mathematical-Foundations.md)
 - **Solver lanes, verification paths:** [`docs/Solver-Status.md`](docs/Solver-Status.md)
 - **Formal proof index (Track J3):** [`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md)
+- **Developer verify matrix (CI parity):** [`docs/VERIFY.md`](docs/VERIFY.md)
+- **Claims vs proofs ledger (Lean ↔ `catalog_id` ↔ Rust):** [`docs/claims-vs-proofs.md`](docs/claims-vs-proofs.md)
+- **Formal integration status (module buckets, god-grade gaps):** [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md)
+- **Catalog ↔ Rust coverage audit:** [`docs/CATALOG_COVERAGE_AUDIT.md`](docs/CATALOG_COVERAGE_AUDIT.md)
+- **Compositional inference / gateway audit:** [`docs/COMPOSITIONAL_INFERENCE_AUDIT.md`](docs/COMPOSITIONAL_INFERENCE_AUDIT.md)
+- **God-grade witness ladder:** [`docs/GOD_GRADE_WITNESS_LADDER.md`](docs/GOD_GRADE_WITNESS_LADDER.md) — philosophy [§ Proof library · gate law · MI envelope · no Rust axioms](docs/GOD_GRADE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms)
+- **Formal export scope (sibling):** [`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`](../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md)
+- **Two-repo formal alignment (sibling):** [`../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md`](../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md)
+- **Supercap formal scaling (sibling):** [`../umst-supercap-cartridge/docs/FORMAL_SCALING.md`](../umst-supercap-cartridge/docs/FORMAL_SCALING.md)
+
+### Lean catalog lock (dual-pin — production **119** modules)
+
+**Production pin (manifold + formal):** digest `0697014fb5b90a3a…` · **119** modules · `cross_repo_merge: true` — see [`docs/GOD_GRADE_PROGRESS_VERIFIED.md`](docs/GOD_GRADE_PROGRESS_VERIFIED.md).
+
+**Historical primary-only pin:** digest `c1d9ba2aa402…` · **69** modules (pre–`formal-fiber-merge`; rollback documented in [`docs/FORMAL_FIBER_MERGE_RUNBOOK.md`](docs/FORMAL_FIBER_MERGE_RUNBOOK.md)).
+
+The manifold pins the exported Lean inventory from [`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit) in **`artifacts/catalog.lock.json`** (119 modules; digest enforced at build via `build.rs` → `UMST_CATALOG_LOCK_SHA256_HEX`). Canonical export: `umst-formal-double-slit/artifacts/catalog.json` (`make lean-catalog-export` with approved cross-repo merge). Override lock path at build: `UMST_CATALOG=/path/to/lock.json`. Status and handoffs: [`docs/AGENT_STATUS.md`](docs/AGENT_STATUS.md). Evidence appendices: [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md) (index) and the audit links above.
 
 ---
 
@@ -487,6 +527,7 @@ The manifold is a substrate. Its value shows up in what gets built on top of it.
 ### Related repositories
 
 - [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) — applied cementitious physics mounted on this manifold
+- [**UMST Supercap Cartridge**](../umst-supercap-cartridge) — structural supercap electrochemistry cartridge (monorepo sibling)
 - [**UMST Formal**](https://github.com/tytolabs/umst-formal) — Lean 4 / Coq proof anchors (Track J3) for the conservation laws
 - [**UMST Formal Double-Slit**](https://github.com/tytolabs/umst-formal-double-slit) — quantum-information proofs anchoring the Thermodynamic CBF
 

@@ -185,6 +185,8 @@ mod tests {
             node_positions: None,
             displacement_bc_mask: Tensor::<B, 3>::ones([1, n, 3], &dev),
             policy_editable_mask: Tensor::<B, 2>::ones([n, 1], &dev),
+            #[cfg(feature = "formal-witness")]
+            catalog_schema_digest: None,
         }
     }
 

@@ -32,8 +32,15 @@
 //! With the **`information_density`** crate feature, [`ManifoldGateway::eta`] adds
 //! **η · mean(information_density)** from the optional `information_density` field on [`PhysicalResult`]
 //! the same way. Default **η = 0** preserves the reward without that term.
+//!
+//! With **`formal-witness`**, [`Self::evaluate_topology_step`] (and [`Self::evaluate_topology_step_formal`])
+//! may reject transitions when gateway and UMST disagree on [`crate::core::tensors::UnifiedMaterialStateTensor::catalog_schema_digest`]
+//! (both sides must opt in via `Some(digest)`; with **`formal-witness`**, [`Self::new`] pins the
+//! gateway expectation to compiled `catalog.lock.json` — UMST still needs
+//! [`UnifiedMaterialStateTensor::with_lock_catalog_schema_digest`] or an explicit digest).
 
 use crate::ai::cbf::ThermodynamicCBF;
+use crate::ai::formal::FormalReject;
 use crate::core::traits::{IScienceCartridge, PhysicalResult};
 use burn::tensor::{backend::Backend, Tensor};
 
@@ -57,6 +64,10 @@ pub struct ManifoldGateway<B: Backend, C: IScienceCartridge<B>> {
     /// **Default 0** in [`Self::new`]; ignored when the feature is off (field is not compiled into
     /// [`PhysicalResult`]).
     pub eta: f32,
+    /// Optional catalog/schema digest asserted against the incoming UMST when **`formal-witness`** is on.
+    /// [`Self::new`] defaults to compiled lock bytes; set `None` explicitly to skip the witness.
+    #[cfg(feature = "formal-witness")]
+    pub expected_catalog_schema_digest: Option<[u8; 32]>,
     _backend: std::marker::PhantomData<B>,
 }
 
@@ -67,23 +78,36 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
             cbf: ThermodynamicCBF::new(temperature_k, initial_credit),
             zeta: 0.0_f32,
             eta: 0.0_f32,
+            #[cfg(feature = "formal-witness")]
+            expected_catalog_schema_digest: Some(
+                crate::runtime::catalog::lock_upstream_catalog_digest_bytes(),
+            ),
             _backend: std::marker::PhantomData,
         }
     }
 
-    /// Evaluates a proposed topology state.
-    /// This runs the full Cartridge functor pass and gates the result through the CBF.
+    /// Set η from catalog per-step MI scan ([`crate::ros::calibrate_eta_bound_from_trace`]; Track G.3).
+    /// Uses `TraceCalibrationReport::eta_bound_suggested` (post-CBF reward weight only).
+    #[cfg(feature = "trace-calibration")]
+    pub fn calibrate_eta_from_trace(&mut self, schema: &crate::ros::EmittedTraceSchema) {
+        let report = crate::ros::calibrate_eta_bound_from_trace(schema);
+        self.eta = report.eta_bound_suggested.clamp(0.0, 1.0) as f32;
+    }
+
+    /// Set η from prototype aggregate ε envelope ([`crate::ros::prototype_eta_from_trace`]; Track G.3).
+    #[cfg(feature = "trace-calibration")]
+    pub fn calibrate_eta_from_prototype_envelope(
+        &mut self,
+        schema: &crate::ros::EmittedTraceSchema,
+    ) {
+        self.eta = crate::ros::prototype_eta_from_trace(schema);
+    }
+
+    /// Evaluates a proposed topology state; errors are structured as [`FormalReject`].
     ///
-    /// # Arguments
-    /// * `raw_state` - The proposed UMST Cellular Sheaf
-    /// * `info_gain` - The calculated mutual information resolved by this step.
-    ///
-    /// # Returns
-    /// * Ok(VerifiedUMST, Reward) - The mathematically secured state and the per-batch scalar reward
-    ///   (spatial thermodynamic terms plus **ζ · mean(safety_margin)** when [`ManifoldGateway::zeta`] ≠ 0,
-    ///   and with **`information_density`**, **η · mean(information_density)** when [`ManifoldGateway::eta`] ≠ 0).
-    /// * Err(String) - If the state violates the Clausius-Duhem Thermodynamic gate.
-    pub fn evaluate_topology_step(
+    /// Prefer this when rejecting transitions must be classified (CBF vs catalog witness). The
+    /// legacy [`Self::evaluate_topology_step`] API maps these cases to [`String`] via [`FormalReject`]'s [`Display`] impl.
+    pub fn evaluate_topology_step_formal(
         &mut self,
         raw_state: crate::core::tensors::UnifiedMaterialStateTensor<B>,
         info_gain: Tensor<B, 1>,
@@ -92,8 +116,18 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
             crate::core::tensors::VerifiedUMST<B, crate::core::tensors::ClausiusDuhemProof>,
             Tensor<B, 1>,
         ),
-        String,
+        FormalReject,
     > {
+        #[cfg(feature = "formal-witness")]
+        if let (Some(expected), Some(observed)) = (
+            self.expected_catalog_schema_digest,
+            raw_state.catalog_schema_digest,
+        ) {
+            if expected != observed {
+                return Err(FormalReject::CatalogSchemaDigestMismatch { expected, observed });
+            }
+        }
+
         // 1. Execute the physics simulation across the topological Cellular Sheaf
         let physical_result: PhysicalResult<B> = self.cartridge.compute_topology(&raw_state);
 
@@ -140,10 +174,37 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
 
                 Ok((verified_state, total_reward))
             }
-            Err(e) => {
-                // The CBF rejected the state
-                Err(format!("Transition Rejected by CBF: {e}"))
-            }
+            Err(detail) => Err(FormalReject::ThermodynamicControlBarrier {
+                catalog_id: crate::ai::formal::LANDAUER_CBF_CATALOG_ID,
+                detail,
+            }),
         }
+    }
+
+    /// Evaluates a proposed topology state.
+    /// This runs the full Cartridge functor pass and gates the result through the CBF.
+    ///
+    /// # Arguments
+    /// * `raw_state` - The proposed UMST Cellular Sheaf
+    /// * `info_gain` - The calculated mutual information resolved by this step.
+    ///
+    /// # Returns
+    /// * Ok(VerifiedUMST, Reward) - The mathematically secured state and the per-batch scalar reward
+    ///   (spatial thermodynamic terms plus **ζ · mean(safety_margin)** when [`ManifoldGateway::zeta`] ≠ 0,
+    ///   and with **`information_density`**, **η · mean(information_density)** when [`ManifoldGateway::eta`] ≠ 0).
+    /// * Err(String) - If the state violates the Clausius-Duhem Thermodynamic gate (or, with **`formal-witness`**, the catalog digest witness).
+    pub fn evaluate_topology_step(
+        &mut self,
+        raw_state: crate::core::tensors::UnifiedMaterialStateTensor<B>,
+        info_gain: Tensor<B, 1>,
+    ) -> Result<
+        (
+            crate::core::tensors::VerifiedUMST<B, crate::core::tensors::ClausiusDuhemProof>,
+            Tensor<B, 1>,
+        ),
+        String,
+    > {
+        self.evaluate_topology_step_formal(raw_state, info_gain)
+            .map_err(|e| e.to_string())
     }
 }

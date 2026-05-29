@@ -83,6 +83,8 @@ mod thmc_ok {
             node_positions,
             displacement_bc_mask: Tensor::<B, 3>::ones([n, 3, 1], &dev),
             policy_editable_mask: Tensor::<B, 2>::ones([n, 1], &dev),
+            #[cfg(feature = "formal-witness")]
+            catalog_schema_digest: None,
         }
     }
 

@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "role": "manifold_runtime_lock",
+  "upstream_repo": "umst-formal-double-slit",
+  "upstream_catalog_digest_hex": "0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227",
+  "module_count": 119,
+  "module_graph_edge_count": 321,
+  "composition_rule": "cross_repo_merge_v1_primary_wins_basename",
+  "composed_catalog_digest_hex": "0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227",
+  "fiber_pins": [
+    {
+      "repo": "umst-formal-double-slit",
+      "catalog_digest_hex": "c1d9ba2aa402106a3477f454dd6d28015eb399c1160d8a2e2ba7d16788fdbfcc",
+      "module_count": 69,
+      "lock_role": "lean_catalog_lock",
+      "catalog_path": "artifacts/catalog.json"
+    },
+    {
+      "repo": "umst-formal",
+      "catalog_digest_hex": "534d9e181fd2af301a319b4a6a645e665d7896b2b7e0302a9ffa29a6d52d454c",
+      "module_count": 62,
+      "lock_role": "lean_catalog_lock",
+      "catalog_path": "artifacts/catalog.json"
+    }
+  ],
+  "notes": "v2 dual-pin: per-fiber digests plus composed R0. upstream_catalog_digest_hex MUST equal composed_catalog_digest_hex. Re-export each Lean root after edits; verify with scripts/verify_umst_stack.sh."
+}

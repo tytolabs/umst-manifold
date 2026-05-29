@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "witnesses": [
+    {
+      "id": "example.witness.checkpoint",
+      "description": "illustrative entry for downstream integrators"
+    }
+  ]
+}

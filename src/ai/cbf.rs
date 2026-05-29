@@ -13,6 +13,7 @@ const K_BOLTZMANN: f64 = 1.380649e-23;
 ///
 /// It acts as a Natural Transformation between the Topology State and the physical
 /// limits defined by global thermodynamic bounds.
+#[derive(Debug, Clone, PartialEq)]
 pub struct ThermodynamicCBF {
     /// Local temperature of the physical system (Kelvin)
     pub temperature_k: f64,

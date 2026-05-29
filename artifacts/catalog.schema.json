@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UMSTCatalogLock",
+  "description": "Pinned formal catalog metadata consumed by umst-manifold build.rs.",
+  "type": "object",
+  "required": ["version", "role"],
+  "additionalProperties": true,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "role": {
+      "type": "string",
+      "enum": ["manifold_runtime_lock"]
+    },
+    "upstream_repo": { "type": "string" },
+    "upstream_catalog_digest_hex": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "module_count": { "type": "integer", "minimum": 0 },
+    "composition_rule": { "type": "string" },
+    "composed_catalog_digest_hex": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "fiber_pins": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["repo", "catalog_digest_hex", "module_count"],
+        "properties": {
+          "repo": { "type": "string" },
+          "catalog_digest_hex": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "module_count": { "type": "integer", "minimum": 0 },
+          "lock_role": { "type": "string" },
+          "catalog_path": { "type": "string" }
+        }
+      }
+    },
+    "notes": { "type": "string" }
+  }
+}

@@ -1,0 +1,65 @@
+# SPDX-License-Identifier: MIT
+#
+# Catalog drift + gate test suite when this directory is the Git repository root.
+# In MaOS-Workspace monorepo, use root `.github/workflows/umst-catalog-drift.yml` instead.
+
+name: UMST catalog drift
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "artifacts/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "build.rs"
+      - "scripts/**"
+      - ".github/workflows/umst-catalog-drift.yml"
+  pull_request:
+    branches: [main, master, develop]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "artifacts/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "build.rs"
+      - "scripts/**"
+      - ".github/workflows/umst-catalog-drift.yml"
+
+env:
+  CARGO_TERM_COLOR: always
+  # Lean export lives in tytolabs/umst-formal-double-slit (checked out below, or sibling on disk).
+  UMST_FORMAL_ROOT: ${{ github.workspace }}/umst-formal-double-slit
+  UMST_REQUIRE_FORMAL_EXPORT: "1"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-umst-stack:
+    name: verify UMST stack (export + gate tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout umst-formal-double-slit (catalog export)
+        uses: actions/checkout@v4
+        with:
+          repository: tytolabs/umst-formal-double-slit
+          path: umst-formal-double-slit
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.88"
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: verify_umst_stack.sh
+        run: bash scripts/verify_umst_stack.sh
+
+      - name: bidirectional_catalog_check.sh
+        run: bash scripts/bidirectional_catalog_check.sh
+

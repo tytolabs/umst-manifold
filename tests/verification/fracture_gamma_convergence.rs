@@ -946,6 +946,8 @@ fn at2_matrix_features_stub_matches_direct_strain_psi_plus_sanity() {
         node_positions: None,
         displacement_bc_mask,
         policy_editable_mask,
+        #[cfg(feature = "formal-witness")]
+        catalog_schema_digest: None,
     };
 
     let eps_stub = strain_tensor_for_fracture_from_manifold::<B>(&manifold, batch, n, &dev);

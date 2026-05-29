@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "source": "umst-prototype/src/rust/core/src/science/thermodynamic_filter.rs unit tests + umst-manifold/tests/gate_parity_fixture.rs golden states",
+  "cases": [
+    {
+      "id": "prototype_forward_hydration",
+      "mode": "from_mix",
+      "old": { "w_c": 0.5, "alpha": 0.3, "temp_k": 293.0, "s_intrinsic_mpa": null },
+      "new": { "w_c": 0.5, "alpha": 0.5, "temp_k": 293.0, "s_intrinsic_mpa": null },
+      "dt_seconds": 3600.0,
+      "prototype_golden": {
+        "accepted": true,
+        "mass_conserved": true,
+        "energy_positive": true,
+        "dissipation_sign": "positive"
+      }
+    },
+    {
+      "id": "prototype_reverse_hydration",
+      "mode": "from_mix",
+      "old": { "w_c": 0.5, "alpha": 0.7, "temp_k": 293.0, "s_intrinsic_mpa": null },
+      "new": { "w_c": 0.5, "alpha": 0.3, "temp_k": 293.0, "s_intrinsic_mpa": null },
+      "dt_seconds": 3600.0,
+      "prototype_golden": {
+        "accepted": false,
+        "mass_conserved": true,
+        "energy_positive": false,
+        "dissipation_sign": "negative"
+      }
+    },
+    {
+      "id": "prototype_strength_monotonicity",
+      "mode": "explicit_snapshot",
+      "old": {
+        "density": 2400.0,
+        "temperature": 293.0,
+        "free_energy": 0.0,
+        "entropy": 0.0,
+        "hydration_degree": 0.5,
+        "strength": 30.0
+      },
+      "new": {
+        "density": 2400.0,
+        "temperature": 293.0,
+        "free_energy": 0.0,
+        "entropy": 0.0,
+        "hydration_degree": 0.5,
+        "strength": 25.0
+      },
+      "dt_seconds": 1.0,
+      "prototype_golden": {
+        "accepted": false,
+        "mass_conserved": true,
+        "energy_positive": false,
+        "dissipation_sign": "any"
+      }
+    },
+    {
+      "id": "prototype_dissipation_rho_q_alpha_dot",
+      "mode": "from_mix",
+      "old": { "w_c": 0.45, "alpha": 0.4, "temp_k": 293.0, "s_intrinsic_mpa": null },
+      "new": { "w_c": 0.45, "alpha": 0.6, "temp_k": 293.0, "s_intrinsic_mpa": null },
+      "dt_seconds": 604800.0,
+      "prototype_golden": {
+        "accepted": true,
+        "mass_conserved": true,
+        "energy_positive": true,
+        "dissipation_sign": "positive",
+        "dissipation_relative_tolerance": 1e-10
+      }
+    },
+    {
+      "id": "manifold_golden_identity_admissible",
+      "mode": "explicit_snapshot",
+      "old": {
+        "density": 2400.0,
+        "temperature": 293.15,
+        "free_energy": -135000.0,
+        "entropy": 0.05,
+        "hydration_degree": 0.42,
+        "strength": 12.7
+      },
+      "new": {
+        "density": 2400.0,
+        "temperature": 293.15,
+        "free_energy": -135000.0,
+        "entropy": 0.05,
+        "hydration_degree": 0.42,
+        "strength": 12.7
+      },
+      "dt_seconds": 1.0,
+      "prototype_golden": {
+        "accepted": true,
+        "mass_conserved": true,
+        "energy_positive": true,
+        "dissipation_sign": "nonnegative"
+      }
+    },
+    {
+      "id": "manifold_golden_mass_violation",
+      "mode": "explicit_snapshot",
+      "old": {
+        "density": 2400.0,
+        "temperature": 293.0,
+        "free_energy": 0.0,
+        "entropy": 0.1,
+        "hydration_degree": 0.3,
+        "strength": 10.0
+      },
+      "new": {
+        "density": 2280.0,
+        "temperature": 293.0,
+        "free_energy": 0.0,
+        "entropy": 0.1,
+        "hydration_degree": 0.3,
+        "strength": 10.0
+      },
+      "dt_seconds": 3600.0,
+      "prototype_golden": {
+        "accepted": false,
+        "mass_conserved": false,
+        "energy_positive": true,
+        "dissipation_sign": "any"
+      }
+    },
+    {
+      "id": "manifold_golden_negative_dissipation",
+      "mode": "explicit_snapshot",
+      "old": {
+        "density": 2200.0,
+        "temperature": 300.0,
+        "free_energy": -200000.0,
+        "entropy": 0.2,
+        "hydration_degree": 0.5,
+        "strength": 20.0
+      },
+      "new": {
+        "density": 2200.0,
+        "temperature": 300.0,
+        "free_energy": -10000.0,
+        "entropy": 0.2,
+        "hydration_degree": 0.5,
+        "strength": 20.0
+      },
+      "dt_seconds": 1.0,
+      "prototype_golden": {
+        "accepted": false,
+        "mass_conserved": true,
+        "energy_positive": false,
+        "dissipation_sign": "any"
+      }
+    },
+    {
+      "id": "prototype_calibrated_d1_strength_only",
+      "mode": "from_mix",
+      "old": { "w_c": 0.5, "alpha": 0.4, "temp_k": 293.0, "s_intrinsic_mpa": 80.0 },
+      "new": { "w_c": 0.5, "alpha": 0.55, "temp_k": 293.0, "s_intrinsic_mpa": 80.0 },
+      "dt_seconds": 86400.0,
+      "prototype_golden": {
+        "accepted": true,
+        "mass_conserved": true,
+        "energy_positive": true,
+        "dissipation_sign": "positive"
+      }
+    }
+  ]
+}

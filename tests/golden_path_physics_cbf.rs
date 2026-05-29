@@ -97,6 +97,8 @@ fn test_umst_two_node_bar(
         node_positions: Some(node_positions),
         displacement_bc_mask: Tensor::<B, 3>::ones([1, n, 3], &dev),
         policy_editable_mask: policy_mask,
+        #[cfg(feature = "formal-witness")]
+        catalog_schema_digest: None,
     }
 }
 

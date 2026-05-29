@@ -52,6 +52,8 @@ fn test_umst(
         node_positions,
         displacement_bc_mask: Tensor::<B, 3>::ones([1, n, 3], &dev),
         policy_editable_mask: policy_mask,
+        #[cfg(feature = "formal-witness")]
+        catalog_schema_digest: None,
     }
 }
 

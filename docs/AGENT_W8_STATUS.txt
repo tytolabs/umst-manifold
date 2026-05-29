@@ -1,0 +1,41 @@
+UMST W8 — manifest-bridge (completed)
+=====================================
+Date: 2026-05-21
+Workspace: MaOS-Workspace/umst-manifold + umst-concrete-cartridge (patched)
+
+## Manifold (`umst-manifold`)
+
+- `src/lib.rs`: `pub mod manifest` (always on; not feature-gated).
+- `src/manifest/mod.rs` re-exports:
+  - `GateRegistry`, `GroundingContract`, `UmstManifest`, `UmstManifestBuilder`
+  - from `src/manifest/umst_manifest.rs`
+- `Cargo.toml` features (already present):
+  - `manifest-bridge = []`  (downstream marker)
+  - `manifold-manifest = []`
+
+## Concrete cartridge (`umst-concrete-cartridge`)
+
+- `crates/umst-concrete-cartridge/Cargo.toml`:
+  - `manifest-bridge = ["umst-manifold/manifest-bridge"]`
+  - `manifold-manifest = ["umst-manifold/manifold-manifest"]`
+- `src/facade/mod.rs`: `#[cfg(feature = "manifest-bridge")] pub use umst_manifold::manifest::*;`
+- Workspace `Cargo.toml` patch (W8 local verify):
+  - `[patch."https://github.com/tytolabs/umst-manifold.git"]`
+  - `umst-manifold = { path = "../umst-manifold" }`
+
+## Cargo verification (exit 0)
+
+```text
+cd umst-manifold && cargo check
+cd umst-concrete-cartridge && cargo check -p umst-concrete-cartridge --features manifest-bridge
+cd umst-concrete-cartridge && cargo check -p umst-concrete-cartridge --features manifest-bridge,manifold-manifest
+```
+
+Patch resolves sibling `umst-manifold` v0.1.0; façade uses typed `UmstManifest` / `GroundingContract` from `umst_manifold::manifest`.
+
+## Remaining (ops, not code)
+
+- Publish `tytolabs/umst-manifold` `main` with `pub mod manifest` so cartridge CI works **without** workspace `[patch]`.
+- GHA: committed `../umst-manifold` patch may break remote CI unless manifold is path-available or patch is removed before merge.
+
+## W8 status: DONE (local patch + feature forward)

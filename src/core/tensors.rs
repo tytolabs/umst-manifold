@@ -52,6 +52,10 @@ pub struct UnifiedMaterialStateTensor<B: Backend> {
 
     /// `1.0` where mix/topology edits are allowed. Shape `[N, 1]`.
     pub policy_editable_mask: Tensor<B, 2>,
+    /// Optional BLAKE3-style-capable digest slot for wiring a runtime material catalog/schema witness.
+    /// Only consulted when **`formal-witness`** is enabled and both UMST + gateway sides supply `Some(..)`.
+    #[cfg(feature = "formal-witness")]
+    pub catalog_schema_digest: Option<[u8; 32]>,
 }
 
 impl<B: Backend> UnifiedMaterialStateTensor<B> {
@@ -93,6 +97,15 @@ impl<B: Backend> UnifiedMaterialStateTensor<B> {
         let m = self.policy_editable_mask.clone().reshape([n, 1]);
         let one = Tensor::<B, 2>::ones_like(&m);
         proposed.mul(m.clone()).add(old.mul(one.sub(m)))
+    }
+
+    /// Pin [`Self::catalog_schema_digest`] to compiled `catalog.lock.json` (formal-witness lane).
+    #[cfg(feature = "formal-witness")]
+    #[must_use]
+    pub fn with_lock_catalog_schema_digest(mut self) -> Self {
+        self.catalog_schema_digest =
+            Some(crate::runtime::catalog::lock_upstream_catalog_digest_bytes());
+        self
     }
 
     /// Replace column `channel` of `scalar_features` with `col` (`[N, 1]`).

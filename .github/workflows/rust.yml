@@ -140,6 +140,62 @@ jobs:
             cargo test --verbose --release --features solver-experimental
           fi
 
+
+  # Required parity-ci lane (W10): gate + formal witness; full verify_umst_stack.sh when
+  # umst-formal-double-slit is a sibling or UMST_FORMAL_ROOT is set. Without formal export, runs
+  # the Rust gate subset from verify_umst_stack.sh (modular formal fibers independent).
+  verify-umst-stack:
+    name: verify UMST stack (parity)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.88"
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Resolve formal export root
+        id: formal
+        run: |
+          set -euo pipefail
+          root=""
+          if [[ -n "${UMST_FORMAL_ROOT:-}" && -d "${UMST_FORMAL_ROOT}/Lean" ]]; then
+            root="$(cd "${UMST_FORMAL_ROOT}" && pwd)"
+          elif [[ -d "${GITHUB_WORKSPACE}/../umst-formal-double-slit/Lean"             && -f "${GITHUB_WORKSPACE}/../umst-formal-double-slit/tools/lean_export/export_catalog.py" ]]; then
+            root="$(cd "${GITHUB_WORKSPACE}/../umst-formal-double-slit" && pwd)"
+          elif [[ -d "${GITHUB_WORKSPACE}/umst-formal-double-slit/Lean"             && -f "${GITHUB_WORKSPACE}/umst-formal-double-slit/tools/lean_export/export_catalog.py" ]]; then
+            root="$(cd "${GITHUB_WORKSPACE}/umst-formal-double-slit" && pwd)"
+          fi
+          if [[ -n "${root}" ]]; then
+            echo "present=true" >> "${GITHUB_OUTPUT}"
+            echo "root=${root}" >> "${GITHUB_OUTPUT}"
+            echo "Formal export root: ${root}"
+          else
+            echo "present=false" >> "${GITHUB_OUTPUT}"
+            echo "No formal sibling (set UMST_FORMAL_ROOT or checkout umst-formal-double-slit)"
+          fi
+
+      - name: verify_umst_stack.sh (formal present)
+        if: steps.formal.outputs.present == 'true'
+        env:
+          UMST_FORMAL_ROOT: ${{ steps.formal.outputs.root }}
+          UMST_REQUIRE_FORMAL_EXPORT: "1"
+        run: bash scripts/verify_umst_stack.sh
+
+      - name: Gate parity subset (no formal export)
+        if: steps.formal.outputs.present != 'true'
+        run: |
+          set -euo pipefail
+          echo "==> parity-ci subset (rust.yml): gate + formal witness (no Lean export)"
+          cargo test -p umst-manifold --verbose \
+            --test gate_parity_fixture --test gate_kleisli --test gate_cbf_parity \
+            --test gate_dual_run_parity --test gate_reject_catalog_id --test gate_adversarial
+          cargo test -p umst-manifold --verbose \
+            --features formal-witness,ros2-contract,serde \
+            --test formal_witness --test ros_contract_serde_roundtrip
+          cargo test -p umst-manifold --verbose \
+            --features gate-server-bin --test gate_server_http
+
   # PR / push gate: rustfmt + clippy on the full solver-experimental graph (v0.4 acceptance; matches meta `solver-tests`).
   lint:
     name: rustfmt + clippy

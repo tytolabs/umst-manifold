@@ -12,10 +12,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+**Impact:** Lean **69-module** catalog export pins at build time; runtime gates reject inadmissible transitions without replaying Lean on the hot path — cartridges inherit digest parity via `manifest-bridge` / `IScienceCartridge`.
+
 ### Added
 
+- **Gate unification** — registry-first `catalog_id` evaluators under `src/gate/` (Kleisli `Admissible`, `ThermodynamicMixEvaluator`, CD transition + CBF dual-run parity); `UmstManifest` defaults and `gate_server` HTTP shim; spec [`docs/GateUnificationSpec.md`](docs/GateUnificationSpec.md); integration tests `gate_kleisli`, `gate_cbf_parity`, `gate_dual_run_parity`, `gate_parity_fixture`, `gate_server_http` (feature `gate-server-bin`).
+- **Catalog lock** — `artifacts/catalog.lock.json` pins upstream Lean export digest `c1d9ba2aa402106a3477f454dd6d28015eb399c1160d8a2e2ba7d16788fdbfcc` (**69** modules from `umst-formal-double-slit`); `build.rs` / `src/runtime/catalog/` emit `UMST_CATALOG_DIGEST_HEX` (override with `UMST_CATALOG=/path/to/lock.json`).
+- **`EmbodiedOrchestrator`** — `src/manifest/orchestrator.rs` composes `ManifoldGateway` (tensor / CBF) with optional host transition + mix registry gates; `tests/embodied_orchestrator.rs`.
+- **`formal-witness`** feature — `src/ai/formal.rs` (`FormalReject`, optional `CatalogSchemaDigestMismatch`); `ManifoldGateway::evaluate_topology_step_formal`; smoke `tests/formal_witness.rs`.
+- **`verify_umst_stack.sh`** — local / CI parity script (`cargo check`, Lean export vs lock, gate + formal + ROS + gate-server tests); wired in `.github/workflows/umst-catalog-drift.yml`; commands catalog [`docs/VERIFY.md`](docs/VERIFY.md).
+- **ROS / manifest wire** — `src/manifest/`, `src/ros/contract.rs` (`catalog_hash` on DTOs); features `ros2-contract`, `serde`, `manifest-bridge`, `manifold-gate`.
+- **Documentation** — parallel handoff status [`docs/AGENT_STATUS.md`](docs/AGENT_STATUS.md), claims traceability [`docs/claims-vs-proofs.md`](docs/claims-vs-proofs.md), layout SSOT [`docs/REPO_LAYOUT_SSOT.md`](docs/REPO_LAYOUT_SSOT.md). Catalog ↔ Rust usage matrix (when published): [`docs/CATALOG_COVERAGE_AUDIT.md`](docs/CATALOG_COVERAGE_AUDIT.md).
 - Helmholtz PDE density filter (`topology_filter`), Heaviside projection with continuation, Bruyneel–Duysinx self-weight q-norm, augmented Lagrangian volume constraint, extruded-plate mechanics scaffold, and integration tests (`topology_filter`, `heaviside_projection`, `self_weight_topology`, `aug_lagrangian_volume`, `extruded_plate_mechanics`) — all behind `solver-experimental` / `solver-tests`.
 - Striatus-class shell storyline in the concrete cartridge: `optimize_shell_3d`, hero GIF `notebooks/_artifacts/striatus_emergence.gif`, and print-ready STL export (`docs/Striatus.md` in that repository).
+
+### Changed
+
+- Gate HTTP surface routes through `gate_server_router.rs` (`POST /gate`, `GET /health`) aligned with unified `catalog_id` evaluators (see [`docs/GateUnificationSpec.md`](docs/GateUnificationSpec.md)).
 
 ## [0.1.0] — 2026-05-07
 

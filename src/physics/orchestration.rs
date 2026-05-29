@@ -306,6 +306,8 @@ mod tests {
             node_positions: Some(pos),
             displacement_bc_mask: Tensor::<TestBackend, 3>::ones([1, n, 3], dev),
             policy_editable_mask: policy_mask,
+            #[cfg(feature = "formal-witness")]
+            catalog_schema_digest: None,
         }
     }
 

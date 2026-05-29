@@ -63,6 +63,8 @@ fn chain_manifold(n: usize) -> UnifiedMaterialStateTensor<B> {
         node_positions,
         displacement_bc_mask,
         policy_editable_mask,
+        #[cfg(feature = "formal-witness")]
+        catalog_schema_digest: None,
     }
 }
 

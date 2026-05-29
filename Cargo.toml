@@ -1,8 +1,12 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
+
 [package]
 name = "umst-manifold"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"
+build = "build.rs"
 authors = [
     "Santhosh Shyamsundar <santhoshshyamsundar@gmail.com>",
     "Santosh Prabhu Shenbagamoorthy",
@@ -16,6 +20,7 @@ license = "MIT"
 readme = "README.md"
 keywords = ["physics", "differentiable", "thermodynamics", "topology", "burn"]
 categories = ["science", "mathematics", "simulation"]
+autobins = false
 
 [features]
 default = ["ndarray"]
@@ -26,49 +31,28 @@ ndarray = []
 blas-accelerate = ["burn-ndarray/blas-accelerate"]
 # macOS convenience bundle: `ndarray` + Accelerate. Use as
 # `cargo test --features mac-fast` or `cargo build --features mac-fast`.
-# Apple Accelerate auto-threads BLAS across P-cores, so PCG / matmul-heavy paths use the M-series silicon.
 mac-fast = ["ndarray", "blas-accelerate"]
-# Optional GPU backend via WGPU (Metal on macOS, Vulkan on Linux). Not enabled in default CI;
-# keep portable validation on `ndarray`. If you turn this on, validate against your pinned Rust + Burn line locally.
+# Optional GPU backend via WGPU (Metal on macOS, Vulkan on Linux).
 wgpu = ["burn/wgpu"]
 # Optimiser / training utilities.
 train = ["burn/train"]
-# --- Opt-in solver scaffolds (granular) — Track I lane names + cfg-stable implementation flags ---
-# Implementation cfg for photonics (`#[cfg(feature = "photonics")]`). Prefer `photonics-fdfd` in lane lists.
 photonics = []
-# Canonical photonics lane name (Track I). Forwards to `photonics` until cfg is renamed in-tree.
 photonics-fdfd = ["photonics"]
-# Deprecated — prefer `photonics-fdfd`. Remove in v0.5.
 photonics-scaffold = ["photonics-fdfd"]
-# AT2-style phase-field damage relaxation (`PhaseFieldFractureSolver`).
 fracture-at2 = []
-# Implicit Newmark-β tensor wave step (`AcousticsSolver::step_wave`).
 acoustics-newmark = []
-# Differentiable density / SIMP topology forward (`TopologyOptimizer::optimize_step`).
 topology-density-evolution = []
-# Coupled THMC Newton / explicit transport scaffold (`ThmcSolver::step`); pulls fracture for post-loop damage.
 thmc-coupled = ["fracture-at2"]
-# Implementation cfg for PNP (`#[cfg(feature = "electrochemistry-mvp")]`). Prefer `electrochemistry-pnp` in lane lists.
 electrochemistry-mvp = []
-# Canonical electrochemistry lane name (Track I). Forwards to `electrochemistry-mvp` until cfg is renamed.
 electrochemistry-pnp = ["electrochemistry-mvp"]
-# Bar-network equilibrium + graph Voigt strain → Cauchy stress (`solve_equilibrium_with_voigt_cauchy`).
 mechanics-voigt-cauchy = []
-# Discrete-adjoint mechanics (Track A); forwards to `mechanics-voigt-cauchy` until cfg splits.
 mechanics-adjoint = ["mechanics-voigt-cauchy"]
-# Q1-hex discrete-adjoint compliance (`AdjointComplianceQ1Hex`); requires structured hex lattice module.
 mechanics-adjoint-q1-hex = ["topology-density-evolution"]
-# Bingham / projection flow on the graph (`BinghamFlowSolver::step`).
 rheology-bingham = []
-# Always-on Richardson relaxation fallback for Chorin graph Poisson (see `rheology_flow.rs`).
 rheology_poisson_richardson_fallback = []
-# Stable-lane marker: Vinet EOS integration test (`statmech_vinet_eos`) only — not the LJ bridge in `statistical_mechanics.rs`. No module `#[cfg]` yet — reserved for v0.5 split.
 statistical-mechanics-vinet = []
-# Opt-in: `statistical_mechanics::bulk_modulus_from_lj_state_johnson1993` re-export (JZG 1993 `f64` reference); default builds omit this symbol from the bridge module.
 statistical-mechanics-johnson-reference = []
-# Verified analytic / iterative kernels with passing benchmarks (PR CI). Expand as benchmarks land (Track I).
 solver-stable = ["topology-density-evolution", "statistical-mechanics-vinet"]
-# Real kernels under active verification or with documented limitations (`main`-branch CI expectations in v0.4 brief).
 solver-research = [
     "fracture-at2",
     "acoustics-newmark",
@@ -80,27 +64,46 @@ solver-research = [
     "photonics-fdfd",
     "statistical-mechanics-johnson-reference",
 ]
-# Meta: full opt-in stack (union of lanes; backward compatible with prior `solver-experimental` workflows).
 solver-experimental = ["solver-stable", "solver-research"]
-# Declared for `check-cfg` / conditional compilation in tests and downstream crates (may be empty).
 information_density = []
-# CI / workspace: same as full `solver-experimental`.
 solver-tests = ["solver-experimental"]
+# Optional structured formal witness wiring (`catalog_schema_digest` on UMST + gateway).
+formal-witness = []
+# Compiles ROS 2 serde contract module [`ros`].
+ros2-contract = []
+# Compiles [`src/bin/gate_server.rs`] (+ opt-in gate HTTP integration tests). Alias: `gate-server`.
+gate-server-bin = []
+gate-server = ["gate-server-bin"]
+gate-full = ["gate-server-bin"]
+# Enables `serde` derives on gated wire types in [`ros::contract`].
+serde = []
+# G.3 stub: `ros/trace_calibration` — η bound from `EmittedStepRecord` vs catalog `stepMI ≤ ln 2`.
+trace-calibration = ["ros2-contract"]
+# Downstream ergonomics hooks (declare + forward to consumers like `umst-concrete-cartridge`).
+manifest-bridge = []
+manifold-manifest = []
+manifold-gate = []
 
 [dependencies]
 burn = { version = "0.13.0", default-features = false }
 burn-ndarray = "0.13.0"
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+serde_json = "1.0"
 tracing = "0.1"
-# Pin: burn 0.13's burn-core calls bincode 2.0.0-rc.3 APIs not present in bincode 2.0.0+.
 bincode = "=2.0.0-rc.3"
-# Pin: burn-train → tracing-appender → time; 0.3.47+ declares rustc 1.88+ (blocks common toolchains).
 time = "=0.3.40"
 rand = "0.8"
 num-traits = "0.2"
+sha2 = "0.10"
+
+[build-dependencies]
+serde_json = "1.0"
+sha2 = "0.10"
 
 [dev-dependencies]
 approx = "0.5"
 num-complex = "0.4"
+serde_json = "1.0"
 burn = { version = "0.13.0", default-features = false, features = ["std", "train", "autodiff"] }
 burn-ndarray = "0.13.0"
 
@@ -111,6 +114,11 @@ path = "src/lib.rs"
 [[example]]
 name = "basic_topology"
 path = "examples/basic_topology.rs"
+
+[[bin]]
+name = "gate_server"
+path = "src/bin/gate_server.rs"
+required-features = ["gate-server-bin"]
 
 [[test]]
 name = "fracture_gamma_convergence"
@@ -202,3 +210,77 @@ required-features = ["photonics-fdfd"]
 [[test]]
 name = "photonics_curl_curl_stub_default_build"
 path = "tests/verification/photonics_curl_curl_stub_default_build.rs"
+
+[[test]]
+name = "formal_witness"
+path = "tests/formal_witness.rs"
+required-features = ["formal-witness"]
+
+[[test]]
+name = "manifest_strict_witness"
+path = "tests/manifest_strict_witness.rs"
+required-features = ["formal-witness"]
+
+[[test]]
+name = "ros_contract_serde_roundtrip"
+path = "tests/ros_contract_serde_roundtrip.rs"
+required-features = ["ros2-contract", "serde"]
+
+[[test]]
+name = "epistemic_trace_schema"
+path = "tests/epistemic_trace_schema.rs"
+required-features = ["ros2-contract", "serde"]
+
+[[test]]
+name = "trace_calibration"
+path = "tests/verification/trace_calibration.rs"
+required-features = ["trace-calibration"]
+
+[[test]]
+name = "catalog_all_ids_registered"
+path = "tests/catalog_all_ids_registered.rs"
+
+[[test]]
+name = "gate_cbf_parity"
+path = "tests/gate_cbf_parity.rs"
+
+[[test]]
+name = "gate_dual_run_parity"
+path = "tests/gate_dual_run_parity.rs"
+
+[[test]]
+name = "gate_server_http"
+path = "tests/gate_server_http.rs"
+required-features = ["gate-server-bin"]
+
+[[test]]
+name = "aug_lagrangian_volume"
+path = "tests/aug_lagrangian_volume.rs"
+required-features = ["solver-experimental"]
+
+[[test]]
+name = "extruded_plate_mechanics"
+path = "tests/extruded_plate_mechanics.rs"
+required-features = ["solver-experimental"]
+
+[[test]]
+name = "heaviside_projection"
+path = "tests/heaviside_projection.rs"
+required-features = ["solver-experimental"]
+
+[[test]]
+name = "self_weight_topology"
+path = "tests/self_weight_topology.rs"
+required-features = ["solver-experimental"]
+
+[[test]]
+name = "topology_filter"
+path = "tests/topology_filter.rs"
+required-features = ["solver-experimental"]
+
+[[test]]
+name = "topology_continuation"
+path = "tests/topology_continuation.rs"
+required-features = ["topology-density-evolution"]
+
+# TEMP probe — removed after check
