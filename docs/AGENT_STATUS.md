@@ -1,6 +1,6 @@
 # UMST parallel agents W1–W10 — status (coordinator scan)
 
-**Scanned:** 2026-05-21 · **Verified:** 2026-05-21 (UTC) — unified R0 pin `0697014fb5b90a3…`, **119** modules; `verify_umst_stack.sh` green · **Workspace:** `MaOS-Workspace/umst-manifold`
+**Scanned:** 2026-05-29 · **Verified:** 2026-05-29 (local) — unified R0 pin `0697014fb5b90a3…`, **119** modules; `verify_umst_stack.sh` exit **0** · **Workspace:** `MaOS-Workspace/umst-manifold` · **CI:** GitHub `rustfmt+clippy` fixed for stable `manual_contains` (pending green badge after push)
 
 **Handoffs (consolidated):** [`PARALLEL_HANDOFFS.md`](PARALLEL_HANDOFFS.md) · **Verify commands:** [`VERIFY.md`](VERIFY.md) · **Plan phases P0–P12:** `lean-to-rust_proof_extraction_fd8f70b5.plan.md` · **Witness ladder:** [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) · **Verified %:** [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)
 

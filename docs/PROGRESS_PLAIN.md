@@ -1,7 +1,7 @@
 # UMST progress — plain English
 
-**Report date:** 2026-05-22  
-**Stack check (this wave):** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` → exit **101** @ **2026-05-21T22:18:41Z** (four manifest digest unit tests); **last green** exit **0**, **`verify_umst_stack: OK`** @ **2026-05-21T22:13:30Z**.  
+**Report date:** 2026-05-29  
+**Stack check (this wave):** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` → exit **0**, **`verify_umst_stack: OK`** (local, 2026-05-29). Prior transient exit **101** (manifest digest unit tests @ 2026-05-21T22:18:41Z) is **not** reproducible on current `main`.  
 **G.2 / G.3 (settled):** `epistemic_trace_schema` **13/13** · `trace_calibration` **8/8** — in script tail on last green run.  
 **Companion ledgers:** [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) · **% deltas:** [`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IMPROVEMENTS.md) · [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md)
 
@@ -11,11 +11,11 @@
 
 **Three ceilings (reminder):** (1) **Automation** **16/16** when verify is green — not org publish. (2) **Hot-path** **18/69 ≈ 26%** · **18/119 ≈ 15%** — by design, **not 100%**. (3) **Org W8** **0/1** publish — human push only.
 
-**26-gap audit:** Only **W8** (G-01→G-03) blocks scoped v1 true 100%; **FFI** (G-26) is horizon-excluded. **G-04** / **G-05** closed in-repo by parallel agents; four manifest unit tests disagree on **bundle SHA** vs **composed upstream** digest — robustness **not** green until aligned.
+**26-gap audit:** Only **W8** (G-01→G-03) blocks scoped v1 true 100%; **FFI** (G-26) is horizon-excluded. **G-04** / **G-05** / **B3** closed in-repo; manifest digest tests align on current `main`.
 
 **Scoped headline:** **~90–92%** toward Done (was **~88–90%** with B3 still open). Open: **W8** + **FFI** horizon only.
 
-**Session deltas (high signal):** automation **+12 pp** (**14/16→16/16**); epistemic **+67 pp**; scoped **+40 pp**; manifest in-repo **+10 pp**; robustness **+15 pp** on last green, **regressed this run** (exit **101**).
+**Session deltas (high signal):** automation **16/16**; epistemic G.2/G.3 in verify tail; scoped **~90–92%** (W8 + FFI horizon only); GitHub **rustfmt+clippy** lane fixed for `manual_contains` on CI stable (2026-05-29).
 
 Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IMPROVEMENTS.md)** · executive gaps: **[`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)** § Executive synthesis.
 
@@ -44,10 +44,10 @@ Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IM
 | **Cross-repo fiber merge** | **1 / 1** milestone | **100%** | — | Unified **119**-module pin closed |
 | **Proof inventory (R0 pin)** | **119 / 119** modules · digest `0697014f…` | **100%** pin | Hot path still **18/69** by design | Re-verified export + lock |
 | **Gates (in-repo)** | Kleisli **6/6** · reject slugs **6/6** · adversarial **75/75** FNR 0 · dual-run **8/8** | **100%** on exercised suites | Optional 2a body delete is hygiene | Full stack green |
-| **Manifest / witness** | strict witness **3/3** · formal witness **3/3** · release strict via `not(debug_assertions)` | **100%** in-repo | Digest test SSOT: bundle vs upstream mismatch this run | G-04/G-05 closed; 4 unit tests fail @ **22:18:41Z** |
+| **Manifest / witness** | strict witness **3/3** · formal witness **3/3** · release strict via `not(debug_assertions)` | **100%** in-repo | — | G-04/G-05/B3 closed; green on 2026-05-29 verify |
 | **Epistemic (R6 host)** | G.1 serde · G.2 bounds **13/13** · G.3 η **8/8** · stack script includes both | **100%** host CI rows | Lean utility certificates deferred (rows 14–15 notes) | G.2/G.3 **closed** |
 | **Automation checklist** | **16 / 16** rows | **100%** on last green | W8 + FFI **outside** denominator | Was **14/16** stale → **16/16** (**+12 pp**) |
-| **Robustness bundle** | **1 / 1** `verify_umst_stack.sh` | **0%** this run · **100%** last green | Exit **101** (manifest tests) vs **127** typo fixed earlier | OK @ **22:13:30Z**; fail @ **22:18:41Z** |
+| **Robustness bundle** | **1 / 1** `verify_umst_stack.sh` | **100%** | — | OK @ **2026-05-29** (local) |
 | **Cartridges (local)** | concrete `manifest-bridge` **1/1** · supercap `formal_anchors` **6/6** | **100%** local | — | Unchanged |
 | **Cartridges (remote / org)** | publish **0/1** · remote CI without patch **0/1** | **0%** publish | **W8 (B1)** — operator push | Unchanged |
 | **Hot path vs U_op** | static wired **18/69** · hot **18/119** | **~26%** hot · **~15%** unified | \(U_{\mathrm{op}}\) grows on robot; **not 100%** | Docs only |

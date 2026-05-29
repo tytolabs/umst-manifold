@@ -116,7 +116,7 @@ impl WitnessPriorityQueue {
     fn lean_modules_for_catalog_id(catalog_id: &str) -> Vec<&'static str> {
         CATALOG_MODULE_WIRED
             .iter()
-            .filter(|(_, ids)| ids.iter().any(|id| *id == catalog_id))
+            .filter(|(_, ids)| ids.contains(&catalog_id))
             .map(|(module, _)| *module)
             .collect()
     }

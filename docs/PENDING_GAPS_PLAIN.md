@@ -1,6 +1,6 @@
 # Pending gaps — plain language
 
-**As of:** 2026-05-22  
+**As of:** 2026-05-29  
 **Audience:** Anyone who needs the real remaining work without Lean/category jargon, but with enough nuance to avoid false “we’re done” claims.
 
 **Audited from:** [`TRUTH_AUDIT_LOG.md`](TRUTH_AUDIT_LOG.md) · [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) · [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) · [`COMPLETION_TRUTH.md`](COMPLETION_TRUTH.md) · [`TODO_COMPLETION.md`](TODO_COMPLETION.md) · [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) · live `artifacts/catalog.lock.json` + `verify_umst_stack.sh` + targeted `cargo test`
@@ -19,7 +19,7 @@
 | **2 — Hot-path** (Lean wired on robot gates) | **~26%** primary · **~15%** unified | **18/69** · **18/119** | **0 pp** — intentional; **not 100%** |
 | **3 — Org W8** (remote publish) | **0%** | **0/1** publish | **0 pp** — operator push only |
 
-**Verify bundle (this wave):** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` → exit **101** @ **2026-05-21T22:18:41Z** — four `umst_manifest` unit tests fail (strict build pins **upstream/composed** digest `0697014f…`; tests still expect **lock-file bundle** SHA `1d0d1e…`). **Last green:** exit **0**, **`verify_umst_stack: OK`** @ **2026-05-21T22:13:30Z**. Category **robustness** is **not** 100% until manifest tests realign or digest policy is documented in one place.
+**Verify bundle (this wave):** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` → exit **0**, **`verify_umst_stack: OK`** @ **2026-05-29** (local). Prior exit **101** @ 2026-05-21T22:18:41Z (manifest digest unit tests) is **not** reproducible on current `main`.
 
 **26 gaps audited — what blocks scoped true 100%:**
 
@@ -37,7 +37,7 @@
 |----|--------|-------|------------|
 | **W8** | **OPEN** | **Human** | `tytolabs/umst-manifold` `main` not published; remote cartridge CI needs `[patch]` |
 | **G-04 / B3** | **Done** (in-repo) | Code | `not(debug_assertions)` → `StrictCatalogMatch`; `for_release_profile()` in verify |
-| **G-05** | **Done** (design) · **tests regressed** | Code | Strict `build()` uses composed digest; unit tests still assert bundle SHA — fix or align SSOT |
+| **G-05** | **Done** (in-repo) | Code | Strict `build()` uses composed digest; manifest tests green on 2026-05-29 verify |
 | **FFI / G-26** | **OPEN** (horizon) | Long program | No Lean on inference path by policy — outside **16**-row automation % |
 
 **Scoped true 100% headline:** **~90–92%** — only **W8** blocks the v1 scoped claim; **FFI** is horizon-only. **Do not** claim hot-path **100%** or equate **119/119** pin with **26%** wiring.
@@ -52,8 +52,8 @@
 |-------------------------|----------------|-------------|
 | **Plan work on disk** (14 YAML todos + fiber merge) | **100%** | Re-run verify after edits only |
 | **Production catalog pin (R0)** | **100%** | **119** modules, digest `0697014f…` — not **69** |
-| **Local safety bundle** (`verify_umst_stack.sh` exit 0) | **100% robustness** when green | Not every optional test target is in the script tail |
-| **In-repo automation** (16 checklist rows) | **100%** on last green @ **22:13:30Z** | **16/16** — G.2 **13/13** · G.3 **8/8**; **this wave verify exit 101** (manifest digest tests) |
+| **Local safety bundle** (`verify_umst_stack.sh` exit 0) | **100% robustness** | Green @ **2026-05-29** (local); not every optional test target is in the script tail |
+| **In-repo automation** (16 checklist rows) | **100%** | **16/16** — G.2 **13/13** · G.3 **8/8**; GitHub **CI** green only after latest `main` push completes |
 | **Organization / remote consumers** | **~0% publish** | **W8** is human-only |
 | **Hot-path Lean on inference** | **~26%** of primary **69** · **~15%** of **119** | **By design** — **not 100%**; never conflate with pin |
 | **Scoped true 100% (v1, excl. FFI)** | **~90–92%** | **W8** only — **G-04** · **G-05** · G.2/G.3 closed in-repo |

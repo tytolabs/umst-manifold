@@ -19,6 +19,7 @@ cd /path/to/umst-manifold   # or MaOS-Workspace/umst-manifold
 
 | Verified (UTC) | Command | Exit | Notes |
 |----------------|---------|------|-------|
+| **2026-05-29** | `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` | **0** | CI clippy wave: `witness_priority.rs` `ids.contains(&catalog_id)`; scoped blockers **W8** + **FFI** only |
 | **2026-05-21T22:24:58Z** | `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` | **0** | Recursive pass: epistemic+trace **log guard** (`VERIFY_STEP_LOG`); `w8_publish_readiness.sh` bash `[[` array check; M* matrix all exit 0 |
 | **2026-05-21T22:20:07Z** | `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` | **0** | R0 pin **119**; G.2/G.3 echoed + log guard; `ci_god_grade_profile` epistemic wiring test; solver tests gated |
 | **2026-05-21T22:01:20Z** | `bash scripts/verify_umst_stack.sh` | **0** | Monorepo sibling formal + prototype E6; fixed duplicate `trace_calibration` integration target |

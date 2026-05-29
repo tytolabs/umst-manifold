@@ -19,7 +19,7 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 
 <!-- readme:god-grade-status -->
-**Completion (verified 2026-05-21T21:58:12Z):** [single % table](docs/GOD_GRADE_PROGRESS_VERIFIED.md#headline-percentages-ssot--one-table) — plan **100%**, god-grade weighted **~84%**, this verify bundle **100%**. Master command: `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` ([`docs/COMPLETION_TRUTH.md`](docs/COMPLETION_TRUTH.md)).
+**Completion (verified 2026-05-29):** [single % table](docs/GOD_GRADE_PROGRESS_VERIFIED.md#headline-percentages-ssot--one-table) — plan **100%**, automation **16/16**, hot-path **~26%** (18/69) by design. Master command: `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` ([`docs/COMPLETION_TRUTH.md`](docs/COMPLETION_TRUTH.md)). **CI:** GitHub `rust.yml` badge reflects the latest push on `main` — do not claim green until that workflow completes after your commit.
 
 **Stack thread (catalog → manifold → cartridge):** [`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit) exports the **unified 119-module Lean catalog** (`cross_repo_merge: true`) → this repo pins `artifacts/catalog.lock.json` and runs DEC + god-grade witnesses → [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) and sibling [`umst-supercap-cartridge`](../umst-supercap-cartridge) mount domain physics on `IScienceCartridge`. Normative order and philosophy: [GOD_GRADE_WITNESS_LADDER § Proof library · gate law · MI envelope · no Rust axioms](docs/GOD_GRADE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms).
 

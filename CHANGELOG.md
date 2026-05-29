@@ -12,12 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-**Impact:** Lean **69-module** catalog export pins at build time; runtime gates reject inadmissible transitions without replaying Lean on the hot path — cartridges inherit digest parity via `manifest-bridge` / `IScienceCartridge`.
+**Impact:** Unified **119-module** catalog export pins at build time (digest `0697014f…`); runtime gates reject inadmissible transitions without replaying Lean on the hot path — cartridges inherit digest parity via `manifest-bridge` / `IScienceCartridge`. Hot-path wiring remains **~26%** (18/69 primary) by design.
+
+### Fixed
+
+- **CI clippy** — `witness_priority.rs` uses `ids.contains(&catalog_id)` for stable `clippy::manual_contains` under `cargo clippy --all-targets --features solver-experimental -- -D warnings`.
 
 ### Added
 
 - **Gate unification** — registry-first `catalog_id` evaluators under `src/gate/` (Kleisli `Admissible`, `ThermodynamicMixEvaluator`, CD transition + CBF dual-run parity); `UmstManifest` defaults and `gate_server` HTTP shim; spec [`docs/GateUnificationSpec.md`](docs/GateUnificationSpec.md); integration tests `gate_kleisli`, `gate_cbf_parity`, `gate_dual_run_parity`, `gate_parity_fixture`, `gate_server_http` (feature `gate-server-bin`).
-- **Catalog lock** — `artifacts/catalog.lock.json` pins upstream Lean export digest `c1d9ba2aa402106a3477f454dd6d28015eb399c1160d8a2e2ba7d16788fdbfcc` (**69** modules from `umst-formal-double-slit`); `build.rs` / `src/runtime/catalog/` emit `UMST_CATALOG_DIGEST_HEX` (override with `UMST_CATALOG=/path/to/lock.json`).
+- **Catalog lock** — `artifacts/catalog.lock.json` pins unified Lean export digest `0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227` (**119** modules, `cross_repo_merge: true`); `build.rs` / `src/runtime/catalog/` emit `UMST_CATALOG_DIGEST_HEX` (override with `UMST_CATALOG=/path/to/lock.json`).
 - **`EmbodiedOrchestrator`** — `src/manifest/orchestrator.rs` composes `ManifoldGateway` (tensor / CBF) with optional host transition + mix registry gates; `tests/embodied_orchestrator.rs`.
 - **`formal-witness`** feature — `src/ai/formal.rs` (`FormalReject`, optional `CatalogSchemaDigestMismatch`); `ManifoldGateway::evaluate_topology_step_formal`; smoke `tests/formal_witness.rs`.
 - **`verify_umst_stack.sh`** — local / CI parity script (`cargo check`, Lean export vs lock, gate + formal + ROS + gate-server tests); wired in `.github/workflows/umst-catalog-drift.yml`; commands catalog [`docs/VERIFY.md`](docs/VERIFY.md).
