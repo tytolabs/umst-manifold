@@ -86,7 +86,7 @@ manifold-gate = []
 
 [dependencies]
 burn = { version = "0.13.0", default-features = false }
-burn-ndarray = "0.13.0"
+burn-ndarray = "0.21.0"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = "1.0"
 tracing = "0.1"
@@ -105,7 +105,7 @@ approx = "0.5"
 num-complex = "0.4"
 serde_json = "1.0"
 burn = { version = "0.13.0", default-features = false, features = ["std", "train", "autodiff"] }
-burn-ndarray = "0.13.0"
+burn-ndarray = "0.21.0"
 
 [lib]
 name = "umst_manifold"
