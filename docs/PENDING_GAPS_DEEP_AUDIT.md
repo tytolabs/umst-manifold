@@ -64,8 +64,8 @@ Each row is **still open** as of 2026-05-21. **Owner** = lane that should close 
 
 | ID | Gap (plain English) | Owner | Verify command | Risk if ignored | Morphism layer | Refs |
 |----|---------------------|-------|----------------|-----------------|----------------|------|
-| **G-01** | Manifold `main` not published to git; cartridge CI needs workspace `[patch]` | manifold publish → cartridge | `git ls-remote https://github.com/tytolabs/umst-manifold.git refs/heads/main` then clean clone: `cargo check -p umst-manifold` | Remote GHA fails or drifts from MaOS pin; partners cannot consume `manifest` without local patch | **R5** | [UNFINISHED § Ops W8] · [COMPLETION_TRUTH § W8] · Track **A** |
-| **G-02** | Cartridge repo CI does not run `manifest-bridge` on git dep alone | cartridge maintainers | `cd umst-concrete-cartridge && cargo test -p umst-concrete-cartridge --features manifest-bridge` **without** `../umst-manifold` patch | Production deploys miss digest-grounded facade tests | **R5** | [UNFINISHED § concrete] · Track **A.3** |
+| **G-01** | ~~Manifold `main` not published~~ **Done** @ **`fe22437`** | — | `git ls-remote https://github.com/tytolabs/umst-manifold.git refs/heads/main` | — | **R5** | Track **A** · [`PROGRESS_PLAIN.md`](PROGRESS_PLAIN.md) |
+| **G-02** | ~~Cartridge CI without git `manifest-bridge`~~ **Done** 2026-05-29 | — | `cargo test -p umst-concrete-cartridge --features manifest-bridge` (no workspace `[patch]`) | — | **R5** | [`FORMAL_GROUNDING_AUDIT.md`](../umst-concrete-cartridge/docs/FORMAL_GROUNDING_AUDIT.md) |
 | **G-03** | Supercap remote `manifest-bridge` / `manifold-gate` not wired on git pin | cartridge (supercap) | `cd umst-supercap-cartridge && cargo check --features manifest-bridge,manifold-gate` without patch | Supercap stays doc-only formal parity vs concrete | **R5** | [UNFINISHED § supercap] · Track **I.3** |
 
 ### Manifest & policy (local code exists; release default open)

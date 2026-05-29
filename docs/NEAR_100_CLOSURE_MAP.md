@@ -46,7 +46,7 @@ Partial Evidence (local tests, files on disk) does **not** equal Done when a hum
 | Field | Value |
 |-------|--------|
 | **Blocker** | **G-03** only — supercap remote `manifest-bridge` in GHA (**optional**) |
-| **Evidence today** | **G-01** publish @ **fe22437**; **G-02** concrete GHA without `[patch]`; supercap `formal_anchors` **6/6** local; MaOS `[patch]` patch-green **Evidence** for dev |
+| **Evidence today** | `crates/umst-concrete-cartridge/Cargo.toml` git **`rev = fe22437…`**; workspace root **no `[patch]`**; GHA **`.github/workflows/rust.yml`** step **`manifest-bridge tests (pinned umst-manifold)`** green on `main`; supercap `formal_anchors` **6/6** local |
 | **Done criterion** | **G-01**/**G-02** ✅; optional **G-03**: wire supercap GHA per [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) Track **I.3** |
 | **Test command** | Concrete: `cargo test -p umst-concrete-cartridge --features manifest-bridge` on git **fe22437** (no patch) · Supercap: `cargo test -p umst-supercap-cartridge --test formal_anchors` |
 | **Owner** | **Human** (**G-03** only) |

@@ -497,7 +497,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 ## Track I — Supercap formal anchor parity
 
-**Status:** ⚠️ **partial** (2026-05-21) — I.1–I.2 ✅; I.3–I.4 need W8 git pin ([`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)).
+**Status:** ⚠️ **partial** (2026-05-29) — I.1–I.2 ✅; I.3–I.4 remote `manifest-bridge` = **G-03** optional ([`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)).
 
 **Witness ladder:** R5 manifest fiber + R3 cartridge constitutive  
 **SSOT gap:** [`../umst-supercap-cartridge/docs/FORMAL_SCALING.md`](../umst-supercap-cartridge/docs/FORMAL_SCALING.md) §2–4
