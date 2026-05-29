@@ -23,7 +23,7 @@
 | **God-grade weighted R0–R6 (in-repo)** | **~98%** | 6.89/7 rungs | R6 host ✅; Lean utility certs deferred on rows 14–15 |
 | **God-grade weighted (incl. org W8)** | **~95%** | R5 concrete **G-02 ✅** · supercap **G-03** open | Concrete remote `manifest-bridge` on git `fe22437` without `[patch]` |
 | **Hot-path proof coverage** | **~26%** | **18/69** primary | **18/119 ≈ 15%** unified — **by design; not 100%** |
-| **Scoped true 100% (toward Done)** | **~93–95%** | **G-03** (supercap) only in W8 family | **G-02** cartridge CI closed **2026-05-29** |
+| **Scoped true 100% (toward Done)** | **~96–98%** | **G-03** (supercap, optional) + **FFI** horizon | **G-02** cartridge CI closed **2026-05-29** |
 | **Remaining scoped blockers** | — | **2** | **G-03** supercap remote · **FFI** (horizon) |
 
 **Do not** report hot-path **26%** or stale org W8 **0%** as “god-grade ~26%.” Use the row that matches the question.

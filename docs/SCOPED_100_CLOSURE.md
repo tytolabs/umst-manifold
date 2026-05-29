@@ -1,7 +1,8 @@
 # Scoped true 100% — honest closure (god-grade)
 
-**As of:** 2026-05-22  
-**SSOT:** [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) · [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) · [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)
+**As of:** 2026-05-29  
+**Pin:** manifold `main` @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) · concrete cartridge **G-02** @ **6742fa3**  
+**SSOT:** [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) · [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) · [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
 
 ---
 
@@ -9,12 +10,13 @@
 
 | Ceiling | Status | Honest label |
 |---------|--------|--------------|
-| **In-repo automation (17 rows)** | **17 / 17 = 100%** | All checklist automation criteria green when run per quick-verify |
+| **In-repo automation (16 rows)** | **16 / 16 = 100%** | All checklist automation criteria green when `verify_umst_stack.sh` exit **0** @ **fe22437** |
 | **Hot-path Lean enforcement** | **18 / 69 ≈ 26%** · **18 / 119 ≈ 15%** | **By design** — not a failure mode |
 | **Lean on inference / robot loop** | **No** | Export + lock + parity only; never `lake` per step |
-| **Scoped true 100%** | **1 / 3 blockers → Done** | **~33%** at Done morphism (B3); B1 W8 + B2 FFI open |
+| **Org W8** | publish **1/1** · concrete **G-02** **1/1** · supercap **0/1** | Phase 1 + **G-02** **Done**; **G-03** optional |
+| **Scoped true 100% (toward Done)** | **~96–98%** | **FFI** horizon + optional **G-03** supercap |
 
-**Policy:** **17/17 automation** does **not** mean hot-path proof coverage, git-published cartridges (W8), or FFI extraction. Release `StrictCatalogMatch` default is **Done** (B3). See [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md).
+**Policy:** **16/16 automation** does **not** mean hot-path proof coverage, supercap remote CI, or FFI extraction. **Do not** report patch-green local-only tests as org W8 Done. See [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md).
 
 ---
 
@@ -29,11 +31,12 @@ Blocker ──evidence──▶ Done
 
 | ID | Blocker (domain) | Owner | Cannot automate | Evidence today | Done criterion |
 |----|------------------|-------|-----------------|----------------|----------------|
-| **B1** | **W8** — remote git + GHA without workspace `[patch]` | **human** (operator credentials) | `git push`, `gh`, cartridge PR merge, org trust | **Prep (machine):** `bash scripts/w8_publish_readiness.sh` exit **0** @ workspace — lock **119** + `0697014f…`, **16/16** markers, secrets hygiene, `manifest-bridge` + `[patch]` ([`AGENT_W8_STATUS.txt`](AGENT_W8_STATUS.txt)) | Phases 1–4 + done table in [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) |
+| **B1** | ~~**W8** — publish + concrete remote CI without `[patch]`~~ | — | — | **Done 2026-05-29:** `git ls-remote` → **fe22437**; cartridge **6742fa3**; GHA `manifest-bridge` on git dep; not patch-green local-only | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) G-01 + G-02 |
 | **B2** | **FFI** — extracted witnesses / attestation beyond digest pin | **human + code** (long horizon) | Full Lean→runtime certificate per lemma; no v1 CI row | R0 digest + `formal-witness` attestation only ([`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md)) | Separate FFI program + reviewed attestation API |
-| **B3** | ~~**Strict prod default**~~ | **Done** (in-repo) | — | `not(debug_assertions)` → `StrictCatalogMatch`; `for_staging()`; `for_release_profile()`; `manifest_strict_witness` **4/4**; `ci_god_grade_profile` **3/3**; gateway auto lock digest ([`umst_manifest.rs`](../src/manifest/umst_manifest.rs), [`ppo.rs`](../src/ai/ppo.rs)) | H.1–H.2 closed: release default strict + `ManifoldGateway::new` pins lock digest |
+| **B3** | ~~**Strict prod default**~~ | **Done** (in-repo) | — | `not(debug_assertions)` → `StrictCatalogMatch`; `for_staging()`; `manifest_strict_witness` **4/4**; gateway auto lock digest | H.1–H.2 closed @ 2026-05-22 |
+| **G-03** | Supercap remote `manifest-bridge` (optional) | **human** (operator) | Org GHA wiring when scheduled | Local `formal_anchors` **6/6** | Supercap CI on git-pinned manifold — optional polish |
 
-**Automation 17/17:** rows 1–17 in [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) § Automation criteria — **all at Done** (in-repo). **B1–B3** are **outside** that denominator.
+**Automation 16/16:** rows 1–16 in [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) § Automation criteria — **all at Done** (in-repo). **B2** + optional **G-03** are **outside** that denominator.
 
 ---
 
@@ -41,60 +44,39 @@ Blocker ──evidence──▶ Done
 
 | Metric | Value |
 |--------|-------|
-| **Remaining blockers (Done morphisms)** | **2** — B1 W8 · B2 FFI |
-| **Blockers at Done** | **1** — **B3** strict prod default + auto digest |
-| **% to scoped true 100%** | **~33%** (1/3 Done) |
+| **Required scoped blockers** | **1** — **B2** FFI (horizon) |
+| **Optional org polish** | **1** — **G-03** supercap remote CI |
+| **Blockers at Done** | **B1** W8 (Phase 1 + **G-02**) · **B3** strict prod |
+| **% to scoped true 100% (v1, excl. FFI)** | **~96–98%** — **G-03** optional only |
 
 **Partial Evidence (does not advance Done):**
 
-| Blocker | Partial % of that blocker | Why not Done |
-|---------|---------------------------|--------------|
-| B1 W8 | ~70% prep automated | `w8_publish_readiness.sh` + `w8_publish_readiness` test green; remote `git ls-remote` / GHA without `[patch]` still ❌ |
-| B3 Strict | **Done** | `default_grounding_contract` + `for_staging()` + gateway/UMST lock digest helpers |
-| B2 FFI | 0% in v1 | Horizon — not scheduled in automation rows |
+| Item | Status | Why not Done |
+|------|--------|--------------|
+| **G-03** supercap | Local **6/6** only | Remote GHA without `[patch]` not wired |
+| **B2** FFI | 0% in v1 | Horizon — not in automation rows |
 
-**Optional scoped view (2 blockers):** Remaining **W8 + FFI** only — **~33%** at Done (B3 closed).
-
-**Do not report:** hot-path **100%**, Lean-on-robot **100%**, or unscoped god-grade **100%**.
+**Do not report:** hot-path **100%**, Lean-on-robot **100%**, org W8 **0%** / publish **0/1**, or **G-02 pending** when cartridge **6742fa3** is merged.
 
 ---
 
-## B1 — W8 org steps (numbered, human-owned)
+## B1 — W8 org (closed 2026-05-29)
 
-**Runbook SSOT:** [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) · **Local code:** ✅ per [`AGENT_W8_STATUS.txt`](AGENT_W8_STATUS.txt)
+**Runbook SSOT:** [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) · **Gap register:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) G-01 / G-02
 
-| Step | Phase | Work (human) | Verify (cannot run unattended push) |
-|------|-------|--------------|-------------------------------------|
-| 1 | **0** | Manifold preflight: `cargo check`, `cargo test`, `verify_umst_stack.sh`, `bidirectional_catalog_check.sh` | Agent/CI may run; record `REV` |
-| 2 | **1** | Operator `git push origin main` on `tytolabs/umst-manifold` | `git ls-remote … refs/heads/main` |
-| 3 | **2** | Clean-clone verify **without** MaOS `[patch]` | `/tmp/umst-manifold-w8-verify` `cargo check` + `rg 'mod manifest'` in `cargo doc` |
-| 4 | **3** | Cartridge git `rev` pin; **remove** `[patch]`; push cartridge | `cargo test -p umst-concrete-cartridge --features manifest-bridge` (no sibling path) |
-| 5 | **4** | Enable GHA `manifest-bridge` job in cartridge `rust.yml` | Green workflow on `main` |
-| 6 | **5** | Close W8 in docs (`AGENT_STATUS`, `TODO_COMPLETION` remote row) | `rg 'W8.*PENDING'` → no stale blockers |
+| Phase | Work | Status | Proof |
+|-------|------|--------|-------|
+| **1** | Publish `tytolabs/umst-manifold` `main` | ✅ | `git ls-remote` → **fe22437**; CI **26649667467** |
+| **2** | Concrete cartridge CI without `[patch]` | ✅ | `rev = fe22437`; cartridge **6742fa3**; `manifest_bridge_catalog_grounding` on git dep; remote CI green |
 
-**Cannot automate:** credentials for `git push`, PR merge, org repo permissions.
-
-### B1 prep Evidence (machine-verified — does not advance Done)
-
-| Check | Command / signal | Status |
-|-------|------------------|--------|
-| Prep gate script | `bash scripts/w8_publish_readiness.sh` → `w8_publish_readiness: OK` | ✅ workspace |
-| Regression test | `cargo test --test w8_publish_readiness` | ✅ |
-| Lock R0 pin | `module_count=119`, digest prefix `0697014f` | ✅ |
-| God-grade wiring | **16/16** markers present in `verify_umst_stack.sh` | ✅ |
-| Secrets hygiene | no tracked/staged `.env` / credentials paths | ✅ |
-| Manifold API | `pub mod manifest`; `manifest-bridge` feature | ✅ |
-| Cartridge local | `cargo test -p umst-concrete-cartridge --features manifest-bridge` with workspace `[patch]` | ✅ |
-| Full stack (optional) | `UMST_W8_RUN_FULL_STACK=1 UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/w8_publish_readiness.sh` | operator |
-
-**Step counts (W8 publish morphism):** **1 machine-verified** prep step (script + test) · **5 human-only** steps (Phases 1–5 in table above). Phase **0** preflight is covered by the prep script; Phases **1–5** unchanged and still require operator credentials.
+**Prep (still useful, not Done by itself):** `bash scripts/w8_publish_readiness.sh` — lock **119**, **16/16** markers, secrets hygiene.
 
 ---
 
 ## B2 — FFI horizon (strict, outside v1)
 
 | Field | Value |
-|-------|--------|
+|-------|-------|
 | **Meaning** | Extracted proof witnesses or FFI attestation linking Lean terms to runtime certificates |
 | **Owner** | **human + code** (formal / long program) |
 | **Test today** | None in scoped v1 — digest attestation only: `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` |
@@ -106,15 +88,15 @@ Blocker ──evidence──▶ Done
 ## B3 — Strict production default — **Done** (2026-05-22)
 
 | Field | Value |
-|-------|--------|
+|-------|-------|
 | **Gap** | ~~`UmstManifestBuilder::default()` advisory~~ → release `StrictCatalogMatch` via `default_grounding_contract()`; debug uses `for_staging()` |
 | **Owner** | **Done** (in-repo) |
-| **Test** | `manifest_strict_witness` **4/4**; `ci_god_grade_profile` **3/3**; `formal_witness` gateway pin test; `ManifoldGateway::new` + `with_lock_catalog_schema_digest()` |
-| **Evidence** | G-04: `default_grounding_contract()` + `UMST_RELEASE_MANIFEST_PROFILE=1`; G-05: `UMST_LOCK_UPSTREAM_CATALOG_DIGEST_HEX` + `lock_upstream_catalog_digest_bytes()`; `verify_umst_stack.sh` exit **0** @ **2026-05-22**; [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) |
+| **Test** | `manifest_strict_witness` **4/4**; `ci_god_grade_profile` **3/3**; `formal_witness` gateway pin test |
+| **Evidence** | G-04/G-05; verify exit **0** @ **2026-05-29**; [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) |
 
 ---
 
-## Quick verify (automation 17/17 — in-repo only)
+## Quick verify (automation 16/16 — in-repo only)
 
 ```bash
 cd umst-manifold
@@ -126,7 +108,9 @@ cargo test --test regime_soundness_claims_allowlist
 UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh
 ```
 
-**Scoped blockers:** no single command closes B1–B2; run `bash scripts/w8_publish_readiness.sh` for W8 prep, then human Phases 1–5 after operator push.
+**Org proof (G-02):** `git ls-remote https://github.com/tytolabs/umst-manifold.git refs/heads/main` → **fe22437**; concrete cartridge workflow green on git-pinned `manifest-bridge` (**6742fa3**).
+
+**Scoped blockers:** **B2** FFI (horizon); optional **G-03** supercap remote CI.
 
 ---
 
@@ -134,7 +118,7 @@ UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh
 
 | Doc | Role |
 |-----|------|
-| [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) | 17 automation rows + org/horizon |
+| [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) | 16 automation rows + org/horizon |
 | [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) | Three ceilings |
-| [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) | Verify ledger timestamps |
-| [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md) | Executive rollup (sync scoped % here when B* close) |
+| [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) | Verify ledger @ **fe22437** |
+| [`PROGRESS_PLAIN.md`](PROGRESS_PLAIN.md) | Plain-English rollup |

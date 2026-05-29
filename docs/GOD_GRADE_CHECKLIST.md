@@ -101,7 +101,7 @@ Targets are **engineering budgets** for the policy gateway + scalar gates, not W
 | **Hot-path Lean modules** | **18 / 69 ≈ 26%** · **18 / 119 ≈ 15%** | By design — **not** automation % |
 | **Org W8 (outside 16-row denominator)** | publish **1/1** @ **fe22437** · concrete **G-02** **1/1** @ **6742fa3** · supercap **0/1** | **G-03** optional — [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) |
 
-**Honest policy:** **16/16 automation** means every in-repo CI row above is green for its **stated host scope** and is invoked by the stack verify bundle. Rows 14–15 defer rollout-approx and utility certificates. B3 strict prod `default()` remains product ops, not an automation-row failure.
+**Honest policy:** **16/16 automation** means every in-repo CI row above is green for its **stated host scope** and is invoked by the stack verify bundle. Rows 14–15 defer rollout-approx and utility certificates. B3 strict prod default is **Done** in-repo (not an automation-row failure).
 
 ---
 
@@ -137,7 +137,7 @@ Track **H.1** closed — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) G-04/G
 |-----------|--------|-------|--------------|-----------|
 | Extracted witnesses / FFI | ❌ **horizon Blocker** | **human + code** (long) | Digest attestation only: `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` | ❌ v1 — no FFI CI row |
 
-**Cannot automate:** per-lemma Lean→runtime extraction without new TCB review. **Do not** conflate with hot-path **26%** or automation **17/17**. [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md) · [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md).
+**Cannot automate:** per-lemma Lean→runtime extraction without new TCB review. **Do not** conflate with hot-path **26%** or automation **16/16**. [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md) · [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md).
 
 ---
 
