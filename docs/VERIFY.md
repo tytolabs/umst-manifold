@@ -175,17 +175,19 @@ cargo run --features gate-server-bin --bin gate_server
 # POST JSON to http://127.0.0.1:<port>/gate  (see tests/gate_server_http.rs)
 ```
 
-### 3.2 Downstream cartridge (W8) — workspace patch
+### 3.2 Downstream cartridge (W8) — git pin (G-02) or optional `[patch]`
 
-`umst-concrete-cartridge` pins git `main`; local W8 verification uses `[patch]` to sibling manifold:
+**Production / CI (G-02 closed 2026-05-29):** `umst-concrete-cartridge` pins `umst-manifold` by git **`rev = fe22437`** (no workspace `[patch]`). Remote GHA runs `manifest-bridge` on the git dependency alone.
 
 ```bash
 cd ../umst-concrete-cartridge
-cargo check -p umst-concrete-cartridge --features manifest-bridge
-cargo check -p umst-concrete-cartridge --features manifold-manifest
+cargo test -p umst-concrete-cartridge --features manifest-bridge
+cargo test -p umst-concrete-cartridge --features manifest-bridge --test manifest_bridge_catalog_grounding
 ```
 
-CI cartridge jobs **do not** enable `manifest-bridge` until `tytolabs/umst-manifold` `main` publishes `manifest` (see [`AGENT_STATUS.md`](AGENT_STATUS.md)).
+**Monorepo dev (optional):** add workspace `[patch]` in `umst-concrete-cartridge/Cargo.toml` to sibling `../umst-manifold` when testing unpublished manifold changes before bumping the cartridge `rev`.
+
+Prep gate (no push): `bash scripts/w8_publish_readiness.sh` — accepts git pin **or** workspace patch.
 
 ### 3.3 Release grounding (`StrictCatalogMatch` + `formal-witness`)
 
@@ -233,10 +235,11 @@ Local one-shot:
 cargo test --features formal-witness --test manifest_strict_witness
 ```
 
-Cartridge release check (workspace patch):
+Cartridge release check (git-pinned manifold; optional MaOS `[patch]` for pre-publish dev):
 
 ```bash
-cargo check -p umst-concrete-cartridge --features manifest-bridge,manifold-manifest
+cd ../umst-concrete-cartridge
+cargo test -p umst-concrete-cartridge --features manifest-bridge,manifold-manifest
 ```
 
 ---

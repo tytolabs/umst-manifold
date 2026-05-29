@@ -3,8 +3,9 @@
 # Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 #
 # W8 publish *prep* gate (machine-verified, no git push).
-# Checks: lock 119, digest 0697014f, 16/16 checklist evidence, manifest-bridge,
-# no dirty secrets, Phase-0 stack scripts. Operator push/clone/GHA remain human-only.
+# Checks: lock 119, digest 0697014f, 16/16 checklist evidence, manifest-bridge
+# (git-pinned cartridge G-02 OR workspace [patch]), no dirty secrets, Phase-0 preflight.
+# Operator push/clone/GHA remain human-only.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -208,15 +209,24 @@ else
   ok "bidirectional_catalog_check.sh exit 0"
 fi
 
-# --- 8. Concrete cartridge manifest-bridge (local [patch]) ---
+# --- 8. Concrete cartridge manifest-bridge (git pin or local [patch]) ---
 if [[ -d "${CONCRETE}" ]]; then
-  step "concrete manifest-bridge (workspace patch)"
+  step "concrete manifest-bridge (git-pinned or workspace patch)"
   cd "${CONCRETE}"
+  CARTRIDGE_CRATE="${CONCRETE}/crates/umst-concrete-cartridge/Cargo.toml"
   if grep_q '\[patch\."https://github.com/tytolabs/umst-manifold.git"\]' Cargo.toml \
     && grep_q 'path = "../umst-manifold"' Cargo.toml; then
-    ok "workspace patch to sibling umst-manifold (local W8 prep)"
+    ok "workspace [patch] to sibling umst-manifold (local W8 dev)"
+  elif [[ -f "${CARTRIDGE_CRATE}" ]] \
+    && grep_q 'umst-manifold = { git = "https://github.com/tytolabs/umst-manifold.git"' "${CARTRIDGE_CRATE}" \
+    && grep -qE 'rev = "[0-9a-f]{7,40}"' "${CARTRIDGE_CRATE}" 2>/dev/null; then
+    MANIFOLD_REV="$(
+      grep -E 'umst-manifold = \{ git' "${CARTRIDGE_CRATE}" \
+        | sed -n 's/.*rev = "\([^"]*\)".*/\1/p' | head -1
+    )"
+    ok "git-pinned umst-manifold rev=${MANIFOLD_REV:0:12}… (G-02; no workspace [patch])"
   else
-    fail "expected workspace [patch] to ../umst-manifold for local prep"
+    fail "concrete needs workspace [patch] to ../umst-manifold OR git rev pin on umst-manifold"
   fi
   cargo test -p umst-concrete-cartridge --features manifest-bridge --lib --quiet
   ok "cargo test manifest-bridge (lib)"

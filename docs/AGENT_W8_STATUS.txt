@@ -1,7 +1,7 @@
 UMST W8 — manifest-bridge (completed)
 =====================================
-Date: 2026-05-21
-Workspace: MaOS-Workspace/umst-manifold + umst-concrete-cartridge (patched)
+Date: 2026-05-29 (remote closure)
+Workspace: MaOS-Workspace/umst-manifold + umst-concrete-cartridge (git-pinned)
 
 ## Manifold (`umst-manifold`)
 
@@ -9,33 +9,33 @@ Workspace: MaOS-Workspace/umst-manifold + umst-concrete-cartridge (patched)
 - `src/manifest/mod.rs` re-exports:
   - `GateRegistry`, `GroundingContract`, `UmstManifest`, `UmstManifestBuilder`
   - from `src/manifest/umst_manifest.rs`
-- `Cargo.toml` features (already present):
+- `Cargo.toml` features:
   - `manifest-bridge = []`  (downstream marker)
   - `manifold-manifest = []`
+- **Phase 1 publish:** `tytolabs/umst-manifold` `main` @ **fe2243716112f2504b063e55eb1e15e97ced4bdc** (`fe22437`); CI run 26649667467 green.
 
 ## Concrete cartridge (`umst-concrete-cartridge`)
 
 - `crates/umst-concrete-cartridge/Cargo.toml`:
-  - `manifest-bridge = ["umst-manifold/manifest-bridge"]`
-  - `manifold-manifest = ["umst-manifold/manifold-manifest"]`
+  - `umst-manifold = { git = "…/umst-manifold.git", rev = "fe22437…" }`
+  - `manifest-bridge = ["umst-manifold/manifest-bridge", …]`
+- **G-02:** workspace `[patch]` removed; GHA `manifest-bridge` on git dep only.
 - `src/facade/mod.rs`: `#[cfg(feature = "manifest-bridge")] pub use umst_manifold::manifest::*;`
-- Workspace `Cargo.toml` patch (W8 local verify):
-  - `[patch."https://github.com/tytolabs/umst-manifold.git"]`
-  - `umst-manifold = { path = "../umst-manifold" }`
 
 ## Cargo verification (exit 0)
 
 ```text
 cd umst-manifold && cargo check
-cd umst-concrete-cartridge && cargo check -p umst-concrete-cartridge --features manifest-bridge
-cd umst-concrete-cartridge && cargo check -p umst-concrete-cartridge --features manifest-bridge,manifold-manifest
+cd umst-concrete-cartridge && cargo test -p umst-concrete-cartridge --features manifest-bridge
+bash umst-manifold/scripts/w8_publish_readiness.sh   # accepts git pin OR optional [patch]
 ```
 
-Patch resolves sibling `umst-manifold` v0.1.0; façade uses typed `UmstManifest` / `GroundingContract` from `umst_manifold::manifest`.
+## Optional monorepo dev
 
-## Remaining (ops, not code)
+- Workspace `[patch]` to `../umst-manifold` is **optional** for unpublished manifold work; not required for G-02 / remote CI.
 
-- Publish `tytolabs/umst-manifold` `main` with `pub mod manifest` so cartridge CI works **without** workspace `[patch]`.
-- GHA: committed `../umst-manifold` patch may break remote CI unless manifold is path-available or patch is removed before merge.
+## W8 status: DONE (local + remote)
 
-## W8 status: DONE (local patch + feature forward)
+- **G-01** manifold publish @ **fe22437**
+- **G-02** concrete cartridge CI without `[patch]`
+- **G-03** supercap remote `manifest-bridge` CI — optional follow-up
