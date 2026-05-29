@@ -22,26 +22,28 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 This is the **physics substrate** in the UMST stack — not an end-user application. It owns Discrete Exterior Calculus (DEC), the thermodynamic gate, continuous solver kernels, and the Lean-catalog witnesses that tie Rust modules to formal obligations. Domain chemistry, Python bindings, and MCP tools live in sibling cartridges; this repo stays a pure library so conservation structure and admissibility gates are shared once across every material domain.
 
-### What improved after publish (2026-05-29)
+### What changed after publish (2026-05-29)
 
-Publishing to [`tytolabs/umst-manifold`](https://github.com/tytolabs/umst-manifold) forced the verification story to match what CI actually runs. The **119-module dual-pin catalog lock** is now the production contract; `scripts/verify_umst_stack.sh` with `UMST_REQUIRE_FORMAL_EXPORT=1` is the master local parity command ([`docs/VERIFY.md`](docs/VERIFY.md)). GitHub [`rust.yml`](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml) [run 26649667467](https://github.com/tytolabs/umst-manifold/actions/runs/26649667467) is green after the clippy fix in [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437). Downstream cartridges can pin this crate by git revision instead of monorepo path alone.
+Publishing to [`tytolabs/umst-manifold`](https://github.com/tytolabs/umst-manifold) closed the loop between what we claim and what CI enforces. The **119-module dual-pin catalog lock** is the production contract — every Lean module in the unified export affects the digest pinned in `artifacts/catalog.lock.json`. Local parity is one command: `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` ([`docs/VERIFY.md`](docs/VERIFY.md)). **`main` @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437)** is the last code CI green pin; status narrative @ [`8b97af7`](https://github.com/tytolabs/umst-manifold/commit/8b97af7). Cartridges can depend on this crate by **git revision** instead of monorepo path alone.
 
-### Honest limits
+### Three ceilings (do not mix these)
 
-We report completion in three buckets — see the [single % table](docs/GOD_GRADE_PROGRESS_VERIFIED.md#headline-percentages-ssot--one-table) and [`docs/COMPLETION_TRUTH.md`](docs/COMPLETION_TRUTH.md):
+Verification answers three different questions — not one blended “completion %”. See [`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md) and the [headline table](docs/GOD_GRADE_PROGRESS_VERIFIED.md#headline-percentages-ssot--one-table).
 
-| Bucket | Status | Meaning |
-|--------|--------|---------|
-| **Plan** | **100%** | Documented god-grade ladder milestones are closed. |
-| **Automation** | **16/16** | CI scripts, catalog guards, and stack verify hooks pass. |
-| **Hot path** | **~26%** (18/69) | By design — only primary-fiber modules on the inference-critical path carry full witness wiring; the rest are staged or cartridge-scoped. |
+| Ceiling | Status | What it means |
+|---------|--------|---------------|
+| **Automation** | **16/16** | In-repo CI rows — gates, catalog pin, manifest, epistemic traces — green when the stack verify script exits 0. |
+| **Hot path** | **~26%** (**18/69**) · **~15%** unified (**18/119**) | Share of the Lean library hand-wired on the inference gate path. **By design** — the robot runs pure Rust witnesses, not a Lean prover at inference time. |
+| **Org W8** | Phase 1 **done** · **G-02 done** · **G-03** optional | **W8 Phase 1:** manifold published on GitHub. **G-02:** [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) CI runs `manifest-bridge` on a git dependency **without** workspace **`[patch]`** (closed 2026-05-29). **G-03:** supercap remote bridge remains optional. |
 
-That split is intentional: we do not inflate hot-path % to match plan %. **G-02** concrete cartridge CI without workspace `[patch]` is closed (**2026-05-29**); remaining scoped blockers are **G-03** (supercap) and **FFI** — see [`docs/AGENT_STATUS.md`](docs/AGENT_STATUS.md).
+**119 vs 69:** **119** is the live unified module count in the production lock (dual-fiber merge). **69** is the primary-fiber count — the denominator for hot-path wiring %. Do not cite **69** as the current library size; do not equate **119/119 pin** with **~26% hot path**.
+
+Scoped v1 blockers: **G-03** (supercap, optional) and **FFI** (horizon). [`docs/AGENT_STATUS.md`](docs/AGENT_STATUS.md).
 
 <!-- readme:god-grade-status -->
 **Verify locally:** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh`
 
-**CI badge:** The [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml) badge tracks the **latest push on `main`** — it is not a guarantee for your branch until that workflow finishes. After you push, wait for the run to complete before claiming green.
+**CI badge:** The [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml) badge reflects the **latest push on `main`** — wait for [`rust.yml`](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml) to finish before claiming green on your branch.
 
 **Stack thread (catalog → manifold → cartridge):** [`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit) exports the **unified 119-module Lean catalog** (`cross_repo_merge: true`) → this repo pins `artifacts/catalog.lock.json` and runs DEC + god-grade witnesses → [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) and sibling [`umst-supercap-cartridge`](../umst-supercap-cartridge) mount domain physics on `IScienceCartridge`. Normative order and philosophy: [GOD_GRADE_WITNESS_LADDER § Proof library · gate law · MI envelope · no Rust axioms](docs/GOD_GRADE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms).
 
@@ -483,11 +485,11 @@ We maintain strict formal proof anchors (`formal_status`) mapping our Rust imple
 
 ### Lean catalog lock (dual-pin — production **119** modules)
 
-**Production pin (manifold + formal):** digest `0697014fb5b90a3a…` · **119** modules · `cross_repo_merge: true` — see [`docs/GOD_GRADE_PROGRESS_VERIFIED.md`](docs/GOD_GRADE_PROGRESS_VERIFIED.md).
+**Production pin:** digest `0697014fb5b90a3a…` · **119** modules · `cross_repo_merge: true` — see [`docs/GOD_GRADE_PROGRESS_VERIFIED.md`](docs/GOD_GRADE_PROGRESS_VERIFIED.md).
 
-**Historical primary-only pin:** digest `c1d9ba2aa402…` · **69** modules (pre–`formal-fiber-merge`; rollback documented in [`docs/FORMAL_FIBER_MERGE_RUNBOOK.md`](docs/FORMAL_FIBER_MERGE_RUNBOOK.md)).
+**Historical primary-only pin:** digest `c1d9ba2aa402…` · **69** modules — pre–`formal-fiber-merge` rollback only ([`docs/FORMAL_FIBER_MERGE_RUNBOOK.md`](docs/FORMAL_FIBER_MERGE_RUNBOOK.md)).
 
-The manifold pins the exported Lean inventory from [`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit) in **`artifacts/catalog.lock.json`** (119 modules; digest enforced at build via `build.rs` → `UMST_CATALOG_LOCK_SHA256_HEX`). Canonical export: `umst-formal-double-slit/artifacts/catalog.json` (`make lean-catalog-export` with approved cross-repo merge). Override lock path at build: `UMST_CATALOG=/path/to/lock.json`. Status and handoffs: [`docs/AGENT_STATUS.md`](docs/AGENT_STATUS.md). Evidence appendices: [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md) (index) and the audit links above.
+The manifold pins the exported Lean inventory from [`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit) in **`artifacts/catalog.lock.json`**. Digest is enforced at build via `build.rs` → `UMST_CATALOG_LOCK_SHA256_HEX`. Canonical export: `umst-formal-double-slit/artifacts/catalog.json` (`make lean-catalog-export`). Override at build: `UMST_CATALOG=/path/to/lock.json`. Handoffs: [`docs/AGENT_STATUS.md`](docs/AGENT_STATUS.md).
 
 ---
 
