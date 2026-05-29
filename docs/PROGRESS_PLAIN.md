@@ -1,7 +1,7 @@
 # UMST progress — plain English
 
 **Report date:** 2026-05-29  
-**Pin:** `main` @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) (local HEAD = remote `refs/heads/main`).  
+**Pin:** `main` @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) (intellection-3to3; local HEAD = remote `refs/heads/main`).  
 **Stack check (this wave):** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` → exit **0**, **`verify_umst_stack: OK`** (CI catalog-drift @ **fe22437**, 2026-05-29). Prior exit **101** (manifest digest unit tests @ 2026-05-21) is **not** reproducible on current `main`.  
 **CI:** GitHub **CI** + **UMST catalog drift** workflows **success** on push **fe22437** (rustfmt/clippy `manual_contains` fix).  
 **G.2 / G.3 (settled):** `epistemic_trace_schema` **13/13** · `trace_calibration` **8/8** — in verify tail on last green run.  
@@ -30,7 +30,7 @@ Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IM
 | **Digest pin** | **119 / 119** | The proof library version is locked in CI — every Lean module in the unified export affects the fingerprint. |
 | **Hot path** | **18 / 69** primary (~**26%**) · **18 / 119** unified (~**15%**) | How much of the proof set is **hand-wired** into live gate code on the robot — intentionally low. **Not 100%.** |
 | **Automation checklist** | **16 / 16** | In-repo CI rows (gates, manifest, epistemic host checks, catalog pin) — **not** git publish. |
-| **Org W8** | **1 / 1** publish (`main` @ **fe22437**) · **0 / 1** remote bridge CI without `[patch]` | Phase 1 **done**; **G-02** / **G-03** = Phase 2 |
+| **Org W8** | publish **1/1** @ **fe22437** · concrete bridge **1/1** · supercap **0/1** | Phase 1 + **G-02** **done**; **G-03** optional |
 | **Operational coverage** \(U_{\mathrm{op}}(t)\) | Dynamic | Grows with deployment evidence — **not** a completion score ([`ADAPTIVE_WITNESS_COVERAGE.md`](ADAPTIVE_WITNESS_COVERAGE.md)). |
 | **Scoped true 100% (toward Done)** | **~96–98%** | **G-03** (optional) + **FFI** horizon; **B3/G-04/G-05/G-02** closed; **W8 Phase 1** done |
 
@@ -55,7 +55,7 @@ Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IM
 | **Hot path vs U_op** | static wired **18/69** · hot **18/119** | **~26%** hot · **~15%** unified | \(U_{\mathrm{op}}\) grows on robot; **not 100%** | Docs only |
 | **Horizon FFI (B2)** | **0 / 1** extracted witnesses on hot path | **0%** (excluded) | Long-term; policy forbids Lean on inference | Excluded from v1 automation % |
 | **Weighted witness R0–R6 (in-repo)** | **6.89 / 7** rungs | **~98%** | R6 host **~100%**; deferred Lean morphisms on checklist notes | Was **~84%** stale |
-| **Weighted witness (incl. org W8)** | — | **~95%** | R5 publish done; **G-02** remote CI open | Was **~91%** pre-publish |
+| **Weighted witness (incl. org W8)** | — | **~98%** | R5 publish + concrete bridge **done**; **G-03** supercap optional | Was **~95%** with **G-02** open |
 | **Scoped true 100% (toward Done)** | **3 / 4** Done (B3 · W8 P1 · G-02) | **~96–98%** | **G-03** (optional) · **FFI** (horizon) | Was **~90–92%** with publish open |
 
 ---
@@ -86,9 +86,9 @@ Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IM
 | **R2** | Landauer / MI | **100%** | 1/1 rung | G.3 host closed |
 | **R3** | Mix / constitutive | **100%** | 1/1 rung | |
 | **R4** | Kleisli / probe | **100%** | 1/1 rung | 6/6 tests |
-| **R5** | Manifest / cartridges | **100%** local · publish **done** · remote bridge CI open | 1/1 in-repo; **G-02** / **G-03** | |
+| **R5** | Manifest / cartridges | **100%** local · **G-02** concrete remote **done** | 1/1 in-repo; **G-03** supercap optional | |
 | **R6** | Epistemic traces | **100%** host rows | 13+8 tests in stack | Lean utility certs deferred |
-| **Org** | W8 Phase 1 publish · Phase 2 CI | **Phase 1 100%** · Phase 2 **0%** | publish **1/1** @ **fe22437**; **G-02** next |
+| **Org** | W8 P1 publish · P2 concrete · **G-03** supercap | **P1 100%** · **G-02 100%** · **G-03 0%** | **`fe22437`** on GitHub (intellection-3to3); concrete GHA git-pinned @ **a779610**/**6742fa3** — no `[patch]` |
 | **Hot path** | Runtime Lean alignment | **~26%** | 18/69 primary | **By design — not 100%** |
 
 **Headline blends (honest):**
@@ -96,7 +96,7 @@ Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IM
 - **Automation:** **16/16 = 100%** (when verify green @ **fe22437**)
 - **Scoped true 100% (toward Done):** **~96–98%** — **G-03** (optional) + **FFI** horizon; **B3/G-04/G-05/G-02** closed; **W8 Phase 1** done
 - **God-grade weighted R0–R6 in-repo:** **~98–100%** (7/7 rungs when stack green)
-- **God-grade weighted incl. org:** **~95%** (publish done; remote bridge CI open)
+- **God-grade weighted incl. org:** **~98%** (publish + concrete **G-02** done; **G-03** supercap optional)
 - **Remaining scoped blocker count:** **1–2** (optional **G-03** · **FFI** horizon)
 
 ---
@@ -143,7 +143,7 @@ Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IM
 | **`umst-manifold`** | Runtime gates, manifest, ROS contracts, catalog lock consumer | Production pin **119**; stack verify green |
 | **`umst-formal-double-slit`** | Primary Lean export + `export_catalog.py` | Canonical catalog JSON; TCB `physicalSecondLaw` |
 | **`umst-formal`** | Second fiber merged into unified export | 50 modules-only in merge; Appendix B traceability |
-| **`umst-concrete-cartridge`** | Domain policy + `manifest-bridge` | **G-02 done** — git **rev** `fe22437`, GHA `manifest-bridge` without `[patch]` |
+| **`umst-concrete-cartridge`** | Domain policy + `manifest-bridge` | **G-02 done** @ **a779610**/**6742fa3** — git **rev** `fe22437`, remote CI green, GHA `manifest-bridge` without `[patch]` |
 | **`umst-supercap-cartridge`** | Scaling / formal anchors | `formal_anchors` 6/6 local |
 | **`umst-prototype`** | Parity reference (dual-run **8/8**) | Shim retained; full 2a delete optional |
 

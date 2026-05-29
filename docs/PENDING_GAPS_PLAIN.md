@@ -37,12 +37,14 @@
 
 | ID | Status | Owner | Plain read |
 |----|--------|-------|------------|
-| **W8** | **Phase 1 done** · **G-03 open** | **Human** (G-03) | Manifold `main` @ `fe22437` published; **G-02** cartridge CI on git dep green; supercap remote `manifest-bridge` still **G-03** |
+| **W8 Phase 1 (G-01)** | **Done** | — | `main` @ **fe22437** published |
+| **G-02** | **Done** | Code + CI | Concrete GHA `manifest-bridge` without `[patch]` @ **a779610**/**6742fa3**; git-pinned **fe22437** + remote CI green |
+| **G-03** | **OPEN** (optional) | **Human** | Supercap remote `manifest-bridge` in GHA |
 | **G-04 / B3** | **Done** (in-repo) | Code | `not(debug_assertions)` → `StrictCatalogMatch`; `for_release_profile()` in verify |
 | **G-05** | **Done** (in-repo) | Code | Strict `build()` uses composed digest; manifest tests green on 2026-05-29 verify |
 | **FFI / G-26** | **OPEN** (horizon) | Long program | No Lean on inference path by policy — outside **16**-row automation % |
 
-**Scoped true 100% headline:** **~90–92%** — only **W8** blocks the v1 scoped claim; **FFI** is horizon-only. **Do not** claim hot-path **100%** or equate **119/119** pin with **26%** wiring.
+**Scoped true 100% headline:** **~96–98%** — **G-03** (optional) + **FFI** horizon only; **W8 Phase 1** and **G-02** closed. **Do not** claim hot-path **100%** or equate **119/119** pin with **26%** wiring.
 
 **Depth vs breadth:** **Breadth** (digest pin, automation, gates) is at or near ceiling when verify is green. **Depth** (hand-wired Lean on the robot path) stays **~26%** by design; **\(U_{\mathrm{op}}(t)\)** is operational evidence, not a completion score.
 
@@ -54,8 +56,8 @@
 |-------------------------|----------------|-------------|
 | **Plan work on disk** (14 YAML todos + fiber merge) | **100%** | Re-run verify after edits only |
 | **Production catalog pin (R0)** | **100%** | **119** modules, digest `0697014f…` — not **69** |
-| **Local safety bundle** (`verify_umst_stack.sh` exit 0) | **100% robustness** | Green @ **2026-05-29** (local); not every optional test target is in the script tail |
-| **In-repo automation** (16 checklist rows) | **100%** | **16/16** — G.2 **13/13** · G.3 **8/8**; GitHub **CI** green only after latest `main` push completes |
+| **Local safety bundle** (`verify_umst_stack.sh` exit 0) | **100% robustness** | Green @ **2026-05-29** on CI (**fe22437**); not every optional test target is in the script tail |
+| **In-repo automation** (16 checklist rows) | **100%** | **16/16** — G.2 **13/13** · G.3 **8/8**; manifold **CI** green on **fe22437** |
 | **Organization / remote consumers** | **publish done** · **G-02 done** · **G-03** optional | **`main` @ fe22437**; concrete GHA without `[patch]` |
 | **Hot-path Lean on inference** | **~26%** of primary **69** · **~15%** of **119** | **By design** — **not 100%**; never conflate with pin |
 | **Scoped true 100% (v1, excl. FFI)** | **~96–98%** | **G-03** optional — **G-04** · **G-05** · **B3** · G.2/G.3 · **G-02** closed |
@@ -123,15 +125,14 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 
 ### Organization — blocks remote / org “100%”
 
-#### G-01 — Publish manifold to GitHub (`main`) — **W8**
+#### G-01 — Publish manifold to GitHub (`main`) — **W8 Phase 1 — closed (2026-05-29)**
 
 | | |
 |--|--|
-| **Blocks** | Remote partners and cartridge GitHub Actions cannot depend on `tytolabs/umst-manifold` without a workspace `[patch]`. |
-| **Already done** | All APIs and tests exist locally; `manifest-bridge` passes with sibling patch. |
-| **Prep (machine)** | `bash scripts/w8_publish_readiness.sh` exit **0** — lock **119** + digest `0697014f…`, **16/16** markers, no staged `.env`/credentials, local `manifest-bridge`; `cargo test --test w8_publish_readiness`. |
-| **Proof** | `cargo test -p umst-concrete-cartridge --features manifest-bridge` exit 0 with patch; [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md). |
-| **Human** | Operator: push `main` / tag. **Agents must not `git push`.** Verify: `git ls-remote https://github.com/tytolabs/umst-manifold.git refs/heads/main` then clean-clone `cargo check -p umst-manifold`. |
+| **Blocks** | **0%** — `tytolabs/umst-manifold` `main` @ **fe22437**. |
+| **Done** | `pub mod manifest`; catalog lock **119**; drift CI + verify green on **fe22437**. |
+| **Proof** | `git ls-remote https://github.com/tytolabs/umst-manifold.git refs/heads/main` → **fe22437** (intellection-3to3); CI run **26649667467** success on GitHub **main**. |
+| **Human** | — |
 
 #### G-02 — Concrete cartridge CI on git dep (no patch) — **closed (2026-05-29)**
 
@@ -139,18 +140,18 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 |--|--|
 | **Blocks** | *(none — closed)* |
 | **Done** | Git `rev = fe22437`; no workspace `[patch]`; GHA step `manifest-bridge tests (pinned umst-manifold)`; `tests/manifest_bridge_catalog_grounding.rs` asserts **119**-module digest `0697014f…` on git dep alone. |
-| **Proof** | `cargo test -p umst-concrete-cartridge --features manifest-bridge` exit **0** locally; cartridge `rust.yml` on push to `main`. |
+| **Proof** | Cartridge commits **a779610** / **6742fa3**; `cargo test -p umst-concrete-cartridge --features manifest-bridge` exit **0**; remote **CI green** on git-pinned manifold (not patch-green local-only). |
 | **Human** | Bump cartridge git pin when manifold releases next digest-changing commit. |
 
 #### G-03 — Supercap remote `manifest-bridge`
 
 | | |
 |--|--|
-| **Blocks** | Supercap remote CI weaker than concrete until **G-01**. |
+| **Blocks** | Supercap remote CI weaker than concrete — optional org polish. |
 | **Already done** | `formal_anchors` **6/6** locally. |
-| **Prep (machine)** | `w8_publish_readiness.sh` runs concrete `formal_anchors` under `manifest-bridge`; supercap remote CI still **human** after **G-01**. |
+| **Prep (machine)** | `w8_publish_readiness.sh` runs concrete `formal_anchors` under `manifest-bridge`; supercap remote CI still **human** (optional — **G-01**/**G-02** already closed). |
 | **Proof** | `cargo test -p umst-supercap-cartridge --test formal_anchors`. |
-| **Human** | After **G-01**: wire features in supercap CI (Track **I.3**). |
+| **Human** | Wire `manifest-bridge` in supercap GHA (Track **I.3**) — does **not** block W8 Phase 1 or concrete **G-02**. |
 
 ---
 
@@ -245,9 +246,9 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 
 | Gap ID | Plain title | Layer (R0–R6) | Blocks % | ETA | Owner |
 |--------|-------------|---------------|----------|-----|-------|
-| **G-01** | Publish manifold `main` (**W8**) | R5 / Org | **8** | Operator-driven | **org** |
-| **G-02** | Concrete CI without patch | R5 / Org | *(in G-01)* | After W8 | **org** |
-| **G-03** | Supercap remote bridge | R5 / Org | *(in G-01)* | After W8 | **org** |
+| **G-01** | Publish manifold `main` (**W8 Phase 1**) | R5 / Org | **0** | Closed @ **fe22437** | **code** ✅ |
+| **G-02** | Concrete CI without patch | R5 / Org | **0** | Closed 2026-05-29 | **code** ✅ |
+| **G-03** | Supercap remote bridge | R5 / Org | **~2** (optional) | When scheduled | **org** |
 | **G-04** | Strict catalog release default | R5 | **0** | Closed | **code** ✅ |
 | **G-05** | Auto-fill witness digest | R5 | **0** | Closed | **code** ✅ |
 | **G-06** | Manifest registry vs orchestrator | R5 | **0** | — | **code** (docs) |
@@ -274,44 +275,43 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 | **R2** | 0 | **0** | G.3 closed |
 | **R3** | 1 optional (**G-18**) | **0** | Regime allowlist **1/1** in checklist |
 | **R4** | 0 | **0** | Kleisli **6/6** |
-| **R5** | 4 (G-01–G-03, G-06) | **1** (W8) | **W8** chain; G-04/G-05 closed |
+| **R5** | 2 (G-03, G-06) | **0** scoped (**G-03** optional) | G-01/G-02/G-04/G-05 closed |
 | **R6** | 0 | **0** | G.2 **13/13** · G.3 **8/8** ✅ |
-| **Org** | 3 (G-01–G-03) | **1** (W8) | Human publish |
+| **Org** | 1 (G-03) | **0** scoped (**G-03** optional) | G-01/G-02 done |
 | **Horizon** | 1 (**G-26**) | **0** in v1 scope | FFI |
 | **Optional register** | 14 (G-09–G-17, etc.) | **0** | Prototype / docs / clippy |
-| **Total registered** | **26** | **1 scoped family** | **W8** (G-01→G-03); **FFI** horizon; G-04/G-05 closed |
+| **Total registered** | **26** | **0–1** (**G-03** optional) | **G-01**/**G-02**/**G-04**/**G-05**/**B3** closed; **FFI** horizon |
 
 ### Honest blocked % (do not add table “Blocks %” column)
 
 | Lens | Remaining blocked | How to read it |
 |------|-------------------|----------------|
-| **Local robustness** (`verify_umst_stack.sh` on **119** pin) | **blocked this run** (exit **101** @ **22:18:41Z**) | Last green **0%** blocked @ **22:13:30Z**; manifest digest unit tests |
+| **Local robustness** (`verify_umst_stack.sh` on **119** pin) | **0%** blocked | Green @ **2026-05-29** CI (**fe22437**) |
 | **In-repo automation (16 rows)** | **0%** | **16/16 = 100%** — G.2 **13/13** · G.3 **8/8** |
-| **Organization remote consumers** | **~8–10%** | Almost entirely **W8** (G-01→G-03) |
-| **Scoped true 100% (v1, excl. FFI)** | **~8–10%** blocked | **W8** org publish only — B3/G-04/G-05 **not** blockers |
+| **Organization remote consumers** | **~0–2%** | **G-03** supercap remote optional only |
+| **Scoped true 100% (v1, excl. FFI)** | **~2–4%** blocked | **G-03** optional — B3/G-04/G-05/G-02 **not** blockers |
 | **Weighted witness R0–R6 (in-repo)** | **~0%** blocked | **7/7** rungs when stack green — [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) |
-| **Weighted witness R0–R6 (incl. org W8 on R5)** | **~7%** blocked | **~93%** complete — R5 remote publish |
+| **Weighted witness R0–R6 (incl. org W8 on R5)** | **~0–2%** blocked | **~98%** complete — publish + concrete bridge done |
 | **Hot-path proof coverage** | **~74% not wired** (of primary **69**) | **Not** blocked — **119/119** digest still enforced |
 
 **Anti double-count rule:** Org **W8** is the main scoped headline; do not add org % + automation %.
 
 ### What actually blocks saying “100%” without qualifiers
 
-1. **W8 (G-01–G-03)** — human git publish and remote CI (**org**, ~**8–10%** scoped headline).
+1. **G-03** (optional) — supercap remote `manifest-bridge` in GHA (~**2%** org).
 2. **FFI (G-26)** — horizon only; say “excluded from v1 scoped 100%.”
 3. **Hot-path ~26%** — never report as failure or as **100%**; **119/119** is digest pin only.
 4. **Do not cite** “69-module production,” “preview JSON is the pin,” unscoped “god-grade 100%,” or “26% = \(U_{\mathrm{op}}\)” without qualifiers.
 
-**Closed this wave (not scoped blockers):** **G-04** release strict default · **G-05** lock digest auto-fill (tests need bundle vs upstream SSOT) · **G.2** (**13/13**) · **G.3** (**8/8**) · **J.3** (**1/1**).
+**Closed this wave (not scoped blockers):** **W8 Phase 1 (G-01)** @ **fe22437** · **G-02** concrete CI without `[patch]` · **G-04** / **B3** release strict · **G-05** lock digest auto-fill · **G.2** (**13/13**) · **G.3** (**8/8**) · **J.3** (**1/1**).
 
 ---
 
 ## Suggested close order
 
-1. **G-01 (W8)** — publish manifold `main` ([`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)).
-2. **G-02, G-03** — remote cartridge CI without patch.
-3. **G-06** — manifest registry vs orchestrator docs (optional).
-4. **Optional** — G-09–G-22, prototype lanes.
+1. **G-03** (optional) — supercap remote `manifest-bridge` in GHA.
+2. **G-06** — manifest registry vs orchestrator docs (optional).
+3. **Optional** — G-09–G-22, prototype lanes.
 
 ---
 
