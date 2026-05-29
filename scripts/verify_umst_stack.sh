@@ -150,7 +150,9 @@ run_bidirectional_catalog_check_if_present() {
 run_bidirectional_catalog_check_if_present
 
 echo "==> cargo test -p umst-manifold (default unit + integration)"
-cargo test -p umst-manifold --verbose
+# w8_publish_readiness integration requires MaOS sibling umst-concrete-cartridge.
+cargo test -p umst-manifold --verbose \
+  -- --skip w8_publish_readiness_exits_zero_on_current_workspace
 
 echo "==> gate parity + Kleisli + dual-run integration tests"
 cargo test -p umst-manifold --verbose \
