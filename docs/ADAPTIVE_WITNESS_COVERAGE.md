@@ -1,6 +1,6 @@
 # Adaptive witness coverage
 
-**As of:** 2026-05-21  
+**As of:** 2026-05-29  
 **Audience:** Operators and agents extending UMST witnesses without inflating completion metrics.
 
 **Plain English:** The Lean catalog has **119** proof modules, but the robot only runs a **small fixed law** (CD → Landauer → constitutive → Kleisli). **Effective coverage** \(U(t)\) measures how much of the *catalog* you have *operationally exercised* over time—via trace rejects, cartridge domain, and epistemic MI signals—so engineering can **prioritize which `catalog_id` to wire next**. That growth happens **on-robot and in Rust** (registry + telemetry); it does **not** mean running Lean or claiming a higher “% complete” on the god-grade checklist.
@@ -16,9 +16,10 @@
 | **Question** | Which catalog modules should we activate *next* given rollout evidence? | Which modules are wired / digest-only / catalog-only *today*? |
 | **Time** | Dynamic \(U(t)\) grows with deployment | Snapshot audit |
 | **Lean on robot** | **Never** — library pin is build-time (R0) | N/A |
-| **% claims** | **Do not** map \(U(t)\) to god-grade **~92%** or checklist **10/13** | Counts **13 used / 47 unused** — semantic inventory, not “project %” |
+| **% claims** | **Do not** map \(U(t)\) to god-grade automation **16/16** or org W8 closure | Counts **13 used / 47 unused** — semantic inventory, not “project %” |
+| **Org W8 / patch-green** | **Orthogonal** to \(U_{\mathrm{op}}\) | **G-01**/**G-02** closed @ **fe22437** (remote concrete without `[patch]`); MaOS `[patch]` is dev Evidence only — [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) §3 |
 
-**Honest status (2026-05-21):** Full \(\pi(c)\) scheduling on-robot is **not** shipped. **Shipped (tests / manifest only):** [`WitnessPriorityQueue`](../src/runtime/catalog/witness_priority.rs) (`record_reject`, `apply_learning_signals`, `ordered_modules`; TCB `physicalSecondLaw` only), optional field on [`UmstManifest`](../src/manifest/umst_manifest.rs), fixed \(W_1\)–\(W_4\) order, `catalog_id` on `FormalReject`, trace schema G.1 serde, CI partition **25 wired + 94 allowlist = 119** in `traceability.rs`.
+**Honest status (2026-05-29):** Full \(\pi(c)\) scheduling on-robot is **not** shipped. **Shipped (tests / manifest only):** [`WitnessPriorityQueue`](../src/runtime/catalog/witness_priority.rs) (`record_reject`, `apply_learning_signals`, `ordered_modules`; TCB `physicalSecondLaw` only), optional field on [`UmstManifest`](../src/manifest/umst_manifest.rs), fixed \(W_1\)–\(W_4\) order, `catalog_id` on `FormalReject`, trace schema G.1 serde, CI partition **25 wired + 94 allowlist = 119** in `traceability.rs`.
 
 ---
 
@@ -107,7 +108,7 @@ U_{\mathrm{pin}} = \frac{|\{ m : \text{in lock digest} \}|}{|\mathcal{C}|} = 1
 ### 5.3 Anti-inflation rules
 
 - Do **not** set \(U(t) := U_{\mathrm{pin}}\) in product copy (“100% catalog covered”).
-- Do **not** multiply \(U_{\mathrm{op}}\) by god-grade automation weights (**~92%**, **10/13**, **14/14** — see [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)).
+- Do **not** multiply \(U_{\mathrm{op}}\) by god-grade automation weights (**16/16**, weighted R0–R6, org W8 — see [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)).
 - **Used (Y) = 13** in [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md) is a **manual audit count**, not \(U_{\mathrm{op}}\).
 - CI partition **25 wired / 94 allowlist** (119 total in `traceability.rs`) is **completeness of registration**, not operational coverage.
 

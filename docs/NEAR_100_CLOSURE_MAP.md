@@ -1,10 +1,10 @@
 # Near-100% closure map
 
-**As of:** 2026-05-22  
+**As of:** 2026-05-29  
 **SSOT for %:** [`PROGRESS_PLAIN.md`](PROGRESS_PLAIN.md) category rollup  
 **Methodology:** [`GOD_GRADE_COMPLETION_METHODOLOGY.md`](GOD_GRADE_COMPLETION_METHODOLOGY.md) · scoped blockers [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md)
 
-This page lists the five plan categories that sit between **85% and 99%** (not rounded to 100%). Each row names what **Done** means, how to prove it, who owns the last mile, and whether it blocks **scoped true 100%** (W8 + FFI + strict prod default — see [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md)).
+This page lists the five plan categories that sit between **85% and 99%** (not rounded to 100%). Each row names what **Done** means, how to prove it, who owns the last mile, and whether it blocks **scoped true 100%** (**G-03** optional + **FFI** horizon — see [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md)).
 
 ---
 
@@ -20,7 +20,7 @@ Partial Evidence (local tests, files on disk) does **not** equal Done when a hum
 | **Evidence** | Command returns exit **0** (or artifact on disk); record UTC in [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) |
 | **Done** | Criterion in the tables below — operator sign-off where noted |
 
-**Do not** mix ceilings: automation **17/17**, hot-path **~26%**, and scoped **B1–B3** are different questions ([`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md)).
+**Do not** mix ceilings: automation **16/16**, hot-path **~26%**, and scoped **G-03 + FFI** are different questions ([`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md)).
 
 ---
 
@@ -41,18 +41,18 @@ Partial Evidence (local tests, files on disk) does **not** equal Done when a hum
 
 ---
 
-### Cartridges — **~80%** (blend: local **100%**, remote **0%** — [`PROGRESS_PLAIN.md`](PROGRESS_PLAIN.md) + [`GOD_GRADE_STATUS_BY_LAYER.md`](GOD_GRADE_STATUS_BY_LAYER.md))
+### Cartridges — **~95%** (local **100%** · concrete remote **100%** · supercap remote **0/1** — [`PROGRESS_PLAIN.md`](PROGRESS_PLAIN.md))
 
 | Field | Value |
 |-------|--------|
-| **Blocker** | **W8** — `tytolabs/umst-manifold` `main` not published; remote GHA needs workspace `[patch]` (**G-01**–**G-03**) |
-| **Evidence today** | Concrete `manifest-bridge` **1/1** with patch; supercap `formal_anchors` **6/6** local |
-| **Done criterion** | Phases 1–4 in [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md): `git ls-remote` OK · clean-clone `cargo check` · cartridge tests without `[patch]` · green GHA `manifest-bridge` on `main` |
-| **Test command** | Local: `cargo test -p umst-concrete-cartridge --features manifest-bridge` · `cargo test -p umst-supercap-cartridge --test formal_anchors` · After publish: same tests in clean clone **without** `[patch]` |
-| **Owner** | **Human** (operator push) → **cartridge** CI after pin bump |
-| **Blocks scoped 100%?** | **Yes** (~8–10% org ceiling — **B1**). Local cartridge work does not close Done |
+| **Blocker** | **G-03** only — supercap remote `manifest-bridge` in GHA (**optional**) |
+| **Evidence today** | **G-01** publish @ **fe22437**; **G-02** concrete GHA without `[patch]`; supercap `formal_anchors` **6/6** local; MaOS `[patch]` patch-green **Evidence** for dev |
+| **Done criterion** | **G-01**/**G-02** ✅; optional **G-03**: wire supercap GHA per [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) Track **I.3** |
+| **Test command** | Concrete: `cargo test -p umst-concrete-cartridge --features manifest-bridge` on git **fe22437** (no patch) · Supercap: `cargo test -p umst-supercap-cartridge --test formal_anchors` |
+| **Owner** | **Human** (**G-03** only) |
+| **Blocks scoped 100%?** | **G-03 only** (~2% optional). **G-02** does **not** block |
 
-**Blocker → Evidence → Done:** B1 W8 → patch-green local tests → remote git + GHA without patch.
+**Blocker → Evidence → Done:** **G-03** open → concrete git bridge green → optional supercap remote GHA.
 
 ---
 
@@ -88,18 +88,18 @@ Partial Evidence (local tests, files on disk) does **not** equal Done when a hum
 
 ---
 
-### Org — **~91%** weighted ([`PROGRESS_PLAIN.md`](PROGRESS_PLAIN.md) “weighted witness incl. org W8”)
+### Org — **~96–98%** weighted ([`PROGRESS_PLAIN.md`](PROGRESS_PLAIN.md) “weighted witness incl. org W8”)
 
 | Field | Value |
 |-------|--------|
-| **Blocker** | Same as cartridges **B1**: publish **0/1**; remote cartridge CI **0/1** without patch |
-| **Evidence today** | Local prep **~40%** ([`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md)); in-repo R5 manifest/cartridge tests **100%** |
-| **Done criterion** | W8 runbook phases 1–4 complete; `AGENT_W8_STATUS` + docs show no stale `W8 PENDING`; `git ls-remote https://github.com/tytolabs/umst-manifold.git refs/heads/main` succeeds for consumers |
-| **Test command** | Preflight: `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` · Post-push: clean-clone verify in [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) |
-| **Owner** | **Human** (operator credentials). **Agents must not `git push`.** |
-| **Blocks scoped 100%?** | **Yes** — main org ceiling (~8–10%). Do **not** add org % + automation % |
+| **Blocker** | **G-03** supercap remote bridge only (**optional**) |
+| **Evidence today** | Publish **1/1** @ **fe22437**; concrete bridge **1/1** without `[patch]`; in-repo R5 **100%** |
+| **Done criterion** | **G-01**/**G-02** ✅; optional **G-03** in supercap GHA; docs free of stale `W8 ❌` / “unpublished `main`” |
+| **Test command** | `git ls-remote https://github.com/tytolabs/umst-manifold.git refs/heads/main` · `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` |
+| **Owner** | **Human** (**G-03** only). **Agents must not `git push`.** |
+| **Blocks scoped 100%?** | **G-03 only** (~2% optional). Do **not** add org % + automation % |
 
-**Blocker → Evidence → Done:** B1 W8 → local stack + patch tests → operator push + remote GHA green.
+**Blocker → Evidence → Done:** **G-01**/**G-02** closed @ **fe22437** → optional **G-03** supercap remote.
 
 ---
 
@@ -108,10 +108,10 @@ Partial Evidence (local tests, files on disk) does **not** equal Done when a hum
 | Category | Current % | One step to 100% | Blocks scoped 100%? |
 |----------|-------------|------------------|---------------------|
 | **Manifest** | **~100%** in-repo | ~~B3/G-04/G-05~~ closed @ **2026-05-22** (`verify_umst_stack.sh` exit **0**) | **No** |
-| **Cartridges** | **~80%** | Operator: complete **W8** publish runbook; remote CI without `[patch]` | **Yes** (~8–10% org) |
+| **Cartridges** | **~95%** | Optional **G-03** supercap remote GHA | **G-03 only** (~2% optional) |
 | **Epistemic** | **~98%** weighted · **100%** host | **Already 100%** for scoped host CI — optional Lean certs / PPO wire only | **No** (v1 scoped) |
 | **Prototypes** | **~85%** | Prototype lane: finish Track **B** thin delete (2a hybrid) after parity | **No** |
-| **Org** | **~91%** weighted | Operator: **W8** `git push` + cartridge pin + green remote GHA | **Yes** (same as **B1**) |
+| **Org** | **~96–98%** weighted | Optional **G-03** supercap remote | **G-03 only** (optional) |
 
 ### Cannot reach 100% by design (do not chase in v1 scoped %)
 
@@ -148,4 +148,4 @@ Re-run after any edit; cite exit **0** + UTC in [`GOD_GRADE_PROGRESS_VERIFIED.md
 | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | **G-01**–**G-26** gap register |
 | [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) | Org / cartridge Done steps |
 
-*Map version:* 2026-05-22 · Stack reference: `verify_umst_stack.sh` exit **0** @ 2026-05-21T22:09:30Z
+*Map version:* 2026-05-29 · Stack reference: `verify_umst_stack.sh` exit **0** @ **fe22437**; **G-02** concrete remote without `[patch]`

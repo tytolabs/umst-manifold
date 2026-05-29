@@ -664,5 +664,5 @@ UMST_REQUIRE_FORMAL_EXPORT=1 UMST_FORMAL_ROOT=$WORKSPACE/umst-formal-double-slit
 #         witness_priority_queue, catalog_incremental_graph_drift, ci_god_grade_profile
 ```
 
-**Cross-read (2026-05-22):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) · [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) (**16/16** automation).
+**Cross-read (2026-05-29):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) · [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) (**16/16** automation) · W8 **G-01**/**G-02** closed.
 
