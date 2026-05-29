@@ -13,7 +13,7 @@ use umst_manifold::core::tensors::{MixTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::ros::{
     calibrate_eta_bound_from_trace, prototype_eta_from_trace, step_mi_excess_over_catalog,
-    step_mi_within_catalog, CATALOG_STEP_MI_UPPER_NAT, EmittedStepRecord, EmittedTraceSchema,
+    step_mi_within_catalog, EmittedStepRecord, EmittedTraceSchema, CATALOG_STEP_MI_UPPER_NAT,
 };
 
 struct EtaStubCartridge;

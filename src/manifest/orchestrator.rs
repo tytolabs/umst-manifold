@@ -221,9 +221,7 @@ impl<B: Backend, C: IScienceCartridge<B>> EmbodiedOrchestrator<B, C> {
 /// Default host registry: constitutive mix + Kleisli unit η (R4 after R1–R3 routing).
 fn default_host_mix_registry() -> GateEvaluatorRegistry {
     let mut reg = GateEvaluatorRegistry::default();
-    reg.register(ThermodynamicMixEvaluator::new(
-        ThermodynamicMixFilter::new(),
-    ));
+    reg.register(ThermodynamicMixEvaluator::new(ThermodynamicMixFilter::new()));
     reg.register_kleisli(KleisliUnitEvaluator::new());
     reg
 }

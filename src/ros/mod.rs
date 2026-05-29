@@ -11,14 +11,13 @@ pub mod epistemic_trace;
 #[cfg(feature = "trace-calibration")]
 pub mod trace_calibration;
 
-pub use epistemic_trace::{
-    landauer_bit_energy_joules, prototype_eps_cost_agg, prototype_eps_mi_agg,
-    EmittedStepRecord, EmittedStepWellFormedError, EmittedTraceSchema,
-    EmittedTraceWellFormedError, PrototypeCalibrationBoundsError, PROTOTYPE_EPS_COST_STEP,
-    PROTOTYPE_EPS_MI_STEP,
-};
 #[cfg(feature = "trace-calibration")]
 pub use epistemic_trace::prototype_eta_from_trace;
+pub use epistemic_trace::{
+    landauer_bit_energy_joules, prototype_eps_cost_agg, prototype_eps_mi_agg, EmittedStepRecord,
+    EmittedStepWellFormedError, EmittedTraceSchema, EmittedTraceWellFormedError,
+    PrototypeCalibrationBoundsError, PROTOTYPE_EPS_COST_STEP, PROTOTYPE_EPS_MI_STEP,
+};
 #[cfg(feature = "trace-calibration")]
 pub use trace_calibration::{
     calibrate_eta_bound_from_steps, calibrate_eta_bound_from_trace, step_mi_excess_over_catalog,

@@ -172,10 +172,7 @@ impl WitnessPriorityQueue {
 
     #[must_use]
     pub fn priority_of_module(&self, lean_module: &str) -> u32 {
-        self.module_scores
-            .get(lean_module)
-            .copied()
-            .unwrap_or(0)
+        self.module_scores.get(lean_module).copied().unwrap_or(0)
     }
 }
 
@@ -214,8 +211,7 @@ mod tests {
         );
         assert_eq!(ordered[0].0, LANDAUER_LAW_LEAN_MODULE);
         assert!(
-            q.priority_of_module(LANDAUER_LAW_LEAN_MODULE)
-                > q.priority_of_module("DoubleSlit"),
+            q.priority_of_module(LANDAUER_LAW_LEAN_MODULE) > q.priority_of_module("DoubleSlit"),
             "second-law TCB module should outrank unrelated modules"
         );
     }

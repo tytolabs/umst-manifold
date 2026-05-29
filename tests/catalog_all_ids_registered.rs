@@ -16,8 +16,8 @@ use std::path::{Path, PathBuf};
 
 use umst_manifold::runtime::catalog::{
     traceability::{
-        ALLOW_UNUSED_CATALOG_IDS, ALLOW_UNUSED_GATE_CATALOG_IDS, CATALOG_MODULE_WIRED,
-        DEFAULT_UPSTREAM_CATALOG_JSON, GATE_REGISTRY_CATALOG_IDS,
+        resolve_upstream_catalog_json_path, ALLOW_UNUSED_CATALOG_IDS,
+        ALLOW_UNUSED_GATE_CATALOG_IDS, CATALOG_MODULE_WIRED, GATE_REGISTRY_CATALOG_IDS,
         GATE_UNIFICATION_SPEC_CATALOG_IDS, RUNTIME_EXTRA_GATE_CATALOG_IDS,
     },
     WitnessCatalog,
@@ -28,10 +28,7 @@ fn manifest_dir() -> PathBuf {
 }
 
 fn resolve_upstream_catalog_json() -> PathBuf {
-    if let Ok(p) = std::env::var("UMST_LEAN_CATALOG_JSON") {
-        return PathBuf::from(p);
-    }
-    manifest_dir().join(DEFAULT_UPSTREAM_CATALOG_JSON)
+    resolve_upstream_catalog_json_path(&manifest_dir())
 }
 
 /// Unified diff-style report for set drift (`+` = missing from allowlist, `-` = stale).
@@ -167,7 +164,8 @@ fn catalog_lock_module_count_matches_upstream_export_119() {
     let catalog_path = resolve_upstream_catalog_json();
     let export_count = load_catalog_module_ids(&catalog_path).len();
     assert_eq!(
-        export_count, CATALOG_LOCK_R0_MODULE_COUNT,
+        export_count,
+        CATALOG_LOCK_R0_MODULE_COUNT,
         "upstream Lean catalog module row count ({export_count}) must match lock \
          module_count ({CATALOG_LOCK_R0_MODULE_COUNT}); path {}",
         catalog_path.display()

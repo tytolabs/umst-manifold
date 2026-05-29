@@ -58,7 +58,9 @@ fn w8_publish_readiness_script_is_present_and_documents_prep_vs_publish() {
 fn w8_publish_readiness_exits_zero_on_current_workspace() {
     let manifest = manifest_dir();
     let script = manifest.join("scripts/w8_publish_readiness.sh");
-    let workspace = manifest.parent().expect("umst-manifold parent = MaOS-Workspace");
+    let workspace = manifest
+        .parent()
+        .expect("umst-manifold parent = MaOS-Workspace");
     let concrete = workspace.join("umst-concrete-cartridge");
     if !concrete.join("Cargo.toml").is_file() {
         panic!(

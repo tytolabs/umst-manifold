@@ -35,8 +35,14 @@ pub enum EmittedStepWellFormedError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EmittedTraceWellFormedError {
     TemperatureNegative,
-    HorizonStepCountMismatch { horizon_n: u32, step_count: usize },
-    Step { index: usize, detail: EmittedStepWellFormedError },
+    HorizonStepCountMismatch {
+        horizon_n: u32,
+        step_count: usize,
+    },
+    Step {
+        index: usize,
+        detail: EmittedStepWellFormedError,
+    },
 }
 
 /// Violation of Lean `prototypeCalibration` aggregate ε envelopes (`epsMIAgg` / `epsCostAgg`).

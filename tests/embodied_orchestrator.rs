@@ -165,9 +165,7 @@ fn embodied_mix_registry_accepts_forward_hydration() {
     let info_gain = Tensor::<B, 1>::from_floats([0.0_f32], &device());
 
     let mut reg = GateEvaluatorRegistry::default();
-    reg.register(ThermodynamicMixEvaluator::new(
-        ThermodynamicMixFilter::new(),
-    ));
+    reg.register(ThermodynamicMixEvaluator::new(ThermodynamicMixFilter::new()));
 
     let mut orch = EmbodiedOrchestrator::new(GatewayStubCartridge, 300.0_f64, 1.0e-12_f64)
         .with_mix_registry(reg);
@@ -192,9 +190,7 @@ fn embodied_mix_registry_rejects_reverse_hydration_with_catalog_id() {
     let info_gain = Tensor::<B, 1>::from_floats([0.0_f32], &device());
 
     let mut reg = GateEvaluatorRegistry::default();
-    reg.register(ThermodynamicMixEvaluator::new(
-        ThermodynamicMixFilter::new(),
-    ));
+    reg.register(ThermodynamicMixEvaluator::new(ThermodynamicMixFilter::new()));
 
     let mut orch = EmbodiedOrchestrator::new(GatewayStubCartridge, 300.0_f64, 1.0e-12_f64)
         .with_mix_registry(reg);

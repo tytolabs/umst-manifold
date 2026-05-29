@@ -33,14 +33,18 @@ if [[ ! -f Cargo.toml ]]; then
 fi
 
 resolve_formal_root() {
-  if [[ -n "${UMST_FORMAL_ROOT:-}" ]]; then
+  if [[ -n "${UMST_FORMAL_ROOT:-}" && -d "${UMST_FORMAL_ROOT}/Lean" ]]; then
     echo "$(cd "${UMST_FORMAL_ROOT}" && pwd)"
     return 0
   fi
   local sibling
   sibling="$(cd "${ROOT}/.." && pwd)/umst-formal-double-slit"
-  if [[ -d "${sibling}/Lean" && -f "${sibling}/tools/lean_export/export_catalog.py" ]]; then
+  if [[ -d "${sibling}/Lean" ]]; then
     echo "${sibling}"
+    return 0
+  fi
+  if [[ -d "${ROOT}/umst-formal-double-slit/Lean" ]]; then
+    echo "${ROOT}/umst-formal-double-slit"
     return 0
   fi
   return 1
@@ -88,13 +92,16 @@ if not str(digest).startswith("0697014f"):
 print(f"OK: catalog.lock module_count=119 digest={digest[:8]}…")
 PYLOCK
 
+PINNED_CATALOG="${ROOT}/artifacts/upstream_catalog.json"
+VERIFY_TOOL="${ROOT}/scripts/catalog_lock_verify.py"
 FORMAL_ROOT=""
-if FORMAL_ROOT="$(resolve_formal_root)"; then
+FORMAL_ROOT="$(resolve_formal_root)" || true
+
+if [[ -n "${FORMAL_ROOT}" && -f "${FORMAL_ROOT}/tools/lean_export/export_catalog.py" ]]; then
   TMP="$(mktemp -t umst-catalog.XXXXXX.json)"
   TMP_DS="$(mktemp -t umst-catalog-ds.XXXXXX.json)"
   TMP_FM="$(mktemp -t umst-catalog-fm.XXXXXX.json)"
   EXPORT_TOOL="${FORMAL_ROOT}/tools/lean_export/export_catalog.py"
-  VERIFY_TOOL="${ROOT}/scripts/catalog_lock_verify.py"
 
   python3 "${EXPORT_TOOL}" --lean-root "${FORMAL_ROOT}/Lean" --out "${TMP_DS}"
 
@@ -116,9 +123,15 @@ if FORMAL_ROOT="$(resolve_formal_root)"; then
   python3 "${EXPORT_TOOL}" "${EXPORT_ARGS[@]}" --out "${TMP}"
 
   python3 "${VERIFY_TOOL}" "${LOCK}" "${TMP}" "${FIBER_VERIFY_ARGS[@]}"
+elif [[ -n "${FORMAL_ROOT}" && -f "${FORMAL_ROOT}/artifacts/catalog.json" ]]; then
+  echo "==> catalog lock verify (formal artifacts/catalog.json; export tool absent)"
+  python3 "${VERIFY_TOOL}" "${LOCK}" "${FORMAL_ROOT}/artifacts/catalog.json"
+elif [[ -f "${PINNED_CATALOG}" ]]; then
+  echo "==> catalog lock verify (pinned artifacts/upstream_catalog.json)"
+  python3 "${VERIFY_TOOL}" "${LOCK}" "${PINNED_CATALOG}"
 else
   if [[ "${UMST_REQUIRE_FORMAL_EXPORT:-0}" == "1" ]]; then
-    echo "FAIL: UMST_REQUIRE_FORMAL_EXPORT=1 but umst-formal-double-slit not found (set UMST_FORMAL_ROOT)" >&2
+    echo "FAIL: UMST_REQUIRE_FORMAL_EXPORT=1 but no formal export, formal catalog.json, or ${PINNED_CATALOG}" >&2
     exit 1
   fi
   echo "SKIP: umst-formal-double-slit not present (set UMST_REQUIRE_FORMAL_EXPORT=1 to enforce)"

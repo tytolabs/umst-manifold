@@ -8,10 +8,9 @@
 use std::f64::consts::LN_2;
 
 use umst_manifold::ros::{
-    landauer_bit_energy_joules, prototype_eps_cost_agg, prototype_eps_mi_agg,
-    EmittedStepRecord, EmittedStepWellFormedError, EmittedTraceSchema,
-    EmittedTraceWellFormedError, PrototypeCalibrationBoundsError, PROTOTYPE_EPS_COST_STEP,
-    PROTOTYPE_EPS_MI_STEP,
+    landauer_bit_energy_joules, prototype_eps_cost_agg, prototype_eps_mi_agg, EmittedStepRecord,
+    EmittedStepWellFormedError, EmittedTraceSchema, EmittedTraceWellFormedError,
+    PrototypeCalibrationBoundsError, PROTOTYPE_EPS_COST_STEP, PROTOTYPE_EPS_MI_STEP,
 };
 
 #[test]

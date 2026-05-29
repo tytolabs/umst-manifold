@@ -2,9 +2,8 @@
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
 use super::{
-    catalog_lock_bundle_sha256_bytes, catalog_lock_bundle_sha256_hex,
-    catalog_lock_quickcheck, lock_upstream_catalog_digest_hex, witness_catalog_quickcheck_ok,
-    CatalogLock, WitnessCatalog,
+    catalog_lock_bundle_sha256_bytes, catalog_lock_bundle_sha256_hex, catalog_lock_quickcheck,
+    lock_upstream_catalog_digest_hex, witness_catalog_quickcheck_ok, CatalogLock, WitnessCatalog,
     WitnessRecord, ENV_WITNESS_CATALOG_PATH, WITNESS_CATALOG_EMBEDDED_LEN,
     WITNESS_CATALOG_EMBEDDED_SHA256_HEX,
 };
@@ -81,7 +80,10 @@ fn v1_monolith_lock_quickcheck_backward_compat() {
         composed_catalog_digest_hex: None,
         fiber_pins: vec![],
     };
-    assert!(catalog_lock_quickcheck(&v1), "v1 monolith without fiber_pins");
+    assert!(
+        catalog_lock_quickcheck(&v1),
+        "v1 monolith without fiber_pins"
+    );
 }
 
 #[test]

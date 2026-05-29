@@ -6,7 +6,7 @@
 
 use umst_manifold::manifest::{UmstManifestBuilder, WitnessPriorityQueue};
 use umst_manifold::runtime::catalog::{
-    traceability::LANDAUER_CBF_CATALOG_ID, tcb_axiom_token_allowed, WitnessLearningSignal,
+    tcb_axiom_token_allowed, traceability::LANDAUER_CBF_CATALOG_ID, WitnessLearningSignal,
     WitnessTcbAxiom, LANDAUER_LAW_LEAN_MODULE, PHYSICAL_SECOND_LAW_AXIOM,
 };
 
@@ -25,7 +25,14 @@ fn runtime_queue_ranks_landauer_law_after_rejects_and_learning() {
 
     let top = q.ordered_modules();
     assert_eq!(top[0].0, LANDAUER_LAW_LEAN_MODULE);
-    assert!(top[0].1 > top.iter().find(|(m, _)| *m == "EpistemicRuntimeContract").unwrap().1);
+    assert!(
+        top[0].1
+            > top
+                .iter()
+                .find(|(m, _)| *m == "EpistemicRuntimeContract")
+                .unwrap()
+                .1
+    );
 }
 
 #[test]

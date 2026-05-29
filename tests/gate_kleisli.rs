@@ -59,9 +59,7 @@ fn kleisli_compose_preserves_admissibility_chain() {
 #[test]
 fn registry_routes_mix_evaluator_to_rest_verdict_strings() {
     let mut reg = GateEvaluatorRegistry::default();
-    reg.register(ThermodynamicMixEvaluator::new(
-        ThermodynamicMixFilter::new(),
-    ));
+    reg.register(ThermodynamicMixEvaluator::new(ThermodynamicMixFilter::new()));
 
     let old = ThermodynamicStateSnapshot::from_mix(0.5, 0.3, 293.0);
     let new = ThermodynamicStateSnapshot::from_mix(0.5, 0.5, 293.0);

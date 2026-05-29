@@ -14,6 +14,6 @@
 mod orchestrator;
 mod umst_manifest;
 
+pub use crate::runtime::catalog::WitnessPriorityQueue;
 pub use orchestrator::{EmbodiedOrchestrator, EmbodiedReject, HostTransitionStep};
 pub use umst_manifest::{GateRegistry, GroundingContract, UmstManifest, UmstManifestBuilder};
-pub use crate::runtime::catalog::WitnessPriorityQueue;

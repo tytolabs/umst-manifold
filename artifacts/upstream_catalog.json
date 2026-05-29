@@ -1,0 +1,4500 @@
+{
+  "version": 1,
+  "lean_root": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean",
+  "lean_roots": [
+    "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean",
+    "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean"
+  ],
+  "cross_repo_merge": true,
+  "primary_repo": "umst-formal-double-slit",
+  "secondary_repo": "umst-formal",
+  "modules": [
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Adjoint.lean",
+      "content_sha256": "cf21d9da05eeb2dd63907242d46e076b89ce25f430e860222f009731ec248399",
+      "declarations": {
+        "theorem": [
+          "adjoint_recovers_gradient",
+          "adjoint_uses_only_terminal"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Analysis.Normed.Algebra.MatrixExponential",
+        "Mathlib.Data.Matrix.Mul",
+        "Mathlib.Data.Real.Basic",
+        "Mathlib.Tactic"
+      ],
+      "module": "Adjoint",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Behavior/SDFCanonical.lean",
+      "content_sha256": "3114f8da10cb19322f9e10d1284e841219eb40165219994283481bc9ad1fa2e9",
+      "declarations": {
+        "def": [
+          "canonical_sdf",
+          "BehaviorEquiv"
+        ],
+        "theorem": [
+          "SDFCanonical"
+        ]
+      },
+      "import_lines": [],
+      "module": "Behavior.SDFCanonical",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Constitutional.lean",
+      "content_sha256": "e0c278096bd7895e3ab77811377bd6c7288dc48b62660d4c85c10aac0879879f",
+      "declarations": {
+        "def": [
+          "KleisliArrow",
+          "WellTyped",
+          "WellTypedN",
+          "makeGateArrow",
+          "kleisliCompose",
+          "kleisliFold",
+          "AllWellTyped"
+        ],
+        "theorem": [
+          "wellTyped_iff_wellTypedN1",
+          "gateArrowWellTyped",
+          "kleisliComposeWellTypedN",
+          "kleisliComposeWellTyped",
+          "kleisliFoldWellTypedN",
+          "kleisliFoldWellTyped",
+          "sequentialCompositionSafe",
+          "identityWellTyped",
+          "kleisliComposeAssoc",
+          "kleisliLeftUnit",
+          "kleisliRightUnit"
+        ]
+      },
+      "import_lines": [
+        "Gate"
+      ],
+      "module": "Constitutional",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Convergence.lean",
+      "content_sha256": "d22ee9208110a98b70eecd2157f4e1cf7764fdc5c7c17d03a1d7929c81365aa1",
+      "declarations": {
+        "def": [
+          "HydrationInUnitInterval",
+          "lyapunov",
+          "ConstitutionalStream"
+        ],
+        "theorem": [
+          "freeEnergy_lower_bound",
+          "lyapunov_nondecreasing",
+          "lyapunov_upper_bound",
+          "hydrationSeq_monotone",
+          "hydrationSeq_bddAbove",
+          "hydrationConverges",
+          "freeEnergyConverges",
+          "lyapunov_bounded_range"
+        ]
+      },
+      "import_lines": [
+        "Gate",
+        "Helmholtz",
+        "Mathlib.Topology.MetricSpace.Basic",
+        "Mathlib.Topology.Order.MonotoneConvergence"
+      ],
+      "module": "Convergence",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/CreditGreedyOptimal.lean",
+      "content_sha256": "322e9447d0401fa001141c3e5ab02fb359b5020a7947e432d6547025aa301972",
+      "declarations": {
+        "structure": [
+          "CreditCandidate"
+        ],
+        "theorem": [
+          "credit_greedy_optimal",
+          "greedy_nonneg",
+          "credit_mass_append",
+          "credit_mass_nil",
+          "greedy_mono_append_admissible",
+          "greedy_append_inadmissible",
+          "credit_mass_singleton"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Algebra.BigOperators.Group.List",
+        "Mathlib.Algebra.Order.BigOperators.Group.List",
+        "Mathlib.Data.Real.Basic"
+      ],
+      "module": "CreditGreedyOptimal",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/Collision.lean",
+      "content_sha256": "8cb5de8362570369c14de2972d7de8b1226d3041850ad3e0799604d7de435575",
+      "declarations": {
+        "theorem": [
+          "SHA3Resistance"
+        ]
+      },
+      "import_lines": [],
+      "module": "Crypto.Collision",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/Composability.lean",
+      "content_sha256": "1497c18fe2e02f6dd1904ebb1a306618ee9a7352ec402d7baa4dada0d5e35f92",
+      "declarations": {
+        "def": [
+          "compose",
+          "revoke",
+          "revoked"
+        ],
+        "theorem": [
+          "TrustAlgebra"
+        ]
+      },
+      "import_lines": [],
+      "module": "Crypto.Composability",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/EUF_CMA.lean",
+      "content_sha256": "96a044c5a4f2a9e2c14267fc7cc99d2ba4e751c2331a5fe2e0ef7f6816ff6434",
+      "declarations": {
+        "def": [
+          "forge"
+        ],
+        "theorem": [
+          "MLDSAUnforgeability"
+        ]
+      },
+      "import_lines": [],
+      "module": "Crypto.EUF_CMA",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/LWE.lean",
+      "content_sha256": "769d7aaf1ff2457465cc0e571ec9c27940f7362f22be5cedb58fc227ada68709",
+      "declarations": {
+        "def": [
+          "hardness_assumption"
+        ],
+        "theorem": [
+          "ModuleLWEHardness"
+        ]
+      },
+      "import_lines": [],
+      "module": "Crypto.LWE",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/SanitizePatternCoverage.lean",
+      "content_sha256": "e16d0f1c44d3d10eada8a326c8e5766c5599c466512e439ee6b9460c607abde8",
+      "declarations": {
+        "inductive": [
+          "AttackClass"
+        ],
+        "def": [
+          "sanitize_set",
+          "covers",
+          "K_v1"
+        ],
+        "theorem": [
+          "K_v1_exhaustive"
+        ]
+      },
+      "import_lines": [],
+      "module": "Crypto.SanitizePatternCoverage",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/SideChannel.lean",
+      "content_sha256": "da727df0f425f74d1a529f7bda84aad05559b8133819e90dfa2daae12dbada09",
+      "declarations": {
+        "def": [
+          "AttackerObservation"
+        ],
+        "theorem": [
+          "UpperBound"
+        ]
+      },
+      "import_lines": [],
+      "module": "Crypto.SideChannel",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/DEC.lean",
+      "content_sha256": "4b24004a2fee19f2db5017951f5e39d2ee2cd024b89e990d54f5a2b53250a476",
+      "declarations": {
+        "def": [
+          "D",
+          "B2",
+          "oneV"
+        ],
+        "lemma": [
+          "B1_eq",
+          "laplacian_mul_one_eq_zero"
+        ],
+        "theorem": [
+          "hodge_laplacian_symmetric",
+          "laplacian_row_sum_zero",
+          "boundary_squared_zero",
+          "discrete_stokes"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Data.Fintype.BigOperators",
+        "Mathlib.Data.Matrix.Basic",
+        "Mathlib.Data.Matrix.Mul",
+        "Mathlib.Data.Rat.Defs",
+        "Mathlib.Tactic"
+      ],
+      "module": "DEC",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/DIBKleisli.lean",
+      "content_sha256": "4f0975565df716210c70a8aadbd55d60844e3306db1088a2226b4ed3994136fd",
+      "declarations": {
+        "structure": [
+          "M",
+          "Observation",
+          "Insight",
+          "Design",
+          "Artifact"
+        ],
+        "def": [
+          "pureM",
+          "bindM",
+          "kleisliArrowCompose",
+          "interpretArtifact",
+          "artifactSemanticStep",
+          "dibArtifactGateCheck"
+        ],
+        "theorem": [
+          "leftUnit",
+          "rightUnit",
+          "assocM",
+          "kleisliAssoc",
+          "kleisliLeftUnit",
+          "kleisliRightUnit",
+          "dibAssoc",
+          "dib_semantic_step_admissible",
+          "dibArtifactGateCheck_eq_true"
+        ],
+        "instance": [
+          "[Inhabited",
+          "dibArtifactSemanticsArtifact"
+        ],
+        "class": [
+          "DIBArtifactSemantics"
+        ]
+      },
+      "import_lines": [
+        "Gate"
+      ],
+      "module": "DIBKleisli",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Dignity.lean",
+      "content_sha256": "c64293e285e216743dc007f06998f61cbfd28c606bba3ad1611656d7cbdcab82",
+      "declarations": {
+        "lemma": [
+          "landauer_joules_per_bit_pos"
+        ],
+        "structure": [
+          "Dignity",
+          "DignityClaim"
+        ],
+        "def": [
+          "honest_spend"
+        ],
+        "theorem": [
+          "tryDignity_eq_none_of_neg",
+          "tryDignity_eq_none_of_gt",
+          "tryDignity_eq_some_iff",
+          "dignity_step_honest_eq",
+          "dignity_step_dishonest_eq",
+          "dignity_non_eroded_by_honest_work",
+          "dignity_monotone_under_mi_gain",
+          "dignity_flags_sub_landauer_claims",
+          "dignity_avg_value",
+          "dignity_list_values_sum_nonneg",
+          "dignity_of_rcc_try",
+          "dignity_scalar_matches_rcc_one_minus_epistemic_gap"
+        ]
+      },
+      "import_lines": [
+        "LandauerEinsteinBridge",
+        "Mathlib.Algebra.Order.BigOperators.Group.List",
+        "Mathlib.Data.Real.Basic",
+        "Mathlib.Tactic"
+      ],
+      "module": "Dignity",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/BurdenRecursionIsAdmissible.lean",
+      "content_sha256": "a50b4bfa988a6feebd853c7658c9e807d4d23da7d24ed705996382c946513e7a",
+      "declarations": {
+        "def": [
+          "stateOfBurden",
+          "burdenStep",
+          "burdenIterate"
+        ],
+        "theorem": [
+          "burdenStep_eq_endo",
+          "burden_decreases_when_entropy_dominates",
+          "burdenRecursion_admissible",
+          "burdenIterate_zero",
+          "burdenIterate_succ",
+          "burdenStep_strict_lt",
+          "burdenIterate_succ_lt"
+        ]
+      },
+      "import_lines": [
+        "Gate"
+      ],
+      "module": "Economic.BurdenRecursionIsAdmissible",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/CollectiveCoherenceCost.lean",
+      "content_sha256": "2cf94fab3211cb4204662d94e7a90cace9f261b5a3f3a3b704d473d8b15487ad",
+      "declarations": {
+        "def": [
+          "collectivePenalty"
+        ],
+        "theorem": [
+          "collectivePenalty_nonneg"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Algebra.BigOperators.Group.List",
+        "Mathlib.Data.Rat.Defs",
+        "Mathlib.Tactic.Linarith"
+      ],
+      "module": "Economic.CollectiveCoherenceCost",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/CreativeExplorationTolerance.lean",
+      "content_sha256": "f50c45aaf59d37c68afdd8dcba478806fe8a0e1be0826e3929be9d1ee9ac7951",
+      "declarations": {
+        "theorem": [
+          "creativeExploration_accepted"
+        ]
+      },
+      "import_lines": [
+        "Economic.CreativityBudget"
+      ],
+      "module": "Economic.CreativeExplorationTolerance",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/CreativityBudget.lean",
+      "content_sha256": "cc09746a961a2972e2d8813e49a6086126c1dd93c40814d1d77be56f4344ac85",
+      "declarations": {
+        "def": [
+          "withinCreativityBudget"
+        ],
+        "theorem": [
+          "creativityBudget_refl",
+          "creativityBudget_monotone\u0394"
+        ]
+      },
+      "import_lines": [
+        "Economic.EconomicDomain",
+        "Mathlib.Tactic.Linarith"
+      ],
+      "module": "Economic.CreativityBudget",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/DynamicEpsilonCalibration.lean",
+      "content_sha256": "79ada7a51888483ed59429902deb37ed18d57b04cfcc419ad940bad61f4cc387",
+      "declarations": {
+        "theorem": [
+          "landauerBitEnergy_pos_of_T_pos",
+          "epsilon_calibrated_energy_nonneg"
+        ]
+      },
+      "import_lines": [
+        "Economic.EconomicDomain",
+        "LandauerEinsteinBridge"
+      ],
+      "module": "Economic.DynamicEpsilonCalibration",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/EconomicDomain.lean",
+      "content_sha256": "bf872505d2361982f8f2e3f0ce83928559e070a4af132da3a6a9147e523fdd3f",
+      "declarations": {
+        "structure": [
+          "InfoThreshold"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Data.Rat.Defs",
+        "Mathlib.Data.Real.Basic"
+      ],
+      "module": "Economic.EconomicDomain",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/EconomicTemperature.lean",
+      "content_sha256": "bd10ad9c3a849c2f7aa351c94d7516c52b8da06047f40ec7db87c7380fa07112",
+      "declarations": {
+        "theorem": [
+          "Tecon_joules_product",
+          "adoptionInformation_product",
+          "Tecon_landauerBitEquivalent_eq_Tecon_joules"
+        ]
+      },
+      "import_lines": [
+        "InfoTheory",
+        "LandauerEinsteinBridge"
+      ],
+      "module": "Economic.EconomicTemperature",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/EpistemicSensingModule.lean",
+      "content_sha256": "071e56f9148019e0311c2527cbbf44704f05ca33a39400e13c86b3ecf44a5f09",
+      "declarations": {
+        "theorem": [
+          "epistemicSensing_product_mutualInformation_zero"
+        ]
+      },
+      "import_lines": [
+        "InfoTheory"
+      ],
+      "module": "Economic.EpistemicSensingModule",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/HallucinationDetector.lean",
+      "content_sha256": "f6225b73e9b8f30a0fe6624181d0f7ad533cda3c837d34f054462f465355e2af",
+      "declarations": {
+        "def": [
+          "highAdoptionInformation"
+        ],
+        "theorem": [
+          "highAdoptionInformation_product_off"
+        ]
+      },
+      "import_lines": [
+        "Economic.EconomicDomain",
+        "Economic.EconomicTemperature",
+        "InfoTheory"
+      ],
+      "module": "Economic.HallucinationDetector",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/HorizonAwareGrounding.lean",
+      "content_sha256": "b27a27f0990a282aea8b77d44bceb4a60007f308530aba2b9d54b3291ab2fc8b",
+      "declarations": {
+        "theorem": [
+          "horizonCost_mem_Icc"
+        ]
+      },
+      "import_lines": [
+        "Economic.EconomicDomain",
+        "Mathlib.Data.Real.Basic",
+        "Mathlib.Tactic.Ring"
+      ],
+      "module": "Economic.HorizonAwareGrounding",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/KleisliAdmissibilityComposition.lean",
+      "content_sha256": "9c8bcd2861f3e0d01fe261e5f8cf226f9b43656895a435febaf9029d7a6103c9",
+      "declarations": {
+        "theorem": [
+          "econ_kleisliComposeWellTypedN",
+          "econ_kleisliFoldWellTypedN"
+        ]
+      },
+      "import_lines": [
+        "Constitutional"
+      ],
+      "module": "Economic.KleisliAdmissibilityComposition",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/LowEntropyLieDetector.lean",
+      "content_sha256": "2cb0eb71e8414b2d8f054f668094300056c6123cf2c3e0922fd38216249d2151",
+      "declarations": {
+        "def": [
+          "inconsistentInformationClaim"
+        ],
+        "theorem": [
+          "inconsistentInformationClaim_of_lt"
+        ]
+      },
+      "import_lines": [
+        "Economic.EconomicTemperature",
+        "InfoTheory"
+      ],
+      "module": "Economic.LowEntropyLieDetector",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/NPVIsSpecialCaseOfThermodynamicBurden.lean",
+      "content_sha256": "a3517c6aaf367d64d06d535d1968777f33c248635e2c73cba7b0be9788d38b79",
+      "declarations": {
+        "theorem": [
+          "burdenStep_no_entropy",
+          "npv_as_burden_iterate_no_entropy"
+        ]
+      },
+      "import_lines": [
+        "Economic.BurdenRecursionIsAdmissible"
+      ],
+      "module": "Economic.NPVIsSpecialCaseOfThermodynamicBurden",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/NuanceIsolator.lean",
+      "content_sha256": "f7dc0244c088078465a4668962bda2d05c922f69727f675edc8114d6f05b8d60",
+      "declarations": {
+        "theorem": [
+          "cost_split_sum",
+          "cost_split_nonneg_of_nonneg"
+        ]
+      },
+      "import_lines": [
+        "Economic.EconomicDomain",
+        "Mathlib.Tactic.Linarith"
+      ],
+      "module": "Economic.NuanceIsolator",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/SelfReferentialEconomicTensor.lean",
+      "content_sha256": "b24c4c27e9bf46a7210abfc23ff4d195363ec7d5087b87fcab8b9999f4bf1a5c",
+      "declarations": {
+        "theorem": [
+          "selfRef_burden_one_step_lt",
+          "selfRef_burden_iterate_lt_initial"
+        ]
+      },
+      "import_lines": [
+        "Economic.BurdenRecursionIsAdmissible"
+      ],
+      "module": "Economic.SelfReferentialEconomicTensor",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/StochasticBurdenExpectation.lean",
+      "content_sha256": "18adfb0a196be24ccde7cb533d1525bbc2391cda7a7ec648baf3ba7cfbd07c57",
+      "declarations": {
+        "theorem": [
+          "burden_expectation_symmetric_two_point",
+          "exploration_buffer_geom_tendsto_zero",
+          "exploration_buffer_geom_tendsto_zero_of_lt_one",
+          "burden_scale_admissible"
+        ]
+      },
+      "import_lines": [
+        "Economic.BurdenRecursionIsAdmissible",
+        "Mathlib.Analysis.SpecificLimits.Basic"
+      ],
+      "module": "Economic.StochasticBurdenExpectation",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/ThermodynamicUncertaintyCertificate.lean",
+      "content_sha256": "c0c8d346ef3a56328bbefae54ae94be3f927122108da737cf007745a2f4cf57d",
+      "declarations": {
+        "structure": [
+          "ThermodynamicUncertaintyCertificate"
+        ],
+        "theorem": [
+          "mkCertificate_adoption"
+        ]
+      },
+      "import_lines": [
+        "Economic.BurdenRecursionIsAdmissible",
+        "Economic.EconomicTemperature",
+        "InfoTheory"
+      ],
+      "module": "Economic.ThermodynamicUncertaintyCertificate",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/EndConditions.lean",
+      "content_sha256": "89135b84b08e59bc60ce9413d3bc69a1e8c42bba76adae54a3f7b0a085b63214",
+      "declarations": {
+        "theorem": [
+          "accumulatedMassBound",
+          "clausiusDuhemGlobal",
+          "equilibriumExists"
+        ],
+        "def": [
+          "IsEquilibrium"
+        ]
+      },
+      "import_lines": [
+        "Gate",
+        "GraphProperties"
+      ],
+      "module": "EndConditions",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/EnrichedAdmissibility.lean",
+      "content_sha256": "66d3fc94704996044a7c250a2341219a0d5c320aebd3b387f1f6f955819fdbe9",
+      "declarations": {
+        "def": [
+          "massDist"
+        ],
+        "theorem": [
+          "massDist_nonneg",
+          "massDist_self",
+          "massDist_comm",
+          "massDist_triangle",
+          "massCond_iff_massDist",
+          "orderAdmissible_refl",
+          "orderAdmissible_trans",
+          "admissibleN_decomp",
+          "admissibleN_of_decomp",
+          "admissibleN_order",
+          "admissibleN_mono",
+          "lawvere_composition"
+        ],
+        "structure": [
+          "OrderAdmissible"
+        ]
+      },
+      "import_lines": [
+        "Gate",
+        "Mathlib.Order.GaloisConnection",
+        "Mathlib.Topology.MetricSpace.Basic"
+      ],
+      "module": "EnrichedAdmissibility",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/EtaCog.lean",
+      "content_sha256": "3e33e0037f11777b3b17f42aa2af7d629834d73fb90b88713556d08b023c87af",
+      "declarations": {
+        "structure": [
+          "EtaCogClaim"
+        ],
+        "lemma": [
+          "etaDenom_pos"
+        ],
+        "theorem": [
+          "eta_cog_nonneg",
+          "eta_cog_bounded_when_delta_energy_zero",
+          "eta_cog_monotone_in_dignity",
+          "eta_cog_monotone_in_mi",
+          "eta_cog_antitone_in_energy",
+          "eta_cog_frozen_under_dishonest_claim",
+          "eta_cog_list_sum_nonneg",
+          "eta_cog_list_mean_nonneg"
+        ]
+      },
+      "import_lines": [
+        "Dignity",
+        "Mathlib.Algebra.Order.Field.Basic",
+        "Mathlib.Data.Real.Basic",
+        "Mathlib.Tactic"
+      ],
+      "module": "EtaCog",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/GaloisGate.lean",
+      "content_sha256": "910740bb06eb3b93f7c1e3512fdc20cece499601b3c3f3f6c246743d3e0711b9",
+      "declarations": {
+        "inductive": [
+          "GateCond"
+        ],
+        "def": [
+          "evalCond"
+        ],
+        "theorem": [
+          "condMeet_full_iff_admissible",
+          "condMeet_empty",
+          "condMeet_antitone",
+          "condExtract_admissible",
+          "mass_condition_independent",
+          "hydration_condition_independent"
+        ]
+      },
+      "import_lines": [
+        "Gate",
+        "Mathlib.Data.Finset.Basic",
+        "Mathlib.Order.GaloisConnection"
+      ],
+      "module": "GaloisGate",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/GraphProperties.lean",
+      "content_sha256": "483acf02bb790995fbe834d8f94250c01414686e526d4056ebe59489bea132dd",
+      "declarations": {
+        "theorem": [
+          "mass_not_transitive",
+          "admissibleTrans_refuted",
+          "dissipCond_transitive",
+          "hydratCond_transitive",
+          "strengthCond_transitive",
+          "hydration_acyclic",
+          "hydration_dag_path",
+          "admissible_not_symmetric",
+          "graded_compose_sanity",
+          "two_step_mass_bound"
+        ]
+      },
+      "import_lines": [
+        "Gate"
+      ],
+      "module": "GraphProperties",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Helmholtz.lean",
+      "content_sha256": "7b334fdccca01dcf367ab34092a146c001a5946ccaff44f96ad54fee1e428a0c",
+      "declarations": {
+        "def": [
+          "HelmholtzState"
+        ],
+        "theorem": [
+          "\u03c8AntitoneHelmholtz",
+          "helmholtzStateAdmissible",
+          "helmholtzLinear",
+          "helmholtzGradientConst",
+          "admissibleDirIsNegGrad"
+        ]
+      },
+      "import_lines": [
+        "Gate"
+      ],
+      "module": "Helmholtz",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/InfoTheory.lean",
+      "content_sha256": "9c294685c44b5a879de0adca0ce6438fdb089026db99fa277f4832e4f142a63d",
+      "declarations": {
+        "structure": [
+          "JointDist"
+        ],
+        "theorem": [
+          "marginalX_product",
+          "marginalY_product",
+          "jointEntropy_product",
+          "mutualInformation_product_zero"
+        ]
+      },
+      "import_lines": [
+        "LandauerLaw",
+        "Mathlib.Algebra.BigOperators.Ring",
+        "Mathlib.Analysis.SpecialFunctions.Log.Basic",
+        "Mathlib.Data.Fintype.BigOperators"
+      ],
+      "module": "InfoTheory",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/JenningsGelSpace.lean",
+      "content_sha256": "3c5a304a95d23928ec78a860595cc6c0d78dbee8d496cd63d89da298089a6768",
+      "declarations": {
+        "lemma": [
+          "denom_pos",
+          "clamp01_mono",
+          "\u03c6_cap_num_mono",
+          "one_sub_\u03c6_nonneg",
+          "one_sub_\u03c6_mono"
+        ],
+        "theorem": [
+          "capillary_porosity_antitone_in_alpha",
+          "jennings_strength_monotone",
+          "jennings_strength_nonneg"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Algebra.Order.Field.Rat",
+        "Mathlib.Data.Rat.Defs",
+        "Mathlib.Tactic"
+      ],
+      "module": "JenningsGelSpace",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/MedianConvergence.lean",
+      "content_sha256": "59de0321fa136af8373f7359b15d73e2419bbc6f9b54b251469c6d1b94bfb826",
+      "declarations": {
+        "theorem": [
+          "median_convergence_sample_size",
+          "n_warmup_positive",
+          "n_warmup_monotone_in_epsilon",
+          "n_warmup_monotone_in_delta",
+          "sqrt_window_warmup_is_admissible"
+        ],
+        "lemma": [
+          "empirical_cdf_tail_nonneg"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Algebra.Order.Floor",
+        "Mathlib.Analysis.SpecialFunctions.Log.Basic",
+        "Mathlib.Data.Complex.ExponentialBounds",
+        "Mathlib.Data.Real.Basic",
+        "Mathlib.Data.Real.Sqrt",
+        "Mathlib.Tactic"
+      ],
+      "module": "MedianConvergence",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Memory/MergeSafe.lean",
+      "content_sha256": "17445c96ffbad60723c65ca2ba455b4f9c52cf3d1af5b31d4fbafb6d9394c325",
+      "declarations": {
+        "structure": [
+          "MemoryEntry"
+        ],
+        "def": [
+          "mergeSafePred"
+        ],
+        "theorem": [
+          "mergeSafePred_intro",
+          "MergeSafe"
+        ]
+      },
+      "import_lines": [],
+      "module": "Memory.MergeSafe",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Memory/TierDisjoint.lean",
+      "content_sha256": "76200509b1a3cb96336b8c9e94f2c7c4e5ef383560e83d5e7ebb19f69ee64b8c",
+      "declarations": {
+        "inductive": [
+          "MemoryTier"
+        ],
+        "structure": [
+          "MemoryEntry"
+        ],
+        "def": [
+          "in_shared_tier",
+          "operator_attested_promotion_from_local",
+          "entries"
+        ],
+        "theorem": [
+          "PairwiseDisjoint",
+          "LocalSharedDisjoint",
+          "local_shared_disjoint_under_promotion"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Data.Set.Basic"
+      ],
+      "module": "Memory.TierDisjoint",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/OrderStatisticsBand.lean",
+      "content_sha256": "a980acfb8852994fdee73ed69bc6ea3e28f6d5227f449e943bca9745c67cae62",
+      "declarations": {
+        "theorem": [
+          "order_statistic_concentration",
+          "quantile_separation_preserved",
+          "band_classification_soundness",
+          "band_flip_rate_bound",
+          "p25_p75_admissibility"
+        ],
+        "lemma": [
+          "empirical_cdf_tail_nonneg"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Algebra.Order.Floor",
+        "Mathlib.Data.Real.Basic",
+        "Mathlib.Data.Real.Sqrt",
+        "Mathlib.Tactic",
+        "MedianConvergence"
+      ],
+      "module": "OrderStatisticsBand",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Powers.lean",
+      "content_sha256": "ae7e745ef7882d13a19175c741b1efe685f5fb4937d1844a2614abc2af68135e",
+      "declarations": {
+        "def": [
+          "S_intrinsic",
+          "PowersState"
+        ],
+        "lemma": [
+          "S_intrinsic_pos",
+          "gelSpaceRatioDenom_pos",
+          "gelSpaceRatio_nonneg",
+          "powersStrength_nonneg",
+          "gelSpaceRatio_mono"
+        ],
+        "theorem": [
+          "powers_monotone",
+          "powersStateFcMonotone",
+          "powersStateAdmissible"
+        ]
+      },
+      "import_lines": [
+        "Gate",
+        "Mathlib.Algebra.Order.Field.Rat",
+        "Mathlib.Tactic"
+      ],
+      "module": "Powers",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/RegimeSoundness.lean",
+      "content_sha256": "ad516ec8e936f65d918853aabac86ad45e4c86806fd176f0881f942ec361b25a",
+      "declarations": {
+        "def": [
+          "in_regime",
+          "warning_set"
+        ],
+        "theorem": [
+          "warnings_empty_iff_in_regime",
+          "warning_dimension_violated"
+        ],
+        "instance": [
+          "in_regime_decidable"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Algebra.Order.Field.Rat",
+        "Mathlib.Data.Finset.Empty",
+        "Mathlib.Data.Fintype.Basic",
+        "Mathlib.Data.Fintype.Card",
+        "Mathlib.Tactic"
+      ],
+      "module": "RegimeSoundness",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/RhoEstimator.lean",
+      "content_sha256": "915302f0e221eeae2b9bf3b488fbe6288a0b7311c5df74031664e2cbdb6864ca",
+      "declarations": {
+        "def": [
+          "ValidRho"
+        ],
+        "theorem": [
+          "rhoMiOfSq_nonneg",
+          "rhoMiOfSq_mono",
+          "rho_based_mi_formula",
+          "rho_mi_nonneg",
+          "rho_mi_zero_at_zero_rho",
+          "rho_mi_monotone_in_abs_rho",
+          "rho_mi_bounded_below_one",
+          "plug_in_variance_bound"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Analysis.SpecialFunctions.Log.Base",
+        "Mathlib.Data.Real.Basic",
+        "Mathlib.Tactic"
+      ],
+      "module": "RhoEstimator",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/SeparationBound.lean",
+      "content_sha256": "72526f7158bfae75eaa7c632024a62f6139714b1b6a2d5f5cb3e74a5c7f38920",
+      "declarations": {
+        "theorem": [
+          "accuracy_safety_separation_real",
+          "accuracy_safety_separation_real_symm"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Data.Real.Basic",
+        "Mathlib.Tactic.Linarith",
+        "Mathlib.Tactic.Ring"
+      ],
+      "module": "SeparationBound",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/_check_ext.lean",
+      "content_sha256": "0f61b8a12260ab81a742b6346ce6a98b38d42df6d0c65d81aaa8339f8554eb8c",
+      "declarations": {},
+      "import_lines": [
+        "LandauerLaw"
+      ],
+      "module": "_check_ext",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/experiments/AutoExperimenterPlaceholder.lean",
+      "content_sha256": "e9ffc73b7587d2b37f4c3617769369593c1a43822be5caf2a7546781209fcc45",
+      "declarations": {
+        "def": [
+          "AutoExperimenterPlaceholder"
+        ]
+      },
+      "import_lines": [],
+      "module": "experiments.AutoExperimenterPlaceholder",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/scripts/print_axioms.lean",
+      "content_sha256": "d31117c92bbce34bc4039512f52fdc4f9e492ccd74971946a5546fbaea883c06",
+      "declarations": {
+        "def": [
+          "axiomClosure"
+        ]
+      },
+      "import_lines": [
+        "Lean",
+        "Lean.Environment",
+        "Lean.Util.CollectAxioms",
+        "Lean.Util.SearchPath"
+      ],
+      "module": "scripts.print_axioms",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Activation.lean",
+      "content_sha256": "82c89554332e6212d9b73bc937fd2ac32023cbfa7197898bc40de00b45cbb2ff",
+      "declarations": {
+        "inductive": [
+          "Engine"
+        ],
+        "def": [
+          "engineMember",
+          "opcEngines",
+          "racEngines",
+          "geoEngines",
+          "limeEngines",
+          "earthEngines",
+          "activation",
+          "activateOPC",
+          "activateRAC",
+          "activateGeopolymer",
+          "activateLime",
+          "activateEarth",
+          "HasActiveEngine"
+        ],
+        "structure": [
+          "ActivatedUMST"
+        ],
+        "theorem": [
+          "activationTotal",
+          "opc_has_hydration",
+          "rac_has_transport",
+          "geo_has_alkali",
+          "lime_has_carbonation",
+          "earth_has_moisture",
+          "earth_no_hydration",
+          "lime_no_hydration",
+          "opc_no_carbonation",
+          "opc_no_transport",
+          "geo_no_hydration"
+        ],
+        "instance": [
+          "activationDecidable"
+        ]
+      },
+      "import_lines": [
+        "Gate",
+        "Naturality"
+      ],
+      "module": "Activation",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Complementarity.lean",
+      "content_sha256": "b4d223afb6cb86150d8efb57e589c0b0ba37d4b3ceeb6c74fd048dee8f89fcb0",
+      "declarations": {
+        "theorem": [
+          "complementarityEnglert",
+          "observationCanonical_complementary"
+        ]
+      },
+      "import_lines": [
+        "QuantumClassicalBridge"
+      ],
+      "module": "Complementarity",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/DataProcessingInequality.lean",
+      "content_sha256": "a5a161fbd624231c4ba5814b4a7cd66ced67588b4cbc59c684086ba4a2149050",
+      "declarations": {
+        "theorem": [
+          "vonNeumannDiagonal_whichPath_invariant",
+          "vonNeumannDiagonal_ge_vonNeumannEntropy",
+          "KrausChannel.identity_isUnital",
+          "vonNeumannEntropy_identity_apply",
+          "vonNeumannEntropy_nondecreasing_unital_identity",
+          "whichPathChannel_isUnital",
+          "densityMatrix_diag_entry_eq_ofReal_re",
+          "whichPath_apply_carrier_eq_diagonal_pathWeight",
+          "vonNeumannEntropy_whichPath_apply_eq_vonNeumannDiagonal",
+          "vonNeumannEntropy_nondecreasing_unital_whichPath",
+          "whichPath_increases_entropy",
+          "entropy_increase_from_measurement_nonneg",
+          "KrausChannel.unitaryChannel_isUnital",
+          "unitaryChannel_apply_carrier",
+          "vonNeumannEntropy_nondecreasing_unital_CPTP_n"
+        ],
+        "def": [
+          "KrausChannel.IsUnital"
+        ]
+      },
+      "import_lines": [
+        "DensityState",
+        "InfoEntropy",
+        "Mathlib.Algebra.BigOperators.Fin",
+        "Mathlib.Analysis.SpecialFunctions.BinaryEntropy",
+        "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog",
+        "Mathlib.Data.Complex.Basic",
+        "Mathlib.LinearAlgebra.Matrix.Determinant.Basic",
+        "Mathlib.LinearAlgebra.Matrix.Hermitian",
+        "Mathlib.LinearAlgebra.Matrix.Spectrum",
+        "Mathlib.LinearAlgebra.Matrix.Trace",
+        "Mathlib.LinearAlgebra.UnitaryGroup",
+        "MeasurementChannel",
+        "SchrodingerDynamics",
+        "VonNeumannEntropy"
+      ],
+      "module": "DataProcessingInequality",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/DensityState.lean",
+      "content_sha256": "745a6e56eaa2a29a87c64c50aafa35c83ab902555ec2b925d96419636b5640f0",
+      "declarations": {
+        "structure": [
+          "DensityMatCore"
+        ],
+        "theorem": [
+          "ext",
+          "trace_eq_one",
+          "isHermitian",
+          "diag_nonneg_complex_n",
+          "diag_re_nonneg_n",
+          "trace_sum_s",
+          "trace_re_eq_one_n",
+          "diag_re_le_one_n",
+          "smul_psd",
+          "pureCarrier_posSemidef",
+          "pureCarrier_trace",
+          "pureDensity_carrier"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Data.Complex.Basic",
+        "Mathlib.Data.Fintype.Basic",
+        "Mathlib.Data.Matrix.RowCol",
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.LinearAlgebra.Matrix.Trace"
+      ],
+      "module": "DensityState",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/DoubleSlit.lean",
+      "content_sha256": "12a7fbb56fd1c13e57b964885526ce32c486f3a14379602b0a1d334d6b43fd8e",
+      "declarations": {
+        "theorem": [
+          "measurementUpdateWhichPath_gateEnforcement"
+        ]
+      },
+      "import_lines": [
+        "Complementarity",
+        "GateCompat",
+        "LandauerBound",
+        "TensorPartialTrace",
+        "WhichPathMeasurementUpdate"
+      ],
+      "module": "DoubleSlit",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/DoubleSlitCore.lean",
+      "content_sha256": "9a839457c472c11b1594efea914853b5da3cf06a236d2aafe2984d222847ae33",
+      "declarations": {
+        "structure": [
+          "ObservationState",
+          "MeasurementUpdate"
+        ],
+        "theorem": [
+          "ObservationState.ext",
+          "infoEnergyLowerBound_nonneg",
+          "infoMassEquivalent_nonneg"
+        ],
+        "def": [
+          "Complementary"
+        ]
+      },
+      "import_lines": [
+        "Mathlib",
+        "UMSTCore"
+      ],
+      "module": "DoubleSlitCore",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicDynamics.lean",
+      "content_sha256": "26fc19ab8c2f0a89472da98eda0f1eb4d1f69c9f97fb9d2823dc27c0bd4b43dc",
+      "declarations": {
+        "theorem": [
+          "rollout_zero",
+          "rollout_succ",
+          "rollout_nullPolicy",
+          "rollout_whichPathPolicy_visibility_zero_of_pos",
+          "rollout_whichPathPolicy_distinguishability_invariant"
+        ],
+        "def": [
+          "nullPolicy",
+          "whichPathPolicy"
+        ]
+      },
+      "import_lines": [
+        "EpistemicMI"
+      ],
+      "module": "EpistemicDynamics",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicGalois.lean",
+      "content_sha256": "a7fa177792bda021fb718b8e9714fd60e333933938888e2ac13c44e6b08adc44",
+      "declarations": {
+        "theorem": [
+          "requiredEnergy_mono",
+          "acquirableInfo_mono",
+          "landauer_galois_connection",
+          "requiredEnergy_acquirableInfo",
+          "acquirableInfo_requiredEnergy",
+          "probe_budget_iff_info_bound"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Data.Real.Basic",
+        "Mathlib.Order.GaloisConnection",
+        "MeasurementCost"
+      ],
+      "module": "EpistemicGalois",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicMI.lean",
+      "content_sha256": "39fd8101df54f60fed7eadcee48061b841d8e20fb141c16ba64064aba2f4d7dd",
+      "declarations": {
+        "inductive": [
+          "PathProbe"
+        ],
+        "theorem": [
+          "epistemicMI_null",
+          "epistemicMI_whichPath",
+          "epistemicMI_nonneg",
+          "epistemicMI_le_log_two",
+          "epistemicMIBits_nonneg",
+          "epistemicMIBits_le_one",
+          "epistemicMIBits_null",
+          "epistemicMIBits_whichPath",
+          "epistemicMI_whichPath_apply",
+          "epistemicLandauerCost_nonneg",
+          "epistemicLandauerCost_le_landauerBitEnergy",
+          "epistemicLandauerCost_null",
+          "epistemicLandauerCost_whichPath"
+        ]
+      },
+      "import_lines": [
+        "EpistemicSensing"
+      ],
+      "module": "EpistemicMI",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicNumericsContract.lean",
+      "content_sha256": "a4014dbb19a561d9e0f9854cb80bd3cad4d49ec735dec3b615158a8c90af410a",
+      "declarations": {
+        "structure": [
+          "NumericTraceRecord"
+        ],
+        "def": [
+          "NumericTraceConsistent",
+          "NumericTraceFullyConsistent"
+        ],
+        "theorem": [
+          "NumericTraceRecord.ofRollout_aggregateMI",
+          "NumericTraceRecord.ofRollout_aggregateCost",
+          "ofRollout_consistent",
+          "ofRollout_fullyConsistent",
+          "traceRecordPolicyUtility_eq_policyUtility",
+          "traceRecord_aggregateMI_nonneg",
+          "traceRecord_aggregateCost_nonneg",
+          "traceRecord_aggregateMI_le",
+          "traceRecord_aggregateCost_le",
+          "traceRecordPolicyUtility_le_aggregateMI"
+        ]
+      },
+      "import_lines": [
+        "EpistemicRuntimeContract"
+      ],
+      "module": "EpistemicNumericsContract",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicPerStepNumerics.lean",
+      "content_sha256": "b0785e27b24dda7fda64e626c73d4ba6ef358f8fe5451a258037a68a43c038e5",
+      "declarations": {
+        "structure": [
+          "PerStepNumericRecord"
+        ],
+        "def": [
+          "PerStepNumericConsistent",
+          "PerStepAggregateConsistent"
+        ],
+        "theorem": [
+          "PerStepNumericRecord.ofRollout_stepMI",
+          "PerStepNumericRecord.ofRollout_stepCost",
+          "ofRollout_perStepConsistent",
+          "ofRollout_aggregateMI",
+          "ofRollout_aggregateCost",
+          "perStepConsistent_implies_aggregateConsistent",
+          "ofRollout_aggregateConsistent",
+          "ofRollout_toNumericTraceRecord",
+          "toNumericTraceRecord_consistent",
+          "perStepRecordPolicyUtility_eq_policyUtility"
+        ]
+      },
+      "import_lines": [
+        "EpistemicNumericsContract"
+      ],
+      "module": "EpistemicPerStepNumerics",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicPolicy.lean",
+      "content_sha256": "175a2b421a086bbde9e9d9c5d6fa792e6d7456e16eb2df251f63767dd00b74bb",
+      "declarations": {
+        "theorem": [
+          "policyUtility_le_cumulativeMI",
+          "exists_optimalPolicyIndexAt",
+          "argmaxPolicyIndexAt_spec",
+          "policyAdmissible_nullPolicy",
+          "policyAdmissible_whichPathPolicy",
+          "exists_constrainedOptimalPolicyAt",
+          "exists_constrainedOptimal_basicPolicyFamily"
+        ],
+        "def": [
+          "IsOptimalPolicyIndexAt",
+          "PolicyAdmissible",
+          "AdmissiblePolicyIndices",
+          "IsConstrainedOptimalPolicyAt",
+          "basicPolicyFamily"
+        ]
+      },
+      "import_lines": [
+        "EpistemicTrajectoryMI",
+        "ProbeOptimization"
+      ],
+      "module": "EpistemicPolicy",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicRuntimeContract.lean",
+      "content_sha256": "f14831e67459ea2a27fd33c12d93c095d967e2a8c46bcad97841d399df5b78b5",
+      "declarations": {
+        "def": [
+          "RuntimeTraceCoherent",
+          "RuntimeTraceContractMI",
+          "RuntimeTraceContractLandauer"
+        ],
+        "theorem": [
+          "traceStateAt_zero",
+          "traceStateAt_succ",
+          "rollout_satisfies_traceCoherent",
+          "rollout_satisfies_traceContractMI",
+          "rollout_satisfies_traceContractLandauer",
+          "policyAdmissible_iff_traceStepsAdmissible",
+          "constrainedOptimal_traceUtilityDominates",
+          "traceStep_MI_le_log_two",
+          "traceStep_landauer_le_bitEnergy"
+        ]
+      },
+      "import_lines": [
+        "EpistemicPolicy"
+      ],
+      "module": "EpistemicRuntimeContract",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicRuntimeSchemaContract.lean",
+      "content_sha256": "c5eedc836f566606c91f53a531b5f21063488e988947cd0bd392ffe6a559f6a0",
+      "declarations": {
+        "structure": [
+          "EmittedStepRecord",
+          "EmittedTraceSchema"
+        ],
+        "def": [
+          "EmittedTraceWellFormed",
+          "EmittedTraceRolloutConsistent"
+        ],
+        "theorem": [
+          "emittedRolloutConsistent_toPerStepConsistent",
+          "emittedRolloutConsistent_toAggregateConsistent",
+          "emittedRolloutConsistent_toNumericTraceConsistent",
+          "emittedRolloutConsistent_policyUtility_eq",
+          "ofRollout_rolloutConsistent",
+          "ofRollout_wellFormed",
+          "ofRollout_numericTraceConsistent",
+          "ofRollout_policyUtility_eq"
+        ]
+      },
+      "import_lines": [
+        "EpistemicPerStepNumerics"
+      ],
+      "module": "EpistemicRuntimeSchemaContract",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicSensing.lean",
+      "content_sha256": "48f21603e7652f003d79a1d24dc50b97f2cc1c557927cfab18ecf0bc13b1d8e3",
+      "declarations": {
+        "structure": [
+          "QuantumProbe"
+        ],
+        "theorem": [
+          "ProbeStrength_nonneg",
+          "ProbeStrength_le_one",
+          "whichPathProbe_apply",
+          "whichPathProbe_strength",
+          "whichPathProbe_isMax_on_singleton",
+          "whichPathProbe_strength_invariant",
+          "whichPathMI_nonneg",
+          "whichPathMI_le_log_two",
+          "whichPathMI_whichPath_apply",
+          "nullProbe_strength",
+          "nullProbe_apply",
+          "whichPathProbe_dominates_nullProbe",
+          "interference_preserved_nullProbe",
+          "collapse_on_whichPathProbe",
+          "whichPathProbe_isMax_on_null_pair",
+          "exists_maxProbeIndexAt",
+          "argmaxProbeIndexAt_spec",
+          "nullWhichFamily_zero",
+          "nullWhichFamily_one",
+          "argmax_nullWhichFamily_eq_which_of_pos",
+          "LandauerCostFromProbeStrength_nonneg",
+          "LandauerCostFromProbeStrength_le_landauerBitEnergy",
+          "LandauerCostFromProbeStrength_nullProbe",
+          "LandauerCostFromProbeStrength_mono",
+          "measurementUpdateWhichPath_info_monotone",
+          "measurementUpdateWhichPath_visibility_drop"
+        ],
+        "def": [
+          "IsMaxMIProbeAt",
+          "ProbeDominatesAt",
+          "ProbeDominates",
+          "IsMaxProbeIndexAt"
+        ]
+      },
+      "import_lines": [
+        "LandauerBound",
+        "WhichPathMeasurementUpdate"
+      ],
+      "module": "EpistemicSensing",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTelemetryApproximation.lean",
+      "content_sha256": "c50161ad9c252ee7dd33229e37dbc5962fec0ea041faab9b7c2d557636107560",
+      "declarations": {
+        "def": [
+          "RuntimeTelemetrySchemaApproxConsistent",
+          "NumericTraceApproxConsistent"
+        ],
+        "theorem": [
+          "telemetryApprox_zero_implies_exact",
+          "numericApprox_zero_implies_exact",
+          "telemetryApprox_zero_policyUtility_eq",
+          "telemetryApprox_ofRollout_zero"
+        ]
+      },
+      "import_lines": [
+        "EpistemicTelemetryBridge"
+      ],
+      "module": "EpistemicTelemetryApproximation",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTelemetryBridge.lean",
+      "content_sha256": "e25ecb1c486074c43a85bb3237a2756c6e21ce5266bfcada5737c5bfdb541806",
+      "declarations": {
+        "structure": [
+          "RuntimeTelemetryAggregate",
+          "RuntimeTelemetryStep",
+          "RuntimeTelemetrySchema"
+        ],
+        "def": [
+          "RuntimeTelemetryAggregateConsistent",
+          "RuntimeTelemetrySchemaConsistent",
+          "RuntimeTelemetryAggregate.toNumericTraceRecord",
+          "RuntimeTelemetrySchema.toPerStepNumericRecord",
+          "RuntimeTelemetrySchema.toEmittedTraceSchema",
+          "RuntimeTelemetrySchemaWellFormed"
+        ],
+        "theorem": [
+          "telemetrySchemaConsistent_toPerStepConsistent",
+          "telemetrySchemaConsistent_toAggregateConsistent",
+          "telemetrySchemaConsistent_toNumericTraceConsistent",
+          "telemetrySchemaConsistent_toEmittedRolloutConsistent",
+          "telemetryAggregateConsistent_toNumericTraceConsistent",
+          "telemetrySchemaConsistent_policyUtility_eq",
+          "telemetryAggregateConsistent_policyUtility_eq",
+          "ofRollout_schemaConsistent",
+          "ofRollout_aggregateConsistent",
+          "telemetrySchemaConsistent_wellFormed",
+          "ofRollout_schemaWellFormed"
+        ]
+      },
+      "import_lines": [
+        "EpistemicRuntimeSchemaContract"
+      ],
+      "module": "EpistemicTelemetryBridge",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTelemetryQuantitativeUtility.lean",
+      "content_sha256": "b967a6e898bb674625d8121032fe7fef4313425c026229372dc5ebe4915c0d28",
+      "declarations": {
+        "theorem": [
+          "utilityApproxBound_nonneg",
+          "utilityApproxBound_zero",
+          "numericApprox_utility_diff_le",
+          "telemetryApprox_zero_utility_diff_zero"
+        ]
+      },
+      "import_lines": [
+        "EpistemicTelemetryApproximation"
+      ],
+      "module": "EpistemicTelemetryQuantitativeUtility",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTelemetrySolverCalibration.lean",
+      "content_sha256": "2d8eb4565f6c0c60671f6cc3805f00b31adcfd963e2288d4dcae6fa841b6813f",
+      "declarations": {
+        "structure": [
+          "SolverCalibration"
+        ],
+        "def": [
+          "SolverCalibration.epsMIStep",
+          "SolverCalibration.epsCostStep",
+          "SolverCalibration.epsMIAgg",
+          "SolverCalibration.epsCostAgg",
+          "SolverCalibrationSchemaAssumption",
+          "SolverCalibrationAggregateAssumption"
+        ],
+        "theorem": [
+          "SolverCalibration.epsMIStep_nonneg",
+          "SolverCalibration.epsCostStep_nonneg",
+          "SolverCalibration.epsMIAgg_nonneg",
+          "SolverCalibration.epsCostAgg_nonneg",
+          "solverCalibration_utility_diff_le",
+          "solverCalibration_utilityBound_nonneg"
+        ]
+      },
+      "import_lines": [
+        "EpistemicTelemetryQuantitativeUtility"
+      ],
+      "module": "EpistemicTelemetrySolverCalibration",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTraceDerivedEpsilonCertificate.lean",
+      "content_sha256": "ddc5618f2eeceb39944b2eb1f3105357eb71e2471e5f0876df43f2f3e73a063a",
+      "declarations": {
+        "theorem": [
+          "traceResidualMI_nonneg",
+          "traceResidualCost_nonneg",
+          "traceResidual_numericApproxConsistent",
+          "traceEpsilonCertificate_utility_diff_le",
+          "traceEpsilonCertificate_bound_nonneg"
+        ],
+        "structure": [
+          "TraceEpsilonCertificate"
+        ],
+        "def": [
+          "TraceEpsilonCertificate.mk"
+        ]
+      },
+      "import_lines": [
+        "EpistemicTelemetryQuantitativeUtility"
+      ],
+      "module": "EpistemicTraceDerivedEpsilonCertificate",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTraceDrivenCalibrationWitness.lean",
+      "content_sha256": "c6c88fcb79109a7f86d41811cb784f0013e191e6a89fecde9605957d2f2ed467",
+      "declarations": {
+        "structure": [
+          "TraceCalibrationWitnessAt"
+        ],
+        "theorem": [
+          "traceCalibrationWitnessAt_utility_diff_le",
+          "traceCalibrationWitnessAt_bound_nonneg"
+        ]
+      },
+      "import_lines": [
+        "EpistemicTelemetrySolverCalibration"
+      ],
+      "module": "EpistemicTraceDrivenCalibrationWitness",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTrajectoryMI.lean",
+      "content_sha256": "8b462445171d2f8a9cba02b5ffc33baadc8fb953c6492f658da6cbbfd19f5ade",
+      "declarations": {
+        "theorem": [
+          "cumulativeEpistemicMI_nonneg",
+          "cumulativeEpistemicMI_le",
+          "cumulativeEpistemicMIBits_nonneg",
+          "cumulativeEpistemicMIBits_le",
+          "cumulativeEpistemicLandauerCost_nonneg",
+          "cumulativeEpistemicLandauerCost_le",
+          "cumulativeEpistemicMI_nullPolicy",
+          "cumulativeEpistemicLandauerCost_nullPolicy"
+        ]
+      },
+      "import_lines": [
+        "EpistemicDynamics"
+      ],
+      "module": "EpistemicTrajectoryMI",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/ErasureChannel.lean",
+      "content_sha256": "f49c30d4f90c4e8c7ad199d0f919e3de2e1b35d6c22e5c412253435c0ec021bf",
+      "declarations": {
+        "theorem": [
+          "resetK0_conjTranspose",
+          "resetK1_conjTranspose",
+          "resetK0_conj_mul",
+          "resetK1_conj_mul",
+          "resetChannel_tp_aux",
+          "resetChannel_tp",
+          "resetChannel_map_entry",
+          "resetChannel_output_eq_rhoZero_carrier",
+          "rhoZeroCarrier_posSemidef",
+          "rhoZeroCarrier_trace_one",
+          "resetChannel_output_eq_rhoZero",
+          "resetOutputState_diag_0",
+          "resetOutputState_diag_1",
+          "resetChannel_entropy_zero",
+          "resetChannel_pathEntropyBits_zero",
+          "resetChannel_landauerCost_zero",
+          "idealResetErasure_saturates"
+        ]
+      },
+      "import_lines": [
+        "LandauerBound",
+        "Mathlib.Algebra.BigOperators.Fin",
+        "Mathlib.Data.Complex.Basic",
+        "Mathlib.Data.Fintype.BigOperators",
+        "Mathlib.LinearAlgebra.Matrix.Trace",
+        "Mathlib.Tactic.FinCases",
+        "MeasurementChannel"
+      ],
+      "module": "ErasureChannel",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/ExamplesQubit.lean",
+      "content_sha256": "23919cea91cc4dfaf010b561f317a11f7620ea967615bfae7b4096c814f3607f",
+      "declarations": {
+        "lemma": [
+          "sqrt2_pos",
+          "sqrt2_ne_zero",
+          "psiPlus_normalized",
+          "rhoPlus_carrier_apply",
+          "psi_times_conj",
+          "psiZero_normalized",
+          "psiOne_normalized"
+        ],
+        "theorem": [
+          "rhoPlus_pathWeight0",
+          "rhoPlus_pathWeight1",
+          "rhoPlus_fringeVisibility",
+          "rhoPlus_whichPathDistinguishability",
+          "rhoPlus_vonNeumannDiagonal_eq_log_two",
+          "rhoPlus_complementarity_squared_eq_one",
+          "rhoPlus_observationCanonical_I",
+          "rhoPlus_observationCanonical_V",
+          "rhoPlus_pathEntropyBits_eq_one",
+          "rhoPlus_landauerCostDiagonal_eq_landauerBitEnergy",
+          "rhoPlus_whichPathApply_fringeVisibility",
+          "rhoPlus_whichPathApply_whichPathDistinguishability",
+          "rhoPlus_whichPathApply_pathEntropyBits",
+          "rhoPlus_measurementUpdate_new_V_eq_zero",
+          "rhoZero_pathWeight0",
+          "rhoZero_pathWeight1",
+          "rhoZero_fringeVisibility",
+          "rhoZero_whichPathDistinguishability",
+          "rhoZero_vonNeumannDiagonal",
+          "rhoZero_pathEntropyBits",
+          "rhoZero_landauerCostDiagonal",
+          "rhoZero_complementarity_squared_eq_one",
+          "rhoZero_observationCanonical_eq_after_whichPath",
+          "rhoZero_measurementUpdate_states_eq",
+          "rhoOne_pathWeight0",
+          "rhoOne_pathWeight1",
+          "rhoOne_fringeVisibility",
+          "rhoOne_whichPathDistinguishability",
+          "rhoOne_vonNeumannDiagonal",
+          "rhoOne_pathEntropyBits",
+          "rhoOne_landauerCostDiagonal",
+          "rhoOne_complementarity_squared_eq_one",
+          "rhoOne_observationCanonical_eq_after_whichPath",
+          "rhoOne_measurementUpdate_states_eq",
+          "rhoZero_argmax_nullWhichFamily",
+          "rhoOne_argmax_nullWhichFamily",
+          "rhoZero_exists_constrainedOptimal_nullWhichFamily",
+          "rhoOne_exists_constrainedOptimal_nullWhichFamily",
+          "rhoPlus_epistemicMI_whichPath",
+          "rhoZero_epistemicMI_whichPath",
+          "rhoOne_epistemicMI_whichPath",
+          "rhoPlus_epistemicLandauerCost_whichPath",
+          "rhoZero_epistemicLandauerCost_whichPath",
+          "rhoOne_epistemicLandauerCost_whichPath"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Algebra.BigOperators.Fin",
+        "ProbeOptimization"
+      ],
+      "module": "ExamplesQubit",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/FiberedActivation.lean",
+      "content_sha256": "8287357d14b99c3cc57787e9dd2cfb922e2e4f6349f7291e2daf43a544e915ff",
+      "declarations": {
+        "def": [
+          "engineFiber"
+        ],
+        "theorem": [
+          "engineFiber_nonempty",
+          "strength_universal",
+          "rheology_universal",
+          "activation_at_least_two",
+          "fiber_covers",
+          "hydration_not_lime",
+          "hydration_not_earth",
+          "transport_not_opc"
+        ]
+      },
+      "import_lines": [
+        "Activation"
+      ],
+      "module": "FiberedActivation",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/FlashMoERuntimeScaffold.lean",
+      "content_sha256": "6b51d8b5c1338a7d6310b4df95e0dfc996885d808a845f1eb19b667c5f777692",
+      "declarations": {},
+      "import_lines": [
+        "Gate"
+      ],
+      "module": "FlashMoERuntimeScaffold",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/FormalFoundations.lean",
+      "content_sha256": "be599adc1b79e2b54e016e77ff53d4675d1c1be37c7ec1a96c73bddbf3831164",
+      "declarations": {
+        "theorem": [
+          "umst_double_slit_formal_complete"
+        ]
+      },
+      "import_lines": [
+        "LandauerLaw",
+        "LindbladDynamics"
+      ],
+      "module": "FormalFoundations",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Gate.lean",
+      "content_sha256": "a349fceeb215a6b02a0b30fb1f9674a388a5eae7ca2a626c0b11ebf2c58da7fb",
+      "declarations": {
+        "structure": [
+          "ThermodynamicState",
+          "Admissible",
+          "AdmissibleN"
+        ],
+        "def": [
+          "\u03b4Mass",
+          "Q_hyd",
+          "helmholtz",
+          "gateCheck",
+          "MassCond",
+          "DissipCond",
+          "HydratCond",
+          "StrengthCond"
+        ],
+        "theorem": [
+          "helmholtzAntitone",
+          "helmholtzGradient",
+          "helmholtzAdditive",
+          "gateCheckSound",
+          "gateCheckComplete",
+          "clausiusDuhemFwd",
+          "forwardHydrationAdmissible",
+          "admissibleRefl",
+          "admissibleIffCSG",
+          "subjectReduction",
+          "kleisliAdmissibility",
+          "admissible_iff_admissibleN1",
+          "admissibleNRefl",
+          "admissibleN_compose"
+        ],
+        "inductive": [
+          "ConstitutionalSeq"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Algebra.Order.Field.Rat",
+        "Mathlib.Tactic"
+      ],
+      "module": "Gate",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/GateCompat.lean",
+      "content_sha256": "9a2b1c081b1a3b06c6b2a8293380acfcc648a9df3e0324d22dfcee530638b8e9",
+      "declarations": {
+        "theorem": [
+          "thermoFromQubitPath_whichPath",
+          "admissible_thermoFromQubitPath_whichPath",
+          "thermoCalibratedScaffold_whichPath",
+          "admissible_thermoCalibratedScaffold_whichPath",
+          "thermoCalibratedScaffold_freeEnergy_nonpos",
+          "thermoCalibratedScaffold_freeEnergy_bounded",
+          "calibratedHydration_nonneg",
+          "calibratedHydration_le_one",
+          "calibratedHydration_whichPath",
+          "calibratedStrength_nonneg",
+          "calibratedStrength_le_one",
+          "admissible_thermoCalibratedPhys_whichPath"
+        ]
+      },
+      "import_lines": [
+        "EpistemicSensing",
+        "GeneralVisibility",
+        "LandauerBound",
+        "MeasurementChannel",
+        "QuantumClassicalBridge",
+        "UMSTCore"
+      ],
+      "module": "GateCompat",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/GeneralDimension.lean",
+      "content_sha256": "5d42e2abd2d1691a713ab9b3ec874ce8e5608ca0b1ec2d663a4eb0a5dbbf6f5f",
+      "declarations": {
+        "theorem": [
+          "vonNeumannDiagonal_n_le_log_n"
+        ]
+      },
+      "import_lines": [
+        "InfoEntropy",
+        "Mathlib.Analysis.Convex.Jensen",
+        "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog",
+        "Mathlib.Data.Fintype.BigOperators"
+      ],
+      "module": "GeneralDimension",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/GeneralResidualCoherence.lean",
+      "content_sha256": "b30a9158b9c1608a5214e5a2dbb6a4384afd98b1b730dd59b8247fb42eb03c2a",
+      "declarations": {
+        "theorem": [
+          "diagonalPurity_nonneg",
+          "diagonalPurity_le_one",
+          "hermitian_sq_diag_eq_sum_normSq",
+          "trace_sq_eq_sum_normSq",
+          "normSq_diag_eq_re_sq",
+          "offDiagonalPurity_eq_sum_offdiag",
+          "offDiagonalPurity_nonneg",
+          "normSq_entry_le_diag_mul",
+          "trace_sq_le_one",
+          "offDiagonalPurity_le_complement",
+          "residualCoherenceCapacity_purity_nonneg",
+          "residualCoherenceCapacity_purity_le_one",
+          "residualCoherenceCapacity_purity_mem_Icc",
+          "offDiagonalPurity_eq_zero_iff_diagonal",
+          "residualCoherenceCapacity_purity_eq_one_iff_pure",
+          "diagonalPurity_qubit",
+          "one_sub_diagonalPurity_qubit",
+          "offDiagonalPurity_qubit",
+          "residualCoherenceCapacity_purity_qubit"
+        ]
+      },
+      "import_lines": [
+        "DensityState",
+        "LandauerBound",
+        "Mathlib.Data.Complex.BigOperators"
+      ],
+      "module": "GeneralResidualCoherence",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/GeneralVisibility.lean",
+      "content_sha256": "a73d3a964ccf0866650983d663a2c059aaa0dfedb979faf70eebe1d92c62a021",
+      "declarations": {
+        "theorem": [
+          "fringeVisibility_n_nonneg",
+          "abs_entry_le_sqrt_diag_mul",
+          "coherenceL1_carrier_le",
+          "fringeVisibility_n_le_one",
+          "fringeVisibility_n_whichPath_apply"
+        ]
+      },
+      "import_lines": [
+        "GeneralResidualCoherence",
+        "Mathlib.Algebra.Order.BigOperators.Ring.Finset",
+        "Mathlib.Data.Complex.Abs",
+        "Mathlib.Data.Real.Sqrt",
+        "MeasurementChannel",
+        "QuantumClassicalBridge"
+      ],
+      "module": "GeneralVisibility",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/InfoEntropy.lean",
+      "content_sha256": "6049548e8e07b0ad0284d5f3c24f65702335282deb2eb52e3e5834cf6263cd94",
+      "declarations": {
+        "theorem": [
+          "shannonBinary_eq_binEntropy",
+          "shannonBinary_le_log_two",
+          "shannonBinary_symm",
+          "pathWeight_le_one",
+          "vonNeumannDiagonal_eq_shannon_path1",
+          "vonNeumannDiagonal_nonneg",
+          "vonNeumannDiagonal_n_nonneg",
+          "vonNeumannDiagonal_n_eq_vonNeumannDiagonal",
+          "vonNeumannDiagonal_le_log_two",
+          "vonNeumannDiagonal_whichPath_apply",
+          "quantumMutualInfo_diagonal_nonneg",
+          "quantumMutualInfo_diagonal_le_log_two",
+          "quantumMutualInfo_diagonal_whichPath",
+          "quantumMutualInfo_diagonal_n_nonneg",
+          "quantumMutualInfo_diagonal_n_qubit_eq"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Algebra.BigOperators.Fin",
+        "Mathlib.Analysis.SpecialFunctions.BinaryEntropy",
+        "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog",
+        "QuantumClassicalBridge"
+      ],
+      "module": "InfoEntropy",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/InformationCostIdentity.lean",
+      "content_sha256": "ba3b5ab38e44397eadffbd84ccc761d8db46c200d8d03ef353b6e342014c8e7f",
+      "declarations": {
+        "theorem": [
+          "residualCoherence_eq_one_minus_epistemic_bits",
+          "epistemic_landauer_as_bit_times_scale",
+          "infoEnergyLowerBound_monotone_bits",
+          "epistemic_landauer_monotone_in_probe_bits",
+          "landauer_ratio_le_one_minus_residual",
+          "one_minus_ratio_le_residualCoherence",
+          "residual_antitone_in_path_bits",
+          "residualCoherence_antitone_pathEntropyBits"
+        ],
+        "lemma": [
+          "landauerBitEnergy_pos"
+        ]
+      },
+      "import_lines": [
+        "EpistemicMI",
+        "LandauerBound"
+      ],
+      "module": "InformationCostIdentity",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/KleinInequality.lean",
+      "content_sha256": "7419db3ad002006f38aca5db9c4821d39da296545659580d1cf8de533b4c3a22",
+      "declarations": {
+        "theorem": [
+          "gibbs_inequality",
+          "spectralRelativeEntropy_nonneg"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Analysis.Convex.Jensen",
+        "Mathlib.Analysis.Convex.SpecificFunctions.Basic",
+        "Mathlib.Data.Complex.BigOperators",
+        "VonNeumannEntropy"
+      ],
+      "module": "KleinInequality",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/KroneckerEigen.lean",
+      "content_sha256": "20e498550e4d60d98fabfbc4610a7ddbdc8df386b2c87e756d28cda366974a2b",
+      "declarations": {
+        "theorem": [
+          "mul_kronecker_mul'",
+          "unitary_kronecker_prod",
+          "carrier_kronecker_spectral",
+          "charpoly_kronecker_carrier",
+          "charpoly_tensorDensity_carrier",
+          "vonNeumannEntropy_eq_of_carrier_charpoly_eq",
+          "sum_negMulLog_tensor_eigenvalues",
+          "vonNeumannEntropy_tensorDensity_eq"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog",
+        "Mathlib.Data.Complex.Order",
+        "Mathlib.Data.Matrix.Kronecker",
+        "Mathlib.LinearAlgebra.Matrix.Charpoly.Basic",
+        "Mathlib.LinearAlgebra.Matrix.Spectrum",
+        "Mathlib.LinearAlgebra.UnitaryGroup",
+        "Mathlib.Logic.Equiv.Fin",
+        "TensorPartialTrace",
+        "VonNeumannEntropy"
+      ],
+      "module": "KroneckerEigen",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LandauerBound.lean",
+      "content_sha256": "e544721c90c67454358c310969fec879e4d10c7e32503ac2bbdc159a2d33c9c9",
+      "declarations": {
+        "lemma": [
+          "log_two_pos"
+        ],
+        "theorem": [
+          "pathEntropyBits_nonneg",
+          "pathEntropyBits_le_one",
+          "pathEntropyBits_n_nonneg",
+          "pathEntropyBits_n_le_logb_two",
+          "landauerCostDiagonal_n_nonneg",
+          "landauerCostDiagonal_n_le_logb_landauerBitEnergy",
+          "pathEntropyBits_n_qubit_eq",
+          "landauerCostDiagonal_nonneg",
+          "landauerCostDiagonal_le_landauerBitEnergy",
+          "landauerCostDiagonal_whichPathInvariant",
+          "landauerCostDiagonal_n_qubit_eq",
+          "residualCoherenceCapacity_nonneg",
+          "residualCoherenceCapacity_le_one",
+          "principle_of_maximal_information_collapse",
+          "maximal_extraction_collapses_coherence",
+          "null_extraction_preserves_coherence",
+          "residualCoherenceCapacity_n_nonneg",
+          "residualCoherenceCapacity_n_le_one",
+          "principle_of_maximal_information_collapse_n",
+          "residualCoherenceCapacity_n_qubit_eq",
+          "landauerCost_eq_bitEnergy_times_extracted",
+          "erasure_dissipation_nonneg"
+        ],
+        "structure": [
+          "ErasureProcess"
+        ]
+      },
+      "import_lines": [
+        "DoubleSlitCore",
+        "GeneralDimension",
+        "InfoEntropy"
+      ],
+      "module": "LandauerBound",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LandauerEinsteinBridge.lean",
+      "content_sha256": "3a1ce36f6db035f97271d4beaac664e078e2d3c53c999d1cdc138fc433ef4fee",
+      "declarations": {
+        "lemma": [
+          "kBoltzmannSI_pos",
+          "speedOfLightSI_pos",
+          "speedOfLightSI_sq_pos",
+          "landauerBitEnergy_pos",
+          "massEquivalent_pos"
+        ],
+        "theorem": [
+          "massEquivalent_linear",
+          "massEquivalent_three_hundred_gt_three_point_one_e_neg_thirtyEight",
+          "massEquivalent_three_hundred_lt_three_point_two_e_neg_thirtyEight",
+          "massEquivalent_three_hundred_interval",
+          "massEquivalent_three_hundred_gt_tight",
+          "massEquivalent_three_hundred_lt_tight",
+          "massEquivalent_three_hundred_interval_tight"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Analysis.SpecialFunctions.Log.Basic",
+        "Mathlib.Data.Complex.ExponentialBounds"
+      ],
+      "module": "LandauerEinsteinBridge",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LandauerExtension.lean",
+      "content_sha256": "c8d3aea9ffa1aa8a218ab9ce69de270642250f40ae12bd414d0c7708fe65cdd9",
+      "declarations": {
+        "theorem": [
+          "landauerBound_temp_scaling",
+          "landauerEnergy_mono",
+          "landauerBound_nBit",
+          "landauerBound_additive",
+          "landauerBound_pos'",
+          "landauerEnergy_300K_pos"
+        ]
+      },
+      "import_lines": [
+        "LandauerLaw",
+        "Mathlib.Analysis.SpecialFunctions.Log.Basic"
+      ],
+      "module": "LandauerExtension",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LandauerLaw.lean",
+      "content_sha256": "abe47e6e961cc0d3af47b79753781a7910741317538824f0f5a6c83fb95c9a91",
+      "declarations": {
+        "structure": [
+          "ProbDist",
+          "HeatBath",
+          "ErasureProcess"
+        ],
+        "theorem": [
+          "ProbDist.ext_mass",
+          "uniformBinaryEntropy",
+          "diracEntropy_zero",
+          "binaryErasureEntropyDrop",
+          "physicalSecondLaw_uniform_binary",
+          "landauerBound",
+          "landauerBound_pos",
+          "landauerBound_300K",
+          "landauerEnergy_300K_pos"
+        ],
+        "lemma": [
+          "two_pos",
+          "log_two_pos",
+          "kB_pos"
+        ],
+        "axiom": [
+          "physicalSecondLaw"
+        ],
+        "def": [
+          "physicalSecondLawUniformBinary"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Algebra.BigOperators.Group.Finset",
+        "Mathlib.Analysis.SpecialFunctions.Log.Basic"
+      ],
+      "module": "LandauerLaw",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LindbladDynamics.lean",
+      "content_sha256": "5a119537e0708e9f868826daa2f8cceb509b5e6534ad2406c030a2ad0575911f",
+      "declarations": {
+        "theorem": [
+          "singleDissipator_trace_zero",
+          "dissipator_trace_zero",
+          "dephasing_dissipator_diagonal",
+          "dephasing_dissipator_offdiag",
+          "whichPath_eq_rho_plus_dissipator",
+          "strong_dephasing_kills_offdiag",
+          "dephasingSolution_zero",
+          "dephasingSolution_trace_preserved",
+          "dephasingSolution_tendsto_diagonal",
+          "dephasing_tendsto_diagonal"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Analysis.SpecialFunctions.Exp",
+        "Mathlib.LinearAlgebra.Matrix.Trace",
+        "Mathlib.Topology.Instances.Complex",
+        "MeasurementChannel",
+        "SchrodingerDynamics"
+      ],
+      "module": "LindbladDynamics",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LindbladStreamD.lean",
+      "content_sha256": "f0c96812c6e7f9543e1229428f4074d7547f02588f50e4b5d1bc0ecc754a99cc",
+      "declarations": {
+        "theorem": [
+          "streamD_limit_to_Lueders_states"
+        ]
+      },
+      "import_lines": [
+        "LindbladDynamics",
+        "Mathlib.Order.Filter.AtTopBot.Archimedean",
+        "Mathlib.Topology.Instances.Real"
+      ],
+      "module": "LindbladStreamD",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LogSum.lean",
+      "content_sha256": "a8bc164b8dcba81cd4d6c15342e57237ac362b22310eace1d2b173e12f77ca20",
+      "declarations": {
+        "lemma": [
+          "log_sum_ineq"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Analysis.Convex.Jensen",
+        "Mathlib.Analysis.SpecialFunctions.Log.Basic",
+        "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog",
+        "Mathlib.Data.Fintype.Basic"
+      ],
+      "module": "LogSum",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/MatrixLog.lean",
+      "content_sha256": "499e121289ee91456013a9ebd559751fd7984d9feb7c5a5ab72042cbf1aba6cd",
+      "declarations": {},
+      "import_lines": [
+        "Mathlib.Analysis.SpecialFunctions.Log.Basic",
+        "Mathlib.Data.Complex.Basic",
+        "Mathlib.LinearAlgebra.Matrix.Spectrum"
+      ],
+      "module": "MatrixLog",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/MeasurementChannel.lean",
+      "content_sha256": "a929a8926fad36ae9f3fcb90b27a12eb0e01c6e89be6c4604b735bb3a7a0bec1",
+      "declarations": {
+        "structure": [
+          "KrausChannel"
+        ],
+        "theorem": [
+          "map_expand",
+          "posSemidef_map_term",
+          "PosSemidef.add",
+          "posSemidef_finset_sum",
+          "posSemidef_sum",
+          "map_posSemidef",
+          "trace_mul_sum",
+          "trace_map_eq",
+          "trace_map_one",
+          "identity_map",
+          "compose_map",
+          "apply_compose",
+          "pathProjector_conjTranspose",
+          "pathProjector_mul_self",
+          "pathProjector_mul_orthogonal",
+          "pathProjector_tp_aux",
+          "pathProjector_conj_mul_entry",
+          "whichPath_map_eq_diagonal",
+          "whichPath_map_apply_entry"
+        ]
+      },
+      "import_lines": [
+        "DensityState",
+        "Mathlib.Algebra.BigOperators.Fin",
+        "Mathlib.Algebra.BigOperators.Ring",
+        "Mathlib.Data.Complex.Basic",
+        "Mathlib.Data.Fintype.BigOperators",
+        "Mathlib.Data.Matrix.Diagonal",
+        "Mathlib.Data.Matrix.RowCol",
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.LinearAlgebra.Matrix.Trace",
+        "Mathlib.Tactic.FinCases"
+      ],
+      "module": "MeasurementChannel",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/MeasurementCost.lean",
+      "content_sha256": "ec28b51fad159a7d6eb612ff04d6a7a33c545d13254980c9a7da146ea008af40",
+      "declarations": {
+        "theorem": [
+          "measurementCost_nonneg",
+          "measurementCost_null",
+          "measurementCost_whichPath",
+          "measurementCost_le_landauerBitEnergy",
+          "measurementCost_whichPath_channel_invariant"
+        ]
+      },
+      "import_lines": [
+        "EpistemicMI",
+        "LandauerBound"
+      ],
+      "module": "MeasurementCost",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/MonoidalState.lean",
+      "content_sha256": "c0656283f87d61603b7ca632f3e8d62650574ec32683ddb5216bf9b7035a7d50",
+      "declarations": {
+        "def": [
+          "combine",
+          "zeroState"
+        ],
+        "theorem": [
+          "combine_one",
+          "combine_zero",
+          "combine_half_density",
+          "combine_density_between",
+          "combine_freeEnergy_le",
+          "combine_hydration_ge"
+        ]
+      },
+      "import_lines": [
+        "Gate"
+      ],
+      "module": "MonoidalState",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Naturality.lean",
+      "content_sha256": "ef48a40db9a45b5d4a3aeb76e53de3d4f08baf6c689e5dc5f1403670fed8b190",
+      "declarations": {
+        "inductive": [
+          "MaterialClass"
+        ],
+        "def": [
+          "stateFor"
+        ],
+        "theorem": [
+          "gateMaterialAgnostic",
+          "gateStateDetermined",
+          "naturalitySquare",
+          "opcGateWellDefined",
+          "stateForAdmissibleRefl",
+          "initialStateMassConserved"
+        ]
+      },
+      "import_lines": [
+        "Gate"
+      ],
+      "module": "Naturality",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/PMICEntropyInterior.lean",
+      "content_sha256": "9dba80c44ebe63d71e469601003c73e8b64df36ee72b6dddfc9cddccfb6d271a",
+      "declarations": {
+        "lemma": [
+          "two_mul_log_one_add_gt",
+          "entropyBoundK_one",
+          "deriv_entropyBoundK_pos",
+          "differentiableOn_entropyBoundK_Ioo",
+          "continuousOn_entropyBoundK_Ici_one",
+          "entropyBoundK_pos",
+          "quad_log_lt_of_lt_half",
+          "binEntropyOverQuad_half",
+          "deriv_binEntropyOverQuad_neg",
+          "four_mul_x_one_sub_x_mul_log_two_interior"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Analysis.Calculus.Deriv.Inv",
+        "Mathlib.Analysis.Calculus.MeanValue",
+        "Mathlib.Analysis.SpecialFunctions.BinaryEntropy",
+        "Mathlib.Tactic"
+      ],
+      "module": "PMICEntropyInterior",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/PMICVisibility.lean",
+      "content_sha256": "8ba472a23535d9d9ef3fde67e2226b046e33c58a054402092fe357b203f76683",
+      "declarations": {
+        "lemma": [
+          "log_two_pos'",
+          "four_mul_x_one_sub_x_mul_log_two_le_binEntropy",
+          "quadratic_le_entropy_bits"
+        ],
+        "theorem": [
+          "visibility_sq_le_coherence_capacity"
+        ]
+      },
+      "import_lines": [
+        "InfoEntropy",
+        "LandauerBound",
+        "PMICEntropyInterior"
+      ],
+      "module": "PMICVisibility",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/PhysicsConstrainedAI.lean",
+      "content_sha256": "f2f247b7ca84be24b788d98417a817128329a31bb53d640d93d3b92787362659",
+      "declarations": {
+        "theorem": [
+          "sandbox_epistemicMI_zero",
+          "sandbox_landauer_cost_zero",
+          "gating_landauer_le_one_bit",
+          "gating_epistemic_cost_eq_diagonal_landauer_cost",
+          "software_gating_share_diagonal_landauer"
+        ]
+      },
+      "import_lines": [
+        "EpistemicMI"
+      ],
+      "module": "PhysicsConstrainedAI",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/ProbeOptimization.lean",
+      "content_sha256": "14131c5aad0206ca7669ffc3075ef10b94e9d718a789d036a689b4314efe0d9a",
+      "declarations": {
+        "theorem": [
+          "landauerBitEnergy_pos",
+          "ProbeUtility_le_strength",
+          "ProbeUtility_eq_strength_at_lambda_zero",
+          "exists_optimalProbeIndexAt",
+          "argmaxUtilityProbeIndexAt_spec",
+          "ProbeSelectionAdmissible_nullProbe",
+          "ProbeSelectionAdmissible_whichPathProbe",
+          "exists_constrainedOptimalAt"
+        ],
+        "def": [
+          "IsOptimalProbeIndexAt",
+          "ProbeSelectionAdmissible",
+          "AdmissibleProbeIndices",
+          "IsConstrainedOptimalAt"
+        ]
+      },
+      "import_lines": [
+        "EpistemicSensing",
+        "GateCompat"
+      ],
+      "module": "ProbeOptimization",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/PrototypeSolverCalibration.lean",
+      "content_sha256": "4f9637512a5fc1b22fd159c3078b9fdaed4e12376bd1a3c9efbdc1053ef6e4d3",
+      "declarations": {
+        "def": [
+          "prototypeCalibration"
+        ],
+        "theorem": [
+          "prototypeCalibration_epsMIStep",
+          "prototypeCalibration_epsCostStep",
+          "prototypeCalibration_epsMIAgg",
+          "prototypeCalibration_epsCostAgg",
+          "prototypeCalibration_utility_diff_le",
+          "prototypeCalibration_utilityBound_nonneg",
+          "prototypeWitness_utility_diff_le",
+          "prototypeWitness_bound_nonneg"
+        ]
+      },
+      "import_lines": [
+        "EpistemicTraceDrivenCalibrationWitness"
+      ],
+      "module": "PrototypeSolverCalibration",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/QRBridge.lean",
+      "content_sha256": "81451cb9b24724cb5cfbe1bc4a3c22f2e5657bcdf7a01804c2b84d736ba3f2de",
+      "declarations": {
+        "theorem": [
+          "admissible_thermodynamicStateToReal"
+        ]
+      },
+      "import_lines": [
+        "Gate",
+        "UMSTCore"
+      ],
+      "module": "QRBridge",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/QuantumClassicalBridge.lean",
+      "content_sha256": "1fcb16bebd2351be99d8f13d9fcc6ca4258f9387ccf3da3ead200dd1fb2ea5e0",
+      "declarations": {
+        "def": [
+          "hnQubit"
+        ],
+        "theorem": [
+          "isHermitian_carrier",
+          "diag_star_eq",
+          "diag_im_zero",
+          "diag_nonneg_complex",
+          "pathWeight_nonneg",
+          "pathWeight0_add_pathWeight1",
+          "pathWeight_nonneg'",
+          "pathWeight_sum",
+          "whichPathDistinguishability_nonneg",
+          "whichPathDistinguishability_le_one",
+          "whichPathDistinguishability_mem_Icc",
+          "pathWeight_whichPath_apply",
+          "whichPathDistinguishability_whichPath_apply",
+          "normSq_coherence_le_product",
+          "fringeVisibility_eq_zero_iff",
+          "fringeVisibility_pos_iff",
+          "fringeVisibility_nonneg",
+          "pathWeight_prod_le_quarter",
+          "fringeVisibility_le_one",
+          "fringeVisibility_whichPath_apply",
+          "complementarity_fringe_path",
+          "observationStateCanonical_complementary",
+          "observationStateOf_complementary",
+          "observationStateOf_fringe_complementary"
+        ]
+      },
+      "import_lines": [
+        "DensityState",
+        "DoubleSlitCore",
+        "Mathlib.Algebra.BigOperators.Fin",
+        "Mathlib.Data.Complex.Abs",
+        "Mathlib.Data.Complex.Order",
+        "Mathlib.Data.Matrix.Mul",
+        "Mathlib.LinearAlgebra.Matrix.Determinant.Basic",
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.LinearAlgebra.Matrix.Spectrum",
+        "Mathlib.LinearAlgebra.Matrix.Trace",
+        "MeasurementChannel"
+      ],
+      "module": "QuantumClassicalBridge",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/QuantumMutualInfo.lean",
+      "content_sha256": "82732e97702b663a60fb2431a8600c519e3d5dce4ac41e81f5b6d83e1e91afca",
+      "declarations": {
+        "theorem": [
+          "quantumMutualInfo_eq_entropy_minus_conditional",
+          "quantumMutualInfo_le",
+          "quantumMutualInfo_product_eq_zero"
+        ]
+      },
+      "import_lines": [
+        "KroneckerEigen",
+        "TensorPartialTrace",
+        "VonNeumannEntropy"
+      ],
+      "module": "QuantumMutualInfo",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/SchrodingerDynamics.lean",
+      "content_sha256": "efe9ad103935c96c3dc5a5a229c6ba5f8fe2faa4de821dafc7f4415843956919",
+      "declarations": {
+        "theorem": [
+          "unitaryChannel_map",
+          "unitaryChannel_preserves_psd",
+          "unitaryChannel_preserves_trace",
+          "conjTranspose_mul_self_of_self_mul_conjTranspose",
+          "conjTranspose_mul_conjTranspose_self",
+          "unitaryChannel_compose_adjoint_map"
+        ]
+      },
+      "import_lines": [
+        "DensityState",
+        "Mathlib.LinearAlgebra.UnitaryGroup",
+        "MeasurementChannel"
+      ],
+      "module": "SchrodingerDynamics",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/SimLeanBridge.lean",
+      "content_sha256": "0cfd53b9322b6d56631f74d304523ec822de2985f5090a4008646e9f57e1bd0a",
+      "declarations": {
+        "structure": [
+          "SimDensityContract",
+          "SimPathProjectionContract",
+          "SimComplementarityWitness",
+          "SimLandauerWitness"
+        ],
+        "theorem": [
+          "SimDensityContract.toDensityMatrix_carrier",
+          "SimComplementarityWitness.V_sq_le_one",
+          "SimComplementarityWitness.D_sq_le_one"
+        ]
+      },
+      "import_lines": [
+        "DensityState",
+        "InfoEntropy",
+        "MeasurementChannel"
+      ],
+      "module": "SimLeanBridge",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/TensorPartialTrace.lean",
+      "content_sha256": "7150b041f9acb39c62c13c06b89697f38962c7c973ae7d7735489a2a7e178431",
+      "declarations": {
+        "theorem": [
+          "conjTranspose_kronecker",
+          "posSemidef_kronecker",
+          "partialTraceRightProd_kronecker",
+          "partialTraceLeftProd_kronecker",
+          "partialTraceLeftProd_tensor_carriers",
+          "trace_partialTraceRightProd",
+          "trace_partialTraceLeftProd",
+          "partialTraceRightProd_tensor_carriers",
+          "partialTraceRightFin_reindex_kronecker",
+          "partialTraceRightFin_tensorDensity_carrier",
+          "partialTraceLeftFin_reindex_kronecker",
+          "partialTraceLeftFin_tensorDensity_carrier",
+          "trace_partialTraceRightFin",
+          "trace_partialTraceLeftFin",
+          "posSemidef_partialTraceRightProd",
+          "posSemidef_partialTraceLeftProd",
+          "partialTraceRightProd_toDensityMatrix_carrier",
+          "partialTraceLeftProd_toDensityMatrix_carrier",
+          "partialTraceRightProd_toDensityMatrix_tensor",
+          "partialTraceLeftProd_toDensityMatrix_tensor"
+        ]
+      },
+      "import_lines": [
+        "DensityState",
+        "Mathlib.Data.Complex.Basic",
+        "Mathlib.Data.Complex.Order",
+        "Mathlib.Data.Fintype.BigOperators",
+        "Mathlib.Data.Matrix.Kronecker",
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.LinearAlgebra.Matrix.Trace",
+        "Mathlib.Logic.Equiv.Fin"
+      ],
+      "module": "TensorPartialTrace",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Test3.lean",
+      "content_sha256": "60b4d48ac2853a1e8b6f68188bfbaa71e4dc16af0471eb29cc4aa9e0f92f6754",
+      "declarations": {},
+      "import_lines": [
+        "Mathlib.Data.Complex.Basic"
+      ],
+      "module": "Test3",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Test4.lean",
+      "content_sha256": "8d7019027afaf06072a412e34c0548757f78510b05219730628edf638738953e",
+      "declarations": {},
+      "import_lines": [
+        "Mathlib.Algebra.BigOperators.Ring",
+        "Mathlib.Data.Fintype.BigOperators"
+      ],
+      "module": "Test4",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/TestEntropy.lean",
+      "content_sha256": "04dbfa25f7fd86be58d5cbb1fc624d60171d702d75d370a6d7b26afdcd3946f7",
+      "declarations": {
+        "theorem": [
+          "diag_nonneg_complex",
+          "diag_re_nonneg",
+          "trace_re_eq_one",
+          "vonNeumannDiagonal_n_nonneg"
+        ]
+      },
+      "import_lines": [
+        "DensityState",
+        "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog"
+      ],
+      "module": "TestEntropy",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/TestFixes.lean",
+      "content_sha256": "50efdef58cafab41b4e97b03e83796520abf1b46539e0c6af994275cf3e2d006",
+      "declarations": {
+        "theorem": [
+          "trace_sum_s",
+          "erase_sum",
+          "single_dot"
+        ]
+      },
+      "import_lines": [
+        "Mathlib"
+      ],
+      "module": "TestFixes",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/TestMixed.lean",
+      "content_sha256": "70e44d38388e19234860a459097f67a18454efe42a3c85ae890b9846d3fb1f76",
+      "declarations": {
+        "structure": [
+          "DensityMatrix"
+        ],
+        "theorem": [
+          "smul_psd"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Data.Complex.Basic",
+        "Mathlib.Data.Matrix.RowCol",
+        "Mathlib.LinearAlgebra.Matrix.PosDef",
+        "Mathlib.LinearAlgebra.Matrix.Trace"
+      ],
+      "module": "TestMixed",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/UMSTCore.lean",
+      "content_sha256": "304bf882ff1229020abeed6de7fe5c591663e4ebcc82b3630a5cf3530c88c696",
+      "declarations": {
+        "lemma": [
+          "kB_pos",
+          "cSI_pos",
+          "landauerBitEnergy_nonneg",
+          "massEquivalentOfEnergy_nonneg"
+        ],
+        "structure": [
+          "ThermodynamicState"
+        ],
+        "def": [
+          "MassCond",
+          "DissipCond",
+          "HydratCond",
+          "StrengthCond",
+          "Admissible"
+        ],
+        "theorem": [
+          "admissibleRefl",
+          "dissipCond_transitive",
+          "hydratCond_transitive",
+          "strengthCond_transitive"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Analysis.SpecialFunctions.Log.Basic",
+        "Mathlib.Tactic"
+      ],
+      "module": "UMSTCore",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/VonNeumannEntropy.lean",
+      "content_sha256": "04fd906d9fc9ca84e04d15d51e1667888b871f9e6307482e7ce2c424a8e603b4",
+      "declarations": {
+        "theorem": [
+          "trace_eq_sum_eigenvalues_hermitian",
+          "density_eigenvalues_nonneg",
+          "density_eigenvalues_sum_eq_one",
+          "density_eigenvalues_sum_eq_one_real",
+          "density_eigenvalues_le_one",
+          "vonNeumannEntropy_nonneg",
+          "vonNeumannEntropy_le_log_n",
+          "vonNeumannEntropy_congr_eigenvalues",
+          "vonNeumannEntropy_eq_of_eigenvalues_reindex",
+          "charmatrix_unitary_conj",
+          "charpoly_unitary_conj",
+          "det_eq_of_charpoly_eq",
+          "trace_unitary_conj",
+          "vonNeumannEntropy_eq_of_det_carrier_eq_two",
+          "vonNeumannEntropy_unitarily_invariant_two",
+          "charmatrix_diagonal'",
+          "charpoly_diagonal'",
+          "roots_prod_X_sub_C_fin",
+          "charpoly_eq_prod_eigenvalues",
+          "eigenvalue_multiset_eq_of_charpoly_eq",
+          "vonNeumannEntropy_unitarily_invariant",
+          "vonNeumannEntropy_eq_sum_negMulLog_of_real_map_eq",
+          "vonNeumannEntropy_eq_sum_negMulLog_of_diagonal_carrier",
+          "vonNeumannEntropy_pure_eq_zero"
+        ]
+      },
+      "import_lines": [
+        "DensityState",
+        "InfoEntropy",
+        "Mathlib.Algebra.BigOperators.Fin",
+        "Mathlib.Algebra.BigOperators.Group.Finset",
+        "Mathlib.Analysis.Convex.Jensen",
+        "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog",
+        "Mathlib.Data.Fintype.BigOperators",
+        "Mathlib.LinearAlgebra.Matrix.Charpoly.Basic",
+        "Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff",
+        "Mathlib.LinearAlgebra.Matrix.Spectrum",
+        "Mathlib.LinearAlgebra.Matrix.Trace",
+        "Mathlib.LinearAlgebra.UnitaryGroup",
+        "Mathlib.RingTheory.PolynomialAlgebra"
+      ],
+      "module": "VonNeumannEntropy",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/WhichPathMeasurementUpdate.lean",
+      "content_sha256": "5c782adb9ff50370f99d28b3b1bc7caeb14770d9dbf1ba1a7ec98879b7897d2d",
+      "declarations": {
+        "theorem": [
+          "measurementUpdateWhichPath_new_V",
+          "measurementUpdateWhichPath_I_eq",
+          "measurementUpdateWhichPath_landauer_eq",
+          "measurementUpdateWhichPath_landauer_le_landauerBitEnergy",
+          "interference_preserved_identity",
+          "collapse_fringe_on_whichPath",
+          "collapse_all_fringes_iff_zeros_offdiag"
+        ]
+      },
+      "import_lines": [
+        "Complementarity",
+        "LandauerBound"
+      ],
+      "module": "WhichPathMeasurementUpdate",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/lakefile.lean",
+      "content_sha256": "c87eda692bdedd68de20a6a54f7781a2eca6f19a692b07d2099ed8719813b029",
+      "declarations": {},
+      "import_lines": [
+        "Lake"
+      ],
+      "module": "lakefile",
+      "repo": "umst-formal-double-slit"
+    },
+    {
+      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/test_tensor_eigen.lean",
+      "content_sha256": "567478331322053d8f10c882873dbc1db73e063a7720c0336265d21c9445fb2b",
+      "declarations": {
+        "theorem": [
+          "kronecker_unitary"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Data.Matrix.Kronecker",
+        "Mathlib.LinearAlgebra.Matrix.Hermitian",
+        "Mathlib.LinearAlgebra.Matrix.Spectrum",
+        "Mathlib.LinearAlgebra.UnitaryGroup",
+        "TensorPartialTrace",
+        "VonNeumannEntropy"
+      ],
+      "module": "test_tensor_eigen",
+      "repo": "umst-formal-double-slit"
+    }
+  ],
+  "module_graph_edges": [
+    {
+      "from": "Adjoint",
+      "import": "Mathlib.Analysis.Normed.Algebra.MatrixExponential",
+      "to_approx": "Mathlib.Analysis.Normed.Algebra.MatrixExponential"
+    },
+    {
+      "from": "Adjoint",
+      "import": "Mathlib.Data.Matrix.Mul",
+      "to_approx": "Mathlib.Data.Matrix.Mul"
+    },
+    {
+      "from": "Adjoint",
+      "import": "Mathlib.Data.Real.Basic",
+      "to_approx": "Mathlib.Data.Real.Basic"
+    },
+    {
+      "from": "Adjoint",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "Constitutional",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "Convergence",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "Convergence",
+      "import": "Helmholtz",
+      "to_approx": "Helmholtz"
+    },
+    {
+      "from": "Convergence",
+      "import": "Mathlib.Topology.MetricSpace.Basic",
+      "to_approx": "Mathlib.Topology.MetricSpace.Basic"
+    },
+    {
+      "from": "Convergence",
+      "import": "Mathlib.Topology.Order.MonotoneConvergence",
+      "to_approx": "Mathlib.Topology.Order.MonotoneConvergence"
+    },
+    {
+      "from": "CreditGreedyOptimal",
+      "import": "Mathlib.Algebra.BigOperators.Group.List",
+      "to_approx": "Mathlib.Algebra.BigOperators.Group.List"
+    },
+    {
+      "from": "CreditGreedyOptimal",
+      "import": "Mathlib.Algebra.Order.BigOperators.Group.List",
+      "to_approx": "Mathlib.Algebra.Order.BigOperators.Group.List"
+    },
+    {
+      "from": "CreditGreedyOptimal",
+      "import": "Mathlib.Data.Real.Basic",
+      "to_approx": "Mathlib.Data.Real.Basic"
+    },
+    {
+      "from": "DEC",
+      "import": "Mathlib.Data.Fintype.BigOperators",
+      "to_approx": "Mathlib.Data.Fintype.BigOperators"
+    },
+    {
+      "from": "DEC",
+      "import": "Mathlib.Data.Matrix.Basic",
+      "to_approx": "Mathlib.Data.Matrix.Basic"
+    },
+    {
+      "from": "DEC",
+      "import": "Mathlib.Data.Matrix.Mul",
+      "to_approx": "Mathlib.Data.Matrix.Mul"
+    },
+    {
+      "from": "DEC",
+      "import": "Mathlib.Data.Rat.Defs",
+      "to_approx": "Mathlib.Data.Rat.Defs"
+    },
+    {
+      "from": "DEC",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "DIBKleisli",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "Dignity",
+      "import": "LandauerEinsteinBridge",
+      "to_approx": "LandauerEinsteinBridge"
+    },
+    {
+      "from": "Dignity",
+      "import": "Mathlib.Algebra.Order.BigOperators.Group.List",
+      "to_approx": "Mathlib.Algebra.Order.BigOperators.Group.List"
+    },
+    {
+      "from": "Dignity",
+      "import": "Mathlib.Data.Real.Basic",
+      "to_approx": "Mathlib.Data.Real.Basic"
+    },
+    {
+      "from": "Dignity",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "Economic.BurdenRecursionIsAdmissible",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "Economic.CollectiveCoherenceCost",
+      "import": "Mathlib.Algebra.BigOperators.Group.List",
+      "to_approx": "Mathlib.Algebra.BigOperators.Group.List"
+    },
+    {
+      "from": "Economic.CollectiveCoherenceCost",
+      "import": "Mathlib.Data.Rat.Defs",
+      "to_approx": "Mathlib.Data.Rat.Defs"
+    },
+    {
+      "from": "Economic.CollectiveCoherenceCost",
+      "import": "Mathlib.Tactic.Linarith",
+      "to_approx": "Mathlib.Tactic.Linarith"
+    },
+    {
+      "from": "Economic.CreativeExplorationTolerance",
+      "import": "Economic.CreativityBudget",
+      "to_approx": "Economic.CreativityBudget"
+    },
+    {
+      "from": "Economic.CreativityBudget",
+      "import": "Economic.EconomicDomain",
+      "to_approx": "Economic.EconomicDomain"
+    },
+    {
+      "from": "Economic.CreativityBudget",
+      "import": "Mathlib.Tactic.Linarith",
+      "to_approx": "Mathlib.Tactic.Linarith"
+    },
+    {
+      "from": "Economic.DynamicEpsilonCalibration",
+      "import": "Economic.EconomicDomain",
+      "to_approx": "Economic.EconomicDomain"
+    },
+    {
+      "from": "Economic.DynamicEpsilonCalibration",
+      "import": "LandauerEinsteinBridge",
+      "to_approx": "LandauerEinsteinBridge"
+    },
+    {
+      "from": "Economic.EconomicDomain",
+      "import": "Mathlib.Data.Rat.Defs",
+      "to_approx": "Mathlib.Data.Rat.Defs"
+    },
+    {
+      "from": "Economic.EconomicDomain",
+      "import": "Mathlib.Data.Real.Basic",
+      "to_approx": "Mathlib.Data.Real.Basic"
+    },
+    {
+      "from": "Economic.EconomicTemperature",
+      "import": "InfoTheory",
+      "to_approx": "InfoTheory"
+    },
+    {
+      "from": "Economic.EconomicTemperature",
+      "import": "LandauerEinsteinBridge",
+      "to_approx": "LandauerEinsteinBridge"
+    },
+    {
+      "from": "Economic.EpistemicSensingModule",
+      "import": "InfoTheory",
+      "to_approx": "InfoTheory"
+    },
+    {
+      "from": "Economic.HallucinationDetector",
+      "import": "Economic.EconomicDomain",
+      "to_approx": "Economic.EconomicDomain"
+    },
+    {
+      "from": "Economic.HallucinationDetector",
+      "import": "Economic.EconomicTemperature",
+      "to_approx": "Economic.EconomicTemperature"
+    },
+    {
+      "from": "Economic.HallucinationDetector",
+      "import": "InfoTheory",
+      "to_approx": "InfoTheory"
+    },
+    {
+      "from": "Economic.HorizonAwareGrounding",
+      "import": "Economic.EconomicDomain",
+      "to_approx": "Economic.EconomicDomain"
+    },
+    {
+      "from": "Economic.HorizonAwareGrounding",
+      "import": "Mathlib.Data.Real.Basic",
+      "to_approx": "Mathlib.Data.Real.Basic"
+    },
+    {
+      "from": "Economic.HorizonAwareGrounding",
+      "import": "Mathlib.Tactic.Ring",
+      "to_approx": "Mathlib.Tactic.Ring"
+    },
+    {
+      "from": "Economic.KleisliAdmissibilityComposition",
+      "import": "Constitutional",
+      "to_approx": "Constitutional"
+    },
+    {
+      "from": "Economic.LowEntropyLieDetector",
+      "import": "Economic.EconomicTemperature",
+      "to_approx": "Economic.EconomicTemperature"
+    },
+    {
+      "from": "Economic.LowEntropyLieDetector",
+      "import": "InfoTheory",
+      "to_approx": "InfoTheory"
+    },
+    {
+      "from": "Economic.NPVIsSpecialCaseOfThermodynamicBurden",
+      "import": "Economic.BurdenRecursionIsAdmissible",
+      "to_approx": "Economic.BurdenRecursionIsAdmissible"
+    },
+    {
+      "from": "Economic.NuanceIsolator",
+      "import": "Economic.EconomicDomain",
+      "to_approx": "Economic.EconomicDomain"
+    },
+    {
+      "from": "Economic.NuanceIsolator",
+      "import": "Mathlib.Tactic.Linarith",
+      "to_approx": "Mathlib.Tactic.Linarith"
+    },
+    {
+      "from": "Economic.SelfReferentialEconomicTensor",
+      "import": "Economic.BurdenRecursionIsAdmissible",
+      "to_approx": "Economic.BurdenRecursionIsAdmissible"
+    },
+    {
+      "from": "Economic.StochasticBurdenExpectation",
+      "import": "Economic.BurdenRecursionIsAdmissible",
+      "to_approx": "Economic.BurdenRecursionIsAdmissible"
+    },
+    {
+      "from": "Economic.StochasticBurdenExpectation",
+      "import": "Mathlib.Analysis.SpecificLimits.Basic",
+      "to_approx": "Mathlib.Analysis.SpecificLimits.Basic"
+    },
+    {
+      "from": "Economic.ThermodynamicUncertaintyCertificate",
+      "import": "Economic.BurdenRecursionIsAdmissible",
+      "to_approx": "Economic.BurdenRecursionIsAdmissible"
+    },
+    {
+      "from": "Economic.ThermodynamicUncertaintyCertificate",
+      "import": "Economic.EconomicTemperature",
+      "to_approx": "Economic.EconomicTemperature"
+    },
+    {
+      "from": "Economic.ThermodynamicUncertaintyCertificate",
+      "import": "InfoTheory",
+      "to_approx": "InfoTheory"
+    },
+    {
+      "from": "EndConditions",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "EndConditions",
+      "import": "GraphProperties",
+      "to_approx": "GraphProperties"
+    },
+    {
+      "from": "EnrichedAdmissibility",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "EnrichedAdmissibility",
+      "import": "Mathlib.Order.GaloisConnection",
+      "to_approx": "Mathlib.Order.GaloisConnection"
+    },
+    {
+      "from": "EnrichedAdmissibility",
+      "import": "Mathlib.Topology.MetricSpace.Basic",
+      "to_approx": "Mathlib.Topology.MetricSpace.Basic"
+    },
+    {
+      "from": "EtaCog",
+      "import": "Dignity",
+      "to_approx": "Dignity"
+    },
+    {
+      "from": "EtaCog",
+      "import": "Mathlib.Algebra.Order.Field.Basic",
+      "to_approx": "Mathlib.Algebra.Order.Field.Basic"
+    },
+    {
+      "from": "EtaCog",
+      "import": "Mathlib.Data.Real.Basic",
+      "to_approx": "Mathlib.Data.Real.Basic"
+    },
+    {
+      "from": "EtaCog",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "GaloisGate",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "GaloisGate",
+      "import": "Mathlib.Data.Finset.Basic",
+      "to_approx": "Mathlib.Data.Finset.Basic"
+    },
+    {
+      "from": "GaloisGate",
+      "import": "Mathlib.Order.GaloisConnection",
+      "to_approx": "Mathlib.Order.GaloisConnection"
+    },
+    {
+      "from": "GraphProperties",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "Helmholtz",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "InfoTheory",
+      "import": "LandauerLaw",
+      "to_approx": "LandauerLaw"
+    },
+    {
+      "from": "InfoTheory",
+      "import": "Mathlib.Algebra.BigOperators.Ring",
+      "to_approx": "Mathlib.Algebra.BigOperators.Ring"
+    },
+    {
+      "from": "InfoTheory",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.Basic",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.Basic"
+    },
+    {
+      "from": "InfoTheory",
+      "import": "Mathlib.Data.Fintype.BigOperators",
+      "to_approx": "Mathlib.Data.Fintype.BigOperators"
+    },
+    {
+      "from": "JenningsGelSpace",
+      "import": "Mathlib.Algebra.Order.Field.Rat",
+      "to_approx": "Mathlib.Algebra.Order.Field.Rat"
+    },
+    {
+      "from": "JenningsGelSpace",
+      "import": "Mathlib.Data.Rat.Defs",
+      "to_approx": "Mathlib.Data.Rat.Defs"
+    },
+    {
+      "from": "JenningsGelSpace",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "MedianConvergence",
+      "import": "Mathlib.Algebra.Order.Floor",
+      "to_approx": "Mathlib.Algebra.Order.Floor"
+    },
+    {
+      "from": "MedianConvergence",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.Basic",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.Basic"
+    },
+    {
+      "from": "MedianConvergence",
+      "import": "Mathlib.Data.Complex.ExponentialBounds",
+      "to_approx": "Mathlib.Data.Complex.ExponentialBounds"
+    },
+    {
+      "from": "MedianConvergence",
+      "import": "Mathlib.Data.Real.Basic",
+      "to_approx": "Mathlib.Data.Real.Basic"
+    },
+    {
+      "from": "MedianConvergence",
+      "import": "Mathlib.Data.Real.Sqrt",
+      "to_approx": "Mathlib.Data.Real.Sqrt"
+    },
+    {
+      "from": "MedianConvergence",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "Memory.TierDisjoint",
+      "import": "Mathlib.Data.Set.Basic",
+      "to_approx": "Mathlib.Data.Set.Basic"
+    },
+    {
+      "from": "OrderStatisticsBand",
+      "import": "Mathlib.Algebra.Order.Floor",
+      "to_approx": "Mathlib.Algebra.Order.Floor"
+    },
+    {
+      "from": "OrderStatisticsBand",
+      "import": "Mathlib.Data.Real.Basic",
+      "to_approx": "Mathlib.Data.Real.Basic"
+    },
+    {
+      "from": "OrderStatisticsBand",
+      "import": "Mathlib.Data.Real.Sqrt",
+      "to_approx": "Mathlib.Data.Real.Sqrt"
+    },
+    {
+      "from": "OrderStatisticsBand",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "OrderStatisticsBand",
+      "import": "MedianConvergence",
+      "to_approx": "MedianConvergence"
+    },
+    {
+      "from": "Powers",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "Powers",
+      "import": "Mathlib.Algebra.Order.Field.Rat",
+      "to_approx": "Mathlib.Algebra.Order.Field.Rat"
+    },
+    {
+      "from": "Powers",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "RegimeSoundness",
+      "import": "Mathlib.Algebra.Order.Field.Rat",
+      "to_approx": "Mathlib.Algebra.Order.Field.Rat"
+    },
+    {
+      "from": "RegimeSoundness",
+      "import": "Mathlib.Data.Finset.Empty",
+      "to_approx": "Mathlib.Data.Finset.Empty"
+    },
+    {
+      "from": "RegimeSoundness",
+      "import": "Mathlib.Data.Fintype.Basic",
+      "to_approx": "Mathlib.Data.Fintype.Basic"
+    },
+    {
+      "from": "RegimeSoundness",
+      "import": "Mathlib.Data.Fintype.Card",
+      "to_approx": "Mathlib.Data.Fintype.Card"
+    },
+    {
+      "from": "RegimeSoundness",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "RhoEstimator",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.Base",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.Base"
+    },
+    {
+      "from": "RhoEstimator",
+      "import": "Mathlib.Data.Real.Basic",
+      "to_approx": "Mathlib.Data.Real.Basic"
+    },
+    {
+      "from": "RhoEstimator",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "SeparationBound",
+      "import": "Mathlib.Data.Real.Basic",
+      "to_approx": "Mathlib.Data.Real.Basic"
+    },
+    {
+      "from": "SeparationBound",
+      "import": "Mathlib.Tactic.Linarith",
+      "to_approx": "Mathlib.Tactic.Linarith"
+    },
+    {
+      "from": "SeparationBound",
+      "import": "Mathlib.Tactic.Ring",
+      "to_approx": "Mathlib.Tactic.Ring"
+    },
+    {
+      "from": "_check_ext",
+      "import": "LandauerLaw",
+      "to_approx": "LandauerLaw"
+    },
+    {
+      "from": "scripts.print_axioms",
+      "import": "Lean",
+      "to_approx": "Lean"
+    },
+    {
+      "from": "scripts.print_axioms",
+      "import": "Lean.Environment",
+      "to_approx": "Lean.Environment"
+    },
+    {
+      "from": "scripts.print_axioms",
+      "import": "Lean.Util.CollectAxioms",
+      "to_approx": "Lean.Util.CollectAxioms"
+    },
+    {
+      "from": "scripts.print_axioms",
+      "import": "Lean.Util.SearchPath",
+      "to_approx": "Lean.Util.SearchPath"
+    },
+    {
+      "from": "Activation",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "Activation",
+      "import": "Naturality",
+      "to_approx": "Naturality"
+    },
+    {
+      "from": "Complementarity",
+      "import": "QuantumClassicalBridge",
+      "to_approx": "QuantumClassicalBridge"
+    },
+    {
+      "from": "DataProcessingInequality",
+      "import": "DensityState",
+      "to_approx": "DensityState"
+    },
+    {
+      "from": "DataProcessingInequality",
+      "import": "InfoEntropy",
+      "to_approx": "InfoEntropy"
+    },
+    {
+      "from": "DataProcessingInequality",
+      "import": "Mathlib.Algebra.BigOperators.Fin",
+      "to_approx": "Mathlib.Algebra.BigOperators.Fin"
+    },
+    {
+      "from": "DataProcessingInequality",
+      "import": "Mathlib.Analysis.SpecialFunctions.BinaryEntropy",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.BinaryEntropy"
+    },
+    {
+      "from": "DataProcessingInequality",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog"
+    },
+    {
+      "from": "DataProcessingInequality",
+      "import": "Mathlib.Data.Complex.Basic",
+      "to_approx": "Mathlib.Data.Complex.Basic"
+    },
+    {
+      "from": "DataProcessingInequality",
+      "import": "Mathlib.LinearAlgebra.Matrix.Determinant.Basic",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Determinant.Basic"
+    },
+    {
+      "from": "DataProcessingInequality",
+      "import": "Mathlib.LinearAlgebra.Matrix.Hermitian",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Hermitian"
+    },
+    {
+      "from": "DataProcessingInequality",
+      "import": "Mathlib.LinearAlgebra.Matrix.Spectrum",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Spectrum"
+    },
+    {
+      "from": "DataProcessingInequality",
+      "import": "Mathlib.LinearAlgebra.Matrix.Trace",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Trace"
+    },
+    {
+      "from": "DataProcessingInequality",
+      "import": "Mathlib.LinearAlgebra.UnitaryGroup",
+      "to_approx": "Mathlib.LinearAlgebra.UnitaryGroup"
+    },
+    {
+      "from": "DataProcessingInequality",
+      "import": "MeasurementChannel",
+      "to_approx": "MeasurementChannel"
+    },
+    {
+      "from": "DataProcessingInequality",
+      "import": "SchrodingerDynamics",
+      "to_approx": "SchrodingerDynamics"
+    },
+    {
+      "from": "DataProcessingInequality",
+      "import": "VonNeumannEntropy",
+      "to_approx": "VonNeumannEntropy"
+    },
+    {
+      "from": "DensityState",
+      "import": "Mathlib.Data.Complex.Basic",
+      "to_approx": "Mathlib.Data.Complex.Basic"
+    },
+    {
+      "from": "DensityState",
+      "import": "Mathlib.Data.Fintype.Basic",
+      "to_approx": "Mathlib.Data.Fintype.Basic"
+    },
+    {
+      "from": "DensityState",
+      "import": "Mathlib.Data.Matrix.RowCol",
+      "to_approx": "Mathlib.Data.Matrix.RowCol"
+    },
+    {
+      "from": "DensityState",
+      "import": "Mathlib.LinearAlgebra.Matrix.PosDef",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.PosDef"
+    },
+    {
+      "from": "DensityState",
+      "import": "Mathlib.LinearAlgebra.Matrix.Trace",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Trace"
+    },
+    {
+      "from": "DoubleSlit",
+      "import": "Complementarity",
+      "to_approx": "Complementarity"
+    },
+    {
+      "from": "DoubleSlit",
+      "import": "GateCompat",
+      "to_approx": "GateCompat"
+    },
+    {
+      "from": "DoubleSlit",
+      "import": "LandauerBound",
+      "to_approx": "LandauerBound"
+    },
+    {
+      "from": "DoubleSlit",
+      "import": "TensorPartialTrace",
+      "to_approx": "TensorPartialTrace"
+    },
+    {
+      "from": "DoubleSlit",
+      "import": "WhichPathMeasurementUpdate",
+      "to_approx": "WhichPathMeasurementUpdate"
+    },
+    {
+      "from": "DoubleSlitCore",
+      "import": "Mathlib",
+      "to_approx": "Mathlib"
+    },
+    {
+      "from": "DoubleSlitCore",
+      "import": "UMSTCore",
+      "to_approx": "UMSTCore"
+    },
+    {
+      "from": "EpistemicDynamics",
+      "import": "EpistemicMI",
+      "to_approx": "EpistemicMI"
+    },
+    {
+      "from": "EpistemicGalois",
+      "import": "Mathlib.Data.Real.Basic",
+      "to_approx": "Mathlib.Data.Real.Basic"
+    },
+    {
+      "from": "EpistemicGalois",
+      "import": "Mathlib.Order.GaloisConnection",
+      "to_approx": "Mathlib.Order.GaloisConnection"
+    },
+    {
+      "from": "EpistemicGalois",
+      "import": "MeasurementCost",
+      "to_approx": "MeasurementCost"
+    },
+    {
+      "from": "EpistemicMI",
+      "import": "EpistemicSensing",
+      "to_approx": "EpistemicSensing"
+    },
+    {
+      "from": "EpistemicNumericsContract",
+      "import": "EpistemicRuntimeContract",
+      "to_approx": "EpistemicRuntimeContract"
+    },
+    {
+      "from": "EpistemicPerStepNumerics",
+      "import": "EpistemicNumericsContract",
+      "to_approx": "EpistemicNumericsContract"
+    },
+    {
+      "from": "EpistemicPolicy",
+      "import": "EpistemicTrajectoryMI",
+      "to_approx": "EpistemicTrajectoryMI"
+    },
+    {
+      "from": "EpistemicPolicy",
+      "import": "ProbeOptimization",
+      "to_approx": "ProbeOptimization"
+    },
+    {
+      "from": "EpistemicRuntimeContract",
+      "import": "EpistemicPolicy",
+      "to_approx": "EpistemicPolicy"
+    },
+    {
+      "from": "EpistemicRuntimeSchemaContract",
+      "import": "EpistemicPerStepNumerics",
+      "to_approx": "EpistemicPerStepNumerics"
+    },
+    {
+      "from": "EpistemicSensing",
+      "import": "LandauerBound",
+      "to_approx": "LandauerBound"
+    },
+    {
+      "from": "EpistemicSensing",
+      "import": "WhichPathMeasurementUpdate",
+      "to_approx": "WhichPathMeasurementUpdate"
+    },
+    {
+      "from": "EpistemicTelemetryApproximation",
+      "import": "EpistemicTelemetryBridge",
+      "to_approx": "EpistemicTelemetryBridge"
+    },
+    {
+      "from": "EpistemicTelemetryBridge",
+      "import": "EpistemicRuntimeSchemaContract",
+      "to_approx": "EpistemicRuntimeSchemaContract"
+    },
+    {
+      "from": "EpistemicTelemetryQuantitativeUtility",
+      "import": "EpistemicTelemetryApproximation",
+      "to_approx": "EpistemicTelemetryApproximation"
+    },
+    {
+      "from": "EpistemicTelemetrySolverCalibration",
+      "import": "EpistemicTelemetryQuantitativeUtility",
+      "to_approx": "EpistemicTelemetryQuantitativeUtility"
+    },
+    {
+      "from": "EpistemicTraceDerivedEpsilonCertificate",
+      "import": "EpistemicTelemetryQuantitativeUtility",
+      "to_approx": "EpistemicTelemetryQuantitativeUtility"
+    },
+    {
+      "from": "EpistemicTraceDrivenCalibrationWitness",
+      "import": "EpistemicTelemetrySolverCalibration",
+      "to_approx": "EpistemicTelemetrySolverCalibration"
+    },
+    {
+      "from": "EpistemicTrajectoryMI",
+      "import": "EpistemicDynamics",
+      "to_approx": "EpistemicDynamics"
+    },
+    {
+      "from": "ErasureChannel",
+      "import": "LandauerBound",
+      "to_approx": "LandauerBound"
+    },
+    {
+      "from": "ErasureChannel",
+      "import": "Mathlib.Algebra.BigOperators.Fin",
+      "to_approx": "Mathlib.Algebra.BigOperators.Fin"
+    },
+    {
+      "from": "ErasureChannel",
+      "import": "Mathlib.Data.Complex.Basic",
+      "to_approx": "Mathlib.Data.Complex.Basic"
+    },
+    {
+      "from": "ErasureChannel",
+      "import": "Mathlib.Data.Fintype.BigOperators",
+      "to_approx": "Mathlib.Data.Fintype.BigOperators"
+    },
+    {
+      "from": "ErasureChannel",
+      "import": "Mathlib.LinearAlgebra.Matrix.Trace",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Trace"
+    },
+    {
+      "from": "ErasureChannel",
+      "import": "Mathlib.Tactic.FinCases",
+      "to_approx": "Mathlib.Tactic.FinCases"
+    },
+    {
+      "from": "ErasureChannel",
+      "import": "MeasurementChannel",
+      "to_approx": "MeasurementChannel"
+    },
+    {
+      "from": "ExamplesQubit",
+      "import": "Mathlib.Algebra.BigOperators.Fin",
+      "to_approx": "Mathlib.Algebra.BigOperators.Fin"
+    },
+    {
+      "from": "ExamplesQubit",
+      "import": "ProbeOptimization",
+      "to_approx": "ProbeOptimization"
+    },
+    {
+      "from": "FiberedActivation",
+      "import": "Activation",
+      "to_approx": "Activation"
+    },
+    {
+      "from": "FlashMoERuntimeScaffold",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "FormalFoundations",
+      "import": "LandauerLaw",
+      "to_approx": "LandauerLaw"
+    },
+    {
+      "from": "FormalFoundations",
+      "import": "LindbladDynamics",
+      "to_approx": "LindbladDynamics"
+    },
+    {
+      "from": "Gate",
+      "import": "Mathlib.Algebra.Order.Field.Rat",
+      "to_approx": "Mathlib.Algebra.Order.Field.Rat"
+    },
+    {
+      "from": "Gate",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "GateCompat",
+      "import": "EpistemicSensing",
+      "to_approx": "EpistemicSensing"
+    },
+    {
+      "from": "GateCompat",
+      "import": "GeneralVisibility",
+      "to_approx": "GeneralVisibility"
+    },
+    {
+      "from": "GateCompat",
+      "import": "LandauerBound",
+      "to_approx": "LandauerBound"
+    },
+    {
+      "from": "GateCompat",
+      "import": "MeasurementChannel",
+      "to_approx": "MeasurementChannel"
+    },
+    {
+      "from": "GateCompat",
+      "import": "QuantumClassicalBridge",
+      "to_approx": "QuantumClassicalBridge"
+    },
+    {
+      "from": "GateCompat",
+      "import": "UMSTCore",
+      "to_approx": "UMSTCore"
+    },
+    {
+      "from": "GeneralDimension",
+      "import": "InfoEntropy",
+      "to_approx": "InfoEntropy"
+    },
+    {
+      "from": "GeneralDimension",
+      "import": "Mathlib.Analysis.Convex.Jensen",
+      "to_approx": "Mathlib.Analysis.Convex.Jensen"
+    },
+    {
+      "from": "GeneralDimension",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog"
+    },
+    {
+      "from": "GeneralDimension",
+      "import": "Mathlib.Data.Fintype.BigOperators",
+      "to_approx": "Mathlib.Data.Fintype.BigOperators"
+    },
+    {
+      "from": "GeneralResidualCoherence",
+      "import": "DensityState",
+      "to_approx": "DensityState"
+    },
+    {
+      "from": "GeneralResidualCoherence",
+      "import": "LandauerBound",
+      "to_approx": "LandauerBound"
+    },
+    {
+      "from": "GeneralResidualCoherence",
+      "import": "Mathlib.Data.Complex.BigOperators",
+      "to_approx": "Mathlib.Data.Complex.BigOperators"
+    },
+    {
+      "from": "GeneralVisibility",
+      "import": "GeneralResidualCoherence",
+      "to_approx": "GeneralResidualCoherence"
+    },
+    {
+      "from": "GeneralVisibility",
+      "import": "Mathlib.Algebra.Order.BigOperators.Ring.Finset",
+      "to_approx": "Mathlib.Algebra.Order.BigOperators.Ring.Finset"
+    },
+    {
+      "from": "GeneralVisibility",
+      "import": "Mathlib.Data.Complex.Abs",
+      "to_approx": "Mathlib.Data.Complex.Abs"
+    },
+    {
+      "from": "GeneralVisibility",
+      "import": "Mathlib.Data.Real.Sqrt",
+      "to_approx": "Mathlib.Data.Real.Sqrt"
+    },
+    {
+      "from": "GeneralVisibility",
+      "import": "MeasurementChannel",
+      "to_approx": "MeasurementChannel"
+    },
+    {
+      "from": "GeneralVisibility",
+      "import": "QuantumClassicalBridge",
+      "to_approx": "QuantumClassicalBridge"
+    },
+    {
+      "from": "InfoEntropy",
+      "import": "Mathlib.Algebra.BigOperators.Fin",
+      "to_approx": "Mathlib.Algebra.BigOperators.Fin"
+    },
+    {
+      "from": "InfoEntropy",
+      "import": "Mathlib.Analysis.SpecialFunctions.BinaryEntropy",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.BinaryEntropy"
+    },
+    {
+      "from": "InfoEntropy",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog"
+    },
+    {
+      "from": "InfoEntropy",
+      "import": "QuantumClassicalBridge",
+      "to_approx": "QuantumClassicalBridge"
+    },
+    {
+      "from": "InformationCostIdentity",
+      "import": "EpistemicMI",
+      "to_approx": "EpistemicMI"
+    },
+    {
+      "from": "InformationCostIdentity",
+      "import": "LandauerBound",
+      "to_approx": "LandauerBound"
+    },
+    {
+      "from": "KleinInequality",
+      "import": "Mathlib.Analysis.Convex.Jensen",
+      "to_approx": "Mathlib.Analysis.Convex.Jensen"
+    },
+    {
+      "from": "KleinInequality",
+      "import": "Mathlib.Analysis.Convex.SpecificFunctions.Basic",
+      "to_approx": "Mathlib.Analysis.Convex.SpecificFunctions.Basic"
+    },
+    {
+      "from": "KleinInequality",
+      "import": "Mathlib.Data.Complex.BigOperators",
+      "to_approx": "Mathlib.Data.Complex.BigOperators"
+    },
+    {
+      "from": "KleinInequality",
+      "import": "VonNeumannEntropy",
+      "to_approx": "VonNeumannEntropy"
+    },
+    {
+      "from": "KroneckerEigen",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog"
+    },
+    {
+      "from": "KroneckerEigen",
+      "import": "Mathlib.Data.Complex.Order",
+      "to_approx": "Mathlib.Data.Complex.Order"
+    },
+    {
+      "from": "KroneckerEigen",
+      "import": "Mathlib.Data.Matrix.Kronecker",
+      "to_approx": "Mathlib.Data.Matrix.Kronecker"
+    },
+    {
+      "from": "KroneckerEigen",
+      "import": "Mathlib.LinearAlgebra.Matrix.Charpoly.Basic",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Charpoly.Basic"
+    },
+    {
+      "from": "KroneckerEigen",
+      "import": "Mathlib.LinearAlgebra.Matrix.Spectrum",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Spectrum"
+    },
+    {
+      "from": "KroneckerEigen",
+      "import": "Mathlib.LinearAlgebra.UnitaryGroup",
+      "to_approx": "Mathlib.LinearAlgebra.UnitaryGroup"
+    },
+    {
+      "from": "KroneckerEigen",
+      "import": "Mathlib.Logic.Equiv.Fin",
+      "to_approx": "Mathlib.Logic.Equiv.Fin"
+    },
+    {
+      "from": "KroneckerEigen",
+      "import": "TensorPartialTrace",
+      "to_approx": "TensorPartialTrace"
+    },
+    {
+      "from": "KroneckerEigen",
+      "import": "VonNeumannEntropy",
+      "to_approx": "VonNeumannEntropy"
+    },
+    {
+      "from": "LandauerBound",
+      "import": "DoubleSlitCore",
+      "to_approx": "DoubleSlitCore"
+    },
+    {
+      "from": "LandauerBound",
+      "import": "GeneralDimension",
+      "to_approx": "GeneralDimension"
+    },
+    {
+      "from": "LandauerBound",
+      "import": "InfoEntropy",
+      "to_approx": "InfoEntropy"
+    },
+    {
+      "from": "LandauerEinsteinBridge",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.Basic",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.Basic"
+    },
+    {
+      "from": "LandauerEinsteinBridge",
+      "import": "Mathlib.Data.Complex.ExponentialBounds",
+      "to_approx": "Mathlib.Data.Complex.ExponentialBounds"
+    },
+    {
+      "from": "LandauerExtension",
+      "import": "LandauerLaw",
+      "to_approx": "LandauerLaw"
+    },
+    {
+      "from": "LandauerExtension",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.Basic",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.Basic"
+    },
+    {
+      "from": "LandauerLaw",
+      "import": "Mathlib.Algebra.BigOperators.Group.Finset",
+      "to_approx": "Mathlib.Algebra.BigOperators.Group.Finset"
+    },
+    {
+      "from": "LandauerLaw",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.Basic",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.Basic"
+    },
+    {
+      "from": "LindbladDynamics",
+      "import": "Mathlib.Analysis.SpecialFunctions.Exp",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Exp"
+    },
+    {
+      "from": "LindbladDynamics",
+      "import": "Mathlib.LinearAlgebra.Matrix.Trace",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Trace"
+    },
+    {
+      "from": "LindbladDynamics",
+      "import": "Mathlib.Topology.Instances.Complex",
+      "to_approx": "Mathlib.Topology.Instances.Complex"
+    },
+    {
+      "from": "LindbladDynamics",
+      "import": "MeasurementChannel",
+      "to_approx": "MeasurementChannel"
+    },
+    {
+      "from": "LindbladDynamics",
+      "import": "SchrodingerDynamics",
+      "to_approx": "SchrodingerDynamics"
+    },
+    {
+      "from": "LindbladStreamD",
+      "import": "LindbladDynamics",
+      "to_approx": "LindbladDynamics"
+    },
+    {
+      "from": "LindbladStreamD",
+      "import": "Mathlib.Order.Filter.AtTopBot.Archimedean",
+      "to_approx": "Mathlib.Order.Filter.AtTopBot.Archimedean"
+    },
+    {
+      "from": "LindbladStreamD",
+      "import": "Mathlib.Topology.Instances.Real",
+      "to_approx": "Mathlib.Topology.Instances.Real"
+    },
+    {
+      "from": "LogSum",
+      "import": "Mathlib.Analysis.Convex.Jensen",
+      "to_approx": "Mathlib.Analysis.Convex.Jensen"
+    },
+    {
+      "from": "LogSum",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.Basic",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.Basic"
+    },
+    {
+      "from": "LogSum",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog"
+    },
+    {
+      "from": "LogSum",
+      "import": "Mathlib.Data.Fintype.Basic",
+      "to_approx": "Mathlib.Data.Fintype.Basic"
+    },
+    {
+      "from": "MatrixLog",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.Basic",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.Basic"
+    },
+    {
+      "from": "MatrixLog",
+      "import": "Mathlib.Data.Complex.Basic",
+      "to_approx": "Mathlib.Data.Complex.Basic"
+    },
+    {
+      "from": "MatrixLog",
+      "import": "Mathlib.LinearAlgebra.Matrix.Spectrum",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Spectrum"
+    },
+    {
+      "from": "MeasurementChannel",
+      "import": "DensityState",
+      "to_approx": "DensityState"
+    },
+    {
+      "from": "MeasurementChannel",
+      "import": "Mathlib.Algebra.BigOperators.Fin",
+      "to_approx": "Mathlib.Algebra.BigOperators.Fin"
+    },
+    {
+      "from": "MeasurementChannel",
+      "import": "Mathlib.Algebra.BigOperators.Ring",
+      "to_approx": "Mathlib.Algebra.BigOperators.Ring"
+    },
+    {
+      "from": "MeasurementChannel",
+      "import": "Mathlib.Data.Complex.Basic",
+      "to_approx": "Mathlib.Data.Complex.Basic"
+    },
+    {
+      "from": "MeasurementChannel",
+      "import": "Mathlib.Data.Fintype.BigOperators",
+      "to_approx": "Mathlib.Data.Fintype.BigOperators"
+    },
+    {
+      "from": "MeasurementChannel",
+      "import": "Mathlib.Data.Matrix.Diagonal",
+      "to_approx": "Mathlib.Data.Matrix.Diagonal"
+    },
+    {
+      "from": "MeasurementChannel",
+      "import": "Mathlib.Data.Matrix.RowCol",
+      "to_approx": "Mathlib.Data.Matrix.RowCol"
+    },
+    {
+      "from": "MeasurementChannel",
+      "import": "Mathlib.LinearAlgebra.Matrix.PosDef",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.PosDef"
+    },
+    {
+      "from": "MeasurementChannel",
+      "import": "Mathlib.LinearAlgebra.Matrix.Trace",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Trace"
+    },
+    {
+      "from": "MeasurementChannel",
+      "import": "Mathlib.Tactic.FinCases",
+      "to_approx": "Mathlib.Tactic.FinCases"
+    },
+    {
+      "from": "MeasurementCost",
+      "import": "EpistemicMI",
+      "to_approx": "EpistemicMI"
+    },
+    {
+      "from": "MeasurementCost",
+      "import": "LandauerBound",
+      "to_approx": "LandauerBound"
+    },
+    {
+      "from": "MonoidalState",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "Naturality",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "PMICEntropyInterior",
+      "import": "Mathlib.Analysis.Calculus.Deriv.Inv",
+      "to_approx": "Mathlib.Analysis.Calculus.Deriv.Inv"
+    },
+    {
+      "from": "PMICEntropyInterior",
+      "import": "Mathlib.Analysis.Calculus.MeanValue",
+      "to_approx": "Mathlib.Analysis.Calculus.MeanValue"
+    },
+    {
+      "from": "PMICEntropyInterior",
+      "import": "Mathlib.Analysis.SpecialFunctions.BinaryEntropy",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.BinaryEntropy"
+    },
+    {
+      "from": "PMICEntropyInterior",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "PMICVisibility",
+      "import": "InfoEntropy",
+      "to_approx": "InfoEntropy"
+    },
+    {
+      "from": "PMICVisibility",
+      "import": "LandauerBound",
+      "to_approx": "LandauerBound"
+    },
+    {
+      "from": "PMICVisibility",
+      "import": "PMICEntropyInterior",
+      "to_approx": "PMICEntropyInterior"
+    },
+    {
+      "from": "PhysicsConstrainedAI",
+      "import": "EpistemicMI",
+      "to_approx": "EpistemicMI"
+    },
+    {
+      "from": "ProbeOptimization",
+      "import": "EpistemicSensing",
+      "to_approx": "EpistemicSensing"
+    },
+    {
+      "from": "ProbeOptimization",
+      "import": "GateCompat",
+      "to_approx": "GateCompat"
+    },
+    {
+      "from": "PrototypeSolverCalibration",
+      "import": "EpistemicTraceDrivenCalibrationWitness",
+      "to_approx": "EpistemicTraceDrivenCalibrationWitness"
+    },
+    {
+      "from": "QRBridge",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "QRBridge",
+      "import": "UMSTCore",
+      "to_approx": "UMSTCore"
+    },
+    {
+      "from": "QuantumClassicalBridge",
+      "import": "DensityState",
+      "to_approx": "DensityState"
+    },
+    {
+      "from": "QuantumClassicalBridge",
+      "import": "DoubleSlitCore",
+      "to_approx": "DoubleSlitCore"
+    },
+    {
+      "from": "QuantumClassicalBridge",
+      "import": "Mathlib.Algebra.BigOperators.Fin",
+      "to_approx": "Mathlib.Algebra.BigOperators.Fin"
+    },
+    {
+      "from": "QuantumClassicalBridge",
+      "import": "Mathlib.Data.Complex.Abs",
+      "to_approx": "Mathlib.Data.Complex.Abs"
+    },
+    {
+      "from": "QuantumClassicalBridge",
+      "import": "Mathlib.Data.Complex.Order",
+      "to_approx": "Mathlib.Data.Complex.Order"
+    },
+    {
+      "from": "QuantumClassicalBridge",
+      "import": "Mathlib.Data.Matrix.Mul",
+      "to_approx": "Mathlib.Data.Matrix.Mul"
+    },
+    {
+      "from": "QuantumClassicalBridge",
+      "import": "Mathlib.LinearAlgebra.Matrix.Determinant.Basic",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Determinant.Basic"
+    },
+    {
+      "from": "QuantumClassicalBridge",
+      "import": "Mathlib.LinearAlgebra.Matrix.PosDef",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.PosDef"
+    },
+    {
+      "from": "QuantumClassicalBridge",
+      "import": "Mathlib.LinearAlgebra.Matrix.Spectrum",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Spectrum"
+    },
+    {
+      "from": "QuantumClassicalBridge",
+      "import": "Mathlib.LinearAlgebra.Matrix.Trace",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Trace"
+    },
+    {
+      "from": "QuantumClassicalBridge",
+      "import": "MeasurementChannel",
+      "to_approx": "MeasurementChannel"
+    },
+    {
+      "from": "QuantumMutualInfo",
+      "import": "KroneckerEigen",
+      "to_approx": "KroneckerEigen"
+    },
+    {
+      "from": "QuantumMutualInfo",
+      "import": "TensorPartialTrace",
+      "to_approx": "TensorPartialTrace"
+    },
+    {
+      "from": "QuantumMutualInfo",
+      "import": "VonNeumannEntropy",
+      "to_approx": "VonNeumannEntropy"
+    },
+    {
+      "from": "SchrodingerDynamics",
+      "import": "DensityState",
+      "to_approx": "DensityState"
+    },
+    {
+      "from": "SchrodingerDynamics",
+      "import": "Mathlib.LinearAlgebra.UnitaryGroup",
+      "to_approx": "Mathlib.LinearAlgebra.UnitaryGroup"
+    },
+    {
+      "from": "SchrodingerDynamics",
+      "import": "MeasurementChannel",
+      "to_approx": "MeasurementChannel"
+    },
+    {
+      "from": "SimLeanBridge",
+      "import": "DensityState",
+      "to_approx": "DensityState"
+    },
+    {
+      "from": "SimLeanBridge",
+      "import": "InfoEntropy",
+      "to_approx": "InfoEntropy"
+    },
+    {
+      "from": "SimLeanBridge",
+      "import": "MeasurementChannel",
+      "to_approx": "MeasurementChannel"
+    },
+    {
+      "from": "TensorPartialTrace",
+      "import": "DensityState",
+      "to_approx": "DensityState"
+    },
+    {
+      "from": "TensorPartialTrace",
+      "import": "Mathlib.Data.Complex.Basic",
+      "to_approx": "Mathlib.Data.Complex.Basic"
+    },
+    {
+      "from": "TensorPartialTrace",
+      "import": "Mathlib.Data.Complex.Order",
+      "to_approx": "Mathlib.Data.Complex.Order"
+    },
+    {
+      "from": "TensorPartialTrace",
+      "import": "Mathlib.Data.Fintype.BigOperators",
+      "to_approx": "Mathlib.Data.Fintype.BigOperators"
+    },
+    {
+      "from": "TensorPartialTrace",
+      "import": "Mathlib.Data.Matrix.Kronecker",
+      "to_approx": "Mathlib.Data.Matrix.Kronecker"
+    },
+    {
+      "from": "TensorPartialTrace",
+      "import": "Mathlib.LinearAlgebra.Matrix.PosDef",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.PosDef"
+    },
+    {
+      "from": "TensorPartialTrace",
+      "import": "Mathlib.LinearAlgebra.Matrix.Trace",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Trace"
+    },
+    {
+      "from": "TensorPartialTrace",
+      "import": "Mathlib.Logic.Equiv.Fin",
+      "to_approx": "Mathlib.Logic.Equiv.Fin"
+    },
+    {
+      "from": "Test3",
+      "import": "Mathlib.Data.Complex.Basic",
+      "to_approx": "Mathlib.Data.Complex.Basic"
+    },
+    {
+      "from": "Test4",
+      "import": "Mathlib.Algebra.BigOperators.Ring",
+      "to_approx": "Mathlib.Algebra.BigOperators.Ring"
+    },
+    {
+      "from": "Test4",
+      "import": "Mathlib.Data.Fintype.BigOperators",
+      "to_approx": "Mathlib.Data.Fintype.BigOperators"
+    },
+    {
+      "from": "TestEntropy",
+      "import": "DensityState",
+      "to_approx": "DensityState"
+    },
+    {
+      "from": "TestEntropy",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog"
+    },
+    {
+      "from": "TestFixes",
+      "import": "Mathlib",
+      "to_approx": "Mathlib"
+    },
+    {
+      "from": "TestMixed",
+      "import": "Mathlib.Data.Complex.Basic",
+      "to_approx": "Mathlib.Data.Complex.Basic"
+    },
+    {
+      "from": "TestMixed",
+      "import": "Mathlib.Data.Matrix.RowCol",
+      "to_approx": "Mathlib.Data.Matrix.RowCol"
+    },
+    {
+      "from": "TestMixed",
+      "import": "Mathlib.LinearAlgebra.Matrix.PosDef",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.PosDef"
+    },
+    {
+      "from": "TestMixed",
+      "import": "Mathlib.LinearAlgebra.Matrix.Trace",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Trace"
+    },
+    {
+      "from": "UMSTCore",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.Basic",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.Basic"
+    },
+    {
+      "from": "UMSTCore",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "VonNeumannEntropy",
+      "import": "DensityState",
+      "to_approx": "DensityState"
+    },
+    {
+      "from": "VonNeumannEntropy",
+      "import": "InfoEntropy",
+      "to_approx": "InfoEntropy"
+    },
+    {
+      "from": "VonNeumannEntropy",
+      "import": "Mathlib.Algebra.BigOperators.Fin",
+      "to_approx": "Mathlib.Algebra.BigOperators.Fin"
+    },
+    {
+      "from": "VonNeumannEntropy",
+      "import": "Mathlib.Algebra.BigOperators.Group.Finset",
+      "to_approx": "Mathlib.Algebra.BigOperators.Group.Finset"
+    },
+    {
+      "from": "VonNeumannEntropy",
+      "import": "Mathlib.Analysis.Convex.Jensen",
+      "to_approx": "Mathlib.Analysis.Convex.Jensen"
+    },
+    {
+      "from": "VonNeumannEntropy",
+      "import": "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog",
+      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.NegMulLog"
+    },
+    {
+      "from": "VonNeumannEntropy",
+      "import": "Mathlib.Data.Fintype.BigOperators",
+      "to_approx": "Mathlib.Data.Fintype.BigOperators"
+    },
+    {
+      "from": "VonNeumannEntropy",
+      "import": "Mathlib.LinearAlgebra.Matrix.Charpoly.Basic",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Charpoly.Basic"
+    },
+    {
+      "from": "VonNeumannEntropy",
+      "import": "Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff"
+    },
+    {
+      "from": "VonNeumannEntropy",
+      "import": "Mathlib.LinearAlgebra.Matrix.Spectrum",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Spectrum"
+    },
+    {
+      "from": "VonNeumannEntropy",
+      "import": "Mathlib.LinearAlgebra.Matrix.Trace",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Trace"
+    },
+    {
+      "from": "VonNeumannEntropy",
+      "import": "Mathlib.LinearAlgebra.UnitaryGroup",
+      "to_approx": "Mathlib.LinearAlgebra.UnitaryGroup"
+    },
+    {
+      "from": "VonNeumannEntropy",
+      "import": "Mathlib.RingTheory.PolynomialAlgebra",
+      "to_approx": "Mathlib.RingTheory.PolynomialAlgebra"
+    },
+    {
+      "from": "WhichPathMeasurementUpdate",
+      "import": "Complementarity",
+      "to_approx": "Complementarity"
+    },
+    {
+      "from": "WhichPathMeasurementUpdate",
+      "import": "LandauerBound",
+      "to_approx": "LandauerBound"
+    },
+    {
+      "from": "lakefile",
+      "import": "Lake",
+      "to_approx": "Lake"
+    },
+    {
+      "from": "test_tensor_eigen",
+      "import": "Mathlib.Data.Matrix.Kronecker",
+      "to_approx": "Mathlib.Data.Matrix.Kronecker"
+    },
+    {
+      "from": "test_tensor_eigen",
+      "import": "Mathlib.LinearAlgebra.Matrix.Hermitian",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Hermitian"
+    },
+    {
+      "from": "test_tensor_eigen",
+      "import": "Mathlib.LinearAlgebra.Matrix.Spectrum",
+      "to_approx": "Mathlib.LinearAlgebra.Matrix.Spectrum"
+    },
+    {
+      "from": "test_tensor_eigen",
+      "import": "Mathlib.LinearAlgebra.UnitaryGroup",
+      "to_approx": "Mathlib.LinearAlgebra.UnitaryGroup"
+    },
+    {
+      "from": "test_tensor_eigen",
+      "import": "TensorPartialTrace",
+      "to_approx": "TensorPartialTrace"
+    },
+    {
+      "from": "test_tensor_eigen",
+      "import": "VonNeumannEntropy",
+      "to_approx": "VonNeumannEntropy"
+    }
+  ],
+  "digest": "0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227"
+}

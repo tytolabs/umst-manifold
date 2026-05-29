@@ -138,10 +138,7 @@ pub const CATALOG_MODULE_WIRED: &[(&str, &[&str])] = &[
     ),
     ("DIBKleisli", &["umst.gate.kleisli_unit"]),
     ("DEC", &["umst.gate.cd_transition"]),
-    (
-        "Powers",
-        &["thermodynamic_mix", "umst.gate.http_shim"],
-    ),
+    ("Powers", &["thermodynamic_mix", "umst.gate.http_shim"]),
 ];
 
 /// `catalog_id` values listed in **`docs/GateUnificationSpec.md`** mapping table (SSOT).
@@ -190,5 +187,20 @@ pub const GATE_REGISTRY_CATALOG_IDS: &[&str] = &[
 /// Runtime gate `catalog_id`s with **no** Lean `catalog.json` backing row (HTTP shim, mix filter, cartridge).
 pub const ALLOW_UNUSED_GATE_CATALOG_IDS: &[&str] = &["umst.cartridge.concrete.policy"];
 
-/// Default relative path from `umst-manifold` to the Lean exporter catalog.
+/// Default relative path from `umst-manifold` to the Lean exporter catalog (MaOS sibling layout).
 pub const DEFAULT_UPSTREAM_CATALOG_JSON: &str = "../umst-formal-double-slit/artifacts/catalog.json";
+
+/// Pinned export committed in-repo for CI when the formal sibling checkout is absent.
+pub const PINNED_UPSTREAM_CATALOG_JSON: &str = "artifacts/upstream_catalog.json";
+
+/// Resolve Lean `catalog.json` for partition tests: env override → sibling → pinned snapshot.
+pub fn resolve_upstream_catalog_json_path(manifest_dir: &std::path::Path) -> std::path::PathBuf {
+    if let Ok(p) = std::env::var("UMST_LEAN_CATALOG_JSON") {
+        return std::path::PathBuf::from(p);
+    }
+    let sibling = manifest_dir.join(DEFAULT_UPSTREAM_CATALOG_JSON);
+    if sibling.is_file() {
+        return sibling;
+    }
+    manifest_dir.join(PINNED_UPSTREAM_CATALOG_JSON)
+}

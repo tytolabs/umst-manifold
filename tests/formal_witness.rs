@@ -55,8 +55,7 @@ fn manifold_gateway_new_pins_lock_digest() {
         }
     }
 
-    let g: ManifoldGateway<NdArray<f32>, Stub> =
-        ManifoldGateway::new(Stub, 300.0, 1.0e-12);
+    let g: ManifoldGateway<NdArray<f32>, Stub> = ManifoldGateway::new(Stub, 300.0, 1.0e-12);
     assert_eq!(
         g.expected_catalog_schema_digest,
         Some(lock_upstream_catalog_digest_bytes())

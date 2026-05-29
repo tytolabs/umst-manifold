@@ -145,7 +145,10 @@ impl UmstManifest {
 
     /// Wire [`crate::ai::ppo::ManifoldGateway::expected_catalog_schema_digest`] from this manifest.
     #[cfg(feature = "formal-witness")]
-    pub fn apply_witness_to_gateway<B: burn::tensor::backend::Backend, C: crate::core::traits::IScienceCartridge<B>>(
+    pub fn apply_witness_to_gateway<
+        B: burn::tensor::backend::Backend,
+        C: crate::core::traits::IScienceCartridge<B>,
+    >(
         &self,
         gateway: &mut crate::ai::ppo::ManifoldGateway<B, C>,
     ) {
@@ -399,10 +402,7 @@ mod tests {
             manifest.grounding_contract,
             GroundingContract::StrictCatalogMatch
         );
-        assert_eq!(
-            manifest.catalog_hash,
-            lock_upstream_catalog_digest_bytes()
-        );
+        assert_eq!(manifest.catalog_hash, lock_upstream_catalog_digest_bytes());
     }
 
     #[test]
@@ -414,10 +414,7 @@ mod tests {
             .catalog_hash(wrong)
             .grounding_contract(GroundingContract::StrictCatalogMatch)
             .build();
-        assert_eq!(
-            manifest.catalog_hash,
-            lock_upstream_catalog_digest_bytes()
-        );
+        assert_eq!(manifest.catalog_hash, lock_upstream_catalog_digest_bytes());
     }
 
     #[cfg(feature = "formal-witness")]

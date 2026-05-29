@@ -111,8 +111,7 @@ fn strict_manifest_matching_digest_accepts_topology_step() {
     let staging = UmstManifestBuilder::default().for_staging().build();
     let release = UmstManifestBuilder::default().for_release_witness().build();
     assert_ne!(
-        release.grounding_contract,
-        staging.grounding_contract,
+        release.grounding_contract, staging.grounding_contract,
         "staging must differ from release profile"
     );
 
