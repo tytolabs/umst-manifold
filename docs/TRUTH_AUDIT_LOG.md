@@ -18,7 +18,7 @@
 | **Automation (in-repo)** | **100%** | **17/17** checklist rows — [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) |
 | **God-grade (weighted R0–R6, in-repo)** | **~98%** | G.2 **13/13** · G.3 **8/8** in `verify_umst_stack.sh` |
 | **Stack verify (last green)** | **100%** | `verify_umst_stack.sh` exit **0** @ **2026-05-21T22:09:30Z** |
-| **Org W8 publish** | **0%** | Outside automation denominator |
+| **Org W8 (Track A)** | **~67%** (**2/3**) | **G-01** + **G-02** ✅; **G-03** optional — outside automation denominator |
 | **Hot-path (primary)** | **18 / 69 (~26%)** | Unchanged by design |
 | **Hot-path (primary fiber)** | **18 / 69 (~26%)** | Intentional v1; **119/119** digest-pinned in CI |
 | **Cross-repo preview** | Dev-only | `catalog-cross-repo-preview.json` always `dry_run: true`; does **not** change production lock |
@@ -31,7 +31,7 @@
 | Stale claim | Correct claim | Where it appeared |
 |-------------|---------------|-----------------|
 | Live lock / export is **69** modules | Production is **119**; **69** only for primary-fiber ratios or **rollback tables** | `README.md`, `CATALOG_COVERAGE_AUDIT.md`, `FORMAL_INTEGRATION_STATUS.md`, `TODO_COMPLETION.md` evidence blocks |
-| God-grade **~76%**–**~92%** mixed | **17/17** automation; **~98%** R0–R6 in-repo; scoped blockers **W8 + FFI** | Rollup docs pre–G.2/G.3 closure |
+| God-grade **~76%**–**~92%** mixed | **17/17** automation; **~98%** R0–R6 in-repo; scoped blockers **G-03** (optional) + **FFI** | Rollup docs pre–G.2/G.3 closure |
 | PENDING_GAPS **~90%** automation | **100%** (17/17); G-07/G-08 **0%** blocks | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) pre-reconcile |
 | COMPLETION_TRUTH **~84%** weighted | **~98%** in-repo · **~91%** incl. W8 | [`COMPLETION_TRUTH.md`](COMPLETION_TRUTH.md) honest-split table |
 | Automation **14/16 ≈ 88%** | **17/17 = 100%** | [`GOD_GRADE_STATUS_BY_LAYER.md`](GOD_GRADE_STATUS_BY_LAYER.md), [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md) |
@@ -49,7 +49,7 @@
 2. **Preview** — Always qualify as dev-only; never imply `catalog-cross-repo-preview.json` updates `catalog.lock.json`.
 3. **Phase 3** — In merge runbooks, Phase 3 is **manifold lock + stack verify** (✅ 2026-05-21). Do not leave “required to close milestone” wording after merge closed.
 4. **Attestation** — Prefer **catalog lock / `formal-witness` digest attestation** for R0–R5. Reserve “extracted witnesses / FFI” for long-horizon god-grade rows; do not conflate with thermodynamic or solver **physics** merges.
-5. **Percentages** — Three ceilings: automation **17/17**; hot-path **18/69 ≈ 26%**; org W8 **0%** publish. Weighted R0–R6 **~98%** in-repo. Plan+fibers **100%**. See [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md).
+5. **Percentages** — Three ceilings: automation **17/17**; hot-path **18/69 ≈ 26%**; org W8 **2/3** (**G-01** + **G-02** ✅). Weighted R0–R6 **~98%** in-repo. Plan+fibers **100%**. See [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md).
 
 ---
 

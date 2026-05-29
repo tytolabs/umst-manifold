@@ -236,15 +236,15 @@ Use this table as the **single navigation hub**. “SSOT” means: if two docs d
 | **Plan + cross-repo completeness** | **100%** | The second Lean library (`umst-formal`) is merged into one **119**-module pin; formal and manifold locks agree. |
 | **Automation (in-repo)** | **100%** | **17/17** checklist rows green — [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md). |
 | **God-grade weighted (R0–R6, in-repo)** | **~98%** | Six rungs at 100%; R6 optional polish (η reward wire, rollout approx) only. |
-| **God-grade weighted (incl. org W8)** | **~91%** | Remote cartridge CI blocked until git publish. |
+| **God-grade weighted (incl. org W8)** | **~95%** | **G-01** + **G-02** ✅ @ **fe22437** / **6742fa3**; **G-03** supercap optional. |
 | **Robustness (verify bundle)** | **100%** | `verify_umst_stack.sh` exit **0** at the timestamp above. |
 | **Hot-path proof coverage** | **~26%** | About **18 of 69** primary Lean modules are hand-wired on the gate hot path; **119/119** digest still enforced in CI. |
-| **Org W8 publish** | **0%** | Local `manifest-bridge` ✅; remote git CI needs operator publish. |
-| **Scoped true 100% blockers** | **W8 + FFI** | G.2 · G.3 · J.3 no longer block in-repo automation. |
+| **Org W8 (Track A)** | **~67%** | **2/3** — publish + concrete remote **done**; **G-03** supercap optional. |
+| **Scoped true 100% blockers** | **G-03** (optional) + **FFI** | G.2 · G.3 · J.3 no longer block in-repo automation. |
 
 **Robustness vs completeness:** Completeness is “how much of the roadmap is done.” Robustness is “did the agreed checks pass without drift?” — they did @ **22:05:32Z**.
 
-**Bottom line:** Treat **plan + fibers + local stack verify + 17/17 automation** as **truth-complete in-repo**. Treat **git publish (W8)** and **FFI** as the remaining scoped blockers — not G.2/G.3 host CI.
+**Bottom line:** Treat **plan + fibers + local stack verify + 17/17 automation** as **truth-complete in-repo**. Treat **G-03** (optional) and **FFI** as the remaining scoped blockers — not W8 G-01/G-02 or G.2/G.3 host CI.
 
 ---
 

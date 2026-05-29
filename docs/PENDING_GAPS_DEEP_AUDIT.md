@@ -22,12 +22,12 @@
 | Plan 15/15 (14 YAML todos + fiber merge) | **100%** | No — re-run verify only |
 | Local stack + tests on pin `0697014f…` / **119** modules | **100%** robustness when green | No |
 | **Code / automation (weighted R0–R5 + CI)** | **~92%** | Partial — see gaps below |
-| **Organization 100%** (remote CI, release policy, traces) | **~92% → 100%** needs **W8** + policy + R6 | **Yes** |
+| **Organization 100%** (remote CI, release policy, traces) | **~96–98%** — **G-03** supercap optional | **G-03** operator only |
 
 **Policy (do not over-claim):**
 
-- Say **~92%** for automation: in-repo gates, lock, parity, adversarial, local `manifest-bridge` with workspace patch.
-- Say **100% for the org** only after **W8** (git publish), plus product choices on strict manifest default and epistemic trace CI (G.2–G.3).
+- Say **100%** for in-repo automation: **17/17** checklist + `verify_umst_stack.sh` when green.
+- Say **~96–98%** scoped org headline: **W8 G-01/G-02** closed @ **fe22437** / **6742fa3**; **G-03** supercap remote optional; **FFI** horizon.
 - **FFI / extracted Lean witnesses** are long-horizon; not in the 92% denominator.
 
 Bottom line from [`COMPLETION_TRUTH.md`](COMPLETION_TRUTH.md): local correctness is **truth-complete**; remote consumers and R6 telemetry are **human-complete**.

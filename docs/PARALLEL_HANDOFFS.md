@@ -64,7 +64,7 @@ UMST_REQUIRE_FORMAL_EXPORT=1 \
 |-------|---|---------|
 | Plan infra todos (14) | **86%** strict / **93%** local | `parity-ci`, `thin-prototypes` |
 | Migration **P0–P7** | **~88%** (7✅ 1⚠️) | **P7** production week + adversarial CI |
-| God-grade automation | **60%** | Kleisli evaluator, strict catalog default, W8 git, P8 body delete |
+| God-grade automation | **100%** in-repo | P8 body delete optional; **G-03** supercap optional |
 
 | Phase | Status | Handoff owner |
 |-------|--------|---------------|
@@ -87,7 +87,7 @@ Full tables: [`AGENT_STATUS.md`](AGENT_STATUS.md) · [`TODO_COMPLETION.md`](TODO
 | **W5** | `manifest/` + `ros` contract | **DONE** — `UmstManifest`, ROS DTOs + `catalog_hash`; feature `ros2-contract` | `serde` feature for roundtrip tests |
 | **W6** | formal witness + `ManifoldGateway` | **DONE** — `src/ai/formal.rs`, `tests/formal_witness.rs`, `formal-witness` | — |
 | **W7** | `gate_server` HTTP | **DONE** — `gate_server_router.rs`, `POST /gate`, `GET /health` | Feature `gate-server-bin` |
-| **W8** | concrete `manifest-bridge` | **PARTIAL** | Git `tytolabs/umst-manifold` `main` must export `manifest`; local `[patch]` verifies `cargo check -p umst-concrete-cartridge --features manifest-bridge` |
+| **W8** | concrete `manifest-bridge` | **DONE** | **G-01** @ **fe22437**; **G-02** remote GHA without `[patch]`; MaOS `[patch]` = dev Evidence |
 | **W9** | docs audit tables | **DONE** — `claims-vs-proofs.md`, `PROOF-STATUS.md`, `REPO_LAYOUT_SSOT.md`, `PROTOTYPE_GATE_MAP.md` | — |
 | **W10** | tests parity + CI | **PARTIAL** | `verify_umst_stack.sh` green; **P7** adversarial + manifold `rust.yml` verify lane optional |
 
@@ -117,9 +117,9 @@ Full tables: [`AGENT_STATUS.md`](AGENT_STATUS.md) · [`TODO_COMPLETION.md`](TODO
 
 ---
 
-## W8 — manifest bridge (pending)
+## W8 — manifest bridge (closed @ 2026-05-29)
 
-**Goal:** `umst-concrete-cartridge` re-exports `umst_manifold::manifest::*` behind `manifest-bridge` without workspace `[patch]`.
+**Goal:** `umst-concrete-cartridge` re-exports `umst_manifold::manifest::*` behind `manifest-bridge` without workspace `[patch]` — **G-02 done** @ **fe22437** / **6742fa3**. Optional: **G-03** supercap remote — [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md).
 
 **Witness ladder:** [R5 — Manifest bridge](GOD_GRADE_WITNESS_LADDER.md#r5--manifest-bridge--formal-witness-deployment-fiber) — digest fiber must be consumable without local patch ([decision 3](GOD_GRADE_WITNESS_LADDER.md#3-manifest-bridge--formal-witness-on-in-ci)).
 

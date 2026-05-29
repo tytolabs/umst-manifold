@@ -244,7 +244,7 @@ This already runs:
 | `ros2-contract` + `serde` | Wire `catalog_hash` stability |
 | Gate parity suite | CD / mix / dual-run vs prototype fixtures |
 
-**`manifest-bridge`:** God-grade requires cartridge CI to `cargo check --features manifest-bridge` against a git-pinned `umst-manifold` revision (today **local OK**, git `main` publish pending — see [`AGENT_STATUS.md`](AGENT_STATUS.md) W8). Treat **manifest-bridge + formal-witness** as a **paired** CI fiber over the same catalog digest.
+**`manifest-bridge`:** God-grade requires cartridge CI to `cargo check --features manifest-bridge` against a git-pinned `umst-manifold` revision — **G-02** concrete remote ✅ @ **fe22437**; **G-03** supercap optional ([`AGENT_STATUS.md`](AGENT_STATUS.md) W8). Treat **manifest-bridge + formal-witness** as a **paired** CI fiber over the same catalog digest.
 
 **Promotion:** Add cartridge jobs to the same workflow as `umst-catalog-drift.yml` once manifold `manifest` is on git `main`.
 
@@ -310,14 +310,14 @@ This already runs:
 
 ## Ladder status (2026-05-21)
 
-**Automation:** **17/17** per [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md). **Org-only:** W8 publish. **Hot-path ceiling:** ~26% of catalog — [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md).
+**Automation:** **17/17** per [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md). **Org W8:** **G-01/G-02** ✅; **G-03** optional. **Hot-path ceiling:** ~26% of catalog — [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md).
 
 | Decision | Status |
 |----------|--------|
 | (1) Failure priority order | **Documented**; embodied path partially lazy (CBF always on gateway) |
 | (2) MI surrogate post-CBF; η from traces | **Partial** — CBF enforces; η hand-set; trace calibration Lean proved, Rust telemetry open |
 | (3) CI `formal-witness` | **ON** in `verify_umst_stack.sh` |
-| (3) CI `manifest-bridge` | **Local**; git cartridge CI pending W8 |
+| (3) CI `manifest-bridge` | **G-02** concrete remote ✅; **G-03** supercap optional |
 | (4) Second fiber `umst-formal` | **Documented**; no unified export |
 | (5) Delete prototype filter | **Blocked** on parity identity sign-off; fixtures **kept** |
 | (6) v1 digest | **Implemented** (feature-gated) |

@@ -27,7 +27,7 @@
 | Bucket | Count (approx.) | Headline |
 |--------|-----------------|----------|
 | Preview-only | 0 major (merge closed) | Unified digest **0697014f…** / **119** modules — preview workflow demoted to dev-only |
-| Ops-only | 6–8 | W8 publish, strict manifest default, v2 traces, CI polish |
+| Ops-only | 2–4 | **G-03** supercap remote (optional), prototype thin-delete, optional `rust.yml` |
 | Hybrid / optional | 2 | 2a thin delete, Python E6 adversarial (Rust `gate_adversarial` required in `rust.yml`) |
 | Long horizon | 1 | Extracted witnesses / FFI |
 

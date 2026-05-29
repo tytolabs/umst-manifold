@@ -17,7 +17,7 @@
 | **Stack verify** | `scripts/verify_umst_stack.sh` | S8, W2, W10 | Exit **0** @ 2026-05-21T20:50:20Z |
 | **Read-only audit** | Six docs on disk | S1–S11 swarm | No code changes; evidence in [`TODO_COMPLETION.md`](TODO_COMPLETION.md) |
 
-Tests prove **witness alignment**, not god-grade closure: R0 digest pin is CI; R1/R3 parity is 8/8; R4 Kleisli lacks hot-path `GateEvaluator`; R5 git manifest bridge still **PARTIAL** (W8).
+Tests prove **witness alignment**, not full scoped closure: R0 digest pin is CI; R1/R3 parity is 8/8; R4 Kleisli on registry path; R5 **G-02** concrete `manifest-bridge` git-pinned @ **fe22437** (**G-03** supercap optional).
 
 ### Witness ladder (why tests are ordered this way)
 
@@ -120,7 +120,7 @@ None (no trivial one-line breaks).
 |------|-------|----------|
 | **P7** adversarial in drift CI | MaOS CI | FNR=0% parity with prototype baseline |
 | **P7** 1-week production dual-run monitor | ops | Plan exit “disagreement rate < threshold” |
-| **W8** git publish + cartridge CI | manifold publish | R5 without `[patch]` |
+| **G-03** supercap remote `manifest-bridge` (optional) | operator | Supercap GHA without `[patch]` |
 | **P8** delete prototype filter body | prototype lane | [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) parity functor → identity |
 
 ---

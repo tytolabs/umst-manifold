@@ -28,7 +28,7 @@
 ### Impact
 
 - Formal merges cannot silently drift: CI prints `FAIL: catalog drift upstream=… export=…`.
-- Cartridge path documented end-to-end; W8 publish removes `[patch]`-only `manifest-bridge`.
+- Cartridge path documented end-to-end; **G-02** enables git-pinned `manifest-bridge` without workspace `[patch]` (MaOS `[patch]` remains dev Evidence).
 - God-grade ladder steps 1–3 (always-on CI, Lean PR checklist, registry completeness) map directly to open tracks C, E, H in the roadmap.
 
 > **Design lens** — Forward flow is functorial export **F** (Lean → digest); reverse flow is a **natural transformation** of regression tests detecting when **F** changes without promotion.
@@ -61,7 +61,7 @@ flowchart LR
   end
   subgraph applied ["umst-concrete-cartridge"]
     Cartridge["IScienceCartridge\nclosures + PyO3/MCP"]
-    Bridge["manifest-bridge\n(W8 pending on git pin)"]
+    Bridge["manifest-bridge\n(G-02 ✅ @ fe22437)"]
   end
   Lean --> Export --> CatFull --> CatLockFormal
   CatFull --> Lock
@@ -104,7 +104,7 @@ There is also a **slim** `catalog.json` on disk that uses an `entries[]` index (
 
 - **Trait:** `IScienceCartridge` — domain closures (concrete, metals, …) run **inside** `ManifoldGateway` / orchestration without forking the DEC substrate.
 - **Concrete path:** [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) supplies cementitious chemistry; manifold holds a **host policy stub** `umst.cartridge.concrete.policy` in `src/gate/concrete_cartridge.rs` for HTTP defaults when Burn is not linked.
-- **Manifest bridge (W8):** Feature `manifest-bridge` is ready locally but **blocked** until published `tytolabs/umst-manifold` `main` exposes `manifest` for git deps ([`AGENT_STATUS.md`](AGENT_STATUS.md)).
+- **Manifest bridge (W8):** **G-01** publish @ **fe22437** and **G-02** concrete remote CI without `[patch]` are **done** (2026-05-29). MaOS workspace `[patch]` remains dev Evidence only ([`AGENT_STATUS.md`](AGENT_STATUS.md)).
 
 **End-to-end story for one topology step:** Cartridge proposes a state update → `ManifoldGateway` runs physics + **Landauer CBF** → host **CD transition gate** (and optional dual-run) → result carries `catalog_id` / hash for telemetry. Formal Lean proofs justify the **design** of those checks; Rust implements them by hand.
 
@@ -121,7 +121,7 @@ There is also a **slim** `catalog.json` on disk that uses an `entries[]` index (
 | Manifold → prototype | Dual-run parity: manifold vs prototype dissipation / gate paths | **Yes** | `tests/gate_dual_run_parity.rs`, `tests/gate_parity_fixture.rs` |
 | Manifest / HTTP / ROS | Responses include `catalog_hash_hex`; tests assert length and stability | **Yes** | `gate_server_http`, `ros_contract_serde_roundtrip` |
 | Lean theorem ↔ Rust behavior | No prover call at runtime; parity tests only on **selected** obligations | **Partial** | `gate_cbf_parity`, `formal_witness` (feature-gated) |
-| Cartridge ↔ manifold manifest | Git revision + optional `manifest-bridge` check | **Manual / local patch** | W8 pending |
+| Cartridge ↔ manifold manifest | Git revision + `manifest-bridge` on git pin | **Yes** (concrete G-02) | **G-03** supercap optional |
 
 **Typical drift failure:** Someone edits Lean, merges, but forgets to run `make lean-catalog-export` and bump `umst-manifold/artifacts/catalog.lock.json`. CI prints:
 
@@ -215,7 +215,7 @@ Practical ladder (order matters):
 3. **Unify catalog artefacts** — Treat `export_catalog.py` output as the only `catalog.json` for drift; generate or retire the slim `entries[]` index so agents do not read the wrong file.
 4. **Registry completeness** — Implement `GateEvaluator` for `umst.gate.kleisli_unit`; namespace `thermodynamic_mix` in `GateUnificationSpec.md`.
 5. **Strict grounding in production** — Default `GroundingContract::StrictCatalogMatch` + enable `formal-witness` on release manifests (today advisory / off by default).
-6. **Cartridge closure (W8)** — Publish `manifest` on `tytolabs/umst-manifold` `main`; enable `manifest-bridge` in cartridge CI so hash and gate policy flow git-pinned, not `[patch]`-only.
+6. **Cartridge closure (W8)** — **Done** @ 2026-05-29: **G-01** publish @ **fe22437**; **G-02** concrete `manifest-bridge` CI without `[patch]`. Optional: **G-03** supercap remote ([`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)).
 7. **Long horizon** — Extracted witnesses or FFI for high-value lemmas (gate soundness, Landauer bound). Required for **full** formal–runtime equivalence; not required for current end-condition smoke ([`END_CONDITION_REPORT.md`](END_CONDITION_REPORT.md)).
 
 ---

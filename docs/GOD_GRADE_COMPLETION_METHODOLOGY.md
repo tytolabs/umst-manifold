@@ -45,7 +45,7 @@ Blocker ──evidence──▶ Done
 | **Evidence** | Reproducible proof today | Command + exit code + artifact path; timestamp in UTC |
 | **Done** | Criterion in §4 or [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) satisfied | Human steps (git push, product default) need operator — **no `git push` by agents** |
 
-**Scoped true 100%** ([`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md)): **0/3** Done morphisms today — **B1** W8 · **B2** FFI · **B3** strict prod default. **17/17** automation rows are **Done** and **outside** that triple.
+**Scoped true 100%** ([`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md)): **3/4** Done morphisms — **B1** W8 (**G-01** + **G-02**) ✅ · **B3** strict ✅ · **B2** FFI horizon; **G-03** supercap optional. **17/17** automation rows are **Done** and **outside** scoped blockers.
 
 ---
 
@@ -57,9 +57,9 @@ From [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) and [`
 |---------|----------|------------------------------|
 | **Automation** | Are in-repo CI rows green? | **17/17 = 100%** (16-row checklist + companion cartridges; all invoked in `verify_umst_stack.sh` tail) |
 | **Hot-path catalog** | What share of Lean modules are runtime-wired on the gate path? | **18/69 ≈ 26%** (primary ratio) · **18/119 ≈ 15%** (unified) — **by design** |
-| **Scoped true 100%** | Are B1–B3 Done morphisms closed? | **0%** at Done (W8 + FFI + B3 policy) |
+| **Scoped true 100%** | Are B1–B3 Done morphisms closed? | **~96–98%** — **G-03** (optional) + **FFI** only |
 
-**Org W8** is a fourth lens (publish **0%**, local prep **~40%**) — same bucket as **B1**, not added to automation %.
+**Org W8** is a fourth lens (**2/3** @ **fe22437** + **G-02**) — same bucket as **B1**, not added to automation %.
 
 ---
 
@@ -158,7 +158,7 @@ Map each illustrative **~90–98%** row to **file / test / command**. Until the 
 | **R2** | 100 | Landauer CBF + G.3 calibration | `gate_cbf_parity` / `formal_witness`; `cargo test --features trace-calibration --test trace_calibration` **8/8** |
 | **R3** | 100 | Mix / constitutive | `gate_parity_fixture`, mix registry tests |
 | **R4** | 100 | Kleisli | `gate_kleisli` **6/6** |
-| **R5** | 100 in-repo · 0% remote | Strict witness local; W8 for org | `manifest_strict_witness` **3/3** in stack; **B1** for publish |
+| **R5** | 100 in-repo · **G-02** remote ✅ | Strict witness + concrete git pin | `manifest_strict_witness` **3/3**; **B1** G-01/G-02 done @ **fe22437** |
 | **R6** | ~98→100 | G.1–G.3 in verify tail | `epistemic_trace_schema` **13/13**; `trace_calibration` **8/8**; `regime_soundness_claims_allowlist` **1/1** |
 
 ### Checklist automation rows (17/17)
@@ -169,7 +169,7 @@ Each row in [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) § Automation cri
 
 | ID | Blocker | Done criterion (human/code) |
 |----|---------|----------------------------|
-| **B1** | W8 publish | Phases 1–4 in [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md); `git ls-remote` + clean-clone `cargo check` |
+| **B1** | W8 publish | **G-01** + **G-02** ✅ @ **fe22437** / **6742fa3**; **G-03** optional per [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) |
 | **B2** | FFI extracted witnesses | Separate program + attestation API — **excluded** from v1 automation |
 | **B3** | Strict prod default | `UmstManifestBuilder::default()` → `StrictCatalogMatch` + lock digest; Track **H.1** |
 

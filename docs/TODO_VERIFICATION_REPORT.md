@@ -131,7 +131,7 @@ These require **publish / CI / human process** — not further Rust scaffolding 
 | Bucket | Count | Share |
 |--------|-------|-------|
 | ✅ Met | 10 | **77%** — Kleisli, reject slugs, dual-run + adversarial in verify script ([`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md)) |
-| ⚠️ Partial | 2 | **15%** — strict catalog default; cartridge git pin (W8) |
+| ⚠️ Partial | 0 | — (strict default + **G-02** cartridge git pin closed @ 2026-05-29) |
 | ❌ Open | 1 | **8%** — FFI / extracted witnesses (long horizon) |
 
 **God-grade headline:** **~84%** weighted (witness R0–R4 + adversarial CI + partial R5); **~72%** strict ✅-only on expanded 18-row matrix ([`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md)).
@@ -144,7 +144,7 @@ These require **publish / CI / human process** — not further Rust scaffolding 
 | Catalog-only + support + test/infra | 51 | **74%** | Digest fingerprint only |
 | Build lock | **119** | **100%** | `catalog.lock.json` → `build.rs` SHA256 |
 
-**Interpretation:** **Plan infra = 100%** (14/14 + `formal-fiber-merge` ✅). **God-grade ≈ 84%** (weighted) closes the *automation and production-default* story; strict ✅-only remains ~70% until strict manifest default, W8 publish, and v2 traces land.
+**Interpretation:** **Plan infra = 100%** (14/14 + `formal-fiber-merge` ✅). **God-grade ≈ 98%** in-repo (weighted R0–R6); scoped blockers are **G-03** (optional) + **FFI** horizon — not W8 G-01/G-02.
 
 ### Level 3 — Witness ladder ([`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md))
 
@@ -155,8 +155,8 @@ These require **publish / CI / human process** — not further Rust scaffolding 
 | R2 Landauer / MI | ✅ `FormalReject` + `umst.gate.landauer_cbf` |
 | R3 Constitutive closure | ✅ mix registry |
 | R4 Probe / Kleisli | ✅ `KleisliUnitEvaluator` + embodied routing |
-| R5 Manifest + digest | ⚠️ local `[patch]`; W8 git pending |
-| R6 Trace schema v2 | ❌ telemetry contract future |
+| R5 Manifest + digest | ✅ in-repo · **G-02** concrete remote @ **fe22437** |
+| R6 Trace schema v2 | ✅ G.1–G.3 in verify tail |
 
 ---
 
@@ -203,7 +203,7 @@ Files touched: `umst-manifold/artifacts/catalog.lock.json`, `src/runtime/catalog
 
 ## Doc hygiene on next pass
 
-1. Close W8/W10 in [`AGENT_STATUS.md`](AGENT_STATUS.md) when git publish and optional `rust.yml` land.  
+1. **W8 G-01/G-02** closed in [`AGENT_STATUS.md`](AGENT_STATUS.md) @ 2026-05-29; optional **G-03** / `rust.yml` remain.  
 2. Re-run this report after Lean export churn: `bash scripts/verify_umst_stack.sh` → refresh exit column.
 
 **End condition reference:** [`END_CONDITION_REPORT.md`](END_CONDITION_REPORT.md) (matrix PASS 2026-05-21).

@@ -71,7 +71,7 @@ These are not hypotheticals; they are the failure modes the new pipeline was bui
 
 6. **Cartridge / manifest mismatch in the wild**  
    Local dev passes with a workspace patch; published git CI still pins an old `umst-manifold` without manifest APIs — green laptop, red GitHub.  
-   *Still a known gap (W8 publish):* local `manifest-bridge` is green; **remote** cartridge CI waits on publishing manifold to git. Documented, not hidden.
+   *Org bridge status (2026-05-29):* concrete remote **G-02** is green on git pin **fe22437** without workspace `[patch]`; optional **G-03** supercap remote remains operator-scheduled.
 
 7. **Coordinator handoff chaos**  
    “Is lean-export done?” answered differently by every agent.  

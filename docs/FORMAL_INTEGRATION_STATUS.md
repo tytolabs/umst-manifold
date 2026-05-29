@@ -137,7 +137,7 @@ Synthesized from [`TODO_COMPLETION.md`](TODO_COMPLETION.md) and [`GOD_GRADE_CHEC
 | **`formal-witness` off by default** | Catalog digest mismatch only fails when the feature is enabled in CI/product. |
 | **`AdvisoryCatalogOnly` vs `StrictCatalogMatch`** | Manifest enum allows advisory mode; production god-grade needs strict hash match on every proposal. |
 | **QR / quantum bridges absent in Rust** | `QRBridge` and most qubit modules are catalog-only. |
-| **W8 `manifest-bridge` blocked on git pin** | Cartridge cannot consume published manifest API until `tytolabs/umst-manifold` `main` catches up (`AGENT_STATUS.md`). |
+| **W8 `manifest-bridge` on git pin** | **G-01** + **G-02** closed @ **fe22437** / **6742fa3**; concrete remote CI without `[patch]` (`AGENT_STATUS.md`). **G-03** supercap optional. |
 | **W10 CI split** | `rust.yml` optional `verify-umst-stack-optional` (subset or full `verify_umst_stack.sh`); drift workflow remains SSOT for export. |
 | **Lean churn → lock promotion** | Manual `make lean-catalog-export` + `upstream_catalog_digest_hex` update; no bot yet. |
 | **Optional: extracted witnesses (long horizon)** | Beyond R0 digest / `formal-witness` attestation; not on the inference hot path today. |

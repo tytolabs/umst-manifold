@@ -8,7 +8,7 @@
 
 **Reading order:** Pipeline → [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) · module buckets → [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md) · witness law → [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) · evidence → [`TODO_COMPLETION.md`](TODO_COMPLETION.md) / [`TODO_VERIFICATION_REPORT.md`](TODO_VERIFICATION_REPORT.md) · remaining tracks → [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md)
 
-**Headline SSOT (mirrors [`COMPLETION_TRUTH.md`](COMPLETION_TRUTH.md) · [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)):** verified **2026-05-21T22:09:30Z** — plan **100%** · automation **17/17 = 100%** · robustness **100%** · weighted R0–R6 **~98%** in-repo / **~91%** incl. W8 · hot-path **~26%** · scoped blockers **W8 + FFI only**.
+**Headline SSOT (mirrors [`COMPLETION_TRUTH.md`](COMPLETION_TRUTH.md) · [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)):** verified **2026-05-21T22:09:30Z** · W8 **G-01/G-02** closed **2026-05-29** — plan **100%** · automation **17/17 = 100%** · robustness **100%** · weighted R0–R6 **~98%** in-repo / **~95%** incl. org W8 · hot-path **~26%** · scoped blockers **G-03** (optional) + **FFI** only.
 
 ---
 
@@ -30,7 +30,7 @@
 | **Prototype lane aligned** | v1 is a thin shim (8/8 dual-run); 2a is a documented **hybrid** (delegates Algorithm 1 when `manifold-gate`, keeps Constitution/CGS locally). | [`THIN_PROTOTYPE_STATUS.md`](../umst-prototype/docs/THIN_PROTOTYPE_STATUS.md) |
 | **Supercap R5 fiber started** | Sibling cartridge pins catalog hash and enforces `formal_anchor` doc blocks on public API (6/6). | `umst-supercap-cartridge` `tests/formal_anchors.rs`; [`FORMAL_SCALING.md`](../umst-supercap-cartridge/docs/FORMAL_SCALING.md) |
 
-**What changed (2026-05-21):** production digest `0697014fb5b90a3a…`, **119** modules; **v2 dual-pin** lock; **strict witness**; **G.1–G.3** epistemic (serde **13/13**, bounds in G.2, η **8/8**); **J.3** regime allowlist **1/1**; concrete `catalog_id` anchored. **Unchanged:** **18/69 ≈ 26%** hot-path by design; TCB **one** Lean axiom. **Automation: 17/17 = 100%** in-repo — [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md). **Scoped true 100%:** **W8 + FFI only**.
+**What changed (2026-05-21):** production digest `0697014fb5b90a3a…`, **119** modules; **v2 dual-pin** lock; **strict witness**; **G.1–G.3** epistemic (serde **13/13**, bounds in G.2, η **8/8**); **J.3** regime allowlist **1/1**; concrete `catalog_id` anchored. **Unchanged:** **18/69 ≈ 26%** hot-path by design; TCB **one** Lean axiom. **Automation: 17/17 = 100%** in-repo — [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md). **Scoped true 100%:** **G-03** (optional) + **FFI** only — **W8 G-01/G-02** closed @ **fe22437**.
 
 ---
 
@@ -44,9 +44,9 @@
 | **Automation (in-repo)** | **100%** | **17/17** checklist rows ✅ |
 | **Robustness (stack script)** | **100%** | exit **0** @ 22:05:32Z |
 | **Hot-path catalog** | **~26%** | **18/69** primary ( **18/119 ≈ 15%** unified ) |
-| **Org W8 publish** | **0%** | **0/1** remote gate |
+| **Org W8 (Track A)** | **~67%** | **2/3** — **G-01** + **G-02** ✅ |
 | **God-grade R0–R6 (in-repo)** | **~98%** | 6.89/7 rungs |
-| **Scoped true 100% blockers** | **W8 + FFI** | G.2 · G.3 · J.3 closed in-repo |
+| **Scoped true 100% blockers** | **G-03** (optional) + **FFI** | G.2 · G.3 · J.3 closed in-repo |
 
 ### Learnings
 
@@ -59,7 +59,7 @@
 
 - **Operators** — One command (`verify_umst_stack.sh`) exercises export lock, bidirectional `catalog_id` check, gate parity, Kleisli + reject slugs + adversarial golden, `formal-witness`, ROS/HTTP contracts, and optional prototype E6 adversarial when checkout exists.
 - **Formal lane** — Export canonical via Python `export_catalog.py`; unified cross-repo pin promoted 2026-05-21 ([`TODO_COMPLETION.md`](TODO_COMPLETION.md) § `formal-fiber-merge`).
-- **Cartridge / ops** — Local `manifest-bridge` green with workspace `[patch]`; supercap `formal_anchors` 6/6; remote git CI blocked on W8 publish ([`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md) Track A).
+- **Cartridge / ops** — Concrete remote **G-02** ✅ @ **fe22437**; supercap `formal_anchors` 6/6; **G-03** supercap remote optional ([`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md) Track A).
 
 > **Design lens** — The export functor pins a **library** (R0); gate witnesses are **law** (R1–R4) on admissible transitions; calibration η is valid only as a natural transformation **after** the CBF witness (R2), never as a standalone certificate.
 
@@ -74,13 +74,13 @@
 | **Catalog digest** | `c1d9ba2aa402…`, 69 modules (historical) | **`0697014f…`, 119 modules** + v2 `fiber_pins` |
 | **Automation (in-repo)** | ~60%–~88% (stale) | **17/17 = 100%** — [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) |
 | **Epistemic G.2 / G.3** | open / partial | **✅** `epistemic_trace_schema` **13/13** · `trace_calibration` **8/8** |
-| **Scoped blockers** | W8 + G.2 + G.3 + FFI | **W8 + FFI only** |
+| **Scoped blockers** | W8 + G.2 + G.3 + FFI | **G-03** (optional) + **FFI** only |
 | **R4 Kleisli** | Weak — predicate port only | **Strong** — `KleisliUnitEvaluator` + registry routing |
 | **Reject telemetry** | CBF only on some paths | **Strong** — `gate_reject_catalog_id` (CD/mix/Landauer/HTTP) |
 | **Adversarial CI** | Open in drift / verify | **Strong** — Rust golden FNR=0 in drift + verify; Python E6 FNR=0 when present |
 | **Prototype filter body** | v1 ~378→226 lines; 2a full body | v1 **226L shim** (8/8 parity); 2a **~480L hybrid** (`manifold-gate` delegates Algorithm 1) |
 
-**Bottom line:** **14/14 plan todos ✅ on disk**. **In-repo automation 17/17 = 100%** after G.2/G.3/J.3 closure. **Hot-path stays ~26%** by design — not a regression. **Scoped true 100%** needs only **W8 publish** and **FFI** (horizon). Do **not** confuse automation **100%** with hot-path **26%** or org W8 **0%**.
+**Bottom line:** **14/14 plan todos ✅ on disk**. **In-repo automation 17/17 = 100%** after G.2/G.3/J.3 closure. **Hot-path stays ~26%** by design — not a regression. **Scoped true 100%** needs only **G-03** (optional) and **FFI** (horizon). Do **not** confuse automation **100%** with hot-path **26%** or stale org W8 **0%**.
 
 ---
 
@@ -186,14 +186,14 @@ Layers follow [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) composition sta
 |--------|-------|------------|
 | **14/14 on-disk** | **100%** of plan scope | Every plan `id` implemented; [`TODO_COMPLETION.md`](TODO_COMPLETION.md) § 14/14 map |
 | **Automation (in-repo)** | **100%** | **17/17** — [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) |
-| **True 100% (scoped)** | excludes **W8 + FFI** | G.2 · G.3 · J.3 closed in-repo |
+| **True 100% (scoped)** | excludes **G-03** (optional) + **FFI** | G.2 · G.3 · J.3 closed in-repo |
 | **YAML tracker** | **0% updated** | 1 `in_progress` + 13 `pending` — intentional (no plan edits) |
 
 | Milestone | Infra | God-grade tie-in |
 |-----------|-------|------------------|
 | 14 plan todos | ✅ on disk | Extraction pipeline closed |
 | `formal-fiber-merge` + dual-pin v2 | ✅ | **119** composed + per-fiber locks |
-| `concrete-cartridge-wire` remote | ⚠️ ops | W8 publish → git CI without `[patch]` |
+| `concrete-cartridge-wire` remote | ✅ **G-02** | Git `fe22437` without `[patch]` @ 2026-05-29 |
 
 ### God-grade criteria (automation / production defaults)
 
@@ -202,7 +202,7 @@ Layers follow [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) composition sta
 | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) (automation rows) | 17 | 0 | W8 org-only · FFI horizon | **17/17 = 100%** |
 | Witness ladder R0–R6 (weighted, in-repo) | R0–R5 ✅ · R6 G.1–G.3 ✅ | stack tail optional | FFI horizon | **~98%** |
 
-**Remaining to scoped true 100%:** **W8** + **FFI** only.
+**Remaining to scoped true 100%:** **G-03** (optional) + **FFI** only.
 
 **Second-law TCB:** Unchanged — `physicalSecondLaw` remains the **only** Lean axiom in the primary export; CD/Landauer witnesses in Rust do not add axioms ([`TCB.md`](TCB.md), [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) § no Rust axioms).
 
@@ -214,9 +214,9 @@ Layers follow [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) composition sta
 | Catalog-only + support + test/infra | 51 | **74%** |
 | Build lock coverage | 119 | **100%** digest (v2 dual-pin) |
 
-Interpretation: **14/14 plan todos ✅**; **automation 17/17**; **hot-path 18/69 ≈ 26%** (by design). Scoped **true 100%** = **W8 + FFI** only.
+Interpretation: **14/14 plan todos ✅**; **automation 17/17**; **hot-path 18/69 ≈ 26%** (by design). Scoped **true 100%** = **G-03** (optional) + **FFI** only.
 
-### Scoped true 100% (W8 + FFI only)
+### Scoped true 100% (G-03 optional + FFI)
 
 Everything else is green in-repo and in `verify_umst_stack.sh`:
 
@@ -237,7 +237,7 @@ Everything else is green in-repo and in `verify_umst_stack.sh`:
 
 ---
 
-## Scoped completion (W8 + FFI only)
+## Scoped completion (G-03 optional + FFI)
 
 | ID | Blocker | Owner | Unblocks |
 |----|---------|-------|----------|

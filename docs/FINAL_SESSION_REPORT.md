@@ -25,7 +25,7 @@ Percentages are **session estimates** from completed plan items, green tests, an
 | **formal (second tree)** (`umst-formal`) | Extra proofs (constitution, DIB Kleisli, etc.) documented but not in the 69-module pin | Appendix B traceability in `claims-vs-proofs.md` | In unified **119** export | **~100%** (merged pin) |
 | **manifold** (`umst-manifold`) | Runtime: catalog lock, gates, manifest, ROS/HTTP, verify script | 12/14 plan items ✅; stack verify exit 0; Kleisli + reject slugs + adversarial CI | Optional `rust.yml` verify lane; doc hygiene | **~95%** |
 | **concrete** (`umst-concrete-cartridge`) | Concrete ML cartridge wired to manifold gates/manifest | Local tests pass with workspace patch; manifest-bridge feature | Remote GitHub Actions still uses git `main` without published manifest API | **~85%** local · **~70%** with remote CI |
-| **supercap** (`umst-supercap-cartridge`) | Sibling cartridge; formal anchor doc tests + catalog hash pin | `formal_anchors` 6/6; lock hash advisory | Full manifest-bridge parity rows (same W8 publish blocker) | **~75%** |
+| **supercap** (`umst-supercap-cartridge`) | Sibling cartridge; formal anchor doc tests + catalog hash pin | `formal_anchors` 6/6; lock hash advisory | **G-03** supercap remote `manifest-bridge` optional | **~90%** |
 | **prototype** (`umst-prototype`) | Older demo; should not duplicate gate math | Thin shim (~226 lines); delegates to manifold; **8/8** dual-run parity | Legacy HTTP gate server (non-blocking) | **~90%** |
 | **2a** (`umst-prototype-2a`) | Newer demo host; hybrid filter | Algorithm 1 delegates when `manifold-gate` on; HTTP via manifold `gate_server` | ~517 lines of 2a-only logic (constitution, joint functor, etc.) still local | **~50%** |
 
@@ -41,7 +41,7 @@ Layers are how the system is stacked: proofs at the bottom, safety checks in the
 |-------|---------------|--------|-------|-------|
 | **Proofs** | Lean library → `catalog.json` → lock file; claims mapped to Rust | Export canonical; digest `0697014f…`; **119** modules locked; `claims-vs-proofs.md` + TCB | **~95%** | **100%** of exported modules in lock; **~26%** on inference hot path by design (18/69 primary wired); cross-repo merge **closed** |
 | **Gates** | Rules that reject illegal states (second law, mix, Landauer budget, Kleisli probe) | CD, mix, CBF, Kleisli evaluator, reject `catalog_id` slugs, 8/8 dual-run, adversarial FNR=0 | **~95%** | Rust golden is source of truth; optional Python E6 when 2a checkout present |
-| **Cartridges** | Concrete/supercap facades calling manifold | Local manifest-bridge green; supercap anchors 6/6 | **~80%** | Remote CI blocked until manifold **W8** publish |
+| **Cartridges** | Concrete/supercap facades calling manifold | Concrete remote **G-02** ✅; supercap anchors 6/6 | **~90%** | **G-03** supercap remote optional |
 | **CI** | Automated checks on every change | `verify_umst_stack.sh` OK; catalog drift workflow; adversarial in drift + verify | **~90%** | Optional: standalone `rust.yml` gate bundle on manifold repo only |
 
 **Layer rollup:** Proofs and gates are **production-trustable in monorepo**; cartridges and CI need **one publish step** to match local green state on GitHub.

@@ -16,7 +16,7 @@
 |------|--------|---------------|
 | **Stack verify (this session)** | **exit 0** | **2026-05-21T21:58:12Z** — [`verify_umst_stack.sh`](../scripts/verify_umst_stack.sh) + bidirectional + END_CONDITION subset + `manifest_strict_witness` |
 | **Plan + R0 pin** | **100%** (see headline table) | **119** modules · digest `0697014f…` |
-| **God-grade weighted R0–R6** | **~84%** (see headline table) | W8 publish · strict default · R6 traces remain human |
+| **God-grade weighted R0–R6** | **~98%** in-repo (see headline table) | **G-03** supercap optional · FFI horizon |
 | **Layer detail** | category matrix below | Per-layer % are illustrative only |
 
 ---
@@ -29,8 +29,8 @@ Each row is a **plan layer** (not a single YAML `id`). `%` reflects on-disk deli
 |----------|---|----------------|-----|-------|
 | **Proofs** | **100%** | `cd umst-formal-double-slit && APPROVE_CROSS_REPO_MERGE=1 python3 tools/lean_export/export_catalog.py --lean-root Lean --also-lean-root ../umst-formal/Lean --also-lean-repo-tag umst-formal` then lock assert | None for unified pin; Appendix B → `catalog_id` graduation is ops | formal / coordinator |
 | **Gates** | **100%** | `cd umst-manifold && cargo test --test gate_kleisli --test gate_reject_catalog_id --test gate_adversarial --test gate_dual_run_parity` | Prototype 2a thin delete optional (Track B); not a gate-law gap | manifold / prototype |
-| **Manifest** | **~90%** | `cargo test --features formal-witness --test manifest_strict_witness --test formal_witness` · `embodied_orchestrator` | W8 git publish (Track A); G.2–G.3 (Track G) | product / ops · manifold |
-| **Cartridges** | **~80%** | `cd umst-concrete-cartridge && cargo test -p umst-concrete-cartridge --features manifest-bridge` · `cd umst-supercap-cartridge && cargo test --test formal_anchors` | Remote GHA without workspace `[patch]`; generated `formal_anchor` rows (I.3–I.4) | manifold publish → cartridge |
+| **Manifest** | **100%** | `cargo test --features formal-witness --test manifest_strict_witness --test formal_witness` · `embodied_orchestrator` | — | manifold |
+| **Cartridges** | **~90%** | git-pinned concrete `manifest-bridge` @ **fe22437** · `formal_anchors` **6/6** | **G-03** supercap remote GHA (I.3–I.4) optional | operator (G-03 only) |
 | **CI** | **~92%** | `UMST_REQUIRE_FORMAL_EXPORT=1 UMST_FORMAL_ROOT=$WORKSPACE/umst-formal-double-slit bash umst-manifold/scripts/verify_umst_stack.sh` | Optional Python E6 only when prototype checkout absent; standalone `umst-manifold/.github/workflows/rust.yml` gate lane | CI / coordinator |
 | **Prototypes** | **~85%** | `cd umst-manifold && cargo test --test gate_dual_run_parity -- --nocapture` · `cd umst-prototype/src/rust/core && cargo test thermodynamic_filter::tests --lib` | v1 shim **226L**; 2a hybrid **517L** (B.3–B.4 full delete); legacy `gate_server` deprecation | prototype lane |
 | **Formal fibers** | **100%** | v2 dual-pin lock + **119** composed digest `0697014f…`; per-fiber `c1d9ba2…` (69) + `534d9e18…` (62) | None — dual-pin v2 + `formal-fiber-merge` closed 2026-05-21 | formal / coordinator |
@@ -72,17 +72,17 @@ Historical migration phases from plan §5 ([`lean-to-rust_proof_extraction_fd8f7
 | **P2** | `runtime/catalog` + `build.rs` | **100%** | `cd umst-manifold && cargo test --test catalog_all_ids_registered` | Partition table if module count shifts | manifold | **F** |
 | **P3** | `gate/` + Kleisli port | **100%** | `cargo test --test gate_kleisli -p umst-manifold` | — | manifold | **C** |
 | **P4** | `GateEvaluator` + CBF | **100%** | `cargo test --test gate_cbf_parity --test cbf -p umst-manifold` | — | manifold | **D** |
-| **P5** | `manifest` re-exports | **100%** | `grep 'pub mod manifest' umst-manifold/src/lib.rs && cargo test --test embodied_orchestrator` | Git consumers need W8 | manifold | **A**, **H** |
+| **P5** | `manifest` re-exports | **100%** | `grep 'pub mod manifest' umst-manifold/src/lib.rs && cargo test --test embodied_orchestrator` | — | manifold | **A**, **H** |
 | **P6** | `gate_server` in manifold | **100%** | `cargo test --features gate-server-bin,ros2-contract,serde --test gate_server_http` | Legacy prototype HTTP bins | manifold / prototype | **B** |
 | **P7** | Dual-run + adversarial production | **100%** | `cargo test --test gate_dual_run_parity --test gate_adversarial` · in `verify_umst_stack.sh` | 1-week production monitor (ops); optional `rust.yml` | CI / ops | **E**, **J** |
 | **P8** | Replace prototype filter core | **~70%** | `wc -l umst-prototype/src/rust/core/src/science/thermodynamic_filter.rs` → 226; 2a → 517 | Full delete 2a Constitution/CGS/functor body | prototype | **B** |
 | **P9** | `ros/contract` + bridge | **~95%** | `cargo test --test ros_contract_serde_roundtrip -p umst-manifold` | Live ROS smoke optional | prototype Python | — |
-| **P10** | Concrete facade + anchors | **~75%** | `cargo test -p umst-concrete-cartridge --features manifest-bridge` (workspace patch) | Remote git CI; catalog-generated `formal_anchor` | cartridge · publish | **A**, **I** |
+| **P10** | Concrete facade + anchors | **~90%** | git-pinned `manifest-bridge` @ **fe22437** (G-02) | **G-03** supercap remote; generated `formal_anchor` polish | cartridge | **A**, **I** |
 | **P11** | `EmbodiedOrchestrator` + claims doc | **100%** | `cargo test --test embodied_orchestrator` · `test -f umst-manifold/docs/claims-vs-proofs.md` | — | manifold | — |
 | **P12** | Thin prototypes | **~85%** | `gate_dual_run_parity` 8/8; v1 `thermodynamic_filter::tests` 5/5 | 2a hybrid body; no concrete path dep (Burn pin) | prototype | **B** |
-| **Publish** | `tytolabs/umst-manifold` `main` | **0%** ops | `git ls-remote https://github.com/tytolabs/umst-manifold.git refs/heads/main` + clean-clone `cargo check` | Blocks cartridge GHA without `[patch]` | manifold publish | **A** |
+| **Publish** | `tytolabs/umst-manifold` `main` | **~95%** | `w8_publish_readiness.sh` + git-pinned concrete `manifest-bridge` | **G-03** supercap remote optional | operator (G-03) | **A** |
 
-**Phase rollup:** P0–P7 **100%** · P8–P12 **~88%** hybrid · Publish **ops-only**.
+**Phase rollup:** P0–P7 **100%** · P8–P12 **~88%** hybrid · Publish **G-01/G-02** ✅.
 
 ---
 
