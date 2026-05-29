@@ -22,14 +22,18 @@ if [[ ! -f "${LOCK}" ]]; then
 fi
 
 resolve_formal_root() {
-  if [[ -n "${UMST_FORMAL_ROOT:-}" ]]; then
+  if [[ -n "${UMST_FORMAL_ROOT:-}" && -d "${UMST_FORMAL_ROOT}/Lean" ]]; then
     echo "$(cd "${UMST_FORMAL_ROOT}" && pwd)"
     return 0
   fi
   local sibling
   sibling="$(cd "${ROOT}/.." && pwd)/umst-formal-double-slit"
-  if [[ -d "${sibling}/Lean" && -f "${sibling}/tools/lean_export/export_catalog.py" ]]; then
+  if [[ -d "${sibling}/Lean" ]]; then
     echo "${sibling}"
+    return 0
+  fi
+  if [[ -d "${ROOT}/umst-formal-double-slit/Lean" ]]; then
+    echo "${ROOT}/umst-formal-double-slit"
     return 0
   fi
   return 1
@@ -61,14 +65,34 @@ if ! FORMAL_ROOT="$(resolve_formal_root)"; then
   exit 0
 fi
 
+PINNED_CATALOG="${ROOT}/artifacts/upstream_catalog.json"
 EXPORT_TOOL="${FORMAL_ROOT}/tools/lean_export/export_catalog.py"
 LEAN_ROOT="${FORMAL_ROOT}/Lean"
 CATALOG_JSON="${FORMAL_ROOT}/artifacts/catalog.json"
+VERIFY_TOOL="${ROOT}/scripts/catalog_lock_verify.py"
 
-if [[ ! -f "${EXPORT_TOOL}" || ! -d "${LEAN_ROOT}" ]]; then
+if [[ ! -d "${LEAN_ROOT}" ]]; then
   echo "bidirectional_catalog_check: invalid formal tree at ${FORMAL_ROOT}" >&2
   exit 1
 fi
+
+if [[ ! -f "${EXPORT_TOOL}" ]]; then
+  if [[ -f "${CATALOG_JSON}" ]]; then
+    echo "==> (1–2) lock vs committed formal catalog.json (export tool absent)"
+    python3 "${VERIFY_TOOL}" "${LOCK}" "${CATALOG_JSON}"
+  elif [[ -f "${PINNED_CATALOG}" ]]; then
+    echo "==> (1–2) lock vs pinned artifacts/upstream_catalog.json (export tool absent)"
+    python3 "${VERIFY_TOOL}" "${LOCK}" "${PINNED_CATALOG}"
+  else
+    echo "bidirectional_catalog_check: no export tool and no catalog.json at ${FORMAL_ROOT} or ${PINNED_CATALOG}" >&2
+    exit 1
+  fi
+  echo "==> (4) catalog_all_ids_registered"
+  cargo test --test catalog_all_ids_registered
+  echo "bidirectional_catalog_check: OK (pinned/committed catalog; live export skipped)"
+  exit 0
+fi
+
 if [[ ! -f "${CATALOG_JSON}" ]]; then
   echo "bidirectional_catalog_check: missing ${CATALOG_JSON} (run make lean-catalog-export)" >&2
   exit 1
