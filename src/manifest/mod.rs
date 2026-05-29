@@ -9,7 +9,8 @@
 //!
 //! **Witness:** [`UmstManifestBuilder::for_release_profile`] + `--features formal-witness`
 //! + cartridge `manifest-bridge` — see [`umst_manifest`](umst_manifest) and [`VERIFY.md`](../../docs/VERIFY.md) §3.3.
-//! CI: `scripts/verify_umst_stack.sh` runs `--test manifest_strict_witness` in the release lane (skip with `UMST_RELEASE_MANIFEST_PROFILE=0`).
+//!
+//!   CI: `scripts/verify_umst_stack.sh` runs `--test manifest_strict_witness` in the release lane (skip with `UMST_RELEASE_MANIFEST_PROFILE=0`).
 
 mod orchestrator;
 mod umst_manifest;

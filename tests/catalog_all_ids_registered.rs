@@ -206,7 +206,7 @@ fn catalog_all_ids_lean_modules_registered_or_allowlisted() {
 
     let covered: BTreeSet<_> = wired_modules
         .into_iter()
-        .chain(allowlisted.into_iter())
+        .chain(allowlisted)
         .map(str::to_string)
         .collect();
 

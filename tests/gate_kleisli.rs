@@ -98,6 +98,6 @@ fn kleisli_mass_gate_then_identity_pipeline() {
             (false, -1.0, Some("non_positive".into()))
         }
     });
-    let seq = pipe.run_sequence(3.14_f64, &[&ok]);
+    let seq = pipe.run_sequence(std::f64::consts::PI, &[&ok]);
     assert!(seq.result.admissible);
 }

@@ -287,8 +287,10 @@ fn embodied_dual_run_accepts_when_host_and_gateway_pass() {
     let info_gain =
         suggested_info_gain_from_batched_nodal_scalars(baseline_batched, proposed_batched);
 
-    let mut manifest = UmstManifest::default();
-    manifest.dual_run = true;
+    let manifest = UmstManifest {
+        dual_run: true,
+        ..Default::default()
+    };
     let mut orch = EmbodiedOrchestrator::from_manifest(GatewayStubCartridge, &manifest);
 
     let (old, new, dt) = golden_identity_host();
