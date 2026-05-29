@@ -1,6 +1,6 @@
 # Pending god-grade roadmap
 
-**As of:** 2026-05-21  
+**As of:** 2026-05-29 (W8 Phase 1 + **G-02** closed; **G-03** optional)  
 **Audience:** Coordinators, formal lane, manifold/prototype/cartridge CI owners  
 **Status SSOT:** [`TODO_COMPLETION.md`](TODO_COMPLETION.md), [`AGENT_STATUS.md`](AGENT_STATUS.md), [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md), [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md)
 
@@ -20,7 +20,7 @@ Verified **2026-05-21T21:18:04Z** — `verify_umst_stack.sh` exit 0; `gate_dual_
 
 | Track | Status | Closed today (summary) | Still open |
 |-------|--------|------------------------|------------|
-| **A** — W8 publish | ❌ **ops** | Local `pub mod manifest`, patch-green cartridge tests | Remote git + GHA — **[`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)** |
+| **A** — W8 publish | ✅ **Phase 1** · ✅ **G-02** · **G-03** optional | `main` @ **fe22437** (intellection-3to3); concrete GHA `manifest-bridge` without `[patch]` @ **6742fa3** | **G-03** supercap remote bridge only — **[`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)** |
 | **B** — 2a thin | ⚠️ **hybrid** | v1 shim 226L, 8/8 dual-run, 2a `manifold-gate` Algorithm 1 delegate | B.3–B.4 full body delete + HTTP-only retirement |
 | **C** — Kleisli | ✅ **done** | `KleisliUnitEvaluator`, registry + embodied routing, `gate_kleisli` 6/6 | — |
 | **D** — reject `catalog_id` | ✅ **done** | `gate_reject_catalog_id` 6/6 (CD/mix/Landauer/HTTP) | — |
@@ -100,7 +100,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 | Track | Primary rungs | Gap source |
 |-------|---------------|------------|
-| [A — W8 publish](#track-a--w8-publish-tytolabsumst-manifold-main) | R5 v1 | ❌ ops — **[`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)**; local code ✅ per `AGENT_W8_STATUS.txt` |
+| [A — W8 publish](#track-a--w8-publish-tytolabsumst-manifold-main) | R5 v1 | ✅ Phase 1 @ **fe22437** · ✅ **G-02** git-pinned CI — **G-03** optional |
 | [B — 2a thin prototype](#track-b--umst-prototype-2a-thin-after-manifold-ports) | R1, R3, R4 (parity) | ⚠️ v1 shim + 8/8 + 2a `manifold-gate`; B.3–B.4 open |
 | [C — Kleisli evaluator](#track-c--kleisli-gateevaluator-umstgatekleisli_unit) | R4 | **✅ 2026-05-21** — `KleisliUnitEvaluator` + embodied routing; `gate_kleisli` 6/6 |
 | [D — `catalog_id` on all rejects](#track-d--catalog_id-on-every-reject-path) | R1–R4 telemetry | **✅ 2026-05-21** — `gate_reject_catalog_id` 6/6 (CD/mix/Landauer/HTTP) |
@@ -115,13 +115,13 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 ## Track A — W8 publish (`tytolabs/umst-manifold` `main`)
 
-**Status:** ❌ **ops-only** (in-repo surface done; no agent `git push` / `cargo publish` without operator credentials).
+**Status:** ✅ **Phase 1 done** (2026-05-29, intellection-3to3) · ✅ **G-02** concrete remote CI · ⚠️ **G-03** supercap remote optional.
 
 **Runbook (SSOT for phases 0–4):** [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)
 
 **Witness ladder:** [R5 — Manifest bridge + formal witness](GOD_GRADE_WITNESS_LADDER.md#r5--manifest-bridge--formal-witness-deployment-fiber)  
-**Owner:** manifold publish → cartridge maintainers  
-**Blocks:** remote `umst-concrete-cartridge` / `umst-supercap-cartridge` git CI without workspace `[patch]`
+**Owner:** cartridge maintainers (G-03 only)  
+**Blocks:** nothing scoped for concrete — supercap remote `manifest-bridge` in GHA is optional polish
 
 ### A.1 — Confirm `pub mod manifest` on publish branch ✅ (local)
 

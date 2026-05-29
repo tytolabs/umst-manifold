@@ -82,7 +82,7 @@ Optional: `UMST_REQUIRE_ADVERSARIAL_GATE=1` when prototype adversarial script pr
 | **P5** | `manifest` re-exports | **✅ DONE** | `UmstManifest`, `EmbodiedOrchestrator`; local `manifest-bridge` |
 | **P6** | `gate_server` in manifold | **✅ DONE** | `gate_server_http` 1 passed; 8/8 REST parity via dual-run fixtures |
 | **P7** | Dual-run production config | **✅ DONE** | 8/8 golden + live in `verify_umst_stack.sh`; `gate_adversarial` in MaOS drift CI @ 2026-05-21T21:18:04Z |
-| **Publish** | `tytolabs/umst-manifold` git `main` + cartridge Phase 2 | **⏳ OPS** | W8 Phase 2 — remote `manifest-bridge` without workspace `[patch]` — see W8 |
+| **Publish** | `tytolabs/umst-manifold` git `main` + cartridge Phase 2 | **✅ DONE** | Phase 1 @ **fe22437**; **G-02** concrete GHA without `[patch]` @ cartridge **6742fa3** — **G-03** supercap optional |
 
 **Beyond P7 (pending):** P8 replace prototype filter core (226-line shim remains); P10–P12 cartridge anchors + thin prototypes — see [`TODO_COMPLETION.md`](TODO_COMPLETION.md).
 
@@ -99,7 +99,7 @@ Optional: `UMST_REQUIRE_ADVERSARIAL_GATE=1` when prototype adversarial script pr
 | **W5** | `manifest` + `ros` contract | **DONE** | `src/manifest/`, `src/ros/contract.rs`, feature `ros2-contract` |
 | **W6** | formal-witness + `ManifoldGateway` | **DONE** | `src/ai/formal.rs`, `tests/formal_witness.rs`, feature `formal-witness` |
 | **W7** | `gate_server` HTTP | **DONE** | `gate_server_router.rs`, `tests/gate_server_http.rs`, feature `gate-server-bin` |
-| **W8** | concrete manifest-bridge | **DONE** | `docs/AGENT_W8_STATUS.txt`; `[patch]` + `cargo test -p umst-concrete-cartridge --features manifest-bridge` exit 0 @ 2026-05-21 — **ops:** git publish only |
+| **W8** | concrete manifest-bridge | **DONE** | Local @ 2026-05-21 + remote: manifold **fe22437**, cartridge **6742fa3**, GHA `manifest-bridge` without `[patch]` — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) G-02 |
 | **W9** | docs audit tables | **DONE** | `claims-vs-proofs.md`, `PROOF-STATUS.md`, `REPO_LAYOUT_SSOT.md`, `PROTOTYPE_GATE_MAP.md` |
 | **W10** | tests parity + CI | **DONE** | `verify_umst_stack.sh` exit 0 @ 2026-05-21T21:18:04Z; MaOS `umst-catalog-drift.yml` + `gate_adversarial`; 8/8 dual-run |
 
@@ -117,7 +117,7 @@ Optional: `UMST_REQUIRE_ADVERSARIAL_GATE=1` when prototype adversarial script pr
 | **S6** | `gate_server` production wiring | **DONE** | `src/bin/gate_server.rs`, `src/gate/http_manifest.rs`, `gate_server_http` 1 passed |
 | **S7** | claims-vs-proofs expansion | **DONE** | `docs/claims-vs-proofs.md` — **43** traceability rows + Appendix A (59 pipe-rows); `TCB.md` |
 | **S8** | CI + `verify_umst_stack.sh` | **DONE** | `bash scripts/verify_umst_stack.sh` exit 0 @ 2026-05-21T21:18:04Z; `.github/workflows/umst-catalog-drift.yml` + `gate_adversarial` |
-| **S9** | Concrete facade gate | **DONE** | `facade/mod.rs` manifest-bridge wired locally; remote GHA unblocks after W8 publish |
+| **S9** | Concrete facade gate | **DONE** | `facade/mod.rs` manifest-bridge wired; remote GHA green on git-pinned manifold (**G-02** closed 2026-05-29) |
 | **S10** | Supercap manifest alignment | **DONE** | `manifold-manifest` + `manifest-bridge` in `umst-supercap-cartridge/Cargo.toml`; `docs/FORMAL_SCALING.md` |
 | **S11** | VERIFY + cargo sweep | **DONE** | `docs/VERIFY.md`; `catalog_all_ids_registered` 4 passed; six swarm audit docs on disk |
 
@@ -129,7 +129,9 @@ Optional: `UMST_REQUIRE_ADVERSARIAL_GATE=1` when prototype adversarial script pr
 
 | ID | Task | Owner | Next action |
 |----|------|-------|-------------|
-| **W8** | **Phase 2 (cartridge)** — remote `manifest-bridge` without `[patch]` | manifold publish + cartridge | Phase 1: push `manifest` to `tytolabs/umst-manifold` `main`; Phase 2: clean-clone verify, bump cartridge dep, enable `manifest-bridge` in cartridge CI — [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) |
+| **G-03** | Supercap remote `manifest-bridge` CI (optional org polish) | operator | After **G-01**/**G-02** — wire supercap features in cartridge CI — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) |
+
+**Closed (2026-05-29):** W8 Phase 1 publish @ **fe22437**; **G-02** concrete cartridge CI without workspace `[patch]` @ **6742fa3**.
 
 ---
 
@@ -164,7 +166,7 @@ UMST_REQUIRE_FORMAL_EXPORT=1 \
 - [x] W5 — `UmstManifest` + ROS DTOs with `catalog_hash`
 - [x] W6 — `FormalReject` + `evaluate_topology_step_formal`
 - [x] W7 — `POST /gate`, `GET /health` via stdlib HTTP
-- [x] W8 — local `manifest-bridge` + cartridge patch verified; git publish is ops-only
+- [x] W8 — local + remote `manifest-bridge` (manifold **fe22437**, cartridge **6742fa3**, GHA without `[patch]`)
 - [x] W9 — claims ↔ proof ↔ gate traceability tables
 - [x] W10 — drift + `verify_umst_stack.sh` + `gate_adversarial` green @ 2026-05-21T21:18:04Z
 - [x] **P0–P7** — plan phases through dual-run + adversarial CI
@@ -173,8 +175,10 @@ UMST_REQUIRE_FORMAL_EXPORT=1 \
 
 ## Remaining scoped blockers (2)
 
-1. **B1 — W8 Phase 2 (cartridge):** Phase 1 publish `tytolabs/umst-manifold` `main` with `manifest`; Phase 2 clean-clone verify, bump `umst-concrete-cartridge` git dep, enable `manifest-bridge` in cartridge CI, remove workspace `[patch]` when safe — [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md).
+1. **G-03 — Supercap remote `manifest-bridge` (optional):** wire supercap cartridge CI on git-pinned manifold — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 2. **B2 — FFI (horizon):** extracted witnesses / attestation on hot path — excluded from v1 automation.
+
+**Closed (not blockers):** W8 Phase 1 @ **fe22437**; **G-02** concrete cartridge CI @ **6742fa3** (remote GHA without `[patch]`, not patch-green local-only).
 
 **Closed in-repo (not blockers):** **B3** strict prod default (G-04/G-05); G.2/G.3/J.3 in verify tail.
 
@@ -189,6 +193,6 @@ UMST_REQUIRE_FORMAL_EXPORT=1 \
 - Consolidated parallel notes into [`PARALLEL_HANDOFFS.md`](PARALLEL_HANDOFFS.md) (retired `PARALLEL_W1_HANDOFF.txt`).
 - Unified `artifacts/catalog.lock.json` digest → `0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227` (**119** modules); Track F closed.
 - Extended `.github/workflows/umst-catalog-drift.yml` gate/formal/ros/server/adversarial test steps (W10 DONE).
-- Coordinator pass @ 2026-05-21T21:18:04Z: W1–W10 + S1–S11 **DONE** where evidence exists; P0–P7 all ✅; remaining ops **W8 publish only**.
+- Coordinator pass @ 2026-05-21T21:18:04Z: W1–W10 + S1–S11 **DONE** where evidence exists; P0–P7 all ✅; W8 publish + **G-02** closed @ 2026-05-29 (**fe22437** / **6742fa3**).
 - Added Kleisli/registry row to `docs/claims-vs-proofs.md`.
 - Coordinator pass @ **2026-05-29**: stack verify exit **0**; CI green @ **fe22437**; automation **16/16**; **G-02** concrete cartridge remote `manifest-bridge` closed; scoped blockers **G-03 + FFI** only.

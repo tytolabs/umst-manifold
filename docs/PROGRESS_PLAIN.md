@@ -1,9 +1,9 @@
 # UMST progress — plain English
 
 **Report date:** 2026-05-29  
-**Pin:** `main` @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) (intellection-3to3; local HEAD = remote `refs/heads/main`).  
+**Pin:** `main` @ [`8b97af7`](https://github.com/tytolabs/umst-manifold/commit/8b97af7) (remote `refs/heads/main`; W8 manifest API @ **fe22437**, intellection-3to3).  
 **Stack check (this wave):** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` → exit **0**, **`verify_umst_stack: OK`** (CI catalog-drift @ **fe22437**, 2026-05-29). Prior exit **101** (manifest digest unit tests @ 2026-05-21) is **not** reproducible on current `main`.  
-**CI:** GitHub **CI** + **UMST catalog drift** workflows **success** on push **fe22437** (rustfmt/clippy `manual_contains` fix).  
+**CI:** GitHub **CI** **success** on **8b97af7** (docs) and **fe22437** (clippy); **UMST catalog drift** green @ **fe22437**.  
 **G.2 / G.3 (settled):** `epistemic_trace_schema` **13/13** · `trace_calibration` **8/8** — in verify tail on last green run.  
 **Companion ledgers:** [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) · **% deltas:** [`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IMPROVEMENTS.md) · [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md)
 

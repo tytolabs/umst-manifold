@@ -6,7 +6,7 @@
 
 **TCB (unchanged):** exactly one Lean project axiom — `physicalSecondLaw` in `umst-formal-double-slit/Lean/LandauerLaw.lean`. Rust implements consequences only; no Rust axioms ([`TCB.md`](TCB.md)).
 
-**Ceiling SSOT:** [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) — automation **16/16** ≠ hot-path **~26%** ≠ org W8 **0%**.
+**Ceiling SSOT:** [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) — automation **16/16** ≠ hot-path **~26%** ≠ org W8 (**publish + concrete G-02 done**; supercap **G-03** optional).
 
 ---
 
@@ -26,7 +26,7 @@
 | **Scoped true 100% (toward Done)** | **~93–95%** | **G-03** (supercap) only in W8 family | **G-02** cartridge CI closed **2026-05-29** |
 | **Remaining scoped blockers** | — | **2** | **G-03** supercap remote · **FFI** (horizon) |
 
-**Do not** report hot-path **26%** or org W8 **0%** as “god-grade ~26%.” Use the row that matches the question.
+**Do not** report hot-path **26%** or stale org W8 **0%** as “god-grade ~26%.” Use the row that matches the question.
 
 ---
 
@@ -71,9 +71,9 @@
 | `verify_umst_stack.sh` | Exit **127** or partial; G.2/G.3 disputed | Exit **0** — **`verify_umst_stack: OK`** |
 | Automation checklist | **10/13** or **14/16** or mixed **17/17** | **16/16 = 100%** (SSOT denominator) |
 | God-grade weighted (in-repo) | **~84%**–**~92%** mixed | **~98%** (6.89/7; deferred Lean notes) |
-| God-grade weighted (incl. W8) | **~84%**–**~91%** | **~91%** |
+| God-grade weighted (incl. W8) | **~84%**–**~91%** | **~95%** (R5 publish + **G-02** @ **6742fa3**) |
 | Epistemic G.2 / G.3 | Listed as blockers in stale rows | **✅** in verify tail — **13/13** + **8/8** |
-| Scoped true 100% blockers | W8 + G.2 + G.3 + J.3 + FFI + B3 | **W8 Phase 2 (cartridge) + FFI** only (**2**) |
+| Scoped true 100% blockers | W8 + G.2 + G.3 + J.3 + FFI + B3 | **G-03** (supercap, optional) + **FFI** only (**2**) |
 | Remaining blocker count | 5+ named in stale rollups | **2** (B1 · B2) |
 | Hot-path catalog | (unchanged by design) | **18/69 ≈ 26%** — **not claimed 100%** |
 | Catalog pin story | Some docs still said **69** live | **119** SSOT everywhere audited |

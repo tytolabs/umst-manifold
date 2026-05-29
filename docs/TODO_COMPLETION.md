@@ -1,15 +1,15 @@
 # UMST plan todo completion audit
 
 **Plan:** `lean-to-rust_proof_extraction_fd8f70b5.plan.md`  
-**Audited:** 2026-05-22  
-**Verified:** 2026-05-21T22:12:13Z (UTC) — re-run `verify_umst_stack.sh` exit **0** on unified R0 pin (`0697014fb5b90a3…`, **119** modules, lock v2); `catalog_all_ids_registered` 4/4; `gate_adversarial` FNR=0; G.2 **13/13** · G.3 **8/8** in stack tail.
+**Audited:** 2026-05-29  
+**Verified:** 2026-05-29 (UTC) — `verify_umst_stack.sh` exit **0** on unified R0 pin (`0697014fb5b90a3…`, **119** modules, lock v2); manifold CI green @ **fe22437**; **G-02** concrete `manifest-bridge` on git dep without `[patch]`; G.2 **13/13** · G.3 **8/8** in stack tail.
 **Workspace:** MaOS-Workspace  
 
 Evidence commands are read-only checks run during audit (no plan file edits).
 
 **Narrative rollup:** [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md) · pipeline [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) · witness law [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) · command ledger [`TODO_VERIFICATION_REPORT.md`](TODO_VERIFICATION_REPORT.md) · verified % [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)
 
-**Scoped closure SSOT (2026-05-22):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) · automation denominator [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) (**16/16** rows) · ceilings [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md)
+**Scoped closure SSOT (2026-05-29):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) · automation denominator [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) (**16/16** rows) · ceilings [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md)
 
 <!-- Cross-link when created: validation methodology doc → § Process & verification -->
 
@@ -17,7 +17,7 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 
 ## Process & verification
 
-**Progress date:** 2026-05-22 · **Verified:** 2026-05-21T22:12:13Z (`verify_umst_stack.sh` full bundle; ledger [`TODO_VERIFICATION_REPORT.md`](TODO_VERIFICATION_REPORT.md) · [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md))
+**Progress date:** 2026-05-29 · **Verified:** 2026-05-29 (`verify_umst_stack.sh` full bundle @ **fe22437**; ledger [`TODO_VERIFICATION_REPORT.md`](TODO_VERIFICATION_REPORT.md) · [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md))
 
 *When a dedicated validation methodology doc is added under `docs/`, link it here (e.g. beside [`Validation.md`](Validation.md)).*
 
@@ -26,8 +26,8 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 | **Plan todos (YAML scope)** | **14 / 14 ✅** | On-disk implementation complete for every plan `id`; see [14/14 map](#1414-plan-todo-map-on-disk-vs-yaml) |
 | **Plan infra → 100%** | **100%** | 14/14 on disk; optional lanes (`rust.yml`, 2a full delete) are polish, not blockers |
 | **Plan + cross-repo fiber** | **100%** | 14/14 + `formal-fiber-merge` ✅ (unified digest + manifold lock + stack verify) |
-| **God-grade automation (in-repo)** | **16 / 16 = 100%** | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) § Automation criteria — all rows green in `verify_umst_stack.sh` @ **22:09:30Z**–**22:12:13Z** |
-| **Scoped true 100% (Done morphisms)** | **2 / 4** | **G-04** ✅ · **G-05** ✅ · **W8** · **FFI** — see [Remaining to scoped true 100%](#remaining-to-scoped-true-100) |
+| **God-grade automation (in-repo)** | **16 / 16 = 100%** | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) § Automation criteria — all rows green @ **2026-05-29** / **fe22437** |
+| **Scoped true 100% (Done morphisms)** | **3 / 4** | **G-04** ✅ · **G-05** ✅ · **W8 (G-01+G-02)** ✅ · **FFI** — **G-03** optional; see [Remaining](#remaining-to-scoped-true-100) |
 | On-disk vs YAML | **14/14 ✅** vs 1 `in_progress` + 13 `pending` | Plan front-matter intentionally not edited |
 
 ### Todo counts (this audit)
@@ -37,8 +37,8 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 | **Plan YAML `id`s (14)** | **14** | **0** | **100%** |
 | **Formal lane (`formal-fiber-merge`)** | **1** | **0** | **100%** |
 | **God-grade automation rows (16)** | **16** | **0** | **100%** |
-| **Scoped true-100% blockers (4)** | **2** | **2** | **50%** at Done (G-04/G-05; W8 + FFI open) |
-| **Plan row `concrete-cartridge-wire` (remote W8)** | local ✅ | remote ⚠️ | W8 publish **not** closed — do not mark W8 ✅ without `git ls-remote` |
+| **Scoped true-100% blockers (4)** | **3** | **1** | **75%** at Done (G-04/G-05/W8 G-01+G-02; FFI horizon) |
+| **Plan row `concrete-cartridge-wire` (remote W8)** | local ✅ | remote ✅ **G-02** | Git `fe22437` + GHA without `[patch]`; **G-03** supercap optional |
 
 ### 14/14 plan todo map (on-disk vs YAML)
 
@@ -53,7 +53,7 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 | 7 | `formal-witness-integration` | `pending` | ✅ | `formal-witness` feature + tests |
 | 8 | `manifold-manifest` | `pending` | ✅ | `UmstManifest`, `GroundingContract` |
 | 9 | `ros2-in-manifold` | `pending` | ✅ | `ros2-contract`, `gate_server` |
-| 10 | `concrete-cartridge-wire` | `pending` | ✅ local / ⚠️ **W8 OPEN** | `manifest-bridge` + `[patch]` @ 2026-05-21T20:50:20Z; remote CI after publish (not Done) |
+| 10 | `concrete-cartridge-wire` | `pending` | ✅ local + ✅ remote **G-02** | Git `fe22437` without `[patch]` @ 2026-05-29; MaOS `[patch]` still patch-green Evidence |
 | 11 | `embodied-orchestrator` | `pending` | ✅ | `EmbodiedOrchestrator` + tests |
 | 12 | `claims-vs-proofs` | `pending` | ✅ | `claims-vs-proofs.md` + `TCB.md` + Appendix B |
 | 13 | `parity-ci` | `pending` | ✅ | Drift CI + `verify_umst_stack` adversarial/Kleisli/rejects |
@@ -76,10 +76,10 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 
 - Evidence blocks below are the **per-todo SSOT** for coordinator handoff (commands + paths).
 - Swarm audit docs (six files) close traceability without new Rust scaffolding.
-- **Scoped true 100%** (honest): **2 / 4** Done — **G-04** ✅ · **G-05** ✅ (B3) @ **2026-05-22**; **W8** · **FFI** open — [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md). G.2/G.3/J.3 closed in-repo @ **2026-05-21T22:05:32Z**–**22:09:30Z**.
+- **Scoped true 100%** (honest): **3 / 4** Done — **G-04** ✅ · **G-05** ✅ · **W8 (G-01+G-02)** ✅ @ **2026-05-29**; **FFI** horizon open; **G-03** supercap optional — [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md).
 - Optional polish (not scoped blockers): 2a thin delete, `rust.yml` verify lane — [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md).
 
-> **Design lens** — Each plan todo is a morphism in the extraction pipeline; completion means the morphism factors through verified tests (exit 0), not merely files on disk. **W8:** local `manifest-bridge` Evidence ≠ Done without operator publish ([`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)).
+> **Design lens** — Each plan todo is a morphism in the extraction pipeline; completion means the morphism factors through verified tests (exit 0), not merely files on disk. **W8:** **G-01** publish + **G-02** concrete remote CI are **Done** @ **fe22437**; MaOS `[patch]` tests remain patch-green **Evidence** for monorepo dev; **G-03** supercap remote is optional ([`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)).
 
 ---
 
@@ -87,16 +87,18 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 
 **SSOT:** [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) · plain register [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
 
-These are the **only** items that block an honest “scoped god-grade 100%” claim (**2/4** at Done). **16/16 in-repo automation** does **not** close W8/FFI.
+These are the **only** items that block an honest “scoped god-grade 100%” claim without qualifiers (**3/4** at Done; headline **~96–98%**). **16/16 in-repo automation** does **not** close **FFI** or optional **G-03**.
 
-| ID | Blocker | Owner | Status | Evidence (partial ≠ Done) | Done criterion |
-|----|---------|-------|--------|---------------------------|----------------|
-| **W8** | Publish `tytolabs/umst-manifold` `main`; remote cartridge/supercap CI without workspace `[patch]` | **human** (operator) | ⚠️ **OPEN** | Local `manifest-bridge` exit **0** @ 2026-05-21T20:50:20Z with `[patch]`; [`AGENT_W8_STATUS.txt`](AGENT_W8_STATUS.txt) — **local only** | Phases 1–4 in [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md); `git ls-remote` + clean-clone `cargo check` **without** patch |
-| **G-04** | `StrictCatalogMatch` on `UmstManifestBuilder::default()` when `UMST_RELEASE_MANIFEST_PROFILE=1` | **code** | ✅ **Done** | `default_grounding_contract()` + `verify_umst_stack.sh` exit **0** @ **2026-05-22**; `manifest_strict_witness` **4/4**; `ci_god_grade_profile` **4/4** | Track **H.1** — B3 |
-| **G-05** | Auto-fill `upstream_catalog_digest_hex` from lock in builder/gateway/UMST | **code** | ✅ **Done** | `build.rs` → `UMST_LOCK_UPSTREAM_CATALOG_DIGEST_HEX`; `lock_upstream_catalog_digest_bytes()`; strict `build()` + `ManifoldGateway::new` @ **2026-05-22** | Track **H.2** — B3 |
-| **FFI** | Extracted Lean witnesses / attestation on hot path | **human + code** (horizon) | ❌ **OPEN** (horizon) | `rg 'lake build\|lean --run' umst-manifold/src` empty — policy; digest attestation only | Separate FFI program — **excluded** from 16-row automation % |
+| ID | Blocker | Owner | Status | Evidence | Done criterion |
+|----|---------|-------|--------|----------|----------------|
+| **W8 / G-01** | Publish `tytolabs/umst-manifold` `main` | **human** | ✅ **Done** | `main` @ **fe22437**; `git ls-remote` OK; manifold CI green | [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) Phase 1 |
+| **W8 / G-02** | Concrete remote CI without `[patch]` | **code** + CI | ✅ **Done** | Git `rev = fe22437`; GHA `manifest-bridge`; grounding test on git dep alone | Phase 2 concrete — no workspace patch |
+| **W8 / G-03** | Supercap remote `manifest-bridge` in GHA | **human** | ⚠️ **OPEN** (optional) | `formal_anchors` **6/6** local | Track **I.3** — does **not** block **G-01**/**G-02** |
+| **G-04** | `StrictCatalogMatch` on `UmstManifestBuilder::default()` when `UMST_RELEASE_MANIFEST_PROFILE=1` | **code** | ✅ **Done** | `verify_umst_stack.sh` exit **0** @ **2026-05-29**; `manifest_strict_witness` **4/4** | Track **H.1** — B3 |
+| **G-05** | Auto-fill `upstream_catalog_digest_hex` from lock in builder/gateway/UMST | **code** | ✅ **Done** | `lock_upstream_catalog_digest_bytes()`; strict `build()` @ **2026-05-29** | Track **H.2** — B3 |
+| **FFI** | Extracted Lean witnesses / attestation on hot path | **human + code** (horizon) | ❌ **OPEN** (horizon) | `rg 'lake build\|lean --run' umst-manifold/src` empty — policy | Separate FFI program — **excluded** from 16-row automation % |
 
-**Do not mark W8 ✅ in per-todo tables until remote publish verify passes.** Local patch tests are Evidence only ([`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) B1).
+**Patch-green rule:** MaOS workspace `[patch]` tests are **Evidence** for local dev; **G-02 Done** = concrete cartridge on **git** `fe22437` without patch ([`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) B1).
 
 **Anti double-count:** Org W8 (~8–10% headline) is one morphism; G-04/G-05 are product/code policy — do not add automation % + scoped %.
 
@@ -356,13 +358,13 @@ test -f umst-manifold/tests/gate_server_http.rs
 
 ---
 
-## concrete-cartridge-wire — COMPLETE (local MaOS) · W8 remote OPEN
+## concrete-cartridge-wire — COMPLETE (local + remote G-02)
 
 **Requirement:** Cartridge depends on manifold manifest+gate; facade uses `GateEvaluator`; `ros2-contract` re-export; generated `formal_anchor` from catalog.
 
 **Done (local):** Optional features `manifold-gate`, `manifold-manifest`, `manifest-bridge`; facade CD gate behind `manifest-bridge` → `umst.gate.cd_transition`; `ros2-contract` feature forward + `lib.rs` `pub use umst_manifold::ros`; workspace `[patch]` to sibling `umst-manifold`; [`../umst-concrete-cartridge/docs/FORMAL_GROUNDING_AUDIT.md`](../umst-concrete-cartridge/docs/FORMAL_GROUNDING_AUDIT.md) documents git publish blocker; `cargo test -p umst-concrete-cartridge --features manifest-bridge` passes with patch (**2026-05-21T20:50:20Z** exit **0**).
 
-**Remaining (remote CI — W8, not Done):** GitHub Actions on `tytolabs/umst-concrete-cartridge` still pins **git** `umst-manifold@main` without published `manifest` API — enable `manifest-bridge` in cartridge CI **after** operator publish ([`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)). **Do not** mark W8 complete in rollup tables until `git ls-remote` + no-patch CI green.
+**Remote CI — G-02 Done (2026-05-29):** `tytolabs/umst-concrete-cartridge` pins git `umst-manifold` **rev `fe22437`**; GHA runs `manifest-bridge` **without** workspace `[patch]`; `manifest_bridge_catalog_grounding` asserts **119**-module digest on git dep alone. **Optional:** **G-03** supercap remote bridge ([`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) Track **I.3**).
 
 **Deferred:** Catalog-generated `formal_anchor` rows (PROOF-STATUS still uses `lean://` / `empirical://` / `literature://`; not gate `catalog_id` slugs).
 
@@ -490,8 +492,8 @@ cd umst-manifold && cargo test --test gate_dual_run_parity -- --nocapture
 |------|-----|-------------------|
 | **14 plan todos** | **None on disk** — all ✅ | — |
 | `formal-fiber-merge` / `lean-export-cross-repo` | — | ✅ closed 2026-05-21 (verify @ 2026-05-21T22:12:13Z) |
-| `concrete-cartridge-wire` | **Local ✅**; **W8 remote OPEN** | **human** publish — [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) |
-| **Scoped blockers** | **G-04** · **G-05** · **W8** · **FFI** | See [Remaining to scoped true 100%](#remaining-to-scoped-true-100) |
+| `concrete-cartridge-wire` | **G-02** remote ✅ | **G-03** supercap optional — [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) |
+| **Scoped blockers** | **G-03** (optional) · **FFI** | See [Remaining to scoped true 100%](#remaining-to-scoped-true-100) |
 | `parity-ci` | optional `rust.yml` verify lane only | `umst-manifold` CI |
 | `thin-prototypes` | optional full 2a delete + legacy `gate_server` | prototype lane |
 
@@ -504,7 +506,7 @@ cd umst-manifold && cargo test --test gate_dual_run_parity -- --nocapture
 | **Plan infra (14 YAML todos)** | **100%** | On disk; re-green `verify_umst_stack.sh` after edits (@ **2026-05-21T22:12:13Z** exit **0**) |
 | **Plan + `formal-fiber-merge`** | **100%** | Unified export + manifold lock + stack verify ([§ formal-fiber-merge](#formal-fiber-merge--complete)) |
 | **God-grade automation (16 rows)** | **100%** | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) — G.2 **13/13** · G.3 **8/8** in verify tail |
-| **Scoped true 100% (4 blockers)** | **0%** at Done | **W8** publish · **G-04** prod strict default · **G-05** auto digest · **FFI** horizon |
+| **Scoped true 100% (4 blockers)** | **~96–98%** | **G-03** supercap optional · **FFI** horizon — **G-01**/**G-02**/**G-04**/**G-05** closed |
 
 No further manifold **scaffolding** is required for plan infra or in-repo automation; remaining scoped work is publish, product defaults, and horizon FFI ([`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md)).
 
@@ -546,7 +548,7 @@ Read-only subagent audits persisted to disk:
 | formal-witness-integration | ✅ | `formal-witness`, `COMPOSITIONAL_INFERENCE_AUDIT.md` §6 gaps |
 | manifold-manifest | ✅ | `src/manifest/umst_manifest.rs` |
 | ros2-in-manifold | ✅ | `src/ros/contract.rs`, `src/bin/gate_server.rs` |
-| concrete-cartridge-wire | ✅ local / ⚠️ **W8 OPEN** (no publish) | `manifest-bridge` + patch; remote CI blocked until W8 Done |
+| concrete-cartridge-wire | ✅ local + ✅ **G-02** remote | Git `fe22437` without `[patch]`; MaOS patch-green Evidence optional |
 | embodied-orchestrator | ✅ | `orchestrator.rs`, `COMPOSITIONAL_INFERENCE_AUDIT.md` |
 | claims-vs-proofs | ✅ | `claims-vs-proofs.md` (43 rows + Appendix A), `TCB.md` — verified 2026-05-21T20:50:20Z |
 | parity-ci | ✅ | Drift CI + `verify_umst_stack`: `gate_adversarial` + dual-run; Python E6 **optional** |
@@ -644,13 +646,13 @@ Functor/monad vocabulary for this pass (no new Rust axioms; TCB remains `physica
 | `gate_adversarial` golden | Regression functor on Phase E boundary: FNR=0 invariant over 75-case pinned JSON |
 | Supercap `formal_anchors` + lock hash | R5 deployment fiber: doc-block witnesses on `pub` API; catalog digest pin via `catalog_lock_bundle_sha256_bytes` |
 
-**Still open (scoped true 100% only):** **W8** (no publish — do not mark ✅), **G-04** strict prod default, **G-05** auto digest, **FFI** horizon — see [Remaining to scoped true 100%](#remaining-to-scoped-true-100). G.2/G.3 closed @ **2026-05-21T22:05:32Z**–**22:09:30Z**. Optional: 2a thin delete — [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md).
+**Still open (scoped true 100% only):** **G-03** supercap remote (optional), **FFI** horizon — see [Remaining to scoped true 100%](#remaining-to-scoped-true-100). **W8 G-01+G-02** closed @ **2026-05-29** / **fe22437**. Optional: 2a thin delete — [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md).
 
 ---
 
-## Agent verification run (re-audit) — 2026-05-22
+## Agent verification run (re-audit) — 2026-05-29
 
-**Verified:** 2026-05-21T22:12:13Z (UTC) — full `verify_umst_stack.sh` re-run after doc audit.
+**Verified:** 2026-05-29 (UTC) — full `verify_umst_stack.sh` @ **fe22437**; **G-02** concrete remote `manifest-bridge` without `[patch]`.
 
 ```bash
 cd umst-manifold

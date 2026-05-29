@@ -1,6 +1,6 @@
 # God-grade checklist (`umst-manifold`)
 
-**As of:** 2026-05-22  
+**As of:** 2026-05-29  
 **Definition:** Bad states are rejected automatically; the formal catalog is SSOT; inference does not depend on human parity review for every Lean change.
 
 **Companions:** [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md), [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md), [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md), [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md), [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md), [`CATALOG_TRACEABILITY.md`](CATALOG_TRACEABILITY.md), [`TODO_COMPLETION.md`](TODO_COMPLETION.md).
@@ -91,50 +91,41 @@ Targets are **engineering budgets** for the policy gateway + scalar gates, not W
 |-----------|--------|----------|
 | Cartridge anchors (concrete `catalog_id` + supercap `formal_anchors`) | ✅ | `bidirectional_catalog_check.sh`; supercap `formal_anchors` 6/6 + lock pin |
 
-### Automation rollup (2026-05-22)
+### Automation rollup (2026-05-29)
 
 | Metric | Value | Notes |
 |--------|-------|-------|
 | **Automation rows** | **16 / 16 = 100%** | Each row has a test or verify-step in `verify_umst_stack.sh` (incl. tail) |
-| **Weighted R0–R6 (in-repo)** | **~100%** | R6 + adaptive priority wired in stack script |
-| **Robustness (verify bundle)** | **100%** | `verify_umst_stack.sh` exit **0** @ **2026-05-21T22:09:30Z** (`UMST_REQUIRE_FORMAL_EXPORT=1`) |
+| **Weighted R0–R6 (in-repo)** | **~98%** | R6 + adaptive priority wired in stack script |
+| **Robustness (verify bundle)** | **100%** | `verify_umst_stack.sh` exit **0** @ **2026-05-29**; CI @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) |
 | **Hot-path Lean modules** | **18 / 69 ≈ 26%** · **18 / 119 ≈ 15%** | By design — **not** automation % |
-| **Org W8 publish** | **0 / 1 = 0%** | Outside 16-row denominator — [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) B1 |
+| **Org W8 (outside 16-row denominator)** | publish **1/1** @ **fe22437** · concrete **G-02** **1/1** @ **6742fa3** · supercap **0/1** | **G-03** optional — [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) |
 
 **Honest policy:** **16/16 automation** means every in-repo CI row above is green for its **stated host scope** and is invoked by the stack verify bundle. Rows 14–15 defer rollout-approx and utility certificates. B3 strict prod `default()` remains product ops, not an automation-row failure.
 
 ---
 
-## Org-only (outside automation %) — **prep automated, publish human**
+## Org-only (outside automation %) — **W8 Phase 1 + G-02 closed (2026-05-29)**
 
-**Scoped blocker B1.** Morphism: Blocker → Evidence → Done — [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md).
-
-**Step counts:** **1 machine** (prep script) · **5 human** (push, clean-clone, cartridge pin, GHA, docs) — publish steps stay operator-only; agents must not `git push`.
-
-**Local prep (machine-verified):** `bash scripts/w8_publish_readiness.sh` — lock **119** + digest `0697014f…`, **16/16** evidence markers in `verify_umst_stack.sh`, no `.env`/credentials in **staged** files, `cargo check` + `--lib` tests, sibling `manifest-bridge` with workspace `[patch]`. Wired in `verify_umst_stack.sh` tail. Optional full stack: `UMST_W8_RUN_FULL_STACK=1 UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/w8_publish_readiness.sh`.
-
-| Step | Owner | Work | Verify | Automate? |
-|------|-------|------|--------|-----------|
-| 0 | **prep script** | Lock **119** / `0697014f…`, secrets, 16/16 markers, manifest-bridge local | `w8_publish_readiness.sh` exit **0**; `cargo test --test w8_publish_readiness` | ✅ |
-| 1 | **human** | Push `tytolabs/umst-manifold` `main` | `git ls-remote … refs/heads/main` | ❌ push |
-| 2 | **human** | Clean-clone without `[patch]` | `/tmp/…` `cargo check` + `manifest` in `cargo doc` | ❌ clone creds |
-| 3 | **human** | Cartridge `rev` pin; remove `[patch]` | `cargo test … manifest-bridge` (no sibling path) | ❌ push |
-| 4 | **human** | GHA `manifest-bridge` job green | cartridge `rust.yml` on `main` | ❌ merge |
-| 5 | **human** | Docs close W8 | `rg 'W8.*PENDING'` clean | partial |
+**Scoped org (not automation rows):** publish + concrete remote CI — [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
-| Cartridge git-pinned manifest bridge (**W8**) | ⚠️ **Blocker** (Evidence, not Done) | **Prep:** `scripts/w8_publish_readiness.sh` + `tests/w8_publish_readiness.rs` + [`AGENT_W8_STATUS.txt`](AGENT_W8_STATUS.txt); **Publish:** [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) Phases 1–4 (human) |
+| Manifold publish (**G-01** / W8 Phase 1) | ✅ **Done** | `tytolabs/umst-manifold` `main` @ **fe22437**; CI run **26649667467** |
+| Concrete cartridge git-pinned `manifest-bridge` (**G-02**) | ✅ **Done** | Git `rev = fe22437`; GHA without workspace `[patch]`; cartridge **6742fa3** / **a779610**; remote CI green (not patch-green local-only) |
+| Supercap remote `manifest-bridge` (**G-03**) | ⏳ **Optional** | Local `formal_anchors` **6/6**; remote GHA — operator when scheduled |
 
-**W8 is excluded** from the 16-row automation denominator. **Prep automated; publish human:** operator `git push`, PR merge, org permissions.
+**Local prep (still machine-verified):** `bash scripts/w8_publish_readiness.sh` — lock **119** + digest `0697014f…`, **16/16** markers, secrets hygiene. Wired in `verify_umst_stack.sh` tail.
 
-### Strict prod default (scoped blocker B3 — open)
+**W8 / G-02 are excluded** from the 16-row automation denominator. **Do not** equate patch-green local tests with org Done — remote consumers use git **fe22437** + cartridge **6742fa3**.
+
+### Strict prod default (scoped blocker B3 — **Done**)
 
 | Criterion | Status | Owner | Verify | Automate? |
 |-----------|--------|-------|--------|-----------|
-| Release default `StrictCatalogMatch` | ⚠️ **Blocker** | **human** (product) | `cargo test --features formal-witness --test manifest_strict_witness` (CI ✅); `default()` still `CatalogPinnedRos2` | CI yes; policy flip **no** |
+| Release default `StrictCatalogMatch` | ✅ **Done** (in-repo) | code | `not(debug_assertions)` → strict; `manifest_strict_witness` + `ci_god_grade_profile` in verify tail | ✅ |
 
-Track **H.1** — [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md). Not an automation-row failure; strict profile is opt-in via `for_release_witness()`.
+Track **H.1** closed — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) G-04/G-05. Not an automation-row failure.
 
 ---
 
@@ -152,7 +143,7 @@ Track **H.1** — [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md)
 
 ## Quick verify (local)
 
-**Last full stack:** 2026-05-21T22:09:30Z (UTC) · exit **0**
+**Last full stack:** 2026-05-29 · exit **0** · CI @ **fe22437**
 
 ```bash
 cd umst-manifold
