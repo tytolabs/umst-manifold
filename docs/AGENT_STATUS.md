@@ -1,6 +1,6 @@
 # UMST parallel agents W1–W10 — status (coordinator scan)
 
-**Scanned:** 2026-05-29 · **Verified:** 2026-05-29 (local) — unified R0 pin `0697014fb5b90a3…`, **119** modules; `verify_umst_stack.sh` exit **0** · **Workspace:** `MaOS-Workspace/umst-manifold` · **CI:** GitHub `rustfmt+clippy` fixed for stable `manual_contains` (pending green badge after push)
+**Scanned:** 2026-05-29 · **Verified:** 2026-05-29 — unified R0 pin `0697014fb5b90a3…`, **119** modules; `verify_umst_stack.sh` exit **0** · **Workspace:** `MaOS-Workspace/umst-manifold` · **CI:** green @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) (`witness_priority.rs` `manual_contains` fix on stable)
 
 **Handoffs (consolidated):** [`PARALLEL_HANDOFFS.md`](PARALLEL_HANDOFFS.md) · **Verify commands:** [`VERIFY.md`](VERIFY.md) · **Plan phases P0–P12:** `lean-to-rust_proof_extraction_fd8f70b5.plan.md` · **Witness ladder:** [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) · **Verified %:** [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)
 
@@ -32,7 +32,7 @@ Short-circuit at the **highest-priority** witness that fires (CD before Landauer
 | Doc | Role |
 |-----|------|
 | [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) | Ordered rungs R0–R6, categorical vocabulary, god-grade decisions 1–3 |
-| [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) | Production automation criteria (**10/13 ≈ 77%**) |
+| [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) | Production automation criteria (**16/16 = 100%**) |
 | [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) | Verified milestones + checklist % ledger |
 | [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md) | Tracks A–J → witness rungs; ops owners |
 | [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) | Export functor + parity mechanics |
@@ -53,22 +53,22 @@ Single authoritative command sequence — details in [`VERIFY.md`](VERIFY.md).
 | 6 — Stack (monorepo) | `UMST_REQUIRE_FORMAL_EXPORT=1 UMST_FORMAL_ROOT=…/umst-formal-double-slit bash scripts/verify_umst_stack.sh` | **P1** R0 + bidirectional + full gate suite |
 | 7 — End matrix | See [`END_CONDITION_REPORT.md`](END_CONDITION_REPORT.md) M1–M9 | Release gate snapshot |
 
-**Last green stack verify:** 2026-05-21 — digest `0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227`, **119** modules, exit 0; `gate_dual_run_parity` 8/8 + `gate_adversarial` FNR=0; Track **F** (`formal-fiber-merge`) closed.
+**Last green stack verify:** 2026-05-29 — digest `0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227`, **119** modules, exit **0**; `gate_dual_run_parity` 8/8 + `gate_adversarial` FNR=0; Track **F** (`formal-fiber-merge`) closed; CI green @ **fe22437**.
 
 Optional: `UMST_REQUIRE_ADVERSARIAL_GATE=1` when prototype adversarial script present (not default CI).
 
-### Completion % (2026-05-21)
+### Completion % (2026-05-29)
 
 | Metric | Value | Source |
 |--------|-------|--------|
 | Plan infra todos (14) + fiber merge | **100%** | [`TODO_COMPLETION.md`](TODO_COMPLETION.md) — `formal-fiber-merge` ✅ |
 | Plan infra — local-complete (+ cartridge patch) | **~100%** | same |
-| **P0–P7 migration phases** (plan §5) | **100%** (8/8 phases ✅) | table below; **ops:** git publish only |
-| God-grade checklist (13 criteria, ✅ only) | **10/13 ≈ 77%** | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) · [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) |
-| God-grade weighted headline | **~84%** | [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) |
-| Witness ladder R0–R6 full automation | **~84%** | R0–R4 ✅; R5 ⚠️; R6 open — [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md) |
+| **P0–P7 migration phases** (plan §5) | **100%** (8/8 phases ✅) | table below; **ops:** **G-03** supercap only |
+| God-grade automation checklist | **16/16 = 100%** | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) · [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) |
+| God-grade weighted headline (in-repo) | **~98%** | [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) |
+| Witness ladder R0–R6 host automation | **~98%** | R0–R6 host ✅; R5 concrete **G-02 ✅**; scoped blockers **G-03 + FFI** |
 
-**Remaining ops:** W8 git publish (`tytolabs/umst-manifold` `main` with `manifest` module). Plan lanes P8/P12 and optional `rust.yml` verify are roadmap, not blocking P0–P7.
+**Remaining scoped blockers:** **G-03** (supercap remote `manifest-bridge`); **FFI** horizon. **G-02** concrete cartridge CI without `[patch]` closed **2026-05-29**. Plan lanes P8/P12 are roadmap, not blocking P0–P7.
 
 ### P0–P7 phase status (plan §5)
 
@@ -82,7 +82,7 @@ Optional: `UMST_REQUIRE_ADVERSARIAL_GATE=1` when prototype adversarial script pr
 | **P5** | `manifest` re-exports | **✅ DONE** | `UmstManifest`, `EmbodiedOrchestrator`; local `manifest-bridge` |
 | **P6** | `gate_server` in manifold | **✅ DONE** | `gate_server_http` 1 passed; 8/8 REST parity via dual-run fixtures |
 | **P7** | Dual-run production config | **✅ DONE** | 8/8 golden + live in `verify_umst_stack.sh`; `gate_adversarial` in MaOS drift CI @ 2026-05-21T21:18:04Z |
-| **Publish** | `tytolabs/umst-manifold` git `main` | **⏳ OPS** | Unblocks cartridge CI without workspace `[patch]` — see W8 |
+| **Publish** | `tytolabs/umst-manifold` git `main` + cartridge Phase 2 | **⏳ OPS** | W8 Phase 2 — remote `manifest-bridge` without workspace `[patch]` — see W8 |
 
 **Beyond P7 (pending):** P8 replace prototype filter core (226-line shim remains); P10–P12 cartridge anchors + thin prototypes — see [`TODO_COMPLETION.md`](TODO_COMPLETION.md).
 
@@ -129,7 +129,7 @@ Optional: `UMST_REQUIRE_ADVERSARIAL_GATE=1` when prototype adversarial script pr
 
 | ID | Task | Owner | Next action |
 |----|------|-------|-------------|
-| **W8** | Publish + unblock cartridge `manifest-bridge` on git `main` | manifold publish | Push `manifest` API to `tytolabs/umst-manifold`; bump cartridge dep; enable feature in cartridge CI; remove workspace `[patch]` when safe |
+| **W8** | **Phase 2 (cartridge)** — remote `manifest-bridge` without `[patch]` | manifold publish + cartridge | Phase 1: push `manifest` to `tytolabs/umst-manifold` `main`; Phase 2: clean-clone verify, bump cartridge dep, enable `manifest-bridge` in cartridge CI — [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) |
 
 ---
 
@@ -171,13 +171,14 @@ UMST_REQUIRE_FORMAL_EXPORT=1 \
 
 ---
 
-## Remaining ops (W8 only)
+## Remaining scoped blockers (2)
 
-1. **Publish** `tytolabs/umst-manifold` `main` with `manifest` module → unblocks cartridge git dep (no workspace `[patch]`).
-2. **Bump** `umst-concrete-cartridge` git dep to that revision; remove committed workspace `[patch]` when safe for GHA.
-3. **Enable** `manifest-bridge` in cartridge CI once the git revision exports `manifest`.
+1. **B1 — W8 Phase 2 (cartridge):** Phase 1 publish `tytolabs/umst-manifold` `main` with `manifest`; Phase 2 clean-clone verify, bump `umst-concrete-cartridge` git dep, enable `manifest-bridge` in cartridge CI, remove workspace `[patch]` when safe — [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md).
+2. **B2 — FFI (horizon):** extracted witnesses / attestation on hot path — excluded from v1 automation.
 
-**Roadmap (non-blocking):** P8/P12 prototype filter deletion; optional W10-a `rust.yml` verify lane — see [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md).
+**Closed in-repo (not blockers):** **B3** strict prod default (G-04/G-05); G.2/G.3/J.3 in verify tail.
+
+**Roadmap (non-blocking):** P8/P12 prototype filter deletion — see [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md).
 
 ---
 
@@ -190,3 +191,4 @@ UMST_REQUIRE_FORMAL_EXPORT=1 \
 - Extended `.github/workflows/umst-catalog-drift.yml` gate/formal/ros/server/adversarial test steps (W10 DONE).
 - Coordinator pass @ 2026-05-21T21:18:04Z: W1–W10 + S1–S11 **DONE** where evidence exists; P0–P7 all ✅; remaining ops **W8 publish only**.
 - Added Kleisli/registry row to `docs/claims-vs-proofs.md`.
+- Coordinator pass @ **2026-05-29**: stack verify exit **0**; CI green @ **fe22437**; automation **16/16**; **G-02** concrete cartridge remote `manifest-bridge` closed; scoped blockers **G-03 + FFI** only.

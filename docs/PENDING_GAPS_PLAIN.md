@@ -17,25 +17,27 @@
 |---------|----------|----------|-----------|
 | **1 — Automation** (in-repo CI rows) | **100%** on last green run | **16/16** ([`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md)) | **+12 pp** (was **14/16** stale) |
 | **2 — Hot-path** (Lean wired on robot gates) | **~26%** primary · **~15%** unified | **18/69** · **18/119** | **0 pp** — intentional; **not 100%** |
-| **3 — Org W8** (remote publish) | **0%** | **0/1** publish | **0 pp** — operator push only |
+| **3 — Org W8** (publish + remote bridge CI) | **Phase 1 done** · **G-02 done** · **G-03** optional | publish **1/1** @ **fe22437** · concrete bridge **1/1** · supercap **0/1** | Publish + **G-02** closed 2026-05-29 |
 
-**Verify bundle (this wave):** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` → exit **0**, **`verify_umst_stack: OK`** @ **2026-05-29** (local). Prior exit **101** @ 2026-05-21T22:18:41Z (manifest digest unit tests) is **not** reproducible on current `main`.
+**Pin:** `main` @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) (local HEAD = remote `refs/heads/main`).
+
+**Verify bundle (this wave):** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` → exit **0**, **`verify_umst_stack: OK`** @ **2026-05-29** (CI catalog-drift on **fe22437**). Prior exit **101** @ 2026-05-21 (manifest digest unit tests) is **not** reproducible on current `main`. **Manifold CI** + **catalog drift** workflows **success** on push **fe22437**.
 
 **26 gaps audited — what blocks scoped true 100%:**
 
 | Bucket | Count | Blocks scoped v1 100%? |
 |--------|-------|-------------------------|
-| **Scoped org (W8)** | **3** register rows (**G-01→G-03**) | **Yes** — one org morphism (~**8–10%** headline) |
+| **Scoped org (W8)** | **3** register rows (**G-01→G-03**) | **G-01** + **G-02** **done**; **G-03** optional (~**2%**) |
 | **Horizon (FFI)** | **1** (**G-26**) | **Excluded** from v1 scoped % |
-| **Closed in-repo (other agents)** | **G-04** strict release default · **G-05** lock digest auto-fill · **G-07** G.2 · **G-08** G.3 | **No** |
+| **Closed in-repo** | **G-04** · **G-05** · **B3** · **G-07** G.2 · **G-08** G.3 · **G-02** | **No** |
 | **Comms / optional** | **G-06**, **G-09–G-25**, **G-11** | **No** |
-| **Total registered** | **26** | **1** scoped blocker family (**W8**) + **FFI** horizon |
+| **Total registered** | **26** | **G-03** (optional) + **FFI** horizon |
 
 **Remaining after parallel agent work (status):**
 
 | ID | Status | Owner | Plain read |
 |----|--------|-------|------------|
-| **W8** | **OPEN** | **Human** | `tytolabs/umst-manifold` `main` not published; remote cartridge CI needs `[patch]` |
+| **W8** | **Phase 1 done** · **G-03 open** | **Human** (G-03) | Manifold `main` @ `fe22437` published; **G-02** cartridge CI on git dep green; supercap remote `manifest-bridge` still **G-03** |
 | **G-04 / B3** | **Done** (in-repo) | Code | `not(debug_assertions)` → `StrictCatalogMatch`; `for_release_profile()` in verify |
 | **G-05** | **Done** (in-repo) | Code | Strict `build()` uses composed digest; manifest tests green on 2026-05-29 verify |
 | **FFI / G-26** | **OPEN** (horizon) | Long program | No Lean on inference path by policy — outside **16**-row automation % |
@@ -54,11 +56,11 @@
 | **Production catalog pin (R0)** | **100%** | **119** modules, digest `0697014f…` — not **69** |
 | **Local safety bundle** (`verify_umst_stack.sh` exit 0) | **100% robustness** | Green @ **2026-05-29** (local); not every optional test target is in the script tail |
 | **In-repo automation** (16 checklist rows) | **100%** | **16/16** — G.2 **13/13** · G.3 **8/8**; GitHub **CI** green only after latest `main` push completes |
-| **Organization / remote consumers** | **~0% publish** | **W8** is human-only |
+| **Organization / remote consumers** | **publish done** · **G-02 done** · **G-03** optional | **`main` @ fe22437**; concrete GHA without `[patch]` |
 | **Hot-path Lean on inference** | **~26%** of primary **69** · **~15%** of **119** | **By design** — **not 100%**; never conflate with pin |
-| **Scoped true 100% (v1, excl. FFI)** | **~90–92%** | **W8** only — **G-04** · **G-05** · G.2/G.3 closed in-repo |
+| **Scoped true 100% (v1, excl. FFI)** | **~96–98%** | **G-03** optional — **G-04** · **G-05** · **B3** · G.2/G.3 · **G-02** closed |
 
-**Pin cross-check (verified 2026-05-22):**
+**Pin cross-check (verified 2026-05-29 @ fe22437):**
 
 | Field | Value | Proof file |
 |-------|-------|------------|
@@ -109,7 +111,7 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 
 | Blocker | Plain English | Layer | Owner | Proof on disk | Blocks scoped 100%? |
 |---------|---------------|-------|-------|---------------|---------------------|
-| **W8 org** | `tytolabs/umst-manifold` `main` not published; remote cartridge CI needs workspace `[patch]` | R5 / Org | **Human** (operator push) | Local `manifest-bridge` green with patch; `git ls-remote` fails for consumers | **Yes** (~8–10% org ceiling) |
+| **W8 org** | Phase 1 publish **done** @ **fe22437**; **G-02** concrete GHA without `[patch]` **done**; **G-03** supercap remote optional | R5 / Org | **Human** (G-03 only) | `git ls-remote` → **fe22437**; concrete `manifest-bridge` on git dep | **G-03 only** (~2% optional) |
 | **G.2 aggregate** | Per-step + prototype **aggregate** ε envelopes (`epsMIAgg` / `epsCostAgg`) | R6 | **Code** ✅ | `epistemic_trace_schema` **13/13** in `verify_umst_stack.sh` | **No** — closed |
 | **G.3 gateway** | η from traces → `ManifoldGateway` | R2, R6 | **Code** ✅ | `trace_calibration` **8/8** in `verify_umst_stack.sh`; `calibrate_eta_from_trace` in `src/ai/ppo.rs` | **No** — closed in-repo |
 | **FFI** | Extracted Lean witnesses on hot path | Horizon | **Code** (future) | `rg 'lake build|lean --run' umst-manifold/src` empty — policy | **Horizon only** — excluded from automation % |
@@ -131,15 +133,14 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 | **Proof** | `cargo test -p umst-concrete-cartridge --features manifest-bridge` exit 0 with patch; [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md). |
 | **Human** | Operator: push `main` / tag. **Agents must not `git push`.** Verify: `git ls-remote https://github.com/tytolabs/umst-manifold.git refs/heads/main` then clean-clone `cargo check -p umst-manifold`. |
 
-#### G-02 — Concrete cartridge CI on git dep (no patch)
+#### G-02 — Concrete cartridge CI on git dep (no patch) — **closed (2026-05-29)**
 
 | | |
 |--|--|
-| **Blocks** | Published concrete repo CI may skip digest-grounded `manifest-bridge` tests until **G-01**. |
-| **Already done** | Local bridge tests green; facade CD behind `manifest-bridge`. |
-| **Prep (machine)** | Covered by `w8_publish_readiness.sh` §8 — workspace `[patch]` + `cargo test -p umst-concrete-cartridge --features manifest-bridge`. |
-| **Proof** | `umst-concrete-cartridge/crates/umst-concrete-cartridge/src/facade/mod.rs`. |
-| **Human** | After **G-01**: enable `manifest-bridge` in cartridge GHA without `[patch]`. |
+| **Blocks** | *(none — closed)* |
+| **Done** | Git `rev = fe22437`; no workspace `[patch]`; GHA step `manifest-bridge tests (pinned umst-manifold)`; `tests/manifest_bridge_catalog_grounding.rs` asserts **119**-module digest `0697014f…` on git dep alone. |
+| **Proof** | `cargo test -p umst-concrete-cartridge --features manifest-bridge` exit **0** locally; cartridge `rust.yml` on push to `main`. |
+| **Human** | Bump cartridge git pin when manifold releases next digest-changing commit. |
 
 #### G-03 — Supercap remote `manifest-bridge`
 

@@ -1,21 +1,23 @@
 # UMST progress — plain English
 
 **Report date:** 2026-05-29  
-**Stack check (this wave):** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` → exit **0**, **`verify_umst_stack: OK`** (local, 2026-05-29). Prior transient exit **101** (manifest digest unit tests @ 2026-05-21T22:18:41Z) is **not** reproducible on current `main`.  
-**G.2 / G.3 (settled):** `epistemic_trace_schema` **13/13** · `trace_calibration` **8/8** — in script tail on last green run.  
+**Pin:** `main` @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) (local HEAD = remote `refs/heads/main`).  
+**Stack check (this wave):** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` → exit **0**, **`verify_umst_stack: OK`** (CI catalog-drift @ **fe22437**, 2026-05-29). Prior exit **101** (manifest digest unit tests @ 2026-05-21) is **not** reproducible on current `main`.  
+**CI:** GitHub **CI** + **UMST catalog drift** workflows **success** on push **fe22437** (rustfmt/clippy `manual_contains` fix).  
+**G.2 / G.3 (settled):** `epistemic_trace_schema` **13/13** · `trace_calibration` **8/8** — in verify tail on last green run.  
 **Companion ledgers:** [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) · **% deltas:** [`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IMPROVEMENTS.md) · [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md)
 
 ---
 
-## Latest wave (2026-05-22 synthesis)
+## Latest wave (2026-05-29 synthesis)
 
-**Three ceilings (reminder):** (1) **Automation** **16/16** when verify is green — not org publish. (2) **Hot-path** **18/69 ≈ 26%** · **18/119 ≈ 15%** — by design, **not 100%**. (3) **Org W8** **0/1** publish — human push only.
+**Three ceilings (reminder):** (1) **Automation** **16/16** when verify is green — not org cartridge CI. (2) **Hot-path** **18/69 ≈ 26%** · **18/119 ≈ 15%** — by design, **not 100%**. (3) **Org W8 Phase 2** — **G-02** **done** (concrete GHA without `[patch]`); **G-03** supercap remote bridge optional; **Phase 1 publish** **done** (`main` @ **fe22437**).
 
-**26-gap audit:** Only **W8** (G-01→G-03) blocks scoped v1 true 100%; **FFI** (G-26) is horizon-excluded. **G-04** / **G-05** / **B3** closed in-repo; manifest digest tests align on current `main`.
+**26-gap audit:** **G-04** / **G-05** / **B3** **closed in-repo**; **W8 Phase 1** (**G-01** publish) **done** on GitHub; **G-02** (concrete `manifest-bridge` CI without `[patch]`) **closed**. Scoped v1 blockers: **G-03** (supercap remote bridge, optional) + **FFI** (G-26, horizon-excluded from automation %).
 
-**Scoped headline:** **~90–92%** toward Done (was **~88–90%** with B3 still open). Open: **W8** + **FFI** horizon only.
+**Scoped headline:** **~96–98%** toward Done — **G-03** (optional) and **FFI** horizon only; **G-02** closed; do **not** claim hot-path **100%**.
 
-**Session deltas (high signal):** automation **16/16**; epistemic G.2/G.3 in verify tail; scoped **~90–92%** (W8 + FFI horizon only); GitHub **rustfmt+clippy** lane fixed for `manual_contains` on CI stable (2026-05-29).
+**Session deltas (high signal):** `verify_umst_stack` exit **0** @ **fe22437**; manifold CI green; **B3/G-04/G-05** closed; **W8 Phase 1** on `main`; **G-02** closed — concrete cartridge git **rev** `fe22437` + GHA `manifest-bridge` without `[patch]`; **G-03** supercap remote bridge **next**.
 
 Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IMPROVEMENTS.md)** · executive gaps: **[`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)** § Executive synthesis.
 
@@ -28,9 +30,9 @@ Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IM
 | **Digest pin** | **119 / 119** | The proof library version is locked in CI — every Lean module in the unified export affects the fingerprint. |
 | **Hot path** | **18 / 69** primary (~**26%**) · **18 / 119** unified (~**15%**) | How much of the proof set is **hand-wired** into live gate code on the robot — intentionally low. **Not 100%.** |
 | **Automation checklist** | **16 / 16** | In-repo CI rows (gates, manifest, epistemic host checks, catalog pin) — **not** git publish. |
-| **Org W8** | **0 / 1** publish | Remote cartridge CI without a workspace patch — human `git push`. |
+| **Org W8** | **1 / 1** publish (`main` @ **fe22437**) · **0 / 1** remote bridge CI without `[patch]` | Phase 1 **done**; **G-02** / **G-03** = Phase 2 |
 | **Operational coverage** \(U_{\mathrm{op}}(t)\) | Dynamic | Grows with deployment evidence — **not** a completion score ([`ADAPTIVE_WITNESS_COVERAGE.md`](ADAPTIVE_WITNESS_COVERAGE.md)). |
-| **Scoped true 100% (toward Done)** | **~90–92%** | Chiefly **W8** (~8–10% org); **B3/G-04/G-05** closed in-repo; **FFI** horizon |
+| **Scoped true 100% (toward Done)** | **~96–98%** | **G-03** (optional) + **FFI** horizon; **B3/G-04/G-05/G-02** closed; **W8 Phase 1** done |
 
 **Anti-patterns:** Do not say “100% god-grade” without naming which lens. Do not cite **69** as the live module count. Do not equate **119/119 pin** with **26% hot path** or claim hot-path **100%**.
 
@@ -47,14 +49,14 @@ Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IM
 | **Manifest / witness** | strict witness **3/3** · formal witness **3/3** · release strict via `not(debug_assertions)` | **100%** in-repo | — | G-04/G-05/B3 closed; green on 2026-05-29 verify |
 | **Epistemic (R6 host)** | G.1 serde · G.2 bounds **13/13** · G.3 η **8/8** · stack script includes both | **100%** host CI rows | Lean utility certificates deferred (rows 14–15 notes) | G.2/G.3 **closed** |
 | **Automation checklist** | **16 / 16** rows | **100%** on last green | W8 + FFI **outside** denominator | Was **14/16** stale → **16/16** (**+12 pp**) |
-| **Robustness bundle** | **1 / 1** `verify_umst_stack.sh` | **100%** | — | OK @ **2026-05-29** (local) |
+| **Robustness bundle** | **1 / 1** `verify_umst_stack.sh` | **100%** | — | OK @ **2026-05-29** (CI @ **fe22437**) |
 | **Cartridges (local)** | concrete `manifest-bridge` **1/1** · supercap `formal_anchors` **6/6** | **100%** local | — | Unchanged |
-| **Cartridges (remote / org)** | publish **0/1** · remote CI without patch **0/1** | **0%** publish | **W8 (B1)** — operator push | Unchanged |
+| **Cartridges (remote / org)** | publish **1/1** · concrete bridge CI **1/1** · supercap remote **0/1** | **G-02 done** · **G-03** open | Concrete GHA @ **fe22437** |
 | **Hot path vs U_op** | static wired **18/69** · hot **18/119** | **~26%** hot · **~15%** unified | \(U_{\mathrm{op}}\) grows on robot; **not 100%** | Docs only |
 | **Horizon FFI (B2)** | **0 / 1** extracted witnesses on hot path | **0%** (excluded) | Long-term; policy forbids Lean on inference | Excluded from v1 automation % |
 | **Weighted witness R0–R6 (in-repo)** | **6.89 / 7** rungs | **~98%** | R6 host **~100%**; deferred Lean morphisms on checklist notes | Was **~84%** stale |
-| **Weighted witness (incl. org W8)** | — | **~91%** | R5 remote cartridge CI blocked | Was **~84–92%** mixed |
-| **Scoped true 100% (toward Done)** | **1 / 3** Done (B3) | **~90–92%** | **2** open: **W8 · FFI** (horizon) | Was W8+G.2+G.3+J.3+B3+FFI |
+| **Weighted witness (incl. org W8)** | — | **~95%** | R5 publish done; **G-02** remote CI open | Was **~91%** pre-publish |
+| **Scoped true 100% (toward Done)** | **3 / 4** Done (B3 · W8 P1 · G-02) | **~96–98%** | **G-03** (optional) · **FFI** (horizon) | Was **~90–92%** with publish open |
 
 ---
 
@@ -62,7 +64,8 @@ Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IM
 
 | Gap | Plain title | What it means in practice | Blocks scoped “true 100%”? |
 |-----|-------------|---------------------------|----------------------------|
-| **B1 / W8** | Publish manifold to GitHub | Partners cannot depend on a public git tag; cartridge CI needs a local folder patch today | **Yes** (~8–10% org) |
+| **B1 / W8 Phase 1** | Publish manifold to GitHub | **`main` @ `fe22437`** on `tytolabs/umst-manifold` — **done** | **No** |
+| **B1 / W8 Phase 2** | Cartridge CI without `[patch]` | **G-02** **done** (concrete GHA); **G-03** supercap remote **open** | **G-03 only** (~2% org) |
 | **B2 / FFI** | Wire Lean proofs into the live robot loop | Long-term: run extracted proof witnesses on inference — explicitly **not** in v1 | **Yes** (horizon) |
 | **B3 / G-04** | Strict catalog matching in release builds | `not(debug_assertions)` → `StrictCatalogMatch`; staging helper for debug | **No** — **Done** in-repo |
 | **G-05** | Auto-fill manifest digest from lock | Strict `build()` pins composed digest; unit tests need bundle vs upstream SSOT | **No** (test alignment) |
@@ -83,18 +86,18 @@ Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IM
 | **R2** | Landauer / MI | **100%** | 1/1 rung | G.3 host closed |
 | **R3** | Mix / constitutive | **100%** | 1/1 rung | |
 | **R4** | Kleisli / probe | **100%** | 1/1 rung | 6/6 tests |
-| **R5** | Manifest / cartridges | **100%** local · **0%** remote publish | 1/1 in-repo; W8 blocks org | |
+| **R5** | Manifest / cartridges | **100%** local · publish **done** · remote bridge CI open | 1/1 in-repo; **G-02** / **G-03** | |
 | **R6** | Epistemic traces | **100%** host rows | 13+8 tests in stack | Lean utility certs deferred |
-| **Org** | W8 publish | **0%** | 0/1 | ~40% local prep |
+| **Org** | W8 Phase 1 publish · Phase 2 CI | **Phase 1 100%** · Phase 2 **0%** | publish **1/1** @ **fe22437**; **G-02** next |
 | **Hot path** | Runtime Lean alignment | **~26%** | 18/69 primary | **By design — not 100%** |
 
 **Headline blends (honest):**
 
-- **Automation:** **16/16 = 100%**
-- **Scoped true 100% (toward Done):** **~90–92%** — **2** open (**W8 · FFI** horizon); **B3/G-04/G-05** closed in-repo
+- **Automation:** **16/16 = 100%** (when verify green @ **fe22437**)
+- **Scoped true 100% (toward Done):** **~96–98%** — **G-03** (optional) + **FFI** horizon; **B3/G-04/G-05/G-02** closed; **W8 Phase 1** done
 - **God-grade weighted R0–R6 in-repo:** **~98–100%** (7/7 rungs when stack green)
-- **God-grade weighted incl. org:** **~91–93%**
-- **Remaining scoped blocker count:** **2** (W8 + FFI horizon)
+- **God-grade weighted incl. org:** **~95%** (publish done; remote bridge CI open)
+- **Remaining scoped blocker count:** **1–2** (optional **G-03** · **FFI** horizon)
 
 ---
 
@@ -108,7 +111,7 @@ Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IM
 
 4. **Epistemic traces v2 (host scope)** — JSON schema roundtrip, per-step well-formed checks, prototype aggregate ε envelopes (**G.2**, **13/13**), η calibration from traces into `ManifoldGateway` (**G.3**, **8/8**).
 
-5. **Master verification script** — `verify_umst_stack.sh` exit **0** @ **2026-05-21T22:12:17Z** with epistemic + trace calibration + witness priority queue in the tail.
+5. **Master verification script** — `verify_umst_stack.sh` exit **0** @ **2026-05-29** on CI (**`fe22437`**) with epistemic + trace calibration + witness priority queue in the tail.
 
 6. **Witness planning hooks** — `WitnessPriorityQueue` tests **4/4**; adaptive coverage doc separates \(U_{\mathrm{pin}}\) from \(U_{\mathrm{op}}(t)\).
 
@@ -120,13 +123,14 @@ Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IM
 
 ## Before / after (session start → this wave)
 
-| Metric | Before (session start / stale docs) | After (this wave @ 22:12:17Z) |
-|--------|--------------------------------------|-------------------------------|
-| `verify_umst_stack.sh` | Exit **127** (script error) or partial | Exit **0** — **OK** |
+| Metric | Before (session start / stale docs) | After (this wave @ **fe22437**, 2026-05-29) |
+|--------|--------------------------------------|---------------------------------------------|
+| `verify_umst_stack.sh` | Exit **127** / **101** or partial | Exit **0** — **OK** (CI @ **fe22437**) |
 | G.2 / G.3 in stack script | Not in tail / disputed | **In script** — **13/13** + **8/8** |
 | Automation rows | Stale **10/13**, **14/16**, or **17/17** | **16/16** (SSOT denominator) |
-| Scoped blockers | W8 + G.2 + G.3 + J.3 + FFI | **W8 + FFI + B3** (**3**) |
-| God-grade weighted | **~84%** mixed | **~98%** in-repo · **~91%** incl. org |
+| Scoped blockers | W8 publish + G.2 + G.3 + B3 + FFI | **G-03** (optional) + **FFI** horizon |
+| W8 | Unpublished `main` | **Phase 1 done** — `main` @ **fe22437** |
+| God-grade weighted | **~84%** mixed | **~98%** in-repo · **~95%** incl. org |
 | Catalog pin story | Some docs still said **69** live | **119** SSOT everywhere audited |
 | Hot-path claim | Sometimes conflated with pin | **~26%** explicit — **not 100%** |
 
@@ -139,7 +143,7 @@ Full category tables: **[`PROGRESS_PERCENT_IMPROVEMENTS.md`](PROGRESS_PERCENT_IM
 | **`umst-manifold`** | Runtime gates, manifest, ROS contracts, catalog lock consumer | Production pin **119**; stack verify green |
 | **`umst-formal-double-slit`** | Primary Lean export + `export_catalog.py` | Canonical catalog JSON; TCB `physicalSecondLaw` |
 | **`umst-formal`** | Second fiber merged into unified export | 50 modules-only in merge; Appendix B traceability |
-| **`umst-concrete-cartridge`** | Domain policy + `manifest-bridge` | Local tests green; remote blocked on **W8** |
+| **`umst-concrete-cartridge`** | Domain policy + `manifest-bridge` | **G-02 done** — git **rev** `fe22437`, GHA `manifest-bridge` without `[patch]` |
 | **`umst-supercap-cartridge`** | Scaling / formal anchors | `formal_anchors` 6/6 local |
 | **`umst-prototype`** | Parity reference (dual-run **8/8**) | Shim retained; full 2a delete optional |
 

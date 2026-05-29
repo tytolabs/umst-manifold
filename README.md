@@ -17,9 +17,31 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 **UMST Manifold** is a unified, differentiable physics engine. Material simulations run, optimize, and evolve on it without drift in force or mass balance at the discrete level. Built in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes its spatial physics to domain-specific material engines (concrete, metals, polymers) through the **`IScienceCartridge`** trait.
 
+<!-- readme:grounding-narrative -->
+### What this repository is
+
+This is the **physics substrate** in the UMST stack — not an end-user application. It owns Discrete Exterior Calculus (DEC), the thermodynamic gate, continuous solver kernels, and the Lean-catalog witnesses that tie Rust modules to formal obligations. Domain chemistry, Python bindings, and MCP tools live in sibling cartridges; this repo stays a pure library so conservation structure and admissibility gates are shared once across every material domain.
+
+### What improved after publish (2026-05-29)
+
+Publishing to [`tytolabs/umst-manifold`](https://github.com/tytolabs/umst-manifold) forced the verification story to match what CI actually runs. The **119-module dual-pin catalog lock** is now the production contract; `scripts/verify_umst_stack.sh` with `UMST_REQUIRE_FORMAL_EXPORT=1` is the master local parity command ([`docs/VERIFY.md`](docs/VERIFY.md)). GitHub [`rust.yml`](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml) [run 26649667467](https://github.com/tytolabs/umst-manifold/actions/runs/26649667467) is green after the clippy fix in [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437). Downstream cartridges can pin this crate by git revision instead of monorepo path alone.
+
+### Honest limits
+
+We report completion in three buckets — see the [single % table](docs/GOD_GRADE_PROGRESS_VERIFIED.md#headline-percentages-ssot--one-table) and [`docs/COMPLETION_TRUTH.md`](docs/COMPLETION_TRUTH.md):
+
+| Bucket | Status | Meaning |
+|--------|--------|---------|
+| **Plan** | **100%** | Documented god-grade ladder milestones are closed. |
+| **Automation** | **16/16** | CI scripts, catalog guards, and stack verify hooks pass. |
+| **Hot path** | **~26%** (18/69) | By design — only primary-fiber modules on the inference-critical path carry full witness wiring; the rest are staged or cartridge-scoped. |
+
+That split is intentional: we do not inflate hot-path % to match plan %. **G-02** concrete cartridge CI without workspace `[patch]` is closed (**2026-05-29**); remaining scoped blockers are **G-03** (supercap) and **FFI** — see [`docs/AGENT_STATUS.md`](docs/AGENT_STATUS.md).
 
 <!-- readme:god-grade-status -->
-**Completion (verified 2026-05-29):** [single % table](docs/GOD_GRADE_PROGRESS_VERIFIED.md#headline-percentages-ssot--one-table) — plan **100%**, automation **16/16**, hot-path **~26%** (18/69) by design. Master command: `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` ([`docs/COMPLETION_TRUTH.md`](docs/COMPLETION_TRUTH.md)). **CI:** GitHub `rust.yml` badge reflects the latest push on `main` — do not claim green until that workflow completes after your commit.
+**Verify locally:** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh`
+
+**CI badge:** The [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml) badge tracks the **latest push on `main`** — it is not a guarantee for your branch until that workflow finishes. After you push, wait for the run to complete before claiming green.
 
 **Stack thread (catalog → manifold → cartridge):** [`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit) exports the **unified 119-module Lean catalog** (`cross_repo_merge: true`) → this repo pins `artifacts/catalog.lock.json` and runs DEC + god-grade witnesses → [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) and sibling [`umst-supercap-cartridge`](../umst-supercap-cartridge) mount domain physics on `IScienceCartridge`. Normative order and philosophy: [GOD_GRADE_WITNESS_LADDER § Proof library · gate law · MI envelope · no Rust axioms](docs/GOD_GRADE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms).
 
