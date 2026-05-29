@@ -150,18 +150,18 @@ From [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md). **Verified 
 
 | Track | Name | Status | Verified % | Verify (exit **0**) | Gap | Owner |
 |-------|------|--------|------------|----------------------|-----|-------|
-| **A** | W8 publish (`tytolabs/umst-manifold` `main`) | ❌ ops | **~40%** | Local `manifest-bridge` tests (patch) | Git push + cartridge dep without `[patch]` | manifold publish → cartridge |
+| **A** | W8 publish (`tytolabs/umst-manifold` `main`) | ✅ **G-01** · ✅ **G-02** · **G-03** optional | **~95%** | `w8_publish_readiness` + git-pinned `manifest-bridge` in stack | **G-03** supercap remote GHA | operator (G-03 only) |
 | **B** | `umst-prototype-2a` thin | ⚠️ hybrid | **~85%** | `gate_dual_run_parity` in stack | B.3–B.4 full 2a body delete | prototype |
 | **C** | Kleisli `GateEvaluator` | ✅ done | **100%** | `gate_kleisli` **6/6** | — | manifold |
 | **D** | `catalog_id` on every reject | ✅ done | **100%** | `gate_reject_catalog_id` **6/6** | — | manifold |
 | **E** | Adversarial gate CI | ✅ done | **100%** | `gate_adversarial` **FNR=0** (75); optional Python E6 | Optional E6 when prototype absent | CI |
 | **F** | Cross-repo catalog (**119** pin) | ✅ done | **100%** | Lock digest `0697014f…`, **119** modules in stack | Optional dual-pin policy only | formal |
-| **G** | Epistemic runtime schema v2 | ⚠️ partial | **~33%** | G.1: `epistemic_trace_schema` **0** | **G.2** bounds · **G.3** η-from-traces | manifold / ops |
+| **G** | Epistemic runtime schema v2 | ✅ done | **100%** | G.1–G.3 in `verify_umst_stack.sh` tail (**13/13** + **8/8**) | — | manifold |
 | **H** | Strict witness + `formal-witness` | ✅ CI | **100%** | `manifest_strict_witness` in stack | Dev `UmstManifest::default()` stays `CatalogPinnedRos2` (not blocker) | product / ops |
-| **I** | Supercap formal anchor parity | ⚠️ partial | **~70%** | `formal_anchors` **6/6** | I.3–I.4 remote `manifest-bridge`; needs **W8** | cartridge |
+| **I** | Supercap formal anchor parity | ⚠️ partial | **~70%** | `formal_anchors` **6/6** | I.3–I.4 remote `manifest-bridge` (**G-03** optional) | cartridge |
 | **J** | Warnings / lint hygiene | ⚠️ partial | **~60%** | Dual-run + adversarial in `verify_umst_stack.sh` | J.1 clippy `-D warnings`; J.3 regime policy | manifold CI |
 
-**Track closure (2026-05-21):** **C, D, E, F, H** ✅ · **G** ⚠️ (G.1–G.3 in-repo ✅; stack tail optional) · **B, I, J** ⚠️ hybrid · **A** ❌ ops (**W8**).
+**Track closure (2026-05-29):** **A** (G-01/G-02) · **C, D, E, F, G, H** ✅ · **B, I, J** ⚠️ hybrid · **G-03** supercap optional.
 
 ---
 
@@ -176,8 +176,8 @@ Normative order: R0 → R1 (CD) → R2 (Landauer) → R3 (constitutive) → R4 (
 | **R2** | Gates (Landauer CBF) | **100%** | `gate_cbf_parity`, `formal_witness` |
 | **R3** | Gates (constitutive / mix) | **100%** | `gate_parity_fixture`, mix registry tests |
 | **R4** | Gates (Kleisli) | **100%** | `gate_kleisli` **6/6** |
-| **R5** | Manifest + cartridges | **100%** in-repo · **0%** org remote | `manifest_strict_witness`, `formal_witness`, local `manifest-bridge`; **W8** blocks remote |
-| **R6** | Epistemic v2 traces | **~89%** | G.1 ✅ · G.2 **12/12** · G.3 **3/3** (not in stack script tail) |
+| **R5** | Manifest + cartridges | **100%** in-repo · **G-02** concrete remote **done** | `manifest_strict_witness`, git-pinned concrete `manifest-bridge`; **G-03** supercap optional |
+| **R6** | Epistemic v2 traces | **100%** host rows | G.1–G.3 in `verify_umst_stack.sh` tail (**13/13** + **8/8**) |
 
 ---
 

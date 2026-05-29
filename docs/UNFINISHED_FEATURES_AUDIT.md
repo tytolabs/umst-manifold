@@ -54,11 +54,11 @@ These exist as **scaffolds** or **dry-runs**. They do not change the production 
 
 | Item | What blocks “god-grade 100%” | Owner | Execute vs wait | Unblocks |
 |------|------------------------------|-------|-----------------|----------|
-| **W8 — Publish manifold `main`** | Remote cartridge CI still needs workspace `[patch]`; `manifest` not on git consumer path | manifold publish → cartridge | **Wait** on operator git push / credentials | Remote `manifest-bridge` tests; Track A — [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) |
-| **W8 — Cartridge CI feature** | Enable `manifest-bridge` on `tytolabs/umst-concrete-cartridge` after pin bump | cartridge maintainers | **Wait** on W8.2 | [`FORMAL_GROUNDING_AUDIT.md`](../umst-concrete-cartridge/docs/FORMAL_GROUNDING_AUDIT.md) remote row |
-| **Strict catalog default (H)** | Release builds still default `CatalogPinnedRos2`; `StrictCatalogMatch` is opt-in | product / ops | **Execute** after W8 if you want fail-closed prod | Track H — [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) |
+| **W8 — Publish manifold `main`** | — | — | **Done** 2026-05-29 @ **`fe22437`** on `tytolabs/umst-manifold` `main` | Track A — [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) |
+| **W8 — Cartridge CI feature** | — | cartridge maintainers | **Done** (**G-02**) — GHA `manifest-bridge` on git pin, no `[patch]` | [`FORMAL_GROUNDING_AUDIT.md`](../umst-concrete-cartridge/docs/FORMAL_GROUNDING_AUDIT.md) |
+| **Strict catalog default (H)** | — | product / ops | **Done** — `StrictCatalogMatch` release default (B3) | Track H — [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) |
 | **Formal-witness auto-digest (H)** | Digest compare works but callers must set `Some` manually | manifold | **Execute** — small wiring; no new axiom | [`COMPOSITIONAL_INFERENCE_AUDIT.md`](COMPOSITIONAL_INFERENCE_AUDIT.md) §6 |
-| **Epistemic v2 traces (G)** | Lean proved; Rust trace schema + CI open | manifold / ops | **Wait** or **Execute** as separate program | Track G |
+| **Epistemic v2 traces (G)** | — | manifold / ops | **Done** — G.1–G.3 in `verify_umst_stack.sh` | Track G |
 | **W10 — `rust.yml` verify lane** | ✅ Required `verify-umst-stack` job (parity subset + optional full stack); drift workflow unchanged | `umst-manifold` CI | **Done** 2026-05-21 | See [`PREVIEW_STUB_AUDIT.md`](PREVIEW_STUB_AUDIT.md) |
 | **W10-b — Lean PR → export bot** | Manual `make lean-catalog-export` + lock bump | formal / coordinator | **Execute** when ready | Reduces human slip on digest |
 | **Bidirectional script hygiene** | `bidirectional_catalog_check.sh` once failed on `GATE_REGISTRY` doc-comment parse (`umst.cartridge.concrete.policy`) | manifold CI | **Execute** — script fix | Re-green full stack verify per [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md) |
@@ -85,9 +85,9 @@ See [`PROTOTYPE_2A_HOST_GAPS.md`](PROTOTYPE_2A_HOST_GAPS.md), [`THIN_PROTOTYPE_S
 
 | Item | State | Owner | Execute vs wait |
 |------|-------|-------|-----------------|
-| **Concrete `manifest-bridge`** | Local ✅ with `[patch]` | manifold publish | **Wait** on W8 for remote |
+| **Concrete `manifest-bridge`** | ✅ git **`fe22437`**, GHA without `[patch]` | cartridge | **Done** (**G-02**) |
 | **Catalog-generated `formal_anchor`** | Still `lean://` URIs | cartridge | **Wait** on cross-repo merge + optional codegen |
-| **Supercap `formal_anchors`** | 6/6 tests ✅ | supercap | **Wait** on W8 for `manifest-bridge` remote (I.3) |
+| **Supercap `formal_anchors`** | 6/6 tests ✅ | supercap | **G-03** optional — remote `manifest-bridge` (I.3) |
 | **Supercap generated anchors (I.4)** | Optional | cartridge | **Wait** |
 
 ---
@@ -111,15 +111,15 @@ Quick map to [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md). Tra
 
 | Track | Status | Owner | Execute vs wait |
 |-------|--------|-------|-----------------|
-| **A — W8 publish** | ❌ ops | manifold publish | **Wait** (credentials) |
+| **A — W8 publish** | ✅ **G-01** · ✅ **G-02** · **G-03** optional | operator (G-03 only) | **G-03** supercap remote when scheduled |
 | **B — 2a thin** | ⚠️ hybrid | prototype | **Wait** on ports |
-| **F — cross-repo catalog** | ✅ closed | formal / coordinator | Preview `dry_run` fixed 2026-05-21 |
-| **G — epistemic v2** | ❌ open | manifold / ops | **Wait** or schedule |
-| **H — strict default** | ❌ open | product / ops | **Execute** post-W8 |
-| **I — supercap bridge** | ⚠️ partial | cartridge | **Wait** on W8 |
+| **F — cross-repo catalog** | ✅ closed | formal / coordinator | — |
+| **G — epistemic v2** | ✅ closed | manifold | G.1–G.3 in `verify_umst_stack.sh` |
+| **H — strict default** | ✅ closed | product / ops | `StrictCatalogMatch` release default (B3) |
+| **I — supercap bridge** | ⚠️ partial | cartridge | **G-03** remote `manifest-bridge` optional |
 | **J — clippy / warnings** | ⚠️ partial | manifold CI | **Execute** J.1 when CI time allows |
 
-**Suggested order (dependencies):** Fix CI script (bidirectional) → **A + H** (publish + strict) → **F** (after approval) → **B** / **G** / **I** / **J** as capacity allows.
+**Suggested order (dependencies):** **G-03** supercap remote (optional) → **B** / **I** / **J** polish as capacity allows. **A/H/G/F** closed 2026-05-29.
 
 ---
 

@@ -26,12 +26,12 @@ Verified **2026-05-21T21:18:04Z** — `verify_umst_stack.sh` exit 0; `gate_dual_
 | **D** — reject `catalog_id` | ✅ **done** | `gate_reject_catalog_id` 6/6 (CD/mix/Landauer/HTTP) | — |
 | **E** — adversarial CI | ✅ **Rust SSOT** | Golden vendored, `gate_adversarial` in verify + drift CI | Optional Python E6; `rust.yml` verify lane (W10) |
 | **F** — cross-repo catalog | ✅ **done** | Unified `0697014f…` / **119** modules; `formal-fiber-merge` ✅ | — |
-| **G** — epistemic v2 | ❌ **open** | — | G.1–G.3 trace schema + η calibration |
-| **H** — strict catalog | ❌ **open** | Lock hash default on manifest builder | `StrictCatalogMatch` release default + CI triple |
-| **I** — supercap anchors | ⚠️ **partial** | `formal_anchors` 6/6, lock pin in `topology_catalog_hash_advisory` | I.3–I.4 `manifest-bridge` / generated anchor rows (needs W8) |
+| **G** — epistemic v2 | ✅ **done** | G.1–G.3 in `verify_umst_stack.sh` tail | — |
+| **H** — strict catalog | ✅ **done** | `StrictCatalogMatch` release default (B3) | — |
+| **I** — supercap anchors | ⚠️ **partial** | `formal_anchors` 6/6, lock pin in `topology_catalog_hash_advisory` | I.3–I.4 remote `manifest-bridge` (**G-03** optional) |
 | **J** — lint / docs | ⚠️ **partial** | J.2 `gate_dual_run_parity` ↔ verify script truth | J.1 clippy `-D warnings`; J.3 regime warnings policy |
 
-**God-grade checklist ([`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md)):** **10 / 13 ≈ 77%** (✅ only) · weighted headline **~84%** · **~16%** automation debt to full v1 checklist (excluding long-horizon extracted-witness row).
+**God-grade checklist ([`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md)):** **16 / 16 = 100%** automation rows (2026-05-29) · weighted in-repo **~98%** · org **G-03** supercap optional (outside 16-row denominator).
 
 ---
 
@@ -42,16 +42,16 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 | Checklist row | Current | Close via | Owner |
 |---------------|---------|-----------|-------|
 | `gate_adversarial` golden | ⚠️ Rust ✅; Python E6 optional | Accept Rust-only SSOT **or** wire optional E6 in drift | CI / coordinator |
-| Default manifest strict grounding | ⚠️ `CatalogPinnedRos2` default | Track **H** H.1–H.3 | product / ops |
-| Cartridge git-pinned manifest bridge (W8) | ⚠️ local `[patch]` only | Track **A** — **[`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)** | manifold publish → cartridge |
+| Default manifest strict grounding | ✅ release `StrictCatalogMatch` | Track **H** closed (B3) | product / ops |
+| Cartridge git-pinned manifest bridge (W8) | ✅ **G-02** remote CI | Track **A** — git `fe22437`, no `[patch]` | cartridge |
 | Extracted witnesses / FFI | ❌ horizon | Track **G** + separate FFI program | formal / long |
 | *(implicit)* Kleisli evaluator | ✅ | Track **C** closed 2026-05-21 | — |
 | *(implicit)* reject `catalog_id` | ✅ | Track **D** closed 2026-05-21 | — |
 | *(implicit)* supercap `formal_anchors` | ✅ | Track **I** I.1–I.2 | — |
 | Cross-repo catalog fiber | ✅ Track **F** closed | — | — |
-| Epistemic v2 traces (R6) | — | Track **G** | manifold / ops |
+| Epistemic v2 traces (R6) | ✅ | Track **G** closed 2026-05-29 | manifold |
 | 2a prototype full thin | — | Track **B** B.3–B.4 | prototype lane |
-| Supercap `manifest-bridge` remote | — | Track **I** I.3 + **A** | cartridge |
+| Supercap `manifest-bridge` remote | — | Track **I** I.3 + **G-03** (optional) | cartridge |
 | Clippy / `rust.yml` gate lane | — | Track **J** J.1 + W10 | manifold CI |
 | Doc stale rows (Kleisli, parity) | — | Track **J** J.2 tail + `claims-vs-proofs.md` | docs |
 
@@ -65,7 +65,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 | Closed in-repo (2026-05-21) | Still open (tracks below) |
 |-----------------------------|---------------------------|
-| R0 lock, R1 CD, R2 Landauer CBF, R4 Kleisli, reject slugs, Rust adversarial, verify stack, v1 8/8 dual-run | R5 git **W8** ([runbook](W8_PUBLISH_RUNBOOK.md)), R6 v2 traces, strict default, cross-repo F, 2a full thin, supercap remote bridge |
+| R0 lock, R1 CD, R2 Landauer CBF, R4 Kleisli, reject slugs, Rust adversarial, verify stack, v1 8/8 dual-run, R5 W8 G-01/G-02, R6 v2, strict default, cross-repo F | **G-03** supercap remote (optional), 2a full thin, supercap I.3–I.4 |
 
 ### Learnings
 
@@ -106,9 +106,9 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 | [D — `catalog_id` on all rejects](#track-d--catalog_id-on-every-reject-path) | R1–R4 telemetry | **✅ 2026-05-21** — `gate_reject_catalog_id` 6/6 (CD/mix/Landauer/HTTP) |
 | [E — Adversarial CI](#track-e--adversarial-gate-ci) | R1, R3 | **✅ 2026-05-21** (Rust) — `gate_adversarial` in verify + drift; Python E6 optional |
 | [F — Cross-repo catalog](#track-f--unified-lean-export-cross-repo-catalog) | R0 (+ second fiber) | ✅ **2026-05-21** — unified digest `0697014f…`, **119** modules |
-| [G — Epistemic v2 traces](#track-g--epistemic-runtime-schema-v2) | R5 v2, R2 η | ❌ R6 open |
-| [H — Strict catalog default](#track-h--strictcatalogmatch--formal-witness) | R5 v1 | ❌ `StrictCatalogMatch` not release default |
-| [I — Supercap formal anchors](#track-i--supercap-formal-anchor-parity) | R5, R3 (cartridge) | ⚠️ I.1–I.2 ✅; I.3–I.4 blocked on W8 git pin |
+| [G — Epistemic v2 traces](#track-g--epistemic-runtime-schema-v2) | R5 v2, R2 η | ✅ R6 host rows in verify tail |
+| [H — Strict catalog default](#track-h--strictcatalogmatch--formal-witness) | R5 v1 | ✅ `StrictCatalogMatch` release default (B3) |
+| [I — Supercap formal anchors](#track-i--supercap-formal-anchor-parity) | R5, R3 (cartridge) | ⚠️ I.1–I.2 ✅; I.3–I.4 **G-03** optional |
 | [J — Warnings / lint hygiene](#track-j--warnings-zero-clippy--docs) | CI gate (all rungs) | ⚠️ J.2 ✅; J.1 clippy + J.3 regime policy open |
 
 ---

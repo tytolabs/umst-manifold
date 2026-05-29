@@ -92,18 +92,18 @@ God-grade ops tracks from [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROA
 
 | Track | Name | Status | % | Verify command | Gap | Owner |
 |-------|------|--------|---|----------------|-----|-------|
-| **A** | W8 publish (`tytolabs/umst-manifold` `main`) | ❌ ops | **~40%** | [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) Phase 0–1: `cargo test -p umst-concrete-cartridge --features manifest-bridge` (local patch) | Git push + cartridge dep bump + GHA without `[patch]` | manifold publish → cartridge |
+| **A** | W8 publish (`tytolabs/umst-manifold` `main`) | ✅ **G-01** · ✅ **G-02** · **G-03** optional | **~95%** | `w8_publish_readiness.sh` + git-pinned `manifest-bridge` in `verify_umst_stack.sh` | **G-03** supercap remote `manifest-bridge` in GHA | operator (G-03 only) |
 | **B** | `umst-prototype-2a` thin | ⚠️ hybrid | **~85%** | `cargo test --test gate_dual_run_parity -p umst-manifold` | B.3–B.4 full 2a body delete; Constitution/CGS port or HTTP-only | prototype |
 | **C** | Kleisli `GateEvaluator` | ✅ done | **100%** | `cargo test --test gate_kleisli -p umst-manifold` | — | manifold |
 | **D** | `catalog_id` on every reject | ✅ done | **100%** | `cargo test --test gate_reject_catalog_id -p umst-manifold` | — | manifold |
 | **E** | Adversarial gate CI | ✅ done | **100%** | `cargo test --test gate_adversarial` · in `verify_umst_stack.sh` (FNR=0, 75 cases) | Optional Python E6 when prototype absent | CI / coordinator |
 | **F** | Cross-repo catalog + v2 dual-pin (**119**) | ✅ done | **100%** | Lock `version: 2`, `fiber_pins`, composed digest `0697014f…`, **119** modules | — | formal |
-| **G** | Epistemic runtime schema v2 | ⚠️ partial | **~33%** | `cargo test --features ros2-contract,serde --test epistemic_trace_schema` | G.2 bounds · G.3 η-from-traces | manifold / ops |
+| **G** | Epistemic runtime schema v2 | ✅ done | **100%** | `epistemic_trace_schema` **13/13** · `trace_calibration` **8/8** in `verify_umst_stack.sh` | — | manifold |
 | **H** | Strict witness + `formal-witness` | ✅ CI | **100%** | `manifest_strict_witness` in `verify_umst_stack.sh` | Dev `UmstManifest::default()` stays `CatalogPinnedRos2` (not a blocker) | product / ops |
-| **I** | Supercap formal anchor parity | ⚠️ partial | **~70%** | `cargo test -p umst-supercap-cartridge --test formal_anchors` | I.3–I.4 `manifest-bridge` remote; needs W8 | cartridge |
+| **I** | Supercap formal anchor parity | ⚠️ partial | **~70%** | `formal_anchors` **6/6** | I.3–I.4 remote `manifest-bridge` (**G-03** optional) | cartridge |
 | **J** | Warnings / lint hygiene | ⚠️ partial | **~60%** | `grep gate_dual_run_parity umst-manifold/scripts/verify_umst_stack.sh` | J.1 clippy `-D warnings` all features; J.3 regime policy | manifold CI |
 
-**Track closure (2026-05-21):** **C, D, E, F, H** ✅ · **G** ⚠️ (G.1 ✅; G.2–G.3 open) · **B, I, J** ⚠️ hybrid · **A** ❌ ops (W8).
+**Track closure (2026-05-29):** **A** (G-01/G-02) · **C, D, E, F, G, H** ✅ · **B, I, J** ⚠️ hybrid · **G-03** supercap optional.
 
 ---
 

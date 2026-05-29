@@ -169,12 +169,12 @@ These require **publish / CI / human process** — not further Rust scaffolding 
 | `formal-witness-integration` | Composition L4; performance budget | `FormalReject` + optional digest ⚠️ (off by default) |
 | `manifold-manifest` / `embodied-orchestrator` | Composition L6–7 | Manifest / orchestrator ✅ |
 | `ros2-in-manifold` | Performance: HTTP cold path | `gate-server-bin` ✅ |
-| `concrete-cartridge-wire` | Composition L7 | Cartridge git-pinned bridge ⚠️ (W8) |
+| `concrete-cartridge-wire` | Composition L7 | Cartridge git-pinned bridge ✅ (**G-02** @ fe22437) |
 | `parity-ci` | CI matrix (`verify_umst_stack`, drift workflow) | Mostly ✅; adversarial + `rust.yml` optional ⚠️ |
 | `claims-vs-proofs` | (supporting) TCB + traceability docs | No Lean on hot path ✅ |
 | `lean-export-lake` | Composition L1; When Lean export changes | Export canonical ⚠️ (Python not `lake exe`) |
 | `thin-prototypes` | — | Duplicate math deletion (prototype ops) |
-| — (not a plan todo) | God-grade criteria | strict catalog ⚠️; W8 git pin ⚠️; FFI ❌ |
+| — (not a plan todo) | God-grade criteria | strict catalog ✅; W8 G-01/G-02 ✅; **G-03** optional; FFI ❌ horizon |
 
 Full criterion ticks and performance budgets: **[`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md)** § Composition layers, § Performance budget, § CI matrix, § God-grade criteria checklist.
 
