@@ -51,7 +51,11 @@ impl<B: Backend> EmergenceMonitor<B> {
         let sdf_z_minus = sdf.clone().slice([0..batch, 0..(d - 2), 0..h, 0..w]);
         let dz = sdf_z_plus.sub(sdf_z_minus).div_scalar(2.0);
 
-        let zero = sdf.mul_scalar(0.0).into_scalar();
+        let zero = sdf
+            .clone()
+            .slice([0..batch, 0..1, 0..1, 0..1])
+            .reshape([1])
+            .into_scalar();
         let pad_x = dx.pad((1, 1, 0, 0), zero);
         let pad_y = dy.pad((0, 0, 1, 1), zero);
         let dev = dz.device();
