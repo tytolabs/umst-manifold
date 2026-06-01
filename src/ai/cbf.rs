@@ -3,10 +3,6 @@
 
 use burn::tensor::{backend::Backend, Tensor};
 use num_traits::ToPrimitive;
-use std::f64::consts::LN_2;
-
-// Boltzmann constant in J/K
-const K_BOLTZMANN: f64 = 1.380649e-23;
 
 /// Control Barrier Function (CBF) for Thermodynamic Admissibility.
 /// This enforces the Clausius-Duhem inequality and Landauer erasure costs.
@@ -39,7 +35,7 @@ impl ThermodynamicCBF {
     /// Calculates the Landauer erasure cost required to resolve `bits_of_uncertainty`.
     /// Cost = k_B * T * ln(2) * N_bits
     pub fn calculate_landauer_cost(&self, bits_of_uncertainty: f64) -> f64 {
-        K_BOLTZMANN * self.temperature_k * LN_2 * bits_of_uncertainty
+        crate::constants::landauer_bit_energy_joules(self.temperature_k) * bits_of_uncertainty
     }
 
     /// Evaluates if a proposed topology update from the RL agent is thermodynamically permissible.

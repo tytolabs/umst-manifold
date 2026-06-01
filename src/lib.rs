@@ -2,6 +2,9 @@
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
 pub mod ai;
+pub mod constants;
+#[cfg(feature = "math-constants")]
+pub use constants::landauer_bit_energy_joules;
 pub mod core;
 pub mod embodied;
 pub mod gate;
