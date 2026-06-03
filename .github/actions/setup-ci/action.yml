@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT
+# After `actions/checkout@v4`: Rust 1.88 + cache (umst-math is vendored under vendor/).
+name: Setup UMST manifold CI
+description: Rust 1.88 toolchain and Swatinem cache
+inputs:
+  components:
+    description: Optional rustup components (e.g. rustfmt, clippy)
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: "1.88"
+        components: ${{ inputs.components }}
+
+    - uses: Swatinem/rust-cache@v2

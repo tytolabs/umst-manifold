@@ -7,6 +7,8 @@
 
 pub mod adjoint;
 pub mod cbf;
+#[cfg(feature = "epistemic-ppo")]
+pub mod epistemic_mi;
 pub mod formal;
 pub mod info_gain;
 pub mod liquid_ppo;

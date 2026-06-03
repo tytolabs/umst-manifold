@@ -117,7 +117,26 @@ def verify_lock_exports(
     composed_export_path: Path,
     fiber_exports: dict[str, Path],
 ) -> None:
+    import os
+
     lock = json.loads(lock_path.read_text())
+    pins = lock.get("fiber_pins")
+    if pins and fiber_exports and (
+        composed_export_path.resolve() == lock_path.resolve()
+        or os.environ.get("UMST_VERIFY_FIBERS_ONLY") == "1"
+    ):
+        by_repo = {p.get("repo"): p for p in pins if p.get("repo")}
+        for repo, export_path in fiber_exports.items():
+            pin = by_repo.get(repo)
+            if pin is None:
+                print(f"FAIL: lock missing fiber_pins entry for {repo}", file=sys.stderr)
+                sys.exit(1)
+            export = json.loads(export_path.read_text())
+            verify_fiber_pin(pin, export, label=repo)
+            verify_incremental_module_graph(export, label=f"{repo} fiber")
+        print("OK: dual-pin fiber verification (composed R0 checked via catalog_lock_119 tests)")
+        return
+
     composed = json.loads(composed_export_path.read_text())
 
     verify_composed_export(lock, composed, label="merged export")

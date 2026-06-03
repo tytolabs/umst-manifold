@@ -64,6 +64,12 @@ pub struct ManifoldGateway<B: Backend, C: IScienceCartridge<B>> {
     /// **Default 0** in [`Self::new`]; ignored when the feature is off (field is not compiled into
     /// [`PhysicalResult`]).
     pub eta: f32,
+    /// Performance reward weight **α** (free-energy term). Default **1.0**.
+    pub alpha: f32,
+    /// Dissipation penalty weight **β**. Default **0.5**.
+    pub beta: f32,
+    /// Carbon / cost penalty weight **γ**. Default **2.0**.
+    pub gamma: f32,
     /// Optional catalog/schema digest asserted against the incoming UMST when **`formal-witness`** is on.
     /// [`Self::new`] defaults to compiled lock bytes; set `None` explicitly to skip the witness.
     #[cfg(feature = "formal-witness")]
@@ -78,6 +84,9 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
             cbf: ThermodynamicCBF::new(temperature_k, initial_credit),
             zeta: 0.0_f32,
             eta: 0.0_f32,
+            alpha: 1.0_f32,
+            beta: 0.5_f32,
+            gamma: 2.0_f32,
             #[cfg(feature = "formal-witness")]
             expected_catalog_schema_digest: Some(
                 crate::runtime::catalog::lock_upstream_catalog_digest_bytes(),
@@ -143,12 +152,10 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
         match self.cbf.verify_tensor_update::<B>(d_int, info_gain.clone()) {
             Ok(erasure_cost) => {
                 // Spatial Reward = (Alpha * Performance) - (Beta * Dissipation) - (Gamma * CO2) - Erasure Cost
-                let alpha = 1.0_f32;
-                let beta = 0.5_f32;
-                let gamma = 2.0_f32;
-
-                let performance = free_energy.mul_scalar(alpha);
-                let penalty = dissipation.mul_scalar(beta).add(cost.mul_scalar(gamma));
+                let performance = free_energy.mul_scalar(self.alpha);
+                let penalty = dissipation
+                    .mul_scalar(self.beta)
+                    .add(cost.mul_scalar(self.gamma));
 
                 // The erasure cost is paid uniformly across the topology
                 let final_spatial_reward = performance.sub(penalty).sub_scalar(erasure_cost as f32);

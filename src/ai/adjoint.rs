@@ -41,6 +41,9 @@ use std::marker::PhantomData;
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use burn::tensor::{backend::Backend, Shape, Tensor};
 
+#[cfg(feature = "epistemic-ppo")]
+use crate::core::umst_schema::SCALAR_EPISTEMIC_UNCERTAINTY;
+
 /// Placeholder policy vector size \(P\) for [`AdjointNeuralODE::policy_weights`] / adjoint gradients.
 pub const ADJOINT_POLICY_DIM: usize = 1024;
 
@@ -88,21 +91,57 @@ impl<B: Backend<FloatElem = f32>> AdjointNeuralODE<B> {
     /// Forward pass (No-Compromise B1)
     /// Computes continuous integration without saving intermediate UMST states.
     /// Uses O(1) memory footprint.
+    ///
+    /// With **`epistemic-ppo`**, applies policy-weight-driven deltas on
+    /// [`UnifiedMaterialStateTensor::policy_editable_mask`] channels and writes the uncertainty column.
     pub fn forward(
         &self,
         initial_state: UnifiedMaterialStateTensor<B>,
         t_start: f32,
         t_end: f32,
     ) -> UnifiedMaterialStateTensor<B> {
-        let current_state = initial_state;
-        let steps = 10;
-        let _dt = (t_end - t_start) / steps as f32;
-
-        for _ in 0..steps {
-            let _ = (_dt, &self.policy_weights);
+        #[cfg(not(feature = "epistemic-ppo"))]
+        {
+            let _ = (t_start, t_end);
+            let _ = &self.policy_weights;
+            initial_state
         }
 
-        current_state
+        #[cfg(feature = "epistemic-ppo")]
+        {
+            self.forward_epistemic(initial_state, t_start, t_end)
+        }
+    }
+
+    #[cfg(feature = "epistemic-ppo")]
+    fn forward_epistemic(
+        &self,
+        mut state: UnifiedMaterialStateTensor<B>,
+        t_start: f32,
+        t_end: f32,
+    ) -> UnifiedMaterialStateTensor<B> {
+        let steps = 10usize;
+        let dt = ((t_end - t_start) / steps as f32).max(1e-6);
+        let [n, f] = state.scalar_features.dims();
+        let dof = (n * f).min(ADJOINT_POLICY_DIM);
+
+        for step in 0..steps {
+            let w = 1.0_f32 / (step + 1) as f32;
+            let theta_slice = self
+                .policy_weights
+                .clone()
+                .slice([0..dof])
+                .reshape([n, f])
+                .mul_scalar(dt * w * 0.05);
+            let proposed = state.scalar_features.clone().add(theta_slice.clone());
+            state.scalar_features = state.apply_policy_mask(proposed.clone());
+
+            if f > SCALAR_EPISTEMIC_UNCERTAINTY {
+                let unc = theta_slice.powf_scalar(2.0).mean_dim(1).clamp(0.0, 1.0);
+                state.write_scalar_channel(SCALAR_EPISTEMIC_UNCERTAINTY, unc);
+            }
+        }
+        state
     }
 
     /// Backward pass using the Adjoint State Method (No-Compromise B2/B3), driven by the scalar-per-batch

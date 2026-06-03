@@ -13,9 +13,12 @@ on:
 permissions:
   contents: read
   actions: write
+  # Required to sparse-checkout private tytolabs/egoff for `../egoff/umst-math`.
+  packages: read
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
 
 jobs:
   readme-sanity:
@@ -54,8 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: ./.github/actions/setup-ci
 
       - name: Build (default features)
         run: cargo build --verbose
@@ -73,8 +75,7 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: ./.github/actions/setup-ci
       - name: cargo test --features solver-stable
         run: cargo test --verbose --features solver-stable
 
@@ -85,8 +86,7 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: ./.github/actions/setup-ci
       - name: cargo check --features solver-stable,solver-research
         run: cargo check --verbose --all-targets --features solver-stable,solver-research
 
@@ -97,8 +97,7 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: ./.github/actions/setup-ci
       - name: cargo test --release (THMC / photonics DEC brick / statmech Johnson upscale)
         run: |
           set -euo pipefail
@@ -116,8 +115,7 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: ./.github/actions/setup-ci
       - name: physics Host-tensor guard
         run: bash scripts/check_physics_no_gradient_break.sh
       - name: cargo test --features solver-experimental --no-fail-fast (optional)
@@ -130,8 +128,7 @@ jobs:
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: ./.github/actions/setup-ci
       - name: cargo test --release --features solver-experimental (retry ×1)
         run: |
           set -euo pipefail
@@ -149,10 +146,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: "1.88"
-      - uses: Swatinem/rust-cache@v2
+      - uses: ./.github/actions/setup-ci
 
       - name: Resolve formal export root
         id: formal
@@ -202,12 +196,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Pin to rust-toolchain.toml so rustfmt/clippy install on the same toolchain cargo uses.
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: ./.github/actions/setup-ci
         with:
-          toolchain: "1.88"
           components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
       - name: rustfmt
         run: cargo fmt --all -- --check
       - name: clippy

@@ -1,0 +1,3 @@
+umst-formal=b57c9e5245d42201001881acdd96ff563ca424d5
+# pinned 2026-05-30 — §14bis.x-L0-WIDE-SEAL — docs-only HEAD atop 0b2879f proof pin (KRON compose unchanged)
+# bump cadence: dedicated PR per change, title prefix [L-0 bump]

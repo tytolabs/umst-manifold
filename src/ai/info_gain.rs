@@ -129,6 +129,50 @@ pub fn suggested_info_gain_from_batched_nodal_scalars<B: Backend<FloatElem = f32
     suggested_info_gain_from_state_delta(baseline.reshape([batch, d]), proposed.reshape([batch, d]))
 }
 
+#[cfg(feature = "epistemic-ppo")]
+pub use crate::ai::epistemic_mi::{
+    clamp_mi_for_landauer, EpistemicStateTracker, MutualInfoEstimator,
+};
+
+/// Histogram MI → batch `info_gain` tensor for the Landauer CBF branch (R2 envelope).
+///
+/// Updates `estimator` with `(state, observation)` host vectors, clamps to `ln 2`, and returns
+/// `Tensor<B, 1>` shaped `[1]` for gateway admission.
+#[cfg(feature = "epistemic-ppo")]
+pub fn histogram_info_gain_tensor<B: Backend<FloatElem = f32>>(
+    estimator: &mut MutualInfoEstimator,
+    state: &[f64],
+    observation: &[f64],
+    device: &B::Device,
+) -> Tensor<B, 1> {
+    estimator.update(state, observation);
+    let bits = clamp_mi_for_landauer(estimator.estimate()) as f32;
+    Tensor::from_floats([bits], device)
+}
+
+/// Mean over active nodes of the first `dim` scalar columns → `f64` vector (host MI probe).
+#[cfg(feature = "epistemic-ppo")]
+pub fn nodal_scalar_means<B: Backend<FloatElem = f32>>(
+    scalars: &Tensor<B, 2>,
+    dim: usize,
+) -> Vec<f64> {
+    let [n, f] = scalars.dims();
+    let dim = dim.min(f);
+    if n == 0 || dim == 0 {
+        return vec![0.0; dim];
+    }
+    let flat: Vec<f32> = scalars.clone().into_data().value;
+    let mut out = vec![0.0_f64; dim];
+    for j in 0..dim {
+        let mut sum = 0.0_f64;
+        for i in 0..n {
+            sum += flat[i * f + j] as f64;
+        }
+        out[j] = sum / n as f64;
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

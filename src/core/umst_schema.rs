@@ -41,6 +41,12 @@ pub const SCALAR_DAMAGE: usize = 4;
 /// omit this column keep a **uniform** \(G_c\) from calibration / material closure.
 pub const SCALAR_FRACTURE_ENERGY_GC: usize = 5;
 
+/// Epistemic uncertainty σ (normalized 0–1), column `6` when `F_scalars > 6`.
+///
+/// Written by [`crate::ai::adjoint::AdjointNeuralODE::forward`] under **`epistemic-ppo`** from
+/// policy-driven scalar deltas on [`policy_editable_mask`](crate::core::tensors::UnifiedMaterialStateTensor::policy_editable_mask).
+pub const SCALAR_EPISTEMIC_UNCERTAINTY: usize = 6;
+
 /// Nodal mechanical displacement **u** (SI metres), vector slot `0` in [`crate::core::tensors::UnifiedMaterialStateTensor::vector_features`]
 /// (`[N, F_vectors, 3]`). When `F_vectors == 0`, THMC / mechanics adapters use zero displacement.
 pub const VECTOR_MECHANICAL_DISPLACEMENT: usize = 0;

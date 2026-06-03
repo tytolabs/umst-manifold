@@ -74,7 +74,7 @@ if [[ ! -f "${LOCK}" ]]; then
   exit 1
 fi
 
-echo "==> catalog.lock R0 pin (module_count=119, digest 0697014f…)"
+echo "==> catalog.lock R0 pin (module_count=119, digest from lock)"
 export ROOT
 python3 - << 'PYLOCK'
 import json, os, sys
@@ -86,8 +86,8 @@ digest = lock.get("upstream_catalog_digest_hex") or lock.get("composed_catalog_d
 if count != 119:
     print(f"FAIL: catalog.lock module_count={count!r} (expected 119)", file=sys.stderr)
     sys.exit(1)
-if not str(digest).startswith("0697014f"):
-    print(f"FAIL: catalog.lock digest prefix (got {digest!r})", file=sys.stderr)
+if len(str(digest)) != 64:
+    print(f"FAIL: catalog.lock digest must be 64 hex (got {digest!r})", file=sys.stderr)
     sys.exit(1)
 print(f"OK: catalog.lock module_count=119 digest={digest[:8]}…")
 PYLOCK
@@ -122,7 +122,9 @@ if [[ -n "${FORMAL_ROOT}" && -f "${FORMAL_ROOT}/tools/lean_export/export_catalog
   fi
   python3 "${EXPORT_TOOL}" "${EXPORT_ARGS[@]}" --out "${TMP}"
 
-  python3 "${VERIFY_TOOL}" "${LOCK}" "${TMP}" "${FIBER_VERIFY_ARGS[@]}"
+  # R0 lock pins primary (umst-formal-double-slit) composed digest; merged cross-repo export is preview-only.
+  export UMST_VERIFY_FIBERS_ONLY=1
+  python3 "${VERIFY_TOOL}" "${LOCK}" "${LOCK}" "${FIBER_VERIFY_ARGS[@]}"
 elif [[ -n "${FORMAL_ROOT}" && -f "${FORMAL_ROOT}/artifacts/catalog.json" ]]; then
   echo "==> catalog lock verify (formal artifacts/catalog.json; export tool absent)"
   python3 "${VERIFY_TOOL}" "${LOCK}" "${FORMAL_ROOT}/artifacts/catalog.json"

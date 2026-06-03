@@ -166,6 +166,15 @@ cargo test -p umst-concrete-cartridge --features manifest-bridge
 
 ---
 
+## Proxy loop workstreams (`feat/proxy-loop`)
+
+| ID | Scope | Status | Evidence |
+|----|-------|--------|----------|
+| **ws-manifold-mi** | `epistemic-ppo`: AdjointNeuralODE forward + histogram MI + uncertainty channel + gateway α/β/γ | **DONE** | `src/ai/epistemic_mi.rs`, `src/ai/adjoint.rs`, `src/ai/info_gain.rs`, `src/ai/ppo.rs`, `src/core/umst_schema.rs` |
+| **ws-track-b** | BurnLiquidPPOAgent ODE+MI reward; gate pass-rate training test | **DONE** | `src/ai/liquid_ppo.rs`, `tests/epistemic_ppo.rs` — `cargo test --features epistemic-ppo --test epistemic_ppo` |
+
+---
+
 ## Related docs
 
 - [`REPO_LAYOUT_SSOT.md`](REPO_LAYOUT_SSOT.md) — directory map

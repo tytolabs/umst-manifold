@@ -83,6 +83,8 @@ trace-calibration = ["ros2-contract"]
 manifest-bridge = []
 manifold-manifest = []
 manifold-gate = []
+# Experimental: real AdjointNeuralODE mutation, histogram MI, uncertainty channel (default off).
+epistemic-ppo = ["train"]
 # Landauer / CODATA via `umst-math` (enabled from egoff `manifold-integration`).
 math-constants = ["dep:umst-math", "dep:ordered-float"]
 
@@ -98,7 +100,8 @@ time = "0.3.47"
 rand = "0.8"
 num-traits = "0.2"
 sha2 = "0.10"
-umst-math = { path = "../egoff/umst-math", optional = true }
+# Vendored from tytolabs/egoff @ 8d53ecb — run `scripts/sync_vendor_umst_math.sh` to refresh.
+umst-math = { path = "vendor/umst-math", optional = true }
 ordered-float = { version = "5.1", optional = true }
 
 [build-dependencies]
@@ -289,3 +292,8 @@ path = "tests/topology_continuation.rs"
 required-features = ["topology-density-evolution"]
 
 # TEMP probe — removed after check
+
+[[test]]
+name = "epistemic_ppo"
+path = "tests/epistemic_ppo.rs"
+required-features = ["epistemic-ppo"]

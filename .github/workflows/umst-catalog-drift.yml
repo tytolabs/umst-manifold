@@ -31,12 +31,14 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
   # Lean export lives in tytolabs/umst-formal-double-slit (checked out below, or sibling on disk).
   UMST_FORMAL_ROOT: ${{ github.workspace }}/umst-formal-double-slit
   UMST_REQUIRE_FORMAL_EXPORT: "1"
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   verify-umst-stack:
@@ -44,18 +46,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-ci
 
       - name: Checkout umst-formal-double-slit (catalog export)
         uses: actions/checkout@v4
         with:
           repository: tytolabs/umst-formal-double-slit
           path: umst-formal-double-slit
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: "1.88"
-
-      - uses: Swatinem/rust-cache@v2
 
       - name: verify_umst_stack.sh
         run: bash scripts/verify_umst_stack.sh

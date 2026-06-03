@@ -9,6 +9,8 @@
 //! Per-step numeric bounds follow Lean `EmittedTraceWellFormed` (proved from
 //! `EpistemicPerStepNumerics` / `epistemicMI_le_log_two`, `epistemicLandauerCost_le_landauerBitEnergy`).
 
+use std::f64::consts::LN_2;
+
 /// Landauer bit energy `k_B T ln 2` (joules), matching Lean `landauerBitEnergy`.
 ///
 /// SSOT: [`crate::constants::landauer_bit_energy_joules`] (`umst-math` when `math-constants`).
