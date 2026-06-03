@@ -197,6 +197,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-ci
+        with:
           components: rustfmt, clippy
       - name: rustfmt
         run: cargo fmt --all -- --check
