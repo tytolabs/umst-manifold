@@ -19,6 +19,8 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+  # Passed into setup-ci for private tytolabs/egoff sparse clone (see umst-ucrs workflow).
+  EGOFF_READ_TOKEN: ${{ secrets.EGOFF_READ_TOKEN || secrets.GITHUB_TOKEN }}
 
 jobs:
   readme-sanity:
@@ -58,6 +60,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-ci
+        with:
+          egoff-read-token: ${{ env.EGOFF_READ_TOKEN }}
 
       - name: Build (default features)
         run: cargo build --verbose
@@ -76,6 +80,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-ci
+        with:
+          egoff-read-token: ${{ env.EGOFF_READ_TOKEN }}
       - name: cargo test --features solver-stable
         run: cargo test --verbose --features solver-stable
 
@@ -87,6 +93,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-ci
+        with:
+          egoff-read-token: ${{ env.EGOFF_READ_TOKEN }}
       - name: cargo check --features solver-stable,solver-research
         run: cargo check --verbose --all-targets --features solver-stable,solver-research
 
@@ -98,6 +106,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-ci
+        with:
+          egoff-read-token: ${{ env.EGOFF_READ_TOKEN }}
       - name: cargo test --release (THMC / photonics DEC brick / statmech Johnson upscale)
         run: |
           set -euo pipefail
@@ -116,6 +126,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-ci
+        with:
+          egoff-read-token: ${{ env.EGOFF_READ_TOKEN }}
       - name: physics Host-tensor guard
         run: bash scripts/check_physics_no_gradient_break.sh
       - name: cargo test --features solver-experimental --no-fail-fast (optional)
@@ -129,6 +141,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-ci
+        with:
+          egoff-read-token: ${{ env.EGOFF_READ_TOKEN }}
       - name: cargo test --release --features solver-experimental (retry ×1)
         run: |
           set -euo pipefail
@@ -147,6 +161,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-ci
+        with:
+          egoff-read-token: ${{ env.EGOFF_READ_TOKEN }}
 
       - name: Resolve formal export root
         id: formal
@@ -198,6 +214,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-ci
         with:
+          egoff-read-token: ${{ env.EGOFF_READ_TOKEN }}
           components: rustfmt, clippy
       - name: rustfmt
         run: cargo fmt --all -- --check
