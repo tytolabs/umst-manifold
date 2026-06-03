@@ -104,7 +104,7 @@ impl<B: Backend<FloatElem = f32>> AdjointNeuralODE<B> {
         {
             let _ = (t_start, t_end);
             let _ = &self.policy_weights;
-            return initial_state;
+            initial_state
         }
 
         #[cfg(feature = "epistemic-ppo")]
