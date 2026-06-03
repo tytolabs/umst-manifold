@@ -97,7 +97,7 @@ tracing = "0.1"
 bincode = "=2.0.0-rc.3"
 # I-0 egoff coupling: align with zeroclaw/matrix-sdk `time ^0.3.44` (was `=0.3.40`).
 time = "0.3.47"
-rand = "0.8"
+rand = "0.10"
 num-traits = "0.2"
 sha2 = "0.10"
 # Vendored from tytolabs/egoff @ 8d53ecb — run `scripts/sync_vendor_umst_math.sh` to refresh.
