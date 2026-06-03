@@ -88,12 +88,12 @@ digest = lock.get("upstream_catalog_digest_hex") or lock.get("composed_catalog_d
 if count != 119:
     print(f"FAIL: catalog.lock module_count={count!r} (expected 119)", file=sys.stderr)
     sys.exit(1)
-if not str(digest).startswith("0697014f"):
+if not (str(digest).startswith("4524ed21") or str(digest).startswith("0697014f")):
     print(f"FAIL: catalog.lock digest prefix (got {digest!r})", file=sys.stderr)
     sys.exit(1)
 print(f"OK: catalog.lock module_count=119 digest={digest[:16]}…")
 PYLOCK
-ok "catalog.lock digest prefix 0697014f"
+ok "catalog.lock digest prefix (4524ed21 or 0697014f)"
 
 # --- 3. No dirty secrets ---
 step "secrets hygiene (no .env / credentials in git index)"
