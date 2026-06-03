@@ -8,6 +8,8 @@ Cargo.lock
 .DS_Store
 Thumbs.db
 Desktop/
+# CI / local symlink checkout of tytolabs/egoff (see Cargo.toml umst-math path).
+/egoff/
 
 .idea/
 .vscode/
