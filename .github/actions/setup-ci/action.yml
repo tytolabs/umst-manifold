@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: MIT
+# Checkout umst-manifold + sparse egoff/umst-math (path dep), Rust 1.88, cache.
+name: Setup UMST manifold CI
+description: Repo checkout, private egoff umst-math sibling, Rust 1.88, Swatinem cache
+inputs:
+  components:
+    description: Optional rustup components (e.g. rustfmt, clippy)
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v4
+
+    - name: Checkout egoff (umst-math path dependency)
+      uses: actions/checkout@v4
+      with:
+        repository: tytolabs/egoff
+        path: ../egoff
+        sparse-checkout: umst-math
+        sparse-checkout-cone-mode: false
+
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: "1.88"
+        components: ${{ inputs.components }}
+
+    - uses: Swatinem/rust-cache@v2

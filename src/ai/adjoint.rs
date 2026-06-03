@@ -137,10 +137,7 @@ impl<B: Backend<FloatElem = f32>> AdjointNeuralODE<B> {
             state.scalar_features = state.apply_policy_mask(proposed.clone());
 
             if f > SCALAR_EPISTEMIC_UNCERTAINTY {
-                let unc = theta_slice
-                    .powf_scalar(2.0)
-                    .mean_dim(1)
-                    .clamp(0.0, 1.0);
+                let unc = theta_slice.powf_scalar(2.0).mean_dim(1).clamp(0.0, 1.0);
                 state.write_scalar_channel(SCALAR_EPISTEMIC_UNCERTAINTY, unc);
             }
         }

@@ -37,25 +37,20 @@ env:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   verify-umst-stack:
     name: verify UMST stack (export + gate tests)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-ci
 
       - name: Checkout umst-formal-double-slit (catalog export)
         uses: actions/checkout@v4
         with:
           repository: tytolabs/umst-formal-double-slit
           path: umst-formal-double-slit
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: "1.88"
-
-      - uses: Swatinem/rust-cache@v2
 
       - name: verify_umst_stack.sh
         run: bash scripts/verify_umst_stack.sh

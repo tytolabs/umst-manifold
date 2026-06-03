@@ -152,18 +152,12 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
         let device = initial_state.scalar_features.device();
         let baseline_scalars = initial_state.scalar_features.clone();
 
-        let proposed_topology = self
-            .ode_solver
-            .forward(initial_state, t_start, t_end);
+        let proposed_topology = self.ode_solver.forward(initial_state, t_start, t_end);
 
         let state_vec = nodal_scalar_means(&baseline_scalars, 6);
         let obs_vec = nodal_scalar_means(&proposed_topology.scalar_features, 6);
-        let info_gain = histogram_info_gain_tensor(
-            &mut self.mi_estimator,
-            &state_vec,
-            &obs_vec,
-            &device,
-        );
+        let info_gain =
+            histogram_info_gain_tensor(&mut self.mi_estimator, &state_vec, &obs_vec, &device);
         self.epistemic_tracker.update(self.mi_estimator.estimate());
 
         match self

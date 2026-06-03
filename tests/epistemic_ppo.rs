@@ -41,8 +41,7 @@ fn umst_with_hydration(hydration: f32, n: usize, f: usize) -> UnifiedMaterialSta
     for i in 0..n {
         data[i * f + SCALAR_HYDRATION_ALPHA] = hydration;
     }
-    let scalar_features =
-        Tensor::<B, 2>::from_data(Data::new(data, Shape::new([n, f])), &dev);
+    let scalar_features = Tensor::<B, 2>::from_data(Data::new(data, Shape::new([n, f])), &dev);
     let vector_features = Tensor::<B, 3>::zeros([n, 1, 3], &dev);
     let matrix_features = Tensor::<B, 4>::zeros([n, 1, 3, 3], &dev);
     UnifiedMaterialStateTensor {
@@ -87,7 +86,10 @@ impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for GateAwareCartridge 
             .clone()
             .slice([0..n, SCALAR_HYDRATION_ALPHA..SCALAR_HYDRATION_ALPHA + 1]);
         let target = 0.35_f32;
-        let dissipation = alpha_col.sub_scalar(target).powf_scalar(2.0).mul_scalar(50.0);
+        let dissipation = alpha_col
+            .sub_scalar(target)
+            .powf_scalar(2.0)
+            .mul_scalar(50.0);
         PhysicalResult {
             free_energy: Tensor::zeros([1, n], &d),
             dissipation,
@@ -107,10 +109,8 @@ fn adjoint_forward_mutates_policy_editable_scalars() {
     let n = 2usize;
     let f = 7usize;
     let mut umst = umst_with_hydration(0.5, n, f);
-    umst.policy_editable_mask = Tensor::<B, 2>::from_data(
-        Data::new(vec![1.0_f32, 0.0_f32], Shape::new([n, 1])),
-        &dev,
-    );
+    umst.policy_editable_mask =
+        Tensor::<B, 2>::from_data(Data::new(vec![1.0_f32, 0.0_f32], Shape::new([n, 1])), &dev);
 
     let mut ode = AdjointNeuralODE::<B>::new(&dev);
     ode.policy_weights = Tensor::<B, 1>::full([1024], 0.5_f32, &dev);

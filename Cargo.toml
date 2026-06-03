@@ -100,8 +100,8 @@ time = "0.3.47"
 rand = "0.8"
 num-traits = "0.2"
 sha2 = "0.10"
-# Pinned git SSOT (CI-safe). MaOS sibling checkout: `[patch]` in umst-concrete-cartridge workspace.
-umst-math = { package = "umst-math", git = "https://github.com/tytolabs/egoff.git", rev = "8d53ecbad75382c2b343c02b789b8149b4e160c2", optional = true }
+# CI: `.github/actions/setup-ci` checks out `../egoff/umst-math` (private tytolabs/egoff).
+umst-math = { path = "../egoff/umst-math", optional = true }
 ordered-float = { version = "5.1", optional = true }
 
 [build-dependencies]

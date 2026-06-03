@@ -40,6 +40,8 @@ src/physics/adjoint.rs
 # REVIEWED 2026-05-12: **HostBridge** (`acoustics-newmark`) — `pack_bn3_to_flat` stages one batch row to host `Vec<f32>`
 # for `krylov_host::gmres_f32_try` (narrowed slice + `reshape([3N])` + `into_data().value`); inner physics stays tensor until Krylov.
 # `#[cfg(test)]` blocks use `into_data` for scalar asserts — TestOnly.
+src/physics/adjoint_q1_hex.rs
+# REVIEWED 2026-06-03: **HostBridge** — Q1-hex `rho` / body-force / mask staged via `into_data().value` for host PCG (`q1_hex_elasticity`).
 src/physics/solvers/acoustics.rs
 # REVIEWED 2026-05-12: **TestOnly** — `into_data().value` only under `#[cfg(all(test, feature = "topology-density-evolution"))]` for Helmholtz / Laplacian residual asserts (see FP_CATEGORICAL_BURN.md E4).
 src/physics/topology_filter.rs
