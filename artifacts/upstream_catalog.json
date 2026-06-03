@@ -2055,11 +2055,12 @@
     },
     {
       "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/KroneckerEigen.lean",
-      "content_sha256": "20e498550e4d60d98fabfbc4610a7ddbdc8df386b2c87e756d28cda366974a2b",
+      "content_sha256": "cbee785a0bdcccade961aeb21c34b087d5e303fd7995d2d9132d5556ca5d598e",
       "declarations": {
         "theorem": [
           "mul_kronecker_mul'",
           "unitary_kronecker_prod",
+          "star_kronecker",
           "carrier_kronecker_spectral",
           "charpoly_kronecker_carrier",
           "charpoly_tensorDensity_carrier",
@@ -2579,7 +2580,7 @@
     },
     {
       "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/QuantumMutualInfo.lean",
-      "content_sha256": "82732e97702b663a60fb2431a8600c519e3d5dce4ac41e81f5b6d83e1e91afca",
+      "content_sha256": "d4359da4f0098764c561e5488fc58f21c735f96193a867b7917949a10fcfe6f9",
       "declarations": {
         "theorem": [
           "quantumMutualInfo_eq_entropy_minus_conditional",
@@ -2791,7 +2792,7 @@
     },
     {
       "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/VonNeumannEntropy.lean",
-      "content_sha256": "04fd906d9fc9ca84e04d15d51e1667888b871f9e6307482e7ce2c424a8e603b4",
+      "content_sha256": "7e974e084d6b0c67f2c32712092062f288881e904fbce502495a932a22beec43",
       "declarations": {
         "theorem": [
           "trace_eq_sum_eigenvalues_hermitian",
@@ -2804,6 +2805,8 @@
           "vonNeumannEntropy_congr_eigenvalues",
           "vonNeumannEntropy_eq_of_eigenvalues_reindex",
           "charmatrix_unitary_conj",
+          "charmatrix_unitary_conj'",
+          "charpoly_unitary_conj'",
           "charpoly_unitary_conj",
           "det_eq_of_charpoly_eq",
           "trace_unitary_conj",
@@ -4496,5 +4499,5 @@
       "to_approx": "VonNeumannEntropy"
     }
   ],
-  "digest": "0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227"
+  "digest": "4524ed218634fcbe716d76a0948b7ab01c0ee03a8bc36c31f2ba31798713e02d"
 }

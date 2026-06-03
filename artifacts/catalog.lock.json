@@ -10,7 +10,7 @@
   "fiber_pins": [
     {
       "repo": "umst-formal-double-slit",
-      "catalog_digest_hex": "c1d9ba2aa402106a3477f454dd6d28015eb399c1160d8a2e2ba7d16788fdbfcc",
+      "catalog_digest_hex": "ecb4b177bee1148d8cef8bcd129d95e94609e1c6f303d416a3e566441a6bd113",
       "module_count": 69,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"
