@@ -1,0 +1,74 @@
+[package]
+name = "umst-math"
+version = "0.1.0"
+edition = "2021"
+description = "UMST mathematical kernel — Rust mirror of tytolabs Lean formalizations (Egoff Phase 2)"
+license = "MIT"
+rust-version = "1.74"
+
+[features]
+default = []
+simd = ["dep:serde", "dep:serde_json"]
+
+[dependencies]
+ordered-float = { version = "5.1.0", default-features = false }
+petgraph = { version = "0.6", default-features = true }
+pqcrypto-dilithium = "0.5.0"
+pqcrypto-kyber = "0.8.1"
+pqcrypto-sphincsplus = "0.7.2"
+pqcrypto-traits = "0.3.5"
+serde = { version = "1.0.217", optional = true, features = ["derive"] }
+serde_json = { version = "1.0.149", optional = true }
+sha3 = "0.10.8"
+thiserror = "1.0"
+
+[dev-dependencies]
+quickcheck = "1.0"
+regex = "1.11.1"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = { version = "1.0.149" }
+subtle = "2.5"
+
+[[bin]]
+name = "simd_kernel_tolerance"
+path = "src/bin/simd_kernel_tolerance.rs"
+required-features = ["simd"]
+
+[[test]]
+name = "s0_crypto_kem_kat"
+path = "tests/s0_crypto_kem_kat.rs"
+
+[[test]]
+name = "s0_crypto_sig_kat"
+path = "tests/s0_crypto_sig_kat.rs"
+
+[[test]]
+name = "s0_crypto_hash_kat"
+path = "tests/s0_crypto_hash_kat.rs"
+
+[[test]]
+name = "s0_crypto_kem_roundtrip"
+path = "tests/s0_crypto_kem_roundtrip.rs"
+
+[[test]]
+name = "s0_crypto_sig_roundtrip"
+path = "tests/s0_crypto_sig_roundtrip.rs"
+
+[[test]]
+name = "s0_crypto_kem_constant_time"
+path = "tests/s0_crypto_kem_constant_time.rs"
+
+[[test]]
+name = "s0_crypto_sig_constant_time"
+path = "tests/s0_crypto_sig_constant_time.rs"
+
+[[test]]
+name = "s0_crypto_malformed_input"
+path = "tests/s0_crypto_malformed_input.rs"
+
+[[test]]
+name = "s0_crypto_registry_constants"
+path = "tests/s0_crypto_registry_constants.rs"
+
+[lints.rust]
+unsafe_code = "forbid"

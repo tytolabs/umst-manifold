@@ -1,0 +1,17 @@
+{
+  "old": {
+    "density": 2400.0,
+    "free_energy": 0.0,
+    "hydration": 0.0,
+    "strength": 0.0,
+    "max_strength": 1.0
+  },
+  "new": {
+    "density": 2550.0,
+    "free_energy": 0.0,
+    "hydration": 0.0,
+    "strength": 0.0,
+    "max_strength": 1.0
+  },
+  "expected_gate_sdf": 50.0
+}

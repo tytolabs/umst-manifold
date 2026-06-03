@@ -32,7 +32,6 @@ on:
 env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
-  EGOFF_READ_TOKEN: ${{ secrets.EGOFF_READ_TOKEN || secrets.GITHUB_TOKEN }}
   # Lean export lives in tytolabs/umst-formal-double-slit (checked out below, or sibling on disk).
   UMST_FORMAL_ROOT: ${{ github.workspace }}/umst-formal-double-slit
   UMST_REQUIRE_FORMAL_EXPORT: "1"
@@ -48,8 +47,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-ci
-        with:
-          egoff-read-token: ${{ env.EGOFF_READ_TOKEN }}
 
       - name: Checkout umst-formal-double-slit (catalog export)
         uses: actions/checkout@v4

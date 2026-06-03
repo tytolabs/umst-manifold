@@ -1,11 +1,8 @@
 # SPDX-License-Identifier: MIT
-# After `actions/checkout@v4` on umst-manifold: egoff umst-math, Rust 1.88, cache.
+# After `actions/checkout@v4`: Rust 1.88 + cache (umst-math is vendored under vendor/).
 name: Setup UMST manifold CI
-description: Clone private egoff umst-math, Rust 1.88, Swatinem cache
+description: Rust 1.88 toolchain and Swatinem cache
 inputs:
-  egoff-read-token:
-    description: Token with read access to tytolabs/egoff (use secrets.EGOFF_READ_TOKEN)
-    required: true
   components:
     description: Optional rustup components (e.g. rustfmt, clippy)
     required: false
@@ -13,22 +10,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Clone egoff (umst-math path dependency)
-      shell: bash
-      env:
-        TOKEN: ${{ inputs.egoff-read-token }}
-      run: |
-        set -euo pipefail
-        if [ -f egoff/umst-math/Cargo.toml ]; then
-          echo "egoff/umst-math already present"
-          exit 0
-        fi
-        rm -rf egoff
-        git clone --depth 1 --filter=blob:none --sparse \
-          "https://x-access-token:${TOKEN}@github.com/tytolabs/egoff.git" egoff
-        cd egoff
-        git sparse-checkout set umst-math
-
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: "1.88"

@@ -1,0 +1,7 @@
+# Push-receipt ledger — append-only.
+# Each line: <egoff-commit-sha> <target-repo>@<target-sha-pre> -> <target-sha-post> <iso-ts> ZCI-MULTI=PASS lang-banners=lean+coq+agda+haskell+rust+python
+# §14bis.j push-safety perimeter: every egoff-driven git push to a sibling repo
+# (umst-formal, umst-formal-double-slit, umst-ucrs) MUST be preceded by
+# `scripts/check_zci_multi_lang.sh --target=<repo>` returning exit 0 + all 6
+# OK <lang> banners. The PR template on the target repo includes one such
+# line verbatim.

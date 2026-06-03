@@ -1,0 +1,18 @@
+# Toolchain pin — Tier-2 CGD-grounded; Tier-4 Pin-derivation under §0.11 CDD.
+# Each non-comment line: <toolchain>: <version>
+# CI compares this file to the actually-resolved toolchain version per job;
+# drift emits cargo:warning from umst-ffi/build.rs (extends L-0 pattern) +
+# fails check_zci_multi_lang.sh under EGOFF_TOOLCHAIN_PIN_STRICT=1 (default).
+# Toolchain partial-order edges (§0.4 graph layer):
+#   agda-stdlib → agda
+#   cabal → ghc
+#   uv → python
+lean: leanprover/lean4:v4.13.0
+coq: 8.20.0
+agda: 2.7.0
+agda-stdlib: 2.1.1
+ghc: 9.10.1
+cabal: 3.12.1.0
+rustc: nightly-2025-10-15
+python: 3.13.1
+uv: 0.5.x
