@@ -22,10 +22,6 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 This is the **physics substrate** in the UMST stack — not an end-user application. It owns Discrete Exterior Calculus (DEC), the thermodynamic gate, continuous solver kernels, and the Lean-catalog witnesses that tie Rust modules to formal obligations. Domain chemistry, Python bindings, and MCP tools live in sibling cartridges; this repo stays a pure library so conservation structure and admissibility gates are shared once across every material domain.
 
-### What changed after publish (2026-05-29)
-
-Publishing to [`tytolabs/umst-manifold`](https://github.com/tytolabs/umst-manifold) closed the loop between what we claim and what CI enforces. The **119-module dual-pin catalog lock** is the production contract — every Lean module in the unified export affects the digest pinned in `artifacts/catalog.lock.json`. Local parity is one command: `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` ([`docs/VERIFY.md`](docs/VERIFY.md)). **`main` @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437)** is the last code CI green pin; status narrative @ [`8b97af7`](https://github.com/tytolabs/umst-manifold/commit/8b97af7). Cartridges can depend on this crate by **git revision** instead of monorepo path alone.
-
 ### Three ceilings (do not mix these)
 
 Verification answers three different questions — not one blended “completion %”. See [`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md) and the [headline table](docs/GOD_GRADE_PROGRESS_VERIFIED.md#headline-percentages-ssot--one-table).
