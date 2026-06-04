@@ -481,7 +481,7 @@ We maintain strict formal proof anchors (`formal_status`) mapping our Rust imple
 
 ### Lean catalog lock (dual-pin — production **119** modules)
 
-**Production pin:** digest `0697014fb5b90a3a…` · **119** modules · `cross_repo_merge: true` — see [`docs/GOD_GRADE_PROGRESS_VERIFIED.md`](docs/GOD_GRADE_PROGRESS_VERIFIED.md).
+**Production pin:** digest `4524ed218634fcbe…` · **119** modules · `cross_repo_merge: true` — see [`docs/GOD_GRADE_PROGRESS_VERIFIED.md`](docs/GOD_GRADE_PROGRESS_VERIFIED.md).
 
 **Historical primary-only pin:** digest `c1d9ba2aa402…` · **69** modules — pre–`formal-fiber-merge` rollback only ([`docs/FORMAL_FIBER_MERGE_RUNBOOK.md`](docs/FORMAL_FIBER_MERGE_RUNBOOK.md)).
 
