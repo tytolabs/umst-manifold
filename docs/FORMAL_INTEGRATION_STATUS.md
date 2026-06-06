@@ -3,10 +3,10 @@
 **As of:** 2026-05-21  
 **Pipeline / drift / automation (companion):** [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md)  
 **Witness ladder (god-grade order):** [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md)  
-**Sources:** `umst-formal-double-slit/artifacts/catalog.json` (**119** Lean modules unified, 582+ theorem/lemma/axiom names on primary fiber export), `umst-manifold/docs/claims-vs-proofs.md`, `artifacts/catalog.lock.json`, Rust `src/` grep, `docs/END_CONDITION_REPORT.md`. Truth pass: [`TRUTH_AUDIT_LOG.md`](TRUTH_AUDIT_LOG.md).  
-**Evidence appendices (on disk):** [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md), [`COMPOSITIONAL_INFERENCE_AUDIT.md`](COMPOSITIONAL_INFERENCE_AUDIT.md), [`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`](../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md), [`../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md`](../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md), [`../umst-supercap-cartridge/docs/FORMAL_SCALING.md`](../umst-supercap-cartridge/docs/FORMAL_SCALING.md).
+**Sources:** `umst-formal-double-slit/artifacts/catalog.json` (**119** Lean modules unified, 582+ theorem/lemma/axiom names on primary fiber export), `umst-manifold/docs/claims-vs-proofs.md`, `artifacts/catalog.lock.json`, Rust `src/` grep, `docs/PENDING_GAPS_PLAIN.md`. Truth pass: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).  
+**Evidence appendices (on disk):** [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md), [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md), [`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`](../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md), [`../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md`](../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md), [`../umst-supercap-cartridge/docs/FORMAL_SCALING.md`](../umst-supercap-cartridge/docs/FORMAL_SCALING.md).
 
-**Narrative:** Start with [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) (forward/backward pipeline), then this file (module buckets), then [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) (enforcement order). Executive rollup: [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md).
+**Narrative:** Start with [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) (forward/backward pipeline), then this file (module buckets), then [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) (enforcement order). Executive rollup: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 ---
 
@@ -71,7 +71,7 @@ These are the modules with a documented **hand-aligned** or **trusted (TCB)** li
 
 **Active `catalog_id` strings in Rust today:** `umst.gate.cd_transition`, `thermodynamic_mix`, `umst.gate.http_shim`, `umst.cartridge.concrete.policy`, `umst.gate.landauer_cbf` on CBF reject via `FormalReject` (plus ROS ack schema `umst.gate_ack.v1`). **`umst.gate.kleisli_unit`** — [`KleisliUnitEvaluator`](../src/gate/kleisli.rs) implements [`GateEvaluator`](../src/gate/evaluator.rs); [`EmbodiedOrchestrator::check_host_transition`](../src/manifest/orchestrator.rs) routes R4 after R1–R3 (registry default includes η unit).
 
-**End-condition smoke (2026-05-21):** Gate dual-run parity 8/8, formal witness, ROS contract round-trip, HTTP gate server—documented in `END_CONDITION_REPORT.md`.
+**End-condition smoke (2026-05-21):** Gate dual-run parity 8/8, formal witness, ROS contract round-trip, HTTP gate server—documented in `PENDING_GAPS_PLAIN.md`.
 
 ---
 
@@ -162,17 +162,17 @@ When formal integration moves forward, update these in one pass:
 | **`claims-vs-proofs.md`** | Add/remove rows for any new Lean↔Rust mapping; fix `kleisli_unit` / `thermodynamic_mix` spec gaps. |
 | **`artifacts/catalog.lock.json`** | Set `upstream_catalog_digest_hex` + `module_count` after `make lean-catalog-export`. |
 | **`VERIFY.md`** | Catalog digest line; gate test commands if new features land. |
-| **`AGENT_STATUS.md` / `PARALLEL_HANDOFFS.md`** | Close W8/W10 items; note CI ownership. |
+| **`AGENT_STATUS.md` / `PENDING_GAPS_PLAIN.md`** | Close W8/W10 items; note CI ownership. |
 | **`GateUnificationSpec.md`** | New `catalog_id` rows; evaluator registry behavior. |
 | **`GOD_GRADE_CHECKLIST.md`** | Composition layers, performance budget, CI matrix, criteria ticks. |
 | **`TCB.md`** | If trust boundary moves (e.g. FFI prover, new axiom in Rust). |
-| **`END_CONDITION_REPORT.md`** | Re-run matrix; attach date and PASS/FAIL. |
+| **`PENDING_GAPS_PLAIN.md`** | Re-run matrix; attach date and PASS/FAIL. |
 | **`PROOF-STATUS.md` / `Solver-Status.md`** | Only if solver claims cite new formal witnesses. |
 | **`PROTOTYPE_GATE_MAP.md`** | If prototype paths change vs manifold SSOT. |
 | **`REPO_LAYOUT_SSOT.md`** | New crates (`qr-bridge`, extract lib, etc.). |
 
 | **`CATALOG_COVERAGE_AUDIT.md`** | Per-module `catalog_id` ↔ Rust wiring matrix. |
-| **`COMPOSITIONAL_INFERENCE_AUDIT.md`** | PPO / gateway / orchestrator layer stack. |
+| **`PENDING_GAPS_PLAIN.md`** | PPO / gateway / orchestrator layer stack. |
 | **`GOD_GRADE_WITNESS_LADDER.md`** | Witness rung order, failure priority, v1/v2 trace contracts. |
 | **`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`** | Exporter scope (69 vs 59 roots). |
 | **`../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md`** | `umst-formal` vs double-slit fiber policy. |
@@ -186,7 +186,7 @@ When formal integration moves forward, update these in one pass:
 |------|--------|
 | Catalog digest (lock) | `0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227` |
 | Modules in lock | **119** (`cross_repo_merge: true`) |
-| Primary-only rollback | `c1d9ba2…` / **69** — [`FORMAL_FIBER_MERGE_RUNBOOK.md`](FORMAL_FIBER_MERGE_RUNBOOK.md) |
+| Primary-only rollback | `c1d9ba2…` / **69** — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) |
 | Theorem / lemma / axiom names in export | 582 |
 | Hot-path modules | 18 (~26%) |
 | Catalog-only + support + test/infra | 51 (~74%) |

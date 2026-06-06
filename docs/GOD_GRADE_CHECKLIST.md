@@ -3,7 +3,7 @@
 **As of:** 2026-05-29  
 **Definition:** Bad states are rejected automatically; the formal catalog is SSOT; inference does not depend on human parity review for every Lean change.
 
-**Companions:** [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md), [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md), [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md), [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md), [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md), [`CATALOG_TRACEABILITY.md`](CATALOG_TRACEABILITY.md), [`TODO_COMPLETION.md`](TODO_COMPLETION.md).
+**Companions:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md), [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md), [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md), [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md), [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md), [`CATALOG_TRACEABILITY.md`](CATALOG_TRACEABILITY.md), [`TODO_COMPLETION.md`](TODO_COMPLETION.md).
 
 ---
 
@@ -99,7 +99,7 @@ Targets are **engineering budgets** for the policy gateway + scalar gates, not W
 | **Weighted R0–R6 (in-repo)** | **~98%** | R6 + adaptive priority wired in stack script |
 | **Robustness (verify bundle)** | **100%** | `verify_umst_stack.sh` exit **0** @ **2026-05-29**; CI @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) |
 | **Hot-path Lean modules** | **18 / 69 ≈ 26%** · **18 / 119 ≈ 15%** | By design — **not** automation % |
-| **Org W8 (outside 16-row denominator)** | publish **1/1** @ **fe22437** · concrete **G-02** **1/1** @ **6742fa3** · supercap **0/1** | **G-03** optional — [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) |
+| **Org W8 (outside 16-row denominator)** | publish **1/1** @ **fe22437** · concrete **G-02** **1/1** @ **6742fa3** · supercap **0/1** | **G-03** optional — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) |
 
 **Honest policy:** **16/16 automation** means every in-repo CI row above is green for its **stated host scope** and is invoked by the stack verify bundle. Rows 14–15 defer rollout-approx and utility certificates. B3 strict prod default is **Done** in-repo (not an automation-row failure).
 
@@ -107,7 +107,7 @@ Targets are **engineering budgets** for the policy gateway + scalar gates, not W
 
 ## Org-only (outside automation %) — **W8 Phase 1 + G-02 closed (2026-05-29)**
 
-**Scoped org (not automation rows):** publish + concrete remote CI — [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
+**Scoped org (not automation rows):** publish + concrete remote CI — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
@@ -137,7 +137,7 @@ Track **H.1** closed — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) G-04/G
 |-----------|--------|-------|--------------|-----------|
 | Extracted witnesses / FFI | ❌ **horizon Blocker** | **human + code** (long) | Digest attestation only: `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` | ❌ v1 — no FFI CI row |
 
-**Cannot automate:** per-lemma Lean→runtime extraction without new TCB review. **Do not** conflate with hot-path **26%** or automation **16/16**. [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md) · [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md).
+**Cannot automate:** per-lemma Lean→runtime extraction without new TCB review. **Do not** conflate with hot-path **26%** or automation **16/16**. [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 ---
 

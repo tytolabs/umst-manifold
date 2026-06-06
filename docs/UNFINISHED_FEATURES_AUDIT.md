@@ -2,8 +2,8 @@
 
 **As of:** 2026-05-21  
 **Audience:** Anyone deciding what to do next vs what to leave alone  
-**Preview/stub detail:** [`PREVIEW_STUB_AUDIT.md`](PREVIEW_STUB_AUDIT.md)  
-**Evidence ledgers:** [`TODO_COMPLETION.md`](TODO_COMPLETION.md), [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md), [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md), [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md)
+**Preview/stub detail:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)  
+**Evidence ledgers:** [`TODO_COMPLETION.md`](TODO_COMPLETION.md), [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md), [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md), [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
 
 ---
 
@@ -31,7 +31,7 @@
 | Hybrid / optional | 2 | 2a thin delete, Python E6 adversarial (Rust `gate_adversarial` required in `rust.yml`) |
 | Long horizon | 1 | Extracted witnesses / FFI |
 
-**Recommendation (preview SSOT):** Cross-repo merge is closed; preview is dev-only triage. **2026-05-21 fix:** exporter always emits `dry_run: true` on preview JSON; stale duplicates removed; regen at `umst-formal-double-slit/artifacts/catalog-cross-repo-preview.json`. Details: [`PREVIEW_STUB_AUDIT.md`](PREVIEW_STUB_AUDIT.md) § 2026-05-21 fix.
+**Recommendation (preview SSOT):** Cross-repo merge is closed; preview is dev-only triage. **2026-05-21 fix:** exporter always emits `dry_run: true` on preview JSON; stale duplicates removed; regen at `umst-formal-double-slit/artifacts/catalog-cross-repo-preview.json`. Details: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) § 2026-05-21 fix.
 
 ---
 
@@ -57,11 +57,11 @@ These exist as **scaffolds** or **dry-runs**. They do not change the production 
 | **W8 — Publish manifold `main`** | — | — | **Done** 2026-05-29 @ **`fe22437`** on `tytolabs/umst-manifold` `main` | Track A — [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) |
 | **W8 — Cartridge CI feature** | — | cartridge maintainers | **Done** (**G-02**) — GHA `manifest-bridge` on git pin, no `[patch]` | [`FORMAL_GROUNDING_AUDIT.md`](../umst-concrete-cartridge/docs/FORMAL_GROUNDING_AUDIT.md) |
 | **Strict catalog default (H)** | — | product / ops | **Done** — `StrictCatalogMatch` release default (B3) | Track H — [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) |
-| **Formal-witness auto-digest (H)** | Digest compare works but callers must set `Some` manually | manifold | **Execute** — small wiring; no new axiom | [`COMPOSITIONAL_INFERENCE_AUDIT.md`](COMPOSITIONAL_INFERENCE_AUDIT.md) §6 |
+| **Formal-witness auto-digest (H)** | Digest compare works but callers must set `Some` manually | manifold | **Execute** — small wiring; no new axiom | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) §6 |
 | **Epistemic v2 traces (G)** | — | manifold / ops | **Done** — G.1–G.3 in `verify_umst_stack.sh` | Track G |
-| **W10 — `rust.yml` verify lane** | ✅ Required `verify-umst-stack` job (parity subset + optional full stack); drift workflow unchanged | `umst-manifold` CI | **Done** 2026-05-21 | See [`PREVIEW_STUB_AUDIT.md`](PREVIEW_STUB_AUDIT.md) |
+| **W10 — `rust.yml` verify lane** | ✅ Required `verify-umst-stack` job (parity subset + optional full stack); drift workflow unchanged | `umst-manifold` CI | **Done** 2026-05-21 | See [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) |
 | **W10-b — Lean PR → export bot** | Manual `make lean-catalog-export` + lock bump | formal / coordinator | **Execute** when ready | Reduces human slip on digest |
-| **Bidirectional script hygiene** | `bidirectional_catalog_check.sh` once failed on `GATE_REGISTRY` doc-comment parse (`umst.cartridge.concrete.policy`) | manifold CI | **Execute** — script fix | Re-green full stack verify per [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md) |
+| **Bidirectional script hygiene** | `bidirectional_catalog_check.sh` once failed on `GATE_REGISTRY` doc-comment parse (`umst.cartridge.concrete.policy`) | manifold CI | **Execute** — script fix | Re-green full stack verify per [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) |
 | **Doc hygiene** | Stale Kleisli / parity rows in `claims-vs-proofs.md` | docs | **Execute** — doc-only | Aligns checklist truth |
 
 ---
@@ -77,7 +77,7 @@ These exist as **scaffolds** or **dry-runs**. They do not change the production 
 | **Python E6 adversarial** | FNR=0 when prototype checkout present; Rust is SSOT | CI / coordinator | **Execute** to wire in `rust.yml` **or** **Wait** and accept Rust-only |
 | **Legacy prototype `gate_server` bins** | ROS telemetry / OCR — separate from manifold SSOT | prototype lane | **Wait** — deprecation track |
 
-See [`PROTOTYPE_2A_HOST_GAPS.md`](PROTOTYPE_2A_HOST_GAPS.md), [`THIN_PROTOTYPE_STATUS.md`](../umst-prototype/docs/THIN_PROTOTYPE_STATUS.md).
+See [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md), [`THIN_PROTOTYPE_STATUS.md`](../umst-prototype/docs/THIN_PROTOTYPE_STATUS.md).
 
 ---
 
@@ -94,7 +94,7 @@ See [`PROTOTYPE_2A_HOST_GAPS.md`](PROTOTYPE_2A_HOST_GAPS.md), [`THIN_PROTOTYPE_S
 
 ## Runtime stubs and automation gaps
 
-Not “missing features” in the product sense — documented gaps between Lean inventory and Rust hot path. Full table: [`PREVIEW_STUB_AUDIT.md`](PREVIEW_STUB_AUDIT.md) § Runtime stubs.
+Not “missing features” in the product sense — documented gaps between Lean inventory and Rust hot path. Full table: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) § Runtime stubs.
 
 | Gap | Plain English | Owner | Execute vs wait |
 |-----|---------------|-------|-----------------|
@@ -145,7 +145,7 @@ Quick map to [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md). Tra
 |------|------|
 | ✅ | Preview `dry_run` always `true` in exporter; tests in `test_export_catalog_cross_repo.py` |
 | ✅ | Regenerated `umst-formal-double-slit/artifacts/catalog-cross-repo-preview.json`; removed stale copies at workspace `artifacts/` and `umst-manifold/artifacts/` |
-| ✅ | [`PREVIEW_STUB_AUDIT.md`](PREVIEW_STUB_AUDIT.md) updated — preview section shrunk |
+| ✅ | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) updated — preview section shrunk |
 
 **Still operator hygiene (doc-only):** Demote `--cross-repo-only` in runbooks where it reads as primary workflow; canonical command remains `make lean-catalog-export`.
 
@@ -157,9 +157,9 @@ Quick map to [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md). Tra
 
 | Document | Use when |
 |----------|----------|
-| [`PREVIEW_STUB_AUDIT.md`](PREVIEW_STUB_AUDIT.md) | Listing preview JSON, schema stubs, runtime gaps |
+| [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | Listing preview JSON, schema stubs, runtime gaps |
 | [`TODO_COMPLETION.md`](TODO_COMPLETION.md) | Per-todo evidence commands |
 | [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md) | Track A–J substeps |
-| [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md) | Ops-only blocker table |
-| [`FORMAL_FIBER_MERGE_RUNBOOK.md`](FORMAL_FIBER_MERGE_RUNBOOK.md) | Promotion phases 0–4 |
+| [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | Ops-only blocker table |
+| [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | Promotion phases 0–4 |
 | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) | 10/13 criteria ticks |

@@ -2,9 +2,9 @@
 
 **Normative policy:** The project axiom closure is **`physicalSecondLaw` only** in Lean (`LandauerLaw.lean`). Rust implements consequences of that axiom on the hot path; it does **not** introduce parallel axioms, undocumented `register_axiom` hooks, or cartridge tokens outside `{NONE, physicalSecondLaw}`.
 
-**Audit SSOT:** [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md) (LandauerLaw row), [`COMPOSITIONAL_INFERENCE_AUDIT.md`](COMPOSITIONAL_INFERENCE_AUDIT.md) (L2–L3 CBF), [`claims-vs-proofs.md`](claims-vs-proofs.md) (traceability), [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) § [No new Lean axioms in Rust](GOD_GRADE_WITNESS_LADDER.md#no-new-lean-axioms-in-rust).
+**Audit SSOT:** [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md) (LandauerLaw row), [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) (L2–L3 CBF), [`claims-vs-proofs.md`](claims-vs-proofs.md) (traceability), [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) § [No new Lean axioms in Rust](GOD_GRADE_WITNESS_LADDER.md#no-new-lean-axioms-in-rust).
 
-**Cross-repo fiber merge:** Operator phases and TCB gates at each promotion step — [`FORMAL_FIBER_MERGE_RUNBOOK.md`](FORMAL_FIBER_MERGE_RUNBOOK.md) (Track **F** in [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md)).
+**Cross-repo fiber merge:** Operator phases and TCB gates at each promotion step — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) (Track **F** in [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md)).
 
 ---
 
@@ -115,7 +115,7 @@ cargo test -p umst-concrete-cartridge formal_anchors -- --nocapture
 
 | Doc | Use |
 |-----|-----|
-| [`FORMAL_FIBER_MERGE_RUNBOOK.md`](FORMAL_FIBER_MERGE_RUNBOOK.md) | Track F operator steps + per-phase TCB gates |
+| [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | Track F operator steps + per-phase TCB gates |
 | [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md) | Global invariants table; Track F |
 | [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) | R5 publish; Phase 0 includes TCB grep |
 | [`../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md`](../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md) | Two-repo fiber policy |

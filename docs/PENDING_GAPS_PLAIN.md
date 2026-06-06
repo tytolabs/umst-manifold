@@ -3,9 +3,9 @@
 **As of:** 2026-05-29  
 **Audience:** Anyone who needs the real remaining work without Lean/category jargon, but with enough nuance to avoid false “we’re done” claims.
 
-**Audited from:** [`TRUTH_AUDIT_LOG.md`](TRUTH_AUDIT_LOG.md) · [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) · [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) · [`COMPLETION_TRUTH.md`](COMPLETION_TRUTH.md) · [`TODO_COMPLETION.md`](TODO_COMPLETION.md) · [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) · live `artifacts/catalog.lock.json` + `verify_umst_stack.sh` + targeted `cargo test`
+**Audited from:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`TODO_COMPLETION.md`](TODO_COMPLETION.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · live `artifacts/catalog.lock.json` + `verify_umst_stack.sh` + targeted `cargo test`
 
-**Technical IDs:** [`PENDING_GAPS_DEEP_AUDIT.md`](PENDING_GAPS_DEEP_AUDIT.md) · execute/wait: [`UNFINISHED_FEATURES_AUDIT.md`](UNFINISHED_FEATURES_AUDIT.md)
+**Technical IDs:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · execute/wait: [`UNFINISHED_FEATURES_AUDIT.md`](UNFINISHED_FEATURES_AUDIT.md)
 
 ---
 
@@ -71,9 +71,9 @@
 | `version` | **2** dual-pin (`fiber_pins`: **69** + **62** → composed **119**) | same |
 | Historical primary fiber only | **69** modules, digest `c1d9ba2…` | `fiber_pins[0]` — **ratio / rollback only** |
 
-**69 vs 119 (TRUTH_AUDIT_LOG cross-check):**
+**69 vs 119 (PENDING_GAPS_PLAIN cross-check):**
 
-- **[`TRUTH_AUDIT_LOG.md`](TRUTH_AUDIT_LOG.md)** production truth: **119** modules, `cross_repo_merge: true` in export narrative; lock uses v2 dual-pin.
+- **[`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)** production truth: **119** modules, `cross_repo_merge: true` in export narrative; lock uses v2 dual-pin.
 - **69** appears only for **primary-fiber hot-path ratio** (**18 / 69 ≈ 26%**) and rollback — never as live `module_count`.
 - **`catalog_all_ids_registered`** partitions the **119**-module unified export (4/4), not a 69-only world.
 
@@ -236,7 +236,7 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 
 ### Optional / hygiene (0% scoped safety debt)
 
-**G-09–G-10** doc `lean://` → `catalog_id` · **G-12** Appendix B · **G-13–G-16** prototype thin-delete · **G-17–G-22** clippy/docs · **G-23–G-25** preview/stub — see prior register in [`PENDING_GAPS_DEEP_AUDIT.md`](PENDING_GAPS_DEEP_AUDIT.md); none block scoped true 100%.
+**G-09–G-10** doc `lean://` → `catalog_id` · **G-12** Appendix B · **G-13–G-16** prototype thin-delete · **G-17–G-22** clippy/docs · **G-23–G-25** preview/stub — see prior register in [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md); none block scoped true 100%.
 
 ---
 
@@ -258,7 +258,7 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 | **G-26** | FFI / extracted witnesses | Horizon | **0**† | Long horizon | **code** |
 | **G-09–G-25** | Optional / hygiene | mixed | **0** | — | mixed |
 
-†Horizon — excluded from automation denominator per [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md).
+†Horizon — excluded from automation denominator per [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 **Owner legend:** **org** = credentials, publish, product policy; **code** = in-repo implementation or docs.
 
@@ -290,7 +290,7 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 | **In-repo automation (16 rows)** | **0%** | **16/16 = 100%** — G.2 **13/13** · G.3 **8/8** |
 | **Organization remote consumers** | **~0–2%** | **G-03** supercap remote optional only |
 | **Scoped true 100% (v1, excl. FFI)** | **~2–4%** blocked | **G-03** optional — B3/G-04/G-05/G-02 **not** blockers |
-| **Weighted witness R0–R6 (in-repo)** | **~0%** blocked | **7/7** rungs when stack green — [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) |
+| **Weighted witness R0–R6 (in-repo)** | **~0%** blocked | **7/7** rungs when stack green — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) |
 | **Weighted witness R0–R6 (incl. org W8 on R5)** | **~0–2%** blocked | **~98%** complete — publish + concrete bridge done |
 | **Hot-path proof coverage** | **~74% not wired** (of primary **69**) | **Not** blocked — **119/119** digest still enforced |
 
@@ -315,4 +315,4 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 
 ---
 
-*Handoff:* truth split → [`COMPLETION_TRUTH.md`](COMPLETION_TRUTH.md) · pin hygiene → [`TRUTH_AUDIT_LOG.md`](TRUTH_AUDIT_LOG.md) · ceilings → [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) · per-todo → [`TODO_COMPLETION.md`](TODO_COMPLETION.md).
+*Handoff:* truth split → [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · pin hygiene → [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · ceilings → [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · per-todo → [`TODO_COMPLETION.md`](TODO_COMPLETION.md).

@@ -6,7 +6,7 @@
 
 **TCB (unchanged):** exactly one Lean project axiom — `physicalSecondLaw` in `umst-formal-double-slit/Lean/LandauerLaw.lean`. Rust implements consequences only; no Rust axioms ([`TCB.md`](TCB.md)).
 
-**Ceiling SSOT:** [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) — automation **16/16** ≠ hot-path **~26%** ≠ org W8 (**publish + concrete G-02 done**; supercap **G-03** optional).
+**Ceiling SSOT:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) — automation **16/16** ≠ hot-path **~26%** ≠ org W8 (**publish + concrete G-02 done**; supercap **G-03** optional).
 
 ---
 
@@ -99,7 +99,7 @@
 | **Digest (prefix)** | `c1d9ba2aa402…` | `0697014fb5b90a3a…` |
 | **Hot-path wired** | **18/69 ≈ 26%** | **18/119 ≈ 15%** (same 18 modules) |
 
-Production pin **119** unchanged — see [`TRUTH_AUDIT_LOG.md`](TRUTH_AUDIT_LOG.md). **Do not** equate **119/119 pin** with hot-path **100%**.
+Production pin **119** unchanged — see [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md). **Do not** equate **119/119 pin** with hot-path **100%**.
 
 ---
 
@@ -118,10 +118,10 @@ Production pin **119** unchanged — see [`TRUTH_AUDIT_LOG.md`](TRUTH_AUDIT_LOG.
 
 ## Related SSOT docs
 
-- [`PROGRESS_PLAIN.md`](PROGRESS_PLAIN.md) — plain-English rollup + gaps table  
-- [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) — B1–B2 open · B3 Done  
+- [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) — plain-English rollup + gaps table  
+- [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) — B1–B2 open · B3 Done  
 - [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) — **16** automation rows  
 - [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) — G-07/G-08 closed  
-- [`TRUTH_AUDIT_LOG.md`](TRUTH_AUDIT_LOG.md) — pin **119** + stale-pattern log  
+- [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) — pin **119** + stale-pattern log  
 
 *Re-run:* commands in [`VERIFY.md`](VERIFY.md) with `UMST_REQUIRE_FORMAL_EXPORT=1`.

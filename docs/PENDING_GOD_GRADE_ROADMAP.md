@@ -8,7 +8,7 @@
 
 **Checklist companion:** [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md)
 
-**Narrative entry:** [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md) (rollup) · [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) (§ [Proof library · gate law · MI](GOD_GRADE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms)) · evidence [`TODO_COMPLETION.md`](TODO_COMPLETION.md)
+**Narrative entry:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) (rollup) · [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) (§ [Proof library · gate law · MI](GOD_GRADE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms)) · evidence [`TODO_COMPLETION.md`](TODO_COMPLETION.md)
 
 **W8 publish (operator-only):** [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) — phases 0–4 for `tytolabs/umst-manifold` `main` + cartridge `manifest-bridge` without workspace `[patch]`.
 
@@ -69,7 +69,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 ### Learnings
 
-- **Proofs as a versioned library** — Tracks F (cross-repo) and A/H (manifest) must promote digest before enlarging runtime; never merge fibers without `physicalSecondLaw` audit ([`FORMAL_FIBER_MERGE_RUNBOOK.md`](FORMAL_FIBER_MERGE_RUNBOOK.md) Phase 0, [`TCB.md`](TCB.md)).
+- **Proofs as a versioned library** — Tracks F (cross-repo) and A/H (manifest) must promote digest before enlarging runtime; never merge fibers without `physicalSecondLaw` audit ([`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) Phase 0, [`TCB.md`](TCB.md)).
 - **Gates as law** — Every track preserves witness order (decision 1); telemetry track D does not weaken CD before Landauer.
 - **Prototype parity** — Track B deletes **presentation** only after parity functor identity; fixtures stay ([`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) §5).
 
@@ -139,7 +139,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 | Field | Value |
 |-------|--------|
-| **Work** | Push commit containing W8 surface (`AGENT_W8_STATUS.txt` checklist) to `main`. |
+| **Work** | Push commit containing W8 surface (`PENDING_GAPS_PLAIN.txt` checklist) to `main`. |
 | **Verify** | `git ls-remote https://github.com/tytolabs/umst-manifold.git refs/heads/main` then clone clean dir: `cargo check -p umst-manifold` |
 | **Done** | Fresh clone builds without workspace `[patch]`. |
 | **TCB** | Unchanged. |
@@ -159,7 +159,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 | Field | Value |
 |-------|--------|
-| **Work** | Update `AGENT_STATUS.md`, `PARALLEL_HANDOFFS.md`, `TODO_COMPLETION.md` concrete-cartridge row to remote ✅. |
+| **Work** | Update `AGENT_STATUS.md`, `PENDING_GAPS_PLAIN.md`, `TODO_COMPLETION.md` concrete-cartridge row to remote ✅. |
 | **Verify** | `rg 'W8.*PENDING\|manifest-bridge.*blocked' umst-manifold/docs` → no stale W8 blockers |
 | **Done** | Handoff tables show W8 **DONE** (git + CI). |
 | **TCB** | Doc-only. |
@@ -219,7 +219,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 ## Track C — Kleisli `GateEvaluator` (`umst.gate.kleisli_unit`)
 
-**Status:** ✅ **DONE** (2026-05-21) — all substeps below closed; `god-kleisli` in [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md).
+**Status:** ✅ **DONE** (2026-05-21) — all substeps below closed; `god-kleisli` in [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 **Witness ladder:** [R4 — Probe / Kleisli](GOD_GRADE_WITNESS_LADDER.md#r4--probe--kleisli-composition)  
 **Owner:** `umst-manifold` gate lane  
@@ -251,7 +251,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 |-------|--------|
 | **Work** | Update `claims-vs-proofs.md`, `FORMAL_INTEGRATION_STATUS.md`, `GOD_GRADE_CHECKLIST.md` Kleisli row ❌→✅. |
 | **Verify** | `rg 'Kleisli.*not yet\|kleisli_unit.*Spec id only' umst-manifold/docs` → empty |
-| **Done** | `god-kleisli` closed in `UMST_PROGRESS_REPORT.md`. |
+| **Done** | `god-kleisli` closed in `PENDING_GAPS_PLAIN.md`. |
 | **TCB** | Doc-only. |
 | **Ladder** | R4 — documented closure. |
 
@@ -290,7 +290,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 |-------|--------|
 | **Work** | On `ManifoldGateway` reject, emit `umst.gate.landauer_cbf` in structured telemetry (not only `FormalReject` string); align ROS ack `gate_catalog_id` when `ros2-contract` enabled. |
 | **Verify** | `cargo test --features formal-witness,ros2-contract,serde --test formal_witness --test ros_contract_serde_roundtrip`; `cargo test --test gateway_info_gain` if present |
-| **Done** | `COMPOSITIONAL_INFERENCE_AUDIT.md` “Emit catalog_id on gateway reject” gap closed. |
+| **Done** | `PENDING_GAPS_PLAIN.md` “Emit catalog_id on gateway reject” gap closed. |
 | **TCB** | Still `physicalSecondLaw` axiom for Landauer law family. |
 | **Ladder** | R2 — MI surrogate only valid post-CBF ([decision 2](GOD_GRADE_WITNESS_LADDER.md#2-mi-surrogate-safe-iff-gated-post-composition-calibration-η-from-traces)). |
 
@@ -342,7 +342,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 | **Verify** | `gh workflow run umst-catalog-drift.yml` (or PR) → green adversarial step |
 | **Done** | `TODO_COMPLETION.md` parity-ci adversarial row ✅. |
 | **TCB** | CI only. |
-| **Ladder** | Closes R1/R3 automation gap in [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md). |
+| **Ladder** | Closes R1/R3 automation gap in [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md). |
 
 ### E.4 — Optional: `rust.yml` verify lane + Python E6 (non-blocking)
 
@@ -360,7 +360,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 **Status:** ✅ **DONE** (2026-05-21) — unified `catalog.json` + manifold lock `0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227`, **119** modules; `verify_umst_stack.sh` green.
 
-**Runbook (historical SSOT):** [`FORMAL_FIBER_MERGE_RUNBOOK.md`](FORMAL_FIBER_MERGE_RUNBOOK.md)
+**Runbook (historical SSOT):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
 
 **Witness ladder:** [R0 — Catalog lock](GOD_GRADE_WITNESS_LADDER.md#r0--catalog-lock-build-time-functor), [§ Second catalog fiber](GOD_GRADE_WITNESS_LADDER.md#4-umst-formal-as-second-catalog-fiber)  
 **Owner:** formal / coordinator (closed)  
@@ -385,7 +385,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 ### F.1 — Human review of cross-repo preview
 
-> Operator steps: [`FORMAL_FIBER_MERGE_RUNBOOK.md`](FORMAL_FIBER_MERGE_RUNBOOK.md) Phase 0–1.
+> Operator steps: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) Phase 0–1.
 
 | Field | Value |
 |-------|--------|
@@ -397,7 +397,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 ### F.2 — Regenerate unified `catalog.json` (non–dry-run)
 
-> Operator steps: [`FORMAL_FIBER_MERGE_RUNBOOK.md`](FORMAL_FIBER_MERGE_RUNBOOK.md) Phase 2.
+> Operator steps: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) Phase 2.
 
 | Field | Value |
 |-------|--------|
@@ -409,7 +409,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 ### F.3 — Bump manifold lock + green stack
 
-> Operator steps: [`FORMAL_FIBER_MERGE_RUNBOOK.md`](FORMAL_FIBER_MERGE_RUNBOOK.md) Phase 3.
+> Operator steps: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) Phase 3.
 
 | Field | Value |
 |-------|--------|
@@ -477,7 +477,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 | Field | Value |
 |-------|--------|
-| **Work** | `ManifoldGateway::expected_catalog_schema_digest` defaults to `Some(lock bytes)` when `formal-witness` enabled; document in `COMPOSITIONAL_INFERENCE_AUDIT.md` §6. |
+| **Work** | `ManifoldGateway::expected_catalog_schema_digest` defaults to `Some(lock bytes)` when `formal-witness` enabled; document in `PENDING_GAPS_PLAIN.md` §6. |
 | **Verify** | `cargo test --features formal-witness --test formal_witness -p umst-manifold` |
 | **Done** | Mismatch test fails closed when UMST presents wrong digest. |
 | **TCB** | 32-byte compare; `physicalSecondLaw` unchanged. |
@@ -567,7 +567,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 |-------|--------|
 | **Work** | Tick `gate_dual_run_parity` in `GOD_GRADE_CHECKLIST.md` (in `verify_umst_stack.sh` since 2026-05-21); sync `FORMAL_INTEGRATION_STATUS.md` parity-ci note. |
 | **Verify** | `grep gate_dual_run_parity umst-manifold/scripts/verify_umst_stack.sh`; `rg 'not in verify_umst_stack' umst-manifold/docs` → empty |
-| **Done** | `doc-hygiene` closed in `UMST_PROGRESS_REPORT.md` (2026-05-21). Remaining: Kleisli stale rows in `claims-vs-proofs.md` (post–Track C). |
+| **Done** | `doc-hygiene` closed in `PENDING_GAPS_PLAIN.md` (2026-05-21). Remaining: Kleisli stale rows in `claims-vs-proofs.md` (post–Track C). |
 | **TCB** | Doc-only. |
 | **Ladder** | Operator docs match R0–R4 verify lane. |
 
@@ -647,4 +647,4 @@ cargo test --test gate_kleisli --test gate_reject_catalog_id --test gate_adversa
 | [`VERIFY.md`](VERIFY.md) | Operator commands |
 | [`claims-vs-proofs.md`](claims-vs-proofs.md) | Lean ↔ `catalog_id` ledger |
 | [`TCB.md`](TCB.md) | Rust TCB boundaries |
-| [`AGENT_W8_STATUS.txt`](AGENT_W8_STATUS.txt) | Local W8 code checklist (pre-publish) |
+| [`PENDING_GAPS_PLAIN.txt`](PENDING_GAPS_PLAIN.txt) | Local W8 code checklist (pre-publish) |

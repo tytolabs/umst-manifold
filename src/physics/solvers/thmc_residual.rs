@@ -5,7 +5,7 @@
 //!
 //! **Solver status / matrix:** authoritative lane notes live in **[`docs/Solver-Status.md`](../../../docs/Solver-Status.md)**
 //! (**Solver lanes — THMC**); numbered scope and acceptance vs next PR slice in
-//! **[`docs/VERIFICATION_COMPLETION_MATRIX.md`](../../../docs/VERIFICATION_COMPLETION_MATRIX.md)** row **#8**.
+//! **[`docs/Solver-Status.md`](../../../docs/Solver-Status.md)** row **#8**.
 //!
 //! **Post-`3394b96` cap (dense Newton only):** all THMC paths that build a **dense** forward-difference Jacobian or
 //! dense damped Newton on stacked implicit unknowns share [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] (**64**) — see
@@ -141,7 +141,7 @@ pub struct ThmcMonolithicImplicitUnknownLayout;
 /// **Single source of truth since `3394b96`:** every shipped dense-Newton THMC path clamps or errors at this value
 /// — there is **no** dense solve for more than **64** stacked DOFs. Production monolithic THMC at large \(N\) is
 /// **not** “the same dense code with a bigger cap”; it is the **sparse / JFNK / AD-safe ‖R‖** roadmap documented in
-/// [`docs/Solver-Status.md`](../../../docs/Solver-Status.md) §THMC and [`docs/VERIFICATION_COMPLETION_MATRIX.md`](../../../docs/VERIFICATION_COMPLETION_MATRIX.md) **#8**.
+/// [`docs/Solver-Status.md`](../../../docs/Solver-Status.md) §THMC.
 pub const THMC_DENSE_NEWTON_MAX_STACKED_DOFS: usize = 64;
 
 impl ThmcMonolithicImplicitUnknownLayout {

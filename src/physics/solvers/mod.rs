@@ -11,7 +11,7 @@
 //! ## Verification surfaces (solver lanes vs code)
 //! - **[`docs/Solver-Status.md`](../../../docs/Solver-Status.md)** — main solver table and **Solver lanes — THMC**
 //!   (implicit split vs monolithic guards, CI boundary, “still open at scale”).
-//! - **[`docs/VERIFICATION_COMPLETION_MATRIX.md`](../../../docs/VERIFICATION_COMPLETION_MATRIX.md)** — numbered
+//! - **[`docs/Solver-Status.md`](../../../docs/Solver-Status.md)** — numbered
 //!   **#8** (THMC) maps follow-up §R3.1 goals to shipped hooks vs exact acceptance.
 //!
 //! **Post-`3394b96` THMC roadmap (honest):** commit **`3394b96`** aligned every THMC dense Newton / fail-fast guard on

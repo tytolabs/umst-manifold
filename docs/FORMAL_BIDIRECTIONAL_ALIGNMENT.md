@@ -5,7 +5,7 @@
 
 **Companions:** [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md) (module buckets), [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) (witness order, failure priority, v1/v2 trace contracts).
 
-**Narrative:** This file is the **pipeline spine** (Lean → catalog → manifold → cartridge → drift). Roll up percentages in [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md); close gaps via [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md).
+**Narrative:** This file is the **pipeline spine** (Lean → catalog → manifold → cartridge → drift). Roll up percentages in [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md); close gaps via [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md).
 
 ---
 
@@ -17,7 +17,7 @@
 |--------|-------|
 | Forward pin (R0) | Digest match on regen; bidirectional `catalog_id` OK |
 | Reverse drift | `umst-catalog-drift.yml` + dual-run 8/8 |
-| Plan infra / god-grade | **100%** / **~84%** ([`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md)) |
+| Plan infra / god-grade | **100%** / **~84%** ([`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)) |
 
 ### Learnings
 
@@ -198,7 +198,7 @@ The ledger is **theorem-family granular** (39 rows), not 1:1 with 69 files.
 
 **Current digest (pinned):** `0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227` (**119** modules)
 
-**Rollup (2026-05-21):** Plan infra **100%** · god-grade **~84%** weighted — [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md) · [`TRUTH_AUDIT_LOG.md`](TRUTH_AUDIT_LOG.md).
+**Rollup (2026-05-21):** Plan infra **100%** · god-grade **~84%** weighted — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 ---
 
@@ -216,7 +216,7 @@ Practical ladder (order matters):
 4. **Registry completeness** — Implement `GateEvaluator` for `umst.gate.kleisli_unit`; namespace `thermodynamic_mix` in `GateUnificationSpec.md`.
 5. **Strict grounding in production** — Default `GroundingContract::StrictCatalogMatch` + enable `formal-witness` on release manifests (today advisory / off by default).
 6. **Cartridge closure (W8)** — **Done** @ 2026-05-29: **G-01** publish @ **fe22437**; **G-02** concrete `manifest-bridge` CI without `[patch]`. Optional: **G-03** supercap remote ([`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)).
-7. **Long horizon** — Extracted witnesses or FFI for high-value lemmas (gate soundness, Landauer bound). Required for **full** formal–runtime equivalence; not required for current end-condition smoke ([`END_CONDITION_REPORT.md`](END_CONDITION_REPORT.md)).
+7. **Long horizon** — Extracted witnesses or FFI for high-value lemmas (gate soundness, Landauer bound). Required for **full** formal–runtime equivalence; not required for current end-condition smoke ([`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)).
 
 ---
 
