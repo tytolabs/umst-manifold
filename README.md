@@ -22,6 +22,14 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 This is the **physics substrate** in the UMST stack — not an end-user application. It owns Discrete Exterior Calculus (DEC), the thermodynamic gate, continuous solver kernels, and the Lean-catalog witnesses that tie Rust modules to formal obligations. Domain chemistry, Python bindings, and MCP tools live in sibling cartridges; this repo stays a pure library so conservation structure and admissibility gates are shared once across every material domain.
 
+### UMST in plain words
+
+UMST — the **Unified Material-State Tensor** — is one structured mathematical object that can represent and evolve the state of *any* material: what it's made of, the processes acting on it, its surroundings, and how it changes through time. Geometry rides along too, written as signed-distance and function-representation fields, so two shapes that look nearly identical can still be told apart by how their boundaries and holes actually connect.
+
+The point is what happens when the state changes. Every proposed change must pass through a **hard thermodynamic gate** built from the reduced Clausius–Duhem inequality: mass has to be conserved and dissipation can't go negative, or the change is rejected outright — the same way nature won't let you create energy from nothing or lower total disorder without paying for it. It's a structural accept/reject, not a soft penalty.
+
+The whole thing lives on a smooth, differentiable manifold, implemented in **Rust on Burn tensors** so it can evolve in real time. Domain-specific **cartridges** (concrete today; language, sound, vision, and embodiment on the roadmap) plug in and compose safely under category-theory laws. A growing, digest-pinned set of **Lean 4 / Agda / Coq** proofs sits behind the gate — see the [three ceilings](#three-ceilings-do-not-mix-these) below for exactly how much of the runtime is proof-backed today versus enforced in code.
+
 ### Three ceilings (do not mix these)
 
 Verification answers three different questions — not one blended “completion %”. See [`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md) and the [headline table](docs/GOD_GRADE_PROGRESS_VERIFIED.md#headline-percentages-ssot--one-table).
