@@ -3,7 +3,7 @@
 **As of:** 2026-05-21  
 **Audience:** Operators, reviewers, and agents wiring UMST formal → manifold → cartridges.
 
-**Plain English:** UMST reaches *god-grade* when every bad transition is rejected automatically, the Lean catalog is the single source of truth for what was proved, and humans are not the backstop for digest drift or gate parity. This document is the **ordered ladder** of witnesses (what gets checked, in what order). Foundational split: **proofs = versioned library**, **gates = law**, **MI only inside the Landauer/trace envelope**, **no new Lean axioms in Rust** — see [§ Proof library · gate law · MI envelope · no Rust axioms](#proof-library--gate-law--mi-envelope--no-rust-axioms). Pipeline mechanics: [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md); module buckets: [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md); rollup: [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md).
+**Plain English:** UMST reaches *god-grade* when every bad transition is rejected automatically, the Lean catalog is the single source of truth for what was proved, and humans are not the backstop for digest drift or gate parity. This document is the **ordered ladder** of witnesses (what gets checked, in what order). Foundational split: **proofs = versioned library**, **gates = law**, **MI only inside the Landauer/trace envelope**, **no new Lean axioms in Rust** — see [§ Proof library · gate law · MI envelope · no Rust axioms](#proof-library--gate-law--mi-envelope--no-rust-axioms). Pipeline mechanics: [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md); module buckets: [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md); rollup: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 ---
 
@@ -21,7 +21,7 @@
 | R5 Manifest | ✅ CI / ⚠️ W8 git | `manifest_strict_witness` 3/3 + `formal-witness` in verify script |
 | R6 Trace v2 | ✅ G.1–G.3 | `epistemic_trace_schema` 12/12; `trace_calibration` 3/3 |
 
-**Headline completion:** **17/17 automation** (in-repo CI); **W8** org-only outside %. Hot-path Lean **~26%** of catalog — [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md).
+**Headline completion:** **17/17 automation** (in-repo CI); **W8** org-only outside %. Hot-path Lean **~26%** of catalog — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 ### Learnings
 
@@ -206,7 +206,7 @@ See [§ v1 digest vs v2 trace schema](#6-v1-digest-reject-v2-epistemicruntimesch
 
 **Implementation anchors:** `src/manifest/orchestrator.rs` (host before gateway), `src/ai/ppo.rs` (CBF after cartridge), `src/gate/mix_eval_registry.rs`, `src/gate/kleisli.rs`.
 
-**Audit:** [`COMPOSITIONAL_INFERENCE_AUDIT.md`](COMPOSITIONAL_INFERENCE_AUDIT.md) § Layer stack; [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md) § Bidirectional table.
+**Audit:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) § Layer stack; [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md) § Bidirectional table.
 
 ---
 
@@ -224,7 +224,7 @@ See [§ v1 digest vs v2 trace schema](#6-v1-digest-reject-v2-epistemicruntimesch
 
 **Categorical reading:** Surrogate feature map `S` is not a functor into admissible states; calibration natural transformation `η: S ⇒ T` is valid only when post-composed with CBF witness `W_2`.
 
-**Audit:** [`COMPOSITIONAL_INFERENCE_AUDIT.md`](COMPOSITIONAL_INFERENCE_AUDIT.md) § L0–L3; formal module `Lean/EpistemicTraceDrivenCalibrationWitness.lean`.
+**Audit:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) § L0–L3; formal module `Lean/EpistemicTraceDrivenCalibrationWitness.lean`.
 
 ---
 
@@ -296,7 +296,7 @@ This already runs:
 | [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) | Forward/backward Lean → catalog → manifold → cartridge |
 | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) | CI matrix + performance budget |
 | [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md) | Per-module `catalog_id` ↔ Rust |
-| [`COMPOSITIONAL_INFERENCE_AUDIT.md`](COMPOSITIONAL_INFERENCE_AUDIT.md) | PPO / gateway layer stack |
+| [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | PPO / gateway layer stack |
 | [`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`](../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md) | 69 vs 59 export scope |
 | [`../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md`](../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md) | Two-repo fiber policy |
 | [`../umst-supercap-cartridge/docs/FORMAL_SCALING.md`](../umst-supercap-cartridge/docs/FORMAL_SCALING.md) | Cartridge manifest / catalog pin scaling |
@@ -310,7 +310,7 @@ This already runs:
 
 ## Ladder status (2026-05-21)
 
-**Automation:** **17/17** per [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md). **Org W8:** **G-01/G-02** ✅; **G-03** optional. **Hot-path ceiling:** ~26% of catalog — [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md).
+**Automation:** **17/17** per [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md). **Org W8:** **G-01/G-02** ✅; **G-03** optional. **Hot-path ceiling:** ~26% of catalog — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 | Decision | Status |
 |----------|--------|

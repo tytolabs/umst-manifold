@@ -2,7 +2,7 @@
 
 **Scanned:** 2026-05-29 · **Verified:** 2026-05-29 — unified R0 pin `0697014fb5b90a3…`, **119** modules; `verify_umst_stack.sh` exit **0** · **Workspace:** `MaOS-Workspace/umst-manifold` · **CI:** green @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) (`witness_priority.rs` `manual_contains` fix on stable)
 
-**Handoffs (consolidated):** [`PARALLEL_HANDOFFS.md`](PARALLEL_HANDOFFS.md) · **Verify commands:** [`VERIFY.md`](VERIFY.md) · **Plan phases P0–P12:** `lean-to-rust_proof_extraction_fd8f70b5.plan.md` · **Witness ladder:** [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) · **Verified %:** [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)
+**Handoffs (consolidated):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · **Verify commands:** [`VERIFY.md`](VERIFY.md) · **Plan phases P0–P12:** `lean-to-rust_proof_extraction_fd8f70b5.plan.md` · **Witness ladder:** [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) · **Verified %:** [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)
 
 ---
 
@@ -51,7 +51,7 @@ Single authoritative command sequence — details in [`VERIFY.md`](VERIFY.md).
 | 4 — Dual-run | `cargo test --test gate_dual_run_parity -- --nocapture` | **P7** — target 8/8 golden + live |
 | 5 — Catalog | `cargo test --test catalog_all_ids_registered` | **P2** — 119-module partition (unified fiber) |
 | 6 — Stack (monorepo) | `UMST_REQUIRE_FORMAL_EXPORT=1 UMST_FORMAL_ROOT=…/umst-formal-double-slit bash scripts/verify_umst_stack.sh` | **P1** R0 + bidirectional + full gate suite |
-| 7 — End matrix | See [`END_CONDITION_REPORT.md`](END_CONDITION_REPORT.md) M1–M9 | Release gate snapshot |
+| 7 — End matrix | See [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) M1–M9 | Release gate snapshot |
 
 **Last green stack verify:** 2026-05-29 — digest `0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227`, **119** modules, exit **0**; `gate_dual_run_parity` 8/8 + `gate_adversarial` FNR=0; Track **F** (`formal-fiber-merge`) closed; CI green @ **fe22437**.
 
@@ -109,7 +109,7 @@ Optional: `UMST_REQUIRE_ADVERSARIAL_GATE=1` when prototype adversarial script pr
 
 | ID | Task | Status | Evidence |
 |----|------|--------|----------|
-| **S1** | W8 manifest + concrete `manifest-bridge` | **DONE** | `docs/AGENT_W8_STATUS.txt`; `cargo test -p umst-concrete-cartridge --features manifest-bridge` exit 0 with `[patch]` @ 2026-05-21 |
+| **S1** | W8 manifest + concrete `manifest-bridge` | **DONE** | `docs/PENDING_GAPS_PLAIN.txt`; `cargo test -p umst-concrete-cartridge --features manifest-bridge` exit 0 with `[patch]` @ 2026-05-21 |
 | **S2** | Formal catalog + lock | **DONE** | Unified export → digest `0697014fb5b90a3…`, `module_count=119`; locks aligned formal↔manifold |
 | **S3** | Thin prototypes path deps | **DONE** | `manifold-gate` in prototype `Cargo.toml`; v1 shim **226** lines + 8/8 dual-run ([`TODO_COMPLETION.md`](TODO_COMPLETION.md) § thin-prototypes) |
 | **S4** | EmbodiedOrchestrator | **DONE** | `src/manifest/orchestrator.rs`, `tests/embodied_orchestrator.rs`, `embodied/mod.rs` re-export |
@@ -121,7 +121,7 @@ Optional: `UMST_REQUIRE_ADVERSARIAL_GATE=1` when prototype adversarial script pr
 | **S10** | Supercap manifest alignment | **DONE** | `manifold-manifest` + `manifest-bridge` in `umst-supercap-cartridge/Cargo.toml`; `docs/FORMAL_SCALING.md` |
 | **S11** | VERIFY + cargo sweep | **DONE** | `docs/VERIFY.md`; `catalog_all_ids_registered` 4 passed; six swarm audit docs on disk |
 
-**Plan todo audit:** [`TODO_COMPLETION.md`](TODO_COMPLETION.md) · **Progress %:** [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md)
+**Plan todo audit:** [`TODO_COMPLETION.md`](TODO_COMPLETION.md) · **Progress %:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
 
 ---
 
@@ -190,7 +190,7 @@ UMST_REQUIRE_FORMAL_EXPORT=1 \
 
 - Added process narrative: agent waves, verification recipe, P0–P7 %, witness ladder links (2026-05-21).
 - [`VERIFY.md`](VERIFY.md) — exact `check` / `test` / `features` commands for developers.
-- Consolidated parallel notes into [`PARALLEL_HANDOFFS.md`](PARALLEL_HANDOFFS.md) (retired `PARALLEL_W1_HANDOFF.txt`).
+- Consolidated parallel notes into [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) (retired `PARALLEL_W1_HANDOFF.txt`).
 - Unified `artifacts/catalog.lock.json` digest → `0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227` (**119** modules); Track F closed.
 - Extended `.github/workflows/umst-catalog-drift.yml` gate/formal/ros/server/adversarial test steps (W10 DONE).
 - Coordinator pass @ 2026-05-21T21:18:04Z: W1–W10 + S1–S11 **DONE** where evidence exists; P0–P7 all ✅; W8 publish + **G-02** closed @ 2026-05-29 (**fe22437** / **6742fa3**).

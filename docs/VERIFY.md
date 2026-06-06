@@ -13,7 +13,7 @@ cd /path/to/umst-manifold   # or MaOS-Workspace/umst-manifold
 
 **Toolchain:** `rust-toolchain.toml` pins **1.88** (required for `cargo clippy --all-targets` with the full optional graph). Install with `rustup toolchain install 1.88`.
 
-**Catalog lock (current, v2 dual-pin):** `artifacts/catalog.lock.json` — composed R0 digest `0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227` (**119** modules); per-fiber pins in `fiber_pins[]` (69 + 62). Policy: [`DUAL_PIN_ARCHITECTURE.md`](DUAL_PIN_ARCHITECTURE.md). Stale-doc audit: [`TRUTH_AUDIT_LOG.md`](TRUTH_AUDIT_LOG.md). Override at build: `UMST_CATALOG=/path/to/lock.json`.
+**Catalog lock (current, v2 dual-pin):** `artifacts/catalog.lock.json` — composed R0 digest `0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227` (**119** modules); per-fiber pins in `fiber_pins[]` (69 + 62). Policy: [`DUAL_PIN_ARCHITECTURE.md`](DUAL_PIN_ARCHITECTURE.md). Stale-doc audit: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md). Override at build: `UMST_CATALOG=/path/to/lock.json`.
 
 ### Exit-0 ledger (`scripts/verify_umst_stack.sh`)
 
@@ -23,7 +23,7 @@ cd /path/to/umst-manifold   # or MaOS-Workspace/umst-manifold
 | **2026-05-21T22:24:58Z** | `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` | **0** | Recursive pass: epistemic+trace **log guard** (`VERIFY_STEP_LOG`); `w8_publish_readiness.sh` bash `[[` array check; M* matrix all exit 0 |
 | **2026-05-21T22:20:07Z** | `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` | **0** | R0 pin **119**; G.2/G.3 echoed + log guard; `ci_god_grade_profile` epistemic wiring test; solver tests gated |
 | **2026-05-21T22:01:20Z** | `bash scripts/verify_umst_stack.sh` | **0** | Monorepo sibling formal + prototype E6; fixed duplicate `trace_calibration` integration target |
-| 2026-05-21T21:18:04Z | `bash scripts/verify_umst_stack.sh` | 0 | Prior pin — see [`TODO_VERIFICATION_REPORT.md`](TODO_VERIFICATION_REPORT.md) |
+| 2026-05-21T21:18:04Z | `bash scripts/verify_umst_stack.sh` | 0 | Prior pin — see [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) |
 
 Guard: `cargo test --test catalog_all_ids_registered catalog_lock_module_count_matches_upstream_export_119` asserts lock `module_count` and upstream `catalog.json` row count both stay **119**.
 

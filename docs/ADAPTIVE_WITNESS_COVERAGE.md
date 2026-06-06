@@ -5,7 +5,7 @@
 
 **Plain English:** The Lean catalog has **119** proof modules, but the robot only runs a **small fixed law** (CD → Landauer → constitutive → Kleisli). **Effective coverage** \(U(t)\) measures how much of the *catalog* you have *operationally exercised* over time—via trace rejects, cartridge domain, and epistemic MI signals—so engineering can **prioritize which `catalog_id` to wire next**. That growth happens **on-robot and in Rust** (registry + telemetry); it does **not** mean running Lean or claiming a higher “% complete” on the god-grade checklist.
 
-**Companions:** [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) (fixed \(W_1\)–\(W_4\)), [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md) (static semantic classes), [`CATALOG_TRACEABILITY.md`](CATALOG_TRACEABILITY.md) (CI partition), [`COMPOSITIONAL_INFERENCE_AUDIT.md`](COMPOSITIONAL_INFERENCE_AUDIT.md) (layer stack).
+**Companions:** [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) (fixed \(W_1\)–\(W_4\)), [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md) (static semantic classes), [`CATALOG_TRACEABILITY.md`](CATALOG_TRACEABILITY.md) (CI partition), [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) (layer stack).
 
 ---
 
@@ -17,7 +17,7 @@
 | **Time** | Dynamic \(U(t)\) grows with deployment | Snapshot audit |
 | **Lean on robot** | **Never** — library pin is build-time (R0) | N/A |
 | **% claims** | **Do not** map \(U(t)\) to god-grade automation **16/16** or org W8 closure | Counts **13 used / 47 unused** — semantic inventory, not “project %” |
-| **Org W8 / patch-green** | **Orthogonal** to \(U_{\mathrm{op}}\) | **G-01**/**G-02** closed @ **fe22437** (remote concrete without `[patch]`); MaOS `[patch]` is dev Evidence only — [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md) §3 |
+| **Org W8 / patch-green** | **Orthogonal** to \(U_{\mathrm{op}}\) | **G-01**/**G-02** closed @ **fe22437** (remote concrete without `[patch]`); MaOS `[patch]` is dev Evidence only — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) §3 |
 
 **Honest status (2026-05-29):** Full \(\pi(c)\) scheduling on-robot is **not** shipped. **Shipped (tests / manifest only):** [`WitnessPriorityQueue`](../src/runtime/catalog/witness_priority.rs) (`record_reject`, `apply_learning_signals`, `ordered_modules`; TCB `physicalSecondLaw` only), optional field on [`UmstManifest`](../src/manifest/umst_manifest.rs), fixed \(W_1\)–\(W_4\) order, `catalog_id` on `FormalReject`, trace schema G.1 serde, CI partition **25 wired + 94 allowlist = 119** in `traceability.rs`.
 
@@ -274,8 +274,8 @@ If only (1) ships as trace fields, \(U_{\mathrm{op}}\) rises by a **small** \(\D
 | [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md) | Static Y/N/partial table |
 | [`claims-vs-proofs.md`](claims-vs-proofs.md) | Lean ↔ `catalog_id` ledger |
 | [`GateUnificationSpec.md`](GateUnificationSpec.md) | Registry SSOT |
-| [`COMPOSITIONAL_INFERENCE_AUDIT.md`](COMPOSITIONAL_INFERENCE_AUDIT.md) | Where \(W_2\) runs in gateway |
-| [`COMPLETION_TRUTH.md`](COMPLETION_TRUTH.md) | What checklist % means (orthogonal to \(U_{\mathrm{op}}\)) |
+| [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | Where \(W_2\) runs in gateway |
+| [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | What checklist % means (orthogonal to \(U_{\mathrm{op}}\)) |
 
 **Verification commands** (unchanged by this doc):
 

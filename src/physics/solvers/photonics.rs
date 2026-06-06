@@ -20,7 +20,7 @@
 //! Maxwell at scale (the shipped patch path uses **CSR matvec CG** as the default lossless inner solve when \(N\le\) [`PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY`] with **`UMST_PHOTONICS_DEC_PATCH_CSR_INNER=auto`**, **O(dim²)** COO assembly — **dense Gauss–Jordan** only as fallback under [`PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT`] when CSR fails or CSR is **`off`** — else **matrix-free CG** up to [`PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV`]),
 //! **complex** \(\varepsilon\) / PML on **`faces_b2`** patches, and general volumetric **BC**s beyond the
 //! gauge **pin** remain open (see **OPEN ROADMAP ITEM — Photonics**).
-//! **Verification matrix row #6** ([`VERIFICATION_COMPLETION_MATRIX.md`](../../../docs/VERIFICATION_COMPLETION_MATRIX.md))
+//! **Verification matrix row #6** ([`Solver-Status.md`](../../../docs/Solver-Status.md))
 //! therefore stays **partial** (**50%** bin in [`Solver-Status.md`](../../../docs/Solver-Status.md)) until
 //! full dual-mesh metrics, **sparse factorizations / preconditioners** at production \(N\),
 //! and complex \(\varepsilon\) / PML on that path land with CI-backed acceptance — see the predicate
@@ -786,7 +786,7 @@ fn dec_patch_topology_valid_for_solve<B: Backend<FloatElem = f32>>(
 /// \(d_1^\top\) (see [`dec_patch_diagonal_star1_primal_edge_length_lumped_si`]). This is **not**
 /// circumcentric/barycentric dual lengths, **not** a sparse production solve, and **not** matrix
 /// **#6** closure — verification row **#6** stays **partial** per
-/// [`Solver-Status.md`](../../../docs/Solver-Status.md) / [`VERIFICATION_COMPLETION_MATRIX.md`](../../../docs/VERIFICATION_COMPLETION_MATRIX.md).
+/// [`Solver-Status.md`](../../../docs/Solver-Status.md).
 #[cfg(feature = "photonics")]
 #[must_use]
 pub const fn photonics_dec_patch_uses_metric_dual_edge_hodge() -> bool {
@@ -842,7 +842,7 @@ impl PhotonicsSolver {
     ///
     /// ## Verification row **#6** (honest partial, not 100%)
     /// This entry point implements what [`Solver-Status.md`](../../../docs/Solver-Status.md) calls the
-    /// **partial** photonics lane ([`VERIFICATION_COMPLETION_MATRIX.md`](../../../docs/VERIFICATION_COMPLETION_MATRIX.md) row **#6**):
+    /// **partial** photonics lane ([`Solver-Status.md`](../../../docs/Solver-Status.md) row **#6**):
     /// uniform-chain TE + optional **small dense** `PhotonicsDecFacesPatch` branch (see also
     /// `photonics_dec_patch_uses_metric_dual_edge_hodge` (feature **`photonics`**) — diagonal primal-length \(\star_1\) on the patch curl leg;
     /// **`[B,N,9]`** tensors additionally feed a **symmetrized edge-averaged 3×3** map in the Whitney trace — **not** \(\varepsilon^{-1}\) constitutive on the curl leg).

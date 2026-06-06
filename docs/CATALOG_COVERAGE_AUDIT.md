@@ -49,7 +49,7 @@
 | **Operational \(U_{\mathrm{op}}(t)\)** | [`ADAPTIVE_WITNESS_COVERAGE.md`](ADAPTIVE_WITNESS_COVERAGE.md) §5 — modules with law exercised or labeled reject in \((t-T,t]\) | **Dynamic**; at \(t=0\) only slugs in `GATE_REGISTRY` + `landauer_cbf` paths count — **do not** substitute **26%** or **13 used** |
 | **Adaptive priority (tests)** | [`WitnessPriorityQueue`](../src/runtime/catalog/witness_priority.rs) — rejects + `WitnessLearningSignal` | **Not hot path**; ranks Lean modules for next wiring (`tests/witness_priority_queue.rs`, `formal-witness`) |
 
-**Anti-inflation:** Product copy may cite **~26%** only for the **intentional v1 hot-path scope** (18/69). Checklist / god-grade **~84%** and **\(U_{\mathrm{pin}}=1\)** are orthogonal — see [`COMPLETION_TRUTH.md`](COMPLETION_TRUTH.md).
+**Anti-inflation:** Product copy may cite **~26%** only for the **intentional v1 hot-path scope** (18/69). Checklist / god-grade **~84%** and **\(U_{\mathrm{pin}}=1\)** are orthogonal — see [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 ### Category theory (one paragraph)
 
@@ -226,7 +226,7 @@ Lean path prefix: `umst-formal-double-slit/Lean/{Module}.lean`
 3. Namespace `thermodynamic_mix` → `umst.gate.thermodynamic_mix` per `GateUnificationSpec.md`.
 4. ~~Either implement `umst.gate.prediction_vs_physics` as `catalog_id` or remove from spec.~~ **Resolved (2026-05-21):** deprecated; `umst.gate.http_shim` + `mix_prediction_vs_physics` `gate_family`.
 5. Export hygiene: drop `Test*`, `lakefile`, `test_tensor_eigen`, empty `MatrixLog` from production catalog (see [`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`](../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md)).
-6. Extend `tests/formal_witness.rs` beyond compile smoke (see [`COMPOSITIONAL_INFERENCE_AUDIT.md`](COMPOSITIONAL_INFERENCE_AUDIT.md)).
+6. Extend `tests/formal_witness.rs` beyond compile smoke (see [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)).
 
 ---
 

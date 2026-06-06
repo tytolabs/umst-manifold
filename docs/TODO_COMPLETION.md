@@ -7,9 +7,9 @@
 
 Evidence commands are read-only checks run during audit (no plan file edits).
 
-**Narrative rollup:** [`UMST_PROGRESS_REPORT.md`](UMST_PROGRESS_REPORT.md) · pipeline [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) · witness law [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) · command ledger [`TODO_VERIFICATION_REPORT.md`](TODO_VERIFICATION_REPORT.md) · verified % [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)
+**Narrative rollup:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · pipeline [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) · witness law [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) · command ledger [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · verified % [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)
 
-**Scoped closure SSOT (2026-05-29):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) · automation denominator [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) (**16/16** rows) · ceilings [`GOD_GRADE_AUTOMATION_CEILING.md`](GOD_GRADE_AUTOMATION_CEILING.md)
+**Scoped closure SSOT (2026-05-29):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · automation denominator [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) (**16/16** rows) · ceilings [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
 
 <!-- Cross-link when created: validation methodology doc → § Process & verification -->
 
@@ -17,7 +17,7 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 
 ## Process & verification
 
-**Progress date:** 2026-05-29 · **Verified:** 2026-05-29 (`verify_umst_stack.sh` full bundle @ **fe22437**; ledger [`TODO_VERIFICATION_REPORT.md`](TODO_VERIFICATION_REPORT.md) · [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md))
+**Progress date:** 2026-05-29 · **Verified:** 2026-05-29 (`verify_umst_stack.sh` full bundle @ **fe22437**; ledger [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md))
 
 *When a dedicated validation methodology doc is added under `docs/`, link it here (e.g. beside [`Validation.md`](Validation.md)).*
 
@@ -76,7 +76,7 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 
 - Evidence blocks below are the **per-todo SSOT** for coordinator handoff (commands + paths).
 - Swarm audit docs (six files) close traceability without new Rust scaffolding.
-- **Scoped true 100%** (honest): **3 / 4** Done — **G-04** ✅ · **G-05** ✅ · **W8 (G-01+G-02)** ✅ @ **2026-05-29**; **FFI** horizon open; **G-03** supercap optional — [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md).
+- **Scoped true 100%** (honest): **3 / 4** Done — **G-04** ✅ · **G-05** ✅ · **W8 (G-01+G-02)** ✅ @ **2026-05-29**; **FFI** horizon open; **G-03** supercap optional — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 - Optional polish (not scoped blockers): 2a thin delete, `rust.yml` verify lane — [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md).
 
 > **Design lens** — Each plan todo is a morphism in the extraction pipeline; completion means the morphism factors through verified tests (exit 0), not merely files on disk. **W8:** **G-01** publish + **G-02** concrete remote CI are **Done** @ **fe22437**; MaOS `[patch]` tests remain patch-green **Evidence** for monorepo dev; **G-03** supercap remote is optional ([`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)).
@@ -85,7 +85,7 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 
 ## Remaining to scoped true 100%
 
-**SSOT:** [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) · plain register [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
+**SSOT:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · plain register [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
 
 These are the **only** items that block an honest “scoped god-grade 100%” claim without qualifiers (**3/4** at Done; headline **~96–98%**). **16/16 in-repo automation** does **not** close **FFI** or optional **G-03**.
 
@@ -98,7 +98,7 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 | **G-05** | Auto-fill `upstream_catalog_digest_hex` from lock in builder/gateway/UMST | **code** | ✅ **Done** | `lock_upstream_catalog_digest_bytes()`; strict `build()` @ **2026-05-29** | Track **H.2** — B3 |
 | **FFI** | Extracted Lean witnesses / attestation on hot path | **human + code** (horizon) | ❌ **OPEN** (horizon) | `rg 'lake build\|lean --run' umst-manifold/src` empty — policy | Separate FFI program — **excluded** from 16-row automation % |
 
-**Patch-green rule:** MaOS workspace `[patch]` tests are **Evidence** for local dev; **G-02 Done** = concrete cartridge on **git** `fe22437` without patch ([`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) B1).
+**Patch-green rule:** MaOS workspace `[patch]` tests are **Evidence** for local dev; **G-02 Done** = concrete cartridge on **git** `fe22437` without patch ([`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) B1).
 
 **Anti double-count:** Org W8 (~8–10% headline) is one morphism; G-04/G-05 are product/code policy — do not add automation % + scoped %.
 
@@ -171,7 +171,7 @@ test -f umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md
 
 ## lean-export-cross-repo — COMPLETE (alias; not in plan YAML)
 
-**Runbook:** [`FORMAL_FIBER_MERGE_RUNBOOK.md`](FORMAL_FIBER_MERGE_RUNBOOK.md) · **TCB:** [`TCB.md`](TCB.md) · **Export SSOT:** [`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`](../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md)
+**Runbook:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · **TCB:** [`TCB.md`](TCB.md) · **Export SSOT:** [`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`](../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md)
 
 **Scope:** Not one of the 14 plan `todos`; tracked for formal-lane closure and **100%** “plan + fibers” rollup.
 
@@ -183,7 +183,7 @@ test -f umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md
 
 ## formal-fiber-merge — COMPLETE
 
-**Scope:** Promote the **second catalog fiber** ([`umst-formal`](../../umst-formal)) into the export pin consumed by manifold **R0**, concrete `manifest-bridge`, and supercap digest advisories. Same milestone as § `lean-export-cross-repo`; operator SSOT: [`FORMAL_FIBER_MERGE_RUNBOOK.md`](FORMAL_FIBER_MERGE_RUNBOOK.md).
+**Scope:** Promote the **second catalog fiber** ([`umst-formal`](../../umst-formal)) into the export pin consumed by manifold **R0**, concrete `manifest-bridge`, and supercap digest advisories. Same milestone as § `lean-export-cross-repo`; operator SSOT: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 ### Production merge — recorded pin (2026-05-21)
 
@@ -273,7 +273,7 @@ UMST_REQUIRE_FORMAL_EXPORT=1 UMST_FORMAL_ROOT=$PWD/../umst-formal-double-slit \
   bash scripts/verify_umst_stack.sh
 ```
 
-**Cross-links:** [`EXPORT_COVERAGE.md`](../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md), [`FORMAL_FIBER_MERGE_RUNBOOK.md`](FORMAL_FIBER_MERGE_RUNBOOK.md), [`FORMAL_GROUNDING_AUDIT.md`](../umst-concrete-cartridge/docs/FORMAL_GROUNDING_AUDIT.md), [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md).
+**Cross-links:** [`EXPORT_COVERAGE.md`](../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md), [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md), [`FORMAL_GROUNDING_AUDIT.md`](../umst-concrete-cartridge/docs/FORMAL_GROUNDING_AUDIT.md), [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md).
 
 ---
 
@@ -310,7 +310,7 @@ grep 'KleisliUnitEvaluator::CATALOG_ID' umst-manifold/src/manifest/orchestrator.
 cargo test --test gate_kleisli --test embodied_orchestrator -p umst-manifold
 # → 2026-05-21T21:45:00Z: gate_kleisli 6/6; embodied 8/8 (incl. kleisli host routes)
 test -f umst-manifold/docs/CATALOG_COVERAGE_AUDIT.md
-test -f umst-manifold/docs/COMPOSITIONAL_INFERENCE_AUDIT.md
+test -f umst-manifold/docs/PENDING_GAPS_PLAIN.md
 ```
 
 ---
@@ -324,7 +324,7 @@ test -f umst-manifold/docs/COMPOSITIONAL_INFERENCE_AUDIT.md
 grep 'formal-witness' umst-manifold/Cargo.toml
 test -f umst-manifold/src/ai/formal.rs
 test -f umst-manifold/tests/formal_witness.rs
-test -f umst-manifold/docs/COMPOSITIONAL_INFERENCE_AUDIT.md
+test -f umst-manifold/docs/PENDING_GAPS_PLAIN.md
 # §6 documents formal-witness automation gaps (digest not auto-filled from lock)
 ```
 
@@ -393,7 +393,7 @@ test -f umst-supercap-cartridge/docs/FORMAL_SCALING.md
 grep 'EmbodiedOrchestrator' umst-manifold/src/manifest/orchestrator.rs
 test -f umst-manifold/tests/embodied_orchestrator.rs
 grep 'pub use.*EmbodiedOrchestrator' umst-manifold/src/embodied/mod.rs
-test -f umst-manifold/docs/COMPOSITIONAL_INFERENCE_AUDIT.md
+test -f umst-manifold/docs/PENDING_GAPS_PLAIN.md
 # mermaid stack: L0 PPO → L1 embodied → L2 gateway → L3 CBF
 ```
 
@@ -410,7 +410,7 @@ test -f umst-manifold/docs/TCB.md
 grep -c '^| `' umst-manifold/docs/claims-vs-proofs.md
 # → 2026-05-21T20:50:20Z: 59 pipe-rows; doc states 43 traceability rows + Appendix A
 test -f umst-manifold/docs/CATALOG_COVERAGE_AUDIT.md
-test -f umst-manifold/docs/COMPOSITIONAL_INFERENCE_AUDIT.md
+test -f umst-manifold/docs/PENDING_GAPS_PLAIN.md
 ```
 
 ---
@@ -453,7 +453,7 @@ cargo test --test gate_adversarial -p umst-manifold
 - Required `umst-manifold` path dep; `thermodynamic_filter.rs` **deprecation shim** (~226 lines) delegating Algorithm 1 to `umst_manifold::gate::mix_proposal` (WASM types preserved)
 - `gate_dual_run_parity`: **8/8 (100%)** golden + **8/8 (100%)** live `gate_dual_fixture` subprocess (**2026-05-21T21:18:04Z** re-run)
 - `thermodynamic_filter::tests`: 5/5 pass on shim
-- [`THIN_PROTOTYPE_STATUS.md`](../umst-prototype/docs/THIN_PROTOTYPE_STATUS.md), [`PROTOTYPE_2A_HOST_GAPS.md`](PROTOTYPE_2A_HOST_GAPS.md)
+- [`THIN_PROTOTYPE_STATUS.md`](../umst-prototype/docs/THIN_PROTOTYPE_STATUS.md), [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
 
 **Done — 2a hybrid (`umst-prototype-2a`):**
 - Optional feature **`manifold-gate`**: Algorithm 1 / CD scalar path delegates to `ThermodynamicMixFilter` (manifold SSOT); 2a-only Constitution/CGS, `evaluate_joint_functor`, `max_strength` remain (~517 lines — hybrid, not duplicate Algorithm 1)
@@ -486,7 +486,7 @@ cd umst-manifold && cargo test --test gate_dual_run_parity -- --nocapture
 
 ## Pending items & owner recommendations
 
-**Plain-language rollup (execute vs wait):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`UNFINISHED_FEATURES_AUDIT.md`](UNFINISHED_FEATURES_AUDIT.md) · preview/stub detail: [`PREVIEW_STUB_AUDIT.md`](PREVIEW_STUB_AUDIT.md)
+**Plain-language rollup (execute vs wait):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`UNFINISHED_FEATURES_AUDIT.md`](UNFINISHED_FEATURES_AUDIT.md) · preview/stub detail: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
 
 | Item | Gap | Recommended owner |
 |------|-----|-------------------|
@@ -508,7 +508,7 @@ cd umst-manifold && cargo test --test gate_dual_run_parity -- --nocapture
 | **God-grade automation (16 rows)** | **100%** | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) — G.2 **13/13** · G.3 **8/8** in verify tail |
 | **Scoped true 100% (4 blockers)** | **~96–98%** | **G-03** supercap optional · **FFI** horizon — **G-01**/**G-02**/**G-04**/**G-05** closed |
 
-No further manifold **scaffolding** is required for plan infra or in-repo automation; remaining scoped work is publish, product defaults, and horizon FFI ([`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md)).
+No further manifold **scaffolding** is required for plan infra or in-repo automation; remaining scoped work is publish, product defaults, and horizon FFI ([`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)).
 
 ---
 
@@ -525,7 +525,7 @@ Read-only subagent audits persisted to disk:
 | Document | Repo | Evidences plan items |
 |----------|------|----------------------|
 | `docs/CATALOG_COVERAGE_AUDIT.md` | umst-manifold | manifold-runtime-catalog, manifold-gate-evaluator, claims-vs-proofs |
-| `docs/COMPOSITIONAL_INFERENCE_AUDIT.md` | umst-manifold | embodied-orchestrator, formal-witness-integration, manifold-gate-evaluator |
+| `docs/PENDING_GAPS_PLAIN.md` | umst-manifold | embodied-orchestrator, formal-witness-integration, manifold-gate-evaluator |
 | `docs/CATALOG_TRACEABILITY.md` + `tests/catalog_all_ids_registered.rs` | umst-manifold | manifold-runtime-catalog (CI partition) |
 | `Docs/EXPORT_COVERAGE.md` | umst-formal-double-slit | lean-export-lake (exporter scope) |
 | `Docs/UMST_FORMAL_REPOS_ALIGNMENT.md` | umst-formal-double-slit | lean-export-lake, claims-vs-proofs |
@@ -544,12 +544,12 @@ Read-only subagent audits persisted to disk:
 | lean-export-cross-repo | ✅ | Alias of `formal-fiber-merge` |
 | formal-fiber-merge | ✅ | Unified `0697014f…` / **119**; manifold lock + `verify_umst_stack.sh` |
 | manifold-runtime-catalog | ✅ | `src/runtime/catalog/`, `CATALOG_COVERAGE_AUDIT.md`, `catalog_all_ids_registered` tests |
-| manifold-gate-evaluator | ✅ | `src/gate/`, `CATALOG_COVERAGE_AUDIT.md`, `COMPOSITIONAL_INFERENCE_AUDIT.md` |
-| formal-witness-integration | ✅ | `formal-witness`, `COMPOSITIONAL_INFERENCE_AUDIT.md` §6 gaps |
+| manifold-gate-evaluator | ✅ | `src/gate/`, `CATALOG_COVERAGE_AUDIT.md`, `PENDING_GAPS_PLAIN.md` |
+| formal-witness-integration | ✅ | `formal-witness`, `PENDING_GAPS_PLAIN.md` §6 gaps |
 | manifold-manifest | ✅ | `src/manifest/umst_manifest.rs` |
 | ros2-in-manifold | ✅ | `src/ros/contract.rs`, `src/bin/gate_server.rs` |
 | concrete-cartridge-wire | ✅ local + ✅ **G-02** remote | Git `fe22437` without `[patch]`; MaOS patch-green Evidence optional |
-| embodied-orchestrator | ✅ | `orchestrator.rs`, `COMPOSITIONAL_INFERENCE_AUDIT.md` |
+| embodied-orchestrator | ✅ | `orchestrator.rs`, `PENDING_GAPS_PLAIN.md` |
 | claims-vs-proofs | ✅ | `claims-vs-proofs.md` (43 rows + Appendix A), `TCB.md` — verified 2026-05-21T20:50:20Z |
 | parity-ci | ✅ | Drift CI + `verify_umst_stack`: `gate_adversarial` + dual-run; Python E6 **optional** |
 | thin-prototypes | ✅ | v1 shim 226L + 2a hybrid 517L (`manifold-gate`) + **8/8** dual-run |
@@ -664,5 +664,5 @@ UMST_REQUIRE_FORMAL_EXPORT=1 UMST_FORMAL_ROOT=$WORKSPACE/umst-formal-double-slit
 #         witness_priority_queue, catalog_incremental_graph_drift, ci_god_grade_profile
 ```
 
-**Cross-read (2026-05-29):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`SCOPED_100_CLOSURE.md`](SCOPED_100_CLOSURE.md) · [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) (**16/16** automation) · W8 **G-01**/**G-02** closed.
+**Cross-read (2026-05-29):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) (**16/16** automation) · W8 **G-01**/**G-02** closed.
 

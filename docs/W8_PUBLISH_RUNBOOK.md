@@ -4,7 +4,7 @@
 
 **Witness ladder:** R5 — [Manifest bridge + formal witness](GOD_GRADE_WITNESS_LADDER.md#r5--manifest-bridge--formal-witness-deployment-fiber) (paired with `formal-witness` in MaOS drift CI).
 
-**Status (2026-05-29):** **Phase 1 DONE** — `tytolabs/umst-manifold` `main` @ **`fe22437`** (`pub mod manifest`, CI green). **G-02 DONE** — concrete cartridge git `rev = fe22437`, GHA `manifest-bridge` without `[patch]`. **G-03** supercap remote bridge optional. SSOT detail: [`AGENT_W8_STATUS.txt`](AGENT_W8_STATUS.txt), [`AGENT_STATUS.md`](AGENT_STATUS.md).
+**Status (2026-05-29):** **Phase 1 DONE** — `tytolabs/umst-manifold` `main` @ **`fe22437`** (`pub mod manifest`, CI green). **G-02 DONE** — concrete cartridge git `rev = fe22437`, GHA `manifest-bridge` without `[patch]`. **G-03** supercap remote bridge optional. SSOT detail: [`PENDING_GAPS_PLAIN.txt`](PENDING_GAPS_PLAIN.txt), [`AGENT_STATUS.md`](AGENT_STATUS.md).
 
 **Roadmap:** Track **A** in [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md) — remaining org polish is **G-03** + strict-default / v2 traces (not blocking concrete).
 
@@ -115,7 +115,7 @@ File: `umst-concrete-cartridge/.github/workflows/rust.yml`.
 - [x] [`TODO_COMPLETION.md`](TODO_COMPLETION.md): remote **G-02** ✅
 - [ ] [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) — remove stale “W8 pending” diagram labels if any remain
 - [x] `bash scripts/w8_publish_readiness.sh` accepts git pin (not patch-only)
-- [x] [`AGENT_W8_STATUS.txt`](AGENT_W8_STATUS.txt) — remote publish + G-02 closed
+- [x] [`PENDING_GAPS_PLAIN.txt`](PENDING_GAPS_PLAIN.txt) — remote publish + G-02 closed
 
 ---
 
@@ -144,7 +144,7 @@ File: `umst-concrete-cartridge/.github/workflows/rust.yml`.
 | Doc | Role |
 |-----|------|
 | [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md) § Track A | Canonical task breakdown A.1–A.4 |
-| [`AGENT_W8_STATUS.txt`](AGENT_W8_STATUS.txt) | W8 code + remote closure record |
+| [`PENDING_GAPS_PLAIN.txt`](PENDING_GAPS_PLAIN.txt) | W8 code + remote closure record |
 | [`../umst-concrete-cartridge/docs/FORMAL_GROUNDING_AUDIT.md`](../umst-concrete-cartridge/docs/FORMAL_GROUNDING_AUDIT.md) | Cartridge gate / manifest-bridge audit |
 | [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) § decision 3 | CI pairing `manifest-bridge` + `formal-witness` |
 | [`VERIFY.md`](VERIFY.md) §3.2 | Cartridge verify commands (git pin vs optional patch) |
