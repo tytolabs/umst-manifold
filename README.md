@@ -8,7 +8,6 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 <!-- readme:status -->
 [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
-[![Formal Status](https://img.shields.io/badge/Formal_Verification-Track_J3-blue.svg)](docs/PROOF-STATUS.md)
 [![Cartridge: concrete](https://img.shields.io/badge/cartridge-concrete-C9A27A)](https://github.com/tytolabs/umst-concrete-cartridge)
 
 > Release notes in [CHANGELOG.md](CHANGELOG.md).
