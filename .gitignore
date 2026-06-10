@@ -17,3 +17,6 @@ Desktop/
 *.swp
 *.swo
 *~
+
+# Sibling repo symlink (local dev convenience; resolved via path deps)
+/egoff
