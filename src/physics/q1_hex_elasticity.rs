@@ -643,6 +643,41 @@ pub fn hex_diagonal(
     }
 }
 
+/// PCG telemetry for [`hex_solve_pcg_masked`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct HexPcgReport {
+    pub iterations: usize,
+    pub rel_residual: f32,
+}
+
+/// \(\|P(f-Ku)\|_2 / \|Pf\|_2\) after a masked Q1-hex forward solve.
+pub fn hex_equilibrium_rel_residual(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    f: &[f32],
+    mask: &[f32],
+    u: &[f32],
+) -> f32 {
+    let ndof = f.len();
+    let mut ku = vec![0.0_f32; ndof];
+    hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, u, &mut ku);
+    let mut num = 0.0_f32;
+    let mut den = 0.0_f32;
+    for i in 0..ndof {
+        let fi = f[i] * mask[i];
+        let ri = mask[i] * (f[i] - ku[i]);
+        num += ri * ri;
+        den += fi * fi;
+    }
+    num.sqrt() / den.sqrt().max(1e-30)
+}
+
 /// Projected PCG on masked free DOFs (`mask[d]=1` free, `0` fixed). Overwrites `u` in-place.
 pub fn hex_solve_pcg_masked(
     nx: usize,
@@ -661,7 +696,7 @@ pub fn hex_solve_pcg_masked(
     max_iter: usize,
     use_preconditioner: bool,
     relative_tol: f32,
-) {
+) -> HexPcgReport {
     let nx1 = nx + 1;
     let ny1 = ny + 1;
     let n = nx1 * ny1 * (nz + 1);
@@ -701,7 +736,10 @@ pub fn hex_solve_pcg_masked(
     }
 
     let tol = relative_tol.max(1e-30_f32);
+    let mut pcg_iters = 0usize;
+    let mut pcg_rel = f32::INFINITY;
     for _ in 0..max_it {
+        pcg_iters += 1;
         scratch_ku.fill(0.0);
         hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, &p, scratch_ku);
         let mut pap = 0.0_f32;
@@ -722,6 +760,7 @@ pub fn hex_solve_pcg_masked(
             r_norm += v * v;
         }
         r_norm = r_norm.sqrt();
+        pcg_rel = r_norm / f_norm;
         if relative_tol > 0.0 && r_norm < tol * f_norm {
             break;
         }
@@ -745,5 +784,10 @@ pub fn hex_solve_pcg_masked(
 
     for i in 0..ndof {
         u[i] *= mask[i];
+    }
+
+    HexPcgReport {
+        iterations: pcg_iters,
+        rel_residual: pcg_rel,
     }
 }

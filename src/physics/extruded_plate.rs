@@ -137,7 +137,7 @@ impl ExtrudedPlateMechanics {
 
         let max_it = cg_config.max_cg_iterations.max(1);
 
-        q1_hex_elasticity::hex_solve_pcg_masked(
+        let _pcg = q1_hex_elasticity::hex_solve_pcg_masked(
             self.nx,
             self.ny,
             self.nz,
@@ -155,6 +155,7 @@ impl ExtrudedPlateMechanics {
             cg_config.use_preconditioner,
             cg_config.cg_tolerance,
         );
+        let _ = _pcg;
 
         let u_tensor: Tensor<B, 3> =
             Tensor::from_data(Data::new(u, Shape::new([1, n, 3])), &device);
