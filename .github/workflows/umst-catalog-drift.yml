@@ -50,7 +50,7 @@ jobs:
     name: verify UMST stack (export + gate tests)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - uses: ./.github/actions/setup-ci
 
       - name: Read pinned upstream refs
@@ -63,14 +63,14 @@ jobs:
           echo "formal_sha=$fm" >> "$GITHUB_OUTPUT"
 
       - name: Checkout umst-formal-double-slit (catalog export)
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: tytolabs/umst-formal-double-slit
           ref: ${{ steps.upstream.outputs.double_slit_sha }}
           path: umst-formal-double-slit
 
       - name: Checkout umst-formal (classical fiber)
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: tytolabs/umst-formal
           ref: ${{ steps.upstream.outputs.formal_sha }}
