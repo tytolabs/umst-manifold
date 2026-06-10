@@ -8,7 +8,6 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 <!-- readme:status -->
 [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
-[![Formal Status](https://img.shields.io/badge/Formal_Verification-Track_J3-blue.svg)](docs/PROOF-STATUS.md)
 [![Cartridge: concrete](https://img.shields.io/badge/cartridge-concrete-C9A27A)](https://github.com/tytolabs/umst-concrete-cartridge)
 
 > Release notes in [CHANGELOG.md](CHANGELOG.md).
@@ -28,30 +27,16 @@ UMST — the **Unified Material-State Tensor** — is one structured mathematica
 
 The point is what happens when the state changes. Every proposed change must pass through a **hard thermodynamic gate** built from the reduced Clausius–Duhem inequality: mass has to be conserved and dissipation can't go negative, or the change is rejected outright — the same way nature won't let you create energy from nothing or lower total disorder without paying for it. It's a structural accept/reject, not a soft penalty.
 
-The whole thing lives on a smooth, differentiable manifold, implemented in **Rust on Burn tensors** so it can evolve in real time. Domain-specific **cartridges** (concrete today; language, sound, vision, and embodiment on the roadmap) plug in and compose safely under category-theory laws. A growing, digest-pinned set of **Lean 4 / Agda / Coq** proofs sits behind the gate — see the [three ceilings](#three-ceilings-do-not-mix-these) below for exactly how much of the runtime is proof-backed today versus enforced in code.
-
-### Three ceilings (do not mix these)
-
-Verification answers three different questions — not one blended “completion %”. See [`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md) and the [headline table](docs/GOD_GRADE_PROGRESS_VERIFIED.md#headline-percentages-ssot--one-table).
-
-| Ceiling | Status | What it means |
-|---------|--------|---------------|
-| **Automation** | **16/16** | In-repo CI rows — gates, catalog pin, manifest, epistemic traces — green when the stack verify script exits 0. |
-| **Hot path** | **~26%** (**18/69**) · **~15%** unified (**18/119**) | Share of the Lean library hand-wired on the inference gate path. **By design** — the robot runs pure Rust witnesses, not a Lean prover at inference time. |
-| **Org W8** | Phase 1 **done** · **G-02 done** · **G-03** optional | **W8 Phase 1:** manifold published on GitHub. **G-02:** [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) CI runs `manifest-bridge` on a git dependency **without** workspace **`[patch]`** (closed 2026-05-29). **G-03:** supercap remote bridge remains optional. |
-
-**119 vs 69:** **119** is the live unified module count in the production lock (dual-fiber merge). **69** is the primary-fiber count — the denominator for hot-path wiring %. Do not cite **69** as the current library size; do not equate **119/119 pin** with **~26% hot path**.
-
-Scoped v1 blockers: **G-03** (supercap, optional) and **FFI** (horizon). [`docs/AGENT_STATUS.md`](docs/AGENT_STATUS.md).
+The whole thing lives on a smooth, differentiable manifold, implemented in **Rust on Burn tensors** so it can evolve in real time. Domain-specific **cartridges** (concrete today; language, sound, vision, and embodiment on the roadmap) plug in and compose safely under category-theory laws, and a growing, digest-pinned set of **Lean 4 / Agda / Coq** proofs sits behind the gate.
 
 <!-- readme:god-grade-status -->
-**Verify locally:** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh`
+### What's proven, what isn't (the honest version)
 
-**CI badge:** The [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml) badge reflects the **latest push on `main`** — wait for [`rust.yml`](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml) to finish before claiming green on your branch.
+We don't pretend everything is proven. Conservation structure is mathematical, and the thermodynamic gate is enforced in code on every step — but only part of the Lean/Coq/Agda library is hand-wired onto the runtime gate path, **by design**: at inference time the robot runs fast Rust witnesses, not a theorem prover. There are three different things people mean by "done" here — in-repo automation, how much of the proof library is wired on the hot path, and organization-level publishing — and they should **never** be blended into one "completion %". The honest, current accounting of each lives in one place: **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)** (verified ledger: [`docs/GOD_GRADE_PROGRESS_VERIFIED.md`](docs/GOD_GRADE_PROGRESS_VERIFIED.md)).
 
-**Stack thread (catalog → manifold → cartridge):** [`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit) exports the **unified 119-module Lean catalog** (`cross_repo_merge: true`) → this repo pins `artifacts/catalog.lock.json` and runs DEC + god-grade witnesses → [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) and sibling [`umst-supercap-cartridge`](../umst-supercap-cartridge) mount domain physics on `IScienceCartridge`. Normative order and philosophy: [GOD_GRADE_WITNESS_LADDER § Proof library · gate law · MI envelope · no Rust axioms](docs/GOD_GRADE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms).
+**Verify it yourself, locally:** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` — full command matrix in [`docs/VERIFY.md`](docs/VERIFY.md).
 
-If you are looking for the applied materials engine specifically built for cementitious systems (concrete design, 3D printing, structural topology), see the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) repository. 
+If you want the applied materials engine for cementitious systems (concrete design, 3D printing, structural topology), see the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge).
 
 <!-- readme:hero-figure -->
 ![UMST unified state pipeline — UMST carrier (light)](docs/assets/fig1_teaser.png#gh-light-mode-only)
