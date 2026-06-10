@@ -37,6 +37,18 @@ pub struct SimpElasticMaterial {
     pub e_min: f32,
 }
 
+/// Ordered finite walk for H5 gradient diagnosis (Q1-hex populates; bar network leaves `None`).
+#[derive(Clone, Debug, Default)]
+pub struct AdjointFiniteStageAudit {
+    pub u_nonfinite: usize,
+    pub u_pinned_nonfinite: usize,
+    pub u_pinned_abs_max: f32,
+    pub ge_nonfinite: usize,
+    pub nodal_sens_nonfinite: usize,
+    /// First stage label with any non-finite entry (`u` → `ge` → `nodal_sens`).
+    pub first_bad_stage: Option<&'static str>,
+}
+
 /// H4 diagnosis bundle: forward PCG telemetry + static equilibrium residual + discrete nodal \(\mathrm{d}c/\mathrm{d}\rho\).
 #[derive(Clone, Debug)]
 pub struct AdjointComplianceDiagnostics {
@@ -45,6 +57,7 @@ pub struct AdjointComplianceDiagnostics {
     pub equilibrium_rel_residual: f32,
     /// Nodal \(\mathrm{d}c/\mathrm{d}\rho_i\) from edge sensitivities (mean split on endpoints).
     pub nodal_sensitivity: Vec<f32>,
+    pub finite_audit: Option<AdjointFiniteStageAudit>,
 }
 
 /// Scatter edge-wise \(\mathrm{d}c/\mathrm{d}\rho_e\) to nodes with the SIMP mean rule.
@@ -220,6 +233,7 @@ impl AdjointCompliance {
             pcg,
             equilibrium_rel_residual: eq_rel,
             nodal_sensitivity,
+            finite_audit: None,
         };
 
         (surrogate, c_raw, diag)

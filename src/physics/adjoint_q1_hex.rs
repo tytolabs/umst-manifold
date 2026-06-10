@@ -15,7 +15,7 @@ use burn::tensor::{
     Data, Int, Shape, Tensor,
 };
 
-use super::adjoint::{AdjointComplianceDiagnostics, SimpElasticMaterial};
+use super::adjoint::{AdjointComplianceDiagnostics, AdjointFiniteStageAudit, SimpElasticMaterial};
 use super::mechanics::BarNetworkPcgReport;
 use super::linear::masked_dot;
 use super::q1_hex_elasticity::{
@@ -59,6 +59,56 @@ fn hex_cell_corner_gather_indices(nx: usize, ny: usize, nz: usize) -> Vec<i64> {
     v
 }
 
+fn count_nonfinite(v: &[f32]) -> usize {
+    v.iter().filter(|x| !x.is_finite()).count()
+}
+
+fn audit_u_post_solve(u: &[f32], mask: &[f32]) -> (usize, usize, f32) {
+    let mut u_nf = 0usize;
+    let mut pinned_nf = 0usize;
+    let mut pinned_abs_max = 0.0_f32;
+    for (&ui, &m) in u.iter().zip(mask) {
+        if !ui.is_finite() {
+            u_nf += 1;
+        }
+        if m < 0.5 {
+            if !ui.is_finite() {
+                pinned_nf += 1;
+            }
+            pinned_abs_max = pinned_abs_max.max(ui.abs());
+        }
+    }
+    (u_nf, pinned_nf, pinned_abs_max)
+}
+
+fn build_finite_audit(
+    u: &[f32],
+    mask: &[f32],
+    ge: &[f32],
+    nodal_sens: &[f32],
+) -> AdjointFiniteStageAudit {
+    let (u_nf, pinned_nf, pinned_max) = audit_u_post_solve(u, mask);
+    let ge_nf = count_nonfinite(ge);
+    let sens_nf = count_nonfinite(nodal_sens);
+    let first_bad = if u_nf > 0 || pinned_nf > 0 {
+        Some("u_post_solve")
+    } else if ge_nf > 0 {
+        Some("element_ge")
+    } else if sens_nf > 0 {
+        Some("nodal_scatter")
+    } else {
+        None
+    };
+    AdjointFiniteStageAudit {
+        u_nonfinite: u_nf,
+        u_pinned_nonfinite: pinned_nf,
+        u_pinned_abs_max: pinned_max,
+        ge_nonfinite: ge_nf,
+        nodal_sens_nonfinite: sens_nf,
+        first_bad_stage: first_bad,
+    }
+}
+
 fn nodal_sensitivity_from_cell_ge(
     ge: &[f32],
     nx: usize,
@@ -100,6 +150,7 @@ struct HexForwardState {
     pcg: BarNetworkPcgReport,
     eq_rel: f32,
     nodal_sensitivity: Vec<f32>,
+    finite_audit: AdjointFiniteStageAudit,
 }
 
 impl AdjointComplianceQ1Hex {
@@ -221,6 +272,7 @@ impl AdjointComplianceQ1Hex {
         }
 
         let nodal_sensitivity = nodal_sensitivity_from_cell_ge(&ge, nx, ny, nz, n_nodes);
+        let finite_audit = build_finite_audit(&u, m_flat, &ge, &nodal_sensitivity);
         let pcg = BarNetworkPcgReport {
             iterations: hex_pcg.iterations,
             rel_residual: hex_pcg.rel_residual,
@@ -236,6 +288,7 @@ impl AdjointComplianceQ1Hex {
             pcg,
             eq_rel,
             nodal_sensitivity,
+            finite_audit,
         }
     }
 
@@ -352,6 +405,7 @@ impl AdjointComplianceQ1Hex {
             pcg: state.pcg,
             equilibrium_rel_residual: state.eq_rel,
             nodal_sensitivity: state.nodal_sensitivity,
+            finite_audit: Some(state.finite_audit),
         };
 
         (surrogate, c_raw, diag)
