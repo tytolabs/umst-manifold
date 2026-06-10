@@ -27,9 +27,9 @@ UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh 2>&1 | tee /tmp/v
 | Field | Value |
 |-------|-------|
 | `module_count` | 119 |
-| `upstream_catalog_digest_hex` | `37bf5a18d9f55d6bc671bfac431f2e67df85cc6936780e9ac762765651521ad7` |
-| `umst-formal-double-slit` fiber | `ecb4b177bee1148d8cef8bcd129d95e94609e1c6f303d416a3e566441a6bd113` (69 modules) |
-| `umst-formal` fiber | `53c43970db00d9b4ae5b11ff1078ccc6b77f03e8ce6573b2e4e3811b6076b1c4` (62 modules) |
+| `upstream_catalog_digest_hex` | `ef0ed071fc82bf8ebc8971aeee8d142b4b54e15583f0c575d942cb237474d1dc` |
+| `umst-formal-double-slit` fiber | `035ea948ff812fddec5fead027e2c02ae96ff44520031df64816fca4f50a579b` (69 modules) |
+| `umst-formal` fiber | `265db0ed86ef9d9efe089fb71307ebf508155272513a3f21ab7bc9b43350fa4d` (62 modules) |
 
 **Note:** umst-formal fiber drift from prior lock (`534d9e18…`) was resolved via `make lean-catalog-export` + manifold lock bump per [`CATALOG_UPDATE_PROTOCOL.md`](CATALOG_UPDATE_PROTOCOL.md).
 
@@ -37,7 +37,7 @@ UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh 2>&1 | tee /tmp/v
 
 ```
 ==> bidirectional catalog check (…/scripts/bidirectional_catalog_check.sh)
-OK: committed catalog.json matches regen (37bf5a18d9f5…, 119 modules)
+OK: committed catalog.json matches regen (ef0ed071fc82…, 119 modules)
 bidirectional_catalog_check: OK
 …
 w8_publish_readiness: PASS=21 FAIL=0 SKIP=2

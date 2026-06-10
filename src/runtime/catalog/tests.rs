@@ -73,7 +73,7 @@ fn v1_monolith_lock_quickcheck_backward_compat() {
         role: "manifold_runtime_lock".into(),
         upstream_repo: Some("umst-formal-double-slit".into()),
         upstream_catalog_digest_hex: Some(
-            "37bf5a18d9f55d6bc671bfac431f2e67df85cc6936780e9ac762765651521ad7".into(),
+            "ef0ed071fc82bf8ebc8971aeee8d142b4b54e15583f0c575d942cb237474d1dc".into(),
         ),
         module_count: Some(119),
         composition_rule: None,

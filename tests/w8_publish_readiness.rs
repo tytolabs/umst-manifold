@@ -19,7 +19,7 @@ fn w8_publish_readiness_script_is_present_and_documents_prep_vs_publish() {
         "script must pin module_count 119"
     );
     assert!(
-        body.contains("37bf5a18")
+        body.contains("ef0ed071") || body.contains("37bf5a18")
             || body.contains("4524ed21")
             || body.contains("0697014f"),
         "script must pin catalog digest prefix from lock"

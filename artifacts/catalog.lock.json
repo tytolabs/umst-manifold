@@ -2,22 +2,22 @@
   "version": 2,
   "role": "manifold_runtime_lock",
   "upstream_repo": "umst-formal-double-slit",
-  "upstream_catalog_digest_hex": "37bf5a18d9f55d6bc671bfac431f2e67df85cc6936780e9ac762765651521ad7",
+  "upstream_catalog_digest_hex": "ef0ed071fc82bf8ebc8971aeee8d142b4b54e15583f0c575d942cb237474d1dc",
   "module_count": 119,
   "module_graph_edge_count": 321,
   "composition_rule": "cross_repo_merge_v1_primary_wins_basename",
-  "composed_catalog_digest_hex": "37bf5a18d9f55d6bc671bfac431f2e67df85cc6936780e9ac762765651521ad7",
+  "composed_catalog_digest_hex": "ef0ed071fc82bf8ebc8971aeee8d142b4b54e15583f0c575d942cb237474d1dc",
   "fiber_pins": [
     {
       "repo": "umst-formal-double-slit",
-      "catalog_digest_hex": "ecb4b177bee1148d8cef8bcd129d95e94609e1c6f303d416a3e566441a6bd113",
+      "catalog_digest_hex": "035ea948ff812fddec5fead027e2c02ae96ff44520031df64816fca4f50a579b",
       "module_count": 69,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"
     },
     {
       "repo": "umst-formal",
-      "catalog_digest_hex": "53c43970db00d9b4ae5b11ff1078ccc6b77f03e8ce6573b2e4e3811b6076b1c4",
+      "catalog_digest_hex": "265db0ed86ef9d9efe089fb71307ebf508155272513a3f21ab7bc9b43350fa4d",
       "module_count": 62,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"

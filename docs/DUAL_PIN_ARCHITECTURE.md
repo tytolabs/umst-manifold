@@ -17,9 +17,9 @@
 
 | Pin | Digest (prefix) | Modules |
 |-----|-----------------|--------:|
-| `umst-formal-double-slit` | `c1d9ba2…` | 69 |
-| `umst-formal` | `53c43970…` | 62 |
-| **Composed (R0)** | `37bf5a18…` | 119 |
+| `umst-formal-double-slit` | `035ea948…` | 69 |
+| `umst-formal` | `265db0ed…` | 62 |
+| **Composed (R0)** | `ef0ed071…` | 119 |
 
 `upstream_catalog_digest_hex` and `composed_catalog_digest_hex` are equal in v2 (composed verification view).
 

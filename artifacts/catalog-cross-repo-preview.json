@@ -8,14 +8,14 @@
   "notes": "APPROVE_CROSS_REPO_MERGE=1 \u2014 unified catalog may be written to artifacts/catalog.json and catalog.lock.json (not this preview file); bump manifold upstream_catalog_digest_hex.",
   "primary_repo": "umst-formal-double-slit",
   "secondary_repo": "umst-formal",
-  "primary_lean_root": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean",
-  "secondary_lean_root": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean",
+  "primary_lean_root": "Lean",
+  "secondary_lean_root": "Lean",
   "primary_module_count": 69,
   "secondary_module_count": 62,
   "merged_module_count": 119,
-  "primary_digest_hex": "ecb4b177bee1148d8cef8bcd129d95e94609e1c6f303d416a3e566441a6bd113",
-  "secondary_digest_hex": "53c43970db00d9b4ae5b11ff1078ccc6b77f03e8ce6573b2e4e3811b6076b1c4",
-  "merged_digest_hex": "37bf5a18d9f55d6bc671bfac431f2e67df85cc6936780e9ac762765651521ad7",
+  "primary_digest_hex": "035ea948ff812fddec5fead027e2c02ae96ff44520031df64816fca4f50a579b",
+  "secondary_digest_hex": "265db0ed86ef9d9efe089fb71307ebf508155272513a3f21ab7bc9b43350fa4d",
+  "merged_digest_hex": "ef0ed071fc82bf8ebc8971aeee8d142b4b54e15583f0c575d942cb237474d1dc",
   "overlap_basename_count": 12,
   "only_in_primary_basename": [
     "Complementarity",
@@ -230,7 +230,7 @@
   ],
   "modules": [
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Adjoint.lean",
+      "path": "Adjoint.lean",
       "content_sha256": "cf21d9da05eeb2dd63907242d46e076b89ce25f430e860222f009731ec248399",
       "declarations": {
         "theorem": [
@@ -248,7 +248,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Behavior/SDFCanonical.lean",
+      "path": "Behavior/SDFCanonical.lean",
       "content_sha256": "3114f8da10cb19322f9e10d1284e841219eb40165219994283481bc9ad1fa2e9",
       "declarations": {
         "def": [
@@ -264,7 +264,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Constitutional.lean",
+      "path": "Constitutional.lean",
       "content_sha256": "e0c278096bd7895e3ab77811377bd6c7288dc48b62660d4c85c10aac0879879f",
       "declarations": {
         "def": [
@@ -297,7 +297,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Convergence.lean",
+      "path": "Convergence.lean",
       "content_sha256": "d22ee9208110a98b70eecd2157f4e1cf7764fdc5c7c17d03a1d7929c81365aa1",
       "declarations": {
         "def": [
@@ -326,7 +326,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/CreditGreedyOptimal.lean",
+      "path": "CreditGreedyOptimal.lean",
       "content_sha256": "322e9447d0401fa001141c3e5ab02fb359b5020a7947e432d6547025aa301972",
       "declarations": {
         "structure": [
@@ -351,7 +351,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/Collision.lean",
+      "path": "Crypto/Collision.lean",
       "content_sha256": "8cb5de8362570369c14de2972d7de8b1226d3041850ad3e0799604d7de435575",
       "declarations": {
         "theorem": [
@@ -363,7 +363,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/Composability.lean",
+      "path": "Crypto/Composability.lean",
       "content_sha256": "1497c18fe2e02f6dd1904ebb1a306618ee9a7352ec402d7baa4dada0d5e35f92",
       "declarations": {
         "def": [
@@ -380,7 +380,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/EUF_CMA.lean",
+      "path": "Crypto/EUF_CMA.lean",
       "content_sha256": "96a044c5a4f2a9e2c14267fc7cc99d2ba4e751c2331a5fe2e0ef7f6816ff6434",
       "declarations": {
         "def": [
@@ -395,7 +395,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/LWE.lean",
+      "path": "Crypto/LWE.lean",
       "content_sha256": "769d7aaf1ff2457465cc0e571ec9c27940f7362f22be5cedb58fc227ada68709",
       "declarations": {
         "def": [
@@ -410,7 +410,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/SanitizePatternCoverage.lean",
+      "path": "Crypto/SanitizePatternCoverage.lean",
       "content_sha256": "e16d0f1c44d3d10eada8a326c8e5766c5599c466512e439ee6b9460c607abde8",
       "declarations": {
         "inductive": [
@@ -430,7 +430,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/SideChannel.lean",
+      "path": "Crypto/SideChannel.lean",
       "content_sha256": "da727df0f425f74d1a529f7bda84aad05559b8133819e90dfa2daae12dbada09",
       "declarations": {
         "def": [
@@ -445,7 +445,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/DEC.lean",
+      "path": "DEC.lean",
       "content_sha256": "4b24004a2fee19f2db5017951f5e39d2ee2cd024b89e990d54f5a2b53250a476",
       "declarations": {
         "def": [
@@ -475,7 +475,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/DIBKleisli.lean",
+      "path": "DIBKleisli.lean",
       "content_sha256": "4f0975565df716210c70a8aadbd55d60844e3306db1088a2226b4ed3994136fd",
       "declarations": {
         "structure": [
@@ -519,7 +519,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Dignity.lean",
+      "path": "Dignity.lean",
       "content_sha256": "c64293e285e216743dc007f06998f61cbfd28c606bba3ad1611656d7cbdcab82",
       "declarations": {
         "lemma": [
@@ -557,7 +557,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/BurdenRecursionIsAdmissible.lean",
+      "path": "Economic/BurdenRecursionIsAdmissible.lean",
       "content_sha256": "a50b4bfa988a6feebd853c7658c9e807d4d23da7d24ed705996382c946513e7a",
       "declarations": {
         "def": [
@@ -582,7 +582,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/CollectiveCoherenceCost.lean",
+      "path": "Economic/CollectiveCoherenceCost.lean",
       "content_sha256": "2cf94fab3211cb4204662d94e7a90cace9f261b5a3f3a3b704d473d8b15487ad",
       "declarations": {
         "def": [
@@ -601,7 +601,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/CreativeExplorationTolerance.lean",
+      "path": "Economic/CreativeExplorationTolerance.lean",
       "content_sha256": "f50c45aaf59d37c68afdd8dcba478806fe8a0e1be0826e3929be9d1ee9ac7951",
       "declarations": {
         "theorem": [
@@ -615,7 +615,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/CreativityBudget.lean",
+      "path": "Economic/CreativityBudget.lean",
       "content_sha256": "cc09746a961a2972e2d8813e49a6086126c1dd93c40814d1d77be56f4344ac85",
       "declarations": {
         "def": [
@@ -634,7 +634,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/DynamicEpsilonCalibration.lean",
+      "path": "Economic/DynamicEpsilonCalibration.lean",
       "content_sha256": "79ada7a51888483ed59429902deb37ed18d57b04cfcc419ad940bad61f4cc387",
       "declarations": {
         "theorem": [
@@ -650,7 +650,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/EconomicDomain.lean",
+      "path": "Economic/EconomicDomain.lean",
       "content_sha256": "bf872505d2361982f8f2e3f0ce83928559e070a4af132da3a6a9147e523fdd3f",
       "declarations": {
         "structure": [
@@ -665,7 +665,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/EconomicTemperature.lean",
+      "path": "Economic/EconomicTemperature.lean",
       "content_sha256": "bd10ad9c3a849c2f7aa351c94d7516c52b8da06047f40ec7db87c7380fa07112",
       "declarations": {
         "theorem": [
@@ -682,7 +682,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/EpistemicSensingModule.lean",
+      "path": "Economic/EpistemicSensingModule.lean",
       "content_sha256": "071e56f9148019e0311c2527cbbf44704f05ca33a39400e13c86b3ecf44a5f09",
       "declarations": {
         "theorem": [
@@ -696,7 +696,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/HallucinationDetector.lean",
+      "path": "Economic/HallucinationDetector.lean",
       "content_sha256": "f6225b73e9b8f30a0fe6624181d0f7ad533cda3c837d34f054462f465355e2af",
       "declarations": {
         "def": [
@@ -715,7 +715,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/HorizonAwareGrounding.lean",
+      "path": "Economic/HorizonAwareGrounding.lean",
       "content_sha256": "b27a27f0990a282aea8b77d44bceb4a60007f308530aba2b9d54b3291ab2fc8b",
       "declarations": {
         "theorem": [
@@ -731,7 +731,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/KleisliAdmissibilityComposition.lean",
+      "path": "Economic/KleisliAdmissibilityComposition.lean",
       "content_sha256": "9c8bcd2861f3e0d01fe261e5f8cf226f9b43656895a435febaf9029d7a6103c9",
       "declarations": {
         "theorem": [
@@ -746,7 +746,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/LowEntropyLieDetector.lean",
+      "path": "Economic/LowEntropyLieDetector.lean",
       "content_sha256": "2cb0eb71e8414b2d8f054f668094300056c6123cf2c3e0922fd38216249d2151",
       "declarations": {
         "def": [
@@ -764,7 +764,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/NPVIsSpecialCaseOfThermodynamicBurden.lean",
+      "path": "Economic/NPVIsSpecialCaseOfThermodynamicBurden.lean",
       "content_sha256": "a3517c6aaf367d64d06d535d1968777f33c248635e2c73cba7b0be9788d38b79",
       "declarations": {
         "theorem": [
@@ -779,7 +779,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/NuanceIsolator.lean",
+      "path": "Economic/NuanceIsolator.lean",
       "content_sha256": "f7dc0244c088078465a4668962bda2d05c922f69727f675edc8114d6f05b8d60",
       "declarations": {
         "theorem": [
@@ -795,7 +795,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/SelfReferentialEconomicTensor.lean",
+      "path": "Economic/SelfReferentialEconomicTensor.lean",
       "content_sha256": "b24c4c27e9bf46a7210abfc23ff4d195363ec7d5087b87fcab8b9999f4bf1a5c",
       "declarations": {
         "theorem": [
@@ -810,7 +810,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/StochasticBurdenExpectation.lean",
+      "path": "Economic/StochasticBurdenExpectation.lean",
       "content_sha256": "18adfb0a196be24ccde7cb533d1525bbc2391cda7a7ec648baf3ba7cfbd07c57",
       "declarations": {
         "theorem": [
@@ -828,7 +828,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/ThermodynamicUncertaintyCertificate.lean",
+      "path": "Economic/ThermodynamicUncertaintyCertificate.lean",
       "content_sha256": "c0c8d346ef3a56328bbefae54ae94be3f927122108da737cf007745a2f4cf57d",
       "declarations": {
         "structure": [
@@ -847,7 +847,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/EndConditions.lean",
+      "path": "EndConditions.lean",
       "content_sha256": "89135b84b08e59bc60ce9413d3bc69a1e8c42bba76adae54a3f7b0a085b63214",
       "declarations": {
         "theorem": [
@@ -867,7 +867,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/EnrichedAdmissibility.lean",
+      "path": "EnrichedAdmissibility.lean",
       "content_sha256": "66d3fc94704996044a7c250a2341219a0d5c320aebd3b387f1f6f955819fdbe9",
       "declarations": {
         "def": [
@@ -900,7 +900,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/EtaCog.lean",
+      "path": "EtaCog.lean",
       "content_sha256": "3e33e0037f11777b3b17f42aa2af7d629834d73fb90b88713556d08b023c87af",
       "declarations": {
         "structure": [
@@ -930,7 +930,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/GaloisGate.lean",
+      "path": "GaloisGate.lean",
       "content_sha256": "910740bb06eb3b93f7c1e3512fdc20cece499601b3c3f3f6c246743d3e0711b9",
       "declarations": {
         "inductive": [
@@ -957,7 +957,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/GraphProperties.lean",
+      "path": "GraphProperties.lean",
       "content_sha256": "483acf02bb790995fbe834d8f94250c01414686e526d4056ebe59489bea132dd",
       "declarations": {
         "theorem": [
@@ -980,7 +980,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Helmholtz.lean",
+      "path": "Helmholtz.lean",
       "content_sha256": "7b334fdccca01dcf367ab34092a146c001a5946ccaff44f96ad54fee1e428a0c",
       "declarations": {
         "def": [
@@ -1001,7 +1001,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/InfoTheory.lean",
+      "path": "InfoTheory.lean",
       "content_sha256": "9c294685c44b5a879de0adca0ce6438fdb089026db99fa277f4832e4f142a63d",
       "declarations": {
         "structure": [
@@ -1024,7 +1024,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/JenningsGelSpace.lean",
+      "path": "JenningsGelSpace.lean",
       "content_sha256": "3c5a304a95d23928ec78a860595cc6c0d78dbee8d496cd63d89da298089a6768",
       "declarations": {
         "lemma": [
@@ -1049,7 +1049,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/MedianConvergence.lean",
+      "path": "MedianConvergence.lean",
       "content_sha256": "59de0321fa136af8373f7359b15d73e2419bbc6f9b54b251469c6d1b94bfb826",
       "declarations": {
         "theorem": [
@@ -1075,7 +1075,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Memory/MergeSafe.lean",
+      "path": "Memory/MergeSafe.lean",
       "content_sha256": "17445c96ffbad60723c65ca2ba455b4f9c52cf3d1af5b31d4fbafb6d9394c325",
       "declarations": {
         "structure": [
@@ -1094,7 +1094,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Memory/TierDisjoint.lean",
+      "path": "Memory/TierDisjoint.lean",
       "content_sha256": "901580cbed5c9c5ef5a1a51891d2756722fd5fcbb6e330bb1b96399e345439a3",
       "declarations": {
         "inductive": [
@@ -1121,7 +1121,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/OrderStatisticsBand.lean",
+      "path": "OrderStatisticsBand.lean",
       "content_sha256": "a980acfb8852994fdee73ed69bc6ea3e28f6d5227f449e943bca9745c67cae62",
       "declarations": {
         "theorem": [
@@ -1146,7 +1146,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Powers.lean",
+      "path": "Powers.lean",
       "content_sha256": "ae7e745ef7882d13a19175c741b1efe685f5fb4937d1844a2614abc2af68135e",
       "declarations": {
         "def": [
@@ -1175,7 +1175,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/RegimeSoundness.lean",
+      "path": "RegimeSoundness.lean",
       "content_sha256": "ad516ec8e936f65d918853aabac86ad45e4c86806fd176f0881f942ec361b25a",
       "declarations": {
         "def": [
@@ -1201,7 +1201,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/RhoEstimator.lean",
+      "path": "RhoEstimator.lean",
       "content_sha256": "915302f0e221eeae2b9bf3b488fbe6288a0b7311c5df74031664e2cbdb6864ca",
       "declarations": {
         "def": [
@@ -1227,7 +1227,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/SeparationBound.lean",
+      "path": "SeparationBound.lean",
       "content_sha256": "72526f7158bfae75eaa7c632024a62f6139714b1b6a2d5f5cb3e74a5c7f38920",
       "declarations": {
         "theorem": [
@@ -1244,7 +1244,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/_check_ext.lean",
+      "path": "_check_ext.lean",
       "content_sha256": "0f61b8a12260ab81a742b6346ce6a98b38d42df6d0c65d81aaa8339f8554eb8c",
       "declarations": {},
       "import_lines": [
@@ -1254,7 +1254,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/experiments/AutoExperimenterPlaceholder.lean",
+      "path": "experiments/AutoExperimenterPlaceholder.lean",
       "content_sha256": "e9ffc73b7587d2b37f4c3617769369593c1a43822be5caf2a7546781209fcc45",
       "declarations": {
         "def": [
@@ -1266,7 +1266,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/scripts/print_axioms.lean",
+      "path": "scripts/print_axioms.lean",
       "content_sha256": "d31117c92bbce34bc4039512f52fdc4f9e492ccd74971946a5546fbaea883c06",
       "declarations": {
         "def": [
@@ -1283,7 +1283,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Activation.lean",
+      "path": "Activation.lean",
       "content_sha256": "82c89554332e6212d9b73bc937fd2ac32023cbfa7197898bc40de00b45cbb2ff",
       "declarations": {
         "inductive": [
@@ -1332,7 +1332,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Complementarity.lean",
+      "path": "Complementarity.lean",
       "content_sha256": "b4d223afb6cb86150d8efb57e589c0b0ba37d4b3ceeb6c74fd048dee8f89fcb0",
       "declarations": {
         "theorem": [
@@ -1347,7 +1347,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/DataProcessingInequality.lean",
+      "path": "DataProcessingInequality.lean",
       "content_sha256": "a5a161fbd624231c4ba5814b4a7cd66ced67588b4cbc59c684086ba4a2149050",
       "declarations": {
         "theorem": [
@@ -1391,7 +1391,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/DensityState.lean",
+      "path": "DensityState.lean",
       "content_sha256": "745a6e56eaa2a29a87c64c50aafa35c83ab902555ec2b925d96419636b5640f0",
       "declarations": {
         "structure": [
@@ -1423,7 +1423,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/DoubleSlit.lean",
+      "path": "DoubleSlit.lean",
       "content_sha256": "12a7fbb56fd1c13e57b964885526ce32c486f3a14379602b0a1d334d6b43fd8e",
       "declarations": {
         "theorem": [
@@ -1441,7 +1441,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/DoubleSlitCore.lean",
+      "path": "DoubleSlitCore.lean",
       "content_sha256": "9a839457c472c11b1594efea914853b5da3cf06a236d2aafe2984d222847ae33",
       "declarations": {
         "structure": [
@@ -1465,7 +1465,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicDynamics.lean",
+      "path": "EpistemicDynamics.lean",
       "content_sha256": "26fc19ab8c2f0a89472da98eda0f1eb4d1f69c9f97fb9d2823dc27c0bd4b43dc",
       "declarations": {
         "theorem": [
@@ -1487,7 +1487,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicGalois.lean",
+      "path": "EpistemicGalois.lean",
       "content_sha256": "a7fa177792bda021fb718b8e9714fd60e333933938888e2ac13c44e6b08adc44",
       "declarations": {
         "theorem": [
@@ -1508,7 +1508,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicMI.lean",
+      "path": "EpistemicMI.lean",
       "content_sha256": "39fd8101df54f60fed7eadcee48061b841d8e20fb141c16ba64064aba2f4d7dd",
       "declarations": {
         "inductive": [
@@ -1537,7 +1537,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicNumericsContract.lean",
+      "path": "EpistemicNumericsContract.lean",
       "content_sha256": "a4014dbb19a561d9e0f9854cb80bd3cad4d49ec735dec3b615158a8c90af410a",
       "declarations": {
         "structure": [
@@ -1567,7 +1567,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicPerStepNumerics.lean",
+      "path": "EpistemicPerStepNumerics.lean",
       "content_sha256": "b0785e27b24dda7fda64e626c73d4ba6ef358f8fe5451a258037a68a43c038e5",
       "declarations": {
         "structure": [
@@ -1597,7 +1597,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicPolicy.lean",
+      "path": "EpistemicPolicy.lean",
       "content_sha256": "175a2b421a086bbde9e9d9c5d6fa792e6d7456e16eb2df251f63767dd00b74bb",
       "declarations": {
         "theorem": [
@@ -1625,7 +1625,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicRuntimeContract.lean",
+      "path": "EpistemicRuntimeContract.lean",
       "content_sha256": "f14831e67459ea2a27fd33c12d93c095d967e2a8c46bcad97841d399df5b78b5",
       "declarations": {
         "def": [
@@ -1652,7 +1652,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicRuntimeSchemaContract.lean",
+      "path": "EpistemicRuntimeSchemaContract.lean",
       "content_sha256": "c5eedc836f566606c91f53a531b5f21063488e988947cd0bd392ffe6a559f6a0",
       "declarations": {
         "structure": [
@@ -1681,7 +1681,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicSensing.lean",
+      "path": "EpistemicSensing.lean",
       "content_sha256": "48f21603e7652f003d79a1d24dc50b97f2cc1c557927cfab18ecf0bc13b1d8e3",
       "declarations": {
         "structure": [
@@ -1730,7 +1730,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTelemetryApproximation.lean",
+      "path": "EpistemicTelemetryApproximation.lean",
       "content_sha256": "c50161ad9c252ee7dd33229e37dbc5962fec0ea041faab9b7c2d557636107560",
       "declarations": {
         "def": [
@@ -1751,7 +1751,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTelemetryBridge.lean",
+      "path": "EpistemicTelemetryBridge.lean",
       "content_sha256": "e25ecb1c486074c43a85bb3237a2756c6e21ce5266bfcada5737c5bfdb541806",
       "declarations": {
         "structure": [
@@ -1788,7 +1788,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTelemetryQuantitativeUtility.lean",
+      "path": "EpistemicTelemetryQuantitativeUtility.lean",
       "content_sha256": "b967a6e898bb674625d8121032fe7fef4313425c026229372dc5ebe4915c0d28",
       "declarations": {
         "theorem": [
@@ -1805,7 +1805,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTelemetrySolverCalibration.lean",
+      "path": "EpistemicTelemetrySolverCalibration.lean",
       "content_sha256": "2d8eb4565f6c0c60671f6cc3805f00b31adcfd963e2288d4dcae6fa841b6813f",
       "declarations": {
         "structure": [
@@ -1835,7 +1835,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTraceDerivedEpsilonCertificate.lean",
+      "path": "EpistemicTraceDerivedEpsilonCertificate.lean",
       "content_sha256": "ddc5618f2eeceb39944b2eb1f3105357eb71e2471e5f0876df43f2f3e73a063a",
       "declarations": {
         "theorem": [
@@ -1859,7 +1859,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTraceDrivenCalibrationWitness.lean",
+      "path": "EpistemicTraceDrivenCalibrationWitness.lean",
       "content_sha256": "c6c88fcb79109a7f86d41811cb784f0013e191e6a89fecde9605957d2f2ed467",
       "declarations": {
         "structure": [
@@ -1877,7 +1877,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTrajectoryMI.lean",
+      "path": "EpistemicTrajectoryMI.lean",
       "content_sha256": "8b462445171d2f8a9cba02b5ffc33baadc8fb953c6492f658da6cbbfd19f5ade",
       "declarations": {
         "theorem": [
@@ -1898,7 +1898,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/ErasureChannel.lean",
+      "path": "ErasureChannel.lean",
       "content_sha256": "f49c30d4f90c4e8c7ad199d0f919e3de2e1b35d6c22e5c412253435c0ec021bf",
       "declarations": {
         "theorem": [
@@ -1934,7 +1934,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/ExamplesQubit.lean",
+      "path": "ExamplesQubit.lean",
       "content_sha256": "23919cea91cc4dfaf010b561f317a11f7620ea967615bfae7b4096c814f3607f",
       "declarations": {
         "lemma": [
@@ -2001,7 +2001,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/FiberedActivation.lean",
+      "path": "FiberedActivation.lean",
       "content_sha256": "8287357d14b99c3cc57787e9dd2cfb922e2e4f6349f7291e2daf43a544e915ff",
       "declarations": {
         "def": [
@@ -2025,7 +2025,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/FlashMoERuntimeScaffold.lean",
+      "path": "FlashMoERuntimeScaffold.lean",
       "content_sha256": "6b51d8b5c1338a7d6310b4df95e0dfc996885d808a845f1eb19b667c5f777692",
       "declarations": {},
       "import_lines": [
@@ -2035,7 +2035,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/FormalFoundations.lean",
+      "path": "FormalFoundations.lean",
       "content_sha256": "be599adc1b79e2b54e016e77ff53d4675d1c1be37c7ec1a96c73bddbf3831164",
       "declarations": {
         "theorem": [
@@ -2050,7 +2050,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Gate.lean",
+      "path": "Gate.lean",
       "content_sha256": "a349fceeb215a6b02a0b30fb1f9674a388a5eae7ca2a626c0b11ebf2c58da7fb",
       "declarations": {
         "structure": [
@@ -2096,7 +2096,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/GateCompat.lean",
+      "path": "GateCompat.lean",
       "content_sha256": "9a2b1c081b1a3b06c6b2a8293380acfcc648a9df3e0324d22dfcee530638b8e9",
       "declarations": {
         "theorem": [
@@ -2126,7 +2126,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/GeneralDimension.lean",
+      "path": "GeneralDimension.lean",
       "content_sha256": "5d42e2abd2d1691a713ab9b3ec874ce8e5608ca0b1ec2d663a4eb0a5dbbf6f5f",
       "declarations": {
         "theorem": [
@@ -2143,7 +2143,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/GeneralResidualCoherence.lean",
+      "path": "GeneralResidualCoherence.lean",
       "content_sha256": "b30a9158b9c1608a5214e5a2dbb6a4384afd98b1b730dd59b8247fb42eb03c2a",
       "declarations": {
         "theorem": [
@@ -2177,7 +2177,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/GeneralVisibility.lean",
+      "path": "GeneralVisibility.lean",
       "content_sha256": "a73d3a964ccf0866650983d663a2c059aaa0dfedb979faf70eebe1d92c62a021",
       "declarations": {
         "theorem": [
@@ -2200,7 +2200,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/InfoEntropy.lean",
+      "path": "InfoEntropy.lean",
       "content_sha256": "6049548e8e07b0ad0284d5f3c24f65702335282deb2eb52e3e5834cf6263cd94",
       "declarations": {
         "theorem": [
@@ -2231,7 +2231,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/InformationCostIdentity.lean",
+      "path": "InformationCostIdentity.lean",
       "content_sha256": "ba3b5ab38e44397eadffbd84ccc761d8db46c200d8d03ef353b6e342014c8e7f",
       "declarations": {
         "theorem": [
@@ -2256,7 +2256,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/KleinInequality.lean",
+      "path": "KleinInequality.lean",
       "content_sha256": "7419db3ad002006f38aca5db9c4821d39da296545659580d1cf8de533b4c3a22",
       "declarations": {
         "theorem": [
@@ -2274,7 +2274,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/KroneckerEigen.lean",
+      "path": "KroneckerEigen.lean",
       "content_sha256": "cbee785a0bdcccade961aeb21c34b087d5e303fd7995d2d9132d5556ca5d598e",
       "declarations": {
         "theorem": [
@@ -2304,7 +2304,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LandauerBound.lean",
+      "path": "LandauerBound.lean",
       "content_sha256": "e544721c90c67454358c310969fec879e4d10c7e32503ac2bbdc159a2d33c9c9",
       "declarations": {
         "lemma": [
@@ -2347,7 +2347,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LandauerEinsteinBridge.lean",
+      "path": "LandauerEinsteinBridge.lean",
       "content_sha256": "3a1ce36f6db035f97271d4beaac664e078e2d3c53c999d1cdc138fc433ef4fee",
       "declarations": {
         "lemma": [
@@ -2375,7 +2375,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LandauerExtension.lean",
+      "path": "LandauerExtension.lean",
       "content_sha256": "c8d3aea9ffa1aa8a218ab9ce69de270642250f40ae12bd414d0c7708fe65cdd9",
       "declarations": {
         "theorem": [
@@ -2395,7 +2395,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LandauerLaw.lean",
+      "path": "LandauerLaw.lean",
       "content_sha256": "abe47e6e961cc0d3af47b79753781a7910741317538824f0f5a6c83fb95c9a91",
       "declarations": {
         "structure": [
@@ -2434,7 +2434,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LindbladDynamics.lean",
+      "path": "LindbladDynamics.lean",
       "content_sha256": "5a119537e0708e9f868826daa2f8cceb509b5e6534ad2406c030a2ad0575911f",
       "declarations": {
         "theorem": [
@@ -2461,7 +2461,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LindbladStreamD.lean",
+      "path": "LindbladStreamD.lean",
       "content_sha256": "f0c96812c6e7f9543e1229428f4074d7547f02588f50e4b5d1bc0ecc754a99cc",
       "declarations": {
         "theorem": [
@@ -2477,7 +2477,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LogSum.lean",
+      "path": "LogSum.lean",
       "content_sha256": "a8bc164b8dcba81cd4d6c15342e57237ac362b22310eace1d2b173e12f77ca20",
       "declarations": {
         "lemma": [
@@ -2494,7 +2494,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/MatrixLog.lean",
+      "path": "MatrixLog.lean",
       "content_sha256": "499e121289ee91456013a9ebd559751fd7984d9feb7c5a5ab72042cbf1aba6cd",
       "declarations": {},
       "import_lines": [
@@ -2506,7 +2506,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/MeasurementChannel.lean",
+      "path": "MeasurementChannel.lean",
       "content_sha256": "a929a8926fad36ae9f3fcb90b27a12eb0e01c6e89be6c4604b735bb3a7a0bec1",
       "declarations": {
         "structure": [
@@ -2550,7 +2550,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/MeasurementCost.lean",
+      "path": "MeasurementCost.lean",
       "content_sha256": "ec28b51fad159a7d6eb612ff04d6a7a33c545d13254980c9a7da146ea008af40",
       "declarations": {
         "theorem": [
@@ -2569,7 +2569,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/MonoidalState.lean",
+      "path": "MonoidalState.lean",
       "content_sha256": "c0656283f87d61603b7ca632f3e8d62650574ec32683ddb5216bf9b7035a7d50",
       "declarations": {
         "def": [
@@ -2592,7 +2592,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Naturality.lean",
+      "path": "Naturality.lean",
       "content_sha256": "ef48a40db9a45b5d4a3aeb76e53de3d4f08baf6c689e5dc5f1403670fed8b190",
       "declarations": {
         "inductive": [
@@ -2617,7 +2617,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/PMICEntropyInterior.lean",
+      "path": "PMICEntropyInterior.lean",
       "content_sha256": "9dba80c44ebe63d71e469601003c73e8b64df36ee72b6dddfc9cddccfb6d271a",
       "declarations": {
         "lemma": [
@@ -2643,7 +2643,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/PMICVisibility.lean",
+      "path": "PMICVisibility.lean",
       "content_sha256": "8ba472a23535d9d9ef3fde67e2226b046e33c58a054402092fe357b203f76683",
       "declarations": {
         "lemma": [
@@ -2664,7 +2664,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/PhysicsConstrainedAI.lean",
+      "path": "PhysicsConstrainedAI.lean",
       "content_sha256": "f2f247b7ca84be24b788d98417a817128329a31bb53d640d93d3b92787362659",
       "declarations": {
         "theorem": [
@@ -2682,7 +2682,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/ProbeOptimization.lean",
+      "path": "ProbeOptimization.lean",
       "content_sha256": "14131c5aad0206ca7669ffc3075ef10b94e9d718a789d036a689b4314efe0d9a",
       "declarations": {
         "theorem": [
@@ -2710,7 +2710,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/PrototypeSolverCalibration.lean",
+      "path": "PrototypeSolverCalibration.lean",
       "content_sha256": "4f9637512a5fc1b22fd159c3078b9fdaed4e12376bd1a3c9efbdc1053ef6e4d3",
       "declarations": {
         "def": [
@@ -2734,7 +2734,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/QRBridge.lean",
+      "path": "QRBridge.lean",
       "content_sha256": "81451cb9b24724cb5cfbe1bc4a3c22f2e5657bcdf7a01804c2b84d736ba3f2de",
       "declarations": {
         "theorem": [
@@ -2749,7 +2749,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/QuantumClassicalBridge.lean",
+      "path": "QuantumClassicalBridge.lean",
       "content_sha256": "1fcb16bebd2351be99d8f13d9fcc6ca4258f9387ccf3da3ead200dd1fb2ea5e0",
       "declarations": {
         "def": [
@@ -2799,7 +2799,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/QuantumMutualInfo.lean",
+      "path": "QuantumMutualInfo.lean",
       "content_sha256": "d4359da4f0098764c561e5488fc58f21c735f96193a867b7917949a10fcfe6f9",
       "declarations": {
         "theorem": [
@@ -2817,7 +2817,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/SchrodingerDynamics.lean",
+      "path": "SchrodingerDynamics.lean",
       "content_sha256": "efe9ad103935c96c3dc5a5a229c6ba5f8fe2faa4de821dafc7f4415843956919",
       "declarations": {
         "theorem": [
@@ -2838,7 +2838,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/SimLeanBridge.lean",
+      "path": "SimLeanBridge.lean",
       "content_sha256": "0cfd53b9322b6d56631f74d304523ec822de2985f5090a4008646e9f57e1bd0a",
       "declarations": {
         "structure": [
@@ -2862,7 +2862,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/TensorPartialTrace.lean",
+      "path": "TensorPartialTrace.lean",
       "content_sha256": "7150b041f9acb39c62c13c06b89697f38962c7c973ae7d7735489a2a7e178431",
       "declarations": {
         "theorem": [
@@ -2902,7 +2902,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Test3.lean",
+      "path": "Test3.lean",
       "content_sha256": "60b4d48ac2853a1e8b6f68188bfbaa71e4dc16af0471eb29cc4aa9e0f92f6754",
       "declarations": {},
       "import_lines": [
@@ -2912,7 +2912,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Test4.lean",
+      "path": "Test4.lean",
       "content_sha256": "8d7019027afaf06072a412e34c0548757f78510b05219730628edf638738953e",
       "declarations": {},
       "import_lines": [
@@ -2923,7 +2923,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/TestEntropy.lean",
+      "path": "TestEntropy.lean",
       "content_sha256": "04dbfa25f7fd86be58d5cbb1fc624d60171d702d75d370a6d7b26afdcd3946f7",
       "declarations": {
         "theorem": [
@@ -2941,7 +2941,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/TestFixes.lean",
+      "path": "TestFixes.lean",
       "content_sha256": "50efdef58cafab41b4e97b03e83796520abf1b46539e0c6af994275cf3e2d006",
       "declarations": {
         "theorem": [
@@ -2957,7 +2957,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/TestMixed.lean",
+      "path": "TestMixed.lean",
       "content_sha256": "70e44d38388e19234860a459097f67a18454efe42a3c85ae890b9846d3fb1f76",
       "declarations": {
         "structure": [
@@ -2977,7 +2977,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/UMSTCore.lean",
+      "path": "UMSTCore.lean",
       "content_sha256": "304bf882ff1229020abeed6de7fe5c591663e4ebcc82b3630a5cf3530c88c696",
       "declarations": {
         "lemma": [
@@ -3011,7 +3011,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/VonNeumannEntropy.lean",
+      "path": "VonNeumannEntropy.lean",
       "content_sha256": "7e974e084d6b0c67f2c32712092062f288881e904fbce502495a932a22beec43",
       "declarations": {
         "theorem": [
@@ -3062,7 +3062,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/WhichPathMeasurementUpdate.lean",
+      "path": "WhichPathMeasurementUpdate.lean",
       "content_sha256": "5c782adb9ff50370f99d28b3b1bc7caeb14770d9dbf1ba1a7ec98879b7897d2d",
       "declarations": {
         "theorem": [
@@ -3083,7 +3083,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/lakefile.lean",
+      "path": "lakefile.lean",
       "content_sha256": "c87eda692bdedd68de20a6a54f7781a2eca6f19a692b07d2099ed8719813b029",
       "declarations": {},
       "import_lines": [
@@ -3093,7 +3093,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/test_tensor_eigen.lean",
+      "path": "test_tensor_eigen.lean",
       "content_sha256": "567478331322053d8f10c882873dbc1db73e063a7720c0336265d21c9445fb2b",
       "declarations": {
         "theorem": [
@@ -3114,7 +3114,7 @@
   ],
   "modules_primary": [
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Activation.lean",
+      "path": "Activation.lean",
       "content_sha256": "82c89554332e6212d9b73bc937fd2ac32023cbfa7197898bc40de00b45cbb2ff",
       "declarations": {
         "inductive": [
@@ -3163,7 +3163,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Complementarity.lean",
+      "path": "Complementarity.lean",
       "content_sha256": "b4d223afb6cb86150d8efb57e589c0b0ba37d4b3ceeb6c74fd048dee8f89fcb0",
       "declarations": {
         "theorem": [
@@ -3178,7 +3178,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/DataProcessingInequality.lean",
+      "path": "DataProcessingInequality.lean",
       "content_sha256": "a5a161fbd624231c4ba5814b4a7cd66ced67588b4cbc59c684086ba4a2149050",
       "declarations": {
         "theorem": [
@@ -3222,7 +3222,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/DensityState.lean",
+      "path": "DensityState.lean",
       "content_sha256": "745a6e56eaa2a29a87c64c50aafa35c83ab902555ec2b925d96419636b5640f0",
       "declarations": {
         "structure": [
@@ -3254,7 +3254,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/DoubleSlit.lean",
+      "path": "DoubleSlit.lean",
       "content_sha256": "12a7fbb56fd1c13e57b964885526ce32c486f3a14379602b0a1d334d6b43fd8e",
       "declarations": {
         "theorem": [
@@ -3272,7 +3272,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/DoubleSlitCore.lean",
+      "path": "DoubleSlitCore.lean",
       "content_sha256": "9a839457c472c11b1594efea914853b5da3cf06a236d2aafe2984d222847ae33",
       "declarations": {
         "structure": [
@@ -3296,7 +3296,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicDynamics.lean",
+      "path": "EpistemicDynamics.lean",
       "content_sha256": "26fc19ab8c2f0a89472da98eda0f1eb4d1f69c9f97fb9d2823dc27c0bd4b43dc",
       "declarations": {
         "theorem": [
@@ -3318,7 +3318,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicGalois.lean",
+      "path": "EpistemicGalois.lean",
       "content_sha256": "a7fa177792bda021fb718b8e9714fd60e333933938888e2ac13c44e6b08adc44",
       "declarations": {
         "theorem": [
@@ -3339,7 +3339,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicMI.lean",
+      "path": "EpistemicMI.lean",
       "content_sha256": "39fd8101df54f60fed7eadcee48061b841d8e20fb141c16ba64064aba2f4d7dd",
       "declarations": {
         "inductive": [
@@ -3368,7 +3368,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicNumericsContract.lean",
+      "path": "EpistemicNumericsContract.lean",
       "content_sha256": "a4014dbb19a561d9e0f9854cb80bd3cad4d49ec735dec3b615158a8c90af410a",
       "declarations": {
         "structure": [
@@ -3398,7 +3398,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicPerStepNumerics.lean",
+      "path": "EpistemicPerStepNumerics.lean",
       "content_sha256": "b0785e27b24dda7fda64e626c73d4ba6ef358f8fe5451a258037a68a43c038e5",
       "declarations": {
         "structure": [
@@ -3428,7 +3428,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicPolicy.lean",
+      "path": "EpistemicPolicy.lean",
       "content_sha256": "175a2b421a086bbde9e9d9c5d6fa792e6d7456e16eb2df251f63767dd00b74bb",
       "declarations": {
         "theorem": [
@@ -3456,7 +3456,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicRuntimeContract.lean",
+      "path": "EpistemicRuntimeContract.lean",
       "content_sha256": "f14831e67459ea2a27fd33c12d93c095d967e2a8c46bcad97841d399df5b78b5",
       "declarations": {
         "def": [
@@ -3483,7 +3483,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicRuntimeSchemaContract.lean",
+      "path": "EpistemicRuntimeSchemaContract.lean",
       "content_sha256": "c5eedc836f566606c91f53a531b5f21063488e988947cd0bd392ffe6a559f6a0",
       "declarations": {
         "structure": [
@@ -3512,7 +3512,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicSensing.lean",
+      "path": "EpistemicSensing.lean",
       "content_sha256": "48f21603e7652f003d79a1d24dc50b97f2cc1c557927cfab18ecf0bc13b1d8e3",
       "declarations": {
         "structure": [
@@ -3561,7 +3561,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTelemetryApproximation.lean",
+      "path": "EpistemicTelemetryApproximation.lean",
       "content_sha256": "c50161ad9c252ee7dd33229e37dbc5962fec0ea041faab9b7c2d557636107560",
       "declarations": {
         "def": [
@@ -3582,7 +3582,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTelemetryBridge.lean",
+      "path": "EpistemicTelemetryBridge.lean",
       "content_sha256": "e25ecb1c486074c43a85bb3237a2756c6e21ce5266bfcada5737c5bfdb541806",
       "declarations": {
         "structure": [
@@ -3619,7 +3619,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTelemetryQuantitativeUtility.lean",
+      "path": "EpistemicTelemetryQuantitativeUtility.lean",
       "content_sha256": "b967a6e898bb674625d8121032fe7fef4313425c026229372dc5ebe4915c0d28",
       "declarations": {
         "theorem": [
@@ -3636,7 +3636,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTelemetrySolverCalibration.lean",
+      "path": "EpistemicTelemetrySolverCalibration.lean",
       "content_sha256": "2d8eb4565f6c0c60671f6cc3805f00b31adcfd963e2288d4dcae6fa841b6813f",
       "declarations": {
         "structure": [
@@ -3666,7 +3666,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTraceDerivedEpsilonCertificate.lean",
+      "path": "EpistemicTraceDerivedEpsilonCertificate.lean",
       "content_sha256": "ddc5618f2eeceb39944b2eb1f3105357eb71e2471e5f0876df43f2f3e73a063a",
       "declarations": {
         "theorem": [
@@ -3690,7 +3690,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTraceDrivenCalibrationWitness.lean",
+      "path": "EpistemicTraceDrivenCalibrationWitness.lean",
       "content_sha256": "c6c88fcb79109a7f86d41811cb784f0013e191e6a89fecde9605957d2f2ed467",
       "declarations": {
         "structure": [
@@ -3708,7 +3708,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/EpistemicTrajectoryMI.lean",
+      "path": "EpistemicTrajectoryMI.lean",
       "content_sha256": "8b462445171d2f8a9cba02b5ffc33baadc8fb953c6492f658da6cbbfd19f5ade",
       "declarations": {
         "theorem": [
@@ -3729,7 +3729,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/ErasureChannel.lean",
+      "path": "ErasureChannel.lean",
       "content_sha256": "f49c30d4f90c4e8c7ad199d0f919e3de2e1b35d6c22e5c412253435c0ec021bf",
       "declarations": {
         "theorem": [
@@ -3765,7 +3765,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/ExamplesQubit.lean",
+      "path": "ExamplesQubit.lean",
       "content_sha256": "23919cea91cc4dfaf010b561f317a11f7620ea967615bfae7b4096c814f3607f",
       "declarations": {
         "lemma": [
@@ -3832,7 +3832,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/FiberedActivation.lean",
+      "path": "FiberedActivation.lean",
       "content_sha256": "8287357d14b99c3cc57787e9dd2cfb922e2e4f6349f7291e2daf43a544e915ff",
       "declarations": {
         "def": [
@@ -3856,7 +3856,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/FlashMoERuntimeScaffold.lean",
+      "path": "FlashMoERuntimeScaffold.lean",
       "content_sha256": "6b51d8b5c1338a7d6310b4df95e0dfc996885d808a845f1eb19b667c5f777692",
       "declarations": {},
       "import_lines": [
@@ -3866,7 +3866,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/FormalFoundations.lean",
+      "path": "FormalFoundations.lean",
       "content_sha256": "be599adc1b79e2b54e016e77ff53d4675d1c1be37c7ec1a96c73bddbf3831164",
       "declarations": {
         "theorem": [
@@ -3881,7 +3881,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Gate.lean",
+      "path": "Gate.lean",
       "content_sha256": "a349fceeb215a6b02a0b30fb1f9674a388a5eae7ca2a626c0b11ebf2c58da7fb",
       "declarations": {
         "structure": [
@@ -3927,7 +3927,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/GateCompat.lean",
+      "path": "GateCompat.lean",
       "content_sha256": "9a2b1c081b1a3b06c6b2a8293380acfcc648a9df3e0324d22dfcee530638b8e9",
       "declarations": {
         "theorem": [
@@ -3957,7 +3957,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/GeneralDimension.lean",
+      "path": "GeneralDimension.lean",
       "content_sha256": "5d42e2abd2d1691a713ab9b3ec874ce8e5608ca0b1ec2d663a4eb0a5dbbf6f5f",
       "declarations": {
         "theorem": [
@@ -3974,7 +3974,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/GeneralResidualCoherence.lean",
+      "path": "GeneralResidualCoherence.lean",
       "content_sha256": "b30a9158b9c1608a5214e5a2dbb6a4384afd98b1b730dd59b8247fb42eb03c2a",
       "declarations": {
         "theorem": [
@@ -4008,7 +4008,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/GeneralVisibility.lean",
+      "path": "GeneralVisibility.lean",
       "content_sha256": "a73d3a964ccf0866650983d663a2c059aaa0dfedb979faf70eebe1d92c62a021",
       "declarations": {
         "theorem": [
@@ -4031,7 +4031,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/InfoEntropy.lean",
+      "path": "InfoEntropy.lean",
       "content_sha256": "6049548e8e07b0ad0284d5f3c24f65702335282deb2eb52e3e5834cf6263cd94",
       "declarations": {
         "theorem": [
@@ -4062,7 +4062,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/InformationCostIdentity.lean",
+      "path": "InformationCostIdentity.lean",
       "content_sha256": "ba3b5ab38e44397eadffbd84ccc761d8db46c200d8d03ef353b6e342014c8e7f",
       "declarations": {
         "theorem": [
@@ -4087,7 +4087,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/KleinInequality.lean",
+      "path": "KleinInequality.lean",
       "content_sha256": "7419db3ad002006f38aca5db9c4821d39da296545659580d1cf8de533b4c3a22",
       "declarations": {
         "theorem": [
@@ -4105,7 +4105,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/KroneckerEigen.lean",
+      "path": "KroneckerEigen.lean",
       "content_sha256": "cbee785a0bdcccade961aeb21c34b087d5e303fd7995d2d9132d5556ca5d598e",
       "declarations": {
         "theorem": [
@@ -4135,7 +4135,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LandauerBound.lean",
+      "path": "LandauerBound.lean",
       "content_sha256": "e544721c90c67454358c310969fec879e4d10c7e32503ac2bbdc159a2d33c9c9",
       "declarations": {
         "lemma": [
@@ -4178,7 +4178,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LandauerEinsteinBridge.lean",
+      "path": "LandauerEinsteinBridge.lean",
       "content_sha256": "3a1ce36f6db035f97271d4beaac664e078e2d3c53c999d1cdc138fc433ef4fee",
       "declarations": {
         "lemma": [
@@ -4206,7 +4206,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LandauerExtension.lean",
+      "path": "LandauerExtension.lean",
       "content_sha256": "c8d3aea9ffa1aa8a218ab9ce69de270642250f40ae12bd414d0c7708fe65cdd9",
       "declarations": {
         "theorem": [
@@ -4226,7 +4226,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LandauerLaw.lean",
+      "path": "LandauerLaw.lean",
       "content_sha256": "abe47e6e961cc0d3af47b79753781a7910741317538824f0f5a6c83fb95c9a91",
       "declarations": {
         "structure": [
@@ -4265,7 +4265,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LindbladDynamics.lean",
+      "path": "LindbladDynamics.lean",
       "content_sha256": "5a119537e0708e9f868826daa2f8cceb509b5e6534ad2406c030a2ad0575911f",
       "declarations": {
         "theorem": [
@@ -4292,7 +4292,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LindbladStreamD.lean",
+      "path": "LindbladStreamD.lean",
       "content_sha256": "f0c96812c6e7f9543e1229428f4074d7547f02588f50e4b5d1bc0ecc754a99cc",
       "declarations": {
         "theorem": [
@@ -4308,7 +4308,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/LogSum.lean",
+      "path": "LogSum.lean",
       "content_sha256": "a8bc164b8dcba81cd4d6c15342e57237ac362b22310eace1d2b173e12f77ca20",
       "declarations": {
         "lemma": [
@@ -4325,7 +4325,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/MatrixLog.lean",
+      "path": "MatrixLog.lean",
       "content_sha256": "499e121289ee91456013a9ebd559751fd7984d9feb7c5a5ab72042cbf1aba6cd",
       "declarations": {},
       "import_lines": [
@@ -4337,7 +4337,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/MeasurementChannel.lean",
+      "path": "MeasurementChannel.lean",
       "content_sha256": "a929a8926fad36ae9f3fcb90b27a12eb0e01c6e89be6c4604b735bb3a7a0bec1",
       "declarations": {
         "structure": [
@@ -4381,7 +4381,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/MeasurementCost.lean",
+      "path": "MeasurementCost.lean",
       "content_sha256": "ec28b51fad159a7d6eb612ff04d6a7a33c545d13254980c9a7da146ea008af40",
       "declarations": {
         "theorem": [
@@ -4400,7 +4400,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/MonoidalState.lean",
+      "path": "MonoidalState.lean",
       "content_sha256": "c0656283f87d61603b7ca632f3e8d62650574ec32683ddb5216bf9b7035a7d50",
       "declarations": {
         "def": [
@@ -4423,7 +4423,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Naturality.lean",
+      "path": "Naturality.lean",
       "content_sha256": "ef48a40db9a45b5d4a3aeb76e53de3d4f08baf6c689e5dc5f1403670fed8b190",
       "declarations": {
         "inductive": [
@@ -4448,7 +4448,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/PMICEntropyInterior.lean",
+      "path": "PMICEntropyInterior.lean",
       "content_sha256": "9dba80c44ebe63d71e469601003c73e8b64df36ee72b6dddfc9cddccfb6d271a",
       "declarations": {
         "lemma": [
@@ -4474,7 +4474,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/PMICVisibility.lean",
+      "path": "PMICVisibility.lean",
       "content_sha256": "8ba472a23535d9d9ef3fde67e2226b046e33c58a054402092fe357b203f76683",
       "declarations": {
         "lemma": [
@@ -4495,7 +4495,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/PhysicsConstrainedAI.lean",
+      "path": "PhysicsConstrainedAI.lean",
       "content_sha256": "f2f247b7ca84be24b788d98417a817128329a31bb53d640d93d3b92787362659",
       "declarations": {
         "theorem": [
@@ -4513,7 +4513,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/ProbeOptimization.lean",
+      "path": "ProbeOptimization.lean",
       "content_sha256": "14131c5aad0206ca7669ffc3075ef10b94e9d718a789d036a689b4314efe0d9a",
       "declarations": {
         "theorem": [
@@ -4541,7 +4541,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/PrototypeSolverCalibration.lean",
+      "path": "PrototypeSolverCalibration.lean",
       "content_sha256": "4f9637512a5fc1b22fd159c3078b9fdaed4e12376bd1a3c9efbdc1053ef6e4d3",
       "declarations": {
         "def": [
@@ -4565,7 +4565,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/QRBridge.lean",
+      "path": "QRBridge.lean",
       "content_sha256": "81451cb9b24724cb5cfbe1bc4a3c22f2e5657bcdf7a01804c2b84d736ba3f2de",
       "declarations": {
         "theorem": [
@@ -4580,7 +4580,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/QuantumClassicalBridge.lean",
+      "path": "QuantumClassicalBridge.lean",
       "content_sha256": "1fcb16bebd2351be99d8f13d9fcc6ca4258f9387ccf3da3ead200dd1fb2ea5e0",
       "declarations": {
         "def": [
@@ -4630,7 +4630,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/QuantumMutualInfo.lean",
+      "path": "QuantumMutualInfo.lean",
       "content_sha256": "d4359da4f0098764c561e5488fc58f21c735f96193a867b7917949a10fcfe6f9",
       "declarations": {
         "theorem": [
@@ -4648,7 +4648,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/SchrodingerDynamics.lean",
+      "path": "SchrodingerDynamics.lean",
       "content_sha256": "efe9ad103935c96c3dc5a5a229c6ba5f8fe2faa4de821dafc7f4415843956919",
       "declarations": {
         "theorem": [
@@ -4669,7 +4669,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/SimLeanBridge.lean",
+      "path": "SimLeanBridge.lean",
       "content_sha256": "0cfd53b9322b6d56631f74d304523ec822de2985f5090a4008646e9f57e1bd0a",
       "declarations": {
         "structure": [
@@ -4693,7 +4693,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/TensorPartialTrace.lean",
+      "path": "TensorPartialTrace.lean",
       "content_sha256": "7150b041f9acb39c62c13c06b89697f38962c7c973ae7d7735489a2a7e178431",
       "declarations": {
         "theorem": [
@@ -4733,7 +4733,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Test3.lean",
+      "path": "Test3.lean",
       "content_sha256": "60b4d48ac2853a1e8b6f68188bfbaa71e4dc16af0471eb29cc4aa9e0f92f6754",
       "declarations": {},
       "import_lines": [
@@ -4743,7 +4743,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/Test4.lean",
+      "path": "Test4.lean",
       "content_sha256": "8d7019027afaf06072a412e34c0548757f78510b05219730628edf638738953e",
       "declarations": {},
       "import_lines": [
@@ -4754,7 +4754,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/TestEntropy.lean",
+      "path": "TestEntropy.lean",
       "content_sha256": "04dbfa25f7fd86be58d5cbb1fc624d60171d702d75d370a6d7b26afdcd3946f7",
       "declarations": {
         "theorem": [
@@ -4772,7 +4772,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/TestFixes.lean",
+      "path": "TestFixes.lean",
       "content_sha256": "50efdef58cafab41b4e97b03e83796520abf1b46539e0c6af994275cf3e2d006",
       "declarations": {
         "theorem": [
@@ -4788,7 +4788,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/TestMixed.lean",
+      "path": "TestMixed.lean",
       "content_sha256": "70e44d38388e19234860a459097f67a18454efe42a3c85ae890b9846d3fb1f76",
       "declarations": {
         "structure": [
@@ -4808,7 +4808,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/UMSTCore.lean",
+      "path": "UMSTCore.lean",
       "content_sha256": "304bf882ff1229020abeed6de7fe5c591663e4ebcc82b3630a5cf3530c88c696",
       "declarations": {
         "lemma": [
@@ -4842,7 +4842,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/VonNeumannEntropy.lean",
+      "path": "VonNeumannEntropy.lean",
       "content_sha256": "7e974e084d6b0c67f2c32712092062f288881e904fbce502495a932a22beec43",
       "declarations": {
         "theorem": [
@@ -4893,7 +4893,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/WhichPathMeasurementUpdate.lean",
+      "path": "WhichPathMeasurementUpdate.lean",
       "content_sha256": "5c782adb9ff50370f99d28b3b1bc7caeb14770d9dbf1ba1a7ec98879b7897d2d",
       "declarations": {
         "theorem": [
@@ -4914,7 +4914,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/lakefile.lean",
+      "path": "lakefile.lean",
       "content_sha256": "c87eda692bdedd68de20a6a54f7781a2eca6f19a692b07d2099ed8719813b029",
       "declarations": {},
       "import_lines": [
@@ -4924,7 +4924,7 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit/Lean/test_tensor_eigen.lean",
+      "path": "test_tensor_eigen.lean",
       "content_sha256": "567478331322053d8f10c882873dbc1db73e063a7720c0336265d21c9445fb2b",
       "declarations": {
         "theorem": [
@@ -4945,7 +4945,7 @@
   ],
   "modules_secondary": [
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Activation.lean",
+      "path": "Activation.lean",
       "content_sha256": "3a097e07c29d4d836875c3da6a60bc63bf01d48550def10976bc0fd3ecc33907",
       "declarations": {
         "inductive": [
@@ -4994,7 +4994,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Adjoint.lean",
+      "path": "Adjoint.lean",
       "content_sha256": "cf21d9da05eeb2dd63907242d46e076b89ce25f430e860222f009731ec248399",
       "declarations": {
         "theorem": [
@@ -5012,7 +5012,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Behavior/SDFCanonical.lean",
+      "path": "Behavior/SDFCanonical.lean",
       "content_sha256": "3114f8da10cb19322f9e10d1284e841219eb40165219994283481bc9ad1fa2e9",
       "declarations": {
         "def": [
@@ -5028,7 +5028,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Constitutional.lean",
+      "path": "Constitutional.lean",
       "content_sha256": "e0c278096bd7895e3ab77811377bd6c7288dc48b62660d4c85c10aac0879879f",
       "declarations": {
         "def": [
@@ -5061,7 +5061,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Convergence.lean",
+      "path": "Convergence.lean",
       "content_sha256": "d22ee9208110a98b70eecd2157f4e1cf7764fdc5c7c17d03a1d7929c81365aa1",
       "declarations": {
         "def": [
@@ -5090,7 +5090,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/CreditGreedyOptimal.lean",
+      "path": "CreditGreedyOptimal.lean",
       "content_sha256": "322e9447d0401fa001141c3e5ab02fb359b5020a7947e432d6547025aa301972",
       "declarations": {
         "structure": [
@@ -5115,7 +5115,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/Collision.lean",
+      "path": "Crypto/Collision.lean",
       "content_sha256": "8cb5de8362570369c14de2972d7de8b1226d3041850ad3e0799604d7de435575",
       "declarations": {
         "theorem": [
@@ -5127,7 +5127,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/Composability.lean",
+      "path": "Crypto/Composability.lean",
       "content_sha256": "1497c18fe2e02f6dd1904ebb1a306618ee9a7352ec402d7baa4dada0d5e35f92",
       "declarations": {
         "def": [
@@ -5144,7 +5144,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/EUF_CMA.lean",
+      "path": "Crypto/EUF_CMA.lean",
       "content_sha256": "96a044c5a4f2a9e2c14267fc7cc99d2ba4e751c2331a5fe2e0ef7f6816ff6434",
       "declarations": {
         "def": [
@@ -5159,7 +5159,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/LWE.lean",
+      "path": "Crypto/LWE.lean",
       "content_sha256": "769d7aaf1ff2457465cc0e571ec9c27940f7362f22be5cedb58fc227ada68709",
       "declarations": {
         "def": [
@@ -5174,7 +5174,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/SanitizePatternCoverage.lean",
+      "path": "Crypto/SanitizePatternCoverage.lean",
       "content_sha256": "e16d0f1c44d3d10eada8a326c8e5766c5599c466512e439ee6b9460c607abde8",
       "declarations": {
         "inductive": [
@@ -5194,7 +5194,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Crypto/SideChannel.lean",
+      "path": "Crypto/SideChannel.lean",
       "content_sha256": "da727df0f425f74d1a529f7bda84aad05559b8133819e90dfa2daae12dbada09",
       "declarations": {
         "def": [
@@ -5209,7 +5209,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/DEC.lean",
+      "path": "DEC.lean",
       "content_sha256": "4b24004a2fee19f2db5017951f5e39d2ee2cd024b89e990d54f5a2b53250a476",
       "declarations": {
         "def": [
@@ -5239,7 +5239,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/DIBKleisli.lean",
+      "path": "DIBKleisli.lean",
       "content_sha256": "4f0975565df716210c70a8aadbd55d60844e3306db1088a2226b4ed3994136fd",
       "declarations": {
         "structure": [
@@ -5283,7 +5283,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Dignity.lean",
+      "path": "Dignity.lean",
       "content_sha256": "c64293e285e216743dc007f06998f61cbfd28c606bba3ad1611656d7cbdcab82",
       "declarations": {
         "lemma": [
@@ -5321,7 +5321,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/BurdenRecursionIsAdmissible.lean",
+      "path": "Economic/BurdenRecursionIsAdmissible.lean",
       "content_sha256": "a50b4bfa988a6feebd853c7658c9e807d4d23da7d24ed705996382c946513e7a",
       "declarations": {
         "def": [
@@ -5346,7 +5346,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/CollectiveCoherenceCost.lean",
+      "path": "Economic/CollectiveCoherenceCost.lean",
       "content_sha256": "2cf94fab3211cb4204662d94e7a90cace9f261b5a3f3a3b704d473d8b15487ad",
       "declarations": {
         "def": [
@@ -5365,7 +5365,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/CreativeExplorationTolerance.lean",
+      "path": "Economic/CreativeExplorationTolerance.lean",
       "content_sha256": "f50c45aaf59d37c68afdd8dcba478806fe8a0e1be0826e3929be9d1ee9ac7951",
       "declarations": {
         "theorem": [
@@ -5379,7 +5379,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/CreativityBudget.lean",
+      "path": "Economic/CreativityBudget.lean",
       "content_sha256": "cc09746a961a2972e2d8813e49a6086126c1dd93c40814d1d77be56f4344ac85",
       "declarations": {
         "def": [
@@ -5398,7 +5398,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/DynamicEpsilonCalibration.lean",
+      "path": "Economic/DynamicEpsilonCalibration.lean",
       "content_sha256": "79ada7a51888483ed59429902deb37ed18d57b04cfcc419ad940bad61f4cc387",
       "declarations": {
         "theorem": [
@@ -5414,7 +5414,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/EconomicDomain.lean",
+      "path": "Economic/EconomicDomain.lean",
       "content_sha256": "bf872505d2361982f8f2e3f0ce83928559e070a4af132da3a6a9147e523fdd3f",
       "declarations": {
         "structure": [
@@ -5429,7 +5429,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/EconomicTemperature.lean",
+      "path": "Economic/EconomicTemperature.lean",
       "content_sha256": "bd10ad9c3a849c2f7aa351c94d7516c52b8da06047f40ec7db87c7380fa07112",
       "declarations": {
         "theorem": [
@@ -5446,7 +5446,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/EpistemicSensingModule.lean",
+      "path": "Economic/EpistemicSensingModule.lean",
       "content_sha256": "071e56f9148019e0311c2527cbbf44704f05ca33a39400e13c86b3ecf44a5f09",
       "declarations": {
         "theorem": [
@@ -5460,7 +5460,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/HallucinationDetector.lean",
+      "path": "Economic/HallucinationDetector.lean",
       "content_sha256": "f6225b73e9b8f30a0fe6624181d0f7ad533cda3c837d34f054462f465355e2af",
       "declarations": {
         "def": [
@@ -5479,7 +5479,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/HorizonAwareGrounding.lean",
+      "path": "Economic/HorizonAwareGrounding.lean",
       "content_sha256": "b27a27f0990a282aea8b77d44bceb4a60007f308530aba2b9d54b3291ab2fc8b",
       "declarations": {
         "theorem": [
@@ -5495,7 +5495,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/KleisliAdmissibilityComposition.lean",
+      "path": "Economic/KleisliAdmissibilityComposition.lean",
       "content_sha256": "9c8bcd2861f3e0d01fe261e5f8cf226f9b43656895a435febaf9029d7a6103c9",
       "declarations": {
         "theorem": [
@@ -5510,7 +5510,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/LowEntropyLieDetector.lean",
+      "path": "Economic/LowEntropyLieDetector.lean",
       "content_sha256": "2cb0eb71e8414b2d8f054f668094300056c6123cf2c3e0922fd38216249d2151",
       "declarations": {
         "def": [
@@ -5528,7 +5528,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/NPVIsSpecialCaseOfThermodynamicBurden.lean",
+      "path": "Economic/NPVIsSpecialCaseOfThermodynamicBurden.lean",
       "content_sha256": "a3517c6aaf367d64d06d535d1968777f33c248635e2c73cba7b0be9788d38b79",
       "declarations": {
         "theorem": [
@@ -5543,7 +5543,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/NuanceIsolator.lean",
+      "path": "Economic/NuanceIsolator.lean",
       "content_sha256": "f7dc0244c088078465a4668962bda2d05c922f69727f675edc8114d6f05b8d60",
       "declarations": {
         "theorem": [
@@ -5559,7 +5559,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/PhysicsConstrainedAI.lean",
+      "path": "Economic/PhysicsConstrainedAI.lean",
       "content_sha256": "7d749713b24a2c0c26cf73a6e7a7e89c41d66c8492770e763527fd6698d9b813",
       "declarations": {
         "theorem": [
@@ -5573,7 +5573,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/SelfReferentialEconomicTensor.lean",
+      "path": "Economic/SelfReferentialEconomicTensor.lean",
       "content_sha256": "b24c4c27e9bf46a7210abfc23ff4d195363ec7d5087b87fcab8b9999f4bf1a5c",
       "declarations": {
         "theorem": [
@@ -5588,7 +5588,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/StochasticBurdenExpectation.lean",
+      "path": "Economic/StochasticBurdenExpectation.lean",
       "content_sha256": "18adfb0a196be24ccde7cb533d1525bbc2391cda7a7ec648baf3ba7cfbd07c57",
       "declarations": {
         "theorem": [
@@ -5606,7 +5606,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Economic/ThermodynamicUncertaintyCertificate.lean",
+      "path": "Economic/ThermodynamicUncertaintyCertificate.lean",
       "content_sha256": "c0c8d346ef3a56328bbefae54ae94be3f927122108da737cf007745a2f4cf57d",
       "declarations": {
         "structure": [
@@ -5625,7 +5625,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/EndConditions.lean",
+      "path": "EndConditions.lean",
       "content_sha256": "89135b84b08e59bc60ce9413d3bc69a1e8c42bba76adae54a3f7b0a085b63214",
       "declarations": {
         "theorem": [
@@ -5645,7 +5645,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/EnrichedAdmissibility.lean",
+      "path": "EnrichedAdmissibility.lean",
       "content_sha256": "66d3fc94704996044a7c250a2341219a0d5c320aebd3b387f1f6f955819fdbe9",
       "declarations": {
         "def": [
@@ -5678,7 +5678,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/EtaCog.lean",
+      "path": "EtaCog.lean",
       "content_sha256": "3e33e0037f11777b3b17f42aa2af7d629834d73fb90b88713556d08b023c87af",
       "declarations": {
         "structure": [
@@ -5708,7 +5708,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/FiberedActivation.lean",
+      "path": "FiberedActivation.lean",
       "content_sha256": "2d5e1d6f104b478872d4cd9cd9d860797c05834d4ffc152d2fceb570e37ecc30",
       "declarations": {
         "def": [
@@ -5732,7 +5732,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/FormalFoundations.lean",
+      "path": "FormalFoundations.lean",
       "content_sha256": "5c40c9250a991c71477b11580a918527846703297487db331b9fb9e51c18f675",
       "declarations": {
         "theorem": [
@@ -5749,7 +5749,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/GaloisGate.lean",
+      "path": "GaloisGate.lean",
       "content_sha256": "910740bb06eb3b93f7c1e3512fdc20cece499601b3c3f3f6c246743d3e0711b9",
       "declarations": {
         "inductive": [
@@ -5776,7 +5776,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Gate.lean",
+      "path": "Gate.lean",
       "content_sha256": "0a037f24390412fb7cb6dcfb76b0d5aad4be0923e58e778c010612fbdd89f68e",
       "declarations": {
         "structure": [
@@ -5822,7 +5822,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/GraphProperties.lean",
+      "path": "GraphProperties.lean",
       "content_sha256": "483acf02bb790995fbe834d8f94250c01414686e526d4056ebe59489bea132dd",
       "declarations": {
         "theorem": [
@@ -5845,7 +5845,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Helmholtz.lean",
+      "path": "Helmholtz.lean",
       "content_sha256": "7b334fdccca01dcf367ab34092a146c001a5946ccaff44f96ad54fee1e428a0c",
       "declarations": {
         "def": [
@@ -5866,7 +5866,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/InfoTheory.lean",
+      "path": "InfoTheory.lean",
       "content_sha256": "9c294685c44b5a879de0adca0ce6438fdb089026db99fa277f4832e4f142a63d",
       "declarations": {
         "structure": [
@@ -5889,7 +5889,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/JenningsGelSpace.lean",
+      "path": "JenningsGelSpace.lean",
       "content_sha256": "3c5a304a95d23928ec78a860595cc6c0d78dbee8d496cd63d89da298089a6768",
       "declarations": {
         "lemma": [
@@ -5914,7 +5914,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/LandauerEinsteinBridge.lean",
+      "path": "LandauerEinsteinBridge.lean",
       "content_sha256": "fdc80ccc3b4307a1dd2310de27956657bfdd576d64187cf39ae3ea7a0597af28",
       "declarations": {
         "lemma": [
@@ -5942,7 +5942,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/LandauerExtension.lean",
+      "path": "LandauerExtension.lean",
       "content_sha256": "3136cebc513436dbef53ec5590466924177250a3cce88b0286575c6eb520f5d3",
       "declarations": {
         "theorem": [
@@ -5962,7 +5962,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/LandauerLaw.lean",
+      "path": "LandauerLaw.lean",
       "content_sha256": "4f0b5731675c983ba0676dc7d85bd4f2752308afca5053302b73e136791d3493",
       "declarations": {
         "structure": [
@@ -6001,7 +6001,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/MeasurementCost.lean",
+      "path": "MeasurementCost.lean",
       "content_sha256": "323c4343a8154ba6337bf6232b761d4ee42e8822648c6bf843c320f8554f3ef9",
       "declarations": {
         "theorem": [
@@ -6016,7 +6016,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/MedianConvergence.lean",
+      "path": "MedianConvergence.lean",
       "content_sha256": "59de0321fa136af8373f7359b15d73e2419bbc6f9b54b251469c6d1b94bfb826",
       "declarations": {
         "theorem": [
@@ -6042,7 +6042,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Memory/MergeSafe.lean",
+      "path": "Memory/MergeSafe.lean",
       "content_sha256": "17445c96ffbad60723c65ca2ba455b4f9c52cf3d1af5b31d4fbafb6d9394c325",
       "declarations": {
         "structure": [
@@ -6061,7 +6061,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Memory/TierDisjoint.lean",
+      "path": "Memory/TierDisjoint.lean",
       "content_sha256": "901580cbed5c9c5ef5a1a51891d2756722fd5fcbb6e330bb1b96399e345439a3",
       "declarations": {
         "inductive": [
@@ -6088,7 +6088,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/MonoidalState.lean",
+      "path": "MonoidalState.lean",
       "content_sha256": "80b767747cf48f9d13a505addbe4cfbf3feca6e3250e81676a4d63d1e69fa015",
       "declarations": {
         "def": [
@@ -6111,7 +6111,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Naturality.lean",
+      "path": "Naturality.lean",
       "content_sha256": "30c8c733ae4c6e6e80d180f636f693f44a3e5689e84f84e1ce865d55231eabba",
       "declarations": {
         "inductive": [
@@ -6136,7 +6136,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/OrderStatisticsBand.lean",
+      "path": "OrderStatisticsBand.lean",
       "content_sha256": "a980acfb8852994fdee73ed69bc6ea3e28f6d5227f449e943bca9745c67cae62",
       "declarations": {
         "theorem": [
@@ -6161,7 +6161,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Powers.lean",
+      "path": "Powers.lean",
       "content_sha256": "ae7e745ef7882d13a19175c741b1efe685f5fb4937d1844a2614abc2af68135e",
       "declarations": {
         "def": [
@@ -6190,7 +6190,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/RegimeSoundness.lean",
+      "path": "RegimeSoundness.lean",
       "content_sha256": "ad516ec8e936f65d918853aabac86ad45e4c86806fd176f0881f942ec361b25a",
       "declarations": {
         "def": [
@@ -6216,7 +6216,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/RhoEstimator.lean",
+      "path": "RhoEstimator.lean",
       "content_sha256": "915302f0e221eeae2b9bf3b488fbe6288a0b7311c5df74031664e2cbdb6864ca",
       "declarations": {
         "def": [
@@ -6242,7 +6242,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/SeparationBound.lean",
+      "path": "SeparationBound.lean",
       "content_sha256": "72526f7158bfae75eaa7c632024a62f6139714b1b6a2d5f5cb3e74a5c7f38920",
       "declarations": {
         "theorem": [
@@ -6259,7 +6259,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/_check_ext.lean",
+      "path": "_check_ext.lean",
       "content_sha256": "0f61b8a12260ab81a742b6346ce6a98b38d42df6d0c65d81aaa8339f8554eb8c",
       "declarations": {},
       "import_lines": [
@@ -6269,7 +6269,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/experiments/AutoExperimenterPlaceholder.lean",
+      "path": "experiments/AutoExperimenterPlaceholder.lean",
       "content_sha256": "e9ffc73b7587d2b37f4c3617769369593c1a43822be5caf2a7546781209fcc45",
       "declarations": {
         "def": [
@@ -6281,7 +6281,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/lakefile.lean",
+      "path": "lakefile.lean",
       "content_sha256": "3d329d4a637d0888a4757a2e53c3454fe054543a9386e94056f33575a336cc9f",
       "declarations": {},
       "import_lines": [
@@ -6291,7 +6291,7 @@
       "repo": "umst-formal"
     },
     {
-      "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/scripts/print_axioms.lean",
+      "path": "scripts/print_axioms.lean",
       "content_sha256": "d31117c92bbce34bc4039512f52fdc4f9e492ccd74971946a5546fbaea883c06",
       "declarations": {
         "def": [

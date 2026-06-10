@@ -38,6 +38,7 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
   UMST_FORMAL_ROOT: ${{ github.workspace }}/umst-formal-double-slit
+  UMST_FORMAL_CLASSICAL_ROOT: ${{ github.workspace }}/umst-formal
   UMST_REQUIRE_FORMAL_EXPORT: "1"
 
 permissions:
@@ -52,19 +53,28 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-ci
 
-      - name: Read pinned upstream ref
+      - name: Read pinned upstream refs
         id: upstream
         run: |
           set -euo pipefail
-          sha=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-formal-double-slit']['sha'])")
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          ds=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-formal-double-slit']['sha'])")
+          fm=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-formal']['sha'])")
+          echo "double_slit_sha=$ds" >> "$GITHUB_OUTPUT"
+          echo "formal_sha=$fm" >> "$GITHUB_OUTPUT"
 
       - name: Checkout umst-formal-double-slit (catalog export)
         uses: actions/checkout@v4
         with:
           repository: tytolabs/umst-formal-double-slit
-          ref: ${{ steps.upstream.outputs.sha }}
+          ref: ${{ steps.upstream.outputs.double_slit_sha }}
           path: umst-formal-double-slit
+
+      - name: Checkout umst-formal (classical fiber)
+        uses: actions/checkout@v4
+        with:
+          repository: tytolabs/umst-formal
+          ref: ${{ steps.upstream.outputs.formal_sha }}
+          path: umst-formal
 
       - name: Tier 0 doc link SSOT
         run: bash scripts/check_doc_links_tier0.sh
