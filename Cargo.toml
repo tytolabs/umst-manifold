@@ -291,6 +291,11 @@ path = "tests/topology_filter.rs"
 required-features = ["solver-experimental"]
 
 [[test]]
+name = "helmholtz_striatus_autodiff"
+path = "tests/helmholtz_striatus_autodiff.rs"
+required-features = ["solver-experimental"]
+
+[[test]]
 name = "topology_continuation"
 path = "tests/topology_continuation.rs"
 required-features = ["topology-density-evolution"]
