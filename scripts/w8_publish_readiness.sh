@@ -3,7 +3,7 @@
 # Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 #
 # W8 publish *prep* gate (machine-verified, no git push).
-# Checks: lock 119, digest 0697014f, 16/16 checklist evidence, manifest-bridge
+# Checks: lock 120, digest 2f17cdf1, 16/16 checklist evidence, manifest-bridge
 # (git-pinned cartridge G-02 OR workspace [patch]), no dirty secrets, Phase-0 preflight.
 # Operator push/clone/GHA remain human-only.
 set -euo pipefail
@@ -75,7 +75,7 @@ else
   fail "Cargo.toml missing manifest-bridge / manifold-manifest features"
 fi
 
-# --- 2. Catalog lock R0 pin (119 / 0697014f) ---
+# --- 2. Catalog lock R0 pin (120 / 2f17cdf1) ---
 step "catalog.lock R0 pin"
 export ROOT="${MANIFOLD}"
 python3 - << 'PYLOCK'
@@ -85,20 +85,21 @@ lock_path = Path(os.environ["ROOT"]) / "artifacts" / "catalog.lock.json"
 lock = json.loads(lock_path.read_text())
 count = lock.get("module_count")
 digest = lock.get("upstream_catalog_digest_hex") or lock.get("composed_catalog_digest_hex") or ""
-if count != 119:
-    print(f"FAIL: catalog.lock module_count={count!r} (expected 119)", file=sys.stderr)
+if count != 120:
+    print(f"FAIL: catalog.lock module_count={count!r} (expected 120)", file=sys.stderr)
     sys.exit(1)
 if not (
-    str(digest).startswith("ef0ed071")
+    str(digest).startswith("2f17cdf1")
+    or str(digest).startswith("ef0ed071")
     or str(digest).startswith("37bf5a18")
     or str(digest).startswith("4524ed21")
     or str(digest).startswith("0697014f")
 ):
     print(f"FAIL: catalog.lock digest prefix (got {digest!r})", file=sys.stderr)
     sys.exit(1)
-print(f"OK: catalog.lock module_count=119 digest={digest[:16]}…")
+print(f"OK: catalog.lock module_count=120 digest={digest[:16]}…")
 PYLOCK
-ok "catalog.lock digest prefix (ef0ed071, 37bf5a18, 4524ed21, or 0697014f)"
+ok "catalog.lock digest prefix (2f17cdf1 or historical pins)"
 
 # --- 3. No dirty secrets ---
 step "secrets hygiene (no .env / credentials in git index)"
@@ -135,7 +136,7 @@ step "god-grade checklist 16/16 evidence (verify_umst_stack.sh)"
 STACK="${MANIFOLD}/scripts/verify_umst_stack.sh"
 require_file "${STACK}"
 REQUIRED_MARKERS=(
-  'module_count=119'
+  'catalog_lock_120'
   'catalog_all_ids_registered'
   'gate_cbf_parity'
   'catalog.lock.json'

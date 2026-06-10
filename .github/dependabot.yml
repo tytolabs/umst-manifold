@@ -7,7 +7,7 @@ updates:
     open-pull-requests-limit: 5
     labels: ["dependencies"]
     ignore:
-      # `umst-math` is a pinned git dep from tytolabs/egoff (not a crates.io crate).
+      # `umst-math` is a workspace path member (not a crates.io crate).
       - dependency-name: "umst-math"
   - package-ecosystem: "github-actions"
     directory: "/"

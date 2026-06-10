@@ -13,7 +13,6 @@ on:
 permissions:
   contents: read
   actions: write
-  # Required to sparse-checkout private tytolabs/egoff for `../egoff/umst-math`.
   packages: read
 
 env:

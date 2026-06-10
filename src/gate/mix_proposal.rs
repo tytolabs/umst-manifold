@@ -173,6 +173,70 @@ impl ThermodynamicMixFilter {
     }
 }
 
+/// Default numeric tolerance for scalar transition gates (C-ABI and host evaluators).
+pub const TRANSITION_TOLERANCE: f64 = 1e-6;
+
+/// Pure transition predicate — explicit inputs → admissibility (no filter handle, no counters).
+///
+/// Matches the material-agnostic C-ABI semantics: mass jump bound, Clausius–Duhem
+/// dissipation, hydration irreversibility, strength monotonicity, and upper strength cap.
+#[must_use]
+pub fn thermodynamic_transition_admissible(
+    old_density: f64,
+    old_free_energy: f64,
+    old_hydration: f64,
+    old_strength: f64,
+    new_density: f64,
+    new_free_energy: f64,
+    new_hydration: f64,
+    new_strength: f64,
+    new_max_strength: f64,
+    dt: f64,
+) -> bool {
+    thermodynamic_transition_admissible_tol(
+        old_density,
+        old_free_energy,
+        old_hydration,
+        old_strength,
+        new_density,
+        new_free_energy,
+        new_hydration,
+        new_strength,
+        new_max_strength,
+        dt,
+        TRANSITION_TOLERANCE,
+    )
+}
+
+/// Tolerance-parameterized variant for tests and calibrated hosts.
+#[must_use]
+pub fn thermodynamic_transition_admissible_tol(
+    old_density: f64,
+    old_free_energy: f64,
+    old_hydration: f64,
+    old_strength: f64,
+    new_density: f64,
+    new_free_energy: f64,
+    new_hydration: f64,
+    new_strength: f64,
+    new_max_strength: f64,
+    dt: f64,
+    tolerance: f64,
+) -> bool {
+    let mass_conserved = (new_density - old_density).abs() < 100.0;
+    let rho = (old_density + new_density) / 2.0;
+    let psi_dot = (new_free_energy - old_free_energy) / (dt + 1e-10);
+    let d_int = -rho * psi_dot;
+    let strength_monotonic = new_strength >= old_strength - tolerance;
+    let hydration_irreversible = new_hydration >= old_hydration - tolerance;
+    let strength_bounded = new_strength <= new_max_strength;
+    mass_conserved
+        && d_int >= -tolerance
+        && strength_monotonic
+        && hydration_irreversible
+        && strength_bounded
+}
+
 /// Convenience: evaluate directly from JSON-shaped proposals without building snapshots manually.
 pub fn evaluate_mix_transition(
     filter: &mut ThermodynamicMixFilter,
@@ -222,6 +286,42 @@ mod tests {
         new.hydration_degree = 0.5;
         let r = filter.check_transition(&old, &new, 1.0);
         assert!(!r.accepted);
+    }
+
+    #[test]
+    fn pure_gate_matches_filter_forward_hydration() {
+        let old = ThermodynamicStateSnapshot::from_mix(0.5, 0.3, 293.0);
+        let new = ThermodynamicStateSnapshot::from_mix(0.5, 0.5, 293.0);
+        assert!(thermodynamic_transition_admissible(
+            old.density,
+            old.free_energy,
+            old.hydration_degree,
+            old.strength,
+            new.density,
+            new.free_energy,
+            new.hydration_degree,
+            new.strength,
+            240.0,
+            3600.0,
+        ));
+    }
+
+    #[test]
+    fn pure_gate_rejects_reverse_hydration() {
+        let old = ThermodynamicStateSnapshot::from_mix(0.5, 0.7, 293.0);
+        let new = ThermodynamicStateSnapshot::from_mix(0.5, 0.3, 293.0);
+        assert!(!thermodynamic_transition_admissible(
+            old.density,
+            old.free_energy,
+            old.hydration_degree,
+            old.strength,
+            new.density,
+            new.free_energy,
+            new.hydration_degree,
+            new.strength,
+            240.0,
+            3600.0,
+        ));
     }
 
     #[test]

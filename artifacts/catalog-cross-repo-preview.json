@@ -12,11 +12,11 @@
   "secondary_lean_root": "Lean",
   "primary_module_count": 69,
   "secondary_module_count": 62,
-  "merged_module_count": 119,
-  "primary_digest_hex": "035ea948ff812fddec5fead027e2c02ae96ff44520031df64816fca4f50a579b",
-  "secondary_digest_hex": "265db0ed86ef9d9efe089fb71307ebf508155272513a3f21ab7bc9b43350fa4d",
-  "merged_digest_hex": "ef0ed071fc82bf8ebc8971aeee8d142b4b54e15583f0c575d942cb237474d1dc",
-  "overlap_basename_count": 12,
+  "merged_module_count": 120,
+  "primary_digest_hex": "a2589c3360c3dd787f8477852861f97bce07e1089b07b6eb4b0ce1e81dd8cc29",
+  "secondary_digest_hex": "403730b7f26344db42df32601952e5fc8008bbc0bff86f31f91df10b4f89bf9e",
+  "merged_digest_hex": "2f17cdf1fecbf5188f7c25e9d4aabb3c72a184f0ef55f7da96160ee8d2fb4bb1",
+  "overlap_basename_count": 11,
   "only_in_primary_basename": [
     "Complementarity",
     "DataProcessingInequality",
@@ -56,6 +56,7 @@
     "LogSum",
     "MatrixLog",
     "MeasurementChannel",
+    "MeasurementCost",
     "PMICEntropyInterior",
     "PMICVisibility",
     "ProbeOptimization",
@@ -80,6 +81,7 @@
     "Adjoint",
     "AutoExperimenterPlaceholder",
     "BurdenRecursionIsAdmissible",
+    "ClassicalMeasurementCost",
     "CollectiveCoherenceCost",
     "Collision",
     "Composability",
@@ -136,7 +138,6 @@
     "LandauerEinsteinBridge",
     "LandauerExtension",
     "LandauerLaw",
-    "MeasurementCost",
     "MonoidalState",
     "Naturality",
     "PhysicsConstrainedAI",
@@ -189,13 +190,6 @@
       "basename": "LandauerLaw",
       "primary_module": "LandauerLaw",
       "secondary_module": "LandauerLaw",
-      "winner_repo": "umst-formal-double-slit",
-      "secondary_repo": "umst-formal"
-    },
-    {
-      "basename": "MeasurementCost",
-      "primary_module": "MeasurementCost",
-      "secondary_module": "MeasurementCost",
       "winner_repo": "umst-formal-double-slit",
       "secondary_repo": "umst-formal"
     },
@@ -261,6 +255,21 @@
       },
       "import_lines": [],
       "module": "Behavior.SDFCanonical",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "ClassicalMeasurementCost.lean",
+      "content_sha256": "f35967e3db979bea4642b2aa15ccac7f4b8d226bf851aa57fac4f82519471f31",
+      "declarations": {
+        "theorem": [
+          "zero_info_zero_energy"
+        ]
+      },
+      "import_lines": [
+        "InfoTheory",
+        "LandauerLaw"
+      ],
+      "module": "ClassicalMeasurementCost",
       "repo": "umst-formal"
     },
     {
@@ -1255,7 +1264,7 @@
     },
     {
       "path": "experiments/AutoExperimenterPlaceholder.lean",
-      "content_sha256": "e9ffc73b7587d2b37f4c3617769369593c1a43822be5caf2a7546781209fcc45",
+      "content_sha256": "3a8aeb5001851003ebb87b4b187c7265afdfed253c9dcc2b43247fbf4718c43a",
       "declarations": {
         "def": [
           "AutoExperimenterPlaceholder"
@@ -2026,7 +2035,7 @@
     },
     {
       "path": "FlashMoERuntimeScaffold.lean",
-      "content_sha256": "6b51d8b5c1338a7d6310b4df95e0dfc996885d808a845f1eb19b667c5f777692",
+      "content_sha256": "774be62d0e39063506c3466918f6ed9484d416ca0962b25d6397e21a4e2c6eac",
       "declarations": {},
       "import_lines": [
         "Gate"
@@ -3857,7 +3866,7 @@
     },
     {
       "path": "FlashMoERuntimeScaffold.lean",
-      "content_sha256": "6b51d8b5c1338a7d6310b4df95e0dfc996885d808a845f1eb19b667c5f777692",
+      "content_sha256": "774be62d0e39063506c3466918f6ed9484d416ca0962b25d6397e21a4e2c6eac",
       "declarations": {},
       "import_lines": [
         "Gate"
@@ -5028,6 +5037,21 @@
       "repo": "umst-formal"
     },
     {
+      "path": "ClassicalMeasurementCost.lean",
+      "content_sha256": "f35967e3db979bea4642b2aa15ccac7f4b8d226bf851aa57fac4f82519471f31",
+      "declarations": {
+        "theorem": [
+          "zero_info_zero_energy"
+        ]
+      },
+      "import_lines": [
+        "InfoTheory",
+        "LandauerLaw"
+      ],
+      "module": "ClassicalMeasurementCost",
+      "repo": "umst-formal"
+    },
+    {
       "path": "Constitutional.lean",
       "content_sha256": "e0c278096bd7895e3ab77811377bd6c7288dc48b62660d4c85c10aac0879879f",
       "declarations": {
@@ -5943,7 +5967,7 @@
     },
     {
       "path": "LandauerExtension.lean",
-      "content_sha256": "3136cebc513436dbef53ec5590466924177250a3cce88b0286575c6eb520f5d3",
+      "content_sha256": "5e176d9cc865b8fa67563f461e3e2be5a400c93d34510c6fa1492190d01d2db6",
       "declarations": {
         "theorem": [
           "landauerBound_temp_scaling",
@@ -5998,21 +6022,6 @@
         "Mathlib.Analysis.SpecialFunctions.Log.Basic"
       ],
       "module": "LandauerLaw",
-      "repo": "umst-formal"
-    },
-    {
-      "path": "MeasurementCost.lean",
-      "content_sha256": "323c4343a8154ba6337bf6232b761d4ee42e8822648c6bf843c320f8554f3ef9",
-      "declarations": {
-        "theorem": [
-          "zero_info_zero_energy"
-        ]
-      },
-      "import_lines": [
-        "InfoTheory",
-        "LandauerLaw"
-      ],
-      "module": "MeasurementCost",
       "repo": "umst-formal"
     },
     {
@@ -6270,7 +6279,7 @@
     },
     {
       "path": "experiments/AutoExperimenterPlaceholder.lean",
-      "content_sha256": "e9ffc73b7587d2b37f4c3617769369593c1a43822be5caf2a7546781209fcc45",
+      "content_sha256": "3a8aeb5001851003ebb87b4b187c7265afdfed253c9dcc2b43247fbf4718c43a",
       "declarations": {
         "def": [
           "AutoExperimenterPlaceholder"
@@ -6282,7 +6291,7 @@
     },
     {
       "path": "lakefile.lean",
-      "content_sha256": "3d329d4a637d0888a4757a2e53c3454fe054543a9386e94056f33575a336cc9f",
+      "content_sha256": "f623cab9aef41539c8378ee24fa372ab2efadd850ccba499cbfa3220800eae4a",
       "declarations": {},
       "import_lines": [
         "Lake"

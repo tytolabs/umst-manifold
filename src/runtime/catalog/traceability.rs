@@ -13,6 +13,8 @@ pub const ALLOW_UNUSED_CATALOG_IDS: &[&str] = &[
     "Activation",
     "Adjoint",
     "Behavior.SDFCanonical",
+    // umst-formal fiber rename; runtime Landauer CBF wiring uses double-slit `MeasurementCost`.
+    "ClassicalMeasurementCost",
     "Complementarity",
     "Convergence",
     "CreditGreedyOptimal",

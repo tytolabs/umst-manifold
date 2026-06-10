@@ -142,10 +142,10 @@ fn witness_registry_ids() -> HashSet<String> {
 
 /// R0 pin: `artifacts/catalog.lock.json` `module_count` must match the Lean export row count.
 /// Fails when lock is bumped without re-export (or export grows without lock promotion).
-const CATALOG_LOCK_R0_MODULE_COUNT: usize = 119;
+const CATALOG_LOCK_R0_MODULE_COUNT: usize = 120;
 
 #[test]
-fn catalog_lock_module_count_matches_upstream_export_119() {
+fn catalog_lock_module_count_matches_upstream_export_120() {
     let lock_path = manifest_dir().join("artifacts/catalog.lock.json");
     let lock_raw = fs::read_to_string(&lock_path).unwrap_or_else(|e| {
         panic!("read catalog.lock.json at {}: {e}", lock_path.display());

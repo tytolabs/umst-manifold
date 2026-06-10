@@ -15,6 +15,6 @@ When the Lean catalog changes in `umst-formal-double-slit`:
 | Standalone `umst-manifold` repo | `.github/workflows/umst-catalog-drift.yml` | Git checkout at `.umst-pins.toml` SHA |
 | multi-repo workspace monorepo | root `.github/workflows/umst-catalog-drift.yml` | Sibling directory on disk (keep siblings in sync manually) |
 
-## umst-math lockfile collision
+## umst-math SSOT
 
-Building egoff workspace with manifold `math-constants` can collide: egoff `umst-math` member vs manifold `vendor/umst-math`. Keep vendor in sync: `bash scripts/sync_vendor_umst_math.sh` in manifold before cross-workspace builds.
+`umst-math` is a workspace member at `umst-manifold/umst-math/` (W3). Consumers use path `../umst-manifold/umst-math`; no vendor copy or sync script.

@@ -38,7 +38,9 @@ pub use mix_eval_registry::{
     GateEvaluatorRegistry, ThermodynamicMixEvaluator, ThermodynamicTransitionContext,
 };
 pub use mix_proposal::{
+    thermodynamic_transition_admissible, thermodynamic_transition_admissible_tol,
     ThermodynamicMixFilter, ThermodynamicStateSnapshot, ThermodynamicTransitionOutcome,
+    TRANSITION_TOLERANCE,
 };
 pub use thermo_transition::{
     AdmissibilityResult as ThermodynamicAdmissibilityResult, ThermodynamicGate, ThermodynamicState,
