@@ -452,6 +452,122 @@ impl VolumeProjection {
 }
 
 #[cfg(feature = "topology-density-evolution")]
+/// Scalar \(\tanh\) Heaviside ([`HeavisideProjection::project`]) for bisection on CPU slices.
+#[must_use]
+pub fn heaviside_tanh_scalar(r: f32, beta: f32, eta: f32) -> f32 {
+    let b = beta.max(1e-20);
+    let tabn = (b * eta).tanh();
+    let den = (tabn + (b * (1.0 - eta)).tanh()).max(1e-20);
+    (((r - eta) * b).tanh() + tabn) / den
+}
+
+#[cfg(feature = "topology-density-evolution")]
+/// Monotone bisection on Heaviside threshold \(\eta\) so \(\mathrm{mean}(\rho_\eta)=V^\*\) within `tol`.
+///
+/// Pure on `rho_tilde` scalars — used to pick \(\eta\) without \(\lambda\)-shift grey inflation (B6 H1).
+#[must_use]
+pub fn volume_matching_threshold_from_slice(
+    rho_tilde: &[f32],
+    beta: f32,
+    target_vf: f32,
+    tol: f32,
+    max_iters: usize,
+) -> f32 {
+    let target = target_vf.clamp(0.0, 1.0);
+    let n = rho_tilde.len().max(1) as f32;
+    let mut lo = 0.0_f32;
+    let mut hi = 1.0_f32;
+    for _ in 0..max_iters.max(1) {
+        let mid = 0.5 * (lo + hi);
+        let vf = rho_tilde
+            .iter()
+            .map(|&r| heaviside_tanh_scalar(r, beta, mid))
+            .sum::<f32>()
+            / n;
+        // VF decreases as \(\eta\) increases (Wang \(\tanh\) Heaviside on fixed \(\tilde\rho\)).
+        if vf > target + tol {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    0.5 * (lo + hi)
+}
+
+#[cfg(feature = "topology-density-evolution")]
+/// Volume match via \(\eta\) on [`HeavisideProjection`] (no post-hoc \(\lambda\) shift).
+#[derive(Clone, Copy, Debug)]
+pub struct VolumeEtaProjection {
+    pub max_bisection: usize,
+    pub tol: f32,
+}
+
+#[cfg(feature = "topology-density-evolution")]
+impl VolumeEtaProjection {
+    #[must_use]
+    pub fn new(max_bisection: usize, tol: f32) -> Self {
+        Self {
+            max_bisection,
+            tol: tol.max(1e-8),
+        }
+    }
+
+    /// \(\rho_\eta = H_\beta(\tilde\rho;\eta^\*)\) with \(\eta^\*\) from [`volume_matching_threshold_from_slice`].
+    pub fn project<B: Backend<FloatElem = f32>>(
+        &self,
+        rho_tilde: Tensor<B, 3>,
+        beta: f32,
+        target_vf: f32,
+    ) -> Tensor<B, 3> {
+        let flat = rho_tilde.clone().into_data().value;
+        let eta = volume_matching_threshold_from_slice(
+            &flat,
+            beta,
+            target_vf,
+            self.tol,
+            self.max_bisection,
+        );
+        HeavisideProjection::new(beta, eta).project(rho_tilde)
+    }
+}
+
+#[cfg(feature = "topology-density-evolution")]
+/// Plateau-triggered \(\beta\) boost when greyness history is flat (B6 H3).
+#[derive(Clone, Copy, Debug)]
+pub struct PlateauBetaContinuation {
+    pub window: usize,
+    pub plateau_eps: f32,
+}
+
+#[cfg(feature = "topology-density-evolution")]
+impl PlateauBetaContinuation {
+    #[must_use]
+    pub fn new(window: usize, plateau_eps: f32) -> Self {
+        Self {
+            window: window.max(2),
+            plateau_eps: plateau_eps.max(1e-8),
+        }
+    }
+
+    /// Returns `base_beta` or `min(2·base_beta, beta_max)` when the last `window` greyness samples plateau.
+    #[must_use]
+    pub fn effective_beta(&self, base_beta: f32, greyness_history: &[f32], beta_max: f32) -> f32 {
+        if greyness_history.len() < self.window {
+            return base_beta;
+        }
+        let tail = &greyness_history[greyness_history.len() - self.window..];
+        let plateau = tail
+            .windows(2)
+            .all(|w| (w[1] - w[0]).abs() <= self.plateau_eps);
+        if plateau && base_beta < beta_max * 0.99 {
+            (base_beta * 2.0).min(beta_max)
+        } else {
+            base_beta
+        }
+    }
+}
+
+#[cfg(feature = "topology-density-evolution")]
 /// SIMP continuation: penalization \(p\) as a function of outer iteration.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct ContinuationSchedule;
@@ -773,11 +889,79 @@ mod simp_step_tests {
 
 #[cfg(all(test, feature = "topology-density-evolution"))]
 mod topology_density_evolution_tests {
-    use super::{BetaContinuation, ContinuationSchedule, SensitivityFilter, VolumeProjection};
+    use super::{
+        heaviside_tanh_scalar, volume_matching_threshold_from_slice, BetaContinuation,
+        ContinuationSchedule, PlateauBetaContinuation, SensitivityFilter, VolumeEtaProjection,
+        VolumeProjection,
+    };
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::NdArray;
 
     type B = NdArray<f32>;
+
+    #[test]
+    fn volume_matching_threshold_hits_target_vf() {
+        let rho: Vec<f32> = (0..64).map(|i| 0.2 + 0.6 * (i as f32 / 63.0)).collect();
+        let beta = 16.0_f32;
+        let target = 0.35_f32;
+        let eta = volume_matching_threshold_from_slice(&rho, beta, target, 1e-3, 48);
+        let vf = rho
+            .iter()
+            .map(|&r| heaviside_tanh_scalar(r, beta, eta))
+            .sum::<f32>()
+            / rho.len() as f32;
+        assert!(
+            (vf - target).abs() < 1e-2,
+            "vf {vf} vs target {target} at eta {eta}"
+        );
+    }
+
+    #[test]
+    fn volume_eta_projection_idempotent_on_binary_field() {
+        let dev = Default::default();
+        let mut v = vec![0.0_f32; 32];
+        for x in v.iter_mut().take(12) {
+            *x = 1.0;
+        }
+        let rho = Tensor::<B, 3>::from_data(Data::new(v, Shape::new([1, 32, 1])), &dev);
+        let proj = VolumeEtaProjection::new(48, 1e-3);
+        let target = 12.0 / 32.0;
+        let out = proj.project(rho.clone(), 32.0, target);
+        let out2 = proj.project(out.clone(), 32.0, target);
+        let a = out.into_data().value;
+        let b = out2.into_data().value;
+        for (x, y) in a.iter().zip(b.iter()) {
+            assert!((x - y).abs() < 1e-5, "idempotent mismatch {x} vs {y}");
+        }
+    }
+
+    #[test]
+    fn volume_matching_vf_monotone_in_eta() {
+        let rho: Vec<f32> = (0..20).map(|i| i as f32 / 19.0).collect();
+        let beta = 8.0_f32;
+        let mut prev = 1.0_f32;
+        for k in 1..=10 {
+            let eta = k as f32 / 10.0;
+            let vf = rho
+                .iter()
+                .map(|&r| heaviside_tanh_scalar(r, beta, eta))
+                .sum::<f32>()
+                / rho.len() as f32;
+            assert!(
+                vf <= prev + 1e-5,
+                "VF should decrease in eta: {vf} > {prev}"
+            );
+            prev = vf;
+        }
+    }
+
+    #[test]
+    fn plateau_beta_doubles_on_flat_greyness() {
+        let p = PlateauBetaContinuation::new(4, 0.01);
+        let hist = [0.5_f32, 0.501, 0.499, 0.5005];
+        let b = p.effective_beta(8.0, &hist, 64.0);
+        assert!((b - 16.0).abs() < 1e-3);
+    }
 
     #[test]
     fn volume_projection_restores_batch_mean() {
