@@ -32,6 +32,13 @@ use super::framework::PhysicsSolverZst;
 use super::time_orchestration::MechanicsInnerLoopConfig;
 use super::topology::EdgeTopology;
 
+/// PCG loop telemetry from [`VectorMechanicsSolver::packed_bar_network_equilibrium`].
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct BarNetworkPcgReport {
+    pub iterations: usize,
+    pub rel_residual: f32,
+}
+
 pub struct VectorMechanicsSolver;
 
 impl PhysicsSolverZst for VectorMechanicsSolver {}
@@ -300,6 +307,7 @@ impl VectorMechanicsSolver {
         Tensor<B, 3, Int>,
         Tensor<B, 3, Int>,
         usize,
+        BarNetworkPcgReport,
     ) {
         let batch = stiffness.dims()[0];
         let n_v = coords.dims()[0];
@@ -341,6 +349,7 @@ impl VectorMechanicsSolver {
 
         let mut u = displacement.mul(boundary_mask.clone());
         let template = u.clone();
+        let mut pcg_report = BarNetworkPcgReport::default();
         // In f32, continuing classical CG far beyond subspace dimension lets `β = ‖r_{k+1}‖² / ‖r_k‖²`
         // amplify rounding noise once `‖r‖` is tiny → NaNs in downstream compliance. Cap iterations at
         // the (scalar) unknown count per row; this is only an upper bound—ill-conditioning can still
@@ -401,8 +410,11 @@ impl VectorMechanicsSolver {
                 r.clone()
             };
             let mut p = z.clone();
+            let mut pcg_iters = 0usize;
+            let mut pcg_rel_res = f32::INFINITY;
 
             for _ in 0..max_it {
+                pcg_iters += 1;
                 let p_emb = Self::embed_batch_row(&template, b, n_v, p.clone());
                 let ap_raw = Self::bar_matvec(
                     p_emb,
@@ -458,12 +470,17 @@ impl VectorMechanicsSolver {
                 z = z_next;
 
                 let r_norm = r.clone().powf_scalar(2.0).sum().sqrt().into_scalar();
+                pcg_rel_res = r_norm / rhs_norm;
                 if use_tol_exit && r_norm <= abs_tol {
                     break;
                 }
             }
 
             u = u.slice_assign([b..b + 1, 0..n_v, 0..3], u_c);
+            pcg_report = BarNetworkPcgReport {
+                iterations: pcg_iters,
+                rel_residual: pcg_rel_res,
+            };
         }
 
         (
@@ -474,7 +491,106 @@ impl VectorMechanicsSolver {
             src_indices,
             tgt_indices,
             n_v,
+            pcg_report,
         )
+    }
+
+    /// \(\|P(f-Ku)\|_2 / \|Pf\|_2\) after a bar-network solve (B6 H4 static residual; no adjoint PCG).
+    #[cfg(feature = "mechanics-adjoint")]
+    #[allow(clippy::too_many_arguments)]
+    pub fn bar_network_equilibrium_rel_residual<B: Backend<FloatElem = f32>>(
+        displacement: Tensor<B, 3>,
+        coords: Tensor<B, 2>,
+        stiffness: Tensor<B, 3>,
+        body_force: Tensor<B, 3>,
+        edges_b1: Tensor<B, 2, Int>,
+        damage: Tensor<B, 3>,
+        boundary_mask: Tensor<B, 3>,
+        cross_section_area: f32,
+    ) -> f32 {
+        let f = body_force.clone();
+        let mask = boundary_mask.clone();
+        let resid = Self::projected_bar_equilibrium_residual_inner(
+            displacement,
+            coords,
+            stiffness,
+            body_force,
+            edges_b1,
+            damage,
+            boundary_mask,
+            cross_section_area,
+        );
+        let rhs_norm = f
+            .mul(mask)
+            .powf_scalar(2.0)
+            .sum()
+            .sqrt()
+            .into_scalar()
+            .max(1e-30_f32);
+        resid.powf_scalar(2.0).sum().sqrt().into_scalar() / rhs_norm
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn projected_bar_equilibrium_residual_inner<B: Backend<FloatElem = f32>>(
+        displacement: Tensor<B, 3>,
+        coords: Tensor<B, 2>,
+        stiffness: Tensor<B, 3>,
+        body_force: Tensor<B, 3>,
+        edges_b1: Tensor<B, 2, Int>,
+        damage: Tensor<B, 3>,
+        boundary_mask: Tensor<B, 3>,
+        cross_section_area: f32,
+    ) -> Tensor<B, 3> {
+        let batch = stiffness.dims()[0];
+        let n_v = coords.dims()[0];
+        let topo = EdgeTopology::new(edges_b1.clone());
+        let n_edges = topo.n_edges();
+
+        let coords_b = coords.clone().unsqueeze_dim::<3>(0).expand([batch, n_v, 3]);
+
+        let src_indices = topo.expand_src_gather_indices(batch, 3);
+        let tgt_indices = topo.expand_tgt_gather_indices(batch, 3);
+
+        let c_src = coords_b.clone().gather(1, src_indices.clone());
+        let c_tgt = coords_b.gather(1, tgt_indices.clone());
+        let delta_geom = c_tgt.sub(c_src);
+        let edge_len = delta_geom
+            .clone()
+            .powf_scalar(2.0)
+            .sum_dim(2)
+            .sqrt()
+            .clamp(1e-12, f32::MAX)
+            .reshape([batch, n_edges, 1]);
+        let edge_unit = delta_geom.div(edge_len.clone());
+
+        let e_young = stiffness.clone().slice([0..batch, 0..n_v, 0..1]);
+        let e_on_edges =
+            DecEdgeOperators::arithmetic_mean_on_edges(e_young.clone(), edges_b1.clone());
+
+        let d_on_edges =
+            DecEdgeOperators::arithmetic_mean_on_edges(damage.clone(), edges_b1.clone());
+        let dmg = Tensor::ones_like(&d_on_edges)
+            .sub(d_on_edges)
+            .powf_scalar(2.0)
+            .add_scalar(DAMAGE_REG);
+
+        let k_axial = e_on_edges
+            .mul_scalar(cross_section_area)
+            .div(edge_len.clone())
+            .mul(dmg);
+
+        let u_proj = displacement.mul(boundary_mask.clone());
+        let ku = Self::bar_matvec(
+            u_proj,
+            &k_axial,
+            &edge_unit,
+            &src_indices,
+            &tgt_indices,
+            n_v,
+            None,
+            &edge_len,
+        );
+        boundary_mask.mul(body_force.sub(ku))
     }
 
     #[cfg(feature = "mechanics-voigt-cauchy")]
@@ -543,7 +659,7 @@ impl VectorMechanicsSolver {
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
     ) -> (Tensor<B, 3>, Tensor<B, 4>) {
-        let (u, k_axial, edge_unit, _edge_len, src_indices, tgt_indices, n_v) =
+        let (u, k_axial, edge_unit, _edge_len, src_indices, tgt_indices, n_v, _pcg) =
             Self::packed_bar_network_equilibrium(
                 displacement,
                 coords,
@@ -585,7 +701,7 @@ impl VectorMechanicsSolver {
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
     ) -> (Tensor<B, 3>, Tensor<B, 4>) {
-        let (u, _k_axial, edge_unit, edge_len, _src_indices, _tgt_indices, n_v) =
+        let (u, _k_axial, edge_unit, edge_len, _src_indices, _tgt_indices, n_v, _pcg) =
             Self::packed_bar_network_equilibrium(
                 displacement,
                 coords,

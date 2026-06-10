@@ -24,7 +24,7 @@ use burn::tensor::{
 };
 
 use super::linear::masked_dot;
-use super::mechanics::VectorMechanicsSolver;
+use super::mechanics::{BarNetworkPcgReport, VectorMechanicsSolver};
 use super::time_orchestration::MechanicsInnerLoopConfig;
 use super::topology::EdgeTopology;
 
@@ -35,6 +35,40 @@ pub struct SimpElasticMaterial {
     pub nu: f32,
     pub p: f32,
     pub e_min: f32,
+}
+
+/// H4 diagnosis bundle: forward PCG telemetry + static equilibrium residual + discrete nodal \(\mathrm{d}c/\mathrm{d}\rho\).
+#[derive(Clone, Debug)]
+pub struct AdjointComplianceDiagnostics {
+    pub pcg: BarNetworkPcgReport,
+    /// \(\|P(f-Ku)\|_2/\|Pf\|_2\) after the forward solve (discrete adjoint has no separate PCG).
+    pub equilibrium_rel_residual: f32,
+    /// Nodal \(\mathrm{d}c/\mathrm{d}\rho_i\) from edge sensitivities (mean split on endpoints).
+    pub nodal_sensitivity: Vec<f32>,
+}
+
+/// Scatter edge-wise \(\mathrm{d}c/\mathrm{d}\rho_e\) to nodes with the SIMP mean rule.
+#[must_use]
+pub fn nodal_sensitivity_from_edge_ge(
+    ge: &[f32],
+    src_ix: &[f32],
+    tgt_ix: &[f32],
+    n_nodes: usize,
+) -> Vec<f32> {
+    let n_e = ge.len().min(src_ix.len()).min(tgt_ix.len());
+    let mut sens = vec![0.0_f32; n_nodes];
+    for e in 0..n_e {
+        let g = ge[e];
+        let a = src_ix[e].round() as usize;
+        let b = tgt_ix[e].round() as usize;
+        if a < n_nodes {
+            sens[a] += g * 0.5;
+        }
+        if b < n_nodes {
+            sens[b] += g * 0.5;
+        }
+    }
+    sens
 }
 
 /// Discrete-adjoint compliance wrapper for topology optimisation.
@@ -55,6 +89,37 @@ impl AdjointCompliance {
         cg: &MechanicsInnerLoopConfig,
         cross_section_area: f32,
     ) -> (Tensor<B, 1>, f32)
+    where
+        B: AutodiffBackend<FloatElem = f32>,
+        B::InnerBackend: Backend<FloatElem = f32>,
+    {
+        let (surrogate, c_raw, _) = Self::forward_loss_with_diagnostics(
+            rho_autodiff,
+            edges_b1,
+            coords_n3,
+            boundary_mask,
+            body_force,
+            damage,
+            material,
+            cg,
+            cross_section_area,
+        );
+        (surrogate, c_raw)
+    }
+
+    /// Same as [`Self::forward_and_loss`] plus PCG / equilibrium / nodal sensitivity telemetry (B6 H4).
+    #[allow(clippy::too_many_arguments)]
+    pub fn forward_loss_with_diagnostics<B>(
+        rho_autodiff: Tensor<B, 3>,
+        edges_b1: Tensor<<B as AutodiffBackend>::InnerBackend, 2, Int>,
+        coords_n3: Tensor<<B as AutodiffBackend>::InnerBackend, 2>,
+        boundary_mask: Tensor<<B as AutodiffBackend>::InnerBackend, 3>,
+        body_force: Tensor<<B as AutodiffBackend>::InnerBackend, 3>,
+        damage: Tensor<<B as AutodiffBackend>::InnerBackend, 3>,
+        material: SimpElasticMaterial,
+        cg: &MechanicsInnerLoopConfig,
+        cross_section_area: f32,
+    ) -> (Tensor<B, 1>, f32, AdjointComplianceDiagnostics)
     where
         B: AutodiffBackend<FloatElem = f32>,
         B::InnerBackend: Backend<FloatElem = f32>,
@@ -80,18 +145,29 @@ impl AdjointCompliance {
             .mul_scalar(material.nu);
         let stiffness = Tensor::cat(vec![e_node, nu_bn], 2);
 
-        let (u, _k_axial, edge_unit, edge_len, src_ix, tgt_ix, _n_v) =
+        let (u, _k_axial, edge_unit, edge_len, src_ix, tgt_ix, _n_v, pcg) =
             VectorMechanicsSolver::packed_bar_network_equilibrium(
                 displacement,
-                coords_n3,
-                stiffness,
+                coords_n3.clone(),
+                stiffness.clone(),
                 body_force.clone(),
                 edges_b1.clone(),
-                damage,
+                damage.clone(),
                 boundary_mask.clone(),
                 cross_section_area,
                 cg,
             );
+
+        let eq_rel = VectorMechanicsSolver::bar_network_equilibrium_rel_residual(
+            u.clone(),
+            coords_n3.clone(),
+            stiffness,
+            body_force.clone(),
+            edges_b1.clone(),
+            damage,
+            boundary_mask.clone(),
+            cross_section_area,
+        );
 
         let batch = u.dims()[0];
         let n_e = _k_axial.dims()[1];
@@ -106,8 +182,6 @@ impl AdjointCompliance {
         let topo = EdgeTopology::new(edges_b1.clone());
         let (rho_s, rho_t) = topo.gather_endpoints(rho_inner.clone());
         let rho_e = rho_s.add(rho_t).mul_scalar(0.5_f32);
-        // SIMP law uses ρ^p on [0,1]; continuation uses fractional p. Tiny negative ρ_e overshoots
-        // from f32 / projection can make ρ^(p−1) NaN — clamp to the physical domain for sensitivities.
         let rho_e_law = rho_e.clone().clamp(0.0_f32, 1.0_f32);
 
         let dk_drho = rho_e_law
@@ -120,25 +194,34 @@ impl AdjointCompliance {
             .mul(delta_e.powf_scalar(2.0))
             .mul_scalar(-1.0_f32);
 
+        let ge_flat = ge.clone().into_data().value;
+        let edges_f = edges_b1.clone().float().into_data().value;
+        let n_e = ge_flat.len();
+        let nodal_sensitivity =
+            nodal_sensitivity_from_edge_ge(&ge_flat, &edges_f[..n_e], &edges_f[n_e..2 * n_e], n);
+
         let comp = masked_dot(&body_force, &u, &boundary_mask);
 
-        let edges_ad = Tensor::<B, 2, Int>::from_inner(edges_b1.clone());
+        let edges_ad = Tensor::<B, 2, Int>::from_inner(edges_b1);
         let topo_ad = EdgeTopology::new(edges_ad);
         let (rsa, rta) = topo_ad.gather_endpoints(rho_autodiff.clone());
         let rho_e_ad = rsa.add(rta).mul_scalar(0.5_f32);
 
-        let ge_ad = Tensor::<B, 3>::from_inner(ge.clone());
-        let rho_e_det_ad = Tensor::<B, 3>::from_inner(rho_e_law.clone());
+        let ge_ad = Tensor::<B, 3>::from_inner(ge);
+        let rho_e_det_ad = Tensor::<B, 3>::from_inner(rho_e_law);
 
         let lin_a = ge_ad.clone().mul(rho_e_ad).sum();
         let lin_b = ge_ad.mul(rho_e_det_ad).sum();
-        // Keep total compliance on the autodiff tape (avoid `Tensor::full` from a host `f32`, which
-        // would sever ∂(surrogate)/∂u through the compliance term). Single scalar sync remains for
-        // the `(surrogate, c_raw)` API boundary.
         let c_pad = Tensor::<B, 1>::from_inner(comp.clone());
         let surrogate = lin_a.sub(lin_b).add(c_pad).reshape([1]);
         let c_raw = comp.into_scalar();
 
-        (surrogate, c_raw)
+        let diag = AdjointComplianceDiagnostics {
+            pcg,
+            equilibrium_rel_residual: eq_rel,
+            nodal_sensitivity,
+        };
+
+        (surrogate, c_raw, diag)
     }
 }
