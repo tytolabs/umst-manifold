@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# After `actions/checkout@v4`: Rust 1.88 + cache (umst-math is workspace member at umst-math/).
+# After `actions/checkout@11bd71901bbe5b1630ceea73d27597364ed6afde # v4`: Rust 1.88 + cache (umst-math is workspace member at umst-math/).
 name: Setup UMST manifold CI
 description: Rust 1.88 toolchain and Swatinem cache
 inputs:
@@ -10,9 +10,9 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: dtolnay/rust-toolchain@stable
+    - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
       with:
         toolchain: "1.88"
         components: ${{ inputs.components }}
 
-    - uses: Swatinem/rust-cache@v2
+    - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
