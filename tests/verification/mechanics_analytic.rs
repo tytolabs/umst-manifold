@@ -82,6 +82,79 @@ fn kirchhoff_centre_w_ssss(q: f32, l: f32, h: f32, e: f32, nu: f32) -> f32 {
     0.00406 * q * l.powi(4) / d.max(1e-30)
 }
 
+/// Kirchhoff SSSS **manufactured compliance** reference: \(C_K \approx \tfrac{2}{3}\, q L^2 w_{\max}\)
+/// with \(w_{\max}\) from [`kirchhoff_centre_w_ssss`] (thin-plate Navier centre coefficient **0.00406**).
+fn kirchhoff_compliance_ssss_uniform(q: f32, l: f32, h: f32, e: f32, nu: f32) -> f32 {
+    let w_c = kirchhoff_centre_w_ssss(q, l, h, e, nu);
+    (2.0 / 3.0) * q * l * l * w_c
+}
+
+/// Masked discrete compliance \(C = \sum_i M_i f_i u_i\) (same convention as [`AdjointComplianceQ1Hex`]).
+fn masked_compliance_ftu(f: &[f32], u: &[f32], mask: &[f32]) -> f32 {
+    f.iter()
+        .zip(u.iter())
+        .zip(mask.iter())
+        .map(|((fi, ui), mi)| mi * fi * ui)
+        .sum()
+}
+
+/// Q1-hex integration scheme recorded in compliance audit lines (see `q1_hex_elasticity` module docs).
+const Q1_HEX_INTEGRATION_SCHEME: &str =
+    "2x2x2 Gauss; B-bar volumetric (element-mean B_vol); gamma_yz/gamma_xz centroid SRI; gamma_xy full";
+
+fn run_plate_compliance_audit(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    lx: f32,
+    ly: f32,
+    lz: f32,
+    q: f32,
+    e0: f32,
+    nu: f32,
+    cfg: &MechanicsInnerLoopConfig,
+    bottom_mask: PlateBottomUzMaskKind,
+) -> (f32, f32, f32) {
+    let dev = NdArrayDevice::Cpu;
+    let dx = lx / nx as f32;
+    let dy = ly / ny as f32;
+    let dz = lz / nz as f32;
+    let plate = ExtrudedPlateMechanics {
+        nx,
+        ny,
+        nz,
+        dx,
+        dy,
+        dz,
+    };
+    let n = plate.n_nodes();
+    let rho = Tensor::<B, 3>::full([1, n, 1], 1.0, &dev);
+    let mask_flat = match bottom_mask {
+        PlateBottomUzMaskKind::FullBottomFaceUz => plate_bottom_uz_mask(nx, ny, nz),
+        PlateBottomUzMaskKind::SsssBottomEdgesUz => {
+            plate_bottom_uz_mask_ssss_edges_only(nx, ny, nz)
+        }
+    };
+    let bm = Tensor::from_data(Data::new(mask_flat.clone(), Shape::new([1, n, 3])), &dev);
+    let mat = ElasticMaterial {
+        e0,
+        nu,
+        simp_p: 1.0,
+        e_min: e0,
+    };
+    let bf = plate.body_force_top_uniform_pressure(q);
+    let body = Tensor::from_data(Data::new(bf.clone(), Shape::new([1, n, 3])), &dev);
+    let (u, _) = plate.solve_equilibrium(rho, body, bm, mat, cfg);
+    let u_flat = u.into_data().value;
+    let c_fe = masked_compliance_ftu(&bf, &u_flat, &mask_flat);
+    let e_cell = uniform_e_cell(nx, ny, nz, mat.e0);
+    let rel = masked_ku_residual_relative(
+        nx, ny, nz, dx, dy, dz, mat.nu, &e_cell, &bf, &mask_flat, &u_flat,
+    );
+    let c_kir = kirchhoff_compliance_ssss_uniform(q, lx.min(ly), lz, e0, nu);
+    (c_fe, c_kir, rel)
+}
+
 /// Accepted range for centre \(w / w_{\mathrm{Kirchhoff\,SSSS}}\) on the **locked** Q1-hex extruded
 /// slab (`plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band` and coarse twin).
 ///
@@ -636,6 +709,99 @@ fn plate_top_uniform_pressure_total_z_matches_q_area() {
     assert!(
         err < 1e-5,
         "sum of top nodal f_z should be -q*Lx*Ly; got {sum_fz} expected {expected} (rel_err={err})"
+    );
+}
+
+/// Uniform **ρ = 1** slab: discrete Q1-hex compliance vs Kirchhoff SSSS reference.
+///
+/// Prints one **over-stiffening** percentage: \((C_K - C_{\mathrm{FE}}) / C_K\). Values **> 20–30%**
+/// mean B6 compliance gates track discretization as much as design. Uses lateral-edge **`u_z=0`**
+/// BCs ([`plate_bottom_uz_mask_ssss_edges_only`]) for Kirchhoff parity.
+#[test]
+fn uniform_rho_q1_hex_compliance_vs_kirchhoff_ssss_audit() {
+    // Striatus-class span/thickness (L/h = 40) at a CI-friendly in-plane mesh.
+    let nx = 16_usize;
+    let ny = 16_usize;
+    let nz = 4_usize;
+    let lx = 4.0_f32;
+    let ly = 4.0_f32;
+    let lz = 0.1_f32;
+    let q = 50.0_f32;
+    let e0 = 200e6_f32;
+    let nu = 0.2_f32;
+    let cfg = kirchhoff_plate_stiff_cg_cfg();
+
+    let (c_fe, c_kir, rel) = run_plate_compliance_audit(
+        nx,
+        ny,
+        nz,
+        lx,
+        ly,
+        lz,
+        q,
+        e0,
+        nu,
+        &cfg,
+        PlateBottomUzMaskKind::SsssBottomEdgesUz,
+    );
+    // Lateral-edge `u_z` SSSS analogue: masked ‖f−Ku‖ can stay O(10⁻²) on f32 PCG (see §R2.1 deflection probe).
+    assert!(
+        rel < 0.05,
+        "expected bounded masked equilibrium residual; got {rel} (C_fe={c_fe})"
+    );
+    assert!(
+        c_fe.is_finite() && c_fe > 0.0 && c_kir.is_finite() && c_kir > 0.0,
+        "positive finite compliances expected; C_fe={c_fe} C_kir={c_kir}"
+    );
+    // Positive `stiff_bias_pct` ⇒ FE compliance lower than thin-plate reference (mesh over-stiff).
+    let stiff_bias_pct = (c_kir - c_fe) / c_kir.max(1e-30) * 100.0;
+    let ratio = c_fe / c_kir.max(1e-30);
+    eprintln!(
+        "VERIFY kirchhoff_compliance_audit: mesh={nx}x{ny}x{nz} LxLyLz=({lx},{ly},{lz}) q={q} E={e0} nu={nu} \
+C_fe={c_fe:.6e} C_kir={c_kir:.6e} C_fe/C_kir={ratio:.6} stiff_bias_pct={stiff_bias_pct:.2}% \
+integration={Q1_HEX_INTEGRATION_SCHEME} eq_rel={rel:.3e}"
+    );
+    if stiff_bias_pct > 30.0 {
+        eprintln!(
+            "VERIFY kirchhoff_compliance_audit: stiff_bias_pct>{:.0}% — compliance gates may be discretization-dominated",
+            30.0_f32
+        );
+    }
+}
+
+/// Full Striatus in-plane mesh (**40×40×4**) — opt-in (`--ignored`) compliance discretization audit.
+#[test]
+#[ignore = "slow: cargo test -p umst-manifold --features mechanics-voigt-cauchy --test mechanics_analytic uniform_rho_q1_hex_compliance_vs_kirchhoff_striatus_40x40x4 -- --ignored --nocapture"]
+fn uniform_rho_q1_hex_compliance_vs_kirchhoff_striatus_40x40x4() {
+    let nx = 40_usize;
+    let ny = 40_usize;
+    let nz = 4_usize;
+    let lx = 4.0_f32;
+    let ly = 4.0_f32;
+    let lz = 0.1_f32;
+    let q = 50.0_f32;
+    let e0 = 200e6_f32;
+    let nu = 0.2_f32;
+    let cfg = kirchhoff_plate_stiff_cg_cfg();
+
+    let (c_fe, c_kir, rel) = run_plate_compliance_audit(
+        nx,
+        ny,
+        nz,
+        lx,
+        ly,
+        lz,
+        q,
+        e0,
+        nu,
+        &cfg,
+        PlateBottomUzMaskKind::SsssBottomEdgesUz,
+    );
+    assert!(rel < 0.05, "eq_rel={rel} C_fe={c_fe}");
+    let stiff_bias_pct = (c_kir - c_fe) / c_kir.max(1e-30) * 100.0;
+    eprintln!(
+        "VERIFY kirchhoff_compliance_audit striatus_grid: mesh=40x40x4 C_fe={c_fe:.6e} C_kir={c_kir:.6e} \
+stiff_bias_pct={stiff_bias_pct:.2}% integration={Q1_HEX_INTEGRATION_SCHEME}"
     );
 }
 
