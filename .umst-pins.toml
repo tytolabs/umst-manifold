@@ -8,6 +8,6 @@ pinned_at = "2026-06-10T12:00:00Z"
 repo = "https://github.com/tytolabs/umst-formal-double-slit"
 
 [umst-formal]
-sha = "4028b4dc57c21f849cf012ac5dc59b1deae4bb67"
+sha = "2dd37d8d0ab913015884684084d031cc6787de89"
 pinned_at = "2026-06-10T12:00:00Z"
 repo = "https://github.com/tytolabs/umst-formal"

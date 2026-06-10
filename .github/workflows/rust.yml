@@ -41,6 +41,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Checkout formal siblings (theorem-count SSOT layout)
+        run: |
+          set -euo pipefail
+          PARENT="$(dirname "$GITHUB_WORKSPACE")"
+          DS=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-formal-double-slit']['sha'])")
+          FM=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-formal']['sha'])")
+          git clone --depth=1 "https://github.com/tytolabs/umst-formal-double-slit.git" "$PARENT/umst-formal-double-slit"
+          git -C "$PARENT/umst-formal-double-slit" fetch --depth=1 origin "$DS"
+          git -C "$PARENT/umst-formal-double-slit" checkout "$DS"
+          git clone --depth=1 "https://github.com/tytolabs/umst-formal.git" "$PARENT/umst-formal"
+          git -C "$PARENT/umst-formal" fetch --depth=1 origin "$FM"
+          git -C "$PARENT/umst-formal" checkout "$FM"
+
       - name: check_solver_status.py (paths + memos + statmech set)
         run: |
           set -euo pipefail
