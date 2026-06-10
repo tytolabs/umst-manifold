@@ -830,8 +830,9 @@ pub fn hex_diagonal(
 
 /// f32 quick-scale lane tol — attainable κ·ε floor (evidence: arm-A probe 9×8×2, 2026-06-10).
 pub const HEX_PCG_REL_TOL_F32: f32 = 1e-4;
-/// f64 Striatus production lane tol — bar `packed_*_pcg_f64` parity; binds once native f64 `K·u` lands.
-pub const HEX_PCG_REL_TOL_F64: f32 = 1e-6;
+/// f64 Striatus lane tol — re-grounded 2026-06-10: sensitivity fidelity + inexact-solve TO practice
+/// (same measured κ·ε floor as f32; 1e-6 overshoots attainable residual at 40×40×4 — see Solver-Status).
+pub const HEX_PCG_REL_TOL_F64: f32 = 1e-4;
 /// Periodic true-residual verification cadence when [`HexPcgBisectConfig::stop_on_true_residual`].
 pub const HEX_PCG_TRUE_RESIDUAL_CHECK_PERIOD: usize = 25;
 
