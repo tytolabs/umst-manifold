@@ -224,7 +224,7 @@ fn assert_matches_golden(
 }
 
 fn prototype_core_manifest() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../umst-prototype/src/rust/core/Cargo.toml")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../umst-core/Cargo.toml")
 }
 
 fn run_prototype_subprocess(fixture_json: &str) -> Option<Vec<SubprocessTransitionResult>> {

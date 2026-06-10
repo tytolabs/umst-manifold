@@ -88,12 +88,16 @@ digest = lock.get("upstream_catalog_digest_hex") or lock.get("composed_catalog_d
 if count != 119:
     print(f"FAIL: catalog.lock module_count={count!r} (expected 119)", file=sys.stderr)
     sys.exit(1)
-if not (str(digest).startswith("4524ed21") or str(digest).startswith("0697014f")):
+if not (
+    str(digest).startswith("37bf5a18")
+    or str(digest).startswith("4524ed21")
+    or str(digest).startswith("0697014f")
+):
     print(f"FAIL: catalog.lock digest prefix (got {digest!r})", file=sys.stderr)
     sys.exit(1)
 print(f"OK: catalog.lock module_count=119 digest={digest[:16]}…")
 PYLOCK
-ok "catalog.lock digest prefix (4524ed21 or 0697014f)"
+ok "catalog.lock digest prefix (37bf5a18, 4524ed21, or 0697014f)"
 
 # --- 3. No dirty secrets ---
 step "secrets hygiene (no .env / credentials in git index)"
@@ -214,9 +218,14 @@ if [[ -d "${CONCRETE}" ]]; then
   step "concrete manifest-bridge (git-pinned or workspace patch)"
   cd "${CONCRETE}"
   CARTRIDGE_CRATE="${CONCRETE}/crates/umst-concrete-cartridge/Cargo.toml"
+  CARGO_CONFIG="${CONCRETE}/.cargo/config.toml"
   if grep_q '\[patch\."https://github.com/tytolabs/umst-manifold.git"\]' Cargo.toml \
     && grep_q 'path = "../umst-manifold"' Cargo.toml; then
     ok "workspace [patch] to sibling umst-manifold (local W8 dev)"
+  elif [[ -f "${CARGO_CONFIG}" ]] \
+    && grep_q '\[patch\."https://github.com/tytolabs/umst-manifold.git"\]' "${CARGO_CONFIG}" \
+    && grep_q 'umst-manifold = { path =' "${CARGO_CONFIG}"; then
+    ok "local .cargo/config.toml [patch] to sibling umst-manifold (monorepo dev)"
   elif [[ -f "${CARTRIDGE_CRATE}" ]] \
     && grep_q 'umst-manifold = { git = "https://github.com/tytolabs/umst-manifold.git"' "${CARTRIDGE_CRATE}" \
     && grep -qE 'rev = "[0-9a-f]{7,40}"' "${CARTRIDGE_CRATE}" 2>/dev/null; then
@@ -225,6 +234,13 @@ if [[ -d "${CONCRETE}" ]]; then
         | sed -n 's/.*rev = "\([^"]*\)".*/\1/p' | head -1
     )"
     ok "git-pinned umst-manifold rev=${MANIFOLD_REV:0:12}… (G-02; no workspace [patch])"
+  elif grep_q 'umst-manifold = { git = "https://github.com/tytolabs/umst-manifold.git"' Cargo.toml \
+    && grep -qE 'rev = "[0-9a-f]{7,40}"' Cargo.toml 2>/dev/null; then
+    MANIFOLD_REV="$(
+      grep -E 'umst-manifold = \{ git' Cargo.toml \
+        | sed -n 's/.*rev = "\([^"]*\)".*/\1/p' | head -1
+    )"
+    ok "workspace git-pinned umst-manifold rev=${MANIFOLD_REV:0:12}… (G-02)"
   else
     fail "concrete needs workspace [patch] to ../umst-manifold OR git rev pin on umst-manifold"
   fi

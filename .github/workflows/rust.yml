@@ -50,6 +50,11 @@ jobs:
             --check-memo-links \
             --check-statmech-verification-set
 
+      - name: theorem counts SSOT (lean_declaration_stats snapshot)
+        run: |
+          set -euo pipefail
+          python3 scripts/check_theorem_counts_ssot.py
+
   # Required job: build the library + run tests on the CPU backend.
   # Stays green on a vanilla GitHub runner without GPU/system libraries.
   build-test:

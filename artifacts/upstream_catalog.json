@@ -875,7 +875,7 @@
     },
     {
       "path": "/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal/Lean/Memory/TierDisjoint.lean",
-      "content_sha256": "76200509b1a3cb96336b8c9e94f2c7c4e5ef383560e83d5e7ebb19f69ee64b8c",
+      "content_sha256": "901580cbed5c9c5ef5a1a51891d2756722fd5fcbb6e330bb1b96399e345439a3",
       "declarations": {
         "inductive": [
           "MemoryTier"
@@ -4499,5 +4499,5 @@
       "to_approx": "VonNeumannEntropy"
     }
   ],
-  "digest": "4524ed218634fcbe716d76a0948b7ab01c0ee03a8bc36c31f2ba31798713e02d"
+  "digest": "37bf5a18d9f55d6bc671bfac431f2e67df85cc6936780e9ac762765651521ad7"
 }

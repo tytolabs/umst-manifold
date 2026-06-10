@@ -1,6 +1,6 @@
 /target
 **/*.rs.bk
-Cargo.lock
+# Cargo.lock tracked for reproducible CI (Phase 4)
 
 .env
 .env.local

@@ -2,11 +2,11 @@
   "version": 2,
   "role": "manifold_runtime_lock",
   "upstream_repo": "umst-formal-double-slit",
-  "upstream_catalog_digest_hex": "4524ed218634fcbe716d76a0948b7ab01c0ee03a8bc36c31f2ba31798713e02d",
+  "upstream_catalog_digest_hex": "37bf5a18d9f55d6bc671bfac431f2e67df85cc6936780e9ac762765651521ad7",
   "module_count": 119,
   "module_graph_edge_count": 321,
   "composition_rule": "cross_repo_merge_v1_primary_wins_basename",
-  "composed_catalog_digest_hex": "4524ed218634fcbe716d76a0948b7ab01c0ee03a8bc36c31f2ba31798713e02d",
+  "composed_catalog_digest_hex": "37bf5a18d9f55d6bc671bfac431f2e67df85cc6936780e9ac762765651521ad7",
   "fiber_pins": [
     {
       "repo": "umst-formal-double-slit",
@@ -17,7 +17,7 @@
     },
     {
       "repo": "umst-formal",
-      "catalog_digest_hex": "534d9e181fd2af301a319b4a6a645e665d7896b2b7e0302a9ffa29a6d52d454c",
+      "catalog_digest_hex": "53c43970db00d9b4ae5b11ff1078ccc6b77f03e8ce6573b2e4e3811b6076b1c4",
       "module_count": 62,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"

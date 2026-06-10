@@ -16,6 +16,7 @@ on:
       - "Cargo.lock"
       - "build.rs"
       - "scripts/**"
+      - ".umst-pins.toml"
       - ".github/workflows/umst-catalog-drift.yml"
   pull_request:
     branches: [main, master, develop]
@@ -27,12 +28,15 @@ on:
       - "Cargo.lock"
       - "build.rs"
       - "scripts/**"
+      - ".umst-pins.toml"
       - ".github/workflows/umst-catalog-drift.yml"
+  schedule:
+    # Weekly re-proof when manifold is idle but double-slit may have drifted.
+    - cron: "0 6 * * 1"
 
 env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
-  # Lean export lives in tytolabs/umst-formal-double-slit (checked out below, or sibling on disk).
   UMST_FORMAL_ROOT: ${{ github.workspace }}/umst-formal-double-slit
   UMST_REQUIRE_FORMAL_EXPORT: "1"
 
@@ -48,11 +52,22 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-ci
 
+      - name: Read pinned upstream ref
+        id: upstream
+        run: |
+          set -euo pipefail
+          sha=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-formal-double-slit']['sha'])")
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
       - name: Checkout umst-formal-double-slit (catalog export)
         uses: actions/checkout@v4
         with:
           repository: tytolabs/umst-formal-double-slit
+          ref: ${{ steps.upstream.outputs.sha }}
           path: umst-formal-double-slit
+
+      - name: Tier 0 doc link SSOT
+        run: bash scripts/check_doc_links_tier0.sh
 
       - name: verify_umst_stack.sh
         run: bash scripts/verify_umst_stack.sh
@@ -60,3 +75,16 @@ jobs:
       - name: bidirectional_catalog_check.sh
         run: bash scripts/bidirectional_catalog_check.sh
 
+      - name: Digest pin cross-check (loud on mismatch)
+        run: |
+          set -euo pipefail
+          want=$(python3 -c "import json; print(json.load(open('artifacts/catalog.lock.json'))['upstream_catalog_digest_hex'])")
+          got=$(python3 -c "import json; print(json.load(open('umst-formal-double-slit/artifacts/catalog.lock.json'))['catalog_digest_hex'])")
+          if [ "$want" != "$got" ]; then
+            echo "::error::Catalog digest mismatch"
+            echo "  manifold lock upstream_catalog_digest_hex: $want"
+            echo "  double-slit catalog.lock catalog_digest_hex: $got"
+            echo "Update protocol: docs/CATALOG_UPDATE_PROTOCOL.md"
+            exit 1
+          fi
+          echo "OK: digest pin matches ($want)"

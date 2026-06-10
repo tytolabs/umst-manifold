@@ -1,0 +1,8 @@
+# Pinned SHAs for cross-repo catalog drift CI (egoff TOML format).
+# Bump only after umst-formal-double-slit export regen + manifold lock update.
+# Protocol: docs/CATALOG_UPDATE_PROTOCOL.md
+
+[umst-formal-double-slit]
+sha = "582f2e1dd6908b1cd44df73def38b92d054004fa"
+pinned_at = "2026-06-10T00:00:00Z"
+repo = "https://github.com/tytolabs/umst-formal-double-slit"
