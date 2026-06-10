@@ -1362,7 +1362,8 @@ fn hex_solve_pcg_masked_f64(
 
         let periodic = pcg_iters % HEX_PCG_TRUE_RESIDUAL_CHECK_PERIOD == 0;
         let recursive_pass = r_norm <= abs_tol;
-        if tol > 0.0 && (periodic || recursive_pass) {
+        let probe_descent = milestone_iters.is_some();
+        if !probe_descent && tol > 0.0 && (periodic || recursive_pass) {
             let r_true = hex_equilibrium_rel_residual_f64(
                 nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u64,
             );

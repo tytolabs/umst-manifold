@@ -199,6 +199,11 @@ path = "tests/verification/q1_hex_pcg_bisect_probe.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
+name = "q1_hex_pcg_descent_probe"
+path = "tests/verification/q1_hex_pcg_descent_probe.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
 name = "q1_hex_nondim_trajectory_identity"
 path = "tests/verification/q1_hex_nondim_trajectory_identity.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
