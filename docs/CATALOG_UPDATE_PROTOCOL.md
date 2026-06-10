@@ -13,7 +13,7 @@ When the Lean catalog changes in `umst-formal-double-slit`:
 | Layout | Workflow | Upstream double-slit |
 |--------|----------|----------------------|
 | Standalone `umst-manifold` repo | `.github/workflows/umst-catalog-drift.yml` | Git checkout at `.umst-pins.toml` SHA |
-| MaOS-Workspace monorepo | root `.github/workflows/umst-catalog-drift.yml` | Sibling directory on disk (keep siblings in sync manually) |
+| multi-repo workspace monorepo | root `.github/workflows/umst-catalog-drift.yml` | Sibling directory on disk (keep siblings in sync manually) |
 
 ## umst-math lockfile collision
 

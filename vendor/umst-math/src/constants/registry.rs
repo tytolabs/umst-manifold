@@ -74,7 +74,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "process_joules_estimate",
         expression: "cpu_watts · Δt · util_frac (EnergyService port)",
         tier: ConstantTier::Tier1Measurement,
-        evidence: "maos-core EnergyService.ts formulas + egoff cockpit energy unit tests",
+        evidence: "egoff cockpit energy port formulas + egoff cockpit energy unit tests",
         env_override: None,
     },
     ConstantEntry {

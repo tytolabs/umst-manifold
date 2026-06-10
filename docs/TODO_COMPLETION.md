@@ -3,7 +3,7 @@
 **Plan:** `lean-to-rust_proof_extraction_fd8f70b5.plan.md`  
 **Audited:** 2026-05-29  
 **Verified:** 2026-05-29 (UTC) — `verify_umst_stack.sh` exit **0** on unified R0 pin (`0697014fb5b90a3…`, **119** modules, lock v2); manifold CI green @ **fe22437**; **G-02** concrete `manifest-bridge` on git dep without `[patch]`; G.2 **13/13** · G.3 **8/8** in stack tail.
-**Workspace:** MaOS-Workspace  
+**Workspace:** multi-repo workspace  
 
 Evidence commands are read-only checks run during audit (no plan file edits).
 
@@ -53,7 +53,7 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 | 7 | `formal-witness-integration` | `pending` | ✅ | `formal-witness` feature + tests |
 | 8 | `manifold-manifest` | `pending` | ✅ | `UmstManifest`, `GroundingContract` |
 | 9 | `ros2-in-manifold` | `pending` | ✅ | `ros2-contract`, `gate_server` |
-| 10 | `concrete-cartridge-wire` | `pending` | ✅ local + ✅ remote **G-02** | Git `fe22437` without `[patch]` @ 2026-05-29; MaOS `[patch]` still patch-green Evidence |
+| 10 | `concrete-cartridge-wire` | `pending` | ✅ local + ✅ remote **G-02** | Git `fe22437` without `[patch]` @ 2026-05-29; local `[patch]` still patch-green Evidence |
 | 11 | `embodied-orchestrator` | `pending` | ✅ | `EmbodiedOrchestrator` + tests |
 | 12 | `claims-vs-proofs` | `pending` | ✅ | `claims-vs-proofs.md` + `TCB.md` + Appendix B |
 | 13 | `parity-ci` | `pending` | ✅ | Drift CI + `verify_umst_stack` adversarial/Kleisli/rejects |
@@ -79,7 +79,7 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 - **Scoped true 100%** (honest): **3 / 4** Done — **G-04** ✅ · **G-05** ✅ · **W8 (G-01+G-02)** ✅ @ **2026-05-29**; **FFI** horizon open; **G-03** supercap optional — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 - Optional polish (not scoped blockers): 2a thin delete, `rust.yml` verify lane — [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md).
 
-> **Design lens** — Each plan todo is a morphism in the extraction pipeline; completion means the morphism factors through verified tests (exit 0), not merely files on disk. **W8:** **G-01** publish + **G-02** concrete remote CI are **Done** @ **fe22437**; MaOS `[patch]` tests remain patch-green **Evidence** for monorepo dev; **G-03** supercap remote is optional ([`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)).
+> **Design lens** — Each plan todo is a morphism in the extraction pipeline; completion means the morphism factors through verified tests (exit 0), not merely files on disk. **W8:** **G-01** publish + **G-02** concrete remote CI are **Done** @ **fe22437**; local `[patch]` tests remain patch-green **Evidence** for monorepo dev; **G-03** supercap remote is optional ([`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)).
 
 ---
 
@@ -98,7 +98,7 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 | **G-05** | Auto-fill `upstream_catalog_digest_hex` from lock in builder/gateway/UMST | **code** | ✅ **Done** | `lock_upstream_catalog_digest_bytes()`; strict `build()` @ **2026-05-29** | Track **H.2** — B3 |
 | **FFI** | Extracted Lean witnesses / attestation on hot path | **human + code** (horizon) | ❌ **OPEN** (horizon) | `rg 'lake build\|lean --run' umst-manifold/src` empty — policy | Separate FFI program — **excluded** from 16-row automation % |
 
-**Patch-green rule:** MaOS workspace `[patch]` tests are **Evidence** for local dev; **G-02 Done** = concrete cartridge on **git** `fe22437` without patch ([`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) B1).
+**Patch-green rule:** local workspace `[patch]` tests are **Evidence** for local dev; **G-02 Done** = concrete cartridge on **git** `fe22437` without patch ([`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) B1).
 
 **Anti double-count:** Org W8 (~8–10% headline) is one morphism; G-04/G-05 are product/code policy — do not add automation % + scoped %.
 
@@ -548,7 +548,7 @@ Read-only subagent audits persisted to disk:
 | formal-witness-integration | ✅ | `formal-witness`, `PENDING_GAPS_PLAIN.md` §6 gaps |
 | manifold-manifest | ✅ | `src/manifest/umst_manifest.rs` |
 | ros2-in-manifold | ✅ | `src/ros/contract.rs`, `src/bin/gate_server.rs` |
-| concrete-cartridge-wire | ✅ local + ✅ **G-02** remote | Git `fe22437` without `[patch]`; MaOS patch-green Evidence optional |
+| concrete-cartridge-wire | ✅ local + ✅ **G-02** remote | Git `fe22437` without `[patch]`; local patch-green Evidence optional |
 | embodied-orchestrator | ✅ | `orchestrator.rs`, `PENDING_GAPS_PLAIN.md` |
 | claims-vs-proofs | ✅ | `claims-vs-proofs.md` (43 rows + Appendix A), `TCB.md` — verified 2026-05-21T20:50:20Z |
 | parity-ci | ✅ | Drift CI + `verify_umst_stack`: `gate_adversarial` + dual-run; Python E6 **optional** |
@@ -575,19 +575,19 @@ UMST_REQUIRE_FORMAL_EXPORT=1 UMST_FORMAL_ROOT=$WORKSPACE/umst-formal-double-slit
 ---
 ## Agent verification run (parity-ci + lean-export-lake) — 2026-05-21
 
-**Environment:** `darwin` / `arm64`, `rustc 1.86.0`, `Python 3.14.3`, workspace `/Users/santhoshshyamsundar/Desktop/MaOS-Workspace`.
+**Environment:** `darwin` / `arm64`, `rustc 1.86.0`, `Python 3.14.3`, workspace `/path/to/multi-repo/workspace`.
 
 **Commands (exit 0):**
 ```bash
 cd umst-manifold
 UMST_REQUIRE_FORMAL_EXPORT=1 \
-  UMST_FORMAL_ROOT=/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit \
+  UMST_FORMAL_ROOT=/path/to/multi-repo/workspace/umst-formal-double-slit \
   bash scripts/verify_umst_stack.sh
 # → OK: export digest matches lock (0697014f…, 119 modules)
 # → bidirectional_catalog_check: OK (119 modules)
 # → verify_umst_stack: OK (~14s wall)
 
-UMST_FORMAL_ROOT=/Users/santhoshshyamsundar/Desktop/MaOS-Workspace/umst-formal-double-slit \
+UMST_FORMAL_ROOT=/path/to/multi-repo/workspace/umst-formal-double-slit \
   bash scripts/bidirectional_catalog_check.sh
 # → OK: export digest matches lock and committed catalog (0697014f…, 119 modules)
 # → catalog_all_ids_registered: 4 passed

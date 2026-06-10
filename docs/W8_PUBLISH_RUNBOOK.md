@@ -2,7 +2,7 @@
 
 **Scope:** Unblock remote git consumers of `umst-manifold::manifest` so `umst-concrete-cartridge` (and optionally `umst-supercap-cartridge`) can run **`manifest-bridge`** in GitHub Actions **without** workspace `[patch]`.
 
-**Witness ladder:** R5 — [Manifest bridge + formal witness](GOD_GRADE_WITNESS_LADDER.md#r5--manifest-bridge--formal-witness-deployment-fiber) (paired with `formal-witness` in MaOS drift CI).
+**Witness ladder:** R5 — [Manifest bridge + formal witness](GOD_GRADE_WITNESS_LADDER.md#r5--manifest-bridge--formal-witness-deployment-fiber) (paired with `formal-witness` in workspace catalog-drift CI).
 
 **Status (2026-05-29):** **Phase 1 DONE** — `tytolabs/umst-manifold` `main` @ **`fe22437`** (`pub mod manifest`, CI green). **G-02 DONE** — concrete cartridge git `rev = fe22437`, GHA `manifest-bridge` without `[patch]`. **G-03** supercap remote bridge optional. SSOT detail: [`PENDING_GAPS_PLAIN.txt`](PENDING_GAPS_PLAIN.txt), [`AGENT_STATUS.md`](AGENT_STATUS.md).
 
@@ -30,7 +30,7 @@ cd ../umst-concrete-cartridge && cargo test -p umst-concrete-cartridge --feature
 
 ## Phase 0 — Manifold preflight (local, no push)
 
-Run from `MaOS-Workspace/umst-manifold`:
+Run from `workspace root/umst-manifold`:
 
 - [x] `cargo check`
 - [x] `cargo test -p umst-manifold`
@@ -57,7 +57,7 @@ git ls-remote https://github.com/tytolabs/umst-manifold.git refs/heads/main
 
 ---
 
-## Phase 2 — Clean-clone verify (no MaOS `[patch]`) — **DONE**
+## Phase 2 — Clean-clone verify (no local `[patch]`) — **DONE**
 
 ```bash
 git clone https://github.com/tytolabs/umst-manifold.git /tmp/umst-manifold-w8-verify
@@ -102,7 +102,7 @@ File: `umst-concrete-cartridge/.github/workflows/rust.yml`.
 - [x] `CARGO_NET_GIT_FETCH_WITH_CLI: "true"`
 - [x] Step `manifest-bridge tests (pinned umst-manifold)` — green on `main` without `../umst-manifold`
 
-### MaOS monorepo drift workflow (paired fiber)
+### multi-repo workspace drift workflow (paired fiber)
 
 - [x] `umst-manifold` standalone: `.github/workflows/umst-catalog-drift.yml` runs `verify_umst_stack.sh` with `formal-witness`.
 - [x] Release triple documented in [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md): `formal-witness` + catalog lock + cartridge `manifest-bridge` on git **`fe22437`**.

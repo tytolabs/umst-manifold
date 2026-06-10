@@ -444,7 +444,7 @@ export UMST_REQUIRE_FORMAL_EXPORT=1   # fail if umst-formal-double-slit export m
 bash scripts/verify_umst_stack.sh
 ```
 
-Monorepo layout: sibling `../umst-formal-double-slit` or `UMST_FORMAL_ROOT`. Full command matrix: [`docs/VERIFY.md`](docs/VERIFY.md). Workspace root shortcut: [`VERIFY.md`](../VERIFY.md) (MaOS-Workspace).
+Monorepo layout: sibling `../umst-formal-double-slit` or `UMST_FORMAL_ROOT`. Full command matrix: [`docs/VERIFY.md`](docs/VERIFY.md). Workspace root shortcut: [`VERIFY.md`](../VERIFY.md) (multi-repo workspace).
 
 ### For Autonomous Agents
 - **Repo root:** treat the checkout directory of this repository as the working root for all `cargo` / `python3` commands.

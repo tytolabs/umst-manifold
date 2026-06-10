@@ -1,7 +1,7 @@
 # VERIFY_TRANSCRIPT — machine run record
 
 **Date:** 2026-06-10  
-**Host:** MaOS-Workspace monorepo (local)  
+**Host:** multi-repo workspace monorepo (local)  
 **Exit code:** 0
 
 ## Toolchain

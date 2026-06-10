@@ -45,7 +45,7 @@ Targets are **engineering budgets** for the policy gateway + scalar gates, not W
 | Job / command | What it proves | Owner path |
 |---------------|----------------|------------|
 | `cargo test --test catalog_all_ids_registered` | Lean **119**-module partition ↔ wired / allowlist | `umst-manifold` |
-| MaOS `umst-catalog-drift.yml` | Regenerated export digest vs lock | workspace root |
+| workspace `umst-catalog-drift.yml` | Regenerated export digest vs lock | workspace root |
 | `scripts/verify_umst_stack.sh` | Gate parity, Kleisli, CBF, formal-witness, ROS, HTTP | `umst-manifold` |
 | `scripts/bidirectional_catalog_check.sh` | Export regen + `catalog_id` ⊆ Rust sources | `umst-manifold` |
 | `cargo test --test gate_dual_run_parity` | Host vs registry dual-run (**in** `verify_umst_stack.sh`) | `umst-manifold` |
@@ -79,7 +79,7 @@ Targets are **engineering budgets** for the policy gateway + scalar gates, not W
 | 9 | `gate_reject_catalog_id` tests | ✅ | `tests/gate_reject_catalog_id.rs` (6/6) |
 | 10 | `gate_adversarial` golden (Rust SSOT) | ✅ | `tests/gate_adversarial.rs` FNR=0 (75 cases) in `verify_umst_stack.sh` |
 | 11 | Default manifest `catalog_hash` pins lock | ✅ | `UmstManifestBuilder::default()` → `catalog_lock_bundle_sha256_bytes()` |
-| 12 | Release strict witness CI | ✅ | `manifest_strict_witness` in `verify_umst_stack.sh` (`UMST_RELEASE_MANIFEST_PROFILE:-1`); `ci_god_grade_profile` **2/2**; MaOS drift workflow sets profile **1** |
+| 12 | Release strict witness CI | ✅ | `manifest_strict_witness` in `verify_umst_stack.sh` (`UMST_RELEASE_MANIFEST_PROFILE:-1`); `ci_god_grade_profile` **2/2**; workspace catalog-drift workflow sets profile **1** |
 | 13 | Epistemic trace schema (G.1) | ✅ | `epistemic_trace_schema` in `verify_umst_stack.sh` tail |
 | 14 | Epistemic per-step bounds (G.2) | ✅ | `epistemic_trace_schema` in verify tail — host envelope; **`NumericTraceApproxConsistent` deferred** |
 | 15 | Epistemic η-from-traces (G.3) | ✅ | `trace_calibration` in verify tail — **catalog η stub**; Lean utility witness deferred |

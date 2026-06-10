@@ -230,7 +230,7 @@ See [§ v1 digest vs v2 trace schema](#6-v1-digest-reject-v2-epistemicruntimesch
 
 ### 3. `manifest-bridge` + `formal-witness` ON in CI
 
-**Normative CI lane** (MaOS + local):
+**Normative CI lane** (workspace + local):
 
 ```bash
 cd umst-manifold && UMST_REQUIRE_FORMAL_EXPORT=1 ./scripts/verify_umst_stack.sh

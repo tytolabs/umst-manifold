@@ -1,7 +1,7 @@
 # God-grade progress — verified run
 
 **Verified (UTC):** 2026-05-29 (local `verify_umst_stack.sh` exit **0**; CI green @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437); prior 2026-05-21T22:13:30Z)  
-**Workspace:** MaOS-Workspace  
+**Workspace:** multi-repo workspace  
 **Environment:** `UMST_REQUIRE_FORMAL_EXPORT=1` · `UMST_FORMAL_ROOT=../umst-formal-double-slit`
 
 **TCB (unchanged):** exactly one Lean project axiom — `physicalSecondLaw` in `umst-formal-double-slit/Lean/LandauerLaw.lean`. Rust implements consequences only; no Rust axioms ([`TCB.md`](TCB.md)).

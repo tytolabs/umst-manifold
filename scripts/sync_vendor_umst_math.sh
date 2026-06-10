@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Refresh vendor/umst-math from sibling egoff (MaOS workspace layout).
+# Refresh vendor/umst-math from sibling egoff (local workspace layout).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="${EGOFF_ROOT:-$ROOT/../egoff}/umst-math"

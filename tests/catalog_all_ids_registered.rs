@@ -52,7 +52,7 @@ fn format_set_drift(missing: &[String], stale: &[String]) -> String {
 fn load_catalog_module_ids(path: &Path) -> Vec<String> {
     let raw = fs::read_to_string(path).unwrap_or_else(|e| {
         panic!(
-            "failed reading Lean catalog at {}: {e}\n(set UMST_LEAN_CATALOG_JSON or run from MaOS workspace)",
+            "failed reading Lean catalog at {}: {e}\n(set UMST_LEAN_CATALOG_JSON or run from local workspace)",
             path.display()
         );
     });

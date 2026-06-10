@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-//! W8 publish prep script: must exist and exit 0 on the current MaOS workspace.
+//! W8 publish prep script: must exist and exit 0 on the current local workspace.
 
 use std::path::PathBuf;
 use std::process::Command;
@@ -62,7 +62,7 @@ fn w8_publish_readiness_exits_zero_on_current_workspace() {
     let script = manifest.join("scripts/w8_publish_readiness.sh");
     let workspace = manifest
         .parent()
-        .expect("umst-manifold parent = MaOS-Workspace");
+        .expect("umst-manifold parent = multi-repo workspace");
     let concrete = workspace.join("umst-concrete-cartridge");
     if !concrete.join("Cargo.toml").is_file() {
         eprintln!(

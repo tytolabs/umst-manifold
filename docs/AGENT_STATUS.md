@@ -1,6 +1,6 @@
 # UMST parallel agents W1–W10 — status (coordinator scan)
 
-**Scanned:** 2026-05-29 · **Verified:** 2026-05-29 — unified R0 pin `0697014fb5b90a3…`, **119** modules; `verify_umst_stack.sh` exit **0** · **Workspace:** `MaOS-Workspace/umst-manifold` · **CI:** green @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) (`witness_priority.rs` `manual_contains` fix on stable)
+**Scanned:** 2026-05-29 · **Verified:** 2026-05-29 — unified R0 pin `0697014fb5b90a3…`, **119** modules; `verify_umst_stack.sh` exit **0** · **Workspace:** `workspace root/umst-manifold` · **CI:** green @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) (`witness_priority.rs` `manual_contains` fix on stable)
 
 **Handoffs (consolidated):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · **Verify commands:** [`VERIFY.md`](VERIFY.md) · **Plan phases P0–P12:** `lean-to-rust_proof_extraction_fd8f70b5.plan.md` · **Witness ladder:** [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) · **Verified %:** [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)
 
@@ -81,7 +81,7 @@ Optional: `UMST_REQUIRE_ADVERSARIAL_GATE=1` when prototype adversarial script pr
 | **P4** | `GateEvaluator` + CBF | **✅ DONE** | `tests/cbf.rs`, `gate_cbf_parity`, `FormalReject` + `landauer_cbf` |
 | **P5** | `manifest` re-exports | **✅ DONE** | `UmstManifest`, `EmbodiedOrchestrator`; local `manifest-bridge` |
 | **P6** | `gate_server` in manifold | **✅ DONE** | `gate_server_http` 1 passed; 8/8 REST parity via dual-run fixtures |
-| **P7** | Dual-run production config | **✅ DONE** | 8/8 golden + live in `verify_umst_stack.sh`; `gate_adversarial` in MaOS drift CI @ 2026-05-21T21:18:04Z |
+| **P7** | Dual-run production config | **✅ DONE** | 8/8 golden + live in `verify_umst_stack.sh`; `gate_adversarial` in workspace catalog-drift CI @ 2026-05-21T21:18:04Z |
 | **Publish** | `tytolabs/umst-manifold` git `main` + cartridge Phase 2 | **✅ DONE** | Phase 1 @ **fe22437**; **G-02** concrete GHA without `[patch]` @ cartridge **6742fa3** — **G-03** supercap optional |
 
 **Beyond P7 (pending):** P8 replace prototype filter core (226-line shim remains); P10–P12 cartridge anchors + thin prototypes — see [`TODO_COMPLETION.md`](TODO_COMPLETION.md).
@@ -101,7 +101,7 @@ Optional: `UMST_REQUIRE_ADVERSARIAL_GATE=1` when prototype adversarial script pr
 | **W7** | `gate_server` HTTP | **DONE** | `gate_server_router.rs`, `tests/gate_server_http.rs`, feature `gate-server-bin` |
 | **W8** | concrete manifest-bridge | **DONE** | Local @ 2026-05-21 + remote: manifold **fe22437**, cartridge **6742fa3**, GHA `manifest-bridge` without `[patch]` — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) G-02 |
 | **W9** | docs audit tables | **DONE** | `claims-vs-proofs.md`, `PROOF-STATUS.md`, `REPO_LAYOUT_SSOT.md`, `PROTOTYPE_GATE_MAP.md` |
-| **W10** | tests parity + CI | **DONE** | `verify_umst_stack.sh` exit 0 @ 2026-05-21T21:18:04Z; MaOS `umst-catalog-drift.yml` + `gate_adversarial`; 8/8 dual-run |
+| **W10** | tests parity + CI | **DONE** | `verify_umst_stack.sh` exit 0 @ 2026-05-21T21:18:04Z; workspace `umst-catalog-drift.yml` + `gate_adversarial`; 8/8 dual-run |
 
 ---
 
@@ -147,7 +147,7 @@ cargo test --features formal-witness,ros2-contract,serde,gate-server-bin \
   --test formal_witness --test ros_contract_serde_roundtrip --test gate_server_http
 ```
 
-MaOS-Workspace root drift parity:
+multi-repo workspace root drift parity:
 
 ```bash
 UMST_REQUIRE_FORMAL_EXPORT=1 \

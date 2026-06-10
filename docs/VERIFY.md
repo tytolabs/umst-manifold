@@ -8,7 +8,7 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 Copy-paste commands for local checks. All paths assume the **crate root**:
 
 ```bash
-cd /path/to/umst-manifold   # or MaOS-Workspace/umst-manifold
+cd /path/to/umst-manifold   # or workspace root/umst-manifold
 ```
 
 **Toolchain:** `rust-toolchain.toml` pins **1.88** (required for `cargo clippy --all-targets` with the full optional graph). Install with `rustup toolchain install 1.88`.
@@ -84,9 +84,9 @@ Equivalent explicit target sweep:
 cargo test --tests
 ```
 
-### 2.2 Gate / catalog parity (MaOS root `umst-catalog-drift.yml`)
+### 2.2 Gate / catalog parity (workspace root `umst-catalog-drift.yml`)
 
-From **MaOS-Workspace** root:
+From **multi-repo workspace** root:
 
 ```bash
 cargo test -p umst-manifold --manifest-path umst-manifold/Cargo.toml
@@ -235,7 +235,7 @@ Local one-shot:
 cargo test --features formal-witness --test manifest_strict_witness
 ```
 
-Cartridge release check (git-pinned manifold; optional MaOS `[patch]` for pre-publish dev):
+Cartridge release check (git-pinned manifold; optional local `[patch]` for pre-publish dev):
 
 ```bash
 cd ../umst-concrete-cartridge
@@ -277,7 +277,7 @@ cargo clean -p umst-manifold && cargo check
 
 | Where CI runs | Workflow file | Formal repo on the runner |
 |---------------|---------------|---------------------------|
-| **MaOS-Workspace** (manifold is `umst-manifold/`) | `.github/workflows/umst-catalog-drift.yml` at repo root | Same `actions/checkout` as the monorepo; formal path is `${{ github.workspace }}/umst-formal-double-slit`, script runs with `working-directory: umst-manifold`. **No second checkout** — both trees must be committed (or otherwise present) in the monorepo. |
+| **multi-repo workspace** (manifold is `umst-manifold/`) | `.github/workflows/umst-catalog-drift.yml` at repo root | Same `actions/checkout` as the monorepo; formal path is `${{ github.workspace }}/umst-formal-double-slit`, script runs with `working-directory: umst-manifold`. **No second checkout** — both trees must be committed (or otherwise present) in the monorepo. |
 | **`tytolabs/umst-manifold`** (crate is repo root) | `.github/workflows/umst-catalog-drift.yml` | Second `actions/checkout` of `tytolabs/umst-formal-double-slit` into `${{ github.workspace }}/umst-formal-double-slit` (not a filesystem sibling of the runner workspace parent). `UMST_FORMAL_ROOT` points at that directory. |
 
 Local parity without nesting formal inside the manifold repo:
@@ -302,7 +302,7 @@ After **`verify_umst_stack.sh`**, CI runs **`scripts/bidirectional_catalog_check
 | (3) | Each `catalog_id()` under `src/gate/` is anchored in formal `catalog.json` (grep / Lean module map). |
 | (4) | `cargo test --test catalog_all_ids_registered` — Lean `modules[].module` ↔ `CATALOG_MODULE_WIRED` ∪ `ALLOW_UNUSED_CATALOG_IDS`. |
 
-**Workflows:** `MaOS-Workspace/.github/workflows/umst-catalog-drift.yml` (step after `verify_umst_stack.sh`, `working-directory: umst-manifold`) and `umst-manifold/.github/workflows/umst-catalog-drift.yml` (standalone repo; second checkout of `tytolabs/umst-formal-double-slit`).
+**Workflows:** `workspace root/.github/workflows/umst-catalog-drift.yml` (step after `verify_umst_stack.sh`, `working-directory: umst-manifold`) and `umst-manifold/.github/workflows/umst-catalog-drift.yml` (standalone repo; second checkout of `tytolabs/umst-formal-double-slit`).
 
 Local parity (sibling formal tree):
 
@@ -324,7 +324,7 @@ After the gate-server HTTP tests, `scripts/verify_umst_stack.sh` may run the pro
 | Order | Prototype root |
 |-------|----------------|
 | 1 | **`UMST_PROTOTYPE_ROOT`** — directory that contains `scripts/test_gate_adversarial.py` |
-| 2 | **Sibling checkout** — `../umst-prototype` or `../umst-prototype_2` next to the crate root (MaOS monorepo) |
+| 2 | **Sibling checkout** — `../umst-prototype` or `../umst-prototype_2` next to the crate root (multi-repo workspace) |
 
 | Prototype tree | Behavior |
 |----------------|----------|
@@ -372,8 +372,8 @@ For authoritative catalog drift on every Lean/manifold change, use **`umst-catal
 | Workflow | Scope | Mirrors |
 |----------|-------|---------|
 | `umst-manifold/.github/workflows/rust.yml` | Default build/test, solver-stable PR, lint; **optional** `verify-umst-stack-optional` (full `verify_umst_stack.sh` or §2.2 subset) | §1.1–§2.3, §5.2 |
-| `MaOS-Workspace/.github/workflows/rust-solvers.yml` | fmt, clippy, solver-tests, cartridge | §1.2, §2.3, §3.2 |
-| `MaOS-Workspace/.github/workflows/umst-catalog-drift.yml` | `verify_umst_stack.sh` + `bidirectional_catalog_check.sh` | §2.2, §5.1 |
+| `workspace root/.github/workflows/rust-solvers.yml` | fmt, clippy, solver-tests, cartridge | §1.2, §2.3, §3.2 |
+| `workspace root/.github/workflows/umst-catalog-drift.yml` | `verify_umst_stack.sh` + `bidirectional_catalog_check.sh` | §2.2, §5.1 |
 
 ---
 
@@ -391,7 +391,7 @@ cargo test --features gate-server-bin --test gate_server_http
 python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set
 ```
 
-From MaOS-Workspace root, also run the drift file parity:
+From multi-repo workspace root, also run the drift file parity:
 
 ```bash
 cargo test -p umst-manifold --manifest-path umst-manifold/Cargo.toml \

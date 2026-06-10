@@ -28,7 +28,7 @@
 ### Impact
 
 - Formal merges cannot silently drift: CI prints `FAIL: catalog drift upstream=… export=…`.
-- Cartridge path documented end-to-end; **G-02** enables git-pinned `manifest-bridge` without workspace `[patch]` (MaOS `[patch]` remains dev Evidence).
+- Cartridge path documented end-to-end; **G-02** enables git-pinned `manifest-bridge` without workspace `[patch]` (local `[patch]` remains dev Evidence).
 - God-grade ladder steps 1–3 (always-on CI, Lean PR checklist, registry completeness) map directly to open tracks C, E, H in the roadmap.
 
 > **Design lens** — Forward flow is functorial export **F** (Lean → digest); reverse flow is a **natural transformation** of regression tests detecting when **F** changes without promotion.
@@ -104,7 +104,7 @@ There is also a **slim** `catalog.json` on disk that uses an `entries[]` index (
 
 - **Trait:** `IScienceCartridge` — domain closures (concrete, metals, …) run **inside** `ManifoldGateway` / orchestration without forking the DEC substrate.
 - **Concrete path:** [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) supplies cementitious chemistry; manifold holds a **host policy stub** `umst.cartridge.concrete.policy` in `src/gate/concrete_cartridge.rs` for HTTP defaults when Burn is not linked.
-- **Manifest bridge (W8):** **G-01** publish @ **fe22437** and **G-02** concrete remote CI without `[patch]` are **done** (2026-05-29). MaOS workspace `[patch]` remains dev Evidence only ([`AGENT_STATUS.md`](AGENT_STATUS.md)).
+- **Manifest bridge (W8):** **G-01** publish @ **fe22437** and **G-02** concrete remote CI without `[patch]` are **done** (2026-05-29). local workspace `[patch]` remains dev Evidence only ([`AGENT_STATUS.md`](AGENT_STATUS.md)).
 
 **End-to-end story for one topology step:** Cartridge proposes a state update → `ManifoldGateway` runs physics + **Landauer CBF** → host **CD transition gate** (and optional dual-run) → result carries `catalog_id` / hash for telemetry. Formal Lean proofs justify the **design** of those checks; Rust implements them by hand.
 
@@ -116,7 +116,7 @@ There is also a **slim** `catalog.json` on disk that uses an `entries[]` index (
 
 | Direction | Check | Automated? | Where |
 |-----------|--------|------------|--------|
-| Lean → catalog | Re-run `export_catalog.py`; digest must match `upstream_catalog_digest_hex` in manifold lock | **Yes** (when formal repo present) | `scripts/verify_umst_stack.sh`; MaOS `.github/workflows/umst-catalog-drift.yml` (`UMST_REQUIRE_FORMAL_EXPORT=1`) |
+| Lean → catalog | Re-run `export_catalog.py`; digest must match `upstream_catalog_digest_hex` in manifold lock | **Yes** (when formal repo present) | `scripts/verify_umst_stack.sh`; workspace `.github/workflows/umst-catalog-drift.yml` (`UMST_REQUIRE_FORMAL_EXPORT=1`) |
 | Catalog lock → build | `build.rs` hashes lock JSON; env constant baked into binary | **Yes** | Every `cargo build` / `cargo test` |
 | Manifold → prototype | Dual-run parity: manifold vs prototype dissipation / gate paths | **Yes** | `tests/gate_dual_run_parity.rs`, `tests/gate_parity_fixture.rs` |
 | Manifest / HTTP / ROS | Responses include `catalog_hash_hex`; tests assert length and stability | **Yes** | `gate_server_http`, `ros_contract_serde_roundtrip` |
@@ -210,7 +210,7 @@ The ledger is **theorem-family granular** (39 rows), not 1:1 with 69 files.
 
 Practical ladder (order matters):
 
-1. **Always-on CI** — MaOS `umst-catalog-drift.yml` + full gate/formal/ros/server tests ([`VERIFY.md`](VERIFY.md) §2.2). Optional: duplicate gate job in manifold `rust.yml` (W10-a).
+1. **Always-on CI** — workspace `umst-catalog-drift.yml` + full gate/formal/ros/server tests ([`VERIFY.md`](VERIFY.md) §2.2). Optional: duplicate gate job in manifold `rust.yml` (W10-a).
 2. **Lean PR bot / checklist** — On every formal merge: `lean-catalog-export` → bump manifold lock → green `verify_umst_stack.sh` (W10-b; today manual).
 3. **Unify catalog artefacts** — Treat `export_catalog.py` output as the only `catalog.json` for drift; generate or retire the slim `entries[]` index so agents do not read the wrong file.
 4. **Registry completeness** — Implement `GateEvaluator` for `umst.gate.kleisli_unit`; namespace `thermodynamic_mix` in `GateUnificationSpec.md`.

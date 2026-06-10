@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 #
 # Catalog drift + gate test suite when this directory is the Git repository root.
-# In MaOS-Workspace monorepo, use root `.github/workflows/umst-catalog-drift.yml` instead.
+# In multi-repo workspace monorepo, use root `.github/workflows/umst-catalog-drift.yml` instead.
 
 name: UMST catalog drift
 

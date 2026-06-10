@@ -153,7 +153,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 | **Verify** | `cd umst-concrete-cartridge && cargo test -p umst-concrete-cartridge --features manifest-bridge` → exit 0 **without** `../umst-manifold` patch |
 | **Done** | Cartridge GHA green on git dep only; `docs/FORMAL_GROUNDING_AUDIT.md` remote CI row ✅. |
 | **TCB** | Cartridge tests still allow only `physicalSecondLaw` in `formal_anchors.rs`. |
-| **Ladder** | R5 — paired with `formal-witness` in MaOS drift workflow ([decision 3](GOD_GRADE_WITNESS_LADDER.md#3-manifest-bridge--formal-witness-on-in-ci)). |
+| **Ladder** | R5 — paired with `formal-witness` in workspace catalog-drift workflow ([decision 3](GOD_GRADE_WITNESS_LADDER.md#3-manifest-bridge--formal-witness-on-in-ci)). |
 
 ### A.4 — Close W8 in agent docs
 
@@ -311,10 +311,10 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 **Status:** ✅ **DONE** (Rust SSOT, 2026-05-21) — E.1–E.3 closed; optional Python E6 + `rust.yml` verify lane remain non-blocking (W10).
 
 **Witness ladder:** R1 + R3 (boundary FNR=0)  
-**Owner:** MaOS CI / coordinator  
+**Owner:** workspace CI / coordinator  
 **Assets:** `umst-manifold/tests/data/adversarial_gate_test.json`, `tests/gate_adversarial.rs`; optional `umst-prototype_2/scripts/test_gate_adversarial.py`
 
-### E.1 — Vendor adversarial golden into manifold or MaOS workflow ✅
+### E.1 — Vendor adversarial golden into manifold or workspace workflow ✅
 
 | Field | Value |
 |-------|--------|
@@ -334,7 +334,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 | **TCB** | CI only. |
 | **Ladder** | R0–R4 stack verified in one operator command. |
 
-### E.3 — MaOS workflow job `parity-ci-b` ✅
+### E.3 — workspace workflow job `parity-ci-b` ✅
 
 | Field | Value |
 |-------|--------|
