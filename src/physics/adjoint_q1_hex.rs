@@ -19,7 +19,8 @@ use super::adjoint::{AdjointComplianceDiagnostics, SimpElasticMaterial};
 use super::mechanics::BarNetworkPcgReport;
 use super::linear::masked_dot;
 use super::q1_hex_elasticity::{
-    hex_cell_strain_energy, hex_equilibrium_rel_residual, hex_solve_pcg_masked,
+    hex_cell_strain_energy, hex_equilibrium_rel_residual, hex_pcg_use_f64_lane,
+    hex_solve_pcg_masked,
 };
 use super::time_orchestration::MechanicsInnerLoopConfig;
 
@@ -176,19 +177,24 @@ impl AdjointComplianceQ1Hex {
             rel_tol,
         );
 
-        let eq_rel = hex_equilibrium_rel_residual(
-            nx,
-            ny,
-            nz,
-            dx,
-            dy,
-            dz,
-            material.nu,
-            &e_cell,
-            f_flat,
-            m_flat,
-            &u,
-        );
+        // f64 lane: bind on solver `rel_residual` (f64 `u64` before f32 round-trip).
+        let eq_rel = if hex_pcg_use_f64_lane(nx, ny, nz) {
+            hex_pcg.rel_residual
+        } else {
+            hex_equilibrium_rel_residual(
+                nx,
+                ny,
+                nz,
+                dx,
+                dy,
+                dz,
+                material.nu,
+                &e_cell,
+                f_flat,
+                m_flat,
+                &u,
+            )
+        };
 
         let mut u_cell_energy = vec![0.0_f32; n_cells];
         hex_cell_strain_energy(

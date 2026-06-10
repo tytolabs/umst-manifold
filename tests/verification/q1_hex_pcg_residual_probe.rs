@@ -100,7 +100,11 @@ fn run_probe_line(nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32, ma
         &bm,
         &u,
     );
-    let r_true = parts.rel_residual;
+    let r_true = if hex_pcg_use_f64_lane(nx, ny, nz) {
+        report.rel_residual
+    } else {
+        parts.rel_residual
+    };
     let precond = if cfg.use_preconditioner {
         "jacobi_precond_search"
     } else {
@@ -112,13 +116,23 @@ fn run_probe_line(nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32, ma
         "f32"
     };
     eprintln!(
-        "Q1_HEX_RESIDUAL_PROBE {nx}x{ny}x{nz} lane={lane}: iters={} |Pf|={:.3e}N |Pr|={:.3e}N rel=|Pr|/|Pf|={:.3e} r_recursive={:.3e} tol={:.3e} units=dimensionless_ratio stop=plain_r_norm precond={precond}",
+        "Q1_HEX_RESIDUAL_PROBE {nx}x{ny}x{nz} lane={lane}: iters={} |Pf|={:.3e}N |Pr|={:.3e}N rel=|Pr|/|Pf|={:.3e} r_recursive={:.3e} r_report={:.3e} tol={:.3e} units=dimensionless_ratio stop=plain_r_norm precond={precond}",
         report.iterations,
         parts.abs_rhs,
         parts.abs_residual,
         r_true,
         report.rel_residual_recursive,
+        report.rel_residual,
         tol,
+    );
+    assert!(
+        r_true <= tol * 1.01,
+        "{nx}x{ny}x{nz} lane={lane}: binding true residual {r_true:.3e} > tol {tol:.3e}"
+    );
+    let ratio = report.rel_residual_recursive / r_true.max(1e-30);
+    assert!(
+        ratio > 0.1 && ratio < 10.0,
+        "{nx}x{ny}x{nz} lane={lane}: recursive/true ratio {ratio:.3e} out of band"
     );
     assert!(
         (parts.rel_residual - parts.abs_residual / parts.abs_rhs).abs() < 1e-6 * parts.rel_residual.max(1.0),
