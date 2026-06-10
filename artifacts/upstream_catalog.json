@@ -44,6 +44,21 @@
       "repo": "umst-formal"
     },
     {
+      "path": "ClassicalMeasurementCost.lean",
+      "content_sha256": "f35967e3db979bea4642b2aa15ccac7f4b8d226bf851aa57fac4f82519471f31",
+      "declarations": {
+        "theorem": [
+          "zero_info_zero_energy"
+        ]
+      },
+      "import_lines": [
+        "InfoTheory",
+        "LandauerLaw"
+      ],
+      "module": "ClassicalMeasurementCost",
+      "repo": "umst-formal"
+    },
+    {
       "path": "Constitutional.lean",
       "content_sha256": "e0c278096bd7895e3ab77811377bd6c7288dc48b62660d4c85c10aac0879879f",
       "declarations": {
@@ -1035,7 +1050,7 @@
     },
     {
       "path": "experiments/AutoExperimenterPlaceholder.lean",
-      "content_sha256": "e9ffc73b7587d2b37f4c3617769369593c1a43822be5caf2a7546781209fcc45",
+      "content_sha256": "3a8aeb5001851003ebb87b4b187c7265afdfed253c9dcc2b43247fbf4718c43a",
       "declarations": {
         "def": [
           "AutoExperimenterPlaceholder"
@@ -1806,7 +1821,7 @@
     },
     {
       "path": "FlashMoERuntimeScaffold.lean",
-      "content_sha256": "6b51d8b5c1338a7d6310b4df95e0dfc996885d808a845f1eb19b667c5f777692",
+      "content_sha256": "774be62d0e39063506c3466918f6ed9484d416ca0962b25d6397e21a4e2c6eac",
       "declarations": {},
       "import_lines": [
         "Gate"
@@ -2912,6 +2927,16 @@
       "from": "Adjoint",
       "import": "Mathlib.Tactic",
       "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "ClassicalMeasurementCost",
+      "import": "InfoTheory",
+      "to_approx": "InfoTheory"
+    },
+    {
+      "from": "ClassicalMeasurementCost",
+      "import": "LandauerLaw",
+      "to_approx": "LandauerLaw"
     },
     {
       "from": "Constitutional",
@@ -4499,5 +4524,5 @@
       "to_approx": "VonNeumannEntropy"
     }
   ],
-  "digest": "ef0ed071fc82bf8ebc8971aeee8d142b4b54e15583f0c575d942cb237474d1dc"
+  "digest": "2f17cdf1fecbf5188f7c25e9d4aabb3c72a184f0ef55f7da96160ee8d2fb4bb1"
 }
