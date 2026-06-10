@@ -519,7 +519,8 @@ impl VolumeEtaProjection {
         beta: f32,
         target_vf: f32,
     ) -> Tensor<B, 3> {
-        let flat = rho_tilde.clone().into_data().value;
+        // Bisection on detached primal only — `into_data()` on the AD tape can sever ρ̄ from density_net.
+        let flat = rho_tilde.clone().detach().into_data().value;
         let eta = volume_matching_threshold_from_slice(
             &flat,
             beta,
