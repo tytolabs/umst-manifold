@@ -181,6 +181,7 @@ pub const TRANSITION_TOLERANCE: f64 = 1e-6;
 /// Matches the material-agnostic C-ABI semantics: mass jump bound, Clausius–Duhem
 /// dissipation, hydration irreversibility, strength monotonicity, and upper strength cap.
 #[must_use]
+#[allow(clippy::too_many_arguments)]
 pub fn thermodynamic_transition_admissible(
     old_density: f64,
     old_free_energy: f64,
@@ -210,6 +211,7 @@ pub fn thermodynamic_transition_admissible(
 
 /// Tolerance-parameterized variant for tests and calibrated hosts.
 #[must_use]
+#[allow(clippy::too_many_arguments)]
 pub fn thermodynamic_transition_admissible_tol(
     old_density: f64,
     old_free_energy: f64,
