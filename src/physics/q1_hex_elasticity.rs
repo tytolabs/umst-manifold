@@ -836,6 +836,12 @@ pub const HEX_PCG_REL_TOL_F64: f32 = 1e-4;
 /// Periodic true-residual verification cadence when [`HexPcgBisectConfig::stop_on_true_residual`].
 pub const HEX_PCG_TRUE_RESIDUAL_CHECK_PERIOD: usize = 25;
 
+/// Full-harness default PCG budget at Striatus N (40×40×4).
+///
+/// Derived: measured ~1213 iters @ outer 1 (2026-06-10); 2× headroom because κ grows as the design
+/// develops contrast (outers 11–18 previously stalled at the 2000 cap).
+pub const HEX_PCG_MAX_ITER_DEFAULT_STRIATUS: usize = 4000;
+
 /// Which norm triggered PCG exit (diagnostic).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HexPcgStoppingCriterion {
