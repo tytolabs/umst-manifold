@@ -6,7 +6,7 @@
 //! B6 H2: Helmholtz filter forward + backward at Striatus grid **40×40×4**.
 
 use burn::backend::Autodiff;
-use burn::tensor::{backend::AutodiffBackend, Shape, Tensor};
+use burn::tensor::{Shape, Tensor};
 use burn_ndarray::NdArray;
 use umst_manifold::physics::extruded_plate::ExtrudedPlateMechanics;
 use umst_manifold::physics::topology_filter::HelmholtzFilter;
