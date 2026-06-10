@@ -458,7 +458,7 @@ fn bbar_t_times_sigma_transverse_shear_centroid_f64(
     f
 }
 
-/// Native f64 `y += K u` (Striatus lane; tensors remain f32 at boundaries).
+/// Native f64 `y += K u` (Striatus lane; modulus per cell in f64).
 pub fn hex_k_times_u_accumulate_f64(
     nx: usize,
     ny: usize,
@@ -467,7 +467,7 @@ pub fn hex_k_times_u_accumulate_f64(
     dy: f32,
     dz: f32,
     nu: f32,
-    e_cell: &[f32],
+    e_cell: &[f64],
     u: &[f64],
     y: &mut [f64],
 ) {
@@ -477,7 +477,7 @@ pub fn hex_k_times_u_accumulate_f64(
         for cy in 0..ny {
             for cx in 0..nx {
                 let c = cx + cy * nx + cz * nx * ny;
-                let e = e_cell[c].max(1e-30_f32) as f64;
+                let e = e_cell[c].max(1e-30_f64);
                 let d = build_d_voigt_f64(e, nu);
                 let x_corner = cell_corner_coords(cx, cy, cz, dx, dy, dz);
                 let mut u24 = [0.0_f64; 24];
@@ -828,7 +828,7 @@ pub fn hex_diagonal(
     }
 }
 
-/// f32 quick-scale lane tol — attainable κ·ε floor (evidence: arm-A probe 9×8×2 + 40×40×4, 2026-06-10).
+/// f32 quick-scale lane tol — attainable κ·ε floor (evidence: arm-A probe 9×8×2, 2026-06-10).
 pub const HEX_PCG_REL_TOL_F32: f32 = 1e-4;
 /// f64 Striatus production lane tol — bar `packed_*_pcg_f64` parity; binds once native f64 `K·u` lands.
 pub const HEX_PCG_REL_TOL_F64: f32 = 1e-6;
@@ -933,6 +933,40 @@ pub fn hex_equilibrium_rel_residual(
         hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, u_ref, ku);
     })
     .rel_residual
+}
+
+/// Physical masked equilibrium residual in f64 (same operator as f64 PCG matvec).
+pub fn hex_equilibrium_rel_residual_f64(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    f: &[f32],
+    mask: &[f32],
+    u: &[f64],
+) -> f64 {
+    let ndof = f.len();
+    let e64: Vec<f64> = e_cell.iter().map(|&e| e as f64).collect();
+    let f64v: Vec<f64> = f.iter().map(|&fi| fi as f64).collect();
+    let mask64: Vec<f64> = mask.iter().map(|&m| m as f64).collect();
+    let mut ku = vec![0.0_f64; ndof];
+    hex_k_times_u_accumulate_f64(nx, ny, nz, dx, dy, dz, nu, &e64, u, &mut ku);
+    for (k, m) in ku.iter_mut().zip(&mask64) {
+        *k *= *m;
+    }
+    let mut num = 0.0_f64;
+    let mut den = 0.0_f64;
+    for i in 0..ndof {
+        let fi = f64v[i] * mask64[i];
+        let ri = mask64[i] * (f64v[i] - ku[i]);
+        num += ri * ri;
+        den += fi * fi;
+    }
+    num.sqrt() / den.sqrt().max(1e-30_f64)
 }
 
 /// [`hex_equilibrium_rel_residual`] with explicit \(\|Pf\|\), \(\|P(f-Ku)\|\) [N].
@@ -1182,7 +1216,15 @@ pub fn hex_solve_pcg_bisect(
     }
 }
 
-/// f64 PCG lane (bar `packed_*_pcg_f64` parity): native f64 `K·u`, full residual refresh.
+/// Descent-curve sample from an f64 PCG run (probe diagnostics).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct HexPcgDescentSample {
+    pub iteration: usize,
+    pub rel_recursive: f64,
+    pub rel_true: f64,
+}
+
+/// f64 PCG lane: all CG state (`u,r,z,p,α,β`, dots) and `K·u` in f64; bind on f64 `eq_rel`.
 #[allow(clippy::too_many_arguments)]
 fn hex_solve_pcg_masked_f64(
     nx: usize,
@@ -1200,16 +1242,20 @@ fn hex_solve_pcg_masked_f64(
     max_iter: usize,
     use_preconditioner: bool,
     relative_tol: f32,
+    milestone_iters: Option<&[usize]>,
+    mut descent_out: Option<&mut Vec<HexPcgDescentSample>>,
 ) -> HexPcgReport {
     let ndof = u.len();
     let max_it = max_iter.max(1);
-    let tol = relative_tol.max(HEX_PCG_REL_TOL_F64).max(1e-30_f32) as f64;
+    let tol = (relative_tol.max(HEX_PCG_REL_TOL_F64).max(1e-30_f32)) as f64;
 
     let k_char = hex_stiffness_scale(e_cell, dx, dy, dz) as f64;
-    let f_solve: Vec<f64> = f.iter().map(|&fi| fi as f64 / k_char).collect();
+    let e_solve: Vec<f64> = e_cell.iter().map(|&e| e as f64 / k_char).collect();
+    let f_phys: Vec<f64> = f.iter().map(|&fi| fi as f64).collect();
+    let f_solve: Vec<f64> = f_phys.iter().map(|&fi| fi / k_char).collect();
     let mask64: Vec<f64> = mask.iter().map(|&m| m as f64).collect();
 
-    let e_solve_f32: Vec<f32> = e_cell.iter().map(|&e| (e as f64 / k_char) as f32).collect();
+    let e_solve_f32: Vec<f32> = e_solve.iter().map(|&e| e as f32).collect();
     hex_diagonal(nx, ny, nz, dx, dy, dz, nu, &e_solve_f32, diag);
     let diag64: Vec<f64> = diag.iter().map(|&d| d as f64).collect();
 
@@ -1223,20 +1269,27 @@ fn hex_solve_pcg_masked_f64(
     let mut z = vec![0.0_f64; ndof];
     let mut p = vec![0.0_f64; ndof];
 
-    ku.fill(0.0);
-    hex_k_times_u_accumulate_f64(nx, ny, nz, dx, dy, dz, nu, &e_solve_f32, &u64, &mut ku);
+    let projected_ku = |vec: &[f64], out: &mut [f64]| {
+        out.fill(0.0);
+        hex_k_times_u_accumulate_f64(nx, ny, nz, dx, dy, dz, nu, &e_solve, vec, out);
+        for (k, m) in out.iter_mut().zip(&mask64) {
+            *k *= *m;
+        }
+    };
+
+    projected_ku(&u64, &mut ku);
     let mut f_norm = 0.0_f64;
     for i in 0..ndof {
         let fi = f_solve[i] * mask64[i];
         f_norm += fi * fi;
         r[i] = mask64[i] * (f_solve[i] - ku[i]);
     }
-    f_norm = f_norm.sqrt().max(1e-30);
+    f_norm = f_norm.sqrt().max(1e-30_f64);
     let abs_tol = tol * f_norm;
 
     if use_preconditioner {
         for i in 0..ndof {
-            z[i] = mask64[i] * r[i] / diag64[i].max(1e-30);
+            z[i] = mask64[i] * r[i] / diag64[i].max(1e-30_f64);
         }
     } else {
         z.copy_from_slice(&r);
@@ -1245,22 +1298,18 @@ fn hex_solve_pcg_masked_f64(
 
     let mut pcg_iters = 0usize;
     let mut pcg_rel_recursive = f32::INFINITY;
-    let mut rz_old: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum();
+    let mut rz_old: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum::<f64>();
 
     for _ in 0..max_it {
         pcg_iters += 1;
-        ku.fill(0.0);
-        hex_k_times_u_accumulate_f64(nx, ny, nz, dx, dy, dz, nu, &e_solve_f32, &p, &mut ku);
-        for (k, m) in ku.iter_mut().zip(&mask64) {
-            *k *= *m;
-        }
+        projected_ku(&p, &mut ku);
         let pap: f64 = p
             .iter()
             .zip(ku.iter())
             .map(|(pi, ki)| pi * ki)
             .sum::<f64>()
-            .max(1e-30);
-        let alpha = rz_old / pap;
+            .max(1e-30_f64);
+        let alpha: f64 = rz_old / pap;
         if !alpha.is_finite() {
             break;
         }
@@ -1269,44 +1318,53 @@ fn hex_solve_pcg_masked_f64(
             u64[i] = (u64[i] + alpha * p[i]) * mask64[i];
         }
 
-        ku.fill(0.0);
-        hex_k_times_u_accumulate_f64(nx, ny, nz, dx, dy, dz, nu, &e_solve_f32, &u64, &mut ku);
-        for (k, m) in ku.iter_mut().zip(&mask64) {
-            *k *= *m;
-        }
+        projected_ku(&u64, &mut ku);
         for i in 0..ndof {
             r[i] = mask64[i] * (f_solve[i] - ku[i]);
         }
 
         if use_preconditioner {
             for i in 0..ndof {
-                z[i] = mask64[i] * r[i] / diag64[i].max(1e-30);
+                z[i] = mask64[i] * r[i] / diag64[i].max(1e-30_f64);
             }
         } else {
             z.copy_from_slice(&r);
         }
 
-        let rz_new: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum();
+        let rz_new: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum::<f64>();
         if !rz_new.is_finite() {
             break;
         }
-        let beta = rz_new / rz_old.max(1e-30);
+        let beta: f64 = rz_new / rz_old.max(1e-30_f64);
         rz_old = rz_new;
         for i in 0..ndof {
             p[i] = (z[i] + beta * p[i]) * mask64[i];
         }
 
         let r_norm: f64 = r.iter().map(|x| x * x).sum::<f64>().sqrt();
-        pcg_rel_recursive = (r_norm / f_norm) as f32;
+        let r_rec = r_norm / f_norm;
+        pcg_rel_recursive = r_rec as f32;
+        if let Some(targets) = milestone_iters {
+            if targets.contains(&pcg_iters) {
+                let r_true = hex_equilibrium_rel_residual_f64(
+                    nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u64,
+                );
+                if let Some(out) = descent_out.as_deref_mut() {
+                    out.push(HexPcgDescentSample {
+                        iteration: pcg_iters,
+                        rel_recursive: r_rec,
+                        rel_true: r_true,
+                    });
+                }
+            }
+        }
+
         let periodic = pcg_iters % HEX_PCG_TRUE_RESIDUAL_CHECK_PERIOD == 0;
         let recursive_pass = r_norm <= abs_tol;
         if tol > 0.0 && (periodic || recursive_pass) {
-            for i in 0..ndof {
-                u[i] = (u64[i] * mask64[i]) as f32;
-            }
-            let r_true = hex_equilibrium_rel_residual(
-                nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, u,
-            ) as f64;
+            let r_true = hex_equilibrium_rel_residual_f64(
+                nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u64,
+            );
             if r_true <= tol {
                 break;
             }
@@ -1317,7 +1375,9 @@ fn hex_solve_pcg_masked_f64(
         u[i] = (u64[i] * mask64[i]) as f32;
     }
 
-    let rel_true = hex_equilibrium_rel_residual(nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, u);
+    let rel_true = hex_equilibrium_rel_residual_f64(
+        nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u64,
+    ) as f32;
 
     HexPcgReport {
         iterations: pcg_iters,
@@ -1326,6 +1386,49 @@ fn hex_solve_pcg_masked_f64(
         stopping_criterion: HexPcgStoppingCriterion::PlainRNorm,
         stiffness_scale: k_char as f32,
     }
+}
+
+/// Descent-curve probe driver (40×40×4 discrimination).
+#[allow(clippy::too_many_arguments)]
+pub fn hex_solve_pcg_f64_descent_probe(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    f: &[f32],
+    mask: &[f32],
+    u: &mut [f32],
+    diag: &mut [f32],
+    max_iter: usize,
+    use_preconditioner: bool,
+    relative_tol: f32,
+    milestone_iters: &[usize],
+) -> (HexPcgReport, Vec<HexPcgDescentSample>) {
+    let mut descent = Vec::new();
+    let report = hex_solve_pcg_masked_f64(
+        nx,
+        ny,
+        nz,
+        dx,
+        dy,
+        dz,
+        nu,
+        e_cell,
+        f,
+        mask,
+        u,
+        diag,
+        max_iter,
+        use_preconditioner,
+        relative_tol,
+        Some(milestone_iters),
+        Some(&mut descent),
+    );
+    (report, descent)
 }
 
 /// Projected PCG on masked free DOFs (`mask[d]=1` free, `0` fixed). Overwrites `u` in-place.
@@ -1366,6 +1469,8 @@ pub fn hex_solve_pcg_masked(
             max_iter,
             use_preconditioner,
             relative_tol,
+            None,
+            None,
         );
     }
     let report = hex_solve_pcg_bisect(
