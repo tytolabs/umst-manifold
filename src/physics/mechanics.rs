@@ -549,7 +549,6 @@ impl VectorMechanicsSolver {
     }
 
     /// \(\|P(f-Ku)\|_2 / \|Pf\|_2\) after a bar-network solve (B6 H4 static residual; no adjoint PCG).
-    #[cfg(feature = "mechanics-adjoint")]
     #[allow(clippy::too_many_arguments)]
     pub fn bar_network_equilibrium_rel_residual<B: Backend<FloatElem = f32>>(
         displacement: Tensor<B, 3>,

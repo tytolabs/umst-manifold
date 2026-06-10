@@ -18,7 +18,9 @@ use burn::tensor::{
 use super::adjoint::{AdjointComplianceDiagnostics, SimpElasticMaterial};
 use super::mechanics::BarNetworkPcgReport;
 use super::linear::masked_dot;
-use super::q1_hex_elasticity::{hex_cell_strain_energy, hex_equilibrium_rel_residual, hex_solve_pcg_masked};
+use super::q1_hex_elasticity::{
+    hex_cell_strain_energy, hex_equilibrium_rel_residual, hex_solve_pcg_masked,
+};
 use super::time_orchestration::MechanicsInnerLoopConfig;
 
 /// Discrete-adjoint compliance for extruded Q1-hex plates / bricks (batch **1**).

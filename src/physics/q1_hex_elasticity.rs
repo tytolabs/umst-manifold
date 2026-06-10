@@ -643,11 +643,90 @@ pub fn hex_diagonal(
     }
 }
 
+/// f32 quick-scale lane tol — attainable κ·ε floor (evidence: arm-A probe 9×8×2 + 40×40×4, 2026-06-10).
+pub const HEX_PCG_REL_TOL_F32: f32 = 1e-4;
+/// f64 Striatus production lane tol — bar `packed_*_pcg_f64` parity; binds once native f64 `K·u` lands.
+pub const HEX_PCG_REL_TOL_F64: f32 = 1e-6;
+/// Periodic true-residual verification cadence when [`HexPcgBisectConfig::stop_on_true_residual`].
+pub const HEX_PCG_TRUE_RESIDUAL_CHECK_PERIOD: usize = 25;
+
+/// Which norm triggered PCG exit (diagnostic).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HexPcgStoppingCriterion {
+    /// \(\|P(f-Ku)\|_2 / \|Pf\|_2\) after full residual refresh (binding).
+    PlainRNorm,
+}
+
 /// PCG telemetry for [`hex_solve_pcg_masked`].
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct HexPcgReport {
     pub iterations: usize,
+    /// Independent `||P(f-Ku)||/||Pf||` at exit — **binding** for gates and stopping.
     pub rel_residual: f32,
+    /// Inner-loop recursive estimate at exit (should match `rel_residual` when healthy).
+    pub rel_residual_recursive: f32,
+    pub stopping_criterion: HexPcgStoppingCriterion,
+    /// `k_char` used to nondimensionalize `K u = f` (1.0 when not applied).
+    pub stiffness_scale: f32,
+}
+
+/// Bisection axis: committed recursive loop vs bundled refresh+masked-\(p\) rewrite.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HexPcgLoopKind {
+    /// Recursive \(r\) update; unmasked \(u,p\) (d8babee baseline).
+    Original,
+    /// Full \(r=P(f-Ku)\) refresh each iter; masked \(u,p\) (under test).
+    RefreshMaskedP,
+}
+
+/// 2×2 bisection knobs (probe-only; production uses [`hex_solve_pcg_masked`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HexPcgBisectConfig {
+    pub loop_kind: HexPcgLoopKind,
+    pub nondim: bool,
+    /// When true, stop on physical `eq_rel` (production). **False** for isolated bisection.
+    pub stop_on_true_residual: bool,
+}
+
+/// Probe telemetry for [`hex_solve_pcg_bisect`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct HexPcgBisectReport {
+    pub iterations: usize,
+    pub rel_residual_recursive: f32,
+    pub rel_residual_true: f32,
+    pub stiffness_scale: f32,
+    pub u: Vec<f32>,
+}
+
+/// Characteristic stiffness scale for Q1-hex PCG (`≈ E_ref · A / Δx`, same intent as bar `k_char`).
+pub fn hex_stiffness_scale(e_cell: &[f32], dx: f32, dy: f32, dz: f32) -> f32 {
+    let e_hi = e_cell
+        .iter()
+        .copied()
+        .fold(0.0_f32, |a, b| a.max(b))
+        .max(1e-12_f32);
+    let dx_char = dx.min(dy).min(dz).max(1e-12_f32);
+    (e_hi * dy * dz / dx_char).max(1e-30_f32)
+}
+
+fn hex_projected_k_times_u(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    u: &[f32],
+    mask: &[f32],
+    ku: &mut [f32],
+) {
+    ku.fill(0.0);
+    hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, u, ku);
+    for (k, m) in ku.iter_mut().zip(mask) {
+        *k *= *m;
+    }
 }
 
 /// \(\|P(f-Ku)\|_2 / \|Pf\|_2\) after a masked Q1-hex forward solve.
@@ -664,22 +743,15 @@ pub fn hex_equilibrium_rel_residual(
     mask: &[f32],
     u: &[f32],
 ) -> f32 {
-    let ndof = f.len();
-    let mut ku = vec![0.0_f32; ndof];
-    hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, u, &mut ku);
-    let mut num = 0.0_f32;
-    let mut den = 0.0_f32;
-    for i in 0..ndof {
-        let fi = f[i] * mask[i];
-        let ri = mask[i] * (f[i] - ku[i]);
-        num += ri * ri;
-        den += fi * fi;
-    }
-    num.sqrt() / den.sqrt().max(1e-30)
+    let u_ref = u;
+    masked_projected_residual_parts(f, mask, |ku| {
+        hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, u_ref, ku);
+    })
+    .rel_residual
 }
 
-/// Projected PCG on masked free DOFs (`mask[d]=1` free, `0` fixed). Overwrites `u` in-place.
-pub fn hex_solve_pcg_masked(
+/// [`hex_equilibrium_rel_residual`] with explicit \(\|Pf\|\), \(\|P(f-Ku)\|\) [N].
+pub fn hex_equilibrium_residual_parts(
     nx: usize,
     ny: usize,
     nz: usize,
@@ -690,33 +762,118 @@ pub fn hex_solve_pcg_masked(
     e_cell: &[f32],
     f: &[f32],
     mask: &[f32],
-    u: &mut [f32],
+    u: &[f32],
+) -> MaskedResidualParts {
+    let u_ref = u;
+    masked_projected_residual_parts(f, mask, |ku| {
+        hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, u_ref, ku);
+    })
+}
+
+/// Absolute and relative masked equilibrium residual (SI: force components in N).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct MaskedResidualParts {
+    /// \(\|P(f-Ku)\|_2\) [N].
+    pub abs_residual: f32,
+    /// \(\|Pf\|_2\) [N].
+    pub abs_rhs: f32,
+    /// `abs_residual / abs_rhs` (dimensionless).
+    pub rel_residual: f32,
+}
+
+/// \(\|P(f-Ku)\|_2 / \|Pf\|_2\) with caller-supplied masked \(K\) matvec.
+pub fn masked_projected_rel_residual(
+    f: &[f32],
+    mask: &[f32],
+    _u: &[f32],
+    apply_k: impl FnMut(&mut [f32]),
+) -> f32 {
+    masked_projected_residual_parts(f, mask, apply_k).rel_residual
+}
+
+/// Same norm as [`masked_projected_rel_residual`], with explicit SI force magnitudes.
+pub fn masked_projected_residual_parts(
+    f: &[f32],
+    mask: &[f32],
+    mut apply_k: impl FnMut(&mut [f32]),
+) -> MaskedResidualParts {
+    let ndof = f.len();
+    let mut ku = vec![0.0_f32; ndof];
+    apply_k(&mut ku);
+    for (k, m) in ku.iter_mut().zip(mask) {
+        *k *= *m;
+    }
+    let mut num = 0.0_f32;
+    let mut den = 0.0_f32;
+    for i in 0..ndof {
+        let fi = f[i] * mask[i];
+        let ri = mask[i] * (f[i] - ku[i]);
+        num += ri * ri;
+        den += fi * fi;
+    }
+    let abs_residual = num.sqrt();
+    let abs_rhs = den.sqrt().max(1e-30_f32);
+    MaskedResidualParts {
+        abs_residual,
+        abs_rhs,
+        rel_residual: abs_residual / abs_rhs,
+    }
+}
+
+/// 2×2 bisection driver (probe-only). Does not mutate caller `u`.
+#[allow(clippy::too_many_arguments)]
+pub fn hex_solve_pcg_bisect(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    f: &[f32],
+    mask: &[f32],
     diag: &mut [f32],
     scratch_ku: &mut [f32],
     max_iter: usize,
     use_preconditioner: bool,
     relative_tol: f32,
-) -> HexPcgReport {
+    cfg: HexPcgBisectConfig,
+) -> HexPcgBisectReport {
     let nx1 = nx + 1;
     let ny1 = ny + 1;
     let n = nx1 * ny1 * (nz + 1);
     let ndof = n * 3;
     let max_it = max_iter.max(1);
+    let tol = relative_tol.max(1e-30_f32);
 
-    hex_diagonal(nx, ny, nz, dx, dy, dz, nu, e_cell, diag);
+    let k_char = if cfg.nondim {
+        hex_stiffness_scale(e_cell, dx, dy, dz)
+    } else {
+        1.0_f32
+    };
+    let e_work: Vec<f32> = if cfg.nondim {
+        e_cell.iter().map(|e| e / k_char).collect()
+    } else {
+        e_cell.to_vec()
+    };
+    let f_work: Vec<f32> = if cfg.nondim {
+        f.iter().map(|fi| fi / k_char).collect()
+    } else {
+        f.to_vec()
+    };
 
-    for i in 0..ndof {
-        u[i] *= mask[i];
-    }
+    hex_diagonal(nx, ny, nz, dx, dy, dz, nu, &e_work, diag);
 
+    let mut u = vec![0.0_f32; ndof];
     scratch_ku.fill(0.0);
-    hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, u, scratch_ku);
+    hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, &e_work, &u, scratch_ku);
     let mut r = vec![0.0_f32; ndof];
     let mut f_norm = 0.0_f32;
     for i in 0..ndof {
-        let fi = f[i] * mask[i];
+        let fi = f_work[i] * mask[i];
         f_norm += fi * fi;
-        r[i] = mask[i] * (f[i] - scratch_ku[i]);
+        r[i] = mask[i] * (f_work[i] - scratch_ku[i]);
     }
     f_norm = f_norm.sqrt().max(1e-30_f32);
 
@@ -735,35 +892,66 @@ pub fn hex_solve_pcg_masked(
         rz_old += r[i] * z[i];
     }
 
-    let tol = relative_tol.max(1e-30_f32);
     let mut pcg_iters = 0usize;
-    let mut pcg_rel = f32::INFINITY;
+    let mut pcg_rel_recursive = f32::INFINITY;
+
     for _ in 0..max_it {
         pcg_iters += 1;
         scratch_ku.fill(0.0);
-        hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, &p, scratch_ku);
+        hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, &e_work, &p, scratch_ku);
+
         let mut pap = 0.0_f32;
         for i in 0..ndof {
             pap += p[i] * mask[i] * scratch_ku[i];
         }
         pap = pap.max(1e-30_f32);
         let alpha = rz_old / pap;
-        for i in 0..ndof {
-            u[i] += alpha * p[i];
+
+        match cfg.loop_kind {
+            HexPcgLoopKind::Original => {
+                for i in 0..ndof {
+                    u[i] += alpha * p[i];
+                }
+                for i in 0..ndof {
+                    r[i] -= alpha * mask[i] * scratch_ku[i];
+                }
+            }
+            HexPcgLoopKind::RefreshMaskedP => {
+                for i in 0..ndof {
+                    u[i] = mask[i] * (u[i] + alpha * p[i]);
+                }
+                hex_projected_k_times_u(
+                    nx, ny, nz, dx, dy, dz, nu, &e_work, &u, mask, scratch_ku,
+                );
+                for i in 0..ndof {
+                    r[i] = mask[i] * (f_work[i] - scratch_ku[i]);
+                }
+            }
         }
-        for i in 0..ndof {
-            r[i] -= alpha * mask[i] * scratch_ku[i];
-        }
+
         let mut r_norm = 0.0_f32;
         for i in 0..ndof {
             let v = r[i] * mask[i];
             r_norm += v * v;
         }
         r_norm = r_norm.sqrt();
-        pcg_rel = r_norm / f_norm;
-        if relative_tol > 0.0 && r_norm < tol * f_norm {
+        pcg_rel_recursive = r_norm / f_norm;
+        if cfg.stop_on_true_residual {
+            // Recursive residual is the cheap trigger; bind exit on one true `eq_rel` matvec.
+            let periodic = pcg_iters % HEX_PCG_TRUE_RESIDUAL_CHECK_PERIOD == 0;
+            let recursive_pass = r_norm <= tol * f_norm;
+            if relative_tol > 0.0 && (periodic || recursive_pass) {
+                let r_true = hex_equilibrium_rel_residual(
+                    nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u,
+                );
+                if r_true <= tol {
+                    break;
+                }
+            }
+        } else if relative_tol > 0.0 && r_norm < tol * f_norm {
             break;
         }
+
         if use_preconditioner {
             for i in 0..ndof {
                 z[i] = mask[i] * r[i] / diag[i];
@@ -771,14 +959,25 @@ pub fn hex_solve_pcg_masked(
         } else {
             z.copy_from_slice(&r);
         }
+
         let mut rz_new = 0.0_f32;
         for i in 0..ndof {
             rz_new += r[i] * z[i];
         }
         let beta = (rz_new / rz_old.max(1e-30_f32)).max(0.0);
         rz_old = rz_new;
-        for i in 0..ndof {
-            p[i] = z[i] + beta * p[i];
+
+        match cfg.loop_kind {
+            HexPcgLoopKind::Original => {
+                for i in 0..ndof {
+                    p[i] = z[i] + beta * p[i];
+                }
+            }
+            HexPcgLoopKind::RefreshMaskedP => {
+                for i in 0..ndof {
+                    p[i] = mask[i] * (z[i] + beta * p[i]);
+                }
+            }
         }
     }
 
@@ -786,8 +985,67 @@ pub fn hex_solve_pcg_masked(
         u[i] *= mask[i];
     }
 
-    HexPcgReport {
+    let rel_true =
+        hex_equilibrium_rel_residual(nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u);
+
+    HexPcgBisectReport {
         iterations: pcg_iters,
-        rel_residual: pcg_rel,
+        rel_residual_recursive: pcg_rel_recursive,
+        rel_residual_true: rel_true,
+        stiffness_scale: k_char,
+        u,
+    }
+}
+
+/// Projected PCG on masked free DOFs (`mask[d]=1` free, `0` fixed). Overwrites `u` in-place.
+///
+/// Production: d8babee recursive loop + `k_char` nondim; `eq_rel` is the binding stop criterion.
+pub fn hex_solve_pcg_masked(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    f: &[f32],
+    mask: &[f32],
+    u: &mut [f32],
+    diag: &mut [f32],
+    scratch_ku: &mut [f32],
+    max_iter: usize,
+    use_preconditioner: bool,
+    relative_tol: f32,
+) -> HexPcgReport {
+    let report = hex_solve_pcg_bisect(
+        nx,
+        ny,
+        nz,
+        dx,
+        dy,
+        dz,
+        nu,
+        e_cell,
+        f,
+        mask,
+        diag,
+        scratch_ku,
+        max_iter,
+        use_preconditioner,
+        relative_tol,
+        HexPcgBisectConfig {
+            loop_kind: HexPcgLoopKind::Original,
+            nondim: true,
+            stop_on_true_residual: true,
+        },
+    );
+    u.copy_from_slice(&report.u);
+    HexPcgReport {
+        iterations: report.iterations,
+        rel_residual: report.rel_residual_true,
+        rel_residual_recursive: report.rel_residual_recursive,
+        stopping_criterion: HexPcgStoppingCriterion::PlainRNorm,
+        stiffness_scale: report.stiffness_scale,
     }
 }
