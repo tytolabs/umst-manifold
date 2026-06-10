@@ -12,6 +12,16 @@ updates:
       # sha2 0.11: Digest::finalize() returns hybrid-array; breaks catalog build_script hex formatting (see docs/DEPENDABOT_TRIAGE.md).
       - dependency-name: "sha2"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "petgraph"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "bincode"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "burn"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "burn-ndarray"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "rand"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

@@ -7,3 +7,14 @@
 **Dependabot:** PR #13 closed; `.github/dependabot.yml` ignores `sha2` semver-major bumps.
 
 **Action when revisiting:** migrate build script to `hex::encode(hasher.finalize())` or equivalent, run `verify_umst_stack.sh` + catalog-drift, remove ignore rule, merge bump.
+
+## Deferred majors (2026-06-10 CI-green wave)
+
+| Dependency | Reason |
+|------------|--------|
+| `petgraph` 0.8 | API churn; not in CI-green scope |
+| `bincode` 3.x | workspace pinned `=2.0.0-rc.3` |
+| `burn` / `burn-ndarray` 0.21 | ML stack major; separate upgrade wave |
+| `rand` 0.10 | transitive API drift across workspace |
+
+PRs closed with `.github/dependabot.yml` `semver-major` ignore rules.
