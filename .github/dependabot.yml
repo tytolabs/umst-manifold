@@ -9,6 +9,9 @@ updates:
     ignore:
       # `umst-math` is a workspace path member (not a crates.io crate).
       - dependency-name: "umst-math"
+      # sha2 0.11: Digest::finalize() returns hybrid-array; breaks catalog build_script hex formatting (see docs/DEPENDABOT_TRIAGE.md).
+      - dependency-name: "sha2"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
