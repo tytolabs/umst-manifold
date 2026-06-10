@@ -361,6 +361,191 @@ fn d_times_eps(d: &[[f32; 6]; 6], e: &[f32; 6]) -> [f32; 6] {
     s
 }
 
+fn build_d_voigt_f64(e: f64, nu: f32) -> [[f64; 6]; 6] {
+    let nu = nu as f64;
+    let lam = e * nu / ((1.0 + nu) * (1.0 - 2.0 * nu)).max(1e-30);
+    let mu = e / (2.0 * (1.0 + nu)).max(1e-30);
+    let l2m = lam + 2.0 * mu;
+    [
+        [l2m, lam, lam, 0.0, 0.0, 0.0],
+        [lam, l2m, lam, 0.0, 0.0, 0.0],
+        [lam, lam, l2m, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, mu, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, mu, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, mu],
+    ]
+}
+
+fn d_times_eps_f64(d: &[[f64; 6]; 6], e: &[f64; 6]) -> [f64; 6] {
+    let mut s = [0.0_f64; 6];
+    for i in 0..6 {
+        let mut sum = 0.0_f64;
+        for j in 0..6 {
+            sum += d[i][j] * e[j];
+        }
+        s[i] = sum;
+    }
+    s
+}
+
+fn bbar_times_u_f64(gn: [[f32; 3]; 8], gn_bar: [[f32; 3]; 8], u24: &[f64; 24]) -> [f64; 6] {
+    let mut ev_bar = 0.0_f64;
+    let mut exx = 0.0_f64;
+    let mut eyy = 0.0_f64;
+    let mut ezz = 0.0_f64;
+    let mut e3 = 0.0_f64;
+    let mut e4 = 0.0_f64;
+    let mut e5 = 0.0_f64;
+    for i in 0..8 {
+        let ui = u24[i * 3];
+        let vi = u24[i * 3 + 1];
+        let wi = u24[i * 3 + 2];
+        let gx = gn[i][0] as f64;
+        let gy = gn[i][1] as f64;
+        let gz = gn[i][2] as f64;
+        exx += gx * ui;
+        eyy += gy * vi;
+        ezz += gz * wi;
+        e3 += gy * ui + gx * vi;
+        e4 += gz * vi + gy * wi;
+        e5 += gz * ui + gx * wi;
+        ev_bar += gn_bar[i][0] as f64 * ui + gn_bar[i][1] as f64 * vi + gn_bar[i][2] as f64 * wi;
+    }
+    let ev_pt = exx + eyy + ezz;
+    let delta = (ev_bar - ev_pt) / 3.0;
+    [exx + delta, eyy + delta, ezz + delta, e3, e4, e5]
+}
+
+fn bbar_times_u_transverse_shear_centroid_f64(
+    gn: [[f32; 3]; 8],
+    gn_bar: [[f32; 3]; 8],
+    u24: &[f64; 24],
+) -> [f64; 6] {
+    let mut eps = bbar_times_u_f64(gn, gn_bar, u24);
+    let eps_c = bbar_times_u_f64(gn_bar, gn_bar, u24);
+    eps[4] = eps_c[4];
+    eps[5] = eps_c[5];
+    eps
+}
+
+fn bbar_t_times_sigma_transverse_shear_centroid_f64(
+    gn: [[f32; 3]; 8],
+    gn_bar: [[f32; 3]; 8],
+    sig: &[f64; 6],
+) -> [f64; 24] {
+    let mut f = [0.0_f64; 24];
+    let sxx = sig[0];
+    let syy = sig[1];
+    let szz = sig[2];
+    let sxy = sig[3];
+    let syz = sig[4];
+    let sxz = sig[5];
+    let sh = (sxx + syy + szz) / 3.0;
+    let dxx = sxx - sh;
+    let dyy = syy - sh;
+    let dzz = szz - sh;
+    for i in 0..8 {
+        let gx = gn[i][0] as f64;
+        let gy = gn[i][1] as f64;
+        let gz = gn[i][2] as f64;
+        let gxb = gn_bar[i][0] as f64;
+        let gyb = gn_bar[i][1] as f64;
+        let gzb = gn_bar[i][2] as f64;
+        f[i * 3] += gx * dxx + gy * sxy + gzb * sxz + gxb * sh;
+        f[i * 3 + 1] += gy * dyy + gx * sxy + gzb * syz + gyb * sh;
+        f[i * 3 + 2] += gz * dzz + gyb * syz + gxb * sxz + gzb * sh;
+    }
+    f
+}
+
+/// Native f64 `y += K u` (Striatus lane; tensors remain f32 at boundaries).
+pub fn hex_k_times_u_accumulate_f64(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    u: &[f64],
+    y: &mut [f64],
+) {
+    let nx1 = nx + 1;
+    let ny1 = ny + 1;
+    for cz in 0..nz {
+        for cy in 0..ny {
+            for cx in 0..nx {
+                let c = cx + cy * nx + cz * nx * ny;
+                let e = e_cell[c].max(1e-30_f32) as f64;
+                let d = build_d_voigt_f64(e, nu);
+                let x_corner = cell_corner_coords(cx, cy, cz, dx, dy, dz);
+                let mut u24 = [0.0_f64; 24];
+                for (k, _corner) in CORNER_XI.iter().enumerate() {
+                    let (ix, iy, iz) = match k {
+                        0 => (cx, cy, cz),
+                        1 => (cx + 1, cy, cz),
+                        2 => (cx + 1, cy + 1, cz),
+                        3 => (cx, cy + 1, cz),
+                        4 => (cx, cy, cz + 1),
+                        5 => (cx + 1, cy, cz + 1),
+                        6 => (cx + 1, cy + 1, cz + 1),
+                        7 => (cx, cy + 1, cz + 1),
+                        _ => unreachable!(),
+                    };
+                    let nid = idx_node(nx1, ny1, ix, iy, iz);
+                    u24[k * 3] = u[nid * 3];
+                    u24[k * 3 + 1] = u[nid * 3 + 1];
+                    u24[k * 3 + 2] = u[nid * 3 + 2];
+                }
+                let Some((gn_bar, _det_c)) = physical_shape_gradients(x_corner, 0.0, 0.0, 0.0)
+                else {
+                    continue;
+                };
+                for &sg in &GAUSS1D {
+                    for &tg in &GAUSS1D {
+                        for &zg in &GAUSS1D {
+                            let Some((gn, detj)) = physical_shape_gradients(x_corner, sg, tg, zg)
+                            else {
+                                continue;
+                            };
+                            let wdet = (WG * WG * WG * detj) as f64;
+                            let eps =
+                                bbar_times_u_transverse_shear_centroid_f64(gn, gn_bar, &u24);
+                            let sig = d_times_eps_f64(&d, &eps);
+                            let fe = bbar_t_times_sigma_transverse_shear_centroid_f64(
+                                gn, gn_bar, &sig,
+                            );
+                            for k in 0..8 {
+                                let (ix, iy, iz) = match k {
+                                    0 => (cx, cy, cz),
+                                    1 => (cx + 1, cy, cz),
+                                    2 => (cx + 1, cy + 1, cz),
+                                    3 => (cx, cy + 1, cz),
+                                    4 => (cx, cy, cz + 1),
+                                    5 => (cx + 1, cy, cz + 1),
+                                    6 => (cx + 1, cy + 1, cz + 1),
+                                    7 => (cx, cy + 1, cz + 1),
+                                    _ => unreachable!(),
+                                };
+                                let nid = idx_node(nx1, ny1, ix, iy, iz);
+                                y[nid * 3] += fe[k * 3] * wdet;
+                                y[nid * 3 + 1] += fe[k * 3 + 1] * wdet;
+                                y[nid * 3 + 2] += fe[k * 3 + 2] * wdet;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Striatus-scale grids use the f64 solve lane (`HEX_PCG_REL_TOL_F64`).
+pub fn hex_pcg_use_f64_lane(nx: usize, ny: usize, nz: usize) -> bool {
+    nx.saturating_mul(ny).saturating_mul(nz) >= 512
+}
+
 /// Matrix-free `y += K u` for the structured hex grid. `e_cell[c]` is Young's modulus in cell `c`.
 pub fn hex_k_times_u_accumulate(
     nx: usize,
@@ -997,9 +1182,155 @@ pub fn hex_solve_pcg_bisect(
     }
 }
 
+/// f64 PCG lane (bar `packed_*_pcg_f64` parity): native f64 `K·u`, full residual refresh.
+#[allow(clippy::too_many_arguments)]
+fn hex_solve_pcg_masked_f64(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    f: &[f32],
+    mask: &[f32],
+    u: &mut [f32],
+    diag: &mut [f32],
+    max_iter: usize,
+    use_preconditioner: bool,
+    relative_tol: f32,
+) -> HexPcgReport {
+    let ndof = u.len();
+    let max_it = max_iter.max(1);
+    let tol = relative_tol.max(HEX_PCG_REL_TOL_F64).max(1e-30_f32) as f64;
+
+    let k_char = hex_stiffness_scale(e_cell, dx, dy, dz) as f64;
+    let f_solve: Vec<f64> = f.iter().map(|&fi| fi as f64 / k_char).collect();
+    let mask64: Vec<f64> = mask.iter().map(|&m| m as f64).collect();
+
+    let e_solve_f32: Vec<f32> = e_cell.iter().map(|&e| (e as f64 / k_char) as f32).collect();
+    hex_diagonal(nx, ny, nz, dx, dy, dz, nu, &e_solve_f32, diag);
+    let diag64: Vec<f64> = diag.iter().map(|&d| d as f64).collect();
+
+    let mut u64: Vec<f64> = u.iter().map(|&x| x as f64).collect();
+    for i in 0..ndof {
+        u64[i] *= mask64[i];
+    }
+
+    let mut ku = vec![0.0_f64; ndof];
+    let mut r = vec![0.0_f64; ndof];
+    let mut z = vec![0.0_f64; ndof];
+    let mut p = vec![0.0_f64; ndof];
+
+    ku.fill(0.0);
+    hex_k_times_u_accumulate_f64(nx, ny, nz, dx, dy, dz, nu, &e_solve_f32, &u64, &mut ku);
+    let mut f_norm = 0.0_f64;
+    for i in 0..ndof {
+        let fi = f_solve[i] * mask64[i];
+        f_norm += fi * fi;
+        r[i] = mask64[i] * (f_solve[i] - ku[i]);
+    }
+    f_norm = f_norm.sqrt().max(1e-30);
+    let abs_tol = tol * f_norm;
+
+    if use_preconditioner {
+        for i in 0..ndof {
+            z[i] = mask64[i] * r[i] / diag64[i].max(1e-30);
+        }
+    } else {
+        z.copy_from_slice(&r);
+    }
+    p.copy_from_slice(&z);
+
+    let mut pcg_iters = 0usize;
+    let mut pcg_rel_recursive = f32::INFINITY;
+    let mut rz_old: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum();
+
+    for _ in 0..max_it {
+        pcg_iters += 1;
+        ku.fill(0.0);
+        hex_k_times_u_accumulate_f64(nx, ny, nz, dx, dy, dz, nu, &e_solve_f32, &p, &mut ku);
+        for (k, m) in ku.iter_mut().zip(&mask64) {
+            *k *= *m;
+        }
+        let pap: f64 = p
+            .iter()
+            .zip(ku.iter())
+            .map(|(pi, ki)| pi * ki)
+            .sum::<f64>()
+            .max(1e-30);
+        let alpha = rz_old / pap;
+        if !alpha.is_finite() {
+            break;
+        }
+
+        for i in 0..ndof {
+            u64[i] = (u64[i] + alpha * p[i]) * mask64[i];
+        }
+
+        ku.fill(0.0);
+        hex_k_times_u_accumulate_f64(nx, ny, nz, dx, dy, dz, nu, &e_solve_f32, &u64, &mut ku);
+        for (k, m) in ku.iter_mut().zip(&mask64) {
+            *k *= *m;
+        }
+        for i in 0..ndof {
+            r[i] = mask64[i] * (f_solve[i] - ku[i]);
+        }
+
+        if use_preconditioner {
+            for i in 0..ndof {
+                z[i] = mask64[i] * r[i] / diag64[i].max(1e-30);
+            }
+        } else {
+            z.copy_from_slice(&r);
+        }
+
+        let rz_new: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum();
+        if !rz_new.is_finite() {
+            break;
+        }
+        let beta = rz_new / rz_old.max(1e-30);
+        rz_old = rz_new;
+        for i in 0..ndof {
+            p[i] = (z[i] + beta * p[i]) * mask64[i];
+        }
+
+        let r_norm: f64 = r.iter().map(|x| x * x).sum::<f64>().sqrt();
+        pcg_rel_recursive = (r_norm / f_norm) as f32;
+        let periodic = pcg_iters % HEX_PCG_TRUE_RESIDUAL_CHECK_PERIOD == 0;
+        let recursive_pass = r_norm <= abs_tol;
+        if tol > 0.0 && (periodic || recursive_pass) {
+            for i in 0..ndof {
+                u[i] = (u64[i] * mask64[i]) as f32;
+            }
+            let r_true = hex_equilibrium_rel_residual(
+                nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, u,
+            ) as f64;
+            if r_true <= tol {
+                break;
+            }
+        }
+    }
+
+    for i in 0..ndof {
+        u[i] = (u64[i] * mask64[i]) as f32;
+    }
+
+    let rel_true = hex_equilibrium_rel_residual(nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, u);
+
+    HexPcgReport {
+        iterations: pcg_iters,
+        rel_residual: rel_true,
+        rel_residual_recursive: pcg_rel_recursive,
+        stopping_criterion: HexPcgStoppingCriterion::PlainRNorm,
+        stiffness_scale: k_char as f32,
+    }
+}
+
 /// Projected PCG on masked free DOFs (`mask[d]=1` free, `0` fixed). Overwrites `u` in-place.
 ///
-/// Production: d8babee recursive loop + `k_char` nondim; `eq_rel` is the binding stop criterion.
+/// Quick grids: f32 lane + `HEX_PCG_REL_TOL_F32`. Striatus (`hex_pcg_use_f64_lane`): f64 lane + `HEX_PCG_REL_TOL_F64`.
 pub fn hex_solve_pcg_masked(
     nx: usize,
     ny: usize,
@@ -1018,6 +1349,25 @@ pub fn hex_solve_pcg_masked(
     use_preconditioner: bool,
     relative_tol: f32,
 ) -> HexPcgReport {
+    if hex_pcg_use_f64_lane(nx, ny, nz) {
+        return hex_solve_pcg_masked_f64(
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            nu,
+            e_cell,
+            f,
+            mask,
+            u,
+            diag,
+            max_iter,
+            use_preconditioner,
+            relative_tol,
+        );
+    }
     let report = hex_solve_pcg_bisect(
         nx,
         ny,

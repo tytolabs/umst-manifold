@@ -7,8 +7,8 @@
 
 use umst_manifold::physics::extruded_plate::ExtrudedPlateMechanics;
 use umst_manifold::physics::q1_hex_elasticity::{
-    hex_equilibrium_rel_residual, hex_equilibrium_residual_parts, hex_solve_pcg_masked,
-    HEX_PCG_REL_TOL_F32,
+    hex_equilibrium_rel_residual, hex_equilibrium_residual_parts, hex_pcg_use_f64_lane,
+    hex_solve_pcg_masked, HEX_PCG_REL_TOL_F32, HEX_PCG_REL_TOL_F64,
 };
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
@@ -53,10 +53,15 @@ fn run_probe_line(nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32, ma
     let e_cell = uniform_e_cell(nx, ny, nz, e);
     let bf = plate.body_force_top_uniform_pressure(50.0);
     let bm = harness_pin_bottom_perimeter(nx, ny, nz);
+    let lane_tol = if hex_pcg_use_f64_lane(nx, ny, nz) {
+        HEX_PCG_REL_TOL_F64
+    } else {
+        HEX_PCG_REL_TOL_F32
+    };
     let cfg = MechanicsInnerLoopConfig {
         max_cg_iterations: max_cg,
-        cg_tolerance: HEX_PCG_REL_TOL_F32,
-        pcg_tolerance: HEX_PCG_REL_TOL_F32,
+        cg_tolerance: lane_tol,
+        pcg_tolerance: lane_tol,
         use_preconditioner: true,
         max_equilibrium_substeps: 1,
     };
@@ -101,8 +106,13 @@ fn run_probe_line(nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32, ma
     } else {
         "none"
     };
+    let lane = if hex_pcg_use_f64_lane(nx, ny, nz) {
+        "f64"
+    } else {
+        "f32"
+    };
     eprintln!(
-        "Q1_HEX_RESIDUAL_PROBE {nx}x{ny}x{nz}: iters={} |Pf|={:.3e}N |Pr|={:.3e}N rel=|Pr|/|Pf|={:.3e} r_recursive={:.3e} tol={:.3e} units=dimensionless_ratio stop=plain_r_norm precond={precond}",
+        "Q1_HEX_RESIDUAL_PROBE {nx}x{ny}x{nz} lane={lane}: iters={} |Pf|={:.3e}N |Pr|={:.3e}N rel=|Pr|/|Pf|={:.3e} r_recursive={:.3e} tol={:.3e} units=dimensionless_ratio stop=plain_r_norm precond={precond}",
         report.iterations,
         parts.abs_rhs,
         parts.abs_residual,
