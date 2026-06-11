@@ -16,8 +16,8 @@ use burn::tensor::{
 };
 
 use super::adjoint::{AdjointComplianceDiagnostics, AdjointFiniteStageAudit, SimpElasticMaterial};
-use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
 use super::linear::masked_dot;
+use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
 use super::q1_hex_elasticity::{
     hex_cell_strain_energy, hex_equilibrium_rel_residual, hex_pcg_use_f64_lane,
     hex_solve_pcg_masked,
@@ -186,6 +186,7 @@ struct HexForwardState {
 }
 
 impl AdjointComplianceQ1Hex {
+    #[allow(clippy::too_many_arguments)]
     fn forward_state(
         rho_flat: &[f32],
         nx: usize,
@@ -430,11 +431,16 @@ impl AdjointComplianceQ1Hex {
 
         // Nodal scatter dot ≡ `Σ_e g_e ρ_e` (eight-corner mean); replaces Burn `gather`
         // backward which yielded zero DensityNet grads on the Striatus tape (H5).
-        let sens_ad = Tensor::<B, 3>::from_inner(Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
-            Data::new(state.nodal_sensitivity.clone(), Shape::new([1, n_nodes, 1])),
-            &device,
-        ));
-        let rho_det_ad = Tensor::<B, 3>::from_inner(Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
+        let sens_ad = Tensor::<B, 3>::from_inner(
+            Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
+                Data::new(state.nodal_sensitivity.clone(), Shape::new([1, n_nodes, 1])),
+                &device,
+            ),
+        );
+        let rho_det_ad = Tensor::<B, 3>::from_inner(Tensor::<
+            <B as AutodiffBackend>::InnerBackend,
+            3,
+        >::from_data(
             Data::new(rho_flat.clone(), Shape::new([1, n_nodes, 1])),
             &device,
         ));
@@ -562,14 +568,19 @@ impl AdjointComplianceQ1Hex {
             .sum_dim(2)
             .div_scalar(8.0_f32)
             .reshape([1, n_cells, 1]);
-        let rho_e_det_ad = Tensor::<B, 3>::from_inner(Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
+        let rho_e_det_ad = Tensor::<B, 3>::from_inner(Tensor::<
+            <B as AutodiffBackend>::InnerBackend,
+            3,
+        >::from_data(
             Data::new(state.rho_e_law.clone(), Shape::new([1, n_cells, 1])),
             &device,
         ));
-        let ge_ad = Tensor::<B, 3>::from_inner(Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
-            Data::new(state.ge.clone(), Shape::new([1, n_cells, 1])),
-            &device,
-        ));
+        let ge_ad = Tensor::<B, 3>::from_inner(
+            Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
+                Data::new(state.ge.clone(), Shape::new([1, n_cells, 1])),
+                &device,
+            ),
+        );
         let lin_a = ge_ad.clone().mul(rho_e_ad).sum();
         let lin_b = ge_ad.mul(rho_e_det_ad).sum();
         let c_pad = Tensor::<B, 1>::from_inner(comp);

@@ -6,6 +6,7 @@
 //! formal_anchor: Track B6 / H4 fix sequence
 
 #![cfg(feature = "mechanics-adjoint")]
+#![allow(clippy::type_complexity, dead_code)]
 
 use burn::tensor::{backend::Backend, Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
@@ -77,11 +78,7 @@ impl<Bk: Backend<FloatElem = f32>> BarAssembly<Bk> {
         }
     }
 
-    fn projected_matvec(
-        &self,
-        u: Tensor<Bk, 3>,
-        mask: &Tensor<Bk, 3>,
-    ) -> Tensor<Bk, 3> {
+    fn projected_matvec(&self, u: Tensor<Bk, 3>, mask: &Tensor<Bk, 3>) -> Tensor<Bk, 3> {
         let ku = VectorMechanicsSolver::bar_matvec(
             u,
             &self.k_axial,
@@ -96,10 +93,7 @@ impl<Bk: Backend<FloatElem = f32>> BarAssembly<Bk> {
     }
 
     fn projected_inner(&self, a: &Tensor<Bk, 3>, b: &Tensor<Bk, 3>) -> f32 {
-        a.clone()
-            .mul(b.clone())
-            .sum()
-            .into_scalar()
+        a.clone().mul(b.clone()).sum().into_scalar()
     }
 }
 
@@ -123,7 +117,12 @@ fn projected_rel_residual_bn3<Bk: Backend<FloatElem = f32>>(
 }
 
 /// Matches cartridge harness [`pin_bottom_perimeter_inner`]: perimeter in **xy** at **z = 0** only.
-fn harness_pin_bottom_perimeter(nx: usize, ny: usize, nz: usize, device: &NdArrayDevice) -> Tensor<B, 3> {
+fn harness_pin_bottom_perimeter(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    device: &NdArrayDevice,
+) -> Tensor<B, 3> {
     let nx1 = nx + 1;
     let ny1 = ny + 1;
     let n = nx1 * ny1 * (nz + 1);
@@ -197,10 +196,7 @@ fn quick_plate_fixture() -> (
     (plate, dev, edges, coords, e_node, mask, area)
 }
 
-fn stiffness_bn2<Bk: Backend<FloatElem = f32>>(
-    e_node: Tensor<Bk, 3>,
-    nu: f32,
-) -> Tensor<Bk, 3> {
+fn stiffness_bn2<Bk: Backend<FloatElem = f32>>(e_node: Tensor<Bk, 3>, nu: f32) -> Tensor<Bk, 3> {
     let device = e_node.device();
     let [batch, n, _] = e_node.dims();
     let nu_t = Tensor::<Bk, 3>::full([batch, n, 1], nu, &device);
@@ -250,7 +246,9 @@ fn chain_1d_fixture(
     let mut bf = vec![0.0_f32; n * 3];
     bf[(n - 1) * 3] = f_tip;
     let body_force = Tensor::from_data(Data::new(bf, Shape::new([1, n, 3])), &dev);
-    (dev, coords, edges_b1, stiffness, damage, mask, body_force, a)
+    (
+        dev, coords, edges_b1, stiffness, damage, mask, body_force, a,
+    )
 }
 
 #[test]
@@ -296,11 +294,7 @@ fn two_node_rel_residual_metric_sane_and_converged() {
         area,
     );
 
-    let u_tip = u
-        .clone()
-        .slice([0..1, 1..2, 0..1])
-        .into_data()
-        .value[0];
+    let u_tip = u.clone().slice([0..1, 1..2, 0..1]).into_data().value[0];
 
     assert!(
         pcg.rel_residual < 1e-6,
@@ -328,17 +322,22 @@ fn quick_plate_operator_symmetry_under_harness_pins() {
     for seed in [11_u64, 29, 97] {
         let v_raw = seeded_vec3n(n, seed, 1.0);
         let w_raw = seeded_vec3n(n, seed.wrapping_add(1), 1.0);
-        let v = mask
-            .clone()
-            .mul(Tensor::from_data(Data::new(v_raw, Shape::new([1, n, 3])), &dev));
-        let w = mask
-            .clone()
-            .mul(Tensor::from_data(Data::new(w_raw, Shape::new([1, n, 3])), &dev));
+        let v = mask.clone().mul(Tensor::from_data(
+            Data::new(v_raw, Shape::new([1, n, 3])),
+            &dev,
+        ));
+        let w = mask.clone().mul(Tensor::from_data(
+            Data::new(w_raw, Shape::new([1, n, 3])),
+            &dev,
+        ));
         let kv = asm.projected_matvec(v.clone(), &mask);
         let kw = asm.projected_matvec(w.clone(), &mask);
         let lhs = asm.projected_inner(&v, &kw);
         let rhs = asm.projected_inner(&w, &kv);
-        let scale = lhs.abs().max(rhs.abs()).max(kv.clone().powf_scalar(2.0).sum().sqrt().into_scalar());
+        let scale = lhs
+            .abs()
+            .max(rhs.abs())
+            .max(kv.clone().powf_scalar(2.0).sum().sqrt().into_scalar());
         let tol = f32::EPSILON * F32_EPS_SCALE * scale.max(1.0);
         assert!(
             (lhs - rhs).abs() <= tol,
@@ -357,9 +356,10 @@ fn quick_plate_operator_psd_under_harness_pins() {
 
     for seed in [3_u64, 17, 101] {
         let v_raw = seeded_vec3n(n, seed, 1.0);
-        let v = mask
-            .clone()
-            .mul(Tensor::from_data(Data::new(v_raw, Shape::new([1, n, 3])), &dev));
+        let v = mask.clone().mul(Tensor::from_data(
+            Data::new(v_raw, Shape::new([1, n, 3])),
+            &dev,
+        ));
         let kv = asm.projected_matvec(v.clone(), &mask);
         let quad = asm.projected_inner(&v, &kv);
         let scale = v.clone().powf_scalar(2.0).sum().into_scalar().max(1.0)
@@ -392,12 +392,10 @@ fn nine_node_chain_manufactured_solution() {
     for i in 0..n {
         u_star_raw[i * 3] = seeded_vec3n(1, 7 + i as u64, 1e-6)[0];
     }
-    let u_star = mask
-        .clone()
-        .mul(Tensor::from_data(
-            Data::new(u_star_raw, Shape::new([1, n, 3])),
-            &dev,
-        ));
+    let u_star = mask.clone().mul(Tensor::from_data(
+        Data::new(u_star_raw, Shape::new([1, n, 3])),
+        &dev,
+    ));
     let body_force = asm.projected_matvec(u_star.clone(), &mask);
 
     let cfg = MechanicsInnerLoopConfig {
@@ -408,7 +406,7 @@ fn nine_node_chain_manufactured_solution() {
         max_equilibrium_substeps: 1,
     };
 
-    let (u, _, pcg) = VectorMechanicsSolver::solve_equilibrium_with_pcg_report(
+    let (_u, _, pcg) = VectorMechanicsSolver::solve_equilibrium_with_pcg_report(
         Tensor::<B, 3>::zeros([1, n, 3], &dev),
         coords,
         stiffness,
@@ -445,8 +443,7 @@ fn quick_plate_harness_load_pcg_converges() {
     for (nid, fz) in body_force.into_iter().enumerate() {
         bf[nid * 3 + 2] = fz;
     }
-    let body_force =
-        Tensor::from_data(Data::new(bf, Shape::new([1, n, 3])), &dev);
+    let body_force = Tensor::from_data(Data::new(bf, Shape::new([1, n, 3])), &dev);
 
     let cfg = MechanicsInnerLoopConfig {
         max_cg_iterations: 2000,
@@ -469,14 +466,7 @@ fn quick_plate_harness_load_pcg_converges() {
     );
 
     let eq_rel = VectorMechanicsSolver::bar_network_equilibrium_rel_residual(
-        u,
-        coords,
-        stiffness,
-        body_force,
-        edges,
-        damage,
-        mask_check,
-        area,
+        u, coords, stiffness, body_force, edges, damage, mask_check, area,
     );
 
     let tol = cfg.pcg_tolerance.max(cfg.cg_tolerance);

@@ -6,6 +6,12 @@
 //! formal_anchor: Track B6 / b6-roof-mechanism-research
 
 #![cfg(feature = "mechanics-adjoint")]
+#![allow(
+    dead_code,
+    clippy::needless_range_loop,
+    clippy::collapsible_if,
+    clippy::type_complexity
+)]
 
 use burn::tensor::{backend::Backend, Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
@@ -86,8 +92,7 @@ impl HarnessFixture {
             .map(|&x| x as f64)
             .collect();
         let bf = plate.body_force_top_uniform_pressure(50.0);
-        let f_roof =
-            Tensor::from_data(Data::new(bf, Shape::new([1, n, 3])), &dev);
+        let f_roof = Tensor::from_data(Data::new(bf, Shape::new([1, n, 3])), &dev);
         let f_roof_flat: Vec<f64> = f_roof
             .clone()
             .into_data()
@@ -116,18 +121,13 @@ impl HarnessFixture {
             .clamp(1e-12, f32::MAX)
             .reshape([batch, n_e, 1]);
         let edge_unit = delta_geom.div(edge_len.clone());
-        let e_on_edges =
-            DecEdgeOperators::arithmetic_mean_on_edges(e_node.clone(), edges.clone());
-        let d_on_edges =
-            DecEdgeOperators::arithmetic_mean_on_edges(damage.clone(), edges.clone());
+        let e_on_edges = DecEdgeOperators::arithmetic_mean_on_edges(e_node.clone(), edges.clone());
+        let d_on_edges = DecEdgeOperators::arithmetic_mean_on_edges(damage.clone(), edges.clone());
         let dmg = Tensor::ones_like(&d_on_edges)
             .sub(d_on_edges)
             .powf_scalar(2.0)
             .add_scalar(DAMAGE_REG);
-        let k_axial = e_on_edges
-            .mul_scalar(area)
-            .div(edge_len.clone())
-            .mul(dmg);
+        let k_axial = e_on_edges.mul_scalar(area).div(edge_len.clone()).mul(dmg);
 
         let edge_data = edges.clone().into_data().value;
         let src: Vec<usize> = (0..n_e).map(|e| edge_data[e] as usize).collect();
@@ -251,10 +251,7 @@ fn harness_pin_bottom_perimeter(
     Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), device)
 }
 
-fn stiffness_bn2<Bk: Backend<FloatElem = f32>>(
-    e_node: Tensor<Bk, 3>,
-    nu: f32,
-) -> Tensor<Bk, 3> {
+fn stiffness_bn2<Bk: Backend<FloatElem = f32>>(e_node: Tensor<Bk, 3>, nu: f32) -> Tensor<Bk, 3> {
     let device = e_node.device();
     let [batch, n, _] = e_node.dims();
     let nu_t = Tensor::<Bk, 3>::full([batch, n, 1], nu, &device);
@@ -296,15 +293,8 @@ fn projected_matvec_f64(
     }
 }
 
-fn matvec_f32(
-    fx: &HarnessFixture,
-    u: &[f32],
-    ku: &mut [f32],
-) {
-    let u_t = Tensor::from_data(
-        Data::new(u.to_vec(), Shape::new([1, fx.n, 3])),
-        &fx.dev,
-    );
+fn matvec_f32(fx: &HarnessFixture, u: &[f32], ku: &mut [f32]) {
+    let u_t = Tensor::from_data(Data::new(u.to_vec(), Shape::new([1, fx.n, 3])), &fx.dev);
     let ku_t = VectorMechanicsSolver::bar_matvec(
         u_t,
         &fx.k_axial,
@@ -383,10 +373,7 @@ fn min_residual_ratio_kff(kff: &[Vec<f64>], ff: &[f64], max_iter: usize) -> f64 
             break;
         }
 
-        let w = matvec_kff(
-            &transpose_kff(kff),
-            &r,
-        );
+        let w = matvec_kff(&transpose_kff(kff), &r);
         let beta = norm_r_new.powi(2) / norm_r.powi(2).max(1e-30);
         norm_r = norm_r_new;
         for i in 0..n {
@@ -485,8 +472,7 @@ fn bar_pcg_rel_res(
 }
 
 fn free_dof_indices(mask: &[f64]) -> Vec<usize> {
-    mask
-        .iter()
+    mask.iter()
         .enumerate()
         .filter(|(_, &m)| m > 0.5)
         .map(|(i, _)| i)
@@ -552,7 +538,9 @@ fn rayleigh_max_eig(a: &[Vec<f64>], iters: usize) -> f64 {
     if n == 0 {
         return 0.0;
     }
-    let mut v: Vec<f64> = (0..n).map(|i| if i % 2 == 0 { 1.0 } else { -1.0 }).collect();
+    let mut v: Vec<f64> = (0..n)
+        .map(|i| if i % 2 == 0 { 1.0 } else { -1.0 })
+        .collect();
     let norm = v.iter().map(|x| x * x).sum::<f64>().sqrt();
     for x in &mut v {
         *x /= norm;
@@ -675,9 +663,7 @@ fn probe3_kff_singular_and_incompatible_rhs() {
     let pivot_tol = 1e-6 * lam_max.max(1.0);
     let (chol_ok, min_pivot) = cholesky_ok(&kff, pivot_tol);
 
-    eprintln!(
-        "PROBE3: chol_ok={chol_ok} min_chol_pivot={min_pivot:.3e} λ_max_est={lam_max:.3e}"
-    );
+    eprintln!("PROBE3: chol_ok={chol_ok} min_chol_pivot={min_pivot:.3e} λ_max_est={lam_max:.3e}");
 
     assert!(
         !chol_ok,

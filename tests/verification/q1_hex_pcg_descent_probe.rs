@@ -79,8 +79,14 @@ fn q1_hex_pcg_f64_descent_curve_striatus() {
         &milestones,
     );
 
-    eprintln!("Q1_HEX_DESCENT_PROBE 40x40x4 tol={:.1e} final_iters={}", HEX_PCG_REL_TOL_F64, report.iterations);
-    eprintln!("{:<8} {:>14} {:>14} {:>14}", "iter", "r_recursive", "r_true", "ratio_rec/true");
+    eprintln!(
+        "Q1_HEX_DESCENT_PROBE 40x40x4 tol={:.1e} final_iters={}",
+        HEX_PCG_REL_TOL_F64, report.iterations
+    );
+    eprintln!(
+        "{:<8} {:>14} {:>14} {:>14}",
+        "iter", "r_recursive", "r_true", "ratio_rec/true"
+    );
     for s in &descent {
         let ratio = if s.rel_true > 0.0 {
             s.rel_recursive / s.rel_true
@@ -97,7 +103,11 @@ fn q1_hex_pcg_f64_descent_curve_striatus() {
         report.rel_residual_recursive, report.rel_residual
     );
 
-    assert_eq!(descent.len(), milestones.len(), "every milestone must be recorded");
+    assert_eq!(
+        descent.len(),
+        milestones.len(),
+        "every milestone must be recorded"
+    );
     for s in &descent {
         assert!(s.rel_true.is_finite() && s.rel_true > 0.0);
         assert!(s.rel_recursive.is_finite());

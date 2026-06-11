@@ -88,17 +88,7 @@ fn run_probe_line(nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32, ma
         tol,
     );
     let parts = hex_equilibrium_residual_parts(
-        nx,
-        ny,
-        nz,
-        plate.dx,
-        plate.dy,
-        plate.dz,
-        0.2,
-        &e_cell,
-        &bf,
-        &bm,
-        &u,
+        nx, ny, nz, plate.dx, plate.dy, plate.dz, 0.2, &e_cell, &bf, &bm, &u,
     );
     let r_true = if hex_pcg_use_f64_lane(nx, ny, nz) {
         report.rel_residual
@@ -135,7 +125,8 @@ fn run_probe_line(nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32, ma
         "{nx}x{ny}x{nz} lane={lane}: recursive/true ratio {ratio:.3e} out of band"
     );
     assert!(
-        (parts.rel_residual - parts.abs_residual / parts.abs_rhs).abs() < 1e-6 * parts.rel_residual.max(1.0),
+        (parts.rel_residual - parts.abs_residual / parts.abs_rhs).abs()
+            < 1e-6 * parts.rel_residual.max(1.0),
         "rel must equal |Pr|/|Pf| (not a mixed-unit absolute dressed as relative)"
     );
     let _ = hex_equilibrium_rel_residual(

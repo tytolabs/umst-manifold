@@ -8,10 +8,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use burn::backend::Autodiff;
-use burn::tensor::{
-    backend::{AutodiffBackend, Backend as BackendTrait},
-    Data, Shape, Tensor,
-};
+use burn::tensor::{backend::AutodiffBackend, Data, Shape, Tensor};
 use burn_ndarray::NdArray;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
@@ -160,30 +157,10 @@ fn adjoint_q1_hex_gradient_matches_finite_difference_plate_8x8x2() {
     rho_minus[nid_p] = (rho_minus[nid_p] - eps).max(1e-6_f32);
 
     let c_plus = raw_compliance_fd(
-        &rho_plus,
-        nx,
-        ny,
-        nz,
-        plate.dx,
-        plate.dy,
-        plate.dz,
-        &bf_data,
-        &bm_data,
-        mat,
-        &cg_fd,
+        &rho_plus, nx, ny, nz, plate.dx, plate.dy, plate.dz, &bf_data, &bm_data, mat, &cg_fd,
     );
     let c_minus = raw_compliance_fd(
-        &rho_minus,
-        nx,
-        ny,
-        nz,
-        plate.dx,
-        plate.dy,
-        plate.dz,
-        &bf_data,
-        &bm_data,
-        mat,
-        &cg_fd,
+        &rho_minus, nx, ny, nz, plate.dx, plate.dy, plate.dz, &bf_data, &bm_data, mat, &cg_fd,
     );
     assert!(
         c_plus.is_finite() && c_minus.is_finite(),

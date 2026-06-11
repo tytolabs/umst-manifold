@@ -407,133 +407,131 @@ impl VectorMechanicsSolver {
         };
         #[cfg(not(feature = "mechanics-adjoint"))]
         let pcg_report = {
-        let mut report = BarNetworkPcgReport::default();
-        let max_it = inner_cfg
-            .max_cg_iterations
-            .max(1)
-            .min(n_v.saturating_mul(3).max(1));
-        let rel_tol = inner_cfg.pcg_tolerance.max(inner_cfg.cg_tolerance).max(0.0);
-        for b in 0..batch {
-            let p_mask = boundary_mask.clone().slice([b..b + 1, 0..n_v, 0..3]);
-            let f_b = body_force_solve
-                .clone()
+            let mut report = BarNetworkPcgReport::default();
+            let max_it = inner_cfg
+                .max_cg_iterations
+                .max(1)
+                .min(n_v.saturating_mul(3).max(1));
+            let rel_tol = inner_cfg.pcg_tolerance.max(inner_cfg.cg_tolerance).max(0.0);
+            for b in 0..batch {
+                let p_mask = boundary_mask.clone().slice([b..b + 1, 0..n_v, 0..3]);
+                let f_b = body_force_solve.clone().slice([b..b + 1, 0..n_v, 0..3]);
+                let mut u_c = u.clone().slice([b..b + 1, 0..n_v, 0..3]);
+
+                let u_emb = Self::embed_batch_row(&template, b, n_v, u_c.clone());
+                let ku_b = Self::bar_matvec(
+                    u_emb,
+                    &k_solve,
+                    &edge_unit,
+                    &src_indices,
+                    &tgt_indices,
+                    n_v,
+                    None,
+                    &edge_len,
+                )
                 .slice([b..b + 1, 0..n_v, 0..3]);
-            let mut u_c = u.clone().slice([b..b + 1, 0..n_v, 0..3]);
+                let mut r = p_mask.clone().mul(f_b.clone().sub(ku_b));
 
-            let u_emb = Self::embed_batch_row(&template, b, n_v, u_c.clone());
-            let ku_b = Self::bar_matvec(
-                u_emb,
-                &k_solve,
-                &edge_unit,
-                &src_indices,
-                &tgt_indices,
-                n_v,
-                None,
-                &edge_len,
-            )
-            .slice([b..b + 1, 0..n_v, 0..3]);
-            let mut r = p_mask.clone().mul(f_b.clone().sub(ku_b));
-
-            let rhs_norm = f_b
-                .clone()
-                .mul(p_mask.clone())
-                .powf_scalar(2.0)
-                .sum()
-                .sqrt()
-                .into_scalar()
-                .max(1e-30_f32);
-            let abs_tol = rel_tol * rhs_norm;
-            let use_tol_exit = rel_tol > 0.0;
-
-            let k_b = k_solve.clone().slice([b..b + 1, 0..n_edges, 0..1]);
-            let eu_b = edge_unit.clone().slice([b..b + 1, 0..n_edges, 0..3]);
-            let diag_bn3 =
-                Self::assemble_bar_network_diagonal_bn3(k_b, eu_b, edges_b1.clone(), n_v);
-
-            let mut z = if inner_cfg.use_preconditioner {
-                p_mask
+                let rhs_norm = f_b
                     .clone()
-                    .mul(r.clone().div(diag_bn3.clone().clamp_min(1e-18_f32)))
-            } else {
-                r.clone()
-            };
-            let mut p = z.clone();
-            let mut pcg_iters = 0usize;
-            let mut pcg_rel_res = f32::INFINITY;
+                    .mul(p_mask.clone())
+                    .powf_scalar(2.0)
+                    .sum()
+                    .sqrt()
+                    .into_scalar()
+                    .max(1e-30_f32);
+                let abs_tol = rel_tol * rhs_norm;
+                let use_tol_exit = rel_tol > 0.0;
 
-            for _ in 0..max_it {
-                pcg_iters += 1;
-                let p_emb = Self::embed_batch_row(&template, b, n_v, p.clone());
-                let ap_raw = Self::bar_matvec(
-                    p_emb,
-                    &k_solve,
-                    &edge_unit,
-                    &src_indices,
-                    &tgt_indices,
-                    n_v,
-                    None,
-                    &edge_len,
-                )
-                .slice([b..b + 1, 0..n_v, 0..3]);
-                let ap_b = p_mask.clone().mul(ap_raw);
+                let k_b = k_solve.clone().slice([b..b + 1, 0..n_edges, 0..1]);
+                let eu_b = edge_unit.clone().slice([b..b + 1, 0..n_edges, 0..3]);
+                let diag_bn3 =
+                    Self::assemble_bar_network_diagonal_bn3(k_b, eu_b, edges_b1.clone(), n_v);
 
-                let rz = (r.clone().mul(z.clone())).sum();
-                if !rz.clone().into_scalar().is_finite() {
-                    break;
-                }
-                let pap = (p.clone().mul(ap_b.clone())).sum().clamp_min(1e-30_f32);
-                let alpha = rz.clone().div(pap).reshape([1, 1, 1]);
-                u_c = u_c.add(p.clone().mul(alpha.clone()));
-                let u_emb2 = Self::embed_batch_row(&template, b, n_v, u_c.clone());
-                let ku_next = Self::bar_matvec(
-                    u_emb2,
-                    &k_solve,
-                    &edge_unit,
-                    &src_indices,
-                    &tgt_indices,
-                    n_v,
-                    None,
-                    &edge_len,
-                )
-                .slice([b..b + 1, 0..n_v, 0..3]);
-                let r_next = p_mask.clone().mul(f_b.clone().sub(ku_next));
-
-                let z_next = if inner_cfg.use_preconditioner {
+                let mut z = if inner_cfg.use_preconditioner {
                     p_mask
                         .clone()
-                        .mul(r_next.clone().div(diag_bn3.clone().clamp_min(1e-18_f32)))
+                        .mul(r.clone().div(diag_bn3.clone().clamp_min(1e-18_f32)))
                 } else {
-                    r_next.clone()
+                    r.clone()
                 };
+                let mut p = z.clone();
+                let mut pcg_iters = 0usize;
+                let mut pcg_rel_res = f32::INFINITY;
 
-                let rz_next = (r_next.clone().mul(z_next.clone())).sum();
-                let beta = rz_next
-                    .div(rz.clone().clamp_min(1e-30_f32))
-                    .reshape([1, 1, 1]);
-                if !beta.clone().into_scalar().is_finite() {
-                    break;
-                }
-                p = z_next.clone().add(p.mul(beta));
-                r = r_next;
-                z = z_next;
+                for _ in 0..max_it {
+                    pcg_iters += 1;
+                    let p_emb = Self::embed_batch_row(&template, b, n_v, p.clone());
+                    let ap_raw = Self::bar_matvec(
+                        p_emb,
+                        &k_solve,
+                        &edge_unit,
+                        &src_indices,
+                        &tgt_indices,
+                        n_v,
+                        None,
+                        &edge_len,
+                    )
+                    .slice([b..b + 1, 0..n_v, 0..3]);
+                    let ap_b = p_mask.clone().mul(ap_raw);
 
-                let r_norm = r.clone().powf_scalar(2.0).sum().sqrt().into_scalar();
-                pcg_rel_res = r_norm / rhs_norm;
-                if use_tol_exit && r_norm <= abs_tol {
-                    break;
+                    let rz = (r.clone().mul(z.clone())).sum();
+                    if !rz.clone().into_scalar().is_finite() {
+                        break;
+                    }
+                    let pap = (p.clone().mul(ap_b.clone())).sum().clamp_min(1e-30_f32);
+                    let alpha = rz.clone().div(pap).reshape([1, 1, 1]);
+                    u_c = u_c.add(p.clone().mul(alpha.clone()));
+                    let u_emb2 = Self::embed_batch_row(&template, b, n_v, u_c.clone());
+                    let ku_next = Self::bar_matvec(
+                        u_emb2,
+                        &k_solve,
+                        &edge_unit,
+                        &src_indices,
+                        &tgt_indices,
+                        n_v,
+                        None,
+                        &edge_len,
+                    )
+                    .slice([b..b + 1, 0..n_v, 0..3]);
+                    let r_next = p_mask.clone().mul(f_b.clone().sub(ku_next));
+
+                    let z_next = if inner_cfg.use_preconditioner {
+                        p_mask
+                            .clone()
+                            .mul(r_next.clone().div(diag_bn3.clone().clamp_min(1e-18_f32)))
+                    } else {
+                        r_next.clone()
+                    };
+
+                    let rz_next = (r_next.clone().mul(z_next.clone())).sum();
+                    let beta = rz_next
+                        .div(rz.clone().clamp_min(1e-30_f32))
+                        .reshape([1, 1, 1]);
+                    if !beta.clone().into_scalar().is_finite() {
+                        break;
+                    }
+                    p = z_next.clone().add(p.mul(beta));
+                    r = r_next;
+                    z = z_next;
+
+                    let r_norm = r.clone().powf_scalar(2.0).sum().sqrt().into_scalar();
+                    pcg_rel_res = r_norm / rhs_norm;
+                    if use_tol_exit && r_norm <= abs_tol {
+                        break;
+                    }
                 }
+
+                u = u.slice_assign([b..b + 1, 0..n_v, 0..3], u_c);
+                report = BarNetworkPcgReport {
+                    iterations: pcg_iters,
+                    rel_residual: pcg_rel_res,
+                    stiffness_scale: k_char,
+                    e_ref: e_hi,
+                    dx_char,
+                };
             }
-
-            u = u.slice_assign([b..b + 1, 0..n_v, 0..3], u_c);
-            report = BarNetworkPcgReport {
-                iterations: pcg_iters,
-                rel_residual: pcg_rel_res,
-                stiffness_scale: k_char,
-                e_ref: e_hi,
-                dx_char,
-            };
-        }
-        report
+            report
         };
 
         (
@@ -901,11 +899,12 @@ impl VectorMechanicsSolver {
             ku[t * 3 + 2] -= f * ez;
         }
         for (k, &m) in ku.iter_mut().zip(mask) {
-            *k *= m as f64;
+            *k *= m;
         }
     }
 
     #[cfg(feature = "mechanics-adjoint")]
+    #[allow(clippy::too_many_arguments)]
     fn packed_bar_network_equilibrium_pcg_f64<B: Backend<FloatElem = f32>>(
         u: &mut Tensor<B, 3>,
         body_force_solve: &Tensor<B, 3>,
@@ -955,10 +954,7 @@ impl VectorMechanicsSolver {
                 .slice([b..b + 1, 0..n_v, 0..3])
                 .into_data()
                 .value;
-            let mut u_flat = u.clone()
-                .slice([b..b + 1, 0..n_v, 0..3])
-                .into_data()
-                .value;
+            let mut u_flat = u.clone().slice([b..b + 1, 0..n_v, 0..3]).into_data().value;
             let k_flat = k_solve
                 .clone()
                 .slice([b..b + 1, 0..n_e, 0..1])
@@ -1018,7 +1014,9 @@ impl VectorMechanicsSolver {
 
             for _ in 0..max_it {
                 pcg_iters += 1;
-                Self::bar_network_projected_matvec_f64(&p, &mut ap, &mask64, &k64, &eu64, &src, &tgt);
+                Self::bar_network_projected_matvec_f64(
+                    &p, &mut ap, &mask64, &k64, &eu64, &src, &tgt,
+                );
 
                 let rz: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum();
                 if !rz.is_finite() {
@@ -1036,7 +1034,9 @@ impl VectorMechanicsSolver {
                     u64[i] *= mask64[i];
                 }
 
-                Self::bar_network_projected_matvec_f64(&u64, &mut ku, &mask64, &k64, &eu64, &src, &tgt);
+                Self::bar_network_projected_matvec_f64(
+                    &u64, &mut ku, &mask64, &k64, &eu64, &src, &tgt,
+                );
                 for i in 0..ndof {
                     r[i] = mask64[i] * (f_rhs[i] - ku[i]);
                 }

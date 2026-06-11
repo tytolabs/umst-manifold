@@ -510,12 +510,10 @@ pub fn hex_k_times_u_accumulate_f64(
                                 continue;
                             };
                             let wdet = (WG * WG * WG * detj) as f64;
-                            let eps =
-                                bbar_times_u_transverse_shear_centroid_f64(gn, gn_bar, &u24);
+                            let eps = bbar_times_u_transverse_shear_centroid_f64(gn, gn_bar, &u24);
                             let sig = d_times_eps_f64(&d, &eps);
-                            let fe = bbar_t_times_sigma_transverse_shear_centroid_f64(
-                                gn, gn_bar, &sig,
-                            );
+                            let fe =
+                                bbar_t_times_sigma_transverse_shear_centroid_f64(gn, gn_bar, &sig);
                             for k in 0..8 {
                                 let (ix, iy, iz) = match k {
                                     0 => (cx, cy, cz),
@@ -1146,9 +1144,7 @@ pub fn hex_solve_pcg_bisect(
                 for i in 0..ndof {
                     u[i] = mask[i] * (u[i] + alpha * p[i]);
                 }
-                hex_projected_k_times_u(
-                    nx, ny, nz, dx, dy, dz, nu, &e_work, &u, mask, scratch_ku,
-                );
+                hex_projected_k_times_u(nx, ny, nz, dx, dy, dz, nu, &e_work, &u, mask, scratch_ku);
                 for i in 0..ndof {
                     r[i] = mask[i] * (f_work[i] - scratch_ku[i]);
                 }
@@ -1167,9 +1163,8 @@ pub fn hex_solve_pcg_bisect(
             let periodic = pcg_iters % HEX_PCG_TRUE_RESIDUAL_CHECK_PERIOD == 0;
             let recursive_pass = r_norm <= tol * f_norm;
             if relative_tol > 0.0 && (periodic || recursive_pass) {
-                let r_true = hex_equilibrium_rel_residual(
-                    nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u,
-                );
+                let r_true =
+                    hex_equilibrium_rel_residual(nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u);
                 if r_true <= tol {
                     break;
                 }
@@ -1211,8 +1206,7 @@ pub fn hex_solve_pcg_bisect(
         u[i] *= mask[i];
     }
 
-    let rel_true =
-        hex_equilibrium_rel_residual(nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u);
+    let rel_true = hex_equilibrium_rel_residual(nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u);
 
     HexPcgBisectReport {
         iterations: pcg_iters,
@@ -1370,9 +1364,8 @@ fn hex_solve_pcg_masked_f64(
         let recursive_pass = r_norm <= abs_tol;
         let probe_descent = milestone_iters.is_some();
         if !probe_descent && tol > 0.0 && (periodic || recursive_pass) {
-            let r_true = hex_equilibrium_rel_residual_f64(
-                nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u64,
-            );
+            let r_true =
+                hex_equilibrium_rel_residual_f64(nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u64);
             if r_true <= tol {
                 break;
             }
@@ -1383,9 +1376,8 @@ fn hex_solve_pcg_masked_f64(
         u[i] = (u64[i] * mask64[i]) as f32;
     }
 
-    let rel_true = hex_equilibrium_rel_residual_f64(
-        nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u64,
-    ) as f32;
+    let rel_true =
+        hex_equilibrium_rel_residual_f64(nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u64) as f32;
 
     HexPcgReport {
         iterations: pcg_iters,

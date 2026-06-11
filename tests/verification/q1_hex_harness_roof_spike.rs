@@ -110,9 +110,7 @@ fn q1_hex_harness_roof_traction_forward_converges() {
     let mut e_cell = vec![0.0_f32; n_cells];
     let rho_e = 0.5_f32;
     let e_e = rho_e.powf(mat.p) * (mat.e0 - mat.e_min) + mat.e_min;
-    for c in &mut e_cell {
-        *c = e_e;
-    }
+    e_cell.fill(e_e);
 
     let mut u = vec![0.0_f32; n * 3];
     let mut diag = vec![0.0_f32; n * 3];
@@ -139,17 +137,7 @@ fn q1_hex_harness_roof_traction_forward_converges() {
     let pcg_rel = pcg.rel_residual;
     let iters = pcg.iterations;
     let eq_rel = hex_equilibrium_rel_residual(
-        nx,
-        ny,
-        nz,
-        plate.dx,
-        plate.dy,
-        plate.dz,
-        mat.nu,
-        &e_cell,
-        &bf,
-        &bm,
-        &u,
+        nx, ny, nz, plate.dx, plate.dy, plate.dz, mat.nu, &e_cell, &bf, &bm, &u,
     );
 
     eprintln!(
@@ -165,5 +153,8 @@ fn q1_hex_harness_roof_traction_forward_converges() {
         eq_rel <= tol,
         "Q1 hex equilibrium residual should meet tol: eq_rel={eq_rel} tol={tol}"
     );
-    assert!(c0.is_finite() && c0 > 0.0, "c0 baseline must be finite positive: {c0}");
+    assert!(
+        c0.is_finite() && c0 > 0.0,
+        "c0 baseline must be finite positive: {c0}"
+    );
 }

@@ -54,8 +54,8 @@ fn q1_hex_adjoint_grad_nonzero_on_quick_grid() {
     let mut rho: Vec<f32> = vec![0.5; n];
     rho[0] = 0.48;
     rho[1] = 0.52;
-    let rho_ad = Tensor::<B, 3>::from_data(Data::new(rho, Shape::new([1, n, 1])), &device)
-        .require_grad();
+    let rho_ad =
+        Tensor::<B, 3>::from_data(Data::new(rho, Shape::new([1, n, 1])), &device).require_grad();
     let bf_data = plate.body_force_top_uniform_pressure(50.0);
     let bm = pin_bottom_perimeter(nx, ny, nz);
     let bf = Tensor::<Inner, 3>::from_data(Data::new(bf_data, Shape::new([1, n, 3])), &device);
@@ -90,7 +90,10 @@ fn q1_hex_adjoint_grad_nonzero_on_quick_grid() {
     let loss_v = loss.clone().into_data().value[0];
     assert!(loss_v.is_finite() && loss_v > 0.0, "loss={loss_v}");
     if let Some(audit) = &diag.finite_audit {
-        assert_eq!(audit.first_bad_stage, None, "forward finite audit: {audit:?}");
+        assert_eq!(
+            audit.first_bad_stage, None,
+            "forward finite audit: {audit:?}"
+        );
     }
     let grads = loss.backward();
     let g_rho = rho_ad.grad(&grads).expect("grad rho");
@@ -143,8 +146,9 @@ fn q1_hex_nodal_dot_matches_gather_surrogate_grad() {
         max_equilibrium_substeps: 1,
     };
 
-    let rho_nodal = Tensor::<B, 3>::from_data(Data::new(rho.clone(), Shape::new([1, n, 1])), &device)
-        .require_grad();
+    let rho_nodal =
+        Tensor::<B, 3>::from_data(Data::new(rho.clone(), Shape::new([1, n, 1])), &device)
+            .require_grad();
     let (nodal_loss, _, _) = AdjointComplianceQ1Hex::forward_loss_with_diagnostics(
         rho_nodal.clone(),
         nx,
@@ -165,8 +169,8 @@ fn q1_hex_nodal_dot_matches_gather_surrogate_grad() {
         .into_data()
         .value;
 
-    let rho_gather = Tensor::<B, 3>::from_data(Data::new(rho, Shape::new([1, n, 1])), &device)
-        .require_grad();
+    let rho_gather =
+        Tensor::<B, 3>::from_data(Data::new(rho, Shape::new([1, n, 1])), &device).require_grad();
     let gather_loss = AdjointComplianceQ1Hex::forward_gather_surrogate_for_test(
         rho_gather.clone(),
         nx,

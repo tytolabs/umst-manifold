@@ -35,7 +35,15 @@ fn harness_pin_bottom_perimeter(nx: usize, ny: usize, nz: usize) -> Vec<f32> {
     bm
 }
 
-fn run_original(nondim: bool, nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32) -> umst_manifold::physics::q1_hex_elasticity::HexPcgBisectReport {
+fn run_original(
+    nondim: bool,
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    lx: f32,
+    ly: f32,
+    lz: f32,
+) -> umst_manifold::physics::q1_hex_elasticity::HexPcgBisectReport {
     let plate = ExtrudedPlateMechanics {
         nx,
         ny,
@@ -79,18 +87,17 @@ fn assert_a_equiv_b(nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32) 
     let a = run_original(false, nx, ny, nz, lx, ly, lz);
     let b = run_original(true, nx, ny, nz, lx, ly, lz);
     let u_scale = a.u.iter().map(|x| x.abs()).fold(1.0_f32, f32::max);
-    let u_diff = a
-        .u
-        .iter()
-        .zip(&b.u)
-        .map(|(x, y)| (x - y).abs())
-        .fold(0.0_f32, f32::max);
+    let u_diff =
+        a.u.iter()
+            .zip(&b.u)
+            .map(|(x, y)| (x - y).abs())
+            .fold(0.0_f32, f32::max);
     assert!(
         a.rel_residual_true.is_finite() && a.rel_residual_true <= HEX_PCG_REL_TOL_F32,
         "arm A must converge at {nx}x{ny}x{nz}: r_true={}",
         a.rel_residual_true
     );
-  assert!(
+    assert!(
         a.iterations.abs_diff(b.iterations) <= 1,
         "nondim must not materially change PCG iteration count at {nx}x{ny}x{nz}: a={} b={}",
         a.iterations,

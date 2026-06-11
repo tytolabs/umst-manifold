@@ -10,10 +10,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use burn::backend::Autodiff;
-use burn::tensor::{
-    backend::{AutodiffBackend, Backend as BackendTrait},
-    Data, Shape, Tensor,
-};
+use burn::tensor::{backend::AutodiffBackend, Data, Shape, Tensor};
 use burn_ndarray::NdArray;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
@@ -78,18 +75,7 @@ fn compliance_fd(
     let n = plate.n_nodes();
     let f = body_force_flat(rho_flat, n, sw, traction);
     AdjointComplianceQ1Hex::raw_compliance_at_rho(
-        rho_flat,
-        plate.nx,
-        plate.ny,
-        plate.nz,
-        plate.dx,
-        plate.dy,
-        plate.dz,
-        &f,
-        mask,
-        mat,
-        cg,
-        sw,
+        rho_flat, plate.nx, plate.ny, plate.nz, plate.dx, plate.dy, plate.dz, &f, mask, mat, cg, sw,
     )
 }
 
@@ -125,7 +111,11 @@ fn adjoint_grad_at_nodes(
         cg,
         sw,
     );
-    rho_ad.grad(&surrogate.backward()).expect("grad").into_data().value
+    rho_ad
+        .grad(&surrogate.backward())
+        .expect("grad")
+        .into_data()
+        .value
 }
 
 fn quick_plate() -> ExtrudedPlateMechanics {

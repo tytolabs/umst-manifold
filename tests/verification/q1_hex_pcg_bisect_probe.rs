@@ -45,6 +45,7 @@ fn max_abs_diff(a: &[f32], b: &[f32]) -> f32 {
         .fold(0.0_f32, f32::max)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_arm(
     label: &str,
     nx: usize,
@@ -91,17 +92,7 @@ fn run_arm(
         cfg,
     );
     let parts = hex_equilibrium_residual_parts(
-        nx,
-        ny,
-        nz,
-        plate.dx,
-        plate.dy,
-        plate.dz,
-        0.2,
-        &e_cell,
-        &bf,
-        &bm,
-        &report.u,
+        nx, ny, nz, plate.dx, plate.dy, plate.dz, 0.2, &e_cell, &bf, &bm, &report.u,
     );
     eprintln!(
         "Q1_HEX_BISECT {label}: iters={} |Pf|={:.3e}N |Pr|={:.3e}N rel=|Pr|/|Pf|={:.3e} r_recursive={:.3e} k_char={:.3e} loop={:?} nondim={}",
@@ -115,8 +106,7 @@ fn run_arm(
         cfg.nondim,
     );
     assert!(
-        (parts.rel_residual - report.rel_residual_true).abs()
-            < 1e-6 * parts.rel_residual.max(1.0),
+        (parts.rel_residual - report.rel_residual_true).abs() < 1e-6 * parts.rel_residual.max(1.0),
         "{label}: r_true must match |Pr|/|Pf|"
     );
     report
@@ -124,7 +114,9 @@ fn run_arm(
 
 #[test]
 fn q1_hex_pcg_bisect_2x2_at_quick_scale() {
-    let quick = (9_usize, 8_usize, 2_usize, 0.8_f32, 0.8_f32, 0.1_f32, 2000_usize);
+    let quick = (
+        9_usize, 8_usize, 2_usize, 0.8_f32, 0.8_f32, 0.1_f32, 2000_usize,
+    );
     let a = run_arm(
         "A",
         quick.0,
@@ -205,7 +197,10 @@ fn q1_hex_pcg_bisect_2x2_at_quick_scale() {
         u_diff_ab < 1e-4 * a.u.iter().map(|x| x.abs()).fold(1.0_f32, f32::max),
         "B must be trajectory-identical to A (complete nondim); |du|_inf={u_diff_ab}"
     );
-    assert_eq!(a.iterations, b.iterations, "nondim must not change iteration count");
+    assert_eq!(
+        a.iterations, b.iterations,
+        "nondim must not change iteration count"
+    );
 
     let _ = (c, d);
 }
@@ -214,7 +209,15 @@ fn q1_hex_pcg_bisect_2x2_at_quick_scale() {
 #[test]
 #[ignore = "Striatus 40×40×4 unit sanity — run with --ignored --nocapture"]
 fn q1_hex_unit_sanity_striatus_n() {
-    let striatus = (40_usize, 40_usize, 4_usize, 4.0_f32, 4.0_f32, 0.1_f32, 10_000_usize);
+    let striatus = (
+        40_usize,
+        40_usize,
+        4_usize,
+        4.0_f32,
+        4.0_f32,
+        0.1_f32,
+        10_000_usize,
+    );
     // Production path today (arm A).
     let a = run_arm(
         "A@40",
@@ -251,7 +254,6 @@ fn q1_hex_unit_sanity_striatus_n() {
     );
     eprintln!(
         "Q1_HEX_UNIT_SANITY: A_rel={:.3e} D_rel={:.3e} (both = |Pr|/|Pf|, N/N)",
-        a.rel_residual_true,
-        d_1e6.rel_residual_true,
+        a.rel_residual_true, d_1e6.rel_residual_true,
     );
 }
