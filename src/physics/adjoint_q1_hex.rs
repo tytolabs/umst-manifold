@@ -16,7 +16,7 @@ use burn::tensor::{
 };
 
 use super::adjoint::{AdjointComplianceDiagnostics, AdjointFiniteStageAudit, SimpElasticMaterial};
-use super::mechanics::BarNetworkPcgReport;
+use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
 use super::linear::masked_dot;
 use super::q1_hex_elasticity::{
     hex_cell_strain_energy, hex_equilibrium_rel_residual, hex_pcg_use_f64_lane,
@@ -109,6 +109,38 @@ fn build_finite_audit(
     }
 }
 
+/// Bruyneel–Duysinx load derivative \(2\mathbf u^\top (\partial \mathbf f_{\mathrm{sw}}/\partial\rho)\) per node.
+///
+/// With \(\mathbf f_{\mathrm{sw}} = \rho^q V g \hat{\mathbf d}\), each nodal entry is
+/// \(2 q \rho^{q-1} V g\, (\mathbf u\cdot\hat{\mathbf d})\).
+#[must_use]
+pub fn self_weight_load_nodal_sensitivity(
+    u: &[f32],
+    rho_flat: &[f32],
+    n_nodes: usize,
+    sw: &SelfWeightConfig,
+) -> Vec<f32> {
+    let [dx, dy, dz] = sw.direction;
+    let mag = (dx * dx + dy * dy + dz * dz).sqrt().max(1e-30);
+    let ux = dx / mag;
+    let uy = dy / mag;
+    let uz = dz / mag;
+    let pref = 2.0_f32 * sw.mass_penalty_q * sw.voxel_volume_m3 * sw.gravity_m_s2;
+    let q = sw.mass_penalty_q;
+    let mut sens = vec![0.0_f32; n_nodes];
+    for i in 0..n_nodes.min(rho_flat.len()) {
+        let rho = rho_flat[i].clamp(1e-30_f32, 1.0_f32);
+        let rho_pow = if (q - 1.0).abs() < 1e-6 {
+            1.0_f32
+        } else {
+            rho.powf(q - 1.0)
+        };
+        let u_dot_d = u[i * 3] * ux + u[i * 3 + 1] * uy + u[i * 3 + 2] * uz;
+        sens[i] = pref * rho_pow * u_dot_d;
+    }
+    sens
+}
+
 fn nodal_sensitivity_from_cell_ge(
     ge: &[f32],
     nx: usize,
@@ -166,6 +198,7 @@ impl AdjointComplianceQ1Hex {
         m_flat: &[f32],
         material: SimpElasticMaterial,
         cg: &MechanicsInnerLoopConfig,
+        self_weight: Option<SelfWeightConfig>,
     ) -> HexForwardState {
         let nx1 = nx + 1;
         let ny1 = ny + 1;
@@ -271,7 +304,13 @@ impl AdjointComplianceQ1Hex {
             ge[c] = -dk_drho * psi;
         }
 
-        let nodal_sensitivity = nodal_sensitivity_from_cell_ge(&ge, nx, ny, nz, n_nodes);
+        let mut nodal_sensitivity = nodal_sensitivity_from_cell_ge(&ge, nx, ny, nz, n_nodes);
+        if let Some(sw) = self_weight {
+            let load_sens = self_weight_load_nodal_sensitivity(&u, rho_flat, n_nodes, &sw);
+            for (s, l) in nodal_sensitivity.iter_mut().zip(load_sens) {
+                *s += l;
+            }
+        }
         let finite_audit = build_finite_audit(&u, m_flat, &ge, &nodal_sensitivity);
         let pcg = BarNetworkPcgReport {
             iterations: hex_pcg.iterations,
@@ -307,6 +346,7 @@ impl AdjointComplianceQ1Hex {
         boundary_mask: Tensor<<B as AutodiffBackend>::InnerBackend, 3>,
         material: SimpElasticMaterial,
         cg: &MechanicsInnerLoopConfig,
+        self_weight: Option<SelfWeightConfig>,
     ) -> (Tensor<B, 1>, f32)
     where
         B: AutodiffBackend<FloatElem = f32>,
@@ -324,6 +364,7 @@ impl AdjointComplianceQ1Hex {
             boundary_mask,
             material,
             cg,
+            self_weight,
         );
         (surrogate, c_raw)
     }
@@ -342,6 +383,7 @@ impl AdjointComplianceQ1Hex {
         boundary_mask: Tensor<<B as AutodiffBackend>::InnerBackend, 3>,
         material: SimpElasticMaterial,
         cg: &MechanicsInnerLoopConfig,
+        self_weight: Option<SelfWeightConfig>,
     ) -> (Tensor<B, 1>, f32, AdjointComplianceDiagnostics)
     where
         B: AutodiffBackend<FloatElem = f32>,
@@ -375,6 +417,7 @@ impl AdjointComplianceQ1Hex {
             &m_flat,
             material,
             cg,
+            self_weight,
         );
 
         let device = rho_autodiff.device();
@@ -425,9 +468,21 @@ impl AdjointComplianceQ1Hex {
         m_flat: &[f32],
         material: SimpElasticMaterial,
         cg: &MechanicsInnerLoopConfig,
+        self_weight: Option<SelfWeightConfig>,
     ) -> f32 {
         let state = Self::forward_state(
-            rho_flat, nx, ny, nz, dx, dy, dz, f_flat, m_flat, material, cg,
+            rho_flat,
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            f_flat,
+            m_flat,
+            material,
+            cg,
+            self_weight,
         );
         let n_nodes = (nx + 1) * (ny + 1) * (nz + 1);
         debug_assert_eq!(f_flat.len(), n_nodes * 3);
@@ -459,6 +514,7 @@ impl AdjointComplianceQ1Hex {
         boundary_mask: Tensor<<B as AutodiffBackend>::InnerBackend, 3>,
         material: SimpElasticMaterial,
         cg: &MechanicsInnerLoopConfig,
+        self_weight: Option<SelfWeightConfig>,
     ) -> Tensor<B, 1>
     where
         B: AutodiffBackend<FloatElem = f32>,
@@ -484,6 +540,7 @@ impl AdjointComplianceQ1Hex {
             &m_flat,
             material,
             cg,
+            self_weight,
         );
         let device = rho_autodiff.device();
         let u_tensor_inner = Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(

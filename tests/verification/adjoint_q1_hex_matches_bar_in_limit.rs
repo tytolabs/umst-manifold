@@ -188,6 +188,7 @@ fn adjoint_q1_hex_compliance_near_bar_z_skeleton_slender_limit() {
         boundary_mask,
         mat,
         &cg,
+        None,
     );
 
     let rel = ((c_hex - c_bar).abs() / c_bar.abs().max(1e-30_f32)).max(0.0_f32);

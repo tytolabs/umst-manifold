@@ -1144,6 +1144,26 @@ pub struct SelfWeightConfig {
 
 #[cfg(feature = "topology-density-evolution")]
 impl SelfWeightConfig {
+    /// Per-node body force flat `[N*3]` for FD / inner-only paths (batch **1**).
+    #[must_use]
+    pub fn body_force_flat(&self, rho_flat: &[f32], n_nodes: usize) -> Vec<f32> {
+        let [dx, dy, dz] = self.direction;
+        let mag = (dx * dx + dy * dy + dz * dz).sqrt().max(1e-30);
+        let ux = dx / mag;
+        let uy = dy / mag;
+        let uz = dz / mag;
+        let gvol = self.voxel_volume_m3 * self.gravity_m_s2;
+        let q = self.mass_penalty_q;
+        let mut f = vec![0.0_f32; n_nodes * 3];
+        for i in 0..n_nodes.min(rho_flat.len()) {
+            let m = rho_flat[i].clamp(0.0, 1.0).powf(q) * gvol;
+            f[i * 3] = m * ux;
+            f[i * 3 + 1] = m * uy;
+            f[i * 3 + 2] = m * uz;
+        }
+        f
+    }
+
     /// Per-node body force `[B,N,3]` matching `rho_projected` `[B,N,1]`.
     pub fn body_force<B: Backend<FloatElem = f32>>(
         &self,

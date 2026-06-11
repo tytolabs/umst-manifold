@@ -104,6 +104,7 @@ fn q1_hex_harness_roof_traction_forward_converges() {
         boundary_mask.clone(),
         mat,
         &cg,
+        None,
     );
 
     let mut e_cell = vec![0.0_f32; n_cells];

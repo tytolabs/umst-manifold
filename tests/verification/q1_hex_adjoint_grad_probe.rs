@@ -85,6 +85,7 @@ fn q1_hex_adjoint_grad_nonzero_on_quick_grid() {
         boundary,
         mat,
         &cg,
+        None,
     );
     let loss_v = loss.clone().into_data().value[0];
     assert!(loss_v.is_finite() && loss_v > 0.0, "loss={loss_v}");
@@ -156,6 +157,7 @@ fn q1_hex_nodal_dot_matches_gather_surrogate_grad() {
         boundary.clone(),
         mat,
         &cg,
+        None,
     );
     let nodal_g = rho_nodal
         .grad(&nodal_loss.backward())
@@ -177,6 +179,7 @@ fn q1_hex_nodal_dot_matches_gather_surrogate_grad() {
         boundary,
         mat,
         &cg,
+        None,
     );
     let gather_g = rho_gather
         .grad(&gather_loss.backward())

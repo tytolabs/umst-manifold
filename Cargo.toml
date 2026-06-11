@@ -199,6 +199,11 @@ path = "tests/verification/q1_hex_adjoint_grad_probe.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
+name = "adjoint_q1_hex_self_weight_fd"
+path = "tests/verification/adjoint_q1_hex_self_weight_fd.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
 name = "q1_hex_pcg_bisect_probe"
 path = "tests/verification/q1_hex_pcg_bisect_probe.rs"
 required-features = ["mechanics-adjoint-q1-hex"]

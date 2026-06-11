@@ -62,7 +62,7 @@ fn raw_compliance_fd(
     cg: &MechanicsInnerLoopConfig,
 ) -> f32 {
     AdjointComplianceQ1Hex::raw_compliance_at_rho(
-        rho_vals, nx, ny, nz, dx, dy, dz, bf_data, bm_data, mat, cg,
+        rho_vals, nx, ny, nz, dx, dy, dz, bf_data, bm_data, mat, cg, None,
     )
 }
 
@@ -146,6 +146,7 @@ fn adjoint_q1_hex_gradient_matches_finite_difference_plate_8x8x2() {
         boundary_mask.clone(),
         mat,
         &cg,
+        None,
     );
 
     let grads = surrogate.backward();
