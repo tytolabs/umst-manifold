@@ -5,6 +5,10 @@
 members = [".", "umst-math"]
 resolver = "2"
 
+# Striatus dev loop: keep test code debuggable; compile Burn/ndarray deps at full speed.
+[profile.dev.package."*"]
+opt-level = 3
+
 [package]
 name = "umst-manifold"
 version = "0.1.0"
@@ -156,6 +160,16 @@ name = "mechanics_analytic"
 path = "tests/verification/mechanics_analytic.rs"
 
 [[test]]
+name = "bar_network_operator_step_a"
+path = "tests/verification/bar_network_operator_step_a.rs"
+required-features = ["mechanics-adjoint"]
+
+[[test]]
+name = "bar_network_roof_mechanism_probe"
+path = "tests/verification/bar_network_roof_mechanism_probe.rs"
+required-features = ["mechanics-adjoint"]
+
+[[test]]
 name = "adjoint_compliance_analytic"
 path = "tests/verification/adjoint_compliance_analytic.rs"
 
@@ -167,6 +181,41 @@ required-features = ["mechanics-adjoint-q1-hex"]
 [[test]]
 name = "adjoint_q1_hex_matches_bar_in_limit"
 path = "tests/verification/adjoint_q1_hex_matches_bar_in_limit.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
+name = "q1_hex_harness_roof_spike"
+path = "tests/verification/q1_hex_harness_roof_spike.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
+name = "q1_hex_pcg_residual_probe"
+path = "tests/verification/q1_hex_pcg_residual_probe.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
+name = "q1_hex_adjoint_grad_probe"
+path = "tests/verification/q1_hex_adjoint_grad_probe.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
+name = "adjoint_q1_hex_self_weight_fd"
+path = "tests/verification/adjoint_q1_hex_self_weight_fd.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
+name = "q1_hex_pcg_bisect_probe"
+path = "tests/verification/q1_hex_pcg_bisect_probe.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
+name = "q1_hex_pcg_descent_probe"
+path = "tests/verification/q1_hex_pcg_descent_probe.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
+name = "q1_hex_nondim_trajectory_identity"
+path = "tests/verification/q1_hex_nondim_trajectory_identity.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]

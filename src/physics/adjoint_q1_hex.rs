@@ -15,9 +15,13 @@ use burn::tensor::{
     Data, Int, Shape, Tensor,
 };
 
-use super::adjoint::SimpElasticMaterial;
+use super::adjoint::{AdjointComplianceDiagnostics, AdjointFiniteStageAudit, SimpElasticMaterial};
 use super::linear::masked_dot;
-use super::q1_hex_elasticity::{hex_cell_strain_energy, hex_solve_pcg_masked};
+use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
+use super::q1_hex_elasticity::{
+    hex_cell_strain_energy, hex_equilibrium_rel_residual, hex_pcg_use_f64_lane,
+    hex_solve_pcg_masked,
+};
 use super::time_orchestration::MechanicsInnerLoopConfig;
 
 /// Discrete-adjoint compliance for extruded Q1-hex plates / bricks (batch **1**).
@@ -55,40 +59,152 @@ fn hex_cell_corner_gather_indices(nx: usize, ny: usize, nz: usize) -> Vec<i64> {
     v
 }
 
+fn count_nonfinite(v: &[f32]) -> usize {
+    v.iter().filter(|x| !x.is_finite()).count()
+}
+
+fn audit_u_post_solve(u: &[f32], mask: &[f32]) -> (usize, usize, f32) {
+    let mut u_nf = 0usize;
+    let mut pinned_nf = 0usize;
+    let mut pinned_abs_max = 0.0_f32;
+    for (&ui, &m) in u.iter().zip(mask) {
+        if !ui.is_finite() {
+            u_nf += 1;
+        }
+        if m < 0.5 {
+            if !ui.is_finite() {
+                pinned_nf += 1;
+            }
+            pinned_abs_max = pinned_abs_max.max(ui.abs());
+        }
+    }
+    (u_nf, pinned_nf, pinned_abs_max)
+}
+
+fn build_finite_audit(
+    u: &[f32],
+    mask: &[f32],
+    ge: &[f32],
+    nodal_sens: &[f32],
+) -> AdjointFiniteStageAudit {
+    let (u_nf, pinned_nf, pinned_max) = audit_u_post_solve(u, mask);
+    let ge_nf = count_nonfinite(ge);
+    let sens_nf = count_nonfinite(nodal_sens);
+    let first_bad = if u_nf > 0 || pinned_nf > 0 {
+        Some("u_post_solve")
+    } else if ge_nf > 0 {
+        Some("element_ge")
+    } else if sens_nf > 0 {
+        Some("nodal_scatter")
+    } else {
+        None
+    };
+    AdjointFiniteStageAudit {
+        u_nonfinite: u_nf,
+        u_pinned_nonfinite: pinned_nf,
+        u_pinned_abs_max: pinned_max,
+        ge_nonfinite: ge_nf,
+        nodal_sens_nonfinite: sens_nf,
+        first_bad_stage: first_bad,
+    }
+}
+
+/// Bruyneel–Duysinx load derivative \(2\mathbf u^\top (\partial \mathbf f_{\mathrm{sw}}/\partial\rho)\) per node.
+///
+/// With \(\mathbf f_{\mathrm{sw}} = \rho^q V g \hat{\mathbf d}\), each nodal entry is
+/// \(2 q \rho^{q-1} V g\, (\mathbf u\cdot\hat{\mathbf d})\).
+#[must_use]
+pub fn self_weight_load_nodal_sensitivity(
+    u: &[f32],
+    rho_flat: &[f32],
+    n_nodes: usize,
+    sw: &SelfWeightConfig,
+) -> Vec<f32> {
+    let [dx, dy, dz] = sw.direction;
+    let mag = (dx * dx + dy * dy + dz * dz).sqrt().max(1e-30);
+    let ux = dx / mag;
+    let uy = dy / mag;
+    let uz = dz / mag;
+    let pref = 2.0_f32 * sw.mass_penalty_q * sw.voxel_volume_m3 * sw.gravity_m_s2;
+    let q = sw.mass_penalty_q;
+    let mut sens = vec![0.0_f32; n_nodes];
+    for i in 0..n_nodes.min(rho_flat.len()) {
+        let rho = rho_flat[i].clamp(1e-30_f32, 1.0_f32);
+        let rho_pow = if (q - 1.0).abs() < 1e-6 {
+            1.0_f32
+        } else {
+            rho.powf(q - 1.0)
+        };
+        let u_dot_d = u[i * 3] * ux + u[i * 3 + 1] * uy + u[i * 3 + 2] * uz;
+        sens[i] = pref * rho_pow * u_dot_d;
+    }
+    sens
+}
+
+fn nodal_sensitivity_from_cell_ge(
+    ge: &[f32],
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    n_nodes: usize,
+) -> Vec<f32> {
+    let nx1 = nx + 1;
+    let ny1 = ny + 1;
+    let mut sens = vec![0.0_f32; n_nodes];
+    for cz in 0..nz {
+        for cy in 0..ny {
+            for cx in 0..nx {
+                let cidx = cx + cy * nx + cz * nx * ny;
+                let g = ge[cidx];
+                for (ix, iy, iz) in [
+                    (cx, cy, cz),
+                    (cx + 1, cy, cz),
+                    (cx + 1, cy + 1, cz),
+                    (cx, cy + 1, cz),
+                    (cx, cy, cz + 1),
+                    (cx + 1, cy, cz + 1),
+                    (cx + 1, cy + 1, cz + 1),
+                    (cx, cy + 1, cz + 1),
+                ] {
+                    let nid = node_id(ix, iy, iz, nx1, ny1);
+                    sens[nid] += g * (1.0 / 8.0_f32);
+                }
+            }
+        }
+    }
+    sens
+}
+
+struct HexForwardState {
+    rho_e_law: Vec<f32>,
+    u: Vec<f32>,
+    ge: Vec<f32>,
+    pcg: BarNetworkPcgReport,
+    eq_rel: f32,
+    nodal_sensitivity: Vec<f32>,
+    finite_audit: AdjointFiniteStageAudit,
+}
+
 impl AdjointComplianceQ1Hex {
-    /// Returns `(surrogate_loss, raw_compliance)` where `surrogate_loss` backpropagates like
-    /// `∂c/∂ρ` for mean nodal SIMP per hex (`ρ_e` from eight corners), batch size **1**.
     #[allow(clippy::too_many_arguments)]
-    pub fn forward_and_loss<B>(
-        rho_autodiff: Tensor<B, 3>,
+    fn forward_state(
+        rho_flat: &[f32],
         nx: usize,
         ny: usize,
         nz: usize,
         dx: f32,
         dy: f32,
         dz: f32,
-        body_force: Tensor<<B as AutodiffBackend>::InnerBackend, 3>,
-        boundary_mask: Tensor<<B as AutodiffBackend>::InnerBackend, 3>,
+        f_flat: &[f32],
+        m_flat: &[f32],
         material: SimpElasticMaterial,
         cg: &MechanicsInnerLoopConfig,
-    ) -> (Tensor<B, 1>, f32)
-    where
-        B: AutodiffBackend<FloatElem = f32>,
-        B::InnerBackend: Backend<FloatElem = f32>,
-    {
+        self_weight: Option<SelfWeightConfig>,
+    ) -> HexForwardState {
         let nx1 = nx + 1;
         let ny1 = ny + 1;
         let n_nodes = nx1 * ny1 * (nz + 1);
         let n_cells = nx * ny * nz;
-
-        debug_assert_eq!(
-            rho_autodiff.dims(),
-            [1, n_nodes, 1],
-            "AdjointComplianceQ1Hex: rho shape must be [1, n_nodes, 1]"
-        );
-
-        let rho_inner = rho_autodiff.clone().inner();
-        let rho_flat = rho_inner.clone().into_data().value;
 
         let mut e_cell = vec![0.0_f32; n_cells];
         let mut rho_e_law = vec![0.0_f32; n_cells];
@@ -121,17 +237,13 @@ impl AdjointComplianceQ1Hex {
             }
         }
 
-        let f_flat = body_force.clone().into_data().value;
-        let m_flat = boundary_mask.clone().into_data().value;
-        debug_assert_eq!(f_flat.len(), n_nodes * 3);
-        debug_assert_eq!(m_flat.len(), n_nodes * 3);
-
         let mut u = vec![0.0_f32; n_nodes * 3];
         let mut diag = vec![0.0_f32; n_nodes * 3];
         let mut scratch = vec![0.0_f32; n_nodes * 3];
         let max_it = cg.max_cg_iterations.max(1);
+        let rel_tol = cg.pcg_tolerance.max(cg.cg_tolerance);
 
-        hex_solve_pcg_masked(
+        let hex_pcg = hex_solve_pcg_masked(
             nx,
             ny,
             nz,
@@ -140,23 +252,34 @@ impl AdjointComplianceQ1Hex {
             dz,
             material.nu,
             &e_cell,
-            &f_flat,
-            &m_flat,
+            f_flat,
+            m_flat,
             &mut u,
             &mut diag,
             &mut scratch,
             max_it,
             cg.use_preconditioner,
-            cg.cg_tolerance,
+            rel_tol,
         );
 
-        let device = rho_autodiff.device();
-        let u_tensor_inner = Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
-            Data::new(u.clone(), Shape::new([1, n_nodes, 3])),
-            &device,
-        );
-
-        let comp = masked_dot(&body_force, &u_tensor_inner, &boundary_mask);
+        // f64 lane: bind on solver `rel_residual` (f64 `u64` before f32 round-trip).
+        let eq_rel = if hex_pcg_use_f64_lane(nx, ny, nz) {
+            hex_pcg.rel_residual
+        } else {
+            hex_equilibrium_rel_residual(
+                nx,
+                ny,
+                nz,
+                dx,
+                dy,
+                dz,
+                material.nu,
+                &e_cell,
+                f_flat,
+                m_flat,
+                &u,
+            )
+        };
 
         let mut u_cell_energy = vec![0.0_f32; n_cells];
         hex_cell_strain_energy(
@@ -182,6 +305,255 @@ impl AdjointComplianceQ1Hex {
             ge[c] = -dk_drho * psi;
         }
 
+        let mut nodal_sensitivity = nodal_sensitivity_from_cell_ge(&ge, nx, ny, nz, n_nodes);
+        if let Some(sw) = self_weight {
+            let load_sens = self_weight_load_nodal_sensitivity(&u, rho_flat, n_nodes, &sw);
+            for (s, l) in nodal_sensitivity.iter_mut().zip(load_sens) {
+                *s += l;
+            }
+        }
+        let finite_audit = build_finite_audit(&u, m_flat, &ge, &nodal_sensitivity);
+        let pcg = BarNetworkPcgReport {
+            iterations: hex_pcg.iterations,
+            rel_residual: hex_pcg.rel_residual,
+            stiffness_scale: 1.0,
+            e_ref: material.e0,
+            dx_char: dx.min(dy).min(dz),
+        };
+
+        HexForwardState {
+            rho_e_law,
+            u,
+            ge,
+            pcg,
+            eq_rel,
+            nodal_sensitivity,
+            finite_audit,
+        }
+    }
+
+    /// Returns `(surrogate_loss, raw_compliance)` where `surrogate_loss` backpropagates like
+    /// `∂c/∂ρ` for mean nodal SIMP per hex (`ρ_e` from eight corners), batch size **1**.
+    #[allow(clippy::too_many_arguments)]
+    pub fn forward_and_loss<B>(
+        rho_autodiff: Tensor<B, 3>,
+        nx: usize,
+        ny: usize,
+        nz: usize,
+        dx: f32,
+        dy: f32,
+        dz: f32,
+        body_force: Tensor<<B as AutodiffBackend>::InnerBackend, 3>,
+        boundary_mask: Tensor<<B as AutodiffBackend>::InnerBackend, 3>,
+        material: SimpElasticMaterial,
+        cg: &MechanicsInnerLoopConfig,
+        self_weight: Option<SelfWeightConfig>,
+    ) -> (Tensor<B, 1>, f32)
+    where
+        B: AutodiffBackend<FloatElem = f32>,
+        B::InnerBackend: Backend<FloatElem = f32>,
+    {
+        let (surrogate, c_raw, _) = Self::forward_loss_with_diagnostics(
+            rho_autodiff,
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            body_force,
+            boundary_mask,
+            material,
+            cg,
+            self_weight,
+        );
+        (surrogate, c_raw)
+    }
+
+    /// Same as [`Self::forward_and_loss`] plus PCG / equilibrium / nodal sensitivity telemetry (B6 H4).
+    #[allow(clippy::too_many_arguments)]
+    pub fn forward_loss_with_diagnostics<B>(
+        rho_autodiff: Tensor<B, 3>,
+        nx: usize,
+        ny: usize,
+        nz: usize,
+        dx: f32,
+        dy: f32,
+        dz: f32,
+        body_force: Tensor<<B as AutodiffBackend>::InnerBackend, 3>,
+        boundary_mask: Tensor<<B as AutodiffBackend>::InnerBackend, 3>,
+        material: SimpElasticMaterial,
+        cg: &MechanicsInnerLoopConfig,
+        self_weight: Option<SelfWeightConfig>,
+    ) -> (Tensor<B, 1>, f32, AdjointComplianceDiagnostics)
+    where
+        B: AutodiffBackend<FloatElem = f32>,
+        B::InnerBackend: Backend<FloatElem = f32>,
+    {
+        let nx1 = nx + 1;
+        let ny1 = ny + 1;
+        let n_nodes = nx1 * ny1 * (nz + 1);
+        debug_assert_eq!(
+            rho_autodiff.dims(),
+            [1, n_nodes, 1],
+            "AdjointComplianceQ1Hex: rho shape must be [1, n_nodes, 1]"
+        );
+
+        let rho_inner = rho_autodiff.clone().inner();
+        let rho_flat = rho_inner.clone().into_data().value;
+        let f_flat = body_force.clone().into_data().value;
+        let m_flat = boundary_mask.clone().into_data().value;
+        debug_assert_eq!(f_flat.len(), n_nodes * 3);
+        debug_assert_eq!(m_flat.len(), n_nodes * 3);
+
+        let state = Self::forward_state(
+            &rho_flat,
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            &f_flat,
+            &m_flat,
+            material,
+            cg,
+            self_weight,
+        );
+
+        let device = rho_autodiff.device();
+        let u_tensor_inner = Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
+            Data::new(state.u.clone(), Shape::new([1, n_nodes, 3])),
+            &device,
+        );
+
+        let comp = masked_dot(&body_force, &u_tensor_inner, &boundary_mask);
+
+        // Nodal scatter dot ≡ `Σ_e g_e ρ_e` (eight-corner mean); replaces Burn `gather`
+        // backward which yielded zero DensityNet grads on the Striatus tape (H5).
+        let sens_ad = Tensor::<B, 3>::from_inner(
+            Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
+                Data::new(state.nodal_sensitivity.clone(), Shape::new([1, n_nodes, 1])),
+                &device,
+            ),
+        );
+        let rho_det_ad = Tensor::<B, 3>::from_inner(Tensor::<
+            <B as AutodiffBackend>::InnerBackend,
+            3,
+        >::from_data(
+            Data::new(rho_flat.clone(), Shape::new([1, n_nodes, 1])),
+            &device,
+        ));
+        let lin_a = rho_autodiff.clone().mul(sens_ad.clone()).sum();
+        let lin_b = rho_det_ad.mul(sens_ad).sum();
+        let c_pad = Tensor::<B, 1>::from_inner(comp.clone());
+        let surrogate = lin_a.sub(lin_b).add(c_pad).reshape([1]);
+        let c_raw = comp.into_scalar();
+
+        let diag = AdjointComplianceDiagnostics {
+            pcg: state.pcg,
+            equilibrium_rel_residual: state.eq_rel,
+            nodal_sensitivity: state.nodal_sensitivity,
+            finite_audit: Some(state.finite_audit),
+        };
+
+        (surrogate, c_raw, diag)
+    }
+
+    /// Inner-only compliance `f^T u` at fixed nodal ρ (finite-difference baseline; no autodiff).
+    #[allow(clippy::too_many_arguments)]
+    pub fn raw_compliance_at_rho(
+        rho_flat: &[f32],
+        nx: usize,
+        ny: usize,
+        nz: usize,
+        dx: f32,
+        dy: f32,
+        dz: f32,
+        f_flat: &[f32],
+        m_flat: &[f32],
+        material: SimpElasticMaterial,
+        cg: &MechanicsInnerLoopConfig,
+        self_weight: Option<SelfWeightConfig>,
+    ) -> f32 {
+        let state = Self::forward_state(
+            rho_flat,
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            f_flat,
+            m_flat,
+            material,
+            cg,
+            self_weight,
+        );
+        let n_nodes = (nx + 1) * (ny + 1) * (nz + 1);
+        debug_assert_eq!(f_flat.len(), n_nodes * 3);
+        debug_assert_eq!(m_flat.len(), n_nodes * 3);
+        let mut comp = 0.0_f32;
+        for i in 0..n_nodes {
+            for d in 0..3 {
+                let k = i * 3 + d;
+                if m_flat[k] > 0.5 {
+                    comp += f_flat[k] * state.u[k];
+                }
+            }
+        }
+        comp
+    }
+
+    /// Retired gather surrogate for regression tests (H5 stage d).
+    #[doc(hidden)]
+    #[allow(clippy::too_many_arguments)]
+    pub fn forward_gather_surrogate_for_test<B>(
+        rho_autodiff: Tensor<B, 3>,
+        nx: usize,
+        ny: usize,
+        nz: usize,
+        dx: f32,
+        dy: f32,
+        dz: f32,
+        body_force: Tensor<<B as AutodiffBackend>::InnerBackend, 3>,
+        boundary_mask: Tensor<<B as AutodiffBackend>::InnerBackend, 3>,
+        material: SimpElasticMaterial,
+        cg: &MechanicsInnerLoopConfig,
+        self_weight: Option<SelfWeightConfig>,
+    ) -> Tensor<B, 1>
+    where
+        B: AutodiffBackend<FloatElem = f32>,
+        B::InnerBackend: Backend<FloatElem = f32>,
+    {
+        let nx1 = nx + 1;
+        let ny1 = ny + 1;
+        let n_nodes = nx1 * ny1 * (nz + 1);
+        let n_cells = nx * ny * nz;
+        let rho_inner = rho_autodiff.clone().inner();
+        let rho_flat = rho_inner.into_data().value;
+        let f_flat = body_force.clone().into_data().value;
+        let m_flat = boundary_mask.clone().into_data().value;
+        let state = Self::forward_state(
+            &rho_flat,
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            &f_flat,
+            &m_flat,
+            material,
+            cg,
+            self_weight,
+        );
+        let device = rho_autodiff.device();
+        let u_tensor_inner = Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
+            Data::new(state.u.clone(), Shape::new([1, n_nodes, 3])),
+            &device,
+        );
+        let comp = masked_dot(&body_force, &u_tensor_inner, &boundary_mask);
         let idx_flat = hex_cell_corner_gather_indices(nx, ny, nz);
         let ids_i32: Vec<i32> = idx_flat.iter().map(|&x| x as i32).collect();
         let idx_inner = Tensor::<<B as AutodiffBackend>::InnerBackend, 1, Int>::from_ints(
@@ -190,32 +562,28 @@ impl AdjointComplianceQ1Hex {
         )
         .reshape([1, n_cells * 8, 1]);
         let idx_tensor = Tensor::<B, 3, Int>::from_inner(idx_inner);
-
         let rho_e_ad = rho_autodiff
             .gather(1, idx_tensor)
             .reshape([1, n_cells, 8])
             .sum_dim(2)
             .div_scalar(8.0_f32)
             .reshape([1, n_cells, 1]);
-
-        let rho_e_det_inner = Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
-            Data::new(rho_e_law.clone(), Shape::new([1, n_cells, 1])),
+        let rho_e_det_ad = Tensor::<B, 3>::from_inner(Tensor::<
+            <B as AutodiffBackend>::InnerBackend,
+            3,
+        >::from_data(
+            Data::new(state.rho_e_law.clone(), Shape::new([1, n_cells, 1])),
             &device,
+        ));
+        let ge_ad = Tensor::<B, 3>::from_inner(
+            Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
+                Data::new(state.ge.clone(), Shape::new([1, n_cells, 1])),
+                &device,
+            ),
         );
-        let rho_e_det_ad = Tensor::<B, 3>::from_inner(rho_e_det_inner);
-
-        let ge_inner = Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
-            Data::new(ge.clone(), Shape::new([1, n_cells, 1])),
-            &device,
-        );
-        let ge_ad = Tensor::<B, 3>::from_inner(ge_inner);
-
         let lin_a = ge_ad.clone().mul(rho_e_ad).sum();
         let lin_b = ge_ad.mul(rho_e_det_ad).sum();
-        let c_pad = Tensor::<B, 1>::from_inner(comp.clone());
-        let surrogate = lin_a.sub(lin_b).add(c_pad).reshape([1]);
-        let c_raw = comp.into_scalar();
-
-        (surrogate, c_raw)
+        let c_pad = Tensor::<B, 1>::from_inner(comp);
+        lin_a.sub(lin_b).add(c_pad).reshape([1])
     }
 }

@@ -361,6 +361,189 @@ fn d_times_eps(d: &[[f32; 6]; 6], e: &[f32; 6]) -> [f32; 6] {
     s
 }
 
+fn build_d_voigt_f64(e: f64, nu: f32) -> [[f64; 6]; 6] {
+    let nu = nu as f64;
+    let lam = e * nu / ((1.0 + nu) * (1.0 - 2.0 * nu)).max(1e-30);
+    let mu = e / (2.0 * (1.0 + nu)).max(1e-30);
+    let l2m = lam + 2.0 * mu;
+    [
+        [l2m, lam, lam, 0.0, 0.0, 0.0],
+        [lam, l2m, lam, 0.0, 0.0, 0.0],
+        [lam, lam, l2m, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, mu, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, mu, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, mu],
+    ]
+}
+
+fn d_times_eps_f64(d: &[[f64; 6]; 6], e: &[f64; 6]) -> [f64; 6] {
+    let mut s = [0.0_f64; 6];
+    for i in 0..6 {
+        let mut sum = 0.0_f64;
+        for j in 0..6 {
+            sum += d[i][j] * e[j];
+        }
+        s[i] = sum;
+    }
+    s
+}
+
+fn bbar_times_u_f64(gn: [[f32; 3]; 8], gn_bar: [[f32; 3]; 8], u24: &[f64; 24]) -> [f64; 6] {
+    let mut ev_bar = 0.0_f64;
+    let mut exx = 0.0_f64;
+    let mut eyy = 0.0_f64;
+    let mut ezz = 0.0_f64;
+    let mut e3 = 0.0_f64;
+    let mut e4 = 0.0_f64;
+    let mut e5 = 0.0_f64;
+    for i in 0..8 {
+        let ui = u24[i * 3];
+        let vi = u24[i * 3 + 1];
+        let wi = u24[i * 3 + 2];
+        let gx = gn[i][0] as f64;
+        let gy = gn[i][1] as f64;
+        let gz = gn[i][2] as f64;
+        exx += gx * ui;
+        eyy += gy * vi;
+        ezz += gz * wi;
+        e3 += gy * ui + gx * vi;
+        e4 += gz * vi + gy * wi;
+        e5 += gz * ui + gx * wi;
+        ev_bar += gn_bar[i][0] as f64 * ui + gn_bar[i][1] as f64 * vi + gn_bar[i][2] as f64 * wi;
+    }
+    let ev_pt = exx + eyy + ezz;
+    let delta = (ev_bar - ev_pt) / 3.0;
+    [exx + delta, eyy + delta, ezz + delta, e3, e4, e5]
+}
+
+fn bbar_times_u_transverse_shear_centroid_f64(
+    gn: [[f32; 3]; 8],
+    gn_bar: [[f32; 3]; 8],
+    u24: &[f64; 24],
+) -> [f64; 6] {
+    let mut eps = bbar_times_u_f64(gn, gn_bar, u24);
+    let eps_c = bbar_times_u_f64(gn_bar, gn_bar, u24);
+    eps[4] = eps_c[4];
+    eps[5] = eps_c[5];
+    eps
+}
+
+fn bbar_t_times_sigma_transverse_shear_centroid_f64(
+    gn: [[f32; 3]; 8],
+    gn_bar: [[f32; 3]; 8],
+    sig: &[f64; 6],
+) -> [f64; 24] {
+    let mut f = [0.0_f64; 24];
+    let sxx = sig[0];
+    let syy = sig[1];
+    let szz = sig[2];
+    let sxy = sig[3];
+    let syz = sig[4];
+    let sxz = sig[5];
+    let sh = (sxx + syy + szz) / 3.0;
+    let dxx = sxx - sh;
+    let dyy = syy - sh;
+    let dzz = szz - sh;
+    for i in 0..8 {
+        let gx = gn[i][0] as f64;
+        let gy = gn[i][1] as f64;
+        let gz = gn[i][2] as f64;
+        let gxb = gn_bar[i][0] as f64;
+        let gyb = gn_bar[i][1] as f64;
+        let gzb = gn_bar[i][2] as f64;
+        f[i * 3] += gx * dxx + gy * sxy + gzb * sxz + gxb * sh;
+        f[i * 3 + 1] += gy * dyy + gx * sxy + gzb * syz + gyb * sh;
+        f[i * 3 + 2] += gz * dzz + gyb * syz + gxb * sxz + gzb * sh;
+    }
+    f
+}
+
+/// Native f64 `y += K u` (Striatus lane; modulus per cell in f64).
+pub fn hex_k_times_u_accumulate_f64(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f64],
+    u: &[f64],
+    y: &mut [f64],
+) {
+    let nx1 = nx + 1;
+    let ny1 = ny + 1;
+    for cz in 0..nz {
+        for cy in 0..ny {
+            for cx in 0..nx {
+                let c = cx + cy * nx + cz * nx * ny;
+                let e = e_cell[c].max(1e-30_f64);
+                let d = build_d_voigt_f64(e, nu);
+                let x_corner = cell_corner_coords(cx, cy, cz, dx, dy, dz);
+                let mut u24 = [0.0_f64; 24];
+                for (k, _corner) in CORNER_XI.iter().enumerate() {
+                    let (ix, iy, iz) = match k {
+                        0 => (cx, cy, cz),
+                        1 => (cx + 1, cy, cz),
+                        2 => (cx + 1, cy + 1, cz),
+                        3 => (cx, cy + 1, cz),
+                        4 => (cx, cy, cz + 1),
+                        5 => (cx + 1, cy, cz + 1),
+                        6 => (cx + 1, cy + 1, cz + 1),
+                        7 => (cx, cy + 1, cz + 1),
+                        _ => unreachable!(),
+                    };
+                    let nid = idx_node(nx1, ny1, ix, iy, iz);
+                    u24[k * 3] = u[nid * 3];
+                    u24[k * 3 + 1] = u[nid * 3 + 1];
+                    u24[k * 3 + 2] = u[nid * 3 + 2];
+                }
+                let Some((gn_bar, _det_c)) = physical_shape_gradients(x_corner, 0.0, 0.0, 0.0)
+                else {
+                    continue;
+                };
+                for &sg in &GAUSS1D {
+                    for &tg in &GAUSS1D {
+                        for &zg in &GAUSS1D {
+                            let Some((gn, detj)) = physical_shape_gradients(x_corner, sg, tg, zg)
+                            else {
+                                continue;
+                            };
+                            let wdet = (WG * WG * WG * detj) as f64;
+                            let eps = bbar_times_u_transverse_shear_centroid_f64(gn, gn_bar, &u24);
+                            let sig = d_times_eps_f64(&d, &eps);
+                            let fe =
+                                bbar_t_times_sigma_transverse_shear_centroid_f64(gn, gn_bar, &sig);
+                            for k in 0..8 {
+                                let (ix, iy, iz) = match k {
+                                    0 => (cx, cy, cz),
+                                    1 => (cx + 1, cy, cz),
+                                    2 => (cx + 1, cy + 1, cz),
+                                    3 => (cx, cy + 1, cz),
+                                    4 => (cx, cy, cz + 1),
+                                    5 => (cx + 1, cy, cz + 1),
+                                    6 => (cx + 1, cy + 1, cz + 1),
+                                    7 => (cx, cy + 1, cz + 1),
+                                    _ => unreachable!(),
+                                };
+                                let nid = idx_node(nx1, ny1, ix, iy, iz);
+                                y[nid * 3] += fe[k * 3] * wdet;
+                                y[nid * 3 + 1] += fe[k * 3 + 1] * wdet;
+                                y[nid * 3 + 2] += fe[k * 3 + 2] * wdet;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Striatus-scale grids use the f64 solve lane (`HEX_PCG_REL_TOL_F64`).
+pub fn hex_pcg_use_f64_lane(nx: usize, ny: usize, nz: usize) -> bool {
+    nx.saturating_mul(ny).saturating_mul(nz) >= 512
+}
+
 /// Matrix-free `y += K u` for the structured hex grid. `e_cell[c]` is Young's modulus in cell `c`.
 pub fn hex_k_times_u_accumulate(
     nx: usize,
@@ -643,8 +826,101 @@ pub fn hex_diagonal(
     }
 }
 
-/// Projected PCG on masked free DOFs (`mask[d]=1` free, `0` fixed). Overwrites `u` in-place.
-pub fn hex_solve_pcg_masked(
+/// f32 quick-scale lane tol — attainable κ·ε floor (evidence: arm-A probe 9×8×2, 2026-06-10).
+pub const HEX_PCG_REL_TOL_F32: f32 = 1e-4;
+/// f64 Striatus lane tol — re-grounded 2026-06-10: sensitivity fidelity + inexact-solve TO practice
+/// (same measured κ·ε floor as f32; 1e-6 overshoots attainable residual at 40×40×4 — see Solver-Status).
+pub const HEX_PCG_REL_TOL_F64: f32 = 1e-4;
+/// Periodic true-residual verification cadence when [`HexPcgBisectConfig::stop_on_true_residual`].
+pub const HEX_PCG_TRUE_RESIDUAL_CHECK_PERIOD: usize = 25;
+
+/// Full-harness default PCG budget at Striatus N (40×40×4).
+///
+/// Derived: measured ~1213 iters @ outer 1 (2026-06-10); 2× headroom because κ grows as the design
+/// develops contrast (outers 11–18 previously stalled at the 2000 cap).
+pub const HEX_PCG_MAX_ITER_DEFAULT_STRIATUS: usize = 4000;
+
+/// Which norm triggered PCG exit (diagnostic).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HexPcgStoppingCriterion {
+    /// \(\|P(f-Ku)\|_2 / \|Pf\|_2\) after full residual refresh (binding).
+    PlainRNorm,
+}
+
+/// PCG telemetry for [`hex_solve_pcg_masked`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct HexPcgReport {
+    pub iterations: usize,
+    /// Independent `||P(f-Ku)||/||Pf||` at exit — **binding** for gates and stopping.
+    pub rel_residual: f32,
+    /// Inner-loop recursive estimate at exit (should match `rel_residual` when healthy).
+    pub rel_residual_recursive: f32,
+    pub stopping_criterion: HexPcgStoppingCriterion,
+    /// `k_char` used to nondimensionalize `K u = f` (1.0 when not applied).
+    pub stiffness_scale: f32,
+}
+
+/// Bisection axis: committed recursive loop vs bundled refresh+masked-\(p\) rewrite.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HexPcgLoopKind {
+    /// Recursive \(r\) update; unmasked \(u,p\) (d8babee baseline).
+    Original,
+    /// Full \(r=P(f-Ku)\) refresh each iter; masked \(u,p\) (under test).
+    RefreshMaskedP,
+}
+
+/// 2×2 bisection knobs (probe-only; production uses [`hex_solve_pcg_masked`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HexPcgBisectConfig {
+    pub loop_kind: HexPcgLoopKind,
+    pub nondim: bool,
+    /// When true, stop on physical `eq_rel` (production). **False** for isolated bisection.
+    pub stop_on_true_residual: bool,
+}
+
+/// Probe telemetry for [`hex_solve_pcg_bisect`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct HexPcgBisectReport {
+    pub iterations: usize,
+    pub rel_residual_recursive: f32,
+    pub rel_residual_true: f32,
+    pub stiffness_scale: f32,
+    pub u: Vec<f32>,
+}
+
+/// Characteristic stiffness scale for Q1-hex PCG (`≈ E_ref · A / Δx`, same intent as bar `k_char`).
+pub fn hex_stiffness_scale(e_cell: &[f32], dx: f32, dy: f32, dz: f32) -> f32 {
+    let e_hi = e_cell
+        .iter()
+        .copied()
+        .fold(0.0_f32, |a, b| a.max(b))
+        .max(1e-12_f32);
+    let dx_char = dx.min(dy).min(dz).max(1e-12_f32);
+    (e_hi * dy * dz / dx_char).max(1e-30_f32)
+}
+
+fn hex_projected_k_times_u(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    u: &[f32],
+    mask: &[f32],
+    ku: &mut [f32],
+) {
+    ku.fill(0.0);
+    hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, u, ku);
+    for (k, m) in ku.iter_mut().zip(mask) {
+        *k *= *m;
+    }
+}
+
+/// \(\|P(f-Ku)\|_2 / \|Pf\|_2\) after a masked Q1-hex forward solve.
+pub fn hex_equilibrium_rel_residual(
     nx: usize,
     ny: usize,
     nz: usize,
@@ -655,33 +931,173 @@ pub fn hex_solve_pcg_masked(
     e_cell: &[f32],
     f: &[f32],
     mask: &[f32],
-    u: &mut [f32],
+    u: &[f32],
+) -> f32 {
+    let u_ref = u;
+    masked_projected_residual_parts(f, mask, |ku| {
+        hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, u_ref, ku);
+    })
+    .rel_residual
+}
+
+/// Physical masked equilibrium residual in f64 (same operator as f64 PCG matvec).
+pub fn hex_equilibrium_rel_residual_f64(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    f: &[f32],
+    mask: &[f32],
+    u: &[f64],
+) -> f64 {
+    let ndof = f.len();
+    let e64: Vec<f64> = e_cell.iter().map(|&e| e as f64).collect();
+    let f64v: Vec<f64> = f.iter().map(|&fi| fi as f64).collect();
+    let mask64: Vec<f64> = mask.iter().map(|&m| m as f64).collect();
+    let mut ku = vec![0.0_f64; ndof];
+    hex_k_times_u_accumulate_f64(nx, ny, nz, dx, dy, dz, nu, &e64, u, &mut ku);
+    for (k, m) in ku.iter_mut().zip(&mask64) {
+        *k *= *m;
+    }
+    let mut num = 0.0_f64;
+    let mut den = 0.0_f64;
+    for i in 0..ndof {
+        let fi = f64v[i] * mask64[i];
+        let ri = mask64[i] * (f64v[i] - ku[i]);
+        num += ri * ri;
+        den += fi * fi;
+    }
+    num.sqrt() / den.sqrt().max(1e-30_f64)
+}
+
+/// [`hex_equilibrium_rel_residual`] with explicit \(\|Pf\|\), \(\|P(f-Ku)\|\) [N].
+pub fn hex_equilibrium_residual_parts(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    f: &[f32],
+    mask: &[f32],
+    u: &[f32],
+) -> MaskedResidualParts {
+    let u_ref = u;
+    masked_projected_residual_parts(f, mask, |ku| {
+        hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, u_ref, ku);
+    })
+}
+
+/// Absolute and relative masked equilibrium residual (SI: force components in N).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct MaskedResidualParts {
+    /// \(\|P(f-Ku)\|_2\) [N].
+    pub abs_residual: f32,
+    /// \(\|Pf\|_2\) [N].
+    pub abs_rhs: f32,
+    /// `abs_residual / abs_rhs` (dimensionless).
+    pub rel_residual: f32,
+}
+
+/// \(\|P(f-Ku)\|_2 / \|Pf\|_2\) with caller-supplied masked \(K\) matvec.
+pub fn masked_projected_rel_residual(
+    f: &[f32],
+    mask: &[f32],
+    _u: &[f32],
+    apply_k: impl FnMut(&mut [f32]),
+) -> f32 {
+    masked_projected_residual_parts(f, mask, apply_k).rel_residual
+}
+
+/// Same norm as [`masked_projected_rel_residual`], with explicit SI force magnitudes.
+pub fn masked_projected_residual_parts(
+    f: &[f32],
+    mask: &[f32],
+    mut apply_k: impl FnMut(&mut [f32]),
+) -> MaskedResidualParts {
+    let ndof = f.len();
+    let mut ku = vec![0.0_f32; ndof];
+    apply_k(&mut ku);
+    for (k, m) in ku.iter_mut().zip(mask) {
+        *k *= *m;
+    }
+    let mut num = 0.0_f32;
+    let mut den = 0.0_f32;
+    for i in 0..ndof {
+        let fi = f[i] * mask[i];
+        let ri = mask[i] * (f[i] - ku[i]);
+        num += ri * ri;
+        den += fi * fi;
+    }
+    let abs_residual = num.sqrt();
+    let abs_rhs = den.sqrt().max(1e-30_f32);
+    MaskedResidualParts {
+        abs_residual,
+        abs_rhs,
+        rel_residual: abs_residual / abs_rhs,
+    }
+}
+
+/// 2×2 bisection driver (probe-only). Does not mutate caller `u`.
+#[allow(clippy::too_many_arguments)]
+pub fn hex_solve_pcg_bisect(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    f: &[f32],
+    mask: &[f32],
     diag: &mut [f32],
     scratch_ku: &mut [f32],
     max_iter: usize,
     use_preconditioner: bool,
     relative_tol: f32,
-) {
+    cfg: HexPcgBisectConfig,
+) -> HexPcgBisectReport {
     let nx1 = nx + 1;
     let ny1 = ny + 1;
     let n = nx1 * ny1 * (nz + 1);
     let ndof = n * 3;
     let max_it = max_iter.max(1);
+    let tol = relative_tol.max(1e-30_f32);
 
-    hex_diagonal(nx, ny, nz, dx, dy, dz, nu, e_cell, diag);
+    let k_char = if cfg.nondim {
+        hex_stiffness_scale(e_cell, dx, dy, dz)
+    } else {
+        1.0_f32
+    };
+    let e_work: Vec<f32> = if cfg.nondim {
+        e_cell.iter().map(|e| e / k_char).collect()
+    } else {
+        e_cell.to_vec()
+    };
+    let f_work: Vec<f32> = if cfg.nondim {
+        f.iter().map(|fi| fi / k_char).collect()
+    } else {
+        f.to_vec()
+    };
 
-    for i in 0..ndof {
-        u[i] *= mask[i];
-    }
+    hex_diagonal(nx, ny, nz, dx, dy, dz, nu, &e_work, diag);
 
+    let mut u = vec![0.0_f32; ndof];
     scratch_ku.fill(0.0);
-    hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, u, scratch_ku);
+    hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, &e_work, &u, scratch_ku);
     let mut r = vec![0.0_f32; ndof];
     let mut f_norm = 0.0_f32;
     for i in 0..ndof {
-        let fi = f[i] * mask[i];
+        let fi = f_work[i] * mask[i];
         f_norm += fi * fi;
-        r[i] = mask[i] * (f[i] - scratch_ku[i]);
+        r[i] = mask[i] * (f_work[i] - scratch_ku[i]);
     }
     f_norm = f_norm.sqrt().max(1e-30_f32);
 
@@ -700,31 +1116,63 @@ pub fn hex_solve_pcg_masked(
         rz_old += r[i] * z[i];
     }
 
-    let tol = relative_tol.max(1e-30_f32);
+    let mut pcg_iters = 0usize;
+    let mut pcg_rel_recursive = f32::INFINITY;
+
     for _ in 0..max_it {
+        pcg_iters += 1;
         scratch_ku.fill(0.0);
-        hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, &p, scratch_ku);
+        hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, &e_work, &p, scratch_ku);
+
         let mut pap = 0.0_f32;
         for i in 0..ndof {
             pap += p[i] * mask[i] * scratch_ku[i];
         }
         pap = pap.max(1e-30_f32);
         let alpha = rz_old / pap;
-        for i in 0..ndof {
-            u[i] += alpha * p[i];
+
+        match cfg.loop_kind {
+            HexPcgLoopKind::Original => {
+                for i in 0..ndof {
+                    u[i] += alpha * p[i];
+                }
+                for i in 0..ndof {
+                    r[i] -= alpha * mask[i] * scratch_ku[i];
+                }
+            }
+            HexPcgLoopKind::RefreshMaskedP => {
+                for i in 0..ndof {
+                    u[i] = mask[i] * (u[i] + alpha * p[i]);
+                }
+                hex_projected_k_times_u(nx, ny, nz, dx, dy, dz, nu, &e_work, &u, mask, scratch_ku);
+                for i in 0..ndof {
+                    r[i] = mask[i] * (f_work[i] - scratch_ku[i]);
+                }
+            }
         }
-        for i in 0..ndof {
-            r[i] -= alpha * mask[i] * scratch_ku[i];
-        }
+
         let mut r_norm = 0.0_f32;
         for i in 0..ndof {
             let v = r[i] * mask[i];
             r_norm += v * v;
         }
         r_norm = r_norm.sqrt();
-        if relative_tol > 0.0 && r_norm < tol * f_norm {
+        pcg_rel_recursive = r_norm / f_norm;
+        if cfg.stop_on_true_residual {
+            // Recursive residual is the cheap trigger; bind exit on one true `eq_rel` matvec.
+            let periodic = pcg_iters % HEX_PCG_TRUE_RESIDUAL_CHECK_PERIOD == 0;
+            let recursive_pass = r_norm <= tol * f_norm;
+            if relative_tol > 0.0 && (periodic || recursive_pass) {
+                let r_true =
+                    hex_equilibrium_rel_residual(nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u);
+                if r_true <= tol {
+                    break;
+                }
+            }
+        } else if relative_tol > 0.0 && r_norm < tol * f_norm {
             break;
         }
+
         if use_preconditioner {
             for i in 0..ndof {
                 z[i] = mask[i] * r[i] / diag[i];
@@ -732,18 +1180,327 @@ pub fn hex_solve_pcg_masked(
         } else {
             z.copy_from_slice(&r);
         }
+
         let mut rz_new = 0.0_f32;
         for i in 0..ndof {
             rz_new += r[i] * z[i];
         }
         let beta = (rz_new / rz_old.max(1e-30_f32)).max(0.0);
         rz_old = rz_new;
-        for i in 0..ndof {
-            p[i] = z[i] + beta * p[i];
+
+        match cfg.loop_kind {
+            HexPcgLoopKind::Original => {
+                for i in 0..ndof {
+                    p[i] = z[i] + beta * p[i];
+                }
+            }
+            HexPcgLoopKind::RefreshMaskedP => {
+                for i in 0..ndof {
+                    p[i] = mask[i] * (z[i] + beta * p[i]);
+                }
+            }
         }
     }
 
     for i in 0..ndof {
         u[i] *= mask[i];
+    }
+
+    let rel_true = hex_equilibrium_rel_residual(nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u);
+
+    HexPcgBisectReport {
+        iterations: pcg_iters,
+        rel_residual_recursive: pcg_rel_recursive,
+        rel_residual_true: rel_true,
+        stiffness_scale: k_char,
+        u,
+    }
+}
+
+/// Descent-curve sample from an f64 PCG run (probe diagnostics).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct HexPcgDescentSample {
+    pub iteration: usize,
+    pub rel_recursive: f64,
+    pub rel_true: f64,
+}
+
+/// f64 PCG lane: all CG state (`u,r,z,p,α,β`, dots) and `K·u` in f64; bind on f64 `eq_rel`.
+#[allow(clippy::too_many_arguments)]
+fn hex_solve_pcg_masked_f64(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    f: &[f32],
+    mask: &[f32],
+    u: &mut [f32],
+    diag: &mut [f32],
+    max_iter: usize,
+    use_preconditioner: bool,
+    relative_tol: f32,
+    milestone_iters: Option<&[usize]>,
+    mut descent_out: Option<&mut Vec<HexPcgDescentSample>>,
+) -> HexPcgReport {
+    let ndof = u.len();
+    let max_it = max_iter.max(1);
+    let tol = (relative_tol.max(HEX_PCG_REL_TOL_F64).max(1e-30_f32)) as f64;
+
+    let k_char = hex_stiffness_scale(e_cell, dx, dy, dz) as f64;
+    let e_solve: Vec<f64> = e_cell.iter().map(|&e| e as f64 / k_char).collect();
+    let f_phys: Vec<f64> = f.iter().map(|&fi| fi as f64).collect();
+    let f_solve: Vec<f64> = f_phys.iter().map(|&fi| fi / k_char).collect();
+    let mask64: Vec<f64> = mask.iter().map(|&m| m as f64).collect();
+
+    let e_solve_f32: Vec<f32> = e_solve.iter().map(|&e| e as f32).collect();
+    hex_diagonal(nx, ny, nz, dx, dy, dz, nu, &e_solve_f32, diag);
+    let diag64: Vec<f64> = diag.iter().map(|&d| d as f64).collect();
+
+    let mut u64: Vec<f64> = u.iter().map(|&x| x as f64).collect();
+    for i in 0..ndof {
+        u64[i] *= mask64[i];
+    }
+
+    let mut ku = vec![0.0_f64; ndof];
+    let mut r = vec![0.0_f64; ndof];
+    let mut z = vec![0.0_f64; ndof];
+    let mut p = vec![0.0_f64; ndof];
+
+    let projected_ku = |vec: &[f64], out: &mut [f64]| {
+        out.fill(0.0);
+        hex_k_times_u_accumulate_f64(nx, ny, nz, dx, dy, dz, nu, &e_solve, vec, out);
+        for (k, m) in out.iter_mut().zip(&mask64) {
+            *k *= *m;
+        }
+    };
+
+    projected_ku(&u64, &mut ku);
+    let mut f_norm = 0.0_f64;
+    for i in 0..ndof {
+        let fi = f_solve[i] * mask64[i];
+        f_norm += fi * fi;
+        r[i] = mask64[i] * (f_solve[i] - ku[i]);
+    }
+    f_norm = f_norm.sqrt().max(1e-30_f64);
+    let abs_tol = tol * f_norm;
+
+    if use_preconditioner {
+        for i in 0..ndof {
+            z[i] = mask64[i] * r[i] / diag64[i].max(1e-30_f64);
+        }
+    } else {
+        z.copy_from_slice(&r);
+    }
+    p.copy_from_slice(&z);
+
+    let mut pcg_iters = 0usize;
+    let mut pcg_rel_recursive = f32::INFINITY;
+    let mut rz_old: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum::<f64>();
+
+    for _ in 0..max_it {
+        pcg_iters += 1;
+        projected_ku(&p, &mut ku);
+        let pap: f64 = p
+            .iter()
+            .zip(ku.iter())
+            .map(|(pi, ki)| pi * ki)
+            .sum::<f64>()
+            .max(1e-30_f64);
+        let alpha: f64 = rz_old / pap;
+        if !alpha.is_finite() {
+            break;
+        }
+
+        for i in 0..ndof {
+            u64[i] = (u64[i] + alpha * p[i]) * mask64[i];
+        }
+
+        projected_ku(&u64, &mut ku);
+        for i in 0..ndof {
+            r[i] = mask64[i] * (f_solve[i] - ku[i]);
+        }
+
+        if use_preconditioner {
+            for i in 0..ndof {
+                z[i] = mask64[i] * r[i] / diag64[i].max(1e-30_f64);
+            }
+        } else {
+            z.copy_from_slice(&r);
+        }
+
+        let rz_new: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum::<f64>();
+        if !rz_new.is_finite() {
+            break;
+        }
+        let beta: f64 = rz_new / rz_old.max(1e-30_f64);
+        rz_old = rz_new;
+        for i in 0..ndof {
+            p[i] = (z[i] + beta * p[i]) * mask64[i];
+        }
+
+        let r_norm: f64 = r.iter().map(|x| x * x).sum::<f64>().sqrt();
+        let r_rec = r_norm / f_norm;
+        pcg_rel_recursive = r_rec as f32;
+        if let Some(targets) = milestone_iters {
+            if targets.contains(&pcg_iters) {
+                let r_true = hex_equilibrium_rel_residual_f64(
+                    nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u64,
+                );
+                if let Some(out) = descent_out.as_deref_mut() {
+                    out.push(HexPcgDescentSample {
+                        iteration: pcg_iters,
+                        rel_recursive: r_rec,
+                        rel_true: r_true,
+                    });
+                }
+            }
+        }
+
+        let periodic = pcg_iters % HEX_PCG_TRUE_RESIDUAL_CHECK_PERIOD == 0;
+        let recursive_pass = r_norm <= abs_tol;
+        let probe_descent = milestone_iters.is_some();
+        if !probe_descent && tol > 0.0 && (periodic || recursive_pass) {
+            let r_true =
+                hex_equilibrium_rel_residual_f64(nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u64);
+            if r_true <= tol {
+                break;
+            }
+        }
+    }
+
+    for i in 0..ndof {
+        u[i] = (u64[i] * mask64[i]) as f32;
+    }
+
+    let rel_true =
+        hex_equilibrium_rel_residual_f64(nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u64) as f32;
+
+    HexPcgReport {
+        iterations: pcg_iters,
+        rel_residual: rel_true,
+        rel_residual_recursive: pcg_rel_recursive,
+        stopping_criterion: HexPcgStoppingCriterion::PlainRNorm,
+        stiffness_scale: k_char as f32,
+    }
+}
+
+/// Descent-curve probe driver (40×40×4 discrimination).
+#[allow(clippy::too_many_arguments)]
+pub fn hex_solve_pcg_f64_descent_probe(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    f: &[f32],
+    mask: &[f32],
+    u: &mut [f32],
+    diag: &mut [f32],
+    max_iter: usize,
+    use_preconditioner: bool,
+    relative_tol: f32,
+    milestone_iters: &[usize],
+) -> (HexPcgReport, Vec<HexPcgDescentSample>) {
+    let mut descent = Vec::new();
+    let report = hex_solve_pcg_masked_f64(
+        nx,
+        ny,
+        nz,
+        dx,
+        dy,
+        dz,
+        nu,
+        e_cell,
+        f,
+        mask,
+        u,
+        diag,
+        max_iter,
+        use_preconditioner,
+        relative_tol,
+        Some(milestone_iters),
+        Some(&mut descent),
+    );
+    (report, descent)
+}
+
+/// Projected PCG on masked free DOFs (`mask[d]=1` free, `0` fixed). Overwrites `u` in-place.
+///
+/// Quick grids: f32 lane + `HEX_PCG_REL_TOL_F32`. Striatus (`hex_pcg_use_f64_lane`): f64 lane + `HEX_PCG_REL_TOL_F64`.
+pub fn hex_solve_pcg_masked(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    f: &[f32],
+    mask: &[f32],
+    u: &mut [f32],
+    diag: &mut [f32],
+    scratch_ku: &mut [f32],
+    max_iter: usize,
+    use_preconditioner: bool,
+    relative_tol: f32,
+) -> HexPcgReport {
+    if hex_pcg_use_f64_lane(nx, ny, nz) {
+        return hex_solve_pcg_masked_f64(
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            nu,
+            e_cell,
+            f,
+            mask,
+            u,
+            diag,
+            max_iter,
+            use_preconditioner,
+            relative_tol,
+            None,
+            None,
+        );
+    }
+    let report = hex_solve_pcg_bisect(
+        nx,
+        ny,
+        nz,
+        dx,
+        dy,
+        dz,
+        nu,
+        e_cell,
+        f,
+        mask,
+        diag,
+        scratch_ku,
+        max_iter,
+        use_preconditioner,
+        relative_tol,
+        HexPcgBisectConfig {
+            loop_kind: HexPcgLoopKind::Original,
+            nondim: true,
+            stop_on_true_residual: true,
+        },
+    );
+    u.copy_from_slice(&report.u);
+    HexPcgReport {
+        iterations: report.iterations,
+        rel_residual: report.rel_residual_true,
+        rel_residual_recursive: report.rel_residual_recursive,
+        stopping_criterion: HexPcgStoppingCriterion::PlainRNorm,
+        stiffness_scale: report.stiffness_scale,
     }
 }

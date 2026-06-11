@@ -8,10 +8,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use burn::backend::Autodiff;
-use burn::tensor::{
-    backend::{AutodiffBackend, Backend as BackendTrait},
-    Data, Shape, Tensor,
-};
+use burn::tensor::{backend::AutodiffBackend, Data, Shape, Tensor};
 use burn_ndarray::NdArray;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
@@ -56,29 +53,14 @@ fn raw_compliance_fd(
     dx: f32,
     dy: f32,
     dz: f32,
-    bf: &Tensor<Inner, 3>,
-    bm: &Tensor<Inner, 3>,
+    bf_data: &[f32],
+    bm_data: &[f32],
     mat: SimpElasticMaterial,
     cg: &MechanicsInnerLoopConfig,
-    dev: &<NdArray<f32> as BackendTrait>::Device,
 ) -> f32 {
-    let n = rho_vals.len();
-    let rho_inner: Tensor<Inner, 3> =
-        Tensor::from_data(Data::new(rho_vals.to_vec(), Shape::new([1, n, 1])), dev);
-    let (_, c_raw) = AdjointComplianceQ1Hex::forward_and_loss::<AD>(
-        Tensor::from_inner(rho_inner),
-        nx,
-        ny,
-        nz,
-        dx,
-        dy,
-        dz,
-        bf.clone(),
-        bm.clone(),
-        mat,
-        cg,
-    );
-    c_raw
+    AdjointComplianceQ1Hex::raw_compliance_at_rho(
+        rho_vals, nx, ny, nz, dx, dy, dz, bf_data, bm_data, mat, cg, None,
+    )
 }
 
 #[test]
@@ -129,6 +111,14 @@ fn adjoint_q1_hex_gradient_matches_finite_difference_plate_8x8x2() {
         use_preconditioner: true,
         max_equilibrium_substeps: 1,
     };
+    // Perturbed-ρ FD re-solves need a looser lane than the autograd anchor (f32 PCG @ 8×8×2).
+    let cg_fd = MechanicsInnerLoopConfig {
+        max_cg_iterations: 6000,
+        cg_tolerance: 1e-5_f32,
+        pcg_tolerance: 1e-5_f32,
+        use_preconditioner: true,
+        max_equilibrium_substeps: 1,
+    };
 
     let nx1 = nx + 1;
     let ny1 = ny + 1;
@@ -153,6 +143,7 @@ fn adjoint_q1_hex_gradient_matches_finite_difference_plate_8x8x2() {
         boundary_mask.clone(),
         mat,
         &cg,
+        None,
     );
 
     let grads = surrogate.backward();
@@ -166,32 +157,14 @@ fn adjoint_q1_hex_gradient_matches_finite_difference_plate_8x8x2() {
     rho_minus[nid_p] = (rho_minus[nid_p] - eps).max(1e-6_f32);
 
     let c_plus = raw_compliance_fd(
-        &rho_plus,
-        nx,
-        ny,
-        nz,
-        plate.dx,
-        plate.dy,
-        plate.dz,
-        &body_force,
-        &boundary_mask,
-        mat,
-        &cg,
-        &dev,
+        &rho_plus, nx, ny, nz, plate.dx, plate.dy, plate.dz, &bf_data, &bm_data, mat, &cg_fd,
     );
     let c_minus = raw_compliance_fd(
-        &rho_minus,
-        nx,
-        ny,
-        nz,
-        plate.dx,
-        plate.dy,
-        plate.dz,
-        &body_force,
-        &boundary_mask,
-        mat,
-        &cg,
-        &dev,
+        &rho_minus, nx, ny, nz, plate.dx, plate.dy, plate.dz, &bf_data, &bm_data, mat, &cg_fd,
+    );
+    assert!(
+        c_plus.is_finite() && c_minus.is_finite(),
+        "FD compliance must be finite: c+={c_plus} c-={c_minus}"
     );
     let fd = (c_plus - c_minus) / (rho_plus[nid_p] - rho_minus[nid_p]);
 
