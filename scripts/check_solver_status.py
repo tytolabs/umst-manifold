@@ -23,8 +23,10 @@ Usage (from ``umst-manifold/``)::
     python3 scripts/check_solver_status.py --check-paths --check-memo-links
     python3 scripts/check_solver_status.py --check-paths --check-statmech-verification-set
     python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set
+    python3 scripts/check_solver_status.py --check-manifest   # non-blocking CI lane (D4)
 
-Crate-local GitHub Actions ``solver-status`` job runs the last command above (see ``.github/workflows/rust.yml``).
+Crate-local GitHub Actions ``solver-status`` job runs the path/memo/statmech command above (see ``.github/workflows/rust.yml``).
+Manifest check runs in optional ``verification-manifest`` job.
 Formatting / Clippy use the separate ``lint`` job.
 
 With a custom doc path::
@@ -37,6 +39,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 # Paths inside backticks or bare `tests/....rs` in the Verification column.
@@ -188,6 +191,85 @@ def _check_statmech_verification_set(rows: list[tuple[str, str, str, str]]) -> i
     return errors
 
 
+def _resolve_fixture_path(root: Path, row: dict) -> Path | None:
+    """Map a MANIFEST [[fixture]] row to a source file under ``root``."""
+    crate = row.get("crate")
+    if crate != "umst-manifold":
+        return None
+    binary = row.get("test_binary")
+    if not isinstance(binary, str) or not binary.strip():
+        return None
+    if binary == "lib":
+        test_fn = row.get("test_fn")
+        if isinstance(test_fn, str) and test_fn:
+            for path in (root / "src").rglob("*.rs"):
+                body = path.read_text(encoding="utf-8", errors="replace")
+                if f"fn {test_fn}" in body:
+                    return path
+        return None
+    candidates = [
+        root / "tests" / "verification" / f"{binary}.rs",
+        root / "tests" / f"{binary}.rs",
+        root / "src" / "physics" / "solvers" / f"{binary}.rs",
+    ]
+    for path in candidates:
+        if path.is_file():
+            return path
+    return None
+
+
+def _check_verification_manifest(root: Path, manifest_path: Path) -> int:
+    """
+    Validate ``tests/verification/MANIFEST.toml`` fixture rows against the repository tree.
+
+    Returns error count.
+    """
+    if not manifest_path.is_file():
+        print(f"error: missing manifest {manifest_path}", file=sys.stderr)
+        return 1
+    data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+    rows = data.get("fixture")
+    if not isinstance(rows, list):
+        print("error: MANIFEST.toml must contain [[fixture]] tables", file=sys.stderr)
+        return 1
+    errors = 0
+    never_run = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        status = str(row.get("status", "")).upper()
+        if status == "NEVER-RUN":
+            never_run += 1
+        if row.get("crate") != "umst-manifold":
+            continue
+        target = _resolve_fixture_path(root, row)
+        if target is None:
+            binary = row.get("test_binary", "?")
+            print(
+                f"error: cannot resolve manifold fixture test_binary={binary!r} "
+                f"(id={row.get('id')!r})",
+                file=sys.stderr,
+            )
+            errors += 1
+            continue
+        test_name = row.get("test_fn")
+        if isinstance(test_name, str) and test_name:
+            body = target.read_text(encoding="utf-8", errors="replace")
+            if f"fn {test_name}" not in body:
+                print(
+                    f"error: manifest test_fn {test_name!r} not found in {target.relative_to(root)!r}",
+                    file=sys.stderr,
+                )
+                errors += 1
+    if never_run < 11:
+        print(
+            f"error: expected ≥11 NEVER-RUN fixtures (6 manifold + 5 cartridge), got {never_run}",
+            file=sys.stderr,
+        )
+        errors += 1
+    return errors
+
+
 def _memo_link_targets(status_md: Path, root: Path, body: str) -> list[tuple[str, Path]]:
     """
     Return (display_ref, absolute_path) for each memo reference to verify.
@@ -255,6 +337,17 @@ def main() -> None:
             "vinet, lj bridge, johnson eos reference, johnson upscale bridge, mechanics fracture bridge)"
         ),
     )
+    ap.add_argument(
+        "--check-manifest",
+        action="store_true",
+        help="Validate tests/verification/MANIFEST.toml paths and NEVER-RUN inventory (D4)",
+    )
+    ap.add_argument(
+        "--manifest-toml",
+        type=Path,
+        default=default_root / "tests" / "verification" / "MANIFEST.toml",
+        help="Path to verification MANIFEST.toml",
+    )
     args = ap.parse_args()
     status_md: Path = args.status_md
     root: Path = args.root
@@ -297,6 +390,9 @@ def main() -> None:
                 )
                 errors += 1
 
+    if args.check_manifest:
+        errors += _check_verification_manifest(root, args.manifest_toml)
+
     if errors:
         sys.exit(1)
     parts = ["stable lane"]
@@ -306,6 +402,8 @@ def main() -> None:
         parts.append("research memo links")
     if args.check_statmech_verification_set:
         parts.append("statmech verification path set")
+    if args.check_manifest:
+        parts.append("verification MANIFEST.toml")
     extra = " + ".join(parts)
     print(f"OK: {status_md} ({len(rows)} table row(s); {extra})")
 

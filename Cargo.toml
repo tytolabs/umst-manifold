@@ -298,6 +298,10 @@ path = "tests/verification/trace_calibration.rs"
 required-features = ["trace-calibration"]
 
 [[test]]
+name = "solve_contract_entry_points"
+path = "tests/solve_contract_entry_points.rs"
+
+[[test]]
 name = "catalog_all_ids_registered"
 path = "tests/catalog_all_ids_registered.rs"
 

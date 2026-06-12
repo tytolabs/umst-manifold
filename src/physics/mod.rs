@@ -15,6 +15,7 @@ pub mod framework;
 pub mod laplacian;
 pub mod linear;
 pub mod mechanics;
+pub mod mechanics_operator;
 pub mod operator;
 pub mod orchestration;
 pub mod protocols;

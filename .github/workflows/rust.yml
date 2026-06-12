@@ -68,6 +68,30 @@ jobs:
           set -euo pipefail
           python3 scripts/check_theorem_counts_ssot.py
 
+  # D3: constants registry docs ↔ Rust (non-blocking).
+  constants-registry-optional:
+    name: constants registry check (optional)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: check_constants.py
+        run: |
+          set -euo pipefail
+          python3 scripts/check_constants.py --check-thmc-todo
+
+  # D4: verification MANIFEST.toml (non-blocking).
+  verification-manifest-optional:
+    name: verification manifest (optional)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: check_solver_status.py --check-manifest
+        run: |
+          set -euo pipefail
+          python3 scripts/check_solver_status.py --check-manifest
+
   # Required job: build the library + run tests on the CPU backend.
   # Stays green on a vanilla GitHub runner without GPU/system libraries.
   build-test:

@@ -3,6 +3,7 @@
 
 pub mod ai;
 pub mod constants;
+pub mod constants_registry;
 #[cfg(feature = "math-constants")]
 pub use constants::landauer_bit_energy_joules;
 pub mod core;
@@ -16,3 +17,4 @@ pub mod pnp_bridge;
 pub mod ros;
 
 pub mod runtime;
+pub mod solve_report;
