@@ -38,14 +38,18 @@ impl<B: Backend<FloatElem = f32>> DensityNet<B> {
         }
     }
 
-    /// Forward on `[..., 3]` → `[..., 1]` (same rank as input).
-    pub fn forward<const D: usize>(&self, coords: Tensor<B, D>) -> Tensor<B, D> {
+    /// MLP trunk through `lin_out` — **pre-sigmoid logits** (unbounded).
+    pub fn forward_logits<const D: usize>(&self, coords: Tensor<B, D>) -> Tensor<B, D> {
         let x = self.lin1.forward(coords);
         let x = relu(x);
         let x = self.lin2.forward(x);
         let x = relu(x);
-        let x = self.lin_out.forward(x);
-        sigmoid(x)
+        self.lin_out.forward(x)
+    }
+
+    /// Forward on `[..., 3]` → `[..., 1]` (same rank as input).
+    pub fn forward<const D: usize>(&self, coords: Tensor<B, D>) -> Tensor<B, D> {
+        sigmoid(self.forward_logits(coords))
     }
 
     /// Batched node coordinates `[B, N, 3]` → pseudo-density `[B, N, 1]`.
@@ -55,6 +59,15 @@ impl<B: Backend<FloatElem = f32>> DensityNet<B> {
         let flat = coords_bn3.reshape([b * n, 3]);
         let rho = self.forward(flat);
         rho.reshape([b, n, 1])
+    }
+
+    /// Batched node coordinates `[B, N, 3]` → pre-sigmoid logits `[B, N, 1]`.
+    pub fn forward_logits_batched(&self, coords_bn3: Tensor<B, 3>) -> Tensor<B, 3> {
+        let [b, n, three] = coords_bn3.dims();
+        debug_assert_eq!(three, 3);
+        let flat = coords_bn3.reshape([b * n, 3]);
+        let z = self.forward_logits(flat);
+        z.reshape([b, n, 1])
     }
 }
 
@@ -391,6 +404,11 @@ impl AugmentedLagrangianVolume {
             self.v_ring.pop_front();
         }
     }
+
+    /// Damp carried \(\lambda\) after a \(\beta\) step — stale multiplier from the old projection regime.
+    pub fn decay_lambda(&mut self, tau_beta: f32) {
+        self.lambda *= tau_beta.clamp(0.0, 1.0);
+    }
 }
 
 #[cfg(feature = "topology-density-evolution")]
@@ -459,6 +477,121 @@ pub fn heaviside_tanh_scalar(r: f32, beta: f32, eta: f32) -> f32 {
     let tabn = (b * eta).tanh();
     let den = (tabn + (b * (1.0 - eta)).tanh()).max(1e-20);
     (((r - eta) * b).tanh() + tabn) / den
+}
+
+#[cfg(feature = "topology-density-evolution")]
+/// Logistic sigmoid on a scalar (CPU bisection helper).
+#[must_use]
+pub fn sigmoid_scalar(x: f32) -> f32 {
+    if x >= 0.0 {
+        1.0 / (1.0 + (-x).exp())
+    } else {
+        let ex = x.exp();
+        ex / (1.0 + ex)
+    }
+}
+
+#[cfg(feature = "topology-density-evolution")]
+/// Mean projected VF on a detached logits slice: \(\mathrm{mean}(H_{\beta,\eta}( \sigma(z+b) ))\)
+/// with identity filter (caller applies spatial filter externally when needed).
+#[must_use]
+pub fn logit_offset_vf_from_slice(logits: &[f32], b: f32, beta: f32, eta: f32) -> f32 {
+    let n = logits.len().max(1) as f32;
+    logits
+        .iter()
+        .map(|&z| heaviside_tanh_scalar(sigmoid_scalar(z + b), beta, eta))
+        .sum::<f32>()
+        / n
+}
+
+#[cfg(feature = "topology-density-evolution")]
+/// Monotone bisection on logit offset \(b\) so
+/// \(\mathrm{mean}(H_{\beta,\eta=0.5}(\sigma(z+b))) = V^\*\) within `tol` (Hoyer et al. 2019).
+///
+/// Bracket \(b \in [-B,+B]\) expands on demand; panics if no bracket is found (should not happen
+/// in unbounded logit space).
+#[must_use]
+pub fn logit_offset_matching_from_slice(
+    logits: &[f32],
+    beta: f32,
+    target_vf: f32,
+    tol: f32,
+    max_iters: usize,
+) -> f32 {
+    const ETA: f32 = 0.5;
+    let target = target_vf.clamp(0.0, 1.0);
+    let eval = |b: f32| logit_offset_vf_from_slice(logits, b, beta, ETA);
+    let mut width = 8.0_f32;
+    let (mut lo, mut hi) = loop {
+        let vf_lo = eval(-width);
+        let vf_hi = eval(width);
+        if vf_lo <= target + tol && vf_hi >= target - tol {
+            break (-width, width);
+        }
+        if width > 1_000_000.0 {
+            panic!(
+                "logit_offset_matching_from_slice: bracket failed — vf@b=-{width}={vf_lo:.6} \
+vf@b=+{width}={vf_hi:.6} target={target:.6} beta={beta:.3} (logit-offset should be feasible)"
+            );
+        }
+        width *= 2.0;
+    };
+    for _ in 0..max_iters.max(1) {
+        let mid = 0.5 * (lo + hi);
+        let vf = eval(mid);
+        // VF increases as b increases (sigmoid shift up → higher densities).
+        if vf > target + tol {
+            hi = mid;
+        } else {
+            lo = mid;
+        }
+    }
+    0.5 * (lo + hi)
+}
+
+#[cfg(feature = "topology-density-evolution")]
+/// Volume match via uniform logit shift \(b\) on detached logits (no post-hoc \(\lambda\) shift).
+#[derive(Clone, Copy, Debug)]
+pub struct VolumeLogitOffsetProjection {
+    pub max_bisection: usize,
+    pub tol: f32,
+}
+
+#[cfg(feature = "topology-density-evolution")]
+impl VolumeLogitOffsetProjection {
+    #[must_use]
+    pub fn new(max_bisection: usize, tol: f32) -> Self {
+        Self {
+            max_bisection,
+            tol: tol.max(1e-8),
+        }
+    }
+
+    /// Scalar \(b^\*\) from [`logit_offset_matching_from_slice`] on detached logits.
+    #[must_use]
+    pub fn bisect_b_from_logits_slice(
+        &self,
+        logits: &[f32],
+        beta: f32,
+        target_vf: f32,
+    ) -> f32 {
+        logit_offset_matching_from_slice(
+            logits,
+            beta,
+            target_vf,
+            self.tol,
+            self.max_bisection,
+        )
+    }
+
+    /// Taped apply: \(\rho = \sigma(z + b)\) with constant \(b\) (bisected on detached \(z\)).
+    pub fn apply_shift<B: Backend<FloatElem = f32>>(
+        &self,
+        logits: Tensor<B, 3>,
+        b: f32,
+    ) -> Tensor<B, 3> {
+        sigmoid(logits.add_scalar(b))
+    }
 }
 
 #[cfg(feature = "topology-density-evolution")]
@@ -565,6 +698,85 @@ impl PlateauBetaContinuation {
         } else {
             base_beta
         }
+    }
+}
+
+#[cfg(feature = "topology-density-evolution")]
+/// AL × β handshake: hold applied \(\beta\) until the volume AL has settled, then allow
+/// [`PlateauBetaContinuation`] / schedule targets to advance (B6 H4).
+#[derive(Clone, Debug)]
+pub struct BetaAlHandshake {
+    pub applied_beta: f32,
+    pub vf_settle_tol: f32,
+    pub lambda_settle_frac: f32,
+    lambda_history: std::collections::VecDeque<f32>,
+}
+
+#[cfg(feature = "topology-density-evolution")]
+impl BetaAlHandshake {
+    /// `lambda_settle_frac`: max \(|\Delta\lambda|\) over the last three outers must be below
+    /// this fraction of \(|\lambda|\) (with floor `1e-4` on \(|\lambda|\)).
+    #[must_use]
+    pub fn new(initial_beta: f32, vf_settle_tol: f32, lambda_settle_frac: f32) -> Self {
+        Self {
+            applied_beta: initial_beta.max(1e-20),
+            vf_settle_tol: vf_settle_tol.max(1e-8),
+            lambda_settle_frac: lambda_settle_frac.clamp(1e-6, 1.0),
+            lambda_history: std::collections::VecDeque::new(),
+        }
+    }
+
+    /// Record \(\lambda\) after each outer multiplier update (settlement uses prior history).
+    pub fn record_lambda(&mut self, lambda: f32) {
+        self.lambda_history.push_back(lambda);
+        while self.lambda_history.len() > 4 {
+            self.lambda_history.pop_front();
+        }
+    }
+
+    /// Volume AL settled: \(|V-V^\*|\) small and recent \(\lambda\) steps are quiet.
+    #[must_use]
+    pub fn constraint_settled(&self, vf_err: f32, lambda: f32) -> bool {
+        if vf_err.abs() >= self.vf_settle_tol {
+            return false;
+        }
+        if self.lambda_history.len() < 4 {
+            return false;
+        }
+        let lam_ref = lambda.abs().max(1e-4);
+        let hist: Vec<f32> = self.lambda_history.iter().copied().collect();
+        let n = hist.len();
+        let mut max_delta = 0.0_f32;
+        for i in (n - 3)..n {
+            if i > 0 {
+                max_delta = max_delta.max((hist[i] - hist[i - 1]).abs());
+            }
+        }
+        max_delta <= self.lambda_settle_frac * lam_ref
+    }
+
+    /// Candidate \(\beta\) from schedule + plateau; applied only when settled (unless `bypass_settle`).
+    ///
+    /// Returns `(applied_beta, beta_stepped, settled)`.
+    pub fn effective_beta(
+        &mut self,
+        plateau: &PlateauBetaContinuation,
+        schedule_beta: f32,
+        greyness_history: &[f32],
+        beta_max: f32,
+        vf_err: f32,
+        lambda: f32,
+        bypass_settle: bool,
+    ) -> (f32, bool, bool) {
+        let candidate =
+            plateau.effective_beta(schedule_beta, greyness_history, beta_max);
+        let settled = bypass_settle || self.constraint_settled(vf_err, lambda);
+        let mut beta_stepped = false;
+        if settled && candidate > self.applied_beta * (1.0 + 1e-6) {
+            self.applied_beta = candidate;
+            beta_stepped = true;
+        }
+        (self.applied_beta, beta_stepped, settled)
     }
 }
 
@@ -891,14 +1103,63 @@ mod simp_step_tests {
 #[cfg(all(test, feature = "topology-density-evolution"))]
 mod topology_density_evolution_tests {
     use super::{
-        heaviside_tanh_scalar, volume_matching_threshold_from_slice, BetaContinuation,
-        ContinuationSchedule, PlateauBetaContinuation, SensitivityFilter, VolumeEtaProjection,
-        VolumeProjection,
+        heaviside_tanh_scalar, logit_offset_matching_from_slice, logit_offset_vf_from_slice,
+        volume_matching_threshold_from_slice, BetaContinuation, ContinuationSchedule,
+        PlateauBetaContinuation, SensitivityFilter, VolumeEtaProjection,
+        VolumeLogitOffsetProjection, VolumeProjection,
     };
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::NdArray;
 
     type B = NdArray<f32>;
+
+    #[test]
+    fn logit_offset_matching_hits_target_vf() {
+        let logits: Vec<f32> = (0..64)
+            .map(|i| -2.0 + 4.0 * (i as f32 / 63.0))
+            .collect();
+        let beta = 16.0_f32;
+        let target = 0.35_f32;
+        let b = logit_offset_matching_from_slice(&logits, beta, target, 1e-3, 48);
+        let vf = logit_offset_vf_from_slice(&logits, b, beta, 0.5);
+        assert!(
+            (vf - target).abs() < 1e-2,
+            "vf {vf} vs target {target} at b {b}"
+        );
+    }
+
+    #[test]
+    fn logit_offset_vf_monotone_in_b() {
+        let logits: Vec<f32> = (0..20).map(|i| -1.0 + 2.0 * (i as f32 / 19.0)).collect();
+        let beta = 8.0_f32;
+        let mut prev = 0.0_f32;
+        for k in -5..=5 {
+            let b = k as f32 * 0.5;
+            let vf = logit_offset_vf_from_slice(&logits, b, beta, 0.5);
+            assert!(
+                vf >= prev - 1e-5,
+                "VF should increase in b: {vf} < {prev} at b={b}"
+            );
+            prev = vf;
+        }
+    }
+
+    #[test]
+    fn volume_logit_offset_projection_apply_shift_bounded() {
+        let dev = Default::default();
+        let proj = VolumeLogitOffsetProjection::new(48, 1e-3);
+        let z = Tensor::<B, 3>::from_data(
+            Data::new(vec![0.0_f32, 1.0, -1.0], Shape::new([1, 3, 1])),
+            &dev,
+        );
+        let rho = proj.apply_shift(z, 0.5);
+        rho.into_data().value.iter().copied().for_each(|v| {
+            assert!(
+                v > 0.0 && v < 1.0,
+                "sigmoid output should lie strictly in (0,1), got {v}"
+            );
+        });
+    }
 
     #[test]
     fn volume_matching_threshold_hits_target_vf() {
