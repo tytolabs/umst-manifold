@@ -16,6 +16,8 @@ src/physics/operator.rs
 src/physics/mechanics.rs
 # REVIEWED 2026-05-12; E4: **HostBridge** (virial / EOS table materialization, `into_data` slices) + **TestOnly** parity asserts;
 # see docs/FP_CATEGORICAL_BURN.md §F. Re-audit if `[B,4]` production path regains per-row host materialization.
+# REVIEWED 2026-06-12; integration-contracts: **TestOnly** — `#[cfg(test)]` bit-identical asserts for `VectorMechanicsSolver` vs `BarNetworkMechanicsAdapter`; `into_data().value` compares equilibrium tensors only; no production host sync in `mechanics_operator.rs`.
+src/physics/mechanics_operator.rs
 src/physics/solvers/statistical_mechanics.rs
 # REVIEWED 2026-05-12; E4: inner CG + L2 telemetry `.into_scalar()` (ConvergenceRequired — telemetry only per module rustdoc);
 # additional grep hits are rustdoc / line comments. No live `into_data` in this file at purge audit.
