@@ -70,7 +70,7 @@ Long-form numbered memos under `docs/research/` were **removed** from this repos
 
 | # | Theme | Completion (%) | Direction |
 | --- | --- | --- | --- |
-| 1 | Topology / shell / Striatus | **25** | Cartridge B6/B8, artefact budgets, `gates_track_b8_all_pass` — see sibling repo docs. |
+| 1 | Topology / shell / Striatus | **25** | Cartridge B6 **ACCEPTANCE FAIL (c1 only, 2026-06-12)** — vf/eq_rel/greyness/xy_var PASS on post-finisher export; see cartridge `Solver-Status.md` + `outputs/b6-acceptance-verdict.md`. B7/B8 blocked until c1 gate design resolved. |
 | 2 | Mechanics — thin plate Kirchhoff accuracy | **25** | Align BCs / enrichment for true §R2.1-style gate; keep ratio-band tests as regression only. |
 | 3 | Fracture — Γ limit, ψ⁺ drives, THMC stagger | **50** | Extend harnesses beyond fixed partial-Γ schedules. |
 | 4 | Acoustics | **100** | Optional: graph-assembled stiffness beyond 1-D periodic bar benchmark. |
