@@ -569,19 +569,8 @@ impl VolumeLogitOffsetProjection {
 
     /// Scalar \(b^\*\) from [`logit_offset_matching_from_slice`] on detached logits.
     #[must_use]
-    pub fn bisect_b_from_logits_slice(
-        &self,
-        logits: &[f32],
-        beta: f32,
-        target_vf: f32,
-    ) -> f32 {
-        logit_offset_matching_from_slice(
-            logits,
-            beta,
-            target_vf,
-            self.tol,
-            self.max_bisection,
-        )
+    pub fn bisect_b_from_logits_slice(&self, logits: &[f32], beta: f32, target_vf: f32) -> f32 {
+        logit_offset_matching_from_slice(logits, beta, target_vf, self.tol, self.max_bisection)
     }
 
     /// Taped apply: \(\rho = \sigma(z + b)\) with constant \(b\) (bisected on detached \(z\)).
@@ -772,6 +761,7 @@ impl BetaAlHandshake {
     /// Candidate \(\beta\) from schedule + plateau; applied only when settled (unless `bypass_settle`).
     ///
     /// Returns `(applied_beta, beta_stepped, settled)`.
+    #[allow(clippy::too_many_arguments)]
     pub fn effective_beta(
         &mut self,
         plateau: &PlateauBetaContinuation,
@@ -782,12 +772,8 @@ impl BetaAlHandshake {
         lambda: f32,
         bypass_settle: bool,
     ) -> (f32, bool, bool) {
-        let candidate = plateau.effective_beta(
-            schedule_beta,
-            greyness_history,
-            beta_max,
-            self.applied_beta,
-        );
+        let candidate =
+            plateau.effective_beta(schedule_beta, greyness_history, beta_max, self.applied_beta);
         let settled = bypass_settle || self.constraint_settled(vf_err, lambda);
         let mut beta_stepped = false;
         if settled && candidate > self.applied_beta * (1.0 + 1e-6) {
@@ -1133,9 +1119,7 @@ mod topology_density_evolution_tests {
 
     #[test]
     fn logit_offset_matching_hits_target_vf() {
-        let logits: Vec<f32> = (0..64)
-            .map(|i| -2.0 + 4.0 * (i as f32 / 63.0))
-            .collect();
+        let logits: Vec<f32> = (0..64).map(|i| -2.0 + 4.0 * (i as f32 / 63.0)).collect();
         let beta = 16.0_f32;
         let target = 0.35_f32;
         let b = logit_offset_matching_from_slice(&logits, beta, target, 1e-3, 48);
