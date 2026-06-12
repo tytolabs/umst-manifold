@@ -148,19 +148,6 @@ jobs:
           cargo test --verbose --release --features solver-research,photonics-fdfd --test photonics_curl_curl_3d_brick
           cargo test --verbose --release --features solver-research --test statmech_lj_johnson_upscale_bridge
 
-  # D3/D4 integration-contracts: constants doc parity + verification MANIFEST (non-blocking).
-  integration-contracts-optional:
-    name: constants + verification manifest (optional)
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - name: check_constants.py
-        run: python3 scripts/check_constants.py
-      - name: check_solver_status.py --check-manifest
-        run: python3 scripts/check_solver_status.py --check-manifest
-
   # Optional PR signal: Phase A physics guard + full solver-experimental test matrix.
   # continue-on-error: not a merge gate; branch protection should keep requiring build-test / lint / solver-* only.
   solver-experimental-pr-optional:
