@@ -836,9 +836,10 @@ pub const HEX_PCG_TRUE_RESIDUAL_CHECK_PERIOD: usize = 25;
 
 /// Full-harness default PCG budget at Striatus N (40×40×4).
 ///
-/// Derived: measured ~1213 iters @ outer 1 (2026-06-10); 2× headroom because κ grows as the design
-/// develops contrast (outers 11–18 previously stalled at the 2000 cap).
-pub const HEX_PCG_MAX_ITER_DEFAULT_STRIATUS: usize = 4000;
+/// Derived (2026-06-12, sharp-field basis): worst observed **3960** iters @ outer 32 on logit-offset
+/// 60-outer (`greyness≈0.084`, κ at lifetime peak); **2×** headroom ⇒ **8000**. Supersedes the
+/// 2026-06-10 grey-field basis (~1213 @ outer 1 → 4000 cap).
+pub const HEX_PCG_MAX_ITER_DEFAULT_STRIATUS: usize = 8000;
 
 /// Which norm triggered PCG exit (diagnostic).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
