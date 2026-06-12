@@ -1,0 +1,131 @@
+# Verification manifest (integration-contracts D4)
+# Audit §4 — NEVER-RUN rows for #[ignore] envelopes (Wave 2 executes once).
+
+[meta]
+schema = 1
+audit_pin = "fb24eda"
+wave_owner = "integration-contracts"
+
+# Manifold crate — six #[ignore] surfaces (grep `ignore =` under tests/ + src/)
+
+[[fixture]]
+id = "manifold.rheology.chorin_longrun"
+crate = "umst-manifold"
+test_binary = "rheology_poiseuille"
+test_fn = "chorin_channel_65x17_longrun_wall_normal_l2_vs_regularized_reference"
+lane = "solver-research"
+status = "NEVER-RUN"
+features = ["rheology-bingham"]
+run_hint = "UMST_RUN_CHORIN_LONGRUN_L2=1 cargo test --release -p umst-manifold --features solver-research --test rheology_poiseuille -- --ignored"
+
+[[fixture]]
+id = "manifold.mechanics.striatus_compliance"
+crate = "umst-manifold"
+test_binary = "mechanics_analytic"
+test_fn = "uniform_rho_q1_hex_compliance_vs_kirchhoff_striatus_40x40x4"
+lane = "solver-research"
+status = "NEVER-RUN"
+features = ["mechanics-voigt-cauchy"]
+run_hint = "cargo test --release -p umst-manifold --features mechanics-voigt-cauchy --test mechanics_analytic uniform_rho_q1_hex_compliance_vs_kirchhoff_striatus_40x40x4 -- --ignored --nocapture"
+
+[[fixture]]
+id = "manifold.mechanics.r21_kirchhoff_gate"
+crate = "umst-manifold"
+test_binary = "mechanics_analytic"
+test_fn = "plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate"
+lane = "solver-research"
+status = "NEVER-RUN"
+features = ["mechanics-voigt-cauchy"]
+run_hint = "UMST_MECHANICS_R21_GATE=1 cargo test -p umst-manifold --features mechanics-voigt-cauchy --test mechanics_analytic -- --ignored"
+
+[[fixture]]
+id = "manifold.mechanics.h4_roof_bar_pcg"
+crate = "umst-manifold"
+test_binary = "bar_network_operator_step_a"
+test_fn = "quick_plate_harness_load_pcg_converges"
+lane = "solver-research"
+status = "NEVER-RUN"
+features = ["mechanics-adjoint"]
+run_hint = "cargo test --release -p umst-manifold --features mechanics-adjoint --test bar_network_operator_step_a -- --ignored"
+
+[[fixture]]
+id = "manifold.mechanics.q1_hex_bisect_striatus"
+crate = "umst-manifold"
+test_binary = "q1_hex_pcg_bisect_probe"
+test_fn = "q1_hex_unit_sanity_striatus_n"
+lane = "solver-research"
+status = "NEVER-RUN"
+features = ["mechanics-adjoint-q1-hex"]
+run_hint = "cargo test -p umst-manifold --features mechanics-adjoint-q1-hex --test q1_hex_pcg_bisect_probe -- --ignored --nocapture"
+
+[[fixture]]
+id = "manifold.electrochemistry.sg_band_jacobian"
+crate = "umst-manifold"
+test_binary = "electrochemistry"
+test_fn = "full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity"
+lane = "solver-research"
+status = "NEVER-RUN"
+features = ["electrochemistry-pnp", "solver-experimental"]
+run_hint = "cargo test --release -p umst-manifold --features electrochemistry-pnp,solver-experimental full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity -- --ignored --nocapture"
+
+# Cartridge repo — five NEVER-RUN envelopes (external; Wave 2 records in sibling ledger)
+
+[[fixture]]
+id = "cartridge.striatus.b6_acceptance"
+crate = "umst-concrete-cartridge"
+test_binary = "gates_track_b8"
+test_fn = "gates_track_b8_all_pass"
+lane = "cartridge"
+status = "NEVER-RUN"
+features = []
+run_hint = "see umst-concrete-cartridge docs/Solver-Status.md"
+
+[[fixture]]
+id = "cartridge.striatus.b6_200_outer"
+crate = "umst-concrete-cartridge"
+test_binary = "striatus_acceptance"
+test_fn = "striatus_200_outer_acceptance"
+lane = "cartridge"
+status = "NEVER-RUN"
+features = []
+run_hint = "cartridge harness — 200-outer B6 acceptance"
+
+[[fixture]]
+id = "cartridge.shell.rib_harness"
+crate = "umst-concrete-cartridge"
+test_binary = "shell_harness"
+test_fn = "rib_topology_harness_smoke"
+lane = "cartridge"
+status = "NEVER-RUN"
+features = []
+run_hint = "cartridge shell harness"
+
+[[fixture]]
+id = "cartridge.print.json_budget"
+crate = "umst-concrete-cartridge"
+test_binary = "print_ready"
+test_fn = "json_artefact_budget_gate"
+lane = "cartridge"
+status = "NEVER-RUN"
+features = []
+run_hint = "cartridge print-ready JSON"
+
+[[fixture]]
+id = "cartridge.helmholtz.pcg_budget"
+crate = "umst-concrete-cartridge"
+test_binary = "helmholtz_striatus"
+test_fn = "pcg_iter_budget_sharp_field"
+lane = "cartridge"
+status = "NEVER-RUN"
+features = []
+run_hint = "cartridge Helmholtz PCG budget"
+
+[[fixture]]
+id = "manifold.solve_contract.wave2_skeleton"
+crate = "umst-manifold"
+test_binary = "solve_contract_entry_points"
+test_fn = "wave2_execute_never_run_ignored_envelopes"
+lane = "integration-contracts"
+status = "NEVER-RUN"
+features = []
+run_hint = "Wave 2 meta-runner — cargo test --test solve_contract_entry_points -- --ignored"
