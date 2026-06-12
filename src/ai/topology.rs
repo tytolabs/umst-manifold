@@ -683,21 +683,35 @@ impl PlateauBetaContinuation {
         }
     }
 
-    /// Returns `base_beta` or `min(2·base_beta, beta_max)` when the last `window` greyness samples plateau.
+    /// Returns schedule `base_beta` (monotone vs `prev_beta`) or `min(2·schedule, beta_max)` when
+    /// the last `window` greyness samples plateau.
     #[must_use]
-    pub fn effective_beta(&self, base_beta: f32, greyness_history: &[f32], beta_max: f32) -> f32 {
+    pub fn effective_beta(
+        &self,
+        base_beta: f32,
+        greyness_history: &[f32],
+        beta_max: f32,
+        prev_beta: f32,
+    ) -> f32 {
+        let schedule = base_beta.max(prev_beta);
         if greyness_history.len() < self.window {
-            return base_beta;
+            return schedule;
         }
         let tail = &greyness_history[greyness_history.len() - self.window..];
         let plateau = tail
             .windows(2)
             .all(|w| (w[1] - w[0]).abs() <= self.plateau_eps);
-        if plateau && base_beta < beta_max * 0.99 {
-            (base_beta * 2.0).min(beta_max)
+        let boosted = if plateau && schedule < beta_max * 0.99 {
+            (schedule * 2.0).min(beta_max)
         } else {
-            base_beta
-        }
+            schedule
+        };
+        let effective = boosted.max(prev_beta);
+        debug_assert!(
+            effective + 1e-6 >= prev_beta,
+            "PlateauBetaContinuation: beta must be monotone (effective={effective} prev={prev_beta})"
+        );
+        effective
     }
 }
 
@@ -768,8 +782,12 @@ impl BetaAlHandshake {
         lambda: f32,
         bypass_settle: bool,
     ) -> (f32, bool, bool) {
-        let candidate =
-            plateau.effective_beta(schedule_beta, greyness_history, beta_max);
+        let candidate = plateau.effective_beta(
+            schedule_beta,
+            greyness_history,
+            beta_max,
+            self.applied_beta,
+        );
         let settled = bypass_settle || self.constraint_settled(vf_err, lambda);
         let mut beta_stepped = false;
         if settled && candidate > self.applied_beta * (1.0 + 1e-6) {
@@ -1221,8 +1239,20 @@ mod topology_density_evolution_tests {
     fn plateau_beta_doubles_on_flat_greyness() {
         let p = PlateauBetaContinuation::new(4, 0.01);
         let hist = [0.5_f32, 0.501, 0.499, 0.5005];
-        let b = p.effective_beta(8.0, &hist, 64.0);
+        let b = p.effective_beta(8.0, &hist, 64.0, 8.0);
         assert!((b - 16.0).abs() < 1e-3);
+    }
+
+    #[test]
+    fn plateau_beta_monotone_when_schedule_dips() {
+        let p = PlateauBetaContinuation::new(4, 0.01);
+        let hist = [0.9_f32, 0.91, 0.89, 0.905];
+        // Prior outer plateau-doubled to 2.514; schedule would read 1.283 without monotonicity guard.
+        let b = p.effective_beta(1.283, &hist, 64.0, 2.514);
+        assert!(
+            b + 1e-6 >= 2.514,
+            "beta must not drop when schedule base_beta < prev_beta: got {b}"
+        );
     }
 
     #[test]
