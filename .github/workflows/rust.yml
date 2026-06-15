@@ -110,6 +110,12 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
 
+      - name: W9 agnostic-on-fork grep (S1)
+        run: bash scripts/check_agnostic_on_fork.sh
+
+      - name: W9 domain lexicon ratchet (S2 baseline)
+        run: bash scripts/check_domain_lexicon.sh
+
   # PR gate: solver-stable lane per Cargo.toml (topology-density-evolution + statistical-mechanics-vinet; mechanics/fracture/Johnson live under solver-research).
   solver-stable-pr:
     name: solver-stable tests (PR)

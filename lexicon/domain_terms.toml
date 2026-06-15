@@ -1,0 +1,28 @@
+# W9 Phase A — domain lexicon baseline (Tier 1 = fail on new hits in src/).
+# Ratchet: scripts/check_domain_lexicon.sh compares against lexicon/baseline_count.txt.
+
+[tier1]
+terms = [
+  "cement",
+  "hydration",
+  "concrete",
+  "clinker",
+  "mortar",
+  "slump",
+  "aggregate",
+  "carbonat",
+  "scm",
+  "gel",
+  "jennings",
+  "powers",
+  "rebar",
+  "paste",
+  "curing",
+  "itz",
+]
+
+[tier2]
+terms = ["mix", "fc", "w_c", "mpa"]
+
+[scan]
+roots = ["src"]

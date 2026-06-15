@@ -273,12 +273,29 @@ impl Default for ThmcSolver {
     }
 }
 
+/// Stacked transport residual \(\|R\|_2\) for operator-split THMC outer iterations (host read).
+#[cfg(feature = "thmc-coupled")]
+fn stacked_transport_residual_l2<B: Backend>(tensor: &Tensor<B, 3>) -> f32
+where
+    B::FloatElem: num_traits::float::FloatCore,
+{
+    tensor
+        .clone()
+        .powf_scalar(2.0)
+        .sum()
+        .sqrt()
+        .into_scalar()
+        .elem::<f32>()
+}
+
 impl ThmcSolver {
     /// One coupled THMC step using cartridge constitutive data.
     ///
     /// # Contract
     /// - Inner tensors `[B, N, …]` align with the active voxel / node count carried by `manifold`.
-    /// - Intended to converge residuals \(\|R\| < tol\); adaptive `dt` halving is a follow-up.
+    /// - Explicit split path: fixed `max_newton` passes; exits early when stacked transport
+    ///   residual \(\|R\|_2 \le\) [`Self::tol`].
+    /// - Monolithic path: uses [`ThmcMonolithicNewtonConfig::stacked_residual_l2_tolerance`] when set.
     ///
     /// # Errors
     /// - Builds **without** `thmc-coupled`: returns `Err` — do not call on production hot paths unless
@@ -446,8 +463,7 @@ impl ThmcSolver {
 
         let mut _last_total_residual_tensor: Option<Tensor<B, 3>> = None;
 
-        // Fixed outer Newton iterations: residual norms stay on-device (no `.into_scalar()`);
-        // early exit would require a host read and is omitted for autodiff-safe control flow.
+        // Split residual Newton: exit when \(\|R\|_2 < tol\) (Wave 1 honesty).
         for _newton in 0..self.max_newton {
             let t_old = state.thermal.temperature.clone();
             let h_old = state.hydro.humidity.clone();
@@ -599,7 +615,12 @@ impl ThmcSolver {
                     .sub(dt_lap_t)
                     .abs();
                 let r_h = state.hydro.humidity.clone().sub(h_old).sub(dt_lap_h).abs();
-                _last_total_residual_tensor = Some(r_t.add(r_h));
+                let total_residual_tensor = r_t.add(r_h);
+                if stacked_transport_residual_l2(&total_residual_tensor) <= self.tol {
+                    _last_total_residual_tensor = Some(total_residual_tensor);
+                    break;
+                }
+                _last_total_residual_tensor = Some(total_residual_tensor);
                 continue;
             }
 
@@ -746,7 +767,10 @@ impl ThmcSolver {
                 .abs();
             let r_h = state.hydro.humidity.clone().sub(h_old).sub(dt_lap_h).abs();
             let total_residual_tensor = r_t.add(r_h);
-            _last_total_residual_tensor = Some(total_residual_tensor);
+            _last_total_residual_tensor = Some(total_residual_tensor.clone());
+            if stacked_transport_residual_l2(&total_residual_tensor) <= self.tol {
+                break;
+            }
         }
 
         let _ = _last_total_residual_tensor;

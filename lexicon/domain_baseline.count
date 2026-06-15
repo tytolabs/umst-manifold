@@ -1,0 +1,3 @@
+# Initial lexicon baseline for W9 Phase A (ratchet down to 0).
+# Count = grep hits for domain terms in umst-manifold/src (see check_domain_lexicon.sh).
+15
