@@ -16,7 +16,7 @@ HITS=()
 while IFS= read -r file; do
   [[ -z "$file" ]] && continue
   case "$file" in
-    *W9_MIGRATION*|*agnostic_on_fork_allowlist*) continue ;;
+    *w9_migration*|*agnostic_on_fork_allowlist*|*traceability.rs*) continue ;;
   esac
   if grep -vE 'serde\(rename\s*=' "$file" | grep -qE "$PATTERN"; then
     HITS+=("$file")

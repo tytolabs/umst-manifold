@@ -1,5 +1,5 @@
-# W9 Phase A — domain lexicon baseline (Tier 1 = fail on new hits in src/).
-# Ratchet: scripts/check_domain_lexicon.sh compares against lexicon/baseline_count.txt.
+# W9 Phase A — domain lexicon (Tier 1 = fail on new hits in src/).
+# Verifier: scripts/check_domain_lexicon.sh (literal zero, no baseline ratchet).
 
 [tier1]
 terms = [

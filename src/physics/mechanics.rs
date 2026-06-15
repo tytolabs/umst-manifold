@@ -25,7 +25,9 @@
 //! stiffness is \(k = (EA/L)\,(1-d)^2\) per edge (damage matches the spirit of
 //! [`crate::physics::laplacian::TopologicalLaplacian`]).
 
-use burn::tensor::{backend::Backend, ElementConversion, Int, Tensor};
+use burn::tensor::{backend::Backend, Int, Tensor};
+#[cfg(feature = "solver-experimental")]
+use burn::tensor::ElementConversion;
 
 use super::dec_operators::DecEdgeOperators;
 use super::framework::PhysicsSolverZst;

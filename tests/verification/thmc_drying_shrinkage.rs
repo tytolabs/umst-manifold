@@ -16,15 +16,23 @@ use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::physics::laplacian::TopologicalLaplacian;
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::solvers::{
-    reaction_extent_rate_tensor, mc2010_style_notional_shrink_strain,
+    mc2010_style_notional_shrink_strain, reaction_extent_rate_tensor,
     shrink_strain_from_saturation_loss, shrink_strain_from_saturation_loss_tensor,
     spectral_tensile_psi_plus_from_strain, strain_tensor_for_fracture_from_manifold, ChemicalPlan,
-    HydrologicPlan, MechanicalPlan, ThermalPlan, ReactionExtentKinetics,
-    ThmcImplicitEulerThermalHumidityReactionExtentResidual, ThmcImplicitEulerThermalReactionExtentResidual,
-    ThmcImplicitTAlphaNewtonConfig, ThmcMonolithicImplicitUnknownLayout,
-    ThmcMonolithicNewtonConfig, ThmcSolver, ThmcState, THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
+    HydrologicPlan, MechanicalPlan, ReactionExtentKinetics, ThermalPlan,
+    ThmcImplicitEulerThermalHumidityReactionExtentResidual,
+    ThmcImplicitEulerThermalReactionExtentResidual, ThmcImplicitTAlphaNewtonConfig,
+    ThmcMonolithicImplicitUnknownLayout, ThmcMonolithicNewtonConfig, ThmcSolver, ThmcState,
+    THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
 };
+#[path = "../injection_mechanism_fixture.rs"]
+mod injection_mechanism_fixture;
+use injection_mechanism_fixture::injection_fixture_kinetics;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
+
+fn reference_reaction_extent_kinetics() -> ReactionExtentKinetics {
+    injection_fixture_kinetics()
+}
 
 type B = NdArray<f32>;
 
@@ -192,7 +200,7 @@ fn thmc_drying_shrinkage_within_mc2010_notional_band() {
         dt: 0.05_f32,
         max_newton: 4_usize,
         tol: 1e-3_f32,
-        reaction_extent_kinetics: ReactionExtentKinetics::default(),
+        reaction_extent_kinetics: reference_reaction_extent_kinetics(),
         drying_last_node_evaporation_k: 0.35_f32,
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
@@ -218,7 +226,7 @@ fn thmc_drying_shrinkage_within_mc2010_notional_band() {
 
 #[test]
 fn thmc_reaction_extent_rate_scalar_matches_closed_form() {
-    let k = ReactionExtentKinetics::default();
+    let k = reference_reaction_extent_kinetics();
     let alpha = 0.35_f32;
     let t = 303.15_f32;
     let got = k.alpha_rate_scalar(alpha, t);
@@ -406,7 +414,7 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
         dt: 0.01_f32,
         max_newton: 1_usize,
         tol: 1e-2_f32,
-        reaction_extent_kinetics: ReactionExtentKinetics::default(),
+        reaction_extent_kinetics: reference_reaction_extent_kinetics(),
         drying_last_node_evaporation_k: 0.0_f32,
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
@@ -485,7 +493,7 @@ fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
             dt: 0.01_f32,
             max_newton: 1_usize,
             tol: 1e-2_f32,
-            reaction_extent_kinetics: ReactionExtentKinetics::default(),
+            reaction_extent_kinetics: reference_reaction_extent_kinetics(),
             drying_last_node_evaporation_k: 0.0_f32,
             drying_ambient_h: 0.5_f32,
             implicit_t_alpha_newton: None,
@@ -526,7 +534,11 @@ fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
 
 /// Piecewise derivative of [`ReactionExtentKinetics::alpha_rate_scalar`] w.r.t. `temperature_k`
 /// (matches the scalar implementation’s `max` / `clamp` semantics).
-fn alpha_rate_scalar_dt_analytic(k: &ReactionExtentKinetics, alpha: f32, temperature_k: f32) -> f32 {
+fn alpha_rate_scalar_dt_analytic(
+    k: &ReactionExtentKinetics,
+    alpha: f32,
+    temperature_k: f32,
+) -> f32 {
     let one_m = (1.0_f32 - alpha).max(0.0_f32);
     let t_safe = temperature_k.max(k.t_min_k);
     let ea_rt = k.activation_energy_j_per_mol / (k.gas_constant_j_per_mol_k * t_safe);
@@ -548,7 +560,7 @@ fn alpha_rate_scalar_dt_analytic(k: &ReactionExtentKinetics, alpha: f32, tempera
 
 #[test]
 fn thmc_reaction_extent_rate_scalar_derivative_temperature_matches_finite_difference() {
-    let k = ReactionExtentKinetics::default();
+    let k = reference_reaction_extent_kinetics();
     let alpha = 0.42_f32;
     let t0 = 301.4_f32;
     let h = 0.25_f32;
@@ -568,7 +580,7 @@ fn thmc_implicit_euler_t_alpha_residual_matches_brute_force_two_nodes() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let dt = 0.02_f32;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
     let t_n = Tensor::<B, 3>::from_data(
         Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
         &d,
@@ -649,7 +661,7 @@ fn thmc_implicit_euler_t_h_alpha_residual_humidity_matches_brute_force_two_nodes
     let n = 2usize;
     let manifold = chain_manifold(n);
     let dt = 0.02_f32;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
     let t_n = Tensor::<B, 3>::from_data(
         Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
         &d,
@@ -766,7 +778,7 @@ fn thmc_implicit_euler_t_h_alpha_u_placeholder_r_u_and_flat_layout_two_nodes() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let dt = 0.02_f32;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
     let t_n = Tensor::<B, 3>::from_data(
         Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
         &d,
@@ -893,7 +905,7 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1040,7 +1052,7 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1165,7 +1177,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1300,7 +1312,7 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1414,7 +1426,7 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1525,7 +1537,7 @@ fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() 
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1628,7 +1640,7 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1775,7 +1787,7 @@ fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() 
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1924,7 +1936,7 @@ fn thmc_implicit_euler_t_h_alpha_multi_newton_monotone_stacked_residual_norm() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let dt = 0.02_f32;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
     let t_n = Tensor::<B, 3>::from_data(
         Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
         &d,
@@ -1999,7 +2011,7 @@ fn thmc_implicit_euler_t_alpha_one_newton_lowers_residual_norm() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let dt = 0.02_f32;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
     let t_n = Tensor::<B, 3>::from_data(
         Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
         &d,
@@ -2066,7 +2078,7 @@ fn thmc_t_alpha_newton_residual_preserves_hydro_mechanics_fields() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let dt = 0.02_f32;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
     let t_n = Tensor::<B, 3>::from_data(
         Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
         &d,
@@ -2144,7 +2156,7 @@ fn thmc_implicit_euler_t_alpha_multi_newton_monotone_residual_norm_decrease() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let dt = 0.02_f32;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
     let t_n = Tensor::<B, 3>::from_data(
         Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
         &d,
@@ -2280,7 +2292,7 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
         time: 0.0_f32,
     };
 
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
     let solver_explicit = ThmcSolver {
         dt: 0.08_f32,
         max_newton: 1_usize,
@@ -2488,7 +2500,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
     let dt = 0.02_f32;
     let mc = ThmcMonolithicNewtonConfig {
         iterations: 4_usize,
@@ -2561,12 +2573,8 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
     } else {
         t_bn1.expand::<3, _>([batch, n, f_alpha_ch])
     };
-    let d_alpha = reaction_extent_rate_tensor(
-        &kinetics,
-        alpha_n.clone(),
-        temperature_for_alpha,
-        &device,
-    );
+    let d_alpha =
+        reaction_extent_rate_tensor(&kinetics, alpha_n.clone(), temperature_for_alpha, &device);
     let f_t_ch = t_old.dims()[2];
     let exo = d_alpha
         .clone()
@@ -2861,7 +2869,7 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
         .expect("chain SI coords")
         .clone();
     let batch = 1usize;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
     let dt = 0.02_f32;
     let mc = ThmcMonolithicNewtonConfig {
         iterations: 4_usize,
@@ -3006,7 +3014,7 @@ fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
         time: 0.0_f32,
     };
 
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
     let solver_explicit = ThmcSolver {
         dt: 0.08_f32,
         max_newton: 1_usize,
@@ -3072,7 +3080,7 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
         time: 0.0_f32,
     };
 
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
     let dt = 0.08_f32;
     let solver_explicit = ThmcSolver {
         dt,

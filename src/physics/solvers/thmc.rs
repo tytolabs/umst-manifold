@@ -83,11 +83,12 @@
 //!   `strain_tensor_for_fracture_from_manifold` (public stub for cartridges / tests).
 
 #[cfg(feature = "thmc-coupled")]
-use burn::tensor::Int;
-#[cfg(feature = "thmc-coupled")]
 use burn::tensor::ElementConversion;
+#[cfg(feature = "thmc-coupled")]
+use burn::tensor::Int;
 use burn::tensor::{backend::Backend, Tensor};
 
+use crate::core::material_transition::ReactionExtentKineticsSpec;
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use crate::core::traits::IScienceCartridge;
 
@@ -102,8 +103,9 @@ use crate::physics::solvers::fracture_field::{
 };
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc_residual::{
-    ThmcImplicitEulerThermalHumidityReactionExtentResidual, ThmcImplicitEulerThermalReactionExtentResidual,
-    ThmcMonolithicImplicitUnknownLayout, THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
+    ThmcImplicitEulerThermalHumidityReactionExtentResidual,
+    ThmcImplicitEulerThermalReactionExtentResidual, ThmcMonolithicImplicitUnknownLayout,
+    THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
 };
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
@@ -127,21 +129,32 @@ pub struct ReactionExtentKinetics {
 
 impl Default for ReactionExtentKinetics {
     fn default() -> Self {
-        Self {
-            arrhenius_prefactor_s: REACTION_EXTENT_ARRHENIUS_PREFACTOR_S,
-            activation_energy_j_per_mol: REACTION_EXTENT_ACTIVATION_ENERGY_J_PER_MOL,
-            gas_constant_j_per_mol_k: UNIVERSAL_GAS_CONSTANT_J_PER_MOL_K,
-            t_min_k: REACTION_EXTENT_T_MIN_K,
-            t_boost_ref_k: REACTION_EXTENT_T_BOOST_REF_K,
-            t_boost_per_k: REACTION_EXTENT_T_BOOST_PER_K,
-            exothermic_k_per_alpha_rate: REACTION_EXTENT_EXOTHERMIC_K_PER_ALPHA_RATE,
-            stiffness_e_scale_pa: 30e9_f32,
-            stiffness_nu: 0.2_f32,
-        }
+        Self::from_spec(ReactionExtentKineticsSpec::substrate_neutral())
+    }
+}
+
+impl From<ReactionExtentKineticsSpec> for ReactionExtentKinetics {
+    fn from(spec: ReactionExtentKineticsSpec) -> Self {
+        Self::from_spec(spec)
     }
 }
 
 impl ReactionExtentKinetics {
+    #[must_use]
+    pub fn from_spec(spec: ReactionExtentKineticsSpec) -> Self {
+        Self {
+            arrhenius_prefactor_s: spec.arrhenius_prefactor_s,
+            activation_energy_j_per_mol: spec.activation_energy_j_per_mol,
+            gas_constant_j_per_mol_k: spec.gas_constant_j_per_mol_k,
+            t_min_k: spec.t_min_k,
+            t_boost_ref_k: spec.t_boost_ref_k,
+            t_boost_per_k: spec.t_boost_per_k,
+            exothermic_k_per_alpha_rate: spec.exothermic_k_per_alpha_rate,
+            stiffness_e_scale_pa: spec.stiffness_e_scale_pa,
+            stiffness_nu: spec.stiffness_nu,
+        }
+    }
+
     /// Scalar Arrhenius rate \(f(\alpha,T)\) (1/s) matching the tensor path in `reaction_extent_arrhenius_rate`.
     #[must_use]
     pub fn alpha_rate_scalar(&self, alpha: f32, temperature_k: f32) -> f32 {
@@ -157,24 +170,6 @@ impl ReactionExtentKinetics {
 
 /// Universal gas constant \(R\) for Arrhenius denominator (J·mol⁻¹·K⁻¹). CODATA-compatible float literal.
 pub const UNIVERSAL_GAS_CONSTANT_J_PER_MOL_K: f32 = 8.314_463_f32;
-
-/// Placeholder activation energy \(E_a\) for reaction extent kinetics (J·mol⁻¹); not calibrated to a mix design.
-pub const REACTION_EXTENT_ACTIVATION_ENERGY_J_PER_MOL: f32 = 40_000.0_f32;
-
-/// Placeholder pre-exponential \(A\) in \(f(\alpha,T) = A\,\exp(-E_a/(RT))\,(1-\alpha)_+\) (s⁻¹).
-pub const REACTION_EXTENT_ARRHENIUS_PREFACTOR_S: f32 = 1.0e-6_f32;
-
-/// Minimum absolute temperature used in the Arrhenius denominator (K) to avoid blow-up at \(T\to 0\).
-pub const REACTION_EXTENT_T_MIN_K: f32 = 250.0_f32;
-
-/// Reference temperature (K) above which Arrhenius rate is boosted (cross-coupling doc).
-pub const REACTION_EXTENT_T_BOOST_REF_K: f32 = 293.15_f32;
-
-/// Multiplicative boost per kelvin above [`REACTION_EXTENT_T_BOOST_REF_K`] on reaction extent rate (1 / K).
-pub const REACTION_EXTENT_T_BOOST_PER_K: f32 = 0.02_f32;
-
-/// Exothermic temperature increment scale (K per unit \(\dot\alpha\) per second of integration): \(T \leftarrow T + \Delta t \cdot q_{\mathrm{exo}} \,\dot\alpha\).
-pub const REACTION_EXTENT_EXOTHERMIC_K_PER_ALPHA_RATE: f32 = 5.0_f32;
 
 /// Thermal plan: nodal temperature (and optional channels). Shape `[B, N, F_T]`.
 #[derive(Clone, Debug)]
@@ -545,7 +540,8 @@ impl ThmcSolver {
                     .clone()
                     .slice([0..batch, 0..n, 0..1])
                     .clamp(1e-6_f32, 1.0_f32);
-                let stiffness_e = alpha_bn1_pred.mul_scalar(self.reaction_extent_kinetics.stiffness_e_scale_pa);
+                let stiffness_e =
+                    alpha_bn1_pred.mul_scalar(self.reaction_extent_kinetics.stiffness_e_scale_pa);
                 let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &device)
                     .add_scalar(self.reaction_extent_kinetics.stiffness_nu);
                 let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
@@ -737,7 +733,8 @@ impl ThmcSolver {
                         .slice([0..batch, 0..n, 0..1])
                         .clamp(1e-6_f32, 1.0_f32);
                     // Uncalibrated E scale (placeholder; Solver-Status.md THMC row / module “Uncalibrated placeholders”).
-                    let stiffness_e = alpha_bn1.mul_scalar(self.reaction_extent_kinetics.stiffness_e_scale_pa);
+                    let stiffness_e =
+                        alpha_bn1.mul_scalar(self.reaction_extent_kinetics.stiffness_e_scale_pa);
                     let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &device)
                         .add_scalar(self.reaction_extent_kinetics.stiffness_nu);
                     let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);

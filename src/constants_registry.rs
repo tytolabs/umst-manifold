@@ -84,31 +84,15 @@ pub const LANDAUER_BIT_ENERGY_300K_J: GroundedConst<f64> = GroundedConst {
     evidence: "k_B T ln 2 — aligns with constants::landauer_bit_energy_joules fallback path",
 };
 
-/// THMC reaction-extent / kinetics floats — **not** migrated; single source remains `thmc.rs` until Wave 1.
-pub const THMC_FLOATS_TODO: &[(&str, &str)] = &[
-    (
-        "HYDRATION_ARRHENIUS_PREFACTOR_S",
-        "src/physics/solvers/thmc.rs — cartridge calibration pending",
-    ),
-    (
-        "HYDRATION_ACTIVATION_ENERGY_J_PER_MOL",
-        "src/physics/solvers/thmc.rs — cartridge calibration pending",
-    ),
-    ("HYDRATION_T_MIN_K", "src/physics/solvers/thmc.rs"),
-    ("HYDRATION_T_BOOST_REF_K", "src/physics/solvers/thmc.rs"),
-    ("HYDRATION_T_BOOST_PER_K", "src/physics/solvers/thmc.rs"),
-    (
-        "HYDRATION_EXOTHERMIC_K_PER_ALPHA_RATE",
-        "src/physics/solvers/thmc.rs",
-    ),
-    (
-        "UNIVERSAL_GAS_CONSTANT_J_PER_MOL_K",
-        "src/physics/solvers/thmc.rs",
-    ),
-];
+/// THMC reaction-extent floats — SSOT in domain cartridge (`material_transition.rs`).
+pub const THMC_FLOATS_TODO: &[(&str, &str)] = &[(
+    "UNIVERSAL_GAS_CONSTANT_J_PER_MOL_K",
+    "src/physics/solvers/thmc.rs",
+)];
 
 /// All migrated row names for `scripts/check_constants.py` (values checked in Rust unit tests).
 #[must_use]
+#[allow(unused_mut)] // cfg-gated `push` extends the vec when features are on
 pub fn migrated_registry_names() -> Vec<&'static str> {
     let mut names = vec![
         DEFAULT_BAR_PCG_REL_TOL.name,

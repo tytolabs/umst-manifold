@@ -15,11 +15,18 @@ use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::physics::laplacian::TopologicalLaplacian;
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::solvers::{
-    reaction_extent_rate_tensor, ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan,
-    ReactionExtentKinetics, ThmcImplicitEulerThermalHumidityReactionExtentResidual,
+    reaction_extent_rate_tensor, ChemicalPlan, HydrologicPlan, MechanicalPlan,
+    ReactionExtentKinetics, ThermalPlan, ThmcImplicitEulerThermalHumidityReactionExtentResidual,
     ThmcMonolithicImplicitUnknownLayout, ThmcState,
 };
+#[path = "../injection_mechanism_fixture.rs"]
+mod injection_mechanism_fixture;
+use injection_mechanism_fixture::injection_fixture_kinetics;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
+
+fn reference_reaction_extent_kinetics() -> ReactionExtentKinetics {
+    injection_fixture_kinetics()
+}
 
 type B = NdArray<f32>;
 
@@ -81,7 +88,7 @@ fn monolithic_thmc_newton_stacked_norm_monotone_decrease_on_five_node_chain() {
     let coords = manifold.node_positions.as_ref().expect("SI coords").clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ReactionExtentKinetics::default();
+    let kinetics = reference_reaction_extent_kinetics();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;

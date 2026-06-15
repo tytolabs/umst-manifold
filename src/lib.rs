@@ -18,7 +18,7 @@ pub mod ros;
 
 pub mod runtime;
 pub mod solve_report;
-pub mod W9_MIGRATION;
+pub mod w9_migration;
 
 #[allow(deprecated)]
-pub use W9_MIGRATION::*;
+pub use w9_migration::*;

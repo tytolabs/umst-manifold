@@ -5,7 +5,7 @@ use umst_math::manifold::csg;
 
 #[test]
 fn aa_manifold_helmholtz_grad_matches_numeric() {
-    const Q: f64 = 450.0; // qHydration (Haskell)
+    const Q: f64 = csg::Q_HYDRATION_J_PER_KG; // qHydration (Haskell)
                           // Step large enough to beat f64 cancellation (ε-bisim, not ulp-strict)
     const EPS: f64 = 1e-4;
     let a = 0.37f64;
@@ -23,7 +23,7 @@ fn aa_manifold_helmholtz_grad_matches_numeric() {
 fn aa_manifold_helmholtz_linearity() {
     for a in [0.0_f64, 0.1, 0.99, 1.0] {
         let v = csg::umst_helmholtz_sdf(a);
-        let w = csg::helmholtz_sdf_1d(a, 450.0);
+        let w = csg::helmholtz_sdf_1d(a, csg::Q_HYDRATION_J_PER_KG);
         assert!((v - w).abs() < 1e-9);
     }
 }

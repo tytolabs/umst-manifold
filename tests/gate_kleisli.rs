@@ -11,8 +11,16 @@ use umst_manifold::gate::{
     ThermodynamicMixEvaluator, ThermodynamicMixFilter, ThermodynamicStateSnapshot,
     ThermodynamicTransitionContext,
 };
+#[path = "injection_mechanism_fixture.rs"]
+mod injection_mechanism_fixture;
+
+use injection_mechanism_fixture::InjectionFixtureParams;
 
 type B = NdArray<f32>;
+
+fn closure_params() -> InjectionFixtureParams {
+    InjectionFixtureParams
+}
 
 #[test]
 fn kleisli_unit_evaluator_catalog_surface_stable() {
@@ -32,7 +40,8 @@ fn registry_routes_kleisli_unit_by_catalog_id() {
     assert_eq!(v, AdmissibilityVerdict::Accepted);
     assert_eq!(v.as_str(), AdmissibilityVerdict::ACCEPTED);
 
-    let state = ThermodynamicStateSnapshot::from_mix(0.5, 0.3, 293.0);
+    let state =
+        ThermodynamicStateSnapshot::from_mix_with_params(0.5, 0.3, 293.0, &closure_params());
     let ctx = ThermodynamicTransitionContext {
         old_state: &state,
         new_state: &state,
@@ -61,8 +70,8 @@ fn registry_routes_mix_evaluator_to_rest_verdict_strings() {
     let mut reg = GateEvaluatorRegistry::default();
     reg.register(ThermodynamicMixEvaluator::new(ThermodynamicMixFilter::new()));
 
-    let old = ThermodynamicStateSnapshot::from_mix(0.5, 0.3, 293.0);
-    let new = ThermodynamicStateSnapshot::from_mix(0.5, 0.5, 293.0);
+    let old = ThermodynamicStateSnapshot::from_mix_with_params(0.5, 0.3, 293.0, &closure_params());
+    let new = ThermodynamicStateSnapshot::from_mix_with_params(0.5, 0.5, 293.0, &closure_params());
     let ctx = ThermodynamicTransitionContext {
         old_state: &old,
         new_state: &new,

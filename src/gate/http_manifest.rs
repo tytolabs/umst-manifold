@@ -104,10 +104,14 @@ impl GateHttpRuntime {
         Self { evaluator }
     }
 
-    #[deprecated(note = "use GateHttpRuntime::new(HttpTransitionEvaluator::from_umst_manifest(..))")]
+    #[deprecated(
+        note = "use GateHttpRuntime::new(HttpTransitionEvaluator::from_umst_manifest(..))"
+    )]
     #[must_use]
     pub fn from_defaults() -> Self {
-        Self::new(HttpTransitionEvaluator::from_umst_manifest(&UmstManifest::default()))
+        Self::new(HttpTransitionEvaluator::from_umst_manifest(
+            &UmstManifest::default(),
+        ))
     }
 
     #[must_use]
@@ -159,7 +163,11 @@ impl HttpTransitionEvaluator {
         let w_c = proposal.water / total;
         let supplementary_ratio =
             (proposal.constituent_secondary_kg + proposal.constituent_tertiary_kg) / total;
-        let alpha = reaction_extent_from_age(proposal.age_days, proposal.temperature_c, supplementary_ratio);
+        let alpha = reaction_extent_from_age(
+            proposal.age_days,
+            proposal.temperature_c,
+            supplementary_ratio,
+        );
         let old = ThermodynamicStateSnapshot::new_idle();
         let new = ThermodynamicStateSnapshot::from_mix_calibrated(
             w_c,
@@ -298,7 +306,11 @@ pub fn evaluate(proposal: &MixProposal, manifest: &GateManifest) -> GateResponse
     let w_c = proposal.water / total_binder;
     let supplementary_ratio =
         (proposal.constituent_secondary_kg + proposal.constituent_tertiary_kg) / total_binder;
-    let alpha = reaction_extent_from_age(proposal.age_days, proposal.temperature_c, supplementary_ratio);
+    let alpha = reaction_extent_from_age(
+        proposal.age_days,
+        proposal.temperature_c,
+        supplementary_ratio,
+    );
     let fc = physics_compressive_strength_mpa(
         w_c,
         alpha,
@@ -328,6 +340,9 @@ fn finalize(admissible: bool, mut codes: Vec<String>) -> GateResponse {
         catalog_hash_hex: pinned_catalog_bundle_sha256_hex(),
     }
 }
+
+#[deprecated(note = "renamed to HttpTransitionEvaluator")]
+pub type HttpMixGateEvaluator = HttpTransitionEvaluator;
 
 #[cfg(test)]
 mod tests {
@@ -371,6 +386,3 @@ mod tests {
         assert_eq!(r.catalog_id.as_deref(), Some(HTTP_SHIM_CATALOG_ID));
     }
 }
-
-#[deprecated(note = "renamed to HttpTransitionEvaluator")]
-pub type HttpMixGateEvaluator = HttpTransitionEvaluator;

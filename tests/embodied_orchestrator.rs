@@ -14,12 +14,20 @@ use umst_manifold::gate::{
     AdmissibilityVerdict, GateEvaluatorRegistry, KleisliUnitEvaluator, ThermodynamicMixEvaluator,
     ThermodynamicMixFilter, ThermodynamicState,
 };
+#[path = "injection_mechanism_fixture.rs"]
+mod injection_mechanism_fixture;
+
+use injection_mechanism_fixture::InjectionFixtureParams;
 use umst_manifold::manifest::UmstManifest;
 use umst_manifold::runtime::catalog::traceability::{
     CD_TRANSITION_CATALOG_ID, THERMODYNAMIC_MIX_CATALOG_ID,
 };
 
 type B = NdArray<f32>;
+
+fn closure_params() -> InjectionFixtureParams {
+    InjectionFixtureParams
+}
 
 fn device() -> NdArrayDevice {
     NdArrayDevice::default()
@@ -167,11 +175,11 @@ fn embodied_mix_registry_accepts_forward_hydration() {
     let mut reg = GateEvaluatorRegistry::default();
     reg.register(ThermodynamicMixEvaluator::new(ThermodynamicMixFilter::new()));
 
-    let mut orch = EmbodiedOrchestrator::new(GatewayStubCartridge, 300.0_f64, 1.0e-12_f64)
-        .with_mix_registry(reg);
+    let mut orch =
+        EmbodiedOrchestrator::new(GatewayStubCartridge, 300.0_f64, 1.0e-12_f64).with_registry(reg);
 
-    let old = ThermodynamicState::from_mix(0.5, 0.3, 293.0);
-    let new = ThermodynamicState::from_mix(0.5, 0.5, 293.0);
+    let old = ThermodynamicState::from_mix_with_params(0.5, 0.3, 293.0, &closure_params());
+    let new = ThermodynamicState::from_mix_with_params(0.5, 0.5, 293.0, &closure_params());
     let host = HostTransitionStep {
         catalog_id: THERMODYNAMIC_MIX_CATALOG_ID,
         old_state: &old,
@@ -192,11 +200,11 @@ fn embodied_mix_registry_rejects_reverse_hydration_with_catalog_id() {
     let mut reg = GateEvaluatorRegistry::default();
     reg.register(ThermodynamicMixEvaluator::new(ThermodynamicMixFilter::new()));
 
-    let mut orch = EmbodiedOrchestrator::new(GatewayStubCartridge, 300.0_f64, 1.0e-12_f64)
-        .with_mix_registry(reg);
+    let mut orch =
+        EmbodiedOrchestrator::new(GatewayStubCartridge, 300.0_f64, 1.0e-12_f64).with_registry(reg);
 
-    let old = ThermodynamicState::from_mix(0.5, 0.5, 293.0);
-    let new = ThermodynamicState::from_mix(0.5, 0.3, 293.0);
+    let old = ThermodynamicState::from_mix_with_params(0.5, 0.5, 293.0, &closure_params());
+    let new = ThermodynamicState::from_mix_with_params(0.5, 0.3, 293.0, &closure_params());
     let host = HostTransitionStep {
         catalog_id: THERMODYNAMIC_MIX_CATALOG_ID,
         old_state: &old,
@@ -224,7 +232,7 @@ fn embodied_host_kleisli_unit_routes_via_default_registry() {
     let info_gain = Tensor::<B, 1>::from_floats([0.0_f32], &device());
     let mut orch = EmbodiedOrchestrator::new(GatewayStubCartridge, 300.0_f64, 1.0e-12_f64);
 
-    let state = ThermodynamicState::from_mix(0.5, 0.3, 293.0);
+    let state = ThermodynamicState::from_mix_with_params(0.5, 0.3, 293.0, &closure_params());
     let host = HostTransitionStep {
         catalog_id: KleisliUnitEvaluator::CATALOG_ID,
         old_state: &state,
@@ -242,10 +250,10 @@ fn embodied_kleisli_missing_registry_returns_slug_not_generic_missing() {
     let proposed = tiny_umst();
     let info_gain = Tensor::<B, 1>::from_floats([0.0_f32], &device());
     let reg = GateEvaluatorRegistry::default();
-    let mut orch = EmbodiedOrchestrator::new(GatewayStubCartridge, 300.0_f64, 1.0e-12_f64)
-        .with_mix_registry(reg);
+    let mut orch =
+        EmbodiedOrchestrator::new(GatewayStubCartridge, 300.0_f64, 1.0e-12_f64).with_registry(reg);
 
-    let state = ThermodynamicState::from_mix(0.5, 0.3, 293.0);
+    let state = ThermodynamicState::from_mix_with_params(0.5, 0.3, 293.0, &closure_params());
     let host = HostTransitionStep {
         catalog_id: KleisliUnitEvaluator::CATALOG_ID,
         old_state: &state,

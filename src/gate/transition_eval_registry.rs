@@ -5,7 +5,7 @@
 
 use super::evaluator::GateEvaluator;
 use super::kleisli::KleisliUnitEvaluator;
-use super::transition_proposal::{TransitionFilter, ThermodynamicStateSnapshot};
+use super::transition_proposal::{ThermodynamicStateSnapshot, TransitionFilter};
 use super::verdict::AdmissibilityVerdict;
 use crate::runtime::catalog::traceability::THERMODYNAMIC_MIX_CATALOG_ID;
 
@@ -98,9 +98,9 @@ impl GateEvaluatorRegistry {
         if catalog_id != KleisliUnitEvaluator::CATALOG_ID {
             return None;
         }
-        self.kleisli_unit.as_ref().map(|ev| ev.evaluate_reflexive_step(
-            &ThermodynamicStateSnapshot::new_idle(),
-        ))
+        self.kleisli_unit
+            .as_ref()
+            .map(|ev| ev.evaluate_reflexive_step(&ThermodynamicStateSnapshot::new_idle()))
     }
 }
 

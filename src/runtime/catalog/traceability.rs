@@ -197,14 +197,40 @@ pub const DEFAULT_UPSTREAM_CATALOG_JSON: &str = "../umst-formal-double-slit/arti
 /// Pinned export committed in-repo for CI when the formal sibling checkout is absent.
 pub const PINNED_UPSTREAM_CATALOG_JSON: &str = "artifacts/upstream_catalog.json";
 
-/// Resolve Lean `catalog.json` for partition tests: env override → sibling → pinned snapshot.
+/// Resolve Lean `catalog.json` for partition tests: env override → sibling (if lock-aligned) → pinned snapshot.
 pub fn resolve_upstream_catalog_json_path(manifest_dir: &std::path::Path) -> std::path::PathBuf {
     if let Ok(p) = std::env::var("UMST_LEAN_CATALOG_JSON") {
         return std::path::PathBuf::from(p);
     }
+    let pinned = manifest_dir.join(PINNED_UPSTREAM_CATALOG_JSON);
     let sibling = manifest_dir.join(DEFAULT_UPSTREAM_CATALOG_JSON);
     if sibling.is_file() {
-        return sibling;
+        if let Some(lock_count) = read_lock_module_count(manifest_dir) {
+            if let Ok(sibling_count) = count_catalog_modules(&sibling) {
+                if sibling_count == lock_count as usize {
+                    return sibling;
+                }
+            }
+        } else {
+            return sibling;
+        }
     }
-    manifest_dir.join(PINNED_UPSTREAM_CATALOG_JSON)
+    pinned
+}
+
+fn read_lock_module_count(manifest_dir: &std::path::Path) -> Option<u64> {
+    let lock_path = manifest_dir.join("artifacts/catalog.lock.json");
+    let lock_raw = std::fs::read_to_string(lock_path).ok()?;
+    let lock: serde_json::Value = serde_json::from_str(&lock_raw).ok()?;
+    lock.get("module_count")?.as_u64()
+}
+
+fn count_catalog_modules(path: &std::path::Path) -> Result<usize, String> {
+    let raw = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let v: serde_json::Value = serde_json::from_str(&raw).map_err(|e| e.to_string())?;
+    let modules = v
+        .get("modules")
+        .and_then(|m| m.as_array())
+        .ok_or_else(|| "catalog.json missing modules array".to_string())?;
+    Ok(modules.len())
 }

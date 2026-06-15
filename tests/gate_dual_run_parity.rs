@@ -13,11 +13,13 @@ use std::process::{Command, Stdio};
 use std::sync::OnceLock;
 
 use serde::Deserialize;
-use umst_manifold::gate::TransitionFilter as ThermodynamicMixFilter;
-use umst_manifold::mix_proposal::{
-    evaluate_mix_transition, MixProposalScalars, ThermodynamicStateSnapshot,
+use umst_manifold::gate::{
+    evaluate_transition_pure_with_params, ThermodynamicStateSnapshot, TransitionScalars,
+    TRANSITION_TOLERANCE,
 };
-use umst_manifold::Q_HYDRATION_J_PER_KG;
+#[path = "injection_mechanism_fixture.rs"]
+mod injection_mechanism_fixture;
+use injection_mechanism_fixture::{InjectionFixtureParams, FIXTURE_REACTION_ENTHALPY_J_PER_KG};
 
 const FIXTURE_REL: &str = "tests/data/gate_dual_run_fixtures.json";
 
@@ -104,8 +106,8 @@ struct SubprocessOutput {
     results: Vec<SubprocessTransitionResult>,
 }
 
-fn mix_to_proposal(m: &MixInput) -> MixProposalScalars {
-    MixProposalScalars {
+fn mix_to_proposal(m: &MixInput) -> TransitionScalars {
+    TransitionScalars {
         binder_liquid_ratio: m.w_c,
         reaction_extent: m.alpha,
         temperature_k: m.temp_k,
@@ -125,7 +127,6 @@ fn snapshot_to_state(s: &SnapshotInput) -> ThermodynamicStateSnapshot {
 }
 
 fn run_manifold_mix_gate(case: &FixtureCase) -> TransitionOutcome {
-    let mut filter = ThermodynamicMixFilter::new();
     match case {
         FixtureCase::FromMix {
             old,
@@ -135,7 +136,14 @@ fn run_manifold_mix_gate(case: &FixtureCase) -> TransitionOutcome {
         } => {
             let old_p = mix_to_proposal(old);
             let new_p = mix_to_proposal(new);
-            let r = evaluate_mix_transition(&mut filter, &old_p, &new_p, *dt_seconds);
+            let params = InjectionFixtureParams;
+            let r = evaluate_transition_pure_with_params(
+                &old_p,
+                &new_p,
+                *dt_seconds,
+                &params,
+                TRANSITION_TOLERANCE,
+            );
             TransitionOutcome {
                 accepted: r.accepted,
                 dissipation: r.dissipation,
@@ -151,7 +159,12 @@ fn run_manifold_mix_gate(case: &FixtureCase) -> TransitionOutcome {
         } => {
             let old_s = snapshot_to_state(old);
             let new_s = snapshot_to_state(new);
-            let r = filter.check_transition(&old_s, &new_s, *dt_seconds);
+            let r = umst_manifold::gate::transition_outcome(
+                &old_s,
+                &new_s,
+                *dt_seconds,
+                TRANSITION_TOLERANCE,
+            );
             TransitionOutcome {
                 accepted: r.accepted,
                 dissipation: r.dissipation,
@@ -210,7 +223,7 @@ fn assert_matches_golden(
         if let Some((old, new, dt)) = old_mix {
             let rho = (2400.0 - 400.0 * old.w_c + 2400.0 - 400.0 * new.w_c) / 2.0;
             let alpha_dot = (new.alpha - old.alpha) / dt;
-            let expected = rho * Q_HYDRATION_J_PER_KG * alpha_dot;
+            let expected = rho * FIXTURE_REACTION_ENTHALPY_J_PER_KG * alpha_dot;
             let rel_err = ((got.dissipation - expected) / expected).abs();
             assert!(
                 rel_err < tol,

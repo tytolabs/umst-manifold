@@ -67,19 +67,3 @@ pub trait GateCartridge {
 
 /// Spatial physics port (Phase B subtyping marker).
 pub trait SpatialCartridge<B: Backend>: IScienceCartridge<B> {}
-
-/// Cartridge-supplied transition closure parameters (W9 Tier 2c bridge).
-///
-/// Default implementations preserve legacy reaction-enthalpy literals; domain cartridges override
-/// in a follow-up pin. Kernel transition math consumes these via injection, not hard-coded binder mass.
-pub trait MaterialTransitionParams {
-    /// Specific heat of reaction progress (J/kg), default reaction-enthalpy scale.
-    fn reaction_enthalpy_j_per_kg(&self) -> f64 {
-        450.0
-    }
-
-    /// Intrinsic strength scale (MPa) for monotonicity checks.
-    fn default_intrinsic_strength_mpa(&self) -> f64 {
-        240.0
-    }
-}

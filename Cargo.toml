@@ -353,8 +353,6 @@ name = "topology_continuation"
 path = "tests/topology_continuation.rs"
 required-features = ["topology-density-evolution"]
 
-# TEMP probe — removed after check
-
 [[test]]
 name = "epistemic_ppo"
 path = "tests/epistemic_ppo.rs"

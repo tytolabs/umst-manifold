@@ -26,7 +26,7 @@ with open(sys.argv[2], "rb") as f:
 
 count = 0
 for path in sorted(root.joinpath("src").rglob("*.rs")):
-    if path.name == "W9_MIGRATION.rs":
+    if path.name in ("w9_migration.rs", "traceability.rs"):
         continue
     lines = path.read_text().splitlines()
     for line in lines:

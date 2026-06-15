@@ -24,7 +24,8 @@ crate = "umst-manifold"
 test_binary = "mechanics_analytic"
 test_fn = "uniform_rho_q1_hex_compliance_vs_kirchhoff_striatus_40x40x4"
 lane = "solver-research"
-status = "NEVER-RUN"
+status = "pass@2026-06-15"
+evidence = "stiff_bias_pct=33.35% C_fe=1.064107e0 C_kir=1.596457e0 mesh=40x40x4 finished=14.87s"
 features = ["mechanics-voigt-cauchy"]
 run_hint = "cargo test --release -p umst-manifold --features mechanics-voigt-cauchy --test mechanics_analytic uniform_rho_q1_hex_compliance_vs_kirchhoff_striatus_40x40x4 -- --ignored --nocapture"
 
@@ -44,7 +45,8 @@ crate = "umst-manifold"
 test_binary = "bar_network_operator_step_a"
 test_fn = "quick_plate_harness_load_pcg_converges"
 lane = "solver-research"
-status = "NEVER-RUN"
+status = "fail@2026-06-15"
+evidence = "rel_residual=0.93728507 iters=2000 tol=1e-4 k_char=1767960.4 E_ref=2.5e7 dx=0.08235295 finished=0.02s"
 features = ["mechanics-adjoint"]
 run_hint = "cargo test --release -p umst-manifold --features mechanics-adjoint --test bar_network_operator_step_a -- --ignored"
 
@@ -54,19 +56,21 @@ crate = "umst-manifold"
 test_binary = "q1_hex_pcg_bisect_probe"
 test_fn = "q1_hex_unit_sanity_striatus_n"
 lane = "solver-research"
-status = "NEVER-RUN"
+status = "pass@2026-06-15"
+evidence = "A_rel=2.380e-1 iters=1972 D_rel=4.235e4 iters=10000 mesh=40x40x4 finished=124.70s release; pass=bisect budget not clean 1e-6 convergence"
 features = ["mechanics-adjoint-q1-hex"]
 run_hint = "cargo test -p umst-manifold --features mechanics-adjoint-q1-hex --test q1_hex_pcg_bisect_probe -- --ignored --nocapture"
 
 [[fixture]]
 id = "manifold.electrochemistry.sg_band_jacobian"
 crate = "umst-manifold"
-test_binary = "electrochemistry"
-test_fn = "full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity"
+test_binary = "umst_manifold (lib)"
+test_fn = "physics::solvers::electrochemistry::newton_chain_tests::full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity"
 lane = "solver-research"
-status = "NEVER-RUN"
+status = "pass@2026-06-15"
+evidence = "Jacobian_assembly=0.003s band-LU=0.0005s dense-expand=0.0015s dim=768 max|δ_lu-δ_de|=3.688e-1 max|Jδ+R|_lu=3.688e-1 _de=2.131e-13"
 features = ["electrochemistry-pnp", "solver-experimental"]
-run_hint = "cargo test --release -p umst-manifold --features electrochemistry-pnp,solver-experimental full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity -- --ignored --nocapture"
+run_hint = "cargo test --release -p umst-manifold --lib --features electrochemistry-pnp,solver-experimental full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity -- --ignored --nocapture"
 
 # Cartridge repo — five NEVER-RUN envelopes (external; Wave 2 records in sibling ledger)
 
@@ -119,6 +123,17 @@ lane = "cartridge"
 status = "NEVER-RUN"
 features = []
 run_hint = "cartridge Helmholtz PCG budget"
+
+[[fixture]]
+id = "cartridge.tier2c.closure_parity"
+crate = "umst-concrete-cartridge"
+test_binary = "tier2c_closure_parity"
+test_fn = "gate_byte_equiv_cement_vs_ssot_injected_substrate"
+lane = "w9-tier2c"
+status = "pass@2026-06-10"
+evidence = "10/10 tier2c_closure_parity tests green; cartridge SSOT byte-equiv vs injected substrate path"
+features = ["manifold-gate", "solver-experimental"]
+run_hint = "PATH=\"$HOME/.cargo/bin:$PATH\" cargo test -p umst-concrete-cartridge --test tier2c_closure_parity"
 
 [[fixture]]
 id = "manifold.solve_contract.wave2_skeleton"

@@ -23,7 +23,7 @@ pub use evaluator::{
 };
 pub use http_manifest::{
     default_gate_manifest, evaluate as evaluate_http_mix_manifest, gate_json_parse_response,
-    reaction_extent_from_age, physics_compressive_strength_mpa, pinned_catalog_bundle_sha256_hex,
+    physics_compressive_strength_mpa, pinned_catalog_bundle_sha256_hex, reaction_extent_from_age,
     GateHttpRuntime, GateManifest as HttpGateManifest, GateResponse as HttpGateResponse,
     HttpTransitionEvaluator, MixProposal as HttpMixProposal,
 };
@@ -32,16 +32,18 @@ pub use kleisli::{
     AdmissibilityResult as KleisliAdmissibilityResult, Admissible, KleisliArrow, KleisliPipeline,
     KleisliUnitEvaluator,
 };
+pub use thermo_transition::{
+    thermo_gate_transition_outcome, AdmissibilityResult as ThermodynamicAdmissibilityResult,
+    ThermodynamicGate, ThermodynamicState,
+};
 pub use transition_eval_registry::{
     GateEvaluatorRegistry, ThermodynamicTransitionContext, TransitionEvaluator,
 };
 pub use transition_proposal::{
-    evaluate_transition, thermodynamic_transition_admissible, thermodynamic_transition_admissible_tol,
-    ThermodynamicStateSnapshot, ThermodynamicTransitionOutcome, TransitionFilter,
-    TRANSITION_TOLERANCE,
-};
-pub use thermo_transition::{
-    AdmissibilityResult as ThermodynamicAdmissibilityResult, ThermodynamicGate, ThermodynamicState,
+    evaluate_transition, evaluate_transition_pure_with_params, evaluate_transition_with_params,
+    thermodynamic_transition_admissible, thermodynamic_transition_admissible_tol,
+    transition_outcome, ThermodynamicStateSnapshot, ThermodynamicTransitionOutcome,
+    TransitionFilter, TransitionScalars, TRANSITION_TOLERANCE,
 };
 pub use verdict::AdmissibilityVerdict;
 

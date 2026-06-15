@@ -19,7 +19,7 @@ use umst_manifold::ai::liquid_ppo::BurnLiquidPPOAgent;
 use umst_manifold::ai::ppo::ManifoldGateway;
 use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
-use umst_manifold::core::umst_schema::SCALAR_HYDRATION_ALPHA;
+use umst_manifold::core::umst_schema::SCALAR_INTERNAL_VARIABLE_0;
 
 type B = NdArray<f32>;
 
@@ -39,7 +39,7 @@ fn umst_with_hydration(hydration: f32, n: usize, f: usize) -> UnifiedMaterialSta
         Tensor::from_data(Data::new(vec![0i64, 0i64], Shape::new([2, 1])), &dev);
     let mut data = vec![0.0_f32; n * f];
     for i in 0..n {
-        data[i * f + SCALAR_HYDRATION_ALPHA] = hydration;
+        data[i * f + SCALAR_INTERNAL_VARIABLE_0] = hydration;
     }
     let scalar_features = Tensor::<B, 2>::from_data(Data::new(data, Shape::new([n, f])), &dev);
     let vector_features = Tensor::<B, 3>::zeros([n, 1, 3], &dev);
@@ -81,10 +81,10 @@ impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for GateAwareCartridge 
     fn compute_topology(&self, m: &UnifiedMaterialStateTensor<Bk>) -> PhysicalResult<Bk> {
         let d = m.scalar_features.device();
         let n = m.scalar_features.dims()[0];
-        let alpha_col = m
-            .scalar_features
-            .clone()
-            .slice([0..n, SCALAR_HYDRATION_ALPHA..SCALAR_HYDRATION_ALPHA + 1]);
+        let alpha_col = m.scalar_features.clone().slice([
+            0..n,
+            SCALAR_INTERNAL_VARIABLE_0..SCALAR_INTERNAL_VARIABLE_0 + 1,
+        ]);
         let target = 0.35_f32;
         let dissipation = alpha_col
             .sub_scalar(target)

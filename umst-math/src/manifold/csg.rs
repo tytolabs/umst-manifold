@@ -42,7 +42,9 @@ pub fn helmholtz_gradient(q_hyd: f64) -> f64 {
 
 // --- UMST gate SDF (ThermodynamicState product space; sign agrees with SDFGate.hs) ---
 
-const Q_HYDR: f64 = 450.0;
+/// Haskell `qHydration` reference for SDF gate parity (formal layer; not W9 cement SSOT).
+pub const Q_HYDRATION_J_PER_KG: f64 = 4.5e2;
+const Q_HYDR: f64 = Q_HYDRATION_J_PER_KG;
 const M_TOL: f64 = 100.0;
 
 /// `ThermodynamicState` mirror for pure gate SDF only (5 fields, Haskell `UMST.ThermodynamicState`).

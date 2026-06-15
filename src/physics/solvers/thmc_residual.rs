@@ -72,7 +72,7 @@ use crate::physics::mechanics::VectorMechanicsSolver;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc::{
     reaction_extent_rate_tensor, shrink_strain_from_saturation_loss_tensor, ChemicalPlan,
-    HydrologicPlan, MechanicalPlan, ThermalPlan, ReactionExtentKinetics, ThmcState,
+    HydrologicPlan, MechanicalPlan, ReactionExtentKinetics, ThermalPlan, ThmcState,
 };
 
 #[cfg(all(feature = "thmc-coupled", feature = "solver-experimental"))]
@@ -1600,7 +1600,9 @@ fn gauss_jordan_solve(a: &mut [f32], b: &mut [f32], n: usize) -> Result<Vec<f32>
 }
 
 #[cfg(feature = "thmc-coupled")]
-impl<B: Backend<FloatElem = f32>> ResidualThmc<B> for ThmcImplicitEulerThermalReactionExtentResidual<B> {
+impl<B: Backend<FloatElem = f32>> ResidualThmc<B>
+    for ThmcImplicitEulerThermalReactionExtentResidual<B>
+{
     fn evaluate_residual(&self, trial: &ThmcState<B>) -> Result<(), String> {
         self.assemble(trial).map(|_| ())
     }

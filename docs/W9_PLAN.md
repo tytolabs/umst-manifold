@@ -1,6 +1,6 @@
 # W9 Phase 0 — Agnostic-on-Fork + Cartridge-Port Survey
 
-**Status:** Planning complete — **STOP for user approval** before Phase A edits.  
+**Status:** Tier-2c grep-zero **complete** (2026-06-10) — `grep 450/240 umst-manifold/src` = 0; cartridge `tier2c_closure_parity` green; awaiting user sign-off before tag/merge/Phase B.  
 **Branch:** `w9-agnostic-port` (from `main` @ `bc87929`).  
 **Canonical prompt:** [`docs/COMPOSER_W9_AGNOSTIC_AND_PORT.md`](../../docs/COMPOSER_W9_AGNOSTIC_AND_PORT.md) (workspace root).  
 **Date:** 2026-06-15.
@@ -212,3 +212,18 @@ Phase B (B1–B5) starts only after A8 user go-ahead.
 - `umst-concrete-cartridge/.../implementation.rs` — `IScienceCartridge for ConcreteCartridge<B>`
 
 **Explicitly not touched (per batch scope):** `q1_hex_elasticity.rs`, `ai/topology.rs`, `shell_topology_rib_pattern.rs`, c1 threshold, 200-outer run, manifold→cartridge `[patch]`.
+
+---
+
+## Parallel development lanes (2026-06-15)
+
+Two agents may work on `w9-agnostic-port` concurrently. **Do not cross lanes without coordination.**
+
+| Lane | Owner | Allowed paths | Forbidden on w9 |
+|------|-------|---------------|-----------------|
+| **W9 Tier-2c + FP** | This agent | `material_transition.rs`, `transition_proposal.rs`, `injection_mechanism_fixture.rs`, gate parity tests, lexicon scripts, `catalog.lock` @ 120/323 | `prime_spectral_*`, `GUIDANCE_CATALOG_IDS`, catalog lock 122 bump |
+| **Prime-spectral Inc 2–4** | Other agent | `src/physics/prime_spectral_filter.rs`, `tests/prime_spectral_*`, `topology_solver` hook, `PRIME_SPECTRAL_BENCHMARK_PROTOCOL.md`, formal `PrimeSpectralGuidance.agda` | W9 rename commits, Tier-2c closure deletes, `450/240` in kernel `src/` |
+
+**Build contract:** W9 CI stays green on default features without local `[patch]`. Prime-spectral test targets in `Cargo.toml` are **commented out** until the other agent restores files — uncomment, do not duplicate.
+
+**Catalog:** W9 keeps pinned `catalog.lock.json` (120 modules, 323 edges). Prime-spectral Inc 4 lock bump is a **separate PR** after user sign-off on both tracks.
