@@ -970,6 +970,76 @@
       "repo": "umst-formal"
     },
     {
+      "path": "PrimeSpectralCategory.lean",
+      "content_sha256": "847f0073044981ca537c9e2ba01de9c0a45e98b36a3ee81ee77c5ae36d89ad04",
+      "declarations": {
+        "def": [
+          "GuidanceF_map"
+        ],
+        "theorem": [
+          "GuidanceF_id_map",
+          "GuidanceF_map_comp",
+          "gate_projection_naturality",
+          "gateCheck_guidance_naturality",
+          "gate_naturality",
+          "gateCheckSound_guidance",
+          "admissible_of_gateCheck_guidance"
+        ]
+      },
+      "import_lines": [
+        "PrimeSpectralGuidance"
+      ],
+      "module": "PrimeSpectralCategory",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "PrimeSpectralGuidance.lean",
+      "content_sha256": "2849aa35c60d7383f5c28fa0de5f67ace62003dcddbd13d8c691f571f53685d3",
+      "declarations": {
+        "structure": [
+          "MultiplicativeChannel",
+          "PrimePeriod",
+          "GuidedState"
+        ],
+        "def": [
+          "vonMangoldtWeight",
+          "spectralFilter",
+          "weightDeviationL1",
+          "mangoldtWeightedSum",
+          "gateProjection",
+          "applyChannelFilter"
+        ],
+        "theorem": [
+          "vonMangoldtWeight_zero",
+          "vonMangoldtWeight_one",
+          "vonMangoldtWeight_prime",
+          "spectralFilter_values",
+          "spectralFilter_id",
+          "spectralFilter_perturb",
+          "spectralFilter_perturb_zero",
+          "spectralFilter_deviation_le_l1",
+          "mangoldtWeightedSum_add",
+          "mangoldtWeightedSum_zero",
+          "prime_coprime",
+          "coprime_primes_lcm_eq_mul",
+          "gateProjection_id",
+          "applyChannelFilter_admissible",
+          "guidance_preserves_admissible",
+          "applyChannelFilter_admissibleN",
+          "kleisli_guidance_commute"
+        ]
+      },
+      "import_lines": [
+        "Gate",
+        "Mathlib.Algebra.BigOperators.Group.Finset",
+        "Mathlib.Algebra.IsPrimePow",
+        "Mathlib.Data.Nat.Prime.Basic",
+        "Mathlib.NumberTheory.VonMangoldt"
+      ],
+      "module": "PrimeSpectralGuidance",
+      "repo": "umst-formal"
+    },
+    {
       "path": "RegimeSoundness.lean",
       "content_sha256": "ad516ec8e936f65d918853aabac86ad45e4c86806fd176f0881f942ec361b25a",
       "declarations": {
@@ -3369,6 +3439,36 @@
       "to_approx": "Mathlib.Tactic"
     },
     {
+      "from": "PrimeSpectralCategory",
+      "import": "PrimeSpectralGuidance",
+      "to_approx": "PrimeSpectralGuidance"
+    },
+    {
+      "from": "PrimeSpectralGuidance",
+      "import": "Gate",
+      "to_approx": "Gate"
+    },
+    {
+      "from": "PrimeSpectralGuidance",
+      "import": "Mathlib.Algebra.BigOperators.Group.Finset",
+      "to_approx": "Mathlib.Algebra.BigOperators.Group.Finset"
+    },
+    {
+      "from": "PrimeSpectralGuidance",
+      "import": "Mathlib.Algebra.IsPrimePow",
+      "to_approx": "Mathlib.Algebra.IsPrimePow"
+    },
+    {
+      "from": "PrimeSpectralGuidance",
+      "import": "Mathlib.Data.Nat.Prime.Basic",
+      "to_approx": "Mathlib.Data.Nat.Prime.Basic"
+    },
+    {
+      "from": "PrimeSpectralGuidance",
+      "import": "Mathlib.NumberTheory.VonMangoldt",
+      "to_approx": "Mathlib.NumberTheory.VonMangoldt"
+    },
+    {
       "from": "RegimeSoundness",
       "import": "Mathlib.Algebra.Order.Field.Rat",
       "to_approx": "Mathlib.Algebra.Order.Field.Rat"
@@ -4524,5 +4624,5 @@
       "to_approx": "VonNeumannEntropy"
     }
   ],
-  "digest": "2f17cdf1fecbf5188f7c25e9d4aabb3c72a184f0ef55f7da96160ee8d2fb4bb1"
+  "digest": "c61b1befdec77a82bbb9f6c3f7562e754218ef635f0e3b9990752138df5f4bb5"
 }

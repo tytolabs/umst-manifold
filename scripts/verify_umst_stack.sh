@@ -248,9 +248,9 @@ echo "==> catalog partition + incremental graph pin (R0)"
 cargo test -p umst-manifold --verbose \
   --test catalog_all_ids_registered --test catalog_incremental_graph_drift
 
-echo "==> catalog_lock_120 (lock module_count vs upstream export)"
+echo "==> catalog_lock_122 (lock module_count vs upstream export)"
 cargo test -p umst-manifold --verbose \
-  --test catalog_all_ids_registered catalog_lock_module_count_matches_upstream_export_120
+  --test catalog_all_ids_registered catalog_lock_module_count_matches_upstream_export_122
 
 echo "==> god-grade CI profile (strict manifest lane default)"
 cargo test -p umst-manifold --verbose --test ci_god_grade_profile

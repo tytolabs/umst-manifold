@@ -11,11 +11,11 @@
   "primary_lean_root": "Lean",
   "secondary_lean_root": "Lean",
   "primary_module_count": 69,
-  "secondary_module_count": 62,
-  "merged_module_count": 120,
+  "secondary_module_count": 64,
+  "merged_module_count": 122,
   "primary_digest_hex": "a2589c3360c3dd787f8477852861f97bce07e1089b07b6eb4b0ce1e81dd8cc29",
-  "secondary_digest_hex": "403730b7f26344db42df32601952e5fc8008bbc0bff86f31f91df10b4f89bf9e",
-  "merged_digest_hex": "2f17cdf1fecbf5188f7c25e9d4aabb3c72a184f0ef55f7da96160ee8d2fb4bb1",
+  "secondary_digest_hex": "43b7d6c21acccf234a20b9e375cab0a9d699b65a67f06f1ad766c359dc8d2cd7",
+  "merged_digest_hex": "c61b1befdec77a82bbb9f6c3f7562e754218ef635f0e3b9990752138df5f4bb5",
   "overlap_basename_count": 11,
   "only_in_primary_basename": [
     "Complementarity",
@@ -117,6 +117,8 @@
     "NuanceIsolator",
     "OrderStatisticsBand",
     "Powers",
+    "PrimeSpectralCategory",
+    "PrimeSpectralGuidance",
     "RegimeSoundness",
     "RhoEstimator",
     "SDFCanonical",
@@ -1181,6 +1183,76 @@
         "Mathlib.Tactic"
       ],
       "module": "Powers",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "PrimeSpectralCategory.lean",
+      "content_sha256": "847f0073044981ca537c9e2ba01de9c0a45e98b36a3ee81ee77c5ae36d89ad04",
+      "declarations": {
+        "def": [
+          "GuidanceF_map"
+        ],
+        "theorem": [
+          "GuidanceF_id_map",
+          "GuidanceF_map_comp",
+          "gate_projection_naturality",
+          "gateCheck_guidance_naturality",
+          "gate_naturality",
+          "gateCheckSound_guidance",
+          "admissible_of_gateCheck_guidance"
+        ]
+      },
+      "import_lines": [
+        "PrimeSpectralGuidance"
+      ],
+      "module": "PrimeSpectralCategory",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "PrimeSpectralGuidance.lean",
+      "content_sha256": "2849aa35c60d7383f5c28fa0de5f67ace62003dcddbd13d8c691f571f53685d3",
+      "declarations": {
+        "structure": [
+          "MultiplicativeChannel",
+          "PrimePeriod",
+          "GuidedState"
+        ],
+        "def": [
+          "vonMangoldtWeight",
+          "spectralFilter",
+          "weightDeviationL1",
+          "mangoldtWeightedSum",
+          "gateProjection",
+          "applyChannelFilter"
+        ],
+        "theorem": [
+          "vonMangoldtWeight_zero",
+          "vonMangoldtWeight_one",
+          "vonMangoldtWeight_prime",
+          "spectralFilter_values",
+          "spectralFilter_id",
+          "spectralFilter_perturb",
+          "spectralFilter_perturb_zero",
+          "spectralFilter_deviation_le_l1",
+          "mangoldtWeightedSum_add",
+          "mangoldtWeightedSum_zero",
+          "prime_coprime",
+          "coprime_primes_lcm_eq_mul",
+          "gateProjection_id",
+          "applyChannelFilter_admissible",
+          "guidance_preserves_admissible",
+          "applyChannelFilter_admissibleN",
+          "kleisli_guidance_commute"
+        ]
+      },
+      "import_lines": [
+        "Gate",
+        "Mathlib.Algebra.BigOperators.Group.Finset",
+        "Mathlib.Algebra.IsPrimePow",
+        "Mathlib.Data.Nat.Prime.Basic",
+        "Mathlib.NumberTheory.VonMangoldt"
+      ],
+      "module": "PrimeSpectralGuidance",
       "repo": "umst-formal"
     },
     {
@@ -5757,7 +5829,7 @@
     },
     {
       "path": "FormalFoundations.lean",
-      "content_sha256": "5c40c9250a991c71477b11580a918527846703297487db331b9fb9e51c18f675",
+      "content_sha256": "9965ac3dc8893e007b99161154f19d167f6cc8b5bde8afba33f031e35bead499",
       "declarations": {
         "theorem": [
           "umst_formal_complete"
@@ -5767,7 +5839,8 @@
         "Convergence",
         "DIBKleisli",
         "Gate",
-        "LandauerLaw"
+        "LandauerLaw",
+        "PrimeSpectralCategory"
       ],
       "module": "FormalFoundations",
       "repo": "umst-formal"
@@ -6199,6 +6272,76 @@
       "repo": "umst-formal"
     },
     {
+      "path": "PrimeSpectralCategory.lean",
+      "content_sha256": "847f0073044981ca537c9e2ba01de9c0a45e98b36a3ee81ee77c5ae36d89ad04",
+      "declarations": {
+        "def": [
+          "GuidanceF_map"
+        ],
+        "theorem": [
+          "GuidanceF_id_map",
+          "GuidanceF_map_comp",
+          "gate_projection_naturality",
+          "gateCheck_guidance_naturality",
+          "gate_naturality",
+          "gateCheckSound_guidance",
+          "admissible_of_gateCheck_guidance"
+        ]
+      },
+      "import_lines": [
+        "PrimeSpectralGuidance"
+      ],
+      "module": "PrimeSpectralCategory",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "PrimeSpectralGuidance.lean",
+      "content_sha256": "2849aa35c60d7383f5c28fa0de5f67ace62003dcddbd13d8c691f571f53685d3",
+      "declarations": {
+        "structure": [
+          "MultiplicativeChannel",
+          "PrimePeriod",
+          "GuidedState"
+        ],
+        "def": [
+          "vonMangoldtWeight",
+          "spectralFilter",
+          "weightDeviationL1",
+          "mangoldtWeightedSum",
+          "gateProjection",
+          "applyChannelFilter"
+        ],
+        "theorem": [
+          "vonMangoldtWeight_zero",
+          "vonMangoldtWeight_one",
+          "vonMangoldtWeight_prime",
+          "spectralFilter_values",
+          "spectralFilter_id",
+          "spectralFilter_perturb",
+          "spectralFilter_perturb_zero",
+          "spectralFilter_deviation_le_l1",
+          "mangoldtWeightedSum_add",
+          "mangoldtWeightedSum_zero",
+          "prime_coprime",
+          "coprime_primes_lcm_eq_mul",
+          "gateProjection_id",
+          "applyChannelFilter_admissible",
+          "guidance_preserves_admissible",
+          "applyChannelFilter_admissibleN",
+          "kleisli_guidance_commute"
+        ]
+      },
+      "import_lines": [
+        "Gate",
+        "Mathlib.Algebra.BigOperators.Group.Finset",
+        "Mathlib.Algebra.IsPrimePow",
+        "Mathlib.Data.Nat.Prime.Basic",
+        "Mathlib.NumberTheory.VonMangoldt"
+      ],
+      "module": "PrimeSpectralGuidance",
+      "repo": "umst-formal"
+    },
+    {
       "path": "RegimeSoundness.lean",
       "content_sha256": "ad516ec8e936f65d918853aabac86ad45e4c86806fd176f0881f942ec361b25a",
       "declarations": {
@@ -6291,7 +6434,7 @@
     },
     {
       "path": "lakefile.lean",
-      "content_sha256": "f623cab9aef41539c8378ee24fa372ab2efadd850ccba499cbfa3220800eae4a",
+      "content_sha256": "2920b6ea17b2bc235509312766523e2f6977348986ea378d1df6366c1736f4a8",
       "declarations": {},
       "import_lines": [
         "Lake"

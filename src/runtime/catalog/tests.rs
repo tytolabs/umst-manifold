@@ -59,7 +59,7 @@ fn bundled_lock_matches_build_digest_semantics() {
         upstream,
         "build.rs must emit UMST_LOCK_UPSTREAM_CATALOG_DIGEST_HEX from lock JSON"
     );
-    assert_eq!(lock.module_count, Some(120));
+    assert_eq!(lock.module_count, Some(122));
     assert!(
         catalog_lock_bundle_sha256_hex().len() == 64,
         "expected 64-char hex fingerprint for lock-bundle digest",

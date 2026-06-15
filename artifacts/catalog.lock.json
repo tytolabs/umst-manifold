@@ -2,11 +2,11 @@
   "version": 2,
   "role": "manifold_runtime_lock",
   "upstream_repo": "umst-formal-double-slit",
-  "upstream_catalog_digest_hex": "2f17cdf1fecbf5188f7c25e9d4aabb3c72a184f0ef55f7da96160ee8d2fb4bb1",
-  "module_count": 120,
-  "module_graph_edge_count": 323,
+  "upstream_catalog_digest_hex": "c61b1befdec77a82bbb9f6c3f7562e754218ef635f0e3b9990752138df5f4bb5",
+  "module_count": 122,
+  "module_graph_edge_count": 329,
   "composition_rule": "cross_repo_merge_v1_primary_wins_basename",
-  "composed_catalog_digest_hex": "2f17cdf1fecbf5188f7c25e9d4aabb3c72a184f0ef55f7da96160ee8d2fb4bb1",
+  "composed_catalog_digest_hex": "c61b1befdec77a82bbb9f6c3f7562e754218ef635f0e3b9990752138df5f4bb5",
   "fiber_pins": [
     {
       "repo": "umst-formal-double-slit",
@@ -17,11 +17,11 @@
     },
     {
       "repo": "umst-formal",
-      "catalog_digest_hex": "403730b7f26344db42df32601952e5fc8008bbc0bff86f31f91df10b4f89bf9e",
-      "module_count": 62,
+      "catalog_digest_hex": "43b7d6c21acccf234a20b9e375cab0a9d699b65a67f06f1ad766c359dc8d2cd7",
+      "module_count": 64,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"
     }
   ],
-  "notes": "v2 dual-pin after ClassicalMeasurementCost rename (+1 merged module vs 119). Re-export each Lean root after edits; verify with scripts/verify_umst_stack.sh."
+  "notes": "W9 pin bump: formal b09d4a0 (PrimeSpectral) + double-slit 7f7f9bf; merged 122 modules / 329 edges."
 }
