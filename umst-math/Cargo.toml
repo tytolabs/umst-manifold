@@ -28,6 +28,7 @@ regex = "1.11.1"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = { version = "1.0.149" }
 subtle = "2.5"
+trybuild = "1"
 
 [[bin]]
 name = "simd_kernel_tolerance"
@@ -69,6 +70,10 @@ path = "tests/s0_crypto_malformed_input.rs"
 [[test]]
 name = "s0_crypto_registry_constants"
 path = "tests/s0_crypto_registry_constants.rs"
+
+[[test]]
+name = "trybuild"
+path = "tests/trybuild.rs"
 
 [lints.rust]
 unsafe_code = "forbid"

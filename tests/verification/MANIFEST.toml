@@ -151,3 +151,14 @@ status = "pass@2026-06-10"
 evidence = "2/2 entropy_tax_gaming: tax_gaming > tax_honest (high-iter + straight-through biased dissipation)"
 features = []
 run_hint = "PATH=\"$HOME/.cargo/bin:$PATH\" cargo test --test entropy_tax_gaming"
+
+[[fixture]]
+id = "umst-math.tensor.shape_contract_trybuild"
+crate = "umst-math"
+test_binary = "trybuild"
+test_fn = "ui"
+lane = "engine-slices"
+status = "pass@2026-06-10"
+evidence = "trybuild compile_fail rank_drop_fail + compile_pass rank_preserve_pass"
+features = []
+run_hint = "PATH=\"$HOME/.cargo/bin:$PATH\" cargo test -p umst-math --test trybuild"

@@ -1,0 +1,10 @@
+error[E0308]: mismatched types
+ --> tests/ui/rank_drop_fail.rs:7:38
+  |
+7 |     let _rank_drop: DensityDiag<3> = traced;
+  |                     --------------   ^^^^^^ expected `3`, found `2`
+  |                     |
+  |                     expected due to this
+  |
+  = note: expected struct `DensityDiag<3>`
+             found struct `DensityDiag<2>`
