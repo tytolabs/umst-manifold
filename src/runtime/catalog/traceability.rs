@@ -155,10 +155,10 @@ pub const GATE_UNIFICATION_SPEC_CATALOG_IDS: &[&str] = &[
 /// Stable slug for [`crate::gate::ThermodynamicTransitionEvaluator`] / host CD transition rejects.
 pub const CD_TRANSITION_CATALOG_ID: &str = "umst.gate.cd_transition";
 
-/// Stable slug for [`crate::gate::ThermodynamicMixEvaluator`] / mix registry host rejects.
+/// Stable slug for [`crate::gate::TransitionEvaluator`] / mix registry host rejects.
 pub const THERMODYNAMIC_MIX_CATALOG_ID: &str = "thermodynamic_mix";
 
-/// Stable slug for [`crate::gate::http_manifest::HttpMixGateEvaluator`] HTTP shim rejects.
+/// Stable slug for [`crate::gate::http_manifest::HttpTransitionEvaluator`] HTTP shim rejects.
 pub const HTTP_SHIM_CATALOG_ID: &str = "umst.gate.http_shim";
 
 /// Deprecated `catalog_id` slug — superseded by [`HTTP_SHIM_CATALOG_ID`].
@@ -177,16 +177,18 @@ pub const LANDAUER_CBF_CATALOG_ID: &str = "umst.gate.landauer_cbf";
 /// Gate slugs implemented in Rust but not yet in the spec table (see `claims-vs-proofs.md` note).
 pub const RUNTIME_EXTRA_GATE_CATALOG_IDS: &[&str] = &["thermodynamic_mix"];
 
-/// [`GateEvaluator::catalog_id`] values implemented in `src/gate/` (registry SSOT for CI).
+/// Cartridge-owned gate slugs (not in kernel universal registry after W9 Phase A).
+pub const CARTRIDGE_GATE_REGISTRY_CATALOG_IDS: &[&str] = &["umst.cartridge.concrete.policy"];
+
+/// [`GateEvaluator::catalog_id`] values implemented in kernel `src/gate/` (universal registry).
 pub const GATE_REGISTRY_CATALOG_IDS: &[&str] = &[
-    "umst.cartridge.concrete.policy",
     "umst.gate.cd_transition",
     "umst.gate.http_shim",
     "umst.gate.kleisli_unit",
     "thermodynamic_mix",
 ];
 
-/// Runtime gate `catalog_id`s with **no** Lean `catalog.json` backing row (HTTP shim, mix filter, cartridge).
+/// Runtime gate `catalog_id`s with **no** Lean `catalog.json` backing row (legacy allowlist).
 pub const ALLOW_UNUSED_GATE_CATALOG_IDS: &[&str] = &["umst.cartridge.concrete.policy"];
 
 /// Default relative path from `umst-manifold` to the Lean exporter catalog (sibling checkout layout).

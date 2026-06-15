@@ -17,7 +17,8 @@ use std::path::{Path, PathBuf};
 use umst_manifold::runtime::catalog::{
     traceability::{
         resolve_upstream_catalog_json_path, ALLOW_UNUSED_CATALOG_IDS,
-        ALLOW_UNUSED_GATE_CATALOG_IDS, CATALOG_MODULE_WIRED, GATE_REGISTRY_CATALOG_IDS,
+        ALLOW_UNUSED_GATE_CATALOG_IDS, CARTRIDGE_GATE_REGISTRY_CATALOG_IDS,
+        CATALOG_MODULE_WIRED, GATE_REGISTRY_CATALOG_IDS,
         GATE_UNIFICATION_SPEC_CATALOG_IDS, RUNTIME_EXTRA_GATE_CATALOG_IDS,
     },
     WitnessCatalog,
@@ -229,6 +230,17 @@ fn catalog_all_ids_lean_modules_registered_or_allowlisted() {
         unknown_wired.is_empty(),
         "wired module maps to catalog_id not in GATE_UNIFICATION_SPEC_CATALOG_IDS ∪ RUNTIME_EXTRA_GATE_CATALOG_IDS: {unknown_wired:?}"
     );
+}
+
+#[test]
+fn catalog_cartridge_registry_disjoint_from_gate_registry() {
+    let gate: HashSet<&str> = GATE_REGISTRY_CATALOG_IDS.iter().copied().collect();
+    for id in CARTRIDGE_GATE_REGISTRY_CATALOG_IDS {
+        assert!(
+            !gate.contains(id),
+            "cartridge-owned catalog_id {id} must not appear in GATE_REGISTRY_CATALOG_IDS"
+        );
+    }
 }
 
 #[test]
