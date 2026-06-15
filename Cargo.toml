@@ -302,6 +302,10 @@ name = "chaos_crucible_gate_transition"
 path = "tests/chaos_crucible_gate_transition.rs"
 
 [[test]]
+name = "entropy_tax_gaming"
+path = "tests/entropy_tax_gaming.rs"
+
+[[test]]
 name = "solve_contract_entry_points"
 path = "tests/solve_contract_entry_points.rs"
 

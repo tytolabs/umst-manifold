@@ -140,3 +140,14 @@ status = "pass@2026-06-10"
 evidence = "5/5 chaos_crucible_gate_transition: NaN reject, garbage temp, Inf reject, clean accept, non-converged SolveReport hook"
 features = []
 run_hint = "PATH=\"$HOME/.cargo/bin:$PATH\" cargo test --test chaos_crucible_gate_transition"
+
+[[fixture]]
+id = "manifold.solve_contract.entropy_tax_gaming"
+crate = "umst-manifold"
+test_binary = "entropy_tax_gaming"
+test_fn = "tax_gaming_exceeds_tax_honest_high_iteration_low_progress"
+lane = "engine-slices"
+status = "pass@2026-06-10"
+evidence = "2/2 entropy_tax_gaming: tax_gaming > tax_honest (high-iter + straight-through biased dissipation)"
+features = []
+run_hint = "PATH=\"$HOME/.cargo/bin:$PATH\" cargo test --test entropy_tax_gaming"

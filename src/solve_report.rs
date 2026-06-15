@@ -51,6 +51,22 @@ impl SolveReport {
     pub fn gate_reject_non_converged_solve(&self) -> bool {
         !self.converged()
     }
+
+    /// Joules excess over Landauer floor: `dissipation_j - k_B T ln(2) * delta_mi_bits`.
+    ///
+    /// POC: `delta_mi_bits` defaults to `iterations` as an information-work proxy; full MI wiring deferred.
+    #[must_use]
+    pub fn entropy_tax_j(&self, dissipation_j: f64, t_k: f64) -> f64 {
+        let delta_mi_bits = self.iterations as f64;
+        entropy_tax_j(dissipation_j, t_k, delta_mi_bits)
+    }
+}
+
+/// Landauer-floor excess dissipation (joules).
+#[must_use]
+pub fn entropy_tax_j(dissipation_j: f64, t_k: f64, delta_mi_bits: f64) -> f64 {
+    let floor = crate::constants::landauer_bit_energy_joules(t_k) * delta_mi_bits;
+    dissipation_j - floor
 }
 
 /// Morphism from lane-specific telemetry into the unified contract.

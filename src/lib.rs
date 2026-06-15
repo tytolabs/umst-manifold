@@ -18,4 +18,4 @@ pub mod ros;
 
 pub mod runtime;
 pub mod solve_report;
-pub use solve_report::{PrecisionLane, SolveReport};
+pub use solve_report::{entropy_tax_j, PrecisionLane, SolveReport};
