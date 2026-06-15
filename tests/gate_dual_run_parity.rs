@@ -13,13 +13,11 @@ use std::process::{Command, Stdio};
 use std::sync::OnceLock;
 
 use serde::Deserialize;
-use umst_manifold::gate::{
-    mix_proposal::{
-        evaluate_mix_transition, MixProposalScalars, ThermodynamicStateSnapshot,
-        Q_HYDRATION_J_PER_KG,
-    },
-    ThermodynamicMixFilter,
+use umst_manifold::gate::TransitionFilter as ThermodynamicMixFilter;
+use umst_manifold::mix_proposal::{
+    evaluate_mix_transition, MixProposalScalars, ThermodynamicStateSnapshot,
 };
+use umst_manifold::Q_HYDRATION_J_PER_KG;
 
 const FIXTURE_REL: &str = "tests/data/gate_dual_run_fixtures.json";
 
@@ -44,7 +42,8 @@ struct SnapshotInput {
     temperature: f64,
     free_energy: f64,
     entropy: f64,
-    hydration_degree: f64,
+    #[serde(rename = "hydration_degree")]
+    reaction_extent: f64,
     strength: f64,
 }
 
@@ -107,8 +106,8 @@ struct SubprocessOutput {
 
 fn mix_to_proposal(m: &MixInput) -> MixProposalScalars {
     MixProposalScalars {
-        water_cement_ratio: m.w_c,
-        hydration_degree: m.alpha,
+        binder_liquid_ratio: m.w_c,
+        reaction_extent: m.alpha,
         temperature_k: m.temp_k,
         s_intrinsic_mpa: m.s_intrinsic_mpa,
     }
@@ -120,7 +119,7 @@ fn snapshot_to_state(s: &SnapshotInput) -> ThermodynamicStateSnapshot {
         temperature: s.temperature,
         free_energy: s.free_energy,
         entropy: s.entropy,
-        hydration_degree: s.hydration_degree,
+        reaction_extent: s.reaction_extent,
         strength: s.strength,
     }
 }

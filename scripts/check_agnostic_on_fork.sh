@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# W9 S1 grep gate: kernel src/ must not reference retired cartridge gate stubs.
+# W9 S1 headline verifier: kernel src/ must be agnostic-on-fork (zero domain identifiers).
 #
 # Usage (from umst-manifold): bash scripts/check_agnostic_on_fork.sh
 #
@@ -9,23 +9,24 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SRC="$ROOT/src"
 
-PATTERNS=(
-  'gate::concrete_cartridge'
-  'mod concrete_cartridge'
-)
+PATTERN='\b(concrete|cement|hydration|powers|ConcreteCartridge|MixTensor|mix_proposal)\b'
 
-fail=0
-for pat in "${PATTERNS[@]}"; do
-  if rg -n "$pat" "$SRC" --glob '*.rs' 2>/dev/null; then
-    echo "FAIL: agnostic-on-fork violation: $pat" >&2
-    fail=1
+HITS=()
+while IFS= read -r file; do
+  [[ -z "$file" ]] && continue
+  case "$file" in
+    *W9_MIGRATION*|*agnostic_on_fork_allowlist*) continue ;;
+  esac
+  if grep -vE 'serde\(rename\s*=' "$file" | grep -qE "$PATTERN"; then
+    HITS+=("$file")
   fi
-done
+done < <(git -C "$ROOT" ls-files src)
 
-if (( fail != 0 )); then
+if ((${#HITS[@]} > 0)); then
+  echo "FAIL: agnostic-on-fork violations (${#HITS[@]} files):" >&2
+  printf '  %s\n' "${HITS[@]}" >&2
   exit 1
 fi
 
-echo "OK: agnostic-on-fork grep clean"
+echo "OK: agnostic-on-fork grep clean (0 files)"

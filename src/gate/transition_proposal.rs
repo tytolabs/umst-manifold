@@ -1,27 +1,27 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-//! Plain (serde-free) mix / thermodynamic snapshots and transition checks ported from
+//! Plain (serde-free) bulk / thermodynamic snapshots and transition checks ported from
 //! `umst-prototype` `science/thermodynamic_filter.rs` — mass bound, Clausius–Duhem scalar gate,
-//! and strength monotonicity under the Powers hydration model.
+//! and strength monotonicity under a cartridge-supplied closure model.
 
 use super::verdict::AdmissibilityVerdict;
 
-/// Default intrinsic gel strength for the Powers model (MPa).
+/// Default intrinsic strength scale for the transition closure (MPa).
 #[deprecated(note = "cartridge-supplied via MaterialTransitionParams — Tier 2c defer")]
 pub const DEFAULT_S_INTRINSIC_MPA: f64 = 240.0;
 
-/// Representative specific heat of hydration for OPC (J/kg).
+/// Representative specific reaction enthalpy (J/kg).
 #[deprecated(note = "cartridge-supplied via MaterialTransitionParams — Tier 2c defer")]
-pub const Q_HYDRATION_J_PER_KG: f64 = 450.0;
+pub const Q_REACTION_ENTHALPY_J_PER_KG: f64 = 450.0;
 
-/// Minimal JSON-shaped proposal for a bulk mix patch (host gate IO).
+/// Minimal JSON-shaped proposal for a bulk material patch (host gate IO).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TransitionScalars {
-    pub water_cement_ratio: f64,
-    pub hydration_degree: f64,
+    pub binder_liquid_ratio: f64,
+    pub reaction_extent: f64,
     pub temperature_k: f64,
-    /// Intrinsic gel strength (MPa); omit in JSON by sending `None` → [`DEFAULT_S_INTRINSIC_MPA`].
+    /// Intrinsic strength scale (MPa); omit in JSON by sending `None` → [`DEFAULT_S_INTRINSIC_MPA`].
     pub s_intrinsic_mpa: Option<f64>,
 }
 
@@ -30,8 +30,8 @@ impl TransitionScalars {
         #[allow(deprecated)]
         let s_intrinsic = self.s_intrinsic_mpa.unwrap_or(DEFAULT_S_INTRINSIC_MPA);
         ThermodynamicStateSnapshot::from_mix_calibrated(
-            self.water_cement_ratio,
-            self.hydration_degree,
+            self.binder_liquid_ratio,
+            self.reaction_extent,
             self.temperature_k,
             s_intrinsic,
         )
@@ -45,7 +45,7 @@ pub struct ThermodynamicStateSnapshot {
     pub temperature: f64,
     pub free_energy: f64,
     pub entropy: f64,
-    pub hydration_degree: f64,
+    pub reaction_extent: f64,
     pub strength: f64,
 }
 
@@ -56,7 +56,7 @@ impl ThermodynamicStateSnapshot {
             temperature: 293.0,
             free_energy: 0.0,
             entropy: 0.0,
-            hydration_degree: 0.0,
+            reaction_extent: 0.0,
             strength: 0.0,
         }
     }
@@ -69,17 +69,17 @@ impl ThermodynamicStateSnapshot {
 
     pub fn from_mix_calibrated(w_c: f64, alpha: f64, temp: f64, s_intrinsic: f64) -> Self {
         #[allow(deprecated)]
-        let q_hydration = Q_HYDRATION_J_PER_KG;
+        let q_reaction = Q_REACTION_ENTHALPY_J_PER_KG;
         let x = 0.68 * alpha / (0.32 * alpha + w_c + 1e-6);
         let fc = s_intrinsic * x.powi(3);
-        let psi = -q_hydration * alpha;
+        let psi = -q_reaction * alpha;
 
         ThermodynamicStateSnapshot {
             density: 2400.0 - 400.0 * w_c,
             temperature: temp,
             free_energy: psi,
             entropy: alpha * 0.1,
-            hydration_degree: alpha,
+            reaction_extent: alpha,
             strength: fc,
         }
     }
@@ -187,17 +187,17 @@ pub const TRANSITION_TOLERANCE: f64 = 1e-6;
 /// Pure transition predicate — explicit inputs → admissibility (no filter handle, no counters).
 ///
 /// Matches the material-agnostic C-ABI semantics: mass jump bound, Clausius–Duhem
-/// dissipation, hydration irreversibility, strength monotonicity, and upper strength cap.
+/// dissipation, reaction-extent irreversibility, strength monotonicity, and upper strength cap.
 #[must_use]
 #[allow(clippy::too_many_arguments)]
 pub fn thermodynamic_transition_admissible(
     old_density: f64,
     old_free_energy: f64,
-    old_hydration: f64,
+    old_reaction_extent: f64,
     old_strength: f64,
     new_density: f64,
     new_free_energy: f64,
-    new_hydration: f64,
+    new_reaction_extent: f64,
     new_strength: f64,
     new_max_strength: f64,
     dt: f64,
@@ -205,11 +205,11 @@ pub fn thermodynamic_transition_admissible(
     thermodynamic_transition_admissible_tol(
         old_density,
         old_free_energy,
-        old_hydration,
+        old_reaction_extent,
         old_strength,
         new_density,
         new_free_energy,
-        new_hydration,
+        new_reaction_extent,
         new_strength,
         new_max_strength,
         dt,
@@ -223,11 +223,11 @@ pub fn thermodynamic_transition_admissible(
 pub fn thermodynamic_transition_admissible_tol(
     old_density: f64,
     old_free_energy: f64,
-    old_hydration: f64,
+    old_reaction_extent: f64,
     old_strength: f64,
     new_density: f64,
     new_free_energy: f64,
-    new_hydration: f64,
+    new_reaction_extent: f64,
     new_strength: f64,
     new_max_strength: f64,
     dt: f64,
@@ -238,12 +238,12 @@ pub fn thermodynamic_transition_admissible_tol(
     let psi_dot = (new_free_energy - old_free_energy) / (dt + 1e-10);
     let d_int = -rho * psi_dot;
     let strength_monotonic = new_strength >= old_strength - tolerance;
-    let hydration_irreversible = new_hydration >= old_hydration - tolerance;
+    let reaction_extent_irreversible = new_reaction_extent >= old_reaction_extent - tolerance;
     let strength_bounded = new_strength <= new_max_strength;
     mass_conserved
         && d_int >= -tolerance
         && strength_monotonic
-        && hydration_irreversible
+        && reaction_extent_irreversible
         && strength_bounded
 }
 
@@ -276,7 +276,7 @@ mod tests {
     #[allow(deprecated)]
 
     #[test]
-    fn admissible_forward_hydration() {
+    fn admissible_forward_reaction_extent() {
         let mut filter = TransitionFilter::new();
         let old = ThermodynamicStateSnapshot::from_mix(0.5, 0.3, 293.0);
         let new = ThermodynamicStateSnapshot::from_mix(0.5, 0.5, 293.0);
@@ -288,7 +288,7 @@ mod tests {
     }
 
     #[test]
-    fn reject_reverse_hydration() {
+    fn reject_reverse_reaction_extent() {
         let mut filter = TransitionFilter::new();
         let old = ThermodynamicStateSnapshot::from_mix(0.5, 0.7, 293.0);
         let new = ThermodynamicStateSnapshot::from_mix(0.5, 0.3, 293.0);
@@ -302,26 +302,26 @@ mod tests {
         let mut filter = TransitionFilter::new();
         let mut old = ThermodynamicStateSnapshot::new_idle();
         old.strength = 30.0;
-        old.hydration_degree = 0.5;
+        old.reaction_extent = 0.5;
         let mut new = ThermodynamicStateSnapshot::new_idle();
         new.strength = 25.0;
-        new.hydration_degree = 0.5;
+        new.reaction_extent = 0.5;
         let r = filter.check_transition(&old, &new, 1.0);
         assert!(!r.accepted);
     }
 
     #[test]
-    fn pure_gate_matches_filter_forward_hydration() {
+    fn pure_gate_matches_filter_forward_reaction_extent() {
         let old = ThermodynamicStateSnapshot::from_mix(0.5, 0.3, 293.0);
         let new = ThermodynamicStateSnapshot::from_mix(0.5, 0.5, 293.0);
         assert!(thermodynamic_transition_admissible(
             old.density,
             old.free_energy,
-            old.hydration_degree,
+            old.reaction_extent,
             old.strength,
             new.density,
             new.free_energy,
-            new.hydration_degree,
+            new.reaction_extent,
             new.strength,
             240.0,
             3600.0,
@@ -329,17 +329,17 @@ mod tests {
     }
 
     #[test]
-    fn pure_gate_rejects_reverse_hydration() {
+    fn pure_gate_rejects_reverse_reaction_extent() {
         let old = ThermodynamicStateSnapshot::from_mix(0.5, 0.7, 293.0);
         let new = ThermodynamicStateSnapshot::from_mix(0.5, 0.3, 293.0);
         assert!(!thermodynamic_transition_admissible(
             old.density,
             old.free_energy,
-            old.hydration_degree,
+            old.reaction_extent,
             old.strength,
             new.density,
             new.free_energy,
-            new.hydration_degree,
+            new.reaction_extent,
             new.strength,
             240.0,
             3600.0,
@@ -359,7 +359,7 @@ mod tests {
 
         let rho = (old.density + new.density) / 2.0;
         let alpha_dot = (alpha_new - alpha_old) / dt;
-        let expected = rho * Q_HYDRATION_J_PER_KG * alpha_dot;
+        let expected = rho * Q_REACTION_ENTHALPY_J_PER_KG * alpha_dot;
         let rel_err = ((r.dissipation - expected) / expected).abs();
         assert!(
             rel_err < 1e-10,

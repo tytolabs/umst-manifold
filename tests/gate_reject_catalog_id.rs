@@ -29,7 +29,7 @@ fn cd_transition_mass_reject_maps_to_host_transition_slug() {
         temperature: 293.0,
         free_energy: 0.0,
         entropy: 0.1,
-        hydration_degree: 0.3,
+        reaction_extent: 0.3,
         strength: 10.0,
     };
     let mut new = old.clone();
@@ -71,9 +71,9 @@ fn formal_cbf_reject_catalog_id_is_landauer_slug() {
 fn http_mix_reject_includes_http_shim_catalog_id() {
     let m = default_gate_manifest();
     let reject = MixProposal {
-        cement: 400.0,
-        slag: 0.0,
-        fly_ash: 0.0,
+        constituent_primary_kg: 400.0,
+        constituent_secondary_kg: 0.0,
+        constituent_tertiary_kg: 0.0,
         water: 200.0,
         age_days: 28.0,
         predicted_strength_mpa: 1.0e9,

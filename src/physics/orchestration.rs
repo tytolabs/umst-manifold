@@ -12,14 +12,14 @@
 //! ## Integration contract (execution order — design intent)
 //!
 //! The canonical ordering below is what higher-level planners should assume when composing solvers.
-//! Today, the concrete sub-steps live inside [`crate::physics::solvers::ThmcSolver`] (see its module
+//! Today, the solver sub-steps live inside [`crate::physics::solvers::ThmcSolver`] (see its module
 //! docs and `--features solver-experimental` implementation). This module documents the **contract**;
 //! evolution of `ThmcSolver` is expected to stay aligned with these phases rather than scattering
 //! duplicate loops across the codebase.
 //!
 //! 1. **Laplacian transport hints** — discrete diffusion / Laplacian-style updates on nodal fields
 //!    (thermal, hydrologic proxies) using graph topology and masks (e.g. damage-degraded flux).
-//! 2. **Chemistry** — hydration / reaction channels on [`crate::physics::solvers::ChemicalPlan`];
+//! 2. **Chemistry** — reaction extent / reaction channels on [`crate::physics::solvers::ChemicalPlan`];
 //!    **placeholder** until kinetics are wired; must not silently change conserved quantities without
 //!    documenting closures via [`crate::core::traits::IScienceCartridge`].
 //! 3. **Mechanics** — equilibrium or pseudo-time step for displacement / stress; requires consistent
@@ -323,7 +323,7 @@ mod tests {
                 displacement: Tensor::<TestBackend, 3>::zeros([1, n, 3], dev),
             },
             chemical: ChemicalPlan {
-                hydration_alpha: Tensor::<TestBackend, 3>::zeros([1, n, 1], dev)
+                reaction_extent: Tensor::<TestBackend, 3>::zeros([1, n, 1], dev)
                     .add_scalar(0.1_f32),
             },
             damage: Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(0.01_f32),

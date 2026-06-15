@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-//! Clausius–Duhem admissibility for cement hydration transitions (prototype thermodynamic gate).
+//! Clausius–Duhem admissibility for bulk reaction-extent transitions (prototype thermodynamic gate).
 //!
 //! Ported from `umst-prototype/.../thermodynamic_filter.rs` — **wasm-free** manifold build.
 
@@ -43,12 +43,12 @@ pub struct ThermodynamicState {
     pub temperature: f64,      // K
     pub free_energy: f64,      // Helmholtz ψ (J/kg)
     pub entropy: f64,          // η (J/kg·K)
-    pub hydration_degree: f64, // α (0-1)
-    pub strength: f64,         // f_c (MPa)
+    pub reaction_extent: f64, // α (0-1)
+    pub strength: f64,        // f_c (MPa)
 }
 
 const S_INT_DEFAULT: f64 = 240.0;
-const Q_HYDRATION: f64 = 450.0;
+const Q_REACTION_ENTHALPY: f64 = 450.0;
 
 impl ThermodynamicState {
     #[must_use]
@@ -58,7 +58,7 @@ impl ThermodynamicState {
             temperature: 293.0,
             free_energy: 0.0,
             entropy: 0.0,
-            hydration_degree: 0.0,
+            reaction_extent: 0.0,
             strength: 0.0,
         }
     }
@@ -73,14 +73,14 @@ impl ThermodynamicState {
     pub fn from_mix_calibrated(w_c: f64, alpha: f64, temp: f64, s_intrinsic: f64) -> Self {
         let x = 0.68 * alpha / (0.32 * alpha + w_c + 1e-6);
         let fc = s_intrinsic * x.powi(3);
-        let psi = -Q_HYDRATION * alpha;
+        let psi = -Q_REACTION_ENTHALPY * alpha;
 
         ThermodynamicState {
             density: 2400.0 - 400.0 * w_c,
             temperature: temp,
             free_energy: psi,
             entropy: alpha * 0.1,
-            hydration_degree: alpha,
+            reaction_extent: alpha,
             strength: fc,
         }
     }
@@ -125,9 +125,9 @@ impl ThermodynamicGate {
         }
     }
 
-    /// `mix_proposal` — substantive transition check ported from Algorithm 1 in the UMST prototypes.
+    /// Substantive transition check ported from Algorithm 1 in the UMST prototypes.
     #[must_use]
-    pub fn mix_proposal_admissible(
+    pub fn transition_proposal_admissible(
         &mut self,
         old_state: &ThermodynamicState,
         new_state: &ThermodynamicState,

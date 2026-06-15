@@ -65,8 +65,8 @@ fn prototype_calibration_envelope_bounds_cases() {
     assert!(!bad.within_prototype_calibration_bounds());
     assert!(matches!(
         bad.check_prototype_calibration_bounds(),
-        Err(PrototypeCalibrationBoundsError::AggregateMiExceeds { .. })
-            | Err(PrototypeCalibrationBoundsError::AggregateCostExceeds { .. })
+        Err(PrototypeCalibrationBoundsError::RolledMiExceeds { .. })
+            | Err(PrototypeCalibrationBoundsError::RolledCostExceeds { .. })
     ));
 }
 

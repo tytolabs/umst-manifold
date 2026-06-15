@@ -168,7 +168,7 @@ pub const HTTP_SHIM_CATALOG_ID: &str = "umst.gate.http_shim";
 /// [`ALLOW_UNUSED_GATE_CATALOG_IDS`].
 pub const PREDICTION_VS_PHYSICS_CATALOG_ID_DEPRECATED: &str = "umst.gate.prediction_vs_physics";
 
-/// `gate_family` for HTTP mix Powers closure + Parrott hydration (not a `catalog_id`).
+/// `gate_family` for HTTP bulk strength closure + Parrott kinetics (not a `catalog_id`).
 pub const MIX_PREDICTION_VS_PHYSICS_GATE_FAMILY: &str = "mix_prediction_vs_physics";
 
 /// Stable slug for [`crate::ai::cbf::ThermodynamicCBF`] / [`FormalReject::ThermodynamicControlBarrier`].
@@ -178,7 +178,7 @@ pub const LANDAUER_CBF_CATALOG_ID: &str = "umst.gate.landauer_cbf";
 pub const RUNTIME_EXTRA_GATE_CATALOG_IDS: &[&str] = &["thermodynamic_mix"];
 
 /// Cartridge-owned gate slugs (not in kernel universal registry after W9 Phase A).
-pub const CARTRIDGE_GATE_REGISTRY_CATALOG_IDS: &[&str] = &["umst.cartridge.concrete.policy"];
+pub const CARTRIDGE_GATE_REGISTRY_CATALOG_IDS: &[&str] = &["umst.cartridge.domain.policy"];
 
 /// [`GateEvaluator::catalog_id`] values implemented in kernel `src/gate/` (universal registry).
 pub const GATE_REGISTRY_CATALOG_IDS: &[&str] = &[
@@ -189,7 +189,7 @@ pub const GATE_REGISTRY_CATALOG_IDS: &[&str] = &[
 ];
 
 /// Runtime gate `catalog_id`s with **no** Lean `catalog.json` backing row (legacy allowlist).
-pub const ALLOW_UNUSED_GATE_CATALOG_IDS: &[&str] = &["umst.cartridge.concrete.policy"];
+pub const ALLOW_UNUSED_GATE_CATALOG_IDS: &[&str] = &["umst.cartridge.domain.policy"];
 
 /// Default relative path from `umst-manifold` to the Lean exporter catalog (sibling checkout layout).
 pub const DEFAULT_UPSTREAM_CATALOG_JSON: &str = "../umst-formal-double-slit/artifacts/catalog.json";

@@ -56,14 +56,14 @@ pub use fracture_field::{
 pub use photonics::{PhotonicsDecFacesPatch, PhotonicsHelmholtzSolver, PhotonicsSolver};
 pub use rheology_flow::BinghamFlowSolver;
 #[cfg(feature = "thmc-coupled")]
-pub use thmc::full_hydration_alpha_rate_tensor;
+pub use thmc::reaction_extent_rate_tensor;
 #[cfg(feature = "thmc-coupled")]
 pub use thmc::{
     mc2010_style_notional_shrink_strain, shrink_strain_from_saturation_loss,
     shrink_strain_from_saturation_loss_tensor,
 };
 pub use thmc::{
-    ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics,
+    ChemicalPlan, HydrologicPlan, MechanicalPlan, ReactionExtentKinetics, ThermalPlan,
     ThmcImplicitTAlphaNewtonConfig, ThmcMonolithicNewtonConfig, ThmcSolver, ThmcState,
 };
 pub use thmc_residual::{
@@ -71,7 +71,8 @@ pub use thmc_residual::{
 };
 #[cfg(feature = "thmc-coupled")]
 pub use thmc_residual::{
-    ThmcImplicitEulerThermalHumidityHydrationResidual, ThmcImplicitEulerThermalHydrationResidual,
+    ThmcImplicitEulerThermalHumidityReactionExtentResidual,
+    ThmcImplicitEulerThermalReactionExtentResidual,
 };
 pub use topology_solver::{
     DensityNet, TopologyOptimizer, TopologyOptimizerStub, TopologySolver, TopologySolverConfig,

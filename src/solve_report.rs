@@ -107,7 +107,7 @@ pub const SOLVER_ENTRY_POINTS: &[SolverEntryPoint] = &[
     },
     SolverEntryPoint {
         module: "physics::solvers::thmc_residual",
-        symbol: "ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u",
+        symbol: "ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations_with_quasi_static_r_u",
         audit_finding: 4,
         notes: "dense cap 64 DOF; ‖R‖ honesty (Wave 1)",
     },

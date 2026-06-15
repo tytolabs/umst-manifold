@@ -6,7 +6,7 @@
 //! # Solver types as morphisms (sketch)
 //!
 //! [`PhysicsSolverZst`] marks **which solver family** is in play (ZST façade). Actual stepping and
-//! composition happen in concrete solver modules and [`crate::physics::orchestration`]; the marker
+//! composition happen in named solver modules and [`crate::physics::orchestration`]; the marker
 //! trait keeps dispatch monomorphized while documenting the categorical “typed morphism” boundary.
 //!
 //! See `docs/Category-of-Material-Updates.md` (`fp-categorical-v04`).

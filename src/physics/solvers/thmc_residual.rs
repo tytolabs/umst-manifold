@@ -13,28 +13,28 @@
 //! monolith work is explicitly the **sparse / matrix-free Jacobian + Krylov–JFNK** direction with **AD-safe** ways to
 //! gate on **‖R‖** at scale (Solver-Status / matrix **#8** “still open” and blocker rows).
 //!
-//! **Milestone (v0.4):** `ThmcImplicitEulerThermalHydrationResidual` (feature `thmc-coupled`) implements the **backward Euler**
-//! discrete residual for the **thermal + hydration \(\alpha\)** sub-block on the graph Laplacian used
+//! **Milestone (v0.4):** `ThmcImplicitEulerThermalReactionExtentResidual` (feature `thmc-coupled`) implements the **backward Euler**
+//! discrete residual for the **thermal + reaction extent \(\alpha\)** sub-block on the graph Laplacian used
 //! by [`crate::physics::solvers::thmc::ThmcSolver`]:
 //! \[
 //! R_T = T - T^n - \Delta t\,\bigl(\mathcal{L}(T) + q_{\mathrm{exo}}\,\dot\alpha(\alpha,T)\bigr),\qquad
 //! R_\alpha = \alpha - \alpha^n - \Delta t\,\dot\alpha(\alpha,T),
 //! \]
-//! with \(\dot\alpha\) from `crate::physics::solvers::thmc::full_hydration_alpha_rate_tensor`
-//! ([`crate::physics::solvers::thmc::ThmcHydrationKinetics`]). Humidity, mechanics, and fracture are
+//! with \(\dot\alpha\) from `crate::physics::solvers::thmc::reaction_extent_rate_tensor`
+//! ([`crate::physics::solvers::thmc::ReactionExtentKinetics`]). Humidity, mechanics, and fracture are
 //! **out of scope** for this struct.
 //!
-//! **Damped Newton on \((T,\alpha)\) (feature `thmc-coupled`):** `ThmcImplicitEulerThermalHydrationResidual::one_damped_newton_step`
+//! **Damped Newton on \((T,\alpha)\) (feature `thmc-coupled`):** `ThmcImplicitEulerThermalReactionExtentResidual::one_damped_newton_step`
 //! builds a dense forward-difference Jacobian on a **small** stacked state (cap on total DOFs) and
 //! applies one damped Newton update \(U \leftarrow U - \omega J^{-1} R\).
-//! `ThmcImplicitEulerThermalHydrationResidual::damped_newton_iterations` chains that step **≥ 2**
+//! `ThmcImplicitEulerThermalReactionExtentResidual::damped_newton_iterations` chains that step **≥ 2**
 //! times (fresh Jacobian each iteration). Track 13 stepping stone toward full JFNK; humidity and
 //! mechanics remain out of scope here. See `docs/research/v0.4_track13_monolithic_newton_thmc.md`
 //! (appendix **§ Implementation blueprint** for stacked-unknown layout and batched constraints).
 //!
 //! **Shipped (`thmc-coupled` + `solver-experimental`):** one monolithic quasi-static Newton step may use
 //! **matrix-free** reduced FD + host **`f32` GMRES** via `solvers::thmc_jfnk::gmres_f32_try` and a **single**
-//! fallible matvec (`ThmcImplicitEulerThermalHumidityHydrationResidual::quasi_static_reduced_directional_fd_matvec`);
+//! fallible matvec (`ThmcImplicitEulerThermalHumidityReactionExtentResidual::quasi_static_reduced_directional_fd_matvec`);
 //! `solvers::thmc_jfnk::gmres_f32` is not used on this path (see `thmc_jfnk` module docs: closure vs `dyn`). Dense
 //! Gauss–Jordan remains the fallback; chained iterations use a **dense** inner solve.
 //!
@@ -71,8 +71,8 @@ use crate::physics::laplacian::TopologicalLaplacian;
 use crate::physics::mechanics::VectorMechanicsSolver;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc::{
-    full_hydration_alpha_rate_tensor, shrink_strain_from_saturation_loss_tensor, ChemicalPlan,
-    HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics, ThmcState,
+    reaction_extent_rate_tensor, shrink_strain_from_saturation_loss_tensor, ChemicalPlan,
+    HydrologicPlan, MechanicalPlan, ThermalPlan, ReactionExtentKinetics, ThmcState,
 };
 
 #[cfg(all(feature = "thmc-coupled", feature = "solver-experimental"))]
@@ -98,7 +98,7 @@ fn tensor1_bool_thmc<B: Backend<FloatElem = f32>>(t: Tensor<B, 1, Bool>) -> bool
     t.into_data().value[0]
 }
 
-/// Return bundle for [`ThmcImplicitEulerThermalHumidityHydrationResidual::one_damped_newton_step_qs_r_u_inner`]
+/// Return bundle for [`ThmcImplicitEulerThermalHumidityReactionExtentResidual::one_damped_newton_step_qs_r_u_inner`]
 /// (updated trial + stacked ‖R‖₂ before/after as rank‑1 tensors).
 #[cfg(feature = "thmc-coupled")]
 type QsRuNewtonStepTensors<B> = (ThmcState<B>, Tensor<B, 1>, Tensor<B, 1>);
@@ -108,8 +108,8 @@ type QsRuNewtonStepTensors<B> = (ThmcState<B>, Tensor<B, 1>, Tensor<B, 1>);
 /// Unknown stack \(U=(T,h,\alpha,u)\) ordering is implementation-defined; block preconditioners
 /// should follow the same layout as the residual vector.
 ///
-/// **Shipped (v0.4, feature `thmc-coupled`):** `ThmcImplicitEulerThermalHydrationResidual` implements
-/// real residual assembly / [`ResidualThmc::evaluate_residual`], tied to hydration kinetics (see
+/// **Shipped (v0.4, feature `thmc-coupled`):** `ThmcImplicitEulerThermalReactionExtentResidual` implements
+/// real residual assembly / [`ResidualThmc::evaluate_residual`], tied to reaction extent kinetics (see
 /// `thmc_implicit_euler_t_alpha_residual_matches_brute_force_two_nodes` in `tests/verification/thmc_drying_shrinkage.rs`).
 /// Other future residual bundles should override the default [`evaluate_residual`](ResidualThmc::evaluate_residual) stub below.
 pub trait ResidualThmc<B: Backend<FloatElem = f32>> {
@@ -128,8 +128,8 @@ pub trait ResidualThmc<B: Backend<FloatElem = f32>> {
 /// Field-major flattened unknown layout for a **future** monolithic THMC Newton–Krylov stack.
 ///
 /// Zero-sized **documentation / const-fn anchor** only — no runtime state. Matches the stacked
-/// \((T,\alpha)\) ordering used in `ThmcImplicitEulerThermalHydrationResidual::one_damped_newton_step`
-/// (thermal `vec`, then hydration \(\alpha\) `vec`) when extended with \(h\) and \(\mathbf u\) blocks.
+/// \((T,\alpha)\) ordering used in `ThmcImplicitEulerThermalReactionExtentResidual::one_damped_newton_step`
+/// (thermal `vec`, then reaction extent \(\alpha\) `vec`) when extended with \(h\) and \(\mathbf u\) blocks.
 ///
 /// See `docs/research/v0.4_track13_monolithic_newton_thmc.md` appendix **§ Implementation blueprint**.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
@@ -153,11 +153,11 @@ impl ThmcMonolithicImplicitUnknownLayout {
         n_nodes: usize,
         f_temperature: usize,
         f_humidity: usize,
-        f_hydration_alpha: usize,
+        f_reaction_extent: usize,
     ) -> usize {
         n_nodes * f_temperature
             + n_nodes * f_humidity
-            + n_nodes * f_hydration_alpha
+            + n_nodes * f_reaction_extent
             + n_nodes * Self::MECHANICAL_DISP_PER_NODE
     }
 
@@ -167,63 +167,63 @@ impl ThmcMonolithicImplicitUnknownLayout {
         n_nodes: usize,
         f_temperature: usize,
         f_humidity: usize,
-        f_hydration_alpha: usize,
+        f_reaction_extent: usize,
     ) -> usize {
         batch
             * Self::field_major_stacked_dof_count(
                 n_nodes,
                 f_temperature,
                 f_humidity,
-                f_hydration_alpha,
+                f_reaction_extent,
             )
     }
 
-    /// Field-major length of the **scalar transport + hydration** prefix \((T,h,\alpha)\) before \(\mathbf u\).
+    /// Field-major length of the **scalar transport + reaction extent** prefix \((T,h,\alpha)\) before \(\mathbf u\).
     ///
     /// \(\texttt{n\_nodes}\cdot(F_T+F_h+F_\alpha)\); consistent with the leading blocks of
-    /// [`Self::field_major_stacked_dof_count`] (same ordering as `ThmcImplicitEulerThermalHumidityHydrationResidual`).
+    /// [`Self::field_major_stacked_dof_count`] (same ordering as `ThmcImplicitEulerThermalHumidityReactionExtentResidual`).
     pub const fn field_major_scalar_transport_hydration_dof_count(
         n_nodes: usize,
         f_temperature: usize,
         f_humidity: usize,
-        f_hydration_alpha: usize,
+        f_reaction_extent: usize,
     ) -> usize {
-        n_nodes * f_temperature + n_nodes * f_humidity + n_nodes * f_hydration_alpha
+        n_nodes * f_temperature + n_nodes * f_humidity + n_nodes * f_reaction_extent
     }
 }
 
-/// Backward-Euler residual for **thermal + hydration** on a fixed graph, \(F\) evaluated at the trial
+/// Backward-Euler residual for **thermal + reaction extent** on a fixed graph, \(F\) evaluated at the trial
 /// state (consistent implicit step).
 #[cfg(feature = "thmc-coupled")]
 #[derive(Clone, Debug)]
-pub struct ThmcImplicitEulerThermalHydrationResidual<B: Backend<FloatElem = f32>> {
+pub struct ThmcImplicitEulerThermalReactionExtentResidual<B: Backend<FloatElem = f32>> {
     pub dt: f32,
     pub temperature_n: Tensor<B, 3>,
     pub alpha_n: Tensor<B, 3>,
     pub edges_b1: Tensor<B, 2, Int>,
     pub damage_m: Tensor<B, 3>,
-    pub kinetics: ThmcHydrationKinetics,
+    pub kinetics: ReactionExtentKinetics,
 }
 
 #[cfg(feature = "thmc-coupled")]
-impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHydrationResidual<B> {
-    /// Assemble \(R_T, R_\alpha\) at `trial` (same shapes as `temperature` / `hydration_alpha` plans).
+impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual<B> {
+    /// Assemble \(R_T, R_\alpha\) at `trial` (same shapes as `temperature` / `reaction_extent` plans).
     pub fn assemble(&self, trial: &ThmcState<B>) -> Result<(Tensor<B, 3>, Tensor<B, 3>), String> {
         let t = trial.thermal.temperature.clone();
-        let alpha = trial.chemical.hydration_alpha.clone();
+        let alpha = trial.chemical.reaction_extent.clone();
         let device = t.device();
         let batch = t.dims()[0];
         let n = t.dims()[1];
         if self.temperature_n.dims() != t.dims() {
             return Err(format!(
-                "ThmcImplicitEulerThermalHydrationResidual: T^n dims {:?} != trial T dims {:?}",
+                "ThmcImplicitEulerThermalReactionExtentResidual: T^n dims {:?} != trial T dims {:?}",
                 self.temperature_n.dims(),
                 t.dims()
             ));
         }
         if self.alpha_n.dims() != alpha.dims() {
             return Err(format!(
-                "ThmcImplicitEulerThermalHydrationResidual: α^n dims {:?} != trial α dims {:?}",
+                "ThmcImplicitEulerThermalReactionExtentResidual: α^n dims {:?} != trial α dims {:?}",
                 self.alpha_n.dims(),
                 alpha.dims()
             ));
@@ -243,7 +243,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHydrationResidual<B> {
         } else {
             t_bn1.expand::<3, _>([batch, n, f_alpha_ch])
         };
-        let d_alpha = full_hydration_alpha_rate_tensor(
+        let d_alpha = reaction_extent_rate_tensor(
             &self.kinetics,
             alpha.clone(),
             temperature_for_alpha,
@@ -281,7 +281,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHydrationResidual<B> {
     ///   `n (f_T + f_\alpha) \le` [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] (hard cap).
     ///
     /// Returns `(updated_trial, \|R\|_2 \text{ before}, \|R\|_2 \text{ after})`. Hydro / mechanics /
-    /// damage / time on `trial` are preserved; only `temperature` and `hydration_alpha` change.
+    /// damage / time on `trial` are preserved; only `temperature` and `reaction_extent` change.
     ///
     /// ## Multi-step
     /// For two or more sequential correctors with a fresh Jacobian each time, use
@@ -300,7 +300,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHydrationResidual<B> {
         }
 
         let t_dims = trial.thermal.temperature.dims();
-        let a_dims = trial.chemical.hydration_alpha.dims();
+        let a_dims = trial.chemical.reaction_extent.dims();
         if t_dims[0] != 1 {
             return Err(format!(
                 "one_damped_newton_step: batch must be 1, got {}",
@@ -327,7 +327,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHydrationResidual<B> {
         let norm_before = combined_residual_l2(&r_t0, &r_a0);
         let r0 = flatten_two_residuals(&r_t0, &r_a0);
 
-        let mut u = flatten_two_fields(&trial.thermal.temperature, &trial.chemical.hydration_alpha);
+        let mut u = flatten_two_fields(&trial.thermal.temperature, &trial.chemical.reaction_extent);
         if u.len() != m || r0.len() != m {
             return Err("one_damped_newton_step: internal flatten length mismatch".into());
         }
@@ -400,12 +400,12 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHydrationResidual<B> {
     }
 }
 
-/// Backward-Euler residual for **thermal + humidity + hydration \(\alpha\)** on a fixed graph.
+/// Backward-Euler residual for **thermal + humidity + reaction extent \(\alpha\)** on a fixed graph.
 ///
 /// Assembles the field-major stacked map (memo track 13 appendix §B) for \((R_T,R_h,R_\alpha)\).
 /// Humidity is pure implicit diffusion \(R_h = h - h^n - \Delta t\,\mathcal{L}_h(h)\) — **not** the
 /// explicit split’s tail drying closure. \((T,\alpha)\) blocks match
-/// [`ThmcImplicitEulerThermalHydrationResidual`].
+/// [`ThmcImplicitEulerThermalReactionExtentResidual`].
 ///
 /// **Mechanics tail (verification stub):** [`Self::assemble_with_mechanics_placeholder_r_u`] appends
 /// a **non-equilibrium** placeholder
@@ -420,7 +420,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHydrationResidual<B> {
 /// [`Self::assemble_with_quasi_static_r_u`] (plan §4 Phase 1–2).
 #[cfg(feature = "thmc-coupled")]
 #[derive(Clone, Debug)]
-pub struct ThmcImplicitEulerThermalHumidityHydrationResidual<B: Backend<FloatElem = f32>> {
+pub struct ThmcImplicitEulerThermalHumidityReactionExtentResidual<B: Backend<FloatElem = f32>> {
     pub dt: f32,
     pub temperature_n: Tensor<B, 3>,
     pub humidity_n: Tensor<B, 3>,
@@ -432,14 +432,14 @@ pub struct ThmcImplicitEulerThermalHumidityHydrationResidual<B: Backend<FloatEle
     pub mechanics_placeholder_mass: f32,
     /// Optional `w/c` for notional drying-shrink **increment** in [`Self::evaluate_quasi_static_r_u`]
     /// (coupling plan §4 Phase 4). `None` preserves shrink-free elastic \(R_u\).
-    pub ru_shrinkage_water_cement_ratio: Option<f32>,
+    pub ru_shrinkage_binder_liquid_ratio: Option<f32>,
     pub edges_b1: Tensor<B, 2, Int>,
     pub damage_m: Tensor<B, 3>,
-    pub kinetics: ThmcHydrationKinetics,
+    pub kinetics: ReactionExtentKinetics,
 }
 
 #[cfg(feature = "thmc-coupled")]
-impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResidual<B> {
+impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtentResidual<B> {
     /// Assemble \((R_T, R_h, R_\alpha)\) at `trial`.
     #[allow(clippy::type_complexity)]
     pub fn assemble(
@@ -448,27 +448,27 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     ) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>), String> {
         let t = trial.thermal.temperature.clone();
         let h = trial.hydro.humidity.clone();
-        let alpha = trial.chemical.hydration_alpha.clone();
+        let alpha = trial.chemical.reaction_extent.clone();
         let device = t.device();
         let batch = t.dims()[0];
         let n = t.dims()[1];
         if self.temperature_n.dims() != t.dims() {
             return Err(format!(
-                "ThmcImplicitEulerThermalHumidityHydrationResidual: T^n dims {:?} != trial T dims {:?}",
+                "ThmcImplicitEulerThermalHumidityReactionExtentResidual: T^n dims {:?} != trial T dims {:?}",
                 self.temperature_n.dims(),
                 t.dims()
             ));
         }
         if self.humidity_n.dims() != h.dims() {
             return Err(format!(
-                "ThmcImplicitEulerThermalHumidityHydrationResidual: h^n dims {:?} != trial h dims {:?}",
+                "ThmcImplicitEulerThermalHumidityReactionExtentResidual: h^n dims {:?} != trial h dims {:?}",
                 self.humidity_n.dims(),
                 h.dims()
             ));
         }
         if self.alpha_n.dims() != alpha.dims() {
             return Err(format!(
-                "ThmcImplicitEulerThermalHumidityHydrationResidual: α^n dims {:?} != trial α dims {:?}",
+                "ThmcImplicitEulerThermalHumidityReactionExtentResidual: α^n dims {:?} != trial α dims {:?}",
                 self.alpha_n.dims(),
                 alpha.dims()
             ));
@@ -495,7 +495,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         } else {
             t_bn1.expand::<3, _>([batch, n, f_alpha_ch])
         };
-        let d_alpha = full_hydration_alpha_rate_tensor(
+        let d_alpha = reaction_extent_rate_tensor(
             &self.kinetics,
             alpha.clone(),
             temperature_for_alpha,
@@ -527,7 +527,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         let u = trial.mechanical.displacement.clone();
         if self.displacement_n.dims() != u.dims() {
             return Err(format!(
-                "ThmcImplicitEulerThermalHumidityHydrationResidual: u^n dims {:?} != trial u dims {:?}",
+                "ThmcImplicitEulerThermalHumidityReactionExtentResidual: u^n dims {:?} != trial u dims {:?}",
                 self.displacement_n.dims(),
                 u.dims()
             ));
@@ -562,7 +562,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
     /// [`super::thmc::ThmcSolver::step_experimental`](super::thmc::ThmcSolver) and
     /// `VectorMechanicsSolver::projected_bar_equilibrium_residual` (crate-private helper on the mechanics solver).
     ///
-    /// **Phase 4 (optional):** when [`Self::ru_shrinkage_water_cement_ratio`] is `Some(w/c)\), a notional
+    /// **Phase 4 (optional):** when [`Self::ru_shrinkage_binder_liquid_ratio`] is `Some(w/c)\), a notional
     /// shrink-strain **increment** along edges (trial vs `humidity_n` saturation deficit, edge-averaged)
     /// enters the axial bar law as an eigenstrain in `VectorMechanicsSolver::projected_bar_equilibrium_residual`.
     ///
@@ -608,12 +608,12 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         let device = u.device();
         let alpha_bn1 = trial
             .chemical
-            .hydration_alpha
+            .reaction_extent
             .clone()
             .slice([0..batch, 0..n, 0..1])
             .clamp(1e-6_f32, 1.0_f32);
 
-        let edge_shrink_strain_increment = if let Some(wc) = self.ru_shrinkage_water_cement_ratio {
+        let edge_shrink_strain_increment = if let Some(wc) = self.ru_shrinkage_binder_liquid_ratio {
             let h = trial.hydro.humidity.clone();
             let h_n = self.humidity_n.clone();
             if h.dims() != [batch, n, 1] {
@@ -757,7 +757,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
 
         let t_dims = trial.thermal.temperature.dims();
         let h_dims = trial.hydro.humidity.dims();
-        let a_dims = trial.chemical.hydration_alpha.dims();
+        let a_dims = trial.chemical.reaction_extent.dims();
         if t_dims[0] != 1 {
             return Err(format!(
                 "one_damped_newton_step (T,h,α): batch must be 1, got {}",
@@ -793,7 +793,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         let mut u = flatten_three_fields(
             &trial.thermal.temperature,
             &trial.hydro.humidity,
-            &trial.chemical.hydration_alpha,
+            &trial.chemical.reaction_extent,
         );
         if u.len() != m || r0.len() != m {
             return Err("one_damped_newton_step (T,h,α): internal flatten length mismatch".into());
@@ -837,7 +837,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         Ok((new_trial, norm_before, norm_after))
     }
 
-    /// Same contract as [`ThmcImplicitEulerThermalHydrationResidual::damped_newton_iterations`], on \((T,h,\alpha)\).
+    /// Same contract as [`ThmcImplicitEulerThermalReactionExtentResidual::damped_newton_iterations`], on \((T,h,\alpha)\).
     pub fn damped_newton_iterations(
         &self,
         trial: &ThmcState<B>,
@@ -957,7 +957,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
 
         let t_dims = trial.thermal.temperature.dims();
         let h_dims = trial.hydro.humidity.dims();
-        let a_dims = trial.chemical.hydration_alpha.dims();
+        let a_dims = trial.chemical.reaction_extent.dims();
         let u_dims = trial.mechanical.displacement.dims();
         if t_dims[0] != 1 {
             return Err(format!(
@@ -1003,7 +1003,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
         let mut packed = flatten_four_fields(
             &trial.thermal.temperature,
             &trial.hydro.humidity,
-            &trial.chemical.hydration_alpha,
+            &trial.chemical.reaction_extent,
             &trial.mechanical.displacement,
         );
         if packed.len() != m || r0.len() != m {
@@ -1235,7 +1235,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityHydrationResid
 }
 
 /// Stacked \(\|R\|_2\) Newton exit: every **active** tolerance predicate must hold (see
-/// [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]).
+/// [`ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations_with_quasi_static_r_u`]).
 ///
 /// Uses lazy comparisons `norm - bound < 0` (strict `<` on scalars) with one [`tensor1_bool_thmc`]
 /// read per active predicate, then ANDs on the host.
@@ -1382,7 +1382,7 @@ fn trial_from_packed_three<B: Backend<FloatElem = f32>>(
             displacement: base.mechanical.displacement.clone(),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: a_new,
+            reaction_extent: a_new,
         },
         damage: base.damage.clone(),
         time: base.time,
@@ -1465,7 +1465,7 @@ fn trial_from_packed_four<B: Backend<FloatElem = f32>>(
             displacement: disp_new,
         },
         chemical: ChemicalPlan {
-            hydration_alpha: a_new,
+            reaction_extent: a_new,
         },
         damage: base.damage.clone(),
         time: base.time,
@@ -1474,7 +1474,7 @@ fn trial_from_packed_four<B: Backend<FloatElem = f32>>(
 
 #[cfg(feature = "thmc-coupled")]
 impl<B: Backend<FloatElem = f32>> ResidualThmc<B>
-    for ThmcImplicitEulerThermalHumidityHydrationResidual<B>
+    for ThmcImplicitEulerThermalHumidityReactionExtentResidual<B>
 {
     fn evaluate_residual(&self, trial: &ThmcState<B>) -> Result<(), String> {
         self.assemble(trial).map(|_| ())
@@ -1542,7 +1542,7 @@ fn trial_from_packed<B: Backend<FloatElem = f32>>(
             displacement: base.mechanical.displacement.clone(),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: a_new,
+            reaction_extent: a_new,
         },
         damage: base.damage.clone(),
         time: base.time,
@@ -1600,7 +1600,7 @@ fn gauss_jordan_solve(a: &mut [f32], b: &mut [f32], n: usize) -> Result<Vec<f32>
 }
 
 #[cfg(feature = "thmc-coupled")]
-impl<B: Backend<FloatElem = f32>> ResidualThmc<B> for ThmcImplicitEulerThermalHydrationResidual<B> {
+impl<B: Backend<FloatElem = f32>> ResidualThmc<B> for ThmcImplicitEulerThermalReactionExtentResidual<B> {
     fn evaluate_residual(&self, trial: &ThmcState<B>) -> Result<(), String> {
         self.assemble(trial).map(|_| ())
     }

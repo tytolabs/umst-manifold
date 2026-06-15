@@ -103,7 +103,7 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
         self.eta = report.eta_bound_suggested.clamp(0.0, 1.0) as f32;
     }
 
-    /// Set η from prototype aggregate ε envelope ([`crate::ros::prototype_eta_from_trace`]; Track G.3).
+    /// Set η from prototype rolled-up ε envelope ([`crate::ros::prototype_eta_from_trace`]; Track G.3).
     #[cfg(feature = "trace-calibration")]
     pub fn calibrate_eta_from_prototype_envelope(
         &mut self,

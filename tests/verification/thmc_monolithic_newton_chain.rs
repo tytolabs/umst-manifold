@@ -15,8 +15,8 @@ use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::physics::laplacian::TopologicalLaplacian;
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::solvers::{
-    full_hydration_alpha_rate_tensor, ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan,
-    ThmcHydrationKinetics, ThmcImplicitEulerThermalHumidityHydrationResidual,
+    reaction_extent_rate_tensor, ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan,
+    ReactionExtentKinetics, ThmcImplicitEulerThermalHumidityReactionExtentResidual,
     ThmcMonolithicImplicitUnknownLayout, ThmcState,
 };
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
@@ -81,7 +81,7 @@ fn monolithic_thmc_newton_stacked_norm_monotone_decrease_on_five_node_chain() {
     let coords = manifold.node_positions.as_ref().expect("SI coords").clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -123,7 +123,7 @@ fn monolithic_thmc_newton_stacked_norm_monotone_decrease_on_five_node_chain() {
     let t_bn1 = t_old.clone().slice([0..batch, 0..n, 0..1]);
     let temperature_for_alpha = t_bn1.clone();
     let d_alpha =
-        full_hydration_alpha_rate_tensor(&kinetics, alpha_n.clone(), temperature_for_alpha, &d);
+        reaction_extent_rate_tensor(&kinetics, alpha_n.clone(), temperature_for_alpha, &d);
     let f_t_ch = 1usize;
     let exo = d_alpha
         .clone()
@@ -178,14 +178,14 @@ fn monolithic_thmc_newton_stacked_norm_monotone_decrease_on_five_node_chain() {
     let trial_h = h_predict;
     let trial_alpha = alpha_predict;
 
-    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: t_n,
         humidity_n: h_n,
         alpha_n: alpha_n_for_pred,
         displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
         mechanics_placeholder_mass: 1.0_f32,
-        ru_shrinkage_water_cement_ratio: None,
+        ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
         damage_m: damage_m.clone(),
         kinetics,
@@ -199,7 +199,7 @@ fn monolithic_thmc_newton_stacked_norm_monotone_decrease_on_five_node_chain() {
             displacement: u_predict,
         },
         chemical: ChemicalPlan {
-            hydration_alpha: trial_alpha,
+            reaction_extent: trial_alpha,
         },
         damage: damage_m,
         time: 0.0_f32,

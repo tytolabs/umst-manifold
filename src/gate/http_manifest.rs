@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-//! HTTP `POST /gate` mix evaluation (prototype-style Powers closure + Parrott hydration).
+//! HTTP `POST /gate` bulk evaluation (prototype-style strength closure + Parrott kinetics).
 //!
 //! [`GateResponse::catalog_hash_hex`] mirrors [`crate::runtime::catalog::catalog_lock_bundle_sha256_hex`]
 //! (pinned by `build.rs` over `artifacts/catalog.lock.json`).
@@ -21,13 +21,13 @@ use crate::runtime::catalog::traceability::{
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct GateManifest {
     pub catalog_version: u32,
-    /// Intrinsic gel strength in Powers closure (prototype D1 **`80`** MPa default).
+    /// Intrinsic strength scale in the closure (prototype D1 **`80`** MPa default).
     pub strength_intrinsic_mpa: f64,
     pub air_void_fraction: f64,
     pub admissibility_rel_margin: f64,
 }
 
-/// Powers closure defaults (prototype `PhysicsConfig::default` / UCI D1 **`s_intrinsic`**).
+/// Closure defaults (prototype `PhysicsConfig::default` / UCI D1 **`s_intrinsic`**).
 #[must_use]
 pub fn default_gate_manifest() -> GateManifest {
     GateManifest {
@@ -50,7 +50,7 @@ impl From<&UmstManifest> for GateManifest {
     }
 }
 
-/// Registry-first HTTP mix gate (`catalog_id` [`HTTP_SHIM_CATALOG_ID`]).
+/// Registry-first HTTP bulk gate (`catalog_id` [`HTTP_SHIM_CATALOG_ID`]).
 ///
 /// Supersedes deprecated slug `umst.gate.prediction_vs_physics` (see **`docs/GateUnificationSpec.md`**
 /// migration notes; constant [`crate::runtime::catalog::traceability::PREDICTION_VS_PHYSICS_CATALOG_ID_DEPRECATED`]).
@@ -76,7 +76,7 @@ impl HttpTransitionEvaluator {
 
     #[deprecated(note = "use HttpTransitionEvaluator::from_umst_manifest — injection-only")]
     #[must_use]
-    pub fn from_concrete_cartridge_defaults() -> Self {
+    pub fn from_domain_policy_defaults() -> Self {
         Self::new(default_gate_manifest())
     }
 }
@@ -144,19 +144,22 @@ impl HttpTransitionEvaluator {
         self.evaluate_transition(proposal)
     }
 
-    /// Optional transition witness: idle → proposal hydration (host [`TransitionEvaluator`]).
+    /// Optional transition witness: idle → proposal reaction extent (host [`TransitionEvaluator`]).
     pub fn evaluate_transition_witness(
         &mut self,
         proposal: &MixProposal,
         dt_seconds: f64,
     ) -> Option<super::verdict::AdmissibilityVerdict> {
-        let total = proposal.cement + proposal.slag + proposal.fly_ash;
+        let total = proposal.constituent_primary_kg
+            + proposal.constituent_secondary_kg
+            + proposal.constituent_tertiary_kg;
         if total <= 1.0e-9 || proposal.water <= 0.0 {
             return None;
         }
         let w_c = proposal.water / total;
-        let scm_ratio = (proposal.slag + proposal.fly_ash) / total;
-        let alpha = hydration_degree(proposal.age_days, proposal.temperature_c, scm_ratio);
+        let supplementary_ratio =
+            (proposal.constituent_secondary_kg + proposal.constituent_tertiary_kg) / total;
+        let alpha = reaction_extent_from_age(proposal.age_days, proposal.temperature_c, supplementary_ratio);
         let old = ThermodynamicStateSnapshot::new_idle();
         let new = ThermodynamicStateSnapshot::from_mix_calibrated(
             w_c,
@@ -187,14 +190,15 @@ pub fn pinned_catalog_bundle_sha256_hex() -> String {
     catalog_lock_bundle_sha256_hex().to_string()
 }
 
-/// Proposal JSON for `/gate` (prototype `GateRequest`–compatible names).
+/// Proposal JSON for `/gate` (prototype `GateRequest`–compatible serde field names).
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct MixProposal {
-    pub cement: f64,
-    #[serde(default)]
-    pub slag: f64,
-    #[serde(default)]
-    pub fly_ash: f64,
+    #[serde(rename = "cement")]
+    pub constituent_primary_kg: f64,
+    #[serde(default, rename = "slag")]
+    pub constituent_secondary_kg: f64,
+    #[serde(default, rename = "fly_ash")]
+    pub constituent_tertiary_kg: f64,
     pub water: f64,
     #[serde(rename = "age_days", alias = "age")]
     pub age_days: f64,
@@ -228,28 +232,28 @@ pub fn gate_json_parse_response() -> GateResponse {
     }
 }
 
-/// Parrott kinetics — `PhysicsKernel::compute_hydration_degree` (`umst-core` prototype).
+/// Parrott-style kinetics — `PhysicsKernel::compute_reaction_extent` (`umst-core` prototype).
 #[must_use]
-pub fn hydration_degree(age_days: f64, temp_c: f64, scm_ratio: f64) -> f64 {
-    let scm_ratio = scm_ratio.clamp(0.0, 1.0) as f32;
-    let alpha_max = 0.95 - scm_ratio * 0.15;
+pub fn reaction_extent_from_age(age_days: f64, temp_c: f64, supplementary_ratio: f64) -> f64 {
+    let supplementary_ratio = supplementary_ratio.clamp(0.0, 1.0) as f32;
+    let alpha_max = 0.95 - supplementary_ratio * 0.15;
     let k_ref = 0.55_f32;
     let t_ref_k = 293.15_f32;
     let t_k = (temp_c as f32) + 273.15;
     let e_over_r = 5000.0_f32;
     let temp_factor = (e_over_r * (1.0 / t_ref_k - 1.0 / t_k)).exp();
-    let scm_factor = 1.0 - scm_ratio * 0.4;
-    let k = k_ref * temp_factor * scm_factor;
+    let supplementary_factor = 1.0 - supplementary_ratio * 0.4;
+    let k = k_ref * temp_factor * supplementary_factor;
     let age_days = age_days as f32;
     let alpha = alpha_max * (1.0 - (-k * age_days.sqrt()).exp());
     f64::from(alpha.clamp(0.0, 1.0))
 }
 
-/// Powers compressive strength (MPa) — `StrengthEngine::compute_powers`.
+/// Compressive strength closure (MPa) — `StrengthEngine::compute_strength`.
 #[must_use]
 pub fn physics_compressive_strength_mpa(
     w_c_ratio: f64,
-    degree_hydration: f64,
+    degree_reaction_extent: f64,
     air: f64,
     intrinsic_strength: f64,
 ) -> f64 {
@@ -257,16 +261,16 @@ pub fn physics_compressive_strength_mpa(
     if wc_ratio > 100.0 {
         return 0.0;
     }
-    let degree_hydration = degree_hydration as f32;
+    let degree_reaction_extent = degree_reaction_extent as f32;
     let air_content = air as f32;
     let intrinsic_strength = intrinsic_strength as f32;
-    let vg_volume_gel = 0.68 * degree_hydration;
-    let vc_volume_capillary = wc_ratio - 0.36 * degree_hydration;
-    let space = vg_volume_gel + vc_volume_capillary + air_content;
+    let vg_volume_phase = 0.68 * degree_reaction_extent;
+    let vc_volume_capillary = wc_ratio - 0.36 * degree_reaction_extent;
+    let space = vg_volume_phase + vc_volume_capillary + air_content;
     if space <= 0.001 {
         return 0.0;
     }
-    let x = vg_volume_gel / space;
+    let x = vg_volume_phase / space;
     let fc = intrinsic_strength * x.powi(3);
     f64::from(fc.max(0.0))
 }
@@ -275,9 +279,11 @@ pub fn physics_compressive_strength_mpa(
 pub fn evaluate(proposal: &MixProposal, manifest: &GateManifest) -> GateResponse {
     let mut codes = Vec::new();
 
-    let total_cementitious = proposal.cement + proposal.slag + proposal.fly_ash;
-    if total_cementitious <= 1.0e-9 {
-        codes.push("MIX_EMPTY_CEMENTITIOUS".to_string());
+    let total_binder = proposal.constituent_primary_kg
+        + proposal.constituent_secondary_kg
+        + proposal.constituent_tertiary_kg;
+    if total_binder <= 1.0e-9 {
+        codes.push("MIX_EMPTY_BINDER".to_string());
         return finalize(false, codes);
     }
     if proposal.water <= 0.0 {
@@ -289,9 +295,10 @@ pub fn evaluate(proposal: &MixProposal, manifest: &GateManifest) -> GateResponse
         return finalize(false, codes);
     }
 
-    let w_c = proposal.water / total_cementitious;
-    let scm_ratio = (proposal.slag + proposal.fly_ash) / total_cementitious;
-    let alpha = hydration_degree(proposal.age_days, proposal.temperature_c, scm_ratio);
+    let w_c = proposal.water / total_binder;
+    let supplementary_ratio =
+        (proposal.constituent_secondary_kg + proposal.constituent_tertiary_kg) / total_binder;
+    let alpha = reaction_extent_from_age(proposal.age_days, proposal.temperature_c, supplementary_ratio);
     let fc = physics_compressive_strength_mpa(
         w_c,
         alpha,
@@ -330,9 +337,9 @@ mod tests {
     fn admitting_vs_reject_example() {
         let m = GateManifest::default();
         let admit = MixProposal {
-            cement: 400.0,
-            slag: 0.0,
-            fly_ash: 0.0,
+            constituent_primary_kg: 400.0,
+            constituent_secondary_kg: 0.0,
+            constituent_tertiary_kg: 0.0,
             water: 200.0,
             age_days: 28.0,
             predicted_strength_mpa: 25.0,

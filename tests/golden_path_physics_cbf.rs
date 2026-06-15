@@ -37,7 +37,7 @@ use std::marker::PhantomData;
 use umst_manifold::ai::cbf::ThermodynamicCBF;
 use umst_manifold::ai::ppo::ManifoldGateway;
 use umst_manifold::core::apply_physics_to_umst;
-use umst_manifold::core::tensors::{MixTensor, UnifiedMaterialStateTensor};
+use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::core::umst_schema::SCALAR_DAMAGE;
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
@@ -132,7 +132,7 @@ struct MechanicsBarCartridge<B> {
 }
 
 impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for MechanicsBarCartridge<Bk> {
-    fn compute_all(&self, mix: &MixTensor<Bk>) -> PhysicalResult<Bk> {
+    fn compute_all(&self, mix: &StatePoint<Bk>) -> PhysicalResult<Bk> {
         let d = mix.fractions.device();
         PhysicalResult {
             free_energy: Tensor::zeros([1, 1], &d),
@@ -211,7 +211,7 @@ struct EmptyCartridge;
 
 #[cfg(feature = "solver-experimental")]
 impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for EmptyCartridge {
-    fn compute_all(&self, mix: &MixTensor<Bk>) -> PhysicalResult<Bk> {
+    fn compute_all(&self, mix: &StatePoint<Bk>) -> PhysicalResult<Bk> {
         let d = mix.fractions.device();
         PhysicalResult {
             free_energy: Tensor::zeros([1, 1], &d),
@@ -269,7 +269,7 @@ fn physical_result_from_thmc_state<Bk: Backend<FloatElem = f32>>(
         .reshape([batch, n]);
     let alpha = state
         .chemical
-        .hydration_alpha
+        .reaction_extent
         .clone()
         .slice([0..batch, 0..n, 0..1])
         .reshape([batch, n]);
@@ -410,7 +410,7 @@ fn golden_path_thmc_experimental_then_cbf_apply_physics() {
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &dev),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: Tensor::<B, 3>::zeros([1, n, 1], &dev).add_scalar(0.1_f32),
+            reaction_extent: Tensor::<B, 3>::zeros([1, n, 1], &dev).add_scalar(0.1_f32),
         },
         damage: Tensor::<B, 3>::zeros([1, n, 1], &dev).add_scalar(0.01_f32),
         time: 0.0,

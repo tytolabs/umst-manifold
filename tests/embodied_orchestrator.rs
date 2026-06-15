@@ -7,7 +7,7 @@ use burn::tensor::backend::Backend;
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::ai::info_gain::suggested_info_gain_from_batched_nodal_scalars;
-use umst_manifold::core::tensors::{MixTensor, UnifiedMaterialStateTensor};
+use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::embodied::{EmbodiedOrchestrator, EmbodiedReject, HostTransitionStep};
 use umst_manifold::gate::{
@@ -59,7 +59,7 @@ fn tiny_umst() -> UnifiedMaterialStateTensor<B> {
 struct GatewayStubCartridge;
 
 impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for GatewayStubCartridge {
-    fn compute_all(&self, mix: &MixTensor<Bk>) -> PhysicalResult<Bk> {
+    fn compute_all(&self, mix: &StatePoint<Bk>) -> PhysicalResult<Bk> {
         let d = mix.fractions.device();
         PhysicalResult {
             free_energy: Tensor::zeros([1, 1], &d),
@@ -95,7 +95,7 @@ fn golden_identity_host() -> (ThermodynamicState, ThermodynamicState, f64) {
         temperature: 293.15,
         free_energy: -1.35e5,
         entropy: 0.05,
-        hydration_degree: 0.42,
+        reaction_extent: 0.42,
         strength: 12.7,
     };
     (s.clone(), s, 1.0)
@@ -107,7 +107,7 @@ fn golden_mass_reject_host() -> (ThermodynamicState, ThermodynamicState, f64) {
         temperature: 293.0,
         free_energy: 0.0,
         entropy: 0.1,
-        hydration_degree: 0.3,
+        reaction_extent: 0.3,
         strength: 10.0,
     };
     let mut new = old.clone();

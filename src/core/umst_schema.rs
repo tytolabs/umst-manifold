@@ -12,12 +12,11 @@
 //!   voxel/grid spacing hint for cartridges and visualization.
 //!
 //! These values are the **layout contract** for topology and THMC-style passes that read nodal
-//! scalars from the manifold. Downstream cartridges (for example `umst-concrete-cartridge`
-//! `compute_topology` / `thmc_state_from_umst`) must use these constants instead of duplicating
-//! numeric literals.
+//! scalars from the manifold. Downstream domain cartridges bind these column indices in their
+//! own crates; the kernel keeps only the shared layout contract.
 //!
 //! Channel `0` is reserved for material-specific bulk scalars (not yet fixed in the shared
-//! contract); concrete workflows in-tree bind standard physics from [`SCALAR_HUMIDITY`] through
+//! contract); standard physics channels bind from [`SCALAR_HUMIDITY`] through
 //! [`SCALAR_DAMAGE`], with optional [`SCALAR_FRACTURE_ENERGY_GC`] when `F_scalars > 5`.
 
 /// Scalar column `0`: reserved / material-specific (define meaning per cartridge).
@@ -33,7 +32,7 @@ pub const SCALAR_INTERNAL_VARIABLE_0: usize = 2;
 #[deprecated(note = "renamed to SCALAR_INTERNAL_VARIABLE_0")]
 pub const SCALAR_HYDRATION_ALPHA: usize = SCALAR_INTERNAL_VARIABLE_0;
 
-/// Nodal temperature (physical units are cartridge-defined; often °C on the concrete path), column `3`.
+/// Nodal temperature (physical units are cartridge-defined), column `3`.
 pub const SCALAR_TEMPERATURE: usize = 3;
 
 /// Continuum / phase-field damage \(d \in \[0,1\]\), column `4`.

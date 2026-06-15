@@ -8,10 +8,6 @@ pub struct StatePoint<B: Backend> {
     pub fractions: Tensor<B, 2>, // [Batch, Features]
 }
 
-/// Renamed to [`StatePoint`] in v2.0.0-rc1 (W9 agnostic-on-fork).
-#[deprecated(note = "renamed to StatePoint")]
-pub type MixTensor<B> = StatePoint<B>;
-
 use std::marker::PhantomData;
 
 /// An empty trait representing a formal proof witness.

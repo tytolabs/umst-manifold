@@ -9,7 +9,7 @@ mod thmc_ok {
     use burn::tensor::backend::Backend;
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
-    use umst_manifold::core::tensors::{MixTensor, UnifiedMaterialStateTensor};
+    use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
     use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
     use umst_manifold::physics::solvers::{
         ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcSolver, ThmcState,
@@ -24,7 +24,7 @@ mod thmc_ok {
     struct Stub;
 
     impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for Stub {
-        fn compute_all(&self, mix: &MixTensor<Bk>) -> PhysicalResult<Bk> {
+        fn compute_all(&self, mix: &StatePoint<Bk>) -> PhysicalResult<Bk> {
             let d = mix.fractions.device();
             PhysicalResult {
                 free_energy: Tensor::zeros([1, 1], &d),
@@ -104,7 +104,7 @@ mod thmc_ok {
                 displacement: Tensor::zeros([1, n, 3], &dev),
             },
             chemical: ChemicalPlan {
-                hydration_alpha: Tensor::zeros([1, n, 1], &dev),
+                reaction_extent: Tensor::zeros([1, n, 1], &dev),
             },
             damage: Tensor::zeros([1, n, 1], &dev),
             time: 0.0_f32,

@@ -3,7 +3,7 @@
 
 //! Immutable compile-time constants registry for manifold solvers (integration-contracts D3).
 //!
-//! **Law:** migrated rows point at a single Rust `const` or `umst-math` re-export; THMC hydration
+//! **Law:** migrated rows point at a single Rust `const` or `umst-math` re-export; THMC reaction-extent
 //! floats remain **TODO** until cartridge calibration lands (no duplicate literals here).
 
 /// One grounded numerical parameter (pure FP: copy types only).
@@ -84,7 +84,7 @@ pub const LANDAUER_BIT_ENERGY_300K_J: GroundedConst<f64> = GroundedConst {
     evidence: "k_B T ln 2 — aligns with constants::landauer_bit_energy_joules fallback path",
 };
 
-/// THMC hydration / kinetics floats — **not** migrated; single source remains `thmc.rs` until Wave 1.
+/// THMC reaction-extent / kinetics floats — **not** migrated; single source remains `thmc.rs` until Wave 1.
 pub const THMC_FLOATS_TODO: &[(&str, &str)] = &[
     (
         "HYDRATION_ARRHENIUS_PREFACTOR_S",

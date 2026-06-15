@@ -88,7 +88,7 @@ impl GateRegistry {
         }
     }
 
-    /// Classical formal anchors (Powers, constitutional Kleisli, DEC) for manifest reviews.
+    /// Classical formal anchors (strength closure, constitutional Kleisli, DEC) for manifest reviews.
     #[must_use]
     pub fn classical_formal_lane_ids() -> [&'static str; 5] {
         [

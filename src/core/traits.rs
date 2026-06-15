@@ -14,7 +14,7 @@
 //!   in this trait (cartridge stays a functor *into* thermodynamic summaries).
 //! - **Second law at the interface:** [`PhysicalResult`] exposes `free_energy`, `dissipation`, and
 //!   related sparse fields so merge, CBF, and RL paths can audit **dissipative consistency** as a
-//!   policy invariant; concrete constitutive closures must populate those tensors consistently with
+//!   policy invariant; constitutive closures must populate those tensors consistently with
 //!   their numerical schemes.
 //!
 //! Longer note (objects / solvers / composition table): `docs/Category-of-Material-Updates.md`.
@@ -70,15 +70,15 @@ pub trait SpatialCartridge<B: Backend>: IScienceCartridge<B> {}
 
 /// Cartridge-supplied transition closure parameters (W9 Tier 2c bridge).
 ///
-/// Default implementations preserve legacy OPC hydration literals; concrete cartridges override
-/// in a follow-up pin. Kernel transition math consumes these via injection, not hard-coded cement.
+/// Default implementations preserve legacy reaction-enthalpy literals; domain cartridges override
+/// in a follow-up pin. Kernel transition math consumes these via injection, not hard-coded binder mass.
 pub trait MaterialTransitionParams {
-    /// Specific heat of reaction progress (J/kg), default OPC hydration enthalpy scale.
-    fn hydration_heat_j_per_kg(&self) -> f64 {
+    /// Specific heat of reaction progress (J/kg), default reaction-enthalpy scale.
+    fn reaction_enthalpy_j_per_kg(&self) -> f64 {
         450.0
     }
 
-    /// Intrinsic gel strength scale (MPa) for Powers-style monotonicity checks.
+    /// Intrinsic strength scale (MPa) for monotonicity checks.
     fn default_intrinsic_strength_mpa(&self) -> f64 {
         240.0
     }

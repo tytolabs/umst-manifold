@@ -44,7 +44,7 @@ pub enum EmittedTraceWellFormedError {
     },
 }
 
-/// Violation of Lean `prototypeCalibration` aggregate ε envelopes (`epsMIAgg` / `epsCostAgg`).
+/// Violation of Lean `prototypeCalibration` rolled-up ε envelopes (`epsMIAgg` / `epsCostAgg`).
 ///
 /// **Not** [`EmittedTraceWellFormed`]: per-step catalog caps are checked separately.
 /// **Not** [`NumericTraceApproxConsistent`]: that morphism needs rollout ground truth `(π, ρ₀)`;
@@ -52,8 +52,8 @@ pub enum EmittedTraceWellFormedError {
 #[derive(Debug, Clone, PartialEq)]
 pub enum PrototypeCalibrationBoundsError {
     HorizonStepCountMismatch { horizon_n: u32, step_count: usize },
-    AggregateMiExceeds { aggregate: f64, bound: f64 },
-    AggregateCostExceeds { aggregate: f64, bound: f64 },
+    RolledMiExceeds { rolled_sum: f64, bound: f64 },
+    RolledCostExceeds { rolled_sum: f64, bound: f64 },
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -146,13 +146,13 @@ pub const PROTOTYPE_EPS_MI_STEP: f64 = 1.0 / 10_000.0;
 /// Per-step Landauer cost tolerance from Lean `prototypeCalibration.epsCostStep`.
 pub const PROTOTYPE_EPS_COST_STEP: f64 = 1.0 / 10_000.0;
 
-/// Aggregate MI bound for horizon `n`: `n * PROTOTYPE_EPS_MI_STEP` (`prototypeCalibration.epsMIAgg`).
+/// Rolled-up MI bound for horizon `n`: `n * PROTOTYPE_EPS_MI_STEP` (`prototypeCalibration.epsMIAgg`).
 #[must_use]
 pub fn prototype_eps_mi_agg(horizon_n: u32) -> f64 {
     f64::from(horizon_n) * PROTOTYPE_EPS_MI_STEP
 }
 
-/// Aggregate cost bound for horizon `n` (`prototypeCalibration.epsCostAgg`).
+/// Rolled-up cost bound for horizon `n` (`prototypeCalibration.epsCostAgg`).
 #[must_use]
 pub fn prototype_eps_cost_agg(horizon_n: u32) -> f64 {
     f64::from(horizon_n) * PROTOTYPE_EPS_COST_STEP
@@ -161,26 +161,38 @@ pub fn prototype_eps_cost_agg(horizon_n: u32) -> f64 {
 impl EmittedTraceSchema {
     pub const SCHEMA_TAG: &'static str = "umst.emitted_trace.v1";
 
-    /// Sum of per-step MI (`PerStepNumericRecord.aggregateMI` fold).
+    /// Sum of per-step MI (`PerStepNumericRecord.rolledMI` fold).
     #[must_use]
-    pub fn aggregate_step_mi(&self) -> f64 {
+    pub fn summed_step_mi(&self) -> f64 {
         self.steps.iter().map(|s| s.step_mi).sum()
     }
 
-    /// Sum of per-step Landauer cost (`PerStepNumericRecord.aggregateCost` fold).
+    /// Sum of per-step Landauer cost (`PerStepNumericRecord.rolledCost` fold).
     #[must_use]
-    pub fn aggregate_step_cost(&self) -> f64 {
+    pub fn summed_step_cost(&self) -> f64 {
         self.steps.iter().map(|s| s.step_cost).sum()
     }
 
-    /// True when `steps.len() == horizon_n` and aggregate MI/cost sit inside Lean
+    #[deprecated(note = "renamed to summed_step_mi")]
+    #[must_use]
+    pub fn aggregate_step_mi(&self) -> f64 {
+        self.summed_step_mi()
+    }
+
+    #[deprecated(note = "renamed to summed_step_cost")]
+    #[must_use]
+    pub fn aggregate_step_cost(&self) -> f64 {
+        self.summed_step_cost()
+    }
+
+    /// True when `steps.len() == horizon_n` and rolled-up MI/cost sit inside Lean
     /// `prototypeCalibration.epsMIAgg` / `epsCostAgg` envelopes (utility calibration, not MI cap).
     #[must_use]
     pub fn within_prototype_calibration_bounds(&self) -> bool {
         self.check_prototype_calibration_bounds().is_ok()
     }
 
-    /// Structured check: aggregate sums vs `prototypeCalibration.epsMIAgg` / `epsCostAgg`.
+    /// Structured check: rolled-up sums vs `prototypeCalibration.epsMIAgg` / `epsCostAgg`.
     pub fn check_prototype_calibration_bounds(
         &self,
     ) -> Result<(), PrototypeCalibrationBoundsError> {
@@ -193,25 +205,25 @@ impl EmittedTraceSchema {
         }
         let n = self.horizon_n;
         let mi_bound = prototype_eps_mi_agg(n);
-        let mi_agg = self.aggregate_step_mi();
+        let mi_agg = self.summed_step_mi();
         if mi_agg > mi_bound {
-            return Err(PrototypeCalibrationBoundsError::AggregateMiExceeds {
-                aggregate: mi_agg,
+            return Err(PrototypeCalibrationBoundsError::RolledMiExceeds {
+                rolled_sum: mi_agg,
                 bound: mi_bound,
             });
         }
         let cost_bound = prototype_eps_cost_agg(n);
-        let cost_agg = self.aggregate_step_cost();
+        let cost_agg = self.summed_step_cost();
         if cost_agg > cost_bound {
-            return Err(PrototypeCalibrationBoundsError::AggregateCostExceeds {
-                aggregate: cost_agg,
+            return Err(PrototypeCalibrationBoundsError::RolledCostExceeds {
+                rolled_sum: cost_agg,
                 bound: cost_bound,
             });
         }
         Ok(())
     }
 
-    /// Fixture inside prototype aggregate ε envelopes (Track G.2 positive case).
+    /// Fixture inside prototype rolled-up ε envelopes (Track G.2 positive case).
     #[must_use]
     pub fn sample_calibration_envelope_fixture() -> Self {
         let steps = vec![
@@ -221,7 +233,7 @@ impl EmittedTraceSchema {
         Self::new(2, 300.0, steps)
     }
 
-    /// Fixture exceeding prototype aggregate ε (Track G.2 negative case).
+    /// Fixture exceeding prototype rolled-up ε (Track G.2 negative case).
     #[must_use]
     pub fn sample_calibration_envelope_violation_fixture() -> Self {
         let steps = vec![EmittedStepRecord::new(
@@ -272,7 +284,7 @@ impl EmittedTraceSchema {
     }
 }
 
-/// Prototype η from trace aggregate MI vs Lean `prototypeCalibration.epsMIAgg` (Track G.3).
+/// Prototype η from trace rolled-up MI vs Lean `prototypeCalibration.epsMIAgg` (Track G.3).
 /// Post-CBF calibration hook only — does not bypass [`crate::ai::cbf::ThermodynamicCBF`].
 #[cfg(feature = "trace-calibration")]
 #[must_use]
@@ -281,7 +293,7 @@ pub fn prototype_eta_from_trace(schema: &EmittedTraceSchema) -> f32 {
     if bound <= 0.0 {
         return 0.0;
     }
-    let ratio = schema.aggregate_step_mi() / bound;
+    let ratio = schema.summed_step_mi() / bound;
     ratio.clamp(0.0, 1.0) as f32
 }
 

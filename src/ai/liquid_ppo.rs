@@ -6,7 +6,7 @@
 //! Replaces the standard discrete MLP path with a continuous-time differential equation solver.
 //! Instead of mapping Action = f(State), it solves:
 //! d(Action)/dt = f_theta(Action, State)
-//! This matches the continuous rheological evolution of printing concrete.
+//! This matches the continuous rheological evolution of printable bulk materials.
 //!
 //! Policy weights use **AdamW**-style tensor updates (Burn-default \(\beta_1,\beta_2,\varepsilon\), weight decay)
 //! so [`AdjointNeuralODE::backward_adjoint`] gradients flow into [`AdjointNeuralODE::policy_weights`] without

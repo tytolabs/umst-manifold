@@ -17,7 +17,7 @@ use umst_manifold::ai::info_gain::{
 };
 use umst_manifold::ai::liquid_ppo::BurnLiquidPPOAgent;
 use umst_manifold::ai::ppo::ManifoldGateway;
-use umst_manifold::core::tensors::{MixTensor, UnifiedMaterialStateTensor};
+use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::core::umst_schema::SCALAR_HYDRATION_ALPHA;
 
@@ -64,7 +64,7 @@ fn umst_with_hydration(hydration: f32, n: usize, f: usize) -> UnifiedMaterialSta
 struct GateAwareCartridge;
 
 impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for GateAwareCartridge {
-    fn compute_all(&self, mix: &MixTensor<Bk>) -> PhysicalResult<Bk> {
+    fn compute_all(&self, mix: &StatePoint<Bk>) -> PhysicalResult<Bk> {
         let d = mix.fractions.device();
         PhysicalResult {
             free_energy: Tensor::zeros([1, 1], &d),

@@ -23,7 +23,7 @@ pub use evaluator::{
 };
 pub use http_manifest::{
     default_gate_manifest, evaluate as evaluate_http_mix_manifest, gate_json_parse_response,
-    hydration_degree, physics_compressive_strength_mpa, pinned_catalog_bundle_sha256_hex,
+    reaction_extent_from_age, physics_compressive_strength_mpa, pinned_catalog_bundle_sha256_hex,
     GateHttpRuntime, GateManifest as HttpGateManifest, GateResponse as HttpGateResponse,
     HttpTransitionEvaluator, MixProposal as HttpMixProposal,
 };
@@ -48,11 +48,6 @@ pub use verdict::AdmissibilityVerdict;
 #[deprecated(note = "renamed to transition_eval_registry")]
 pub mod mix_eval_registry {
     pub use super::transition_eval_registry::*;
-}
-
-#[deprecated(note = "renamed to transition_proposal")]
-pub mod mix_proposal {
-    pub use super::transition_proposal::*;
 }
 
 #[deprecated(note = "renamed to HttpTransitionEvaluator")]

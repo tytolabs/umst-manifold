@@ -18,18 +18,18 @@
 //! - **\(R_T\) — thermal:** heat equation / transport residual for nodal temperature (diffusion + sources).
 //! - **\(R_h\) — hydrologic:** moisture / pore-fluid proxy residual (transport + coupling).
 //! - **\(R_u\) — mechanical:** equilibrium / momentum residual for displacement (stress divergence + body forces).
-//! - **\(R_\alpha\) — chemical / hydration:** hydration degree evolution residual (kinetics vs stored \(\alpha\)).
+//! - **\(R_\alpha\) — chemical / reaction extent:** reaction extent degree evolution residual (kinetics vs stored \(\alpha\)).
 //!
 //! **Monolithic Newton (Phase 5 — partial, small graph only):** when [`ThmcSolver::monolithic_thmc_newton`] is `Some`,
 //! each outer pass replaces the split \((T,\alpha)\to h\to u\) sequence with **dense** damped Newton on the
 //! backward-Euler stacked unknowns including quasi-static \(R_u\)
-//! (`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`) **only
+//! (`ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations_with_quasi_static_r_u`) **only
 //! while** field-major stacked DOFs \(\le\) [`crate::physics::solvers::THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] (**64**,
 //! unified post-**`3394b96`** — see [`docs/Solver-Status.md`](../../../docs/Solver-Status.md) §THMC and matrix **#8**).
 //! **No** shipped path performs dense Newton (or a dense Jacobian solve) **above** that cap. At production \(N\), the
 //! roadmap is **sparse or matrix-free Jacobians**, **Krylov–JFNK**, **AD-safe** residual-norm **‖R‖** exit criteria,
 //! and adaptive `dt` — not a larger dense stack. Without monolithic config, [`ThmcSolver::step`] is an
-//! **operator split** per outer `max_newton` pass: **(1)** advance **\(T\)** and **hydration \(\alpha\)** (explicit
+//! **operator split** per outer `max_newton` pass: **(1)** advance **\(T\)** and **reaction extent \(\alpha\)** (explicit
 //! thermal Laplacian + exothermic coupling, or opt-in backward-Euler **\((T,\alpha)\)** damped Newton), **(2)**
 //! advance **humidity \(h\)** (topological Laplacian + optional tail drying), **(3)** quasi-static **bar \(u\)** when
 //! `[N,3]` `node_positions` and the BC mask allow — then repeat for diagnostics; **after** the outer loop,
@@ -37,9 +37,9 @@
 //! entry** for every pass (no within-step \(u\!\leftrightarrow\!d\) stagger). This is **not** a Jacobian–Newton
 //! solve on the fully coupled residual. **Opt-in (feature `thmc-coupled`):** set
 //! [`ThmcSolver::implicit_t_alpha_newton`] to replace the explicit \(T\) + \(\alpha\) updates **per outer pass**
-//! with multi-step damped Newton on the backward-Euler \((T,\alpha)\) block (`ThmcImplicitEulerThermalHydrationResidual`).
+//! with multi-step damped Newton on the backward-Euler \((T,\alpha)\) block (`ThmcImplicitEulerThermalReactionExtentResidual`).
 //! Default **`None`** preserves the legacy split. **Milestone:** the
-//! `ThmcImplicitEulerThermalHydrationResidual` type in `thmc_residual.rs` assembles the backward-Euler
+//! `ThmcImplicitEulerThermalReactionExtentResidual` type in `thmc_residual.rs` assembles the backward-Euler
 //! residual for the **\(T\)–\(\alpha\)** block only; see `tests/verification/thmc_drying_shrinkage.rs`.
 //!
 //! **Thermal / hydrologic residual tensors (diagnostic):** after each outer pass,
@@ -55,19 +55,19 @@
 //! [`ThmcSolver::monolithic_thmc_newton`] is `Some` — see below. The optional dense Jacobian for \((T,\alpha)\)
 //! applies only when [`ThmcSolver::implicit_t_alpha_newton`] is `Some` (feature `thmc-coupled`). **Phase 5:** when
 //! [`ThmcSolver::monolithic_thmc_newton`] is `Some`, each outer pass runs
-//! `ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u` instead of the
+//! `ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations_with_quasi_static_r_u` instead of the
 //! split \((T,\alpha)\to h\to u\) sequence (small graphs only — see struct rustdoc).
 //!
-//! **Calibration surface (cross-ref Solver-Status THMC):** [`ThmcHydrationKinetics`] bundles Arrhenius /
+//! **Calibration surface (cross-ref Solver-Status THMC):** [`ReactionExtentKinetics`] bundles Arrhenius /
 //! exothermic / T-boost / mechanics **E** scale defaults (same shipped numbers as the legacy
-//! `HYDRATION_*` module constants). Cartridge-backed calibration and the open monolithic Jacobian
+//! `REACTION_EXTENT_*` module constants). Cartridge-backed calibration and the open monolithic Jacobian
 //! remain future work.
 //!
 //! ## Coupled stepping (`thmc-coupled`; also enabled via `solver-research` / `solver-experimental` meta-features)
 //! Per outer pass (see ordering above): **`damage` for Laplacian weights is fixed at step entry** (not updated between passes).
-//! - **\(T\) and hydration \(\alpha\) (first):** thermal [`crate::physics::laplacian::TopologicalLaplacian`] on \(T\) with that mask;
+//! - **\(T\) and reaction extent \(\alpha\) (first):** thermal [`crate::physics::laplacian::TopologicalLaplacian`] on \(T\) with that mask;
 //!   exothermic heat \(\propto \dot\alpha\); then either explicit Euler on \(T\) and explicit \(\alpha \leftarrow \mathrm{clip}_{\[0,1\]}\bigl(\alpha + \Delta t\,f(\alpha,T)\bigr)\)
-//!   with Arrhenius-style \(f\) (`HYDRATION_ARRHENIUS_PREFACTOR_S`, …), or opt-in backward-Euler Newton on the coupled \((T,\alpha)\) block only.
+//!   with Arrhenius-style \(f\) (`REACTION_EXTENT_ARRHENIUS_PREFACTOR_S`, …), or opt-in backward-Euler Newton on the coupled \((T,\alpha)\) block only.
 //!   Temperature driving \(f\) uses **`state.thermal.temperature`** (first channel, broadcast), **kelvin**.
 //! - **Humidity \(h\) (second):** same Laplacian on \(h\) with the **same** step-entry damage mask; explicit Euler plus optional tail drying.
 //! - **Mechanics \(u\) (third):** [`crate::physics::mechanics::VectorMechanicsSolver`] when [`crate::core::tensors::UnifiedMaterialStateTensor::node_positions`]
@@ -84,6 +84,8 @@
 
 #[cfg(feature = "thmc-coupled")]
 use burn::tensor::Int;
+#[cfg(feature = "thmc-coupled")]
+use burn::tensor::ElementConversion;
 use burn::tensor::{backend::Backend, Tensor};
 
 use crate::core::tensors::UnifiedMaterialStateTensor;
@@ -100,17 +102,17 @@ use crate::physics::solvers::fracture_field::{
 };
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc_residual::{
-    ThmcImplicitEulerThermalHumidityHydrationResidual, ThmcImplicitEulerThermalHydrationResidual,
+    ThmcImplicitEulerThermalHumidityReactionExtentResidual, ThmcImplicitEulerThermalReactionExtentResidual,
     ThmcMonolithicImplicitUnknownLayout, THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
 };
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
 
-/// Bundles hydration kinetics and the **uncalibrated** mechanics stiffness scale used in [`ThmcSolver::step`].
+/// Bundles reaction extent kinetics and the **uncalibrated** mechanics stiffness scale used in [`ThmcSolver::step`].
 ///
 /// Defaults match the legacy module constants; override per solver instance for mix-specific calibration.
 #[derive(Clone, Debug)]
-pub struct ThmcHydrationKinetics {
+pub struct ReactionExtentKinetics {
     pub arrhenius_prefactor_s: f32,
     pub activation_energy_j_per_mol: f32,
     pub gas_constant_j_per_mol_k: f32,
@@ -118,29 +120,29 @@ pub struct ThmcHydrationKinetics {
     pub t_boost_ref_k: f32,
     pub t_boost_per_k: f32,
     pub exothermic_k_per_alpha_rate: f32,
-    /// Young’s-modulus scale \(E \propto \alpha\) multiplier (Pa) at full hydration.
+    /// Young’s-modulus scale \(E \propto \alpha\) multiplier (Pa) at full reaction extent.
     pub stiffness_e_scale_pa: f32,
     pub stiffness_nu: f32,
 }
 
-impl Default for ThmcHydrationKinetics {
+impl Default for ReactionExtentKinetics {
     fn default() -> Self {
         Self {
-            arrhenius_prefactor_s: HYDRATION_ARRHENIUS_PREFACTOR_S,
-            activation_energy_j_per_mol: HYDRATION_ACTIVATION_ENERGY_J_PER_MOL,
+            arrhenius_prefactor_s: REACTION_EXTENT_ARRHENIUS_PREFACTOR_S,
+            activation_energy_j_per_mol: REACTION_EXTENT_ACTIVATION_ENERGY_J_PER_MOL,
             gas_constant_j_per_mol_k: UNIVERSAL_GAS_CONSTANT_J_PER_MOL_K,
-            t_min_k: HYDRATION_T_MIN_K,
-            t_boost_ref_k: HYDRATION_T_BOOST_REF_K,
-            t_boost_per_k: HYDRATION_T_BOOST_PER_K,
-            exothermic_k_per_alpha_rate: HYDRATION_EXOTHERMIC_K_PER_ALPHA_RATE,
+            t_min_k: REACTION_EXTENT_T_MIN_K,
+            t_boost_ref_k: REACTION_EXTENT_T_BOOST_REF_K,
+            t_boost_per_k: REACTION_EXTENT_T_BOOST_PER_K,
+            exothermic_k_per_alpha_rate: REACTION_EXTENT_EXOTHERMIC_K_PER_ALPHA_RATE,
             stiffness_e_scale_pa: 30e9_f32,
             stiffness_nu: 0.2_f32,
         }
     }
 }
 
-impl ThmcHydrationKinetics {
-    /// Scalar Arrhenius rate \(f(\alpha,T)\) (1/s) matching the tensor path in `hydration_arrhenius_rate`.
+impl ReactionExtentKinetics {
+    /// Scalar Arrhenius rate \(f(\alpha,T)\) (1/s) matching the tensor path in `reaction_extent_arrhenius_rate`.
     #[must_use]
     pub fn alpha_rate_scalar(&self, alpha: f32, temperature_k: f32) -> f32 {
         let one_m = (1.0_f32 - alpha).max(0.0_f32);
@@ -156,23 +158,23 @@ impl ThmcHydrationKinetics {
 /// Universal gas constant \(R\) for Arrhenius denominator (J·mol⁻¹·K⁻¹). CODATA-compatible float literal.
 pub const UNIVERSAL_GAS_CONSTANT_J_PER_MOL_K: f32 = 8.314_463_f32;
 
-/// Placeholder activation energy \(E_a\) for hydration kinetics (J·mol⁻¹); not calibrated to a mix design.
-pub const HYDRATION_ACTIVATION_ENERGY_J_PER_MOL: f32 = 40_000.0_f32;
+/// Placeholder activation energy \(E_a\) for reaction extent kinetics (J·mol⁻¹); not calibrated to a mix design.
+pub const REACTION_EXTENT_ACTIVATION_ENERGY_J_PER_MOL: f32 = 40_000.0_f32;
 
 /// Placeholder pre-exponential \(A\) in \(f(\alpha,T) = A\,\exp(-E_a/(RT))\,(1-\alpha)_+\) (s⁻¹).
-pub const HYDRATION_ARRHENIUS_PREFACTOR_S: f32 = 1.0e-6_f32;
+pub const REACTION_EXTENT_ARRHENIUS_PREFACTOR_S: f32 = 1.0e-6_f32;
 
 /// Minimum absolute temperature used in the Arrhenius denominator (K) to avoid blow-up at \(T\to 0\).
-pub const HYDRATION_T_MIN_K: f32 = 250.0_f32;
+pub const REACTION_EXTENT_T_MIN_K: f32 = 250.0_f32;
 
 /// Reference temperature (K) above which Arrhenius rate is boosted (cross-coupling doc).
-pub const HYDRATION_T_BOOST_REF_K: f32 = 293.15_f32;
+pub const REACTION_EXTENT_T_BOOST_REF_K: f32 = 293.15_f32;
 
-/// Multiplicative boost per kelvin above [`HYDRATION_T_BOOST_REF_K`] on hydration rate (1 / K).
-pub const HYDRATION_T_BOOST_PER_K: f32 = 0.02_f32;
+/// Multiplicative boost per kelvin above [`REACTION_EXTENT_T_BOOST_REF_K`] on reaction extent rate (1 / K).
+pub const REACTION_EXTENT_T_BOOST_PER_K: f32 = 0.02_f32;
 
 /// Exothermic temperature increment scale (K per unit \(\dot\alpha\) per second of integration): \(T \leftarrow T + \Delta t \cdot q_{\mathrm{exo}} \,\dot\alpha\).
-pub const HYDRATION_EXOTHERMIC_K_PER_ALPHA_RATE: f32 = 5.0_f32;
+pub const REACTION_EXTENT_EXOTHERMIC_K_PER_ALPHA_RATE: f32 = 5.0_f32;
 
 /// Thermal plan: nodal temperature (and optional channels). Shape `[B, N, F_T]`.
 #[derive(Clone, Debug)]
@@ -192,10 +194,10 @@ pub struct MechanicalPlan<B: Backend> {
     pub displacement: Tensor<B, 3>,
 }
 
-/// Chemical / hydration kinetics plan. Shape `[B, N, F_α]`.
+/// Chemical / reaction extent kinetics plan. Shape `[B, N, F_α]`.
 #[derive(Clone, Debug)]
 pub struct ChemicalPlan<B: Backend> {
-    pub hydration_alpha: Tensor<B, 3>,
+    pub reaction_extent: Tensor<B, 3>,
 }
 
 /// Coupled thermo-hydro-mechanical-chemical state: one tensor bundle per physics plan plus fracture and clock.
@@ -213,7 +215,7 @@ pub struct ThmcState<B: Backend> {
 /// Coupled **thermo–hydro–mechanical–chemical** stepper for one material graph (`thmc-coupled`).
 ///
 /// [`Self::step`] advances [`ThmcState`] on a [`UnifiedMaterialStateTensor`] topology: by default an
-/// **operator split** (thermal + hydration, then humidity, then optional bar equilibrium, then
+/// **operator split** (thermal + reaction extent, then humidity, then optional bar equilibrium, then
 /// fracture damage once). Optional Newton paths replace parts of that split — see
 /// [`Self::implicit_t_alpha_newton`] and [`Self::monolithic_thmc_newton`].
 ///
@@ -229,8 +231,8 @@ pub struct ThmcSolver {
     pub dt: f32,
     pub max_newton: usize,
     pub tol: f32,
-    /// Hydration kinetics + mechanics stiffness scales (see module **Calibration surface**).
-    pub hydration: ThmcHydrationKinetics,
+    /// reaction extent kinetics + mechanics stiffness scales (see module **Calibration surface**).
+    pub reaction_extent_kinetics: ReactionExtentKinetics,
     /// Capillary evaporation sink on the **last** node index (`N-1`) when `> 0`:
     /// after the Laplacian humidity update, \(h_{N-1} \leftarrow h_{N-1} - \Delta t\,k\,(h_{N-1}-h_\infty)\).
     /// Intended for 1D drying-facet benchmarks (`tests/verification/thmc_drying_shrinkage.rs`).
@@ -242,7 +244,7 @@ pub struct ThmcSolver {
     /// Default **`None`**: legacy explicit split (unchanged behaviour).
     pub implicit_t_alpha_newton: Option<ThmcImplicitTAlphaNewtonConfig>,
     /// Opt-in **Phase 5** dense damped Newton on backward-Euler \((T,h,\alpha,\mathbf u)\) with
-    /// quasi-static bar \(R_u\) (`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`).
+    /// quasi-static bar \(R_u\) (`ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations_with_quasi_static_r_u`).
     ///
     /// **Requires:** `batch == 1`, `[N,3]` SI `node_positions`, compatible `displacement_bc_mask`,
     /// stacked DOFs \(\le\) [`crate::physics::solvers::THMC_DENSE_NEWTON_MAX_STACKED_DOFS`], and **`drying_last_node_evaporation_k == 0`** (pure implicit diffusion \(R_h\)).
@@ -251,7 +253,7 @@ pub struct ThmcSolver {
     /// [`ThmcMonolithicNewtonConfig::stacked_residual_l2_tolerance`] /
     /// [`ThmcMonolithicNewtonConfig::stacked_residual_relative_to_initial`]: optional stacked \(\|R\|_2\)
     /// early-exit predicates wired into
-    /// `ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`
+    /// `ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations_with_quasi_static_r_u`
     /// (host scalar reads after each residual evaluation).
     ///
     /// Call [`Self::step`] as usual, or `Self::step_monolithic_implicit` to assert this branch is configured.
@@ -264,7 +266,7 @@ impl Default for ThmcSolver {
             dt: 0.01_f32,
             max_newton: 2_usize,
             tol: 1e-3_f32,
-            hydration: ThmcHydrationKinetics::default(),
+            reaction_extent_kinetics: ReactionExtentKinetics::default(),
             drying_last_node_evaporation_k: 0.0_f32,
             drying_ambient_h: 0.5_f32,
             implicit_t_alpha_newton: None,
@@ -449,7 +451,7 @@ impl ThmcSolver {
             }
             let f_t = state.thermal.temperature.dims()[2];
             let f_h = state.hydro.humidity.dims()[2];
-            let f_a = state.chemical.hydration_alpha.dims()[2];
+            let f_a = state.chemical.reaction_extent.dims()[2];
             let m_dof = ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(
                 n, f_t, f_h, f_a,
             );
@@ -483,17 +485,17 @@ impl ThmcSolver {
             let dt_lap_t = lap_t.mul_scalar(self.dt);
             let dt_lap_h = lap_h.mul_scalar(self.dt);
 
-            // Hydration rate uses **pre-transport** temperature (same sub-step as explicit Euler split).
-            let f_alpha_ch = state.chemical.hydration_alpha.dims()[2];
+            // reaction extent rate uses **pre-transport** temperature (same sub-step as explicit Euler split).
+            let f_alpha_ch = state.chemical.reaction_extent.dims()[2];
             let t_bn1 = t_old.clone().slice([0..batch, 0..n, 0..1]);
             let temperature_for_alpha = if f_alpha_ch == 1 {
                 t_bn1
             } else {
                 t_bn1.expand::<3, _>([batch, n, f_alpha_ch])
             };
-            let d_alpha = full_hydration_alpha_rate_tensor(
-                &self.hydration,
-                state.chemical.hydration_alpha.clone(),
+            let d_alpha = reaction_extent_rate_tensor(
+                &self.reaction_extent_kinetics,
+                state.chemical.reaction_extent.clone(),
                 temperature_for_alpha.clone(),
                 &device,
             );
@@ -503,10 +505,10 @@ impl ThmcSolver {
             let exo = d_alpha
                 .clone()
                 .slice([0..batch, 0..n, 0..1])
-                .mul_scalar(self.hydration.exothermic_k_per_alpha_rate * self.dt)
+                .mul_scalar(self.reaction_extent_kinetics.exothermic_k_per_alpha_rate * self.dt)
                 .expand::<3, _>([batch, n, f_t_ch]);
 
-            let alpha_n = state.chemical.hydration_alpha.clone();
+            let alpha_n = state.chemical.reaction_extent.clone();
 
             if let Some(mc) = self.monolithic_thmc_newton.as_ref() {
                 let coords_n3 = manifold
@@ -543,9 +545,9 @@ impl ThmcSolver {
                     .clone()
                     .slice([0..batch, 0..n, 0..1])
                     .clamp(1e-6_f32, 1.0_f32);
-                let stiffness_e = alpha_bn1_pred.mul_scalar(self.hydration.stiffness_e_scale_pa);
+                let stiffness_e = alpha_bn1_pred.mul_scalar(self.reaction_extent_kinetics.stiffness_e_scale_pa);
                 let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &device)
-                    .add_scalar(self.hydration.stiffness_nu);
+                    .add_scalar(self.reaction_extent_kinetics.stiffness_nu);
                 let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
                 let (u_predict, _) = VectorMechanicsSolver::solve_equilibrium(
                     state.mechanical.displacement.clone(),
@@ -570,23 +572,23 @@ impl ThmcSolver {
                         displacement: u_predict,
                     },
                     chemical: ChemicalPlan {
-                        hydration_alpha: alpha_predict,
+                        reaction_extent: alpha_predict,
                     },
                     damage: state.damage.clone(),
                     time: state.time,
                 };
 
-                let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+                let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
                     dt: self.dt,
                     temperature_n: t_old.clone(),
                     humidity_n: h_old.clone(),
                     alpha_n: alpha_n.clone(),
                     displacement_n: state.mechanical.displacement.clone(),
                     mechanics_placeholder_mass: 1.0_f32,
-                    ru_shrinkage_water_cement_ratio: None,
+                    ru_shrinkage_binder_liquid_ratio: None,
                     edges_b1: edges_b1.clone(),
                     damage_m: damage_m.clone(),
-                    kinetics: self.hydration.clone(),
+                    kinetics: self.reaction_extent_kinetics.clone(),
                 };
 
                 let (updated, _) = assembler.damped_newton_iterations_with_quasi_static_r_u(
@@ -604,7 +606,7 @@ impl ThmcSolver {
 
                 state.thermal.temperature = updated.thermal.temperature;
                 state.hydro.humidity = updated.hydro.humidity;
-                state.chemical.hydration_alpha = updated.chemical.hydration_alpha;
+                state.chemical.reaction_extent = updated.chemical.reaction_extent;
                 state.mechanical.displacement = updated.mechanical.displacement;
 
                 let r_t = state
@@ -663,19 +665,19 @@ impl ThmcSolver {
                         displacement: state.mechanical.displacement.clone(),
                     },
                     chemical: ChemicalPlan {
-                        hydration_alpha: alpha_predict,
+                        reaction_extent: alpha_predict,
                     },
                     damage: state.damage.clone(),
                     time: state.time,
                 };
 
-                let assembler = ThmcImplicitEulerThermalHydrationResidual {
+                let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
                     dt: self.dt,
                     temperature_n: t_old.clone(),
                     alpha_n: alpha_n.clone(),
                     edges_b1: edges_b1.clone(),
                     damage_m: damage_m.clone(),
-                    kinetics: self.hydration.clone(),
+                    kinetics: self.reaction_extent_kinetics.clone(),
                 };
 
                 let (updated, _) = assembler.damped_newton_iterations(
@@ -686,10 +688,10 @@ impl ThmcSolver {
                 )?;
 
                 state.thermal.temperature = updated.thermal.temperature;
-                state.chemical.hydration_alpha = updated.chemical.hydration_alpha;
+                state.chemical.reaction_extent = updated.chemical.reaction_extent;
             } else {
                 state.thermal.temperature = t_old.clone().add(dt_lap_t.clone()).add(exo);
-                state.chemical.hydration_alpha = alpha_n
+                state.chemical.reaction_extent = alpha_n
                     .clone()
                     .add(d_alpha.mul_scalar(self.dt))
                     .clamp(0.0_f32, 1.0_f32);
@@ -727,17 +729,17 @@ impl ThmcSolver {
                         }
                     };
                     let bm = bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3]);
-                    // Stiffness scales with hydration \(\alpha\) (full-coupling doc): \(E \propto \alpha\) on nodes.
+                    // Stiffness scales with reaction extent \(\alpha\) (full-coupling doc): \(E \propto \alpha\) on nodes.
                     let alpha_bn1 = state
                         .chemical
-                        .hydration_alpha
+                        .reaction_extent
                         .clone()
                         .slice([0..batch, 0..n, 0..1])
                         .clamp(1e-6_f32, 1.0_f32);
                     // Uncalibrated E scale (placeholder; Solver-Status.md THMC row / module “Uncalibrated placeholders”).
-                    let stiffness_e = alpha_bn1.mul_scalar(self.hydration.stiffness_e_scale_pa);
+                    let stiffness_e = alpha_bn1.mul_scalar(self.reaction_extent_kinetics.stiffness_e_scale_pa);
                     let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &device)
-                        .add_scalar(self.hydration.stiffness_nu);
+                        .add_scalar(self.reaction_extent_kinetics.stiffness_nu);
                     let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
                     let bf = Tensor::<B, 3>::zeros([batch, n, 3], &device);
                     let inner_cfg = MechanicsInnerLoopConfig::default();
@@ -842,16 +844,16 @@ impl Default for ThmcNewtonConfig {
 }
 
 /// Opt-in **multi-step damped Newton** on the backward-Euler \((T,\alpha)\) block (implementation:
-/// `ThmcImplicitEulerThermalHydrationResidual::damped_newton_iterations` in `thmc_residual.rs`).
+/// `ThmcImplicitEulerThermalReactionExtentResidual::damped_newton_iterations` in `thmc_residual.rs`).
 ///
 /// When [`ThmcSolver::implicit_t_alpha_newton`] is `Some`, each outer `max_newton` pass replaces the
-/// usual explicit thermal increment + explicit hydration \(\alpha\) update with a Newton solve on
+/// usual explicit thermal increment + explicit reaction extent \(\alpha\) update with a Newton solve on
 /// the same analytic residual used in verification tests. Humidity, mechanics, and fracture
 /// substeps are unchanged. **Requires** `thmc-coupled` (otherwise [`ThmcSolver::step`] does not run
 /// this path); `batch` must be **1** and stacked \((T,\alpha)\) DOFs \(\le\) [`crate::physics::solvers::THMC_DENSE_NEWTON_MAX_STACKED_DOFS`].
 #[derive(Clone, Debug, PartialEq)]
 pub struct ThmcImplicitTAlphaNewtonConfig {
-    /// Chains `ThmcImplicitEulerThermalHydrationResidual::damped_newton_iterations` in `thmc_residual.rs` — must be
+    /// Chains `ThmcImplicitEulerThermalReactionExtentResidual::damped_newton_iterations` in `thmc_residual.rs` — must be
     /// **≥ 2** (the helper rejects smaller values).
     pub iterations: usize,
     pub damping: f32,
@@ -869,7 +871,7 @@ impl Default for ThmcImplicitTAlphaNewtonConfig {
 }
 
 /// Opt-in **Phase 5** damped Newton on backward-Euler \((T,h,\alpha,\mathbf u)\) with quasi-static bar
-/// \(R_u\) — `ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`.
+/// \(R_u\) — `ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations_with_quasi_static_r_u`.
 ///
 /// Wired from [`ThmcSolver::step`] when [`ThmcSolver::monolithic_thmc_newton`] is `Some` (requires `thmc-coupled`).
 ///
@@ -1007,16 +1009,16 @@ impl ThmcSolver {
     }
 }
 
-/// Full tensor hydration rate \(\dot\alpha(\alpha,T)\) used in [`ThmcSolver::step`] and implicit residuals:
-/// Arrhenius core `hydration_arrhenius_rate` times the high-temperature boost factor.
+/// Full tensor reaction extent rate \(\dot\alpha(\alpha,T)\) used in [`ThmcSolver::step`] and implicit residuals:
+/// Arrhenius core `reaction_extent_arrhenius_rate` times the high-temperature boost factor.
 #[cfg(feature = "thmc-coupled")]
-pub fn full_hydration_alpha_rate_tensor<B: Backend<FloatElem = f32>>(
-    k: &ThmcHydrationKinetics,
+pub fn reaction_extent_rate_tensor<B: Backend<FloatElem = f32>>(
+    k: &ReactionExtentKinetics,
     alpha: Tensor<B, 3>,
     temperature_for_alpha: Tensor<B, 3>,
     device: &B::Device,
 ) -> Tensor<B, 3> {
-    let d0 = hydration_arrhenius_rate(k, alpha, temperature_for_alpha.clone());
+    let d0 = reaction_extent_arrhenius_rate(k, alpha, temperature_for_alpha.clone());
     let t_boost_ref = Tensor::<B, 3>::full(temperature_for_alpha.dims(), k.t_boost_ref_k, device);
     let arrhenius_temp_boost = temperature_for_alpha
         .sub(t_boost_ref)
@@ -1026,11 +1028,11 @@ pub fn full_hydration_alpha_rate_tensor<B: Backend<FloatElem = f32>>(
     d0.mul(arrhenius_temp_boost)
 }
 
-/// Arrhenius-style hydration rate \(f(\alpha,T) = A\,\exp\!\bigl(-E_a/(R\,T)\bigr)\,(1-\alpha)_+\)
-/// using fields from `k` (defaults align with legacy `HYDRATION_*` module constants).
+/// Arrhenius-style reaction extent rate \(f(\alpha,T) = A\,\exp\!\bigl(-E_a/(R\,T)\bigr)\,(1-\alpha)_+\)
+/// using fields from `k` (defaults align with legacy `REACTION_EXTENT_*` module constants).
 #[cfg(feature = "thmc-coupled")]
-fn hydration_arrhenius_rate<B: Backend<FloatElem = f32>>(
-    k: &ThmcHydrationKinetics,
+fn reaction_extent_arrhenius_rate<B: Backend<FloatElem = f32>>(
+    k: &ReactionExtentKinetics,
     alpha: Tensor<B, 3>,
     temperature_k: Tensor<B, 3>,
 ) -> Tensor<B, 3> {
@@ -1050,20 +1052,20 @@ fn hydration_arrhenius_rate<B: Backend<FloatElem = f32>>(
 }
 
 /// Order-of-magnitude **notional** total shrinkage strain (dimensionless) aligned to CEB-FIP MC2010-style
-/// reporting for cement paste (drying + autogenous trend; not a certified structural design value).
+/// reporting for bulk binder (drying + autogenous trend; not a certified structural design value).
 ///
 /// `ambient_rh_percent` is exterior RH in percent (e.g. `50.0`); `age_days` is equivalent exposure duration.
 #[cfg(feature = "thmc-coupled")]
 pub fn mc2010_style_notional_shrink_strain(
-    water_cement_ratio: f32,
-    hydration_alpha: f32,
+    binder_liquid_ratio: f32,
+    reaction_extent: f32,
     ambient_rh_percent: f32,
     age_days: f32,
 ) -> f32 {
     let rh = (ambient_rh_percent / 100.0_f32).clamp(0.0_f32, 1.0_f32);
     let t = (age_days / 28.0_f32).sqrt().clamp(0.0_f32, 1.5_f32);
-    let w = (water_cement_ratio / 0.4_f32).clamp(0.5_f32, 1.2_f32);
-    let a = hydration_alpha.clamp(0.1_f32, 1.0_f32);
+    let w = (binder_liquid_ratio / 0.4_f32).clamp(0.5_f32, 1.2_f32);
+    let a = reaction_extent.clamp(0.1_f32, 1.0_f32);
     1.05e-3_f32 * w * a.sqrt() * (1.0 - rh) * t
 }
 
@@ -1073,12 +1075,12 @@ pub fn mc2010_style_notional_shrink_strain(
 #[cfg(feature = "thmc-coupled")]
 pub fn shrink_strain_from_saturation_loss(
     humidity_loss_01: f32,
-    water_cement_ratio: f32,
-    hydration_alpha: f32,
+    binder_liquid_ratio: f32,
+    reaction_extent: f32,
 ) -> f32 {
     let coeff = 1.1e-3_f32
-        * (water_cement_ratio / 0.4_f32).clamp(0.5_f32, 1.2_f32)
-        * hydration_alpha.sqrt().clamp(0.2_f32, 1.0_f32);
+        * (binder_liquid_ratio / 0.4_f32).clamp(0.5_f32, 1.2_f32)
+        * reaction_extent.sqrt().clamp(0.2_f32, 1.0_f32);
     coeff * humidity_loss_01.clamp(0.0_f32, 1.0_f32)
 }
 
@@ -1086,11 +1088,11 @@ pub fn shrink_strain_from_saturation_loss(
 #[cfg(feature = "thmc-coupled")]
 pub fn shrink_strain_from_saturation_loss_tensor<B: Backend<FloatElem = f32>>(
     humidity_loss_01: Tensor<B, 3>,
-    water_cement_ratio: f32,
-    hydration_alpha: Tensor<B, 3>,
+    binder_liquid_ratio: f32,
+    reaction_extent: Tensor<B, 3>,
 ) -> Tensor<B, 3> {
-    let w = (water_cement_ratio / 0.4_f32).clamp(0.5_f32, 1.2_f32);
-    let alpha_term = hydration_alpha.sqrt().clamp(0.2_f32, 1.0_f32);
+    let w = (binder_liquid_ratio / 0.4_f32).clamp(0.5_f32, 1.2_f32);
+    let alpha_term = reaction_extent.sqrt().clamp(0.2_f32, 1.0_f32);
     let coeff = alpha_term.mul_scalar(1.1e-3_f32 * w);
     coeff.mul(humidity_loss_01.clamp(0.0_f32, 1.0_f32))
 }

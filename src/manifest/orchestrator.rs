@@ -243,7 +243,7 @@ fn host_to_snapshot(s: &ThermodynamicState) -> ThermodynamicStateSnapshot {
         temperature: s.temperature,
         free_energy: s.free_energy,
         entropy: s.entropy,
-        hydration_degree: s.hydration_degree,
+        reaction_extent: s.reaction_extent,
         strength: s.strength,
     }
 }

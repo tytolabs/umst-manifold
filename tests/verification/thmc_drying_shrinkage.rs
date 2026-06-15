@@ -11,16 +11,16 @@
 
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
-use umst_manifold::core::tensors::{MixTensor, UnifiedMaterialStateTensor};
+use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::physics::laplacian::TopologicalLaplacian;
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::solvers::{
-    full_hydration_alpha_rate_tensor, mc2010_style_notional_shrink_strain,
+    reaction_extent_rate_tensor, mc2010_style_notional_shrink_strain,
     shrink_strain_from_saturation_loss, shrink_strain_from_saturation_loss_tensor,
     spectral_tensile_psi_plus_from_strain, strain_tensor_for_fracture_from_manifold, ChemicalPlan,
-    HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcHydrationKinetics,
-    ThmcImplicitEulerThermalHumidityHydrationResidual, ThmcImplicitEulerThermalHydrationResidual,
+    HydrologicPlan, MechanicalPlan, ThermalPlan, ReactionExtentKinetics,
+    ThmcImplicitEulerThermalHumidityReactionExtentResidual, ThmcImplicitEulerThermalReactionExtentResidual,
     ThmcImplicitTAlphaNewtonConfig, ThmcMonolithicImplicitUnknownLayout,
     ThmcMonolithicNewtonConfig, ThmcSolver, ThmcState, THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
 };
@@ -35,7 +35,7 @@ fn dev() -> NdArrayDevice {
 struct Stub;
 
 impl<Bk: burn::tensor::backend::Backend<FloatElem = f32>> IScienceCartridge<Bk> for Stub {
-    fn compute_all(&self, mix: &MixTensor<Bk>) -> PhysicalResult<Bk> {
+    fn compute_all(&self, mix: &StatePoint<Bk>) -> PhysicalResult<Bk> {
         let d = mix.fractions.device();
         PhysicalResult {
             free_energy: Tensor::zeros([1, 1], &d),
@@ -183,7 +183,7 @@ fn thmc_drying_shrinkage_within_mc2010_notional_band() {
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: Tensor::<B, 3>::full([1, n, 1], 0.7_f32, &d),
+            reaction_extent: Tensor::<B, 3>::full([1, n, 1], 0.7_f32, &d),
         },
         damage,
         time: 0.0_f32,
@@ -192,7 +192,7 @@ fn thmc_drying_shrinkage_within_mc2010_notional_band() {
         dt: 0.05_f32,
         max_newton: 4_usize,
         tol: 1e-3_f32,
-        hydration: ThmcHydrationKinetics::default(),
+        reaction_extent_kinetics: ReactionExtentKinetics::default(),
         drying_last_node_evaporation_k: 0.35_f32,
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
@@ -217,8 +217,8 @@ fn thmc_drying_shrinkage_within_mc2010_notional_band() {
 }
 
 #[test]
-fn thmc_hydration_alpha_rate_scalar_matches_closed_form() {
-    let k = ThmcHydrationKinetics::default();
+fn thmc_reaction_extent_rate_scalar_matches_closed_form() {
+    let k = ReactionExtentKinetics::default();
     let alpha = 0.35_f32;
     let t = 303.15_f32;
     let got = k.alpha_rate_scalar(alpha, t);
@@ -396,7 +396,7 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
             displacement: Tensor::<B, 3>::zeros([batch, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &d),
+            reaction_extent: Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &d),
         },
         damage,
         time: 0.0_f32,
@@ -406,7 +406,7 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
         dt: 0.01_f32,
         max_newton: 1_usize,
         tol: 1e-2_f32,
-        hydration: ThmcHydrationKinetics::default(),
+        reaction_extent_kinetics: ReactionExtentKinetics::default(),
         drying_last_node_evaporation_k: 0.0_f32,
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
@@ -474,7 +474,7 @@ fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
             displacement: Tensor::<B, 3>::zeros([batch, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &d),
+            reaction_extent: Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &d),
         },
         damage,
         time: 0.0_f32,
@@ -485,7 +485,7 @@ fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
             dt: 0.01_f32,
             max_newton: 1_usize,
             tol: 1e-2_f32,
-            hydration: ThmcHydrationKinetics::default(),
+            reaction_extent_kinetics: ReactionExtentKinetics::default(),
             drying_last_node_evaporation_k: 0.0_f32,
             drying_ambient_h: 0.5_f32,
             implicit_t_alpha_newton: None,
@@ -524,9 +524,9 @@ fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
     );
 }
 
-/// Piecewise derivative of [`ThmcHydrationKinetics::alpha_rate_scalar`] w.r.t. `temperature_k`
+/// Piecewise derivative of [`ReactionExtentKinetics::alpha_rate_scalar`] w.r.t. `temperature_k`
 /// (matches the scalar implementation’s `max` / `clamp` semantics).
-fn alpha_rate_scalar_dt_analytic(k: &ThmcHydrationKinetics, alpha: f32, temperature_k: f32) -> f32 {
+fn alpha_rate_scalar_dt_analytic(k: &ReactionExtentKinetics, alpha: f32, temperature_k: f32) -> f32 {
     let one_m = (1.0_f32 - alpha).max(0.0_f32);
     let t_safe = temperature_k.max(k.t_min_k);
     let ea_rt = k.activation_energy_j_per_mol / (k.gas_constant_j_per_mol_k * t_safe);
@@ -547,8 +547,8 @@ fn alpha_rate_scalar_dt_analytic(k: &ThmcHydrationKinetics, alpha: f32, temperat
 }
 
 #[test]
-fn thmc_hydration_alpha_rate_scalar_derivative_temperature_matches_finite_difference() {
-    let k = ThmcHydrationKinetics::default();
+fn thmc_reaction_extent_rate_scalar_derivative_temperature_matches_finite_difference() {
+    let k = ReactionExtentKinetics::default();
     let alpha = 0.42_f32;
     let t0 = 301.4_f32;
     let h = 0.25_f32;
@@ -568,7 +568,7 @@ fn thmc_implicit_euler_t_alpha_residual_matches_brute_force_two_nodes() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let dt = 0.02_f32;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
     let t_n = Tensor::<B, 3>::from_data(
         Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
         &d,
@@ -586,7 +586,7 @@ fn thmc_implicit_euler_t_alpha_residual_matches_brute_force_two_nodes() {
         &d,
     );
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let assembler = ThmcImplicitEulerThermalHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
         dt,
         temperature_n: t_n.clone(),
         alpha_n: alpha_n.clone(),
@@ -605,7 +605,7 @@ fn thmc_implicit_euler_t_alpha_residual_matches_brute_force_two_nodes() {
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: trial_alpha.clone(),
+            reaction_extent: trial_alpha.clone(),
         },
         damage: damage_m.clone(),
         time: 0.0_f32,
@@ -649,7 +649,7 @@ fn thmc_implicit_euler_t_h_alpha_residual_humidity_matches_brute_force_two_nodes
     let n = 2usize;
     let manifold = chain_manifold(n);
     let dt = 0.02_f32;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
     let t_n = Tensor::<B, 3>::from_data(
         Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
         &d,
@@ -675,14 +675,14 @@ fn thmc_implicit_euler_t_h_alpha_residual_humidity_matches_brute_force_two_nodes
         &d,
     );
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: t_n.clone(),
         humidity_n: h_n.clone(),
         alpha_n: alpha_n.clone(),
         displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
         mechanics_placeholder_mass: 1.0_f32,
-        ru_shrinkage_water_cement_ratio: None,
+        ru_shrinkage_binder_liquid_ratio: None,
         edges_b1: manifold.edges_b1.clone(),
         damage_m: damage_m.clone(),
         kinetics: kinetics.clone(),
@@ -698,7 +698,7 @@ fn thmc_implicit_euler_t_h_alpha_residual_humidity_matches_brute_force_two_nodes
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: trial_alpha.clone(),
+            reaction_extent: trial_alpha.clone(),
         },
         damage: damage_m.clone(),
         time: 0.0_f32,
@@ -766,7 +766,7 @@ fn thmc_implicit_euler_t_h_alpha_u_placeholder_r_u_and_flat_layout_two_nodes() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let dt = 0.02_f32;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
     let t_n = Tensor::<B, 3>::from_data(
         Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
         &d,
@@ -809,7 +809,7 @@ fn thmc_implicit_euler_t_h_alpha_u_placeholder_r_u_and_flat_layout_two_nodes() {
         &d,
     );
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: t_n,
         humidity_n: h_n,
@@ -819,7 +819,7 @@ fn thmc_implicit_euler_t_h_alpha_u_placeholder_r_u_and_flat_layout_two_nodes() {
             &d,
         ),
         mechanics_placeholder_mass: mass,
-        ru_shrinkage_water_cement_ratio: None,
+        ru_shrinkage_binder_liquid_ratio: None,
         edges_b1: manifold.edges_b1.clone(),
         damage_m: damage_m.clone(),
         kinetics,
@@ -836,7 +836,7 @@ fn thmc_implicit_euler_t_h_alpha_u_placeholder_r_u_and_flat_layout_two_nodes() {
             ),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: trial_alpha,
+            reaction_extent: trial_alpha,
         },
         damage: damage_m,
         time: 0.0_f32,
@@ -893,7 +893,7 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -939,14 +939,14 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
     );
 
     let dt = 0.02_f32;
-    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d),
         humidity_n: Tensor::<B, 3>::full([batch, n, 1], 0.6_f32, &d),
         alpha_n: alpha_hydr.clone(),
         displacement_n: Tensor::<B, 3>::zeros([batch, n, 3], &d),
         mechanics_placeholder_mass: 0.0_f32,
-        ru_shrinkage_water_cement_ratio: None,
+        ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
         damage_m: damage.clone(),
         kinetics,
@@ -962,7 +962,7 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
             displacement: u_star,
         },
         chemical: ChemicalPlan {
-            hydration_alpha: alpha_hydr,
+            reaction_extent: alpha_hydr,
         },
         damage,
         time: 0.0_f32,
@@ -1040,7 +1040,7 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1087,14 +1087,14 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
 
     let h_shared = 0.58_f32;
     let dt = 0.02_f32;
-    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d),
         humidity_n: Tensor::<B, 3>::full([batch, n, 1], h_shared, &d),
         alpha_n: alpha_hydr.clone(),
         displacement_n: Tensor::<B, 3>::zeros([batch, n, 3], &d),
         mechanics_placeholder_mass: 0.0_f32,
-        ru_shrinkage_water_cement_ratio: Some(0.4_f32),
+        ru_shrinkage_binder_liquid_ratio: Some(0.4_f32),
         edges_b1,
         damage_m: damage.clone(),
         kinetics,
@@ -1110,7 +1110,7 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
             displacement: u_star,
         },
         chemical: ChemicalPlan {
-            hydration_alpha: alpha_hydr,
+            reaction_extent: alpha_hydr,
         },
         damage,
         time: 0.0_f32,
@@ -1165,7 +1165,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1211,14 +1211,14 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
     );
 
     let dt = 0.02_f32;
-    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d),
         humidity_n: Tensor::<B, 3>::full([batch, n, 1], 0.62_f32, &d),
         alpha_n: alpha_hydr.clone(),
         displacement_n: Tensor::<B, 3>::zeros([batch, n, 3], &d),
         mechanics_placeholder_mass: 0.0_f32,
-        ru_shrinkage_water_cement_ratio: Some(0.4_f32),
+        ru_shrinkage_binder_liquid_ratio: Some(0.4_f32),
         edges_b1: edges_b1.clone(),
         damage_m: damage.clone(),
         kinetics: kinetics.clone(),
@@ -1237,7 +1237,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
             displacement: u_star.clone(),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: alpha_hydr.clone(),
+            reaction_extent: alpha_hydr.clone(),
         },
         damage: damage.clone(),
         time: 0.0_f32,
@@ -1264,7 +1264,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
             displacement: u_star,
         },
         chemical: ChemicalPlan {
-            hydration_alpha: alpha_hydr,
+            reaction_extent: alpha_hydr,
         },
         damage,
         time: 0.0_f32,
@@ -1300,7 +1300,7 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1317,14 +1317,14 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
     let dt = 0.02_f32;
     let alpha_hydr = Tensor::<B, 3>::full([batch, n, 1], 0.72_f32, &d);
     let damage_m = Tensor::<B, 3>::zeros([batch, n, 1], &d);
-    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d),
         humidity_n: Tensor::<B, 3>::full([batch, n, 1], 0.6_f32, &d),
         alpha_n: alpha_hydr.clone(),
         displacement_n: Tensor::<B, 3>::zeros([batch, n, 3], &d),
         mechanics_placeholder_mass: 1.0_f32,
-        ru_shrinkage_water_cement_ratio: None,
+        ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
         damage_m: damage_m.clone(),
         kinetics,
@@ -1340,7 +1340,7 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
             displacement: Tensor::<B, 3>::zeros([batch, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: alpha_hydr,
+            reaction_extent: alpha_hydr,
         },
         damage: damage_m,
         time: 0.0_f32,
@@ -1414,7 +1414,7 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1454,14 +1454,14 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
         &d,
     );
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: t_n,
         humidity_n: h_n,
         alpha_n,
         displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
         mechanics_placeholder_mass: 1.0_f32,
-        ru_shrinkage_water_cement_ratio: None,
+        ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
         damage_m: damage_m.clone(),
         kinetics,
@@ -1475,7 +1475,7 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: trial_alpha,
+            reaction_extent: trial_alpha,
         },
         damage: damage_m,
         time: 0.0_f32,
@@ -1510,7 +1510,7 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
 
 /// One damped Newton step on the monolithic \((T,h,\alpha,\mathbf u)\) quasi-static path; with
 /// **`solver-experimental`**, the inner linear solve uses JFNK + host **GMRES** (see
-/// [`ThmcImplicitEulerThermalHumidityHydrationResidual::one_damped_newton_step_with_quasi_static_r_u`]).
+/// [`ThmcImplicitEulerThermalHumidityReactionExtentResidual::one_damped_newton_step_with_quasi_static_r_u`]).
 /// Same 2-node harness as [`thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes`].
 #[cfg(feature = "solver-experimental")]
 #[test]
@@ -1525,7 +1525,7 @@ fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() 
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1565,14 +1565,14 @@ fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() 
         &d,
     );
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: t_n,
         humidity_n: h_n,
         alpha_n,
         displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
         mechanics_placeholder_mass: 1.0_f32,
-        ru_shrinkage_water_cement_ratio: None,
+        ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
         damage_m: damage_m.clone(),
         kinetics,
@@ -1586,7 +1586,7 @@ fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() 
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: trial_alpha,
+            reaction_extent: trial_alpha,
         },
         damage: damage_m,
         time: 0.0_f32,
@@ -1613,7 +1613,7 @@ fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() 
     );
 }
 
-/// Stacked \(\|R\|_2\) **`tol`** on [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]
+/// Stacked \(\|R\|_2\) **`tol`** on [`ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations_with_quasi_static_r_u`]
 /// shortens the recorded norm trail once \(\|R\|_2\) drops below **`tol`** (same 2-node harness as
 /// [`thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes`]).
 #[test]
@@ -1628,7 +1628,7 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1668,14 +1668,14 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
         &d,
     );
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: t_n,
         humidity_n: h_n,
         alpha_n,
         displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
         mechanics_placeholder_mass: 1.0_f32,
-        ru_shrinkage_water_cement_ratio: None,
+        ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
         damage_m: damage_m.clone(),
         kinetics,
@@ -1689,7 +1689,7 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: trial_alpha,
+            reaction_extent: trial_alpha,
         },
         damage: damage_m,
         time: 0.0_f32,
@@ -1761,7 +1761,7 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
 }
 
 /// Relative stacked \(\|R\|_2\) gate \(\|R\|_2 < k\|R_0\|_2\) with absolute tolerance disabled on
-/// [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]
+/// [`ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations_with_quasi_static_r_u`]
 /// (same 2-node harness as [`thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail`]).
 #[test]
 fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() {
@@ -1775,7 +1775,7 @@ fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() 
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0_f32;
@@ -1815,14 +1815,14 @@ fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() 
         &d,
     );
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: t_n,
         humidity_n: h_n,
         alpha_n,
         displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
         mechanics_placeholder_mass: 1.0_f32,
-        ru_shrinkage_water_cement_ratio: None,
+        ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
         damage_m: damage_m.clone(),
         kinetics,
@@ -1836,7 +1836,7 @@ fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() 
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: trial_alpha,
+            reaction_extent: trial_alpha,
         },
         damage: damage_m,
         time: 0.0_f32,
@@ -1924,7 +1924,7 @@ fn thmc_implicit_euler_t_h_alpha_multi_newton_monotone_stacked_residual_norm() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let dt = 0.02_f32;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
     let t_n = Tensor::<B, 3>::from_data(
         Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
         &d,
@@ -1950,14 +1950,14 @@ fn thmc_implicit_euler_t_h_alpha_multi_newton_monotone_stacked_residual_norm() {
         &d,
     );
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: t_n,
         humidity_n: h_n,
         alpha_n,
         displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
         mechanics_placeholder_mass: 1.0_f32,
-        ru_shrinkage_water_cement_ratio: None,
+        ru_shrinkage_binder_liquid_ratio: None,
         edges_b1: manifold.edges_b1.clone(),
         damage_m: damage_m.clone(),
         kinetics,
@@ -1971,7 +1971,7 @@ fn thmc_implicit_euler_t_h_alpha_multi_newton_monotone_stacked_residual_norm() {
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: trial_alpha,
+            reaction_extent: trial_alpha,
         },
         damage: damage_m,
         time: 0.0_f32,
@@ -1999,7 +1999,7 @@ fn thmc_implicit_euler_t_alpha_one_newton_lowers_residual_norm() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let dt = 0.02_f32;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
     let t_n = Tensor::<B, 3>::from_data(
         Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
         &d,
@@ -2017,7 +2017,7 @@ fn thmc_implicit_euler_t_alpha_one_newton_lowers_residual_norm() {
         &d,
     );
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let assembler = ThmcImplicitEulerThermalHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
         dt,
         temperature_n: t_n,
         alpha_n,
@@ -2036,7 +2036,7 @@ fn thmc_implicit_euler_t_alpha_one_newton_lowers_residual_norm() {
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: trial_alpha,
+            reaction_extent: trial_alpha,
         },
         damage: damage_m,
         time: 0.0_f32,
@@ -2055,7 +2055,7 @@ fn thmc_implicit_euler_t_alpha_one_newton_lowers_residual_norm() {
     let _ = new_trial;
 }
 
-/// Track 13 **boundary** (not monolithic): [`ThmcImplicitEulerThermalHydrationResidual::one_damped_newton_step`]
+/// Track 13 **boundary** (not monolithic): [`ThmcImplicitEulerThermalReactionExtentResidual::one_damped_newton_step`]
 /// updates only `(T,\alpha)`; trial humidity and displacement are preserved — the shipped
 /// [`ThmcImplicitTAlphaNewtonConfig`] path gates the same `(T,\alpha)` block inside [`ThmcSolver::step`]
 /// while \(h\) and quasi-static \(u\) follow the legacy explicit / outer-pass ordering. A fully coupled
@@ -2066,7 +2066,7 @@ fn thmc_t_alpha_newton_residual_preserves_hydro_mechanics_fields() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let dt = 0.02_f32;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
     let t_n = Tensor::<B, 3>::from_data(
         Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
         &d,
@@ -2084,7 +2084,7 @@ fn thmc_t_alpha_newton_residual_preserves_hydro_mechanics_fields() {
         &d,
     );
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let assembler = ThmcImplicitEulerThermalHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
         dt,
         temperature_n: t_n,
         alpha_n,
@@ -2111,7 +2111,7 @@ fn thmc_t_alpha_newton_residual_preserves_hydro_mechanics_fields() {
             ),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: trial_alpha,
+            reaction_extent: trial_alpha,
         },
         damage: damage_m,
         time: 0.42_f32,
@@ -2144,7 +2144,7 @@ fn thmc_implicit_euler_t_alpha_multi_newton_monotone_residual_norm_decrease() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let dt = 0.02_f32;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
     let t_n = Tensor::<B, 3>::from_data(
         Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
         &d,
@@ -2162,7 +2162,7 @@ fn thmc_implicit_euler_t_alpha_multi_newton_monotone_residual_norm_decrease() {
         &d,
     );
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let assembler = ThmcImplicitEulerThermalHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
         dt,
         temperature_n: t_n,
         alpha_n,
@@ -2181,7 +2181,7 @@ fn thmc_implicit_euler_t_alpha_multi_newton_monotone_residual_norm_decrease() {
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: trial_alpha,
+            reaction_extent: trial_alpha,
         },
         damage: damage_m,
         time: 0.0_f32,
@@ -2223,7 +2223,7 @@ fn clone_thmc_state(s: &ThmcState<B>) -> ThmcState<B> {
             displacement: s.mechanical.displacement.clone(),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: s.chemical.hydration_alpha.clone(),
+            reaction_extent: s.chemical.reaction_extent.clone(),
         },
         damage: s.damage.clone(),
         time: s.time,
@@ -2233,7 +2233,7 @@ fn clone_thmc_state(s: &ThmcState<B>) -> ThmcState<B> {
 fn thmc_state_with_t_alpha(
     base: &ThmcState<B>,
     temperature: Tensor<B, 3>,
-    hydration_alpha: Tensor<B, 3>,
+    reaction_extent: Tensor<B, 3>,
 ) -> ThmcState<B> {
     ThmcState {
         thermal: ThermalPlan { temperature },
@@ -2243,7 +2243,7 @@ fn thmc_state_with_t_alpha(
         mechanical: MechanicalPlan {
             displacement: base.mechanical.displacement.clone(),
         },
-        chemical: ChemicalPlan { hydration_alpha },
+        chemical: ChemicalPlan { reaction_extent },
         damage: base.damage.clone(),
         time: base.time,
     }
@@ -2271,7 +2271,7 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: Tensor::<B, 3>::from_data(
+            reaction_extent: Tensor::<B, 3>::from_data(
                 Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
                 &d,
             ),
@@ -2280,12 +2280,12 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
         time: 0.0_f32,
     };
 
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
     let solver_explicit = ThmcSolver {
         dt: 0.08_f32,
         max_newton: 1_usize,
         tol: 1e-3_f32,
-        hydration: kinetics.clone(),
+        reaction_extent_kinetics: kinetics.clone(),
         drying_last_node_evaporation_k: 0.0_f32,
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
@@ -2317,9 +2317,9 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
         .into_scalar();
     let a_diff = s_exp
         .chemical
-        .hydration_alpha
+        .reaction_extent
         .clone()
-        .sub(s_imp.chemical.hydration_alpha.clone())
+        .sub(s_imp.chemical.reaction_extent.clone())
         .abs()
         .sum()
         .into_scalar();
@@ -2348,7 +2348,7 @@ fn thmc_step_monolithic_newton_errors_when_both_implicit_flags_set() {
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
+            reaction_extent: Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
         },
         damage: damage.clone(),
         time: 0.0_f32,
@@ -2396,7 +2396,7 @@ fn thmc_step_monolithic_newton_errors_when_drying_sink_enabled() {
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
+            reaction_extent: Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
         },
         damage: Tensor::<B, 3>::zeros([1, n, 1], &d),
         time: 0.0_f32,
@@ -2443,7 +2443,7 @@ fn thmc_step_monolithic_newton_errors_when_stacked_dof_count_exceeds_64() {
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
+            reaction_extent: Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
         },
         damage: Tensor::<B, 3>::zeros([1, n, 1], &d),
         time: 0.0_f32,
@@ -2462,7 +2462,7 @@ fn thmc_step_monolithic_newton_errors_when_stacked_dof_count_exceeds_64() {
 }
 
 /// **Phase 5 integration:** [`ThmcSolver::step`] monolithic branch matches a standalone call to
-/// [`ThmcImplicitEulerThermalHumidityHydrationResidual::damped_newton_iterations_with_quasi_static_r_u`]
+/// [`ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations_with_quasi_static_r_u`]
 /// when the predictor block matches `thmc.rs` `step_experimental` (keep in sync on edits).
 ///
 /// Uses the same BC mask pattern as [`thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes`]
@@ -2488,7 +2488,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
     let dt = 0.02_f32;
     let mc = ThmcMonolithicNewtonConfig {
         iterations: 4_usize,
@@ -2522,7 +2522,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: alpha_n.clone(),
+            reaction_extent: alpha_n.clone(),
         },
         damage: damage.clone(),
         time: 0.0_f32,
@@ -2532,7 +2532,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         dt,
         max_newton: 1_usize,
         tol: 1e-3_f32,
-        hydration: kinetics.clone(),
+        reaction_extent_kinetics: kinetics.clone(),
         drying_last_node_evaporation_k: 0.0_f32,
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
@@ -2546,7 +2546,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
     let device = state0.thermal.temperature.device();
     let t_old = state0.thermal.temperature.clone();
     let h_old = state0.hydro.humidity.clone();
-    let alpha_n = state0.chemical.hydration_alpha.clone();
+    let alpha_n = state0.chemical.reaction_extent.clone();
     let damage_m = damage.clone();
     let lap_t =
         TopologicalLaplacian::scalar_laplacian(t_old.clone(), edges_b1.clone(), damage_m.clone());
@@ -2561,7 +2561,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
     } else {
         t_bn1.expand::<3, _>([batch, n, f_alpha_ch])
     };
-    let d_alpha = full_hydration_alpha_rate_tensor(
+    let d_alpha = reaction_extent_rate_tensor(
         &kinetics,
         alpha_n.clone(),
         temperature_for_alpha,
@@ -2622,20 +2622,20 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
             displacement: u_predict,
         },
         chemical: ChemicalPlan {
-            hydration_alpha: alpha_predict,
+            reaction_extent: alpha_predict,
         },
         damage: state0.damage.clone(),
         time: state0.time,
     };
 
-    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: t_old.clone(),
         humidity_n: h_old.clone(),
         alpha_n: alpha_n.clone(),
         displacement_n: state0.mechanical.displacement.clone(),
         mechanics_placeholder_mass: 1.0_f32,
-        ru_shrinkage_water_cement_ratio: None,
+        ru_shrinkage_binder_liquid_ratio: None,
         edges_b1: edges_b1.clone(),
         damage_m: damage_m.clone(),
         kinetics: kinetics.clone(),
@@ -2687,7 +2687,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
     }
     for (a, b) in s_step
         .chemical
-        .hydration_alpha
+        .reaction_extent
         .clone()
         .into_data()
         .value
@@ -2695,7 +2695,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         .zip(
             updated_standalone
                 .chemical
-                .hydration_alpha
+                .reaction_extent
                 .into_data()
                 .value
                 .iter(),
@@ -2800,7 +2800,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
     }
     for (a, b) in s_early
         .chemical
-        .hydration_alpha
+        .reaction_extent
         .clone()
         .into_data()
         .value
@@ -2808,7 +2808,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         .zip(
             updated_early
                 .chemical
-                .hydration_alpha
+                .reaction_extent
                 .into_data()
                 .value
                 .iter(),
@@ -2861,7 +2861,7 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
         .expect("chain SI coords")
         .clone();
     let batch = 1usize;
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
     let dt = 0.02_f32;
     let mc = ThmcMonolithicNewtonConfig {
         iterations: 4_usize,
@@ -2889,7 +2889,7 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: Tensor::<B, 3>::from_data(
+            reaction_extent: Tensor::<B, 3>::from_data(
                 Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
                 &d,
             ),
@@ -2902,7 +2902,7 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
         dt,
         max_newton: 1_usize,
         tol: 1e-3_f32,
-        hydration: kinetics.clone(),
+        reaction_extent_kinetics: kinetics.clone(),
         drying_last_node_evaporation_k: 0.0_f32,
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
@@ -2930,14 +2930,14 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
     let body_force = Tensor::<B, 3>::zeros([batch, n, 3], &d);
     let cross_section_area = 0.01_f32;
 
-    let assembler = ThmcImplicitEulerThermalHumidityHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: state0.thermal.temperature.clone(),
         humidity_n: state0.hydro.humidity.clone(),
-        alpha_n: state0.chemical.hydration_alpha.clone(),
+        alpha_n: state0.chemical.reaction_extent.clone(),
         displacement_n: state0.mechanical.displacement.clone(),
         mechanics_placeholder_mass: 1.0_f32,
-        ru_shrinkage_water_cement_ratio: None,
+        ru_shrinkage_binder_liquid_ratio: None,
         edges_b1: manifold.edges_b1.clone(),
         damage_m: damage.clone(),
         kinetics: kinetics.clone(),
@@ -2997,7 +2997,7 @@ fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: Tensor::<B, 3>::from_data(
+            reaction_extent: Tensor::<B, 3>::from_data(
                 Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
                 &d,
             ),
@@ -3006,12 +3006,12 @@ fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
         time: 0.0_f32,
     };
 
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
     let solver_explicit = ThmcSolver {
         dt: 0.08_f32,
         max_newton: 1_usize,
         tol: 1e-3_f32,
-        hydration: kinetics.clone(),
+        reaction_extent_kinetics: kinetics.clone(),
         drying_last_node_evaporation_k: 0.0_f32,
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
@@ -3040,7 +3040,7 @@ fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
     );
 }
 
-/// With [`ThmcImplicitEulerThermalHydrationResidual`] anchored at the pre-step \((T^n,\alpha^n)\), the
+/// With [`ThmcImplicitEulerThermalReactionExtentResidual`] anchored at the pre-step \((T^n,\alpha^n)\), the
 /// post-step state from the Newton path must yield a **strictly smaller** \(\|R\|_2\) than the
 /// explicit-split endpoint (which coincides with the Newton initial iterate).
 #[test]
@@ -3063,7 +3063,7 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
             displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
         },
         chemical: ChemicalPlan {
-            hydration_alpha: Tensor::<B, 3>::from_data(
+            reaction_extent: Tensor::<B, 3>::from_data(
                 Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
                 &d,
             ),
@@ -3072,13 +3072,13 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
         time: 0.0_f32,
     };
 
-    let kinetics = ThmcHydrationKinetics::default();
+    let kinetics = ReactionExtentKinetics::default();
     let dt = 0.08_f32;
     let solver_explicit = ThmcSolver {
         dt,
         max_newton: 1_usize,
         tol: 1e-3_f32,
-        hydration: kinetics.clone(),
+        reaction_extent_kinetics: kinetics.clone(),
         drying_last_node_evaporation_k: 0.0_f32,
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
@@ -3100,10 +3100,10 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
         .step(&Stub, clone_thmc_state(&state0), &manifold)
         .expect("implicit step");
 
-    let assembler = ThmcImplicitEulerThermalHydrationResidual {
+    let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
         dt,
         temperature_n: state0.thermal.temperature.clone(),
-        alpha_n: state0.chemical.hydration_alpha.clone(),
+        alpha_n: state0.chemical.reaction_extent.clone(),
         edges_b1: manifold.edges_b1.clone(),
         damage_m: damage.clone(),
         kinetics,
@@ -3112,12 +3112,12 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
     let trial_exp = thmc_state_with_t_alpha(
         &state0,
         s_exp.thermal.temperature.clone(),
-        s_exp.chemical.hydration_alpha.clone(),
+        s_exp.chemical.reaction_extent.clone(),
     );
     let trial_imp = thmc_state_with_t_alpha(
         &state0,
         s_imp.thermal.temperature.clone(),
-        s_imp.chemical.hydration_alpha.clone(),
+        s_imp.chemical.reaction_extent.clone(),
     );
 
     let r_exp = assembler

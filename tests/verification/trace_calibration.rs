@@ -9,7 +9,7 @@ use burn::prelude::Backend;
 use burn::tensor::Tensor;
 use burn_ndarray::NdArray;
 use umst_manifold::ai::ppo::ManifoldGateway;
-use umst_manifold::core::tensors::{MixTensor, UnifiedMaterialStateTensor};
+use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::ros::{
     calibrate_eta_bound_from_trace, prototype_eta_from_trace, step_mi_excess_over_catalog,
@@ -19,7 +19,7 @@ use umst_manifold::ros::{
 struct EtaStubCartridge;
 
 impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for EtaStubCartridge {
-    fn compute_all(&self, mix: &MixTensor<Bk>) -> PhysicalResult<Bk> {
+    fn compute_all(&self, mix: &StatePoint<Bk>) -> PhysicalResult<Bk> {
         let d = mix.fractions.device();
         PhysicalResult {
             free_energy: Tensor::zeros([1, 1], &d),

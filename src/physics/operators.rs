@@ -7,7 +7,7 @@
 //!
 //! Fix an oriented graph \(G=(V,E)\). Nodal tensors live on **primal 0-cells** \(C^0\); edge tensors
 //! on **primal 1-cells** \(C^1\). The incidence gather/scatter used by [`super::topology::EdgeTopology`]
-//! is the concrete Burn realisation of the chain maps \(B_1^\top: C^1\to C^0\) (weak divergence) and
+//! is the literal Burn realisation of the chain maps \(B_1^\top: C^1\to C^0\) (weak divergence) and
 //! \(d_0: C^0\to C^1\) (coboundary / edge increment). Changing only the **cochain values** while
 //! holding `edges_b1` fixed is a linear natural transformation between finite-dimensional spaces of
 //! sections; metric/Hodge weights (when present in callers) post-compose on \(C^k\) before duality

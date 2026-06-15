@@ -30,7 +30,7 @@ fn host_to_snapshot(s: &ThermodynamicState) -> ThermodynamicStateSnapshot {
         temperature: s.temperature,
         free_energy: s.free_energy,
         entropy: s.entropy,
-        hydration_degree: s.hydration_degree,
+        reaction_extent: s.reaction_extent,
         strength: s.strength,
     }
 }
@@ -42,7 +42,7 @@ fn golden_identity_admissible() -> (ThermodynamicState, ThermodynamicState, f64)
         temperature: 293.15,
         free_energy: -1.35e5,
         entropy: 0.05,
-        hydration_degree: 0.42,
+        reaction_extent: 0.42,
         strength: 12.7,
     };
     (s.clone(), s, 1.0)
@@ -55,7 +55,7 @@ fn golden_mass_reject() -> (ThermodynamicState, ThermodynamicState, f64) {
         temperature: 293.0,
         free_energy: 0.0,
         entropy: 0.1,
-        hydration_degree: 0.3,
+        reaction_extent: 0.3,
         strength: 10.0,
     };
     let mut new = old.clone();
@@ -70,7 +70,7 @@ fn golden_negative_dissipation_reject() -> (ThermodynamicState, ThermodynamicSta
         temperature: 300.0,
         free_energy: -2.0e5,
         entropy: 0.2,
-        hydration_degree: 0.5,
+        reaction_extent: 0.5,
         strength: 20.0,
     };
     let mut new = old.clone();
