@@ -215,15 +215,17 @@ Phase B (B1–B5) starts only after A8 user go-ahead.
 
 ---
 
-## Parallel development lanes (2026-06-15)
+## Parallel development — prime-spectral fence (2026-06-15)
 
-Two agents may work on `w9-agnostic-port` concurrently. **Do not cross lanes without coordination.**
+**W9 owns:** Tier-2c injected closures, `injection_mechanism_fixture.rs` (111/222 sentinels), gate parity, lexicon/agnostic verifiers, catalog lock @ 120/323.
 
-| Lane | Owner | Allowed paths | Forbidden on w9 |
-|------|-------|---------------|-----------------|
-| **W9 Tier-2c + FP** | This agent | `material_transition.rs`, `transition_proposal.rs`, `injection_mechanism_fixture.rs`, gate parity tests, lexicon scripts, `catalog.lock` @ 120/323 | `prime_spectral_*`, `GUIDANCE_CATALOG_IDS`, catalog lock 122 bump |
-| **Prime-spectral Inc 2–4** | Other agent | `src/physics/prime_spectral_filter.rs`, `tests/prime_spectral_*`, `topology_solver` hook, `PRIME_SPECTRAL_BENCHMARK_PROTOCOL.md`, formal `PrimeSpectralGuidance.agda` | W9 rename commits, Tier-2c closure deletes, `450/240` in kernel `src/` |
+**Prime-spectral-research** (branch `prime-spectral-research` off `main`) owns benchmarks, witness tests, protocol MD, topology hooks, Inc 3–4 tuning. **Do not touch that lane from W9.**
 
-**Build contract:** W9 CI stays green on default features without local `[patch]`. Prime-spectral test targets in `Cargo.toml` are **commented out** until the other agent restores files — uncomment, do not duplicate.
+| Surface | W9 rule |
+|---------|---------|
+| **Established (keep compiling, do not delete or grow)** | `src/physics/prime_spectral_filter.rs` + `physics/mod.rs` decl (feature-gated). Lean 17-theorem bundle + `umst.guidance.prime_spectral` catalog id live in formal repos — not W9's edit surface. |
+| **Leaked WIP (remove from `w9-agnostic-port`)** | `tests/prime_spectral_*`, `PRIME_SPECTRAL_BENCHMARK_PROTOCOL.md`, benchmark/witness Cargo targets, topology_solver hooks, commented test stubs. |
+| **`traceability.rs`** | Edit W9 badge rows only; **do not** add/remove/reword `umst.guidance.prime_spectral` or `PrimeSpectralCategory` rows. |
+| **`shell_topology_rib_pattern.rs`** | **No-touch** (B6 + prime-spectral Tier-2 testbed). |
 
-**Catalog:** W9 keeps pinned `catalog.lock.json` (120 modules, 323 edges). Prime-spectral Inc 4 lock bump is a **separate PR** after user sign-off on both tracks.
+**Sign-off gate:** user signature on this plan before `v2.0.0-rc1` tag or merge to `main`.
