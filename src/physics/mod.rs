@@ -32,5 +32,3 @@ pub mod topology;
 pub mod topology_filter;
 #[cfg(feature = "topology-density-evolution")]
 pub mod prime_spectral_filter;
-#[cfg(feature = "topology-density-evolution")]
-pub mod prime_spectral_research;

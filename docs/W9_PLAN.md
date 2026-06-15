@@ -223,8 +223,8 @@ Phase B (B1–B5) starts only after A8 user go-ahead.
 
 | Surface | W9 rule |
 |---------|---------|
-| **Established (keep compiling, do not delete or grow)** | `src/physics/prime_spectral_filter.rs` + `physics/mod.rs` decl (feature-gated). Lean 17-theorem bundle + `umst.guidance.prime_spectral` catalog id live in formal repos — not W9's edit surface. |
-| **Leaked WIP (remove from `w9-agnostic-port`)** | `tests/prime_spectral_*`, `PRIME_SPECTRAL_BENCHMARK_PROTOCOL.md`, benchmark/witness Cargo targets, topology_solver hooks, commented test stubs. |
+| **Established (keep compiling, do not delete or grow)** | `src/physics/prime_spectral_filter.rs` + single `physics/mod.rs` decl (feature-gated; **no** `prime_spectral_research` mod). Lean 17-theorem bundle + `umst.guidance.prime_spectral` catalog id live in formal repos — not W9's edit surface. |
+| **Leaked WIP (remove from `w9-agnostic-port`)** | `prime_spectral_research` mod decl (accidentally re-introduced in fence commit `20ef99c` — fixed in follow-up), `tests/prime_spectral_*`, `PRIME_SPECTRAL_BENCHMARK_PROTOCOL.md`, benchmark/witness Cargo targets, topology_solver hooks, commented test stubs. |
 | **`traceability.rs`** | Edit W9 badge rows only; **do not** add/remove/reword `umst.guidance.prime_spectral` or `PrimeSpectralCategory` rows. |
 | **`shell_topology_rib_pattern.rs`** | **No-touch** (B6 + prime-spectral Tier-2 testbed). |
 
