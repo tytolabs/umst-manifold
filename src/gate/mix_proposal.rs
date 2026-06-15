@@ -134,6 +134,20 @@ impl ThermodynamicMixFilter {
         new_state: &ThermodynamicStateSnapshot,
         dt: f64,
     ) -> ThermodynamicTransitionOutcome {
+        if !transition_snapshot_well_formed(old_state)
+            || !transition_snapshot_well_formed(new_state)
+            || !dt.is_finite()
+            || dt <= 0.0
+        {
+            self.rejections += 1;
+            return ThermodynamicTransitionOutcome {
+                accepted: false,
+                dissipation: 0.0,
+                mass_conserved: false,
+                energy_positive: false,
+            };
+        }
+
         let mass_conserved = (new_state.density - old_state.density).abs() < 100.0;
 
         let rho = (old_state.density + new_state.density) / 2.0;
@@ -175,6 +189,17 @@ impl ThermodynamicMixFilter {
 
 /// Default numeric tolerance for scalar transition gates (C-ABI and host evaluators).
 pub const TRANSITION_TOLERANCE: f64 = 1e-6;
+
+#[must_use]
+fn transition_snapshot_well_formed(s: &ThermodynamicStateSnapshot) -> bool {
+    s.density.is_finite()
+        && s.temperature.is_finite()
+        && s.temperature > 0.0
+        && s.free_energy.is_finite()
+        && s.entropy.is_finite()
+        && s.hydration_degree.is_finite()
+        && s.strength.is_finite()
+}
 
 /// Pure transition predicate — explicit inputs → admissibility (no filter handle, no counters).
 ///
@@ -225,6 +250,20 @@ pub fn thermodynamic_transition_admissible_tol(
     dt: f64,
     tolerance: f64,
 ) -> bool {
+    if !old_density.is_finite()
+        || !old_free_energy.is_finite()
+        || !old_hydration.is_finite()
+        || !old_strength.is_finite()
+        || !new_density.is_finite()
+        || !new_free_energy.is_finite()
+        || !new_hydration.is_finite()
+        || !new_strength.is_finite()
+        || !new_max_strength.is_finite()
+        || !dt.is_finite()
+        || dt <= 0.0
+    {
+        return false;
+    }
     let mass_conserved = (new_density - old_density).abs() < 100.0;
     let rho = (old_density + new_density) / 2.0;
     let psi_dot = (new_free_energy - old_free_energy) / (dt + 1e-10);

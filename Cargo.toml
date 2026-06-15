@@ -298,6 +298,10 @@ path = "tests/verification/trace_calibration.rs"
 required-features = ["trace-calibration"]
 
 [[test]]
+name = "chaos_crucible_gate_transition"
+path = "tests/chaos_crucible_gate_transition.rs"
+
+[[test]]
 name = "solve_contract_entry_points"
 path = "tests/solve_contract_entry_points.rs"
 

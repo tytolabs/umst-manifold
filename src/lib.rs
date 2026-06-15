@@ -18,3 +18,4 @@ pub mod ros;
 
 pub mod runtime;
 pub mod solve_report;
+pub use solve_report::{PrecisionLane, SolveReport};

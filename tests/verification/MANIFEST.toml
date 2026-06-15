@@ -129,3 +129,14 @@ lane = "integration-contracts"
 status = "NEVER-RUN"
 features = []
 run_hint = "Wave 2 meta-runner — cargo test --test solve_contract_entry_points -- --ignored"
+
+[[fixture]]
+id = "manifold.gate.chaos_crucible_transition"
+crate = "umst-manifold"
+test_binary = "chaos_crucible_gate_transition"
+test_fn = "nan_free_energy_rejects_and_preserves_old_state"
+lane = "engine-slices"
+status = "pass@2026-06-10"
+evidence = "5/5 chaos_crucible_gate_transition: NaN reject, garbage temp, Inf reject, clean accept, non-converged SolveReport hook"
+features = []
+run_hint = "PATH=\"$HOME/.cargo/bin:$PATH\" cargo test --test chaos_crucible_gate_transition"

@@ -45,6 +45,12 @@ impl SolveReport {
     pub fn converged(&self) -> bool {
         self.rel_tol > 0.0 && self.rel_residual.is_finite() && self.rel_residual <= self.rel_tol
     }
+
+    /// Wave-1 THMC honesty hook: reject witnesses that did not meet their relative tolerance.
+    #[must_use]
+    pub fn gate_reject_non_converged_solve(&self) -> bool {
+        !self.converged()
+    }
 }
 
 /// Morphism from lane-specific telemetry into the unified contract.
