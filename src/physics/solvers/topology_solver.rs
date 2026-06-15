@@ -142,6 +142,15 @@ impl<B: Backend<FloatElem = f32>> TopologySolver<B> {
 }
 
 #[cfg(feature = "topology-density-evolution")]
+pub fn pre_filter_prime_spectral<B: Backend<FloatElem = f32>>(
+    ps: &crate::physics::prime_spectral_filter::PrimeSpectralFilter,
+    rho: Tensor<B, 3>,
+) -> Tensor<B, 3> {
+    let n = rho.dims()[1];
+    ps.apply(rho, n)
+}
+
+#[cfg(feature = "topology-density-evolution")]
 impl<B: Backend<FloatElem = f32>> TopologySolver<B> {
     /// Replace \(\rho\) with [`DensityNet::forward_batched`] on `coords_bn3` (`[B, N, 3]`).
     pub fn set_rho_from_density_net(

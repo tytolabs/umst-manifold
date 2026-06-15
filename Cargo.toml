@@ -353,7 +353,24 @@ name = "topology_continuation"
 path = "tests/topology_continuation.rs"
 required-features = ["topology-density-evolution"]
 
-# TEMP probe — removed after check
+[[test]]
+name = "prime_spectral_witness_present"
+path = "tests/prime_spectral_witness_present.rs"
+
+[[test]]
+name = "prime_spectral_filter"
+path = "tests/prime_spectral_filter.rs"
+required-features = ["solver-experimental"]
+
+[[test]]
+name = "prime_spectral_research"
+path = "tests/prime_spectral_research.rs"
+required-features = ["solver-experimental"]
+
+[[test]]
+name = "prime_spectral_tracks"
+path = "tests/prime_spectral_tracks.rs"
+required-features = ["topology-density-evolution"]
 
 [[test]]
 name = "epistemic_ppo"

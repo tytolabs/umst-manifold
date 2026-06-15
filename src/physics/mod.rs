@@ -30,3 +30,11 @@ pub mod time_orchestration;
 pub mod topology;
 #[cfg(feature = "topology-density-evolution")]
 pub mod topology_filter;
+#[cfg(feature = "topology-density-evolution")]
+pub mod prime_spectral_filter;
+#[cfg(feature = "topology-density-evolution")]
+pub mod prime_spectral_research;
+#[cfg(feature = "topology-density-evolution")]
+pub mod prime_spectral_ntt;
+#[cfg(feature = "topology-density-evolution")]
+pub mod prime_spectral_qmc;
