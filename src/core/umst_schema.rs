@@ -26,8 +26,12 @@ pub const SCALAR_CHANNEL0: usize = 0;
 /// Relative humidity (or equivalent moisture scalar), column `1`.
 pub const SCALAR_HUMIDITY: usize = 1;
 
-/// Hydration degree / chemical progress \(\alpha\), column `2`.
-pub const SCALAR_HYDRATION_ALPHA: usize = 2;
+/// First internal progress variable (cartridge-defined semantics), column `2`.
+pub const SCALAR_INTERNAL_VARIABLE_0: usize = 2;
+
+/// Renamed to [`SCALAR_INTERNAL_VARIABLE_0`] in v2.0.0-rc1 (W9 agnostic-on-fork).
+#[deprecated(note = "renamed to SCALAR_INTERNAL_VARIABLE_0")]
+pub const SCALAR_HYDRATION_ALPHA: usize = SCALAR_INTERNAL_VARIABLE_0;
 
 /// Nodal temperature (physical units are cartridge-defined; often °C on the concrete path), column `3`.
 pub const SCALAR_TEMPERATURE: usize = 3;

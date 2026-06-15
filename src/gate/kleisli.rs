@@ -7,7 +7,7 @@
 //! `umst.gate.kleisli_unit`, hand-aligned to `Gate.lean` (`admissibleNRefl`, `kleisliAdmissibility`).
 
 use super::evaluator::GateEvaluator;
-use super::mix_proposal::ThermodynamicStateSnapshot;
+use super::transition_proposal::ThermodynamicStateSnapshot;
 use super::verdict::AdmissibilityVerdict;
 
 /// Result of a thermodynamic gate check on a wrapped value.

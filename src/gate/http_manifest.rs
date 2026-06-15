@@ -9,8 +9,8 @@
 use serde::{Deserialize, Serialize};
 
 use super::evaluator::GateEvaluator;
-use super::mix_eval_registry::{ThermodynamicMixEvaluator, ThermodynamicTransitionContext};
-use super::mix_proposal::{ThermodynamicMixFilter, ThermodynamicStateSnapshot};
+use super::transition_eval_registry::{ThermodynamicTransitionContext, TransitionEvaluator};
+use super::transition_proposal::{ThermodynamicStateSnapshot, TransitionFilter};
 use crate::manifest::UmstManifest;
 use crate::runtime::catalog::catalog_lock_bundle_sha256_hex;
 use crate::runtime::catalog::traceability::{
@@ -55,17 +55,17 @@ impl From<&UmstManifest> for GateManifest {
 /// Supersedes deprecated slug `umst.gate.prediction_vs_physics` (see **`docs/GateUnificationSpec.md`**
 /// migration notes; constant [`crate::runtime::catalog::traceability::PREDICTION_VS_PHYSICS_CATALOG_ID_DEPRECATED`]).
 #[derive(Debug)]
-pub struct HttpMixGateEvaluator {
+pub struct HttpTransitionEvaluator {
     pub manifest: GateManifest,
-    mix_evaluator: ThermodynamicMixEvaluator,
+    mix_evaluator: TransitionEvaluator,
 }
 
-impl HttpMixGateEvaluator {
+impl HttpTransitionEvaluator {
     #[must_use]
     pub fn new(manifest: GateManifest) -> Self {
         Self {
             manifest,
-            mix_evaluator: ThermodynamicMixEvaluator::new(ThermodynamicMixFilter::new()),
+            mix_evaluator: TransitionEvaluator::new(TransitionFilter::new()),
         }
     }
 
@@ -74,13 +74,14 @@ impl HttpMixGateEvaluator {
         Self::new(GateManifest::from(manifest))
     }
 
+    #[deprecated(note = "use HttpTransitionEvaluator::from_umst_manifest — injection-only")]
     #[must_use]
     pub fn from_concrete_cartridge_defaults() -> Self {
         Self::new(default_gate_manifest())
     }
 }
 
-impl GateEvaluator for HttpMixGateEvaluator {
+impl GateEvaluator for HttpTransitionEvaluator {
     fn catalog_id(&self) -> &'static str {
         "umst.gate.http_shim"
     }
@@ -93,22 +94,25 @@ impl GateEvaluator for HttpMixGateEvaluator {
 /// Shared runtime for `gate_server` / [`crate::gate_server_router`].
 #[derive(Debug)]
 pub struct GateHttpRuntime {
-    pub evaluator: HttpMixGateEvaluator,
+    pub evaluator: HttpTransitionEvaluator,
 }
 
 impl GateHttpRuntime {
+    /// Injection-only constructor — callers supply a configured [`HttpTransitionEvaluator`].
+    #[must_use]
+    pub fn new(evaluator: HttpTransitionEvaluator) -> Self {
+        Self { evaluator }
+    }
+
+    #[deprecated(note = "use GateHttpRuntime::new(HttpTransitionEvaluator::from_umst_manifest(..))")]
     #[must_use]
     pub fn from_defaults() -> Self {
-        Self {
-            evaluator: HttpMixGateEvaluator::from_concrete_cartridge_defaults(),
-        }
+        Self::new(HttpTransitionEvaluator::from_umst_manifest(&UmstManifest::default()))
     }
 
     #[must_use]
     pub fn from_umst_manifest(manifest: &UmstManifest) -> Self {
-        Self {
-            evaluator: HttpMixGateEvaluator::from_umst_manifest(manifest),
-        }
+        Self::new(HttpTransitionEvaluator::from_umst_manifest(manifest))
     }
 
     #[must_use]
@@ -117,19 +121,31 @@ impl GateHttpRuntime {
     }
 
     #[must_use]
-    pub fn evaluate_mix(&self, proposal: &MixProposal) -> GateResponse {
+    pub fn evaluate_transition(&self, proposal: &MixProposal) -> GateResponse {
         evaluate(proposal, &self.evaluator.manifest)
+    }
+
+    #[deprecated(note = "renamed to evaluate_transition")]
+    #[must_use]
+    pub fn evaluate_mix(&self, proposal: &MixProposal) -> GateResponse {
+        self.evaluate_transition(proposal)
     }
 }
 
-impl HttpMixGateEvaluator {
+impl HttpTransitionEvaluator {
     #[must_use]
-    pub fn evaluate_mix(&self, proposal: &MixProposal) -> GateResponse {
+    pub fn evaluate_transition(&self, proposal: &MixProposal) -> GateResponse {
         evaluate(proposal, &self.manifest)
     }
 
-    /// Optional transition witness: idle → proposal hydration (host [`ThermodynamicMixEvaluator`]).
-    pub fn evaluate_mix_transition(
+    #[deprecated(note = "renamed to evaluate_transition")]
+    #[must_use]
+    pub fn evaluate_mix(&self, proposal: &MixProposal) -> GateResponse {
+        self.evaluate_transition(proposal)
+    }
+
+    /// Optional transition witness: idle → proposal hydration (host [`TransitionEvaluator`]).
+    pub fn evaluate_transition_witness(
         &mut self,
         proposal: &MixProposal,
         dt_seconds: f64,
@@ -154,6 +170,15 @@ impl HttpMixGateEvaluator {
             dt_seconds,
         };
         Some(self.mix_evaluator.evaluate_thermo_transition(ctx))
+    }
+
+    #[deprecated(note = "renamed to evaluate_transition_witness")]
+    pub fn evaluate_mix_transition(
+        &mut self,
+        proposal: &MixProposal,
+        dt_seconds: f64,
+    ) -> Option<super::verdict::AdmissibilityVerdict> {
+        self.evaluate_transition_witness(proposal, dt_seconds)
     }
 }
 
@@ -339,3 +364,6 @@ mod tests {
         assert_eq!(r.catalog_id.as_deref(), Some(HTTP_SHIM_CATALOG_ID));
     }
 }
+
+#[deprecated(note = "renamed to HttpTransitionEvaluator")]
+pub type HttpMixGateEvaluator = HttpTransitionEvaluator;

@@ -3,10 +3,14 @@
 
 use burn::tensor::{backend::Backend, Tensor};
 
-/// 1D representation of a material state (used for homogeneous batching or 0D models)
-pub struct MixTensor<B: Backend> {
+/// Homogeneous material state carrier (0D/1D batching).
+pub struct StatePoint<B: Backend> {
     pub fractions: Tensor<B, 2>, // [Batch, Features]
 }
+
+/// Renamed to [`StatePoint`] in v2.0.0-rc1 (W9 agnostic-on-fork).
+#[deprecated(note = "renamed to StatePoint")]
+pub type MixTensor<B> = StatePoint<B>;
 
 use std::marker::PhantomData;
 

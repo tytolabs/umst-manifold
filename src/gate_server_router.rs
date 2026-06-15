@@ -96,7 +96,7 @@ fn build_response(req: &ParsedRequest, runtime: &GateHttpRuntime) -> Vec<u8> {
 
     let body_str = String::from_utf8_lossy(&req.body);
     let json = match serde_json::from_str::<MixProposal>(body_str.as_ref()) {
-        Ok(p) => serde_json::to_string(&runtime.evaluate_mix(&p)).unwrap(),
+        Ok(p) => serde_json::to_string(&runtime.evaluate_transition(&p)).unwrap(),
         Err(_) => serde_json::to_string(&gate_json_parse_response()).unwrap(),
     };
     http_payload("200 OK", &json)

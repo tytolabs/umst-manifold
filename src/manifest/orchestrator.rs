@@ -9,8 +9,8 @@ use crate::core::tensors::{ClausiusDuhemProof, UnifiedMaterialStateTensor, Verif
 use crate::core::traits::IScienceCartridge;
 use crate::gate::{
     AdmissibilityVerdict, GateEvaluator, GateEvaluatorRegistry, KleisliUnitEvaluator,
-    ThermodynamicMixEvaluator, ThermodynamicMixFilter, ThermodynamicState,
-    ThermodynamicStateSnapshot, ThermodynamicTransitionContext, ThermodynamicTransitionEvaluator,
+    ThermodynamicState, ThermodynamicStateSnapshot, ThermodynamicTransitionContext,
+    ThermodynamicTransitionEvaluator, TransitionEvaluator, TransitionFilter,
     TransitionGateEvaluator, TransitionVerdict,
 };
 use crate::manifest::UmstManifest;
@@ -127,13 +127,24 @@ impl<B: Backend, C: IScienceCartridge<B>> EmbodiedOrchestrator<B, C> {
     }
 
     #[must_use]
-    pub fn with_mix_registry(mut self, registry: GateEvaluatorRegistry) -> Self {
+    pub fn with_registry(mut self, registry: GateEvaluatorRegistry) -> Self {
         self.mix_gate_registry = registry;
         self
     }
 
-    pub fn register_mix_evaluator(&mut self, ev: ThermodynamicMixEvaluator) {
+    #[deprecated(note = "renamed to with_registry")]
+    #[must_use]
+    pub fn with_mix_registry(self, registry: GateEvaluatorRegistry) -> Self {
+        self.with_registry(registry)
+    }
+
+    pub fn register_evaluator(&mut self, ev: TransitionEvaluator) {
         self.mix_gate_registry.register(ev);
+    }
+
+    #[deprecated(note = "renamed to register_evaluator")]
+    pub fn register_mix_evaluator(&mut self, ev: TransitionEvaluator) {
+        self.register_evaluator(ev);
     }
 
     /// Topology step: optional host gate (registry or CD transition), then [`ManifoldGateway::evaluate_topology_step`].
@@ -221,7 +232,7 @@ impl<B: Backend, C: IScienceCartridge<B>> EmbodiedOrchestrator<B, C> {
 /// Default host registry: constitutive mix + Kleisli unit η (R4 after R1–R3 routing).
 fn default_host_mix_registry() -> GateEvaluatorRegistry {
     let mut reg = GateEvaluatorRegistry::default();
-    reg.register(ThermodynamicMixEvaluator::new(ThermodynamicMixFilter::new()));
+    reg.register(TransitionEvaluator::new(TransitionFilter::new()));
     reg.register_kleisli(KleisliUnitEvaluator::new());
     reg
 }

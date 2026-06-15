@@ -248,7 +248,7 @@ mod tests {
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::NdArray;
 
-    use crate::core::tensors::MixTensor;
+    use crate::core::tensors::StatePoint;
     use crate::core::traits::PhysicalResult;
     use crate::physics::solvers::{
         ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcState,
@@ -334,7 +334,7 @@ mod tests {
     struct EmptyCartridge;
 
     impl IScienceCartridge<TestBackend> for EmptyCartridge {
-        fn compute_all(&self, mix: &MixTensor<TestBackend>) -> PhysicalResult<TestBackend> {
+        fn compute_all(&self, mix: &StatePoint<TestBackend>) -> PhysicalResult<TestBackend> {
             physical_zeros(&mix.fractions.device(), 1, 1)
         }
 

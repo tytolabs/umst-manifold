@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-//! Stateful mix evaluator + trivial registry façade (fixture tests / Kleisli integration).
+//! Stateful transition evaluator + trivial registry façade (fixture tests / Kleisli integration).
 
 use super::evaluator::GateEvaluator;
 use super::kleisli::KleisliUnitEvaluator;
-use super::mix_proposal::{ThermodynamicMixFilter, ThermodynamicStateSnapshot};
+use super::transition_proposal::{TransitionFilter, ThermodynamicStateSnapshot};
 use super::verdict::AdmissibilityVerdict;
 use crate::runtime::catalog::traceability::THERMODYNAMIC_MIX_CATALOG_ID;
 
@@ -16,15 +16,15 @@ pub struct ThermodynamicTransitionContext<'a> {
     pub dt_seconds: f64,
 }
 
-/// Wraps [`ThermodynamicMixFilter`] and maps outcomes to REST-stable [`AdmissibilityVerdict`].
+/// Wraps [`TransitionFilter`] and maps outcomes to REST-stable [`AdmissibilityVerdict`].
 #[derive(Debug)]
-pub struct ThermodynamicMixEvaluator {
-    pub filter: ThermodynamicMixFilter,
+pub struct TransitionEvaluator {
+    pub filter: TransitionFilter,
 }
 
-impl ThermodynamicMixEvaluator {
+impl TransitionEvaluator {
     #[must_use]
-    pub fn new(filter: ThermodynamicMixFilter) -> Self {
+    pub fn new(filter: TransitionFilter) -> Self {
         Self { filter }
     }
 
@@ -40,7 +40,7 @@ impl ThermodynamicMixEvaluator {
     }
 }
 
-impl GateEvaluator for ThermodynamicMixEvaluator {
+impl GateEvaluator for TransitionEvaluator {
     fn catalog_id(&self) -> &'static str {
         THERMODYNAMIC_MIX_CATALOG_ID
     }
@@ -53,7 +53,7 @@ impl GateEvaluator for ThermodynamicMixEvaluator {
 /// Holds registered gate evaluators keyed by [`GateEvaluator::catalog_id`].
 #[derive(Debug, Default)]
 pub struct GateEvaluatorRegistry {
-    thermodynamic_mix: Option<ThermodynamicMixEvaluator>,
+    thermodynamic_mix: Option<TransitionEvaluator>,
     kleisli_unit: Option<KleisliUnitEvaluator>,
 }
 
@@ -63,7 +63,7 @@ impl GateEvaluatorRegistry {
         Self::default()
     }
 
-    pub fn register(&mut self, ev: ThermodynamicMixEvaluator) {
+    pub fn register(&mut self, ev: TransitionEvaluator) {
         self.thermodynamic_mix = Some(ev);
     }
 
@@ -98,8 +98,11 @@ impl GateEvaluatorRegistry {
         if catalog_id != KleisliUnitEvaluator::CATALOG_ID {
             return None;
         }
-        self.kleisli_unit
-            .as_ref()
-            .map(|_| AdmissibilityVerdict::Accepted)
+        self.kleisli_unit.as_ref().map(|ev| ev.evaluate_reflexive_step(
+            &ThermodynamicStateSnapshot::new_idle(),
+        ))
     }
 }
+
+#[deprecated(note = "renamed to TransitionEvaluator")]
+pub type ThermodynamicMixEvaluator = TransitionEvaluator;

@@ -8,14 +8,16 @@
 use super::verdict::AdmissibilityVerdict;
 
 /// Default intrinsic gel strength for the Powers model (MPa).
+#[deprecated(note = "cartridge-supplied via MaterialTransitionParams — Tier 2c defer")]
 pub const DEFAULT_S_INTRINSIC_MPA: f64 = 240.0;
 
 /// Representative specific heat of hydration for OPC (J/kg).
+#[deprecated(note = "cartridge-supplied via MaterialTransitionParams — Tier 2c defer")]
 pub const Q_HYDRATION_J_PER_KG: f64 = 450.0;
 
 /// Minimal JSON-shaped proposal for a bulk mix patch (host gate IO).
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct MixProposalScalars {
+pub struct TransitionScalars {
     pub water_cement_ratio: f64,
     pub hydration_degree: f64,
     pub temperature_k: f64,
@@ -23,13 +25,15 @@ pub struct MixProposalScalars {
     pub s_intrinsic_mpa: Option<f64>,
 }
 
-impl MixProposalScalars {
+impl TransitionScalars {
     pub fn thermodynamic_snapshot(&self) -> ThermodynamicStateSnapshot {
+        #[allow(deprecated)]
+        let s_intrinsic = self.s_intrinsic_mpa.unwrap_or(DEFAULT_S_INTRINSIC_MPA);
         ThermodynamicStateSnapshot::from_mix_calibrated(
             self.water_cement_ratio,
             self.hydration_degree,
             self.temperature_k,
-            self.s_intrinsic_mpa.unwrap_or(DEFAULT_S_INTRINSIC_MPA),
+            s_intrinsic,
         )
     }
 }
@@ -58,13 +62,17 @@ impl ThermodynamicStateSnapshot {
     }
 
     pub fn from_mix(w_c: f64, alpha: f64, temp: f64) -> Self {
-        Self::from_mix_calibrated(w_c, alpha, temp, DEFAULT_S_INTRINSIC_MPA)
+        #[allow(deprecated)]
+        let s_intrinsic = DEFAULT_S_INTRINSIC_MPA;
+        Self::from_mix_calibrated(w_c, alpha, temp, s_intrinsic)
     }
 
     pub fn from_mix_calibrated(w_c: f64, alpha: f64, temp: f64, s_intrinsic: f64) -> Self {
+        #[allow(deprecated)]
+        let q_hydration = Q_HYDRATION_J_PER_KG;
         let x = 0.68 * alpha / (0.32 * alpha + w_c + 1e-6);
         let fc = s_intrinsic * x.powi(3);
-        let psi = -Q_HYDRATION_J_PER_KG * alpha;
+        let psi = -q_hydration * alpha;
 
         ThermodynamicStateSnapshot {
             density: 2400.0 - 400.0 * w_c,
@@ -98,21 +106,21 @@ impl ThermodynamicTransitionOutcome {
 
 /// Stateful filter with tolerance and counters (prototype semantics).
 #[derive(Debug, Clone)]
-pub struct ThermodynamicMixFilter {
+pub struct TransitionFilter {
     tolerance: f64,
     rejections: u64,
     acceptances: u64,
 }
 
-impl Default for ThermodynamicMixFilter {
+impl Default for TransitionFilter {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ThermodynamicMixFilter {
+impl TransitionFilter {
     pub fn new() -> Self {
-        ThermodynamicMixFilter {
+        TransitionFilter {
             tolerance: 1e-6,
             rejections: 0,
             acceptances: 0,
@@ -120,7 +128,7 @@ impl ThermodynamicMixFilter {
     }
 
     pub fn with_tolerance(tolerance: f64) -> Self {
-        ThermodynamicMixFilter {
+        TransitionFilter {
             tolerance,
             rejections: 0,
             acceptances: 0,
@@ -240,10 +248,10 @@ pub fn thermodynamic_transition_admissible_tol(
 }
 
 /// Convenience: evaluate directly from JSON-shaped proposals without building snapshots manually.
-pub fn evaluate_mix_transition(
-    filter: &mut ThermodynamicMixFilter,
-    old: &MixProposalScalars,
-    new: &MixProposalScalars,
+pub fn evaluate_transition(
+    filter: &mut TransitionFilter,
+    old: &TransitionScalars,
+    new: &TransitionScalars,
     dt_seconds: f64,
 ) -> ThermodynamicTransitionOutcome {
     let old_s = old.thermodynamic_snapshot();
@@ -251,13 +259,25 @@ pub fn evaluate_mix_transition(
     filter.check_transition(&old_s, &new_s, dt_seconds)
 }
 
+#[deprecated(note = "renamed to evaluate_transition")]
+pub fn evaluate_mix_transition(
+    filter: &mut TransitionFilter,
+    old: &TransitionScalars,
+    new: &TransitionScalars,
+    dt_seconds: f64,
+) -> ThermodynamicTransitionOutcome {
+    evaluate_transition(filter, old, new, dt_seconds)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    #[allow(deprecated)]
+
     #[test]
     fn admissible_forward_hydration() {
-        let mut filter = ThermodynamicMixFilter::new();
+        let mut filter = TransitionFilter::new();
         let old = ThermodynamicStateSnapshot::from_mix(0.5, 0.3, 293.0);
         let new = ThermodynamicStateSnapshot::from_mix(0.5, 0.5, 293.0);
         assert!(new.free_energy < old.free_energy);
@@ -269,7 +289,7 @@ mod tests {
 
     #[test]
     fn reject_reverse_hydration() {
-        let mut filter = ThermodynamicMixFilter::new();
+        let mut filter = TransitionFilter::new();
         let old = ThermodynamicStateSnapshot::from_mix(0.5, 0.7, 293.0);
         let new = ThermodynamicStateSnapshot::from_mix(0.5, 0.3, 293.0);
         let r = filter.check_transition(&old, &new, 3600.0);
@@ -279,7 +299,7 @@ mod tests {
 
     #[test]
     fn strength_monotonicity() {
-        let mut filter = ThermodynamicMixFilter::new();
+        let mut filter = TransitionFilter::new();
         let mut old = ThermodynamicStateSnapshot::new_idle();
         old.strength = 30.0;
         old.hydration_degree = 0.5;
@@ -328,7 +348,7 @@ mod tests {
 
     #[test]
     fn dissipation_matches_rho_q_alpha_dot() {
-        let mut filter = ThermodynamicMixFilter::new();
+        let mut filter = TransitionFilter::new();
         let w_c = 0.45;
         let alpha_old = 0.4;
         let alpha_new = 0.6;
@@ -349,3 +369,9 @@ mod tests {
         );
     }
 }
+
+#[deprecated(note = "renamed to TransitionScalars")]
+pub type MixProposalScalars = TransitionScalars;
+
+#[deprecated(note = "renamed to TransitionFilter")]
+pub type ThermodynamicMixFilter = TransitionFilter;
