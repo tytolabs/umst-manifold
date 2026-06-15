@@ -38,6 +38,11 @@ fn prime_spectral_research_smoke_all_ics() {
 
 #[test]
 fn prime_spectral_r1_baseline_emit() {
+    if std::env::var("UMST_PRIME_SPECTRAL_EMIT").ok().as_deref() != Some("1") {
+        eprintln!("skip r1 emit (set UMST_PRIME_SPECTRAL_EMIT=1 to enable)");
+        return;
+    }
+
     let dev = Default::default();
     let mut records = Vec::new();
     for &ic in InitialCondition::all() {
@@ -74,6 +79,11 @@ fn prime_spectral_r1_baseline_emit() {
 
 #[test]
 fn prime_spectral_primary_sweep_emit() {
+    if std::env::var("UMST_PRIME_SPECTRAL_EMIT").ok().as_deref() != Some("1") {
+        eprintln!("skip primary sweep emit (set UMST_PRIME_SPECTRAL_EMIT=1 to enable)");
+        return;
+    }
+
     let dev = Default::default();
     let grids = [(16_usize, 16_usize), (32, 32)];
     let seeds = [42_u64, 137];

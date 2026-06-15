@@ -49,6 +49,7 @@ impl InitialCondition {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[allow(non_camel_case_types)]
 pub enum ResearchMode {
     A,
     B,

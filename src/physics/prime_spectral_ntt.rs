@@ -73,7 +73,7 @@ pub fn ntt(a: &[u64], plan: &NttPlan) -> Vec<u64> {
     }
     let mut len = 2;
     while len <= n {
-        let step = mod_pow(plan.root, ((plan.q - 1) / len as u64), plan.q);
+        let step = mod_pow(plan.root, (plan.q - 1) / len as u64, plan.q);
         let mut i = 0;
         while i < n {
             let mut w = 1_u64;
@@ -93,9 +93,8 @@ pub fn ntt(a: &[u64], plan: &NttPlan) -> Vec<u64> {
 
 #[must_use]
 pub fn intt(a: &[u64], plan: &NttPlan) -> Vec<u64> {
-    let n = plan.n;
     let inv_root = mod_inv(plan.root, plan.q);
-    let mut inv_plan = NttPlan {
+    let inv_plan = NttPlan {
         n: plan.n,
         q: plan.q,
         root: inv_root,
