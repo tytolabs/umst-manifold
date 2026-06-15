@@ -85,6 +85,8 @@ pub const ALLOW_UNUSED_CATALOG_IDS: &[&str] = &[
     "OrderStatisticsBand",
     "PMICEntropyInterior",
     "PMICVisibility",
+    "PrimeSpectralCategory",
+    "PrimeSpectralGuidance",
     "PrototypeSolverCalibration",
     "QuantumClassicalBridge",
     "QuantumMutualInfo",
