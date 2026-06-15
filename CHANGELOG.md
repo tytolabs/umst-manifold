@@ -12,7 +12,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### 2026-05-29 closure (wave pin [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437); narrative sync [`8b97af7`](https://github.com/tytolabs/umst-manifold/commit/8b97af7))
+## [2.0.0] — 2026-06-15
+
+**Tags:** [`v2.0.0-rc1`](https://github.com/tytolabs/umst-manifold/releases/tag/v2.0.0-rc1) (Phase A) · [`v2.0.0`](https://github.com/tytolabs/umst-manifold/releases/tag/v2.0.0) (Phase B)  
+**Manifold `main`:** `7431c1b` · **Catalog R0:** **122** modules, digest `c61b1bef…`
+
+Material-agnostic **W9** wave: kernel renames (`StatePoint`, `transition_proposal`), cement literals evicted to cartridge injection, lexicon + agnostic-on-fork CI green, formal prime-spectral mirror (+2 Lean roots), cartridge registry split, Phase B `GateCartridge` / `SpatialCartridge` stub + [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md). Plan: [`docs/W9_PLAN.md`](docs/W9_PLAN.md).
+
+### Added
+
+- **Phase B port docs** — `GateCartridge` marker trait, `SpatialCartridge` alias, `tests/gate_cartridge_only_stub.rs` (injection-only gate contract).
+- **Tier-2c injection fixture** — `tests/injection_mechanism_fixture.rs` (111/222 sentinels); cartridge `tier2c_closure_parity`.
+- **Prime-spectral formal mirror** — `PrimeSpectralGuidance` + `PrimeSpectralCategory` in `umst-formal` (53 lake roots; catalog allowlist on manifold).
+- **Theorem count SSOT** — `scripts/theorem_counts_snapshot.json` → formal **261** theorem / double-slit **540** theorem (regen via `check_theorem_counts_ssot.py`).
+
+### Changed
+
+- **Agnostic kernel** — `MixTensor` → `StatePoint` (deprecated alias); `mix_proposal` → `transition_proposal`; `ThmcHydrationKinetics` → `ReactionExtentKinetics` with byte-equivalent THMC parity.
+- **Gate registry** — CARTRIDGE badge rows split from universal `GATE_REGISTRY_CATALOG_IDS`; kernel `gate::ConcreteCartridge` retired (cartridge owns policy `GateEvaluator`).
+- **Catalog pin** — unified export **119 → 122** modules (`c61b1bef…`); `.umst-pins.toml` bumps formal `b09d4a0`, double-slit `72a6fe9`.
+- **Cartridge git pin** — `umst-concrete-cartridge` pins manifold `cfc683f` (`v2.0.0-rc1` embed; Phase B on manifold is docs/tests only).
+
+### Verification
+
+`UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` exit **0** (rustup **1.88** on PATH). Acceptance: `check_domain_lexicon.sh` 0, `check_agnostic_on_fork.sh` 0, `cargo test --lib` 81/81, `thmc_drying_shrinkage` 32/32, `lake build UMST` green on `umst-formal` `main`.
+
+## [2.0.0-rc1] — 2026-06-15
+
+Phase A only (`cfc683f`): W9 agnostic port + catalog 122 allowlist before Phase B cherry-pick.
+
 
 Plain-language snapshot for this wave — read the bullets below for detail.
 

@@ -1,7 +1,7 @@
 # W9 Phase 0 — Agnostic-on-Fork + Cartridge-Port Survey
 
-**Status:** Tier-2c grep-zero **complete** (2026-06-10) — `grep 450/240 umst-manifold/src` = 0; cartridge `tier2c_closure_parity` green; awaiting user sign-off before tag/merge/Phase B.  
-**Branch:** `w9-agnostic-port` (from `main` @ `bc87929`).  
+**Status:** **LANDED** on `main` @ `7431c1b` — tags `v2.0.0-rc1` / `v2.0.0` (2026-06-15). Tier-2c grep-zero, lexicon/agnostic verifiers, `verify_umst_stack` green.  
+**Branch:** merged `w9-agnostic-port` → `main` (was `bc87929`).  
 **Canonical prompt:** [`docs/COMPOSER_W9_AGNOSTIC_AND_PORT.md`](../../docs/COMPOSER_W9_AGNOSTIC_AND_PORT.md) (workspace root).  
 **Date:** 2026-06-15.
 
@@ -198,7 +198,7 @@ Phase B (B1–B5) starts only after A8 user go-ahead.
 - [x] Risk register (ConcreteCartridge homonym, GateCartridge invent, THMC timing)
 - [x] Deprecate-not-delete list
 - [x] Open PRs #23–27 noted
-- [ ] **User approval** — required before A1
+- [x] **User approval** — waived 2026-06-15; stack merged without pause
 
 ---
 
@@ -217,15 +217,15 @@ Phase B (B1–B5) starts only after A8 user go-ahead.
 
 ## Parallel development — prime-spectral fence (2026-06-15)
 
-**W9 owns:** Tier-2c injected closures, `injection_mechanism_fixture.rs` (111/222 sentinels), gate parity, lexicon/agnostic verifiers, catalog lock @ 120/323.
+**W9 owns:** Tier-2c injected closures, `injection_mechanism_fixture.rs` (111/222 sentinels), gate parity, lexicon/agnostic verifiers, catalog lock @ **122** / digest `c61b1bef…`.
 
-**Prime-spectral-research** (branch `prime-spectral-research` off `main`) owns benchmarks, witness tests, protocol MD, topology hooks, Inc 3–4 tuning. **Do not touch that lane from W9.**
+**Prime-spectral-research** (branch `prime-spectral-research`) owns benchmarks, witness tests, protocol MD — **CLOSED / AMBER** per [`outputs/prime-spectral-research/FINAL_FINDING.md`](../../outputs/prime-spectral-research/FINAL_FINDING.md). **Do not merge research WIP onto `main`.**
 
 | Surface | W9 rule |
 |---------|---------|
-| **Established (keep compiling, do not delete or grow)** | `src/physics/prime_spectral_filter.rs` + single `physics/mod.rs` decl (feature-gated; **no** `prime_spectral_research` mod). Lean 17-theorem bundle + `umst.guidance.prime_spectral` catalog id live in formal repos — not W9's edit surface. |
-| **Leaked WIP (remove from `w9-agnostic-port`)** | `prime_spectral_research` mod decl (accidentally re-introduced in fence commit `20ef99c` — fixed in follow-up), `tests/prime_spectral_*`, `PRIME_SPECTRAL_BENCHMARK_PROTOCOL.md`, benchmark/witness Cargo targets, topology_solver hooks, commented test stubs. |
-| **`traceability.rs`** | Edit W9 badge rows only; **do not** add/remove/reword `umst.guidance.prime_spectral` or `PrimeSpectralCategory` rows. |
+| **Established (keep compiling, do not delete or grow)** | `src/physics/prime_spectral_filter.rs` + single `physics/mod.rs` decl (feature-gated; **no** `prime_spectral_research` mod). Lean prime-spectral bundle + `umst.guidance.prime_spectral` catalog id live in formal repos — landed on `main` via catalog allowlist. |
+| **Research lane only** | `tests/prime_spectral_*`, benchmark targets, topology_solver hooks — stay on `prime-spectral-research`, not `main`. |
+| **`traceability.rs`** | W9 badge rows landed; `umst.guidance.prime_spectral` rows from formal mirror. |
 | **`shell_topology_rib_pattern.rs`** | **No-touch** (B6 + prime-spectral Tier-2 testbed). |
 
-**Sign-off gate:** user signature on this plan before `v2.0.0-rc1` tag or merge to `main`.
+**Sign-off:** [`outputs/w9-sign-off-package.md`](../../outputs/w9-sign-off-package.md) — `verify_umst_stack` exit 0 @ 2026-06-15.

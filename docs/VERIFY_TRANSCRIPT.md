@@ -1,6 +1,6 @@
 # VERIFY_TRANSCRIPT — machine run record
 
-**Date:** 2026-06-10  
+**Date:** 2026-06-15 (W9 finish follow-up)  
 **Host:** multi-repo workspace monorepo (local)  
 **Exit code:** 0
 
@@ -8,46 +8,51 @@
 
 | Item | Value |
 |------|-------|
-| `rustc` | 1.88.0 (6b00bc388 2025-06-23) |
-| `PATH` | `$HOME/.cargo/bin` prepended (rustup 1.88; Homebrew 1.86 shadowed) |
-| `umst-manifold` | `a8a693af121199c2b0acbf291723816ed7e58c6d` |
-| `umst-formal-double-slit` | `0b049b0e3ee190c65e587b1ba47dd81c2b2c4d58` |
-| `umst-formal` | `44a8b7bd1e4e793ee5d804001e38dc10fd8e4dc1` |
+| `rustc` | 1.88.0 (rustup; `$HOME/.cargo/bin` prepended) |
+| `umst-manifold` | `7431c1b5088cd3abb36d2af3d448eda8af4fd4fb` (`v2.0.0`) |
+| `umst-formal-double-slit` | `72a6fe93d44e471cd74e1d3f513396d3da7261c5` |
+| `umst-formal` | `b09d4a0a99190b49c166833a360b96a464452bd0` |
+| `umst-concrete-cartridge` | `938330c0eaeffe62c0df2729d4d88962bd508499` |
 
 ## Command (exact)
 
 ```bash
 cd umst-manifold
 export PATH="$HOME/.cargo/bin:$PATH"
-UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh 2>&1 | tee /tmp/verify_transcript.txt
+UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh 2>&1 | tee /tmp/verify_w9_followup.log
 ```
 
 ## Catalog pin at run time (R0)
 
 | Field | Value |
 |-------|-------|
-| `module_count` | 119 |
-| `upstream_catalog_digest_hex` | `ef0ed071fc82bf8ebc8971aeee8d142b4b54e15583f0c575d942cb237474d1dc` |
-| `umst-formal-double-slit` fiber | `035ea948ff812fddec5fead027e2c02ae96ff44520031df64816fca4f50a579b` (69 modules) |
-| `umst-formal` fiber | `265db0ed86ef9d9efe089fb71307ebf508155272513a3f21ab7bc9b43350fa4d` (62 modules) |
+| `module_count` | **122** |
+| `upstream_catalog_digest_hex` | `c61b1befdec77a82bbb9f6c3f7562e754218ef635f0e3b9990752138df5f4bb5` |
+| `module_graph_edge_count` | 329 |
 
-**Note:** umst-formal fiber drift from prior lock (`534d9e18…`) was resolved via `make lean-catalog-export` + manifold lock bump per [`CATALOG_UPDATE_PROTOCOL.md`](CATALOG_UPDATE_PROTOCOL.md).
+## W9 acceptance (additional)
 
-## Tail output (representative)
+```text
+check_domain_lexicon.sh          → domain_lexicon_tier1_hits=0
+check_agnostic_on_fork.sh        → 0 files
+check_theorem_counts_ssot.py     → formal 53/261/24, double-slit 59/540/34
+cargo test --lib                 → 81/81
+cargo test gate_cartridge_only_stub → 1/1
+cargo test thmc_drying_shrinkage --features thmc-coupled --release → 32/32
+umst-formal: lake build UMST     → Build completed successfully
+```
+
+## Transcript tail
 
 ```
-==> bidirectional catalog check (…/scripts/bidirectional_catalog_check.sh)
-OK: committed catalog.json matches regen (ef0ed071fc82…, 119 modules)
-bidirectional_catalog_check: OK
-…
+OK: manifest_bridge_catalog_grounding
+OK: formal_anchors manifest-bridge
 w8_publish_readiness: PASS=21 FAIL=0 SKIP=2
-w8_publish_readiness: READY (prep automated; publish remains human-only)
-w8_publish_readiness: OK
 verify_umst_stack: OK
 ```
 
-Full log: `/tmp/verify_transcript.txt` on the machine that produced this record.
+Full log: `/tmp/verify_w9_followup.log`
 
-## Reproduce
+## Research fence (prime-spectral)
 
-See [`VERIFY.md`](VERIFY.md) §1. Requires sibling checkouts `umst-formal-double-slit` and `umst-formal` with Lean trees present.
+Branch `prime-spectral-research` remains **CLOSED / AMBER** ([`outputs/prime-spectral-research/FINAL_FINDING.md`](../../outputs/prime-spectral-research/FINAL_FINDING.md)). R2/R3/Track 4–5 killed; Track 1 NTT conservation lead parked. Not merged to `main`.

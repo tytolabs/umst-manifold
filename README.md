@@ -7,14 +7,15 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 <!-- readme:status -->
 [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
+[![Release](https://img.shields.io/github/v/release/tytolabs/umst-manifold?label=v2.0.0)](https://github.com/tytolabs/umst-manifold/releases/tag/v2.0.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Cartridge: concrete](https://img.shields.io/badge/cartridge-concrete-C9A27A)](https://github.com/tytolabs/umst-concrete-cartridge)
 
-> Release notes in [CHANGELOG.md](CHANGELOG.md).
+> Release notes in [CHANGELOG.md](CHANGELOG.md). **v2.0.0** (2026-06-15): material-agnostic W9 port — [`docs/W9_PLAN.md`](docs/W9_PLAN.md), cartridge injection [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md), **122**-module catalog digest `c61b1bef…`.
 
 > *Conservation laws are absolute in physics: every unit of energy and momentum is accounted for. Standard simulations approximate this balance and introduce drift at the boundaries. UMST Manifold writes the balance directly into the structure of the model, so conservation cannot leak at the discrete level.*
 
-**UMST Manifold** is a unified, differentiable physics engine. Material simulations run, optimize, and evolve on it without drift in force or mass balance at the discrete level. Built in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes its spatial physics to domain-specific material engines (concrete, metals, polymers) through the **`IScienceCartridge`** trait.
+**UMST Manifold** is a unified, differentiable physics engine. Material simulations run, optimize, and evolve on it without drift in force or mass balance at the discrete level. Built in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes spatial physics to domain-specific material engines through the **`IScienceCartridge`** trait (Phase B alias: **`SpatialCartridge`**; gate-only policy via **`GateCartridge`** — see [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md)).
 
 <!-- readme:grounding-narrative -->
 ### What this repository is
