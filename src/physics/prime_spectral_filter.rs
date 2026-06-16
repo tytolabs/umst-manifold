@@ -66,11 +66,7 @@ impl PrimeSpectralFilter {
     }
 
     /// Apply spectral filter: `rho' = w ⊙ rho` (same shape).
-    pub fn apply<B: Backend<FloatElem = f32>>(
-        &self,
-        rho: Tensor<B, 3>,
-        n: usize,
-    ) -> Tensor<B, 3> {
+    pub fn apply<B: Backend<FloatElem = f32>>(&self, rho: Tensor<B, 3>, n: usize) -> Tensor<B, 3> {
         let weights = self.weight_table(n);
         let device = rho.device();
         let w = Tensor::<B, 1>::from_floats(weights.as_slice(), &device).reshape([1, n, 1]);

@@ -18,6 +18,8 @@ pub mod mechanics;
 pub mod mechanics_operator;
 pub mod operator;
 pub mod orchestration;
+#[cfg(feature = "topology-density-evolution")]
+pub mod prime_spectral_filter;
 pub mod protocols;
 #[cfg(any(
     feature = "topology-density-evolution",
@@ -30,5 +32,3 @@ pub mod time_orchestration;
 pub mod topology;
 #[cfg(feature = "topology-density-evolution")]
 pub mod topology_filter;
-#[cfg(feature = "topology-density-evolution")]
-pub mod prime_spectral_filter;

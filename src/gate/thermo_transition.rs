@@ -5,8 +5,8 @@
 //!
 //! Ported from `umst-prototype/.../thermodynamic_filter.rs` — **wasm-free** manifold build.
 
-use crate::core::material_transition::{MaterialTransitionParams, SubstrateMaterialParams};
 use super::transition_proposal::{transition_outcome, ThermodynamicStateSnapshot};
+use crate::core::material_transition::{MaterialTransitionParams, SubstrateMaterialParams};
 
 /// Result of thermodynamic admissibility check
 #[derive(Clone, Debug)]
@@ -244,8 +244,10 @@ mod tests {
 
     #[test]
     fn pure_outcome_matches_telemetry_path_without_counters() {
-        let old = ThermodynamicState::from_mix_with_params(0.5, 0.4, 293.0, &SubstrateMaterialParams);
-        let new = ThermodynamicState::from_mix_with_params(0.5, 0.65, 293.0, &SubstrateMaterialParams);
+        let old =
+            ThermodynamicState::from_mix_with_params(0.5, 0.4, 293.0, &SubstrateMaterialParams);
+        let new =
+            ThermodynamicState::from_mix_with_params(0.5, 0.65, 293.0, &SubstrateMaterialParams);
         let dt = 86_400.0;
         let pure = thermo_gate_transition_outcome(&old, &new, dt, 1e-6);
         let mut gate = ThermodynamicGate::new();

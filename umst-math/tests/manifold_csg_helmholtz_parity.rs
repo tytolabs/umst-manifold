@@ -6,7 +6,7 @@ use umst_math::manifold::csg;
 #[test]
 fn aa_manifold_helmholtz_grad_matches_numeric() {
     const Q: f64 = csg::Q_HYDRATION_J_PER_KG; // qHydration (Haskell)
-                          // Step large enough to beat f64 cancellation (ε-bisim, not ulp-strict)
+                                              // Step large enough to beat f64 cancellation (ε-bisim, not ulp-strict)
     const EPS: f64 = 1e-4;
     let a = 0.37f64;
     let psi0 = csg::umst_helmholtz_sdf(a);
