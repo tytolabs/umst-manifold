@@ -962,7 +962,7 @@ impl VectorMechanicsSolver {
                 .slice([b..b + 1, 0..n_e, 0..1])
                 .into_data()
                 .value;
-            let e_scale = e_hi.max(1e-12) as f64;
+            let e_scale = k_char.max(1e-30) as f64;
             let eu_flat = edge_unit
                 .clone()
                 .slice([b..b + 1, 0..n_e, 0..3])
@@ -1000,7 +1000,7 @@ impl VectorMechanicsSolver {
                 n_v,
             );
             let diag_flat = diag_bn3.into_data().value;
-            let diag64: Vec<f64> = diag_flat.iter().map(|&x| x as f64).collect();
+            let diag64: Vec<f64> = diag_flat.iter().map(|&x| (x as f64) / e_scale).collect();
 
             if inner_cfg.use_preconditioner {
                 for i in 0..ndof {
