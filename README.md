@@ -57,7 +57,7 @@ If you want the applied materials engine for cementitious systems (concrete desi
 | Solvers & ops | [§6](#6-advanced-continuous-solver-specifications) · [§7](#7-technical-deployment--agentic-instructions) · [§8](#8-formal-foundations-and-citation) |
 | Agents & wrap-up | [§9](#9-special-protocol-note-to-autonomous-ai-agents--systems) · [§10](#10-conclusion-inferences--forward-path) · [Related](#related-repositories) |
 
-**Detailed outline** — each line links to a heading anchor where one exists; lines marked *(collapsible)* open a `<details>` block under that section (no separate URL).
+**Detailed outline** — every entry links to a stable anchor (`README.md#…`); collapsible sections use `<details>` but share the same deep-link fragments.
 
 - [§1 The Core Approach](#1-the-core-approach)
   - [1.1 The Mathematical Topology of Conservation](#11-the-mathematical-topology-of-conservation)
@@ -68,25 +68,25 @@ If you want the applied materials engine for cementitious systems (concrete desi
   - [2.1 Lane map (64 scalars today)](#21-lane-map-64-scalars-today)
   - [2.2 Composition, DEC, and gradients](#22-composition-dec-and-gradients)
   - [2.3 Extensibility (carriers, lanes, and versions)](#23-extensibility-carriers-lanes-and-versions)
-  - End-to-flow diagram (mermaid) at end of §2
+  - [End-to-flow diagram (mermaid)](#2-unified-material-state-pipeline-umst-carrier) at end of §2
 - [§3 Cross-Domain Integration Specifications](#3-cross-domain-integration-specifications)
-  - *(collapsible)* Mathematical Foundations & Formal Grounding
-  - *(collapsible)* Autonomous Control & Embodied AI
-  - *(collapsible)* Structural Dynamics & Topology Optimization
-  - *(collapsible)* Constitutive Materials Chemistry
+  - [3.1 Mathematical Foundations & Formal Grounding](#31-mathematical-foundations--formal-grounding)
+  - [3.2 Autonomous Control & Embodied AI](#32-autonomous-control--embodied-ai)
+  - [3.3 Structural Dynamics & Topology Optimization](#33-structural-dynamics--topology-optimization)
+  - [3.4 Constitutive Materials Chemistry](#34-constitutive-materials-chemistry)
 - [§4 Exhaustive Architecture Topology](#4-exhaustive-architecture-topology)
-  - *(collapsible)* Repository tree (`umst-manifold/` paths)
+  - [Repository tree](#repository-tree)
 - [§5 Surfaces & Entrypoints](#5-surfaces--entrypoints)
 - [§6 Advanced Continuous Solver Specifications](#6-advanced-continuous-solver-specifications)
-  - Summary table (Ionic electrochemistry → JFNK THMC)
-  - *(collapsible)* Multi-Species Ionic Electrochemistry (PBNP)
-  - *(collapsible)* Electromagnetic & Radiative Transport (FDFD)
-  - *(collapsible)* Coupled Phase-Field Fracture
-  - *(collapsible)* Anisotropic Acoustics & Wave Dynamics
-  - *(collapsible)* Non-Newtonian Extrusion Rheology (Herschel-Bulkley)
-  - *(collapsible)* Coupled JFNK THMC Solver
+  - [Summary table (Ionic electrochemistry → JFNK THMC)](#6-advanced-continuous-solver-specifications)
+  - [6.1 Multi-Species Ionic Electrochemistry (PBNP)](#61-multi-species-ionic-electrochemistry-pbnp)
+  - [6.2 Electromagnetic & Radiative Transport (FDFD)](#62-electromagnetic--radiative-transport-fdfd)
+  - [6.3 Coupled Phase-Field Fracture](#63-coupled-phase-field-fracture)
+  - [6.4 Anisotropic Acoustics & Wave Dynamics](#64-anisotropic-acoustics--wave-dynamics)
+  - [6.5 Non-Newtonian Extrusion Rheology (Herschel-Bulkley)](#65-non-newtonian-extrusion-rheology-herschel-bulkley)
+  - [6.6 Coupled JFNK THMC Solver](#66-coupled-jfnk-thmc-solver)
 - [§7 Technical Deployment & Agentic Instructions](#7-technical-deployment--agentic-instructions)
-  - *(collapsible)* Commands, Cargo features, and agent checklist
+  - [Commands, Cargo features, and agent checklist](#commands-cargo-features-and-agent-checklist)
   - [Build, test, CI parity](#build-test-ci-parity)
   - [Selected Cargo Features](#selected-cargo-features)
   - [For Autonomous Agents](#for-autonomous-agents)
@@ -98,8 +98,8 @@ If you want the applied materials engine for cementitious systems (concrete desi
   - [9.4 Three Physical Principles for Agent Reasoning](#94-three-physical-principles-for-agent-reasoning)
   - [9.5 The Ecosystem Loop & Modular Material Scaling](#95-the-ecosystem-loop--modular-material-scaling)
 - [§10 Conclusion: Inferences & Forward Path](#10-conclusion-inferences--forward-path)
-  - [What this manifold demonstrates](#what-this-manifold-demonstrates) — bullets under this heading
-  - [What surprised us](#what-surprised-us) — bullets under this heading
+  - [What this manifold demonstrates](#what-this-manifold-demonstrates)
+  - [What surprised us](#what-surprised-us)
 - [Related repositories](#related-repositories)
 
 <details>
@@ -118,10 +118,22 @@ Each `##` / `###` heading on GitHub gets a stable **anchor**: the part after `#`
 #22-composition-dec-and-gradients
 #23-extensibility-carriers-lanes-and-versions
 #3-cross-domain-integration-specifications
+#31-mathematical-foundations--formal-grounding
+#32-autonomous-control--embodied-ai
+#33-structural-dynamics--topology-optimization
+#34-constitutive-materials-chemistry
 #4-exhaustive-architecture-topology
+#repository-tree
 #5-surfaces--entrypoints
 #6-advanced-continuous-solver-specifications
+#61-multi-species-ionic-electrochemistry-pbnp
+#62-electromagnetic--radiative-transport-fdfd
+#63-coupled-phase-field-fracture
+#64-anisotropic-acoustics--wave-dynamics
+#65-non-newtonian-extrusion-rheology-herschel-bulkley
+#66-coupled-jfnk-thmc-solver
 #7-technical-deployment--agentic-instructions
+#commands-cargo-features-and-agent-checklist
 #build-test-ci-parity
 #selected-cargo-features
 #for-autonomous-agents
@@ -220,6 +232,7 @@ End-to-end flow (same diagram as before; labels read “UMST carrier” in prose
 
 This Manifold is a pure library. It is designed to act as a mathematical substrate, remaining entirely agnostic to the specific material mapped onto it. Find your domain below to see how the engine handles your integration requirements:
 
+<a id="31-mathematical-foundations--formal-grounding"></a>
 <details>
 <summary><b>1. Mathematical Foundations & Formal Grounding</b> (Mathematicians, Theoretical Physicists)</summary>
 
@@ -230,6 +243,7 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 *   **Computational Outcome:** A spatial substrate where mass, momentum, and energy conservation are guaranteed algebraically by the graph topology rather than bounded by numerical float approximations. Rust modules map directly to formal Lean/Coq proof references (Track J3).
 </details>
 
+<a id="32-autonomous-control--embodied-ai"></a>
 <details>
 <summary><b>2. Autonomous Control & Embodied AI</b> (Robotics Engineers, Physical AI Architects)</summary>
 
@@ -240,6 +254,7 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 *   **Computational Outcome:** Agents and robotic controllers evaluate spatial path feasibility (e.g., 3D-printing trajectories) against thermodynamic stability limits and receive exact gradient steps to correct path drift. The per-step latency tracks the solver kernel selected — sub-second on small grids; minutes on full shell topology runs (see [`docs/Solver-Status.md`](docs/Solver-Status.md)).
 </details>
 
+<a id="33-structural-dynamics--topology-optimization"></a>
 <details>
 <summary><b>3. Structural Dynamics & Topology Optimization</b> (Civil & Structural Engineers, Architects)</summary>
 
@@ -250,6 +265,7 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 *   **Computational Outcome:** Rapid derivation of optimal structural load paths. While the forward PDE solvers scale with the spatial mesh discretization (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;O(N)"><img alt="O(N)" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;O(N)" style="vertical-align:middle"></picture>), the Adjoint Neural ODE backpropagation bypasses dense BPTT activation caching—yielding a constant <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;O(1)"><img alt="O(1)" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;O(1)" style="vertical-align:middle"></picture> memory footprint over integration time steps, rendering complex dynamic topology optimization highly feasible on standard CPU hardware.
 </details>
 
+<a id="34-constitutive-materials-chemistry"></a>
 <details>
 <summary><b>4. Constitutive Materials Chemistry</b> (Materials Scientists, Bio-chemical Researchers)</summary>
 
@@ -266,6 +282,7 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 
 The repository is organized functionally — each file maps to a specific role in the solver, gate, or verification pipeline.
 
+<a id="repository-tree"></a>
 <details>
 <summary><b>Repository tree</b> (paths & roles)</summary>
 
@@ -329,6 +346,7 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 | **5. Non-Newtonian Flow** | Herschel-Bulkley Viscoplastic Fluid Yield | `solvers/rheology_flow.rs` | Yield stress front velocity vectors (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathbf{u}"><img alt="\mathbf{u}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathbf{u}" style="vertical-align:middle"></picture>), localized thixotropic structural viscosity (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\eta"><img alt="\eta" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\eta" style="vertical-align:middle"></picture>). | Lean 4 Theorem `Bingham_Flow_Stable` |
 | **6. Coupled THMC Residual** | Jacobian-Free Newton-Krylov Matrix-Free GMRES | `solvers/thmc.rs` & `solvers/thmc_residual.rs` | Interlinked heat (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\theta"><img alt="\theta" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\theta" style="vertical-align:middle"></picture>), moisture saturation (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;S_w"><img alt="S_w" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;S_w" style="vertical-align:middle"></picture>), mechanical strain (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\varepsilon"><img alt="\varepsilon" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\varepsilon" style="vertical-align:middle"></picture>), and chemical hydration (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\alpha"><img alt="\alpha" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\alpha" style="vertical-align:middle"></picture>). | Coq Lemma `JFNK_THMC_Residual_Bounded` |
 
+<a id="61-multi-species-ionic-electrochemistry-pbnp"></a>
 <details>
 <summary><b>1. Multi-Species Ionic Electrochemistry</b> (Nernst-Planck-Poisson)</summary>
 
@@ -342,6 +360,7 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
     Where <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;C_i"><img alt="C_i" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;C_i" style="vertical-align:middle"></picture> is ion concentration, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;D_i"><img alt="D_i" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;D_i" style="vertical-align:middle"></picture> is diffusivity, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;z_i"><img alt="z_i" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;z_i" style="vertical-align:middle"></picture> is valence, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\Phi"><img alt="\Phi" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\Phi" style="vertical-align:middle"></picture> is the electrostatic potential, and <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathbf{u}"><img alt="\mathbf{u}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathbf{u}" style="vertical-align:middle"></picture> is pore fluid velocity.
 </details>
 
+<a id="62-electromagnetic--radiative-transport-fdfd"></a>
 <details>
 <summary><b>2. Electromagnetic & Radiative Transport</b> (Photonics FDFD)</summary>
 
@@ -353,6 +372,7 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
     Where <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathbf{E}"><img alt="\mathbf{E}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathbf{E}" style="vertical-align:middle"></picture> is the electric field tensor, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\epsilon_r"><img alt="\epsilon_r" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\epsilon_r" style="vertical-align:middle"></picture> is complex relative permittivity, and <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;k_0"><img alt="k_0" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;k_0" style="vertical-align:middle"></picture> is the free-space wavenumber.
 </details>
 
+<a id="63-coupled-phase-field-fracture"></a>
 <details>
 <summary><b>3. Coupled Phase-Field Fracture</b> (Cracking Dynamics)</summary>
 
@@ -366,6 +386,7 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
     Where <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;G_c"><img alt="G_c" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;G_c" style="vertical-align:middle"></picture> is critical energy release rate, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;l"><img alt="l" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;l" style="vertical-align:middle"></picture> is the length scale of crack width, and <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathcal{H}"><img alt="\mathcal{H}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathcal{H}" style="vertical-align:middle"></picture> is the history variable of tensile strain energy density.
 </details>
 
+<a id="64-anisotropic-acoustics--wave-dynamics"></a>
 <details>
 <summary><b>4. Anisotropic Acoustics & Wave Dynamics</b> (Sound Propagation)</summary>
 
@@ -377,6 +398,7 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
     Where <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathbf{u}"><img alt="\mathbf{u}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathbf{u}" style="vertical-align:middle"></picture> is displacement, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\rho"><img alt="\rho" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\rho" style="vertical-align:middle"></picture> is local density, and <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathbf{C}"><img alt="\mathbf{C}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathbf{C}" style="vertical-align:middle"></picture> is the 4th-order anisotropic stiffness tensor.
 </details>
 
+<a id="65-non-newtonian-extrusion-rheology-herschel-bulkley"></a>
 <details>
 <summary><b>5. Non-Newtonian Extrusion Rheology</b> (Herschel-Bulkley Flows)</summary>
 
@@ -388,6 +410,7 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
     Where <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\tau_y"><img alt="\tau_y" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\tau_y" style="vertical-align:middle"></picture> is yield stress, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;K"><img alt="K" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;K" style="vertical-align:middle"></picture> is consistency index, and <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;n"><img alt="n" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;n" style="vertical-align:middle"></picture> is the flow behavior index.
 </details>
 
+<a id="66-coupled-jfnk-thmc-solver"></a>
 <details>
 <summary><b>6. Coupled Jacobian-Free Newton-Krylov (JFNK) THMC Solver</b> (Multi-Physics Convergence)</summary>
 
@@ -407,6 +430,7 @@ If you are an application engineer, architect, or data scientist looking for Pyt
 
 If you are building atop the Manifold, here is the technical deployment reference:
 
+<a id="commands-cargo-features-and-agent-checklist"></a>
 <details>
 <summary><b>Commands, Cargo features, and agent checklist</b></summary>
 
