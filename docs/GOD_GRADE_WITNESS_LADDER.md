@@ -1,9 +1,12 @@
-# God-grade witness ladder
+# Release witness profile ladder
+
+> **Public name:** *release witness profile* (strict catalog match + ordered gate witnesses).  
+> **Filename note:** `GOD_GRADE_WITNESS_LADDER.md` is a legacy path kept for stable links; new docs should use the public term above.
 
 **As of:** 2026-05-21  
-**Audience:** Operators, reviewers, and agents wiring UMST formal → manifold → cartridges.
+**Audience:** Integrators, reviewers, and contributors wiring UMST formal → manifold → cartridges.
 
-**Plain English:** UMST reaches *god-grade* when every bad transition is rejected automatically, the Lean catalog is the single source of truth for what was proved, and humans are not the backstop for digest drift or gate parity. This document is the **ordered ladder** of witnesses (what gets checked, in what order). Foundational split: **proofs = versioned library**, **gates = law**, **MI only inside the Landauer/trace envelope**, **no new Lean axioms in Rust** — see [§ Proof library · gate law · MI envelope · no Rust axioms](#proof-library--gate-law--mi-envelope--no-rust-axioms). Pipeline mechanics: [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md); module buckets: [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md); rollup: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
+**Plain English:** UMST reaches a **release witness profile** when every bad transition is rejected automatically, the Lean catalog is the single source of truth for what was proved, and humans are not the backstop for digest drift or gate parity. This document is the **ordered ladder** of witnesses (what gets checked, in what order). Foundational split: **proofs = versioned library**, **gates = law**, **MI only inside the Landauer/trace envelope**, **no new Lean axioms in Rust** — see [§ Proof library · gate law · MI envelope · no Rust axioms](#proof-library--gate-law--mi-envelope--no-rust-axioms). Pipeline mechanics: [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md); module buckets: [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md); rollup: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 ---
 

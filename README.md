@@ -11,7 +11,7 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Cartridge: concrete](https://img.shields.io/badge/cartridge-concrete-C9A27A)](https://github.com/tytolabs/umst-concrete-cartridge)
 
-> Release notes in [CHANGELOG.md](CHANGELOG.md). **v2.0.0** (2026-06-15): material-agnostic W9 port — [`docs/W9_PLAN.md`](docs/W9_PLAN.md), cartridge injection [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md), **122**-module catalog digest `c61b1bef…`.
+> Release notes in [CHANGELOG.md](CHANGELOG.md). **v2.0.0** (2026-06-15): material-agnostic cartridge port — [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md), **122**-module catalog digest `c61b1bef…`.
 
 > *Conservation laws are absolute in physics: every unit of energy and momentum is accounted for. Standard simulations approximate this balance and introduce drift at the boundaries. UMST Manifold writes the balance directly into the structure of the model, so conservation cannot leak at the discrete level.*
 
@@ -33,7 +33,7 @@ The whole thing lives on a smooth, differentiable manifold, implemented in **Rus
 <!-- readme:god-grade-status -->
 ### What's proven, what isn't (the honest version)
 
-We don't pretend everything is proven. Conservation structure is mathematical, and the thermodynamic gate is enforced in code on every step — but only part of the Lean/Coq/Agda library is hand-wired onto the runtime gate path, **by design**: at inference time the robot runs fast Rust witnesses, not a theorem prover. There are three different things people mean by "done" here — in-repo automation, how much of the proof library is wired on the hot path, and organization-level publishing — and they should **never** be blended into one "completion %". The honest, current accounting of each lives in one place: **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)** (verified ledger: [`docs/GOD_GRADE_PROGRESS_VERIFIED.md`](docs/GOD_GRADE_PROGRESS_VERIFIED.md)).
+We don't pretend everything is proven. Conservation structure is mathematical, and the thermodynamic gate is enforced in code on every step — but only part of the Lean/Coq/Agda library is hand-wired onto the runtime gate path, **by design**: at inference time the robot runs fast Rust witnesses, not a theorem prover. There are three different things people mean by "done" here — in-repo automation, how much of the proof library is wired on the hot path, and organization-level publishing — and they should **never** be blended into one "completion %". The honest, current accounting of each lives in one place: **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)** (verified ledger: [`docs/GOD_GRADE_PROGRESS_VERIFIED.md`](docs/GOD_GRADE_PROGRESS_VERIFIED.md) — release witness profile rollup).
 
 **Verify it yourself, locally:** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` — full command matrix in [`docs/VERIFY.md`](docs/VERIFY.md). Latest machine transcript: [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md).
 
@@ -202,7 +202,7 @@ We use exact adjoint gradients—running the simulation backwards through time�
 
 **Constants are derived, measured, or grounded in truth — not silent knobs.** Every coefficient must trace to at least one obligation: **derived** from closed-form constitutive relations, limits, or dimensional analysis tied to the second-law spine (§1.2); **measured** from experiment, benchmark, or site calibration with recorded conditions (what was measured, on which material, under which schema version); or **grounded** as a documented calibration input with literature, dataset, or formal trail in [`docs/Solver-Status.md`](docs/Solver-Status.md) and companion docs, and often **pinned with explicit regression tolerances** in CI so drift is visible. Nothing is “just a float”: if it moves, a derivation, measurement record, or human or formal obligation must say why.
 
-**“Proven” means traceable invariants, not vibes.** Conservation structure is **mathematical** (cochain topology). Solver-specific claims are tied to **Lean 4 / Coq anchors** in [`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md) where the Track J3 pipeline applies, and to **regression tests** and `scripts/check_solver_status.py` so documentation, `#[cfg(feature)]` lanes, and proof tables stay aligned. Where a proof is still staged, the code path is labelled honestly in Solver-Status — we do not conflate “compiled” with “discharged in Lean.”
+**“Proven” means traceable invariants, not vibes.** Conservation structure is **mathematical** (cochain topology). Solver-specific claims are tied to **Lean 4 / Coq anchors** in [`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md) where the formal cement-gate fiber applies, and to **regression tests** and `scripts/check_solver_status.py` so documentation, `#[cfg(feature)]` lanes, and proof tables stay aligned. Where a proof is still staged, the code path is labelled honestly in Solver-Status — we do not conflate “compiled” with “discharged in Lean.”
 
 ---
 
@@ -240,7 +240,7 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 
 *   **Solver Composition:** Exposes Discrete Exterior Calculus (DEC) primitives to construct exact cochain complexes over sparse combinatorial graphs.
 
-*   **Computational Outcome:** A spatial substrate where mass, momentum, and energy conservation are guaranteed algebraically by the graph topology rather than bounded by numerical float approximations. Rust modules map directly to formal Lean/Coq proof references (Track J3).
+*   **Computational Outcome:** A spatial substrate where mass, momentum, and energy conservation are guaranteed algebraically by the graph topology rather than bounded by numerical float approximations. Rust modules map directly to formal Lean/Coq proof references in the pinned catalog.
 </details>
 
 <a id="32-autonomous-control--embodied-ai"></a>
@@ -486,13 +486,13 @@ We maintain strict formal proof anchors (`formal_status`) mapping our Rust imple
 
 - **Notation and foundations:** [`docs/Mathematical-Foundations.md`](docs/Mathematical-Foundations.md)
 - **Solver lanes, verification paths:** [`docs/Solver-Status.md`](docs/Solver-Status.md)
-- **Formal proof index (Track J3):** [`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md)
+- **Formal proof index:** [`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md)
 - **Developer verify matrix (CI parity):** [`docs/VERIFY.md`](docs/VERIFY.md)
 - **Claims vs proofs ledger (Lean ↔ `catalog_id` ↔ Rust):** [`docs/claims-vs-proofs.md`](docs/claims-vs-proofs.md)
-- **Formal integration status (module buckets, god-grade gaps):** [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md)
+- **Formal integration status (module buckets, release witness gaps):** [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md)
 - **Catalog ↔ Rust coverage audit:** [`docs/CATALOG_COVERAGE_AUDIT.md`](docs/CATALOG_COVERAGE_AUDIT.md)
 - **Compositional inference / gateway audit:** [`docs/COMPOSITIONAL_INFERENCE_AUDIT.md`](docs/COMPOSITIONAL_INFERENCE_AUDIT.md)
-- **God-grade witness ladder:** [`docs/GOD_GRADE_WITNESS_LADDER.md`](docs/GOD_GRADE_WITNESS_LADDER.md) — philosophy [§ Proof library · gate law · MI envelope · no Rust axioms](docs/GOD_GRADE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms)
+- **Release witness ladder:** [`docs/GOD_GRADE_WITNESS_LADDER.md`](docs/GOD_GRADE_WITNESS_LADDER.md) — philosophy [§ Proof library · gate law · MI envelope · no Rust axioms](docs/GOD_GRADE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms)
 - **Formal export scope (sibling):** [`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`](../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md)
 - **Two-repo formal alignment (sibling):** [`../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md`](../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md)
 - **Supercap formal scaling (sibling):** [`../umst-supercap-cartridge/docs/FORMAL_SCALING.md`](../umst-supercap-cartridge/docs/FORMAL_SCALING.md)
@@ -515,7 +515,7 @@ This repository is one component of a four-repo material-science stack. The sect
 Four active repositories make up the stack:
 1.  **[`umst-manifold`](https://github.com/tytolabs/umst-manifold) (This Repository):** Exposes the core Discrete Exterior Calculus (DEC) primal grid, the differentiable Burn tensor graph, and the high-fidelity continuous solvers.
 2.  **[`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge):** The applied engineering interface exposing Python/PyO3 bindings, headless MCP tools, and 26 chemical-physical closures (e.g. hydration kinetics, viscoelastic creep).
-3.  **[`umst-formal`](https://github.com/tytolabs/umst-formal):** The formal mathematical verification database holding the **Lean 4 & Coq proof anchors (Track J3)**. This repository mathematically proves that the DEC cochain complexes satisfy exact conservation laws (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;d%20\circ%20d%20=%200"><img alt="d \circ d = 0" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;d%20\circ%20d%20=%200" style="vertical-align:middle"></picture>).
+3.  **[`umst-formal`](https://github.com/tytolabs/umst-formal):** The formal mathematical verification database holding the **Lean 4 & Coq proof anchors** for the cement gate fiber. This repository mathematically proves that the DEC cochain complexes satisfy exact conservation laws (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;d%20\circ%20d%20=%200"><img alt="d \circ d = 0" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;d%20\circ%20d%20=%200" style="vertical-align:middle"></picture>).
 4.  **[`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit):** The quantum-information proof suite (Lean 4 + Mathlib). Machine-checked proofs of the Landauer cost of measurement, the Englert visibility / which-path bound, Lindblad dephasing limits, and Klein relative-entropy nonnegativity — anchoring the manifold's Thermodynamic CBF in formally verified quantum-mechanical foundations.
 
 ### 9.2 Working Contract
@@ -566,7 +566,7 @@ The manifold is a substrate. Its value shows up in what gets built on top of it.
 
 - [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) — applied cementitious physics mounted on this manifold
 - [**UMST Supercap Cartridge**](../umst-supercap-cartridge) — structural supercap electrochemistry cartridge (monorepo sibling)
-- [**UMST Formal**](https://github.com/tytolabs/umst-formal) — Lean 4 / Coq proof anchors (Track J3) for the conservation laws
+- [**UMST Formal**](https://github.com/tytolabs/umst-formal) — Lean 4 / Coq proof anchors for the conservation laws
 - [**UMST Formal Double-Slit**](https://github.com/tytolabs/umst-formal-double-slit) — quantum-information proofs anchoring the Thermodynamic CBF
 
 ---
