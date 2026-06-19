@@ -33,7 +33,7 @@ The whole thing lives on a smooth, differentiable manifold, implemented in **Rus
 <!-- readme:god-grade-status -->
 ### What's proven, what isn't (the honest version)
 
-We don't pretend everything is proven. Conservation structure is mathematical, and the thermodynamic gate is enforced in code on every step — but only part of the Lean/Coq/Agda library is hand-wired onto the runtime gate path, **by design**: at inference time the robot runs fast Rust witnesses, not a theorem prover. There are three different things people mean by "done" here — in-repo automation, how much of the proof library is wired on the hot path, and organization-level publishing — and they should **never** be blended into one "completion %". The honest, current accounting of each lives in one place: **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)** (verified ledger: [`docs/GOD_GRADE_PROGRESS_VERIFIED.md`](docs/GOD_GRADE_PROGRESS_VERIFIED.md) — release witness profile rollup).
+We don't pretend everything is proven. Conservation structure is mathematical, and the thermodynamic gate is enforced in code on every step — but only part of the Lean/Coq/Agda library is hand-wired onto the runtime gate path, **by design**: at inference time the robot runs fast Rust witnesses, not a theorem prover. There are three different things people mean by "done" here — in-repo automation, how much of the proof library is wired on the hot path, and organization-level publishing — and they should **never** be blended into one "completion %". The honest, current accounting of each lives in one place: **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)** (verified ledger: [`docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md`](docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md) — release witness profile rollup).
 
 **Verify it yourself, locally:** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` — full command matrix in [`docs/VERIFY.md`](docs/VERIFY.md). Latest machine transcript: [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md).
 
@@ -492,14 +492,16 @@ We maintain strict formal proof anchors (`formal_status`) mapping our Rust imple
 - **Formal integration status (module buckets, release witness gaps):** [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md)
 - **Catalog ↔ Rust coverage audit:** [`docs/CATALOG_COVERAGE_AUDIT.md`](docs/CATALOG_COVERAGE_AUDIT.md)
 - **Compositional inference / gateway audit:** [`docs/COMPOSITIONAL_INFERENCE_AUDIT.md`](docs/COMPOSITIONAL_INFERENCE_AUDIT.md)
-- **Release witness ladder:** [`docs/GOD_GRADE_WITNESS_LADDER.md`](docs/GOD_GRADE_WITNESS_LADDER.md) — philosophy [§ Proof library · gate law · MI envelope · no Rust axioms](docs/GOD_GRADE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms)
+- **Release witness ladder:** [`docs/RELEASE_WITNESS_LADDER.md`](docs/RELEASE_WITNESS_LADDER.md) — philosophy [§ Proof library · gate law · MI envelope · no Rust axioms](docs/RELEASE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms)
 - **Formal export scope (sibling):** [`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`](../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md)
 - **Two-repo formal alignment (sibling):** [`../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md`](../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md)
 - **Supercap formal scaling (sibling):** [`../umst-supercap-cartridge/docs/FORMAL_SCALING.md`](../umst-supercap-cartridge/docs/FORMAL_SCALING.md)
 
-### Lean catalog lock (dual-pin — production **119** modules)
+### Lean catalog lock (dual-pin — production **119** modules; CI lock **122** modules)
 
-**Production pin:** digest `0697014fb5b90a3a…` · **119** modules · `cross_repo_merge: true` — see [`docs/GOD_GRADE_PROGRESS_VERIFIED.md`](docs/GOD_GRADE_PROGRESS_VERIFIED.md).
+**Production pin:** digest `0697014fb5b90a3a…` · **119** modules · `cross_repo_merge: true` — see [`docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md`](docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md).
+
+**CI catalog lock:** digest `c61b1bef…` · **122** modules — enforced by `umst-catalog-drift.yml` and `catalog_lock_module_count_matches_upstream_export_122` (current unified export after PrimeSpectral fiber).
 
 **Historical primary-only pin:** digest `c1d9ba2aa402…` · **69** modules — pre–`formal-fiber-merge` rollback only ([`docs/FORMAL_FIBER_MERGE_RUNBOOK.md`](docs/FORMAL_FIBER_MERGE_RUNBOOK.md)).
 
@@ -565,6 +567,7 @@ The manifold is a substrate. Its value shows up in what gets built on top of it.
 ### Related repositories
 
 - [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) — applied cementitious physics mounted on this manifold
+- [**UMST-UCRS**](https://github.com/tytolabs/umst-ucrs) — Universal Calendar Resolution Spine; constitutional time and `UcrsObservedAt` stamps on durable logs
 - [**UMST Supercap Cartridge**](../umst-supercap-cartridge) — structural supercap electrochemistry cartridge (monorepo sibling)
 - [**UMST Formal**](https://github.com/tytolabs/umst-formal) — Lean 4 / Coq proof anchors for the conservation laws
 - [**UMST Formal Double-Slit**](https://github.com/tytolabs/umst-formal-double-slit) — quantum-information proofs anchoring the Thermodynamic CBF
