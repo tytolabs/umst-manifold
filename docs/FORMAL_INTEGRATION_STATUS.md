@@ -36,6 +36,46 @@
 
 ---
 
+## UCRS constitutional time layer (not a fifth gate)
+
+[`umst-ucrs`](https://github.com/tytolabs/umst-ucrs) supplies **observation stamps** (`UcrsObservedAt`, `ucrs_seq`) on durable cartridge logs. This is orthogonal to the thermodynamic gate conjuncts enforced on topology steps:
+
+| Concern | Owner | Runtime check |
+|---------|-------|----------------|
+| Mass / dissipation admissibility | Manifold + formal catalog | `gateCheck` / CD transition |
+| Constitutional time ordering | UCRS | `stamp_tier`, monotonic `ucrs_seq` on memory rows |
+| Volumetric gravity (roadmap) | Manifold geometry extension | Not UCRS |
+
+Cartridges bind UCRS via optional `ucrs-provenance`; UCRS does **not** add a fifth gate conjunct to manifold `gateCheck`. See [`umst-ucrs/Docs/LOGGING_POLICY.md`](https://github.com/tytolabs/umst-ucrs/blob/main/Docs/LOGGING_POLICY.md).
+
+### Track F — UCRS Lean fiber (scaffold, not in catalog lock digest)
+
+| Module | Repo path | Status |
+|--------|-----------|--------|
+| `Ucrs.L1_LandauerNonneg` … `L4_GateAdmit` | `umst-ucrs/Lean/Ucrs/` | P0 — 0 `sorry` target |
+| `Ucrs.L5` … `L8` | same | Stubs with `sorry` until Mathlib bridge |
+| `TensorLandauer` | `umst-ucrs/Lean/TensorLandauer.lean` | Explicit axioms |
+
+Digest pin for Track F is **deferred** until UCRS Lean exports join the unified lock (no change to `artifacts/catalog.lock.json` in this wave).
+
+---
+
+## UCRS as time layer (not a fifth gate)
+
+[`umst-ucrs`](https://github.com/tytolabs/umst-ucrs) provides **constitutional time** — `UcrsObservedAt`, thermodynamic credit, and `TemporalWitness::stamp()` for durable logs. It does **not** add a new `catalog_id` gate slug to the manifold registry.
+
+| Concern | Owner | Formal status |
+|---------|-------|---------------|
+| Admissibility (`gateCheck`, CD transition) | Manifold + Lean `Gate` fiber | Hot-path ~26% enforced |
+| Observation stamps (`ucrs_seq`, `phase_entropy_bits`) | `umst-ucrs` | Library + live witness; Lean mirror planned |
+| Volumetric gravity (potential gradient) | Manifold roadmap | Not in catalog export today |
+
+**Integration rule:** Gate verdicts and agent memory rows may embed `observed_at` from UCRS; merge authority uses **`ucrs_seq`**, not wall clock. UCRS stamps annotate **when** an admissible event was witnessed — they do not replace `umst.gate.cd_transition` or `umst.gate.landauer_cbf`.
+
+Cartridge wiring: `UMST_UCRS_WITNESS=live|synthetic` on MCP session boundary ([`umst-concrete-cartridge` `docs/AGENT_MCP.md`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md)). Policy: [`umst-ucrs/Docs/LOGGING_POLICY.md`](https://github.com/tytolabs/umst-ucrs/blob/main/Docs/LOGGING_POLICY.md).
+
+---
+
 ## What “119 modules / 69 primary” means here
 
 The build pins **119 Lean modules** in the unified formal catalog (dual-pin: **69** primary + **62** `umst-formal`, composed digest). That is not 119 separate runtime checks. Each module holds many small proved facts (582 theorem/lemma/axiom names on a primary-only export scan). At runtime, manifold mostly checks **hand-written Rust** aligned to **18** primary modules—not the Lean prover itself.
@@ -177,6 +217,20 @@ When formal integration moves forward, update these in one pass:
 | **`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`** | Exporter scope (69 vs 59 roots). |
 | **`../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md`** | `umst-formal` vs double-slit fiber policy. |
 | **`../umst-supercap-cartridge/docs/FORMAL_SCALING.md`** | Supercap cartridge manifest / catalog pin scaling. |
+
+---
+
+## UCRS as constitutional time layer (not a fifth gate)
+
+[`umst-ucrs`](https://github.com/tytolabs/umst-ucrs) is the **time layer** of the UMST stack — frugality-first shared **now**, P2P credit economics, and `UcrsObservedAt` stamps on durable logs. It is **orthogonal** to the manifold thermodynamic gate:
+
+| Concern | Owner | Runtime role |
+|---------|-------|----------------|
+| Material admissibility | **umst-manifold** (`gateCheck`, `catalog_id`) | Reject violating mix/state transitions **before** actuators |
+| Constitutional time | **umst-ucrs** (`TemporalWitness`, `ucrs_seq`) | Monotonic observation stamps on memory, gate exports, promotion preimages |
+| Gravity extension (roadmap) | **umst-manifold** geometry | Volumetric potential — **not** a clock and **not** a gate conjunct |
+
+UCRS does **not** add a fifth conjunct to `gateCheck`. Cartridges optionally bind UCRS via `ucrs-provenance`; stamps witness **when** an admissible row was accepted, not **whether** it was admissible. See [`umst-ucrs/README.md`](https://github.com/tytolabs/umst-ucrs/blob/main/README.md) § MCP session clock and [`umst-ucrs/Docs/LOGGING_POLICY.md`](https://github.com/tytolabs/umst-ucrs/blob/main/Docs/LOGGING_POLICY.md).
 
 ---
 
