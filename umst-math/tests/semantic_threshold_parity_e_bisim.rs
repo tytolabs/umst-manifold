@@ -10,7 +10,9 @@ fn percent_from_row() -> u32 {
     let entry = REGISTRY
         .iter()
         .find(|e| e.name == "umst_semantic_coverage_threshold_w2")
-        .expect("REGISTRY must contain `umst_semantic_coverage_threshold_w2` (§14bis.l W-2/W-3 G8 row)");
+        .expect(
+            "REGISTRY must contain `umst_semantic_coverage_threshold_w2` (§14bis.l W-2/W-3 G8 row)",
+        );
     let s = entry.expression.trim();
     let re = Regex::new(r"^(\d+)%")
         .expect("percent regex (Percent ∈ 0..=100) must compile for registry.expression");

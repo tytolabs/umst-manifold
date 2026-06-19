@@ -64,8 +64,8 @@ run_hint = "cargo test -p umst-manifold --features mechanics-adjoint-q1-hex --te
 [[fixture]]
 id = "manifold.electrochemistry.sg_band_jacobian"
 crate = "umst-manifold"
-test_binary = "umst_manifold (lib)"
-test_fn = "physics::solvers::electrochemistry::newton_chain_tests::full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity"
+test_binary = "lib"
+test_fn = "full_sg_chain_n256_band_lu_vs_dense_expand_wall_clock_and_residual_parity"
 lane = "solver-research"
 status = "pass@2026-06-15"
 evidence = "Jacobian_assembly=0.003s band-LU=0.0005s dense-expand=0.0015s dim=768 max|δ_lu-δ_de|=3.688e-1 max|Jδ+R|_lu=3.688e-1 _de=2.131e-13"

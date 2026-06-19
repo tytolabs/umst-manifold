@@ -261,9 +261,10 @@ def _check_verification_manifest(root: Path, manifest_path: Path) -> int:
                     file=sys.stderr,
                 )
                 errors += 1
-    if never_run < 11:
+    # 3 manifold + 5 cartridge NEVER-RUN remain after Wave-2 executed envelopes (pass@/fail@).
+    if never_run < 8:
         print(
-            f"error: expected ≥11 NEVER-RUN fixtures (6 manifold + 5 cartridge), got {never_run}",
+            f"error: expected ≥8 NEVER-RUN fixtures (3 manifold + 5 cartridge), got {never_run}",
             file=sys.stderr,
         )
         errors += 1
