@@ -6,7 +6,7 @@
 
 **Automation:** CI partition enforced by `tests/catalog_all_ids_registered.rs` and `src/runtime/catalog/traceability.rs` — see [`CATALOG_TRACEABILITY.md`](CATALOG_TRACEABILITY.md).
 
-**God-grade:** Witness priority and second formal fiber — [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md). Pipeline — [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md).
+**God-grade:** Witness priority and second formal fiber — [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md). Pipeline — [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md).
 
 ---
 
@@ -235,7 +235,7 @@ Lean path prefix: `umst-formal-double-slit/Lean/{Module}.lean`
 | Doc | Role |
 |-----|------|
 | [`ADAPTIVE_WITNESS_COVERAGE.md`](ADAPTIVE_WITNESS_COVERAGE.md) | \(U_{\mathrm{op}}(t)\), `WitnessPriorityQueue`, vs static ~26% |
-| [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) | Failure priority, MI surrogate, v1/v2 witnesses |
+| [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) | Failure priority, MI surrogate, v1/v2 witnesses |
 | [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) | Lean → catalog → manifold → cartridge |
 | [`CATALOG_TRACEABILITY.md`](CATALOG_TRACEABILITY.md) | CI partition (`catalog_all_ids_registered`) |
 | [`claims-vs-proofs.md`](claims-vs-proofs.md) | Lean ↔ `catalog_id` ↔ Rust ledger |

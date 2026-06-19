@@ -3,7 +3,7 @@
 **As of:** 2026-05-21  
 **Audience:** Anyone deciding what to do next vs what to leave alone  
 **Preview/stub detail:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)  
-**Evidence ledgers:** [`TODO_COMPLETION.md`](TODO_COMPLETION.md), [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md), [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md), [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
+**Evidence ledgers:** [`TODO_COMPLETION.md`](TODO_COMPLETION.md), [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md), [`PENDING_RELEASE_WITNESS_ROADMAP.md`](PENDING_RELEASE_WITNESS_ROADMAP.md), [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
 
 ---
 
@@ -42,7 +42,7 @@ These exist as **scaffolds** or **dry-runs**. They do not change the production 
 | Item | What it is (plain English) | Owner | Execute vs wait | Notes |
 |------|----------------------------|-------|-----------------|-------|
 | **Cross-repo catalog merge** | Unified `catalog.json` (**119** modules) | formal / coordinator | ✅ **Done** 2026-05-21 | Digest `0697014f…`; see [`TODO_COMPLETION.md`](TODO_COMPLETION.md) § `formal-fiber-merge` |
-| **Formal fiber merge** | Same milestone as above: one digest for R0, manifold lock, cartridge anchors | formal / coordinator | ✅ **Done** 2026-05-21 | Track F ✅ — [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) |
+| **Formal fiber merge** | Same milestone as above: one digest for R0, manifold lock, cartridge anchors | formal / coordinator | ✅ **Done** 2026-05-21 | Track F ✅ — [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md) |
 | **Appendix B (`umst-formal`)** | Docs trace classical lemmas; graduation ops post-merge | docs / formal | **Execute** — doc refresh optional | [`claims-vs-proofs.md`](claims-vs-proofs.md) |
 | **Lean-export-cross-repo alias** | Tracker name in [`TODO_COMPLETION.md`](TODO_COMPLETION.md) — not a plan YAML id | coordinator | ✅ **Done** | Alias of `formal-fiber-merge` |
 
@@ -56,7 +56,7 @@ These exist as **scaffolds** or **dry-runs**. They do not change the production 
 |------|------------------------------|-------|-----------------|----------|
 | **W8 — Publish manifold `main`** | — | — | **Done** 2026-05-29 @ **`fe22437`** on `tytolabs/umst-manifold` `main` | Track A — [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) |
 | **W8 — Cartridge CI feature** | — | cartridge maintainers | **Done** (**G-02**) — GHA `manifest-bridge` on git pin, no `[patch]` | [`FORMAL_GROUNDING_AUDIT.md`](../umst-concrete-cartridge/docs/FORMAL_GROUNDING_AUDIT.md) |
-| **Strict catalog default (H)** | — | product / ops | **Done** — `StrictCatalogMatch` release default (B3) | Track H — [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) |
+| **Strict catalog default (H)** | — | product / ops | **Done** — `StrictCatalogMatch` release default (B3) | Track H — [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) |
 | **Formal-witness auto-digest (H)** | Digest compare works but callers must set `Some` manually | manifold | **Execute** — small wiring; no new axiom | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) §6 |
 | **Epistemic v2 traces (G)** | — | manifold / ops | **Done** — G.1–G.3 in `verify_umst_stack.sh` | Track G |
 | **W10 — `rust.yml` verify lane** | ✅ Required `verify-umst-stack` job (parity subset + optional full stack); drift workflow unchanged | `umst-manifold` CI | **Done** 2026-05-21 | See [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) |
@@ -107,7 +107,7 @@ Not “missing features” in the product sense — documented gaps between Lean
 
 ## God-grade tracks still open (A–J)
 
-Quick map to [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md). Tracks **C, D, E** (Rust adversarial) are closed.
+Quick map to [`PENDING_RELEASE_WITNESS_ROADMAP.md`](PENDING_RELEASE_WITNESS_ROADMAP.md). Tracks **C, D, E** (Rust adversarial) are closed.
 
 | Track | Status | Owner | Execute vs wait |
 |-------|--------|-------|-----------------|
@@ -159,7 +159,7 @@ Quick map to [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md). Tra
 |----------|----------|
 | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | Listing preview JSON, schema stubs, runtime gaps |
 | [`TODO_COMPLETION.md`](TODO_COMPLETION.md) | Per-todo evidence commands |
-| [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md) | Track A–J substeps |
+| [`PENDING_RELEASE_WITNESS_ROADMAP.md`](PENDING_RELEASE_WITNESS_ROADMAP.md) | Track A–J substeps |
 | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | Ops-only blocker table |
 | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | Promotion phases 0–4 |
-| [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) | 10/13 criteria ticks |
+| [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) | 10/13 criteria ticks |

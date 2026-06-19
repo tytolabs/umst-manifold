@@ -3,9 +3,9 @@
 **As of:** 2026-05-21  
 **Synthesized from:** `umst-formal-double-slit/artifacts/catalog.json`, `umst-formal-double-slit/artifacts/catalog.lock.json`, `umst-manifold/artifacts/catalog.lock.json`, `docs/claims-vs-proofs.md`, `docs/PROTOTYPE_GATE_MAP.md`, `docs/TCB.md`, `docs/AGENT_STATUS.md`, `scripts/verify_umst_stack.sh`, and `.github/workflows/umst-catalog-drift.yml`.
 
-**Companions:** [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md) (module buckets), [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) (witness order, failure priority, v1/v2 trace contracts).
+**Companions:** [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md) (module buckets), [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) (witness order, failure priority, v1/v2 trace contracts).
 
-**Narrative:** This file is the **pipeline spine** (Lean → catalog → manifold → cartridge → drift). Roll up percentages in [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md); close gaps via [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md).
+**Narrative:** This file is the **pipeline spine** (Lean → catalog → manifold → cartridge → drift). Roll up percentages in [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md); close gaps via [`PENDING_RELEASE_WITNESS_ROADMAP.md`](PENDING_RELEASE_WITNESS_ROADMAP.md).
 
 ---
 
@@ -23,7 +23,7 @@
 
 - **Proofs as a versioned library** — Authoritative artifact is **regenerated** `export_catalog.py` output, not the slim `entries[]` index file. Promotion = export → lock bump → verify ([§ Reverse flow](#reverse-flow-drift-detection)).
 - **Bidirectional ≠ prover** — Downstream checks fail on **fingerprint** and **parity**, not Lean replay at runtime. Hand-aligned Rust stays inside the pinned revision.
-- **Second-law on the wire** — CD transition and Landauer CBF are the operational anchors for forward enforcement; `physicalSecondLaw` stays in Lean only ([`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) § Proof library · gate law · MI).
+- **Second-law on the wire** — CD transition and Landauer CBF are the operational anchors for forward enforcement; `physicalSecondLaw` stays in Lean only ([`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) § Proof library · gate law · MI).
 
 ### Impact
 
@@ -206,7 +206,7 @@ The ledger is **theorem-family granular** (39 rows), not 1:1 with 69 files.
 
 **God-grade** (for UMST) means: **bad states are rejected automatically**, with the formal catalog as SSOT, without relying on human parity review for every change.
 
-**Normative witness order and six locked decisions** (failure priority CD → Landauer → constitutive → probe; MI surrogate post-CBF; CI `manifest-bridge` + `formal-witness`; `umst-formal` second fiber; prototype deletion gated on parity identity; v1 digest vs v2 trace schema): see [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md).
+**Normative witness order and six locked decisions** (failure priority CD → Landauer → constitutive → probe; MI surrogate post-CBF; CI `manifest-bridge` + `formal-witness`; `umst-formal` second fiber; prototype deletion gated on parity identity; v1 digest vs v2 trace schema): see [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md).
 
 Practical ladder (order matters):
 
@@ -233,4 +233,4 @@ Practical ladder (order matters):
 | Verify script | `umst-manifold/scripts/verify_umst_stack.sh` |
 | Swarm status | `umst-manifold/docs/AGENT_STATUS.md` |
 
-**Related:** [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) (witness order + six decisions), [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md) (module-level percentages), [`claims-vs-proofs.md`](claims-vs-proofs.md) (row-level Lean ↔ Rust), [`VERIFY.md`](VERIFY.md) (commands).
+**Related:** [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) (witness order + six decisions), [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md) (module-level percentages), [`claims-vs-proofs.md`](claims-vs-proofs.md) (row-level Lean ↔ Rust), [`VERIFY.md`](VERIFY.md) (commands).

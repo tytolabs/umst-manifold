@@ -2,11 +2,11 @@
 
 **Scope:** Unblock remote git consumers of `umst-manifold::manifest` so `umst-concrete-cartridge` (and optionally `umst-supercap-cartridge`) can run **`manifest-bridge`** in GitHub Actions **without** workspace `[patch]`.
 
-**Witness ladder:** R5 — [Manifest bridge + formal witness](GOD_GRADE_WITNESS_LADDER.md#r5--manifest-bridge--formal-witness-deployment-fiber) (paired with `formal-witness` in workspace catalog-drift CI).
+**Witness ladder:** R5 — [Manifest bridge + formal witness](RELEASE_WITNESS_LADDER.md#r5--manifest-bridge--formal-witness-deployment-fiber) (paired with `formal-witness` in workspace catalog-drift CI).
 
 **Status (2026-05-29):** **Phase 1 DONE** — `tytolabs/umst-manifold` `main` @ **`fe22437`** (`pub mod manifest`, CI green). **G-02 DONE** — concrete cartridge git `rev = fe22437`, GHA `manifest-bridge` without `[patch]`. **G-03** supercap remote bridge optional. SSOT detail: [`PENDING_GAPS_PLAIN.txt`](PENDING_GAPS_PLAIN.txt), [`AGENT_STATUS.md`](AGENT_STATUS.md).
 
-**Roadmap:** Track **A** in [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md) — remaining org polish is **G-03** + strict-default / v2 traces (not blocking concrete).
+**Roadmap:** Track **A** in [`PENDING_RELEASE_WITNESS_ROADMAP.md`](PENDING_RELEASE_WITNESS_ROADMAP.md) — remaining org polish is **G-03** + strict-default / v2 traces (not blocking concrete).
 
 **Agent policy:** Do **not** `git push`, `gh`, or `cargo publish` to crates.io unless the operator has confirmed credentials and asked for it. Push/publish steps below are **historical / rollback** reference unless reopening W8.
 
@@ -105,7 +105,7 @@ File: `umst-concrete-cartridge/.github/workflows/rust.yml`.
 ### multi-repo workspace drift workflow (paired fiber)
 
 - [x] `umst-manifold` standalone: `.github/workflows/umst-catalog-drift.yml` runs `verify_umst_stack.sh` with `formal-witness`.
-- [x] Release triple documented in [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md): `formal-witness` + catalog lock + cartridge `manifest-bridge` on git **`fe22437`**.
+- [x] Release triple documented in [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md): `formal-witness` + catalog lock + cartridge `manifest-bridge` on git **`fe22437`**.
 
 ---
 
@@ -143,8 +143,8 @@ File: `umst-concrete-cartridge/.github/workflows/rust.yml`.
 
 | Doc | Role |
 |-----|------|
-| [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md) § Track A | Canonical task breakdown A.1–A.4 |
+| [`PENDING_RELEASE_WITNESS_ROADMAP.md`](PENDING_RELEASE_WITNESS_ROADMAP.md) § Track A | Canonical task breakdown A.1–A.4 |
 | [`PENDING_GAPS_PLAIN.txt`](PENDING_GAPS_PLAIN.txt) | W8 code + remote closure record |
 | [`../umst-concrete-cartridge/docs/FORMAL_GROUNDING_AUDIT.md`](../umst-concrete-cartridge/docs/FORMAL_GROUNDING_AUDIT.md) | Cartridge gate / manifest-bridge audit |
-| [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) § decision 3 | CI pairing `manifest-bridge` + `formal-witness` |
+| [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) § decision 3 | CI pairing `manifest-bridge` + `formal-witness` |
 | [`VERIFY.md`](VERIFY.md) §3.2 | Cartridge verify commands (git pin vs optional patch) |

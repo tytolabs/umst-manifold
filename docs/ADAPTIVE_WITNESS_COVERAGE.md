@@ -5,7 +5,7 @@
 
 **Plain English:** The Lean catalog has **119** proof modules, but the robot only runs a **small fixed law** (CD → Landauer → constitutive → Kleisli). **Effective coverage** \(U(t)\) measures how much of the *catalog* you have *operationally exercised* over time—via trace rejects, cartridge domain, and epistemic MI signals—so engineering can **prioritize which `catalog_id` to wire next**. That growth happens **on-robot and in Rust** (registry + telemetry); it does **not** mean running Lean or claiming a higher “% complete” on the god-grade checklist.
 
-**Companions:** [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) (fixed \(W_1\)–\(W_4\)), [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md) (static semantic classes), [`CATALOG_TRACEABILITY.md`](CATALOG_TRACEABILITY.md) (CI partition), [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) (layer stack).
+**Companions:** [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) (fixed \(W_1\)–\(W_4\)), [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md) (static semantic classes), [`CATALOG_TRACEABILITY.md`](CATALOG_TRACEABILITY.md) (CI partition), [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) (layer stack).
 
 ---
 
@@ -34,7 +34,7 @@
 
 ## 3. Fixed witness envelope \(W_1\)–\(W_4\)
 
-Aligns with [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) § Gates as law.
+Aligns with [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) § Gates as law.
 
 | Witness | Rung | `catalog_id` (representative) | Rust anchor |
 |---------|------|-------------------------------|-------------|
@@ -49,7 +49,7 @@ Aligns with [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) § Gate
 W_{\mathrm{step}} = W_4 \circ W_3 \circ W_2 \circ W_1
 \]
 
-Evaluation stops at the first arrow to the **reject** object. Surrogate `info_gain` is admissible only as input **inside** \(W_2\), not as a standalone certificate ([§ MI inside the envelope](GOD_GRADE_WITNESS_LADDER.md#mi-inside-the-envelope)).
+Evaluation stops at the first arrow to the **reject** object. Surrogate `info_gain` is admissible only as input **inside** \(W_2\), not as a standalone certificate ([§ MI inside the envelope](RELEASE_WITNESS_LADDER.md#mi-inside-the-envelope)).
 
 **Invariant:** Adaptive coverage **must not** alter \(W_i\) ordering, thresholds on the hot path without a Lean + lock bump, or the TCB (`physicalSecondLaw` only in Lean — [`TCB.md`](TCB.md)).
 
@@ -108,7 +108,7 @@ U_{\mathrm{pin}} = \frac{|\{ m : \text{in lock digest} \}|}{|\mathcal{C}|} = 1
 ### 5.3 Anti-inflation rules
 
 - Do **not** set \(U(t) := U_{\mathrm{pin}}\) in product copy (“100% catalog covered”).
-- Do **not** multiply \(U_{\mathrm{op}}\) by god-grade automation weights (**16/16**, weighted R0–R6, org W8 — see [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)).
+- Do **not** multiply \(U_{\mathrm{op}}\) by god-grade automation weights (**16/16**, weighted R0–R6, org W8 — see [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md)).
 - **Used (Y) = 13** in [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md) is a **manual audit count**, not \(U_{\mathrm{op}}\).
 - CI partition **25 wired / 94 allowlist** (119 total in `traceability.rs`) is **completeness of registration**, not operational coverage.
 
@@ -183,7 +183,7 @@ Define categories:
 
 i.e. \(\alpha\) only schedules **additional** checkpoints inside the fixed composite \(W_4 \circ \cdots \circ W_1\), never replaces it.
 
-**Natural transformation (calibration):** \(\eta : S \Rightarrow T\) from surrogate sensing \(S\) to trace-consistent utility \(T\) is valid only post-\(W_2\) ([GOD_GRADE_WITNESS_LADDER § decision 2](GOD_GRADE_WITNESS_LADDER.md#2-mi-surrogate-safe-iff-gated-post-composition-calibration-η-from-traces)). \(\alpha\) may schedule \(\eta\) fitting from traces; it may not schedule “MI-only” gates.
+**Natural transformation (calibration):** \(\eta : S \Rightarrow T\) from surrogate sensing \(S\) to trace-consistent utility \(T\) is valid only post-\(W_2\) ([GOD_GRADE_WITNESS_LADDER § decision 2](RELEASE_WITNESS_LADDER.md#2-mi-surrogate-safe-iff-gated-post-composition-calibration-η-from-traces)). \(\alpha\) may schedule \(\eta\) fitting from traces; it may not schedule “MI-only” gates.
 
 ### 8.2 Score \(\pi(c; E)\) (design)
 
@@ -270,7 +270,7 @@ If only (1) ships as trace fields, \(U_{\mathrm{op}}\) rises by a **small** \(\D
 
 | Document | Use |
 |----------|-----|
-| [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) | \(W_1\)–\(W_4\) order, MI envelope |
+| [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) | \(W_1\)–\(W_4\) order, MI envelope |
 | [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md) | Static Y/N/partial table |
 | [`claims-vs-proofs.md`](claims-vs-proofs.md) | Lean ↔ `catalog_id` ledger |
 | [`GateUnificationSpec.md`](GateUnificationSpec.md) | Registry SSOT |

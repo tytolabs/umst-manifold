@@ -3,7 +3,7 @@
 **As of:** 2026-05-29  
 **Audience:** Anyone who needs the real remaining work without Lean/category jargon, but with enough nuance to avoid false “we’re done” claims.
 
-**Audited from:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`TODO_COMPLETION.md`](TODO_COMPLETION.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · live `artifacts/catalog.lock.json` + `verify_umst_stack.sh` + targeted `cargo test`
+**Audited from:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`TODO_COMPLETION.md`](TODO_COMPLETION.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · live `artifacts/catalog.lock.json` + `verify_umst_stack.sh` + targeted `cargo test`
 
 **Technical IDs:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · execute/wait: [`UNFINISHED_FEATURES_AUDIT.md`](UNFINISHED_FEATURES_AUDIT.md)
 
@@ -15,7 +15,7 @@
 
 | Ceiling | Honest % | Fraction | Session Δ |
 |---------|----------|----------|-----------|
-| **1 — Automation** (in-repo CI rows) | **100%** on last green run | **16/16** ([`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md)) | **+12 pp** (was **14/16** stale) |
+| **1 — Automation** (in-repo CI rows) | **100%** on last green run | **16/16** ([`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md)) | **+12 pp** (was **14/16** stale) |
 | **2 — Hot-path** (Lean wired on robot gates) | **~26%** primary · **~15%** unified | **18/69** · **18/119** | **0 pp** — intentional; **not 100%** |
 | **3 — Org W8** (publish + remote bridge CI) | **Phase 1 done** · **G-02 done** · **G-03** optional | publish **1/1** @ **fe22437** · concrete bridge **1/1** · supercap **0/1** | Publish + **G-02** closed 2026-05-29 |
 
@@ -229,7 +229,7 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 |--|--|
 | **Blocks** | Long-horizon god-grade only — **not** in 17-row denominator. |
 | **Already done** | No Lean on inference path (policy). |
-| **Proof** | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) Horizon table; [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md). |
+| **Proof** | [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) Horizon table; [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md). |
 | **Human** | Formal lane only if architecture changes. |
 
 ---

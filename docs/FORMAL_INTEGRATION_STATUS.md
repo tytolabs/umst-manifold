@@ -2,11 +2,11 @@
 
 **As of:** 2026-05-21  
 **Pipeline / drift / automation (companion):** [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md)  
-**Witness ladder (god-grade order):** [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md)  
+**Witness ladder (god-grade order):** [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md)  
 **Sources:** `umst-formal-double-slit/artifacts/catalog.json` (**119** Lean modules unified, 582+ theorem/lemma/axiom names on primary fiber export), `umst-manifold/docs/claims-vs-proofs.md`, `artifacts/catalog.lock.json`, Rust `src/` grep, `docs/PENDING_GAPS_PLAIN.md`. Truth pass: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).  
 **Evidence appendices (on disk):** [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md), [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md), [`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`](../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md), [`../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md`](../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md), [`../umst-supercap-cartridge/docs/FORMAL_SCALING.md`](../umst-supercap-cartridge/docs/FORMAL_SCALING.md).
 
-**Narrative:** Start with [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) (forward/backward pipeline), then this file (module buckets), then [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) (enforcement order). Executive rollup: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
+**Narrative:** Start with [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) (forward/backward pipeline), then this file (module buckets), then [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) (enforcement order). Executive rollup: [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 ---
 
@@ -24,7 +24,7 @@
 
 - **Proofs as a versioned library** — All **119** modules affect the unified lock fingerprint; only **~26%** of the **primary** fiber (18/69) are **enforced** on the topology hot path. The remainder justify the proof graph and drift detection until wired or allowlisted.
 - **Second-law TCB unchanged** — `physicalSecondLaw` (`LandauerLaw.lean`) is the sole project axiom in the primary export; Rust CD/Landauer code is TCB implementation, not a new axiom ([`TCB.md`](TCB.md)).
-- **Gate law vs catalog inventory** — `catalog_id` slugs route rejects; `umst.gate.kleisli_unit` routes via `KleisliUnitEvaluator` on embodied host steps ([§ Proof library · gate law · MI](GOD_GRADE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms)).
+- **Gate law vs catalog inventory** — `catalog_id` slugs route rejects; `umst.gate.kleisli_unit` routes via `KleisliUnitEvaluator` on embodied host steps ([§ Proof library · gate law · MI](RELEASE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms)).
 
 ### Impact
 
@@ -99,7 +99,7 @@ Examples: `SchrodingerDynamics`, `TensorPartialTrace`, `QuantumClassicalBridge`,
 
 ## Plan todo vs god-grade criteria
 
-Synthesized from [`TODO_COMPLETION.md`](TODO_COMPLETION.md) and [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) (2026-05-21).
+Synthesized from [`TODO_COMPLETION.md`](TODO_COMPLETION.md) and [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) (2026-05-21).
 
 | Plan todo | God-grade criterion | Verdict | Notes |
 |-----------|---------------------|---------|-------|
@@ -164,7 +164,7 @@ When formal integration moves forward, update these in one pass:
 | **`VERIFY.md`** | Catalog digest line; gate test commands if new features land. |
 | **`AGENT_STATUS.md` / `PENDING_GAPS_PLAIN.md`** | Close W8/W10 items; note CI ownership. |
 | **`GateUnificationSpec.md`** | New `catalog_id` rows; evaluator registry behavior. |
-| **`GOD_GRADE_CHECKLIST.md`** | Composition layers, performance budget, CI matrix, criteria ticks. |
+| **`RELEASE_WITNESS_CHECKLIST.md`** | Composition layers, performance budget, CI matrix, criteria ticks. |
 | **`TCB.md`** | If trust boundary moves (e.g. FFI prover, new axiom in Rust). |
 | **`PENDING_GAPS_PLAIN.md`** | Re-run matrix; attach date and PASS/FAIL. |
 | **`PROOF-STATUS.md` / `Solver-Status.md`** | Only if solver claims cite new formal witnesses. |
@@ -173,7 +173,7 @@ When formal integration moves forward, update these in one pass:
 
 | **`CATALOG_COVERAGE_AUDIT.md`** | Per-module `catalog_id` ↔ Rust wiring matrix. |
 | **`PENDING_GAPS_PLAIN.md`** | PPO / gateway / orchestrator layer stack. |
-| **`GOD_GRADE_WITNESS_LADDER.md`** | Witness rung order, failure priority, v1/v2 trace contracts. |
+| **`RELEASE_WITNESS_LADDER.md`** | Witness rung order, failure priority, v1/v2 trace contracts. |
 | **`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`** | Exporter scope (69 vs 59 roots). |
 | **`../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md`** | `umst-formal` vs double-slit fiber policy. |
 | **`../umst-supercap-cartridge/docs/FORMAL_SCALING.md`** | Supercap cartridge manifest / catalog pin scaling. |

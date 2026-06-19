@@ -2,13 +2,13 @@
 
 **As of:** 2026-05-29 (W8 Phase 1 + **G-02** closed; **G-03** optional)  
 **Audience:** Coordinators, formal lane, manifold/prototype/cartridge CI owners  
-**Status SSOT:** [`TODO_COMPLETION.md`](TODO_COMPLETION.md), [`AGENT_STATUS.md`](AGENT_STATUS.md), [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md), [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md)
+**Status SSOT:** [`TODO_COMPLETION.md`](TODO_COMPLETION.md), [`AGENT_STATUS.md`](AGENT_STATUS.md), [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md), [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md)
 
-**Witness order (normative):** Every step below must preserve evaluation order and short-circuit semantics in [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) — **R0 → R1 (CD) → R2 (Landauer) → R3 (constitutive) → R4 (Kleisli) → R5 (manifest / digest / trace)**.
+**Witness order (normative):** Every step below must preserve evaluation order and short-circuit semantics in [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) — **R0 → R1 (CD) → R2 (Landauer) → R3 (constitutive) → R4 (Kleisli) → R5 (manifest / digest / trace)**.
 
-**Checklist companion:** [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md)
+**Checklist companion:** [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md)
 
-**Narrative entry:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) (rollup) · [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) (§ [Proof library · gate law · MI](GOD_GRADE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms)) · evidence [`TODO_COMPLETION.md`](TODO_COMPLETION.md)
+**Narrative entry:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) (rollup) · [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) (§ [Proof library · gate law · MI](RELEASE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms)) · evidence [`TODO_COMPLETION.md`](TODO_COMPLETION.md)
 
 **W8 publish (operator-only):** [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) — phases 0–4 for `tytolabs/umst-manifold` `main` + cartridge `manifest-bridge` without workspace `[patch]`.
 
@@ -31,13 +31,13 @@ Verified **2026-05-21T21:18:04Z** — `verify_umst_stack.sh` exit 0; `gate_dual_
 | **I** — supercap anchors | ⚠️ **partial** | `formal_anchors` 6/6, lock pin in `topology_catalog_hash_advisory` | I.3–I.4 remote `manifest-bridge` (**G-03** optional) |
 | **J** — lint / docs | ⚠️ **partial** | J.2 `gate_dual_run_parity` ↔ verify script truth | J.1 clippy `-D warnings`; J.3 regime warnings policy |
 
-**God-grade checklist ([`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md)):** **16 / 16 = 100%** automation rows (2026-05-29) · weighted in-repo **~98%** · org **G-03** supercap optional (outside 16-row denominator).
+**God-grade checklist ([`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md)):** **16 / 16 = 100%** automation rows (2026-05-29) · weighted in-repo **~98%** · org **G-03** supercap optional (outside 16-row denominator).
 
 ---
 
 ## Remaining to 100% god-grade checklist
 
-Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **FFI / extracted witnesses** stays ❌ (long horizon; not blocking v1 automation).
+Maps open [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) rows → tracks. **FFI / extracted witnesses** stays ❌ (long horizon; not blocking v1 automation).
 
 | Checklist row | Current | Close via | Owner |
 |---------------|---------|-----------|-------|
@@ -71,7 +71,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 - **Proofs as a versioned library** — Tracks F (cross-repo) and A/H (manifest) must promote digest before enlarging runtime; never merge fibers without `physicalSecondLaw` audit ([`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) Phase 0, [`TCB.md`](TCB.md)).
 - **Gates as law** — Every track preserves witness order (decision 1); telemetry track D does not weaken CD before Landauer.
-- **Prototype parity** — Track B deletes **presentation** only after parity functor identity; fixtures stay ([`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) §5).
+- **Prototype parity** — Track B deletes **presentation** only after parity functor identity; fixtures stay ([`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) §5).
 
 ### Impact
 
@@ -90,7 +90,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 | **TCB axiom count** | Lean project axiom remains **`physicalSecondLaw` only** (`LandauerLaw.lean`). Do **not** add Rust axioms, new Lean axioms, or cartridge `formal_axioms` tokens beyond `{NONE, physicalSecondLaw}`. | `cd umst-formal-double-slit/Lean && lake build` then `rg '^axiom ' Lean/LandauerLaw.lean` → single `physicalSecondLaw` |
 | **No Lean on hot path** | Inference/gates stay hand-aligned Rust; Lean is build/CI only. | `rg 'lake build|lean --run' umst-manifold/src` → empty |
 | **Lock digest** | After any catalog promotion: `upstream_catalog_digest_hex` in `artifacts/catalog.lock.json` matches regenerated export. | `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` → exit 0 |
-| **Witness ladder** | Each track maps to rungs in [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md); do not reorder failure priority (decision 1). | Review § [Witness ladder (ordered)](GOD_GRADE_WITNESS_LADDER.md#witness-ladder-ordered) before merge |
+| **Witness ladder** | Each track maps to rungs in [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md); do not reorder failure priority (decision 1). | Review § [Witness ladder (ordered)](RELEASE_WITNESS_LADDER.md#witness-ladder-ordered) before merge |
 
 **TCB table (Rust):** [`TCB.md`](TCB.md) — `physicalSecondLaw` is **documented TCB** via `src/ai/cbf.rs`, not extracted proof terms.
 
@@ -119,7 +119,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 **Runbook (SSOT for phases 0–4):** [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)
 
-**Witness ladder:** [R5 — Manifest bridge + formal witness](GOD_GRADE_WITNESS_LADDER.md#r5--manifest-bridge--formal-witness-deployment-fiber)  
+**Witness ladder:** [R5 — Manifest bridge + formal witness](RELEASE_WITNESS_LADDER.md#r5--manifest-bridge--formal-witness-deployment-fiber)  
 **Owner:** cartridge maintainers (G-03 only)  
 **Blocks:** nothing scoped for concrete — supercap remote `manifest-bridge` in GHA is optional polish
 
@@ -153,7 +153,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 | **Verify** | `cd umst-concrete-cartridge && cargo test -p umst-concrete-cartridge --features manifest-bridge` → exit 0 **without** `../umst-manifold` patch |
 | **Done** | Cartridge GHA green on git dep only; `docs/FORMAL_GROUNDING_AUDIT.md` remote CI row ✅. |
 | **TCB** | Cartridge tests still allow only `physicalSecondLaw` in `formal_anchors.rs`. |
-| **Ladder** | R5 — paired with `formal-witness` in workspace catalog-drift workflow ([decision 3](GOD_GRADE_WITNESS_LADDER.md#3-manifest-bridge--formal-witness-on-in-ci)). |
+| **Ladder** | R5 — paired with `formal-witness` in workspace catalog-drift workflow ([decision 3](RELEASE_WITNESS_LADDER.md#3-manifest-bridge--formal-witness-on-in-ci)). |
 
 ### A.4 — Close W8 in agent docs
 
@@ -171,7 +171,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 **Status:** ⚠️ **hybrid DONE** (2026-05-21) — v1 shim ~226L + **8/8** `gate_dual_run_parity`; 2a optional `manifold-gate` delegates Algorithm 1 (~517L 2a-only Constitution/CGS/functor remain). Plan todo `thin-prototypes` ✅ at hybrid level ([`TODO_COMPLETION.md`](TODO_COMPLETION.md)).
 
-**Witness ladder:** [R1 CD](GOD_GRADE_WITNESS_LADDER.md#r1--clausiusduhem--second-law-host-scalar), [R3 constitutive](GOD_GRADE_WITNESS_LADDER.md#r3--constitutive-closure), [R5 parity functor](GOD_GRADE_WITNESS_LADDER.md#5-delete-prototype-filter-when-parity-functor-is-identity-keep-fixtures)  
+**Witness ladder:** [R1 CD](RELEASE_WITNESS_LADDER.md#r1--clausiusduhem--second-law-host-scalar), [R3 constitutive](RELEASE_WITNESS_LADDER.md#r3--constitutive-closure), [R5 parity functor](RELEASE_WITNESS_LADDER.md#5-delete-prototype-filter-when-parity-functor-is-identity-keep-fixtures)  
 **Owner:** prototype lane (`umst-prototype-2a`)  
 **Prerequisite:** manifold ports for Constitution/CGS, `evaluate_joint_functor`, `max_strength` OR callers migrate to HTTP `gate_server` :8787 only
 
@@ -203,7 +203,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 | **Verify** | `wc -l umst-prototype-2a/prototype/src/rust/core/src/science/thermodynamic_filter.rs` ≲ 250; `cd umst-prototype-2a/prototype/src/rust/core && cargo test thermodynamic_filter::tests --lib` |
 | **Done** | `THIN_PROTOTYPE_STATUS.md` marks 2a **thin**; `TODO_COMPLETION.md` thin-prototypes ✅. |
 | **TCB** | Shim calls same Rust TCB as manifold; `physicalSecondLaw` only in formal ledger. |
-| **Ladder** | R3/R1 — delete duplicate presentation, keep fixtures ([§5](GOD_GRADE_WITNESS_LADDER.md#5-delete-prototype-filter-when-parity-functor-is-identity-keep-fixtures)). |
+| **Ladder** | R3/R1 — delete duplicate presentation, keep fixtures ([§5](RELEASE_WITNESS_LADDER.md#5-delete-prototype-filter-when-parity-functor-is-identity-keep-fixtures)). |
 
 ### B.4 — Retire `gate_dual_fixture` subprocess when HTTP-only
 
@@ -221,7 +221,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 **Status:** ✅ **DONE** (2026-05-21) — all substeps below closed; `god-kleisli` in [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
-**Witness ladder:** [R4 — Probe / Kleisli](GOD_GRADE_WITNESS_LADDER.md#r4--probe--kleisli-composition)  
+**Witness ladder:** [R4 — Probe / Kleisli](RELEASE_WITNESS_LADDER.md#r4--probe--kleisli-composition)  
 **Owner:** `umst-manifold` gate lane  
 **Refs:** `src/gate/kleisli.rs`, `GateUnificationSpec.md`, `claims-vs-proofs.md`
 
@@ -233,7 +233,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 | **Verify** | `cd umst-manifold && cargo test --test gate_kleisli -p umst-manifold` |
 | **Done** | `rg 'kleisli_unit' src/gate/` shows `impl GateEvaluator`; existing 4 Kleisli tests pass. |
 | **TCB** | Composition laws remain Rust TCB; Lean `ProbeOptimization` still catalog-only justification. |
-| **Ladder** | R4 — lowest priority reject; must not run before R1–R3 on same step ([decision 1](GOD_GRADE_WITNESS_LADDER.md#1-failure-priority-cd--2nd-law--landauer--constitutive--probe)). |
+| **Ladder** | R4 — lowest priority reject; must not run before R1–R3 on same step ([decision 1](RELEASE_WITNESS_LADDER.md#1-failure-priority-cd--2nd-law--landauer--constitutive--probe)). |
 
 ### C.2 — Register in `mix_eval_registry` / host routing ✅
 
@@ -249,7 +249,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 | Field | Value |
 |-------|--------|
-| **Work** | Update `claims-vs-proofs.md`, `FORMAL_INTEGRATION_STATUS.md`, `GOD_GRADE_CHECKLIST.md` Kleisli row ❌→✅. |
+| **Work** | Update `claims-vs-proofs.md`, `FORMAL_INTEGRATION_STATUS.md`, `RELEASE_WITNESS_CHECKLIST.md` Kleisli row ❌→✅. |
 | **Verify** | `rg 'Kleisli.*not yet\|kleisli_unit.*Spec id only' umst-manifold/docs` → empty |
 | **Done** | `god-kleisli` closed in `PENDING_GAPS_PLAIN.md`. |
 | **TCB** | Doc-only. |
@@ -261,7 +261,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 **Status:** ✅ **DONE** (2026-05-21) — `tests/gate_reject_catalog_id.rs` 6/6; in `verify_umst_stack.sh`.
 
-**Witness ladder:** R1–R4 telemetry + [R2 Landauer](GOD_GRADE_WITNESS_LADDER.md#r2--landauer--epistemic-mi-budget-tensor-cbf) (CBF ✅)  
+**Witness ladder:** R1–R4 telemetry + [R2 Landauer](RELEASE_WITNESS_LADDER.md#r2--landauer--epistemic-mi-budget-tensor-cbf) (CBF ✅)  
 **Gap (closed):** Host CD / mix / Landauer / HTTP shim reject paths emit stable `umst.gate.*` slugs.
 
 ### D.1 — CD transition reject slug ✅
@@ -292,7 +292,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 | **Verify** | `cargo test --features formal-witness,ros2-contract,serde --test formal_witness --test ros_contract_serde_roundtrip`; `cargo test --test gateway_info_gain` if present |
 | **Done** | `PENDING_GAPS_PLAIN.md` “Emit catalog_id on gateway reject” gap closed. |
 | **TCB** | Still `physicalSecondLaw` axiom for Landauer law family. |
-| **Ladder** | R2 — MI surrogate only valid post-CBF ([decision 2](GOD_GRADE_WITNESS_LADDER.md#2-mi-surrogate-safe-iff-gated-post-composition-calibration-η-from-traces)). |
+| **Ladder** | R2 — MI surrogate only valid post-CBF ([decision 2](RELEASE_WITNESS_LADDER.md#2-mi-surrogate-safe-iff-gated-post-composition-calibration-η-from-traces)). |
 
 ### D.4 — CI guard: reject parsers ✅
 
@@ -362,7 +362,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 **Runbook (historical SSOT):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
 
-**Witness ladder:** [R0 — Catalog lock](GOD_GRADE_WITNESS_LADDER.md#r0--catalog-lock-build-time-functor), [§ Second catalog fiber](GOD_GRADE_WITNESS_LADDER.md#4-umst-formal-as-second-catalog-fiber)  
+**Witness ladder:** [R0 — Catalog lock](RELEASE_WITNESS_LADDER.md#r0--catalog-lock-build-time-functor), [§ Second catalog fiber](RELEASE_WITNESS_LADDER.md#4-umst-formal-as-second-catalog-fiber)  
 **Owner:** formal / coordinator (closed)  
 **Artifacts:** `umst-formal-double-slit/artifacts/catalog.json` (`cross_repo_merge: true`); preview retained at `catalog-cross-repo-preview.json`
 
@@ -423,7 +423,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 ## Track G — Epistemic runtime schema v2
 
-**Witness ladder:** [§6 v1 digest vs v2 trace schema](GOD_GRADE_WITNESS_LADDER.md#6-v1-digest-reject-v2-epistemicruntimeschema-in-traces), [R5 v2](GOD_GRADE_WITNESS_LADDER.md#r5--manifest-bridge--formal-witness-deployment-fiber)  
+**Witness ladder:** [§6 v1 digest vs v2 trace schema](RELEASE_WITNESS_LADDER.md#6-v1-digest-reject-v2-epistemicruntimeschema-in-traces), [R5 v2](RELEASE_WITNESS_LADDER.md#r5--manifest-bridge--formal-witness-deployment-fiber)  
 **Lean:** `EpistemicRuntimeSchemaContract`, `EpistemicPerStepNumerics`, `EpistemicTraceDrivenCalibrationWitness`  
 **Partial closure (2026-05-21):** G.1 ✅ — serde witness types + roundtrip CI; G.2 ⚠️ partial — per-step `EmittedTraceWellFormed` + aggregate `check_prototype_calibration_bounds` (`epsMIAgg`/`epsCostAgg`) in CI; `NumericTraceApproxConsistent` deferred (needs `(π, ρ₀)`); G.3 ⚠️ partial — `ManifoldGateway::calibrate_eta_from_trace` wires `eta_bound_suggested`; Lean `EpistemicTraceDrivenCalibrationWitness` not a Rust certificate.
 
@@ -445,7 +445,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 | **Verify** | `cargo test --test epistemic_trace_schema` — fixture pass + violation cases (MI, cost, confidence, horizon mismatch, aggregate envelope) |
 | **Done (partial)** | Per-step + aggregate ε envelope in CI; `NumericTraceApproxConsistent` with ground-truth policy deferred. |
 | **TCB** | Checks are inequalities over traces, not new `axiom`. |
-| **Ladder** | R5 v2 + [decision 2 η from traces](GOD_GRADE_WITNESS_LADDER.md#2-mi-surrogate-safe-iff-gated-post-composition-calibration-η-from-traces). |
+| **Ladder** | R5 v2 + [decision 2 η from traces](RELEASE_WITNESS_LADDER.md#2-mi-surrogate-safe-iff-gated-post-composition-calibration-η-from-traces). |
 
 ### G.3 — Wire η calibration from traces (optional feature) ⚠️ partial
 
@@ -461,7 +461,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 ## Track H — `StrictCatalogMatch` + `formal-witness`
 
-**Witness ladder:** [R5 v1 digest reject](GOD_GRADE_WITNESS_LADDER.md#6-v1-digest-reject-v2-epistemicruntimeschema-in-traces), [decision 3 CI pairing](GOD_GRADE_WITNESS_LADDER.md#3-manifest-bridge--formal-witness-on-in-ci)
+**Witness ladder:** [R5 v1 digest reject](RELEASE_WITNESS_LADDER.md#6-v1-digest-reject-v2-epistemicruntimeschema-in-traces), [decision 3 CI pairing](RELEASE_WITNESS_LADDER.md#3-manifest-bridge--formal-witness-on-in-ci)
 
 ### H.1 — Release profile defaults strict grounding
 
@@ -469,7 +469,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 |-------|--------|
 | **Work** | `UmstManifestBuilder::default()` → `GroundingContract::StrictCatalogMatch`; keep `AdvisoryCatalogOnly` behind `#[cfg(test)]` or explicit `for_staging()`. |
 | **Verify** | `cargo test -p umst-manifold manifest::` ; `rg 'AdvisoryCatalogOnly' src/manifest/umst_manifest.rs` shows non-default path only |
-| **Done** | `GOD_GRADE_CHECKLIST.md` strict catalog row ✅. |
+| **Done** | `RELEASE_WITNESS_CHECKLIST.md` strict catalog row ✅. |
 | **TCB** | Hash compare only; no axiom. |
 | **Ladder** | R5 v1 — `FormalReject::CatalogSchemaDigestMismatch`. |
 
@@ -487,11 +487,11 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 | Field | Value |
 |-------|--------|
-| **Work** | Document release triple: `formal-witness` + `StrictCatalogMatch` + `manifest-bridge` (cartridge repo). Add matrix row to `GOD_GRADE_CHECKLIST.md` CI table. |
+| **Work** | Document release triple: `formal-witness` + `StrictCatalogMatch` + `manifest-bridge` (cartridge repo). Add matrix row to `RELEASE_WITNESS_CHECKLIST.md` CI table. |
 | **Verify** | `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` (already runs formal-witness); cartridge job from Track A.3 |
 | **Done** | `god-strict` closed in progress report. |
 | **TCB** | Feature flags only. |
-| **Ladder** | R5 v1 ON in CI ([decision 3](GOD_GRADE_WITNESS_LADDER.md#3-manifest-bridge--formal-witness-on-in-ci)). |
+| **Ladder** | R5 v1 ON in CI ([decision 3](RELEASE_WITNESS_LADDER.md#3-manifest-bridge--formal-witness-on-in-ci)). |
 
 ---
 
@@ -565,7 +565,7 @@ Maps open [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) rows → tracks. **
 
 | Field | Value |
 |-------|--------|
-| **Work** | Tick `gate_dual_run_parity` in `GOD_GRADE_CHECKLIST.md` (in `verify_umst_stack.sh` since 2026-05-21); sync `FORMAL_INTEGRATION_STATUS.md` parity-ci note. |
+| **Work** | Tick `gate_dual_run_parity` in `RELEASE_WITNESS_CHECKLIST.md` (in `verify_umst_stack.sh` since 2026-05-21); sync `FORMAL_INTEGRATION_STATUS.md` parity-ci note. |
 | **Verify** | `grep gate_dual_run_parity umst-manifold/scripts/verify_umst_stack.sh`; `rg 'not in verify_umst_stack' umst-manifold/docs` → empty |
 | **Done** | `doc-hygiene` closed in `PENDING_GAPS_PLAIN.md` (2026-05-21). Remaining: Kleisli stale rows in `claims-vs-proofs.md` (post–Track C). |
 | **TCB** | Doc-only. |
@@ -631,7 +631,7 @@ cargo test --test catalog_all_ids_registered -p umst-manifold
 cargo test --test gate_kleisli --test gate_reject_catalog_id --test gate_adversarial -p umst-manifold
 ```
 
-**Done (whole roadmap):** Tracks **C, D, E, F** ✅; **B** hybrid + **I** anchors partial; **A** via [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) (operator). Full closure: **A, H, G, B.3–B.4, I.3–I.4, J.1** + optional E6 — see [Remaining to 100%](#remaining-to-100-god-grade-checklist). Verified ledger: [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md). Lean still **1** axiom `physicalSecondLaw`.
+**Done (whole roadmap):** Tracks **C, D, E, F** ✅; **B** hybrid + **I** anchors partial; **A** via [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) (operator). Full closure: **A, H, G, B.3–B.4, I.3–I.4, J.1** + optional E6 — see [Remaining to 100%](#remaining-to-100-god-grade-checklist). Verified ledger: [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md). Lean still **1** axiom `physicalSecondLaw`.
 
 ---
 
@@ -640,9 +640,9 @@ cargo test --test gate_kleisli --test gate_reject_catalog_id --test gate_adversa
 | Document | Role |
 |----------|------|
 | [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) | **Operator SSOT** — publish manifold `main` + cartridge `manifest-bridge` (Track A) |
-| [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) | Rung order, failure priority, v1/v2 |
-| [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) | Criteria ticks + CI matrix (10/13 ≈ 77% as of 2026-05-21) |
-| [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) | Verified milestones, checklist %, reproduce commands |
+| [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) | Rung order, failure priority, v1/v2 |
+| [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) | Criteria ticks + CI matrix (10/13 ≈ 77% as of 2026-05-21) |
+| [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md) | Verified milestones, checklist %, reproduce commands |
 | [`TODO_COMPLETION.md`](TODO_COMPLETION.md) | Plan todo evidence |
 | [`VERIFY.md`](VERIFY.md) | Operator commands |
 | [`claims-vs-proofs.md`](claims-vs-proofs.md) | Lean ↔ `catalog_id` ledger |

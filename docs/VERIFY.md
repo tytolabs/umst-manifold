@@ -193,7 +193,7 @@ Prep gate (no push): `bash scripts/w8_publish_readiness.sh` — accepts git pin 
 
 **Default builds are unchanged:** `cargo check` / `cargo test` use [`UmstManifestBuilder::default`](../../src/manifest/umst_manifest.rs) with [`GroundingContract::CatalogPinnedRos2`](../../src/manifest/umst_manifest.rs) and **no** `formal-witness` feature. Digest mismatch does not hard-fail.
 
-**God-grade / production release profile** (explicit opt-in — see [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) R5 v1):
+**God-grade / production release profile** (explicit opt-in — see [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) R5 v1):
 
 | Layer | Setting |
 |-------|---------|

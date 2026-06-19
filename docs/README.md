@@ -36,9 +36,9 @@ Read top-to-bottom once for context; use **Quick verify** before any code change
 | 1 | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | Day-level executive summary, metrics, start-of-day vs now |
 | 2 | [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) | **Pipeline spine:** Lean export → lock → manifold → cartridge → drift |
 | 3 | [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md) | **119**-module pin; primary-fiber buckets (hot / digest-only / open) |
-| 4 | [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) | Normative witness order **R0→R1→R2→R3→R4→R5→R6** |
-| 5 | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) | Production automation criteria (**10/13 ≈ 77%**) |
-| 5b | [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) | Verified milestones, checklist %, stack reproduce commands |
+| 4 | [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) | Normative witness order **R0→R1→R2→R3→R4→R5→R6** |
+| 5 | [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) | Production automation criteria (**10/13 ≈ 77%**) |
+| 5b | [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md) | Verified milestones, checklist %, stack reproduce commands |
 
 ### 2 — Architecture & traceability
 
@@ -68,7 +68,7 @@ Read top-to-bottom once for context; use **Quick verify** before any code change
 | # | Doc | Role |
 |---|-----|------|
 | 19 | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | **God-grade truthful gap audit** — scoped 100% blockers, R0–R6 table, 119≠69 |
-| 20 | [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md) | Tracks A–J mapped to witness rungs; ops owners |
+| 20 | [`PENDING_RELEASE_WITNESS_ROADMAP.md`](PENDING_RELEASE_WITNESS_ROADMAP.md) | Tracks A–J mapped to witness rungs; ops owners |
 | 21 | [`UNFINISHED_FEATURES_AUDIT.md`](UNFINISHED_FEATURES_AUDIT.md) | Plain-language open items: owner + execute vs wait |
 | 22 | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | Preview artifacts and stubs (not production pin) |
 

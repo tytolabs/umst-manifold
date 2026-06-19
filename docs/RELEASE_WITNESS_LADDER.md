@@ -1,7 +1,7 @@
 # Release witness profile ladder
 
 > **Public name:** *release witness profile* (strict catalog match + ordered gate witnesses).  
-> **Filename note:** `GOD_GRADE_WITNESS_LADDER.md` is a legacy path kept for stable links; new docs should use the public term above.
+> **Filename note:** Legacy stub at `GOD_GRADE_WITNESS_LADDER.md` redirects here; use this path in new docs.
 
 **As of:** 2026-05-21  
 **Audience:** Integrators, reviewers, and contributors wiring UMST formal → manifold → cartridges.
@@ -102,7 +102,7 @@ Four invariants separate **what was proved** (Lean fiber) from **what is enforce
 | **Article** | Stable `catalog_id` per gate family (`umst.gate.cd_transition`, `umst.gate.landauer_cbf`, …) — registry in [`GateUnificationSpec.md`](GateUnificationSpec.md). |
 | **Court** | `GateEvaluator`, `ThermodynamicCBF`, mix evaluators, future Kleisli slot — return **reject** or proceed; no silent override. |
 
-**Rule:** If a transition violates Clausius–Duhem, Landauer/MI budget, or constitutive closure, the step **fails** at the highest-priority witness that fires ([§ God-grade decision 1](#1-failure-priority-cd--2nd-law--landauer--constitutive--probe)). Product “advisory” catalog modes are **not** god-grade law ([`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) strict-catalog row).
+**Rule:** If a transition violates Clausius–Duhem, Landauer/MI budget, or constitutive closure, the step **fails** at the highest-priority witness that fires ([§ God-grade decision 1](#1-failure-priority-cd--2nd-law--landauer--constitutive--probe)). Product “advisory” catalog modes are **not** god-grade law ([`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) strict-catalog row).
 
 **Categorical reading:** Gates are endomorphisms on the admissible subcategory **or** arrows into the reject object — law as **witness functors**, not comments in `claims-vs-proofs.md`.
 
@@ -297,7 +297,7 @@ This already runs:
 | Document | Role |
 |----------|------|
 | [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) | Forward/backward Lean → catalog → manifold → cartridge |
-| [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) | CI matrix + performance budget |
+| [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) | CI matrix + performance budget |
 | [`CATALOG_COVERAGE_AUDIT.md`](CATALOG_COVERAGE_AUDIT.md) | Per-module `catalog_id` ↔ Rust |
 | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | PPO / gateway layer stack |
 | [`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`](../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md) | 69 vs 59 export scope |
@@ -313,7 +313,7 @@ This already runs:
 
 ## Ladder status (2026-05-21)
 
-**Automation:** **17/17** per [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md). **Org W8:** **G-01/G-02** ✅; **G-03** optional. **Hot-path ceiling:** ~26% of catalog — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
+**Automation:** **17/17** per [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md). **Org W8:** **G-01/G-02** ✅; **G-03** optional. **Hot-path ceiling:** ~26% of catalog — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
 
 | Decision | Status |
 |----------|--------|

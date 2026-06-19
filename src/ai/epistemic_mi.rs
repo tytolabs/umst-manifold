@@ -3,7 +3,7 @@
 //!
 //! **Witness reading:** MI estimates are morphisms into the R2 Landauer envelope only — valid as
 //! post-composition scalar `info_gain` tensors after CBF, never as standalone certificates
-//! (see [`GOD_GRADE_WITNESS_LADDER`](../../docs/GOD_GRADE_WITNESS_LADDER.md) § MI inside the envelope).
+//! (see [`GOD_GRADE_WITNESS_LADDER`](../../docs/RELEASE_WITNESS_LADDER.md) § MI inside the envelope).
 //!
 //! Stateful histogram updates are confined to [`MutualInfoEstimator`]; scoring and clamp maps are pure.
 

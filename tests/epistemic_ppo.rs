@@ -4,7 +4,7 @@
 //! Epistemic PPO integration tests (`--features epistemic-ppo` only).
 //!
 //! Histogram MI feeds the Landauer CBF branch; epistemic bonus is applied post-R2 per
-//! [`GOD_GRADE_WITNESS_LADDER`](../docs/GOD_GRADE_WITNESS_LADDER.md).
+//! [`GOD_GRADE_WITNESS_LADDER`](../docs/RELEASE_WITNESS_LADDER.md).
 
 #![cfg(feature = "epistemic-ppo")]
 

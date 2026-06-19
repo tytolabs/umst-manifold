@@ -7,9 +7,9 @@
 
 Evidence commands are read-only checks run during audit (no plan file edits).
 
-**Narrative rollup:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · pipeline [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) · witness law [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) · command ledger [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · verified % [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)
+**Narrative rollup:** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · pipeline [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) · witness law [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) · command ledger [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · verified % [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md)
 
-**Scoped closure SSOT (2026-05-29):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · automation denominator [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) (**16/16** rows) · ceilings [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
+**Scoped closure SSOT (2026-05-29):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · automation denominator [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) (**16/16** rows) · ceilings [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)
 
 <!-- Cross-link when created: validation methodology doc → § Process & verification -->
 
@@ -17,7 +17,7 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 
 ## Process & verification
 
-**Progress date:** 2026-05-29 · **Verified:** 2026-05-29 (`verify_umst_stack.sh` full bundle @ **fe22437**; ledger [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md))
+**Progress date:** 2026-05-29 · **Verified:** 2026-05-29 (`verify_umst_stack.sh` full bundle @ **fe22437**; ledger [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md))
 
 *When a dedicated validation methodology doc is added under `docs/`, link it here (e.g. beside [`Validation.md`](Validation.md)).*
 
@@ -26,7 +26,7 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 | **Plan todos (YAML scope)** | **14 / 14 ✅** | On-disk implementation complete for every plan `id`; see [14/14 map](#1414-plan-todo-map-on-disk-vs-yaml) |
 | **Plan infra → 100%** | **100%** | 14/14 on disk; optional lanes (`rust.yml`, 2a full delete) are polish, not blockers |
 | **Plan + cross-repo fiber** | **100%** | 14/14 + `formal-fiber-merge` ✅ (unified digest + manifold lock + stack verify) |
-| **God-grade automation (in-repo)** | **16 / 16 = 100%** | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) § Automation criteria — all rows green @ **2026-05-29** / **fe22437** |
+| **God-grade automation (in-repo)** | **16 / 16 = 100%** | [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) § Automation criteria — all rows green @ **2026-05-29** / **fe22437** |
 | **Scoped true 100% (Done morphisms)** | **3 / 4** | **G-04** ✅ · **G-05** ✅ · **W8 (G-01+G-02)** ✅ · **FFI** — **G-03** optional; see [Remaining](#remaining-to-scoped-true-100) |
 | On-disk vs YAML | **14/14 ✅** vs 1 `in_progress` + 13 `pending` | Plan front-matter intentionally not edited |
 
@@ -77,7 +77,7 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 - Evidence blocks below are the **per-todo SSOT** for coordinator handoff (commands + paths).
 - Swarm audit docs (six files) close traceability without new Rust scaffolding.
 - **Scoped true 100%** (honest): **3 / 4** Done — **G-04** ✅ · **G-05** ✅ · **W8 (G-01+G-02)** ✅ @ **2026-05-29**; **FFI** horizon open; **G-03** supercap optional — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md).
-- Optional polish (not scoped blockers): 2a thin delete, `rust.yml` verify lane — [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md).
+- Optional polish (not scoped blockers): 2a thin delete, `rust.yml` verify lane — [`PENDING_RELEASE_WITNESS_ROADMAP.md`](PENDING_RELEASE_WITNESS_ROADMAP.md).
 
 > **Design lens** — Each plan todo is a morphism in the extraction pipeline; completion means the morphism factors through verified tests (exit 0), not merely files on disk. **W8:** **G-01** publish + **G-02** concrete remote CI are **Done** @ **fe22437**; local `[patch]` tests remain patch-green **Evidence** for monorepo dev; **G-03** supercap remote is optional ([`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md)).
 
@@ -220,7 +220,7 @@ Set the environment variable to `1` for unified `catalog.json` / `catalog.lock.j
 |-------|--------------------------------|-------------|
 | **Closed (2026-05-21)** | `0697014f…`, **119** modules | `0697014f…`, **119** — `verify_umst_stack.sh` green |
 
-**Owner:** formal / coordinator. Policy: [`UMST_FORMAL_REPOS_ALIGNMENT.md`](../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md). Roadmap: [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md) Track F.
+**Owner:** formal / coordinator. Policy: [`UMST_FORMAL_REPOS_ALIGNMENT.md`](../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md). Roadmap: [`PENDING_RELEASE_WITNESS_ROADMAP.md`](PENDING_RELEASE_WITNESS_ROADMAP.md) Track F.
 
 ### Ideal grounding — concrete + manifold (post-merge)
 
@@ -239,7 +239,7 @@ Merge does **not** add Rust axioms; it enlarges proof inventory **F**. TCB remai
 2. ~~**TCB + policy**~~ ✅ — single `physicalSecondLaw`; alignment doc signed.
 3. ~~**Manifold pin**~~ ✅ — `umst-manifold/artifacts/catalog.lock.json` → `0697014f…`, `module_count: 119`.
 4. ~~**Downstream verify**~~ ✅ — `verify_umst_stack.sh`, `catalog_all_ids_registered` 4/4.
-5. ~~**Close milestone**~~ ✅ — Track F ✅ in [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md); verified ledger [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md).
+5. ~~**Close milestone**~~ ✅ — Track F ✅ in [`PENDING_RELEASE_WITNESS_ROADMAP.md`](PENDING_RELEASE_WITNESS_ROADMAP.md); verified ledger [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md).
 
 ### Verify commands
 
@@ -505,7 +505,7 @@ cd umst-manifold && cargo test --test gate_dual_run_parity -- --nocapture
 |--------|---------|---------------------|
 | **Plan infra (14 YAML todos)** | **100%** | On disk; re-green `verify_umst_stack.sh` after edits (@ **2026-05-21T22:12:13Z** exit **0**) |
 | **Plan + `formal-fiber-merge`** | **100%** | Unified export + manifold lock + stack verify ([§ formal-fiber-merge](#formal-fiber-merge--complete)) |
-| **God-grade automation (16 rows)** | **100%** | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) — G.2 **13/13** · G.3 **8/8** in verify tail |
+| **God-grade automation (16 rows)** | **100%** | [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) — G.2 **13/13** · G.3 **8/8** in verify tail |
 | **Scoped true 100% (4 blockers)** | **~96–98%** | **G-03** supercap optional · **FFI** horizon — **G-01**/**G-02**/**G-04**/**G-05** closed |
 
 No further manifold **scaffolding** is required for plan infra or in-repo automation; remaining scoped work is publish, product defaults, and horizon FFI ([`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md)).
@@ -594,7 +594,7 @@ UMST_FORMAL_ROOT=/path/to/multi-repo/workspace/umst-formal-double-slit \
 # → bidirectional_catalog_check: OK
 ```
 
-**lean-export-lake / formal-fiber-merge:** Unified export via `export_catalog.py` with `APPROVE_CROSS_REPO_MERGE=1`; digest `0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227` matches `umst-manifold/artifacts/catalog.lock.json` `upstream_catalog_digest_hex` and committed `catalog.json` (`module_count: 119`, `cross_repo_merge: true`). See [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md).
+**lean-export-lake / formal-fiber-merge:** Unified export via `export_catalog.py` with `APPROVE_CROSS_REPO_MERGE=1`; digest `0697014fb5b90a3aca4db3e5cc226896ca198802c910d5395f254e4262aa6227` matches `umst-manifold/artifacts/catalog.lock.json` `upstream_catalog_digest_hex` and committed `catalog.json` (`module_count: 119`, `cross_repo_merge: true`). See [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md).
 
 **parity-ci / thin-prototypes (2026-05-21T21:18:04Z):** `gate_dual_run_parity` 8/8 golden + live subprocess. `verify_umst_stack.sh` runs `gate_adversarial` (Rust SSOT, FNR=0) + dual-run; Python E6 **optional**. v1 shim 226L; 2a hybrid 517L with `manifold-gate` delegating Algorithm 1.
 
@@ -646,7 +646,7 @@ Functor/monad vocabulary for this pass (no new Rust axioms; TCB remains `physica
 | `gate_adversarial` golden | Regression functor on Phase E boundary: FNR=0 invariant over 75-case pinned JSON |
 | Supercap `formal_anchors` + lock hash | R5 deployment fiber: doc-block witnesses on `pub` API; catalog digest pin via `catalog_lock_bundle_sha256_bytes` |
 
-**Still open (scoped true 100% only):** **G-03** supercap remote (optional), **FFI** horizon — see [Remaining to scoped true 100%](#remaining-to-scoped-true-100). **W8 G-01+G-02** closed @ **2026-05-29** / **fe22437**. Optional: 2a thin delete — [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md).
+**Still open (scoped true 100% only):** **G-03** supercap remote (optional), **FFI** horizon — see [Remaining to scoped true 100%](#remaining-to-scoped-true-100). **W8 G-01+G-02** closed @ **2026-05-29** / **fe22437**. Optional: 2a thin delete — [`PENDING_RELEASE_WITNESS_ROADMAP.md`](PENDING_RELEASE_WITNESS_ROADMAP.md).
 
 ---
 
@@ -664,5 +664,5 @@ UMST_REQUIRE_FORMAL_EXPORT=1 UMST_FORMAL_ROOT=$WORKSPACE/umst-formal-double-slit
 #         witness_priority_queue, catalog_incremental_graph_drift, ci_god_grade_profile
 ```
 
-**Cross-read (2026-05-29):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) (**16/16** automation) · W8 **G-01**/**G-02** closed.
+**Cross-read (2026-05-29):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) (**16/16** automation) · W8 **G-01**/**G-02** closed.
 

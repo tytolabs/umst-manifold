@@ -19,7 +19,7 @@ Canonical categorical vocabulary for UMST manifold + cartridges. Cartridge-speci
 | Cartridge law port | [`IScienceCartridge`](../src/core/traits.rs) | `compute_all` / `compute_topology` → [`PhysicalResult`](../src/core/traits.rs) |
 | Topology plan step | [`TopologyPhysicsOrchestrator`](../src/physics/orchestration.rs) | Fold over [`TopologyPlanIntent`](../src/physics/orchestration.rs) |
 | Gateway / PPO step | [`ManifoldGateway`](../src/ai/ppo.rs) | Policy → physics → CBF witness chain |
-| Witness ladder | [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) | R1 CD → R2 Landauer → R3 constitutive → R4 Kleisli (short-circuit) |
+| Witness ladder | [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) | R1 CD → R2 Landauer → R3 constitutive → R4 Kleisli (short-circuit) |
 
 ## Sequential composition (THMC contract)
 

@@ -16,7 +16,7 @@
 |----------|---|--------------|-------|
 | **Plan completeness** | **100%** | 14/14 + fiber merge | On-disk; YAML front-matter unchanged |
 | **Catalog pin (R0)** | **100%** | 119/119 modules | Digest `0697014f…` — **not** hot-path % |
-| **Automation (in-repo)** | **100%** | **16/16** rows | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) |
+| **Automation (in-repo)** | **100%** | **16/16** rows | [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) |
 | **Robustness bundle** | **100%** | 1/1 script | `verify_umst_stack.sh` exit **0** @ **2026-05-29** |
 | **Gates (exercised suites)** | **100%** | Kleisli 6/6 · rejects 6/6 · adv 75/75 FNR 0 · dual-run 8/8 | In stack |
 | **Epistemic host (R6)** | **100%** | G.2 **13/13** · G.3 **8/8** | In verify tail |
@@ -36,7 +36,7 @@
 |------|---|-------------------------|--------------|
 | **Plan completeness** | **100%** | 14/14 YAML + `formal-fiber-merge` | Every plan `id` implemented on disk. |
 | **Plan + cross-repo** | **100%** | unified **119** pin | Formal and manifold locks agree on digest and module count. |
-| **Automation (in-repo)** | **100%** | **16/16** checklist rows ✅ | Gates, manifest, G.1–G.3, J.3, catalog pin — [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md). |
+| **Automation (in-repo)** | **100%** | **16/16** checklist rows ✅ | Gates, manifest, G.1–G.3, J.3, catalog pin — [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md). |
 | **Robustness (verify bundle)** | **100%** | stack script exit **0** | `verify_umst_stack.sh` @ **2026-05-29** (local; includes G.2 + G.3 steps). |
 | **God-grade weighted (R0–R6, in-repo)** | **~98%** | 6.89/7 rungs | R6 optional: PPO η reward wire + rollout approx witness (horizon). |
 | **God-grade weighted (incl. org W8)** | **~95%** | R5 concrete **G-02 ✅** | Supercap **G-03** still open. |
@@ -120,7 +120,7 @@ Production pin **119** unchanged — see [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_
 
 - [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) — plain-English rollup + gaps table  
 - [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) — B1–B2 open · B3 Done  
-- [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) — **16** automation rows  
+- [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) — **16** automation rows  
 - [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) — G-07/G-08 closed  
 - [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) — pin **119** + stale-pattern log  
 

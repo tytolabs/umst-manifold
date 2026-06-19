@@ -2,7 +2,7 @@
 
 **Scanned:** 2026-05-29 · **Verified:** 2026-05-29 — unified R0 pin `0697014fb5b90a3…`, **119** modules; `verify_umst_stack.sh` exit **0** · **Workspace:** `workspace root/umst-manifold` · **CI:** green @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) (`witness_priority.rs` `manual_contains` fix on stable)
 
-**Handoffs (consolidated):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · **Verify commands:** [`VERIFY.md`](VERIFY.md) · **Plan phases P0–P12:** `lean-to-rust_proof_extraction_fd8f70b5.plan.md` · **Witness ladder:** [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) · **Verified %:** [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md)
+**Handoffs (consolidated):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · **Verify commands:** [`VERIFY.md`](VERIFY.md) · **Plan phases P0–P12:** `lean-to-rust_proof_extraction_fd8f70b5.plan.md` · **Witness ladder:** [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) · **Verified %:** [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md)
 
 ---
 
@@ -31,10 +31,10 @@ Short-circuit at the **highest-priority** witness that fires (CD before Landauer
 
 | Doc | Role |
 |-----|------|
-| [`GOD_GRADE_WITNESS_LADDER.md`](GOD_GRADE_WITNESS_LADDER.md) | Ordered rungs R0–R6, categorical vocabulary, god-grade decisions 1–3 |
-| [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) | Production automation criteria (**16/16 = 100%**) |
-| [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) | Verified milestones + checklist % ledger |
-| [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md) | Tracks A–J → witness rungs; ops owners |
+| [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) | Ordered rungs R0–R6, categorical vocabulary, god-grade decisions 1–3 |
+| [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) | Production automation criteria (**16/16 = 100%**) |
+| [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md) | Verified milestones + checklist % ledger |
+| [`PENDING_RELEASE_WITNESS_ROADMAP.md`](PENDING_RELEASE_WITNESS_ROADMAP.md) | Tracks A–J → witness rungs; ops owners |
 | [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) | Export functor + parity mechanics |
 
 **Wave → rung mapping:** W2/W3 → **R0**; W4 → **R1–R4** (incl. `KleisliUnitEvaluator` + `gate_kleisli`); W6 → **R2** + **R5 v1**; W5/W8 → **R5**; W10 → parity proves **R1/R3** alignment + adversarial FNR=0 in drift CI (`gate_adversarial`).
@@ -64,8 +64,8 @@ Optional: `UMST_REQUIRE_ADVERSARIAL_GATE=1` when prototype adversarial script pr
 | Plan infra todos (14) + fiber merge | **100%** | [`TODO_COMPLETION.md`](TODO_COMPLETION.md) — `formal-fiber-merge` ✅ |
 | Plan infra — local-complete (+ cartridge patch) | **~100%** | same |
 | **P0–P7 migration phases** (plan §5) | **100%** (8/8 phases ✅) | table below; **ops:** **G-03** supercap only |
-| God-grade automation checklist | **16/16 = 100%** | [`GOD_GRADE_CHECKLIST.md`](GOD_GRADE_CHECKLIST.md) · [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) |
-| God-grade weighted headline (in-repo) | **~98%** | [`GOD_GRADE_PROGRESS_VERIFIED.md`](GOD_GRADE_PROGRESS_VERIFIED.md) |
+| God-grade automation checklist | **16/16 = 100%** | [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) · [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md) |
+| God-grade weighted headline (in-repo) | **~98%** | [`RELEASE_WITNESS_PROGRESS_VERIFIED.md`](RELEASE_WITNESS_PROGRESS_VERIFIED.md) |
 | Witness ladder R0–R6 host automation | **~98%** | R0–R6 host ✅; R5 concrete **G-02 ✅**; scoped blockers **G-03 + FFI** |
 
 **Remaining scoped blockers:** **G-03** (supercap remote `manifest-bridge`); **FFI** horizon. **G-02** concrete cartridge CI without `[patch]` closed **2026-05-29**. Plan lanes P8/P12 are roadmap, not blocking P0–P7.
@@ -182,7 +182,7 @@ UMST_REQUIRE_FORMAL_EXPORT=1 \
 
 **Closed in-repo (not blockers):** **B3** strict prod default (G-04/G-05); G.2/G.3/J.3 in verify tail.
 
-**Roadmap (non-blocking):** P8/P12 prototype filter deletion — see [`PENDING_GOD_GRADE_ROADMAP.md`](PENDING_GOD_GRADE_ROADMAP.md).
+**Roadmap (non-blocking):** P8/P12 prototype filter deletion — see [`PENDING_RELEASE_WITNESS_ROADMAP.md`](PENDING_RELEASE_WITNESS_ROADMAP.md).
 
 ---
 
