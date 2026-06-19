@@ -80,6 +80,7 @@ Long-form numbered memos under `docs/research/` were **removed** from this repos
 | 8 | THMC — large‑N monolith | **75** | Krylov–JFNK, adaptive time stepping, stagger policy. |
 | 9 | Statistical mechanics — virial / coexistence in **`upscale_potentials`** | **25** | Physical **γ\_gc**; AD-safe **`K`** in Burn. |
 | 10 | Transient **vector** solid dynamics & contact | **25** | No default CI **2‑DOF vector** transient stack on the mechanics graph; contact out of scope until a new verification row exists. |
+| 11 | Prime-spectral NTT exact density filter (branch-only) | **25** | **Parked** on `prime-spectral-research` — zero mod-q conservation drift validated; L∞ float parity blocked on requantization. Not on `main`; see [issue #26](https://github.com/tytolabs/umst-manifold/issues/26) and MaOS [`FINAL_FINDING.md`](https://github.com/tytolabs/MaOS-Workspace/blob/prime-spectral-research/outputs/prime-spectral-research/FINAL_FINDING.md). |
 
 ---
 

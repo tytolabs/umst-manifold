@@ -219,7 +219,7 @@ Phase B (B1–B5) starts only after A8 user go-ahead.
 
 **W9 owns:** Tier-2c injected closures, `injection_mechanism_fixture.rs` (111/222 sentinels), gate parity, lexicon/agnostic verifiers, catalog lock @ **122** / digest `c61b1bef…`.
 
-**Prime-spectral-research** (branch `prime-spectral-research`) owns benchmarks, witness tests, protocol MD — **CLOSED / AMBER** per [`outputs/prime-spectral-research/FINAL_FINDING.md`](../../outputs/prime-spectral-research/FINAL_FINDING.md). **Do not merge research WIP onto `main`.**
+**Prime-spectral-research** (branch `prime-spectral-research`) owns benchmarks, witness tests, protocol MD — **CLOSED / AMBER** per [`outputs/prime-spectral-research/FINAL_FINDING.md`](../../outputs/prime-spectral-research/FINAL_FINDING.md). **Do not merge research WIP onto `main`.** Durable pointer for the surviving NTT lead: [umst-manifold#26](https://github.com/tytolabs/umst-manifold/issues/26) (parked; not load-bearing).
 
 | Surface | W9 rule |
 |---------|---------|
