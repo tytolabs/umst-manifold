@@ -21,7 +21,20 @@
       "module_count": 64,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"
+    },
+    {
+      "repo": "umst-ucrs",
+      "catalog_digest_hex": "24a773ec27a0536ae4441f7dbbc6246fcf150f85ffd0b2c86ddd75b954f96eed",
+      "module_count": 9,
+      "lock_role": "ucrs_lean_catalog_track_f",
+      "catalog_path": "artifacts/ucrs-catalog.json"
     }
   ],
-  "notes": "W9 pin bump: formal b09d4a0 (PrimeSpectral) + double-slit 7f7f9bf; merged 122 modules / 329 edges."
+  "ucrs_fiber_preview": {
+    "source": "artifacts/ucrs-catalog.json",
+    "entry_count": 9,
+    "catalog_digest_hex": "24a773ec27a0536ae4441f7dbbc6246fcf150f85ffd0b2c86ddd75b954f96eed",
+    "notes": "T5 preview merge — tertiary Track F fiber; not merged into composed primary catalog until coordinator approves."
+  },
+  "notes": "W9 pin bump: formal b09d4a0 (PrimeSpectral) + double-slit 7f7f9bf; merged 122 modules / 329 edges. UCRS fiber pin added 2026-06-19 (digest-locked preview)."
 }
