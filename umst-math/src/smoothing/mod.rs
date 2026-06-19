@@ -31,7 +31,7 @@ fn default_initial() -> f64 {
     0.0
 }
 
-/// CONSTANT-BOUND: `EGOFF_COCKPIT_SMOOTHING=none` — identity
+/// CONSTANT-BOUND: `UMST_COCKPIT_SMOOTHING=none` — identity
 pub struct NoneSmoother {
     v: f64,
 }

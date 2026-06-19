@@ -2,7 +2,7 @@
 # Each non-comment line: <toolchain>: <version>
 # CI compares this file to the actually-resolved toolchain version per job;
 # drift emits cargo:warning from umst-ffi/build.rs (extends L-0 pattern) +
-# fails check_zci_multi_lang.sh under EGOFF_TOOLCHAIN_PIN_STRICT=1 (default).
+# fails check_zci_multi_lang.sh under UMST_TOOLCHAIN_PIN_STRICT=1 (default).
 # Toolchain partial-order edges (§0.4 graph layer):
 #   agda-stdlib → agda
 #   cabal → ghc
