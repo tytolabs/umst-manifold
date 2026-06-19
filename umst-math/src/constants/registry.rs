@@ -784,7 +784,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "manifold_hilbert_bits_default",
-        expression: "12 (default Hilbert 2D order; `EGOFF_MEMORY_HILBERT_BITS` mirror in §24m; M-0 tests use 4 for ε-bisim speed)",
+        expression: "12 (default Hilbert 2D order; `UMST_MEMORY_HILBERT_BITS` mirror in §24m; M-0 tests use 4 for ε-bisim speed)",
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (MEMORY-ARC-PLAN §6; umst-math::manifold::hilbert)",
         env_override: None,
@@ -920,10 +920,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "egoff_memory_m2_promotion_requires_theorem_default",
-        expression: "1 (default `EGOFF_MEMORY_PROMOTION_REQUIRE_THEOREM=1`; Z-cert branch deferred)",
+        expression: "1 (default `UMST_MEMORY_PROMOTION_REQUIRE_THEOREM=1`; Z-cert branch deferred)",
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-2; CONSTANT-BOUND default; `egoff::memory::promotion_require_theorem_enabled`)",
-        env_override: Some("EGOFF_MEMORY_PROMOTION_REQUIRE_THEOREM"),
+        env_override: Some("UMST_MEMORY_PROMOTION_REQUIRE_THEOREM"),
     },
     ConstantEntry {
         name: "egoff_memory_m2_serial_scrub_placeholder_len",
@@ -934,10 +934,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "egoff_memory_ephemeral_ttl_hours_typical",
-        expression: "168 (default TTL hours for `EphemeralRetention::from_registry_default`; overridden by `EGOFF_MEMORY_EPHEMERAL_TTL_HOURS`)",
+        expression: "168 (default TTL hours for `EphemeralRetention::from_registry_default`; overridden by `UMST_MEMORY_EPHEMERAL_TTL_HOURS`)",
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3 ephemeral retention witness; MEMORY-ARC)",
-        env_override: Some("EGOFF_MEMORY_EPHEMERAL_TTL_HOURS"),
+        env_override: Some("UMST_MEMORY_EPHEMERAL_TTL_HOURS"),
     },
     ConstantEntry {
         name: "egoff_memory_m3_palette_federated_inspect_min_rows",
@@ -993,21 +993,21 @@ pub static REGISTRY: &[ConstantEntry] = &[
             "`0.60` (default α in `retain = α·MI + β·pareto`; β = 1 − α)",
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3-retention; `memory::env::retention_alpha_or_default`)",
-        env_override: Some("EGOFF_MEMORY_RETENTION_ALPHA"),
+        env_override: Some("UMST_MEMORY_RETENTION_ALPHA"),
     },
     ConstantEntry {
         name: "egoff_memory_retention_evict_default",
         expression: "`0` (opt-in; `1` enables post-store eviction + `:memory budget` would_evict)",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Definition (§14bis.f-M-3-retention; `EGOFF_MEMORY_RETENTION_EVICT`)",
-        env_override: Some("EGOFF_MEMORY_RETENTION_EVICT"),
+        evidence: "Definition (§14bis.f-M-3-retention; `UMST_MEMORY_RETENTION_EVICT`)",
+        env_override: Some("UMST_MEMORY_RETENTION_EVICT"),
     },
     ConstantEntry {
         name: "egoff_memory_retention_degrade_first_default",
         expression: "`1` (prefer resolution degrade before drop when both apply)",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Definition (§14bis.f-M-3-retention; `EGOFF_MEMORY_RETENTION_DEGRADE_FIRST`)",
-        env_override: Some("EGOFF_MEMORY_RETENTION_DEGRADE_FIRST"),
+        evidence: "Definition (§14bis.f-M-3-retention; `UMST_MEMORY_RETENTION_DEGRADE_FIRST`)",
+        env_override: Some("UMST_MEMORY_RETENTION_DEGRADE_FIRST"),
     },
     ConstantEntry {
         name: "egoff_memory_retention_mi_estimate_p99_us",
@@ -1074,10 +1074,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "egoff_memory_hilbert_bits",
-        expression: "8 (M-0 Hilbert order cap; policy target 12 in MEMORY-ARC M-5; `EGOFF_MEMORY_HILBERT_BITS`)",
+        expression: "8 (M-0 Hilbert order cap; policy target 12 in MEMORY-ARC M-5; `UMST_MEMORY_HILBERT_BITS`)",
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-5; `memory_hilbert_bits`; umst_math::manifold::hilbert)",
-        env_override: Some("EGOFF_MEMORY_HILBERT_BITS"),
+        env_override: Some("UMST_MEMORY_HILBERT_BITS"),
     },
     ConstantEntry {
         name: "egoff_msdf_hilbert_persist_enabled",
