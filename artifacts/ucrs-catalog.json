@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "role": "ucrs_lean_catalog_track_f",
+  "repo": "umst-ucrs",
+  "lean_root": "Lean",
+  "notes": "Tertiary fiber for Track F cross-repo preview — UCRS L1-L8 + TensorLandauer scaffold. Not merged into primary manifold lock until coordinator approves.",
+  "entries": [
+    { "id": "ucrs.L1_LandauerNonneg", "module": "Ucrs.L1_LandauerNonneg", "kind": "theorem", "sorry": 0 },
+    { "id": "ucrs.L2_TensorLandauer", "module": "Ucrs.L2_TensorLandauer", "kind": "theorem", "sorry": 0 },
+    { "id": "ucrs.L3_CreditGreedy", "module": "Ucrs.L3_CreditGreedy", "kind": "axiom", "sorry": 0 },
+    { "id": "ucrs.L4_GateAdmit", "module": "Ucrs.L4_GateAdmit", "kind": "theorem", "sorry": 0 },
+    { "id": "ucrs.L5_ClockCoalgebra", "module": "Ucrs.L5_ClockCoalgebra", "kind": "theorem", "sorry": 1 },
+    { "id": "ucrs.L6_ByzantineIsolation", "module": "Ucrs.L6_ByzantineIsolation", "kind": "theorem", "sorry": 1 },
+    { "id": "ucrs.L7_SyncOverhead", "module": "Ucrs.L7_SyncOverhead", "kind": "theorem", "sorry": 1 },
+    { "id": "ucrs.L8_WireMonotone", "module": "Ucrs.L8_WireMonotone", "kind": "theorem", "sorry": 1 },
+    { "id": "ucrs.TensorLandauer", "module": "TensorLandauer", "kind": "axiom", "sorry": 0 }
+  ]
+}
