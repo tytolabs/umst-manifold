@@ -17,7 +17,7 @@ pub struct KalmanFilter1D {
     pub x: f64,
     /// THEOREM-BOUND: state variance (clamped `≥ 0` on read)
     pub p: f64,
-    /// CONSTANT-BOUND: `egoff_cockpit_smoothing_default` path — process noise scale (Q)
+    /// CONSTANT-BOUND: `umst_cockpit_smoothing_default` path — process noise scale (Q)
     pub q: f64,
     /// CONSTANT-BOUND: measurement noise scale (R)
     pub r: f64,

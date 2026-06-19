@@ -197,25 +197,25 @@ fn assert_tuning_helps_kalman(scale: f64, qn: &str, rn: &str) {
 
 #[test]
 fn kalman_tuning_rcc_g5() {
-    assert_tuning_helps_kalman(3.0, "egoff_smoother_q_rcc", "egoff_smoother_r_rcc");
+    assert_tuning_helps_kalman(3.0, "umst_smoother_q_rcc", "umst_smoother_r_rcc");
 }
 #[test]
 fn kalman_tuning_mi_g5() {
-    assert_tuning_helps_kalman(2.0, "egoff_smoother_q_mi", "egoff_smoother_r_mi");
+    assert_tuning_helps_kalman(2.0, "umst_smoother_q_mi", "umst_smoother_r_mi");
 }
 #[test]
 fn kalman_tuning_eta_cog_g5() {
-    assert_tuning_helps_kalman(10.0, "egoff_smoother_q_eta_cog", "egoff_smoother_r_eta_cog");
+    assert_tuning_helps_kalman(10.0, "umst_smoother_q_eta_cog", "umst_smoother_r_eta_cog");
 }
 #[test]
 fn kalman_tuning_dignity_g5() {
-    assert_tuning_helps_kalman(0.8, "egoff_smoother_q_dignity", "egoff_smoother_r_dignity");
+    assert_tuning_helps_kalman(0.8, "umst_smoother_q_dignity", "umst_smoother_r_dignity");
 }
 #[test]
 fn kalman_tuning_landauer_g5() {
     assert_tuning_helps_kalman(
         200.0,
-        "egoff_smoother_q_landauer_slack",
-        "egoff_smoother_r_landauer_slack",
+        "umst_smoother_q_landauer_slack",
+        "umst_smoother_r_landauer_slack",
     );
 }

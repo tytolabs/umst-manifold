@@ -32,7 +32,7 @@ impl EkfState {
 /// THEOREM-BOUND: Joseph-form covariance update; distinguishable from the classic 1D Kalman step
 pub struct ScalarEkf1D {
     state: EkfState,
-    /// CONSTANT-BOUND: `egoff_cockpit_smoothing_default` (process noise, uniform slice)
+    /// CONSTANT-BOUND: `umst_cockpit_smoothing_default` (process noise, uniform slice)
     pub q: f64,
     /// CONSTANT-BOUND: measurement noise
     pub r: f64,

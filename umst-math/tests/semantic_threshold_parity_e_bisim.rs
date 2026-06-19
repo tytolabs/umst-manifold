@@ -1,4 +1,4 @@
-//! §14bis.l W-3 — ε-bisim: `egoff_semantic_coverage_threshold_w2` vs `# ZCI-PARITY-DEFAULT` in
+//! §14bis.l W-3 — ε-bisim: `umst_semantic_coverage_threshold_w2` vs `# ZCI-PARITY-DEFAULT` in
 //! `check_semantic_coverage.sh` (compile-time `include_str!` + static `REGISTRY`).
 
 use regex::Regex;
@@ -9,13 +9,13 @@ const CHECK_SEMANTIC_COVERAGE_SH: &str = include_str!("../../scripts/check_seman
 fn percent_from_row() -> u32 {
     let entry = REGISTRY
         .iter()
-        .find(|e| e.name == "egoff_semantic_coverage_threshold_w2")
-        .expect("REGISTRY must contain `egoff_semantic_coverage_threshold_w2` (§14bis.l W-2/W-3 G8 row)");
+        .find(|e| e.name == "umst_semantic_coverage_threshold_w2")
+        .expect("REGISTRY must contain `umst_semantic_coverage_threshold_w2` (§14bis.l W-2/W-3 G8 row)");
     let s = entry.expression.trim();
     let re = Regex::new(r"^(\d+)%")
         .expect("percent regex (Percent ∈ 0..=100) must compile for registry.expression");
     let c = re.captures(s).expect(
-        "egoff_semantic_coverage_threshold_w2.expression must start with N% (policy Percent)",
+        "umst_semantic_coverage_threshold_w2.expression must start with N% (policy Percent)",
     );
     c[1].parse()
         .expect("leading percent digits must parse as policy Percent 0..=100")

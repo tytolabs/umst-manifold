@@ -1,6 +1,6 @@
 # Environment variable migration (EGOFF → UMST)
 
-**Status:** Env overrides complete (2026-06-19); registry `name` column `egoff_*` identifiers deferred to H4e.  
+**Status:** Complete (2026-06-19) — env overrides and registry `name` column `umst_*` identifiers migrated.  
 **Breaking:** Operators must update shell exports and deployment configs.
 
 ## Memory family (H4a)
