@@ -1,6 +1,6 @@
 # VERIFY_TRANSCRIPT — machine run record
 
-**Date:** 2026-06-15 (W9 finish follow-up)  
+**Date:** 2026-06-19 (Composer backlog T2 — catalog bundle pin bump)  
 **Host:** multi-repo workspace monorepo (local)  
 **Exit code:** 0
 
@@ -9,17 +9,17 @@
 | Item | Value |
 |------|-------|
 | `rustc` | 1.88.0 (rustup; `$HOME/.cargo/bin` prepended) |
-| `umst-manifold` | `7431c1b5088cd3abb36d2af3d448eda8af4fd4fb` (`v2.0.0`) |
+| `umst-manifold` | `f70c411a3e56bb38c0086ab6b1a81f19e5d701d9` |
 | `umst-formal-double-slit` | `72a6fe93d44e471cd74e1d3f513396d3da7261c5` |
 | `umst-formal` | `b09d4a0a99190b49c166833a360b96a464452bd0` |
-| `umst-concrete-cartridge` | `938330c0eaeffe62c0df2729d4d88962bd508499` |
+| `umst-concrete-cartridge` | `4fe621556bc43b02d0a3208d7eb78f0b86f3e0e0` |
 
 ## Command (exact)
 
 ```bash
 cd umst-manifold
 export PATH="$HOME/.cargo/bin:$PATH"
-UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh 2>&1 | tee /tmp/verify_w9_followup.log
+UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh 2>&1 | tee /tmp/verify_composer_t2.log
 ```
 
 ## Catalog pin at run time (R0)
@@ -28,6 +28,8 @@ UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh 2>&1 | tee /tmp/v
 |-------|-------|
 | `module_count` | **122** |
 | `upstream_catalog_digest_hex` | `c61b1befdec77a82bbb9f6c3f7562e754218ef635f0e3b9990752138df5f4bb5` |
+| `composed_primary_fiber_fingerprint_hex` | `c712aa93443c12a0043ee54ee895166609d0c1e104d8e2e61ed4e1c4390bb3f8` |
+| `catalog_lock_bundle_sha256_hex` | `904f01b18d939d72ea63de27f639f94885b761ebad92b96082a602a620ace46c` |
 | `module_graph_edge_count` | 329 |
 
 ## W9 acceptance (additional)
