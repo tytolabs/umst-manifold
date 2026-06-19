@@ -7,6 +7,7 @@
   "module_graph_edge_count": 329,
   "composition_rule": "cross_repo_merge_v1_primary_wins_basename",
   "composed_catalog_digest_hex": "c61b1befdec77a82bbb9f6c3f7562e754218ef635f0e3b9990752138df5f4bb5",
+  "composed_primary_fiber_fingerprint_hex": "c712aa93443c12a0043ee54ee895166609d0c1e104d8e2e61ed4e1c4390bb3f8",
   "fiber_pins": [
     {
       "repo": "umst-formal-double-slit",

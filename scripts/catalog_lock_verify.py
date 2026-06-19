@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -17,6 +18,57 @@ def module_count(doc: dict[str, Any]) -> int:
     if "entries" in doc:
         return len(doc["entries"])
     return 0
+
+
+PRIMARY_FIBER_REPOS = ("umst-formal", "umst-formal-double-slit")
+
+
+def primary_fiber_fingerprint(lock: dict[str, Any]) -> str:
+    """SHA256 of sorted primary-fiber digests (preview / tertiary pins excluded)."""
+    import hashlib
+
+    pins = lock.get("fiber_pins") or []
+    digests: list[str] = []
+    for pin in pins:
+        if not isinstance(pin, dict):
+            continue
+        repo = pin.get("repo")
+        role = str(pin.get("lock_role", ""))
+        if repo not in PRIMARY_FIBER_REPOS:
+            continue
+        if "preview" in role or "track_f" in role:
+            continue
+        digest = pin.get("catalog_digest_hex")
+        if digest:
+            digests.append(f"{repo}:{digest}")
+    if not digests:
+        return ""
+    payload = "|".join(sorted(digests)).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def verify_digest_coupling(lock: dict[str, Any]) -> None:
+    """Non-preview fiber pin edits must update composed_primary_fiber_fingerprint_hex."""
+    fp = primary_fiber_fingerprint(lock)
+    if not fp:
+        return
+    stored = lock.get("composed_primary_fiber_fingerprint_hex")
+    if not stored:
+        print(
+            "FAIL: lock missing composed_primary_fiber_fingerprint_hex "
+            "(run catalog update protocol after primary fiber pin change)",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if stored != fp:
+        print(
+            "FAIL: primary fiber pin digest changed but "
+            f"composed_primary_fiber_fingerprint_hex not updated "
+            f"(want {fp[:12]}… got {stored[:12]}…)",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    print(f"OK: primary fiber fingerprint ({fp[:12]}…)")
 
 
 def composed_digest(lock: dict[str, Any]) -> str:
@@ -157,7 +209,26 @@ def verify_lock_exports(
 
 
 def main() -> None:
-    if len(sys.argv) < 3:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--coupling-only",
+        action="store_true",
+        help="Only verify composed_primary_fiber_fingerprint_hex vs fiber_pins",
+    )
+    parser.add_argument("lock", nargs="?", help="catalog.lock.json path")
+    parser.add_argument("composed", nargs="?", help="composed export JSON path")
+    parser.add_argument("fiber_exports", nargs="*", help="repo=export.json pairs")
+    args = parser.parse_args()
+
+    if args.coupling_only:
+        if not args.lock:
+            print("usage: catalog_lock_verify.py --coupling-only <lock.json>", file=sys.stderr)
+            sys.exit(2)
+        lock = json.loads(Path(args.lock).read_text())
+        verify_digest_coupling(lock)
+        return
+
+    if not args.lock or not args.composed:
         print(
             "usage: catalog_lock_verify.py <lock.json> <composed-export.json> "
             "[repo=export.json ...]",
@@ -165,16 +236,18 @@ def main() -> None:
         )
         sys.exit(2)
 
-    lock_path = Path(sys.argv[1])
-    composed_path = Path(sys.argv[2])
+    lock_path = Path(args.lock)
+    composed_path = Path(args.composed)
     fiber_exports: dict[str, Path] = {}
-    for arg in sys.argv[3:]:
+    for arg in args.fiber_exports:
         if "=" not in arg:
             print(f"FAIL: expected repo=path, got {arg!r}", file=sys.stderr)
             sys.exit(2)
         repo, path = arg.split("=", 1)
         fiber_exports[repo] = Path(path)
 
+    lock = json.loads(lock_path.read_text())
+    verify_digest_coupling(lock)
     verify_lock_exports(lock_path, composed_path, fiber_exports)
 
 

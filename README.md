@@ -490,7 +490,7 @@ We maintain strict formal proof anchors (`formal_status`) mapping our Rust imple
 - **Claims vs proofs ledger (Lean ↔ `catalog_id` ↔ Rust):** [`docs/claims-vs-proofs.md`](docs/claims-vs-proofs.md)
 - **Formal integration status (module buckets, release witness gaps):** [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md)
 - **Catalog ↔ Rust coverage audit:** [`docs/CATALOG_COVERAGE_AUDIT.md`](docs/CATALOG_COVERAGE_AUDIT.md)
-- **Compositional inference / gateway audit:** [`docs/COMPOSITIONAL_INFERENCE_AUDIT.md`](docs/COMPOSITIONAL_INFERENCE_AUDIT.md)
+- **Compositional inference / gateway audit:** [`docs/CATALOG_COVERAGE_AUDIT.md`](docs/CATALOG_COVERAGE_AUDIT.md) (catalog ↔ Rust witness coverage)
 - **Release witness ladder:** [`docs/RELEASE_WITNESS_LADDER.md`](docs/RELEASE_WITNESS_LADDER.md) — philosophy [§ Proof library · gate law · MI envelope · no Rust axioms](docs/RELEASE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms)
 - **Formal export scope (sibling):** [`../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md`](../umst-formal-double-slit/Docs/EXPORT_COVERAGE.md)
 - **Two-repo formal alignment (sibling):** [`../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md`](../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md)
@@ -502,7 +502,7 @@ We maintain strict formal proof anchors (`formal_status`) mapping our Rust imple
 
 **CI catalog lock:** digest `c61b1bef…` · **122** modules — enforced by `umst-catalog-drift.yml` and `catalog_lock_module_count_matches_upstream_export_122` (current unified export after PrimeSpectral fiber).
 
-**Historical primary-only pin:** digest `c1d9ba2aa402…` · **69** modules — pre–`formal-fiber-merge` rollback only ([`docs/FORMAL_FIBER_MERGE_RUNBOOK.md`](docs/FORMAL_FIBER_MERGE_RUNBOOK.md)).
+**Historical primary-only pin:** digest `c1d9ba2aa402…` · **69** modules — pre–formal-fiber-merge rollback only ([`docs/W9_PLAN.md`](docs/W9_PLAN.md) · [`docs/DUAL_PIN_ARCHITECTURE.md`](docs/DUAL_PIN_ARCHITECTURE.md)).
 
 The manifold pins the exported Lean inventory from [`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit) in **`artifacts/catalog.lock.json`**. Digest is enforced at build via `build.rs` → `UMST_CATALOG_LOCK_SHA256_HEX`. Canonical export: `umst-formal-double-slit/artifacts/catalog.json` (`make lean-catalog-export`). Override at build: `UMST_CATALOG=/path/to/lock.json`. Handoffs: [`docs/AGENT_STATUS.md`](docs/AGENT_STATUS.md).
 
