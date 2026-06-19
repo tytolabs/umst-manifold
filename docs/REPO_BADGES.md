@@ -1,21 +1,23 @@
-# Repository badge SSOT
+# Repository badges
 
-**Slug:** `repo-badges`  
-**Purpose:** Single source for README shields and `studiotyto-website` `/umst` cards.
+**Canonical SSOT:** [`MaOS-Workspace/docs/repo-badges.v1.json`](../../docs/repo-badges.v1.json) (machine-readable catalog).
 
-| Repository | Role | Primary CI workflow | Maturity chip | Website card |
-|------------|------|---------------------|---------------|--------------|
-| `tytolabs/umst-manifold` | runtime engine | `rust.yml` | physics substrate | Manifold + catalog drift (stack hub only) |
-| `tytolabs/umst-concrete-cartridge` | applied cartridge | `rust.yml` | PRL agent-layer | Concrete MCP + schemas |
-| `tytolabs/umst-ucrs` | constitutional time | `rust.yml` | witness: library+live; p2p: deferred | UCRS Tier-2 stamps |
-| `tytolabs/umst-formal` | formal proof | `ci.yml` | Lean 0 sorry (scoped roots) | Meso-layer formal |
-| `tytolabs/umst-formal-double-slit` | formal proof | `lean.yml` | quantum RCC verified | Knowing paper |
-| `tytolabs/umst-supercap-cartridge` | applied cartridge | `rust.yml` | electrochemistry | Supercap cartridge |
-| `tytolabs/MaOS-Workspace` | stack meta | `docs-integrity.yml` | catalog drift link | — |
+This file records human rules only.
 
-**Rules**
+## Policy
 
-1. Stack hub (`MaOS-Workspace`, manifold README) shows **catalog drift** badge only — not duplicated on every repo.
-2. Formal repos: umbrella **CI** on website; README may keep Lean/Haskell/Formal trio (≤5 shields).
-3. UCRS: Rust CI + static maturity labels — no Lean badge until `Lean/` ships.
-4. Website cards: one CI badge + one maturity chip + verify link per repo.
+| Allowed per README | Forbidden |
+|--------------------|-----------|
+| 1× GitHub Actions CI badge (primary workflow from JSON) | Meta “Badge SSOT” badge |
+| 1× License | Static shields pretending to be build status (`witness:`, `p2p:`, `layer:`) |
+| Optional 1× doc link chip (e.g. Agent MCP) | More than 3 shields total |
+| Stack hub only: catalog drift badge on manifold + workspace | Duplicating catalog drift on every repo |
+
+## Public copy
+
+- Use **role lines** from JSON (`role` field), not Track/Tier engineering jargon.
+- Website cards: CI badge + role line + link to verify doc.
+
+## Website sync
+
+[`studiotyto-website/src/repo-badges.ts`](../../studiotyto-website/src/repo-badges.ts) mirrors JSON entries with `website: true`. Update JSON first, then sync TypeScript.

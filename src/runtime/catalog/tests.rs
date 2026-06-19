@@ -89,10 +89,11 @@ fn v1_monolith_lock_quickcheck_backward_compat() {
 #[test]
 fn v2_dual_pin_per_fiber_digests_present() {
     let lock = CatalogLock::from_bundled().expect("bundled lock");
-    assert_eq!(lock.fiber_pins.len(), 2);
+    assert_eq!(lock.fiber_pins.len(), 3);
     let repos: Vec<_> = lock.fiber_pins.iter().map(|p| p.repo.as_str()).collect();
     assert!(repos.contains(&"umst-formal-double-slit"));
     assert!(repos.contains(&"umst-formal"));
+    assert!(repos.contains(&"umst-ucrs"));
     for pin in &lock.fiber_pins {
         assert_eq!(pin.catalog_digest_hex.len(), 64);
     }
