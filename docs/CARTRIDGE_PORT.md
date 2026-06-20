@@ -22,4 +22,4 @@ Types implementing only [`GateCartridge`](../src/core/traits.rs) (see `tests/gat
 
 ## Cross-repo
 
-Domain implementations live in cartridge repos (`umst-concrete-cartridge`, `umst-supercap-cartridge`). Manifold pins semver tags `v2.0.0-rc1` (Phase A) / `v2.0.0` (Phase B).
+Domain implementations live in cartridge repos (`umst-concrete-cartridge`, `umst-supercap-cartridge`). Semver tags `v2.0.0-rc1` / `v2.0.0` were **withdrawn** (2026-06-20); re-tag after sign-off.

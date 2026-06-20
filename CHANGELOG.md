@@ -12,9 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.0.0] — 2026-06-15
+### Removed (gate hygiene)
 
-**Tags:** [`v2.0.0-rc1`](https://github.com/tytolabs/umst-manifold/releases/tag/v2.0.0-rc1) (Phase A) · [`v2.0.0`](https://github.com/tytolabs/umst-manifold/releases/tag/v2.0.0) (Phase B)  
+- **GitHub release + tags `v2.0.0` / `v2.0.0-rc1` withdrawn** (2026-06-20): no Zenodo software DOI was minted for the release; premature public ship claim. Re-tag after user sign-off and trust-surface close. Code on `main` unchanged.
+
+## [2.0.0] — 2026-06-15 (unreleased — tags withdrawn 2026-06-20)
+
+**Tags:** ~~`v2.0.0-rc1`~~ / ~~`v2.0.0`~~ (deleted; see Unreleased)  
 **Manifold `main`:** `7431c1b` · **Catalog R0:** **122** modules, digest `c61b1bef…`
 
 Material-agnostic **W9** wave: kernel renames (`StatePoint`, `transition_proposal`), cement literals evicted to cartridge injection, lexicon + agnostic-on-fork CI green, formal prime-spectral mirror (+2 Lean roots), cartridge registry split, Phase B `GateCartridge` / `SpatialCartridge` stub + [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md). Plan: [`docs/W9_PLAN.md`](docs/W9_PLAN.md).

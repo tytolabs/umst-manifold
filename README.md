@@ -10,7 +10,7 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Cartridge: concrete](https://img.shields.io/badge/cartridge-concrete-C9A27A)](https://github.com/tytolabs/umst-concrete-cartridge)
 
-> Release notes in [CHANGELOG.md](CHANGELOG.md). **v2.0.0** (2026-06-15): material-agnostic cartridge port — [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md), **122**-module catalog digest `c61b1bef…`. **Stack verify:** `verify_umst_stack.sh` green — [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md) (2026-06-19).
+> Release notes in [CHANGELOG.md](CHANGELOG.md). **W9 landed** on `main` (2026-06-15): material-agnostic cartridge port — [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md), **122**-module catalog digest `c61b1bef…`. **v2.0.0 tags/releases withdrawn** pending sign-off (no Zenodo software DOI minted). **Stack verify:** `verify_umst_stack.sh` green — [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md) (2026-06-19).
 
 > *Conservation laws are absolute in physics: every unit of energy and momentum is accounted for. Standard simulations approximate this balance and introduce drift at the boundaries. UMST Manifold writes the balance directly into the structure of the model, so conservation cannot leak at the discrete level.*
 
