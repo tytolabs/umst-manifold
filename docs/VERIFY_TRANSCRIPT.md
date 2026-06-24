@@ -53,7 +53,7 @@ w8_publish_readiness: PASS=21 FAIL=0 SKIP=2
 verify_umst_stack: OK
 ```
 
-Full log: `/tmp/verify_w9_followup.log`
+Full log: `/tmp/verify_composer_t2.log`
 
 ## Research fence (prime-spectral)
 

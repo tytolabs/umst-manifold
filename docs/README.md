@@ -21,8 +21,8 @@ Read top-to-bottom once for context; use **Quick verify** before any code change
 |-----|------|
 | [`VERIFY.md`](VERIFY.md) | Canonical `cargo test` / feature matrix and stack script |
 | [`TCB.md`](TCB.md) | Trusted computing base: `physicalSecondLaw`-only policy, CBF, digest witness |
-| [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | Track F: cross-repo Lean catalog merge (coordinator) |
-| [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) | Track A: publish `manifest` for remote cartridge CI |
+| [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | Cross-repo Lean catalog merge (coordinator) |
+| [`W8_PUBLISH_RUNBOOK.md`](W8_PUBLISH_RUNBOOK.md) | Publish `manifest` for remote cartridge CI |
 | [`REPO_LAYOUT_SSOT.md`](REPO_LAYOUT_SSOT.md) | Monorepo layout under `umst-manifold/` (`runtime/`, `gate/`, `manifest/`, `ros/`, `bins/`) |
 
 ### 1 — Executive rollup (start here)
