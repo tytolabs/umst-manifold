@@ -334,7 +334,10 @@ mod tests {
     struct EmptyCartridge;
 
     impl IScienceCartridge<TestBackend> for EmptyCartridge {
-        fn compute_all(&self, mix: &MaterialCompositionTensor<TestBackend>) -> PhysicalResult<TestBackend> {
+        fn compute_all(
+            &self,
+            mix: &MaterialCompositionTensor<TestBackend>,
+        ) -> PhysicalResult<TestBackend> {
             physical_zeros(&mix.fractions.device(), 1, 1)
         }
 
