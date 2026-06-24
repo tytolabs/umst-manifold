@@ -369,3 +369,8 @@ required-features = ["epistemic-ppo"]
 [[test]]
 name = "catalog_functor_witness"
 path = "tests/catalog_functor_witness.rs"
+
+[[test]]
+name = "mechanics_solve_port_compile"
+path = "tests/mechanics_solve_port_compile.rs"
+required-features = ["mechanics-adjoint"]
