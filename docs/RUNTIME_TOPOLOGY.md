@@ -14,7 +14,7 @@ effects live only at the **Warm** boundary (once) or the **Cold** edge.
 
 | Tier | What lives here | Effects allowed | Key symbols |
 | ---- | --------------- | --------------- | ----------- |
-| **Hot** | In-process physics, gates, solvers, Burn graph | Pure math only; zero alloc on the inner loop; `Result` for divergence | [`IScienceCartridge`](../src/core/traits.rs) (`compute_all`, `compute_topology`), [`TransitionFilter`](../src/gate/transition_proposal.rs), [`ThmcSolver::step`](../src/physics/solvers/thmc.rs), [`ai::ppo`](../src/ai/ppo.rs)/[`ai::cbf`](../src/ai/cbf.rs), planned `ai::constraint_loss`, `umst-concrete-ffi` `cdylib` |
+| **Hot** | In-process physics, gates, solvers, Burn graph | Pure math only; zero alloc on the inner loop; `Result` for divergence | [`IScienceCartridge`](../src/core/traits.rs) (`compute_all`, `compute_topology`), [`TransitionFilter`](../src/gate/transition_proposal.rs), [`ThmcSolver::step`](../src/physics/solvers/thmc.rs), [`ai::ppo`](../src/ai/ppo.rs)/[`ai::cbf`](../src/ai/cbf.rs), live (partial) [`ai::constraint_loss`](../src/ai/constraint_loss.rs) (feature-gated), `umst-concrete-ffi` `cdylib` |
 | **Warm** | Single deserialization boundary | Rational/`f64` parse **once** per request/batch; no per-step serde | planned `into_simulation()` / `into_arena()` (single conversion `cold bytes → hot view`) |
 | **Cold** | Edges, transport, telemetry | serde, JSON-RPC, HTTP, files, `tracing` logs, metrics export | [`umst-mcp`](../../umst-concrete-cartridge/crates/umst-mcp), `umst-cli`, [`gate_server_router`](../src/gate_server_router.rs), [`gate/http_manifest`](../src/gate/http_manifest.rs), `ros`, Docker |
 
@@ -65,7 +65,7 @@ flowchart LR
 | Audience | Use this | Do **not** reach for |
 | -------- | -------- | -------------------- |
 | **Agents (MCP)** | `umst_gate_check`, `umst_predict`, `umst_audit`, `contribute*` via [`AGENT_MCP.md`](../../umst-concrete-cartridge/docs/AGENT_MCP.md) (Cold, JSON-RPC) | Raw solver/cartridge structs |
-| **Agents (perf-sensitive)** | planned `umst-runtime-arena` (`arena.load(bytes)` once → in-process `predict` loop) — the fast path | Per-step Docker MCP round-trips |
+| **Agents (perf-sensitive)** | skeleton shipped [`umst-runtime-arena`](../umst-runtime-arena/) (`load_arena(bytes)` once → in-process `predict` loop) — opt-in fast path | Per-step Docker MCP round-trips |
 | **Researchers (Rust)** | `IScienceCartridge` trait, `ThmcSolver`, Burn modules as a **library** | — |
 | **Internal only** | `http_manifest`, `gate_server_router`, FFI marshalling | exposed as public agent API |
 
@@ -98,8 +98,9 @@ loops in-process (target ≥10× MCP round-trip).*
 | --------- | ------ |
 | `IScienceCartridge`, `TransitionFilter`, `ThmcSolver::step`, Burn ppo/cbf | **live** (hot) |
 | Single Warm `into_simulation()`/`into_arena()` conversion | **planned** (P2) |
-| `umst-runtime-arena` zero-copy `UmstArenaView` (`Send + Sync`, zero-alloc) | **planned** (P2) |
-| `ai::constraint_loss` soft penalty + `ConstraintExplanation` | **planned** (P4) |
+| `umst-runtime-arena` zero-copy `UmstArenaView` (`Send + Sync`, zero-alloc) | **skeleton shipped** (P2) — `load_arena()`; no mmap; zero MCP consumers |
+| `ai::constraint_loss` soft penalty + `ConstraintExplanation` | **live (partial)** (P4) — feature-gated (`epistemic-ppo` / `kleisli-ppo-hot-bind`); `landauer_slack_violation` deferred |
+| THMC gate evidence (`wire_gate_evidence_post_step`, `step_gate_evidence` / `drain_gate_evidence`) | **live (partial)** (W10) — accumulator wired; cartridge-sourced dissipation deferred |
 | UCRS witness stamps on arena commit | **doc + guard** (P2-C; stamp wire deferred) |
 | `catalog.lock.json` fiber pin `commit_stamp` | **doc + schema** (optional; populated on witnessed commit) |
 

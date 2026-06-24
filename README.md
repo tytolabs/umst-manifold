@@ -42,15 +42,24 @@ We don't pretend everything is proven. Conservation structure is mathematical, a
 
 If you want the applied materials engine for cementitious systems (concrete design, 3D printing, structural topology), see the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge).
 
-### For agents and researchers
+### For Agents & Researchers
 
 | Path | When to use |
 |------|-------------|
-| **Library (hot)** | Batch sweeps, training, CI physics — `cargo test`, cartridge `IScienceCartridge` in-process | 
+| **Library (hot)** | Batch sweeps, training, CI physics — `cargo test`, cartridge `IScienceCartridge` in-process |
+| **Arena (warm)** | Parse-once loops — [`umst-runtime-arena`](umst-runtime-arena/) `load_arena()` skeleton (opt-in; no MCP consumer yet) |
 | **MCP (cold)** | IDE agents, discovery, single-shot gate/predict — sibling [`umst-concrete-cartridge` Agent MCP](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md) |
 | **Formal** | Catalog witnesses, digest pins — [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md) |
 
-Prefer **library/arena calls over Docker MCP** for performance-sensitive proposal loops — arena skeleton shipped; adoption tracked in the [master plan stack roadmap](https://github.com/tytolabs/MaOS-Workspace/blob/master/outputs/.plans/umst-master-reengineering.md#stack-roadmap-shipped-vs-in-flight).
+Prefer **library/arena calls over Docker MCP** for performance-sensitive proposal loops. Hot/warm/cold boundaries: [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md). Adoption tracked in the [master plan stack roadmap](https://github.com/tytolabs/MaOS-Workspace/blob/master/outputs/.plans/umst-master-reengineering.md#stack-roadmap-shipped-vs-in-flight).
+
+### Current State (2026-06-24)
+
+| Shipped | Skeleton / partial | USER-gated |
+|---------|-------------------|------------|
+| DEC substrate, thermodynamic CBF, `IScienceCartridge`, solver-stable CI lane | `umst-runtime-arena` v1 skeleton (`load_arena`); `ai::constraint_loss` behind `epistemic-ppo`; THMC `step_gate_evidence` / `drain_gate_evidence` (W10); Warm `into_arena()` not on agent path | P2 arena ≥10× MCP benchmark; P4 training witness; Phase 6 Zenodo / release tag; solver waves (B6) |
+
+Full evidence ledger: [`outputs/IMPLEMENTATION_EVIDENCE.md`](https://github.com/tytolabs/MaOS-Workspace/blob/master/outputs/IMPLEMENTATION_EVIDENCE.md) (MaOS-Workspace SSOT — update Status there, not duplicate tables here).
 
 ---
 <!-- readme:hero-figure -->
