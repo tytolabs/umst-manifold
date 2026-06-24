@@ -179,6 +179,12 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
             }
         }
 
+        raw_state
+            .try_as_verified_dec_bundle(0)
+            .map_err(|e| FormalReject::DecTypestateStaging {
+                detail: format!("{e:?}"),
+            })?;
+
         // 1. Execute the physics simulation across the topological Cellular Sheaf
         let physical_result: PhysicalResult<B> = self.cartridge.compute_topology(&raw_state);
 

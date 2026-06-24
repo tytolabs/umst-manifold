@@ -30,6 +30,8 @@ fn format_catalog_digest_hex(bytes: &[u8; 32]) -> String {
 /// crate feature.
 #[derive(Clone, Eq, PartialEq)]
 pub enum FormalReject {
+    /// DEC typestate staging bundle rejected the proposed UMST layout before physics.
+    DecTypestateStaging { detail: String },
     /// Clausius–Duhem / Landauer bookkeeping rejected the proposed transition (`ThermodynamicCBF`).
     ThermodynamicControlBarrier {
         catalog_id: &'static str,
@@ -46,6 +48,10 @@ pub enum FormalReject {
 impl core::fmt::Debug for FormalReject {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            FormalReject::DecTypestateStaging { detail } => f
+                .debug_struct("DecTypestateStaging")
+                .field("detail", detail)
+                .finish(),
             FormalReject::ThermodynamicControlBarrier { catalog_id, detail } => f
                 .debug_struct("ThermodynamicControlBarrier")
                 .field("catalog_id", catalog_id)
@@ -65,6 +71,7 @@ impl FormalReject {
     /// Stable gate / witness slug for telemetry (see `GateUnificationSpec.md`).
     pub fn catalog_id(&self) -> &'static str {
         match self {
+            Self::DecTypestateStaging { .. } => "umst.gate.dec_typestate",
             Self::ThermodynamicControlBarrier { catalog_id, .. } => catalog_id,
             #[cfg(feature = "formal-witness")]
             Self::CatalogSchemaDigestMismatch { .. } => "umst.formal.catalog_lock",
@@ -75,6 +82,9 @@ impl FormalReject {
 impl core::fmt::Display for FormalReject {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            FormalReject::DecTypestateStaging { detail } => {
+                write!(f, "DEC typestate staging reject [umst.gate.dec_typestate]: {detail}")
+            }
             FormalReject::ThermodynamicControlBarrier { catalog_id, detail } => {
                 write!(f, "Transition Rejected by CBF [{catalog_id}]: {detail}")
             }

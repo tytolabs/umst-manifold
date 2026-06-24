@@ -67,6 +67,21 @@ impl<B: Backend> UnifiedMaterialStateTensor<B> {
         B1Incidence::try_new(self.edges_b1.clone())
     }
 
+    /// Cold DEC staging pre-check: assemble [`super::dec_typestate::VerifiedUMST`] from live fields.
+    ///
+    /// Distinct from proof-carrying [`VerifiedUMST<B, P>`] on the gateway hot path.
+    #[inline]
+    pub fn try_as_verified_dec_bundle(
+        &self,
+        channel: usize,
+    ) -> Result<super::dec_typestate::VerifiedUMST<B>, DecTypestateError> {
+        super::dec_typestate::VerifiedUMST::try_assemble(
+            self.edges_b1.clone(),
+            self.scalar_features.dims()[1],
+            channel,
+        )
+    }
+
     /// Blend full `proposed_scalar_features` (`[N, F]`) toward the current [`Self::scalar_features`]
     /// using [`Self::policy_editable_mask`] broadcast over all scalar channels:
     /// `result = proposed * m + original * (1 - m)` (same rule as [`Self::project_scalar_channel`]).
