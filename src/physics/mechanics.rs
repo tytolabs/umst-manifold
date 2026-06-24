@@ -26,6 +26,8 @@
 //! [`crate::physics::laplacian::TopologicalLaplacian`]).
 
 use burn::tensor::{backend::Backend, Int, Tensor};
+#[cfg(feature = "mechanics-adjoint")]
+use burn::tensor::ElementConversion;
 
 use super::dec_operators::DecEdgeOperators;
 use super::framework::PhysicsSolverZst;

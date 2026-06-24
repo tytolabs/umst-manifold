@@ -6,7 +6,7 @@
 //! Complements [`super::mechanics_operator::MechanicsOperator`] (tensor morphism without witness)
 //! with a [`crate::solve_report::SolveReport`] at the port boundary for adjoint / gate consumers.
 //!
-//! **This wave:** trait + bar port stub only — no `thmc`, `fracture_field`, or `adjoint` rewiring.
+//! **Wave 9:** first production consumer via [`bar_network_equilibrium_reported`] (THMC operator-split).
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
@@ -80,6 +80,42 @@ impl<B: Backend<FloatElem = f32>> MechanicsSolvePort<B> for BarNetworkMechanicsS
         let report = pcg.into_solve_report(rel_tol, PrecisionLane::F64AdjointBarPcg);
         (u, stress, report)
     }
+}
+
+/// Fail-closed bar equilibrium via [`BarNetworkMechanicsSolvePort`] (`ops-mechanics-port-consumer`).
+#[allow(clippy::too_many_arguments)]
+pub fn bar_network_equilibrium_reported<B: Backend<FloatElem = f32>>(
+    displacement: Tensor<B, 3>,
+    coords: Tensor<B, 2>,
+    stiffness: Tensor<B, 3>,
+    body_force: Tensor<B, 3>,
+    edges_b1: Tensor<B, 2, Int>,
+    damage: Tensor<B, 3>,
+    boundary_mask: Tensor<B, 3>,
+    cross_section_area: f32,
+    inner_cfg: &MechanicsInnerLoopConfig,
+    rel_tol: f32,
+) -> Result<(Tensor<B, 3>, Tensor<B, 4>, SolveReport), String> {
+    let port = BarNetworkMechanicsSolvePort;
+    let (u, stress, report) = port.solve_equilibrium_reported(
+        displacement,
+        coords,
+        stiffness,
+        body_force,
+        edges_b1,
+        damage,
+        boundary_mask,
+        cross_section_area,
+        inner_cfg,
+        rel_tol,
+    );
+    if !report.converged() {
+        return Err(format!(
+            "bar_network_equilibrium_reported: PCG did not converge (rel_residual={} rel_tol={})",
+            report.rel_residual, report.rel_tol
+        ));
+    }
+    Ok((u, stress, report))
 }
 
 #[cfg(test)]
