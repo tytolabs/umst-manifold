@@ -2,6 +2,8 @@
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
 //! W9 Phase A deprecated aliases — excluded from agnostic-on-fork / tier-1 lexicon scans.
+//!
+//! [`MixTensor`] is a type alias for [`StatePoint`]; prefer [`StatePoint`] in new code.
 
 #![allow(non_snake_case)]
 
