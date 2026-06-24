@@ -69,6 +69,24 @@ flowchart LR
 | **Researchers (Rust)** | `IScienceCartridge` trait, `ThmcSolver`, Burn modules as a **library** | — |
 | **Internal only** | `http_manifest`, `gate_server_router`, FFI marshalling | exposed as public agent API |
 
+## HTTP gate defaults — migration (P5 / `p5-retire-http-defaults`)
+
+The cold HTTP shim ([`gate/http_manifest`](../src/gate/http_manifest.rs)) historically
+constructed evaluators from embedded prototype literals (`default_gate_manifest`,
+`GateHttpRuntime::from_defaults`, `HttpTransitionEvaluator::from_domain_policy_defaults`).
+Those paths are **deprecated** in favor of **injection-only** construction:
+
+| Deprecated | Replacement |
+| ---------- | ----------- |
+| `default_gate_manifest()` | `GateManifest::from(&UmstManifest)` |
+| `HttpTransitionEvaluator::from_domain_policy_defaults()` | `HttpTransitionEvaluator::from_umst_manifest(&manifest)` |
+| `GateHttpRuntime::from_defaults()` | `GateHttpRuntime::from_umst_manifest(&manifest)` |
+
+`gate_server` already wires `GateHttpRuntime::from_umst_manifest(&UmstManifest::default())`.
+Agents and integrators should pass an explicit [`UmstManifest`](../src/manifest/umst_manifest.rs)
+(or a cartridge-supplied policy row) rather than embedded literal defaults. See also
+**`docs/GateUnificationSpec.md`** § Migration notes.
+
 **Migration note (add to AGENT_MCP.md):** *For performance-sensitive or batched
 work, prefer the in-process library / arena path over per-call Docker MCP. MCP
 remains the stable default; the arena is an opt-in fast path that parses once and
