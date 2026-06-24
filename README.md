@@ -13,8 +13,6 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Cartridge: concrete](https://img.shields.io/badge/cartridge-concrete-C9A27A)](https://github.com/tytolabs/umst-concrete-cartridge)
 
-*This ecosystem is dedicated to the thousands of unnamed contributors who wrote formal proofs, maintained open-source compilers, and built mathematical libraries for years — often without evidence that any of it would be used beyond pure theory. They chose to make their work free, because they understood that knowledge about physical reality cannot be owned. Whatever this system achieves is yours.*
-
 > Release notes in [CHANGELOG.md](CHANGELOG.md). **W9 landed** on `main` (2026-06-15): material-agnostic cartridge port — [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md), **122**-module catalog digest `c61b1bef…`. **v2.0.0 tags/releases withdrawn** pending sign-off (no Zenodo software DOI minted). **Stack verify:** `verify_umst_stack.sh` green — [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md) (2026-06-19).
 
 > *Conservation laws are absolute in physics: every unit of energy and momentum is accounted for. Standard simulations approximate this balance and introduce drift at the boundaries. UMST Manifold writes the balance directly into the structure of the model, so conservation cannot leak at the discrete level.*
