@@ -8,7 +8,7 @@ This page is the **authoritative** mapping from solver surfaces to **Cargo featu
 
 ## Completion column
 
-**Completion (%)** is a coarse label in **{0, 25, 50, 75, 100}**, aligned with the v0.4 verification narrative when that material is available in your checkout (historically shipped beside this crate as numbered rows **#1–#10**). It is **not** “fraction of tests green.” **100** means the public acceptance story for that lane is met end-to-end on the stated CI path; lower values mean partial milestones, smokes, or documented gaps. **Do not** treat **100** as permission to claim closure unless the underlying acceptance text is satisfied.
+**Completion (%)** is a coarse label in **{0, 25, 50, 75, 100}**, aligned with the v0.4 verification narrative when that material is available in your checkout (historically shipped beside this crate as numbered rows **#1–#10**). It is **not** “fraction of tests green.” **100** means the public acceptance story for that lane is met end-to-end on the stated **test** CI path for the scoped benchmark (not the whole solver family). Lower values mean partial milestones, smokes, or documented gaps. **Do not** treat **100** as permission to claim closure unless the underlying acceptance text is satisfied. **Compiled ≠ validated:** `cargo check` / `cargo clippy` green does **not** discharge physics — see § CI.
 
 ---
 
@@ -28,15 +28,19 @@ This page is the **authoritative** mapping from solver surfaces to **Cargo featu
 
 ## CI (`.github/workflows/rust.yml`)
 
-| Job | Role |
-| --- | --- |
-| **`solver-status`** | `python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set` — stable rows must cite real tests; statistical-mechanics row must list the full `statmech_*` set (see `scripts/check_solver_status.py`). |
-| **`build-test`** | Default features: `cargo build` / `cargo test`. |
-| **`solver-stable-pr`** (PR) | `cargo test --features solver-stable`. |
-| **`solver-research-check-pr`** (PR) | `cargo check --all-targets --features solver-stable,solver-research`. |
-| **`phase4-verification-pr`** (PR) | Release tests: `thmc_monolithic_newton_chain`; `photonics_curl_curl_{2d_patch,3d_brick}` with `photonics-fdfd`; `statmech_lj_johnson_upscale_bridge` — all with `solver-research` as in the workflow. |
-| **`lint`** | `cargo fmt --check` and `cargo clippy --all-targets --features solver-experimental -- -D warnings` (toolchain pinned in workflow). |
-| **`research-stack`** | `main` / `workflow_dispatch`: `cargo test --release --features solver-experimental` with one retry. |
+**Signal legend:** **test** = `cargo test` (physics benches may run); **compile** = `cargo check` / `cargo clippy` only (**builds**, not validated physics); **docs** = markdown / script lint. Workflow **job ids** appear in backticks; doc labels rename misleading ids where noted.
+
+| Doc label (workflow job id) | Signal | Role |
+| --- | --- | --- |
+| **`solver-status`** | docs | `python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set` — stable rows must cite real tests; statistical-mechanics row must list the full `statmech_*` set (see `scripts/check_solver_status.py`). |
+| **`build-test`** | test | Default features: `cargo build` / `cargo test`. |
+| **`solver-stable-pr`** (PR) | test | `cargo test --features solver-stable`. |
+| **`solver-research-compile-pr`** (`solver-research-check-pr`) | **compile** | `cargo check --all-targets --features solver-stable,solver-research` — research graph **builds**; does **not** run physics verification. |
+| **`phase4-verification-pr`** (PR) | test | Release tests: `thmc_monolithic_newton_chain`; `photonics_curl_curl_{2d_patch,3d_brick}` with `photonics-fdfd`; `statmech_lj_johnson_upscale_bridge` — all with `solver-research` as in the workflow. |
+| **`lint`** | compile | `cargo fmt --check` and `cargo clippy --all-targets --features solver-experimental -- -D warnings` (toolchain pinned in workflow). |
+| **`solver-experimental-pr-optional`** (PR) | test (optional) | `cargo test --features solver-experimental --no-fail-fast`; not a merge gate (`continue-on-error`). |
+| **`research-stack`** (`main`) | test (optional) | `main` / `workflow_dispatch`: `cargo test --release --features solver-experimental` with one retry; `continue-on-error` on `main`. |
+| **`verify-umst-stack`** | test | Gate parity + formal witness subset via `verify_umst_stack.sh` when formal export is present. |
 
 ---
 
@@ -49,14 +53,14 @@ Use **Verification** paths as the contract for what “implemented / verified”
 | `solvers::topology_solver` (`TopologyOptimizer`, density evolution) | stable | **25** | `tests/topology_continuation.rs`, `tests/topology_filter.rs` | Feature **`topology-density-evolution`**. Conservative stable entry: heat-equation / SIMP-style density evolution. Shell **B6 / B8 / Track L** acceptance and cartridge commands live in **umst-concrete-cartridge** (not repeated here). |
 | `mechanics::VectorMechanicsSolver`, `adjoint::AdjointCompliance`, `adjoint_q1_hex::AdjointComplianceQ1Hex` | research | **25** | `tests/verification/mechanics_analytic.rs`, `tests/verification/adjoint_compliance_analytic.rs`, `tests/verification/adjoint_q1_hex_compliance_analytic.rs`, `tests/verification/adjoint_q1_hex_matches_bar_in_limit.rs` | Features **`mechanics-voigt-cauchy`**, **`topology-density-evolution`**, **`mechanics-adjoint-q1-hex`**. Shipped quasi-static bar / plate / Q1-hex paths + discrete adjoint checks. **`acoustics-newmark`** exercises **scalar 1-D** periodic bar waves — **not** vector 3D solid dynamics on the mechanics graph. Kirchhoff **≤ 5 %** centre-deflection vs classical SSSS remains **open** for the shipped brick BCs: the **`#[ignore]`** wide-plate gate still shows **O(1)** relative error; the tighter **`w/w_K`** band test is a **regression** guard on the mismatched-BC path, not thin-plate accuracy. **Contact / friction:** not implemented. See **§ Mechanics**. |
 | `solvers::fracture_field` (`PhaseFieldFractureSolver`) | research | **50** | `tests/verification/fracture_gamma_convergence.rs`, `tests/verification/staggered_fracture_mechanics_chain.rs`, `tests/verification/staggered_ud_loop_milestone.rs`, `tests/verification/thmc_drying_shrinkage.rs` | Feature **`fracture-at2`**. AT2 relaxation, length-scale and **partial** Γ-type harnesses, staggered bar milestones, THMC kinematic strain parity vs fracture helpers. **Open:** sharp-interface Γ-limit with driven **ψ⁺**, broader \((l_0,h)\), within-step THMC **u↔d** stagger. **Compressive crushing / plasticity caps** are **not** in this solver (spectral tensile **ψ⁺** drive only). See **§ Fracture**. |
-| `solvers::acoustics` (`AcousticWaveSolver`, `AcousticNewmarkBar1dPeriodic`) | research | **100** | `tests/verification/acoustics_plane_wave.rs` | Feature **`acoustics-newmark`**. Newmark vs dense reference; **return-map** checks at multiple `n` including **`plane_wave_return_map_n128_l2_within_two_percent`** with period \(T=2\pi/\Omega\) and lumped \(m=\rho\Delta x\) (historical **mis-timed** \(T\) using only FD dispersion was a doc’d slip, not “needs more substeps alone”). Inner linear solve uses **f64** Cholesky at larger `n`. See **§ Acoustics**. |
+| `solvers::acoustics` (`AcousticWaveSolver`, `AcousticNewmarkBar1dPeriodic`) | research | **100** | `tests/verification/acoustics_plane_wave.rs` | Feature **`acoustics-newmark`**. **100 % = 1-D periodic bar** (`AcousticNewmarkBar1dPeriodic`) only — not graph-assembled **`AcousticWaveSolver`**. Newmark vs dense reference; **return-map** at **n ∈ {64, 100, 128}** including **`plane_wave_return_map_n128_l2_within_two_percent`** with period \(T=2\pi/\Omega\) and lumped \(m=\rho\Delta x\). Inner linear solve uses **f64** Cholesky at larger `n`. See **§ Acoustics**. |
 | `solvers::electrochemistry` (`ElectroChemicalSolver`) | research | **75** | `tests/verification/pnp_debye_layer.rs` | Feature **`electrochemistry-pnp`**. MVP chain: SG NP + Thomas Poisson; **explicit Picard** path in `solve_pnp_step` / `solve_pnp_step_experimental` (no **`NewtonPnpContext`** on that default path). **λ\_D** screening-length LS gates on **256**-cell chains run on the **`pnp_debye_layer`** surface when the feature is enabled (quasi-steady trajectory + `mesh_spacing = h` harness). Opt-in **`solve_pnp_step_dispatch`** + implicit Newton chain for research users. **Open:** general-graph implicit Newton, removing worst-case dense \((3N)^2\) scratch at large **N**, variable ε on non-chain topologies. See **§ Electrochemistry**. |
-| `solvers::photonics` (`PhotonicsSolver`, `PhotonicsHelmholtzSolver`) | research | **50** | `tests/verification/photonics_fresnel.rs`, `tests/verification/photonics_curl_curl_2d_patch.rs`, `tests/verification/photonics_curl_curl_3d_brick.rs`, `tests/verification/photonics_curl_curl_stub_default_build.rs` | Feature **`photonics-fdfd`**. TE Helmholtz / 1-D curl–curl reductions; small embedded **DEC** patch tests (PR **phase4** path); **stub** documents default-build no-op when **`photonics`** is off. **Open:** dual Hodge / metrics, sparse Krylov, complex ε + PML on patches, BCs beyond gauge pin, production 3D assembly. See **§ Photonics**. |
-| `solvers::rheology_flow` (`BinghamFlowSolver`) | research | **50** | `tests/verification/rheology_poiseuille.rs` | Feature **`rheology-bingham`**. Analytic Poiseuille / Bingham references, Chorin split smokes, **Jacobi–PCG** pressure Poisson on **−𝒞**. **research-stack** runs short-channel smokes without **`#[ignore]`** — they are **finite / bracket** guards, **not** long-run steady **L²** vs developed Poiseuille. **Open:** MAC-style staggering and/or consistent open **x** BCs; multi-thousand-step steady acceptance. See **§ Rheology**. |
+| `solvers::photonics` (`PhotonicsSolver`, `PhotonicsHelmholtzSolver`) | research | **50** | `tests/verification/photonics_fresnel.rs`, `tests/verification/photonics_curl_curl_2d_patch.rs`, `tests/verification/photonics_curl_curl_3d_brick.rs`, `tests/verification/photonics_curl_curl_stub_default_build.rs` | Feature **`photonics-fdfd`**. TE Helmholtz / 1-D curl–curl reductions — **STE stopgap**, not production adjoint TO; small embedded **DEC** patch tests (PR **phase4** path); **stub** documents default-build no-op when **`photonics`** is off. **Open:** dual Hodge / metrics, sparse Krylov, complex ε + PML on patches, BCs beyond gauge pin, production 3D assembly. See **§ Photonics**. |
+| `solvers::rheology_flow` (`BinghamFlowSolver`) | research | **50** | `tests/verification/rheology_poiseuille.rs` | Feature **`rheology-bingham`**. **Bingham only** — no Herschel–Bulkley. Analytic Poiseuille / Bingham references, Chorin split smokes, **Jacobi–PCG** pressure Poisson on **−𝒞**. **research-stack** runs short-channel smokes without **`#[ignore]`** — they are **finite / bracket** guards, **not** long-run steady **L²** vs developed Poiseuille. **Open:** MAC-style staggering and/or consistent open **x** BCs; multi-thousand-step steady acceptance. See **§ Rheology**. |
 | `solvers::thmc` (`ThmcSolver`, …) | research | **75** | `tests/verification/thmc_drying_shrinkage.rs`, `tests/verification/thmc_monolithic_newton_chain.rs` | Feature **`thmc-coupled`**. Drying + shrinkage + hydration kinetics; implicit **(T, α)** Newton block on tiny graphs; stacked **(T, h, α, u)** dense damped Newton with quasi-static **R\_u** on **≤ 64** DOFs wired into **`ThmcSolver::step` / `step_experimental`** when configured (**Phase 5** in prior memos). **Open:** production-scale monolith / JFNK, adaptive **dt**, within-step **u↔d** stagger. See **§ THMC**. |
-| `solvers::statistical_mechanics` | research | **25** | `tests/verification/statmech_vinet_eos.rs`, `tests/verification/statmech_lj_bridge_contract.rs`, `tests/verification/statmech_lj_johnson_eos_reference.rs`, `tests/verification/statmech_lj_johnson_upscale_bridge.rs`, `tests/verification/statmech_mechanics_fracture_bridge.rs` | **`statistical-mechanics-vinet`** marks the **scalar Vinet EOS** stable slice. **Research:** **`[B,2]`** LJ→continuum **`upscale_potentials`** remains a **documented placeholder** vs Johnson **`K`**; **`[B,4]`** Johnson **`K\_T`** rows via host **`f64`** materialisation (not AD-safe). Johnson (1993) **`f64`** reference surface + upscale bridge tests; optional **`statistical-mechanics-johnson-reference`** re-export. **γ\_gc** and virial-backed bridges remain **open**. See **§ Statistical mechanics**. |
+| `solvers::statistical_mechanics` | research | **25** | `tests/verification/statmech_vinet_eos.rs`, `tests/verification/statmech_lj_bridge_contract.rs`, `tests/verification/statmech_lj_johnson_eos_reference.rs`, `tests/verification/statmech_lj_johnson_upscale_bridge.rs`, `tests/verification/statmech_mechanics_fracture_bridge.rs` | **`statistical-mechanics-vinet`** marks the **scalar Vinet EOS** stable slice. **Research:** **`[B,2]`** LJ→continuum **`upscale_potentials`** remains a **documented placeholder / virial surrogate** vs Johnson **`K`**; **`[B,4]`** Johnson **`K\_T`** rows via host **`f64`** materialisation (not AD-safe). Johnson (1993) **`f64`** reference surface + upscale bridge tests; optional **`statistical-mechanics-johnson-reference`** re-export. **γ\_gc** and virial-backed bridges remain **open**. See **§ Statistical mechanics**. |
 
-**Prose rule (Track J1):** say “verified on CI” only for behaviours exercised by the **Verification** paths above (plus the workflow’s explicit **`--release`** crates for Phase-4 slices).
+**Prose rule (Track J1):** say “verified on CI” only for behaviours exercised by the **Verification** paths above on a **test** CI lane (§ CI). Do **not** cite **`solver-research-compile-pr`** (`solver-research-check-pr`) or **`lint`** as physics validation. Formal Lean discharge is separate from regression tests.
 
 ---
 
@@ -73,7 +77,7 @@ Long-form numbered memos under `docs/research/` were **removed** from this repos
 | 1 | Topology / shell / Striatus | **25** | Cartridge B6/B8, artefact budgets, `gates_track_b8_all_pass` — see sibling repo docs. |
 | 2 | Mechanics — thin plate Kirchhoff accuracy | **25** | Align BCs / enrichment for true §R2.1-style gate; keep ratio-band tests as regression only. |
 | 3 | Fracture — Γ limit, ψ⁺ drives, THMC stagger | **50** | Extend harnesses beyond fixed partial-Γ schedules. |
-| 4 | Acoustics | **100** | Optional: graph-assembled stiffness beyond 1-D periodic bar benchmark. |
+| 4 | Acoustics | **100** | **1-D periodic bar** benchmark closed; optional: graph-assembled stiffness beyond bar. |
 | 5 | Electrochemistry — scale & graph generality | **75** | Matrix-free / banded solvers; nonlinear SG beyond linearised Debye gates. |
 | 6 | Photonics — production DEC + solvers | **50** | Metrics, sparse inner loops, BCs/PML. |
 | 7 | Rheology — developed channel fidelity | **50** | MAC / open BCs; long-run **L²** acceptance. |
@@ -89,6 +93,7 @@ Long-form numbered memos under `docs/research/` were **removed** from this repos
 ### Mechanics
 
 - **Modules:** `VectorMechanicsSolver::solve_equilibrium`, `AdjointCompliance`, `AdjointComplianceQ1Hex` (see `src/physics/mechanics.rs`, `adjoint.rs`, `adjoint_q1_hex`).
+- **Kirchhoff gates:** **R2.1-A** — wide-plate centre deflection vs classical SSSS (`#[ignore]`, **open**, O(1) on shipped brick BCs). **R2.1-B** — tighter **`w/w_K`** band on the mismatched-BC path is **regression-only**, not thin-plate accuracy.
 - **Q1 hex:** shipped operator uses a **unified** **D** on the B-bar / centroid-shear strain path; a naive dev/vol split was **rejected** because it regressed slender-column consistency.
 - **Ignored slender Q1 vs bar:** z-skeleton bar limit matches closed form; the **1×1** brick cross-section remains much more compliant — documented harness limitation, not “solver wrong” without refined 1D reduction.
 
@@ -99,7 +104,8 @@ Long-form numbered memos under `docs/research/` were **removed** from this repos
 
 ### Acoustics
 
-- **`AcousticWaveSolver`** remains the nodal graph contraction; **`AcousticNewmarkBar1dPeriodic`** hosts the verified Newmark + return-map suite in `tests/verification/acoustics_plane_wave.rs`.
+- **`AcousticNewmarkBar1dPeriodic`** hosts the verified Newmark + return-map suite in `tests/verification/acoustics_plane_wave.rs` — this is the **100 %** scope (1-D periodic bar).
+- **`AcousticWaveSolver`** remains the nodal graph contraction; graph-assembled dynamics are **not** certified on CI.
 
 ### Electrochemistry
 
@@ -108,11 +114,13 @@ Long-form numbered memos under `docs/research/` were **removed** from this repos
 
 ### Photonics
 
+- **STE stopgap:** TE Helmholtz / embedded DEC patches are regression harnesses — **not** production adjoint topology optimisation.
 - **Stub:** `photonics_curl_curl_stub_default_build` pins **`solve_maxwell_curl_curl`** as identity when **`photonics`** is off.
 - **Patches:** DEC face-patch tests use test-authored **COO** incidence and **unweighted** \(d_1^\top d_1\) structure — not yet full mesh pipeline.
 
 ### Rheology
 
+- **Constitutive scope:** **Bingham** only — Herschel–Bulkley and yield-stress generalisations are **out of scope** until a new verification row exists.
 - **Pressure:** Jacobi-preconditioned CG on graph Laplacian (`rheology_flow.rs`); Richardson fallback feature **`rheology_poisson_richardson_fallback`** exists in `Cargo.toml` for Chorin Poisson.
 
 ### THMC
@@ -123,6 +131,7 @@ Long-form numbered memos under `docs/research/` were **removed** from this repos
 ### Statistical mechanics
 
 - **Tests (canonical set, all named in table):** Vinet EOS; LJ bridge scaling; Johnson EOS reference + documented mismatch vs placeholder upscale; Johnson upscale bridge; mechanics–fracture bridge coupling file.
+- **Upscale honesty:** **`upscale_potentials`** is a **virial surrogate / placeholder** vs Johnson **`K`** — not a discharged coexistence proof.
 - **Johnson `K` from rows \((\varepsilon,\sigma,\rho^\*,T^\*)\):** implemented via Burn column views + host **`f64`** loop — **not** AD-through-`K` today.
 
 ### Topology (manifold crate)
