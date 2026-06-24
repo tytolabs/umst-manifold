@@ -45,8 +45,8 @@ use crate::runtime::gate::{CdTransitionCartridge, GateCartridge, TransitionEvide
 #[cfg(feature = "thmc-coupled")]
 use super::thmc::{ThmcSolver, ThmcState};
 
-/// Default intrinsic strength (MPa) for mix-calibrated lift — aligns with concrete
-/// [`CEMENT_DEFAULT_S_INTRINSIC_MPA`] (240 MPa); override via [`ThmcSolver::with_gate_intrinsic_strength_mpa`].
+/// Default intrinsic strength (MPa) for mix-calibrated gate lift (240 MPa scale).
+/// Override via [`ThmcSolver::with_gate_intrinsic_strength_mpa`] when a cartridge supplies its own scale.
 #[cfg(feature = "thmc-coupled")]
 pub const THMC_GATE_LIFT_S_INTRINSIC_MPA_DEFAULT: f64 = 240.0;
 

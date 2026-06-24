@@ -260,10 +260,10 @@ pub struct ThmcSolver {
     #[cfg(all(feature = "thmc-coupled", feature = "mechanics-adjoint"))]
     pub mechanics_solve_reports: Vec<crate::solve_report::SolveReport>,
     /// Intrinsic strength (MPa) for mix-calibrated gate snapshot lift at post-step evidence hook.
-    /// Default aligns with concrete cement SSOT ([`super::thmc_step::THMC_GATE_LIFT_S_INTRINSIC_MPA_DEFAULT`]).
+    /// Default aligns with [`super::thmc_step::THMC_GATE_LIFT_S_INTRINSIC_MPA_DEFAULT`] cartridge lift scale.
     #[cfg(feature = "thmc-coupled")]
     pub gate_intrinsic_strength_mpa: f64,
-    /// Injectable transition witness — default host CD; concrete cartridges set strength via
+    /// Injectable transition witness — default host CD; downstream cartridges set strength via
     /// [`Self::gate_intrinsic_strength_mpa`].
     #[cfg(feature = "thmc-coupled")]
     pub transition_gate: super::thmc_step::TransitionGateWitness,
