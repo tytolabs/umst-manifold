@@ -71,10 +71,10 @@ pub struct ManifoldGateway<B: Backend, C: IScienceCartridge<B>> {
     pub beta: f32,
     /// Carbon / cost penalty weight **γ**. Default **2.0**.
     pub gamma: f32,
-    /// Clausius–Duhem constraint slack weight **λ_cd** (epistemic PPO path only).
-    /// When non-zero with **`epistemic-ppo`**, [`Self::constraint_loss_penalty`] scales
-    /// [`crate::ai::constraint_loss::clausius_duhem_violation`] for soft training penalties.
-    #[cfg(feature = "epistemic-ppo")]
+    /// Clausius–Duhem constraint slack weight **λ_cd** (epistemic / Kleisli hot-bind paths).
+    /// When non-zero with **`epistemic-ppo`** or **`kleisli-ppo-hot-bind`**, [`Self::constraint_loss_penalty`]
+    /// scales [`crate::ai::constraint_loss::clausius_duhem_violation`] for soft training penalties.
+    #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
     pub lambda_cd: f32,
     /// Optional catalog/schema digest asserted against the incoming UMST when **`formal-witness`** is on.
     /// [`Self::new`] defaults to compiled lock bytes; set `None` explicitly to skip the witness.
@@ -93,7 +93,7 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
             alpha: 1.0_f32,
             beta: 0.5_f32,
             gamma: 2.0_f32,
-            #[cfg(feature = "epistemic-ppo")]
+            #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
             lambda_cd: 0.0_f32,
             #[cfg(feature = "formal-witness")]
             expected_catalog_schema_digest: Some(
@@ -122,7 +122,7 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
 
     /// Optional Clausius–Duhem soft penalty for epistemic training (`λ_cd · relu(−D_int)` per batch row).
     ///
-    /// With **`epistemic-ppo`** disabled or [`Self::lambda_cd`] = 0, returns a zero `[B]` tensor.
+    /// With penalize features disabled or [`Self::lambda_cd`] = 0, returns a zero `[B]` tensor.
     pub fn constraint_loss_penalty(
         &self,
         old_density: Tensor<B, 1>,
@@ -135,11 +135,11 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
         B: Backend<FloatElem = f32>,
     {
         let lambda_cd = {
-            #[cfg(feature = "epistemic-ppo")]
+            #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
             {
                 self.lambda_cd
             }
-            #[cfg(not(feature = "epistemic-ppo"))]
+            #[cfg(not(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind")))]
             {
                 0.0_f32
             }
