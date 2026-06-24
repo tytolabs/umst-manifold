@@ -20,6 +20,8 @@ pub enum DecTypestateError {
     B1WrongRowCount { rows: usize },
     /// Scalar channel index is outside the pinned layout contract.
     ScalarChannelOutOfRange { index: usize, channel_count: usize },
+    /// Nodal scalar tensor width does not match the compile-time layout witness.
+    ScalarWidthMismatch { expected: usize, found: usize },
 }
 
 /// Oriented primal **B₁** incidence: nodes → edges, shape `[2, E]`.
@@ -101,6 +103,62 @@ impl ScalarChannelIdx {
     #[inline]
     pub fn index(self) -> usize {
         self.0
+    }
+}
+
+/// Staging DEC + scalar-layout bundle (`math-verified-umst-typestate`).
+///
+/// Composes a validated [`B1Incidence`] with a runtime [`ScalarChannelIdx`], pinned to
+/// [`UMST_SCALAR_CHANNEL_COUNT`] at compile time via [`ScalarChannel`]. Distinct from the
+/// proof-carrying gateway type [`super::tensors::VerifiedUMST`].
+#[derive(Clone, Debug)]
+pub struct VerifiedUMST<B: Backend> {
+    b1: B1Incidence<B>,
+    channel: ScalarChannelIdx,
+    _layout: PhantomData<ScalarChannel<UMST_SCALAR_CHANNEL_COUNT>>,
+}
+
+impl<B: Backend> VerifiedUMST<B> {
+    /// Pinned nodal scalar width from [`UMST_SCALAR_CHANNEL_COUNT`].
+    pub const CHANNEL_COUNT: usize = UMST_SCALAR_CHANNEL_COUNT;
+
+    /// Validate incidence layout, scalar tensor width, and channel index; assemble staging bundle.
+    pub fn try_assemble(
+        edges_b1: Tensor<B, 2, Int>,
+        scalar_cols: usize,
+        channel: usize,
+    ) -> Result<Self, DecTypestateError> {
+        if scalar_cols != Self::CHANNEL_COUNT {
+            return Err(DecTypestateError::ScalarWidthMismatch {
+                expected: Self::CHANNEL_COUNT,
+                found: scalar_cols,
+            });
+        }
+        let b1 = B1Incidence::try_new(edges_b1)?;
+        let channel = ScalarChannelIdx::try_new(channel)?;
+        Ok(Self {
+            b1,
+            channel,
+            _layout: PhantomData,
+        })
+    }
+
+    /// Borrow the validated **B₁** incidence carrier.
+    #[inline]
+    pub fn b1(&self) -> &B1Incidence<B> {
+        &self.b1
+    }
+
+    /// Active scalar channel index inside the pinned layout.
+    #[inline]
+    pub fn channel(&self) -> ScalarChannelIdx {
+        self.channel
+    }
+
+    /// Consume and return the underlying incidence tensor.
+    #[inline]
+    pub fn into_b1(self) -> B1Incidence<B> {
+        self.b1
     }
 }
 
