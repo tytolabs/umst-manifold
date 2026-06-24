@@ -26,7 +26,7 @@ pub fn kcompose(
     f: fn(UnitKind) -> Option<UnitKind>,
     g: fn(UnitKind) -> Option<UnitKind>,
 ) -> impl Fn(UnitKind) -> Option<UnitKind> {
-    move |a: UnitKind| f(a).and_then(&g)
+    move |a: UnitKind| f(a).and_then(g)
 }
 
 /// (a) `id >=> f = f` and `f >=> id = f` on the domain of `f`
