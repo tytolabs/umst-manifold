@@ -3,6 +3,7 @@
   "role": "manifold_runtime_lock",
   "upstream_repo": "umst-formal-double-slit",
   "upstream_catalog_digest_hex": "c61b1befdec77a82bbb9f6c3f7562e754218ef635f0e3b9990752138df5f4bb5",
+  "scalar_channel_count": 7,
   "module_count": 122,
   "module_graph_edge_count": 329,
   "composition_rule": "cross_repo_merge_v1_primary_wins_basename",

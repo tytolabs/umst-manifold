@@ -18,6 +18,15 @@
 //! Channel `0` is reserved for material-specific bulk scalars (not yet fixed in the shared
 //! contract); standard physics channels bind from [`SCALAR_HUMIDITY`] through
 //! [`SCALAR_DAMAGE`], with optional [`SCALAR_FRACTURE_ENERGY_GC`] when `F_scalars > 5`.
+//!
+//! [`UMST_SCALAR_CHANNEL_COUNT`] is the hand-written layout SSOT mirrored in
+//! `artifacts/catalog.lock.json` (`scalar_channel_count`); `build.rs` emits
+//! `compile_error!` when they diverge.
+
+/// Number of nodal scalar columns in the shared UMST layout contract (`F_scalars` width).
+///
+/// Must match `scalar_channel_count` in `artifacts/catalog.lock.json` (checked at build time).
+pub const UMST_SCALAR_CHANNEL_COUNT: usize = 7;
 
 /// Scalar column `0`: reserved / material-specific (define meaning per cartridge).
 pub const SCALAR_CHANNEL0: usize = 0;
@@ -49,3 +58,6 @@ pub const SCALAR_EPISTEMIC_UNCERTAINTY: usize = 6;
 /// Nodal mechanical displacement **u** (SI metres), vector slot `0` in [`crate::core::tensors::UnifiedMaterialStateTensor::vector_features`]
 /// (`[N, F_vectors, 3]`). When `F_vectors == 0`, THMC / mechanics adapters use zero displacement.
 pub const VECTOR_MECHANICAL_DISPLACEMENT: usize = 0;
+
+// Build-time drift guard: `build.rs` emits `compile_error!` when lock JSON disagrees.
+include!(concat!(env!("OUT_DIR"), "/scalar_layout_guard.rs"));

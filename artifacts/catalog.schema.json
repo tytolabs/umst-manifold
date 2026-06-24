@@ -19,6 +19,7 @@
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
     },
+    "scalar_channel_count": { "type": "integer", "minimum": 1 },
     "module_count": { "type": "integer", "minimum": 0 },
     "composition_rule": { "type": "string" },
     "composed_catalog_digest_hex": {
