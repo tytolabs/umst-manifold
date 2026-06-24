@@ -16,5 +16,5 @@ mod header;
 mod load;
 
 pub use error::ArenaError;
-pub use header::{ARENA_ABI_VERSION, ARENA_HEADER_BYTES, ARENA_MAGIC, UmstArenaHeader};
-pub use load::{UmstArenaView, load_arena};
+pub use header::{UmstArenaHeader, ARENA_ABI_VERSION, ARENA_HEADER_BYTES, ARENA_MAGIC};
+pub use load::{load_arena, UmstArenaView};

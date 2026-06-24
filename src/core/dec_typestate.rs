@@ -188,8 +188,8 @@ impl<B: Backend> VerifiedUMST<B> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use burn_ndarray::NdArray;
     use burn::tensor::Tensor;
+    use burn_ndarray::NdArray;
 
     type B = NdArray;
 
@@ -221,8 +221,7 @@ mod tests {
     #[test]
     fn dec_b1_incidence_rejects_non_two_row_layout() {
         let device = Default::default();
-        let bad: Tensor<B, 2, Int> =
-            Tensor::zeros([3, 4], &device);
+        let bad: Tensor<B, 2, Int> = Tensor::zeros([3, 4], &device);
         let err = B1Incidence::try_new(bad).unwrap_err();
         assert_eq!(err, DecTypestateError::B1WrongRowCount { rows: 3 });
 

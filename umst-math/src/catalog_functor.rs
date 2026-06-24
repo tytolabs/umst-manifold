@@ -191,11 +191,7 @@ mod tests {
     fn catalog_functor_lean_fiber_maps_to_zero() {
         let sidecar = parse_scalar_layout_lock(SAMPLE_SIDECAR).expect("sidecar");
         assert_eq!(
-            expected_scalar_channel_count(
-                "umst-formal",
-                Some("lean_catalog_lock"),
-                &sidecar
-            ),
+            expected_scalar_channel_count("umst-formal", Some("lean_catalog_lock"), &sidecar),
             0
         );
     }

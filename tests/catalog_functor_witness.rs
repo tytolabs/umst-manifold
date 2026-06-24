@@ -13,8 +13,8 @@ fn catalog_functor_fixture_lock_passes_composed_digest_guard() {
 
 #[test]
 fn catalog_functor_fixture_fibers_and_sidecar_agree() {
-    let sidecar =
-        parse_scalar_layout_lock(include_str!("../artifacts/scalar_layout.lock.json")).expect("sidecar");
+    let sidecar = parse_scalar_layout_lock(include_str!("../artifacts/scalar_layout.lock.json"))
+        .expect("sidecar");
     let lock: Value =
         serde_json::from_str(include_str!("../artifacts/catalog.lock.json")).expect("lock");
     for pin in lock

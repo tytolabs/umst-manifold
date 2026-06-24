@@ -18,8 +18,7 @@ use std::fs;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
 use umst_layout_codegen::{
-    emit_scalar_layout_guard as codegen_emit_scalar_layout_guard,
-    emit_scalar_layout_rs,
+    emit_scalar_layout_guard as codegen_emit_scalar_layout_guard, emit_scalar_layout_rs,
     parse_scalar_layout_lock,
 };
 
@@ -267,8 +266,7 @@ fn emit_scalar_layout_guard(manifest_dir: &Path, out_dir: &Path) {
     println!("cargo:rustc-env=UMST_SCALAR_CHANNEL_COUNT={lock_count}");
 
     let indices_path = out_dir.join("scalar_layout_indices.rs");
-    fs::write(&indices_path, emit_scalar_layout_rs(&spec))
-        .expect("write scalar_layout_indices.rs");
+    fs::write(&indices_path, emit_scalar_layout_rs(&spec)).expect("write scalar_layout_indices.rs");
 
     let guard_path = out_dir.join("scalar_layout_guard.rs");
     fs::write(&guard_path, codegen_emit_scalar_layout_guard(&spec))

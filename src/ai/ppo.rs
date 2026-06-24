@@ -148,10 +148,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
 
     /// Differentiable penalize morphism from drained THMC gate evidence → [`Self::constraint_loss_penalty`].
     #[cfg(feature = "thmc-coupled")]
-    pub fn constraint_loss_penalty_from_gate_evidence(
-        &self,
-        device: &B::Device,
-    ) -> Tensor<B, 1>
+    pub fn constraint_loss_penalty_from_gate_evidence(&self, device: &B::Device) -> Tensor<B, 1>
     where
         B: Backend<FloatElem = f32>,
     {
@@ -176,8 +173,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
         } else {
             violations
         };
-        let violation_tensor =
-            Tensor::<B, 1>::from_floats(data.as_slice(), device);
+        let violation_tensor = Tensor::<B, 1>::from_floats(data.as_slice(), device);
         let sized = if violation_tensor.dims()[0] == batch {
             violation_tensor
         } else {
@@ -300,11 +296,11 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
             }
         }
 
-        let staging = raw_state
-            .try_as_verified_dec_bundle(0)
-            .map_err(|e| FormalReject::DecTypestateStaging {
+        let staging = raw_state.try_as_verified_dec_bundle(0).map_err(|e| {
+            FormalReject::DecTypestateStaging {
                 detail: format!("{e:?}"),
-            })?;
+            }
+        })?;
 
         // 1. Execute the physics simulation across the topological Cellular Sheaf
         let physical_result: PhysicalResult<B> = self.cartridge.compute_topology(&raw_state);
@@ -338,7 +334,9 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
                 let verified_state = crate::core::tensors::VerifiedUMST::<
                     B,
                     crate::core::tensors::ClausiusDuhemProof,
-                >::lift_after_dec_staging_witness(staging, secured_state);
+                >::lift_after_dec_staging_witness(
+                    staging, secured_state
+                );
 
                 // Flatten the spatial reward to a single scalar [Batch] for the policy gradient (Adjoint Method target)
                 let mut total_reward = final_spatial_reward.sum_dim(1).squeeze(1);

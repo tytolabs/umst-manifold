@@ -11,9 +11,9 @@
 
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
-use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
+use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 use umst_manifold::physics::laplacian::TopologicalLaplacian;
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::solvers::{
@@ -160,7 +160,7 @@ fn chain_manifold_matrix_path(n: usize, exx: f32) -> UnifiedMaterialStateTensor<
 
 #[test]
 fn thmc_newton_outer_passes_within_six() {
-    let mut solver = ThmcSolver {
+    let solver = ThmcSolver {
         max_newton: 6_usize,
         ..Default::default()
     };
@@ -501,8 +501,8 @@ fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
             drying_ambient_h: 0.5_f32,
             implicit_t_alpha_newton: None,
             monolithic_thmc_newton: None,
-        ..Default::default()
-    };
+            ..Default::default()
+        };
         let manifold = chain_manifold_matrix_path(n, exx);
         let s = solver
             .step(
@@ -3190,7 +3190,7 @@ fn thermal_implicit_newton_residual_decreases_monotonically() {
     // No Dirichlet pin — all nodes free.
     let mask = Tensor::<B, 3>::ones([1, n, 1], &d);
 
-    let mut solver = ThmcSolver::default();
+    let solver = ThmcSolver::default();
     let cfg = ThmcNewtonConfig {
         max_iterations: 20,
         residual_tolerance: 1.0e-6_f32,
@@ -3251,7 +3251,7 @@ fn thermal_implicit_matches_analytic_decay_mode() {
     let kappa = 0.05_f32;
     let dt = 0.01_f32;
     let n_steps = 100usize;
-    let mut solver = ThmcSolver::default();
+    let solver = ThmcSolver::default();
     let cfg = ThmcNewtonConfig {
         max_iterations: 200,
         residual_tolerance: 1.0e-8_f32,

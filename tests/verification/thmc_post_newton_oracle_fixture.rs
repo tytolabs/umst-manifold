@@ -13,8 +13,8 @@
 
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
-use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
+use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 use umst_manifold::physics::solvers::{
     ChemicalPlan, HydrologicPlan, MechanicalPlan, ReactionExtentKinetics, ThermalPlan,
     ThmcImplicitEulerThermalHumidityReactionExtentResidual, ThmcState,
@@ -107,11 +107,7 @@ fn post_newton_stacked_residual_oracle_matches_independent_recompute_two_nodes()
     let d = dev();
     let n = 2usize;
     let manifold = two_node_chain_manifold(n);
-    let coords = manifold
-        .node_positions
-        .as_ref()
-        .expect("SI coords")
-        .clone();
+    let coords = manifold.node_positions.as_ref().expect("SI coords").clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
     let kinetics = reference_reaction_extent_kinetics();

@@ -9,9 +9,9 @@ mod thmc_ok {
     use burn::tensor::backend::Backend;
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
-    use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
     use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
     use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
+    use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
     use umst_manifold::physics::solvers::{
         ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcSolver, ThmcState,
     };

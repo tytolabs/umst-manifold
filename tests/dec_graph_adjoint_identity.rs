@@ -32,10 +32,8 @@ fn tensor_inner(a: Tensor<B, 3>, b: Tensor<B, 3>) -> f32 {
 /// Single oriented edge `0 → 1` on two vertices, wrapped as [`B1Incidence`].
 fn toy_two_node_one_edge_b1() -> B1Incidence<B> {
     let device = Default::default();
-    let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
-        Data::new(vec![0i64, 1], Shape::new([2, 1])),
-        &device,
-    );
+    let edges_b1: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(vec![0i64, 1], Shape::new([2, 1])), &device);
     B1Incidence::try_new(edges_b1).expect("toy mesh B1 layout [2, 1]")
 }
 
@@ -56,8 +54,7 @@ fn dec_graph_adjoint_b1_transpose_composition_matches_pairing() {
     // Sign convention: primal_divergence scatters +flux at src, −flux at tgt; adjoint pairs with −B₁ᵀ.
     let b1t_omega = primal_scalar_edge_increment(omega.clone(), &topo).neg();
     // B₁ u: edge 1-cochain → nodal 0-cochain (divergence).
-    let b1_u =
-        primal_divergence_from_edge_flux_topo(edge_flux.clone(), &topo, &nodal_template);
+    let b1_u = primal_divergence_from_edge_flux_topo(edge_flux.clone(), &topo, &nodal_template);
 
     let lhs = tensor_inner(b1t_omega, edge_flux);
     let rhs = tensor_inner(omega, b1_u);

@@ -11,7 +11,9 @@ use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::apply_physics_to_umst;
 use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
-use umst_manifold::core::umst_schema::{SCALAR_DAMAGE, SCALAR_TEMPERATURE, UMST_SCALAR_CHANNEL_COUNT};
+use umst_manifold::core::umst_schema::{
+    SCALAR_DAMAGE, SCALAR_TEMPERATURE, UMST_SCALAR_CHANNEL_COUNT,
+};
 
 #[cfg(not(feature = "thmc-coupled"))]
 use umst_manifold::physics::solvers::{

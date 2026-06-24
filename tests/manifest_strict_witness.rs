@@ -8,9 +8,9 @@ use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::ai::formal::FormalReject;
 use umst_manifold::ai::ppo::ManifoldGateway;
-use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
+use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 use umst_manifold::manifest::{GroundingContract, UmstManifestBuilder};
 use umst_manifold::runtime::catalog::lock_upstream_catalog_digest_bytes;
 

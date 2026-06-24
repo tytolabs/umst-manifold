@@ -7,9 +7,9 @@ use burn::tensor::backend::Backend;
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::ai::info_gain::suggested_info_gain_from_batched_nodal_scalars;
-use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
+use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 use umst_manifold::embodied::{EmbodiedOrchestrator, EmbodiedReject, HostTransitionStep};
 use umst_manifold::gate::{
     AdmissibilityVerdict, GateEvaluatorRegistry, KleisliUnitEvaluator, ThermodynamicMixEvaluator,

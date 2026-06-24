@@ -8,9 +8,9 @@ mod thmc_gate_evidence_wire {
     use burn::tensor::backend::Backend;
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
-    use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
     use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
     use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
+    use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
     use umst_manifold::physics::solvers::{
         wire_gate_evidence_post_step, ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan,
         ThmcSolver, ThmcState,
@@ -120,11 +120,11 @@ mod thmc_gate_evidence_wire {
         let solver = ThmcSolver::default();
         let evidence = wire_gate_evidence_post_step(&solver, &Stub, &pre, &post, &umst, 1.0_f32)
             .expect("identity lift should succeed");
+        assert_eq!(evidence.transition.catalog_id, CD_TRANSITION_CATALOG_ID);
         assert_eq!(
-            evidence.transition.catalog_id,
-            CD_TRANSITION_CATALOG_ID
+            evidence.transition.admissibility,
+            AdmissibilityToken::Admissible
         );
-        assert_eq!(evidence.transition.admissibility, AdmissibilityToken::Admissible);
         assert!(evidence.wiring_tag.contains("CdTransitionCartridge"));
     }
 }

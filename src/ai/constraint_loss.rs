@@ -112,10 +112,10 @@ pub fn explain_clausius_duhem_violation<B: Backend<FloatElem = f32>>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use burn::tensor::{Data, Shape};
-    use burn_ndarray::{NdArray, NdArrayDevice};
     use crate::gate::transition_proposal::transition_outcome;
     use crate::gate::ThermodynamicStateSnapshot;
+    use burn::tensor::{Data, Shape};
+    use burn_ndarray::{NdArray, NdArrayDevice};
 
     type B = NdArray<f32>;
 
@@ -148,7 +148,11 @@ mod tests {
             scalar_tensor(&dev, &[dt as f32]),
         );
         let v: Vec<f32> = violation.into_data().value;
-        assert!(v[0].abs() < 1e-4, "admissible host path → zero slack, got {}", v[0]);
+        assert!(
+            v[0].abs() < 1e-4,
+            "admissible host path → zero slack, got {}",
+            v[0]
+        );
     }
 
     #[test]

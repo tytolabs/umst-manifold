@@ -43,7 +43,8 @@ impl LandauerRegistry {
             name: "host_temperature_reference_k",
             value: HOST_TEMPERATURE_REFERENCE_K,
             si_unit: "K",
-            provenance: "Operator-assumed ambient anchor (constants::registry host_temperature_fallback_k)",
+            provenance:
+                "Operator-assumed ambient anchor (constants::registry host_temperature_fallback_k)",
         },
         LandauerConst {
             name: "landauer_bit_energy_300k_j",

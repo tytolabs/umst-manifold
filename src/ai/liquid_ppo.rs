@@ -304,10 +304,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
             return spatial_reward;
         }
         let device = baseline_state.scalar_features.device();
-        let baseline_pr = self
-            .gateway
-            .cartridge
-            .compute_topology(baseline_state);
+        let baseline_pr = self.gateway.cartridge.compute_topology(baseline_state);
         let proposed_pr = self
             .gateway
             .cartridge
@@ -371,13 +368,16 @@ fn adamw_step_policy<B: Backend<FloatElem = f32>>(
     (new_w, moment_1, moment_2, time)
 }
 
-#[cfg(all(test, not(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))))]
+#[cfg(all(
+    test,
+    not(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))
+))]
 mod tests {
     use super::BurnLiquidPPOAgent;
     use crate::ai::ppo::ManifoldGateway;
-    use crate::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
     use crate::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
     use crate::core::traits::{IScienceCartridge, PhysicalResult};
+    use crate::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
     use burn::tensor::backend::Backend;
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};

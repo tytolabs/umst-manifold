@@ -3,9 +3,7 @@
 
 //! `GateCartridge` evidence contract — cold-edge witness for transition admissibility.
 
-use crate::gate::transition_proposal::{
-    ThermodynamicStateSnapshot, TRANSITION_TOLERANCE,
-};
+use crate::gate::transition_proposal::{ThermodynamicStateSnapshot, TRANSITION_TOLERANCE};
 
 use super::evidence::{explain_cd_transition_host, TransitionEvidence};
 

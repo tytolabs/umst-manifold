@@ -39,12 +39,11 @@ struct ScalarLayoutLock {
 
 /// Parse pinned scalar layout JSON into a validated [`LayoutSpec`].
 pub fn parse_scalar_layout_lock(json: &str) -> Result<LayoutSpec, LayoutCodegenError> {
-    let lock: ScalarLayoutLock = serde_json::from_str(json).map_err(|e| LayoutCodegenError::Json(e.to_string()))?;
+    let lock: ScalarLayoutLock =
+        serde_json::from_str(json).map_err(|e| LayoutCodegenError::Json(e.to_string()))?;
 
     if lock.schema != SCALAR_LAYOUT_SCHEMA_V1 {
-        return Err(LayoutCodegenError::UnsupportedSchema {
-            found: lock.schema,
-        });
+        return Err(LayoutCodegenError::UnsupportedSchema { found: lock.schema });
     }
 
     if lock.scalar_channel_count < 1 {

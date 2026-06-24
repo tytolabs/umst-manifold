@@ -120,9 +120,7 @@ fn read_u32_le(bytes: &[u8], offset: usize) -> u32 {
 
 fn read_u64_le(bytes: &[u8], offset: usize) -> u64 {
     let b = &bytes[offset..offset + 8];
-    u64::from_le_bytes([
-        b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
-    ])
+    u64::from_le_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]])
 }
 
 #[cfg(test)]

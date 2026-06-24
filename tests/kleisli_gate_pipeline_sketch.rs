@@ -9,8 +9,8 @@
 //! Burn `constraint_loss` is the autodiff mirror of `penalize` (see `docs/KLEISLI_GATE_PIPELINE.md`).
 
 use umst_manifold::gate::{
-    kleisli_compose_pair, Admissible, KleisliArrow, ThermodynamicStateSnapshot,
-    TransitionScalars, TRANSITION_TOLERANCE,
+    kleisli_compose_pair, Admissible, KleisliArrow, ThermodynamicStateSnapshot, TransitionScalars,
+    TRANSITION_TOLERANCE,
 };
 use umst_manifold::runtime::gate::{
     explain_cd_transition_host, AdmissibilityToken, CdTransitionCartridge, ConstraintExplanation,
@@ -58,12 +58,8 @@ fn propose(intent: TransitionIntent) -> Admissible<TransitionPair> {
 }
 
 fn penalize(pair: TransitionPair) -> Admissible<PenalizedTransition> {
-    let explanation = explain_cd_transition_host(
-        &pair.old,
-        &pair.new,
-        pair.dt,
-        TRANSITION_TOLERANCE,
-    );
+    let explanation =
+        explain_cd_transition_host(&pair.old, &pair.new, pair.dt, TRANSITION_TOLERANCE);
     let admissible = explanation.admissibility == AdmissibilityToken::Admissible;
     Admissible {
         value: PenalizedTransition { pair, explanation },
@@ -80,11 +76,8 @@ fn penalize(pair: TransitionPair) -> Admissible<PenalizedTransition> {
 }
 
 fn witness(pen: PenalizedTransition) -> Admissible<TransitionEvidence> {
-    let evidence = CdTransitionCartridge.transition_evidence(
-        &pen.pair.old,
-        &pen.pair.new,
-        pen.pair.dt,
-    );
+    let evidence =
+        CdTransitionCartridge.transition_evidence(&pen.pair.old, &pen.pair.new, pen.pair.dt);
     let admissible = evidence.admissibility == AdmissibilityToken::Admissible;
     Admissible {
         value: evidence,
@@ -181,8 +174,7 @@ fn kleisli_gate_pipeline_penalize_witness_agree_on_token() {
     let pen = penalize(pair);
     let wit = witness(pen.value);
     assert_eq!(
-        pen.value.explanation.admissibility,
-        wit.value.admissibility,
+        pen.value.explanation.admissibility, wit.value.admissibility,
         "penalize explanation and GateCartridge witness must agree"
     );
 }

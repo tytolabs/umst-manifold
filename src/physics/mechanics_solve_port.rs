@@ -126,9 +126,7 @@ mod tests {
 
     type B = NdArray<f32>;
 
-    fn chain_fixture(
-        n: usize,
-    ) -> (
+    type ChainFixture = (
         Tensor<B, 2>,
         Tensor<B, 2, Int>,
         Tensor<B, 3>,
@@ -137,7 +135,9 @@ mod tests {
         Tensor<B, 3>,
         f32,
         MechanicsInnerLoopConfig,
-    ) {
+    );
+
+    fn chain_fixture(n: usize) -> ChainFixture {
         let dev = NdArrayDevice::Cpu;
         let dx = 0.1_f32;
         let e = 200e9_f32;

@@ -19,9 +19,6 @@ mod thmc_solver_step_wire {
     #[test]
     fn thmc_solver_step_trait_is_object_safe_and_exported() {
         let solver = ThmcSolver::default();
-        assert_eq!(
-            accepts_thmc_solver_step::<B>(&solver),
-            "ThmcSolverStep"
-        );
+        assert_eq!(accepts_thmc_solver_step::<B>(&solver), "ThmcSolverStep");
     }
 }

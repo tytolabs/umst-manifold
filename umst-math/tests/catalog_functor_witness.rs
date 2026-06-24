@@ -4,9 +4,8 @@ use quickcheck::quickcheck;
 use serde_json::Value;
 use umst_layout_codegen::parse_scalar_layout_lock;
 use umst_math::catalog_functor::{
-    composed_digest_guard_holds, composed_digest_guard_idempotent,
-    expected_scalar_channel_count, is_preview_fiber_role, runtime_scalar_channel_count,
-    MANIFOLD_RUNTIME_FIBER_ID,
+    composed_digest_guard_holds, composed_digest_guard_idempotent, expected_scalar_channel_count,
+    is_preview_fiber_role, runtime_scalar_channel_count, MANIFOLD_RUNTIME_FIBER_ID,
 };
 
 fn workspace_root() -> std::path::PathBuf {
@@ -39,7 +38,8 @@ fn catalog_functor_fiber_id_maps_to_expected_scalar_channel_count_from_sidecar()
         7
     );
 
-    let lock: Value = serde_json::from_str(&fixture_catalog_lock_json()).expect("catalog lock json");
+    let lock: Value =
+        serde_json::from_str(&fixture_catalog_lock_json()).expect("catalog lock json");
     let pins = lock
         .get("fiber_pins")
         .and_then(Value::as_array)
@@ -61,7 +61,8 @@ fn catalog_functor_fiber_id_maps_to_expected_scalar_channel_count_from_sidecar()
 
 #[test]
 fn catalog_functor_composed_digest_guard_holds_for_fixture_lock() {
-    let lock: Value = serde_json::from_str(&fixture_catalog_lock_json()).expect("catalog lock json");
+    let lock: Value =
+        serde_json::from_str(&fixture_catalog_lock_json()).expect("catalog lock json");
     assert!(
         composed_digest_guard_holds(&lock),
         "fixture catalog.lock.json must satisfy T1 composed digest guard"

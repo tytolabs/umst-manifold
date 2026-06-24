@@ -418,7 +418,7 @@ fn golden_path_thmc_experimental_then_cbf_apply_physics() {
         time: 0.0,
     };
 
-    let orchestrator = TopologyPhysicsOrchestrator::new(ThmcSolver {
+    let mut orchestrator = TopologyPhysicsOrchestrator::new(ThmcSolver {
         dt: 0.01,
         max_newton: 3,
         tol: 1e-2,

@@ -3,9 +3,7 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 use burn_ndarray::NdArray;
-use umst_manifold::core::dec_typestate::{
-    DecTypestateError, VerifiedUMST,
-};
+use umst_manifold::core::dec_typestate::{DecTypestateError, VerifiedUMST};
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 
 type B = NdArray;
@@ -30,8 +28,8 @@ fn verified_umst_staging_rejects_scalar_width_mismatch() {
     let device = Default::default();
     let edges = toy_b1_two_edges(&device);
 
-    let too_narrow = VerifiedUMST::try_assemble(edges.clone(), UMST_SCALAR_CHANNEL_COUNT - 1, 0)
-        .unwrap_err();
+    let too_narrow =
+        VerifiedUMST::try_assemble(edges.clone(), UMST_SCALAR_CHANNEL_COUNT - 1, 0).unwrap_err();
     assert_eq!(
         too_narrow,
         DecTypestateError::ScalarWidthMismatch {
@@ -73,18 +71,15 @@ fn verified_umst_staging_assemble_round_trip_preserves_b1_and_channel() {
     let edges = toy_b1_two_edges(&device);
     let channel_idx = UMST_SCALAR_CHANNEL_COUNT.saturating_sub(1);
 
-    let staging =
-        VerifiedUMST::try_assemble(edges, UMST_SCALAR_CHANNEL_COUNT, channel_idx).expect("assemble");
+    let staging = VerifiedUMST::try_assemble(edges, UMST_SCALAR_CHANNEL_COUNT, channel_idx)
+        .expect("assemble");
     assert_eq!(staging.b1().n_edges(), 2);
     assert_eq!(staging.channel().index(), channel_idx);
 
     let b1 = staging.into_b1();
-    let round_trip = VerifiedUMST::try_assemble(
-        b1.into_tensor(),
-        UMST_SCALAR_CHANNEL_COUNT,
-        channel_idx,
-    )
-    .expect("round-trip assemble");
+    let round_trip =
+        VerifiedUMST::try_assemble(b1.into_tensor(), UMST_SCALAR_CHANNEL_COUNT, channel_idx)
+            .expect("round-trip assemble");
 
     assert_eq!(round_trip.b1().n_edges(), 2);
     assert_eq!(round_trip.channel().index(), channel_idx);

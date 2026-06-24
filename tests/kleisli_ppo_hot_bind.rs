@@ -14,9 +14,9 @@ use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::ai::constraint_loss::clausius_duhem_violation;
 use umst_manifold::ai::liquid_ppo::BurnLiquidPPOAgent;
 use umst_manifold::ai::ppo::ManifoldGateway;
-use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
+use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 
 type B = NdArray<f32>;
 

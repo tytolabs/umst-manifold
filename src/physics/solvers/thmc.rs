@@ -863,12 +863,7 @@ impl ThmcSolver {
 
         // Post-step gate evidence (`thmc_step::wire_gate_evidence_post_step` → CdTransitionCartridge).
         let gate_evidence = super::thmc_step::wire_gate_evidence_post_step(
-            self,
-            _cartridge,
-            &pre_step,
-            &state,
-            manifold,
-            self.dt,
+            self, _cartridge, &pre_step, &state, manifold, self.dt,
         )?;
         self.step_gate_evidence.push(gate_evidence);
 

@@ -109,11 +109,8 @@ fn penalize(pair: TransitionPair) -> Admissible<PenalizedTransition> {
 }
 
 fn witness(pen: PenalizedTransition) -> Admissible<TransitionEvidence> {
-    let evidence = CdTransitionCartridge.transition_evidence(
-        &pen.pair.old,
-        &pen.pair.new,
-        pen.pair.dt,
-    );
+    let evidence =
+        CdTransitionCartridge.transition_evidence(&pen.pair.old, &pen.pair.new, pen.pair.dt);
     let admissible = evidence.admissibility == AdmissibilityToken::Admissible;
     Admissible {
         value: evidence,
@@ -134,7 +131,11 @@ fn penalize_then_witness(pair: TransitionPair) -> Admissible<TransitionEvidence>
 }
 
 fn pipeline() -> KleisliArrow<TransitionIntent, TransitionEvidence> {
-    kleisli_compose_pair(propose, penalize_then_witness, "propose_penalize_witness_e2e")
+    kleisli_compose_pair(
+        propose,
+        penalize_then_witness,
+        "propose_penalize_witness_e2e",
+    )
 }
 
 #[test]
@@ -152,7 +153,10 @@ fn kleisli_gate_pipeline_e2e_admissible_identity_transition() {
     };
 
     let out = pipeline().run(intent);
-    assert!(out.result.admissible, "identity transition must admit through full pipeline");
+    assert!(
+        out.result.admissible,
+        "identity transition must admit through full pipeline"
+    );
     assert_eq!(out.value.admissibility, AdmissibilityToken::Admissible);
     assert_eq!(out.value.catalog_id, CD_TRANSITION_CATALOG_ID);
 }
@@ -207,8 +211,7 @@ fn kleisli_gate_pipeline_e2e_penalize_witness_agree_on_token() {
     let pen = penalize(pair);
     let wit = witness(pen.value);
     assert_eq!(
-        pen.value.explanation.admissibility,
-        wit.value.admissibility,
+        pen.value.explanation.admissibility, wit.value.admissibility,
         "constraint_loss host mirror and GateCartridge witness must agree"
     );
 }

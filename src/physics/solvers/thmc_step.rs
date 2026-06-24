@@ -134,7 +134,6 @@ where
 ///
 /// Lifts pre/post [`ThmcState`] snapshots and evaluates [`CdTransitionCartridge::transition_evidence`].
 #[cfg(feature = "thmc-coupled")]
-#[must_use]
 pub fn wire_gate_evidence_post_step<B, C>(
     _solver: &ThmcSolver,
     _cartridge: &C,

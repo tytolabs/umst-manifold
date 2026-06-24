@@ -8,7 +8,8 @@ use umst_manifold::embodied::{EmbodiedReject, HostTransitionStep};
 use umst_manifold::gate::http_manifest::MixProposal;
 use umst_manifold::gate::{
     evaluate_http_mix_manifest, gate_json_parse_response, AdmissibilityVerdict, GateEvaluator,
-    HttpGateManifest, ThermodynamicState, ThermodynamicTransitionEvaluator, TransitionGateEvaluator,
+    HttpGateManifest, ThermodynamicState, ThermodynamicTransitionEvaluator,
+    TransitionGateEvaluator,
 };
 use umst_manifold::manifest::UmstManifest;
 use umst_manifold::runtime::catalog::traceability::{

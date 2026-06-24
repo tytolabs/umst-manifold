@@ -3,9 +3,7 @@
 
 //! Structured transition evidence for cold-edge telemetry (catalog id + admissibility witness).
 
-use crate::gate::transition_proposal::{
-    transition_outcome, ThermodynamicStateSnapshot,
-};
+use crate::gate::transition_proposal::{transition_outcome, ThermodynamicStateSnapshot};
 use crate::runtime::catalog::traceability::CD_TRANSITION_CATALOG_ID;
 
 /// Host-side admissibility witness for transition telemetry (cold edge only).
