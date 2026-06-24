@@ -99,7 +99,7 @@ impl<B: Backend, C: IScienceCartridge<B>> std::fmt::Debug for EmbodiedOrchestrat
     }
 }
 
-impl<B: Backend, C: IScienceCartridge<B>> EmbodiedOrchestrator<B, C> {
+impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> EmbodiedOrchestrator<B, C> {
     #[must_use]
     pub fn new(cartridge: C, temperature_k: f64, initial_credit_joules: f64) -> Self {
         Self {

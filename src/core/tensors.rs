@@ -174,4 +174,12 @@ impl<B: Backend, P: Proof> VerifiedUMST<B, P> {
             _witness: PhantomData,
         }
     }
+
+    /// Explicit morphism: DEC staging witness → proof-carrying gateway bundle.
+    pub(crate) fn lift_after_dec_staging_witness(
+        _staging: super::dec_typestate::VerifiedUMST<B>,
+        state: UnifiedMaterialStateTensor<B>,
+    ) -> Self {
+        Self::new(state)
+    }
 }

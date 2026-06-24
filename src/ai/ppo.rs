@@ -93,7 +93,7 @@ pub struct ManifoldGateway<B: Backend, C: IScienceCartridge<B>> {
     _backend: std::marker::PhantomData<B>,
 }
 
-impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
+impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
     pub fn new(cartridge: C, temperature_k: f64, initial_credit: f64) -> Self {
         Self {
             cartridge,
@@ -335,11 +335,10 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
                 let final_spatial_reward = performance.sub(penalty).sub_scalar(erasure_cost as f32);
 
                 // Construct the mathematically secured tensor (staging → proof morphism).
-                let verified_state =
-                    crate::core::tensors::VerifiedUMST::lift_after_dec_staging_witness(
-                        staging,
-                        secured_state,
-                    );
+                let verified_state = crate::core::tensors::VerifiedUMST::<
+                    B,
+                    crate::core::tensors::ClausiusDuhemProof,
+                >::lift_after_dec_staging_witness(staging, secured_state);
 
                 // Flatten the spatial reward to a single scalar [Batch] for the policy gradient (Adjoint Method target)
                 let mut total_reward = final_spatial_reward.sum_dim(1).squeeze(1);
