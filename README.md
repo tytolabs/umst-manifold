@@ -38,6 +38,26 @@ We don't pretend everything is proven. Conservation structure is mathematical, a
 
 If you want the applied materials engine for cementitious systems (concrete design, 3D printing, structural topology), see the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge).
 
+### For agents and researchers
+
+| Path | When to use |
+|------|-------------|
+| **Library (hot)** | Batch sweeps, training, CI physics — `cargo test`, cartridge `IScienceCartridge` in-process | 
+| **MCP (cold)** | IDE agents, discovery, single-shot gate/predict — sibling [`umst-concrete-cartridge` Agent MCP](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md) |
+| **Formal** | Catalog witnesses, digest pins — [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md) |
+
+Prefer **library/arena calls over Docker MCP** for performance-sensitive proposal loops (arena ABI planned in master re-engineering Phase 2).
+
+### Current capabilities (today vs planned)
+
+| Works today | Planned |
+|-------------|---------|
+| DEC + thermodynamic gate host, Burn solvers, catalog digest CI | `umst-layout-codegen` compile-time schema functor (Phase 1) |
+| `GateCartridge` marker trait; in-process cartridge sweeps | `transition_evidence()` wired through `ThmcSolver` (Phase 5) |
+| `ManifoldGateway` + hard CBF witness | Differentiable `constraint_loss` + soft/hard dual path (Phase 4) |
+| Integration contracts: `SolveReport`, `MechanicsOperator` trait (spec) | Consumer ports + bar→Q1 migration (solver-quality wave) |
+
+---
 <!-- readme:hero-figure -->
 ![UMST unified state pipeline — UMST carrier (light)](docs/assets/fig1_teaser.png#gh-light-mode-only)
 ![UMST unified state pipeline — UMST carrier (dark)](docs/assets/fig1_teaser_dark.png#gh-dark-mode-only)
