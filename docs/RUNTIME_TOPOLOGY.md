@@ -27,7 +27,7 @@ flowchart LR
     Tel[metrics / tracing]
   end
   subgraph warm [Warm boundary — parse once]
-    Sim["into_simulation() / into_arena()"]
+    Sim["load_arena() shipped; into_simulation() P2 follow-on"]
   end
   subgraph hot [Hot path — pure, zero-alloc]
     Cart[IScienceCartridge]
@@ -91,7 +91,7 @@ Agents and integrators should pass an explicit [`UmstManifest`](../src/manifest/
 work, prefer the in-process library / arena path over per-call Docker MCP. MCP
 remains the stable default; the arena is an opt-in fast path that parses once and
 loops in-process (≥**5×** MCP round-trip required for Phase 2 exit, CI-pinned via
-[`arena-bench`](../.github/workflows/rust.yml); **10×** aspirational footnote on reference hardware).*
+[`arena-vs-mcp`](../.github/workflows/rust.yml); **10×** aspirational footnote on reference hardware).*
 
 ## Live vs planned (2026-06-24)
 
@@ -105,7 +105,7 @@ loops in-process (≥**5×** MCP round-trip required for Phase 2 exit, CI-pinned
 | UCRS witness stamps on arena commit | **shipped** — [`stamp.rs`](../umst-runtime-arena/src/stamp.rs) + `fiber_pins[].commit_stamp` on witnessed commit |
 | `catalog.lock.json` fiber pin `commit_stamp` | **doc + schema** (optional; populated on witnessed commit) |
 
-**Exit witness (P2):** CI-pinned [`arena-bench`](../.github/workflows/rust.yml) requires in-process arena ≥**5×** MCP round-trip (`UMST_BENCH_N=30`); **10×** aspirational on reference hardware (local `N=100`). No required CI lane depends on Docker MCP for correctness gates.
+**Exit witness (P2):** CI-pinned [`arena-vs-mcp`](../.github/workflows/rust.yml) requires in-process arena ≥**5×** MCP round-trip (`UMST_BENCH_N=30`); **10×** aspirational on reference hardware (local `N=100`). No required CI lane depends on Docker MCP for correctness gates.
 
 ## Catalog lock fiber pins — preview vs composed digest
 
@@ -149,5 +149,6 @@ file-backed arenas without an extra copy.
 | `state_bytes` | 8 | UMST state blob length |
 
 **Deferred (later ABI revisions):** `proposal_offset` / witness payload sections
-beyond the commit stamp. Hot solvers remain unchanged until a full Warm
-`into_arena()` wires this view into `IScienceCartridge`.
+beyond the commit stamp. Hot solvers remain unchanged until Warm
+`into_simulation()` wires [`UmstArenaView`](../umst-runtime-arena/src/load.rs) into
+`IScienceCartridge` (P2 follow-on; `load_arena` / mmap / stamp are already shipped).

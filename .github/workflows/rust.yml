@@ -63,6 +63,11 @@ jobs:
             --check-memo-links \
             --check-statmech-verification-set
 
+      - name: RUNTIME_TOPOLOGY freshness (no planned/skeleton on shipped)
+        run: |
+          set -euo pipefail
+          bash scripts/check_runtime_topology_freshness.sh
+
       - name: theorem counts SSOT (lean_declaration_stats snapshot)
         run: |
           set -euo pipefail
@@ -261,7 +266,7 @@ jobs:
           cargo test -p umst-manifold --features kleisli-ppo-hot-bind \
             --test p4_rejection_witness p4_rejection_baseline_measured_witness -- --exact
 
-  arena-bench:
+  arena-vs-mcp:
     name: arena vs MCP benchmark (≥5×)
     runs-on: ubuntu-latest
     steps:
@@ -280,9 +285,18 @@ jobs:
           cargo build -p umst-runtime-arena --release --features mmap
           cargo build -p umst-mcp --release --features agent-layer --manifest-path ../umst-concrete-cartridge/crates/umst-mcp/Cargo.toml
       - name: bench_arena_vs_mcp (CI-pinned N=30, min ratio 5×)
+        env:
+          UMST_BENCH_ENFORCE: "1"
         run: |
           set -euo pipefail
-          UMST_BENCH_N=30 UMST_BENCH_MIN_RATIO=5 python3 scripts/bench_arena_vs_mcp.py
+          UMST_BENCH_N=30 UMST_BENCH_MIN_RATIO=5 UMST_BENCH_ENFORCE=1 \
+            python3 scripts/bench_arena_vs_mcp.py
+          ec=$?
+          if [[ "$ec" -ne 0 ]]; then
+            echo "FAIL: bench_arena_vs_mcp exit $ec (required arena_vs_mcp ratio >= 5)" >&2
+            exit "$ec"
+          fi
+          echo "OK: bench_arena_vs_mcp exit 0 (ratio gate passed)"
       - name: Upload arena benchmark artifact
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

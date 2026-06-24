@@ -40,7 +40,7 @@ python3 examples/agent/06_arena_batch.py
 | `mmap_arena_path` + `seal_arena_commit` | **Shipped** |
 | `examples/agent/06_arena_batch.py` + CI | **Shipped** |
 | `scripts/bench_arena_vs_mcp.py` | **Shipped** |
-| CI `arena-bench` job (`UMST_BENCH_N=30`, ratio ≥5×) | **Shipped** |
+| CI `arena-vs-mcp` job (`UMST_BENCH_N=30`, ratio ≥5×) | **Shipped** |
 | Published ≥5× ratio on CI hardware | **CI-pinned** — see `artifacts/benchmarks/arena_vs_mcp_ci.json` |
 
 Paste measured `ratio_mcp_over_inprocess` into [`IMPLEMENTATION_EVIDENCE.md`](../../../outputs/IMPLEMENTATION_EVIDENCE.md) P2 row after hardware runs.

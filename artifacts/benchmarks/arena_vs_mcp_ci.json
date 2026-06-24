@@ -1,8 +1,8 @@
 {
   "schema_version": "arena_vs_mcp_ci.v1",
-  "n_calls": 10,
+  "n_calls": 30,
   "min_ratio": 5.0,
   "arena_sec": 0.0,
-  "mcp_sec": 0.0020265839993953705,
-  "ratio_mcp_over_inprocess": 2026583999.3953705
+  "mcp_sec": 0.007275167037732899,
+  "ratio_mcp_over_inprocess": 7275167037.7329
 }

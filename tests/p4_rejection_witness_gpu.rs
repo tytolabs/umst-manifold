@@ -27,6 +27,31 @@ type B = Wgpu;
 const EPISODES: usize = 128;
 const TARGET_REDUCTION_MIN: f64 = 0.15;
 const KLEISLI_EPISODES: usize = 4;
+const DEFAULT_SEED: u64 = 42;
+
+fn witness_seed() -> u64 {
+    std::env::var("P4_WITNESS_SEED")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(DEFAULT_SEED)
+}
+
+fn hardware_note() -> String {
+    if cfg!(target_os = "macos") {
+        "Apple Silicon / Intel macOS runner; WGPU Metal backend (wgpu crate)".to_string()
+    } else {
+        "Linux/Windows CI runner; WGPU Vulkan backend (wgpu crate)".to_string()
+    }
+}
+
+fn single_run_disclaimer() -> &'static str {
+    "Single deterministic witness run per seed; not a multi-seed statistical study. \
+     Use scripts/run_p4_multiseed_witness.sh for a 3-seed aggregate stub."
+}
+
+fn features_used() -> Vec<&'static str> {
+    vec!["kleisli-ppo-hot-bind", "wgpu"]
+}
 
 fn device() -> WgpuDevice {
     WgpuDevice::default()
@@ -44,7 +69,7 @@ fn scalar_tensor(dev: &WgpuDevice, values: &[f32]) -> Tensor<B, 1> {
     Tensor::<B, 1>::from_data(Data::new(values.to_vec(), Shape::new([values.len()])), dev)
 }
 
-fn snapshot_pair(i: usize) -> (ThermodynamicStateSnapshot, ThermodynamicStateSnapshot) {
+fn snapshot_pair(seed: u64, i: usize) -> (ThermodynamicStateSnapshot, ThermodynamicStateSnapshot) {
     let base = ThermodynamicStateSnapshot {
         density: 2400.0,
         temperature: 293.15,
@@ -53,7 +78,7 @@ fn snapshot_pair(i: usize) -> (ThermodynamicStateSnapshot, ThermodynamicStateSna
         reaction_extent: 0.42,
         strength: 12.7,
     };
-    if i % 5 < 2 {
+    if (i.wrapping_add(seed as usize)) % 5 < 2 {
         let mut bad = base;
         bad.free_energy = -1.0e4;
         (base, bad)
@@ -62,10 +87,10 @@ fn snapshot_pair(i: usize) -> (ThermodynamicStateSnapshot, ThermodynamicStateSna
     }
 }
 
-fn simulate_generate_then_filter(dev: &WgpuDevice) -> RejectionTelemetry {
+fn simulate_generate_then_filter(dev: &WgpuDevice, seed: u64) -> RejectionTelemetry {
     let mut telemetry = RejectionTelemetry::default();
     for i in 0..EPISODES {
-        let (old, new) = snapshot_pair(i);
+        let (old, new) = snapshot_pair(seed, i);
         let explanation = explain_clausius_duhem_violation(
             scalar_tensor(dev, &[old.density as f32]),
             scalar_tensor(dev, &[new.density as f32]),
@@ -82,10 +107,10 @@ fn simulate_generate_then_filter(dev: &WgpuDevice) -> RejectionTelemetry {
     telemetry
 }
 
-fn simulate_kleisli_penalize(dev: &WgpuDevice) -> RejectionTelemetry {
+fn simulate_kleisli_penalize(dev: &WgpuDevice, seed: u64) -> RejectionTelemetry {
     let mut telemetry = RejectionTelemetry::default();
     for i in 0..EPISODES {
-        let (old, new) = snapshot_pair(i);
+        let (old, new) = snapshot_pair(seed, i);
         let explanation = explain_clausius_duhem_violation(
             scalar_tensor(dev, &[old.density as f32]),
             scalar_tensor(dev, &[new.density as f32]),
@@ -103,7 +128,7 @@ fn simulate_kleisli_penalize(dev: &WgpuDevice) -> RejectionTelemetry {
 
         if explanation.admissibility == AdmissibilityToken::Admissible {
             telemetry.record_commit(f64::from(explanation.violation));
-        } else if landauer_max > 0.0 && i % 7 == 0 {
+        } else if landauer_max > 0.0 && (i.wrapping_add(seed as usize)) % 7 == 0 {
             telemetry.record_reject();
         } else {
             telemetry.record_soft_penalty(f64::from(explanation.violation));
@@ -183,19 +208,25 @@ fn tiny_umst(dev: &WgpuDevice) -> UnifiedMaterialStateTensor<B> {
 #[test]
 fn p4_rejection_baseline_gpu_measured_witness() {
     let dev = device();
-    let hard = simulate_generate_then_filter(&dev);
-    let soft = simulate_kleisli_penalize(&dev);
+    let seed = witness_seed();
+    let hard = simulate_generate_then_filter(&dev, seed);
+    let soft = simulate_kleisli_penalize(&dev, seed);
 
     let hard_rate = hard.rejection_rate();
     let soft_rate = soft.rejection_rate();
     let reduction = hard_rate - soft_rate;
     let target_met = reduction >= TARGET_REDUCTION_MIN;
+    let features: Vec<&str> = features_used();
 
     let doc = serde_json::json!({
         "schema_version": "p4_rejection_baseline.v2",
         "generated_at": "2026-06-24",
+        "seed": seed,
+        "hardware_note": hardware_note(),
+        "single_run_disclaimer": single_run_disclaimer(),
+        "features_used": features,
         "device": detect_device_label(),
-        "backend_features": ["kleisli-ppo-hot-bind", "wgpu"],
+        "backend_features": features,
         "regenerate": "cargo test -p umst-manifold --features kleisli-ppo-hot-bind,wgpu --test p4_rejection_witness_gpu",
         "comparison": {
             "protocol": "equal_reward_budget",
@@ -213,7 +244,7 @@ fn p4_rejection_baseline_gpu_measured_witness() {
             "mean_slack_at_commit": soft.mean_slack_at_commit(),
             "lambda_cd": 1.0,
             "lambda_landauer": 0.25,
-            "features": ["kleisli-ppo-hot-bind", "wgpu"]
+            "features": features
         },
         "delta": {
             "rejection_rate_reduction": reduction,

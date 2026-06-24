@@ -14,6 +14,10 @@
     "target_reduction_min": 0.15
   },
   "device": "wgpu-metal",
+  "features_used": [
+    "kleisli-ppo-hot-bind",
+    "wgpu"
+  ],
   "generate_then_filter": {
     "hard_cbf_rejection_rate": 0.40625,
     "lambda_cd": 0.0,
@@ -21,6 +25,7 @@
     "mean_slack_at_commit": 0.0
   },
   "generated_at": "2026-06-24",
+  "hardware_note": "Apple Silicon / Intel macOS runner; WGPU Metal backend (wgpu crate)",
   "kleisli_penalize_treatment": {
     "features": [
       "kleisli-ppo-hot-bind",
@@ -32,5 +37,7 @@
     "mean_slack_at_commit": 205263157.89473686
   },
   "regenerate": "cargo test -p umst-manifold --features kleisli-ppo-hot-bind,wgpu --test p4_rejection_witness_gpu",
-  "schema_version": "p4_rejection_baseline.v2"
+  "schema_version": "p4_rejection_baseline.v2",
+  "seed": 42,
+  "single_run_disclaimer": "Single deterministic witness run per seed; not a multi-seed statistical study. Use scripts/run_p4_multiseed_witness.sh for a 3-seed aggregate stub."
 }

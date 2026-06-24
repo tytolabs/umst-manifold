@@ -2,7 +2,8 @@
 """Arena vs MCP round-trip benchmark — Phase 2 exit witness (≥5× in-process target).
 
 Compares stdio MCP `umst_gate_check` wall time vs in-process `load_arena` hot loop (N=100).
-Exit 0 when ratio >= UMST_BENCH_MIN_RATIO (default 5.0). Set UMST_BENCH_SKIP_RATIO=1 to log only.
+Exit 0 when ratio >= UMST_BENCH_MIN_RATIO (default 5.0).
+Set UMST_BENCH_SKIP_RATIO=1 to log only locally (ignored when UMST_BENCH_ENFORCE=1 or CI=true).
 """
 
 from __future__ import annotations
@@ -25,8 +26,21 @@ MIX = {
 N_CALLS = int(os.environ.get("UMST_BENCH_N", os.environ.get("UMST_BENCH_ITERATIONS", "100")))
 MIN_RATIO = float(os.environ.get("UMST_BENCH_MIN_RATIO", "5.0"))
 SKIP_RATIO = os.environ.get("UMST_BENCH_SKIP_RATIO", "") == "1"
+ENFORCE = os.environ.get("UMST_BENCH_ENFORCE", "") == "1" or os.environ.get("CI", "").lower() == "true"
 ARENA_ONLY = "--arena-only" in sys.argv
 MCP_ARENA_SESSION = "--mcp-arena-session" in sys.argv
+
+
+def fail_ratio_gate(label: str, ratio: float) -> int:
+    """Exit 1 when ratio gate fails; never downgrade to log-only when ENFORCE is set."""
+    if SKIP_RATIO and not ENFORCE:
+        print(f"UMST_BENCH_SKIP_RATIO=1 — {label} witness logged only")
+        return 0
+    print(
+        f"FAIL: {label} ratio {ratio:.2f} < required {MIN_RATIO}",
+        file=sys.stderr,
+    )
+    return 1
 
 
 def bench_mcp_arena_session(n: int) -> float:
@@ -202,7 +216,11 @@ def bench_arena_load_loop(n: int) -> float:
 
 def main() -> int:
     if not CONCRETE.is_dir():
-        print(f"skip: concrete cartridge not found at {CONCRETE}", file=sys.stderr)
+        msg = f"concrete cartridge not found at {CONCRETE}"
+        if ENFORCE:
+            print(f"FAIL: {msg} (UMST_BENCH_ENFORCE/CI requires sibling checkout)", file=sys.stderr)
+            return 1
+        print(f"skip: {msg}", file=sys.stderr)
         return 0
 
     arena_sec = bench_arena_load_loop(N_CALLS)
@@ -217,12 +235,8 @@ def main() -> int:
         print(f"mcp_arena_session_{N_CALLS}_gate_check_sec {session_sec:.6f}")
         ratio_session = session_sec / max(arena_sec, 1e-12)
         print(f"arena_vs_mcp_arena_session_ratio {ratio_session:.2f}")
-        if not SKIP_RATIO and ratio_session < MIN_RATIO:
-            print(
-                f"FAIL: mcp_arena_session ratio {ratio_session:.2f} < required {MIN_RATIO}",
-                file=sys.stderr,
-            )
-            return 1
+        if ratio_session < MIN_RATIO:
+            return fail_ratio_gate("mcp_arena_session", ratio_session)
 
     mcp_sec = bench_mcp_gate(N_CALLS)
     print(f"mcp_{N_CALLS}_gate_check_sec {mcp_sec:.6f}")
@@ -230,13 +244,8 @@ def main() -> int:
     ratio = mcp_sec / max(arena_sec, 1e-12)
     print(f"arena_vs_mcp_ratio {ratio:.2f} (min {MIN_RATIO})")
 
-    if SKIP_RATIO:
-        print("UMST_BENCH_SKIP_RATIO=1 — witness logged only")
-        return 0
-
     if ratio < MIN_RATIO:
-        print(f"FAIL: ratio {ratio:.2f} < required {MIN_RATIO}", file=sys.stderr)
-        return 1
+        return fail_ratio_gate("arena_vs_mcp", ratio)
 
     ci_artifact = MANIFOLD / "artifacts" / "benchmarks" / "arena_vs_mcp_ci.json"
     ci_artifact.parent.mkdir(parents=True, exist_ok=True)
@@ -246,6 +255,7 @@ def main() -> int:
                 "schema_version": "arena_vs_mcp_ci.v1",
                 "n_calls": N_CALLS,
                 "min_ratio": MIN_RATIO,
+                "enforce": ENFORCE,
                 "arena_sec": arena_sec,
                 "mcp_sec": mcp_sec,
                 "ratio_mcp_over_inprocess": ratio,
