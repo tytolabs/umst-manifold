@@ -179,10 +179,32 @@ struct HexForwardState {
     rho_e_law: Vec<f32>,
     u: Vec<f32>,
     ge: Vec<f32>,
+    cell_strain_energy: Vec<f32>,
     pcg: BarNetworkPcgReport,
     eq_rel: f32,
     nodal_sensitivity: Vec<f32>,
     finite_audit: AdjointFiniteStageAudit,
+}
+
+/// Post-processing audit for B6 **c1** gate diagnosis (no autodiff).
+#[derive(Clone, Debug)]
+pub struct Q1HexComplianceAudit {
+    pub compliance: f32,
+    pub strain_energy_total: f32,
+    pub cell_strain_energy: Vec<f32>,
+    pub equilibrium_rel_residual: f32,
+}
+
+/// Spatial fractions for hypothesis **H-A** (top-face load over void columns).
+#[derive(Clone, Debug)]
+pub struct Q1HexTopVoidColumnFractions {
+    /// \(\sum f_i u_i\) on free DOFs at top-face nodes in void columns / total compliance.
+    pub compliance_fraction: f32,
+    /// Sum of hex cell strain energy in the top layer over void columns / total strain energy.
+    pub strain_energy_fraction: f32,
+    /// Fraction of \((n_x{+}1)(n_y{+}1)\) columns with top-face \(\rho <\) threshold.
+    pub void_column_fraction_xy: f32,
+    pub void_rho_threshold: f32,
 }
 
 impl AdjointComplianceQ1Hex {
@@ -325,10 +347,153 @@ impl AdjointComplianceQ1Hex {
             rho_e_law,
             u,
             ge,
+            cell_strain_energy: u_cell_energy,
             pcg,
             eq_rel,
             nodal_sensitivity,
             finite_audit,
+        }
+    }
+
+    /// Forward equilibrium + compliance scalar for reference layouts (post-processing only).
+    #[allow(clippy::too_many_arguments)]
+    pub fn evaluate_compliance(
+        rho_flat: &[f32],
+        nx: usize,
+        ny: usize,
+        nz: usize,
+        dx: f32,
+        dy: f32,
+        dz: f32,
+        f_flat: &[f32],
+        m_flat: &[f32],
+        material: SimpElasticMaterial,
+        cg: &MechanicsInnerLoopConfig,
+        self_weight: Option<SelfWeightConfig>,
+    ) -> (Q1HexComplianceAudit, Vec<f32>) {
+        let state = Self::forward_state(
+            rho_flat,
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            f_flat,
+            m_flat,
+            material,
+            cg,
+            self_weight,
+        );
+        let mut compliance = 0.0_f32;
+        for i in 0..f_flat.len().min(state.u.len()).min(m_flat.len()) {
+            if m_flat[i] > 0.5 {
+                compliance += f_flat[i] * state.u[i];
+            }
+        }
+        let strain_energy_total = state.cell_strain_energy.iter().sum();
+        let audit = Q1HexComplianceAudit {
+            compliance,
+            strain_energy_total,
+            cell_strain_energy: state.cell_strain_energy,
+            equilibrium_rel_residual: state.eq_rel,
+        };
+        (audit, state.u)
+    }
+
+    /// Top-layer void-column fractions for **H-A** (roof load on non-design skin).
+    #[allow(clippy::too_many_arguments)]
+    pub fn top_void_column_fractions(
+        audit: &Q1HexComplianceAudit,
+        u: &[f32],
+        rho_flat: &[f32],
+        nx: usize,
+        ny: usize,
+        nz: usize,
+        f_flat: &[f32],
+        m_flat: &[f32],
+        void_rho_threshold: f32,
+    ) -> Q1HexTopVoidColumnFractions {
+        let nx1 = nx + 1;
+        let ny1 = ny + 1;
+        let iz_top = nz;
+        let mut void_cols = vec![false; nx1 * ny1];
+        let mut n_void_cols = 0usize;
+        for iy in 0..ny1 {
+            for ix in 0..nx1 {
+                let nid = ix + iy * nx1 + iz_top * nx1 * ny1;
+                let rho_top = rho_flat.get(nid).copied().unwrap_or(1.0);
+                let is_void = rho_top < void_rho_threshold;
+                void_cols[ix + iy * nx1] = is_void;
+                if is_void {
+                    n_void_cols += 1;
+                }
+            }
+        }
+        let void_column_fraction_xy = n_void_cols as f32 / (nx1 * ny1).max(1) as f32;
+
+        let mut comp_void_top = 0.0_f32;
+        let mut comp_total = 0.0_f32;
+        for iy in 0..ny1 {
+            for ix in 0..nx1 {
+                let nid = ix + iy * nx1 + iz_top * nx1 * ny1;
+                if !void_cols[ix + iy * nx1] {
+                    continue;
+                }
+                for d in 0..3 {
+                    let idx = nid * 3 + d;
+                    if idx < f_flat.len()
+                        && idx < u.len()
+                        && idx < m_flat.len()
+                        && m_flat[idx] > 0.5
+                    {
+                        comp_void_top += f_flat[idx] * u[idx];
+                    }
+                }
+            }
+        }
+        for i in 0..f_flat.len().min(u.len()).min(m_flat.len()) {
+            if m_flat[i] > 0.5 {
+                comp_total += f_flat[i] * u[i];
+            }
+        }
+        let compliance_fraction = if comp_total.abs() > 1e-30 {
+            comp_void_top / comp_total
+        } else {
+            f32::NAN
+        };
+
+        let mut se_void_top = 0.0_f32;
+        for cz in nz.saturating_sub(1)..nz {
+            for cy in 0..ny {
+                for cx in 0..nx {
+                    let col_ix = cx + 1;
+                    let col_iy = cy + 1;
+                    let void = void_cols
+                        .get(col_ix + col_iy * nx1)
+                        .copied()
+                        .unwrap_or(false)
+                        || void_cols.get(cx + col_iy * nx1).copied().unwrap_or(false)
+                        || void_cols.get(col_ix + cy * nx1).copied().unwrap_or(false)
+                        || void_cols.get(cx + cy * nx1).copied().unwrap_or(false);
+                    if void {
+                        let cidx = cx + cy * nx + cz * nx * ny;
+                        se_void_top += audit.cell_strain_energy.get(cidx).copied().unwrap_or(0.0);
+                    }
+                }
+            }
+        }
+        let strain_energy_fraction = if audit.strain_energy_total.abs() > 1e-30 {
+            se_void_top / audit.strain_energy_total
+        } else {
+            f32::NAN
+        };
+
+        Q1HexTopVoidColumnFractions {
+            compliance_fraction,
+            strain_energy_fraction,
+            void_column_fraction_xy,
+            void_rho_threshold,
         }
     }
 
