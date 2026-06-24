@@ -8,6 +8,7 @@ mod thmc_gate_evidence_wire {
     use burn::tensor::backend::Backend;
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
+    use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
     use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
     use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
     use umst_manifold::physics::solvers::{
@@ -58,7 +59,7 @@ mod thmc_gate_evidence_wire {
 
     fn umst(n: usize) -> UnifiedMaterialStateTensor<B> {
         let dev = dev();
-        let f = 5usize;
+        let f = UMST_SCALAR_CHANNEL_COUNT;
         let coords: Tensor<B, 2, Int> =
             Tensor::from_data(Data::new(vec![0i64; n * 5], Shape::new([n, 5])), &dev);
         let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(

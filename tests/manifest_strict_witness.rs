@@ -8,6 +8,7 @@ use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::ai::formal::FormalReject;
 use umst_manifold::ai::ppo::ManifoldGateway;
+use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::manifest::{GroundingContract, UmstManifestBuilder};
@@ -22,7 +23,7 @@ fn device() -> NdArrayDevice {
 fn tiny_umst(digest: Option<[u8; 32]>) -> UnifiedMaterialStateTensor<B> {
     let dev = device();
     let n = 2usize;
-    let f = 5usize;
+    let f = UMST_SCALAR_CHANNEL_COUNT;
     let coords: Tensor<B, 2, Int> =
         Tensor::from_data(Data::new(vec![0i64; n * 5], Shape::new([n, 5])), &dev);
     let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(

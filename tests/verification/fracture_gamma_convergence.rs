@@ -18,6 +18,7 @@ use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 
 #[cfg(feature = "fracture-at2")]
+use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
 #[cfg(feature = "fracture-at2")]
@@ -913,7 +914,7 @@ fn at2_matrix_features_stub_matches_direct_strain_psi_plus_sanity() {
     let n = 4usize;
     let batch = 1usize;
     let exx = 0.061_f32;
-    let f = 5usize;
+    let f = UMST_SCALAR_CHANNEL_COUNT;
     let coords: Tensor<B, 2, Int> =
         Tensor::from_data(Data::new(vec![0i64; n * 5], Shape::new([n, 5])), &dev);
     let mut e = Vec::with_capacity((n - 1) * 2);
