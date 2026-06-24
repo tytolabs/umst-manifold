@@ -57,4 +57,15 @@ When **`UMST_CATALOG_PATH`** is set (UTF-8 path), that file replaces the embedde
 
 Digest is **SHA-256 (hex lowercase)** over the verbatim lock-file bytes (`UMST_CATALOG` selects the source path).
 
-See **`docs/TCB.md`** and `artifacts/catalog.lock.json` layout.
+See **`docs/TCB.md`**, **`docs/RUNTIME_TOPOLOGY.md`** (fiber pins + `commit_stamp`), and `artifacts/catalog.lock.json` layout.
+
+### v2 `fiber_pins[]` (per-fiber Lean catalog pin)
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `repo` | yes | Sibling repo id |
+| `catalog_digest_hex` | yes | 64-char lowercase SHA-256 of that fiber's catalog export |
+| `module_count` | yes | Entry count for audit |
+| `lock_role` | recommended | `lean_catalog_lock` for primary fibers; `preview` / `track_f` marks tertiary preview pins (e.g. `umst-ucrs`) excluded from `composed_catalog_digest_hex` |
+| `catalog_path` | recommended | Relative catalog artifact path |
+| `commit_stamp` | no | Optional UCRS witness stamp at last witnessed commit; absent at cold pin time |

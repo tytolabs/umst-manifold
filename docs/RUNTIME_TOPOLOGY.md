@@ -82,10 +82,34 @@ loops in-process (target ≥10× MCP round-trip).*
 | Single Warm `into_simulation()`/`into_arena()` conversion | **planned** (P2) |
 | `umst-runtime-arena` zero-copy `UmstArenaView` (`Send + Sync`, zero-alloc) | **planned** (P2) |
 | `ai::constraint_loss` soft penalty + `ConstraintExplanation` | **planned** (P4) |
-| UCRS witness stamps on arena commit | **planned** (P2-C) |
+| UCRS witness stamps on arena commit | **doc + guard** (P2-C; stamp wire deferred) |
+| `catalog.lock.json` fiber pin `commit_stamp` | **doc + schema** (optional; populated on witnessed commit) |
 
 **Exit witness (P2):** benchmark in-process predict ≥10× an MCP round-trip; no
 required CI lane depends on Docker MCP.
+
+## Catalog lock fiber pins — preview vs composed digest
+
+`artifacts/catalog.lock.json` v2 carries per-fiber pins in `fiber_pins[]`.
+Primary Lean fibers (`umst-formal`, `umst-formal-double-slit`) contribute to the
+composed R0 digest (`composed_catalog_digest_hex` ==
+`upstream_catalog_digest_hex`). **Preview / Track F fibers are excluded** from
+that composed digest and from `composed_primary_fiber_fingerprint_hex` (T1 digest
+guard in `build.rs` and `scripts/catalog_lock_verify.py`).
+
+| `fiber_pins[]` field | Required | Role |
+| -------------------- | -------- | ---- |
+| `repo` | yes | Sibling repo id (`umst-formal-double-slit`, `umst-formal`, `umst-ucrs`, …) |
+| `catalog_digest_hex` | yes | SHA-256 of that fiber's `catalog.json` export |
+| `module_count` | yes | Module/entry count for audit |
+| `lock_role` | recommended | `lean_catalog_lock` for primary fibers; **`preview`** or **`track_f`** substring marks a tertiary preview pin excluded from composed digest |
+| `catalog_path` | recommended | Relative path to the pinned catalog artifact |
+| `commit_stamp` | no | **Commit-only egress.** Optional UCRS witness stamp (`UcrsObservedAt` canonical hex or null at pin time). Written when a witnessed arena/MCP commit closes; never on hot-path inner steps. Preview fiber `umst-ucrs` may carry a stamp without merging its catalog into R0. |
+
+**Preview fiber `umst-ucrs`:** `lock_role` must contain `preview` or `track_f`
+(build-time guard). Its digest is digest-locked in the lock bundle for audit
+(`ucrs_fiber_preview` block) but **must not** appear in the non-preview fingerprint
+used for `composed_catalog_digest_hex`.
 
 ## Arena ABI (v1 skeleton — `umst-runtime-arena`)
 
@@ -103,7 +127,8 @@ out. Parsing happens **once**; hot loops read sub-slices only.
 | `state_offset` | 8 | UMST state blob start |
 | `state_bytes` | 8 | UMST state blob length |
 
-**Deferred (later ABI revisions):** `proposal_offset` / witness sections, optional
-`mmap` in `umst-concrete-ffi`, UCRS stamps on commit-only egress. Hot solvers
-remain unchanged until a full Warm `into_arena()` wires this view into
+**Deferred (later ABI revisions):** `proposal_offset` / witness sections,
+full `UcrsObservedAt` wire in the arena header (stamps live in lock
+`fiber_pins[].commit_stamp` until then). **No `mmap`** in this crate revision.
+Hot solvers remain unchanged until a full Warm `into_arena()` wires this view into
 `IScienceCartridge`.

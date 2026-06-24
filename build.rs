@@ -50,7 +50,14 @@ fn emit_catalog_lock_digest(manifest_dir: &Path) {
 
     let (hex, upstream_hex) = match fs::read_to_string(&path) {
         Ok(raw) => {
-            emit_catalog_digest_guard(&path, &raw);
+            let lock: serde_json::Value = serde_json::from_str(&raw).unwrap_or_else(|e| {
+                panic!(
+                    "umst-manifold: catalog lock at {} is not valid JSON ({e})",
+                    path.display()
+                );
+            });
+            emit_catalog_digest_guard(&path, &lock);
+            emit_ucrs_preview_fiber_guard(&path, &lock);
             let bundle = Sha256::digest(raw.as_bytes());
             let bundle_hex = format!("{bundle:x}");
             let upstream_hex = parse_lock_upstream_digest_hex(&raw).unwrap_or_else(|| {
@@ -77,15 +84,57 @@ fn emit_catalog_lock_digest(manifest_dir: &Path) {
     println!("cargo:rustc-env=UMST_LOCK_UPSTREAM_CATALOG_DIGEST_HEX={upstream_hex}");
 }
 
-/// T1 digest guard (cold/build): `composed_catalog_digest_hex` must cover all non-preview fibers.
-fn emit_catalog_digest_guard(lock_path: &Path, lock_json: &str) {
-    let lock: serde_json::Value = serde_json::from_str(lock_json).unwrap_or_else(|e| {
-        panic!(
-            "umst-manifold: catalog lock at {} is not valid JSON ({e})",
-            lock_path.display()
-        );
+/// Preview fiber `umst-ucrs` must be role-marked and excluded from composed digest (T1 guard).
+fn emit_ucrs_preview_fiber_guard(lock_path: &Path, lock: &serde_json::Value) {
+    if lock.get("version").and_then(|v| v.as_u64()).unwrap_or(1) < 2 {
+        return;
+    }
+
+    let pins = lock
+        .get("fiber_pins")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+
+    let ucrs = pins.iter().find(|pin| {
+        pin.get("repo")
+            .and_then(|v| v.as_str())
+            .is_some_and(|repo| repo == "umst-ucrs")
     });
 
+    let Some(ucrs) = ucrs else {
+        panic!(
+            "umst-manifold: catalog lock at {} missing umst-ucrs preview fiber pin",
+            lock_path.display()
+        );
+    };
+
+    if !is_preview_fiber_pin(ucrs) {
+        panic!(
+            "umst-manifold: catalog lock at {} umst-ucrs fiber pin lock_role must contain \
+             `preview` or `track_f` (excluded from composed_catalog_digest_hex)",
+            lock_path.display()
+        );
+    }
+
+    let non_preview: Vec<_> = pins
+        .iter()
+        .filter(|pin| !is_preview_fiber_pin(pin))
+        .collect();
+    if non_preview
+        .iter()
+        .any(|pin| pin.get("repo").and_then(|v| v.as_str()) == Some("umst-ucrs"))
+    {
+        panic!(
+            "umst-manifold: catalog lock at {} umst-ucrs must be excluded from \
+             non-preview composed digest fingerprint",
+            lock_path.display()
+        );
+    }
+}
+
+/// T1 digest guard (cold/build): `composed_catalog_digest_hex` must cover all non-preview fibers.
+fn emit_catalog_digest_guard(lock_path: &Path, lock: &serde_json::Value) {
     let version = lock.get("version").and_then(|v| v.as_u64()).unwrap_or(1);
     if version < 2 {
         return;

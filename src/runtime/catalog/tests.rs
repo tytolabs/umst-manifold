@@ -3,9 +3,9 @@
 
 use super::{
     catalog_lock_bundle_sha256_bytes, catalog_lock_bundle_sha256_hex, catalog_lock_quickcheck,
-    lock_upstream_catalog_digest_hex, witness_catalog_quickcheck_ok, CatalogLock, WitnessCatalog,
-    WitnessRecord, ENV_WITNESS_CATALOG_PATH, WITNESS_CATALOG_EMBEDDED_LEN,
-    WITNESS_CATALOG_EMBEDDED_SHA256_HEX,
+    is_preview_fiber_pin, lock_upstream_catalog_digest_hex, witness_catalog_quickcheck_ok,
+    CatalogLock, WitnessCatalog, WitnessRecord, ENV_WITNESS_CATALOG_PATH,
+    WITNESS_CATALOG_EMBEDDED_LEN, WITNESS_CATALOG_EMBEDDED_SHA256_HEX,
 };
 use std::sync::Mutex;
 
@@ -97,6 +97,38 @@ fn v2_dual_pin_per_fiber_digests_present() {
     for pin in &lock.fiber_pins {
         assert_eq!(pin.catalog_digest_hex.len(), 64);
     }
+}
+
+#[test]
+fn ucrs_preview_fiber_excluded_from_composed_digest() {
+    let lock = CatalogLock::from_bundled().expect("bundled lock");
+    let ucrs = lock
+        .fiber_pins
+        .iter()
+        .find(|pin| pin.repo == "umst-ucrs")
+        .expect("umst-ucrs preview fiber pin");
+    assert!(
+        is_preview_fiber_pin(ucrs),
+        "umst-ucrs lock_role must mark preview (preview or track_f substring)"
+    );
+    let non_preview: Vec<_> = lock
+        .fiber_pins
+        .iter()
+        .filter(|pin| !is_preview_fiber_pin(pin))
+        .collect();
+    assert_eq!(
+        non_preview.len(),
+        2,
+        "composed digest covers primary fibers only"
+    );
+    assert!(
+        !non_preview.iter().any(|pin| pin.repo == "umst-ucrs"),
+        "umst-ucrs must not contribute to composed_catalog_digest_hex"
+    );
+    assert!(
+        ucrs.commit_stamp.is_none(),
+        "commit_stamp is optional until witnessed commit egress"
+    );
 }
 
 #[test]

@@ -93,6 +93,11 @@ pub fn bundled_catalog_lock_json() -> &'static str {
 }
 
 /// Per-fiber Lean catalog pin (schema v2). See [`docs/DUAL_PIN_ARCHITECTURE.md`](../../../docs/DUAL_PIN_ARCHITECTURE.md).
+///
+/// Preview fibers (`lock_role` contains `preview` or `track_f`, e.g. `umst-ucrs`) are
+/// digest-locked for audit but excluded from [`CatalogLock::composed_digest_hex`].
+/// Optional [`Self::commit_stamp`] is populated on witnessed commit-only egress
+/// (see [`docs/RUNTIME_TOPOLOGY.md`](../../../docs/RUNTIME_TOPOLOGY.md)).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CatalogFiberPin {
     pub repo: String,
@@ -102,6 +107,16 @@ pub struct CatalogFiberPin {
     pub lock_role: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalog_path: Option<String>,
+    /// UCRS witness stamp at last witnessed commit; absent at cold pin time.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub commit_stamp: Option<String>,
+}
+
+/// Whether a fiber pin is preview / Track F (excluded from composed R0 digest).
+#[must_use]
+pub fn is_preview_fiber_pin(pin: &CatalogFiberPin) -> bool {
+    let role = pin.lock_role.as_deref().unwrap_or("").to_ascii_lowercase();
+    role.contains("preview") || role.contains("track_f")
 }
 
 /// Manifold runtime lock (`artifacts/catalog.lock.json`). v1 monolith or v2 dual-pin.
