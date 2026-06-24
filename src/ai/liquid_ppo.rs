@@ -59,6 +59,9 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
     ///
     /// With **`epistemic-ppo`**, ignores the caller `info_gain` and derives histogram MI from the
     /// baseline→proposed scalar transition (R2/CBF envelope); epistemic bonus is added post-CBF.
+    ///
+    /// With **`kleisli-ppo-hot-bind`** (and not epistemic), routes through the Kleisli penalize hook
+    /// ([`Self::step_and_learn_kleisli_penalize`]) instead of [`Self::step_and_learn_stub`].
     pub fn step_and_learn(
         &mut self,
         initial_state: UnifiedMaterialStateTensor<B>,
@@ -76,13 +79,24 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
             return self.step_and_learn_epistemic(initial_state, t_start, t_end, dt_sim_dt_global);
         }
 
-        #[cfg(not(feature = "epistemic-ppo"))]
+        #[cfg(all(feature = "kleisli-ppo-hot-bind", not(feature = "epistemic-ppo")))]
+        {
+            return self.step_and_learn_kleisli_penalize(
+                initial_state,
+                t_start,
+                t_end,
+                info_gain,
+                dt_sim_dt_global,
+            );
+        }
+
+        #[cfg(not(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind")))]
         {
             self.step_and_learn_stub(initial_state, t_start, t_end, info_gain, dt_sim_dt_global)
         }
     }
 
-    #[cfg(not(feature = "epistemic-ppo"))]
+    #[cfg(not(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind")))]
     fn step_and_learn_stub(
         &mut self,
         initial_state: UnifiedMaterialStateTensor<B>,
@@ -94,25 +108,21 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
         crate::core::tensors::VerifiedUMST<B, crate::core::tensors::ClausiusDuhemProof>,
         String,
     > {
-        // 1. FORWARD PASS: Solve Neural ODE without storing intermediate states
         let proposed_topology = self.ode_solver.forward(initial_state, t_start, t_end);
 
-        // 2. THERMODYNAMIC GATE: Wire the Brain to the Physics Body
         match self
             .gateway
             .evaluate_topology_step(proposed_topology, info_gain)
         {
             Ok((verified_state, spatial_reward)) => {
-                // 3. BACKWARD PASS: Optimize the Neural ODE weights using the Adjoint State Method
-                // Note: final_state is safe to extract because the VerifiedUMST guarantees it's valid.
                 let final_state_raw = verified_state.state.clone();
 
                 let gradients = self.ode_solver.backward_adjoint(
                     final_state_raw,
-                    spatial_reward, // Target from the physical thermodynamic outcome
+                    spatial_reward,
                     t_start,
                     t_end,
-                    dt_sim_dt_global, // Time Dilation optimization
+                    dt_sim_dt_global,
                 );
 
                 const ADAM_LR: f32 = 1e-3;
@@ -131,10 +141,67 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
 
                 Ok(verified_state)
             }
-            Err(e) => {
-                // The AI proposed a topology that broke the 2nd Law of Thermodynamics.
-                Err(e)
+            Err(e) => Err(e),
+        }
+    }
+
+    /// Kleisli **penalize** stage on the Burn hot path (`kleisli-ppo-hot-bind`).
+    ///
+    /// Same ODE → CBF → adjoint topology as [`Self::step_and_learn_stub`], but subtracts
+    /// [`ManifoldGateway::constraint_loss_penalty`] from `spatial_reward` when `lambda_cd ≠ 0`.
+    #[cfg(all(feature = "kleisli-ppo-hot-bind", not(feature = "epistemic-ppo")))]
+    fn step_and_learn_kleisli_penalize(
+        &mut self,
+        initial_state: UnifiedMaterialStateTensor<B>,
+        t_start: f32,
+        t_end: f32,
+        info_gain: Tensor<B, 1>,
+        dt_sim_dt_global: Tensor<B, 1>,
+    ) -> Result<
+        crate::core::tensors::VerifiedUMST<B, crate::core::tensors::ClausiusDuhemProof>,
+        String,
+    > {
+        let baseline_state = initial_state.clone();
+        let proposed_topology = self.ode_solver.forward(initial_state, t_start, t_end);
+
+        match self
+            .gateway
+            .evaluate_topology_step(proposed_topology, info_gain)
+        {
+            Ok((verified_state, spatial_reward)) => {
+                let spatial_reward = self.subtract_cd_penalty_from_reward(
+                    &baseline_state,
+                    &verified_state,
+                    spatial_reward,
+                    &dt_sim_dt_global,
+                );
+                let final_state_raw = verified_state.state.clone();
+
+                let gradients = self.ode_solver.backward_adjoint(
+                    final_state_raw,
+                    spatial_reward,
+                    t_start,
+                    t_end,
+                    dt_sim_dt_global,
+                );
+
+                const ADAM_LR: f32 = 1e-3;
+                let (w_new, m1, m2, t) = adamw_step_policy(
+                    self.ode_solver.policy_weights.clone(),
+                    gradients,
+                    ADAM_LR,
+                    self.ode_solver.adam_m1.take(),
+                    self.ode_solver.adam_m2.take(),
+                    self.ode_solver.adam_t,
+                );
+                self.ode_solver.policy_weights = w_new;
+                self.ode_solver.adam_m1 = Some(m1);
+                self.ode_solver.adam_m2 = Some(m2);
+                self.ode_solver.adam_t = t;
+
+                Ok(verified_state)
             }
+            Err(e) => Err(e),
         }
     }
 
@@ -169,28 +236,12 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
                 let bonus = self.epistemic_tracker.epistemic_bonus() as f32;
                 spatial_reward = spatial_reward.add_scalar(bonus);
 
-                if self.gateway.lambda_cd != 0.0_f32 {
-                    let baseline_pr = self
-                        .gateway
-                        .cartridge
-                        .compute_topology(&baseline_state);
-                    let proposed_pr = self
-                        .gateway
-                        .cartridge
-                        .compute_topology(&verified_state.state);
-                    let batch = spatial_reward.dims()[0];
-                    let rho = Tensor::<B, 1>::full([batch], 2400.0_f32, &device);
-                    let old_fe = baseline_pr.free_energy.mean_dim(1).squeeze(1);
-                    let new_fe = proposed_pr.free_energy.mean_dim(1).squeeze(1);
-                    let cd_penalty = self.gateway.constraint_loss_penalty(
-                        rho.clone(),
-                        rho,
-                        old_fe,
-                        new_fe,
-                        dt_sim_dt_global.clone(),
-                    );
-                    spatial_reward = spatial_reward.sub(cd_penalty);
-                }
+                spatial_reward = self.subtract_cd_penalty_from_reward(
+                    &baseline_state,
+                    &verified_state,
+                    spatial_reward,
+                    &dt_sim_dt_global,
+                );
 
                 let final_state_raw = verified_state.state.clone();
                 let gradients = self.ode_solver.backward_adjoint(
@@ -219,6 +270,44 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
             }
             Err(e) => Err(e),
         }
+    }
+
+    /// Kleisli **penalize** hook: subtract `λ_cd · relu(−D_int)` from the spatial reward tensor.
+    #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
+    fn subtract_cd_penalty_from_reward(
+        &self,
+        baseline_state: &UnifiedMaterialStateTensor<B>,
+        verified_state: &crate::core::tensors::VerifiedUMST<
+            B,
+            crate::core::tensors::ClausiusDuhemProof,
+        >,
+        spatial_reward: Tensor<B, 1>,
+        dt_sim_dt_global: &Tensor<B, 1>,
+    ) -> Tensor<B, 1> {
+        if self.gateway.lambda_cd == 0.0_f32 {
+            return spatial_reward;
+        }
+        let device = baseline_state.scalar_features.device();
+        let baseline_pr = self
+            .gateway
+            .cartridge
+            .compute_topology(baseline_state);
+        let proposed_pr = self
+            .gateway
+            .cartridge
+            .compute_topology(&verified_state.state);
+        let batch = spatial_reward.dims()[0];
+        let rho = Tensor::<B, 1>::full([batch], 2400.0_f32, &device);
+        let old_fe = baseline_pr.free_energy.mean_dim(1).squeeze(1);
+        let new_fe = proposed_pr.free_energy.mean_dim(1).squeeze(1);
+        let cd_penalty = self.gateway.constraint_loss_penalty(
+            rho.clone(),
+            rho,
+            old_fe,
+            new_fe,
+            dt_sim_dt_global.clone(),
+        );
+        spatial_reward.sub(cd_penalty)
     }
 }
 
@@ -266,7 +355,7 @@ fn adamw_step_policy<B: Backend<FloatElem = f32>>(
     (new_w, moment_1, moment_2, time)
 }
 
-#[cfg(all(test, not(feature = "epistemic-ppo")))]
+#[cfg(all(test, not(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))))]
 mod tests {
     use super::BurnLiquidPPOAgent;
     use crate::ai::ppo::ManifoldGateway;
@@ -346,9 +435,7 @@ mod tests {
         }
     }
 
-    /// Striatus Gate — PPO ↔ gateway ↔ finite backward surrogate (`adjoint`) smoke (default features).
     #[test]
-    #[cfg(not(feature = "epistemic-ppo"))]
     fn burn_liquid_ppo_step_finite_backward_chain_smoke() {
         let dev = device();
         let gateway = ManifoldGateway::new(PpoChainStubCartridge, 300.0_f64, 1.0e-12_f64);

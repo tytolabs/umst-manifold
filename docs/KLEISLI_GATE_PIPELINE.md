@@ -1,7 +1,7 @@
 # Kleisli gate pipeline — propose → penalize → witness
 
-**Status:** Witness sketch (`math-kleisli-gate-pipeline`, Wave 5 slot 3).  
-**Scope:** Pure composition + docs only — no hot-path wiring changes.
+**Status:** Penalize hot-bind landed (`kleisli-ppo-hot-bind`, Wave 9 slot 4).  
+**Scope:** Burn `step_and_learn` can subtract `constraint_loss` slack; full `kleisli_compose_pair` remains test-only.
 
 ## Purpose
 
@@ -55,6 +55,34 @@ scalar Clausius–Duhem surrogate (`ρ`, `ψ̇`, `D_int = −ρ ψ̇`). Parity i
 `catalog_id` for CD transitions: `umst.gate.cd_transition` (see
 [`runtime::catalog::traceability`](../src/runtime/catalog/traceability.rs)).
 
+## Production hot path (partial)
+
+| Stage | Burn PPO equivalent | Wired? |
+|-------|---------------------|--------|
+| **propose** | `AdjointNeuralODE::forward` | yes (always) |
+| **penalize (hard)** | `ThermodynamicCBF::verify_tensor_update` | yes (CBF reject) |
+| **penalize (soft)** | `constraint_loss_penalty` → `scaled_clausius_duhem_violation` | **yes** with `kleisli-ppo-hot-bind` or `epistemic-ppo` when `lambda_cd ≠ 0` |
+| **witness** | `CdTransitionCartridge::transition_evidence` | **no** — cold/test edge only |
+| **compose** | `kleisli_compose_pair` | **no** — zero `src/` call sites |
+
+### Feature flag: `kleisli-ppo-hot-bind`
+
+Enable on `umst-manifold` to route [`BurnLiquidPPOAgent::step_and_learn`](../src/ai/liquid_ppo.rs)
+through `step_and_learn_kleisli_penalize` instead of `step_and_learn_stub`. Set
+[`ManifoldGateway::lambda_cd`](../src/ai/ppo.rs) to a non-zero value to activate the soft
+Clausius–Duhem slack subtraction post-CBF.
+
+```bash
+cargo test kleisli_ppo_hot_bind --features kleisli-ppo-hot-bind --quiet
+```
+
+**Default build:** feature off; `lambda_cd = 0` — identical to legacy stub (no penalty graph).
+
+**Blocked (documented):** Full hot bind of `kleisli_compose_pair(propose, penalize, witness)` is
+not attempted here. Propose on the Burn path remains ODE/tensor-based, not
+`evaluate_transition_pure_with_params`; witness remains host-only. Wiring those stages through
+`Admissible::bind` on the autodiff graph is deferred to `p5-transition-evidence`.
+
 ## Composition sketch (stub types)
 
 The integration witness [`tests/kleisli_gate_pipeline_sketch.rs`](../tests/kleisli_gate_pipeline_sketch.rs)
@@ -81,6 +109,8 @@ sketch (value threading) but the composed `AdmissibilityResult` reflects the fir
 ```bash
 export PATH="$HOME/.cargo/bin:$PATH"
 cargo test kleisli_gate_pipeline
+cargo test kleisli constraint_loss liquid_ppo --quiet
+cargo test kleisli_ppo_hot_bind --features kleisli-ppo-hot-bind --quiet
 ```
 
 - `tests/kleisli_gate_pipeline_sketch.rs` — pure `kleisli_compose_pair` chain, admissible + inadmissible fixtures.
