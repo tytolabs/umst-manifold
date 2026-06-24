@@ -23,7 +23,7 @@ pub use evaluator::{
 };
 #[allow(deprecated)]
 pub use http_manifest::{
-    default_gate_manifest, evaluate as evaluate_http_mix_manifest, gate_json_parse_response,
+    evaluate as evaluate_http_mix_manifest, gate_json_parse_response,
     physics_compressive_strength_mpa, pinned_catalog_bundle_sha256_hex, reaction_extent_from_age,
     GateHttpRuntime, GateManifest as HttpGateManifest, GateResponse as HttpGateResponse,
     HttpTransitionEvaluator, MixProposal as HttpMixProposal,

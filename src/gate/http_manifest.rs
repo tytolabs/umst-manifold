@@ -27,31 +27,26 @@ pub struct GateManifest {
     pub admissibility_rel_margin: f64,
 }
 
-/// Closure defaults (prototype `PhysicsConfig::default` / UCI D1 **`s_intrinsic`**).
-#[deprecated(
-    note = "use GateManifest::from(&UmstManifest) — injection-only; see docs/RUNTIME_TOPOLOGY.md § HTTP gate defaults"
-)]
-#[must_use]
-pub fn default_gate_manifest() -> GateManifest {
-    GateManifest {
-        catalog_version: 1,
-        strength_intrinsic_mpa: 80.0,
-        air_void_fraction: 0.02,
-        admissibility_rel_margin: 0.15,
-    }
-}
+/// Prototype closure literals aligned with `PhysicsConfig::default` / UCI D1 **`s_intrinsic`**.
+const GATE_MANIFEST_CATALOG_VERSION: u32 = 1;
+const GATE_MANIFEST_STRENGTH_INTRINSIC_MPA: f64 = 80.0;
+const GATE_MANIFEST_AIR_VOID_FRACTION: f64 = 0.02;
+const GATE_MANIFEST_ADMISSIBILITY_REL_MARGIN: f64 = 0.15;
 
 impl Default for GateManifest {
-    #[allow(deprecated)]
     fn default() -> Self {
-        default_gate_manifest()
+        GateManifest::from(&UmstManifest::default())
     }
 }
 
 impl From<&UmstManifest> for GateManifest {
-    #[allow(deprecated)]
     fn from(_: &UmstManifest) -> Self {
-        default_gate_manifest()
+        GateManifest {
+            catalog_version: GATE_MANIFEST_CATALOG_VERSION,
+            strength_intrinsic_mpa: GATE_MANIFEST_STRENGTH_INTRINSIC_MPA,
+            air_void_fraction: GATE_MANIFEST_AIR_VOID_FRACTION,
+            admissibility_rel_margin: GATE_MANIFEST_ADMISSIBILITY_REL_MARGIN,
+        }
     }
 }
 
@@ -81,9 +76,8 @@ impl HttpTransitionEvaluator {
 
     #[deprecated(note = "use HttpTransitionEvaluator::from_umst_manifest — injection-only")]
     #[must_use]
-    #[allow(deprecated)]
     pub fn from_domain_policy_defaults() -> Self {
-        Self::new(default_gate_manifest())
+        Self::from_umst_manifest(&UmstManifest::default())
     }
 }
 

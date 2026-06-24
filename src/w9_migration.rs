@@ -8,8 +8,6 @@
 use burn::tensor::{backend::Backend, Tensor};
 
 use crate::core::tensors::StatePoint;
-#[allow(deprecated)]
-use crate::gate::http_manifest::{default_gate_manifest, HttpTransitionEvaluator};
 use crate::gate::thermo_transition::{ThermodynamicGate, ThermodynamicState};
 use crate::physics::solvers::thmc::ReactionExtentKinetics;
 
@@ -19,14 +17,6 @@ pub type MixTensor<B> = StatePoint<B>;
 
 #[deprecated(note = "renamed to ReactionExtentKinetics")]
 pub type ThmcHydrationKinetics = ReactionExtentKinetics;
-
-#[deprecated(
-    note = "use MaterialTransitionParams::reaction_enthalpy_j_per_kg from domain cartridge"
-)]
-#[allow(deprecated)]
-pub fn from_iE_cartridge_defaults() -> HttpTransitionEvaluator {
-    HttpTransitionEvaluator::new(default_gate_manifest())
-}
 
 #[deprecated(note = "cartridge-supplied strength closure")]
 pub fn iE_degree(age_days: f64, temp_c: f64, supplementary_ratio: f64) -> f64 {

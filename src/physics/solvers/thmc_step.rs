@@ -43,7 +43,7 @@ use crate::runtime::gate::{CdTransitionCartridge, GateCartridge, TransitionEvide
 #[cfg(feature = "thmc-coupled")]
 use super::thmc::{ThmcSolver, ThmcState};
 
-/// Default intrinsic strength (MPa) for mix-calibrated lift — matches [`crate::gate::http_manifest::default_gate_manifest`].
+/// Default intrinsic strength (MPa) for mix-calibrated lift — matches [`crate::gate::http_manifest::GateManifest::from`].
 #[cfg(feature = "thmc-coupled")]
 const THMC_GATE_LIFT_S_INTRINSIC_MPA: f64 = 80.0;
 
