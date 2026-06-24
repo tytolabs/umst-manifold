@@ -21,7 +21,6 @@ pub use cbf_bridge::cd_dissipation_proxy_to_entropy_joules;
 pub use evaluator::{
     GateEvaluator, ThermodynamicTransitionEvaluator, TransitionGateEvaluator, TransitionVerdict,
 };
-#[allow(deprecated)]
 pub use http_manifest::{
     default_gate_manifest, evaluate as evaluate_http_mix_manifest, gate_json_parse_response,
     physics_compressive_strength_mpa, pinned_catalog_bundle_sha256_hex, reaction_extent_from_age,

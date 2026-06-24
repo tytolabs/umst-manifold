@@ -69,23 +69,27 @@ flowchart LR
 | **Researchers (Rust)** | `IScienceCartridge` trait, `ThmcSolver`, Burn modules as a **library** | — |
 | **Internal only** | `http_manifest`, `gate_server_router`, FFI marshalling | exposed as public agent API |
 
-## HTTP gate defaults — migration (P5 / `p5-retire-http-defaults`)
+## HTTP egress retirement (P5 / `p5-retire-http-defaults`)
 
 The cold HTTP shim ([`gate/http_manifest`](../src/gate/http_manifest.rs)) historically
-constructed evaluators from embedded prototype literals (`default_gate_manifest`,
-`GateHttpRuntime::from_defaults`, `HttpTransitionEvaluator::from_domain_policy_defaults`).
-Those paths are **deprecated** in favor of **injection-only** construction:
+constructed evaluators from embedded prototype literals via
+[`default_gate_manifest()`](../src/gate/http_manifest.rs) (`strength_intrinsic_mpa = 80`,
+`air_void_fraction = 0.02`, `admissibility_rel_margin = 0.15`). Retire those defaults in
+favor of **injection-only** construction from [`UmstManifest`](../src/manifest/umst_manifest.rs)
+(or a cartridge-supplied policy row).
 
-| Deprecated | Replacement |
-| ---------- | ----------- |
+| Retired default path | Replacement |
+| -------------------- | ----------- |
 | `default_gate_manifest()` | `GateManifest::from(&UmstManifest)` |
 | `HttpTransitionEvaluator::from_domain_policy_defaults()` | `HttpTransitionEvaluator::from_umst_manifest(&manifest)` |
 | `GateHttpRuntime::from_defaults()` | `GateHttpRuntime::from_umst_manifest(&manifest)` |
 
+`from_domain_policy_defaults` and `from_defaults` carry `#[deprecated]` (zero in-tree callers
+after grep). `default_gate_manifest` remains for W9 shim re-exports until callers drain; new
+code must not add call sites.
+
 `gate_server` already wires `GateHttpRuntime::from_umst_manifest(&UmstManifest::default())`.
-Agents and integrators should pass an explicit [`UmstManifest`](../src/manifest/umst_manifest.rs)
-(or a cartridge-supplied policy row) rather than embedded literal defaults. See also
-**`docs/GateUnificationSpec.md`** § Migration notes.
+See also **`docs/GateUnificationSpec.md`** § Migration notes.
 
 **Migration note (add to AGENT_MCP.md):** *For performance-sensitive or batched
 work, prefer the in-process library / arena path over per-call Docker MCP. MCP

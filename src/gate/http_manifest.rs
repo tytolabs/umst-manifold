@@ -28,9 +28,8 @@ pub struct GateManifest {
 }
 
 /// Closure defaults (prototype `PhysicsConfig::default` / UCI D1 **`s_intrinsic`**).
-#[deprecated(
-    note = "use GateManifest::from(&UmstManifest) — injection-only; see docs/RUNTIME_TOPOLOGY.md § HTTP gate defaults"
-)]
+///
+/// Prefer [`GateManifest::from`] — see **`docs/RUNTIME_TOPOLOGY.md`** § HTTP egress retirement.
 #[must_use]
 pub fn default_gate_manifest() -> GateManifest {
     GateManifest {
@@ -42,14 +41,12 @@ pub fn default_gate_manifest() -> GateManifest {
 }
 
 impl Default for GateManifest {
-    #[allow(deprecated)]
     fn default() -> Self {
         default_gate_manifest()
     }
 }
 
 impl From<&UmstManifest> for GateManifest {
-    #[allow(deprecated)]
     fn from(_: &UmstManifest) -> Self {
         default_gate_manifest()
     }
@@ -79,9 +76,10 @@ impl HttpTransitionEvaluator {
         Self::new(GateManifest::from(manifest))
     }
 
-    #[deprecated(note = "use HttpTransitionEvaluator::from_umst_manifest — injection-only")]
+    #[deprecated(
+        note = "use HttpTransitionEvaluator::from_umst_manifest — injection-only; see docs/RUNTIME_TOPOLOGY.md § HTTP egress retirement"
+    )]
     #[must_use]
-    #[allow(deprecated)]
     pub fn from_domain_policy_defaults() -> Self {
         Self::new(default_gate_manifest())
     }
@@ -111,7 +109,7 @@ impl GateHttpRuntime {
     }
 
     #[deprecated(
-        note = "use GateHttpRuntime::new(HttpTransitionEvaluator::from_umst_manifest(..))"
+        note = "use GateHttpRuntime::from_umst_manifest — injection-only; see docs/RUNTIME_TOPOLOGY.md § HTTP egress retirement"
     )]
     #[must_use]
     pub fn from_defaults() -> Self {
