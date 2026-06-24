@@ -116,6 +116,9 @@ jobs:
       - name: W9 domain lexicon ratchet (S2 baseline)
         run: bash scripts/check_domain_lexicon.sh
 
+      - name: T1 composed catalog digest guard (non-preview fibers)
+        run: python3 scripts/catalog_lock_verify.py --composed-digest-guard artifacts/catalog.lock.json
+
   # PR gate: solver-stable lane per Cargo.toml (topology-density-evolution + statistical-mechanics-vinet; mechanics/fracture/Johnson live under solver-research).
   solver-stable-pr:
     name: solver-stable tests (PR)

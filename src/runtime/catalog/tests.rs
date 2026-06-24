@@ -100,6 +100,34 @@ fn v2_dual_pin_per_fiber_digests_present() {
 }
 
 #[test]
+fn composed_digest_covers_non_preview_fibers() {
+    let lock = CatalogLock::from_bundled().expect("bundled lock");
+    let non_preview: Vec<_> = lock
+        .fiber_pins
+        .iter()
+        .filter(|pin| {
+            let role = pin.lock_role.as_deref().unwrap_or("").to_ascii_lowercase();
+            !role.contains("preview") && !role.contains("track_f")
+        })
+        .collect();
+    assert!(
+        !non_preview.is_empty(),
+        "production lock should have non-preview fiber pins"
+    );
+    let composed = lock
+        .composed_catalog_digest_hex
+        .as_deref()
+        .or(lock.upstream_catalog_digest_hex.as_deref())
+        .expect("composed or upstream digest");
+    assert_eq!(composed.len(), 64);
+    assert_eq!(
+        lock.composed_catalog_digest_hex.as_deref(),
+        lock.upstream_catalog_digest_hex.as_deref(),
+        "composed_catalog_digest_hex must equal upstream for v2 dual-pin"
+    );
+}
+
+#[test]
 fn witness_quickcheck_reports_coherent_bundle() {
     assert!(witness_catalog_quickcheck_ok());
 }

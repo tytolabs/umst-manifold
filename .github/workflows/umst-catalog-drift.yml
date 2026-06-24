@@ -99,5 +99,8 @@ jobs:
           fi
           echo "OK: digest pin matches ($want)"
 
+      - name: Composed catalog digest guard (non-preview fibers)
+        run: python3 scripts/catalog_lock_verify.py --composed-digest-guard artifacts/catalog.lock.json
+
       - name: Primary fiber digest coupling
         run: python3 scripts/catalog_lock_verify.py --coupling-only artifacts/catalog.lock.json
