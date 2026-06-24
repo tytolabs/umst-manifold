@@ -369,3 +369,7 @@ required-features = ["epistemic-ppo"]
 [[test]]
 name = "catalog_functor_witness"
 path = "tests/catalog_functor_witness.rs"
+
+[[test]]
+name = "verified_umst_typestate_witness"
+path = "tests/verified_umst_typestate_witness.rs"
