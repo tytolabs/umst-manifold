@@ -3,6 +3,8 @@
 
 use burn::tensor::{backend::Backend, Tensor};
 
+use super::dec_typestate::ScalarChannelSelector;
+
 /// Homogeneous material state carrier (0D/1D batching).
 pub struct StatePoint<B: Backend> {
     pub fractions: Tensor<B, 2>, // [Batch, Features]
@@ -88,7 +90,12 @@ impl<B: Backend> UnifiedMaterialStateTensor<B> {
     }
 
     /// Blend `proposed` (`[N, 1]`) into scalar column `channel` using [`Self::policy_editable_mask`].
-    pub fn project_scalar_channel(&self, channel: usize, proposed: Tensor<B, 2>) -> Tensor<B, 2> {
+    pub fn project_scalar_channel<C: ScalarChannelSelector>(
+        &self,
+        channel: C,
+        proposed: Tensor<B, 2>,
+    ) -> Tensor<B, 2> {
+        let channel = channel.scalar_channel_index();
         let n = self.scalar_features.dims()[0];
         let old = self
             .scalar_features
@@ -109,7 +116,12 @@ impl<B: Backend> UnifiedMaterialStateTensor<B> {
     }
 
     /// Replace column `channel` of `scalar_features` with `col` (`[N, 1]`).
-    pub fn write_scalar_channel(&mut self, channel: usize, col: Tensor<B, 2>) {
+    pub fn write_scalar_channel<C: ScalarChannelSelector>(
+        &mut self,
+        channel: C,
+        col: Tensor<B, 2>,
+    ) {
+        let channel = channel.scalar_channel_index();
         let n = self.scalar_features.dims()[0];
         let f = self.scalar_features.dims()[1];
         assert!(
