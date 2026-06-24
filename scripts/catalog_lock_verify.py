@@ -23,6 +23,32 @@ def module_count(doc: dict[str, Any]) -> int:
 PRIMARY_FIBER_REPOS = ("umst-formal", "umst-formal-double-slit")
 
 
+def is_preview_fiber_pin(pin: dict[str, Any]) -> bool:
+    role = str(pin.get("lock_role", "")).lower()
+    return "preview" in role or "track_f" in role
+
+
+def non_preview_fiber_fingerprint(lock: dict[str, Any]) -> str:
+    """SHA256 of sorted non-preview fiber digests (preview / Track F pins excluded)."""
+    import hashlib
+
+    pins = lock.get("fiber_pins") or []
+    digests: list[str] = []
+    for pin in pins:
+        if not isinstance(pin, dict):
+            continue
+        if is_preview_fiber_pin(pin):
+            continue
+        repo = pin.get("repo")
+        digest = pin.get("catalog_digest_hex")
+        if repo and digest:
+            digests.append(f"{repo}:{digest}")
+    if not digests:
+        return ""
+    payload = "|".join(sorted(digests)).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def primary_fiber_fingerprint(lock: dict[str, Any]) -> str:
     """SHA256 of sorted primary-fiber digests (preview / tertiary pins excluded)."""
     import hashlib
@@ -33,10 +59,9 @@ def primary_fiber_fingerprint(lock: dict[str, Any]) -> str:
         if not isinstance(pin, dict):
             continue
         repo = pin.get("repo")
-        role = str(pin.get("lock_role", ""))
         if repo not in PRIMARY_FIBER_REPOS:
             continue
-        if "preview" in role or "track_f" in role:
+        if is_preview_fiber_pin(pin):
             continue
         digest = pin.get("catalog_digest_hex")
         if digest:
@@ -45,6 +70,62 @@ def primary_fiber_fingerprint(lock: dict[str, Any]) -> str:
         return ""
     payload = "|".join(sorted(digests)).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
+
+
+def verify_composed_digest_guard(lock: dict[str, Any]) -> None:
+    """Cold/build guard: composed_catalog_digest_hex must cover all non-preview fibers."""
+    if lock.get("version", 1) < 2:
+        print("OK: v1 monolith lock (no fiber_pins composed digest guard)")
+        return
+
+    pins = lock.get("fiber_pins") or []
+    non_preview = [
+        p for p in pins if isinstance(p, dict) and not is_preview_fiber_pin(p)
+    ]
+    if not non_preview:
+        print("OK: no non-preview fiber pins (composed digest guard N/A)")
+        return
+
+    fp = non_preview_fiber_fingerprint(lock)
+    stored = lock.get("composed_primary_fiber_fingerprint_hex")
+    if not stored:
+        print(
+            "FAIL: lock missing composed_primary_fiber_fingerprint_hex "
+            "(run catalog update protocol after non-preview fiber pin change)",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if stored != fp:
+        print(
+            "FAIL: non-preview fiber pin digest changed but "
+            f"composed_primary_fiber_fingerprint_hex not updated "
+            f"(want {fp[:12]}… got {stored[:12]}…)",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    composed = lock.get("composed_catalog_digest_hex") or ""
+    upstream = lock.get("upstream_catalog_digest_hex") or ""
+    if len(composed) != 64:
+        print(
+            "FAIL: v2 lock missing composed_catalog_digest_hex "
+            "(must update when non-preview fibers change)",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if upstream and composed != upstream:
+        print(
+            f"FAIL: composed_catalog_digest_hex != upstream_catalog_digest_hex "
+            f"({composed[:12]}… vs {upstream[:12]}…)",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    repos = sorted(p.get("repo", "?") for p in non_preview)
+    print(
+        f"OK: composed_catalog_digest_hex covers {len(non_preview)} non-preview "
+        f"fiber(s) [{', '.join(repos)}]; fingerprint {fp[:12]}…"
+    )
 
 
 def verify_digest_coupling(lock: dict[str, Any]) -> None:
@@ -213,12 +294,28 @@ def main() -> None:
     parser.add_argument(
         "--coupling-only",
         action="store_true",
-        help="Only verify composed_primary_fiber_fingerprint_hex vs fiber_pins",
+        help="Only verify composed_primary_fiber_fingerprint_hex vs primary fiber_pins",
+    )
+    parser.add_argument(
+        "--composed-digest-guard",
+        action="store_true",
+        help="Cold/build guard: composed_catalog_digest_hex covers all non-preview fibers",
     )
     parser.add_argument("lock", nargs="?", help="catalog.lock.json path")
     parser.add_argument("composed", nargs="?", help="composed export JSON path")
     parser.add_argument("fiber_exports", nargs="*", help="repo=export.json pairs")
     args = parser.parse_args()
+
+    if args.composed_digest_guard:
+        if not args.lock:
+            print(
+                "usage: catalog_lock_verify.py --composed-digest-guard <lock.json>",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+        lock = json.loads(Path(args.lock).read_text())
+        verify_composed_digest_guard(lock)
+        return
 
     if args.coupling_only:
         if not args.lock:

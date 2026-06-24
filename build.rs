@@ -45,6 +45,7 @@ fn emit_catalog_lock_digest(manifest_dir: &Path) {
 
     let (hex, upstream_hex) = match fs::read_to_string(&path) {
         Ok(raw) => {
+            emit_catalog_digest_guard(&path, &raw);
             let bundle = Sha256::digest(raw.as_bytes());
             let bundle_hex = format!("{bundle:x}");
             let upstream_hex = parse_lock_upstream_digest_hex(&raw).unwrap_or_else(|| {
@@ -69,6 +70,117 @@ fn emit_catalog_lock_digest(manifest_dir: &Path) {
 
     println!("cargo:rustc-env=UMST_CATALOG_LOCK_SHA256_HEX={hex}");
     println!("cargo:rustc-env=UMST_LOCK_UPSTREAM_CATALOG_DIGEST_HEX={upstream_hex}");
+}
+
+/// T1 digest guard (cold/build): `composed_catalog_digest_hex` must cover all non-preview fibers.
+fn emit_catalog_digest_guard(lock_path: &Path, lock_json: &str) {
+    let lock: serde_json::Value = serde_json::from_str(lock_json).unwrap_or_else(|e| {
+        panic!(
+            "umst-manifold: catalog lock at {} is not valid JSON ({e})",
+            lock_path.display()
+        );
+    });
+
+    let version = lock.get("version").and_then(|v| v.as_u64()).unwrap_or(1);
+    if version < 2 {
+        return;
+    }
+
+    let pins = lock
+        .get("fiber_pins")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+
+    let non_preview: Vec<&serde_json::Value> = pins
+        .iter()
+        .filter(|pin| !is_preview_fiber_pin(pin))
+        .collect();
+
+    if non_preview.is_empty() {
+        return;
+    }
+
+    let fp = non_preview_fiber_fingerprint(&lock);
+    let stored = lock
+        .get("composed_primary_fiber_fingerprint_hex")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    if stored.is_empty() {
+        panic!(
+            "umst-manifold: catalog lock at {} missing composed_primary_fiber_fingerprint_hex \
+             (update protocol after non-preview fiber pin change)",
+            lock_path.display()
+        );
+    }
+    if stored != fp {
+        panic!(
+            "umst-manifold: catalog lock at {} non-preview fiber drift: \
+             composed_primary_fiber_fingerprint_hex want {fp} got {stored}",
+            lock_path.display()
+        );
+    }
+
+    let composed = lock
+        .get("composed_catalog_digest_hex")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    if composed.len() != 64 {
+        panic!(
+            "umst-manifold: catalog lock at {} missing composed_catalog_digest_hex \
+             (must update when non-preview fibers change)",
+            lock_path.display()
+        );
+    }
+    if let Some(upstream) = lock
+        .get("upstream_catalog_digest_hex")
+        .and_then(|v| v.as_str())
+        .filter(|u| !u.is_empty())
+    {
+        if composed != upstream {
+            panic!(
+                "umst-manifold: catalog lock at {} composed_catalog_digest_hex != upstream_catalog_digest_hex \
+                 ({composed} vs {upstream})",
+                lock_path.display()
+            );
+        }
+    }
+}
+
+fn is_preview_fiber_pin(pin: &serde_json::Value) -> bool {
+    let role = pin
+        .get("lock_role")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    role.contains("preview") || role.contains("track_f")
+}
+
+fn non_preview_fiber_fingerprint(lock: &serde_json::Value) -> String {
+    let pins = lock
+        .get("fiber_pins")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+
+    let mut digests: Vec<String> = pins
+        .iter()
+        .filter(|pin| !is_preview_fiber_pin(pin))
+        .filter_map(|pin| {
+            let repo = pin.get("repo")?.as_str()?;
+            let digest = pin.get("catalog_digest_hex")?.as_str()?;
+            Some(format!("{repo}:{digest}"))
+        })
+        .collect();
+
+    if digests.is_empty() {
+        return String::new();
+    }
+
+    digests.sort();
+    let payload = digests.join("|");
+    let hash = Sha256::digest(payload.as_bytes());
+    format!("{hash:x}")
 }
 
 /// Phase 1 §1B: nodal scalar channel map lives in `artifacts/scalar_layout.lock.json`, not
