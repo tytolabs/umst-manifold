@@ -28,6 +28,9 @@ pub struct GateManifest {
 }
 
 /// Closure defaults (prototype `PhysicsConfig::default` / UCI D1 **`s_intrinsic`**).
+#[deprecated(
+    note = "use GateManifest::from(&UmstManifest) — injection-only; see docs/RUNTIME_TOPOLOGY.md § HTTP gate defaults"
+)]
 #[must_use]
 pub fn default_gate_manifest() -> GateManifest {
     GateManifest {
@@ -39,12 +42,14 @@ pub fn default_gate_manifest() -> GateManifest {
 }
 
 impl Default for GateManifest {
+    #[allow(deprecated)]
     fn default() -> Self {
         default_gate_manifest()
     }
 }
 
 impl From<&UmstManifest> for GateManifest {
+    #[allow(deprecated)]
     fn from(_: &UmstManifest) -> Self {
         default_gate_manifest()
     }
@@ -76,6 +81,7 @@ impl HttpTransitionEvaluator {
 
     #[deprecated(note = "use HttpTransitionEvaluator::from_umst_manifest — injection-only")]
     #[must_use]
+    #[allow(deprecated)]
     pub fn from_domain_policy_defaults() -> Self {
         Self::new(default_gate_manifest())
     }
@@ -350,7 +356,7 @@ mod tests {
 
     #[test]
     fn admitting_vs_reject_example() {
-        let m = GateManifest::default();
+        let m = GateManifest::from(&UmstManifest::default());
         let admit = MixProposal {
             constituent_primary_kg: 400.0,
             constituent_secondary_kg: 0.0,

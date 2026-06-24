@@ -7,10 +7,10 @@ use umst_manifold::ai::formal::{FormalReject, LANDAUER_CBF_CATALOG_ID};
 use umst_manifold::embodied::{EmbodiedReject, HostTransitionStep};
 use umst_manifold::gate::http_manifest::MixProposal;
 use umst_manifold::gate::{
-    default_gate_manifest, evaluate_http_mix_manifest, gate_json_parse_response,
-    AdmissibilityVerdict, GateEvaluator, ThermodynamicState, ThermodynamicTransitionEvaluator,
-    TransitionGateEvaluator,
+    evaluate_http_mix_manifest, gate_json_parse_response, AdmissibilityVerdict, GateEvaluator,
+    HttpGateManifest, ThermodynamicState, ThermodynamicTransitionEvaluator, TransitionGateEvaluator,
 };
+use umst_manifold::manifest::UmstManifest;
 use umst_manifold::runtime::catalog::traceability::{
     CD_TRANSITION_CATALOG_ID, HTTP_SHIM_CATALOG_ID, THERMODYNAMIC_MIX_CATALOG_ID,
 };
@@ -69,7 +69,7 @@ fn formal_cbf_reject_catalog_id_is_landauer_slug() {
 
 #[test]
 fn http_mix_reject_includes_http_shim_catalog_id() {
-    let m = default_gate_manifest();
+    let m = HttpGateManifest::from(&UmstManifest::default());
     let reject = MixProposal {
         constituent_primary_kg: 400.0,
         constituent_secondary_kg: 0.0,
