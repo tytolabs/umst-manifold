@@ -9,34 +9,12 @@ use burn::tensor::activation::relu;
 use burn::tensor::{backend::Backend, Tensor};
 
 use crate::runtime::catalog::traceability::CD_TRANSITION_CATALOG_ID;
+pub use crate::runtime::gate::evidence::{
+    admissibility_from_violation, AdmissibilityToken, ConstraintExplanation,
+};
 
 /// Numerical floor on `dt` matching [`crate::gate::transition_proposal::transition_outcome`].
 const DT_EPS: f32 = 1e-10;
-
-/// Host-side admissibility witness for constraint telemetry (cold edge only).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AdmissibilityToken {
-    Admissible,
-    Inadmissible,
-}
-
-/// Pure-data explanation sidecar for a single constraint channel sample.
-///
-/// Built from detached host scalars after the Burn step — never inside the autodiff graph.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct ConstraintExplanation {
-    pub violation: f32,
-    pub channel_id: &'static str,
-    pub admissibility: AdmissibilityToken,
-}
-
-fn admissibility_from_violation(violation: f32) -> AdmissibilityToken {
-    if violation <= 1e-4 {
-        AdmissibilityToken::Admissible
-    } else {
-        AdmissibilityToken::Inadmissible
-    }
-}
 
 /// Per-batch ReLU slack for Clausius–Duhem dissipation violation.
 ///
