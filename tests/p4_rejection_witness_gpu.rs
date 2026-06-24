@@ -160,8 +160,10 @@ fn tiny_umst(dev: &WgpuDevice) -> UnifiedMaterialStateTensor<B> {
         Data::new(vec![0i32, 1i32, 1i32, 0i32, 2i32, 3i32], Shape::new([3, 2])),
         dev,
     );
-    let faces_b2: Tensor<B, 2, Int> =
-        Tensor::from_data(Data::new(vec![0i32, 0i32, 1i32, 1i32], Shape::new([2, 2])), dev);
+    let faces_b2: Tensor<B, 2, Int> = Tensor::from_data(
+        Data::new(vec![0i32, 0i32, 1i32, 1i32], Shape::new([2, 2])),
+        dev,
+    );
     UnifiedMaterialStateTensor {
         coords,
         edges_b1,
@@ -224,7 +226,8 @@ fn p4_rejection_baseline_gpu_measured_witness() {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).expect("create artifacts/training");
     }
-    fs::write(&path, serde_json::to_string_pretty(&doc).expect("json")).expect("write baseline gpu");
+    fs::write(&path, serde_json::to_string_pretty(&doc).expect("json"))
+        .expect("write baseline gpu");
 
     assert!(
         hard_rate > soft_rate,

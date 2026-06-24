@@ -275,7 +275,10 @@ impl std::fmt::Debug for ThmcSolver {
             .field("dt", &self.dt)
             .field("max_newton", &self.max_newton)
             .field("tol", &self.tol)
-            .field("gate_intrinsic_strength_mpa", &self.gate_intrinsic_strength_mpa)
+            .field(
+                "gate_intrinsic_strength_mpa",
+                &self.gate_intrinsic_strength_mpa,
+            )
             .field("gate_cartridge", &"<dyn GateCartridge>")
             .finish_non_exhaustive()
     }
@@ -331,17 +334,17 @@ impl ThmcSolver {
 
     /// Route post-step evidence through an injectable [`crate::runtime::gate::GateCartridge`].
     #[must_use]
-    pub fn with_gate_cartridge(mut self, cartridge: &'static dyn crate::runtime::gate::GateCartridge) -> Self {
+    pub fn with_gate_cartridge(
+        mut self,
+        cartridge: &'static dyn crate::runtime::gate::GateCartridge,
+    ) -> Self {
         self.gate_cartridge = cartridge;
         self
     }
 
     /// Deprecated alias for [`Self::with_gate_cartridge`].
     #[must_use]
-    #[deprecated(
-        since = "0.1.0",
-        note = "use with_gate_cartridge instead"
-    )]
+    #[deprecated(since = "0.1.0", note = "use with_gate_cartridge instead")]
     #[allow(deprecated)]
     pub fn with_transition_gate(mut self, gate: super::thmc_step::TransitionGateWitness) -> Self {
         self.gate_cartridge = gate.cartridge();
