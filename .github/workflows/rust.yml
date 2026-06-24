@@ -110,6 +110,9 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
 
+      - name: Feature-gated physics connectivity (Wave 10)
+        run: cargo test --quiet --features thmc-coupled,epistemic-ppo,kleisli-ppo-hot-bind
+
       - name: W9 agnostic-on-fork grep (S1)
         run: bash scripts/check_agnostic_on_fork.sh
 
