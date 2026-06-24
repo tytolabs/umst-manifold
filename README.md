@@ -49,7 +49,7 @@ If you want the applied materials engine for cementitious systems (concrete desi
 | **MCP (cold)** | IDE agents, discovery, single-shot gate/predict — sibling [`umst-concrete-cartridge` Agent MCP](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md) |
 | **Formal** | Catalog witnesses, digest pins — [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md) |
 
-Prefer **library/arena calls over Docker MCP** for performance-sensitive proposal loops (arena ABI planned in master re-engineering Phase 2). **Roadmap:** [Stack roadmap (shipped vs in flight)](https://github.com/tytolabs/MaOS-Workspace/blob/master/outputs/.plans/umst-master-reengineering.md#stack-roadmap-shipped-vs-in-flight).
+Prefer **library/arena calls over Docker MCP** for performance-sensitive proposal loops — arena skeleton shipped; adoption tracked in the [master plan stack roadmap](https://github.com/tytolabs/MaOS-Workspace/blob/master/outputs/.plans/umst-master-reengineering.md#stack-roadmap-shipped-vs-in-flight).
 
 ---
 <!-- readme:hero-figure -->
