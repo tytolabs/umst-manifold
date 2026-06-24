@@ -150,6 +150,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
         String,
     > {
         let device = initial_state.scalar_features.device();
+        let baseline_state = initial_state.clone();
         let baseline_scalars = initial_state.scalar_features.clone();
 
         let proposed_topology = self.ode_solver.forward(initial_state, t_start, t_end);
@@ -167,6 +168,29 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
             Ok((verified_state, mut spatial_reward)) => {
                 let bonus = self.epistemic_tracker.epistemic_bonus() as f32;
                 spatial_reward = spatial_reward.add_scalar(bonus);
+
+                if self.gateway.lambda_cd != 0.0_f32 {
+                    let baseline_pr = self
+                        .gateway
+                        .cartridge
+                        .compute_topology(&baseline_state);
+                    let proposed_pr = self
+                        .gateway
+                        .cartridge
+                        .compute_topology(&verified_state.state);
+                    let batch = spatial_reward.dims()[0];
+                    let rho = Tensor::<B, 1>::full([batch], 2400.0_f32, &device);
+                    let old_fe = baseline_pr.free_energy.mean_dim(1).squeeze(1);
+                    let new_fe = proposed_pr.free_energy.mean_dim(1).squeeze(1);
+                    let cd_penalty = self.gateway.constraint_loss_penalty(
+                        rho.clone(),
+                        rho,
+                        old_fe,
+                        new_fe,
+                        dt_sim_dt_global.clone(),
+                    );
+                    spatial_reward = spatial_reward.sub(cd_penalty);
+                }
 
                 let final_state_raw = verified_state.state.clone();
                 let gradients = self.ode_solver.backward_adjoint(

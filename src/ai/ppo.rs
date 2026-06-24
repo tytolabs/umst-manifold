@@ -40,6 +40,7 @@
 //! [`UnifiedMaterialStateTensor::with_lock_catalog_schema_digest`] or an explicit digest).
 
 use crate::ai::cbf::ThermodynamicCBF;
+use crate::ai::constraint_loss::scaled_clausius_duhem_violation;
 use crate::ai::formal::FormalReject;
 use crate::core::traits::{IScienceCartridge, PhysicalResult};
 use burn::tensor::{backend::Backend, Tensor};
@@ -70,6 +71,11 @@ pub struct ManifoldGateway<B: Backend, C: IScienceCartridge<B>> {
     pub beta: f32,
     /// Carbon / cost penalty weight **γ**. Default **2.0**.
     pub gamma: f32,
+    /// Clausius–Duhem constraint slack weight **λ_cd** (epistemic PPO path only).
+    /// When non-zero with **`epistemic-ppo`**, [`Self::constraint_loss_penalty`] scales
+    /// [`crate::ai::constraint_loss::clausius_duhem_violation`] for soft training penalties.
+    #[cfg(feature = "epistemic-ppo")]
+    pub lambda_cd: f32,
     /// Optional catalog/schema digest asserted against the incoming UMST when **`formal-witness`** is on.
     /// [`Self::new`] defaults to compiled lock bytes; set `None` explicitly to skip the witness.
     #[cfg(feature = "formal-witness")]
@@ -87,6 +93,8 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
             alpha: 1.0_f32,
             beta: 0.5_f32,
             gamma: 2.0_f32,
+            #[cfg(feature = "epistemic-ppo")]
+            lambda_cd: 0.0_f32,
             #[cfg(feature = "formal-witness")]
             expected_catalog_schema_digest: Some(
                 crate::runtime::catalog::lock_upstream_catalog_digest_bytes(),
@@ -110,6 +118,40 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
         schema: &crate::ros::EmittedTraceSchema,
     ) {
         self.eta = crate::ros::prototype_eta_from_trace(schema);
+    }
+
+    /// Optional Clausius–Duhem soft penalty for epistemic training (`λ_cd · relu(−D_int)` per batch row).
+    ///
+    /// With **`epistemic-ppo`** disabled or [`Self::lambda_cd`] = 0, returns a zero `[B]` tensor.
+    pub fn constraint_loss_penalty(
+        &self,
+        old_density: Tensor<B, 1>,
+        new_density: Tensor<B, 1>,
+        old_free_energy: Tensor<B, 1>,
+        new_free_energy: Tensor<B, 1>,
+        dt_s: Tensor<B, 1>,
+    ) -> Tensor<B, 1>
+    where
+        B: Backend<FloatElem = f32>,
+    {
+        let lambda_cd = {
+            #[cfg(feature = "epistemic-ppo")]
+            {
+                self.lambda_cd
+            }
+            #[cfg(not(feature = "epistemic-ppo"))]
+            {
+                0.0_f32
+            }
+        };
+        scaled_clausius_duhem_violation(
+            lambda_cd,
+            old_density,
+            new_density,
+            old_free_energy,
+            new_free_energy,
+            dt_s,
+        )
     }
 
     /// Evaluates a proposed topology state; errors are structured as [`FormalReject`].

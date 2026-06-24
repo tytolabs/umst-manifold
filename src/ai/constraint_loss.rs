@@ -62,6 +62,32 @@ pub fn clausius_duhem_violation<B: Backend<FloatElem = f32>>(
     relu(d_int.neg())
 }
 
+/// Weighted Clausius–Duhem slack for gateway / PPO penalty hooks.
+///
+/// Returns zeros when `lambda_cd == 0` without building the violation graph.
+pub fn scaled_clausius_duhem_violation<B: Backend<FloatElem = f32>>(
+    lambda_cd: f32,
+    old_density: Tensor<B, 1>,
+    new_density: Tensor<B, 1>,
+    old_free_energy: Tensor<B, 1>,
+    new_free_energy: Tensor<B, 1>,
+    dt_s: Tensor<B, 1>,
+) -> Tensor<B, 1> {
+    let batch = old_density.dims()[0];
+    let device = old_density.device();
+    if lambda_cd == 0.0_f32 {
+        return Tensor::zeros([batch], &device);
+    }
+    clausius_duhem_violation(
+        old_density,
+        new_density,
+        old_free_energy,
+        new_free_energy,
+        dt_s,
+    )
+    .mul_scalar(lambda_cd)
+}
+
 /// Structured explanation for Clausius–Duhem slack at the same batch contract as
 /// [`clausius_duhem_violation`].
 ///
@@ -235,5 +261,81 @@ mod tests {
         );
         assert_eq!(explanation.admissibility, AdmissibilityToken::Inadmissible);
         assert_eq!(explanation.channel_id, CD_TRANSITION_CATALOG_ID);
+    }
+
+    #[test]
+    fn scaled_clausius_duhem_violation_zero_when_lambda_disabled() {
+        let dev = NdArrayDevice::default();
+        let old = ThermodynamicStateSnapshot {
+            density: 2200.0,
+            temperature: 300.0,
+            free_energy: -2.0e5,
+            entropy: 0.2,
+            reaction_extent: 0.5,
+            strength: 20.0,
+        };
+        let new = ThermodynamicStateSnapshot {
+            free_energy: -1.0e4,
+            ..old
+        };
+        let dt = 1.0_f64;
+
+        let penalty = scaled_clausius_duhem_violation(
+            0.0_f32,
+            scalar_tensor(&dev, &[old.density as f32]),
+            scalar_tensor(&dev, &[new.density as f32]),
+            scalar_tensor(&dev, &[old.free_energy as f32]),
+            scalar_tensor(&dev, &[new.free_energy as f32]),
+            scalar_tensor(&dev, &[dt as f32]),
+        );
+        let v: Vec<f32> = penalty.into_data().value;
+        assert_eq!(v[0], 0.0_f32, "λ_cd = 0 must short-circuit to zero penalty");
+    }
+
+    #[test]
+    fn scaled_clausius_duhem_violation_scales_slack() {
+        let dev = NdArrayDevice::default();
+        let old = ThermodynamicStateSnapshot {
+            density: 2200.0,
+            temperature: 300.0,
+            free_energy: -2.0e5,
+            entropy: 0.2,
+            reaction_extent: 0.5,
+            strength: 20.0,
+        };
+        let new = ThermodynamicStateSnapshot {
+            free_energy: -1.0e4,
+            ..old
+        };
+        let dt = 1.0_f64;
+        let lambda = 2.5_f32;
+
+        let slack = clausius_duhem_violation(
+            scalar_tensor(&dev, &[old.density as f32]),
+            scalar_tensor(&dev, &[new.density as f32]),
+            scalar_tensor(&dev, &[old.free_energy as f32]),
+            scalar_tensor(&dev, &[new.free_energy as f32]),
+            scalar_tensor(&dev, &[dt as f32]),
+        );
+        let penalty = scaled_clausius_duhem_violation(
+            lambda,
+            scalar_tensor(&dev, &[old.density as f32]),
+            scalar_tensor(&dev, &[new.density as f32]),
+            scalar_tensor(&dev, &[old.free_energy as f32]),
+            scalar_tensor(&dev, &[new.free_energy as f32]),
+            scalar_tensor(&dev, &[dt as f32]),
+        );
+        let s: Vec<f32> = slack.into_data().value;
+        let p: Vec<f32> = penalty.into_data().value;
+        assert!(
+            s[0] > 0.0,
+            "inadmissible transition must incur positive slack"
+        );
+        assert!(
+            (p[0] - lambda * s[0]).abs() < 1e-3,
+            "penalty {p0} should equal λ·slack ≈ {expected}",
+            p0 = p[0],
+            expected = lambda * s[0]
+        );
     }
 }
