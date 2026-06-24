@@ -88,13 +88,13 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
 
         #[cfg(all(feature = "kleisli-ppo-hot-bind", not(feature = "epistemic-ppo")))]
         {
-            return self.step_and_learn_kleisli_penalize(
+            self.step_and_learn_kleisli_penalize(
                 initial_state,
                 t_start,
                 t_end,
                 info_gain,
                 dt_sim_dt_global,
-            );
+            )
         }
 
         #[cfg(not(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind")))]

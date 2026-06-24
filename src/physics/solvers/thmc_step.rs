@@ -55,6 +55,7 @@ pub const THMC_GATE_LIFT_S_INTRINSIC_MPA_DEFAULT: f64 = 240.0;
 pub const DEFAULT_GATE_CARTRIDGE: &CdTransitionCartridge = &CdTransitionCartridge;
 
 #[cfg(feature = "thmc-coupled")]
+#[allow(deprecated)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 #[deprecated(
     since = "0.1.0",
