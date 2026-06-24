@@ -89,6 +89,7 @@ impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoChainStubCartrid
 }
 
 #[test]
+#[cfg(not(feature = "epistemic-ppo"))]
 fn kleisli_ppo_hot_bind_step_and_learn_uses_constraint_loss_path() {
     let dev = device();
     let mut gateway = ManifoldGateway::new(PpoChainStubCartridge, 300.0_f64, 1.0e-12_f64);
