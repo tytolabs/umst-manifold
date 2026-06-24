@@ -10,6 +10,17 @@ architectural rule of the reengineering is **Fracture 1: no serialization,
 JSON, HTTP, MCP, logging, or filesystem access inside the hot path.** Those
 effects live only at the **Warm** boundary (once) or the **Cold** edge.
 
+> **Recommended path for agents**
+>
+> | Your goal | Use |
+> |-----------|-----|
+> | Fast batch / optimization | Arena (`load_arena`, mmap) or in-process library |
+> | Prototyping, IDE discovery | stdio MCP (`umst-mcp`) |
+> | Cross-language (no Rust dep) | MCP or cartridge FFI |
+> | Long proposal loops | Arena — parse once, gate in hot loop |
+>
+> **Migration:** many gate checks in one agent session → `umst_arena_open` / `load_arena` once, then `umst_gate_check_arena` or `UmstArenaView` hot reads. Contract: [`AGENT_MCP.md`](../../umst-concrete-cartridge/docs/AGENT_MCP.md) · benchmarks: [`arena_vs_mcp.md`](benchmarks/arena_vs_mcp.md).
+
 ## Tiers
 
 | Tier | What lives here | Effects allowed | Key symbols |
@@ -87,11 +98,7 @@ Agents and integrators should pass an explicit [`UmstManifest`](../src/manifest/
 (or a cartridge-supplied policy row) rather than embedded literal defaults. See also
 **`docs/GateUnificationSpec.md`** § Migration notes.
 
-**Migration note (add to AGENT_MCP.md):** *For performance-sensitive or batched
-work, prefer the in-process library / arena path over per-call Docker MCP. MCP
-remains the stable default; the arena is an opt-in fast path that parses once and
-loops in-process (≥**5×** MCP round-trip required for Phase 2 exit, CI-pinned via
-[`arena-vs-mcp`](../.github/workflows/rust.yml); **10×** aspirational footnote on reference hardware).*
+**Migration (agents):** For performance-sensitive or batched work, prefer the in-process library / arena path over per-call stdio MCP. MCP remains the stable default; the arena is an opt-in fast path that parses once and loops in-process (≥**5×** MCP round-trip required for Phase 2 exit, CI-pinned via [`arena-vs-mcp`](../.github/workflows/rust.yml); **10×** aspirational footnote on reference hardware). See [`AGENT_MCP.md`](../../umst-concrete-cartridge/docs/AGENT_MCP.md) § Performance.
 
 ## Live vs planned (2026-06-24)
 

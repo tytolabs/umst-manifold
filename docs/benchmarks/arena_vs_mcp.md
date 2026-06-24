@@ -2,6 +2,16 @@
 
 **Exit witness (Phase 2):** in-process gate/arena ≥ **5×** vs one stdio MCP `tools/call` round-trip per gate check.
 
+## Summary (relative throughput)
+
+| Surface | Relative speed | Notes |
+|---------|----------------|-------|
+| Stdio MCP `tools/call` | **1×** (baseline) | JSON-RPC per gate check |
+| In-process library (`gate_check_mix`) | **~5–10×+** | Same process, no wire |
+| Arena mmap (`load_arena` / `UmstArenaView`) | **~5–10×+** | Parse once; zero-copy hot loop |
+
+CI job `arena-vs-mcp` enforces in-process arena ≥ **5×** MCP (`UMST_BENCH_N=30`). **10×** is aspirational on reference hardware.
+
 ## Surfaces
 
 | Surface | Boundary | When |

@@ -580,6 +580,16 @@ The manifold is a substrate. Its value shows up in what gets built on top of it.
 
 > Release notes in [CHANGELOG.md](CHANGELOG.md). **W9 landed** on `main` (2026-06-15): material-agnostic cartridge port — [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md), **122**-module catalog digest `c61b1bef…`. **v2.0.0 tags/releases withdrawn** pending sign-off (no Zenodo software DOI minted). **Stack verify:** `verify_umst_stack.sh` green — [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md) (2026-06-19).
 
+### Fast Path for Agents
+
+| Goal | Start here |
+|------|------------|
+| Batch sweeps, optimization, many gate checks | [`umst-runtime-arena`](umst-runtime-arena/) — [`load_arena`](umst-runtime-arena/src/load.rs), optional [`mmap`](umst-runtime-arena/src/mmap.rs); cartridge [`06_arena_batch.py`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/examples/agent/06_arena_batch.py) |
+| Prototyping, IDE agents, single-shot | Sibling [`umst-concrete-cartridge` Agent MCP](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md) |
+| Throughput vs MCP | [`docs/benchmarks/arena_vs_mcp.md`](docs/benchmarks/arena_vs_mcp.md) — CI enforces arena ≥**5×** stdio MCP |
+
+Hot/warm/cold boundaries: [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md).
+
 ### For Agents & Researchers
 
 | Path | When to use |
