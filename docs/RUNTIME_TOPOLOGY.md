@@ -1,0 +1,88 @@
+# Runtime topology — Hot / Warm / Cold layering
+
+> Backlog id: `p2-runtime-topology-doc` (Fracture 1). Source of truth for the
+> hot/warm/cold boundary referenced by
+> [`outputs/.plans/umst-master-reengineering.md`](../../outputs/.plans/umst-master-reengineering.md).
+> **Design boundary lands before any binary ABI** (`umst-runtime-arena`).
+
+This document fixes *where computation is allowed to do I/O*. The single
+architectural rule of the reengineering is **Fracture 1: no serialization,
+JSON, HTTP, MCP, logging, or filesystem access inside the hot path.** Those
+effects live only at the **Warm** boundary (once) or the **Cold** edge.
+
+## Tiers
+
+| Tier | What lives here | Effects allowed | Key symbols |
+| ---- | --------------- | --------------- | ----------- |
+| **Hot** | In-process physics, gates, solvers, Burn graph | Pure math only; zero alloc on the inner loop; `Result` for divergence | [`IScienceCartridge`](../src/core/traits.rs) (`compute_all`, `compute_topology`), [`TransitionFilter`](../src/gate/transition_proposal.rs), [`ThmcSolver::step`](../src/physics/solvers/thmc.rs), [`ai::ppo`](../src/ai/ppo.rs)/[`ai::cbf`](../src/ai/cbf.rs), planned `ai::constraint_loss`, `umst-concrete-ffi` `cdylib` |
+| **Warm** | Single deserialization boundary | Rational/`f64` parse **once** per request/batch; no per-step serde | planned `into_simulation()` / `into_arena()` (single conversion `cold bytes → hot view`) |
+| **Cold** | Edges, transport, telemetry | serde, JSON-RPC, HTTP, files, `tracing` logs, metrics export | [`umst-mcp`](../../umst-concrete-cartridge/crates/umst-mcp), `umst-cli`, [`gate_server_router`](../src/gate_server_router.rs), [`gate/http_manifest`](../src/gate/http_manifest.rs), `ros`, Docker |
+
+```mermaid
+flowchart LR
+  subgraph cold [Cold edge — effects ok]
+    MCP[umst-mcp JSON-RPC]
+    HTTP[http_manifest / router]
+    Docs[AGENT_MCP + examples]
+    Tel[metrics / tracing]
+  end
+  subgraph warm [Warm boundary — parse once]
+    Sim["into_simulation() / into_arena()"]
+  end
+  subgraph hot [Hot path — pure, zero-alloc]
+    Cart[IScienceCartridge]
+    Filt[TransitionFilter]
+    Thmc[ThmcSolver::step]
+    Burn[Burn graph: ppo / cbf / constraint_loss]
+  end
+  MCP --> Sim
+  HTTP --> Sim
+  Sim --> Cart
+  Cart --> Filt
+  Burn --> Filt
+  Filt -->|witness commit only| Tel
+  Filt -->|witness commit only| Docs
+```
+
+## Boundary rules (enforced by pre-flight + Verifier)
+
+1. **No effects in Hot.** No `serde`, `serde_json`, `reqwest`/HTTP, `std::fs`,
+   `std::env`, `println!`, or MCP types inside the Hot symbols above. Logging on
+   the Hot path uses nothing; emit `tracing` only after returning to Cold.
+2. **Parse once at Warm.** Cold bytes cross into Hot through exactly one
+   conversion. The Hot path then operates on **borrowed views** — no repeated
+   deserialization inside `ThmcSolver::step` or Burn inner loops.
+3. **Dual gate path.** Gates expose a **soft** differentiable penalty (Burn,
+   training) *and* a **hard** `f64` witness (`TransitionFilter`, commit). Never
+   drop gradient on the rejection boundary; never commit except through witness.
+4. **Total functions.** Solver convergence paths return
+   `Result<State, PhysicsError>` — no `unwrap`/`expect`/`panic!`.
+5. **Commit-only egress.** UCRS stamps, telemetry, and agent-visible JSON are
+   written **only** on witnessed commit, never per inner step.
+
+## Agent API surface — what agents use vs internal hot paths
+
+| Audience | Use this | Do **not** reach for |
+| -------- | -------- | -------------------- |
+| **Agents (MCP)** | `umst_gate_check`, `umst_predict`, `umst_audit`, `contribute*` via [`AGENT_MCP.md`](../../umst-concrete-cartridge/docs/AGENT_MCP.md) (Cold, JSON-RPC) | Raw solver/cartridge structs |
+| **Agents (perf-sensitive)** | planned `umst-runtime-arena` (`arena.load(bytes)` once → in-process `predict` loop) — the fast path | Per-step Docker MCP round-trips |
+| **Researchers (Rust)** | `IScienceCartridge` trait, `ThmcSolver`, Burn modules as a **library** | — |
+| **Internal only** | `http_manifest`, `gate_server_router`, FFI marshalling | exposed as public agent API |
+
+**Migration note (add to AGENT_MCP.md):** *For performance-sensitive or batched
+work, prefer the in-process library / arena path over per-call Docker MCP. MCP
+remains the stable default; the arena is an opt-in fast path that parses once and
+loops in-process (target ≥10× MCP round-trip).*
+
+## Live vs planned (2026-06-24)
+
+| Component | Status |
+| --------- | ------ |
+| `IScienceCartridge`, `TransitionFilter`, `ThmcSolver::step`, Burn ppo/cbf | **live** (hot) |
+| Single Warm `into_simulation()`/`into_arena()` conversion | **planned** (P2) |
+| `umst-runtime-arena` zero-copy `UmstArenaView` (`Send + Sync`, zero-alloc) | **planned** (P2) |
+| `ai::constraint_loss` soft penalty + `ConstraintExplanation` | **planned** (P4) |
+| UCRS witness stamps on arena commit | **planned** (P2-C) |
+
+**Exit witness (P2):** benchmark in-process predict ≥10× an MCP round-trip; no
+required CI lane depends on Docker MCP.
