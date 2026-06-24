@@ -1,0 +1,13 @@
+{
+  "schema": "umst_scalar_layout_v1",
+  "scalar_channel_count": 7,
+  "channel_ids": [
+    "SCALAR_CHANNEL0",
+    "SCALAR_HUMIDITY",
+    "SCALAR_INTERNAL_VARIABLE_0",
+    "SCALAR_TEMPERATURE",
+    "SCALAR_DAMAGE",
+    "SCALAR_FRACTURE_ENERGY_GC",
+    "SCALAR_EPISTEMIC_UNCERTAINTY"
+  ]
+}

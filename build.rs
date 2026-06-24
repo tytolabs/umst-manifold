@@ -7,7 +7,10 @@
 //!    `UMST_CATALOG_LOCK_SHA256_HEX` rustc env consumed by [`catalog_lock_bundle_sha256_hex`].
 //! 2. **Witness catalog JSON envelope** (`WitnessCatalog`) — emits `OUT_DIR/catalog_constants.rs`
 //!    containing a SHA-256 fingerprint and a `[u8; N]` array. When no witness JSON exists on disk,
-//!    a minimal built-in envelope is embedded so **`cargo check` never requires extra files.**
+//!    a minimal built-in envelope is embedded so **`cargo check` never requires extra files**.
+//!
+//! Scalar nodal channel layout lives in `artifacts/scalar_layout.lock.json` (Phase 1 section 1B), not in
+//! `catalog.lock.json`, which pins formal module metadata only.
 
 use sha2::{Digest, Sha256};
 use std::env;
@@ -24,6 +27,8 @@ fn main() {
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR"));
 
     emit_catalog_lock_digest(&manifest_dir);
+    // Scalar layout sidecar is separate from catalog.lock per Phase 1 §1B.
+    println!("cargo:rerun-if-changed=artifacts/scalar_layout.lock.json");
     let witness_bytes = resolve_witness_catalog_bytes(&manifest_dir);
     write_catalog_constants(&out_dir, &witness_bytes);
 }
