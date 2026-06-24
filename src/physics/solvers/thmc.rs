@@ -810,7 +810,7 @@ impl ThmcSolver {
             Tensor::cat(vec![damage_new, tail], 2)
         };
 
-        // Post-step gate evidence attachment site (stub — `thmc_step::wire_gate_evidence_post_step`).
+        // Post-step gate evidence (`thmc_step::wire_gate_evidence_post_step` → CdTransitionCartridge).
         let _gate_evidence = super::thmc_step::wire_gate_evidence_post_step(
             self,
             _cartridge,
@@ -818,7 +818,7 @@ impl ThmcSolver {
             &state,
             manifold,
             self.dt,
-        );
+        )?;
 
         state.time += self.dt;
         Ok(state)
