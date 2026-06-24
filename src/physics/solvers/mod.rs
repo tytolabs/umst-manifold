@@ -32,6 +32,8 @@ pub mod photonics;
 pub mod rheology_flow;
 pub mod statistical_mechanics;
 pub mod thmc;
+#[cfg(feature = "thmc-coupled")]
+pub mod thmc_step;
 #[cfg(feature = "solver-experimental")]
 pub mod thmc_jfnk;
 pub mod thmc_residual;
@@ -62,6 +64,8 @@ pub use thmc::{
     mc2010_style_notional_shrink_strain, shrink_strain_from_saturation_loss,
     shrink_strain_from_saturation_loss_tensor,
 };
+#[cfg(feature = "thmc-coupled")]
+pub use thmc_step::{ThmcSolverStep, ThmcStepGateEvidence, wire_gate_evidence_post_step};
 pub use thmc::{
     ChemicalPlan, HydrologicPlan, MechanicalPlan, ReactionExtentKinetics, ThermalPlan,
     ThmcImplicitTAlphaNewtonConfig, ThmcMonolithicNewtonConfig, ThmcSolver, ThmcState,
