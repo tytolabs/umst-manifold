@@ -238,9 +238,9 @@ fn non_preview_fiber_fingerprint(lock: &serde_json::Value) -> String {
 }
 
 /// Phase 1 §1B: nodal scalar channel map lives in `artifacts/scalar_layout.lock.json`, not
-/// `catalog.lock.json`. `umst-layout-codegen` parses the lock and emits `OUT_DIR` artifacts;
-/// compares lock `scalar_channel_count` to
-/// [`UMST_SCALAR_CHANNEL_COUNT`](src/core/umst_schema.rs) during migration.
+/// `catalog.lock.json`. `umst-layout-codegen` parses the lock and emits `OUT_DIR` artifacts
+/// included by [`umst_schema`](src/core/umst_schema.rs). Compile-time drift guard:
+/// `UMST_SCALAR_CHANNEL_COUNT` vs `UMST_SCALAR_CHANNEL_COUNT_LOCK`.
 fn emit_scalar_layout_guard(manifest_dir: &Path, out_dir: &Path) {
     let rel = "artifacts/scalar_layout.lock.json";
     let path = manifest_dir.join(rel);
@@ -264,33 +264,6 @@ fn emit_scalar_layout_guard(manifest_dir: &Path, out_dir: &Path) {
 
     let lock_count = spec.scalar_channel_count;
 
-    let schema_src = fs::read_to_string(manifest_dir.join("src/core/umst_schema.rs")).unwrap_or_else(
-        |e| panic!("umst-manifold: cannot read src/core/umst_schema.rs for scalar layout guard ({e})"),
-    );
-    let schema_count = parse_umst_schema_scalar_channel_count(&schema_src).unwrap_or_else(|| {
-        panic!(
-            "umst-manifold: src/core/umst_schema.rs missing `pub const UMST_SCALAR_CHANNEL_COUNT: usize = N;`"
-        );
-    });
-
-    if lock_count != schema_count {
-        panic!(
-            "umst-manifold: scalar layout drift: {} scalar_channel_count={lock_count} != src/core/umst_schema.rs UMST_SCALAR_CHANNEL_COUNT={schema_count}",
-            path.display()
-        );
-    }
-
-    for (index, id) in spec.channel_ids.iter().enumerate() {
-        if let Some(handwritten) = parse_umst_schema_scalar_index(&schema_src, id) {
-            if handwritten != index {
-                panic!(
-                    "umst-manifold: scalar layout drift: {} channel `{id}` lock index={index} != src/core/umst_schema.rs {id}={handwritten}",
-                    path.display()
-                );
-            }
-        }
-    }
-
     println!("cargo:rustc-env=UMST_SCALAR_CHANNEL_COUNT={lock_count}");
 
     let indices_path = out_dir.join("scalar_layout_indices.rs");
@@ -300,24 +273,6 @@ fn emit_scalar_layout_guard(manifest_dir: &Path, out_dir: &Path) {
     let guard_path = out_dir.join("scalar_layout_guard.rs");
     fs::write(&guard_path, codegen_emit_scalar_layout_guard(&spec))
         .expect("write scalar_layout_guard.rs");
-}
-
-/// Parse `pub const UMST_SCALAR_CHANNEL_COUNT: usize = N;` from hand-written schema source.
-fn parse_umst_schema_scalar_channel_count(src: &str) -> Option<usize> {
-    const NEEDLE: &str = "pub const UMST_SCALAR_CHANNEL_COUNT: usize = ";
-    let start = src.find(NEEDLE)? + NEEDLE.len();
-    let rest = &src[start..];
-    let end = rest.find(';')?;
-    rest[..end].trim().parse().ok()
-}
-
-/// Parse `pub const SCALAR_FOO: usize = N;` from hand-written schema source (migration drift guard).
-fn parse_umst_schema_scalar_index(src: &str, id: &str) -> Option<usize> {
-    let needle = format!("pub const {id}: usize = ");
-    let start = src.find(&needle)? + needle.len();
-    let rest = &src[start..];
-    let end = rest.find(';')?;
-    rest[..end].trim().parse().ok()
 }
 
 /// v2 `composed_catalog_digest_hex` or v1 `upstream_catalog_digest_hex` from lock JSON.
