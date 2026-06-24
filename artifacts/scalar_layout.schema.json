@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UMSTScalarLayoutLock",
+  "description": "Pinned nodal scalar channel map for umst-manifold (Phase 1 §1B sidecar; separate from catalog.lock.json).",
+  "type": "object",
+  "required": ["schema", "scalar_channel_count", "channel_ids"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "umst_scalar_layout_v1"
+    },
+    "scalar_channel_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "channel_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^SCALAR_[A-Z0-9_]+$"
+      },
+      "minItems": 1
+    }
+  }
+}

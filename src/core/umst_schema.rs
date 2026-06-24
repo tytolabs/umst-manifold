@@ -18,6 +18,16 @@
 //! Channel `0` is reserved for material-specific bulk scalars (not yet fixed in the shared
 //! contract); standard physics channels bind from [`SCALAR_HUMIDITY`] through
 //! [`SCALAR_DAMAGE`], with optional [`SCALAR_FRACTURE_ENERGY_GC`] when `F_scalars > 5`.
+//!
+//! The pinned channel map is `artifacts/scalar_layout.lock.json` (Phase 1 §1B sidecar).
+//! [`UMST_SCALAR_CHANNEL_COUNT`] must match `scalar_channel_count` there; `build.rs` panics on drift.
+
+/// Number of nodal scalar channels in the pinned layout (`artifacts/scalar_layout.lock.json`).
+pub const UMST_SCALAR_CHANNEL_COUNT: usize = 7;
+
+include!(concat!(env!("OUT_DIR"), "/scalar_layout_guard.rs"));
+
+const _: [(); UMST_SCALAR_CHANNEL_COUNT] = [(); UMST_SCALAR_CHANNEL_COUNT_LOCK];
 
 /// Scalar column `0`: reserved / material-specific (define meaning per cartridge).
 pub const SCALAR_CHANNEL0: usize = 0;
