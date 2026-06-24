@@ -3,7 +3,7 @@
 
 use burn::tensor::{backend::Backend, Tensor};
 
-use super::dec_typestate::ScalarChannelSelector;
+use super::dec_typestate::{B1Incidence, DecTypestateError, ScalarChannelSelector};
 
 /// Homogeneous material state carrier (0D/1D batching).
 pub struct StatePoint<B: Backend> {
@@ -61,6 +61,12 @@ pub struct UnifiedMaterialStateTensor<B: Backend> {
 }
 
 impl<B: Backend> UnifiedMaterialStateTensor<B> {
+    /// Validate [`Self::edges_b1`] as oriented primal **B₁** incidence (`[2, E]`).
+    #[inline]
+    pub fn try_b1_incidence(&self) -> Result<B1Incidence<B>, DecTypestateError> {
+        B1Incidence::try_new(self.edges_b1.clone())
+    }
+
     /// Blend full `proposed_scalar_features` (`[N, F]`) toward the current [`Self::scalar_features`]
     /// using [`Self::policy_editable_mask`] broadcast over all scalar channels:
     /// `result = proposed * m + original * (1 - m)` (same rule as [`Self::project_scalar_channel`]).

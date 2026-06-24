@@ -10,10 +10,14 @@
 
 use burn::tensor::backend::Backend;
 
-use crate::core::dec_typestate::ScalarChannelIdx;
+use crate::core::dec_typestate::{DecTypestateError, ScalarChannelIdx};
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use crate::core::traits::PhysicalResult;
 use crate::core::umst_schema::{SCALAR_DAMAGE, SCALAR_TEMPERATURE};
+
+fn dec_typestate_err(context: &str, err: DecTypestateError) -> String {
+    format!("apply_physics_to_umst: {context}: {err:?}")
+}
 
 /// Writes `damage` and optional `temperature_delta` from `result` into `umst.scalar_features`.
 ///
@@ -26,6 +30,9 @@ pub fn apply_physics_to_umst<B: Backend<FloatElem = f32>>(
     result: &PhysicalResult<B>,
     umst: &mut UnifiedMaterialStateTensor<B>,
 ) -> Result<(), String> {
+    umst.try_b1_incidence()
+        .map_err(|e| dec_typestate_err("invalid B1 incidence on UMST", e))?;
+
     let n = umst.scalar_features.dims()[0];
     let nf = umst.scalar_features.dims()[1];
     if nf <= SCALAR_DAMAGE {
@@ -51,9 +58,8 @@ pub fn apply_physics_to_umst<B: Backend<FloatElem = f32>>(
             .squeeze::<1>(0)
             .unsqueeze_dim::<2>(1)
     };
-    let damage_ch = ScalarChannelIdx::try_new(SCALAR_DAMAGE).map_err(|e| {
-        format!("apply_physics_to_umst: invalid SCALAR_DAMAGE channel: {e:?}")
-    })?;
+    let damage_ch = ScalarChannelIdx::try_new(SCALAR_DAMAGE)
+        .map_err(|e| dec_typestate_err("invalid SCALAR_DAMAGE channel", e))?;
     let merged_damage = umst.project_scalar_channel(damage_ch, damage_col);
     umst.write_scalar_channel(damage_ch, merged_damage);
 
@@ -83,8 +89,10 @@ pub fn apply_physics_to_umst<B: Backend<FloatElem = f32>>(
             .clone()
             .slice([0..n, SCALAR_TEMPERATURE..SCALAR_TEMPERATURE + 1]);
         let proposed = old_t.add(inc);
-        let merged_t = umst.project_scalar_channel(SCALAR_TEMPERATURE, proposed);
-        umst.write_scalar_channel(SCALAR_TEMPERATURE, merged_t);
+        let temp_ch = ScalarChannelIdx::try_new(SCALAR_TEMPERATURE)
+            .map_err(|e| dec_typestate_err("invalid SCALAR_TEMPERATURE channel", e))?;
+        let merged_t = umst.project_scalar_channel(temp_ch, proposed);
+        umst.write_scalar_channel(temp_ch, merged_t);
     }
 
     Ok(())
