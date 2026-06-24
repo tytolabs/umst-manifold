@@ -155,7 +155,7 @@ fn emit_catalog_digest_guard(lock_path: &Path, lock: &serde_json::Value) {
         return;
     }
 
-    let fp = non_preview_fiber_fingerprint(&lock);
+    let fp = non_preview_fiber_fingerprint(lock);
     let stored = lock
         .get("composed_primary_fiber_fingerprint_hex")
         .and_then(|v| v.as_str())
