@@ -139,4 +139,28 @@ mod thmc_gate_evidence_wire {
         );
         assert!(evidence.wiring_tag.contains("GateCartridge"));
     }
+
+    #[test]
+    fn with_gate_cartridge_injection_uses_configured_witness() {
+        use umst_manifold::runtime::gate::CdTransitionCartridge;
+
+        let n = 2usize;
+        let umst = umst(n);
+        let dev = dev();
+        let pre = mk_state(&dev, n, 293.0_f32, 0.5_f32, 0.42_f32, 0.0_f32);
+        let post = pre.clone();
+        let solver = ThmcSolver::default()
+            .with_gate_intrinsic_strength_mpa(240.0)
+            .with_gate_cartridge(&CdTransitionCartridge);
+        let stub = Stub;
+        let evidence = umst_manifold::physics::solvers::ThmcSolverStep::attach_gate_evidence(
+            &solver, &stub, &pre, &post, &umst, 1.0_f32,
+        )
+        .expect("injected cartridge lift should succeed");
+        assert_eq!(evidence.transition.catalog_id, CD_TRANSITION_CATALOG_ID);
+        assert_eq!(
+            evidence.transition.admissibility,
+            AdmissibilityToken::Admissible
+        );
+    }
 }

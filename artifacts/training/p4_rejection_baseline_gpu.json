@@ -1,0 +1,36 @@
+{
+  "backend_features": [
+    "kleisli-ppo-hot-bind",
+    "wgpu"
+  ],
+  "comparison": {
+    "episodes": 128,
+    "note": "Measured via RejectionTelemetry + constraint_loss / landauer_slack_violation on WGPU backend",
+    "protocol": "equal_reward_budget"
+  },
+  "delta": {
+    "rejection_rate_reduction": 0.40625,
+    "target_met": true,
+    "target_reduction_min": 0.15
+  },
+  "device": "wgpu-metal",
+  "generate_then_filter": {
+    "hard_cbf_rejection_rate": 0.40625,
+    "lambda_cd": 0.0,
+    "lambda_landauer": 0.0,
+    "mean_slack_at_commit": 0.0
+  },
+  "generated_at": "2026-06-24",
+  "kleisli_penalize_treatment": {
+    "features": [
+      "kleisli-ppo-hot-bind",
+      "wgpu"
+    ],
+    "hard_cbf_rejection_rate": 0.0,
+    "lambda_cd": 1.0,
+    "lambda_landauer": 0.25,
+    "mean_slack_at_commit": 205263157.89473686
+  },
+  "regenerate": "cargo test -p umst-manifold --features kleisli-ppo-hot-bind,wgpu --test p4_rejection_witness_gpu",
+  "schema_version": "p4_rejection_baseline.v2"
+}

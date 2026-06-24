@@ -389,6 +389,15 @@ path = "tests/p4_rejection_witness.rs"
 required-features = ["kleisli-ppo-hot-bind"]
 
 [[test]]
+name = "p4_rejection_witness_gpu"
+path = "tests/p4_rejection_witness_gpu.rs"
+required-features = ["kleisli-ppo-hot-bind", "wgpu"]
+
+[[test]]
+name = "explain_ssot_parity"
+path = "tests/explain_ssot_parity.rs"
+
+[[test]]
 name = "catalog_functor_witness"
 path = "tests/catalog_functor_witness.rs"
 

@@ -50,9 +50,16 @@ use super::thmc::{ThmcSolver, ThmcState};
 #[cfg(feature = "thmc-coupled")]
 pub const THMC_GATE_LIFT_S_INTRINSIC_MPA_DEFAULT: f64 = 240.0;
 
-/// Injectable transition witness selector (`thmc-coupled`).
+/// Injectable transition witness — default host CD cartridge.
+#[cfg(feature = "thmc-coupled")]
+pub const DEFAULT_GATE_CARTRIDGE: &CdTransitionCartridge = &CdTransitionCartridge;
+
 #[cfg(feature = "thmc-coupled")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[deprecated(
+    since = "0.1.0",
+    note = "use ThmcSolver::gate_cartridge and with_gate_cartridge instead"
+)]
 pub enum TransitionGateWitness {
     /// Host Clausius–Duhem cartridge (default).
     #[default]
@@ -60,12 +67,13 @@ pub enum TransitionGateWitness {
 }
 
 #[cfg(feature = "thmc-coupled")]
+#[allow(deprecated)]
 impl TransitionGateWitness {
     /// Resolve to a [`GateCartridge`] witness implementation.
     #[must_use]
     pub fn cartridge(self) -> &'static dyn GateCartridge {
         match self {
-            Self::HostCd => &CdTransitionCartridge,
+            Self::HostCd => DEFAULT_GATE_CARTRIDGE,
         }
     }
 }
@@ -113,7 +121,7 @@ where
     ) -> Result<ThmcStepGateEvidence, String> {
         wire_gate_evidence_post_step(
             self,
-            self.transition_gate.cartridge(),
+            self.gate_cartridge,
             pre,
             post,
             manifold,

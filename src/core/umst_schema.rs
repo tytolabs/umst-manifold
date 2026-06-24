@@ -20,8 +20,10 @@
 //! [`SCALAR_DAMAGE`], with optional [`SCALAR_FRACTURE_ENERGY_GC`] when `F_scalars > 5`.
 //!
 //! The pinned channel map is `artifacts/scalar_layout.lock.json` (Phase 1 §1B sidecar).
-//! [`UMST_SCALAR_CHANNEL_COUNT`] and [`SCALAR_*`] indices are generated at build time via
-//! `build.rs` → `umst-layout-codegen`; compile-time drift guard below panics on lock mismatch.
+//! [`UMST_SCALAR_CHANNEL_COUNT`] and [`SCALAR_*`] indices are **generated schema surface**:
+//! `build.rs` → `umst-layout-codegen` writes `OUT_DIR/scalar_layout_indices.rs` from
+//! `artifacts/scalar_layout.lock.json`; the include below is the compile-time channel map.
+//! Compile-time drift guard panics on lock mismatch.
 
 include!(concat!(env!("OUT_DIR"), "/scalar_layout_indices.rs"));
 

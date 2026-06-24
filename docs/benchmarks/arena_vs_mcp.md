@@ -22,7 +22,8 @@ python3 scripts/bench_arena_vs_mcp.py
 UMST_BENCH_SKIP_RATIO=1 python3 scripts/bench_arena_vs_mcp.py
 
 # Tune iterations / threshold
-UMST_BENCH_ITERATIONS=30 UMST_BENCH_MIN_RATIO=5 python3 scripts/bench_arena_vs_mcp.py
+UMST_BENCH_N=100 python3 scripts/bench_arena_vs_mcp.py   # local reference (N=100)
+UMST_BENCH_N=30 UMST_BENCH_MIN_RATIO=5 python3 scripts/bench_arena_vs_mcp.py   # CI-pinned
 ```
 
 Agent batch example (in-process gate, no MCP):
@@ -39,6 +40,7 @@ python3 examples/agent/06_arena_batch.py
 | `mmap_arena_path` + `seal_arena_commit` | **Shipped** |
 | `examples/agent/06_arena_batch.py` + CI | **Shipped** |
 | `scripts/bench_arena_vs_mcp.py` | **Shipped** |
-| Published ≥5× ratio on CI hardware | **Partial** — run locally; use `UMST_BENCH_SKIP_RATIO=1` on slow CI |
+| CI `arena-bench` job (`UMST_BENCH_N=30`, ratio ≥5×) | **Shipped** |
+| Published ≥5× ratio on CI hardware | **CI-pinned** — see `artifacts/benchmarks/arena_vs_mcp_ci.json` |
 
 Paste measured `ratio_mcp_over_inprocess` into [`IMPLEMENTATION_EVIDENCE.md`](../../../outputs/IMPLEMENTATION_EVIDENCE.md) P2 row after hardware runs.

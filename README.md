@@ -14,8 +14,6 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Cartridge: concrete](https://img.shields.io/badge/cartridge-concrete-C9A27A)](https://github.com/tytolabs/umst-concrete-cartridge)
 
-> Release notes in [CHANGELOG.md](CHANGELOG.md). **W9 landed** on `main` (2026-06-15): material-agnostic cartridge port — [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md), **122**-module catalog digest `c61b1bef…`. **v2.0.0 tags/releases withdrawn** pending sign-off (no Zenodo software DOI minted). **Stack verify:** `verify_umst_stack.sh` green — [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md) (2026-06-19).
-
 > *Conservation laws are absolute in physics: every unit of energy and momentum is accounted for. Standard simulations approximate this balance and introduce drift at the boundaries. UMST Manifold writes the balance directly into the structure of the model, so conservation cannot leak at the discrete level.*
 
 **UMST Manifold** is a unified, differentiable physics engine. Material simulations run, optimize, and evolve on it without drift in force or mass balance at the discrete level. Built in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes spatial physics to domain-specific material engines through the **`IScienceCartridge`** trait (Phase B alias: **`SpatialCartridge`**; gate-only policy via **`GateCartridge`** — see [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md)).
@@ -41,17 +39,6 @@ We don't pretend everything is proven. Conservation structure is mathematical, a
 **Verify it yourself, locally:** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` — full command matrix in [`docs/VERIFY.md`](docs/VERIFY.md). Latest machine transcript: [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md).
 
 If you want the applied materials engine for cementitious systems (concrete design, 3D printing, structural topology), see the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge).
-
-### For Agents & Researchers
-
-| Path | When to use |
-|------|-------------|
-| **Library (hot)** | Batch sweeps, training, CI physics — `cargo test`, cartridge `IScienceCartridge` in-process |
-| **Arena (warm)** | Parse-once loops — [`umst-runtime-arena`](umst-runtime-arena/) `load_arena()` skeleton (opt-in; no MCP consumer yet) |
-| **MCP (cold)** | IDE agents, discovery, single-shot gate/predict — sibling [`umst-concrete-cartridge` Agent MCP](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md) |
-| **Formal** | Catalog witnesses, digest pins — [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md) |
-
-Prefer **library/arena calls over Docker MCP** for performance-sensitive proposal loops. Hot/warm/cold boundaries: [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md). **Current State** (shipped vs partial vs USER-gated): [IMPLEMENTATION_EVIDENCE.md](https://github.com/tytolabs/MaOS-Workspace/blob/master/outputs/IMPLEMENTATION_EVIDENCE.md).
 
 ---
 <!-- readme:hero-figure -->
@@ -586,6 +573,23 @@ The manifold is a substrate. Its value shows up in what gets built on top of it.
 - [**UMST Supercap Cartridge**](../umst-supercap-cartridge) — structural supercap electrochemistry cartridge (monorepo sibling)
 - [**UMST Formal**](https://github.com/tytolabs/umst-formal) — Lean 4 / Coq proof anchors for the conservation laws
 - [**UMST Formal Double-Slit**](https://github.com/tytolabs/umst-formal-double-slit) — quantum-information proofs anchoring the Thermodynamic CBF
+
+---
+
+## Release & agent path
+
+> Release notes in [CHANGELOG.md](CHANGELOG.md). **W9 landed** on `main` (2026-06-15): material-agnostic cartridge port — [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md), **122**-module catalog digest `c61b1bef…`. **v2.0.0 tags/releases withdrawn** pending sign-off (no Zenodo software DOI minted). **Stack verify:** `verify_umst_stack.sh` green — [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md) (2026-06-19).
+
+### For Agents & Researchers
+
+| Path | When to use |
+|------|-------------|
+| **Library (hot)** | Batch sweeps, training, CI physics — `cargo test`, cartridge `IScienceCartridge` in-process |
+| **Arena (warm)** | Parse-once loops — [`umst-runtime-arena`](umst-runtime-arena/) `load_arena()` + optional `mmap` |
+| **MCP (cold)** | IDE agents, discovery, single-shot gate/predict — sibling [`umst-concrete-cartridge` Agent MCP](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md) |
+| **Formal** | Catalog witnesses, digest pins — [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md) |
+
+Prefer **library/arena calls over Docker MCP** for performance-sensitive proposal loops. Hot/warm/cold boundaries: [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md). **Current State** (shipped vs partial vs USER-gated): [IMPLEMENTATION_EVIDENCE.md](https://github.com/tytolabs/MaOS-Workspace/blob/master/outputs/IMPLEMENTATION_EVIDENCE.md).
 
 ---
 

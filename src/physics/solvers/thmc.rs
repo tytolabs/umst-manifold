@@ -221,7 +221,7 @@ pub struct ThmcState<B: Backend> {
 /// [`crate::physics::solvers::ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count`] for the live
 /// `(N, F_T, F_h, F_α)` exceeds [`crate::physics::solvers::THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] (dense Jacobian workspace cap — same as the standalone
 /// `(T,\alpha)` implicit helper).
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct ThmcSolver {
     pub dt: f32,
     pub max_newton: usize,
@@ -263,10 +263,33 @@ pub struct ThmcSolver {
     /// Default aligns with [`super::thmc_step::THMC_GATE_LIFT_S_INTRINSIC_MPA_DEFAULT`] cartridge lift scale.
     #[cfg(feature = "thmc-coupled")]
     pub gate_intrinsic_strength_mpa: f64,
-    /// Injectable transition witness — default host CD; downstream cartridges set strength via
-    /// [`Self::gate_intrinsic_strength_mpa`].
+    /// Injectable gate witness — default [`super::thmc_step::DEFAULT_GATE_CARTRIDGE`].
     #[cfg(feature = "thmc-coupled")]
-    pub transition_gate: super::thmc_step::TransitionGateWitness,
+    pub gate_cartridge: &'static dyn crate::runtime::gate::GateCartridge,
+}
+
+#[cfg(feature = "thmc-coupled")]
+impl std::fmt::Debug for ThmcSolver {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ThmcSolver")
+            .field("dt", &self.dt)
+            .field("max_newton", &self.max_newton)
+            .field("tol", &self.tol)
+            .field("gate_intrinsic_strength_mpa", &self.gate_intrinsic_strength_mpa)
+            .field("gate_cartridge", &"<dyn GateCartridge>")
+            .finish_non_exhaustive()
+    }
+}
+
+#[cfg(not(feature = "thmc-coupled"))]
+impl std::fmt::Debug for ThmcSolver {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ThmcSolver")
+            .field("dt", &self.dt)
+            .field("max_newton", &self.max_newton)
+            .field("tol", &self.tol)
+            .finish_non_exhaustive()
+    }
 }
 
 impl Default for ThmcSolver {
@@ -287,7 +310,7 @@ impl Default for ThmcSolver {
             #[cfg(feature = "thmc-coupled")]
             gate_intrinsic_strength_mpa: super::thmc_step::THMC_GATE_LIFT_S_INTRINSIC_MPA_DEFAULT,
             #[cfg(feature = "thmc-coupled")]
-            transition_gate: super::thmc_step::TransitionGateWitness::default(),
+            gate_cartridge: super::thmc_step::DEFAULT_GATE_CARTRIDGE,
         }
     }
 }
@@ -306,10 +329,22 @@ impl ThmcSolver {
         self
     }
 
-    /// Route post-step evidence through a custom transition witness selector.
+    /// Route post-step evidence through an injectable [`crate::runtime::gate::GateCartridge`].
     #[must_use]
+    pub fn with_gate_cartridge(mut self, cartridge: &'static dyn crate::runtime::gate::GateCartridge) -> Self {
+        self.gate_cartridge = cartridge;
+        self
+    }
+
+    /// Deprecated alias for [`Self::with_gate_cartridge`].
+    #[must_use]
+    #[deprecated(
+        since = "0.1.0",
+        note = "use with_gate_cartridge instead"
+    )]
+    #[allow(deprecated)]
     pub fn with_transition_gate(mut self, gate: super::thmc_step::TransitionGateWitness) -> Self {
-        self.transition_gate = gate;
+        self.gate_cartridge = gate.cartridge();
         self
     }
 

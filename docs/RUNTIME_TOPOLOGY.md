@@ -15,7 +15,7 @@ effects live only at the **Warm** boundary (once) or the **Cold** edge.
 | Tier | What lives here | Effects allowed | Key symbols |
 | ---- | --------------- | --------------- | ----------- |
 | **Hot** | In-process physics, gates, solvers, Burn graph | Pure math only; zero alloc on the inner loop; `Result` for divergence | [`IScienceCartridge`](../src/core/traits.rs) (`compute_all`, `compute_topology`), [`TransitionFilter`](../src/gate/transition_proposal.rs), [`ThmcSolver::step`](../src/physics/solvers/thmc.rs), [`ai::ppo`](../src/ai/ppo.rs)/[`ai::cbf`](../src/ai/cbf.rs), live (partial) [`ai::constraint_loss`](../src/ai/constraint_loss.rs) (feature-gated), `umst-concrete-ffi` `cdylib` |
-| **Warm** | Single deserialization boundary | Rational/`f64` parse **once** per request/batch; no per-step serde | planned `into_simulation()` / `into_arena()` (single conversion `cold bytes → hot view`) |
+| **Warm** | Single deserialization boundary | Rational/`f64` parse **once** per request/batch; no per-step serde | **Shipped** — [`load_arena`](../umst-runtime-arena/src/load.rs), optional [`mmap_arena_path`](../umst-runtime-arena/src/mmap.rs) (`feature = "mmap"`), [`seal_arena_commit`](../umst-runtime-arena/src/stamp.rs); full `into_simulation()` → `IScienceCartridge` wire remains P2 follow-on |
 | **Cold** | Edges, transport, telemetry | serde, JSON-RPC, HTTP, files, `tracing` logs, metrics export | [`umst-mcp`](../../umst-concrete-cartridge/crates/umst-mcp), `umst-cli`, [`gate_server_router`](../src/gate_server_router.rs), [`gate/http_manifest`](../src/gate/http_manifest.rs), `ros`, Docker |
 
 ```mermaid
@@ -65,7 +65,7 @@ flowchart LR
 | Audience | Use this | Do **not** reach for |
 | -------- | -------- | -------------------- |
 | **Agents (MCP)** | `umst_gate_check`, `umst_predict`, `umst_audit`, `contribute*` via [`AGENT_MCP.md`](../../umst-concrete-cartridge/docs/AGENT_MCP.md) (Cold, JSON-RPC) | Raw solver/cartridge structs |
-| **Agents (perf-sensitive)** | skeleton shipped [`umst-runtime-arena`](../umst-runtime-arena/) (`load_arena(bytes)` once → in-process `predict` loop) — opt-in fast path | Per-step Docker MCP round-trips |
+| **Agents (perf-sensitive)** | **Shipped** [`umst-runtime-arena`](../umst-runtime-arena/) (`load_arena(bytes)` once → in-process hot loop); see [`bench_arena_vs_mcp.py`](../scripts/bench_arena_vs_mcp.py), cartridge [`06_arena_batch.py`](../../umst-concrete-cartridge/examples/agent/06_arena_batch.py) | Per-step Docker MCP round-trips |
 | **Researchers (Rust)** | `IScienceCartridge` trait, `ThmcSolver`, Burn modules as a **library** | — |
 | **Internal only** | `http_manifest`, `gate_server_router`, FFI marshalling | exposed as public agent API |
 
@@ -90,22 +90,22 @@ Agents and integrators should pass an explicit [`UmstManifest`](../src/manifest/
 **Migration note (add to AGENT_MCP.md):** *For performance-sensitive or batched
 work, prefer the in-process library / arena path over per-call Docker MCP. MCP
 remains the stable default; the arena is an opt-in fast path that parses once and
-loops in-process (target ≥10× MCP round-trip).*
+loops in-process (≥**5×** MCP round-trip required for Phase 2 exit, CI-pinned via
+[`arena-bench`](../.github/workflows/rust.yml); **10×** aspirational footnote on reference hardware).*
 
 ## Live vs planned (2026-06-24)
 
 | Component | Status |
 | --------- | ------ |
 | `IScienceCartridge`, `TransitionFilter`, `ThmcSolver::step`, Burn ppo/cbf | **live** (hot) |
-| Single Warm `into_simulation()`/`into_arena()` conversion | **planned** (P2) |
-| `umst-runtime-arena` zero-copy `UmstArenaView` (`Send + Sync`, zero-alloc) | **partial shipped** (P2) — `load_arena()` + optional `mmap` feature; UCRS commit stamp bytes 12..20 |
+| Single Warm `into_simulation()` → `IScienceCartridge` | **planned** (P2 follow-on) |
+| `umst-runtime-arena` zero-copy `UmstArenaView` (`Send + Sync`, zero-alloc) | **shipped** (P2) — [`load_arena`](../umst-runtime-arena/src/load.rs), optional [`mmap_arena_path`](../umst-runtime-arena/src/mmap.rs), [`seal_arena_commit`](../umst-runtime-arena/src/stamp.rs) (UCRS stamp bytes 12..20) |
 | `ai::constraint_loss` soft penalty + `ConstraintExplanation` | **live (partial)** (P4) — `clausius_duhem_violation` + `landauer_slack_violation` feature-gated (`kleisli-ppo-hot-bind`) |
-| THMC gate evidence (`wire_gate_evidence_post_step`, `step_gate_evidence` / `drain_gate_evidence`) | **live (partial)** (W10) — accumulator wired; cartridge-sourced dissipation deferred |
-| UCRS witness stamps on arena commit | **doc + guard** (P2-C; stamp wire deferred) |
+| THMC gate evidence (`wire_gate_evidence_post_step`, injectable `GateCartridge`) | **live** (W10/D1) — `gate_cartridge: &'static dyn GateCartridge` on [`ThmcSolver`](../src/physics/solvers/thmc.rs); concrete witness via cartridge integration tests |
+| UCRS witness stamps on arena commit | **shipped** — [`stamp.rs`](../umst-runtime-arena/src/stamp.rs) + `fiber_pins[].commit_stamp` on witnessed commit |
 | `catalog.lock.json` fiber pin `commit_stamp` | **doc + schema** (optional; populated on witnessed commit) |
 
-**Exit witness (P2):** benchmark in-process predict ≥10× an MCP round-trip; no
-required CI lane depends on Docker MCP.
+**Exit witness (P2):** CI-pinned [`arena-bench`](../.github/workflows/rust.yml) requires in-process arena ≥**5×** MCP round-trip (`UMST_BENCH_N=30`); **10×** aspirational on reference hardware (local `N=100`). No required CI lane depends on Docker MCP for correctness gates.
 
 ## Catalog lock fiber pins — preview vs composed digest
 
@@ -130,24 +130,24 @@ guard in `build.rs` and `scripts/catalog_lock_verify.py`).
 (`ucrs_fiber_preview` block) but **must not** appear in the non-preview fingerprint
 used for `composed_catalog_digest_hex`.
 
-## Arena ABI (v1 skeleton — `umst-runtime-arena`)
+## Arena ABI (v1 shipped — `umst-runtime-arena`)
 
 The Warm entry point is [`load_arena`](../umst-runtime-arena/src/load.rs):
 cold-owned bytes in, borrowed [`UmstArenaView`](../umst-runtime-arena/src/load.rs)
-out. Parsing happens **once**; hot loops read sub-slices only.
+out. Parsing happens **once**; hot loops read sub-slices only. Optional
+[`mmap_arena_path`](../umst-runtime-arena/src/mmap.rs) (`feature = "mmap"`) maps
+file-backed arenas without an extra copy.
 
 | Field | Size | Role |
 | ----- | ---- | ---- |
 | `magic` | 4 | `0x54534D55` (`"UMST"` LE) |
-| `abi_version` | 4 | `1` for this skeleton |
+| `abi_version` | 4 | `1` for v1 |
 | `header_bytes` | 4 | Fixed `64` for v1 |
-| `_reserved` | 4 | Zero; forward growth |
+| `commit_stamp` | 8 | UCRS witness stamp (bytes 12..20 LE u64); [`stamp.rs`](../umst-runtime-arena/src/stamp.rs) |
 | `catalog_digest` | 32 | SHA-256 of `artifacts/catalog.lock.json` at arena build |
 | `state_offset` | 8 | UMST state blob start |
 | `state_bytes` | 8 | UMST state blob length |
 
-**Deferred (later ABI revisions):** `proposal_offset` / witness sections,
-full `UcrsObservedAt` wire in the arena header (stamps live in lock
-`fiber_pins[].commit_stamp` until then). **No `mmap`** in this crate revision.
-Hot solvers remain unchanged until a full Warm `into_arena()` wires this view into
-`IScienceCartridge`.
+**Deferred (later ABI revisions):** `proposal_offset` / witness payload sections
+beyond the commit stamp. Hot solvers remain unchanged until a full Warm
+`into_arena()` wires this view into `IScienceCartridge`.
