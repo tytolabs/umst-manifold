@@ -8,6 +8,8 @@ rust-version = "1.74"
 
 [features]
 default = []
+# P3: compile `landauer_registry` (CODATA / Landauer SSOT slice).
+math-constants = []
 simd = ["dep:serde"]
 
 [dependencies]

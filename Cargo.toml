@@ -94,7 +94,7 @@ manifold-gate = []
 # Experimental: real AdjointNeuralODE mutation, histogram MI, uncertainty channel (default off).
 epistemic-ppo = ["train"]
 # Landauer / CODATA via `umst-math` (enabled from egoff `manifold-integration`).
-math-constants = ["dep:umst-math", "dep:ordered-float"]
+math-constants = ["dep:umst-math", "dep:ordered-float", "umst-math/math-constants"]
 
 [dependencies]
 burn = { version = "0.13.0", default-features = false }
