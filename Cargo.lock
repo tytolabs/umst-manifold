@@ -3264,6 +3264,8 @@ dependencies = [
 name = "umst-runtime-arena"
 version = "0.1.0"
 dependencies = [
+ "memmap2",
+ "tempfile",
  "thiserror 1.0.69",
 ]
 

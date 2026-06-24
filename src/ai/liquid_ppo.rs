@@ -119,7 +119,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
 
         match self
             .gateway
-            .evaluate_topology_step(proposed_topology, info_gain)
+            .evaluate_topology_step(proposed_topology, info_gain.clone())
         {
             Ok((verified_state, spatial_reward)) => {
                 let final_state_raw = verified_state.state.clone();
@@ -173,7 +173,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
 
         match self
             .gateway
-            .evaluate_topology_step(proposed_topology, info_gain)
+            .evaluate_topology_step(proposed_topology, info_gain.clone())
         {
             Ok((verified_state, spatial_reward)) => {
                 let spatial_reward = self.subtract_cd_penalty_from_reward(
@@ -181,6 +181,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
                     &verified_state,
                     spatial_reward,
                     &dt_sim_dt_global,
+                    &info_gain,
                 );
                 let final_state_raw = verified_state.state.clone();
 
@@ -246,7 +247,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
 
         match self
             .gateway
-            .evaluate_topology_step(proposed_topology, info_gain)
+            .evaluate_topology_step(proposed_topology, info_gain.clone())
         {
             Ok((verified_state, mut spatial_reward)) => {
                 let bonus = self.epistemic_tracker.epistemic_bonus() as f32;
@@ -257,6 +258,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
                     &verified_state,
                     spatial_reward,
                     &dt_sim_dt_global,
+                    &info_gain,
                 );
 
                 let final_state_raw = verified_state.state.clone();
@@ -299,8 +301,9 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
         >,
         spatial_reward: Tensor<B, 1>,
         dt_sim_dt_global: &Tensor<B, 1>,
+        info_gain: &Tensor<B, 1>,
     ) -> Tensor<B, 1> {
-        if self.gateway.lambda_cd == 0.0_f32 {
+        if self.gateway.lambda_cd == 0.0_f32 && self.gateway.lambda_landauer == 0.0_f32 {
             return spatial_reward;
         }
         let device = baseline_state.scalar_features.device();
@@ -313,14 +316,15 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
         let rho = Tensor::<B, 1>::full([batch], 2400.0_f32, &device);
         let old_fe = baseline_pr.free_energy.mean_dim(1).squeeze(1);
         let new_fe = proposed_pr.free_energy.mean_dim(1).squeeze(1);
-        let cd_penalty = self.gateway.constraint_loss_penalty(
+        let penalty = self.gateway.total_constraint_loss_penalty(
             rho.clone(),
             rho,
             old_fe,
             new_fe,
             dt_sim_dt_global.clone(),
+            info_gain.clone(),
         );
-        spatial_reward.sub(cd_penalty)
+        spatial_reward.sub(penalty)
     }
 }
 

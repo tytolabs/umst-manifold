@@ -43,6 +43,8 @@ use crate::ai::cbf::ThermodynamicCBF;
 use crate::ai::constraint_loss::scaled_clausius_duhem_violation;
 #[cfg(feature = "thmc-coupled")]
 use crate::ai::constraint_loss::scaled_constraint_violation_penalty;
+#[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
+use crate::ai::constraint_loss::scaled_landauer_slack_violation;
 use crate::ai::formal::FormalReject;
 use crate::core::traits::{IScienceCartridge, PhysicalResult};
 use burn::tensor::{backend::Backend, Tensor};
@@ -78,6 +80,9 @@ pub struct ManifoldGateway<B: Backend, C: IScienceCartridge<B>> {
     /// scales [`crate::ai::constraint_loss::clausius_duhem_violation`] for soft training penalties.
     #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
     pub lambda_cd: f32,
+    /// Landauer erasure slack weight **λ_landauer** (same feature gate as [`Self::lambda_cd`]).
+    #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
+    pub lambda_landauer: f32,
     /// Optional catalog/schema digest asserted against the incoming UMST when **`formal-witness`** is on.
     /// [`Self::new`] defaults to compiled lock bytes; set `None` explicitly to skip the witness.
     #[cfg(feature = "formal-witness")]
@@ -105,6 +110,11 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
             gamma: 2.0_f32,
             #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
             lambda_cd: std::env::var("UMST_LAMBDA_CD")
+                .ok()
+                .and_then(|s| s.parse::<f32>().ok())
+                .unwrap_or(0.0_f32),
+            #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
+            lambda_landauer: std::env::var("UMST_LAMBDA_LANDAUER")
                 .ok()
                 .and_then(|s| s.parse::<f32>().ok())
                 .unwrap_or(0.0_f32),
@@ -269,6 +279,48 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
             new_free_energy,
             dt_s,
         )
+    }
+
+    /// Optional Landauer erasure soft penalty (`λ_landauer · relu(k_B T ln2 · bits − credit)`).
+    #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
+    pub fn landauer_constraint_loss_penalty(&self, info_gain_bits: Tensor<B, 1>) -> Tensor<B, 1>
+    where
+        B: Backend<FloatElem = f32>,
+    {
+        if self.lambda_landauer == 0.0_f32 {
+            let batch = info_gain_bits.dims()[0];
+            return Tensor::zeros([batch], &info_gain_bits.device());
+        }
+        scaled_landauer_slack_violation(
+            self.lambda_landauer,
+            info_gain_bits,
+            self.cbf.temperature_k as f32,
+            self.cbf.available_credit_joules as f32,
+        )
+    }
+
+    /// Combined CD + Landauer soft penalties for Kleisli penalize hooks.
+    #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
+    pub fn total_constraint_loss_penalty(
+        &self,
+        old_density: Tensor<B, 1>,
+        new_density: Tensor<B, 1>,
+        old_free_energy: Tensor<B, 1>,
+        new_free_energy: Tensor<B, 1>,
+        dt_s: Tensor<B, 1>,
+        info_gain_bits: Tensor<B, 1>,
+    ) -> Tensor<B, 1>
+    where
+        B: Backend<FloatElem = f32>,
+    {
+        self.constraint_loss_penalty(
+            old_density,
+            new_density,
+            old_free_energy,
+            new_free_energy,
+            dt_s,
+        )
+        .add(self.landauer_constraint_loss_penalty(info_gain_bits))
     }
 
     /// Evaluates a proposed topology state; errors are structured as [`FormalReject`].

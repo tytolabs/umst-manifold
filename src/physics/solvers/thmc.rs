@@ -259,6 +259,11 @@ pub struct ThmcSolver {
     /// Mechanics port witnesses from [`crate::physics::mechanics_solve_port`] (warm drain).
     #[cfg(all(feature = "thmc-coupled", feature = "mechanics-adjoint"))]
     pub mechanics_solve_reports: Vec<crate::solve_report::SolveReport>,
+    /// Intrinsic strength (MPa) for mix-calibrated gate snapshot lift at post-step evidence hook.
+    /// Default matches legacy HTTP manifest constant; concrete cartridges should set
+    /// [`umst_concrete_cartridge::CEMENT_DEFAULT_S_INTRINSIC_MPA`] when wired.
+    #[cfg(feature = "thmc-coupled")]
+    pub gate_intrinsic_strength_mpa: f64,
 }
 
 impl Default for ThmcSolver {
@@ -276,6 +281,8 @@ impl Default for ThmcSolver {
             step_gate_evidence: Vec::new(),
             #[cfg(all(feature = "thmc-coupled", feature = "mechanics-adjoint"))]
             mechanics_solve_reports: Vec::new(),
+            #[cfg(feature = "thmc-coupled")]
+            gate_intrinsic_strength_mpa: super::thmc_step::THMC_GATE_LIFT_S_INTRINSIC_MPA_DEFAULT,
         }
     }
 }
@@ -863,7 +870,13 @@ impl ThmcSolver {
 
         // Post-step gate evidence (`thmc_step::wire_gate_evidence_post_step` → CdTransitionCartridge).
         let gate_evidence = super::thmc_step::wire_gate_evidence_post_step(
-            self, _cartridge, &pre_step, &state, manifold, self.dt,
+            self,
+            &crate::runtime::gate::CdTransitionCartridge,
+            &pre_step,
+            &state,
+            manifold,
+            self.dt,
+            self.gate_intrinsic_strength_mpa,
         )?;
         self.step_gate_evidence.push(gate_evidence);
 

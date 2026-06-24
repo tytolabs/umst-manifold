@@ -169,3 +169,23 @@ fn mix_gate_evaluator_golden_negative_dissipation() {
     let v = ev.evaluate_thermo_transition(ctx);
     assert_eq!(v, AdmissibilityVerdict::NegativeDissipation);
 }
+
+/// Cartridge-style mix-calibrated lift (concrete SSOT scalars) — parity with host CD cartridge.
+#[test]
+fn gate_parity_concrete_mix_calibrated_snapshots() {
+    use umst_manifold::core::SubstrateMaterialParams;
+    use umst_manifold::gate::transition_proposal::ThermodynamicStateSnapshot;
+    use umst_manifold::runtime::gate::evidence::AdmissibilityToken;
+    use umst_manifold::runtime::gate::{CdTransitionCartridge, GateCartridge};
+
+    let old = ThermodynamicStateSnapshot::from_mix_calibrated_with_params(
+        0.45,
+        0.30,
+        293.15,
+        240.0,
+        &SubstrateMaterialParams,
+    );
+    let new = old;
+    let evidence = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
+    assert_eq!(evidence.admissibility, AdmissibilityToken::Admissible);
+}

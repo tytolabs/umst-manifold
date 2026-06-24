@@ -17,6 +17,7 @@ mod thmc_gate_evidence_wire {
     };
     use umst_manifold::runtime::catalog::traceability::CD_TRANSITION_CATALOG_ID;
     use umst_manifold::runtime::gate::AdmissibilityToken;
+    use umst_manifold::runtime::gate::CdTransitionCartridge;
 
     type B = NdArray<f32>;
 
@@ -118,13 +119,21 @@ mod thmc_gate_evidence_wire {
         let pre = mk_state(&dev, n, 293.0_f32, 0.5_f32, 0.42_f32, 0.0_f32);
         let post = pre.clone();
         let solver = ThmcSolver::default();
-        let evidence = wire_gate_evidence_post_step(&solver, &Stub, &pre, &post, &umst, 1.0_f32)
-            .expect("identity lift should succeed");
+        let evidence = wire_gate_evidence_post_step(
+            &solver,
+            &CdTransitionCartridge,
+            &pre,
+            &post,
+            &umst,
+            1.0_f32,
+            solver.gate_intrinsic_strength_mpa,
+        )
+        .expect("identity lift should succeed");
         assert_eq!(evidence.transition.catalog_id, CD_TRANSITION_CATALOG_ID);
         assert_eq!(
             evidence.transition.admissibility,
             AdmissibilityToken::Admissible
         );
-        assert!(evidence.wiring_tag.contains("CdTransitionCartridge"));
+        assert!(evidence.wiring_tag.contains("GateCartridge"));
     }
 }

@@ -76,6 +76,27 @@ else
   warn "umst-concrete-cartridge checkout not present for cross-repo grep"
 fi
 
+echo "=== Landauer slack (W5) ==="
+if rg -q 'landauer_slack_violation' src/ai/constraint_loss.rs \
+  && rg -q 'lambda_landauer' src/ai/ppo.rs; then
+  echo "OK: landauer_slack_violation + lambda_landauer wired"
+else
+  fail "landauer_slack_violation wiring incomplete"
+fi
+
+echo "=== P4 training witness JSON ==="
+if [ -f artifacts/training/p4_rejection_baseline.json ]; then
+  echo "OK: artifacts/training/p4_rejection_baseline.json present"
+else
+  warn "missing artifacts/training/p4_rejection_baseline.json"
+fi
+
+echo "=== Arena mmap (P2) ==="
+if rg -q 'mmap_arena_path' umst-runtime-arena/src/mmap.rs 2>/dev/null; then
+  echo "OK: umst-runtime-arena mmap module present"
+else
+  warn "mmap module not found"
+fi
 echo "=== Solver never-run ledger (Track C) ==="
 if [ -f docs/SOLVER_NEVER_RUN_LEDGER.md ]; then
   IGNORE_COUNT="$(rg -c '#\[ignore' tests src --glob '*.rs' 2>/dev/null | awk -F: '{s+=$2} END {print s+0}')"

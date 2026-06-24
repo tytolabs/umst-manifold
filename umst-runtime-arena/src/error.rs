@@ -3,7 +3,7 @@
 use thiserror::Error;
 
 /// Arena load / layout validation errors (total — no panics).
-#[derive(Debug, Error, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Error)]
 pub enum ArenaError {
     /// Byte slice shorter than the fixed header.
     #[error("buffer too short: need at least {need} bytes, got {got}")]
@@ -35,5 +35,13 @@ pub enum ArenaError {
         len: u64,
         /// Total backing buffer length.
         buffer: usize,
+    },
+    /// Filesystem / mmap failure at the Cold→Warm boundary.
+    #[error("arena I/O at {path}: {source}")]
+    Io {
+        /// Path attempted.
+        path: String,
+        /// Underlying OS error.
+        source: std::io::Error,
     },
 }

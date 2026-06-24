@@ -98,8 +98,8 @@ loops in-process (target ≥10× MCP round-trip).*
 | --------- | ------ |
 | `IScienceCartridge`, `TransitionFilter`, `ThmcSolver::step`, Burn ppo/cbf | **live** (hot) |
 | Single Warm `into_simulation()`/`into_arena()` conversion | **planned** (P2) |
-| `umst-runtime-arena` zero-copy `UmstArenaView` (`Send + Sync`, zero-alloc) | **skeleton shipped** (P2) — `load_arena()`; no mmap; zero MCP consumers |
-| `ai::constraint_loss` soft penalty + `ConstraintExplanation` | **live (partial)** (P4) — feature-gated (`epistemic-ppo` / `kleisli-ppo-hot-bind`); `landauer_slack_violation` deferred |
+| `umst-runtime-arena` zero-copy `UmstArenaView` (`Send + Sync`, zero-alloc) | **partial shipped** (P2) — `load_arena()` + optional `mmap` feature; UCRS commit stamp bytes 12..20 |
+| `ai::constraint_loss` soft penalty + `ConstraintExplanation` | **live (partial)** (P4) — `clausius_duhem_violation` + `landauer_slack_violation` feature-gated (`kleisli-ppo-hot-bind`) |
 | THMC gate evidence (`wire_gate_evidence_post_step`, `step_gate_evidence` / `drain_gate_evidence`) | **live (partial)** (W10) — accumulator wired; cartridge-sourced dissipation deferred |
 | UCRS witness stamps on arena commit | **doc + guard** (P2-C; stamp wire deferred) |
 | `catalog.lock.json` fiber pin `commit_stamp` | **doc + schema** (optional; populated on witnessed commit) |

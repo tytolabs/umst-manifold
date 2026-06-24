@@ -1,0 +1,28 @@
+{
+  "schema_version": "p4_rejection_baseline.v1",
+  "generated_at": "2026-06-24",
+  "regenerate": "cargo test -p umst-manifold --features kleisli-ppo-hot-bind --test kleisli_gate_pipeline_e2e && python3 scripts/regenerate_p4_baseline.py (when training lane lands)",
+  "comparison": {
+    "protocol": "equal_reward_budget",
+    "episodes": 128,
+    "note": "Placeholder witness structure — replace rejection_rate with measured training run before Phase 4 exit"
+  },
+  "generate_then_filter": {
+    "hard_cbf_rejection_rate": 0.42,
+    "mean_slack_at_commit": 0.08,
+    "lambda_cd": 0.0,
+    "lambda_landauer": 0.0
+  },
+  "kleisli_penalize_treatment": {
+    "hard_cbf_rejection_rate": 0.31,
+    "mean_slack_at_commit": 0.05,
+    "lambda_cd": 1.0,
+    "lambda_landauer": 0.25,
+    "features": ["kleisli-ppo-hot-bind", "epistemic-ppo"]
+  },
+  "delta": {
+    "rejection_rate_reduction": 0.11,
+    "target_met": false,
+    "target_reduction_min": 0.15
+  }
+}

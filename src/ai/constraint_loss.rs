@@ -16,6 +16,12 @@ pub use crate::runtime::gate::evidence::{
 /// Numerical floor on `dt` matching [`crate::gate::transition_proposal::transition_outcome`].
 const DT_EPS: f32 = 1e-10;
 
+/// Boltzmann constant (J/K) — matches [`crate::constants::landauer_bit_energy_joules`] fallback path.
+const K_BOLTZMANN_F32: f32 = 1.380_649e-23;
+
+/// ln(2) bit factor for Landauer erasure floor.
+const LN2_F32: f32 = std::f32::consts::LN_2;
+
 /// Per-batch ReLU slack for Clausius–Duhem dissipation violation.
 ///
 /// Mirrors the host gate surrogate `D_int = −ρ ψ̇` with
@@ -77,6 +83,36 @@ pub fn scaled_clausius_duhem_violation<B: Backend<FloatElem = f32>>(
         dt_s,
     )
     .mul_scalar(lambda_cd)
+}
+
+/// Per-batch ReLU slack when resolved bits exceed the available Landauer credit (joules).
+///
+/// Mirrors [`crate::ai::cbf::ThermodynamicCBF::calculate_landauer_cost`] at tensor granularity:
+/// `erasure_cost = k_B · T · ln(2) · bits`, returns `relu(erasure_cost − credit_j)`.
+pub fn landauer_slack_violation<B: Backend<FloatElem = f32>>(
+    info_gain_bits: Tensor<B, 1>,
+    temperature_k: f32,
+    available_credit_joules: f32,
+) -> Tensor<B, 1> {
+    let bit_energy = temperature_k * LN2_F32 * K_BOLTZMANN_F32;
+    let erasure_cost = info_gain_bits.mul_scalar(bit_energy);
+    relu(erasure_cost.sub_scalar(available_credit_joules))
+}
+
+/// Weighted Landauer slack for gateway / PPO penalty hooks.
+pub fn scaled_landauer_slack_violation<B: Backend<FloatElem = f32>>(
+    lambda_landauer: f32,
+    info_gain_bits: Tensor<B, 1>,
+    temperature_k: f32,
+    available_credit_joules: f32,
+) -> Tensor<B, 1> {
+    let batch = info_gain_bits.dims()[0];
+    let device = info_gain_bits.device();
+    if lambda_landauer == 0.0_f32 {
+        return Tensor::zeros([batch], &device);
+    }
+    landauer_slack_violation(info_gain_bits, temperature_k, available_credit_joules)
+        .mul_scalar(lambda_landauer)
 }
 
 /// Structured explanation for Clausius–Duhem slack at the same batch contract as
@@ -332,5 +368,42 @@ mod tests {
             p0 = p[0],
             expected = lambda * s[0]
         );
+    }
+
+    #[test]
+    fn landauer_slack_violation_zero_when_credit_sufficient() {
+        let dev = NdArrayDevice::default();
+        let bits = scalar_tensor(&dev, &[0.01_f32]);
+        let slack = landauer_slack_violation(bits, 300.0_f32, 1.0e6_f32);
+        let v: Vec<f32> = slack.into_data().value;
+        assert!(
+            v[0].abs() < 1e-12,
+            "ample credit → zero Landauer slack, got {}",
+            v[0]
+        );
+    }
+
+    #[test]
+    fn landauer_slack_violation_positive_when_credit_exhausted() {
+        let dev = NdArrayDevice::default();
+        let bits = scalar_tensor(&dev, &[1.0_f32]);
+        let slack = landauer_slack_violation(bits, 300.0_f32, 0.0_f32);
+        let v: Vec<f32> = slack.into_data().value;
+        assert!(v[0] > 0.0, "zero credit → positive Landauer slack");
+        let expected = 300.0_f32 * LN2_F32 * K_BOLTZMANN_F32;
+        assert!(
+            (v[0] - expected).abs() < 1e-20,
+            "slack {v0} should track k_B T ln2 bits ≈ {expected}",
+            v0 = v[0]
+        );
+    }
+
+    #[test]
+    fn scaled_landauer_slack_violation_zero_when_lambda_disabled() {
+        let dev = NdArrayDevice::default();
+        let bits = scalar_tensor(&dev, &[1.0_f32]);
+        let penalty = scaled_landauer_slack_violation(0.0_f32, bits, 300.0_f32, 0.0_f32);
+        let v: Vec<f32> = penalty.into_data().value;
+        assert_eq!(v[0], 0.0_f32);
     }
 }

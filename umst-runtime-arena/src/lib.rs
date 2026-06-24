@@ -2,19 +2,24 @@
 //!
 //! Cold agents hand off an owned byte buffer; [`load_arena`] validates the
 //! [`UmstArenaHeader`] once and returns a borrowed [`UmstArenaView`] for
-//! in-process hot loops. `mmap` and UCRS commit stamps are deferred.
+//! in-process hot loops. Optional [`mmap_arena_path`](crate::mmap_arena_path) (`feature = "mmap"`)
+//! maps a file read-only at the Warm boundary; UCRS commit stamps live in header bytes 12..20.
 //!
 //! # Crate invariants
-//! - **`#![forbid(unsafe_code)]`** — no `unsafe` in this crate.
+//! - **`#![forbid(unsafe_code)]`** on default build; `feature = "mmap"` permits bounded `unsafe` for `memmap2`.
 //! - Total functions at the parse boundary — [`ArenaError`] instead of panics.
 
-#![forbid(unsafe_code)]
+#![cfg_attr(not(feature = "mmap"), forbid(unsafe_code))]
 #![warn(missing_docs)]
 
 mod error;
 mod header;
 mod load;
+#[cfg(feature = "mmap")]
+mod mmap;
 
 pub use error::ArenaError;
 pub use header::{UmstArenaHeader, ARENA_ABI_VERSION, ARENA_HEADER_BYTES, ARENA_MAGIC};
 pub use load::{load_arena, UmstArenaView};
+#[cfg(feature = "mmap")]
+pub use mmap::{mmap_arena_path, read_commit_stamp, write_commit_stamp, MmappedArena};
