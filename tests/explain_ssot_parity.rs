@@ -20,7 +20,7 @@ const CARTRIDGE_REMEDIATION: &[(&str, &str)] = &[
     ),
     (
         THERMODYNAMIC_CD_FAIL,
-        "Mix violates Clausius–Duhem margin; reduce w_c, adjust temperature_k, or change curing regime before re-checking.",
+        "Mix violates Clausius–Duhem margin; reduce w_c, adjust temperature_k, or change the thermal schedule before re-checking.",
     ),
     (
         MANIFEST_BRIDGE_DISABLED,
