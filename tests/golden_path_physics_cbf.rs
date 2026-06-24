@@ -39,7 +39,7 @@ use umst_manifold::ai::ppo::ManifoldGateway;
 use umst_manifold::core::apply_physics_to_umst;
 use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
-use umst_manifold::core::umst_schema::SCALAR_DAMAGE;
+use umst_manifold::core::umst_schema::{SCALAR_DAMAGE, UMST_SCALAR_CHANNEL_COUNT};
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
@@ -68,7 +68,7 @@ fn assert_tensor1_finite(t: &Tensor<B, 1>, label: &str) {
     }
 }
 
-/// Two-node UMST: five scalar channels, SI `[N, 3]` embedding, single bar edge `0—1`.
+/// Two-node UMST: [`UMST_SCALAR_CHANNEL_COUNT`] scalar channels, SI `[N, 3]` embedding, single bar edge `0—1`.
 fn test_umst_two_node_bar(
     scalars: Tensor<B, 2>,
     policy_mask: Tensor<B, 2>,
@@ -76,7 +76,7 @@ fn test_umst_two_node_bar(
 ) -> UnifiedMaterialStateTensor<B> {
     let dev = device();
     let n = scalars.dims()[0];
-    assert_eq!(scalars.dims()[1], 5);
+    assert_eq!(scalars.dims()[1], UMST_SCALAR_CHANNEL_COUNT);
     assert_eq!(node_positions.dims(), [n, 3]);
     let coords: Tensor<B, 2, Int> =
         Tensor::from_data(Data::new(vec![0i64; n * 5], Shape::new([n, 5])), &dev);
@@ -296,10 +296,11 @@ fn physical_result_from_thmc_state<Bk: Backend<FloatElem = f32>>(
 fn golden_path_mechanics_physical_result_cbf_apply_physics() {
     let dev = device();
     let n = 2usize;
-    let mut flat = vec![0.0_f32; n * 5];
+    let f = UMST_SCALAR_CHANNEL_COUNT;
+    let mut flat = vec![0.0_f32; n * f];
     flat[SCALAR_DAMAGE] = 0.05;
-    flat[5 + SCALAR_DAMAGE] = 0.06;
-    let scalars = Tensor::from_data(Data::new(flat, Shape::new([n, 5])), &dev);
+    flat[f + SCALAR_DAMAGE] = 0.06;
+    let scalars = Tensor::from_data(Data::new(flat, Shape::new([n, f])), &dev);
     let mask = Tensor::from_data(Data::new(vec![1.0_f32, 1.0_f32], Shape::new([n, 1])), &dev);
     // One-metre bar along +x (SI).
     let pos = Tensor::from_data(
@@ -341,7 +342,7 @@ fn golden_path_mechanics_physical_result_cbf_apply_physics() {
     apply_physics_to_umst(&pr, &mut umst).expect("apply_physics_to_umst");
     let out = umst.scalar_features.clone().into_data().value;
     assert!(out[SCALAR_DAMAGE].is_finite());
-    assert!(out[5 + SCALAR_DAMAGE].is_finite());
+    assert!(out[UMST_SCALAR_CHANNEL_COUNT + SCALAR_DAMAGE].is_finite());
 }
 
 /// Symmetric nodal strain \([\varepsilon]\) in channel `0` for [`ThmcSolver::step`] fracture coupling:
@@ -381,10 +382,11 @@ fn test_umst_two_node_bar_thmc(
 fn golden_path_thmc_experimental_then_cbf_apply_physics() {
     let dev = device();
     let n = 2usize;
-    let mut flat = vec![0.0_f32; n * 5];
+    let f = UMST_SCALAR_CHANNEL_COUNT;
+    let mut flat = vec![0.0_f32; n * f];
     flat[SCALAR_DAMAGE] = 0.02;
-    flat[5 + SCALAR_DAMAGE] = 0.03;
-    let scalars = Tensor::from_data(Data::new(flat, Shape::new([n, 5])), &dev);
+    flat[f + SCALAR_DAMAGE] = 0.03;
+    let scalars = Tensor::from_data(Data::new(flat, Shape::new([n, f])), &dev);
     let mask = Tensor::from_data(Data::new(vec![1.0_f32, 1.0_f32], Shape::new([n, 1])), &dev);
     let pos = Tensor::from_data(
         Data::new(

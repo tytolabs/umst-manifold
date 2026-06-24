@@ -11,7 +11,7 @@ use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::apply_physics_to_umst;
 use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
-use umst_manifold::core::umst_schema::{SCALAR_DAMAGE, SCALAR_TEMPERATURE};
+use umst_manifold::core::umst_schema::{SCALAR_DAMAGE, SCALAR_TEMPERATURE, UMST_SCALAR_CHANNEL_COUNT};
 
 #[cfg(not(feature = "thmc-coupled"))]
 use umst_manifold::physics::solvers::{
@@ -24,7 +24,7 @@ fn device() -> NdArrayDevice {
     NdArrayDevice::default()
 }
 
-/// Two-node UMST with five scalar channels; optional SI `[N, 3]` embedding.
+/// Two-node UMST with [`UMST_SCALAR_CHANNEL_COUNT`] scalar channels; optional SI `[N, 3]` embedding.
 fn test_umst(
     scalars: Tensor<B, 2>,
     policy_mask: Tensor<B, 2>,
@@ -32,7 +32,7 @@ fn test_umst(
 ) -> UnifiedMaterialStateTensor<B> {
     let dev = device();
     let n = scalars.dims()[0];
-    assert_eq!(scalars.dims()[1], 5);
+    assert_eq!(scalars.dims()[1], UMST_SCALAR_CHANNEL_COUNT);
     let coords: Tensor<B, 2, Int> =
         Tensor::from_data(Data::new(vec![0i64; n * 5], Shape::new([n, 5])), &dev);
     let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
@@ -80,11 +80,11 @@ fn physical_result(
 fn apply_physics_damage_writeback_respects_policy_mask() {
     let dev = device();
     let n = 2usize;
-    let flat = vec![
-        0.0_f32, 0.0, 0.0, 0.0, 0.1, //
-        0.0_f32, 0.0, 0.0, 0.0, 0.2,
-    ];
-    let scalars = Tensor::from_data(Data::new(flat, Shape::new([n, 5])), &dev);
+    let f = UMST_SCALAR_CHANNEL_COUNT;
+    let mut flat = vec![0.0_f32; n * f];
+    flat[SCALAR_DAMAGE] = 0.1;
+    flat[f + SCALAR_DAMAGE] = 0.2;
+    let scalars = Tensor::from_data(Data::new(flat, Shape::new([n, f])), &dev);
     let mask = Tensor::from_data(Data::new(vec![1.0_f32, 0.0_f32], Shape::new([n, 1])), &dev);
     let pos = Tensor::from_data(Data::new(vec![0.0_f32; n * 3], Shape::new([n, 3])), &dev);
     let mut umst = test_umst(scalars, mask, Some(pos));
@@ -94,7 +94,7 @@ fn apply_physics_damage_writeback_respects_policy_mask() {
 
     let out = umst.scalar_features.clone().into_data().value;
     let d0 = out[SCALAR_DAMAGE];
-    let d1 = out[5 + SCALAR_DAMAGE];
+    let d1 = out[f + SCALAR_DAMAGE];
     assert!(
         (d0 - 0.9).abs() < 1e-5,
         "editable node should take physics damage"
@@ -109,10 +109,11 @@ fn apply_physics_damage_writeback_respects_policy_mask() {
 fn apply_physics_temperature_delta_respects_policy_mask() {
     let dev = device();
     let n = 2usize;
-    let mut flat = vec![0.0_f32; n * 5];
+    let f = UMST_SCALAR_CHANNEL_COUNT;
+    let mut flat = vec![0.0_f32; n * f];
     flat[SCALAR_TEMPERATURE] = 100.0;
-    flat[5 + SCALAR_TEMPERATURE] = 50.0;
-    let scalars = Tensor::from_data(Data::new(flat, Shape::new([n, 5])), &dev);
+    flat[f + SCALAR_TEMPERATURE] = 50.0;
+    let scalars = Tensor::from_data(Data::new(flat, Shape::new([n, f])), &dev);
     let mask = Tensor::from_data(Data::new(vec![1.0_f32, 0.0_f32], Shape::new([n, 1])), &dev);
     let mut umst = test_umst(scalars, mask, None);
 
@@ -121,7 +122,7 @@ fn apply_physics_temperature_delta_respects_policy_mask() {
 
     let out = umst.scalar_features.clone().into_data().value;
     let t0 = out[SCALAR_TEMPERATURE];
-    let t1 = out[5 + SCALAR_TEMPERATURE];
+    let t1 = out[f + SCALAR_TEMPERATURE];
     assert!((t0 - 110.0).abs() < 1e-4);
     assert!((t1 - 50.0).abs() < 1e-4);
 }
@@ -165,7 +166,7 @@ impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for EmptyCartridge {
 fn apply_physics_thmc_step_errors_without_thmc_coupled() {
     let dev = device();
     let n = 2usize;
-    let scalars = Tensor::<B, 2>::zeros([n, 5], &dev);
+    let scalars = Tensor::<B, 2>::zeros([n, UMST_SCALAR_CHANNEL_COUNT], &dev);
     let mask = Tensor::<B, 2>::ones([n, 1], &dev);
     let manifold = test_umst(scalars, mask, None);
 
