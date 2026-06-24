@@ -744,18 +744,42 @@ impl ThmcSolver {
                     let bf = Tensor::<B, 3>::zeros([batch, n, 3], &device);
                     let inner_cfg = MechanicsInnerLoopConfig::default();
                     let cross_section_area = 0.01_f32;
-                    let (u_new, _stress) = VectorMechanicsSolver::solve_equilibrium(
-                        state.mechanical.displacement.clone(),
-                        coords_n3.clone(),
-                        stiffness,
-                        bf,
-                        edges_b1.clone(),
-                        damage_m.clone(),
-                        bm,
-                        cross_section_area,
-                        &inner_cfg,
-                    );
-                    state.mechanical.displacement = u_new;
+                    #[cfg(feature = "mechanics-adjoint")]
+                    {
+                        use crate::physics::mechanics_solve_port::bar_network_equilibrium_reported;
+                        let rel_tol = inner_cfg
+                            .pcg_tolerance
+                            .max(inner_cfg.cg_tolerance)
+                            .max(1e-6_f32);
+                        let (u_new, _stress, _report) = bar_network_equilibrium_reported(
+                            state.mechanical.displacement.clone(),
+                            coords_n3.clone(),
+                            stiffness,
+                            bf,
+                            edges_b1.clone(),
+                            damage_m.clone(),
+                            bm,
+                            cross_section_area,
+                            &inner_cfg,
+                            rel_tol,
+                        )?;
+                        state.mechanical.displacement = u_new;
+                    }
+                    #[cfg(not(feature = "mechanics-adjoint"))]
+                    {
+                        let (u_new, _stress) = VectorMechanicsSolver::solve_equilibrium(
+                            state.mechanical.displacement.clone(),
+                            coords_n3.clone(),
+                            stiffness,
+                            bf,
+                            edges_b1.clone(),
+                            damage_m.clone(),
+                            bm,
+                            cross_section_area,
+                            &inner_cfg,
+                        );
+                        state.mechanical.displacement = u_new;
+                    }
                 }
             }
 
