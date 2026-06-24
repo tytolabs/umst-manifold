@@ -6,6 +6,12 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
     labels: ["dependencies"]
+    # Collapse non-major cargo updates into a single PR to cut review noise (O6 triage).
+    groups:
+      cargo-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       # `umst-math` is a workspace path member (not a crates.io crate).
       - dependency-name: "umst-math"
@@ -31,6 +37,11 @@ updates:
     schedule:
       interval: "monthly"
     labels: ["ci"]
+    groups:
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "actions/checkout"
         update-types: ["version-update:semver-major"]
