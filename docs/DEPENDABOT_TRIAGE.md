@@ -18,3 +18,18 @@
 | `rand` 0.10 | transitive API drift across workspace |
 
 PRs closed with `.github/dependabot.yml` `semver-major` ignore rules.
+
+## O6 triage (2026-06-24)
+
+**Known alerts:** ~3 open Dependabot alerts on `umst-manifold`.
+
+**Automation state:** `.github/dependabot.yml` enables `cargo` (weekly) + `github-actions`
+(monthly) ecosystem updates. Non-major updates are now **grouped** (`cargo-minor-patch`,
+`actions-minor-patch`) into a single PR each to cut review noise; known-incompatible
+majors stay in the `ignore` list above.
+
+**Version bumps deferred:** Actual `Cargo.toml` version bumps are **not** performed in this
+pass. Applying and validating a bump requires building with the pinned `rustc 1.88`
+toolchain (`time-core@0.1.9` needs 1.88), which is unavailable in the Ops/cold environment.
+Bumps are deferred to a **build-capable worker** who can run `cargo build && cargo test` +
+`verify_umst_stack.sh` + catalog-drift before merging each (grouped) Dependabot PR.
