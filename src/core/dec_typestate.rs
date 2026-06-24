@@ -20,6 +20,8 @@ pub enum DecTypestateError {
     B1WrongRowCount { rows: usize },
     /// Scalar channel index is outside the pinned layout contract.
     ScalarChannelOutOfRange { index: usize, channel_count: usize },
+    /// Nodal scalar tensor width does not match the compile-time layout witness.
+    ScalarWidthMismatch { expected: usize, found: usize },
 }
 
 /// Oriented primal **B₁** incidence: nodes → edges, shape `[2, E]`.

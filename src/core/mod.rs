@@ -9,6 +9,7 @@ pub mod material_transition;
 pub mod tensors;
 pub mod traits;
 pub mod umst_schema;
+pub mod verified_umst;
 
 pub use apply_physics::apply_physics_to_umst;
 pub use dec_typestate::{
