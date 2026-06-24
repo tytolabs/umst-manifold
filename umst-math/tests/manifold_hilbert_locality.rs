@@ -12,7 +12,7 @@ fn aa_manifold_hilbert_d4_covers_256() {
     let mut s = BTreeSet::new();
     for d in 0u32..256 {
         let p = d2xy(n, d);
-        assert!(s.insert(p), "dupe at {d} -> {:?}", p);
+        assert!(s.insert(p), "dupe at {d} -> {p:?}");
     }
     assert_eq!(s.len(), 256, "cover all cells");
     let _ = side;

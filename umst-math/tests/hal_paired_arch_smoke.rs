@@ -1,12 +1,10 @@
 //! M4: paired-mock laws + (Linux) real `build_linux_inventory` with `ArchClass` population.
 // mock path always runs; Linux path exercises real backends; macOS stays on mocks (H-9-mac).
 
-use umst_math::hal::kinds::UnitKind;
 use umst_math::hal::laws::{
     check_associative, check_identity_law, f_cpu_igpu, g_igpu_ram, h_ram_port,
 };
 use umst_math::hal::mocks::{mock_apple_m3_inventory, mock_linux_intel_inventory};
-use umst_math::hal::presence::UnitPresence;
 use umst_math::hal::profile::ArchClass;
 
 /// Always-on: mock-Apple + mock-Linux satisfy the same H-8 route laws as the inventory tests
@@ -38,6 +36,8 @@ fn aa_hal_paired_mocks_distinguish_by_archclass() {
 mod linux_paired {
     use super::*;
     use umst_math::hal::build_linux_inventory;
+    use umst_math::hal::kinds::UnitKind;
+    use umst_math::hal::presence::UnitPresence;
     use umst_math::hal::profile::ArchClass;
 
     #[test]

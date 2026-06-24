@@ -59,7 +59,7 @@ pub fn is_lean_catalog_fiber_role(lock_role: Option<&str>) -> bool {
 }
 
 fn is_sha256_hex(s: &str) -> bool {
-    s.len() == 64 && s.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F'))
+    s.len() == 64 && s.bytes().all(|b| b.is_ascii_hexdigit())
 }
 
 /// SHA-256 of sorted `repo:digest` pairs for non-preview [`fiber_pins`](Value::get).
@@ -153,6 +153,15 @@ pub fn composed_digest_guard_holds(lock: &Value) -> bool {
     true
 }
 
+/// Idempotency: recomputing the guard on an already-valid lock stays valid.
+#[must_use]
+pub fn composed_digest_guard_idempotent(lock: &Value) -> bool {
+    if !composed_digest_guard_holds(lock) {
+        return true;
+    }
+    composed_digest_guard_holds(lock)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -190,13 +199,4 @@ mod tests {
             0
         );
     }
-}
-
-/// Idempotency: recomputing the guard on an already-valid lock stays valid.
-#[must_use]
-pub fn composed_digest_guard_idempotent(lock: &Value) -> bool {
-    if !composed_digest_guard_holds(lock) {
-        return true;
-    }
-    composed_digest_guard_holds(lock)
 }
