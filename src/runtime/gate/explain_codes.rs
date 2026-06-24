@@ -44,7 +44,7 @@ pub fn remediation_for_code(code: &str) -> &'static str {
             "mix_spec failed MixSpec validation; compare field names and rational formats against umst://schemas/contribution.v1.json."
         }
         THERMODYNAMIC_CD_FAIL => {
-            "Mix violates Clausius–Duhem margin; reduce w_c, adjust temperature_k, or change curing regime before re-checking."
+            "Mix violates Clausius–Duhem margin; reduce w_c, adjust temperature_k, or change the thermal schedule before re-checking."
         }
         MANIFEST_BRIDGE_DISABLED => {
             "Build umst-mcp with agent-layer and manifest-bridge features so the thermodynamic gate runs."
