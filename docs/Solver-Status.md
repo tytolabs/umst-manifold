@@ -6,6 +6,22 @@ This page is the **authoritative** mapping from solver surfaces to **Cargo featu
 
 ---
 
+## Smoke vs acceptance (Track C / Wave 0)
+
+**Do not conflate CI green with physics acceptance.** Three horizons appear across this ledger and the cartridge mirror:
+
+| Horizon | What runs | What it proves | What it does **not** prove |
+| --- | --- | --- | --- |
+| **Compile** | `cargo check` / `cargo clippy` on `solver-research` (`solver-research-compile-pr`) | Feature graph builds | Any residual, benchmark, or acceptance gate |
+| **Smoke** | Default `cargo test`, quick harnesses, `UMST_SHELL_RIB_FULL_ITERS` **< 200**, subset `#[ignore]` envelopes with shortened iters | Finite metrics, regression guards, operator probes on small meshes | B6 §9 acceptance, Kirchhoff **R2.1-A**, developed-channel **L²**, never-run `#[ignore]` physics |
+| **Acceptance** | Full schedules: B6 **200-outer** post-finisher export, `UMST_MECHANICS_R21_GATE=1` wide-plate gate, Wave 2 never-run ledger execution | Pre-registered §9 tables, honest pass/fail rows | Closure of open research lanes (Γ-limit, bar→Q1, THMC monolith at scale) |
+
+**Examples (honest labels):** cartridge **20-outer PASS** (2026-06-12) is **smoke/schedule-regime**, not B6 acceptance — acceptance **FAIL on c1 only** was measured separately at **200-outer** (same date). Manifold **phase4-verification-pr** is **test** CI but still **tiny-graph** scope for THMC monolith. **`research-stack`** on `main` is optional (`continue-on-error`) — not a merge gate.
+
+**Never-run inventory:** [`SOLVER_NEVER_RUN_LEDGER.md`](SOLVER_NEVER_RUN_LEDGER.md) — Wave 2 executes each `#[ignore]` envelope once (`--release`); Track C prep does **not** run them.
+
+---
+
 ## Completion column
 
 **Completion (%)** is a coarse label in **{0, 25, 50, 75, 100}**, aligned with the v0.4 verification narrative when that material is available in your checkout (historically shipped beside this crate as numbered rows **#1–#10**). It is **not** “fraction of tests green.” **100** means the public acceptance story for that lane is met end-to-end on the stated **test** CI path for the scoped benchmark (not the whole solver family). Lower values mean partial milestones, smokes, or documented gaps. **Do not** treat **100** as permission to claim closure unless the underlying acceptance text is satisfied. **Compiled ≠ validated:** `cargo check` / `cargo clippy` green does **not** discharge physics — see § CI.

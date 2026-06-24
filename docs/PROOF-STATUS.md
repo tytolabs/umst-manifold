@@ -4,6 +4,8 @@ Authoritative solver–lane–verification mapping and long-form notes live in *
 
 **Compiled ≠ validated:** a green **`cargo check`** or **`cargo clippy`** lane only proves the feature graph **builds**. Say “verified on CI” only when a row’s **`benchmark_test`** path is exercised by a **`cargo test`** job listed in [`Solver-Status.md`](Solver-Status.md) § CI (default **`build-test`**, **`solver-stable-pr`**, **`phase4-verification-pr`**, or **`research-stack`** on `main`). Formal Lean discharge is a separate track — see [`FORMAL_INTEGRATION_STATUS.md`](FORMAL_INTEGRATION_STATUS.md).
 
+**Smoke vs acceptance:** rows below cite **CI smoke** paths unless the test name is explicitly an acceptance harness (e.g. cartridge B6 **200-outer** lives in **umst-concrete-cartridge**, not this table). **`#[ignore]`** envelopes are **not** CI-smoke — see [`SOLVER_NEVER_RUN_LEDGER.md`](SOLVER_NEVER_RUN_LEDGER.md). Do **not** read **20-outer PASS** or **phase4 tiny-graph** green as B6 / Kirchhoff **R2.1-A** / developed-channel acceptance.
+
 **Columns (Track J):** `lane`, `benchmark_test` (path(s) to `tests/**/*.rs` exercised on CI for the claim), `verification_status` ∈ {`mechanised`, `analytic-benchmark`, `literature`, `none`}. **Reject** a row with `lane = stable` and empty `benchmark_test`. Formal citations for solver rustdoc accumulate in **[`References.bib`](References.bib)** (Track J4).
 
 CI lint for the full table: `python3 scripts/check_solver_status.py --check-paths --check-memo-links --check-statmech-verification-set` (from `umst-manifold/`; validates [`Solver-Status.md`](Solver-Status.md)).
