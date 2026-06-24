@@ -3,19 +3,24 @@
 
 //! W9 Phase A deprecated aliases — excluded from agnostic-on-fork / tier-1 lexicon scans.
 //!
-//! [`MixTensor`] is a type alias for [`StatePoint`]; prefer [`StatePoint`] in new code.
+//! [`MixTensor`] and [`StatePoint`] are type aliases for [`MaterialCompositionTensor`];
+//! prefer [`MaterialCompositionTensor`] in new code.
 
 #![allow(non_snake_case)]
 
 use burn::tensor::{backend::Backend, Tensor};
 
-use crate::core::tensors::StatePoint;
+use crate::core::tensors::MaterialCompositionTensor;
 use crate::gate::thermo_transition::{ThermodynamicGate, ThermodynamicState};
 use crate::physics::solvers::thmc::ReactionExtentKinetics;
 
-/// Renamed to [`StatePoint`] in v2.0.0-rc1 (W9 agnostic-on-fork).
-#[deprecated(note = "renamed to StatePoint")]
-pub type MixTensor<B> = StatePoint<B>;
+/// Renamed to [`MaterialCompositionTensor`] in v2.0.0-rc1 (W9 agnostic-on-fork).
+#[deprecated(note = "renamed to MaterialCompositionTensor")]
+pub type MixTensor<B> = MaterialCompositionTensor<B>;
+
+/// Renamed to [`MaterialCompositionTensor`] in v2.0.0-rc1 (W9 agnostic-on-fork).
+#[deprecated(note = "renamed to MaterialCompositionTensor")]
+pub type StatePoint<B> = MaterialCompositionTensor<B>;
 
 #[deprecated(note = "renamed to ReactionExtentKinetics")]
 pub type ThmcHydrationKinetics = ReactionExtentKinetics;

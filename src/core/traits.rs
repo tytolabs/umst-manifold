@@ -5,7 +5,7 @@
 //!
 //! # Categorical vocabulary (design sketch)
 //!
-//! - **Objects:** [`crate::core::tensors::StatePoint`] (homogeneous bulk) and
+//! - **Objects:** [`crate::core::tensors::MaterialCompositionTensor`] (homogeneous bulk) and
 //!   [`crate::core::tensors::UnifiedMaterialStateTensor`] (topology-carrying UMST) are the primary
 //!   *state carriers* solvers and cartridges reason about.
 //! - **Morphisms:** [`IScienceCartridge`] is the stable **material-law port**—two evaluation heads
@@ -19,7 +19,7 @@
 //!
 //! Longer note (objects / solvers / composition table): `docs/Category-of-Material-Updates.md`.
 
-use crate::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
+use crate::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
 use burn::tensor::{backend::Backend, Tensor};
 
 /// The unified thermodynamic return type expected by the Orchestrator and the CBF.
@@ -50,7 +50,7 @@ pub struct PhysicalResult<B: Backend> {
 /// Material-law port: bulk and topology evaluation into [`PhysicalResult`] (no THMC stepping here).
 pub trait IScienceCartridge<B: Backend> {
     /// Standard homogeneous forward pass (0D/1D). Evaluates the bulk material.
-    fn compute_all(&self, mix: &StatePoint<B>) -> PhysicalResult<B>;
+    fn compute_all(&self, mix: &MaterialCompositionTensor<B>) -> PhysicalResult<B>;
 
     /// Multi-agent heterogeneous topology pass.
     /// The cartridge computes physics using the Cellular Sheaf topology (Discrete Exterior Calculus).

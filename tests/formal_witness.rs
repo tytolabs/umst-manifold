@@ -43,7 +43,7 @@ fn manifold_gateway_new_pins_lock_digest() {
     impl<B: burn::tensor::backend::Backend<FloatElem = f32>> IScienceCartridge<B> for Stub {
         fn compute_all(
             &self,
-            _mix: &umst_manifold::core::tensors::StatePoint<B>,
+            _mix: &umst_manifold::core::tensors::MaterialCompositionTensor<B>,
         ) -> umst_manifold::core::traits::PhysicalResult<B> {
             unimplemented!()
         }

@@ -14,7 +14,7 @@ use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::ai::constraint_loss::clausius_duhem_violation;
 use umst_manifold::ai::liquid_ppo::BurnLiquidPPOAgent;
 use umst_manifold::ai::ppo::ManifoldGateway;
-use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
+use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 
@@ -58,7 +58,7 @@ fn tiny_umst() -> UnifiedMaterialStateTensor<B> {
 struct PpoChainStubCartridge;
 
 impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoChainStubCartridge {
-    fn compute_all(&self, mix: &StatePoint<Bk>) -> PhysicalResult<Bk> {
+    fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
         let d = mix.fractions.device();
         PhysicalResult {
             free_energy: Tensor::zeros([1, 1], &d),

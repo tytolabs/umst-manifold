@@ -10,7 +10,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-PATTERN='\b(concrete|cement|hydration|powers|ConcreteCartridge|MixTensor|mix_proposal)\b'
+PATTERN='\b(concrete|cement|hydration|powers|ConcreteCartridge|MixTensor|StatePoint|mix_proposal)\b'
 
 HITS=()
 while IFS= read -r file; do

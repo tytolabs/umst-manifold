@@ -5,8 +5,8 @@ use burn::tensor::{backend::Backend, Tensor};
 
 use super::dec_typestate::{B1Incidence, DecTypestateError, ScalarChannelSelector};
 
-/// Homogeneous material state carrier (0D/1D batching).
-pub struct StatePoint<B: Backend> {
+/// Homogeneous material composition carrier (0D/1D batching): phase fractions / recipe columns.
+pub struct MaterialCompositionTensor<B: Backend> {
     pub fractions: Tensor<B, 2>, // [Batch, Features]
 }
 

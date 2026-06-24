@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Tags:** ~~`v2.0.0-rc1`~~ / ~~`v2.0.0`~~ (deleted; see Unreleased)  
 **Manifold `main`:** `7431c1b` · **Catalog R0:** **122** modules, digest `c61b1bef…`
 
-Material-agnostic **W9** wave: kernel renames (`StatePoint`, `transition_proposal`), cement literals evicted to cartridge injection, lexicon + agnostic-on-fork CI green, formal prime-spectral mirror (+2 Lean roots), cartridge registry split, Phase B `GateCartridge` / `SpatialCartridge` stub + [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md). Plan: [`docs/W9_PLAN.md`](docs/W9_PLAN.md).
+Material-agnostic **W9** wave: kernel renames (`MaterialCompositionTensor`, `transition_proposal`), cement literals evicted to cartridge injection, lexicon + agnostic-on-fork CI green, formal prime-spectral mirror (+2 Lean roots), cartridge registry split, Phase B `GateCartridge` / `SpatialCartridge` stub + [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md). Plan: [`docs/W9_PLAN.md`](docs/W9_PLAN.md).
 
 ### Added
 
@@ -32,7 +32,7 @@ Material-agnostic **W9** wave: kernel renames (`StatePoint`, `transition_proposa
 
 ### Changed
 
-- **Agnostic kernel** — `MixTensor` → `StatePoint` (deprecated alias); `mix_proposal` → `transition_proposal`; `ThmcHydrationKinetics` → `ReactionExtentKinetics` with byte-equivalent THMC parity.
+- **Agnostic kernel** — `MixTensor` → `MaterialCompositionTensor` (deprecated alias); `mix_proposal` → `transition_proposal`; `ThmcHydrationKinetics` → `ReactionExtentKinetics` with byte-equivalent THMC parity.
 - **Gate registry** — CARTRIDGE badge rows split from universal `GATE_REGISTRY_CATALOG_IDS`; kernel `gate::ConcreteCartridge` retired (cartridge owns policy `GateEvaluator`).
 - **Catalog pin** — unified export **119 → 122** modules (`c61b1bef…`); `.umst-pins.toml` bumps formal `b09d4a0`, double-slit `72a6fe9`.
 - **Cartridge git pin** — `umst-concrete-cartridge` pins manifold `cfc683f` (`v2.0.0-rc1` embed; Phase B on manifold is docs/tests only).

@@ -379,7 +379,7 @@ fn adamw_step_policy<B: Backend<FloatElem = f32>>(
 mod tests {
     use super::BurnLiquidPPOAgent;
     use crate::ai::ppo::ManifoldGateway;
-    use crate::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
+    use crate::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
     use crate::core::traits::{IScienceCartridge, PhysicalResult};
     use crate::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
     use burn::tensor::backend::Backend;
@@ -426,7 +426,7 @@ mod tests {
     struct PpoChainStubCartridge;
 
     impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoChainStubCartridge {
-        fn compute_all(&self, mix: &StatePoint<Bk>) -> PhysicalResult<Bk> {
+        fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
             let d = mix.fractions.device();
             PhysicalResult {
                 free_energy: Tensor::zeros([1, 1], &d),

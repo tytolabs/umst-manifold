@@ -9,7 +9,7 @@ use burn::tensor::backend::Backend;
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::apply_physics_to_umst;
-use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
+use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::core::umst_schema::{
     SCALAR_DAMAGE, SCALAR_TEMPERATURE, UMST_SCALAR_CHANNEL_COUNT,
@@ -133,7 +133,7 @@ fn apply_physics_temperature_delta_respects_policy_mask() {
 struct EmptyCartridge;
 
 impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for EmptyCartridge {
-    fn compute_all(&self, mix: &StatePoint<Bk>) -> PhysicalResult<Bk> {
+    fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
         let d = mix.fractions.device();
         PhysicalResult {
             free_energy: Tensor::zeros([1, 1], &d),

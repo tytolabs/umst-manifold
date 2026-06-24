@@ -8,7 +8,7 @@ mod thmc_gate_evidence_wire {
     use burn::tensor::backend::Backend;
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
-    use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
+    use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
     use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
     use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
     use umst_manifold::physics::solvers::{
@@ -26,7 +26,7 @@ mod thmc_gate_evidence_wire {
     struct Stub;
 
     impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for Stub {
-        fn compute_all(&self, mix: &StatePoint<Bk>) -> PhysicalResult<Bk> {
+        fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
             let d = mix.fractions.device();
             PhysicalResult {
                 free_energy: Tensor::zeros([1, 1], &d),

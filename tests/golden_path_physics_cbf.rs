@@ -37,7 +37,7 @@ use std::marker::PhantomData;
 use umst_manifold::ai::cbf::ThermodynamicCBF;
 use umst_manifold::ai::ppo::ManifoldGateway;
 use umst_manifold::core::apply_physics_to_umst;
-use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
+use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::core::umst_schema::{SCALAR_DAMAGE, UMST_SCALAR_CHANNEL_COUNT};
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
@@ -132,7 +132,7 @@ struct MechanicsBarCartridge<B> {
 }
 
 impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for MechanicsBarCartridge<Bk> {
-    fn compute_all(&self, mix: &StatePoint<Bk>) -> PhysicalResult<Bk> {
+    fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
         let d = mix.fractions.device();
         PhysicalResult {
             free_energy: Tensor::zeros([1, 1], &d),
@@ -211,7 +211,7 @@ struct EmptyCartridge;
 
 #[cfg(feature = "solver-experimental")]
 impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for EmptyCartridge {
-    fn compute_all(&self, mix: &StatePoint<Bk>) -> PhysicalResult<Bk> {
+    fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
         let d = mix.fractions.device();
         PhysicalResult {
             free_energy: Tensor::zeros([1, 1], &d),

@@ -24,7 +24,7 @@ Open PRs (informational, not blockers): manifold **#23**, **#25**; cartridge **#
 
 | Item | Definition (file:line) | Callers / refs | S1–S4 | Frozen wire? | Test coverage | Tier | Strategy |
 |------|------------------------|----------------|-------|--------------|---------------|------|----------|
-| `MixTensor` | `src/core/tensors.rs:7` — `[Batch, Features]` fractions | `traits::IScienceCartridge::compute_all`, orchestration, cartridge `implementation.rs`, PPO/gateway tests | S1 | serde via UMST paths only | `golden_path_physics_cbf`, cartridge pipeline tests | **T1** | Rename → `StatePoint`; `pub use` deprecated alias |
+| `MixTensor` | `src/core/tensors.rs:7` — `[Batch, Features]` fractions | `traits::IScienceCartridge::compute_all`, orchestration, cartridge `implementation.rs`, PPO/gateway tests | S1 | serde via UMST paths only | `golden_path_physics_cbf`, cartridge pipeline tests | **T1** | Rename → `MaterialCompositionTensor`; `pub use` deprecated alias |
 | `mix_proposal` mod | `src/gate/mix_proposal.rs` (whole file) | `http_manifest`, `mix_eval_registry`, `gate/mod.rs`, `tests/gate_*`, `ros_contract_serde_roundtrip` | S1+S2 | C-ABI `thermodynamic_transition_admissible*` in egoff/ffi (frozen names) | `mix_proposal` unit tests; `gate_parity_fixture`, `gate_dual_run_parity` | **T1** | Rename mod → `transition_proposal`; serde `alias` on JSON fields |
 | `MixProposalScalars` | `mix_proposal.rs:18` | HTTP gate IO, registry context | S1+S2 | JSON field names in HTTP contract | `gate_parity_fixture` | **T1** | → `TransitionScalars` |
 | `DEFAULT_S_INTRINSIC_MPA`, `Q_HYDRATION_J_PER_KG` | `mix_proposal.rs:11–14` | `ThermodynamicStateSnapshot::from_mix_calibrated`, HTTP Powers closure | S2+S3 | HTTP manifest literals (`strength_intrinsic_mpa`) | `mix_proposal` tests | **T2c** | Cartridge-supplied via trait params; kernel keeps generic form |
@@ -95,7 +95,7 @@ trait GateCartridge<B> {
 
 trait SpatialCartridge<B>: GateCartridge<B> {
     fn compute_topology(&self, m: &UnifiedMaterialStateTensor<B>) -> PhysicalResult<B>;
-    fn compute_all(&self, mix: &StatePoint<B>) -> PhysicalResult<B>;  // renamed
+    fn compute_all(&self, mix: &MaterialCompositionTensor<B>) -> PhysicalResult<B>;  // renamed
 }
 ```
 
@@ -134,7 +134,7 @@ Each commit: **both repos compile + test green** (manifold first, cartridge pin 
 | Commit | Scope | Precondition | Postcondition |
 |--------|-------|--------------|---------------|
 | **A0** | This document only (`docs/W9_PLAN.md`) | `main` @ `bc87929` green | Plan approved gate |
-| **A1** | Tier 1 renames (MixTensor→StatePoint, mix_proposal→transition_proposal, …) + deprecated aliases | Lexicon baseline captured | `cargo test` green; serde aliases on frozen fields |
+| **A1** | Tier 1 renames (MixTensor→MaterialCompositionTensor, mix_proposal→transition_proposal, …) + deprecated aliases | Lexicon baseline captured | `cargo test` green; serde aliases on frozen fields |
 | **A2** | Move kernel `gate::ConcreteCartridge` (`GateEvaluator`) to cartridge; verify destination | A1 green | Cartridge owns policy evaluator; kernel deprecated re-export |
 | **A3** | Retire `from_concrete_cartridge_defaults`; injection-only `GateHttpRuntime` | A2 green | No default material in kernel gate ctor |
 | **A4** | Evict cement **values** to cartridge trait params (`Q_HYDRATION`, `DEFAULT_S_INTRINSIC`, …) | A3 green | Kernel `mix_proposal` uses injected params or generic placeholders |

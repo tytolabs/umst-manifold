@@ -52,7 +52,7 @@ struct GatewayStubCartridge;
 impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for GatewayStubCartridge {
     fn compute_all(
         &self,
-        mix: &umst_manifold::core::tensors::StatePoint<Bk>,
+        mix: &umst_manifold::core::tensors::MaterialCompositionTensor<Bk>,
     ) -> umst_manifold::core::traits::PhysicalResult<Bk> {
         let d = mix.fractions.device();
         PhysicalResult {
