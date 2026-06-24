@@ -1,34 +1,257 @@
-name: Rust CI
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
+
+name: CI
 
 on:
   push:
-    branches: [main, integ/sprint-1]
+    branches: ["main"]
   pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+  packages: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
 
 jobs:
-  test-default:
+  readme-sanity:
+    name: README sanity
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.88.0
-      - name: Default features
-        run: cargo test --quiet
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: README sanity (catch accidental wipes)
+        run: |
+          set -euo pipefail
+          lines=$(wc -l < README.md)
+          if [ "$lines" -lt 20 ]; then
+            echo "FAIL: README.md is suspiciously short ($lines lines)"
+            exit 1
+          fi
+          echo "OK: README.md has $lines lines"
 
-  feature-gated-physics:
+  # Track K: lint Solver-Status.md (stable rows + optional path existence).
+  solver-status:
+    name: solver status (docs/Solver-Status.md)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.88.0
-      - name: Feature-gated physics connectivity
-        run: cargo test --features thmc-coupled,epistemic-ppo,kleisli-ppo-hot-bind --quiet
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-  experimental-features:
+      - name: Checkout formal siblings (theorem-count SSOT layout)
+        run: |
+          set -euo pipefail
+          PARENT="$(dirname "$GITHUB_WORKSPACE")"
+          DS=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-formal-double-slit']['sha'])")
+          FM=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-formal']['sha'])")
+          git clone --depth=1 "https://github.com/tytolabs/umst-formal-double-slit.git" "$PARENT/umst-formal-double-slit"
+          git -C "$PARENT/umst-formal-double-slit" fetch --depth=1 origin "$DS"
+          git -C "$PARENT/umst-formal-double-slit" checkout "$DS"
+          git clone --depth=1 "https://github.com/tytolabs/umst-formal.git" "$PARENT/umst-formal"
+          git -C "$PARENT/umst-formal" fetch --depth=1 origin "$FM"
+          git -C "$PARENT/umst-formal" checkout "$FM"
+
+      - name: check_solver_status.py (paths + memos + statmech set)
+        run: |
+          set -euo pipefail
+          python3 scripts/check_solver_status.py \
+            --check-paths \
+            --check-memo-links \
+            --check-statmech-verification-set
+
+      - name: theorem counts SSOT (lean_declaration_stats snapshot)
+        run: |
+          set -euo pipefail
+          python3 scripts/check_theorem_counts_ssot.py
+
+  # D3: constants registry docs ↔ Rust (non-blocking).
+  constants-registry-optional:
+    name: constants registry check (optional)
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.88.0
-      - name: Experimental fracture-at2
-        run: cargo test --features fracture-at2 --quiet
-      - name: Experimental photonics
-        run: cargo test --features photonics --quiet
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: check_constants.py
+        run: |
+          set -euo pipefail
+          python3 scripts/check_constants.py --check-thmc-todo
+
+  # D4: verification MANIFEST.toml (non-blocking).
+  verification-manifest-optional:
+    name: verification manifest (optional)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: check_solver_status.py --check-manifest
+        run: |
+          set -euo pipefail
+          python3 scripts/check_solver_status.py --check-manifest
+
+  # Required job: build the library + run tests on the CPU backend.
+  # Stays green on a vanilla GitHub runner without GPU/system libraries.
+  build-test:
+    name: build & test (ndarray backend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: ./.github/actions/setup-ci
+
+      - name: Build (default features)
+        run: cargo build --verbose
+
+      - name: Build examples
+        run: cargo build --examples --verbose
+
+      - name: Run tests
+        run: cargo test --verbose
+
+      - name: W9 agnostic-on-fork grep (S1)
+        run: bash scripts/check_agnostic_on_fork.sh
+
+      - name: W9 domain lexicon ratchet (S2 baseline)
+        run: bash scripts/check_domain_lexicon.sh
+
+      - name: T1 composed catalog digest guard (non-preview fibers)
+        run: python3 scripts/catalog_lock_verify.py --composed-digest-guard artifacts/catalog.lock.json
+
+  # PR gate: solver-stable lane per Cargo.toml (topology-density-evolution + statistical-mechanics-vinet; mechanics/fracture/Johnson live under solver-research).
+  solver-stable-pr:
+    name: solver-stable tests (PR)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: ./.github/actions/setup-ci
+      - name: cargo test --features solver-stable
+        run: cargo test --verbose --features solver-stable
+
+  # PR gate (v0.4 Track K): compile full union without running research-only benchmarks here.
+  solver-research-check-pr:
+    name: cargo check solver-stable,solver-research (PR)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: ./.github/actions/setup-ci
+      - name: cargo check --features solver-stable,solver-research
+        run: cargo check --verbose --all-targets --features solver-stable,solver-research
+
+  # v0.4 Phase-4a: dedicated solver-research verification crates (brief gate 4 lane; see docs/Solver-Status.md).
+  phase4-verification-pr:
+    name: Phase-4 verification tests (--release, PR)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: ./.github/actions/setup-ci
+      - name: cargo test --release (THMC / photonics DEC brick / statmech Johnson upscale)
+        run: |
+          set -euo pipefail
+          cargo test --verbose --release --features solver-research --test thmc_monolithic_newton_chain
+          cargo test --verbose --release --features solver-research,photonics-fdfd --test photonics_curl_curl_2d_patch
+          cargo test --verbose --release --features solver-research,photonics-fdfd --test photonics_curl_curl_3d_brick
+          cargo test --verbose --release --features solver-research --test statmech_lj_johnson_upscale_bridge
+
+  # Optional PR signal: Phase A physics guard + full solver-experimental test matrix.
+  # continue-on-error: not a merge gate; branch protection should keep requiring build-test / lint / solver-* only.
+  solver-experimental-pr-optional:
+    name: solver-experimental + physics guard (PR, optional)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: ./.github/actions/setup-ci
+      - name: physics Host-tensor guard
+        run: bash scripts/check_physics_no_gradient_break.sh
+      - name: cargo test --features solver-experimental --no-fail-fast (optional)
+        run: cargo test --verbose --features solver-experimental --no-fail-fast
+
+  # v0.4 brief Track K: full experimental stack on default branch (same feature union as PR check), release tests.
+  research-stack:
+    name: solver-experimental tests (main, release)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: ./.github/actions/setup-ci
+      - name: cargo test --release --features solver-experimental (retry ×1)
+        run: |
+          set -euo pipefail
+          if ! cargo test --verbose --release --features solver-experimental; then
+            echo "retry once after possible flake..."
+            cargo test --verbose --release --features solver-experimental
+          fi
+
+
+  # Required parity-ci lane (W10): gate + formal witness; full verify_umst_stack.sh when
+  # umst-formal-double-slit is a sibling or UMST_FORMAL_ROOT is set. Without formal export, runs
+  # the Rust gate subset from verify_umst_stack.sh (modular formal fibers independent).
+  verify-umst-stack:
+    name: verify UMST stack (parity)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: ./.github/actions/setup-ci
+
+      - name: Resolve formal export root
+        id: formal
+        run: |
+          set -euo pipefail
+          root=""
+          if [[ -n "${UMST_FORMAL_ROOT:-}" && -d "${UMST_FORMAL_ROOT}/Lean" ]]; then
+            root="$(cd "${UMST_FORMAL_ROOT}" && pwd)"
+          elif [[ -d "${GITHUB_WORKSPACE}/../umst-formal-double-slit/Lean"             && -f "${GITHUB_WORKSPACE}/../umst-formal-double-slit/tools/lean_export/export_catalog.py" ]]; then
+            root="$(cd "${GITHUB_WORKSPACE}/../umst-formal-double-slit" && pwd)"
+          elif [[ -d "${GITHUB_WORKSPACE}/umst-formal-double-slit/Lean"             && -f "${GITHUB_WORKSPACE}/umst-formal-double-slit/tools/lean_export/export_catalog.py" ]]; then
+            root="$(cd "${GITHUB_WORKSPACE}/umst-formal-double-slit" && pwd)"
+          fi
+          if [[ -n "${root}" ]]; then
+            echo "present=true" >> "${GITHUB_OUTPUT}"
+            echo "root=${root}" >> "${GITHUB_OUTPUT}"
+            echo "Formal export root: ${root}"
+          else
+            echo "present=false" >> "${GITHUB_OUTPUT}"
+            echo "No formal sibling (set UMST_FORMAL_ROOT or checkout umst-formal-double-slit)"
+          fi
+
+      - name: verify_umst_stack.sh (formal present)
+        if: steps.formal.outputs.present == 'true'
+        env:
+          UMST_FORMAL_ROOT: ${{ steps.formal.outputs.root }}
+          UMST_REQUIRE_FORMAL_EXPORT: "1"
+        run: bash scripts/verify_umst_stack.sh
+
+      - name: Gate parity subset (no formal export)
+        if: steps.formal.outputs.present != 'true'
+        run: |
+          set -euo pipefail
+          echo "==> parity-ci subset (rust.yml): gate + formal witness (no Lean export)"
+          cargo test -p umst-manifold --verbose \
+            --test gate_parity_fixture --test gate_kleisli --test gate_cbf_parity \
+            --test gate_dual_run_parity --test gate_reject_catalog_id --test gate_adversarial
+          cargo test -p umst-manifold --verbose \
+            --features formal-witness,ros2-contract,serde \
+            --test formal_witness --test ros_contract_serde_roundtrip
+          cargo test -p umst-manifold --verbose \
+            --features gate-server-bin --test gate_server_http
+
+  # PR / push gate: rustfmt + clippy on the full solver-experimental graph (v0.4 acceptance; matches meta `solver-tests`).
+  lint:
+    name: rustfmt + clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: ./.github/actions/setup-ci
+        with:
+          components: rustfmt, clippy
+      - name: rustfmt
+        run: cargo fmt --all -- --check
+      - name: clippy
+        run: cargo clippy --all-targets --features solver-experimental -- -D warnings

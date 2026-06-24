@@ -104,7 +104,10 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
             beta: 0.5_f32,
             gamma: 2.0_f32,
             #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
-            lambda_cd: 0.0_f32,
+            lambda_cd: std::env::var("UMST_LAMBDA_CD")
+                .ok()
+                .and_then(|s| s.parse::<f32>().ok())
+                .unwrap_or(0.0_f32),
             #[cfg(feature = "formal-witness")]
             expected_catalog_schema_digest: Some(
                 crate::runtime::catalog::lock_upstream_catalog_digest_bytes(),
@@ -297,7 +300,7 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
             }
         }
 
-        raw_state
+        let staging = raw_state
             .try_as_verified_dec_bundle(0)
             .map_err(|e| FormalReject::DecTypestateStaging {
                 detail: format!("{e:?}"),
@@ -305,6 +308,10 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
 
         // 1. Execute the physics simulation across the topological Cellular Sheaf
         let physical_result: PhysicalResult<B> = self.cartridge.compute_topology(&raw_state);
+
+        let mut secured_state = raw_state;
+        crate::core::apply_physics::apply_physics_to_umst(&physical_result, &mut secured_state)
+            .map_err(|detail| FormalReject::DecTypestateStaging { detail })?;
 
         // Keep metrics in Sparse Space [Batch, N_active_voxels]
         let free_energy = physical_result.free_energy.clone();
@@ -327,8 +334,12 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
                 // The erasure cost is paid uniformly across the topology
                 let final_spatial_reward = performance.sub(penalty).sub_scalar(erasure_cost as f32);
 
-                // Construct the mathematically secured tensor
-                let verified_state = crate::core::tensors::VerifiedUMST::new(raw_state);
+                // Construct the mathematically secured tensor (staging → proof morphism).
+                let verified_state =
+                    crate::core::tensors::VerifiedUMST::lift_after_dec_staging_witness(
+                        staging,
+                        secured_state,
+                    );
 
                 // Flatten the spatial reward to a single scalar [Batch] for the policy gradient (Adjoint Method target)
                 let mut total_reward = final_spatial_reward.sum_dim(1).squeeze(1);
