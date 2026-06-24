@@ -26,19 +26,34 @@ fn verified_umst_staging_assembles_b1_and_scalar_channel() {
 }
 
 #[test]
-fn verified_umst_staging_rejects_scalar_width_and_channel_mismatch() {
+fn verified_umst_staging_rejects_scalar_width_mismatch() {
     let device = Default::default();
     let edges = toy_b1_two_edges(&device);
 
-    let width_err = VerifiedUMST::try_assemble(edges.clone(), UMST_SCALAR_CHANNEL_COUNT - 1, 0)
+    let too_narrow = VerifiedUMST::try_assemble(edges.clone(), UMST_SCALAR_CHANNEL_COUNT - 1, 0)
         .unwrap_err();
     assert_eq!(
-        width_err,
+        too_narrow,
         DecTypestateError::ScalarWidthMismatch {
             expected: UMST_SCALAR_CHANNEL_COUNT,
             found: UMST_SCALAR_CHANNEL_COUNT - 1,
         }
     );
+
+    let too_wide = VerifiedUMST::try_assemble(edges, UMST_SCALAR_CHANNEL_COUNT + 1, 0).unwrap_err();
+    assert_eq!(
+        too_wide,
+        DecTypestateError::ScalarWidthMismatch {
+            expected: UMST_SCALAR_CHANNEL_COUNT,
+            found: UMST_SCALAR_CHANNEL_COUNT + 1,
+        }
+    );
+}
+
+#[test]
+fn verified_umst_staging_rejects_scalar_channel_out_of_range() {
+    let device = Default::default();
+    let edges = toy_b1_two_edges(&device);
 
     let channel_err =
         VerifiedUMST::try_assemble(edges, UMST_SCALAR_CHANNEL_COUNT, UMST_SCALAR_CHANNEL_COUNT)
@@ -50,4 +65,28 @@ fn verified_umst_staging_rejects_scalar_width_and_channel_mismatch() {
             channel_count: UMST_SCALAR_CHANNEL_COUNT,
         }
     );
+}
+
+#[test]
+fn verified_umst_staging_assemble_round_trip_preserves_b1_and_channel() {
+    let device = Default::default();
+    let edges = toy_b1_two_edges(&device);
+    let channel_idx = UMST_SCALAR_CHANNEL_COUNT.saturating_sub(1);
+
+    let staging =
+        VerifiedUMST::try_assemble(edges, UMST_SCALAR_CHANNEL_COUNT, channel_idx).expect("assemble");
+    assert_eq!(staging.b1().n_edges(), 2);
+    assert_eq!(staging.channel().index(), channel_idx);
+
+    let b1 = staging.into_b1();
+    let round_trip = VerifiedUMST::try_assemble(
+        b1.into_tensor(),
+        UMST_SCALAR_CHANNEL_COUNT,
+        channel_idx,
+    )
+    .expect("round-trip assemble");
+
+    assert_eq!(round_trip.b1().n_edges(), 2);
+    assert_eq!(round_trip.channel().index(), channel_idx);
+    assert_eq!(VerifiedUMST::<B>::CHANNEL_COUNT, UMST_SCALAR_CHANNEL_COUNT);
 }
