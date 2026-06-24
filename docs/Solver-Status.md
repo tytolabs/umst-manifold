@@ -127,6 +127,7 @@ Long-form numbered memos under `docs/research/` were **removed** from this repos
 
 - **Split path:** \((T,\alpha)\) → humidity → bar equilibrium per outer pass; **`update_damage`** once per step after outers on the SI strain path.
 - **Monolith:** small-graph dense Newton behind **`ThmcMonolithicNewtonConfig`**, mutually exclusive with implicit **(T, α)** Newton when both are `Some`; drying guard **`drying_last_node_evaporation_k == 0`** among preconditions.
+- **Wave 1 prep (queued, S1 gate):** post-Newton stacked-\(\|R\|_2\) diagnostic hook on the implicit functional is **not** wired in production `ThmcSolver::step` yet — split-path early exit on **`tol`** is shipped; monolithic exit uses **`ThmcMonolithicNewtonConfig::stacked_residual_l2_tolerance`**. Wave 1 will add a feature-gated **`ThmcPostNewtonDiagnostic`** witness at Newton exit (stacked residual + brute-force oracle parity). Until then, the oracle contract lives in **`tests/verification/thmc_post_newton_oracle_fixture.rs`** (skeleton only; no hot-path edits).
 
 ### Statistical mechanics
 
