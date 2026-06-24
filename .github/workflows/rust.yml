@@ -5,9 +5,9 @@ name: CI
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "integ/sprint-1"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "integ/sprint-1"]
   workflow_dispatch:
 
 permissions:
