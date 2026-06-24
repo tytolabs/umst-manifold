@@ -40,6 +40,9 @@ pub mod kernels;
 pub mod klein;
 pub mod kraus;
 pub mod landauer;
+/// P3 CODATA / Landauer compile-time registry (`math-constants` feature).
+#[cfg(feature = "math-constants")]
+pub mod landauer_registry;
 pub mod lindblad;
 /// §14bis.f-M-0: M-Arc **manifold** pure math (S², SDF/CSG, Hilbert, octree; GMD) — no I/O
 #[allow(missing_docs)]
