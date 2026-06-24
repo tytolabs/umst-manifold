@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Arena vs MCP round-trip benchmark — Phase 2 exit witness (≥5× in-process target)."""
+"""Arena vs MCP round-trip benchmark — Phase 2 exit witness (≥5× in-process target).
+
+Compares stdio MCP `umst_gate_check` wall time vs in-process `load_arena` hot loop (N=100).
+Exit 0 when ratio >= UMST_BENCH_MIN_RATIO (default 5.0). Set UMST_BENCH_SKIP_RATIO=1 to log only.
+"""
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -17,12 +22,13 @@ MIX = {
     "temperature_k": "29315/100",
     "aggregate_volume_fraction": "7/10",
 }
-ITERATIONS = int(os.environ.get("UMST_BENCH_ITERATIONS", "50"))
+N_CALLS = int(os.environ.get("UMST_BENCH_N", os.environ.get("UMST_BENCH_ITERATIONS", "100")))
 MIN_RATIO = float(os.environ.get("UMST_BENCH_MIN_RATIO", "5.0"))
 SKIP_RATIO = os.environ.get("UMST_BENCH_SKIP_RATIO", "") == "1"
+ARENA_ONLY = "--arena-only" in sys.argv
 
 
-def bench_mcp_gate(iterations: int) -> float:
+def bench_mcp_gate(n: int) -> float:
     proc = subprocess.Popen(
         [
             "cargo",
@@ -59,7 +65,7 @@ def bench_mcp_gate(iterations: int) -> float:
         }
     )
     t0 = time.perf_counter()
-    for i in range(iterations):
+    for i in range(n):
         rpc(
             {
                 "jsonrpc": "2.0",
@@ -70,46 +76,14 @@ def bench_mcp_gate(iterations: int) -> float:
         )
     elapsed = time.perf_counter() - t0
     proc.terminate()
+    proc.wait(timeout=120)
     return elapsed
 
 
-def bench_inprocess_gate(iterations: int) -> float:
+def bench_arena_load_loop(n: int) -> float:
+    """Parse inner arena hot-loop timing from release test output (excludes cargo startup)."""
     env = os.environ.copy()
-    env["UMST_INPROCESS_GATE_ITERS"] = str(iterations)
-    t0 = time.perf_counter()
-    proc = subprocess.run(
-        [
-            "cargo",
-            "test",
-            "-p",
-            "umst-concrete-cartridge",
-            "--features",
-            "agent-layer",
-            "--release",
-            "--test",
-            "inprocess_gate_batch",
-            "inprocess_gate_batch_hot_loop",
-            "--",
-            "--exact",
-            "--nocapture",
-        ],
-        cwd=CONCRETE,
-        env=env,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if proc.returncode != 0:
-        sys.stderr.write(proc.stdout)
-        sys.stderr.write(proc.stderr)
-        raise SystemExit(proc.returncode)
-    return time.perf_counter() - t0
-
-
-def bench_arena_hot_loop(iterations: int) -> float:
-    env = os.environ.copy()
-    env["UMST_ARENA_HOT_ITERS"] = str(iterations * 100)
-    t0 = time.perf_counter()
+    env["UMST_ARENA_HOT_ITERS"] = str(n)
     proc = subprocess.run(
         [
             "cargo",
@@ -117,9 +91,8 @@ def bench_arena_hot_loop(iterations: int) -> float:
             "-p",
             "umst-runtime-arena",
             "--release",
-            "bench_load_arena_hot_loop",
+            "bench_load_arena",
             "--",
-            "--exact",
             "--nocapture",
         ],
         cwd=MANIFOLD,
@@ -128,11 +101,19 @@ def bench_arena_hot_loop(iterations: int) -> float:
         text=True,
         check=False,
     )
+    combined = proc.stdout + proc.stderr
     if proc.returncode != 0:
-        sys.stderr.write(proc.stdout)
-        sys.stderr.write(proc.stderr)
+        sys.stderr.write(combined)
         raise SystemExit(proc.returncode)
-    return time.perf_counter() - t0
+    match = re.search(r"arena_100_loads_sec\s+([0-9.]+)", combined)
+    if not match:
+        match = re.search(r"arena_hot_loop_ok iters=\d+ sec=([0-9.]+)", combined)
+    if not match:
+        print("FAIL: bench_load_arena_hot_loop missing timing line", file=sys.stderr)
+        raise SystemExit(1)
+    if "arena_100_loads_sec" in combined:
+        return float(match.group(1))
+    return float(match.group(1)) * (n / 100.0)
 
 
 def main() -> int:
@@ -140,32 +121,28 @@ def main() -> int:
         print(f"skip: concrete cartridge not found at {CONCRETE}", file=sys.stderr)
         return 0
 
-    print(f"bench iterations={ITERATIONS} min_ratio={MIN_RATIO}")
-    mcp_s = bench_mcp_gate(ITERATIONS)
-    inproc_s = bench_inprocess_gate(ITERATIONS)
-    arena_s = bench_arena_hot_loop(ITERATIONS)
+    arena_sec = bench_arena_load_loop(N_CALLS)
+    print(f"arena_{N_CALLS}_loads_sec {arena_sec:.6f}")
 
-    ratio_inproc = mcp_s / max(inproc_s, 1e-9)
-    ratio_arena = mcp_s / max(arena_s, 1e-9)
+    if ARENA_ONLY:
+        print("arena-only mode: skipping MCP ratio gate")
+        return 0
 
-    print(f"mcp_gate_{ITERATIONS}_sec={mcp_s:.4f}")
-    print(f"inprocess_gate_{ITERATIONS}_sec={inproc_s:.4f}")
-    print(f"arena_hot_{ITERATIONS}x100_sec={arena_s:.4f}")
-    print(f"ratio_mcp_over_inprocess={ratio_inproc:.2f}x")
-    print(f"ratio_mcp_over_arena={ratio_arena:.2f}x")
+    mcp_sec = bench_mcp_gate(N_CALLS)
+    print(f"mcp_{N_CALLS}_gate_check_sec {mcp_sec:.6f}")
+
+    ratio = mcp_sec / max(arena_sec, 1e-12)
+    print(f"arena_vs_mcp_ratio {ratio:.2f} (min {MIN_RATIO})")
 
     if SKIP_RATIO:
         print("UMST_BENCH_SKIP_RATIO=1 — witness logged only")
         return 0
 
-    if ratio_inproc < MIN_RATIO and ratio_arena < MIN_RATIO:
-        print(
-            f"FAIL: neither in-process ({ratio_inproc:.2f}x) nor arena ({ratio_arena:.2f}x) "
-            f"met {MIN_RATIO}x",
-            file=sys.stderr,
-        )
+    if ratio < MIN_RATIO:
+        print(f"FAIL: ratio {ratio:.2f} < required {MIN_RATIO}", file=sys.stderr)
         return 1
-    print("PASS: Phase 2 benchmark ratio met")
+
+    print("bench_arena_vs_mcp: ok")
     return 0
 
 

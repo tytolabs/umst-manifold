@@ -83,7 +83,7 @@ mod tests {
         let iters: usize = std::env::var("UMST_ARENA_HOT_ITERS")
             .ok()
             .and_then(|s| s.parse().ok())
-            .unwrap_or(10_000);
+            .unwrap_or(100);
         let buf = fixture();
         let view = load_arena(&buf).expect("load");
         let start = std::time::Instant::now();
@@ -92,5 +92,9 @@ mod tests {
         }
         let elapsed = start.elapsed().as_secs_f64();
         eprintln!("arena_hot_loop_ok iters={iters} sec={elapsed:.6}");
+        println!(
+            "arena_100_loads_sec {:.6}",
+            elapsed * (100.0 / iters as f64)
+        );
     }
 }

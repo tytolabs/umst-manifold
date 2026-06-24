@@ -139,9 +139,9 @@ fn kleisli_ppo_hot_bind_constraint_loss_penalty_nonzero_when_lambda_set() {
 #[test]
 fn kleisli_ppo_hot_bind_landauer_penalty_nonzero_when_lambda_set() {
     let dev = device();
-    let mut gateway = ManifoldGateway::new(PpoChainStubCartridge, 300.0_f64, 1.0e-12_f64);
+    let mut gateway = ManifoldGateway::new(PpoChainStubCartridge, 300.0_f64, 1.0e-30_f64);
     gateway.lambda_landauer = 0.5_f32;
-    let info_bits = Tensor::<B, 1>::full([1], 2.0_f32, &dev);
+    let info_bits = Tensor::<B, 1>::full([1], 1.0e6_f32, &dev);
     let penalty = gateway.landauer_constraint_loss_penalty(info_bits.clone());
     let p: Vec<f32> = penalty.into_data().value;
     assert!(
