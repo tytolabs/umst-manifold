@@ -253,6 +253,11 @@ path = "tests/verification/thmc_monolithic_newton_chain.rs"
 required-features = ["thmc-coupled"]
 
 [[test]]
+name = "thmc_solver_step_wire"
+path = "tests/thmc_solver_step_wire.rs"
+required-features = ["thmc-coupled"]
+
+[[test]]
 name = "rheology_poiseuille"
 path = "tests/verification/rheology_poiseuille.rs"
 

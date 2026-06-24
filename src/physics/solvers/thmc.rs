@@ -403,6 +403,9 @@ impl ThmcSolver {
             ));
         }
 
+        // Pre-step snapshot for post-step gate evidence hook (p5-thmc-wire; see `thmc_step.rs`).
+        let pre_step = state.clone();
+
         // Damage mask `[B,N,1]` for transport coefficients (last dim 1; otherwise first channel).
         let damage_m = match state.damage.dims()[2] {
             1 => state.damage.clone(),
@@ -806,6 +809,16 @@ impl ThmcSolver {
             let tail = state.damage.slice([0..batch, 0..n, 1..d_last]);
             Tensor::cat(vec![damage_new, tail], 2)
         };
+
+        // Post-step gate evidence attachment site (stub — `thmc_step::wire_gate_evidence_post_step`).
+        let _gate_evidence = super::thmc_step::wire_gate_evidence_post_step(
+            self,
+            _cartridge,
+            &pre_step,
+            &state,
+            manifold,
+            self.dt,
+        );
 
         state.time += self.dt;
         Ok(state)
