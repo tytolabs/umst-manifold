@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
 [workspace]
-members = [".", "umst-math", "umst-runtime-arena"]
+members = [".", "umst-layout-codegen", "umst-math", "umst-runtime-arena"]
 resolver = "2"
 
 # Striatus dev loop: keep test code debuggable; compile Burn/ndarray deps at full speed.
@@ -115,6 +115,7 @@ ordered-float = { version = "5.1", optional = true }
 [build-dependencies]
 serde_json = "1.0"
 sha2 = "0.10"
+umst-layout-codegen = { path = "umst-layout-codegen" }
 
 [dev-dependencies]
 approx = "0.5"
