@@ -148,4 +148,76 @@ mod tests {
         let ok: Tensor<B, 2, Int> = Tensor::zeros([2, 5], &device);
         assert_eq!(B1Incidence::try_new(ok).unwrap().n_edges(), 5);
     }
+
+    /// Toy 2-node / 1-edge mesh: witness \(\langle B_1^\top \omega, u\rangle = \langle \omega, B_1 u\rangle\)
+    /// for unweighted Frobenius pairings (graph DEC adjoint; no solver).
+    mod dec_graph_adjoint_identity {
+        use super::*;
+        use burn::tensor::{Data, Shape};
+        use crate::physics::dec_primal::{
+            primal_divergence_from_edge_flux_topo, primal_scalar_edge_increment,
+        };
+
+        fn tensor_inner(a: Tensor<B, 3>, b: Tensor<B, 3>) -> f32 {
+            a.mul(b).sum().into_scalar()
+        }
+
+        /// Single oriented edge `0 → 1` on two vertices, wrapped as [`B1Incidence`].
+        fn toy_two_node_one_edge_b1() -> B1Incidence<B> {
+            let device = Default::default();
+            let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
+                Data::new(vec![0i64, 1], Shape::new([2, 1])),
+                &device,
+            );
+            B1Incidence::try_new(edges_b1).expect("toy mesh B1 layout [2, 1]")
+        }
+
+        #[test]
+        fn b1_transpose_composition_matches_graph_adjoint_pairing() {
+            let b1 = toy_two_node_one_edge_b1();
+            assert_eq!(b1.n_edges(), 1);
+            let topo = b1.to_edge_topology();
+            let device = Default::default();
+
+            let omega = Tensor::from_data(
+                Data::new(vec![1.2_f32, -0.45], Shape::new([1, 2, 1])),
+                &device,
+            );
+            let edge_flux = Tensor::from_data(Data::new(vec![0.7_f32], Shape::new([1, 1, 1])), &device);
+            let nodal_template = Tensor::zeros([1, 2, 1], &device);
+
+            let b1t_omega = primal_scalar_edge_increment(omega.clone(), &topo).neg();
+            let b1_u =
+                primal_divergence_from_edge_flux_topo(edge_flux.clone(), &topo, &nodal_template);
+
+            let lhs = tensor_inner(b1t_omega, edge_flux);
+            let rhs = tensor_inner(omega, b1_u);
+            assert!(
+                (lhs - rhs).abs() < 1.0e-5,
+                "⟨B₁ᵀω,u⟩ = {lhs} must equal ⟨ω,B₁u⟩ = {rhs} on 2-node 1-edge toy mesh"
+            );
+        }
+
+        #[test]
+        fn b1_transpose_b1_is_two_node_graph_laplacian_on_toy_mesh() {
+            let b1 = toy_two_node_one_edge_b1();
+            let topo = b1.to_edge_topology();
+            let device = Default::default();
+
+            let omega = Tensor::from_data(
+                Data::new(vec![2.0_f32, 5.0], Shape::new([1, 2, 1])),
+                &device,
+            );
+            let nodal_template = Tensor::zeros([1, 2, 1], &device);
+
+            let grad = primal_scalar_edge_increment(omega.clone(), &topo);
+            let lap_omega = primal_divergence_from_edge_flux_topo(grad, &topo, &nodal_template);
+            let v: Vec<f32> = lap_omega.into_data().value;
+            assert_eq!(v.len(), 2);
+            let increment = 5.0_f32 - 2.0_f32;
+            assert!((v[0] - increment).abs() < 1.0e-5);
+            assert!((v[1] + increment).abs() < 1.0e-5);
+            assert!((v[0] + v[1]).abs() < 1.0e-5, "row-sum zero (closed incidence)");
+        }
+    }
 }
