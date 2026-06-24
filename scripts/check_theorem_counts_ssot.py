@@ -9,16 +9,33 @@ import subprocess
 import sys
 from pathlib import Path
 
-WORKSPACE = Path(__file__).resolve().parent.parent.parent
 SNAPSHOT = Path(__file__).resolve().parent / "theorem_counts_snapshot.json"
 
-REPOS = {
-    "umst-formal": WORKSPACE / "umst-formal" / "scripts" / "lean_declaration_stats.py",
-    "umst-formal-double-slit": WORKSPACE
-    / "umst-formal-double-slit"
-    / "scripts"
-    / "lean_declaration_stats.py",
-}
+FORMAL_STATS_REL = Path("umst-formal") / "scripts" / "lean_declaration_stats.py"
+DOUBLE_SLIT_STATS_REL = (
+    Path("umst-formal-double-slit") / "scripts" / "lean_declaration_stats.py"
+)
+
+
+def monorepo_workspace_root(start: Path) -> Path | None:
+    """MaOS-Workspace root: ancestor directory containing formal Lean stats scripts."""
+    for parent in start.parents:
+        if (parent / FORMAL_STATS_REL).is_file() and (
+            parent / DOUBLE_SLIT_STATS_REL
+        ).is_file():
+            return parent
+    return None
+
+
+def resolve_repos() -> tuple[Path | None, dict[str, Path]]:
+    workspace = monorepo_workspace_root(Path(__file__).resolve())
+    if workspace is None:
+        return None, {}
+    repos = {
+        "umst-formal": workspace / FORMAL_STATS_REL,
+        "umst-formal-double-slit": workspace / DOUBLE_SLIT_STATS_REL,
+    }
+    return workspace, repos
 
 
 def run_stats(script: Path) -> dict:
@@ -36,10 +53,20 @@ def main() -> int:
         print(f"FAIL: missing snapshot {SNAPSHOT}", file=sys.stderr)
         return 1
 
+    workspace, repos = resolve_repos()
+    if workspace is None:
+        print(
+            "SKIP: formal siblings missing (no umst-formal + umst-formal-double-slit "
+            "with lean_declaration_stats.py in ancestor workspace); "
+            "run from MaOS-Workspace monorepo for SSOT check",
+            file=sys.stderr,
+        )
+        return 0
+
     expected = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
     errors: list[str] = []
 
-    for name, script in REPOS.items():
+    for name, script in repos.items():
         if not script.is_file():
             errors.append(f"{name}: stats script missing at {script}")
             continue
@@ -66,7 +93,7 @@ def main() -> int:
         return 1
 
     print("OK: theorem counts match SSOT snapshot")
-    for name in REPOS:
+    for name in repos:
         w = expected[name]
         print(
             f"  {name}: {w['lake_roots']} roots, "
