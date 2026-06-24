@@ -104,6 +104,29 @@ impl ScalarChannelIdx {
     }
 }
 
+/// Channel selector for [`super::tensors::UnifiedMaterialStateTensor::project_scalar_channel`] /
+/// [`super::tensors::UnifiedMaterialStateTensor::write_scalar_channel`].
+///
+/// [`usize`] preserves legacy call sites; [`ScalarChannelIdx`] carries a layout-validated index.
+pub trait ScalarChannelSelector {
+    /// Scalar column index into `scalar_features`.
+    fn scalar_channel_index(&self) -> usize;
+}
+
+impl ScalarChannelSelector for usize {
+    #[inline]
+    fn scalar_channel_index(&self) -> usize {
+        *self
+    }
+}
+
+impl ScalarChannelSelector for ScalarChannelIdx {
+    #[inline]
+    fn scalar_channel_index(&self) -> usize {
+        self.index()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

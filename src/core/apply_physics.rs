@@ -10,6 +10,7 @@
 
 use burn::tensor::backend::Backend;
 
+use crate::core::dec_typestate::ScalarChannelIdx;
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use crate::core::traits::PhysicalResult;
 use crate::core::umst_schema::{SCALAR_DAMAGE, SCALAR_TEMPERATURE};
@@ -50,8 +51,11 @@ pub fn apply_physics_to_umst<B: Backend<FloatElem = f32>>(
             .squeeze::<1>(0)
             .unsqueeze_dim::<2>(1)
     };
-    let merged_damage = umst.project_scalar_channel(SCALAR_DAMAGE, damage_col);
-    umst.write_scalar_channel(SCALAR_DAMAGE, merged_damage);
+    let damage_ch = ScalarChannelIdx::try_new(SCALAR_DAMAGE).map_err(|e| {
+        format!("apply_physics_to_umst: invalid SCALAR_DAMAGE channel: {e:?}")
+    })?;
+    let merged_damage = umst.project_scalar_channel(damage_ch, damage_col);
+    umst.write_scalar_channel(damage_ch, merged_damage);
 
     if let Some(ref delta) = result.temperature_delta {
         if nf <= SCALAR_TEMPERATURE {
