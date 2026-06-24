@@ -16,6 +16,8 @@ pub mod laplacian;
 pub mod linear;
 pub mod mechanics;
 pub mod mechanics_operator;
+#[cfg(feature = "mechanics-adjoint")]
+pub mod mechanics_solve_port;
 pub mod operator;
 pub mod orchestration;
 #[cfg(feature = "topology-density-evolution")]
