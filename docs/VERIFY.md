@@ -86,6 +86,8 @@ cargo test --tests
 
 ### 2.2 Gate / catalog parity (workspace root `umst-catalog-drift.yml`)
 
+**Golden fixtures (researcher path):** hand-built transition vectors, vendored adversarial JSON, expected verdict tokens, and one-shot commands — [`GOLDEN_FIXTURES.md`](GOLDEN_FIXTURES.md).
+
 From **multi-repo workspace** root:
 
 ```bash
@@ -318,6 +320,8 @@ bash scripts/bidirectional_catalog_check.sh
 If formal is missing and `UMST_REQUIRE_FORMAL_EXPORT=1`, the script fails; when unset/`0`, the export digest step is skipped (gate tests still run).
 
 ### 5.1.1 Optional adversarial gate (prototype E6)
+
+See also [`GOLDEN_FIXTURES.md`](GOLDEN_FIXTURES.md) §2 for the vendored Rust golden (`gate_adversarial`) and case-field reference.
 
 After the gate-server HTTP tests, `scripts/verify_umst_stack.sh` may run the prototype **Experiment E6** adversarial stress script:
 
