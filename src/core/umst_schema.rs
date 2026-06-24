@@ -20,41 +20,14 @@
 //! [`SCALAR_DAMAGE`], with optional [`SCALAR_FRACTURE_ENERGY_GC`] when `F_scalars > 5`.
 //!
 //! The pinned channel map is `artifacts/scalar_layout.lock.json` (Phase 1 §1B sidecar).
-//! [`UMST_SCALAR_CHANNEL_COUNT`] must match `scalar_channel_count` there; `build.rs` panics on drift.
+//! [`UMST_SCALAR_CHANNEL_COUNT`] and [`SCALAR_*`] indices are generated at build time via
+//! `build.rs` → `umst-layout-codegen`; compile-time drift guard below panics on lock mismatch.
 
-/// Number of nodal scalar channels in the pinned layout (`artifacts/scalar_layout.lock.json`).
-pub const UMST_SCALAR_CHANNEL_COUNT: usize = 7;
+include!(concat!(env!("OUT_DIR"), "/scalar_layout_indices.rs"));
 
 include!(concat!(env!("OUT_DIR"), "/scalar_layout_guard.rs"));
 
 const _: [(); UMST_SCALAR_CHANNEL_COUNT] = [(); UMST_SCALAR_CHANNEL_COUNT_LOCK];
-
-/// Scalar column `0`: reserved / material-specific (define meaning per cartridge).
-pub const SCALAR_CHANNEL0: usize = 0;
-
-/// Relative humidity (or equivalent moisture scalar), column `1`.
-pub const SCALAR_HUMIDITY: usize = 1;
-
-/// First internal progress variable (cartridge-defined semantics), column `2`.
-pub const SCALAR_INTERNAL_VARIABLE_0: usize = 2;
-
-/// Nodal temperature (physical units are cartridge-defined), column `3`.
-pub const SCALAR_TEMPERATURE: usize = 3;
-
-/// Continuum / phase-field damage \(d \in \[0,1\]\), column `4`.
-pub const SCALAR_DAMAGE: usize = 4;
-
-/// Optional per-node fracture energy \(G_c\) [J/m²] for phase-field / cohesive models, column `5`.
-///
-/// Present only when `F_scalars > 5` (extends the baseline humidity→damage layout). Cartridges that
-/// omit this column keep a **uniform** \(G_c\) from calibration / material closure.
-pub const SCALAR_FRACTURE_ENERGY_GC: usize = 5;
-
-/// Epistemic uncertainty σ (normalized 0–1), column `6` when `F_scalars > 6`.
-///
-/// Written by [`crate::ai::adjoint::AdjointNeuralODE::forward`] under **`epistemic-ppo`** from
-/// policy-driven scalar deltas on [`policy_editable_mask`](crate::core::tensors::UnifiedMaterialStateTensor::policy_editable_mask).
-pub const SCALAR_EPISTEMIC_UNCERTAINTY: usize = 6;
 
 /// Nodal mechanical displacement **u** (SI metres), vector slot `0` in [`crate::core::tensors::UnifiedMaterialStateTensor::vector_features`]
 /// (`[N, F_vectors, 3]`). When `F_vectors == 0`, THMC / mechanics adapters use zero displacement.
