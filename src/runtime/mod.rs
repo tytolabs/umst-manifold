@@ -4,3 +4,4 @@
 //! Host-side runtime scaffolding (catalog lock, fingerprints).
 
 pub mod catalog;
+pub mod gate;

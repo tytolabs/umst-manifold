@@ -86,6 +86,15 @@ cargo test --tests
 
 ### 2.2 Gate / catalog parity (workspace root `umst-catalog-drift.yml`)
 
+**Transition evidence (`GateCartridge`):** cold-edge witnesses for Clausius–Duhem transitions
+live in `src/runtime/gate/` (`CdTransitionCartridge::transition_evidence` → catalog id
+`umst.gate.cd_transition` + [`AdmissibilityToken`](src/runtime/gate/evidence.rs)). Host path
+mirrors [`ai::constraint_loss::ConstraintExplanation`](src/ai/constraint_loss.rs); verify with:
+
+```bash
+cargo test runtime::gate::cartridge::
+```
+
 **Golden fixtures (researcher path):** hand-built transition vectors, vendored adversarial JSON, expected verdict tokens, and one-shot commands — [`GOLDEN_FIXTURES.md`](GOLDEN_FIXTURES.md).
 
 From **multi-repo workspace** root:
