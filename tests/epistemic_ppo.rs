@@ -135,9 +135,17 @@ fn histogram_mi_tensor_respects_landauer_ln2_cap() {
     let mut est = MutualInfoEstimator::for_material_proxy();
     for i in 0..400 {
         let x = i as f64 / 400.0;
-        est.update(&[x; 6], &[x; 6]);
+        est.update(
+            &[x; UMST_SCALAR_CHANNEL_COUNT],
+            &[x; UMST_SCALAR_CHANNEL_COUNT],
+        );
     }
-    let t = histogram_info_gain_tensor::<B>(&mut est, &[0.9; 6], &[0.9; 6], &dev);
+    let t = histogram_info_gain_tensor::<B>(
+        &mut est,
+        &[0.9; UMST_SCALAR_CHANNEL_COUNT],
+        &[0.9; UMST_SCALAR_CHANNEL_COUNT],
+        &dev,
+    );
     let v: f32 = t.into_data().value[0];
     let v = v as f64;
     assert!(v <= f64::ln(2.0) + 1e-6);

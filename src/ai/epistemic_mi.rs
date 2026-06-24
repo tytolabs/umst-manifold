@@ -51,10 +51,11 @@ impl MutualInfoEstimator {
         }
     }
 
-    /// Material-proxy layout: 6 nodal scalar means (humidity→damage + extras) × 6 observation channels.
+    /// Material-proxy layout: pinned [`UMST_SCALAR_CHANNEL_COUNT`] nodal means × same observation width.
     #[must_use]
     pub fn for_material_proxy() -> Self {
-        Self::new(6, 6)
+        use crate::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
+        Self::new(UMST_SCALAR_CHANNEL_COUNT, UMST_SCALAR_CHANNEL_COUNT)
     }
 
     #[must_use]

@@ -27,6 +27,8 @@ use burn::tensor::{backend::Backend, Tensor};
 use crate::ai::info_gain::{
     histogram_info_gain_tensor, nodal_scalar_means, EpistemicStateTracker, MutualInfoEstimator,
 };
+#[cfg(feature = "epistemic-ppo")]
+use crate::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 
 /// The Burn-Native Liquid PPO Agent.
 /// Drives the material state forward in continuous time using the Adjoint Method,
@@ -75,8 +77,13 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
     > {
         #[cfg(feature = "epistemic-ppo")]
         {
-            let _ = info_gain;
-            return self.step_and_learn_epistemic(initial_state, t_start, t_end, dt_sim_dt_global);
+            return self.step_and_learn_epistemic(
+                initial_state,
+                t_start,
+                t_end,
+                info_gain,
+                dt_sim_dt_global,
+            );
         }
 
         #[cfg(all(feature = "kleisli-ppo-hot-bind", not(feature = "epistemic-ppo")))]
@@ -211,6 +218,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
         initial_state: UnifiedMaterialStateTensor<B>,
         t_start: f32,
         t_end: f32,
+        external_info_gain: Tensor<B, 1>,
         dt_sim_dt_global: Tensor<B, 1>,
     ) -> Result<
         crate::core::tensors::VerifiedUMST<B, crate::core::tensors::ClausiusDuhemProof>,
@@ -222,10 +230,18 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
 
         let proposed_topology = self.ode_solver.forward(initial_state, t_start, t_end);
 
-        let state_vec = nodal_scalar_means(&baseline_scalars, 6);
-        let obs_vec = nodal_scalar_means(&proposed_topology.scalar_features, 6);
-        let info_gain =
+        let state_vec = nodal_scalar_means(&baseline_scalars, UMST_SCALAR_CHANNEL_COUNT);
+        let obs_vec = nodal_scalar_means(
+            &proposed_topology.scalar_features,
+            UMST_SCALAR_CHANNEL_COUNT,
+        );
+        let mut info_gain =
             histogram_info_gain_tensor(&mut self.mi_estimator, &state_vec, &obs_vec, &device);
+        #[cfg(feature = "kleisli-ppo-hot-bind")]
+        {
+            // Kleisli hot-bind keeps caller `info_gain` as a Landauer floor when histogram MI is ~0.
+            info_gain = info_gain.max_pair(external_info_gain);
+        }
         self.epistemic_tracker.update(self.mi_estimator.estimate());
 
         match self
