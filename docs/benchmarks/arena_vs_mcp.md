@@ -18,12 +18,14 @@
 cd umst-manifold
 python3 scripts/bench_arena_vs_mcp.py
 
-# Log ratios only (CI-friendly — no fail on slow runners)
+# Log ratios only (local dev — no fail on slow runners)
 UMST_BENCH_SKIP_RATIO=1 python3 scripts/bench_arena_vs_mcp.py
 
-# Tune iterations / threshold
-UMST_BENCH_N=100 python3 scripts/bench_arena_vs_mcp.py   # local reference (N=100)
-UMST_BENCH_N=30 UMST_BENCH_MIN_RATIO=5 python3 scripts/bench_arena_vs_mcp.py   # CI-pinned
+# CI / enforced fail when ratio < 5× (default when CI=true or UMST_BENCH_ENFORCE=1)
+UMST_BENCH_N=30 UMST_BENCH_MIN_RATIO=5 UMST_BENCH_ENFORCE=1 python3 scripts/bench_arena_vs_mcp.py
+
+# Local reference (higher N)
+UMST_BENCH_N=100 python3 scripts/bench_arena_vs_mcp.py
 ```
 
 Agent batch example (in-process gate, no MCP):
