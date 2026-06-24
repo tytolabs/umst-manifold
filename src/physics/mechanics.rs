@@ -25,7 +25,6 @@
 //! stiffness is \(k = (EA/L)\,(1-d)^2\) per edge (damage matches the spirit of
 //! [`crate::physics::laplacian::TopologicalLaplacian`]).
 
-use burn::tensor::ElementConversion;
 use burn::tensor::{backend::Backend, Int, Tensor};
 
 use super::dec_operators::DecEdgeOperators;
