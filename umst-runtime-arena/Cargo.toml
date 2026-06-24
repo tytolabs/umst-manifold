@@ -1,0 +1,12 @@
+[package]
+name = "umst-runtime-arena"
+version = "0.1.0"
+edition = "2021"
+description = "UMST runtime arena — warm-boundary parse of versioned arena bytes (no mmap yet)"
+license = "MIT"
+rust-version = "1.75"
+
+[dependencies]
+thiserror = "1.0"
+
+[dev-dependencies]

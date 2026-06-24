@@ -86,3 +86,24 @@ loops in-process (target ≥10× MCP round-trip).*
 
 **Exit witness (P2):** benchmark in-process predict ≥10× an MCP round-trip; no
 required CI lane depends on Docker MCP.
+
+## Arena ABI (v1 skeleton — `umst-runtime-arena`)
+
+The Warm entry point is [`load_arena`](../umst-runtime-arena/src/load.rs):
+cold-owned bytes in, borrowed [`UmstArenaView`](../umst-runtime-arena/src/load.rs)
+out. Parsing happens **once**; hot loops read sub-slices only.
+
+| Field | Size | Role |
+| ----- | ---- | ---- |
+| `magic` | 4 | `0x54534D55` (`"UMST"` LE) |
+| `abi_version` | 4 | `1` for this skeleton |
+| `header_bytes` | 4 | Fixed `64` for v1 |
+| `_reserved` | 4 | Zero; forward growth |
+| `catalog_digest` | 32 | SHA-256 of `artifacts/catalog.lock.json` at arena build |
+| `state_offset` | 8 | UMST state blob start |
+| `state_bytes` | 8 | UMST state blob length |
+
+**Deferred (later ABI revisions):** `proposal_offset` / witness sections, optional
+`mmap` in `umst-concrete-ffi`, UCRS stamps on commit-only egress. Hot solvers
+remain unchanged until a full Warm `into_arena()` wires this view into
+`IScienceCartridge`.

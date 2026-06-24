@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
 [workspace]
-members = [".", "umst-math"]
+members = [".", "umst-math", "umst-runtime-arena"]
 resolver = "2"
 
 # Striatus dev loop: keep test code debuggable; compile Burn/ndarray deps at full speed.
