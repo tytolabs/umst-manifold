@@ -12,12 +12,10 @@ mod thmc_gate_evidence_wire {
     use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
     use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
     use umst_manifold::physics::solvers::{
-        wire_gate_evidence_post_step, ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan,
-        ThmcSolver, ThmcState,
+        ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcSolver, ThmcState,
     };
     use umst_manifold::runtime::catalog::traceability::CD_TRANSITION_CATALOG_ID;
     use umst_manifold::runtime::gate::AdmissibilityToken;
-    use umst_manifold::runtime::gate::CdTransitionCartridge;
 
     type B = NdArray<f32>;
 
@@ -112,21 +110,26 @@ mod thmc_gate_evidence_wire {
     }
 
     #[test]
-    fn wire_gate_evidence_identity_transition_is_admissible() {
+    fn wire_gate_evidence_cement_default_strength_is_240_mpa() {
+        let solver = ThmcSolver::default();
+        assert!(
+            (solver.gate_intrinsic_strength_mpa - 240.0).abs() < 1e-9,
+            "expected cement SSOT 240 MPa default, got {}",
+            solver.gate_intrinsic_strength_mpa
+        );
+    }
+
+    #[test]
+    fn attach_gate_evidence_identity_transition_is_admissible() {
         let n = 2usize;
         let umst = umst(n);
         let dev = dev();
         let pre = mk_state(&dev, n, 293.0_f32, 0.5_f32, 0.42_f32, 0.0_f32);
         let post = pre.clone();
         let solver = ThmcSolver::default();
-        let evidence = wire_gate_evidence_post_step(
-            &solver,
-            &CdTransitionCartridge,
-            &pre,
-            &post,
-            &umst,
-            1.0_f32,
-            solver.gate_intrinsic_strength_mpa,
+        let stub = Stub;
+        let evidence = umst_manifold::physics::solvers::ThmcSolverStep::attach_gate_evidence(
+            &solver, &stub, &pre, &post, &umst, 1.0_f32,
         )
         .expect("identity lift should succeed");
         assert_eq!(evidence.transition.catalog_id, CD_TRANSITION_CATALOG_ID);

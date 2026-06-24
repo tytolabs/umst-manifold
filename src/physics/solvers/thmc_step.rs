@@ -45,11 +45,30 @@ use crate::runtime::gate::{CdTransitionCartridge, GateCartridge, TransitionEvide
 #[cfg(feature = "thmc-coupled")]
 use super::thmc::{ThmcSolver, ThmcState};
 
-/// Default intrinsic strength (MPa) for mix-calibrated lift — matches [`crate::gate::http_manifest::GateManifest::from`].
+/// Default intrinsic strength (MPa) for mix-calibrated lift — aligns with concrete
+/// [`CEMENT_DEFAULT_S_INTRINSIC_MPA`] (240 MPa); override via [`ThmcSolver::with_gate_intrinsic_strength_mpa`].
 #[cfg(feature = "thmc-coupled")]
-pub const THMC_GATE_LIFT_S_INTRINSIC_MPA_DEFAULT: f64 = 80.0;
+pub const THMC_GATE_LIFT_S_INTRINSIC_MPA_DEFAULT: f64 = 240.0;
 
-/// Witness returned at the post-step gate hook after [`CdTransitionCartridge`] evaluation.
+/// Injectable transition witness selector (`thmc-coupled`).
+#[cfg(feature = "thmc-coupled")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum TransitionGateWitness {
+    /// Host Clausius–Duhem cartridge (default).
+    #[default]
+    HostCd,
+}
+
+#[cfg(feature = "thmc-coupled")]
+impl TransitionGateWitness {
+    /// Resolve to a [`GateCartridge`] witness implementation.
+    #[must_use]
+    pub fn cartridge(self) -> &'static dyn GateCartridge {
+        match self {
+            Self::HostCd => &CdTransitionCartridge,
+        }
+    }
+}
 #[cfg(feature = "thmc-coupled")]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ThmcStepGateEvidence {
@@ -94,7 +113,7 @@ where
     ) -> Result<ThmcStepGateEvidence, String> {
         wire_gate_evidence_post_step(
             self,
-            &CdTransitionCartridge,
+            self.transition_gate.cartridge(),
             pre,
             post,
             manifold,
@@ -143,9 +162,9 @@ where
 ///
 /// Lifts pre/post [`ThmcState`] snapshots and evaluates [`GateCartridge::transition_evidence`].
 #[cfg(feature = "thmc-coupled")]
-pub fn wire_gate_evidence_post_step<B, G>(
+pub fn wire_gate_evidence_post_step<B>(
     _solver: &ThmcSolver,
-    gate: &G,
+    gate: &'static dyn GateCartridge,
     pre: &ThmcState<B>,
     post: &ThmcState<B>,
     manifold: &UnifiedMaterialStateTensor<B>,
@@ -154,7 +173,6 @@ pub fn wire_gate_evidence_post_step<B, G>(
 ) -> Result<ThmcStepGateEvidence, String>
 where
     B: Backend<FloatElem = f32>,
-    G: GateCartridge,
 {
     let old = thmc_state_thermodynamic_snapshot(pre, manifold, s_intrinsic_mpa)?;
     let new = thmc_state_thermodynamic_snapshot(post, manifold, s_intrinsic_mpa)?;

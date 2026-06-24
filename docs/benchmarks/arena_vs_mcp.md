@@ -1,6 +1,6 @@
 # Arena vs MCP round-trip benchmark
 
-**Exit witness (Phase 2):** in-process arena predict ≥ **5×** (stretch **10×**) vs one stdio MCP `tools/call` round-trip.
+**Exit witness (Phase 2):** in-process gate/arena ≥ **5×** vs one stdio MCP `tools/call` round-trip per gate check.
 
 ## Surfaces
 
@@ -9,44 +9,36 @@
 | MCP stdio | Cold | Agents, discovery, single-shot gate/predict |
 | `load_arena(bytes)` | Warm | Owned buffer, parse once |
 | `mmap_arena_path` (`feature = "mmap"`) | Warm | File-backed arena, zero-copy view |
+| `seal_arena_commit` | Warm egress | UCRS stamp bytes 12..20 on commit close |
 
-## Harness (local)
+## Harness
+
+```bash
+# Full benchmark (release builds; may take several minutes first compile)
+cd umst-manifold
+python3 scripts/bench_arena_vs_mcp.py
+
+# Log ratios only (CI-friendly — no fail on slow runners)
+UMST_BENCH_SKIP_RATIO=1 python3 scripts/bench_arena_vs_mcp.py
+
+# Tune iterations / threshold
+UMST_BENCH_ITERATIONS=30 UMST_BENCH_MIN_RATIO=5 python3 scripts/bench_arena_vs_mcp.py
+```
+
+Agent batch example (in-process gate, no MCP):
 
 ```bash
 cd umst-concrete-cartridge
-cargo build -p umst-mcp --features agent-layer --release
-
-# MCP baseline — one gate_check + predict (Python smoke pattern)
-/usr/bin/time -p python3 -c "
-import json, subprocess, time
-from pathlib import Path
-root = Path('.').resolve()
-proc = subprocess.Popen(
-    ['cargo', 'run', '-q', '-p', 'umst-mcp', '--features', 'agent-layer'],
-    stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, cwd=root)
-def rpc(p):
-    p.stdin.write(json.dumps(p)+'\n'); p.stdin.flush()
-    return json.loads(p.stdout.readline())
-rpc({'jsonrpc':'2.0','id':1,'method':'initialize','params':{'protocolVersion':'2024-11-05','capabilities':{},'clientInfo':{'name':'bench','version':'0.1'}}})
-mix = {'w_c':'9/20','temperature_k':'29315/100','aggregate_volume_fraction':'7/10'}
-t0 = time.perf_counter()
-for i in range(100):
-    rpc({'jsonrpc':'2.0','id':2+i,'method':'tools/call','params':{'name':'umst_gate_check','arguments':{'mix':mix}}})
-print('mcp_100_calls_sec', time.perf_counter()-t0)
-proc.terminate()
-"
-
-# Arena path — parse-once loop (manifold crate)
-cd ../umst-manifold
-cargo test -p umst-runtime-arena --features mmap --release -- --nocapture
+python3 examples/agent/06_arena_batch.py
 ```
 
-## Honest status (2026-06-24)
+## Status (2026-06-24)
 
 | Item | Status |
 |------|--------|
-| `mmap_arena_path` + UCRS `commit_stamp` read/write | **Shipped** (`feature = "mmap"`) |
-| `examples/agent/06_arena_batch.py` | **Shipped** — in-process batch pattern doc |
-| Published ≥5× ratio on CI hardware | **Partial** — harness doc only; run locally before Phase 2 exit |
+| `mmap_arena_path` + `seal_arena_commit` | **Shipped** |
+| `examples/agent/06_arena_batch.py` + CI | **Shipped** |
+| `scripts/bench_arena_vs_mcp.py` | **Shipped** |
+| Published ≥5× ratio on CI hardware | **Partial** — run locally; use `UMST_BENCH_SKIP_RATIO=1` on slow CI |
 
-Regenerate numbers after hardware change; paste wall-clock into `IMPLEMENTATION_EVIDENCE.md` P2 row.
+Paste measured `ratio_mcp_over_inprocess` into [`IMPLEMENTATION_EVIDENCE.md`](../../../outputs/IMPLEMENTATION_EVIDENCE.md) P2 row after hardware runs.

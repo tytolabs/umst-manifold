@@ -161,6 +161,11 @@ cargo test -p umst-manifold --verbose \
   --test gate_parity_fixture --test gate_kleisli --test gate_cbf_parity \
   --test gate_dual_run_parity
 
+echo "==> kleisli-ppo-hot-bind + landauer / p4 rejection witness (feature-gated)"
+cargo test -p umst-manifold --verbose \
+  --features kleisli-ppo-hot-bind \
+  --test kleisli_ppo_hot_bind --test p4_rejection_witness landauer
+
 echo "==> formal witness + release manifest profile + ROS contract (feature-gated)"
 # Release lane (R5 v1): `manifest_strict_witness` exercises StrictCatalogMatch + digest reject.
 # Skip only with UMST_RELEASE_MANIFEST_PROFILE=0 (dev iteration on witness plumbing).

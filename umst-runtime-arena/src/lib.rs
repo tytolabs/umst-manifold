@@ -17,9 +17,11 @@ mod header;
 mod load;
 #[cfg(feature = "mmap")]
 mod mmap;
+mod stamp;
 
 pub use error::ArenaError;
 pub use header::{UmstArenaHeader, ARENA_ABI_VERSION, ARENA_HEADER_BYTES, ARENA_MAGIC};
 pub use load::{load_arena, UmstArenaView};
 #[cfg(feature = "mmap")]
-pub use mmap::{mmap_arena_path, read_commit_stamp, write_commit_stamp, MmappedArena};
+pub use mmap::{mmap_arena_path, MmappedArena};
+pub use stamp::{read_commit_stamp, seal_arena_commit, write_commit_stamp};

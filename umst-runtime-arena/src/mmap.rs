@@ -6,6 +6,7 @@ use std::path::Path;
 use memmap2::Mmap;
 
 use crate::load::{load_arena, UmstArenaView};
+use crate::stamp::read_commit_stamp;
 use crate::ArenaError;
 
 /// Owned mmap mapping with parsed arena view (Warm boundary — parse once).
@@ -47,32 +48,11 @@ pub fn mmap_arena_path(path: &Path) -> Result<MmappedArena, ArenaError> {
     Ok(MmappedArena { _file: file, map })
 }
 
-/// Read optional commit stamp from header reserved field (offset 12, 8 bytes).
-pub fn read_commit_stamp(bytes: &[u8]) -> u64 {
-    if bytes.len() < 20 {
-        return 0;
-    }
-    u64::from_le_bytes([
-        bytes[12], bytes[13], bytes[14], bytes[15], bytes[16], bytes[17], bytes[18], bytes[19],
-    ])
-}
-
-/// Write commit stamp into arena bytes in-place (Warm commit hook; caller owns buffer).
-pub fn write_commit_stamp(bytes: &mut [u8], stamp: u64) -> Result<(), ArenaError> {
-    if bytes.len() < 20 {
-        return Err(ArenaError::BufferTooShort {
-            need: 20,
-            got: bytes.len(),
-        });
-    }
-    bytes[12..20].copy_from_slice(&stamp.to_le_bytes());
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::header::{ARENA_ABI_VERSION, ARENA_HEADER_BYTES, ARENA_MAGIC};
+    use crate::stamp::write_commit_stamp;
     use std::io::Write;
     use tempfile::NamedTempFile;
 

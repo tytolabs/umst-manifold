@@ -135,3 +135,30 @@ fn kleisli_ppo_hot_bind_constraint_loss_penalty_nonzero_when_lambda_set() {
         r[0]
     );
 }
+
+#[test]
+fn kleisli_ppo_hot_bind_landauer_penalty_nonzero_when_lambda_set() {
+    let dev = device();
+    let mut gateway = ManifoldGateway::new(PpoChainStubCartridge, 300.0_f64, 1.0e-12_f64);
+    gateway.lambda_landauer = 0.5_f32;
+    let info_bits = Tensor::<B, 1>::full([1], 2.0_f32, &dev);
+    let penalty = gateway.landauer_constraint_loss_penalty(info_bits.clone());
+    let p: Vec<f32> = penalty.into_data().value;
+    assert!(
+        p[0] > 0.0,
+        "Landauer penalty must be positive when bits exceed credit, got {}",
+        p[0]
+    );
+
+    let rho = Tensor::<B, 1>::full([1], 2400.0_f32, &dev);
+    let old_fe = Tensor::<B, 1>::full([1], -1.0e5_f32, &dev);
+    let new_fe = Tensor::<B, 1>::full([1], -1.0e4_f32, &dev);
+    let dt = Tensor::<B, 1>::full([1], 1.0_f32, &dev);
+    let total =
+        gateway.total_constraint_loss_penalty(rho.clone(), rho, old_fe, new_fe, dt, info_bits);
+    let t: Vec<f32> = total.into_data().value;
+    assert!(
+        t[0].is_finite() && t[0] > 0.0,
+        "total penalty must be finite and positive"
+    );
+}

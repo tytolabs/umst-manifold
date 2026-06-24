@@ -66,4 +66,31 @@ mod tests {
         let view = load_arena(&buf).expect("load");
         assert_eq!(view.state_bytes(), &[0x42; 8]);
     }
+
+    #[test]
+    fn seal_arena_commit_roundtrip_on_load_path() {
+        use crate::stamp::{read_commit_stamp, seal_arena_commit};
+
+        let mut buf = fixture();
+        seal_arena_commit(&mut buf, 0xCAFE_BABE_0000_0001).expect("seal");
+        assert_eq!(read_commit_stamp(&buf), 0xCAFE_BABE_0000_0001);
+        let view = load_arena(&buf).expect("load after seal");
+        assert_eq!(view.state_bytes(), &[0x42; 8]);
+    }
+
+    #[test]
+    fn bench_load_arena_hot_loop() {
+        let iters: usize = std::env::var("UMST_ARENA_HOT_ITERS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(10_000);
+        let buf = fixture();
+        let view = load_arena(&buf).expect("load");
+        let start = std::time::Instant::now();
+        for _ in 0..iters {
+            let _ = view.state_bytes();
+        }
+        let elapsed = start.elapsed().as_secs_f64();
+        eprintln!("arena_hot_loop_ok iters={iters} sec={elapsed:.6}");
+    }
 }

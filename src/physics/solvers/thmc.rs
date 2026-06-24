@@ -260,10 +260,13 @@ pub struct ThmcSolver {
     #[cfg(all(feature = "thmc-coupled", feature = "mechanics-adjoint"))]
     pub mechanics_solve_reports: Vec<crate::solve_report::SolveReport>,
     /// Intrinsic strength (MPa) for mix-calibrated gate snapshot lift at post-step evidence hook.
-    /// Default matches legacy HTTP manifest constant; concrete cartridges should set
-    /// [`umst_concrete_cartridge::CEMENT_DEFAULT_S_INTRINSIC_MPA`] when wired.
+    /// Default aligns with concrete cement SSOT ([`super::thmc_step::THMC_GATE_LIFT_S_INTRINSIC_MPA_DEFAULT`]).
     #[cfg(feature = "thmc-coupled")]
     pub gate_intrinsic_strength_mpa: f64,
+    /// Injectable transition witness — default host CD; concrete cartridges set strength via
+    /// [`Self::gate_intrinsic_strength_mpa`].
+    #[cfg(feature = "thmc-coupled")]
+    pub transition_gate: super::thmc_step::TransitionGateWitness,
 }
 
 impl Default for ThmcSolver {
@@ -283,6 +286,8 @@ impl Default for ThmcSolver {
             mechanics_solve_reports: Vec::new(),
             #[cfg(feature = "thmc-coupled")]
             gate_intrinsic_strength_mpa: super::thmc_step::THMC_GATE_LIFT_S_INTRINSIC_MPA_DEFAULT,
+            #[cfg(feature = "thmc-coupled")]
+            transition_gate: super::thmc_step::TransitionGateWitness::default(),
         }
     }
 }
@@ -292,6 +297,20 @@ impl ThmcSolver {
     /// Drain accumulated post-step gate evidence for PPO / gateway penalize morphisms.
     pub fn drain_gate_evidence(&mut self) -> Vec<super::thmc_step::ThmcStepGateEvidence> {
         std::mem::take(&mut self.step_gate_evidence)
+    }
+
+    /// Override mix-calibrated intrinsic strength (MPa) for gate snapshot lift.
+    #[must_use]
+    pub fn with_gate_intrinsic_strength_mpa(mut self, mpa: f64) -> Self {
+        self.gate_intrinsic_strength_mpa = mpa;
+        self
+    }
+
+    /// Route post-step evidence through a custom transition witness selector.
+    #[must_use]
+    pub fn with_transition_gate(mut self, gate: super::thmc_step::TransitionGateWitness) -> Self {
+        self.transition_gate = gate;
+        self
     }
 
     /// Drain mechanics [`crate::solve_report::SolveReport`] witnesses from the operator-split loop.
@@ -868,15 +887,9 @@ impl ThmcSolver {
             Tensor::cat(vec![damage_new, tail], 2)
         };
 
-        // Post-step gate evidence (`thmc_step::wire_gate_evidence_post_step` → CdTransitionCartridge).
-        let gate_evidence = super::thmc_step::wire_gate_evidence_post_step(
-            self,
-            &crate::runtime::gate::CdTransitionCartridge,
-            &pre_step,
-            &state,
-            manifold,
-            self.dt,
-            self.gate_intrinsic_strength_mpa,
+        // Post-step gate evidence via configured transition gate cartridge.
+        let gate_evidence = super::thmc_step::ThmcSolverStep::attach_gate_evidence(
+            self, _cartridge, &pre_step, &state, manifold, self.dt,
         )?;
         self.step_gate_evidence.push(gate_evidence);
 

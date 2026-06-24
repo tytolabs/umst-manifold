@@ -178,6 +178,32 @@ fn gate_parity_concrete_mix_calibrated_snapshots() {
     use umst_manifold::runtime::gate::evidence::AdmissibilityToken;
     use umst_manifold::runtime::gate::{CdTransitionCartridge, GateCartridge};
 
+    const CEMENT_S_INTRINSIC_MPA: f64 = 240.0;
+
+    let old = ThermodynamicStateSnapshot::from_mix_calibrated_with_params(
+        0.45,
+        0.30,
+        293.15,
+        CEMENT_S_INTRINSIC_MPA,
+        &SubstrateMaterialParams,
+    );
+    let new = old;
+    let evidence = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
+    assert_eq!(evidence.admissibility, AdmissibilityToken::Admissible);
+    assert!(
+        old.strength > 0.0,
+        "mix-calibrated lift must carry non-zero strength at cement SSOT"
+    );
+}
+
+/// Mix-calibrated cement lift (240 MPa) must agree with host CD on admissible identity step.
+#[test]
+fn gate_parity_cement_ssot_matches_host_cd() {
+    use umst_manifold::core::SubstrateMaterialParams;
+    use umst_manifold::gate::transition_proposal::ThermodynamicStateSnapshot;
+    use umst_manifold::runtime::gate::evidence::AdmissibilityToken;
+    use umst_manifold::runtime::gate::{CdTransitionCartridge, GateCartridge};
+
     let old = ThermodynamicStateSnapshot::from_mix_calibrated_with_params(
         0.45,
         0.30,
@@ -186,6 +212,7 @@ fn gate_parity_concrete_mix_calibrated_snapshots() {
         &SubstrateMaterialParams,
     );
     let new = old;
-    let evidence = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
-    assert_eq!(evidence.admissibility, AdmissibilityToken::Admissible);
+    let cd = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
+    assert_eq!(cd.admissibility, AdmissibilityToken::Admissible);
+    assert_eq!(cd.catalog_id, "umst.gate.cd_transition");
 }

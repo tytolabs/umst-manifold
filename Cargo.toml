@@ -384,6 +384,11 @@ path = "tests/kleisli_ppo_hot_bind.rs"
 required-features = ["kleisli-ppo-hot-bind"]
 
 [[test]]
+name = "p4_rejection_witness"
+path = "tests/p4_rejection_witness.rs"
+required-features = ["kleisli-ppo-hot-bind"]
+
+[[test]]
 name = "catalog_functor_witness"
 path = "tests/catalog_functor_witness.rs"
 

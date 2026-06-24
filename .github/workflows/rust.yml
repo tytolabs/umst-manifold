@@ -245,6 +245,21 @@ jobs:
           cargo test -p umst-manifold --verbose \
             --features gate-server-bin --test gate_server_http
 
+  kleisli-ppo-hot-bind:
+    name: kleisli PPO + landauer witness (CPU)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: ./.github/actions/setup-ci
+      - name: landauer + p4 rejection witness
+        run: |
+          set -euo pipefail
+          cargo test -p umst-manifold --features kleisli-ppo-hot-bind \
+            --test p4_rejection_witness --test kleisli_gate_pipeline_e2e \
+            landauer_slack
+          cargo test -p umst-manifold --features kleisli-ppo-hot-bind \
+            --test p4_rejection_witness p4_rejection_baseline_measured_witness -- --exact
+
   # PR / push gate: rustfmt + clippy on the full solver-experimental graph (v0.4 acceptance; matches meta `solver-tests`).
   lint:
     name: rustfmt + clippy
