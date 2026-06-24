@@ -40,6 +40,19 @@ pub fn clausius_duhem_violation<B: Backend<FloatElem = f32>>(
     relu(d_int.neg())
 }
 
+/// Weighted violation slack from host gate evidence (`λ_cd · violation` per witness).
+pub fn scaled_constraint_violation_penalty<B: Backend<FloatElem = f32>>(
+    lambda_cd: f32,
+    violations: Tensor<B, 1>,
+) -> Tensor<B, 1> {
+    let batch = violations.dims()[0];
+    let device = violations.device();
+    if lambda_cd == 0.0_f32 {
+        return Tensor::zeros([batch], &device);
+    }
+    violations.mul_scalar(lambda_cd)
+}
+
 /// Weighted Clausius–Duhem slack for gateway / PPO penalty hooks.
 ///
 /// Returns zeros when `lambda_cd == 0` without building the violation graph.

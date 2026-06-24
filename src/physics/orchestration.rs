@@ -79,7 +79,7 @@ pub enum TopologyPlanIntent {
 impl TopologyPlanIntent {
     fn apply<B, C>(
         self,
-        thmc: &ThmcSolver,
+        thmc: &mut ThmcSolver,
         cartridge: &C,
         state: ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
@@ -121,7 +121,7 @@ impl TopologyPhysicsOrchestrator {
     /// without invoking the solver — that is **not** equivalent to [`Self::run_plan_step`], which always
     /// runs the default singleton plan.
     pub fn fold_plan_step<B, C, I>(
-        &self,
+        &mut self,
         intents: I,
         cartridge: &C,
         state: ThmcState<B>,
@@ -133,7 +133,7 @@ impl TopologyPhysicsOrchestrator {
         I: IntoIterator<Item = TopologyPlanIntent>,
     {
         intents.into_iter().try_fold(state, |state, intent| {
-            intent.apply(&self.thmc, cartridge, state, manifold)
+            intent.apply(&mut self.thmc, cartridge, state, manifold)
         })
     }
 
@@ -152,7 +152,7 @@ impl TopologyPhysicsOrchestrator {
     /// Forwards [`ThmcSolver::step`] errors (including the default-feature `Err` when experimental
     /// coupling is disabled).
     pub fn run_plan_step<B, C>(
-        &self,
+        &mut self,
         cartridge: &C,
         state: ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
@@ -166,7 +166,7 @@ impl TopologyPhysicsOrchestrator {
 
     /// Same as [`Self::run_plan_step`] — alias for planners that prefer an explicit “full integration” name.
     pub fn run_full_integration_step<B, C>(
-        &self,
+        &mut self,
         cartridge: &C,
         state: ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
@@ -189,7 +189,7 @@ impl TopologyPhysicsOrchestrator {
     /// `steps == 0` returns `Ok(state)` without invoking the solver (same empty-fold spirit as
     /// [`Self::fold_plan_step`] on an empty iterator).
     pub fn run_plan_step_repeated<B, C>(
-        &self,
+        &mut self,
         steps: usize,
         cartridge: &C,
         state: ThmcState<B>,
@@ -350,7 +350,7 @@ mod tests {
 
     #[test]
     fn run_plan_step_repeated_zero_leaves_state() {
-        let o = TopologyPhysicsOrchestrator::new(ThmcSolver::default());
+        let mut o = TopologyPhysicsOrchestrator::new(ThmcSolver::default());
         let dev = ndarray_device();
         let state = toy_thmc_state(&dev, 2);
         let manifold = toy_umst_two_node(&dev);
@@ -365,7 +365,7 @@ mod tests {
 
     #[test]
     fn run_plan_step_repeated_one_matches_run_plan_step() {
-        let o = TopologyPhysicsOrchestrator::new(ThmcSolver::default());
+        let mut o = TopologyPhysicsOrchestrator::new(ThmcSolver::default());
         let dev = ndarray_device();
         let n = 2usize;
         let state = toy_thmc_state(&dev, n);
@@ -403,7 +403,7 @@ mod tests {
 
     #[test]
     fn run_plan_step_matches_fold_over_default_intents() {
-        let o = TopologyPhysicsOrchestrator::new(ThmcSolver::default());
+        let mut o = TopologyPhysicsOrchestrator::new(ThmcSolver::default());
         let dev = ndarray_device();
         let n = 2usize;
         let state = toy_thmc_state(&dev, n);
@@ -427,7 +427,7 @@ mod tests {
 
     #[test]
     fn fold_empty_plan_is_noop_ok() {
-        let o = TopologyPhysicsOrchestrator::new(ThmcSolver::default());
+        let mut o = TopologyPhysicsOrchestrator::new(ThmcSolver::default());
         let dev = ndarray_device();
         let state = toy_thmc_state(&dev, 2);
         let manifold = toy_umst_two_node(&dev);

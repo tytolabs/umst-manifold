@@ -110,7 +110,7 @@ mod thmc_ok {
             damage: Tensor::zeros([1, n, 1], &dev),
             time: 0.0_f32,
         };
-        let solver = ThmcSolver {
+        let mut solver = ThmcSolver {
             dt: 0.01_f32,
             max_newton: 2_usize,
             tol: 1e-3_f32,

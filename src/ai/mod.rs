@@ -14,4 +14,5 @@ pub mod formal;
 pub mod info_gain;
 pub mod liquid_ppo;
 pub mod ppo;
+pub mod rejection_telemetry;
 pub mod topology;

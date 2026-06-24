@@ -187,7 +187,7 @@ fn apply_physics_thmc_step_errors_without_thmc_coupled() {
         time: 0.0,
     };
 
-    let solver = ThmcSolver {
+    let mut solver = ThmcSolver {
         dt: 0.01,
         max_newton: 1,
         tol: 1e-6,

@@ -41,6 +41,8 @@
 
 use crate::ai::cbf::ThermodynamicCBF;
 use crate::ai::constraint_loss::scaled_clausius_duhem_violation;
+#[cfg(feature = "thmc-coupled")]
+use crate::ai::constraint_loss::scaled_constraint_violation_penalty;
 use crate::ai::formal::FormalReject;
 use crate::core::traits::{IScienceCartridge, PhysicalResult};
 use burn::tensor::{backend::Backend, Tensor};
@@ -80,6 +82,14 @@ pub struct ManifoldGateway<B: Backend, C: IScienceCartridge<B>> {
     /// [`Self::new`] defaults to compiled lock bytes; set `None` explicitly to skip the witness.
     #[cfg(feature = "formal-witness")]
     pub expected_catalog_schema_digest: Option<[u8; 32]>,
+    /// Phase 4 exit witnesses — warm orchestrator only ([`crate::ai::rejection_telemetry::RejectionTelemetry`]).
+    pub rejection_telemetry: crate::ai::rejection_telemetry::RejectionTelemetry,
+    /// Kleisli penalize drain from [`crate::physics::solvers::ThmcSolver::drain_gate_evidence`].
+    #[cfg(feature = "thmc-coupled")]
+    pub thmc_gate_evidence: Vec<crate::physics::solvers::thmc_step::ThmcStepGateEvidence>,
+    /// Mechanics solve witnesses from [`crate::physics::solvers::ThmcSolver::drain_mechanics_solve_reports`].
+    #[cfg(all(feature = "thmc-coupled", feature = "mechanics-adjoint"))]
+    pub mechanics_solve_reports: Vec<crate::solve_report::SolveReport>,
     _backend: std::marker::PhantomData<B>,
 }
 
@@ -99,8 +109,116 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
             expected_catalog_schema_digest: Some(
                 crate::runtime::catalog::lock_upstream_catalog_digest_bytes(),
             ),
+            rejection_telemetry: crate::ai::rejection_telemetry::RejectionTelemetry::default(),
+            #[cfg(feature = "thmc-coupled")]
+            thmc_gate_evidence: Vec::new(),
+            #[cfg(all(feature = "thmc-coupled", feature = "mechanics-adjoint"))]
+            mechanics_solve_reports: Vec::new(),
             _backend: std::marker::PhantomData,
         }
+    }
+
+    /// Phase 4 exit witness accessor (cold edge).
+    #[must_use]
+    pub fn telemetry(&self) -> &crate::ai::rejection_telemetry::RejectionTelemetry {
+        &self.rejection_telemetry
+    }
+
+    /// Absorb THMC post-step gate evidence from solver drain into Kleisli penalize path.
+    #[cfg(feature = "thmc-coupled")]
+    pub fn absorb_thmc_gate_evidence(
+        &mut self,
+        batch: impl IntoIterator<Item = crate::physics::solvers::thmc_step::ThmcStepGateEvidence>,
+    ) {
+        use crate::runtime::gate::evidence::AdmissibilityToken;
+        for evidence in batch {
+            if evidence.transition.admissibility == AdmissibilityToken::Inadmissible {
+                self.rejection_telemetry
+                    .record_soft_penalty(f64::from(evidence.constraint.violation));
+            } else {
+                self.rejection_telemetry
+                    .record_commit(f64::from(evidence.constraint.violation));
+            }
+            self.thmc_gate_evidence.push(evidence);
+        }
+    }
+
+    /// Differentiable penalize morphism from drained THMC gate evidence → [`Self::constraint_loss_penalty`].
+    #[cfg(feature = "thmc-coupled")]
+    pub fn constraint_loss_penalty_from_gate_evidence(
+        &self,
+        device: &B::Device,
+    ) -> Tensor<B, 1>
+    where
+        B: Backend<FloatElem = f32>,
+    {
+        let lambda_cd = {
+            #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
+            {
+                self.lambda_cd
+            }
+            #[cfg(not(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind")))]
+            {
+                0.0_f32
+            }
+        };
+        let batch = self.thmc_gate_evidence.len().max(1);
+        let violations: Vec<f32> = self
+            .thmc_gate_evidence
+            .iter()
+            .map(|e| e.constraint.violation)
+            .collect();
+        let data = if violations.is_empty() {
+            vec![0.0_f32]
+        } else {
+            violations
+        };
+        let violation_tensor =
+            Tensor::<B, 1>::from_floats(data.as_slice(), device);
+        let sized = if violation_tensor.dims()[0] == batch {
+            violation_tensor
+        } else {
+            violation_tensor.reshape([batch])
+        };
+        scaled_constraint_violation_penalty(lambda_cd, sized)
+    }
+
+    /// Absorb mechanics [`crate::solve_report::SolveReport`] into warm telemetry (non-converged → soft penalty).
+    #[cfg(all(feature = "thmc-coupled", feature = "mechanics-adjoint"))]
+    pub fn absorb_mechanics_solve_reports(
+        &mut self,
+        reports: impl IntoIterator<Item = crate::solve_report::SolveReport>,
+    ) {
+        for report in reports {
+            if report.converged() {
+                self.rejection_telemetry
+                    .record_commit(f64::from(report.rel_residual));
+            } else {
+                self.rejection_telemetry
+                    .record_soft_penalty(f64::from(report.rel_residual));
+            }
+            self.mechanics_solve_reports.push(report);
+        }
+    }
+
+    /// Drain accumulated THMC gate evidence after an episode rollout.
+    #[cfg(feature = "thmc-coupled")]
+    pub fn drain_thmc_gate_evidence(
+        &mut self,
+    ) -> Vec<crate::physics::solvers::thmc_step::ThmcStepGateEvidence> {
+        std::mem::take(&mut self.thmc_gate_evidence)
+    }
+
+    /// Host-side CD slack from drained THMC evidence (inadmissible → unit slack per step).
+    #[cfg(feature = "thmc-coupled")]
+    pub fn thmc_evidence_penalty_hint(&self) -> f32 {
+        use crate::runtime::gate::evidence::AdmissibilityToken;
+        let inadmissible = self
+            .thmc_gate_evidence
+            .iter()
+            .filter(|e| e.transition.admissibility == AdmissibilityToken::Inadmissible)
+            .count();
+        inadmissible as f32
     }
 
     /// Set η from catalog per-step MI scan ([`crate::ros::calibrate_eta_bound_from_trace`]; Track G.3).
@@ -199,6 +317,7 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
 
         match self.cbf.verify_tensor_update::<B>(d_int, info_gain.clone()) {
             Ok(erasure_cost) => {
+                self.rejection_telemetry.record_commit(0.0);
                 // Spatial Reward = (Alpha * Performance) - (Beta * Dissipation) - (Gamma * CO2) - Erasure Cost
                 let performance = free_energy.mul_scalar(self.alpha);
                 let penalty = dissipation
@@ -229,10 +348,13 @@ impl<B: Backend, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
 
                 Ok((verified_state, total_reward))
             }
-            Err(detail) => Err(FormalReject::ThermodynamicControlBarrier {
-                catalog_id: crate::ai::formal::LANDAUER_CBF_CATALOG_ID,
-                detail,
-            }),
+            Err(detail) => {
+                self.rejection_telemetry.record_reject();
+                Err(FormalReject::ThermodynamicControlBarrier {
+                    catalog_id: crate::ai::formal::LANDAUER_CBF_CATALOG_ID,
+                    detail,
+                })
+            }
         }
     }
 

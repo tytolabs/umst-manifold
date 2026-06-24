@@ -19,7 +19,7 @@ use umst_manifold::ai::liquid_ppo::BurnLiquidPPOAgent;
 use umst_manifold::ai::ppo::ManifoldGateway;
 use umst_manifold::core::tensors::{StatePoint, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
-use umst_manifold::core::umst_schema::SCALAR_INTERNAL_VARIABLE_0;
+use umst_manifold::core::umst_schema::{UMST_SCALAR_CHANNEL_COUNT, SCALAR_INTERNAL_VARIABLE_0};
 
 type B = NdArray<f32>;
 
@@ -147,7 +147,7 @@ fn histogram_mi_tensor_respects_landauer_ln2_cap() {
 #[test]
 fn manifold_gateway_alpha_beta_gamma_weights() {
     let dev = device();
-    let umst = umst_with_hydration(0.4, 2, 5);
+    let umst = umst_with_hydration(0.4, 2, UMST_SCALAR_CHANNEL_COUNT);
     let info = Tensor::<B, 1>::full([1], 0.001_f32, &dev);
 
     let mut g_base = ManifoldGateway::new(GateAwareCartridge, 300.0_f64, 1.0e-6_f64);

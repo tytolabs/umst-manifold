@@ -38,6 +38,8 @@ use crate::core::traits::IScienceCartridge;
 #[cfg(feature = "thmc-coupled")]
 use crate::gate::transition_proposal::ThermodynamicStateSnapshot;
 #[cfg(feature = "thmc-coupled")]
+use crate::runtime::gate::evidence::{explain_cd_transition_host, ConstraintExplanation};
+#[cfg(feature = "thmc-coupled")]
 use crate::runtime::gate::{CdTransitionCartridge, GateCartridge, TransitionEvidence};
 
 #[cfg(feature = "thmc-coupled")]
@@ -54,6 +56,8 @@ pub struct ThmcStepGateEvidence {
     pub dt_seconds: f32,
     pub time_after: f32,
     pub transition: TransitionEvidence,
+    /// Host Clausius–Duhem slack witness (immutable; feeds penalize accumulator).
+    pub constraint: ConstraintExplanation,
     /// Static tag for CI / ledger honesty — not a cryptographic digest.
     pub wiring_tag: &'static str,
 }
@@ -145,11 +149,13 @@ where
 {
     let old = thmc_state_thermodynamic_snapshot(pre, manifold)?;
     let new = thmc_state_thermodynamic_snapshot(post, manifold)?;
+    let constraint = explain_cd_transition_host(&old, &new, f64::from(dt), 1e-6);
     let transition = CdTransitionCartridge.transition_evidence(&old, &new, f64::from(dt));
     Ok(ThmcStepGateEvidence {
         dt_seconds: dt,
         time_after: post.time,
         transition,
+        constraint,
         wiring_tag: "p5-thmc-wire: CdTransitionCartridge::transition_evidence",
     })
 }

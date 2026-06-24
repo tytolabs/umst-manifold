@@ -253,6 +253,12 @@ pub struct ThmcSolver {
     ///
     /// Call [`Self::step`] as usual, or `Self::step_monolithic_implicit` to assert this branch is configured.
     pub monolithic_thmc_newton: Option<ThmcMonolithicNewtonConfig>,
+    /// Kleisli penalize accumulator — immutable [`super::thmc_step::ThmcStepGateEvidence`] per step (warm drain).
+    #[cfg(feature = "thmc-coupled")]
+    pub step_gate_evidence: Vec<super::thmc_step::ThmcStepGateEvidence>,
+    /// Mechanics port witnesses from [`crate::physics::mechanics_solve_port`] (warm drain).
+    #[cfg(all(feature = "thmc-coupled", feature = "mechanics-adjoint"))]
+    pub mechanics_solve_reports: Vec<crate::solve_report::SolveReport>,
 }
 
 impl Default for ThmcSolver {
@@ -266,7 +272,25 @@ impl Default for ThmcSolver {
             drying_ambient_h: 0.5_f32,
             implicit_t_alpha_newton: None,
             monolithic_thmc_newton: None,
+            #[cfg(feature = "thmc-coupled")]
+            step_gate_evidence: Vec::new(),
+            #[cfg(all(feature = "thmc-coupled", feature = "mechanics-adjoint"))]
+            mechanics_solve_reports: Vec::new(),
         }
+    }
+}
+
+#[cfg(feature = "thmc-coupled")]
+impl ThmcSolver {
+    /// Drain accumulated post-step gate evidence for PPO / gateway penalize morphisms.
+    pub fn drain_gate_evidence(&mut self) -> Vec<super::thmc_step::ThmcStepGateEvidence> {
+        std::mem::take(&mut self.step_gate_evidence)
+    }
+
+    /// Drain mechanics [`crate::solve_report::SolveReport`] witnesses from the operator-split loop.
+    #[cfg(feature = "mechanics-adjoint")]
+    pub fn drain_mechanics_solve_reports(&mut self) -> Vec<crate::solve_report::SolveReport> {
+        std::mem::take(&mut self.mechanics_solve_reports)
     }
 }
 
@@ -300,7 +324,7 @@ impl ThmcSolver {
     /// - Experimental builds: returns `Err` on node-count mismatch between `state` and `manifold`.
     #[must_use = "THMC state advance must be consumed or propagated; ignoring the result drops the updated physics bundle"]
     pub fn step<B, C>(
-        &self,
+        &mut self,
         cartridge: &C,
         state: ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
@@ -344,7 +368,7 @@ impl ThmcSolver {
     #[cfg(feature = "thmc-coupled")]
     #[must_use = "THMC state advance must be consumed or propagated; ignoring the result drops the updated physics bundle"]
     pub fn step_monolithic_implicit<B, C>(
-        &self,
+        &mut self,
         cartridge: &C,
         state: ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
@@ -382,7 +406,7 @@ impl ThmcSolver {
 
     #[cfg(feature = "thmc-coupled")]
     fn step_experimental<B, C>(
-        &self,
+        &mut self,
         _cartridge: &C,
         mut state: ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
@@ -746,12 +770,12 @@ impl ThmcSolver {
                     let cross_section_area = 0.01_f32;
                     #[cfg(feature = "mechanics-adjoint")]
                     {
-                        use crate::physics::mechanics_solve_port::bar_network_equilibrium_reported;
+                        use crate::physics::mechanics_solve_port::bar_network_equilibrium_reported as solve_bar_equilibrium;
                         let rel_tol = inner_cfg
                             .pcg_tolerance
                             .max(inner_cfg.cg_tolerance)
                             .max(1e-6_f32);
-                        let (u_new, _stress, _report) = bar_network_equilibrium_reported(
+                        let equilibrium = solve_bar_equilibrium(
                             state.mechanical.displacement.clone(),
                             coords_n3.clone(),
                             stiffness,
@@ -763,6 +787,9 @@ impl ThmcSolver {
                             &inner_cfg,
                             rel_tol,
                         )?;
+                        let u_new = equilibrium.0;
+                        let report = equilibrium.2;
+                        self.mechanics_solve_reports.push(report);
                         state.mechanical.displacement = u_new;
                     }
                     #[cfg(not(feature = "mechanics-adjoint"))]
@@ -835,7 +862,7 @@ impl ThmcSolver {
         };
 
         // Post-step gate evidence (`thmc_step::wire_gate_evidence_post_step` → CdTransitionCartridge).
-        let _gate_evidence = super::thmc_step::wire_gate_evidence_post_step(
+        let gate_evidence = super::thmc_step::wire_gate_evidence_post_step(
             self,
             _cartridge,
             &pre_step,
@@ -843,6 +870,7 @@ impl ThmcSolver {
             manifold,
             self.dt,
         )?;
+        self.step_gate_evidence.push(gate_evidence);
 
         state.time += self.dt;
         Ok(state)

@@ -160,7 +160,7 @@ fn chain_manifold_matrix_path(n: usize, exx: f32) -> UnifiedMaterialStateTensor<
 
 #[test]
 fn thmc_newton_outer_passes_within_six() {
-    let solver = ThmcSolver {
+    let mut solver = ThmcSolver {
         max_newton: 6_usize,
         ..Default::default()
     };
@@ -197,7 +197,7 @@ fn thmc_drying_shrinkage_within_mc2010_notional_band() {
         damage,
         time: 0.0_f32,
     };
-    let solver = ThmcSolver {
+    let mut solver = ThmcSolver {
         dt: 0.05_f32,
         max_newton: 4_usize,
         tol: 1e-3_f32,
@@ -206,6 +206,7 @@ fn thmc_drying_shrinkage_within_mc2010_notional_band() {
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
         monolithic_thmc_newton: None,
+        ..Default::default()
     };
     let mut s = state;
     for _ in 0..560 {
@@ -411,7 +412,7 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
         time: 0.0_f32,
     };
 
-    let solver = ThmcSolver {
+    let mut solver = ThmcSolver {
         dt: 0.01_f32,
         max_newton: 1_usize,
         tol: 1e-2_f32,
@@ -420,6 +421,7 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
         monolithic_thmc_newton: None,
+        ..Default::default()
     };
 
     let s_tension = solver
@@ -490,7 +492,7 @@ fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
     };
 
     let max_damage_after_step = |exx: f32| -> f32 {
-        let solver = ThmcSolver {
+        let mut solver = ThmcSolver {
             dt: 0.01_f32,
             max_newton: 1_usize,
             tol: 1e-2_f32,
@@ -499,7 +501,8 @@ fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
             drying_ambient_h: 0.5_f32,
             implicit_t_alpha_newton: None,
             monolithic_thmc_newton: None,
-        };
+        ..Default::default()
+    };
         let manifold = chain_manifold_matrix_path(n, exx);
         let s = solver
             .step(
@@ -2294,7 +2297,7 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
     };
 
     let kinetics = reference_reaction_extent_kinetics();
-    let solver_explicit = ThmcSolver {
+    let mut solver_explicit = ThmcSolver {
         dt: 0.08_f32,
         max_newton: 1_usize,
         tol: 1e-3_f32,
@@ -2303,8 +2306,9 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
         monolithic_thmc_newton: None,
+        ..Default::default()
     };
-    let solver_implicit = ThmcSolver {
+    let mut solver_implicit = ThmcSolver {
         implicit_t_alpha_newton: Some(ThmcImplicitTAlphaNewtonConfig {
             iterations: 4_usize,
             damping: 1.0_f32,
@@ -2366,7 +2370,7 @@ fn thmc_step_monolithic_newton_errors_when_both_implicit_flags_set() {
         damage: damage.clone(),
         time: 0.0_f32,
     };
-    let solver = ThmcSolver {
+    let mut solver = ThmcSolver {
         implicit_t_alpha_newton: Some(ThmcImplicitTAlphaNewtonConfig {
             iterations: 3_usize,
             damping: 1.0_f32,
@@ -2414,7 +2418,7 @@ fn thmc_step_monolithic_newton_errors_when_drying_sink_enabled() {
         damage: Tensor::<B, 3>::zeros([1, n, 1], &d),
         time: 0.0_f32,
     };
-    let solver = ThmcSolver {
+    let mut solver = ThmcSolver {
         drying_last_node_evaporation_k: 0.1_f32,
         monolithic_thmc_newton: Some(ThmcMonolithicNewtonConfig::default()),
         implicit_t_alpha_newton: None,
@@ -2461,7 +2465,7 @@ fn thmc_step_monolithic_newton_errors_when_stacked_dof_count_exceeds_64() {
         damage: Tensor::<B, 3>::zeros([1, n, 1], &d),
         time: 0.0_f32,
     };
-    let solver = ThmcSolver {
+    let mut solver = ThmcSolver {
         drying_last_node_evaporation_k: 0.0_f32,
         monolithic_thmc_newton: Some(ThmcMonolithicNewtonConfig::default()),
         implicit_t_alpha_newton: None,
@@ -2541,7 +2545,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         time: 0.0_f32,
     };
 
-    let solver = ThmcSolver {
+    let mut solver = ThmcSolver {
         dt,
         max_newton: 1_usize,
         tol: 1e-3_f32,
@@ -2550,6 +2554,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
         monolithic_thmc_newton: Some(mc.clone()),
+        ..Default::default()
     };
     let s_step = solver
         .step(&Stub, clone_thmc_state(&state0), &manifold)
@@ -2763,7 +2768,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         stacked_residual_l2_tolerance: tol_exit,
         stacked_residual_relative_to_initial: None,
     };
-    let solver_early = ThmcSolver {
+    let mut solver_early = ThmcSolver {
         monolithic_thmc_newton: Some(mc_early.clone()),
         ..solver.clone()
     };
@@ -2907,7 +2912,7 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
         time: 0.0_f32,
     };
 
-    let solver_split = ThmcSolver {
+    let mut solver_split = ThmcSolver {
         dt,
         max_newton: 1_usize,
         tol: 1e-3_f32,
@@ -2916,8 +2921,9 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
         monolithic_thmc_newton: None,
+        ..Default::default()
     };
-    let solver_mono = ThmcSolver {
+    let mut solver_mono = ThmcSolver {
         monolithic_thmc_newton: Some(mc),
         ..solver_split.clone()
     };
@@ -3016,7 +3022,7 @@ fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
     };
 
     let kinetics = reference_reaction_extent_kinetics();
-    let solver_explicit = ThmcSolver {
+    let mut solver_explicit = ThmcSolver {
         dt: 0.08_f32,
         max_newton: 1_usize,
         tol: 1e-3_f32,
@@ -3025,8 +3031,9 @@ fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
         monolithic_thmc_newton: None,
+        ..Default::default()
     };
-    let solver_implicit = ThmcSolver {
+    let mut solver_implicit = ThmcSolver {
         implicit_t_alpha_newton: Some(ThmcImplicitTAlphaNewtonConfig {
             iterations: 4_usize,
             damping: 1.0_f32,
@@ -3083,7 +3090,7 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
 
     let kinetics = reference_reaction_extent_kinetics();
     let dt = 0.08_f32;
-    let solver_explicit = ThmcSolver {
+    let mut solver_explicit = ThmcSolver {
         dt,
         max_newton: 1_usize,
         tol: 1e-3_f32,
@@ -3092,8 +3099,9 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
         drying_ambient_h: 0.5_f32,
         implicit_t_alpha_newton: None,
         monolithic_thmc_newton: None,
+        ..Default::default()
     };
-    let solver_implicit = ThmcSolver {
+    let mut solver_implicit = ThmcSolver {
         implicit_t_alpha_newton: Some(ThmcImplicitTAlphaNewtonConfig {
             iterations: 4_usize,
             damping: 1.0_f32,
@@ -3182,7 +3190,7 @@ fn thermal_implicit_newton_residual_decreases_monotonically() {
     // No Dirichlet pin — all nodes free.
     let mask = Tensor::<B, 3>::ones([1, n, 1], &d);
 
-    let solver = ThmcSolver::default();
+    let mut solver = ThmcSolver::default();
     let cfg = ThmcNewtonConfig {
         max_iterations: 20,
         residual_tolerance: 1.0e-6_f32,
@@ -3243,7 +3251,7 @@ fn thermal_implicit_matches_analytic_decay_mode() {
     let kappa = 0.05_f32;
     let dt = 0.01_f32;
     let n_steps = 100usize;
-    let solver = ThmcSolver::default();
+    let mut solver = ThmcSolver::default();
     let cfg = ThmcNewtonConfig {
         max_iterations: 200,
         residual_tolerance: 1.0e-8_f32,
