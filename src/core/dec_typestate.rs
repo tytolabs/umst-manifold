@@ -106,7 +106,6 @@ impl ScalarChannelIdx {
     }
 }
 
-<<<<<<< HEAD
 /// Channel selector for [`super::tensors::UnifiedMaterialStateTensor::project_scalar_channel`] /
 /// [`super::tensors::UnifiedMaterialStateTensor::write_scalar_channel`].
 ///
