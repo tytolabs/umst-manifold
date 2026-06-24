@@ -7,6 +7,7 @@
 
 pub mod adjoint;
 pub mod cbf;
+pub mod constraint_loss;
 #[cfg(feature = "epistemic-ppo")]
 pub mod epistemic_mi;
 pub mod formal;
