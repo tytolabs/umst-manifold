@@ -3253,9 +3253,11 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
+ "sha2",
  "sha3",
  "subtle",
  "thiserror 1.0.69",
+ "umst-layout-codegen",
 ]
 
 [[package]]

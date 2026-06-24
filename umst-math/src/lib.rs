@@ -14,6 +14,8 @@
 
 mod kahan;
 
+/// Phase 1 catalog → scalar-layout functor witness (pure; no I/O).
+pub mod catalog_functor;
 pub mod constants;
 pub mod credit;
 /// §14bis.f-S-0 — PQC primitives (ML-KEM / ML-DSA / SLH-DSA / SHA3-256).
