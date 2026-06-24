@@ -5,6 +5,9 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 # UMST Manifold: The Universal Physics Board
 
+> _This architecture is built upon the life's work of numerous scientists who formalized the mathematics of thermodynamics without ever seeing it touch physical reality. Our only contribution is humility—connecting their unbroken chain of truth to the machine._
+
+
 <!-- readme:status -->
 [![CI](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
