@@ -13,9 +13,7 @@ use super::transition_eval_registry::{ThermodynamicTransitionContext, Transition
 use super::transition_proposal::{ThermodynamicStateSnapshot, TransitionFilter};
 use crate::manifest::UmstManifest;
 use crate::runtime::catalog::catalog_lock_bundle_sha256_hex;
-use crate::runtime::catalog::traceability::{
-    HTTP_SHIM_CATALOG_ID, MIX_PREDICTION_VS_PHYSICS_GATE_FAMILY,
-};
+use crate::runtime::catalog::traceability::HTTP_SHIM_CATALOG_ID;
 
 /// Embedded rule defaults (orthogonal to catalog bytes; bump `catalog_version` when literals change).
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -87,7 +85,7 @@ impl GateEvaluator for HttpTransitionEvaluator {
     }
 
     fn gate_family(&self) -> &'static str {
-        MIX_PREDICTION_VS_PHYSICS_GATE_FAMILY
+        "http_shim_transition"
     }
 }
 

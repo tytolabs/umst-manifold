@@ -165,13 +165,9 @@ pub const HTTP_SHIM_CATALOG_ID: &str = "umst.gate.http_shim";
 
 /// Deprecated `catalog_id` slug — superseded by [`HTTP_SHIM_CATALOG_ID`].
 ///
-/// Telemetry only: [`crate::gate::http_manifest::HttpMixGateEvaluator::gate_family`] uses
-/// [`MIX_PREDICTION_VS_PHYSICS_GATE_FAMILY`]. Not in [`GATE_REGISTRY_CATALOG_IDS`] or
-/// [`ALLOW_UNUSED_GATE_CATALOG_IDS`].
+/// Domain-specific HTTP `gate_family` telemetry lives in the cartridge registry
+/// (`umst-concrete-cartridge::cartridge_registry`), not kernel traceability.
 pub const PREDICTION_VS_PHYSICS_CATALOG_ID_DEPRECATED: &str = "umst.gate.prediction_vs_physics";
-
-/// `gate_family` for HTTP bulk strength closure + Parrott kinetics (not a `catalog_id`).
-pub const MIX_PREDICTION_VS_PHYSICS_GATE_FAMILY: &str = "mix_prediction_vs_physics";
 
 /// Stable slug for [`crate::ai::cbf::ThermodynamicCBF`] / [`FormalReject::ThermodynamicControlBarrier`].
 pub const LANDAUER_CBF_CATALOG_ID: &str = "umst.gate.landauer_cbf";
