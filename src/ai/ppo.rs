@@ -147,10 +147,10 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
         for evidence in batch {
             if evidence.transition.admissibility == AdmissibilityToken::Inadmissible {
                 self.rejection_telemetry
-                    .record_soft_penalty(f64::from(evidence.constraint.violation));
+                    .record_soft_penalty(f64::from(evidence.constraint.margin.violation()));
             } else {
                 self.rejection_telemetry
-                    .record_commit(f64::from(evidence.constraint.violation));
+                    .record_commit(f64::from(evidence.constraint.margin.violation()));
             }
             self.thmc_gate_evidence.push(evidence);
         }
@@ -176,7 +176,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
         let violations: Vec<f32> = self
             .thmc_gate_evidence
             .iter()
-            .map(|e| e.constraint.violation)
+            .map(|e| e.constraint.margin.violation())
             .collect();
         let data = if violations.is_empty() {
             vec![0.0_f32]
@@ -247,7 +247,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
         self.eta = crate::ros::prototype_eta_from_trace(schema);
     }
 
-    /// Optional Clausius–Duhem soft penalty for epistemic training (`λ_cd · relu(−D_int)` per batch row).
+    /// Optional Clausius–Duhem soft penalty (`λ_cd · relu(−margin)` per batch row).
     ///
     /// With penalize features disabled or [`Self::lambda_cd`] = 0, returns a zero `[B]` tensor.
     pub fn constraint_loss_penalty(

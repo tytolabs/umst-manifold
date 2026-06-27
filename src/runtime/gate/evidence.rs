@@ -6,6 +6,11 @@
 use crate::gate::transition_proposal::{transition_outcome, ThermodynamicStateSnapshot};
 use crate::runtime::catalog::traceability::CD_TRANSITION_CATALOG_ID;
 
+use super::admissibility_margin::{
+    admissibility_from_margin, admissibility_margin_from_dissipation, AdmissibilityMargin,
+    ADMISSIBILITY_MARGIN_EPS,
+};
+
 /// Host-side admissibility witness for transition telemetry (cold edge only).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AdmissibilityToken {
@@ -19,16 +24,20 @@ pub enum AdmissibilityToken {
 /// built from detached scalars, never inside the Burn autodiff graph.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ConstraintExplanation {
+    /// Signed Clausius–Duhem margin `D_int` (R2 SSOT).
+    pub margin: AdmissibilityMargin,
+    /// Exterior slack `relu(−margin)` — backward-compatible violation scalar.
     pub violation: f32,
     pub channel_id: &'static str,
     pub admissibility: AdmissibilityToken,
 }
 
 /// Structured evidence returned by [`super::cartridge::GateCartridge::transition_evidence`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TransitionEvidence {
     pub catalog_id: &'static str,
     pub admissibility: AdmissibilityToken,
+    pub margin: AdmissibilityMargin,
 }
 
 impl TransitionEvidence {
@@ -37,13 +46,14 @@ impl TransitionEvidence {
         Self {
             catalog_id: explanation.channel_id,
             admissibility: explanation.admissibility,
+            margin: explanation.margin,
         }
     }
 }
 
 #[must_use]
 pub fn admissibility_from_violation(violation: f32) -> AdmissibilityToken {
-    if violation <= 1e-4 {
+    if violation <= ADMISSIBILITY_MARGIN_EPS {
         AdmissibilityToken::Admissible
     } else {
         AdmissibilityToken::Inadmissible
@@ -60,10 +70,12 @@ pub fn explain_cd_transition_host(
     tolerance: f64,
 ) -> ConstraintExplanation {
     let outcome = transition_outcome(old, new, dt, tolerance);
-    let violation = (-outcome.dissipation).max(0.0) as f32;
+    let margin = admissibility_margin_from_dissipation(outcome.dissipation as f32);
+    let violation = margin.violation();
     ConstraintExplanation {
+        margin,
         violation,
         channel_id: CD_TRANSITION_CATALOG_ID,
-        admissibility: admissibility_from_violation(violation),
+        admissibility: admissibility_from_margin(margin),
     }
 }
