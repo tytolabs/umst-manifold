@@ -209,7 +209,7 @@ pub struct Q1HexTopVoidColumnFractions {
 
 impl AdjointComplianceQ1Hex {
     #[allow(clippy::too_many_arguments)]
-    fn forward_state(
+    pub(crate) fn forward_state_for_compliance(
         rho_flat: &[f32],
         nx: usize,
         ny: usize,
@@ -371,7 +371,7 @@ impl AdjointComplianceQ1Hex {
         cg: &MechanicsInnerLoopConfig,
         self_weight: Option<SelfWeightConfig>,
     ) -> (Q1HexComplianceAudit, Vec<f32>) {
-        let state = Self::forward_state(
+        let state = Self::forward_state_for_compliance(
             rho_flat,
             nx,
             ny,
@@ -571,7 +571,7 @@ impl AdjointComplianceQ1Hex {
         debug_assert_eq!(f_flat.len(), n_nodes * 3);
         debug_assert_eq!(m_flat.len(), n_nodes * 3);
 
-        let state = Self::forward_state(
+        let state = Self::forward_state_for_compliance(
             &rho_flat,
             nx,
             ny,
@@ -594,8 +594,6 @@ impl AdjointComplianceQ1Hex {
 
         let comp = masked_dot(&body_force, &u_tensor_inner, &boundary_mask);
 
-        // Nodal scatter dot ≡ `Σ_e g_e ρ_e` (eight-corner mean); replaces Burn `gather`
-        // backward which yielded zero DensityNet grads on the Striatus tape (H5).
         let sens_ad = Tensor::<B, 3>::from_inner(
             Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
                 Data::new(state.nodal_sensitivity.clone(), Shape::new([1, n_nodes, 1])),
@@ -625,6 +623,44 @@ impl AdjointComplianceQ1Hex {
         (surrogate, c_raw, diag)
     }
 
+    /// Host diagnostics bundle at fixed nodal ρ (no autodiff).
+    #[allow(clippy::too_many_arguments)]
+    pub fn compliance_diagnostics_at_rho(
+        rho_flat: &[f32],
+        nx: usize,
+        ny: usize,
+        nz: usize,
+        dx: f32,
+        dy: f32,
+        dz: f32,
+        f_flat: &[f32],
+        m_flat: &[f32],
+        material: SimpElasticMaterial,
+        cg: &MechanicsInnerLoopConfig,
+        self_weight: Option<SelfWeightConfig>,
+    ) -> AdjointComplianceDiagnostics {
+        let state = Self::forward_state_for_compliance(
+            rho_flat,
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            f_flat,
+            m_flat,
+            material,
+            cg,
+            self_weight,
+        );
+        AdjointComplianceDiagnostics {
+            pcg: state.pcg,
+            equilibrium_rel_residual: state.eq_rel,
+            nodal_sensitivity: state.nodal_sensitivity,
+            finite_audit: Some(state.finite_audit),
+        }
+    }
+
     /// Inner-only compliance `f^T u` at fixed nodal ρ (finite-difference baseline; no autodiff).
     #[allow(clippy::too_many_arguments)]
     pub fn raw_compliance_at_rho(
@@ -641,7 +677,7 @@ impl AdjointComplianceQ1Hex {
         cg: &MechanicsInnerLoopConfig,
         self_weight: Option<SelfWeightConfig>,
     ) -> f32 {
-        let state = Self::forward_state(
+        let state = Self::forward_state_for_compliance(
             rho_flat,
             nx,
             ny,
@@ -699,7 +735,7 @@ impl AdjointComplianceQ1Hex {
         let rho_flat = rho_inner.into_data().value;
         let f_flat = body_force.clone().into_data().value;
         let m_flat = boundary_mask.clone().into_data().value;
-        let state = Self::forward_state(
+        let state = Self::forward_state_for_compliance(
             &rho_flat,
             nx,
             ny,

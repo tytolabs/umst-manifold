@@ -95,6 +95,8 @@ manifold-gate = []
 epistemic-ppo = ["train"]
 # Kleisli penalize stage on BurnLiquidPPOAgent::step_and_learn (λ_cd soft slack; default off).
 kleisli-ppo-hot-bind = ["train"]
+design-query = ["mechanics-adjoint-q1-hex", "topology-density-evolution"]
+design-implicit-field = ["topology-density-evolution"]
 # Landauer / CODATA via `umst-math` (enabled from egoff `manifold-integration`).
 math-constants = ["dep:umst-math", "dep:ordered-float", "umst-math/math-constants"]
 
@@ -404,3 +406,22 @@ path = "tests/catalog_functor_witness.rs"
 [[test]]
 name = "verified_umst_typestate_witness"
 path = "tests/verified_umst_typestate_witness.rs"
+
+[[test]]
+name = "compliance_functional_identity"
+path = "tests/compliance_functional_identity.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
+name = "admissibility_margin_soft_tracks_hard"
+path = "tests/admissibility_margin_soft_tracks_hard.rs"
+
+[[test]]
+name = "design_representation_voxel_parity"
+path = "tests/design_representation_voxel_parity.rs"
+required-features = ["topology-density-evolution"]
+
+[[test]]
+name = "implicit_field_scaffold"
+path = "tests/implicit_field_scaffold.rs"
+required-features = ["design-implicit-field"]
