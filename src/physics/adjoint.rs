@@ -263,7 +263,7 @@ impl AdjointCompliance {
         let c_raw = comp.into_scalar();
 
         let diag = AdjointComplianceDiagnostics {
-            pcg: pcg.clone(),
+            pcg,
             pcg_iters: pcg.iterations,
             equilibrium_rel_residual: eq_rel,
             nodal_sensitivity,
