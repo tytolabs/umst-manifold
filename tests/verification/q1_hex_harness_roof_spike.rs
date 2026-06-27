@@ -85,7 +85,7 @@ fn q1_hex_harness_roof_traction_forward_converges() {
         max_cg_iterations: 2000,
         cg_tolerance: 1e-4,
         pcg_tolerance: 1e-4,
-        use_preconditioner: true,
+        use_preconditioner: hex_precond_from_use_preconditioner(true),
         max_equilibrium_substeps: 1,
     };
 

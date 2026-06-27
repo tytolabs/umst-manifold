@@ -709,6 +709,270 @@ pub fn hex_cell_strain_energy(
     }
 }
 
+
+/// Preconditioner for projected hex PCG (logging + A/B levers).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HexPcgPrecondKind {
+    None,
+    JacobiDiagonal,
+    BlockJacobiNodal3x3,
+}
+
+#[must_use]
+pub fn hex_precond_from_use_preconditioner(use_preconditioner: bool) -> HexPcgPrecondKind {
+    if use_preconditioner {
+        HexPcgPrecondKind::JacobiDiagonal
+    } else {
+        HexPcgPrecondKind::None
+    }
+}
+
+fn invert_3x3_f64(m: [[f64; 3]; 3]) -> Option<[[f64; 3]; 3]> {
+    let a = m[0][0];
+    let b = m[0][1];
+    let c = m[0][2];
+    let d = m[1][0];
+    let e = m[1][1];
+    let f = m[1][2];
+    let g = m[2][0];
+    let h = m[2][1];
+    let i = m[2][2];
+    let det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    if det.abs() < 1e-30_f64 {
+        return None;
+    }
+    let inv_det = 1.0 / det;
+    Some([
+        [
+            (e * i - f * h) * inv_det,
+            (c * h - b * i) * inv_det,
+            (b * f - c * e) * inv_det,
+        ],
+        [
+            (f * g - d * i) * inv_det,
+            (a * i - c * g) * inv_det,
+            (c * d - a * f) * inv_det,
+        ],
+        [
+            (d * h - e * g) * inv_det,
+            (b * g - a * h) * inv_det,
+            (a * e - b * d) * inv_det,
+        ],
+    ])
+}
+
+fn invert_3x3_f32(m: [[f32; 3]; 3]) -> Option<[[f32; 3]; 3]> {
+    let a = m[0][0] as f64;
+    let b = m[0][1] as f64;
+    let c = m[0][2] as f64;
+    let d = m[1][0] as f64;
+    let e = m[1][1] as f64;
+    let f = m[1][2] as f64;
+    let g = m[2][0] as f64;
+    let h = m[2][1] as f64;
+    let i = m[2][2] as f64;
+    let inv = invert_3x3_f64([[a, b, c], [d, e, f], [g, h, i]])?;
+    Some([
+        [inv[0][0] as f32, inv[0][1] as f32, inv[0][2] as f32],
+        [inv[1][0] as f32, inv[1][1] as f32, inv[1][2] as f32],
+        [inv[2][0] as f32, inv[2][1] as f32, inv[2][2] as f32],
+    ])
+}
+
+/// Assemble nodal 3×3 diagonal blocks of `K` (row-major `n_nodes × 9`).
+pub fn hex_nodal_block_jacobi_3x3(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    blocks: &mut [f32],
+) {
+    let nx1 = nx + 1;
+    let ny1 = ny + 1;
+    let n_nodes = nx1 * ny1 * (nz + 1);
+    assert_eq!(blocks.len(), n_nodes * 9);
+    blocks.fill(0.0);
+    let mut ke = [[0.0_f32; 24]; 24];
+    for cz in 0..nz {
+        for cy in 0..ny {
+            for cx in 0..nx {
+                let c = cx + cy * nx + cz * nx * ny;
+                let e = e_cell[c].max(1e-30_f32);
+                let d = build_d_voigt(e, nu);
+                let x_corner = cell_corner_coords(cx, cy, cz, dx, dy, dz);
+                ke.iter_mut().for_each(|row| row.fill(0.0));
+                let Some((gn_bar, _det_c)) = physical_shape_gradients(x_corner, 0.0, 0.0, 0.0)
+                else {
+                    continue;
+                };
+                for &sg in &GAUSS1D {
+                    for &tg in &GAUSS1D {
+                        for &zg in &GAUSS1D {
+                            let Some((gn, detj)) = physical_shape_gradients(x_corner, sg, tg, zg)
+                            else {
+                                continue;
+                            };
+                            let wdet = WG * WG * WG * detj;
+                            let mut b = [[0.0_f32; 24]; 6];
+                            for node in 0..8 {
+                                let gx = gn[node][0];
+                                let gy = gn[node][1];
+                                let gz = gn[node][2];
+                                let gxb = gn_bar[node][0];
+                                let gyb = gn_bar[node][1];
+                                let gzb = gn_bar[node][2];
+                                let c0 = node * 3;
+                                let third = 1.0 / 3.0;
+                                let dgx = third * (gxb - gx);
+                                let dgy = third * (gyb - gy);
+                                let dgz = third * (gzb - gz);
+                                b[0][c0] = gx + dgx;
+                                b[0][c0 + 1] = dgy;
+                                b[0][c0 + 2] = dgz;
+                                b[1][c0] = dgx;
+                                b[1][c0 + 1] = gy + dgy;
+                                b[1][c0 + 2] = dgz;
+                                b[2][c0] = dgx;
+                                b[2][c0 + 1] = dgy;
+                                b[2][c0 + 2] = gz + dgz;
+                                b[3][c0] = gy;
+                                b[3][c0 + 1] = gx;
+                                b[4][c0 + 1] = gzb;
+                                b[4][c0 + 2] = gyb;
+                                b[5][c0] = gzb;
+                                b[5][c0 + 2] = gxb;
+                            }
+                            for ii in 0..24 {
+                                for jj in 0..24 {
+                                    let mut sum = 0.0_f32;
+                                    for a in 0..6 {
+                                        for b_row in 0..6 {
+                                            sum += b[a][ii] * d[a][b_row] * b[b_row][jj];
+                                        }
+                                    }
+                                    ke[ii][jj] += sum * wdet;
+                                }
+                            }
+                        }
+                    }
+                }
+                for k in 0..8 {
+                    let (ix, iy, iz) = match k {
+                        0 => (cx, cy, cz),
+                        1 => (cx + 1, cy, cz),
+                        2 => (cx + 1, cy + 1, cz),
+                        3 => (cx, cy + 1, cz),
+                        4 => (cx, cy, cz + 1),
+                        5 => (cx + 1, cy, cz + 1),
+                        6 => (cx + 1, cy + 1, cz + 1),
+                        7 => (cx, cy + 1, cz + 1),
+                        _ => unreachable!(),
+                    };
+                    let nid = idx_node(nx1, ny1, ix, iy, iz);
+                    let bo = nid * 9;
+                    for a in 0..3 {
+                        for b in 0..3 {
+                            let ia = k * 3 + a;
+                            let ib = k * 3 + b;
+                            blocks[bo + a * 3 + b] += ke[ia][ib];
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn apply_precond_jacobi_f32(diag: &[f32], mask: &[f32], r: &[f32], z: &mut [f32]) {
+    for i in 0..r.len() {
+        z[i] = mask[i] * r[i] / diag[i].max(1e-30_f32);
+    }
+}
+
+fn apply_precond_block_3x3_f32(blocks: &[f32], mask: &[f32], r: &[f32], z: &mut [f32], n_nodes: usize) {
+    z.fill(0.0);
+    for nid in 0..n_nodes {
+        let d0 = nid * 3;
+        let free = mask[d0] > 0.5 && mask[d0 + 1] > 0.5 && mask[d0 + 2] > 0.5;
+        if !free {
+            for a in 0..3 {
+                let d = d0 + a;
+                if mask[d] > 0.5 {
+                    z[d] = r[d];
+                }
+            }
+            continue;
+        }
+        let bo = nid * 9;
+        let mut m = [[0.0_f32; 3]; 3];
+        for a in 0..3 {
+            for b in 0..3 {
+                m[a][b] = blocks[bo + a * 3 + b];
+            }
+        }
+        if let Some(inv) = invert_3x3_f32(m) {
+            for a in 0..3 {
+                let mut sum = 0.0_f32;
+                for b in 0..3 {
+                    sum += inv[a][b] * r[d0 + b];
+                }
+                z[d0 + a] = sum;
+            }
+        } else {
+            for a in 0..3 {
+                z[d0 + a] = r[d0 + a];
+            }
+        }
+    }
+}
+
+fn apply_precond_jacobi_f64(diag: &[f64], mask: &[f64], r: &[f64], z: &mut [f64]) {
+    for i in 0..r.len() {
+        z[i] = mask[i] * r[i] / diag[i].max(1e-30_f64);
+    }
+}
+
+fn apply_precond_block_3x3_f64(blocks: &[f64], mask: &[f64], r: &[f64], z: &mut [f64], n_nodes: usize) {
+    z.fill(0.0);
+    for nid in 0..n_nodes {
+        let d0 = nid * 3;
+        let free = mask[d0] > 0.5 && mask[d0 + 1] > 0.5 && mask[d0 + 2] > 0.5;
+        if !free {
+            for a in 0..3 {
+                let d = d0 + a;
+                if mask[d] > 0.5 {
+                    z[d] = r[d];
+                }
+            }
+            continue;
+        }
+        let bo = nid * 9;
+        let mut m = [[0.0_f64; 3]; 3];
+        for a in 0..3 {
+            for b in 0..3 {
+                m[a][b] = blocks[bo + a * 3 + b];
+            }
+        }
+        if let Some(inv) = invert_3x3_f64(m) {
+            for a in 0..3 {
+                let mut sum = 0.0_f64;
+                for b in 0..3 {
+                    sum += inv[a][b] * r[d0 + b];
+                }
+                z[d0 + a] = sum;
+            }
+        } else {
+            for a in 0..3 {
+                z[d0 + a] = r[d0 + a];
+            }
+        }
+    }
+}
+
 /// Assembled diagonal of `K` (free rows) for Jacobi preconditioning.
 pub fn hex_diagonal(
     nx: usize,
@@ -1061,7 +1325,7 @@ pub fn hex_solve_pcg_bisect(
     diag: &mut [f32],
     scratch_ku: &mut [f32],
     max_iter: usize,
-    use_preconditioner: bool,
+    precond: HexPcgPrecondKind,
     relative_tol: f32,
     cfg: HexPcgBisectConfig,
 ) -> HexPcgBisectReport {
@@ -1089,6 +1353,10 @@ pub fn hex_solve_pcg_bisect(
     };
 
     hex_diagonal(nx, ny, nz, dx, dy, dz, nu, &e_work, diag);
+    let mut block_jacobi = vec![0.0_f32; n * 9];
+    if precond == HexPcgPrecondKind::BlockJacobiNodal3x3 {
+        hex_nodal_block_jacobi_3x3(nx, ny, nz, dx, dy, dz, nu, &e_work, &mut block_jacobi);
+    }
 
     let mut u = vec![0.0_f32; ndof];
     scratch_ku.fill(0.0);
@@ -1103,12 +1371,12 @@ pub fn hex_solve_pcg_bisect(
     f_norm = f_norm.sqrt().max(1e-30_f32);
 
     let mut z = vec![0.0_f32; ndof];
-    if use_preconditioner {
-        for i in 0..ndof {
-            z[i] = mask[i] * r[i] / diag[i];
+    match precond {
+        HexPcgPrecondKind::None => z.copy_from_slice(&r),
+        HexPcgPrecondKind::JacobiDiagonal => apply_precond_jacobi_f32(diag, mask, &r, &mut z),
+        HexPcgPrecondKind::BlockJacobiNodal3x3 => {
+            apply_precond_block_3x3_f32(&block_jacobi, mask, &r, &mut z, n)
         }
-    } else {
-        z.copy_from_slice(&r);
     }
     let mut p = z.clone();
 
@@ -1174,12 +1442,12 @@ pub fn hex_solve_pcg_bisect(
             break;
         }
 
-        if use_preconditioner {
-            for i in 0..ndof {
-                z[i] = mask[i] * r[i] / diag[i];
+        match precond {
+            HexPcgPrecondKind::None => z.copy_from_slice(&r),
+            HexPcgPrecondKind::JacobiDiagonal => apply_precond_jacobi_f32(diag, mask, &r, &mut z),
+            HexPcgPrecondKind::BlockJacobiNodal3x3 => {
+                apply_precond_block_3x3_f32(&block_jacobi, mask, &r, &mut z, n)
             }
-        } else {
-            z.copy_from_slice(&r);
         }
 
         let mut rz_new = 0.0_f32;
@@ -1242,7 +1510,7 @@ fn hex_solve_pcg_masked_f64(
     u: &mut [f32],
     diag: &mut [f32],
     max_iter: usize,
-    use_preconditioner: bool,
+    precond: HexPcgPrecondKind,
     relative_tol: f32,
     milestone_iters: Option<&[usize]>,
     mut descent_out: Option<&mut Vec<HexPcgDescentSample>>,
@@ -1260,6 +1528,15 @@ fn hex_solve_pcg_masked_f64(
     let e_solve_f32: Vec<f32> = e_solve.iter().map(|&e| e as f32).collect();
     hex_diagonal(nx, ny, nz, dx, dy, dz, nu, &e_solve_f32, diag);
     let diag64: Vec<f64> = diag.iter().map(|&d| d as f64).collect();
+    let n_nodes = (nx + 1) * (ny + 1) * (nz + 1);
+    let mut block_jacobi64 = vec![0.0_f64; n_nodes * 9];
+    if precond == HexPcgPrecondKind::BlockJacobiNodal3x3 {
+        let mut blocks_f32 = vec![0.0_f32; n_nodes * 9];
+        hex_nodal_block_jacobi_3x3(nx, ny, nz, dx, dy, dz, nu, &e_solve_f32, &mut blocks_f32);
+        for (a, b) in block_jacobi64.iter_mut().zip(&blocks_f32) {
+            *a = *b as f64;
+        }
+    }
 
     let mut u64: Vec<f64> = u.iter().map(|&x| x as f64).collect();
     for i in 0..ndof {
@@ -1289,12 +1566,12 @@ fn hex_solve_pcg_masked_f64(
     f_norm = f_norm.sqrt().max(1e-30_f64);
     let abs_tol = tol * f_norm;
 
-    if use_preconditioner {
-        for i in 0..ndof {
-            z[i] = mask64[i] * r[i] / diag64[i].max(1e-30_f64);
+    match precond {
+        HexPcgPrecondKind::None => z.copy_from_slice(&r),
+        HexPcgPrecondKind::JacobiDiagonal => apply_precond_jacobi_f64(&diag64, &mask64, &r, &mut z),
+        HexPcgPrecondKind::BlockJacobiNodal3x3 => {
+            apply_precond_block_3x3_f64(&block_jacobi64, &mask64, &r, &mut z, n_nodes)
         }
-    } else {
-        z.copy_from_slice(&r);
     }
     p.copy_from_slice(&z);
 
@@ -1325,12 +1602,12 @@ fn hex_solve_pcg_masked_f64(
             r[i] = mask64[i] * (f_solve[i] - ku[i]);
         }
 
-        if use_preconditioner {
-            for i in 0..ndof {
-                z[i] = mask64[i] * r[i] / diag64[i].max(1e-30_f64);
+        match precond {
+            HexPcgPrecondKind::None => z.copy_from_slice(&r),
+            HexPcgPrecondKind::JacobiDiagonal => apply_precond_jacobi_f64(&diag64, &mask64, &r, &mut z),
+            HexPcgPrecondKind::BlockJacobiNodal3x3 => {
+                apply_precond_block_3x3_f64(&block_jacobi64, &mask64, &r, &mut z, n_nodes)
             }
-        } else {
-            z.copy_from_slice(&r);
         }
 
         let rz_new: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum::<f64>();
@@ -1424,7 +1701,7 @@ pub fn hex_solve_pcg_f64_descent_probe(
         u,
         diag,
         max_iter,
-        use_preconditioner,
+        hex_precond_from_use_preconditioner(use_preconditioner),
         relative_tol,
         Some(milestone_iters),
         Some(&mut descent),
@@ -1450,7 +1727,7 @@ pub fn hex_solve_pcg_masked(
     diag: &mut [f32],
     scratch_ku: &mut [f32],
     max_iter: usize,
-    use_preconditioner: bool,
+    precond: HexPcgPrecondKind,
     relative_tol: f32,
 ) -> HexPcgReport {
     if hex_pcg_use_f64_lane(nx, ny, nz) {
@@ -1468,7 +1745,7 @@ pub fn hex_solve_pcg_masked(
             u,
             diag,
             max_iter,
-            use_preconditioner,
+            precond,
             relative_tol,
             None,
             None,
@@ -1488,7 +1765,7 @@ pub fn hex_solve_pcg_masked(
         diag,
         scratch_ku,
         max_iter,
-        use_preconditioner,
+        precond,
         relative_tol,
         HexPcgBisectConfig {
             loop_kind: HexPcgLoopKind::Original,
