@@ -23,7 +23,7 @@ use super::linear::masked_dot;
 use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
 use super::q1_hex_elasticity::{
     hex_cell_strain_energy, hex_equilibrium_rel_residual, hex_pcg_use_f64_lane,
-    hex_solve_pcg_masked, HexPcgPrecondKind,
+    hex_solve_pcg_masked, HexPcgPrecondKind, HexStructuredOperatorCache,
 };
 use super::time_orchestration::MechanicsInnerLoopConfig;
 use std::time::Instant;
@@ -36,6 +36,8 @@ pub struct Q1HexSolveOptions {
     pub pcg_seed_displacement: Option<Vec<f32>>,
     /// When `Some`, overrides Jacobi vs block-Jacobi for the matrix-free PCG call.
     pub precond_kind: Option<HexPreconditionerKind>,
+    /// Reuse uniform-brick `ke_unit` for matrix-free `K·u` (metrics-match).
+    pub use_operator_cache: bool,
 }
 
 fn map_hex_pcg_precond(kind: HexPreconditionerKind) -> HexPcgPrecondKind {
@@ -43,6 +45,7 @@ fn map_hex_pcg_precond(kind: HexPreconditionerKind) -> HexPcgPrecondKind {
         HexPreconditionerKind::None => HexPcgPrecondKind::None,
         HexPreconditionerKind::JacobiDiagonal => HexPcgPrecondKind::JacobiDiagonal,
         HexPreconditionerKind::BlockJacobiNodal3x3 => HexPcgPrecondKind::BlockJacobiNodal3x3,
+        HexPreconditionerKind::GeometricMultigridVCycle => HexPcgPrecondKind::GeometricMultigridVCycle,
     }
 }
 
@@ -308,6 +311,15 @@ impl AdjointComplianceQ1Hex {
             HexPreconditionerKind::from_use_preconditioner(cg.use_preconditioner)
         });
 
+        let op_cache_holder = if solve_options.use_operator_cache {
+            Some(HexStructuredOperatorCache::new(
+                nx, ny, nz, dx, dy, dz, material.nu,
+            ))
+        } else {
+            None
+        };
+        let op_cache_ref = op_cache_holder.as_ref();
+
         let t_pcg = Instant::now();
         let hex_pcg = hex_solve_pcg_masked(
             nx,
@@ -326,6 +338,7 @@ impl AdjointComplianceQ1Hex {
             max_it,
             map_hex_pcg_precond(precond_kind),
             rel_tol,
+            op_cache_ref,
         );
         let pcg_ms = t_pcg.elapsed().as_secs_f64() * 1000.0;
         let t_adjoint = Instant::now();

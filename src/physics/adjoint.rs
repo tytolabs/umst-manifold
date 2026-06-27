@@ -55,6 +55,7 @@ pub enum HexPreconditionerKind {
     None,
     JacobiDiagonal,
     BlockJacobiNodal3x3,
+    GeometricMultigridVCycle,
 }
 
 impl HexPreconditionerKind {

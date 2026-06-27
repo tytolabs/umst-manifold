@@ -154,6 +154,7 @@ impl ExtrudedPlateMechanics {
             max_it,
             q1_hex_elasticity::hex_precond_from_use_preconditioner(cg_config.use_preconditioner),
             cg_config.cg_tolerance,
+            None,
         );
         let _ = _pcg;
 
