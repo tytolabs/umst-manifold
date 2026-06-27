@@ -122,7 +122,7 @@ pub struct ThermodynamicTransitionOutcome {
     pub dissipation: f64,
     pub mass_conserved: bool,
     pub energy_positive: bool,
-    /// Hydration / reaction-extent monotonicity (`gate_sdf` hydration conjunct).
+    /// Reaction-extent monotonicity (`gate_sdf` conjunct).
     pub reaction_extent_irreversible: bool,
 }
 
@@ -219,7 +219,7 @@ fn transition_snapshot_well_formed(s: &ThermodynamicStateSnapshot) -> bool {
 /// Pure transition evaluator: `(old, new, dt, ε) → outcome` with no filter state.
 ///
 /// Aligns with [`thermodynamic_transition_admissible_tol`] and umst-math [`gate_sdf`]
-/// (mass, Clausius–Duhem, hydration/reaction-extent, strength). Telemetry-only wrapper:
+/// (mass, Clausius–Duhem, reaction-extent, strength). Telemetry-only wrapper:
 /// [`TransitionFilter::check_transition`].
 #[must_use]
 pub fn transition_outcome(
@@ -397,16 +397,16 @@ pub type ThermodynamicMixFilter = TransitionFilter;
 #[cfg(test)]
 mod transition_outcome_tests {
     use super::*;
-    use umst_math::manifold::csg::{gate_sdf, ThermoGateState};
+    use umst_math::manifold::csg::{gate_sdf, thermo_gate_from_reaction_extent, ThermoGateState};
 
     fn snapshot_to_gate(s: &ThermodynamicStateSnapshot, max_strength: f64) -> ThermoGateState {
-        ThermoGateState {
-            density: s.density,
-            free_energy: s.free_energy,
-            hydration: s.reaction_extent,
-            strength: s.strength,
+        thermo_gate_from_reaction_extent(
+            s.density,
+            s.free_energy,
+            s.reaction_extent,
+            s.strength,
             max_strength,
-        }
+        )
     }
 
     #[test]
