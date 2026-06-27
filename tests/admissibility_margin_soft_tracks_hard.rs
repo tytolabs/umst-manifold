@@ -100,13 +100,11 @@ fn soft_tracks_hard_monotonicity_sweep() {
     for i in 1..margins.len() {
         assert!(
             margins[i] <= margins[i - 1] + 1e-3,
-            "margin must decrease (more negative) as ψ spikes: {:?}",
-            margins
+            "margin must decrease (more negative) as ψ spikes: {margins:?}"
         );
         assert!(
             violations[i] >= violations[i - 1] - 1e-3,
-            "violation must be monotone non-decreasing: {:?}",
-            violations
+            "violation must be monotone non-decreasing: {violations:?}"
         );
         if violations[i] > 1e-4 {
             assert!(hard_reject[i], "positive violation must HARD reject");
