@@ -175,7 +175,7 @@ fn nodal_sensitivity_from_cell_ge(
     sens
 }
 
-struct HexForwardState {
+pub(crate) struct HexForwardState {
     rho_e_law: Vec<f32>,
     u: Vec<f32>,
     ge: Vec<f32>,

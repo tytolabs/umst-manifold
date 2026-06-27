@@ -5,8 +5,6 @@
 //!
 //! Hot-path only — no serde, HTTP, or filesystem I/O.
 
-#![cfg(feature = "mechanics-adjoint-q1-hex")]
-
 use burn::tensor::{
     backend::{AutodiffBackend, Backend},
     Tensor,
