@@ -680,9 +680,12 @@ impl AdjointComplianceQ1Hex {
         );
         AdjointComplianceDiagnostics {
             pcg: state.pcg,
+            pcg_iters: state.pcg.iterations,
             equilibrium_rel_residual: state.eq_rel,
             nodal_sensitivity: state.nodal_sensitivity,
             finite_audit: Some(state.finite_audit),
+            phase_timing: state.phase_timing,
+            precond_kind: state.precond_kind,
         }
     }
 
