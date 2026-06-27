@@ -7,6 +7,8 @@ pub mod constants_registry;
 #[cfg(feature = "math-constants")]
 pub use constants::landauer_bit_energy_joules;
 pub mod core;
+#[cfg(feature = "design-query")]
+pub mod design;
 pub mod embodied;
 pub mod gate;
 pub mod gate_server_router;
