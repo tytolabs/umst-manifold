@@ -36,7 +36,19 @@ fn q1_hex_pcg_warm_start_matches_cold_compliance() {
     };
     let opts_cold = Q1HexSolveOptions::default();
     let (_, c_cold, diag_cold) = AdjointComplianceQ1Hex::forward_loss_with_diagnostics(
-        rho.clone(), nx, ny, nz, dx, dy, dz, f.clone(), m.clone(), material, &cg, None, &opts_cold,
+        rho.clone(),
+        nx,
+        ny,
+        nz,
+        dx,
+        dy,
+        dz,
+        f.clone(),
+        m.clone(),
+        material,
+        &cg,
+        None,
+        &opts_cold,
     );
     let opts_warm = Q1HexSolveOptions {
         pcg_warm_start: true,
@@ -51,8 +63,10 @@ fn q1_hex_pcg_warm_start_matches_cold_compliance() {
     assert!(diag_warm.pcg_iters <= diag_cold.pcg_iters);
     eprintln!(
         "warm_start_ab: pcg_iters cold={} warm={} eq_rel cold={:.3e} warm={:.3e}",
-        diag_cold.pcg_iters, diag_warm.pcg_iters,
-        diag_cold.equilibrium_rel_residual, diag_warm.equilibrium_rel_residual,
+        diag_cold.pcg_iters,
+        diag_warm.pcg_iters,
+        diag_cold.equilibrium_rel_residual,
+        diag_warm.equilibrium_rel_residual,
     );
     let _ = c_cold;
 }

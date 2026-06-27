@@ -709,7 +709,6 @@ pub fn hex_cell_strain_energy(
     }
 }
 
-
 /// Preconditioner for projected hex PCG (logging + A/B levers).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HexPcgPrecondKind {
@@ -893,7 +892,13 @@ fn apply_precond_jacobi_f32(diag: &[f32], mask: &[f32], r: &[f32], z: &mut [f32]
     }
 }
 
-fn apply_precond_block_3x3_f32(blocks: &[f32], mask: &[f32], r: &[f32], z: &mut [f32], n_nodes: usize) {
+fn apply_precond_block_3x3_f32(
+    blocks: &[f32],
+    mask: &[f32],
+    r: &[f32],
+    z: &mut [f32],
+    n_nodes: usize,
+) {
     z.fill(0.0);
     for nid in 0..n_nodes {
         let d0 = nid * 3;
@@ -923,9 +928,7 @@ fn apply_precond_block_3x3_f32(blocks: &[f32], mask: &[f32], r: &[f32], z: &mut 
                 z[d0 + a] = sum;
             }
         } else {
-            for a in 0..3 {
-                z[d0 + a] = r[d0 + a];
-            }
+            z[d0..d0 + 3].copy_from_slice(&r[d0..d0 + 3]);
         }
     }
 }
@@ -936,7 +939,13 @@ fn apply_precond_jacobi_f64(diag: &[f64], mask: &[f64], r: &[f64], z: &mut [f64]
     }
 }
 
-fn apply_precond_block_3x3_f64(blocks: &[f64], mask: &[f64], r: &[f64], z: &mut [f64], n_nodes: usize) {
+fn apply_precond_block_3x3_f64(
+    blocks: &[f64],
+    mask: &[f64],
+    r: &[f64],
+    z: &mut [f64],
+    n_nodes: usize,
+) {
     z.fill(0.0);
     for nid in 0..n_nodes {
         let d0 = nid * 3;
@@ -966,9 +975,7 @@ fn apply_precond_block_3x3_f64(blocks: &[f64], mask: &[f64], r: &[f64], z: &mut 
                 z[d0 + a] = sum;
             }
         } else {
-            for a in 0..3 {
-                z[d0 + a] = r[d0 + a];
-            }
+            z[d0..d0 + 3].copy_from_slice(&r[d0..d0 + 3]);
         }
     }
 }
@@ -1604,7 +1611,9 @@ fn hex_solve_pcg_masked_f64(
 
         match precond {
             HexPcgPrecondKind::None => z.copy_from_slice(&r),
-            HexPcgPrecondKind::JacobiDiagonal => apply_precond_jacobi_f64(&diag64, &mask64, &r, &mut z),
+            HexPcgPrecondKind::JacobiDiagonal => {
+                apply_precond_jacobi_f64(&diag64, &mask64, &r, &mut z)
+            }
             HexPcgPrecondKind::BlockJacobiNodal3x3 => {
                 apply_precond_block_3x3_f64(&block_jacobi64, &mask64, &r, &mut z, n_nodes)
             }

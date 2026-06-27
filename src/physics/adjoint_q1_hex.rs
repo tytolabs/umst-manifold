@@ -19,7 +19,6 @@ use super::adjoint::{
     AdjointComplianceDiagnostics, AdjointFiniteStageAudit, AdjointForwardPhaseTiming,
     HexPreconditionerKind, SimpElasticMaterial,
 };
-use std::time::Instant;
 use super::linear::masked_dot;
 use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
 use super::q1_hex_elasticity::{
@@ -27,8 +26,7 @@ use super::q1_hex_elasticity::{
     hex_solve_pcg_masked, HexPcgPrecondKind,
 };
 use super::time_orchestration::MechanicsInnerLoopConfig;
-
-/// Discrete-adjoint compliance for extruded Q1-hex plates / bricks (batch **1**).
+use std::time::Instant;
 
 /// Per-solve knobs for Q1-hex forward (warm-start / preconditioner selection).
 #[derive(Clone, Debug, Default)]
@@ -48,6 +46,7 @@ fn map_hex_pcg_precond(kind: HexPreconditionerKind) -> HexPcgPrecondKind {
     }
 }
 
+/// Discrete-adjoint compliance for extruded Q1-hex plates / bricks (batch **1**).
 pub struct AdjointComplianceQ1Hex;
 
 fn node_id(ix: usize, iy: usize, iz: usize, nx1: usize, ny1: usize) -> usize {
@@ -305,9 +304,9 @@ impl AdjointComplianceQ1Hex {
         let mut scratch = vec![0.0_f32; n_nodes * 3];
         let max_it = cg.max_cg_iterations.max(1);
         let rel_tol = cg.pcg_tolerance.max(cg.cg_tolerance);
-        let precond_kind = solve_options
-            .precond_kind
-            .unwrap_or_else(|| HexPreconditionerKind::from_use_preconditioner(cg.use_preconditioner));
+        let precond_kind = solve_options.precond_kind.unwrap_or_else(|| {
+            HexPreconditionerKind::from_use_preconditioner(cg.use_preconditioner)
+        });
 
         let t_pcg = Instant::now();
         let hex_pcg = hex_solve_pcg_masked(
