@@ -15,7 +15,11 @@ use burn::tensor::{
     Data, Int, Shape, Tensor,
 };
 
-use super::adjoint::{AdjointComplianceDiagnostics, AdjointFiniteStageAudit, SimpElasticMaterial};
+use super::adjoint::{
+    AdjointComplianceDiagnostics, AdjointFiniteStageAudit, AdjointForwardPhaseTiming,
+    HexPreconditionerKind, SimpElasticMaterial,
+};
+use std::time::Instant;
 use super::linear::masked_dot;
 use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
 use super::q1_hex_elasticity::{
@@ -184,6 +188,8 @@ struct HexForwardState {
     eq_rel: f32,
     nodal_sensitivity: Vec<f32>,
     finite_audit: AdjointFiniteStageAudit,
+    phase_timing: AdjointForwardPhaseTiming,
+    precond_kind: HexPreconditionerKind,
 }
 
 /// Post-processing audit for B6 **c1** gate diagnosis (no autodiff).
@@ -228,6 +234,7 @@ impl AdjointComplianceQ1Hex {
         let n_nodes = nx1 * ny1 * (nz + 1);
         let n_cells = nx * ny * nz;
 
+        let t_assemble = Instant::now();
         let mut e_cell = vec![0.0_f32; n_cells];
         let mut rho_e_law = vec![0.0_f32; n_cells];
 
@@ -259,12 +266,16 @@ impl AdjointComplianceQ1Hex {
             }
         }
 
+        let assemble_ms = t_assemble.elapsed().as_secs_f64() * 1000.0;
+
         let mut u = vec![0.0_f32; n_nodes * 3];
         let mut diag = vec![0.0_f32; n_nodes * 3];
         let mut scratch = vec![0.0_f32; n_nodes * 3];
         let max_it = cg.max_cg_iterations.max(1);
         let rel_tol = cg.pcg_tolerance.max(cg.cg_tolerance);
+        let precond_kind = HexPreconditionerKind::from_use_preconditioner(cg.use_preconditioner);
 
+        let t_pcg = Instant::now();
         let hex_pcg = hex_solve_pcg_masked(
             nx,
             ny,
@@ -283,6 +294,8 @@ impl AdjointComplianceQ1Hex {
             cg.use_preconditioner,
             rel_tol,
         );
+        let pcg_ms = t_pcg.elapsed().as_secs_f64() * 1000.0;
+        let t_adjoint = Instant::now();
 
         // f64 lane: bind on solver `rel_residual` (f64 `u64` before f32 round-trip).
         let eq_rel = if hex_pcg_use_f64_lane(nx, ny, nz) {
@@ -343,6 +356,13 @@ impl AdjointComplianceQ1Hex {
             dx_char: dx.min(dy).min(dz),
         };
 
+        let adjoint_ms = t_adjoint.elapsed().as_secs_f64() * 1000.0;
+        let phase_timing = AdjointForwardPhaseTiming {
+            assemble_ms,
+            pcg_ms,
+            adjoint_ms,
+        };
+
         HexForwardState {
             rho_e_law,
             u,
@@ -352,6 +372,8 @@ impl AdjointComplianceQ1Hex {
             eq_rel,
             nodal_sensitivity,
             finite_audit,
+            phase_timing,
+            precond_kind,
         }
     }
 
@@ -617,9 +639,12 @@ impl AdjointComplianceQ1Hex {
 
         let diag = AdjointComplianceDiagnostics {
             pcg: state.pcg,
+            pcg_iters: state.pcg.iterations,
             equilibrium_rel_residual: state.eq_rel,
             nodal_sensitivity: state.nodal_sensitivity,
             finite_audit: Some(state.finite_audit),
+            phase_timing: state.phase_timing,
+            precond_kind: state.precond_kind,
         };
 
         (surrogate, c_raw, diag)
