@@ -49,15 +49,45 @@ pub struct AdjointFiniteStageAudit {
     pub first_bad_stage: Option<&'static str>,
 }
 
+/// Preconditioner label for B6 per-outer metrics (logging only).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HexPreconditionerKind {
+    None,
+    JacobiDiagonal,
+}
+
+impl HexPreconditionerKind {
+    #[must_use]
+    pub fn from_use_preconditioner(use_preconditioner: bool) -> Self {
+        if use_preconditioner {
+            Self::JacobiDiagonal
+        } else {
+            Self::None
+        }
+    }
+}
+
+/// Wall-clock phase splits for one Q1-hex forward pass (ms, harness-facing).
+#[derive(Clone, Copy, Debug, Default)]
+pub struct AdjointForwardPhaseTiming {
+    pub assemble_ms: f64,
+    pub pcg_ms: f64,
+    pub adjoint_ms: f64,
+}
+
 /// H4 diagnosis bundle: forward PCG telemetry + static equilibrium residual + discrete nodal \(\mathrm{d}c/\mathrm{d}\rho\).
 #[derive(Clone, Debug)]
 pub struct AdjointComplianceDiagnostics {
     pub pcg: BarNetworkPcgReport,
+    /// PCG iteration count (alias of [`BarNetworkPcgReport::iterations`] for shell metrics).
+    pub pcg_iters: usize,
     /// \(\|P(f-Ku)\|_2/\|Pf\|_2\) after the forward solve (discrete adjoint has no separate PCG).
     pub equilibrium_rel_residual: f32,
     /// Nodal \(\mathrm{d}c/\mathrm{d}\rho_i\) from edge sensitivities (mean split on endpoints).
     pub nodal_sensitivity: Vec<f32>,
     pub finite_audit: Option<AdjointFiniteStageAudit>,
+    pub phase_timing: AdjointForwardPhaseTiming,
+    pub precond_kind: HexPreconditionerKind,
 }
 
 /// Scatter edge-wise \(\mathrm{d}c/\mathrm{d}\rho_e\) to nodes with the SIMP mean rule.
@@ -230,10 +260,13 @@ impl AdjointCompliance {
         let c_raw = comp.into_scalar();
 
         let diag = AdjointComplianceDiagnostics {
-            pcg,
+            pcg: pcg.clone(),
+            pcg_iters: pcg.iterations,
             equilibrium_rel_residual: eq_rel,
             nodal_sensitivity,
             finite_audit: None,
+            phase_timing: AdjointForwardPhaseTiming::default(),
+            precond_kind: HexPreconditionerKind::from_use_preconditioner(cg.use_preconditioner),
         };
 
         (surrogate, c_raw, diag)
