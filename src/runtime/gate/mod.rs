@@ -16,7 +16,9 @@ pub use admissibility_margin::{
 };
 pub use cartridge::{CdTransitionCartridge, GateCartridge};
 #[cfg(feature = "ucrs-provenance")]
-pub use cold_wire::{transition_evidence_to_wire, TransitionEvidenceWire};
+pub use cold_wire::{
+    transition_evidence_to_wire, SpineEventCost, TransitionEvidenceWire,
+};
 pub use evidence::{
     explain_cd_transition_host, AdmissibilityToken, ConstraintExplanation, TransitionEvidence,
     UcrsObservedAtWire,

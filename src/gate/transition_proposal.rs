@@ -122,6 +122,8 @@ pub struct ThermodynamicTransitionOutcome {
     pub dissipation: f64,
     pub mass_conserved: bool,
     pub energy_positive: bool,
+    /// Hydration / reaction-extent monotonicity (`gate_sdf` hydration conjunct).
+    pub reaction_extent_irreversible: bool,
 }
 
 impl ThermodynamicTransitionOutcome {
@@ -200,6 +202,9 @@ impl TransitionFilter {
 /// Default numeric tolerance for scalar transition gates (C-ABI and host evaluators).
 pub const TRANSITION_TOLERANCE: f64 = 1e-6;
 
+/// Mass jump band (kg/m³) — mirrors umst-math `GATE_MASS_TOLERANCE_KG_M3` / registry.
+pub const GATE_MASS_TOLERANCE_KG_M3: f64 = 100.0;
+
 #[must_use]
 fn transition_snapshot_well_formed(s: &ThermodynamicStateSnapshot) -> bool {
     s.density.is_finite()
@@ -213,7 +218,9 @@ fn transition_snapshot_well_formed(s: &ThermodynamicStateSnapshot) -> bool {
 
 /// Pure transition evaluator: `(old, new, dt, ε) → outcome` with no filter state.
 ///
-/// FP SSOT for admissibility; [`TransitionFilter::check_transition`] adds telemetry only.
+/// Aligns with [`thermodynamic_transition_admissible_tol`] and umst-math [`gate_sdf`]
+/// (mass, Clausius–Duhem, hydration/reaction-extent, strength). Telemetry-only wrapper:
+/// [`TransitionFilter::check_transition`].
 #[must_use]
 pub fn transition_outcome(
     old_state: &ThermodynamicStateSnapshot,
@@ -231,25 +238,30 @@ pub fn transition_outcome(
             dissipation: 0.0,
             mass_conserved: false,
             energy_positive: false,
+            reaction_extent_irreversible: false,
         };
     }
 
-    let mass_conserved = (new_state.density - old_state.density).abs() < 100.0;
+    let mass_conserved =
+        (new_state.density - old_state.density).abs() < GATE_MASS_TOLERANCE_KG_M3;
 
     let rho = (old_state.density + new_state.density) / 2.0;
     let psi_dot = (new_state.free_energy - old_state.free_energy) / (dt + 1e-10);
     let d_int = -rho * psi_dot;
 
     let strength_valid = new_state.strength >= old_state.strength - tolerance;
+    let reaction_extent_irreversible =
+        new_state.reaction_extent >= old_state.reaction_extent - tolerance;
 
     let energy_positive = d_int >= -tolerance && strength_valid;
-    let accepted = mass_conserved && energy_positive;
+    let accepted = mass_conserved && energy_positive && reaction_extent_irreversible;
 
     ThermodynamicTransitionOutcome {
         accepted,
         dissipation: d_int,
         mass_conserved,
         energy_positive,
+        reaction_extent_irreversible,
     }
 }
 
@@ -316,7 +328,8 @@ pub fn thermodynamic_transition_admissible_tol(
     {
         return false;
     }
-    let mass_conserved = (new_density - old_density).abs() < 100.0;
+    let mass_conserved =
+        (new_density - old_density).abs() < GATE_MASS_TOLERANCE_KG_M3;
     let rho = (old_density + new_density) / 2.0;
     let psi_dot = (new_free_energy - old_free_energy) / (dt + 1e-10);
     let d_int = -rho * psi_dot;
@@ -382,3 +395,69 @@ pub type MixProposalScalars = TransitionScalars;
 
 #[deprecated(note = "renamed to TransitionFilter")]
 pub type ThermodynamicMixFilter = TransitionFilter;
+
+#[cfg(test)]
+mod transition_outcome_tests {
+    use super::*;
+    use umst_math::manifold::csg::{gate_sdf, ThermoGateState};
+
+    fn snapshot_to_gate(s: &ThermodynamicStateSnapshot, max_strength: f64) -> ThermoGateState {
+        ThermoGateState {
+            density: s.density,
+            free_energy: s.free_energy,
+            hydration: s.reaction_extent,
+            strength: s.strength,
+            max_strength,
+        }
+    }
+
+    #[test]
+    fn transition_outcome_matches_thermodynamic_admissible_tol() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        let mut new = old;
+        new.reaction_extent = 0.35;
+        new.free_energy = old.free_energy - 100.0;
+        let dt = 1.0;
+        let tol = TRANSITION_TOLERANCE;
+        let outcome = transition_outcome(&old, &new, dt, tol);
+        let adm = thermodynamic_transition_admissible_tol(
+            old.density,
+            old.free_energy,
+            old.reaction_extent,
+            old.strength,
+            new.density,
+            new.free_energy,
+            new.reaction_extent,
+            new.strength,
+            80.0,
+            dt,
+            tol,
+        );
+        assert_eq!(outcome.accepted, adm);
+        assert!(outcome.reaction_extent_irreversible);
+    }
+
+    #[test]
+    fn transition_outcome_rejects_reaction_extent_regression() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0);
+        let mut new = old;
+        new.reaction_extent = 0.1;
+        let outcome = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
+        assert!(!outcome.reaction_extent_irreversible);
+        assert!(!outcome.accepted);
+    }
+
+    #[test]
+    fn transition_outcome_aligns_with_gate_sdf_sign() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+        let outcome = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
+        let g = gate_sdf(
+            &snapshot_to_gate(&old, 80.0),
+            &snapshot_to_gate(&new, 80.0),
+        );
+        if outcome.accepted {
+            assert!(g <= TRANSITION_TOLERANCE, "accepted ⇒ gate_sdf ≤ ε ({g})");
+        }
+    }
+}

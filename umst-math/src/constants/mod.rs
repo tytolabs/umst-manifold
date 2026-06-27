@@ -4,4 +4,5 @@
 //! mirror lives in `egoff/egoffimprov.md` §24a (`egoffplan.md` §0.4 taxonomy).
 
 pub mod registry;
+pub mod provenance;
 pub mod toolchain_pin;
