@@ -18,6 +18,13 @@ pub enum AdmissibilityToken {
     Inadmissible,
 }
 
+/// Cold-edge wire for optional UCRS provenance (`ucrs-provenance` boundary).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct UcrsObservedAtWire {
+    pub wall_ms: i64,
+    pub ucrs_seq: u64,
+}
+
 /// Pure-data explanation sidecar for a gate transition witness.
 ///
 /// Mirrors [`crate::ai::constraint_loss::ConstraintExplanation`] on the host path —
@@ -38,6 +45,8 @@ pub struct TransitionEvidence {
     pub catalog_id: &'static str,
     pub admissibility: AdmissibilityToken,
     pub margin: AdmissibilityMargin,
+    /// Present when cold-edge telemetry carries a UCRS observation stamp.
+    pub observed_at: Option<UcrsObservedAtWire>,
 }
 
 impl TransitionEvidence {
@@ -47,7 +56,14 @@ impl TransitionEvidence {
             catalog_id: explanation.channel_id,
             admissibility: explanation.admissibility,
             margin: explanation.margin,
+            observed_at: None,
         }
+    }
+
+    #[must_use]
+    pub fn with_observed_at(mut self, stamp: UcrsObservedAtWire) -> Self {
+        self.observed_at = Some(stamp);
+        self
     }
 }
 
@@ -77,5 +93,26 @@ pub fn explain_cd_transition_host(
         violation,
         channel_id: CD_TRANSITION_CATALOG_ID,
         admissibility: admissibility_from_margin(margin),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn transition_evidence_observed_at_wire_optional() {
+        use crate::gate::transition_proposal::ThermodynamicStateSnapshot;
+
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        let new = old;
+        let base = explain_cd_transition_host(&old, &new, 1.0, 1e-6);
+        let evidence = TransitionEvidence::from_constraint_explanation(base);
+        assert!(evidence.observed_at.is_none());
+        let stamped = evidence.with_observed_at(UcrsObservedAtWire {
+            wall_ms: 1_718_745_600_000,
+            ucrs_seq: 1,
+        });
+        assert_eq!(stamped.observed_at.unwrap().ucrs_seq, 1);
     }
 }
