@@ -19,7 +19,6 @@ use super::adjoint::{
     AdjointComplianceDiagnostics, AdjointFiniteStageAudit, AdjointForwardPhaseTiming,
     HexPreconditionerKind, SimpElasticMaterial,
 };
-use std::time::Instant;
 use super::linear::masked_dot;
 use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
 use super::q1_hex_elasticity::{
@@ -27,6 +26,7 @@ use super::q1_hex_elasticity::{
     hex_solve_pcg_masked,
 };
 use super::time_orchestration::MechanicsInnerLoopConfig;
+use std::time::Instant;
 
 /// Discrete-adjoint compliance for extruded Q1-hex plates / bricks (batch **1**).
 pub struct AdjointComplianceQ1Hex;
