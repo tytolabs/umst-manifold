@@ -67,3 +67,41 @@ pub trait GateCartridge {
 
 /// Spatial physics port (Phase B subtyping marker).
 pub trait SpatialCartridge<B: Backend>: IScienceCartridge<B> {}
+
+// --- R4 DesignRepresentation port (agent-facing refactor) ---
+
+/// Learnable or checkpointed design parameters (latent code or flattened logits).
+#[derive(Clone, Debug)]
+pub struct DesignLatent<B: Backend> {
+    pub tensor: Tensor<B, 2>,
+}
+
+/// Decoded geometry on the active DEC graph — input to SIMP / UMST projection.
+#[derive(Clone, Debug)]
+pub struct Geometry<B: Backend> {
+    /// Nodal density ρ ∈ (0,1), shape `[B, N, 1]`.
+    pub density: Tensor<B, 3>,
+    /// Optional signed distance φ at nodes (implicit path).
+    pub signed_distance: Option<Tensor<B, 3>>,
+    /// Query coordinates used for decode, `[B, N, 3]`.
+    pub coords: Tensor<B, 3>,
+}
+
+/// Decode failures on the hot design path (total — no panic).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DesignDecodeError {
+    ShapeMismatch,
+    NonFinite,
+}
+
+/// Design geometry decode port — orthogonal to [`IScienceCartridge`] material law.
+pub trait DesignRepresentation<B: Backend> {
+    fn repr_id(&self) -> &'static str;
+
+    /// Decode latent → geometry. Must be pure (no IO).
+    fn decode(
+        &self,
+        latent: &DesignLatent<B>,
+        query_coords: Tensor<B, 3>,
+    ) -> Result<Geometry<B>, DesignDecodeError>;
+}

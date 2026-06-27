@@ -3,10 +3,15 @@
 
 //! Gate evidence contracts for cold-edge telemetry.
 
+pub mod admissibility_margin;
 pub mod cartridge;
 pub mod evidence;
 pub mod explain_codes;
 
+pub use admissibility_margin::{
+    admissibility_from_margin, admissibility_margin_from_dissipation, AdmissibilityMargin,
+    ADMISSIBILITY_MARGIN_EPS,
+};
 pub use cartridge::{CdTransitionCartridge, GateCartridge};
 pub use evidence::{
     explain_cd_transition_host, AdmissibilityToken, ConstraintExplanation, TransitionEvidence,

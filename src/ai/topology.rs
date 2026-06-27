@@ -71,6 +71,72 @@ impl<B: Backend<FloatElem = f32>> DensityNet<B> {
     }
 }
 
+#[cfg(feature = "topology-density-evolution")]
+use crate::core::traits::{DesignDecodeError, DesignLatent, DesignRepresentation, Geometry};
+
+/// R4 adapter: nodal voxel density via [`DensityNet`] (parity-first).
+#[cfg(feature = "topology-density-evolution")]
+#[derive(Clone, Debug)]
+pub struct VoxelDensity<B: Backend> {
+    pub density_net: DensityNet<B>,
+}
+
+#[cfg(feature = "topology-density-evolution")]
+impl<B: Backend<FloatElem = f32>> VoxelDensity<B> {
+    pub fn new(density_net: DensityNet<B>) -> Self {
+        Self { density_net }
+    }
+
+    /// Single choke point for B6 / harness decode (zero offset when latent is zero).
+    pub fn decode_voxel_density(
+        &self,
+        latent: &DesignLatent<B>,
+        query_coords: Tensor<B, 3>,
+    ) -> Result<Geometry<B>, DesignDecodeError> {
+        self.decode(latent, query_coords)
+    }
+}
+
+#[cfg(feature = "topology-density-evolution")]
+impl<B: Backend<FloatElem = f32>> DesignRepresentation<B> for VoxelDensity<B> {
+    fn repr_id(&self) -> &'static str {
+        "umst.design.voxel_density"
+    }
+
+    fn decode(
+        &self,
+        latent: &DesignLatent<B>,
+        query_coords: Tensor<B, 3>,
+    ) -> Result<Geometry<B>, DesignDecodeError> {
+        let mut density = self.density_net.forward_batched(query_coords.clone());
+        let [b, n, _] = density.dims();
+        let latent_dim = latent.tensor.dims()[1];
+        if latent_dim == 1 {
+            let offset = latent.tensor.clone().reshape([b, 1, 1]);
+            density = density.add(offset);
+        } else if latent_dim == n {
+            let offset = latent.tensor.clone().reshape([b, n, 1]);
+            density = density.add(offset);
+        } else if latent_dim != 1 && latent_dim != n {
+            return Err(DesignDecodeError::ShapeMismatch);
+        }
+        if density
+            .clone()
+            .into_data()
+            .value
+            .iter()
+            .any(|x| !x.is_finite())
+        {
+            return Err(DesignDecodeError::NonFinite);
+        }
+        Ok(Geometry {
+            density,
+            signed_distance: None,
+            coords: query_coords,
+        })
+    }
+}
+
 /// Neural-SIMP optimizer shell: volume target \(V^\*\), SIMP exponent \(p\), and [`DensityNet`].
 ///
 /// Not a Burn [`Module`] itself (scalar hyperparameters are plain `f32`); only [`DensityNet`] carries
@@ -103,6 +169,23 @@ impl<B: Backend<FloatElem = f32>> TopologyOptimizer<B> {
     /// or **`solver-experimental`**.
     pub fn pseudo_density_at_coords(&self, coords: Tensor<B, 3>) -> Tensor<B, 3> {
         self.density_net.forward_batched(coords)
+    }
+
+    /// Optimizer vs gate penalization pair for [`crate::design::query::DesignQueryContext`] (R3 v0).
+    #[cfg(feature = "design-query")]
+    pub fn design_query_penalizations(
+        &self,
+        outer: usize,
+        total: usize,
+    ) -> (
+        crate::physics::compliance_functional::CompliancePenalization,
+        crate::physics::compliance_functional::CompliancePenalization,
+    ) {
+        use crate::physics::compliance_functional::CompliancePenalization;
+        (
+            CompliancePenalization::Schedule { outer, total },
+            CompliancePenalization::Gate(3.0),
+        )
     }
 }
 

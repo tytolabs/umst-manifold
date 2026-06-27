@@ -3,6 +3,8 @@
 
 pub mod adjoint;
 #[cfg(feature = "mechanics-adjoint-q1-hex")]
+pub mod compliance_functional;
+#[cfg(feature = "mechanics-adjoint-q1-hex")]
 pub mod adjoint_q1_hex;
 pub mod dec_operators;
 pub mod dec_primal;

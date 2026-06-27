@@ -12,6 +12,7 @@ use crate::runtime::catalog::traceability::CD_TRANSITION_CATALOG_ID;
 pub use crate::runtime::gate::evidence::{
     admissibility_from_violation, AdmissibilityToken, ConstraintExplanation,
 };
+pub use crate::runtime::gate::{AdmissibilityMargin, ADMISSIBILITY_MARGIN_EPS};
 
 /// Numerical floor on `dt` matching [`crate::gate::transition_proposal::transition_outcome`].
 const DT_EPS: f32 = 1e-10;
@@ -22,7 +23,22 @@ const K_BOLTZMANN_F32: f32 = 1.380_649e-23;
 /// ln(2) bit factor for Landauer erasure floor.
 const LN2_F32: f32 = std::f32::consts::LN_2;
 
-/// Per-batch ReLU slack for Clausius–Duhem dissipation violation.
+/// Per-batch signed Clausius–Duhem margin `D_int = −ρ ψ̇`.
+pub fn clausius_duhem_margin<B: Backend<FloatElem = f32>>(
+    old_density: Tensor<B, 1>,
+    new_density: Tensor<B, 1>,
+    old_free_energy: Tensor<B, 1>,
+    new_free_energy: Tensor<B, 1>,
+    dt_s: Tensor<B, 1>,
+) -> Tensor<B, 1> {
+    let rho = old_density.add(new_density).div_scalar(2.0);
+    let psi_dot = new_free_energy
+        .sub(old_free_energy)
+        .div(dt_s.add_scalar(DT_EPS));
+    psi_dot.mul(rho).neg()
+}
+
+/// Per-batch ReLU slack for Clausius–Duhem dissipation violation (`relu(−margin)`).
 ///
 /// Mirrors the host gate surrogate `D_int = −ρ ψ̇` with
 /// `ρ = (ρ_old + ρ_new) / 2`, `ψ̇ = (ψ_new − ψ_old) / (Δt + ε)`, and returns
@@ -38,12 +54,13 @@ pub fn clausius_duhem_violation<B: Backend<FloatElem = f32>>(
     new_free_energy: Tensor<B, 1>,
     dt_s: Tensor<B, 1>,
 ) -> Tensor<B, 1> {
-    let rho = old_density.add(new_density).div_scalar(2.0);
-    let psi_dot = new_free_energy
-        .sub(old_free_energy)
-        .div(dt_s.add_scalar(DT_EPS));
-    let d_int = psi_dot.mul(rho).neg();
-    relu(d_int.neg())
+    relu(clausius_duhem_margin(
+        old_density,
+        new_density,
+        old_free_energy,
+        new_free_energy,
+        dt_s,
+    ).neg())
 }
 
 /// Weighted violation slack from host gate evidence (`λ_cd · violation` per witness).
@@ -126,6 +143,13 @@ pub fn explain_clausius_duhem_violation<B: Backend<FloatElem = f32>>(
     new_free_energy: Tensor<B, 1>,
     dt_s: Tensor<B, 1>,
 ) -> ConstraintExplanation {
+    let margin_tensor = clausius_duhem_margin(
+        old_density.clone(),
+        new_density.clone(),
+        old_free_energy.clone(),
+        new_free_energy.clone(),
+        dt_s.clone(),
+    );
     let violation = clausius_duhem_violation(
         old_density,
         new_density,
@@ -133,12 +157,19 @@ pub fn explain_clausius_duhem_violation<B: Backend<FloatElem = f32>>(
         new_free_energy,
         dt_s,
     );
+    let m = margin_tensor
+        .clone()
+        .into_data()
+        .value
+        .into_iter()
+        .fold(0.0_f32, |a, b| if b < a { b } else { a });
     let v = violation
         .into_data()
         .value
         .into_iter()
         .fold(0.0_f32, f32::max);
     ConstraintExplanation {
+        margin: AdmissibilityMargin(m),
         violation: v,
         channel_id: CD_TRANSITION_CATALOG_ID,
         admissibility: admissibility_from_violation(v),
