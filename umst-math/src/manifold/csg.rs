@@ -64,6 +64,24 @@ pub struct ThermoGateState {
     pub max_strength: f64,
 }
 
+/// Build gate state from thermodynamic scalars (`reaction_extent` maps to formal hydration conjunct).
+#[must_use]
+pub fn thermo_gate_from_reaction_extent(
+    density: f64,
+    free_energy: f64,
+    reaction_extent: f64,
+    strength: f64,
+    max_strength: f64,
+) -> ThermoGateState {
+    ThermoGateState {
+        density,
+        free_energy,
+        hydration: reaction_extent,
+        strength,
+        max_strength,
+    }
+}
+
 pub fn mass_conservation_sdf(old: &ThermoGateState, new: &ThermoGateState) -> f64 {
     (new.density - old.density).abs() - M_TOL
 }
