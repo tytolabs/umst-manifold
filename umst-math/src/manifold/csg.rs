@@ -70,6 +70,14 @@ pub fn clausius_duhem_sdf(old: &ThermoGateState, new: &ThermoGateState) -> f64 {
     new.free_energy - old.free_energy
 }
 
+/// Clausius–Duhem admissibility conjunct (`Gate.lean`: `new.freeEnergy ≤ old.freeEnergy`).
+///
+/// Parametric over any scalar ψ (material free energy, clock desync energy, etc.).
+#[must_use]
+pub fn clausius_duhem_admissible(old_free_energy: f64, new_free_energy: f64) -> bool {
+    new_free_energy <= old_free_energy
+}
+
 pub fn hydration_irreversibility_sdf(old: &ThermoGateState, new: &ThermoGateState) -> f64 {
     old.hydration - new.hydration
 }

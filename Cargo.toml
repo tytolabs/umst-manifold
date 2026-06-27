@@ -77,6 +77,8 @@ information_density = []
 solver-tests = ["solver-experimental"]
 # Optional structured formal witness wiring (`catalog_schema_digest` on UMST + gateway).
 formal-witness = []
+# Cold-edge UCRS provenance wire on gate verdicts (no libp2p / no hot-path clock).
+ucrs-provenance = ["serde"]
 # Compiles ROS 2 serde contract module [`ros`].
 ros2-contract = []
 # Compiles [`src/bin/gate_server.rs`] (+ opt-in gate HTTP integration tests). Alias: `gate-server`.

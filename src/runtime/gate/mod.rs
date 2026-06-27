@@ -5,6 +5,8 @@
 
 pub mod admissibility_margin;
 pub mod cartridge;
+#[cfg(feature = "ucrs-provenance")]
+pub mod cold_wire;
 pub mod evidence;
 pub mod explain_codes;
 
@@ -13,6 +15,8 @@ pub use admissibility_margin::{
     ADMISSIBILITY_MARGIN_EPS,
 };
 pub use cartridge::{CdTransitionCartridge, GateCartridge};
+#[cfg(feature = "ucrs-provenance")]
+pub use cold_wire::{transition_evidence_to_wire, TransitionEvidenceWire};
 pub use evidence::{
     explain_cd_transition_host, AdmissibilityToken, ConstraintExplanation, TransitionEvidence,
     UcrsObservedAtWire,
