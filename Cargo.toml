@@ -199,6 +199,10 @@ path = "tests/verification/q1_hex_pcg_residual_probe.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
+name = "q1_hex_pcg_warm_start_ab"
+path = "tests/verification/q1_hex_pcg_warm_start_ab.rs"
+
+[[test]]
 name = "q1_hex_forward_perf_instrument"
 path = "tests/verification/q1_hex_forward_perf_instrument.rs"
 

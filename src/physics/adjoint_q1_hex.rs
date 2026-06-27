@@ -24,11 +24,30 @@ use super::linear::masked_dot;
 use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
 use super::q1_hex_elasticity::{
     hex_cell_strain_energy, hex_equilibrium_rel_residual, hex_pcg_use_f64_lane,
-    hex_solve_pcg_masked,
+    hex_solve_pcg_masked, HexPcgPrecondKind,
 };
 use super::time_orchestration::MechanicsInnerLoopConfig;
 
 /// Discrete-adjoint compliance for extruded Q1-hex plates / bricks (batch **1**).
+
+/// Per-solve knobs for Q1-hex forward (warm-start / preconditioner selection).
+#[derive(Clone, Debug, Default)]
+pub struct Q1HexSolveOptions {
+    /// When true and [`Self::pcg_seed_displacement`] matches DOF length, seed PCG with that `u`.
+    pub pcg_warm_start: bool,
+    pub pcg_seed_displacement: Option<Vec<f32>>,
+    /// When `Some`, overrides Jacobi vs block-Jacobi for the matrix-free PCG call.
+    pub precond_kind: Option<HexPreconditionerKind>,
+}
+
+fn map_hex_pcg_precond(kind: HexPreconditionerKind) -> HexPcgPrecondKind {
+    match kind {
+        HexPreconditionerKind::None => HexPcgPrecondKind::None,
+        HexPreconditionerKind::JacobiDiagonal => HexPcgPrecondKind::JacobiDiagonal,
+        HexPreconditionerKind::BlockJacobiNodal3x3 => HexPcgPrecondKind::BlockJacobiNodal3x3,
+    }
+}
+
 pub struct AdjointComplianceQ1Hex;
 
 fn node_id(ix: usize, iy: usize, iz: usize, nx1: usize, ny1: usize) -> usize {
@@ -228,6 +247,7 @@ impl AdjointComplianceQ1Hex {
         material: SimpElasticMaterial,
         cg: &MechanicsInnerLoopConfig,
         self_weight: Option<SelfWeightConfig>,
+        solve_options: &Q1HexSolveOptions,
     ) -> HexForwardState {
         let nx1 = nx + 1;
         let ny1 = ny + 1;
@@ -268,12 +288,26 @@ impl AdjointComplianceQ1Hex {
 
         let assemble_ms = t_assemble.elapsed().as_secs_f64() * 1000.0;
 
-        let mut u = vec![0.0_f32; n_nodes * 3];
+        let mut u = if solve_options.pcg_warm_start {
+            if let Some(seed) = &solve_options.pcg_seed_displacement {
+                if seed.len() == n_nodes * 3 {
+                    seed.clone()
+                } else {
+                    vec![0.0_f32; n_nodes * 3]
+                }
+            } else {
+                vec![0.0_f32; n_nodes * 3]
+            }
+        } else {
+            vec![0.0_f32; n_nodes * 3]
+        };
         let mut diag = vec![0.0_f32; n_nodes * 3];
         let mut scratch = vec![0.0_f32; n_nodes * 3];
         let max_it = cg.max_cg_iterations.max(1);
         let rel_tol = cg.pcg_tolerance.max(cg.cg_tolerance);
-        let precond_kind = HexPreconditionerKind::from_use_preconditioner(cg.use_preconditioner);
+        let precond_kind = solve_options
+            .precond_kind
+            .unwrap_or_else(|| HexPreconditionerKind::from_use_preconditioner(cg.use_preconditioner));
 
         let t_pcg = Instant::now();
         let hex_pcg = hex_solve_pcg_masked(
@@ -291,7 +325,7 @@ impl AdjointComplianceQ1Hex {
             &mut diag,
             &mut scratch,
             max_it,
-            cg.use_preconditioner,
+            map_hex_pcg_precond(precond_kind),
             rel_tol,
         );
         let pcg_ms = t_pcg.elapsed().as_secs_f64() * 1000.0;
@@ -406,6 +440,7 @@ impl AdjointComplianceQ1Hex {
             material,
             cg,
             self_weight,
+            &Q1HexSolveOptions::default(),
         );
         let mut compliance = 0.0_f32;
         for i in 0..f_flat.len().min(state.u.len()).min(m_flat.len()) {
@@ -553,6 +588,7 @@ impl AdjointComplianceQ1Hex {
             material,
             cg,
             self_weight,
+            &Q1HexSolveOptions::default(),
         );
         (surrogate, c_raw)
     }
@@ -572,6 +608,7 @@ impl AdjointComplianceQ1Hex {
         material: SimpElasticMaterial,
         cg: &MechanicsInnerLoopConfig,
         self_weight: Option<SelfWeightConfig>,
+        solve_options: &Q1HexSolveOptions,
     ) -> (Tensor<B, 1>, f32, AdjointComplianceDiagnostics)
     where
         B: AutodiffBackend<FloatElem = f32>,
@@ -606,6 +643,7 @@ impl AdjointComplianceQ1Hex {
             material,
             cg,
             self_weight,
+            solve_options,
         );
 
         let device = rho_autodiff.device();
@@ -645,6 +683,7 @@ impl AdjointComplianceQ1Hex {
             finite_audit: Some(state.finite_audit),
             phase_timing: state.phase_timing,
             precond_kind: state.precond_kind,
+            equilibrium_displacement: state.u,
         };
 
         (surrogate, c_raw, diag)
@@ -679,6 +718,7 @@ impl AdjointComplianceQ1Hex {
             material,
             cg,
             self_weight,
+            &Q1HexSolveOptions::default(),
         );
         let n_nodes = (nx + 1) * (ny + 1) * (nz + 1);
         debug_assert_eq!(f_flat.len(), n_nodes * 3);
@@ -737,6 +777,7 @@ impl AdjointComplianceQ1Hex {
             material,
             cg,
             self_weight,
+            &Q1HexSolveOptions::default(),
         );
         let device = rho_autodiff.device();
         let u_tensor_inner = Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
