@@ -638,7 +638,7 @@ impl AdjointComplianceQ1Hex {
         let c_raw = comp.into_scalar();
 
         let diag = AdjointComplianceDiagnostics {
-            pcg: state.pcg.clone(),
+            pcg: state.pcg,
             pcg_iters: state.pcg.iterations,
             equilibrium_rel_residual: state.eq_rel,
             nodal_sensitivity: state.nodal_sensitivity,
