@@ -7,7 +7,7 @@ use burn::backend::Autodiff;
 use burn::tensor::{backend::AutodiffBackend, Tensor};
 use burn_ndarray::NdArray;
 use umst_manifold::physics::adjoint::{HexPreconditionerKind, SimpElasticMaterial};
-use umst_manifold::physics::adjoint_q1_hex::AdjointComplianceQ1Hex;
+use umst_manifold::physics::adjoint_q1_hex::{AdjointComplianceQ1Hex, Q1HexSolveOptions};
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
 type B = Autodiff<NdArray<f32>>;
@@ -36,22 +36,41 @@ fn q1_hex_forward_perf_fields_smoke() {
         use_preconditioner: true,
         ..Default::default()
     };
-    let (_, _, diag) = AdjointComplianceQ1Hex::forward_loss_with_diagnostics(
-        rho, nx, ny, nz, dx, dy, dz, f, m, material, &cg, None,
-    );
-    assert_eq!(diag.pcg_iters, diag.pcg.iterations);
-    assert!(diag.equilibrium_rel_residual.is_finite());
-    assert!(diag.phase_timing.pcg_ms >= 0.0);
-    assert!(diag.phase_timing.assemble_ms >= 0.0);
-    assert!(diag.phase_timing.adjoint_ms >= 0.0);
-    assert_eq!(diag.precond_kind, HexPreconditionerKind::JacobiDiagonal);
-    eprintln!(
-        "q1_hex_perf_instrument: pcg_iters={} eq_rel={:.3e} assemble_ms={:.3} pcg_ms={:.3} adjoint_ms={:.3} precond_kind={:?}",
-        diag.pcg_iters,
-        diag.equilibrium_rel_residual,
-        diag.phase_timing.assemble_ms,
-        diag.phase_timing.pcg_ms,
-        diag.phase_timing.adjoint_ms,
-        diag.precond_kind,
-    );
+
+    let mut warm: Option<Vec<f32>> = None;
+    for outer in 1..=3 {
+        let mut opts = Q1HexSolveOptions::default();
+        if let Some(seed) = warm.take() {
+            opts.pcg_warm_start = true;
+            opts.pcg_seed_displacement = Some(seed);
+        }
+        let (_, _, diag) = AdjointComplianceQ1Hex::forward_loss_with_diagnostics(
+            rho.clone(),
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            f.clone(),
+            m.clone(),
+            material,
+            &cg,
+            None,
+            &opts,
+        );
+        assert_eq!(diag.pcg_iters, diag.pcg.iterations);
+        assert!(diag.equilibrium_rel_residual.is_finite());
+        assert_eq!(diag.precond_kind, HexPreconditionerKind::JacobiDiagonal);
+        eprintln!(
+            "q1_hex_perf_instrument: outer {outer}/3 pcg_iters={} eq_rel={:.3e} assemble_ms={:.3} pcg_ms={:.3} adjoint_ms={:.3} precond_kind={:?}",
+            diag.pcg_iters,
+            diag.equilibrium_rel_residual,
+            diag.phase_timing.assemble_ms,
+            diag.phase_timing.pcg_ms,
+            diag.phase_timing.adjoint_ms,
+            diag.precond_kind,
+        );
+        warm = Some(diag.equilibrium_displacement);
+    }
 }

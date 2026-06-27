@@ -7,7 +7,7 @@ use burn::backend::Autodiff;
 use burn::tensor::{backend::AutodiffBackend, Data, Shape, Tensor};
 use burn_ndarray::NdArray;
 use umst_manifold::physics::adjoint::SimpElasticMaterial;
-use umst_manifold::physics::adjoint_q1_hex::AdjointComplianceQ1Hex;
+use umst_manifold::physics::adjoint_q1_hex::{AdjointComplianceQ1Hex, Q1HexSolveOptions};
 use umst_manifold::physics::extruded_plate::ExtrudedPlateMechanics;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
