@@ -16,6 +16,7 @@ mod kahan;
 
 /// Phase 1 catalog → scalar-layout functor witness (pure; no I/O).
 pub mod catalog_functor;
+pub mod clausius_duhem;
 pub mod constants;
 pub mod credit;
 /// §14bis.f-S-0 — PQC primitives (ML-KEM / ML-DSA / SLH-DSA / SHA3-256).
@@ -61,6 +62,7 @@ pub mod theorem_registry;
 pub mod vne;
 
 /// THEOREM-BOUND: `combine_density_between` (re-export: density diagonal / CGD struct)
+pub use clausius_duhem::clausius_duhem_admissible;
 pub use density::DensityDiag;
 /// THEOREM-BOUND: `clausiusDuhemFwd` (re-export: Englert duality / thermo bridge)
 pub use englert::{englert_bound_holds, englert_lhs};
