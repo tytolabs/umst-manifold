@@ -119,26 +119,28 @@ where
         let bf = ctx.body_force.clone().inner().into_data().value;
         let bm = ctx.boundary_mask.clone().inner().into_data().value;
 
-        let opt = Q1HexComplianceFunctional.eval_inner(
-            ctx.compliance_ctx,
-            ComplianceHostInput {
-                rho_flat: &rho_flat,
-                body_force: &bf,
-                boundary_mask: &bm,
-                penalization: ctx.penalization_optimizer,
-            },
-        )
-        .map_err(DesignQueryError::Compliance)?;
+        let opt = Q1HexComplianceFunctional
+            .eval_inner(
+                ctx.compliance_ctx,
+                ComplianceHostInput {
+                    rho_flat: &rho_flat,
+                    body_force: &bf,
+                    boundary_mask: &bm,
+                    penalization: ctx.penalization_optimizer,
+                },
+            )
+            .map_err(DesignQueryError::Compliance)?;
 
-        let gate = Q1HexComplianceFunctional.eval_inner(
-            ctx.compliance_ctx,
-            ComplianceHostInput {
-                rho_flat: &rho_flat,
-                body_force: &bf,
-                boundary_mask: &bm,
-                penalization: ctx.penalization_gate,
-            },
-        )
+        let gate = Q1HexComplianceFunctional
+            .eval_inner(
+                ctx.compliance_ctx,
+                ComplianceHostInput {
+                    rho_flat: &rho_flat,
+                    body_force: &bf,
+                    boundary_mask: &bm,
+                    penalization: ctx.penalization_gate,
+                },
+            )
             .map_err(DesignQueryError::Compliance)?;
 
         let margin_tensor = clausius_duhem_margin(

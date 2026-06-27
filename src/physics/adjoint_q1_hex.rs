@@ -45,7 +45,9 @@ fn map_hex_pcg_precond(kind: HexPreconditionerKind) -> HexPcgPrecondKind {
         HexPreconditionerKind::None => HexPcgPrecondKind::None,
         HexPreconditionerKind::JacobiDiagonal => HexPcgPrecondKind::JacobiDiagonal,
         HexPreconditionerKind::BlockJacobiNodal3x3 => HexPcgPrecondKind::BlockJacobiNodal3x3,
-        HexPreconditionerKind::GeometricMultigridVCycle => HexPcgPrecondKind::GeometricMultigridVCycle,
+        HexPreconditionerKind::GeometricMultigridVCycle => {
+            HexPcgPrecondKind::GeometricMultigridVCycle
+        }
     }
 }
 
@@ -313,7 +315,13 @@ impl AdjointComplianceQ1Hex {
 
         let op_cache_holder = if solve_options.use_operator_cache {
             Some(HexStructuredOperatorCache::new(
-                nx, ny, nz, dx, dy, dz, material.nu,
+                nx,
+                ny,
+                nz,
+                dx,
+                dy,
+                dz,
+                material.nu,
             ))
         } else {
             None

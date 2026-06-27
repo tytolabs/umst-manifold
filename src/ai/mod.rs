@@ -9,11 +9,11 @@ pub mod adjoint;
 pub mod cbf;
 pub mod cbf_qp;
 pub mod constraint_loss;
-#[cfg(feature = "design-implicit-field")]
-pub mod implicit_field;
 #[cfg(feature = "epistemic-ppo")]
 pub mod epistemic_mi;
 pub mod formal;
+#[cfg(feature = "design-implicit-field")]
+pub mod implicit_field;
 pub mod info_gain;
 pub mod liquid_ppo;
 pub mod ppo;

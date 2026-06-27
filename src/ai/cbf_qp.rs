@@ -11,7 +11,12 @@ use crate::runtime::gate::AdmissibilityMargin;
 ///
 /// `h_dot_coeff` is ∂h/∂u along the proposed direction (scalar surrogate).
 #[must_use]
-pub fn cbf_qp_project_1d(u_agent: f32, margin: AdmissibilityMargin, h_dot_coeff: f32, alpha: f32) -> f32 {
+pub fn cbf_qp_project_1d(
+    u_agent: f32,
+    margin: AdmissibilityMargin,
+    h_dot_coeff: f32,
+    alpha: f32,
+) -> f32 {
     let h = margin.value();
     let rhs = -alpha * h;
     let lhs = h_dot_coeff * u_agent;
@@ -47,7 +52,10 @@ mod tests {
         let h_dot = 1.0_f32;
         let alpha = 1.0_f32;
         let u = cbf_qp_project_1d(u_agent, margin, h_dot, alpha);
-        assert!(u > u_agent, "negative margin should push u outward to satisfy ḣ ≥ −αh");
+        assert!(
+            u > u_agent,
+            "negative margin should push u outward to satisfy ḣ ≥ −αh"
+        );
         assert!((h_dot * u - (-alpha * margin.value())).abs() < 1e-5);
     }
 

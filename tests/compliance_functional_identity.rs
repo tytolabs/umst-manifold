@@ -93,11 +93,20 @@ fn compliance_functional_identity_optimizer_readout_gate() {
     let bm_t: Tensor<Inner, 3> =
         Tensor::from_data(Data::new(bm.clone(), Shape::new([1, n_nodes, 3])), &dev);
 
-    let penalization_opt = CompliancePenalization::Schedule { outer: 20, total: 200 };
+    let penalization_opt = CompliancePenalization::Schedule {
+        outer: 20,
+        total: 200,
+    };
     let penalization_gate = CompliancePenalization::Gate(3.0);
 
     let (surrogate, value_opt) = Q1HexComplianceFunctional
-        .eval_autodiff(&ctx, rho_ad.clone(), bf_t.clone(), bm_t.clone(), penalization_opt)
+        .eval_autodiff(
+            &ctx,
+            rho_ad.clone(),
+            bf_t.clone(),
+            bm_t.clone(),
+            penalization_opt,
+        )
         .expect("optimizer eval");
     let c_surrogate: f32 = surrogate.into_scalar();
 

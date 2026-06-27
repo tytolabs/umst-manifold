@@ -9,9 +9,7 @@ use burn::tensor::{Data, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::ai::topology::{DensityNet, VoxelDensity};
 use umst_manifold::core::traits::{DesignLatent, DesignRepresentation};
-use umst_manifold::design::query::{
-    DesignQueryContext, DesignQueryPort, StructuralDesignQuery,
-};
+use umst_manifold::design::query::{DesignQueryContext, DesignQueryPort, StructuralDesignQuery};
 use umst_manifold::physics::adjoint::SimpElasticMaterial;
 use umst_manifold::physics::compliance_functional::{
     ComplianceContext, CompliancePenalization, Q1HexBrickSpec,

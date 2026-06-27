@@ -709,8 +709,6 @@ pub fn hex_cell_strain_energy(
     }
 }
 
-
-
 /// Uniform-brick element stiffness at `e = 1` (geometry + `nu` only).
 fn assemble_hex_ke_unit(dx: f32, dy: f32, dz: f32, nu: f32) -> [[f32; 24]; 24] {
     let mut ke = [[0.0_f32; 24]; 24];
@@ -946,7 +944,12 @@ fn hex_dims_coarsenable(nx: usize, ny: usize, nz: usize) -> bool {
     nx >= 2 && ny >= 2 && nz >= 2 && nx % 2 == 0 && ny % 2 == 0 && nz % 2 == 0
 }
 
-fn hex_coarsen_cell_field(e_fine: &[f32], nx: usize, ny: usize, nz: usize) -> (Vec<f32>, usize, usize, usize) {
+fn hex_coarsen_cell_field(
+    e_fine: &[f32],
+    nx: usize,
+    ny: usize,
+    nz: usize,
+) -> (Vec<f32>, usize, usize, usize) {
     let nx_c = nx / 2;
     let ny_c = ny / 2;
     let nz_c = nz / 2;
@@ -973,7 +976,12 @@ fn hex_coarsen_cell_field(e_fine: &[f32], nx: usize, ny: usize, nz: usize) -> (V
     (e_c, nx_c, ny_c, nz_c)
 }
 
-fn hex_restrict_mask(mask_fine: &[f32], nx: usize, ny: usize, nz: usize) -> (Vec<f32>, usize, usize, usize) {
+fn hex_restrict_mask(
+    mask_fine: &[f32],
+    nx: usize,
+    ny: usize,
+    nz: usize,
+) -> (Vec<f32>, usize, usize, usize) {
     let nx_c = nx / 2;
     let ny_c = ny / 2;
     let nz_c = nz / 2;
@@ -1203,9 +1211,7 @@ fn apply_precond_geometric_mg_f32(
         }
     }
     z.fill(0.0);
-    bpx_level(
-        nx, ny, nz, dx, dy, dz, nu, e_cell, mask, diag, r, z, 0, 6,
-    );
+    bpx_level(nx, ny, nz, dx, dy, dz, nu, e_cell, mask, diag, r, z, 0, 6);
     for i in 0..z.len() {
         z[i] *= mask[i];
     }
@@ -1267,19 +1273,7 @@ fn apply_precond_geometric_mg_f64(
     let diag_f: Vec<f32> = diag.iter().map(|&v| v as f32).collect();
     let mut z_f = vec![0.0_f32; r.len()];
     apply_precond_geometric_mg_f32(
-        nx,
-        ny,
-        nz,
-        dx,
-        dy,
-        dz,
-        nu,
-        e_cell,
-        &mask_f,
-        &diag_f,
-        &r_f,
-        &mut z_f,
-        None,
+        nx, ny, nz, dx, dy, dz, nu, e_cell, &mask_f, &diag_f, &r_f, &mut z_f, None,
     );
     for (a, b) in z.iter_mut().zip(&z_f) {
         *a = *b as f64;
@@ -1470,7 +1464,13 @@ fn apply_precond_jacobi_f32(diag: &[f32], mask: &[f32], r: &[f32], z: &mut [f32]
     }
 }
 
-fn apply_precond_block_3x3_f32(blocks: &[f32], mask: &[f32], r: &[f32], z: &mut [f32], n_nodes: usize) {
+fn apply_precond_block_3x3_f32(
+    blocks: &[f32],
+    mask: &[f32],
+    r: &[f32],
+    z: &mut [f32],
+    n_nodes: usize,
+) {
     z.fill(0.0);
     for nid in 0..n_nodes {
         let d0 = nid * 3;
@@ -1511,7 +1511,13 @@ fn apply_precond_jacobi_f64(diag: &[f64], mask: &[f64], r: &[f64], z: &mut [f64]
     }
 }
 
-fn apply_precond_block_3x3_f64(blocks: &[f64], mask: &[f64], r: &[f64], z: &mut [f64], n_nodes: usize) {
+fn apply_precond_block_3x3_f64(
+    blocks: &[f64],
+    mask: &[f64],
+    r: &[f64],
+    z: &mut [f64],
+    n_nodes: usize,
+) {
     z.fill(0.0);
     for nid in 0..n_nodes {
         let d0 = nid * 3;
@@ -1934,11 +1940,11 @@ pub fn hex_solve_pcg_bisect(
 
     let mut u = vec![0.0_f32; ndof];
     scratch_ku.fill(0.0);
-        if let Some(cache) = op_cache {
-            hex_k_times_u_accumulate_cached(cache, &e_work, &u, scratch_ku);
-        } else {
-            hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, &e_work, &u, scratch_ku);
-        }
+    if let Some(cache) = op_cache {
+        hex_k_times_u_accumulate_cached(cache, &e_work, &u, scratch_ku);
+    } else {
+        hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, &e_work, &u, scratch_ku);
+    }
 
     let mut r = vec![0.0_f32; ndof];
     let mut f_norm = 0.0_f32;
@@ -1956,11 +1962,9 @@ pub fn hex_solve_pcg_bisect(
         HexPcgPrecondKind::BlockJacobiNodal3x3 => {
             apply_precond_block_3x3_f32(&block_jacobi, mask, &r, &mut z, n)
         }
-        HexPcgPrecondKind::GeometricMultigridVCycle => {
-            apply_precond_geometric_mg_f32(
-                nx, ny, nz, dx, dy, dz, nu, &e_work, mask, diag, &r, &mut z, op_cache,
-            )
-        }
+        HexPcgPrecondKind::GeometricMultigridVCycle => apply_precond_geometric_mg_f32(
+            nx, ny, nz, dx, dy, dz, nu, &e_work, mask, diag, &r, &mut z, op_cache,
+        ),
     }
     let mut p = z.clone();
 
@@ -2036,11 +2040,9 @@ pub fn hex_solve_pcg_bisect(
             HexPcgPrecondKind::BlockJacobiNodal3x3 => {
                 apply_precond_block_3x3_f32(&block_jacobi, mask, &r, &mut z, n)
             }
-            HexPcgPrecondKind::GeometricMultigridVCycle => {
-            apply_precond_geometric_mg_f32(
+            HexPcgPrecondKind::GeometricMultigridVCycle => apply_precond_geometric_mg_f32(
                 nx, ny, nz, dx, dy, dz, nu, &e_work, mask, diag, &r, &mut z, op_cache,
-            )
-        }
+            ),
         }
 
         let mut rz_new = 0.0_f32;
@@ -2170,11 +2172,9 @@ fn hex_solve_pcg_masked_f64(
         HexPcgPrecondKind::BlockJacobiNodal3x3 => {
             apply_precond_block_3x3_f64(&block_jacobi64, &mask64, &r, &mut z, n_nodes)
         }
-        HexPcgPrecondKind::GeometricMultigridVCycle => {
-            apply_precond_geometric_mg_f64(
-                nx, ny, nz, dx, dy, dz, nu, e_cell, &mask64, &diag64, &r, &mut z, op_cache,
-            )
-        }
+        HexPcgPrecondKind::GeometricMultigridVCycle => apply_precond_geometric_mg_f64(
+            nx, ny, nz, dx, dy, dz, nu, e_cell, &mask64, &diag64, &r, &mut z, op_cache,
+        ),
     }
     p.copy_from_slice(&z);
 
@@ -2207,15 +2207,15 @@ fn hex_solve_pcg_masked_f64(
 
         match precond {
             HexPcgPrecondKind::None => z.copy_from_slice(&r),
-            HexPcgPrecondKind::JacobiDiagonal => apply_precond_jacobi_f64(&diag64, &mask64, &r, &mut z),
+            HexPcgPrecondKind::JacobiDiagonal => {
+                apply_precond_jacobi_f64(&diag64, &mask64, &r, &mut z)
+            }
             HexPcgPrecondKind::BlockJacobiNodal3x3 => {
                 apply_precond_block_3x3_f64(&block_jacobi64, &mask64, &r, &mut z, n_nodes)
             }
-            HexPcgPrecondKind::GeometricMultigridVCycle => {
-            apply_precond_geometric_mg_f64(
+            HexPcgPrecondKind::GeometricMultigridVCycle => apply_precond_geometric_mg_f64(
                 nx, ny, nz, dx, dy, dz, nu, e_cell, &mask64, &diag64, &r, &mut z, op_cache,
-            )
-        }
+            ),
         }
 
         let rz_new: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum::<f64>();

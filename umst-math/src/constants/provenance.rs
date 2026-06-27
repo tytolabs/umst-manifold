@@ -14,11 +14,36 @@ pub enum ConstantProvenance {
 }
 
 impl ConstantProvenance {
+    /// True when the constant has Derived, Measured, or Grounded evidence (not `Ungrounded`).
     #[must_use]
     pub fn is_grounded(self) -> bool {
         !matches!(self, Self::Ungrounded)
     }
 }
+
+/// Gate-path constants that must be grounded for admissibility CBF.
+pub const GATE_PATH_CONSTANTS: &[(&str, ConstantProvenance)] = &[
+    (
+        "gate_mass_tolerance_kg_m3",
+        ConstantProvenance::Measured(
+            "bulk mix calibration band; mirrors umst-math GATE_MASS_TOLERANCE_KG_M3",
+        ),
+    ),
+    (
+        "transition_tolerance",
+        ConstantProvenance::Derived("UMST.Formal.Gate.transitionTolerance"),
+    ),
+    (
+        "admissibility_margin_eps",
+        ConstantProvenance::Derived(
+            "runtime gate ε floor; AdmissibilityMargin ADMISSIBILITY_MARGIN_EPS",
+        ),
+    ),
+    (
+        "min_promotion_credit_bits",
+        ConstantProvenance::Measured("UCRS promotion quarantine; umst-ucrs observation.rs"),
+    ),
+];
 
 #[cfg(test)]
 mod tests {
@@ -34,25 +59,3 @@ mod tests {
         }
     }
 }
-
-/// Gate-path constants that must be grounded for admissibility CBF.
-pub const GATE_PATH_CONSTANTS: &[(&'static str, ConstantProvenance)] = &[
-    (
-        "gate_mass_tolerance_kg_m3",
-        ConstantProvenance::Measured(
-            "bulk mix calibration band; mirrors umst-math GATE_MASS_TOLERANCE_KG_M3",
-        ),
-    ),
-    (
-        "transition_tolerance",
-        ConstantProvenance::Derived("UMST.Formal.Gate.transitionTolerance"),
-    ),
-    (
-        "admissibility_margin_eps",
-        ConstantProvenance::Derived("runtime gate ε floor; AdmissibilityMargin ADMISSIBILITY_MARGIN_EPS"),
-    ),
-    (
-        "min_promotion_credit_bits",
-        ConstantProvenance::Measured("UCRS promotion quarantine; umst-ucrs observation.rs"),
-    ),
-];
