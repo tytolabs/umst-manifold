@@ -8,7 +8,8 @@
 use umst_manifold::physics::extruded_plate::ExtrudedPlateMechanics;
 use umst_manifold::physics::q1_hex_elasticity::{
     hex_equilibrium_rel_residual, hex_equilibrium_residual_parts, hex_pcg_use_f64_lane,
-    hex_solve_pcg_masked, HEX_PCG_REL_TOL_F32, HEX_PCG_REL_TOL_F64,
+    hex_precond_from_use_preconditioner, hex_solve_pcg_masked, HEX_PCG_REL_TOL_F32,
+    HEX_PCG_REL_TOL_F64,
 };
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
@@ -84,8 +85,9 @@ fn run_probe_line(nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32, ma
         &mut diag,
         &mut scratch,
         max_cg,
-        cfg.use_preconditioner,
+        hex_precond_from_use_preconditioner(cfg.use_preconditioner),
         tol,
+        None,
     );
     let parts = hex_equilibrium_residual_parts(
         nx, ny, nz, plate.dx, plate.dy, plate.dz, 0.2, &e_cell, &bf, &bm, &u,
@@ -110,7 +112,7 @@ fn run_probe_line(nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32, ma
         report.iterations,
         parts.abs_rhs,
         parts.abs_residual,
-        r_true,
+        parts.rel_residual,
         report.rel_residual_recursive,
         report.rel_residual,
         tol,

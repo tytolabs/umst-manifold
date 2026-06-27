@@ -152,8 +152,9 @@ impl ExtrudedPlateMechanics {
             &mut diag,
             &mut scratch,
             max_it,
-            cg_config.use_preconditioner,
+            q1_hex_elasticity::hex_precond_from_use_preconditioner(cg_config.use_preconditioner),
             cg_config.cg_tolerance,
+            None,
         );
         let _ = _pcg;
 

@@ -14,7 +14,7 @@ use umst_manifold::physics::adjoint::SimpElasticMaterial;
 use umst_manifold::physics::adjoint_q1_hex::AdjointComplianceQ1Hex;
 use umst_manifold::physics::extruded_plate::ExtrudedPlateMechanics;
 use umst_manifold::physics::q1_hex_elasticity::{
-    hex_equilibrium_rel_residual, hex_solve_pcg_masked,
+    hex_equilibrium_rel_residual, hex_precond_from_use_preconditioner, hex_solve_pcg_masked,
 };
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
@@ -131,8 +131,9 @@ fn q1_hex_harness_roof_traction_forward_converges() {
         &mut diag,
         &mut scratch,
         cg.max_cg_iterations.max(1),
-        cg.use_preconditioner,
+        hex_precond_from_use_preconditioner(cg.use_preconditioner),
         tol,
+        None,
     );
     let pcg_rel = pcg.rel_residual;
     let iters = pcg.iterations;

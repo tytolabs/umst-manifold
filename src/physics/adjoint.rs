@@ -54,6 +54,8 @@ pub struct AdjointFiniteStageAudit {
 pub enum HexPreconditionerKind {
     None,
     JacobiDiagonal,
+    BlockJacobiNodal3x3,
+    GeometricMultigridVCycle,
 }
 
 impl HexPreconditionerKind {
@@ -88,6 +90,8 @@ pub struct AdjointComplianceDiagnostics {
     pub finite_audit: Option<AdjointFiniteStageAudit>,
     pub phase_timing: AdjointForwardPhaseTiming,
     pub precond_kind: HexPreconditionerKind,
+    /// Forward equilibrium displacement (for PCG warm-start on the next outer).
+    pub equilibrium_displacement: Vec<f32>,
 }
 
 /// Scatter edge-wise \(\mathrm{d}c/\mathrm{d}\rho_e\) to nodes with the SIMP mean rule.
@@ -267,6 +271,7 @@ impl AdjointCompliance {
             finite_audit: None,
             phase_timing: AdjointForwardPhaseTiming::default(),
             precond_kind: HexPreconditionerKind::from_use_preconditioner(cg.use_preconditioner),
+            equilibrium_displacement: Vec::new(),
         };
 
         (surrogate, c_raw, diag)

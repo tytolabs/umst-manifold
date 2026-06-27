@@ -9,7 +9,8 @@
 
 use umst_manifold::physics::extruded_plate::ExtrudedPlateMechanics;
 use umst_manifold::physics::q1_hex_elasticity::{
-    hex_solve_pcg_bisect, HexPcgBisectConfig, HexPcgLoopKind, HEX_PCG_REL_TOL_F32,
+    hex_precond_from_use_preconditioner, hex_solve_pcg_bisect, HexPcgBisectConfig, HexPcgLoopKind,
+    HEX_PCG_REL_TOL_F32,
 };
 
 fn harness_pin_bottom_perimeter(nx: usize, ny: usize, nz: usize) -> Vec<f32> {
@@ -73,13 +74,14 @@ fn run_original(
         &mut diag,
         &mut scratch,
         2000,
-        true,
+        hex_precond_from_use_preconditioner(true),
         HEX_PCG_REL_TOL_F32,
         HexPcgBisectConfig {
             loop_kind: HexPcgLoopKind::Original,
             nondim,
             stop_on_true_residual: false,
         },
+        None,
     )
 }
 
