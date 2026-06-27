@@ -86,6 +86,7 @@ fn q1_hex_adjoint_grad_nonzero_on_quick_grid() {
         mat,
         &cg,
         None,
+        &Q1HexSolveOptions::default(),
     );
     let loss_v = loss.clone().into_data().value[0];
     assert!(loss_v.is_finite() && loss_v > 0.0, "loss={loss_v}");
@@ -162,6 +163,7 @@ fn q1_hex_nodal_dot_matches_gather_surrogate_grad() {
         mat,
         &cg,
         None,
+        &Q1HexSolveOptions::default(),
     );
     let nodal_g = rho_nodal
         .grad(&nodal_loss.backward())
