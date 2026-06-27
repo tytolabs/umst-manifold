@@ -54,13 +54,16 @@ pub fn clausius_duhem_violation<B: Backend<FloatElem = f32>>(
     new_free_energy: Tensor<B, 1>,
     dt_s: Tensor<B, 1>,
 ) -> Tensor<B, 1> {
-    relu(clausius_duhem_margin(
-        old_density,
-        new_density,
-        old_free_energy,
-        new_free_energy,
-        dt_s,
-    ).neg())
+    relu(
+        clausius_duhem_margin(
+            old_density,
+            new_density,
+            old_free_energy,
+            new_free_energy,
+            dt_s,
+        )
+        .neg(),
+    )
 }
 
 /// Weighted violation slack from host gate evidence (`λ_cd · violation` per witness).

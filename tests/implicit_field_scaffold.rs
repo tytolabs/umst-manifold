@@ -21,7 +21,9 @@ fn implicit_field_decode_finite_bar_fixture() {
     let n = 5_usize;
     let coords = Tensor::<B, 3>::from_data(
         Data::new(
-            vec![0.0_f32, 0.0, 0.0, 0.25, 0.0, 0.0, 0.5, 0.0, 0.0, 0.75, 0.0, 0.0, 1.0, 0.0, 0.0],
+            vec![
+                0.0_f32, 0.0, 0.0, 0.25, 0.0, 0.0, 0.5, 0.0, 0.0, 0.75, 0.0, 0.0, 1.0, 0.0, 0.0,
+            ],
             Shape::new([1, n, 3]),
         ),
         &dev,

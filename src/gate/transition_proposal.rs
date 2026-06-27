@@ -242,8 +242,7 @@ pub fn transition_outcome(
         };
     }
 
-    let mass_conserved =
-        (new_state.density - old_state.density).abs() < GATE_MASS_TOLERANCE_KG_M3;
+    let mass_conserved = (new_state.density - old_state.density).abs() < GATE_MASS_TOLERANCE_KG_M3;
 
     let rho = (old_state.density + new_state.density) / 2.0;
     let psi_dot = (new_state.free_energy - old_state.free_energy) / (dt + 1e-10);
@@ -328,8 +327,7 @@ pub fn thermodynamic_transition_admissible_tol(
     {
         return false;
     }
-    let mass_conserved =
-        (new_density - old_density).abs() < GATE_MASS_TOLERANCE_KG_M3;
+    let mass_conserved = (new_density - old_density).abs() < GATE_MASS_TOLERANCE_KG_M3;
     let rho = (old_density + new_density) / 2.0;
     let psi_dot = (new_free_energy - old_free_energy) / (dt + 1e-10);
     let d_int = -rho * psi_dot;
@@ -452,10 +450,7 @@ mod transition_outcome_tests {
         let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
         let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
         let outcome = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
-        let g = gate_sdf(
-            &snapshot_to_gate(&old, 80.0),
-            &snapshot_to_gate(&new, 80.0),
-        );
+        let g = gate_sdf(&snapshot_to_gate(&old, 80.0), &snapshot_to_gate(&new, 80.0));
         if outcome.accepted {
             assert!(g <= TRANSITION_TOLERANCE, "accepted ⇒ gate_sdf ≤ ε ({g})");
         }

@@ -31,11 +31,7 @@ impl<B: Backend<FloatElem = f32>> ImplicitFieldNet<B> {
         }
     }
 
-    pub fn forward_phi(
-        &self,
-        latent_bn: Tensor<B, 2>,
-        coords_bn3: Tensor<B, 3>,
-    ) -> Tensor<B, 3> {
+    pub fn forward_phi(&self, latent_bn: Tensor<B, 2>, coords_bn3: Tensor<B, 3>) -> Tensor<B, 3> {
         let [b, n, three] = coords_bn3.dims();
         debug_assert_eq!(three, 3);
         let z = latent_bn.clone().unsqueeze_dim::<3>(1);
@@ -72,7 +68,9 @@ impl<B: Backend<FloatElem = f32>> DesignRepresentation<B> for ImplicitField<B> {
         latent: &DesignLatent<B>,
         query_coords: Tensor<B, 3>,
     ) -> Result<Geometry<B>, DesignDecodeError> {
-        let phi = self.field_net.forward_phi(latent.tensor.clone(), query_coords.clone());
+        let phi = self
+            .field_net
+            .forward_phi(latent.tensor.clone(), query_coords.clone());
         let density = sigmoid(phi.clone().mul_scalar(-self.beta));
         if density
             .clone()
