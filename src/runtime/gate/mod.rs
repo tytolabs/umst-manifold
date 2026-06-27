@@ -10,6 +10,7 @@ pub mod explain_codes;
 pub use cartridge::{CdTransitionCartridge, GateCartridge};
 pub use evidence::{
     explain_cd_transition_host, AdmissibilityToken, ConstraintExplanation, TransitionEvidence,
+    UcrsObservedAtWire,
 };
 pub use explain_codes::{
     fields_for_code, remediation_for_code, GateFieldIssue, MANIFEST_BRIDGE_DISABLED,
