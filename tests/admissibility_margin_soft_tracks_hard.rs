@@ -153,3 +153,44 @@ fn explain_hot_path_carries_margin_token_parity() {
         admissibility_from_margin(explanation.margin)
     );
 }
+
+#[test]
+fn soft_margin_reduces_hard_rejections() {
+    let old = ThermodynamicStateSnapshot {
+        density: 2200.0,
+        temperature: 300.0,
+        free_energy: -2.0e5,
+        entropy: 0.2,
+        reaction_extent: 0.5,
+        strength: 20.0,
+    };
+    let dt = 1.0_f64;
+    let mut reject_before = 0_u32;
+    let mut reject_after = 0_u32;
+    for spike in [2.0e5_f64, 1.5e5, 1.0e5, 5.0e4, 0.0] {
+        let new = ThermodynamicStateSnapshot {
+            free_energy: old.free_energy + spike,
+            ..old
+        };
+        let explanation = explain_cd_transition_host(&old, &new, dt, TRANSITION_TOLERANCE);
+        if explanation.admissibility == AdmissibilityToken::Inadmissible {
+            reject_before += 1;
+        }
+        let improved = ThermodynamicStateSnapshot {
+            free_energy: new.free_energy - 0.25 * spike.abs(),
+            ..new
+        };
+        let improved_ex = explain_cd_transition_host(&old, &improved, dt, TRANSITION_TOLERANCE);
+        if improved_ex.admissibility == AdmissibilityToken::Inadmissible {
+            reject_after += 1;
+        }
+        assert!(
+            improved_ex.violation <= explanation.violation + 1e-3,
+            "improving ψ must not increase soft violation"
+        );
+    }
+    assert!(
+        reject_after <= reject_before,
+        "optimizing soft margin must not increase HARD rejections: before={reject_before} after={reject_after}"
+    );
+}

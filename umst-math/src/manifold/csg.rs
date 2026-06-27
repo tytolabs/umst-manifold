@@ -45,7 +45,9 @@ pub fn helmholtz_gradient(q_hyd: f64) -> f64 {
 /// Haskell `qHydration` reference for SDF gate parity (formal layer; not W9 cement SSOT).
 pub const Q_HYDRATION_J_PER_KG: f64 = 4.5e2;
 const Q_HYDR: f64 = Q_HYDRATION_J_PER_KG;
-const M_TOL: f64 = 100.0;
+/// Mass-jump band (kg/m³) — registry: `gate_mass_tolerance_kg_m3`.
+pub const GATE_MASS_TOLERANCE_KG_M3: f64 = 100.0;
+const M_TOL: f64 = GATE_MASS_TOLERANCE_KG_M3;
 
 /// `ThermodynamicState` mirror for pure gate SDF only (5 fields, Haskell `UMST.ThermodynamicState`).
 #[derive(Debug, Clone, Copy, PartialEq)]

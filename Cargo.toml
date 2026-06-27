@@ -428,6 +428,11 @@ path = "tests/design_representation_voxel_parity.rs"
 required-features = ["topology-density-evolution"]
 
 [[test]]
+name = "design_query_deterministic_replay"
+path = "tests/design_query_deterministic_replay.rs"
+required-features = ["design-query", "topology-density-evolution", "mechanics-adjoint-q1-hex"]
+
+[[test]]
 name = "implicit_field_scaffold"
 path = "tests/implicit_field_scaffold.rs"
 required-features = ["design-implicit-field"]

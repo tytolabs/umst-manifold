@@ -7,6 +7,7 @@
 
 pub mod adjoint;
 pub mod cbf;
+pub mod cbf_qp;
 pub mod constraint_loss;
 #[cfg(feature = "design-implicit-field")]
 pub mod implicit_field;
