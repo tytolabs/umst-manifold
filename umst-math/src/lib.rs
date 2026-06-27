@@ -64,9 +64,9 @@ pub mod vne;
 pub use density::DensityDiag;
 /// THEOREM-BOUND: `clausiusDuhemFwd` (re-export: Englert duality / thermo bridge)
 pub use englert::{englert_bound_holds, englert_lhs};
-/// THEOREM-BOUND: Clausius–Duhem admissibility (`Gate.lean` conjunct; SSOT for ucrs/formal drift)
-pub use manifold::csg::clausius_duhem_admissible;
 /// CONSTANT-BOUND: `landauer_floor_j_per_bit` (re-export: Landauer bit cost)
 pub use landauer::landauer_cost_diagonal_bits;
+/// THEOREM-BOUND: Clausius–Duhem admissibility (`Gate.lean` conjunct; SSOT for ucrs/formal drift)
+pub use manifold::csg::clausius_duhem_admissible;
 /// THEOREM-BOUND: `credit_greedy_optimal` (re-export: PMIC / residual coherence capacity)
 pub use pmic::residual_coherence_capacity;

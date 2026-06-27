@@ -50,10 +50,12 @@ pub fn transition_evidence_to_wire(
     TransitionEvidenceWire {
         catalog_id: evidence.catalog_id.to_string(),
         admissibility: evidence.admissibility.into(),
-        observed_at: stamp.or(evidence.observed_at).map(|s| UcrsObservedAtWireSerde {
-            wall_ms: s.wall_ms,
-            ucrs_seq: s.ucrs_seq,
-        }),
+        observed_at: stamp
+            .or(evidence.observed_at)
+            .map(|s| UcrsObservedAtWireSerde {
+                wall_ms: s.wall_ms,
+                ucrs_seq: s.ucrs_seq,
+            }),
     }
 }
 
