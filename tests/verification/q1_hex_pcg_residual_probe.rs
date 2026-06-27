@@ -62,7 +62,7 @@ fn run_probe_line(nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32, ma
         max_cg_iterations: max_cg,
         cg_tolerance: lane_tol,
         pcg_tolerance: lane_tol,
-        use_preconditioner: true,
+        use_preconditioner: hex_precond_from_use_preconditioner(true),
         max_equilibrium_substeps: 1,
     };
     let mut u = vec![0.0_f32; n * 3];
@@ -110,7 +110,7 @@ fn run_probe_line(nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32, ma
         report.iterations,
         parts.abs_rhs,
         parts.abs_residual,
-        r_true,
+        r_hex_precond_from_use_preconditioner(true),
         report.rel_residual_recursive,
         report.rel_residual,
         tol,
