@@ -90,6 +90,7 @@ fn run_arm(
         hex_precond_from_use_preconditioner(true),
         tol,
         cfg,
+        None,
     );
     let parts = hex_equilibrium_residual_parts(
         nx, ny, nz, plate.dx, plate.dy, plate.dz, 0.2, &e_cell, &bf, &bm, &report.u,

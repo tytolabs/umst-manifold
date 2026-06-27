@@ -728,6 +728,7 @@ impl AdjointComplianceQ1Hex {
             material,
             cg,
             self_weight,
+            &Q1HexSolveOptions::default(),
         );
         AdjointComplianceDiagnostics {
             pcg: state.pcg,
@@ -737,6 +738,7 @@ impl AdjointComplianceQ1Hex {
             finite_audit: Some(state.finite_audit),
             phase_timing: state.phase_timing,
             precond_kind: state.precond_kind,
+            equilibrium_displacement: state.u,
         }
     }
 

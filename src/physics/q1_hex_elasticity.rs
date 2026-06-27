@@ -943,7 +943,7 @@ pub fn hex_k_times_u_accumulate_cached_f64(
 }
 
 fn hex_dims_coarsenable(nx: usize, ny: usize, nz: usize) -> bool {
-    nx >= 2 && ny >= 2 && nz >= 2 && nx.is_multiple_of(2) && ny.is_multiple_of(2) && nz.is_multiple_of(2)
+    nx >= 2 && ny >= 2 && nz >= 2 && nx % 2 == 0 && ny % 2 == 0 && nz % 2 == 0
 }
 
 fn hex_coarsen_cell_field(e_fine: &[f32], nx: usize, ny: usize, nz: usize) -> (Vec<f32>, usize, usize, usize) {
@@ -1097,6 +1097,7 @@ fn hex_prolong_nodal_add_f32(
     }
 }
 
+#[allow(dead_code)] // reserved for V-cycle Jacobi smoothing (BPX path uses diagonal prolongation today)
 fn hex_jacobi_smooth_f32(
     nx: usize,
     ny: usize,
@@ -1210,6 +1211,7 @@ fn apply_precond_geometric_mg_f32(
     }
 }
 
+#[allow(dead_code)] // reserved for V-cycle Jacobi smoothing (BPX path uses diagonal prolongation today)
 fn hex_jacobi_smooth_f64(
     nx: usize,
     ny: usize,
@@ -1498,9 +1500,7 @@ fn apply_precond_block_3x3_f32(blocks: &[f32], mask: &[f32], r: &[f32], z: &mut 
                 z[d0 + a] = sum;
             }
         } else {
-            for a in 0..3 {
-                z[d0 + a] = r[d0 + a];
-            }
+            z[d0..d0 + 3].copy_from_slice(&r[d0..d0 + 3]);
         }
     }
 }
@@ -1541,9 +1541,7 @@ fn apply_precond_block_3x3_f64(blocks: &[f64], mask: &[f64], r: &[f64], z: &mut 
                 z[d0 + a] = sum;
             }
         } else {
-            for a in 0..3 {
-                z[d0 + a] = r[d0 + a];
-            }
+            z[d0..d0 + 3].copy_from_slice(&r[d0..d0 + 3]);
         }
     }
 }

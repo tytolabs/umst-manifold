@@ -133,6 +133,7 @@ fn q1_hex_harness_roof_traction_forward_converges() {
         cg.max_cg_iterations.max(1),
         hex_precond_from_use_preconditioner(cg.use_preconditioner),
         tol,
+        None,
     );
     let pcg_rel = pcg.rel_residual;
     let iters = pcg.iterations;

@@ -110,7 +110,7 @@ fn q1_hex_8x8x4_perf_levers_ab() {
         use_operator_cache: true,
         ..Default::default()
     };
-    let (c_bj, it_bj, eq_bj) = run_config(&cache_opts, HexPreconditionerKind::BlockJacobiNodal3x3);
+    let (_c_bj, it_bj, eq_bj) = run_config(&cache_opts, HexPreconditionerKind::BlockJacobiNodal3x3);
     let (c2, it2, eq2) = run_config(&mg_opts, HexPreconditionerKind::GeometricMultigridVCycle);
     assert!((c0 - c2).abs() < 1e-4, "MG compliance drift {c0} vs {c2}");
 

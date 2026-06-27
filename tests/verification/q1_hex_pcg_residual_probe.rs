@@ -87,6 +87,7 @@ fn run_probe_line(nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32, ma
         max_cg,
         hex_precond_from_use_preconditioner(cfg.use_preconditioner),
         tol,
+        None,
     );
     let parts = hex_equilibrium_residual_parts(
         nx, ny, nz, plate.dx, plate.dy, plate.dz, 0.2, &e_cell, &bf, &bm, &u,
