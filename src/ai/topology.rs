@@ -700,6 +700,70 @@ pub fn volume_matching_threshold_from_slice(
 }
 
 #[cfg(feature = "topology-density-evolution")]
+/// Mask-aware \(\eta\) bisection: fixed nodes (`mask` \< 0.5) contribute VF=1; editable nodes bisect to
+/// hit global `target_vf` (excludes non-design skin from the η solve — D2 Tier 4a).
+#[must_use]
+pub fn volume_matching_threshold_masked_from_slice(
+    rho_tilde: &[f32],
+    editable_mask: &[f32],
+    beta: f32,
+    target_vf: f32,
+    tol: f32,
+    max_iters: usize,
+) -> f32 {
+    if editable_mask.len() != rho_tilde.len() {
+        return volume_matching_threshold_from_slice(
+            rho_tilde,
+            beta,
+            target_vf,
+            tol,
+            max_iters,
+        );
+    }
+    let n = rho_tilde.len().max(1);
+    let mut n_edit = 0usize;
+    let mut vf_fixed = 0.0_f32;
+    for (i, &m) in editable_mask.iter().enumerate() {
+        if m > 0.5 {
+            n_edit += 1;
+        } else {
+            // Policy-fixed solid skin (mask·ρ + (1−mask)·1).
+            let _ = i;
+            vf_fixed += 1.0;
+        }
+    }
+    if n_edit == 0 {
+        return volume_matching_threshold_from_slice(
+            rho_tilde,
+            beta,
+            target_vf,
+            tol,
+            max_iters,
+        );
+    }
+    let target = target_vf.clamp(0.0, 1.0);
+    let n_f = n as f32;
+    let mut lo = 0.0_f32;
+    let mut hi = 1.0_f32;
+    for _ in 0..max_iters.max(1) {
+        let mid = 0.5 * (lo + hi);
+        let mut vf_sum = vf_fixed;
+        for (i, &r) in rho_tilde.iter().enumerate() {
+            if editable_mask[i] > 0.5 {
+                vf_sum += heaviside_tanh_scalar(r, beta, mid);
+            }
+        }
+        let vf = vf_sum / n_f;
+        if vf > target + tol {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    0.5 * (lo + hi)
+}
+
+#[cfg(feature = "topology-density-evolution")]
 /// Volume match via \(\eta\) on [`HeavisideProjection`] (no post-hoc \(\lambda\) shift).
 #[derive(Clone, Copy, Debug)]
 pub struct VolumeEtaProjection {
@@ -724,15 +788,35 @@ impl VolumeEtaProjection {
         beta: f32,
         target_vf: f32,
     ) -> Tensor<B, 3> {
-        // Bisection on detached primal only — `into_data()` on the AD tape can sever ρ̄ from density_net.
+        self.project_with_mask(rho_tilde, beta, target_vf, None)
+    }
+
+    /// Like [`Self::project`] but bisects \(\eta\) on editable DOFs only when `editable_mask` is set.
+    pub fn project_with_mask<B: Backend<FloatElem = f32>>(
+        &self,
+        rho_tilde: Tensor<B, 3>,
+        beta: f32,
+        target_vf: f32,
+        editable_mask: Option<&[f32]>,
+    ) -> Tensor<B, 3> {
         let flat = rho_tilde.clone().detach().into_data().value;
-        let eta = volume_matching_threshold_from_slice(
-            &flat,
-            beta,
-            target_vf,
-            self.tol,
-            self.max_bisection,
-        );
+        let eta = match editable_mask {
+            Some(mask) => volume_matching_threshold_masked_from_slice(
+                &flat,
+                mask,
+                beta,
+                target_vf,
+                self.tol,
+                self.max_bisection,
+            ),
+            None => volume_matching_threshold_from_slice(
+                &flat,
+                beta,
+                target_vf,
+                self.tol,
+                self.max_bisection,
+            ),
+        };
         HeavisideProjection::new(beta, eta).project(rho_tilde)
     }
 }
@@ -1191,7 +1275,8 @@ mod simp_step_tests {
 mod topology_density_evolution_tests {
     use super::{
         heaviside_tanh_scalar, logit_offset_matching_from_slice, logit_offset_vf_from_slice,
-        volume_matching_threshold_from_slice, BetaContinuation, ContinuationSchedule,
+        volume_matching_threshold_from_slice, volume_matching_threshold_masked_from_slice,
+        BetaContinuation, ContinuationSchedule,
         PlateauBetaContinuation, SensitivityFilter, VolumeEtaProjection,
         VolumeLogitOffsetProjection, VolumeProjection,
     };
@@ -1244,6 +1329,35 @@ mod topology_density_evolution_tests {
                 "sigmoid output should lie strictly in (0,1), got {v}"
             );
         });
+    }
+
+    #[test]
+    fn volume_matching_threshold_masked_excludes_fixed_skin() {
+        let mut rho: Vec<f32> = (0..64).map(|i| 0.2 + 0.6 * (i as f32 / 63.0)).collect();
+        let mut mask = vec![1.0_f32; 64];
+        for m in mask.iter_mut().take(16) {
+            *m = 0.0;
+        }
+        for r in rho.iter_mut().take(16) {
+            *r = 0.5;
+        }
+        let beta = 16.0_f32;
+        let target = 0.35_f32;
+        let eta = volume_matching_threshold_masked_from_slice(&rho, &mask, beta, target, 1e-3, 48);
+        let mut vf_sum = 0.0_f32;
+        for (i, &r) in rho.iter().enumerate() {
+            let h = if mask[i] > 0.5 {
+                heaviside_tanh_scalar(r, beta, eta)
+            } else {
+                1.0
+            };
+            vf_sum += h;
+        }
+        let vf = vf_sum / 64.0;
+        assert!(
+            (vf - target).abs() < 1e-2,
+            "masked vf {vf} vs target {target} at eta {eta}"
+        );
     }
 
     #[test]
