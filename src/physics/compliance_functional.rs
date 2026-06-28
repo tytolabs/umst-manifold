@@ -13,7 +13,6 @@ use burn::tensor::{
 use super::adjoint::{AdjointComplianceDiagnostics, SimpElasticMaterial};
 use super::adjoint_q1_hex::{AdjointComplianceQ1Hex, Q1HexSolveOptions};
 use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
-use super::solver_region::SolverRegion;
 use super::time_orchestration::MechanicsInnerLoopConfig;
 use crate::ai::topology::ContinuationSchedule;
 
@@ -135,55 +134,6 @@ pub trait ComplianceFunctional {
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Q1HexComplianceFunctional;
 
-impl Q1HexComplianceFunctional {
-    /// Host eval with explicit solve options and optional [`SolverRegion`] reuse.
-    #[allow(clippy::too_many_arguments)]
-    pub fn eval_inner_with_region(
-        &self,
-        ctx: &ComplianceContext,
-        input: ComplianceHostInput<'_>,
-        solve_options: &Q1HexSolveOptions,
-        region: Option<&mut SolverRegion>,
-    ) -> Result<ComplianceValue, PhysicsError> {
-        let mut material = ctx.material;
-        material.p = input.penalization.resolve_p();
-        let m = &ctx.mesh;
-        let c_raw = AdjointComplianceQ1Hex::raw_compliance_at_rho_with_region(
-            input.rho_flat,
-            m.nx,
-            m.ny,
-            m.nz,
-            m.dx,
-            m.dy,
-            m.dz,
-            input.body_force,
-            input.boundary_mask,
-            material,
-            &ctx.cg,
-            ctx.self_weight,
-            solve_options,
-            region,
-        );
-        let diagnostics = AdjointComplianceQ1Hex::compliance_diagnostics_at_rho_with_region(
-            input.rho_flat,
-            m.nx,
-            m.ny,
-            m.nz,
-            m.dx,
-            m.dy,
-            m.dz,
-            input.body_force,
-            input.boundary_mask,
-            material,
-            &ctx.cg,
-            ctx.self_weight,
-            solve_options,
-            None,
-        );
-        ComplianceValue::from_forward_state(c_raw, material.p, diagnostics)
-    }
-}
-
 impl ComplianceFunctional for Q1HexComplianceFunctional {
     fn eval_inner(
         &self,
@@ -252,8 +202,6 @@ impl ComplianceFunctional for Q1HexComplianceFunctional {
             &ctx.cg,
             ctx.self_weight,
             &Q1HexSolveOptions::default(),
-            None,
-            None,
         );
         let value = ComplianceValue::from_forward_state(c_raw, material.p, diagnostics)?;
         Ok((surrogate, value))

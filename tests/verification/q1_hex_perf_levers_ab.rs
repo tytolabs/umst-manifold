@@ -100,8 +100,6 @@ fn run_config(
         &cg,
         None,
         &solve_opts,
-        None,
-        None,
     );
     (
         c,
