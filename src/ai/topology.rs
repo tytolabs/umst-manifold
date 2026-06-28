@@ -712,13 +712,7 @@ pub fn volume_matching_threshold_masked_from_slice(
     max_iters: usize,
 ) -> f32 {
     if editable_mask.len() != rho_tilde.len() {
-        return volume_matching_threshold_from_slice(
-            rho_tilde,
-            beta,
-            target_vf,
-            tol,
-            max_iters,
-        );
+        return volume_matching_threshold_from_slice(rho_tilde, beta, target_vf, tol, max_iters);
     }
     let n = rho_tilde.len().max(1);
     let mut n_edit = 0usize;
@@ -733,13 +727,7 @@ pub fn volume_matching_threshold_masked_from_slice(
         }
     }
     if n_edit == 0 {
-        return volume_matching_threshold_from_slice(
-            rho_tilde,
-            beta,
-            target_vf,
-            tol,
-            max_iters,
-        );
+        return volume_matching_threshold_from_slice(rho_tilde, beta, target_vf, tol, max_iters);
     }
     let target = target_vf.clamp(0.0, 1.0);
     let n_f = n as f32;
@@ -1276,9 +1264,8 @@ mod topology_density_evolution_tests {
     use super::{
         heaviside_tanh_scalar, logit_offset_matching_from_slice, logit_offset_vf_from_slice,
         volume_matching_threshold_from_slice, volume_matching_threshold_masked_from_slice,
-        BetaContinuation, ContinuationSchedule,
-        PlateauBetaContinuation, SensitivityFilter, VolumeEtaProjection,
-        VolumeLogitOffsetProjection, VolumeProjection,
+        BetaContinuation, ContinuationSchedule, PlateauBetaContinuation, SensitivityFilter,
+        VolumeEtaProjection, VolumeLogitOffsetProjection, VolumeProjection,
     };
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::NdArray;
