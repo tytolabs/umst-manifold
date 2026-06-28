@@ -149,7 +149,10 @@ mod tests {
 
     type B = NdArray<f32>;
 
-    fn chain_graph_edges(n_nodes: usize, device: &<B as burn::tensor::backend::Backend>::Device) -> Tensor<B, 2, Int> {
+    fn chain_graph_edges(
+        n_nodes: usize,
+        device: &<B as burn::tensor::backend::Backend>::Device,
+    ) -> Tensor<B, 2, Int> {
         let ne = n_nodes.saturating_sub(1);
         let mut e = Vec::with_capacity(ne * 2);
         for i in 0..ne {
@@ -169,14 +172,13 @@ mod tests {
         let device = Default::default();
         let n = 5usize;
         let x_data: Vec<f32> = (0..n).map(|i| (i as f32 + 1.0) * 0.1).collect();
-        let x = Tensor::<B, 1>::from_data(Data::new(x_data, [n].into()), &device)
-            .reshape([1, n, 1]);
+        let x =
+            Tensor::<B, 1>::from_data(Data::new(x_data, [n].into()), &device).reshape([1, n, 1]);
         let dmg = Tensor::<B, 3>::zeros([1, n, 1], &device);
         let edges = chain_graph_edges(n, &device);
 
         let lap = TopologicalLaplacian::scalar_laplacian(x.clone(), edges.clone(), dmg.clone());
-        let fused =
-            TopologicalLaplacian::scalar_laplacian_fused(x, edges, dmg);
+        let fused = TopologicalLaplacian::scalar_laplacian_fused(x, edges, dmg);
 
         let a = lap.into_data().value;
         let b = fused.into_data().value;
