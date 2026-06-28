@@ -160,7 +160,7 @@ fn l5_1_workspace_capacity_bounded_after_reuse() {
     let mut region = SolverRegion::new();
     let n_dof = 70 * 3;
     for _ in 0..12 {
-        region.workspace.ensure_capacity(n_dof);
+        let _ = region.workspace.ensure_capacity(n_dof);
         region.workspace.zero_u(n_dof);
     }
     assert_eq!(region.workspace.u.len(), n_dof);

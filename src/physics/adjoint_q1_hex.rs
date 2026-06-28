@@ -319,7 +319,7 @@ impl AdjointComplianceQ1Hex {
             if opts.use_operator_cache {
                 reg.ensure_ke_cache(nx, ny, nz, dx, dy, dz, material.nu);
             }
-            reg.workspace.ensure_capacity(n_dof);
+            let _ = reg.workspace.ensure_capacity(n_dof);
             if opts.pcg_warm_start {
                 if let Some(seed) = &opts.pcg_seed_displacement {
                     let _ = reg.workspace.seed_u(seed, n_dof);
