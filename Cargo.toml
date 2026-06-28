@@ -410,6 +410,11 @@ path = "tests/p4_rejection_witness_gpu.rs"
 required-features = ["kleisli-ppo-hot-bind", "wgpu"]
 
 [[test]]
+name = "cross_backend_gate_determinism"
+path = "tests/cross_backend_gate_determinism.rs"
+required-features = ["wgpu"]
+
+[[test]]
 name = "explain_ssot_parity"
 path = "tests/explain_ssot_parity.rs"
 

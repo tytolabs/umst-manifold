@@ -33,7 +33,7 @@ pub enum ConstantTier {
 }
 
 /// Authoritative registry (keep in lock-step with `egoff/egoffimprov.md` §24a).
-/// CONSTANT-BOUND: … + §14bis.f-M-6 (+2) + §14bis.f-M-7 (+1 mcert) = **162** (mirror `egoff/egoffimprov.md` §24a)
+/// CONSTANT-BOUND: … + §14bis.f-M-6 (+2) + §14bis.f-M-7 (+1 mcert) + foundation Phase 3 (+4) = **166** (mirror `egoff/egoffimprov.md` §24a)
 pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "landauer_floor_j_per_bit",
@@ -74,7 +74,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "admissibility_margin_eps",
         expression: "1e-4 hard token floor (ADMISSIBILITY_MARGIN_EPS)",
         tier: ConstantTier::Tier2Derivable,
-        evidence: "runtime AdmissibilityMargin witness floor",
+        evidence: "UMST.Formal.Gate.gateCheckSound (runtime AdmissibilityMargin witness floor ε)",
         env_override: None,
     },
     ConstantEntry {
@@ -1341,7 +1341,7 @@ mod tests {
 
     #[test]
     fn registry_sorted_by_tier_is_sorted_and_complete() {
-        assert_eq!(REGISTRY.len(), 162);
+        assert_eq!(REGISTRY.len(), 166);
         let sorted = registry_sorted_by_tier();
         assert_eq!(sorted.len(), REGISTRY.len());
         for w in sorted.windows(2) {
