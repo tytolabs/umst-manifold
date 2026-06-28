@@ -77,10 +77,7 @@ pub fn mechanics_config_from_cockpit(
     base: &MechanicsInnerLoopConfig,
 ) -> MechanicsInnerLoopConfig {
     let opts = q1hex_opts_from_cockpit(snap);
-    let max_it = opts
-        .pcg_max_iter
-        .unwrap_or(base.max_cg_iterations)
-        .max(1);
+    let max_it = opts.pcg_max_iter.unwrap_or(base.max_cg_iterations).max(1);
     MechanicsInnerLoopConfig {
         max_cg_iterations: max_it,
         ..base.clone()
@@ -90,10 +87,7 @@ pub fn mechanics_config_from_cockpit(
 #[cfg(feature = "math-constants")]
 /// Compute η_cog from dignity + claim at the cockpit boundary (delegates to `umst-math`).
 #[must_use]
-pub fn cockpit_eta_from_claim(
-    dignity: f64,
-    claim: &umst_math::eta_cog::EtaCogClaim,
-) -> f64 {
+pub fn cockpit_eta_from_claim(dignity: f64, claim: &umst_math::eta_cog::EtaCogClaim) -> f64 {
     umst_math::eta_cog::eta_cog(dignity, claim)
 }
 

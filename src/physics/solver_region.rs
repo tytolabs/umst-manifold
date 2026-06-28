@@ -64,6 +64,7 @@ impl SolverRegion {
     }
 
     /// Ensure uniform-brick operator cache exists when `use_operator_cache` is set.
+    #[allow(clippy::too_many_arguments)]
     pub fn ensure_ke_cache(
         &mut self,
         nx: usize,
@@ -74,13 +75,12 @@ impl SolverRegion {
         dz: f32,
         nu: f32,
     ) {
-        let needs_new = self.ke_cache.as_ref().is_none_or(|c| {
-            c.nx != nx || c.ny != ny || c.nz != nz
-        });
+        let needs_new = match self.ke_cache.as_ref() {
+            None => true,
+            Some(c) => c.nx != nx || c.ny != ny || c.nz != nz,
+        };
         if needs_new {
-            self.ke_cache = Some(HexStructuredOperatorCache::new(
-                nx, ny, nz, dx, dy, dz, nu,
-            ));
+            self.ke_cache = Some(HexStructuredOperatorCache::new(nx, ny, nz, dx, dy, dz, nu));
         }
     }
 

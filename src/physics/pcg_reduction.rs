@@ -156,14 +156,11 @@ mod tests {
     fn masked_dot_matches_naive() {
         let a: Vec<f32> = (0..512).map(|i| (i as f32).sin()).collect();
         let b: Vec<f32> = (0..512).map(|i| (i as f32).cos()).collect();
-        let m: Vec<f32> = (0..512).map(|i| if i % 3 == 0 { 1.0 } else { 0.0 }).collect();
+        let m: Vec<f32> = (0..512)
+            .map(|i| if i % 3 == 0 { 1.0 } else { 0.0 })
+            .collect();
         let fused = masked_dot_f32(&a, &b, &m);
-        let naive: f32 = a
-            .iter()
-            .zip(&b)
-            .zip(&m)
-            .map(|((x, y), w)| x * y * w)
-            .sum();
+        let naive: f32 = a.iter().zip(&b).zip(&m).map(|((x, y), w)| x * y * w).sum();
         assert!((fused - naive).abs() < 1e-5);
     }
 }

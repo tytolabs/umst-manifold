@@ -304,10 +304,7 @@ impl AdjointComplianceQ1Hex {
 
         let assemble_ms = t_assemble.elapsed().as_secs_f64() * 1000.0;
 
-        let max_it = opts
-            .pcg_max_iter
-            .unwrap_or(cg.max_cg_iterations)
-            .max(1);
+        let max_it = opts.pcg_max_iter.unwrap_or(cg.max_cg_iterations).max(1);
         let rel_tol = cg.pcg_tolerance.max(cg.cg_tolerance);
         let precond_kind = opts.precond_kind.unwrap_or_else(|| {
             HexPreconditionerKind::from_use_preconditioner(cg.use_preconditioner)
@@ -369,7 +366,13 @@ impl AdjointComplianceQ1Hex {
             let mut scratch = vec![0.0_f32; n_dof];
             let local_op_cache = if opts.use_operator_cache {
                 Some(HexStructuredOperatorCache::new(
-                    nx, ny, nz, dx, dy, dz, material.nu,
+                    nx,
+                    ny,
+                    nz,
+                    dx,
+                    dy,
+                    dz,
+                    material.nu,
                 ))
             } else {
                 None

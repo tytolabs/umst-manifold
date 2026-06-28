@@ -12,8 +12,8 @@ use burn::tensor::{
 
 use super::adjoint::{AdjointComplianceDiagnostics, SimpElasticMaterial};
 use super::adjoint_q1_hex::{AdjointComplianceQ1Hex, Q1HexSolveOptions};
-use super::solver_region::SolverRegion;
 use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
+use super::solver_region::SolverRegion;
 use super::time_orchestration::MechanicsInnerLoopConfig;
 use crate::ai::topology::ContinuationSchedule;
 

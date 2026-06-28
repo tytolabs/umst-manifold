@@ -104,7 +104,11 @@ use super::extruded_plate::ExtrudedPlateMechanics;
     feature = "mechanics-voigt-cauchy"
 ))]
 #[must_use]
-pub fn extruded_plate_from_witness<W: GridWitness>(dx: f32, dy: f32, dz: f32) -> ExtrudedPlateMechanics {
+pub fn extruded_plate_from_witness<W: GridWitness>(
+    dx: f32,
+    dy: f32,
+    dz: f32,
+) -> ExtrudedPlateMechanics {
     ExtrudedPlateMechanics {
         nx: W::NX,
         ny: W::NY,
