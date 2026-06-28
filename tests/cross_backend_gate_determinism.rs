@@ -45,7 +45,11 @@ fn sweep() -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>) {
         let psi_old = -1.0e5 - t * 10.0;
         ofe.push(psi_old);
         // Alternate inadmissible transitions (ψ_new > ψ_old ⇒ positive violation).
-        nfe.push(if i % 2 == 0 { psi_old - 50.0 } else { psi_old + 80.0 });
+        nfe.push(if i % 2 == 0 {
+            psi_old - 50.0
+        } else {
+            psi_old + 80.0
+        });
         dt.push(1.0 + 0.01 * t);
     }
     (od, nd, ofe, nfe, dt)
