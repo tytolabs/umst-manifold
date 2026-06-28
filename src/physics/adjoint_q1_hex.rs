@@ -28,6 +28,9 @@ use super::q1_hex_elasticity::{
 use super::time_orchestration::MechanicsInnerLoopConfig;
 use std::time::Instant;
 
+pub use super::device_sheet::DeviceSheet;
+pub use super::solver_region::{PcgWorkspace, SolverRegion};
+
 /// Per-solve knobs for Q1-hex forward (warm-start / preconditioner selection).
 #[derive(Clone, Debug, Default)]
 pub struct Q1HexSolveOptions {
@@ -38,6 +41,8 @@ pub struct Q1HexSolveOptions {
     pub precond_kind: Option<HexPreconditionerKind>,
     /// Reuse uniform-brick `ke_unit` for matrix-free `K·u` (metrics-match).
     pub use_operator_cache: bool,
+    /// Cockpit budget override for PCG iteration cap (`None` → `cg.max_cg_iterations`).
+    pub pcg_max_iter: Option<usize>,
 }
 
 fn map_hex_pcg_precond(kind: HexPreconditionerKind) -> HexPcgPrecondKind {
@@ -252,11 +257,18 @@ impl AdjointComplianceQ1Hex {
         cg: &MechanicsInnerLoopConfig,
         self_weight: Option<SelfWeightConfig>,
         solve_options: &Q1HexSolveOptions,
+        mut region: Option<&mut SolverRegion>,
     ) -> HexForwardState {
         let nx1 = nx + 1;
         let ny1 = ny + 1;
         let n_nodes = nx1 * ny1 * (nz + 1);
         let n_cells = nx * ny * nz;
+        let n_dof = n_nodes * 3;
+
+        let mut opts = solve_options.clone();
+        if let Some(reg) = region.as_ref() {
+            reg.seed_options_if_warm(&mut opts, n_dof);
+        }
 
         let t_assemble = Instant::now();
         let mut e_cell = vec![0.0_f32; n_cells];
@@ -292,29 +304,30 @@ impl AdjointComplianceQ1Hex {
 
         let assemble_ms = t_assemble.elapsed().as_secs_f64() * 1000.0;
 
-        let mut u = if solve_options.pcg_warm_start {
-            if let Some(seed) = &solve_options.pcg_seed_displacement {
-                if seed.len() == n_nodes * 3 {
-                    seed.clone()
-                } else {
-                    vec![0.0_f32; n_nodes * 3]
-                }
-            } else {
-                vec![0.0_f32; n_nodes * 3]
-            }
-        } else {
-            vec![0.0_f32; n_nodes * 3]
-        };
-        let mut diag = vec![0.0_f32; n_nodes * 3];
-        let mut scratch = vec![0.0_f32; n_nodes * 3];
-        let max_it = cg.max_cg_iterations.max(1);
+        let max_it = opts.pcg_max_iter.unwrap_or(cg.max_cg_iterations).max(1);
         let rel_tol = cg.pcg_tolerance.max(cg.cg_tolerance);
-        let precond_kind = solve_options.precond_kind.unwrap_or_else(|| {
+        let precond_kind = opts.precond_kind.unwrap_or_else(|| {
             HexPreconditionerKind::from_use_preconditioner(cg.use_preconditioner)
         });
+        let precond = map_hex_pcg_precond(precond_kind);
 
-        let op_cache_holder = if solve_options.use_operator_cache {
-            Some(HexStructuredOperatorCache::new(
+        let t_pcg = Instant::now();
+        let (hex_pcg, u_out) = if let Some(reg) = region.as_mut() {
+            if opts.use_operator_cache {
+                reg.ensure_ke_cache(nx, ny, nz, dx, dy, dz, material.nu);
+            }
+            let _ = reg.workspace.ensure_capacity(n_dof);
+            if opts.pcg_warm_start {
+                if let Some(seed) = &opts.pcg_seed_displacement {
+                    let _ = reg.workspace.seed_u(seed, n_dof);
+                } else {
+                    reg.workspace.zero_u(n_dof);
+                }
+            } else {
+                reg.workspace.zero_u(n_dof);
+            }
+            let op_cache_ref = reg.ke_cache.as_ref();
+            let report = hex_solve_pcg_masked(
                 nx,
                 ny,
                 nz,
@@ -322,32 +335,69 @@ impl AdjointComplianceQ1Hex {
                 dy,
                 dz,
                 material.nu,
-            ))
+                &e_cell,
+                f_flat,
+                m_flat,
+                &mut reg.workspace.u[..n_dof],
+                &mut reg.workspace.diag[..n_dof],
+                &mut reg.workspace.scratch_ku[..n_dof],
+                max_it,
+                precond,
+                rel_tol,
+                op_cache_ref,
+            );
+            let u_copy = reg.workspace.u[..n_dof].to_vec();
+            (report, u_copy)
         } else {
-            None
+            let mut u = if opts.pcg_warm_start {
+                if let Some(seed) = &opts.pcg_seed_displacement {
+                    if seed.len() == n_dof {
+                        seed.clone()
+                    } else {
+                        vec![0.0_f32; n_dof]
+                    }
+                } else {
+                    vec![0.0_f32; n_dof]
+                }
+            } else {
+                vec![0.0_f32; n_dof]
+            };
+            let mut diag = vec![0.0_f32; n_dof];
+            let mut scratch = vec![0.0_f32; n_dof];
+            let local_op_cache = if opts.use_operator_cache {
+                Some(HexStructuredOperatorCache::new(
+                    nx,
+                    ny,
+                    nz,
+                    dx,
+                    dy,
+                    dz,
+                    material.nu,
+                ))
+            } else {
+                None
+            };
+            let report = hex_solve_pcg_masked(
+                nx,
+                ny,
+                nz,
+                dx,
+                dy,
+                dz,
+                material.nu,
+                &e_cell,
+                f_flat,
+                m_flat,
+                &mut u,
+                &mut diag,
+                &mut scratch,
+                max_it,
+                precond,
+                rel_tol,
+                local_op_cache.as_ref(),
+            );
+            (report, u)
         };
-        let op_cache_ref = op_cache_holder.as_ref();
-
-        let t_pcg = Instant::now();
-        let hex_pcg = hex_solve_pcg_masked(
-            nx,
-            ny,
-            nz,
-            dx,
-            dy,
-            dz,
-            material.nu,
-            &e_cell,
-            f_flat,
-            m_flat,
-            &mut u,
-            &mut diag,
-            &mut scratch,
-            max_it,
-            map_hex_pcg_precond(precond_kind),
-            rel_tol,
-            op_cache_ref,
-        );
         let pcg_ms = t_pcg.elapsed().as_secs_f64() * 1000.0;
         let t_adjoint = Instant::now();
 
@@ -366,7 +416,7 @@ impl AdjointComplianceQ1Hex {
                 &e_cell,
                 f_flat,
                 m_flat,
-                &u,
+                &u_out,
             )
         };
 
@@ -380,7 +430,7 @@ impl AdjointComplianceQ1Hex {
             dz,
             material.nu,
             &e_cell,
-            &u,
+            &u_out,
             &mut u_cell_energy,
         );
 
@@ -396,12 +446,12 @@ impl AdjointComplianceQ1Hex {
 
         let mut nodal_sensitivity = nodal_sensitivity_from_cell_ge(&ge, nx, ny, nz, n_nodes);
         if let Some(sw) = self_weight {
-            let load_sens = self_weight_load_nodal_sensitivity(&u, rho_flat, n_nodes, &sw);
+            let load_sens = self_weight_load_nodal_sensitivity(&u_out, rho_flat, n_nodes, &sw);
             for (s, l) in nodal_sensitivity.iter_mut().zip(load_sens) {
                 *s += l;
             }
         }
-        let finite_audit = build_finite_audit(&u, m_flat, &ge, &nodal_sensitivity);
+        let finite_audit = build_finite_audit(&u_out, m_flat, &ge, &nodal_sensitivity);
         let pcg = BarNetworkPcgReport {
             iterations: hex_pcg.iterations,
             rel_residual: hex_pcg.rel_residual,
@@ -417,9 +467,14 @@ impl AdjointComplianceQ1Hex {
             adjoint_ms,
         };
 
+        if let Some(reg) = region {
+            reg.store_warm_u(&u_out);
+            reg.last_timing = phase_timing;
+        }
+
         HexForwardState {
             rho_e_law,
-            u,
+            u: u_out,
             ge,
             cell_strain_energy: u_cell_energy,
             pcg,
@@ -461,6 +516,7 @@ impl AdjointComplianceQ1Hex {
             cg,
             self_weight,
             &Q1HexSolveOptions::default(),
+            None,
         );
         let mut compliance = 0.0_f32;
         for i in 0..f_flat.len().min(state.u.len()).min(m_flat.len()) {
@@ -609,6 +665,8 @@ impl AdjointComplianceQ1Hex {
             cg,
             self_weight,
             &Q1HexSolveOptions::default(),
+            None,
+            None,
         );
         (surrogate, c_raw)
     }
@@ -629,6 +687,8 @@ impl AdjointComplianceQ1Hex {
         cg: &MechanicsInnerLoopConfig,
         self_weight: Option<SelfWeightConfig>,
         solve_options: &Q1HexSolveOptions,
+        region: Option<&mut SolverRegion>,
+        sheet: Option<&mut DeviceSheet>,
     ) -> (Tensor<B, 1>, f32, AdjointComplianceDiagnostics)
     where
         B: AutodiffBackend<FloatElem = f32>,
@@ -644,26 +704,36 @@ impl AdjointComplianceQ1Hex {
         );
 
         let rho_inner = rho_autodiff.clone().inner();
-        let rho_flat = rho_inner.clone().into_data().value;
-        let f_flat = body_force.clone().into_data().value;
-        let m_flat = boundary_mask.clone().into_data().value;
-        debug_assert_eq!(f_flat.len(), n_nodes * 3);
-        debug_assert_eq!(m_flat.len(), n_nodes * 3);
+        let owned_rho;
+        let owned_f;
+        let owned_m;
+        let (rho_ref, f_ref, m_ref): (&[f32], &[f32], &[f32]) = if let Some(sh) = sheet {
+            sh.sync_from_tensors(&rho_inner, &body_force, &boundary_mask, n_nodes);
+            (sh.rho_slice(), sh.f_slice(), sh.m_slice())
+        } else {
+            owned_rho = rho_inner.into_data().value;
+            owned_f = body_force.clone().into_data().value;
+            owned_m = boundary_mask.clone().into_data().value;
+            (&owned_rho, &owned_f, &owned_m)
+        };
+        debug_assert_eq!(f_ref.len(), n_nodes * 3);
+        debug_assert_eq!(m_ref.len(), n_nodes * 3);
 
         let state = Self::forward_state_for_compliance(
-            &rho_flat,
+            rho_ref,
             nx,
             ny,
             nz,
             dx,
             dy,
             dz,
-            &f_flat,
-            &m_flat,
+            f_ref,
+            m_ref,
             material,
             cg,
             self_weight,
             solve_options,
+            region,
         );
 
         let device = rho_autodiff.device();
@@ -684,7 +754,7 @@ impl AdjointComplianceQ1Hex {
             <B as AutodiffBackend>::InnerBackend,
             3,
         >::from_data(
-            Data::new(rho_flat.clone(), Shape::new([1, n_nodes, 1])),
+            Data::new(rho_ref.to_vec(), Shape::new([1, n_nodes, 1])),
             &device,
         ));
         let lin_a = rho_autodiff.clone().mul(sens_ad.clone()).sum();
@@ -723,7 +793,7 @@ impl AdjointComplianceQ1Hex {
         cg: &MechanicsInnerLoopConfig,
         self_weight: Option<SelfWeightConfig>,
     ) -> AdjointComplianceDiagnostics {
-        let state = Self::forward_state_for_compliance(
+        Self::compliance_diagnostics_at_rho_with_region(
             rho_flat,
             nx,
             ny,
@@ -737,6 +807,43 @@ impl AdjointComplianceQ1Hex {
             cg,
             self_weight,
             &Q1HexSolveOptions::default(),
+            None,
+        )
+    }
+
+    /// Diagnostics with explicit solve options and optional [`SolverRegion`] reuse.
+    #[allow(clippy::too_many_arguments)]
+    pub fn compliance_diagnostics_at_rho_with_region(
+        rho_flat: &[f32],
+        nx: usize,
+        ny: usize,
+        nz: usize,
+        dx: f32,
+        dy: f32,
+        dz: f32,
+        f_flat: &[f32],
+        m_flat: &[f32],
+        material: SimpElasticMaterial,
+        cg: &MechanicsInnerLoopConfig,
+        self_weight: Option<SelfWeightConfig>,
+        solve_options: &Q1HexSolveOptions,
+        region: Option<&mut SolverRegion>,
+    ) -> AdjointComplianceDiagnostics {
+        let state = Self::forward_state_for_compliance(
+            rho_flat,
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            f_flat,
+            m_flat,
+            material,
+            cg,
+            self_weight,
+            solve_options,
+            region,
         );
         AdjointComplianceDiagnostics {
             pcg: state.pcg,
@@ -766,7 +873,7 @@ impl AdjointComplianceQ1Hex {
         cg: &MechanicsInnerLoopConfig,
         self_weight: Option<SelfWeightConfig>,
     ) -> f32 {
-        let state = Self::forward_state_for_compliance(
+        Self::raw_compliance_at_rho_with_region(
             rho_flat,
             nx,
             ny,
@@ -780,6 +887,43 @@ impl AdjointComplianceQ1Hex {
             cg,
             self_weight,
             &Q1HexSolveOptions::default(),
+            None,
+        )
+    }
+
+    /// Raw compliance with explicit solve options and optional [`SolverRegion`] reuse.
+    #[allow(clippy::too_many_arguments)]
+    pub fn raw_compliance_at_rho_with_region(
+        rho_flat: &[f32],
+        nx: usize,
+        ny: usize,
+        nz: usize,
+        dx: f32,
+        dy: f32,
+        dz: f32,
+        f_flat: &[f32],
+        m_flat: &[f32],
+        material: SimpElasticMaterial,
+        cg: &MechanicsInnerLoopConfig,
+        self_weight: Option<SelfWeightConfig>,
+        solve_options: &Q1HexSolveOptions,
+        region: Option<&mut SolverRegion>,
+    ) -> f32 {
+        let state = Self::forward_state_for_compliance(
+            rho_flat,
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            f_flat,
+            m_flat,
+            material,
+            cg,
+            self_weight,
+            solve_options,
+            region,
         );
         let n_nodes = (nx + 1) * (ny + 1) * (nz + 1);
         debug_assert_eq!(f_flat.len(), n_nodes * 3);
@@ -839,6 +983,7 @@ impl AdjointComplianceQ1Hex {
             cg,
             self_weight,
             &Q1HexSolveOptions::default(),
+            None,
         );
         let device = rho_autodiff.device();
         let u_tensor_inner = Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::from_data(
