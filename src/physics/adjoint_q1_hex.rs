@@ -28,7 +28,6 @@ use super::q1_hex_elasticity::{
 use super::time_orchestration::MechanicsInnerLoopConfig;
 use std::time::Instant;
 
-pub use super::device_sheet::DeviceSheet;
 pub use super::solver_region::{PcgWorkspace, SolverRegion};
 
 /// Per-solve knobs for Q1-hex forward (warm-start / preconditioner selection).
@@ -666,7 +665,6 @@ impl AdjointComplianceQ1Hex {
             self_weight,
             &Q1HexSolveOptions::default(),
             None,
-            None,
         );
         (surrogate, c_raw)
     }
@@ -688,7 +686,6 @@ impl AdjointComplianceQ1Hex {
         self_weight: Option<SelfWeightConfig>,
         solve_options: &Q1HexSolveOptions,
         region: Option<&mut SolverRegion>,
-        sheet: Option<&mut DeviceSheet>,
     ) -> (Tensor<B, 1>, f32, AdjointComplianceDiagnostics)
     where
         B: AutodiffBackend<FloatElem = f32>,
@@ -704,18 +701,10 @@ impl AdjointComplianceQ1Hex {
         );
 
         let rho_inner = rho_autodiff.clone().inner();
-        let owned_rho;
-        let owned_f;
-        let owned_m;
-        let (rho_ref, f_ref, m_ref): (&[f32], &[f32], &[f32]) = if let Some(sh) = sheet {
-            sh.sync_from_tensors(&rho_inner, &body_force, &boundary_mask, n_nodes);
-            (sh.rho_slice(), sh.f_slice(), sh.m_slice())
-        } else {
-            owned_rho = rho_inner.into_data().value;
-            owned_f = body_force.clone().into_data().value;
-            owned_m = boundary_mask.clone().into_data().value;
-            (&owned_rho, &owned_f, &owned_m)
-        };
+        let owned_rho = rho_inner.into_data().value;
+        let owned_f = body_force.clone().into_data().value;
+        let owned_m = boundary_mask.clone().into_data().value;
+        let (rho_ref, f_ref, m_ref): (&[f32], &[f32], &[f32]) = (&owned_rho, &owned_f, &owned_m);
         debug_assert_eq!(f_ref.len(), n_nodes * 3);
         debug_assert_eq!(m_ref.len(), n_nodes * 3);
 

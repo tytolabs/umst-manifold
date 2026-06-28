@@ -6,7 +6,7 @@ use burn::tensor::{backend::AutodiffBackend, Tensor};
 use burn_ndarray::NdArray;
 use umst_manifold::physics::adjoint::SimpElasticMaterial;
 use umst_manifold::physics::adjoint_q1_hex::{
-    AdjointComplianceQ1Hex, DeviceSheet, Q1HexSolveOptions,
+    AdjointComplianceQ1Hex, Q1HexSolveOptions,
 };
 use umst_manifold::physics::solver_region::SolverRegion;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
@@ -57,7 +57,6 @@ fn solver_region_parity_cold_vs_warm_reuse() {
         None,
         &opts_cold,
         None,
-        None,
     );
 
     let mut region = SolverRegion::new();
@@ -81,7 +80,6 @@ fn solver_region_parity_cold_vs_warm_reuse() {
         None,
         &opts_warm,
         Some(&mut region),
-        None,
     );
 
     let dc = (c_cold - c_warm).abs();
@@ -101,26 +99,4 @@ fn solver_region_parity_cold_vs_warm_reuse() {
         diag_warm.phase_timing.pcg_ms,
         dc,
     );
-
-    let mut sheet = DeviceSheet::new();
-    let (_, c_sheet, diag_sheet) = AdjointComplianceQ1Hex::forward_loss_with_diagnostics(
-        rho.clone(),
-        nx,
-        ny,
-        nz,
-        dx,
-        dy,
-        dz,
-        f.clone(),
-        m.clone(),
-        material,
-        &cg,
-        None,
-        &opts_cold,
-        None,
-        Some(&mut sheet),
-    );
-    assert!((c_cold - c_sheet).abs() < 1e-4);
-    assert_eq!(diag_sheet.pcg_iters, diag_cold.pcg_iters);
-    eprintln!("device_sheet_parity: dc={:.2e}", (c_cold - c_sheet).abs());
 }

@@ -101,7 +101,6 @@ fn run_config(
         None,
         &solve_opts,
         None,
-        None,
     );
     (
         c,
