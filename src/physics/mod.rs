@@ -13,6 +13,8 @@ pub mod dec_primal;
     feature = "mechanics-voigt-cauchy"
 ))]
 pub mod extruded_plate;
+#[cfg(feature = "mechanics-adjoint-q1-hex")]
+pub mod grid_witness;
 pub mod framework;
 pub mod laplacian;
 pub mod linear;
@@ -25,14 +27,24 @@ pub mod orchestration;
 #[cfg(feature = "topology-density-evolution")]
 pub mod prime_spectral_filter;
 pub mod protocols;
+#[cfg(feature = "rheology-bingham")]
+pub mod rheology_analytic;
+#[cfg(any(
+    feature = "topology-density-evolution",
+    feature = "mechanics-voigt-cauchy"
+))]
+pub mod pcg_reduction;
 #[cfg(any(
     feature = "topology-density-evolution",
     feature = "mechanics-voigt-cauchy"
 ))]
 pub mod q1_hex_elasticity;
-pub mod rheology_analytic;
+#[cfg(feature = "mechanics-adjoint-q1-hex")]
+pub mod device_sheet;
 #[cfg(feature = "mechanics-adjoint-q1-hex")]
 pub mod solver_region;
+#[cfg(feature = "mechanics-adjoint-q1-hex")]
+pub mod solve_budget;
 pub mod solvers;
 pub mod time_orchestration;
 pub mod topology;

@@ -51,6 +51,10 @@
 #![allow(clippy::needless_range_loop)]
 #![allow(clippy::too_many_arguments)]
 
+use super::pcg_reduction::{
+    dot_f32, dot_f64, masked_dot_f32, masked_norm_sq_f32, masked_norm_sq_f64, norm_sq_f64,
+};
+
 /// Parent-space coordinates \((\xi,\eta,\zeta)\in\{-1,1\}^3\) for the eight corner nodes (lexicographic
 /// ordering consistent with [`super::extruded_plate::ExtrudedPlateMechanics`] cell corners).
 const CORNER_XI: [[f32; 3]; 8] = [
@@ -2218,13 +2222,10 @@ pub fn hex_solve_pcg_bisect(
     }
 
     let mut r = vec![0.0_f32; ndof];
-    let mut f_norm = 0.0_f32;
     for i in 0..ndof {
-        let fi = f_work[i] * mask[i];
-        f_norm += fi * fi;
         r[i] = mask[i] * (f_work[i] - scratch_ku[i]);
     }
-    f_norm = f_norm.sqrt().max(1e-30_f32);
+    let f_norm = masked_norm_sq_f32(&f_work, mask).sqrt().max(1e-30_f32);
 
     let mut z = vec![0.0_f32; ndof];
     match precond {
@@ -2242,10 +2243,7 @@ pub fn hex_solve_pcg_bisect(
     }
     let mut p = z.clone();
 
-    let mut rz_old = 0.0_f32;
-    for i in 0..ndof {
-        rz_old += r[i] * z[i];
-    }
+    let mut rz_old = dot_f32(&r, &z);
 
     let mut pcg_iters = 0usize;
     let mut pcg_rel_recursive = f32::INFINITY;
@@ -2259,11 +2257,7 @@ pub fn hex_solve_pcg_bisect(
             hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, &e_work, &p, scratch_ku);
         }
 
-        let mut pap = 0.0_f32;
-        for i in 0..ndof {
-            pap += p[i] * mask[i] * scratch_ku[i];
-        }
-        pap = pap.max(1e-30_f32);
+        let pap = masked_dot_f32(&p, scratch_ku, mask).max(1e-30_f32);
         let alpha = rz_old / pap;
 
         match cfg.loop_kind {
@@ -2286,12 +2280,7 @@ pub fn hex_solve_pcg_bisect(
             }
         }
 
-        let mut r_norm = 0.0_f32;
-        for i in 0..ndof {
-            let v = r[i] * mask[i];
-            r_norm += v * v;
-        }
-        r_norm = r_norm.sqrt();
+        let r_norm = masked_norm_sq_f32(&r, mask).sqrt();
         pcg_rel_recursive = r_norm / f_norm;
         if cfg.stop_on_true_residual {
             // Recursive residual is the cheap trigger; bind exit on one true `eq_rel` matvec.
@@ -2322,10 +2311,7 @@ pub fn hex_solve_pcg_bisect(
             ),
         }
 
-        let mut rz_new = 0.0_f32;
-        for i in 0..ndof {
-            rz_new += r[i] * z[i];
-        }
+        let rz_new = dot_f32(&r, &z);
         let beta = (rz_new / rz_old.max(1e-30_f32)).max(0.0);
         rz_old = rz_new;
 
@@ -2435,13 +2421,10 @@ fn hex_solve_pcg_masked_f64(
     };
 
     projected_ku(&u64, &mut ku);
-    let mut f_norm = 0.0_f64;
     for i in 0..ndof {
-        let fi = f_solve[i] * mask64[i];
-        f_norm += fi * fi;
         r[i] = mask64[i] * (f_solve[i] - ku[i]);
     }
-    f_norm = f_norm.sqrt().max(1e-30_f64);
+    let f_norm = masked_norm_sq_f64(&f_solve, &mask64).sqrt().max(1e-30_f64);
     let abs_tol = tol * f_norm;
 
     match precond {
@@ -2485,17 +2468,12 @@ fn hex_solve_pcg_masked_f64(
 
     let mut pcg_iters = 0usize;
     let mut pcg_rel_recursive = f32::INFINITY;
-    let mut rz_old: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum::<f64>();
+    let mut rz_old: f64 = dot_f64(&r, &z);
 
     for _ in 0..max_it {
         pcg_iters += 1;
         projected_ku(&p, &mut ku);
-        let pap: f64 = p
-            .iter()
-            .zip(ku.iter())
-            .map(|(pi, ki)| pi * ki)
-            .sum::<f64>()
-            .max(1e-30_f64);
+        let pap: f64 = dot_f64(&p, &ku).max(1e-30_f64);
         let alpha: f64 = rz_old / pap;
         if !alpha.is_finite() {
             break;
@@ -2550,7 +2528,7 @@ fn hex_solve_pcg_masked_f64(
             ),
         }
 
-        let rz_new: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum::<f64>();
+        let rz_new: f64 = dot_f64(&r, &z);
         if !rz_new.is_finite() {
             break;
         }
@@ -2560,7 +2538,7 @@ fn hex_solve_pcg_masked_f64(
             p[i] = (z[i] + beta * p[i]) * mask64[i];
         }
 
-        let r_norm: f64 = r.iter().map(|x| x * x).sum::<f64>().sqrt();
+        let r_norm: f64 = norm_sq_f64(&r).sqrt();
         let r_rec = r_norm / f_norm;
         pcg_rel_recursive = r_rec as f32;
         if let Some(targets) = milestone_iters {

@@ -12,8 +12,8 @@ use burn::tensor::{
 
 use super::adjoint::{AdjointComplianceDiagnostics, SimpElasticMaterial};
 use super::adjoint_q1_hex::{AdjointComplianceQ1Hex, Q1HexSolveOptions};
-use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
 use super::solver_region::SolverRegion;
+use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
 use super::time_orchestration::MechanicsInnerLoopConfig;
 use crate::ai::topology::ContinuationSchedule;
 
@@ -252,6 +252,7 @@ impl ComplianceFunctional for Q1HexComplianceFunctional {
             &ctx.cg,
             ctx.self_weight,
             &Q1HexSolveOptions::default(),
+            None,
             None,
         );
         let value = ComplianceValue::from_forward_state(c_raw, material.p, diagnostics)?;

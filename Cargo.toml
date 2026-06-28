@@ -220,6 +220,16 @@ path = "tests/verification/solver_region_parity.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
+name = "grid_witness_catalog"
+path = "tests/verification/grid_witness_catalog.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
+name = "hardware_perf_adversarial"
+path = "tests/verification/hardware_perf_adversarial.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
 name = "q1_hex_adjoint_grad_probe"
 path = "tests/verification/q1_hex_adjoint_grad_probe.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
