@@ -956,6 +956,161 @@ fn hex_dims_coarsenable(nx: usize, ny: usize, nz: usize) -> bool {
     nx >= 2 && ny >= 2 && nz >= 2 && nx % 2 == 0 && ny % 2 == 0 && nz % 2 == 0
 }
 
+fn hex_dims_semicoarsenable_xy(nx: usize, ny: usize) -> bool {
+    nx >= 2 && ny >= 2 && nx % 2 == 0 && ny % 2 == 0
+}
+
+fn hex_coarsen_cell_field_xy_only(
+    e_fine: &[f32],
+    nx: usize,
+    ny: usize,
+    nz: usize,
+) -> (Vec<f32>, usize, usize, usize) {
+    let nx_c = nx / 2;
+    let ny_c = ny / 2;
+    let nz_c = nz;
+    let mut e_c = vec![0.0_f32; nx_c * ny_c * nz_c];
+    for cz in 0..nz_c {
+        for cy in 0..ny_c {
+            for cx in 0..nx_c {
+                let mut sum = 0.0_f32;
+                for dy in 0..2 {
+                    for dx in 0..2 {
+                        let fx = cx * 2 + dx;
+                        let fy = cy * 2 + dy;
+                        let c = fx + fy * nx + cz * nx * ny;
+                        sum += e_fine[c];
+                    }
+                }
+                e_c[cx + cy * nx_c + cz * nx_c * ny_c] = sum * 0.25_f32;
+            }
+        }
+    }
+    (e_c, nx_c, ny_c, nz_c)
+}
+
+fn hex_restrict_mask_xy_only(
+    mask_fine: &[f32],
+    nx: usize,
+    ny: usize,
+    nz: usize,
+) -> (Vec<f32>, usize, usize, usize) {
+    let nx_c = nx / 2;
+    let ny_c = ny / 2;
+    let nz_c = nz;
+    let nx1 = nx + 1;
+    let ny1 = ny + 1;
+    let nx1_c = nx_c + 1;
+    let ny1_c = ny_c + 1;
+    let mut m_c = vec![0.0_f32; (nx1_c * ny1_c * (nz_c + 1)) * 3];
+    for iz in 0..=nz_c {
+        for iy_c in 0..=ny_c {
+            for ix_c in 0..=nx_c {
+                let ic = ix_c + iy_c * nx1_c + iz * nx1_c * ny1_c;
+                for d in 0..3 {
+                    let mut m_min = 1.0_f32;
+                    for dy in 0..=1 {
+                        for dx in 0..=1 {
+                            let ix_f = ix_c * 2 + dx;
+                            let iy_f = iy_c * 2 + dy;
+                            if ix_f <= nx && iy_f <= ny {
+                                let i_f = ix_f + iy_f * nx1 + iz * nx1 * ny1;
+                                m_min = m_min.min(mask_fine[i_f * 3 + d]);
+                            }
+                        }
+                    }
+                    m_c[ic * 3 + d] = m_min;
+                }
+            }
+        }
+    }
+    let _ = ny1;
+    (m_c, nx_c, ny_c, nz_c)
+}
+
+fn hex_restrict_nodal_f32_xy_only(
+    v_fine: &[f32],
+    mask_fine: &[f32],
+    nx: usize,
+    ny: usize,
+    nz: usize,
+) -> (Vec<f32>, Vec<f32>, usize, usize, usize) {
+    let (m_c, nx_c, ny_c, nz_c) = hex_restrict_mask_xy_only(mask_fine, nx, ny, nz);
+    let nx1 = nx + 1;
+    let ny1 = ny + 1;
+    let nx1_c = nx_c + 1;
+    let ny1_c = ny_c + 1;
+    let ndof_c = (nx1_c * ny1_c * (nz_c + 1)) * 3;
+    let mut v_c = vec![0.0_f32; ndof_c];
+    for iz in 0..=nz_c {
+        for iy_c in 0..=ny_c {
+            for ix_c in 0..=nx_c {
+                let ic = ix_c + iy_c * nx1_c + iz * nx1_c * ny1_c;
+                let ix_f = ix_c * 2;
+                let iy_f = iy_c * 2;
+                if ix_f <= nx && iy_f <= ny {
+                    let i_f = ix_f + iy_f * nx1 + iz * nx1 * ny1;
+                    for d in 0..3 {
+                        v_c[ic * 3 + d] = v_fine[i_f * 3 + d];
+                    }
+                }
+            }
+        }
+    }
+    let _ = ny1;
+    (v_c, m_c, nx_c, ny_c, nz_c)
+}
+
+fn hex_prolong_nodal_add_f32_xy_only(
+    v_coarse: &[f32],
+    nx_c: usize,
+    ny_c: usize,
+    nz_c: usize,
+    v_fine: &mut [f32],
+    nx: usize,
+    ny: usize,
+    nz: usize,
+) {
+    let nx1 = nx + 1;
+    let ny1 = ny + 1;
+    let nx1_c = nx_c + 1;
+    let ny1_c = ny_c + 1;
+    debug_assert_eq!(nz, nz_c);
+    for iz in 0..=nz {
+        for iy in 0..=ny {
+            for ix in 0..=nx {
+                let i_f = ix + iy * nx1 + iz * nx1 * ny1;
+                let ix_c0 = ix / 2;
+                let iy_c0 = iy / 2;
+                let fx = (ix % 2) as f32 * 0.5_f32;
+                let fy = (iy % 2) as f32 * 0.5_f32;
+                for d in 0..3 {
+                    let mut val = 0.0_f32;
+                    let mut w = 0.0_f32;
+                    for (ix_c, wx) in [(ix_c0, 1.0_f32 - fx), (ix_c0 + 1, fx)] {
+                        if ix_c > nx_c {
+                            continue;
+                        }
+                        for (iy_c, wy) in [(iy_c0, 1.0_f32 - fy), (iy_c0 + 1, fy)] {
+                            if iy_c > ny_c {
+                                continue;
+                            }
+                            let ic = ix_c + iy_c * nx1_c + iz * nx1_c * ny1_c;
+                            let wt = wx * wy;
+                            val += wt * v_coarse[ic * 3 + d];
+                            w += wt;
+                        }
+                    }
+                    if w > 1e-30_f32 {
+                        v_fine[i_f * 3 + d] += val / w;
+                    }
+                }
+            }
+        }
+    }
+    let _ = ny1;
+}
+
 fn hex_coarsen_cell_field(
     e_fine: &[f32],
     nx: usize,
@@ -1229,6 +1384,82 @@ fn apply_precond_geometric_mg_f32(
     }
 }
 
+fn apply_precond_semicoarsening_mg_f32(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    mask: &[f32],
+    diag: &[f32],
+    r: &[f32],
+    z: &mut [f32],
+    _op_cache: Option<&HexStructuredOperatorCache>,
+) {
+    fn bpx_level_xy(
+        nx: usize,
+        ny: usize,
+        nz: usize,
+        dx: f32,
+        dy: f32,
+        dz: f32,
+        nu: f32,
+        e_cell: &[f32],
+        mask: &[f32],
+        diag: &[f32],
+        r: &[f32],
+        z: &mut [f32],
+        level: usize,
+        max_levels: usize,
+    ) {
+        for i in 0..z.len() {
+            if mask[i] > 0.5_f32 {
+                z[i] += r[i] / diag[i].max(1e-30_f32);
+            }
+        }
+        if level + 1 >= max_levels || !hex_dims_semicoarsenable_xy(nx, ny) {
+            return;
+        }
+        let (e_c, nx_c, ny_c, nz_c) = hex_coarsen_cell_field_xy_only(e_cell, nx, ny, nz);
+        let (r_c, m_c, _, _, _) = hex_restrict_nodal_f32_xy_only(r, mask, nx, ny, nz);
+        let dx_c = dx * 2.0_f32;
+        let dy_c = dy * 2.0_f32;
+        let mut diag_c = vec![0.0_f32; m_c.len()];
+        hex_diagonal(nx_c, ny_c, nz_c, dx_c, dy_c, dz, nu, &e_c, &mut diag_c);
+        let ndof_c = r_c.len();
+        let mut z_c = vec![0.0_f32; ndof_c];
+        bpx_level_xy(
+            nx_c,
+            ny_c,
+            nz_c,
+            dx_c,
+            dy_c,
+            dz,
+            nu,
+            &e_c,
+            &m_c,
+            &diag_c,
+            &r_c,
+            &mut z_c,
+            level + 1,
+            max_levels,
+        );
+        let mut bump = vec![0.0_f32; z.len()];
+        hex_prolong_nodal_add_f32_xy_only(&z_c, nx_c, ny_c, nz_c, &mut bump, nx, ny, nz);
+        for i in 0..z.len() {
+            z[i] += 0.35_f32 * bump[i];
+        }
+    }
+    z.fill(0.0);
+    bpx_level_xy(nx, ny, nz, dx, dy, dz, nu, e_cell, mask, diag, r, z, 0, 6);
+    for i in 0..z.len() {
+        z[i] *= mask[i];
+    }
+}
+
 #[allow(dead_code)] // reserved for V-cycle Jacobi smoothing (BPX path uses diagonal prolongation today)
 fn hex_jacobi_smooth_f64(
     nx: usize,
@@ -1292,6 +1523,33 @@ fn apply_precond_geometric_mg_f64(
     }
 }
 
+fn apply_precond_semicoarsening_mg_f64(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    mask: &[f64],
+    diag: &[f64],
+    r: &[f64],
+    z: &mut [f64],
+    _op_cache: Option<&HexStructuredOperatorCache>,
+) {
+    let mask_f: Vec<f32> = mask.iter().map(|&m| m as f32).collect();
+    let r_f: Vec<f32> = r.iter().map(|&v| v as f32).collect();
+    let diag_f: Vec<f32> = diag.iter().map(|&v| v as f32).collect();
+    let mut z_f = vec![0.0_f32; r.len()];
+    apply_precond_semicoarsening_mg_f32(
+        nx, ny, nz, dx, dy, dz, nu, e_cell, &mask_f, &diag_f, &r_f, &mut z_f, None,
+    );
+    for (a, b) in z.iter_mut().zip(&z_f) {
+        *a = *b as f64;
+    }
+}
+
 /// Preconditioner for projected hex PCG (logging + A/B levers).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HexPcgPrecondKind {
@@ -1299,6 +1557,7 @@ pub enum HexPcgPrecondKind {
     JacobiDiagonal,
     BlockJacobiNodal3x3,
     GeometricMultigridVCycle,
+    SemicoarseningMultigridVCycle,
 }
 
 #[must_use]
@@ -1977,6 +2236,9 @@ pub fn hex_solve_pcg_bisect(
         HexPcgPrecondKind::GeometricMultigridVCycle => apply_precond_geometric_mg_f32(
             nx, ny, nz, dx, dy, dz, nu, &e_work, mask, diag, &r, &mut z, op_cache,
         ),
+        HexPcgPrecondKind::SemicoarseningMultigridVCycle => apply_precond_semicoarsening_mg_f32(
+            nx, ny, nz, dx, dy, dz, nu, &e_work, mask, diag, &r, &mut z, op_cache,
+        ),
     }
     let mut p = z.clone();
 
@@ -2053,6 +2315,9 @@ pub fn hex_solve_pcg_bisect(
                 apply_precond_block_3x3_f32(&block_jacobi, mask, &r, &mut z, n)
             }
             HexPcgPrecondKind::GeometricMultigridVCycle => apply_precond_geometric_mg_f32(
+                nx, ny, nz, dx, dy, dz, nu, &e_work, mask, diag, &r, &mut z, op_cache,
+            ),
+            HexPcgPrecondKind::SemicoarseningMultigridVCycle => apply_precond_semicoarsening_mg_f32(
                 nx, ny, nz, dx, dy, dz, nu, &e_work, mask, diag, &r, &mut z, op_cache,
             ),
         }
@@ -2200,6 +2465,21 @@ fn hex_solve_pcg_masked_f64(
             &mut z,
             op_cache,
         ),
+        HexPcgPrecondKind::SemicoarseningMultigridVCycle => apply_precond_semicoarsening_mg_f64(
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            nu,
+            &e_solve_f32,
+            &mask64,
+            &diag64,
+            &r,
+            &mut z,
+            op_cache,
+        ),
     }
     p.copy_from_slice(&z);
 
@@ -2239,6 +2519,21 @@ fn hex_solve_pcg_masked_f64(
                 apply_precond_block_3x3_f64(&block_jacobi64, &mask64, &r, &mut z, n_nodes)
             }
             HexPcgPrecondKind::GeometricMultigridVCycle => apply_precond_geometric_mg_f64(
+                nx,
+                ny,
+                nz,
+                dx,
+                dy,
+                dz,
+                nu,
+                &e_solve_f32,
+                &mask64,
+                &diag64,
+                &r,
+                &mut z,
+                op_cache,
+            ),
+            HexPcgPrecondKind::SemicoarseningMultigridVCycle => apply_precond_semicoarsening_mg_f64(
                 nx,
                 ny,
                 nz,

@@ -56,6 +56,8 @@ pub enum HexPreconditionerKind {
     JacobiDiagonal,
     BlockJacobiNodal3x3,
     GeometricMultigridVCycle,
+    /// In-plane x/y coarsening only; hold z (thin-slab anisotropy, e.g. 40×40×4).
+    SemicoarseningMultigridVCycle,
 }
 
 impl HexPreconditionerKind {
