@@ -59,7 +59,6 @@ fn q1_hex_forward_perf_fields_smoke() {
             None,
             &opts,
             None,
-            None,
         );
         assert_eq!(diag.pcg_iters, diag.pcg.iterations);
         assert!(diag.equilibrium_rel_residual.is_finite());
