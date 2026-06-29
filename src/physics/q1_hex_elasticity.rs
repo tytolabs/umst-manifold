@@ -881,17 +881,29 @@ pub fn hex_k_times_u_accumulate_cached_f64(
     u: &[f64],
     y: &mut [f64],
 ) {
+    let e64: Vec<f64> = e_cell.iter().map(|&e| e as f64).collect();
+    hex_k_times_u_accumulate_cached_f64_e(cache, &e64, u, y);
+}
+
+/// `y += K u` using [`HexStructuredOperatorCache`] with f64 moduli (f64 PCG lane parity).
+pub fn hex_k_times_u_accumulate_cached_f64_e(
+    cache: &HexStructuredOperatorCache,
+    e_cell: &[f64],
+    u: &[f64],
+    y: &mut [f64],
+) {
     let nx = cache.nx;
     let ny = cache.ny;
     let nz = cache.nz;
     let nx1 = nx + 1;
     let ny1 = ny + 1;
     let ke_unit = &cache.ke_unit;
+    debug_assert_eq!(cache.nx * cache.ny * cache.nz, e_cell.len());
     for cz in 0..nz {
         for cy in 0..ny {
             for cx in 0..nx {
                 let c = cx + cy * nx + cz * nx * ny;
-                let e = e_cell[c].max(1e-30_f32) as f64;
+                let e = e_cell[c].max(1e-30_f64);
                 let mut u24 = [0.0_f64; 24];
                 for k in 0..8 {
                     let (ix, iy, iz) = match k {
@@ -2147,7 +2159,8 @@ fn hex_solve_pcg_masked_f64(
     let projected_ku = |vec: &[f64], out: &mut [f64]| {
         out.fill(0.0);
         if let Some(cache) = op_cache {
-            hex_k_times_u_accumulate_cached_f64(cache, e_cell, vec, out);
+            // f64 lane nondims `e_solve`/`f_solve`; cached matvec must use the same scaled moduli.
+            hex_k_times_u_accumulate_cached_f64_e(cache, &e_solve, vec, out);
         } else {
             hex_k_times_u_accumulate_f64(nx, ny, nz, dx, dy, dz, nu, &e_solve, vec, out);
         }
@@ -2173,7 +2186,19 @@ fn hex_solve_pcg_masked_f64(
             apply_precond_block_3x3_f64(&block_jacobi64, &mask64, &r, &mut z, n_nodes)
         }
         HexPcgPrecondKind::GeometricMultigridVCycle => apply_precond_geometric_mg_f64(
-            nx, ny, nz, dx, dy, dz, nu, e_cell, &mask64, &diag64, &r, &mut z, op_cache,
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            nu,
+            &e_solve_f32,
+            &mask64,
+            &diag64,
+            &r,
+            &mut z,
+            op_cache,
         ),
     }
     p.copy_from_slice(&z);
@@ -2214,7 +2239,19 @@ fn hex_solve_pcg_masked_f64(
                 apply_precond_block_3x3_f64(&block_jacobi64, &mask64, &r, &mut z, n_nodes)
             }
             HexPcgPrecondKind::GeometricMultigridVCycle => apply_precond_geometric_mg_f64(
-                nx, ny, nz, dx, dy, dz, nu, e_cell, &mask64, &diag64, &r, &mut z, op_cache,
+                nx,
+                ny,
+                nz,
+                dx,
+                dy,
+                dz,
+                nu,
+                &e_solve_f32,
+                &mask64,
+                &diag64,
+                &r,
+                &mut z,
+                op_cache,
             ),
         }
 
