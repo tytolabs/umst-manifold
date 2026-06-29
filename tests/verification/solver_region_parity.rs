@@ -5,9 +5,7 @@ use burn::backend::Autodiff;
 use burn::tensor::{backend::AutodiffBackend, Tensor};
 use burn_ndarray::NdArray;
 use umst_manifold::physics::adjoint::SimpElasticMaterial;
-use umst_manifold::physics::adjoint_q1_hex::{
-    AdjointComplianceQ1Hex, Q1HexSolveOptions,
-};
+use umst_manifold::physics::adjoint_q1_hex::{AdjointComplianceQ1Hex, Q1HexSolveOptions};
 use umst_manifold::physics::solver_region::SolverRegion;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
