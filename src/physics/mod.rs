@@ -31,6 +31,8 @@ pub mod protocols;
 ))]
 pub mod q1_hex_elasticity;
 pub mod rheology_analytic;
+#[cfg(feature = "mechanics-adjoint-q1-hex")]
+pub mod solver_region;
 pub mod solvers;
 pub mod time_orchestration;
 pub mod topology;
