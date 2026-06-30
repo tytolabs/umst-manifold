@@ -269,6 +269,12 @@ cargo test -p umst-manifold --verbose \
 echo "==> adaptive witness priority queue (tests only; not hot path)"
 cargo test -p umst-manifold --verbose --test witness_priority_queue
 
+echo "==> Q1-hex hardware perf adversarial (H0–H6 instrumentation)"
+cargo test -p umst-manifold --verbose --features mechanics-adjoint-q1-hex \
+  --test hardware_perf_adversarial \
+  --test solver_region_parity \
+  --test grid_witness_catalog
+
 echo "==> guard: epistemic+trace steps in verify log"
 EPISTEMIC_TRACE_MARKERS=(
   "==> epistemic trace schema G.2 (ros2-contract, serde)"

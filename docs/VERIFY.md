@@ -153,6 +153,27 @@ See [`Validation.md`](Validation.md). Quick replay:
 cargo test --test dec_identities --test conservation --test cbf
 ```
 
+### 2.6 Q1-hex hardware perf (Sprint 1–2 instrumentation)
+
+Fast PR witnesses (parity + drift guards; **not** wall-clock benchmarks):
+
+```bash
+cargo test --features mechanics-adjoint-q1-hex \
+  --test hardware_perf_adversarial \
+  --test solver_region_parity \
+  --test grid_witness_catalog \
+  --test q1_hex_pcg_warm_start_ab \
+  --test q1_hex_forward_perf_instrument
+```
+
+Local preconditioner ladder A/B (slow, ~minutes):
+
+```bash
+cargo test --features mechanics-adjoint-q1-hex --test q1_hex_perf_levers_ab -- --nocapture
+```
+
+Ecosystem-wide battery (MaOS workspace): `bash scripts/verify-hardware-perf.sh`.
+
 ---
 
 ## 3. Features (optional Cargo flags)

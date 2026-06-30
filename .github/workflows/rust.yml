@@ -165,6 +165,22 @@ jobs:
           cargo test --verbose --release --features solver-research,photonics-fdfd --test photonics_curl_curl_3d_brick
           cargo test --verbose --release --features solver-research --test statmech_lj_johnson_upscale_bridge
 
+  # PR gate: Q1-hex hardware-perf instrumentation witnesses (H0–H6); fast, no wall-clock claim.
+  hardware-perf-q1hex-pr:
+    name: Q1-hex perf witnesses (PR)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: ./.github/actions/setup-ci
+      - name: cargo test --features mechanics-adjoint-q1-hex (adversarial + parity)
+        run: |
+          set -euo pipefail
+          cargo test --verbose --features mechanics-adjoint-q1-hex \
+            --test hardware_perf_adversarial \
+            --test solver_region_parity \
+            --test grid_witness_catalog
+
   # Optional PR signal: Phase A physics guard + full solver-experimental test matrix.
   # continue-on-error: not a merge gate; branch protection should keep requiring build-test / lint / solver-* only.
   solver-experimental-pr-optional:
