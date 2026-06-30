@@ -58,6 +58,7 @@ pub enum HexPreconditionerKind {
     GeometricMultigridVCycle,
     /// In-plane x/y coarsening only; hold z (thin-slab anisotropy, e.g. 40×40×4).
     SemicoarseningMultigridVCycle,
+    // AMG (algebraic multigrid): earned preconditioner slot — USER-gated build per ECOSYSTEM_STATE.
 }
 
 impl HexPreconditionerKind {
