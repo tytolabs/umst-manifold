@@ -205,14 +205,17 @@ required-features = ["mechanics-adjoint-q1-hex"]
 [[test]]
 name = "q1_hex_perf_levers_ab"
 path = "tests/verification/q1_hex_perf_levers_ab.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
 name = "q1_hex_pcg_warm_start_ab"
 path = "tests/verification/q1_hex_pcg_warm_start_ab.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
 name = "q1_hex_forward_perf_instrument"
 path = "tests/verification/q1_hex_forward_perf_instrument.rs"
+required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
 name = "solver_region_parity"
