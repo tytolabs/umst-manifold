@@ -1,9 +1,9 @@
 {
   "umst-formal": {
-    "lake_roots": 53,
-    "theorem": 261,
+    "lake_roots": 54,
+    "theorem": 265,
     "lemma": 24,
-    "all_lean_theorem": 268,
+    "all_lean_theorem": 272,
     "all_lean_lemma": 24
   },
   "umst-formal-double-slit": {
