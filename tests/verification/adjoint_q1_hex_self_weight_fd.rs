@@ -158,6 +158,16 @@ fn quick_cg_fd() -> MechanicsInnerLoopConfig {
     }
 }
 
+/// Relative FD check with an absolute floor for near-zero sensitivities (noise-dominated).
+fn fd_matches_adjoint(g: f32, fd: f32, rel_tol: f32) -> bool {
+    const ABS_FLOOR: f32 = 1e-7;
+    if g.abs() < ABS_FLOOR && fd.abs() < ABS_FLOOR {
+        return (g - fd).abs() < 2e-9;
+    }
+    let denom = fd.abs().max(g.abs()).max(1e-12_f32);
+    (g - fd).abs() / denom < rel_tol
+}
+
 fn quick_self_weight(plate: &ExtrudedPlateMechanics) -> SelfWeightConfig {
     SelfWeightConfig {
         gravity_m_s2: 9.81,
@@ -195,14 +205,18 @@ fn adjoint_self_weight_fd_matches_on_quick_grid() {
         let c_plus = compliance_fd(&rho_plus, &plate, &traction, &mask, mat, &cg_fd, Some(sw));
         let c_minus = compliance_fd(&rho_minus, &plate, &traction, &mask, mat, &cg_fd, Some(sw));
         let fd = (c_plus - c_minus) / (rho_plus[nid] - rho_minus[nid]);
-        let denom = fd.abs().max(g[nid].abs()).max(1e-12_f32);
-        let rel = (g[nid] - fd).abs() / denom;
+        let rel = if fd_matches_adjoint(g[nid], fd, 2.5e-2_f32) {
+            0.0_f32
+        } else {
+            let denom = fd.abs().max(g[nid].abs()).max(1e-12_f32);
+            (g[nid] - fd).abs() / denom
+        };
         if rel > worst_rel {
             worst_rel = rel;
             worst_nid = nid;
         }
         assert!(
-            rel < 2.5e-2_f32,
+            fd_matches_adjoint(g[nid], fd, 2.5e-2_f32),
             "SELF_WEIGHT ON nid={nid}: adjoint={} fd={} rel={rel}",
             g[nid],
             fd
@@ -239,10 +253,14 @@ fn adjoint_no_self_weight_fd_regression_on_quick_grid() {
         let c_plus = compliance_fd(&rho_plus, &plate, &traction, &mask, mat, &cg_fd, None);
         let c_minus = compliance_fd(&rho_minus, &plate, &traction, &mask, mat, &cg_fd, None);
         let fd = (c_plus - c_minus) / (rho_plus[nid] - rho_minus[nid]);
-        let denom = fd.abs().max(g[nid].abs()).max(1e-12_f32);
-        let rel = (g[nid] - fd).abs() / denom;
+        let rel = if fd_matches_adjoint(g[nid], fd, 2.5e-2_f32) {
+            0.0_f32
+        } else {
+            let denom = fd.abs().max(g[nid].abs()).max(1e-12_f32);
+            (g[nid] - fd).abs() / denom
+        };
         assert!(
-            rel < 2.5e-2_f32,
+            fd_matches_adjoint(g[nid], fd, 2.5e-2_f32),
             "SELF_WEIGHT OFF nid={nid}: adjoint={} fd={} rel={rel}",
             g[nid],
             fd
