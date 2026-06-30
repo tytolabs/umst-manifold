@@ -131,7 +131,7 @@ fn q1_hex_pcg_bisect_2x2_at_quick_scale() {
         HexPcgBisectConfig {
             loop_kind: HexPcgLoopKind::Original,
             nondim: false,
-            stop_on_true_residual: false,
+            stop_on_true_residual: true,
         },
     );
     let b = run_arm(
@@ -147,7 +147,7 @@ fn q1_hex_pcg_bisect_2x2_at_quick_scale() {
         HexPcgBisectConfig {
             loop_kind: HexPcgLoopKind::Original,
             nondim: true,
-            stop_on_true_residual: false,
+            stop_on_true_residual: true,
         },
     );
     let c = run_arm(
@@ -163,7 +163,7 @@ fn q1_hex_pcg_bisect_2x2_at_quick_scale() {
         HexPcgBisectConfig {
             loop_kind: HexPcgLoopKind::RefreshMaskedP,
             nondim: false,
-            stop_on_true_residual: false,
+            stop_on_true_residual: true,
         },
     );
     let d = run_arm(
@@ -179,7 +179,7 @@ fn q1_hex_pcg_bisect_2x2_at_quick_scale() {
         HexPcgBisectConfig {
             loop_kind: HexPcgLoopKind::RefreshMaskedP,
             nondim: true,
-            stop_on_true_residual: false,
+            stop_on_true_residual: true,
         },
     );
 
@@ -233,7 +233,7 @@ fn q1_hex_unit_sanity_striatus_n() {
         HexPcgBisectConfig {
             loop_kind: HexPcgLoopKind::Original,
             nondim: false,
-            stop_on_true_residual: false,
+            stop_on_true_residual: true,
         },
     );
     // Historical bundled state that produced rel≈4.2e4 @ tol 1e-6 (loop rewrite + nondim).
@@ -250,7 +250,7 @@ fn q1_hex_unit_sanity_striatus_n() {
         HexPcgBisectConfig {
             loop_kind: HexPcgLoopKind::RefreshMaskedP,
             nondim: true,
-            stop_on_true_residual: false,
+            stop_on_true_residual: true,
         },
     );
     eprintln!(

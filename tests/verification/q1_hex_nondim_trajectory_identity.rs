@@ -79,7 +79,7 @@ fn run_original(
         HexPcgBisectConfig {
             loop_kind: HexPcgLoopKind::Original,
             nondim,
-            stop_on_true_residual: false,
+            stop_on_true_residual: true,
         },
         None,
     )
