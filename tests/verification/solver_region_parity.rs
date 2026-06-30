@@ -57,6 +57,7 @@ fn solver_region_parity_cold_vs_warm_reuse() {
         None,
         &opts_cold,
         None,
+        None,
     );
 
     let mut region = SolverRegion::new();
@@ -80,6 +81,7 @@ fn solver_region_parity_cold_vs_warm_reuse() {
         None,
         &opts_warm,
         Some(&mut region),
+        None,
     );
 
     let dc = (c_cold - c_warm).abs();
