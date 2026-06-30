@@ -50,6 +50,7 @@ fn q1_hex_pcg_warm_start_matches_cold_compliance() {
         None,
         &opts_cold,
         None,
+        None,
     );
     let opts_warm = Q1HexSolveOptions {
         pcg_warm_start: true,
@@ -57,7 +58,7 @@ fn q1_hex_pcg_warm_start_matches_cold_compliance() {
         ..Default::default()
     };
     let (_, c_warm, diag_warm) = AdjointComplianceQ1Hex::forward_loss_with_diagnostics(
-        rho, nx, ny, nz, dx, dy, dz, f, m, material, &cg, None, &opts_warm, None,
+        rho, nx, ny, nz, dx, dy, dz, f, m, material, &cg, None, &opts_warm, None, None,
     );
     let dc = (c_cold - c_warm).abs();
     assert!(dc < 1e-4, "compliance mismatch cold={c_cold} warm={c_warm}");
