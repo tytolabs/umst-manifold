@@ -1464,6 +1464,55 @@ fn apply_precond_semicoarsening_mg_f32(
     }
 }
 
+/// Smoothed semicoarsening V-cycle: Jacobi pre/post smooth + xy semicoarsening MG (AMG wave-A spike).
+fn apply_precond_algebraic_amg_f32(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    mask: &[f32],
+    diag: &[f32],
+    r: &[f32],
+    z: &mut [f32],
+    op_cache: Option<&HexStructuredOperatorCache>,
+) {
+    let ndof = r.len();
+    z.fill(0.0);
+    hex_jacobi_smooth_f32(
+        nx, ny, nz, dx, dy, dz, nu, e_cell, mask, diag, r, z, 2, 0.67_f32, op_cache,
+    );
+    let mut ku = vec![0.0_f32; ndof];
+    let mut r_sm = r.to_vec();
+    ku.fill(0.0);
+    if let Some(cache) = op_cache {
+        hex_k_times_u_accumulate_cached(cache, e_cell, z, &mut ku);
+    } else {
+        hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, e_cell, z, &mut ku);
+    }
+    for i in 0..ndof {
+        if mask[i] > 0.5_f32 {
+            r_sm[i] -= ku[i];
+        }
+    }
+    let mut z_c = vec![0.0_f32; ndof];
+    apply_precond_semicoarsening_mg_f32(
+        nx, ny, nz, dx, dy, dz, nu, e_cell, mask, diag, &r_sm, &mut z_c, op_cache,
+    );
+    for i in 0..ndof {
+        z[i] += z_c[i];
+    }
+    hex_jacobi_smooth_f32(
+        nx, ny, nz, dx, dy, dz, nu, e_cell, mask, diag, r, z, 2, 0.67_f32, op_cache,
+    );
+    for i in 0..ndof {
+        z[i] *= mask[i];
+    }
+}
+
 #[allow(dead_code)] // reserved for V-cycle Jacobi smoothing (BPX path uses diagonal prolongation today)
 fn hex_jacobi_smooth_f64(
     nx: usize,
@@ -1554,6 +1603,33 @@ fn apply_precond_semicoarsening_mg_f64(
     }
 }
 
+fn apply_precond_algebraic_amg_f64(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    dx: f32,
+    dy: f32,
+    dz: f32,
+    nu: f32,
+    e_cell: &[f32],
+    mask: &[f64],
+    diag: &[f64],
+    r: &[f64],
+    z: &mut [f64],
+    op_cache: Option<&HexStructuredOperatorCache>,
+) {
+    let mask_f: Vec<f32> = mask.iter().map(|&m| m as f32).collect();
+    let r_f: Vec<f32> = r.iter().map(|&v| v as f32).collect();
+    let diag_f: Vec<f32> = diag.iter().map(|&v| v as f32).collect();
+    let mut z_f = vec![0.0_f32; r.len()];
+    apply_precond_algebraic_amg_f32(
+        nx, ny, nz, dx, dy, dz, nu, e_cell, &mask_f, &diag_f, &r_f, &mut z_f, op_cache,
+    );
+    for (a, b) in z.iter_mut().zip(&z_f) {
+        *a = *b as f64;
+    }
+}
+
 /// Preconditioner for projected hex PCG (logging + A/B levers).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HexPcgPrecondKind {
@@ -1562,6 +1638,7 @@ pub enum HexPcgPrecondKind {
     BlockJacobiNodal3x3,
     GeometricMultigridVCycle,
     SemicoarseningMultigridVCycle,
+    AlgebraicMultigridVCycle,
 }
 
 #[must_use]
@@ -2240,6 +2317,9 @@ pub fn hex_solve_pcg_bisect(
         HexPcgPrecondKind::SemicoarseningMultigridVCycle => apply_precond_semicoarsening_mg_f32(
             nx, ny, nz, dx, dy, dz, nu, &e_work, mask, diag, &r, &mut z, op_cache,
         ),
+        HexPcgPrecondKind::AlgebraicMultigridVCycle => apply_precond_algebraic_amg_f32(
+            nx, ny, nz, dx, dy, dz, nu, &e_work, mask, diag, &r, &mut z, op_cache,
+        ),
     }
     let mut p = z.clone();
 
@@ -2306,7 +2386,12 @@ pub fn hex_solve_pcg_bisect(
             HexPcgPrecondKind::GeometricMultigridVCycle => apply_precond_geometric_mg_f32(
                 nx, ny, nz, dx, dy, dz, nu, &e_work, mask, diag, &r, &mut z, op_cache,
             ),
-            HexPcgPrecondKind::SemicoarseningMultigridVCycle => apply_precond_semicoarsening_mg_f32(
+            HexPcgPrecondKind::SemicoarseningMultigridVCycle => {
+                apply_precond_semicoarsening_mg_f32(
+                    nx, ny, nz, dx, dy, dz, nu, &e_work, mask, diag, &r, &mut z, op_cache,
+                )
+            }
+            HexPcgPrecondKind::AlgebraicMultigridVCycle => apply_precond_algebraic_amg_f32(
                 nx, ny, nz, dx, dy, dz, nu, &e_work, mask, diag, &r, &mut z, op_cache,
             ),
         }
@@ -2463,6 +2548,21 @@ fn hex_solve_pcg_masked_f64(
             &mut z,
             op_cache,
         ),
+        HexPcgPrecondKind::AlgebraicMultigridVCycle => apply_precond_algebraic_amg_f64(
+            nx,
+            ny,
+            nz,
+            dx,
+            dy,
+            dz,
+            nu,
+            &e_solve_f32,
+            &mask64,
+            &diag64,
+            &r,
+            &mut z,
+            op_cache,
+        ),
     }
     p.copy_from_slice(&z);
 
@@ -2511,7 +2611,24 @@ fn hex_solve_pcg_masked_f64(
                 &mut z,
                 op_cache,
             ),
-            HexPcgPrecondKind::SemicoarseningMultigridVCycle => apply_precond_semicoarsening_mg_f64(
+            HexPcgPrecondKind::SemicoarseningMultigridVCycle => {
+                apply_precond_semicoarsening_mg_f64(
+                    nx,
+                    ny,
+                    nz,
+                    dx,
+                    dy,
+                    dz,
+                    nu,
+                    &e_solve_f32,
+                    &mask64,
+                    &diag64,
+                    &r,
+                    &mut z,
+                    op_cache,
+                )
+            }
+            HexPcgPrecondKind::AlgebraicMultigridVCycle => apply_precond_algebraic_amg_f64(
                 nx,
                 ny,
                 nz,

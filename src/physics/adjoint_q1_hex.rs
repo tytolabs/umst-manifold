@@ -56,6 +56,9 @@ fn map_hex_pcg_precond(kind: HexPreconditionerKind) -> HexPcgPrecondKind {
         HexPreconditionerKind::SemicoarseningMultigridVCycle => {
             HexPcgPrecondKind::SemicoarseningMultigridVCycle
         }
+        HexPreconditionerKind::AlgebraicMultigridVCycle => {
+            HexPcgPrecondKind::AlgebraicMultigridVCycle
+        }
     }
 }
 

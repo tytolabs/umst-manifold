@@ -150,21 +150,30 @@ fn q1_hex_8x8x4_perf_levers_ab() {
     assert_c_parity("geometric-mg-vcycle", c0, c2);
     assert_u_parity("geometric-mg-vcycle", &u0, &u2);
 
-    let (c_semi, it_semi, eq_semi, u_semi) =
-        run_config(&mg_opts, HexPreconditionerKind::SemicoarseningMultigridVCycle);
+    let (c_semi, it_semi, eq_semi, u_semi) = run_config(
+        &mg_opts,
+        HexPreconditionerKind::SemicoarseningMultigridVCycle,
+    );
     assert_c_parity("semicoarsening-mg-vcycle", c0, c_semi);
     assert_u_parity("semicoarsening-mg-vcycle", &u0, &u_semi);
 
+    let (c_amg, it_amg, eq_amg, u_amg) =
+        run_config(&mg_opts, HexPreconditionerKind::AlgebraicMultigridVCycle);
+    assert_c_parity("algebraic-amg-vcycle", c0, c_amg);
+    assert_u_parity("algebraic-amg-vcycle", &u0, &u_amg);
+
     eprintln!(
-        "q1_hex_8x8x4_ab: jacobi iters={it0} | +cache iters={it1} | block_jacobi iters={it_bj} eq={eq_bj:.3e} | MG iters={it2} eq={eq2:.3e} | semi-MG iters={it_semi} eq={eq_semi:.3e} | c0={c0:.6} dc_cache={:.3e} dc_bj={:.3e} dc_mg={:.3e} dc_semi={:.3e} du_cache={:.3e} du_bj={:.3e} du_mg={:.3e} du_semi={:.3e}",
+        "q1_hex_8x8x4_ab: jacobi iters={it0} | +cache iters={it1} | block_jacobi iters={it_bj} eq={eq_bj:.3e} | MG iters={it2} eq={eq2:.3e} | semi-MG iters={it_semi} eq={eq_semi:.3e} | AMG iters={it_amg} eq={eq_amg:.3e} | c0={c0:.6} dc_cache={:.3e} dc_bj={:.3e} dc_mg={:.3e} dc_semi={:.3e} dc_amg={:.3e} du_cache={:.3e} du_bj={:.3e} du_mg={:.3e} du_semi={:.3e} du_amg={:.3e}",
         (c0 - c1).abs(),
         (c0 - c_bj).abs(),
         (c0 - c2).abs(),
         (c0 - c_semi).abs(),
+        (c0 - c_amg).abs(),
         max_abs_diff(&u0, &u1),
         max_abs_diff(&u0, &u_bj),
         max_abs_diff(&u0, &u2),
         max_abs_diff(&u0, &u_semi),
+        max_abs_diff(&u0, &u_amg),
     );
     assert!(
         eq0 < 1e-4 && eq1 < 1e-4,
@@ -178,6 +187,10 @@ fn q1_hex_8x8x4_perf_levers_ab() {
     assert!(
         eq_semi < 1e-4,
         "semicoarsening-MG must preserve equilibrium: eq_semi={eq_semi:.3e}"
+    );
+    assert!(
+        eq_amg < 1e-4,
+        "algebraic-AMG must preserve equilibrium: eq_amg={eq_amg:.3e}"
     );
     assert!(it2 <= it0, "MG should not increase iters: {it2} > {it0}");
     assert!(
