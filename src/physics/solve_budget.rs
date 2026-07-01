@@ -50,21 +50,21 @@ pub enum CockpitParseError {
     MissingEtaCog,
 }
 
-/// Minimal egoff [`CockpitSnapshot`] schema v4 fields (IO boundary only).
+/// Minimal external cockpit-telemetry [`CockpitSnapshot`] schema v4 fields (IO boundary only).
 #[derive(Debug, Deserialize)]
-struct EgoffCockpitJson {
+struct RawCockpitJson {
     eta_cog: Option<f64>,
     eta_cog_raw: Option<f64>,
     dignity_value: Option<f64>,
     dignity_value_raw: Option<f64>,
-    /// Optional throughput hint; egoff v4 has no canonical field — default 0.
+    /// Optional throughput hint; schema v4 has no canonical field — default 0.
     #[serde(default)]
     tokens_per_sec: Option<f64>,
 }
 
-/// Map egoff cockpit JSON (schema v4) → pure [`CockpitSnapshot`].
-pub fn cockpit_from_egoff_json(json: &str) -> Result<CockpitSnapshot, CockpitParseError> {
-    let raw: EgoffCockpitJson =
+/// Map external cockpit-telemetry JSON (schema v4) → pure [`CockpitSnapshot`].
+pub fn cockpit_from_external_json(json: &str) -> Result<CockpitSnapshot, CockpitParseError> {
+    let raw: RawCockpitJson =
         serde_json::from_str(json).map_err(|e| CockpitParseError::Json(e.to_string()))?;
     let eta_cog = raw
         .eta_cog
@@ -177,23 +177,23 @@ mod tests {
     }
 
     #[test]
-    fn cockpit_from_egoff_json_maps_v4_fields() {
+    fn cockpit_from_external_json_maps_v4_fields() {
         let json = r#"{
             "schema_version": 4,
             "eta_cog": 0.42,
             "dignity_value": 7.5,
             "tokens_per_sec": 120.0
         }"#;
-        let snap = cockpit_from_egoff_json(json).expect("parse");
+        let snap = cockpit_from_external_json(json).expect("parse");
         assert!((snap.eta_cog - 0.42).abs() < 1e-9);
         assert!((snap.dignity - 7.5).abs() < 1e-9);
         assert!((snap.tokens_per_sec - 120.0).abs() < 1e-9);
     }
 
     #[test]
-    fn cockpit_from_egoff_json_falls_back_to_raw_fields() {
+    fn cockpit_from_external_json_falls_back_to_raw_fields() {
         let json = r#"{"eta_cog_raw": 0.15, "dignity_value_raw": 3.0}"#;
-        let snap = cockpit_from_egoff_json(json).expect("parse");
+        let snap = cockpit_from_external_json(json).expect("parse");
         assert!((snap.eta_cog - 0.15).abs() < 1e-9);
         assert!((snap.dignity - 3.0).abs() < 1e-9);
         assert_eq!(snap.tokens_per_sec, 0.0);
