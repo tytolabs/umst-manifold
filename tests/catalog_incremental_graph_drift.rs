@@ -23,7 +23,7 @@ fn catalog_lock_pins_module_graph_edge_count_for_unified_export() {
         .and_then(|v| v.as_u64())
         .expect("catalog.lock.json must declare module_graph_edge_count");
     assert_eq!(
-        pinned, 329,
+        pinned, 352,
         "bump module_graph_edge_count after Lean import-graph churn (regen export first)"
     );
 }

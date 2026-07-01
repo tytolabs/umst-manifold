@@ -143,7 +143,7 @@ fn witness_registry_ids() -> HashSet<String> {
 
 /// R0 pin: `artifacts/catalog.lock.json` `module_count` must match the Lean export row count.
 /// Fails when lock is bumped without re-export (or export grows without lock promotion).
-const CATALOG_LOCK_R0_MODULE_COUNT: usize = 122;
+const CATALOG_LOCK_R0_MODULE_COUNT: usize = 129;
 
 #[test]
 fn catalog_lock_module_count_matches_upstream_export_122() {

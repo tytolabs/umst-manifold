@@ -15,11 +15,12 @@ fn w8_publish_readiness_script_is_present_and_documents_prep_vs_publish() {
     let script = manifest_dir().join("scripts/w8_publish_readiness.sh");
     let body = std::fs::read_to_string(&script).expect("w8_publish_readiness.sh");
     assert!(
-        body.contains("module_count=122") || body.contains("module_count\": 120"),
-        "script must pin module_count 122"
+        body.contains("module_count=129") || body.contains("module_count=122"),
+        "script must pin module_count 129 (or legacy 122)"
     );
     assert!(
-        body.contains("c61b1bef")
+        body.contains("17a6d8e1")
+            || body.contains("c61b1bef")
             || body.contains("2f17cdf1")
             || body.contains("ef0ed071")
             || body.contains("37bf5a18")

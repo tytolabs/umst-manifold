@@ -2,24 +2,24 @@
   "version": 2,
   "role": "manifold_runtime_lock",
   "upstream_repo": "umst-formal-double-slit",
-  "upstream_catalog_digest_hex": "c61b1befdec77a82bbb9f6c3f7562e754218ef635f0e3b9990752138df5f4bb5",
-  "module_count": 122,
-  "module_graph_edge_count": 329,
+  "upstream_catalog_digest_hex": "17a6d8e17d9a4847231a255ffb1214db0319a7a2727ecd80708cb7f08045da1e",
+  "module_count": 129,
+  "module_graph_edge_count": 352,
   "composition_rule": "cross_repo_merge_v1_primary_wins_basename",
-  "composed_catalog_digest_hex": "c61b1befdec77a82bbb9f6c3f7562e754218ef635f0e3b9990752138df5f4bb5",
-  "composed_primary_fiber_fingerprint_hex": "c712aa93443c12a0043ee54ee895166609d0c1e104d8e2e61ed4e1c4390bb3f8",
+  "composed_catalog_digest_hex": "17a6d8e17d9a4847231a255ffb1214db0319a7a2727ecd80708cb7f08045da1e",
+  "composed_primary_fiber_fingerprint_hex": "b3da119423c6b06be897f686de595f1a78f7c045b2694b1b9ce946a6ddbf9a92",
   "fiber_pins": [
     {
       "repo": "umst-formal-double-slit",
-      "catalog_digest_hex": "a2589c3360c3dd787f8477852861f97bce07e1089b07b6eb4b0ce1e81dd8cc29",
-      "module_count": 69,
+      "catalog_digest_hex": "4d48eefe3cd326023a8d5f939d00a13a80d1ce67a538a594f64e73e1dcf256db",
+      "module_count": 62,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"
     },
     {
       "repo": "umst-formal",
-      "catalog_digest_hex": "43b7d6c21acccf234a20b9e375cab0a9d699b65a67f06f1ad766c359dc8d2cd7",
-      "module_count": 64,
+      "catalog_digest_hex": "33f8a0bab3199dcb77d6faea20f84427c45cd011aa0c7aed5eae4b7808979395",
+      "module_count": 73,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"
     },
@@ -35,7 +35,7 @@
     "source": "artifacts/ucrs-catalog.json",
     "entry_count": 9,
     "catalog_digest_hex": "24a773ec27a0536ae4441f7dbbc6246fcf150f85ffd0b2c86ddd75b954f96eed",
-    "notes": "T5 preview merge — tertiary Track F fiber; not merged into composed primary catalog until coordinator approves."
+    "notes": "T5 preview merge \u2014 tertiary Track F fiber; not merged into composed primary catalog until coordinator approves."
   },
-  "notes": "W9 pin bump: formal b09d4a0 (PrimeSpectral) + double-slit 7f7f9bf; merged 122 modules / 329 edges. UCRS fiber pin added 2026-06-19 (digest-locked preview)."
+  "notes": "W10 pin bump: formal 0aec253 (K-gen) + double-slit d5ed5dd (bridge removal); merged 129 modules / 352 edges. UCRS fiber pin unchanged (preview)."
 }

@@ -1,16 +1,16 @@
 {
   "umst-formal": {
-    "lake_roots": 59,
-    "theorem": 287,
+    "lake_roots": 62,
+    "theorem": 289,
     "lemma": 24,
-    "all_lean_theorem": 294,
+    "all_lean_theorem": 296,
     "all_lean_lemma": 24
   },
   "umst-formal-double-slit": {
-    "lake_roots": 53,
-    "theorem": 487,
+    "lake_roots": 52,
+    "theorem": 486,
     "lemma": 30,
-    "all_lean_theorem": 496,
+    "all_lean_theorem": 495,
     "all_lean_lemma": 31
   }
 }

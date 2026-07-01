@@ -85,11 +85,12 @@ lock_path = Path(os.environ["ROOT"]) / "artifacts" / "catalog.lock.json"
 lock = json.loads(lock_path.read_text())
 count = lock.get("module_count")
 digest = lock.get("upstream_catalog_digest_hex") or lock.get("composed_catalog_digest_hex") or ""
-if count != 122:
-    print(f"FAIL: catalog.lock module_count={count!r} (expected 122)", file=sys.stderr)
+if count != 129:
+    print(f"FAIL: catalog.lock module_count={count!r} (expected 129)", file=sys.stderr)
     sys.exit(1)
 if not (
-    str(digest).startswith("c61b1bef")
+    str(digest).startswith("17a6d8e1")
+    or str(digest).startswith("c61b1bef")
     or str(digest).startswith("2f17cdf1")
     or str(digest).startswith("37bf5a18")
     or str(digest).startswith("4524ed21")
@@ -97,7 +98,7 @@ if not (
 ):
     print(f"FAIL: catalog.lock digest prefix (got {digest!r})", file=sys.stderr)
     sys.exit(1)
-print(f"OK: catalog.lock module_count=122 digest={digest[:16]}…")
+print(f"OK: catalog.lock module_count=129 digest={digest[:16]}…")
 PYLOCK
 ok "catalog.lock digest prefix (c61b1bef or historical pins)"
 
