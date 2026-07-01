@@ -149,7 +149,10 @@ pub const CATALOG_MODULE_WIRED: &[(&str, &[&str])] = &[
     ),
     ("DIBKleisli", &["umst.gate.kleisli_unit"]),
     ("DEC", &["umst.gate.cd_transition"]),
-    ("Concrete.Powers", &["thermodynamic_mix", "umst.gate.http_shim"]),
+    (
+        "Concrete.Powers",
+        &["thermodynamic_mix", "umst.gate.http_shim"],
+    ),
 ];
 
 /// `catalog_id` values listed in **`docs/GateUnificationSpec.md`** mapping table (SSOT).
