@@ -19,7 +19,8 @@ fn w8_publish_readiness_script_is_present_and_documents_prep_vs_publish() {
         "script must pin module_count 129 (or legacy 122)"
     );
     assert!(
-        body.contains("c61b1bef")
+        body.contains("17a6d8e1")
+            || body.contains("c61b1bef")
             || body.contains("2f17cdf1")
             || body.contains("ef0ed071")
             || body.contains("37bf5a18")
