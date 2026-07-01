@@ -202,7 +202,7 @@ elif "entries" in catalog:
             module_names.add(mid.split(".")[-1])
 
 ANCHOR = {
-    "umst.gate.cd_transition": "Gate",
+    "umst.gate.cd_transition": "Compat.Gate",
     "umst.gate.http_shim": "GateCompat",
     "umst.gate.kleisli_unit": "ProbeOptimization",
     "thermodynamic_mix": "GateCompat",
