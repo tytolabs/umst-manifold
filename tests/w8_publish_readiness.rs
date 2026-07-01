@@ -16,7 +16,7 @@ fn w8_publish_readiness_script_is_present_and_documents_prep_vs_publish() {
     let body = std::fs::read_to_string(&script).expect("w8_publish_readiness.sh");
     assert!(
         body.contains("module_count=122") || body.contains("module_count\": 120"),
-        "script must pin module_count 122"
+        "script must pin module_count 129 (or legacy 122)"
     );
     assert!(
         body.contains("c61b1bef")
