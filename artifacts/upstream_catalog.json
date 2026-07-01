@@ -59,8 +59,8 @@
       "repo": "umst-formal"
     },
     {
-      "path": "Constitutional.lean",
-      "content_sha256": "e0c278096bd7895e3ab77811377bd6c7288dc48b62660d4c85c10aac0879879f",
+      "path": "Compat/Constitutional.lean",
+      "content_sha256": "08c3473437479a8baf3b6ec82c552be600c0c94c926225ae9b163e4bee2eaea9",
       "declarations": {
         "def": [
           "KleisliArrow",
@@ -86,14 +86,99 @@
         ]
       },
       "import_lines": [
-        "Gate"
+        "Compat.Gate"
       ],
-      "module": "Constitutional",
+      "module": "Compat.Constitutional",
       "repo": "umst-formal"
     },
     {
-      "path": "Convergence.lean",
-      "content_sha256": "d22ee9208110a98b70eecd2157f4e1cf7764fdc5c7c17d03a1d7929c81365aa1",
+      "path": "Compat/Gate.lean",
+      "content_sha256": "41583bc1f39b89c3662b32376e0d60ef6c26788edd3dcf5add10d103713a5240",
+      "declarations": {
+        "def": [
+          "\u03b4Mass",
+          "Q_hyd",
+          "helmholtz",
+          "MassCond",
+          "DissipCond",
+          "HydratCond",
+          "StrengthCond",
+          "Admissible.mk",
+          "massDensity",
+          "clausiusDuhem",
+          "AdmissibleN.mk",
+          "massDensity",
+          "clausiusDuhem"
+        ],
+        "theorem": [
+          "\u03b4Mass_eq",
+          "helmholtz_ge_neg_Q_hyd",
+          "admissibleN_compose",
+          "subjectReduction",
+          "kleisliAdmissibility"
+        ]
+      },
+      "import_lines": [
+        "Concrete.Gate",
+        "Concrete.State",
+        "Core.Constitutional",
+        "Core.Gate"
+      ],
+      "module": "Compat.Gate",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Concrete/Activation.lean",
+      "content_sha256": "e83a738cb16a024f8af49da7b3c39d2539bfa40d509a63e5f6059c999a3fc5e3",
+      "declarations": {
+        "inductive": [
+          "Engine"
+        ],
+        "def": [
+          "engineMember",
+          "opcEngines",
+          "racEngines",
+          "geoEngines",
+          "limeEngines",
+          "earthEngines",
+          "activation",
+          "activateOPC",
+          "activateRAC",
+          "activateGeopolymer",
+          "activateLime",
+          "activateEarth",
+          "HasActiveEngine"
+        ],
+        "structure": [
+          "ActivatedUMST"
+        ],
+        "theorem": [
+          "activationTotal",
+          "opc_has_hydration",
+          "rac_has_transport",
+          "geo_has_alkali",
+          "lime_has_carbonation",
+          "earth_has_moisture",
+          "earth_no_hydration",
+          "lime_no_hydration",
+          "opc_no_carbonation",
+          "opc_no_transport",
+          "geo_no_hydration"
+        ],
+        "instance": [
+          "activationDecidable"
+        ]
+      },
+      "import_lines": [
+        "Compat.Gate",
+        "Naturality"
+      ],
+      "module": "Concrete.Activation",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Concrete/Convergence.lean",
+      "content_sha256": "376ba67d39c42ff2c689f5fe755908a186ace6d22c290c4d7604a38801e61870",
       "declarations": {
         "def": [
           "HydrationInUnitInterval",
@@ -112,17 +197,336 @@
         ]
       },
       "import_lines": [
-        "Gate",
-        "Helmholtz",
+        "Compat.Gate",
+        "Concrete.Helmholtz",
         "Mathlib.Topology.MetricSpace.Basic",
         "Mathlib.Topology.Order.MonotoneConvergence"
       ],
-      "module": "Convergence",
+      "module": "Concrete.Convergence",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Concrete/EndConditions.lean",
+      "content_sha256": "e0e1680c72061464518542c2e7f771576e49f215bb606c985bfe2bf74fda7546",
+      "declarations": {
+        "theorem": [
+          "accumulatedMassBound",
+          "clausiusDuhemGlobal",
+          "equilibriumExists"
+        ],
+        "def": [
+          "IsEquilibrium"
+        ]
+      },
+      "import_lines": [
+        "Compat.Gate",
+        "Concrete.GraphProperties"
+      ],
+      "module": "Concrete.EndConditions",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Concrete/EnrichedAdmissibility.lean",
+      "content_sha256": "abc9dd2180a334832bdfafd835e13c0288c197e9e20d146a91b9a4fde3c11436",
+      "declarations": {
+        "def": [
+          "massDist"
+        ],
+        "theorem": [
+          "massDist_nonneg",
+          "massDist_self",
+          "massDist_comm",
+          "massDist_triangle",
+          "massCond_iff_massDist",
+          "orderAdmissible_refl",
+          "orderAdmissible_trans",
+          "admissibleN_decomp",
+          "admissibleN_of_decomp",
+          "admissibleN_order",
+          "admissibleN_mono",
+          "lawvere_composition"
+        ],
+        "structure": [
+          "OrderAdmissible"
+        ]
+      },
+      "import_lines": [
+        "Compat.Gate",
+        "Mathlib.Order.GaloisConnection",
+        "Mathlib.Topology.MetricSpace.Basic"
+      ],
+      "module": "Concrete.EnrichedAdmissibility",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Concrete/GaloisGate.lean",
+      "content_sha256": "2ef816faa2165883bfe6eb89f006ad347ff42130cc7dd1a9e65d2963a3848a72",
+      "declarations": {
+        "inductive": [
+          "GateCond"
+        ],
+        "def": [
+          "evalCond"
+        ],
+        "theorem": [
+          "condMeet_full_iff_admissible",
+          "condMeet_empty",
+          "condMeet_antitone",
+          "condExtract_admissible",
+          "mass_condition_independent",
+          "hydration_condition_independent"
+        ]
+      },
+      "import_lines": [
+        "Compat.Gate",
+        "Mathlib.Data.Finset.Basic",
+        "Mathlib.Order.GaloisConnection"
+      ],
+      "module": "Concrete.GaloisGate",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Concrete/Gate.lean",
+      "content_sha256": "d018b296b830bb9dc3ef976b01cc3cef2395b0f3701be9549b4fe851bae77802",
+      "declarations": {
+        "def": [
+          "\u03b4Mass",
+          "Q_hyd",
+          "helmholtz",
+          "gateCheck",
+          "MassCond",
+          "DissipCond",
+          "HydratCond",
+          "StrengthCond"
+        ],
+        "theorem": [
+          "helmholtzAntitone",
+          "helmholtz_le_iff",
+          "helmholtz_one",
+          "helmholtz_ge_neg_Q_hyd",
+          "helmholtzGradient",
+          "helmholtzAdditive",
+          "gateCheckSound",
+          "gateCheckComplete",
+          "clausiusDuhemFwd",
+          "forwardHydrationAdmissible",
+          "admissibleRefl",
+          "admissibleIffCSG",
+          "admissible_iff_admissibleN1",
+          "admissibleNRefl",
+          "admissibleN_compose"
+        ],
+        "structure": [
+          "ConcreteAdmissible",
+          "ConcreteAdmissibleN"
+        ],
+        "instance": [
+          "concreteAdmissibleSystem"
+        ]
+      },
+      "import_lines": [
+        "Concrete.State",
+        "Core.Gate",
+        "Core.State",
+        "Mathlib.Algebra.Order.Field.Rat",
+        "Mathlib.Tactic"
+      ],
+      "module": "Concrete.Gate",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Concrete/GraphProperties.lean",
+      "content_sha256": "1b8d4c93c48d963c5d5cd7836af12ae6592343966c1b3ce4962cb910b3ae1dff",
+      "declarations": {
+        "theorem": [
+          "mass_not_transitive",
+          "admissibleTrans_refuted",
+          "dissipCond_transitive",
+          "hydratCond_transitive",
+          "strengthCond_transitive",
+          "hydration_acyclic",
+          "hydration_dag_path",
+          "admissible_not_symmetric",
+          "graded_compose_sanity",
+          "two_step_mass_bound"
+        ]
+      },
+      "import_lines": [
+        "Compat.Gate",
+        "Mathlib.Tactic"
+      ],
+      "module": "Concrete.GraphProperties",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Concrete/Helmholtz.lean",
+      "content_sha256": "b03c75baa37902c07dc3fe4498620938773ccc4ed0578148bd182819277488be",
+      "declarations": {
+        "def": [
+          "HelmholtzState"
+        ],
+        "theorem": [
+          "\u03c8AntitoneHelmholtz",
+          "helmholtzStateAdmissible",
+          "helmholtzLinear",
+          "helmholtzGradientConst",
+          "helmholtz_le_iff_hydration",
+          "admissibleDirIsNegGrad"
+        ]
+      },
+      "import_lines": [
+        "Compat.Gate",
+        "Mathlib.Tactic"
+      ],
+      "module": "Concrete.Helmholtz",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Concrete/Powers.lean",
+      "content_sha256": "78dd7179f08118576cc74d0c4f3ab99b83f2be0077c20dc6200e546aba640d28",
+      "declarations": {
+        "def": [
+          "S_intrinsic",
+          "PowersState"
+        ],
+        "lemma": [
+          "S_intrinsic_pos",
+          "gelSpaceRatioDenom_pos",
+          "gelSpaceRatio_nonneg",
+          "powersStrength_nonneg",
+          "gelSpaceRatio_mono"
+        ],
+        "theorem": [
+          "powers_monotone",
+          "powersStateFcMonotone",
+          "powersStateAdmissible"
+        ]
+      },
+      "import_lines": [
+        "Compat.Gate",
+        "Mathlib.Algebra.Order.Field.Rat",
+        "Mathlib.Tactic"
+      ],
+      "module": "Concrete.Powers",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Concrete/State.lean",
+      "content_sha256": "85a2ed02ba5eee6720311d11eebb4db90186d865924da49ab0573896073c3d22",
+      "declarations": {
+        "structure": [
+          "ConcreteState"
+        ]
+      },
+      "import_lines": [
+        "Core.State"
+      ],
+      "module": "Concrete.State",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Core/Constitutional.lean",
+      "content_sha256": "9afac21876a675f517b4ee2377db8e5a0b08de52e1711804313c74933e5b296e",
+      "declarations": {
+        "def": [
+          "KleisliArrow",
+          "WellTyped",
+          "WellTypedN",
+          "kleisliCompose",
+          "kleisliFold",
+          "AllWellTyped"
+        ],
+        "theorem": [
+          "wellTyped_iff_wellTypedN1",
+          "kleisliComposeWellTypedN",
+          "kleisliComposeWellTyped",
+          "kleisliFoldWellTypedN",
+          "kleisliFoldWellTyped",
+          "subjectReduction",
+          "kleisliAdmissibility",
+          "identityWellTyped",
+          "kleisliComposeAssoc",
+          "kleisliLeftUnit",
+          "kleisliRightUnit"
+        ],
+        "inductive": [
+          "ConstitutionalSeq"
+        ]
+      },
+      "import_lines": [
+        "Core.State"
+      ],
+      "module": "Core.Constitutional",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Core/Gate.lean",
+      "content_sha256": "d7e12338ac044030555c4dd849b2c5b5a8475292e6c79349a9077146e328c2c1",
+      "declarations": {
+        "structure": [
+          "CoreAdmissible",
+          "CoreAdmissibleN"
+        ],
+        "def": [
+          "CoreMassCond",
+          "CoreDissipCond"
+        ],
+        "theorem": [
+          "coreAdmissible_iff_mass_dissip",
+          "coreAdmissibleN_compose",
+          "coreAdmissibleN_refl",
+          "coreAdmissibleN_one"
+        ]
+      },
+      "import_lines": [
+        "Core.Scalar",
+        "Core.State",
+        "Mathlib.Algebra.Order.Field.Basic",
+        "Mathlib.Tactic"
+      ],
+      "module": "Core.Gate",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Core/Scalar.lean",
+      "content_sha256": "c896176738351865c611f1e6243b7f079a12f3c9a429b5c5690785e99176db0e",
+      "declarations": {
+        "class": [
+          "ThermodynamicScalar"
+        ],
+        "def": [
+          "\u03b4Mass"
+        ],
+        "instance": [
+          "thermodynamicScalarRat",
+          "thermodynamicScalarReal"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Algebra.Order.Field.Rat",
+        "Mathlib.Data.Real.Basic"
+      ],
+      "module": "Core.Scalar",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Core/State.lean",
+      "content_sha256": "14e7cbf5a46e9386e5e4b91648c6a3b446e2b88dcf0bba901f369fc9fe503c6d",
+      "declarations": {
+        "class": [
+          "ThermodynamicSystem",
+          "AdmissibleSystem"
+        ]
+      },
+      "import_lines": [
+        "Core.Scalar"
+      ],
+      "module": "Core.State",
       "repo": "umst-formal"
     },
     {
       "path": "CreditGreedyOptimal.lean",
-      "content_sha256": "322e9447d0401fa001141c3e5ab02fb359b5020a7947e432d6547025aa301972",
+      "content_sha256": "4577e38cf982476ceb5f135c1130d310b10698b6652e00841a03f248147ca6eb",
       "declarations": {
         "structure": [
           "CreditCandidate"
@@ -271,7 +675,7 @@
     },
     {
       "path": "DIBKleisli.lean",
-      "content_sha256": "4f0975565df716210c70a8aadbd55d60844e3306db1088a2226b4ed3994136fd",
+      "content_sha256": "7f43c8e57e389a46a90fe57e45126a82e3cd6f234fa26e32600fef8701644986",
       "declarations": {
         "structure": [
           "M",
@@ -308,14 +712,14 @@
         ]
       },
       "import_lines": [
-        "Gate"
+        "Compat.Gate"
       ],
       "module": "DIBKleisli",
       "repo": "umst-formal"
     },
     {
       "path": "Dignity.lean",
-      "content_sha256": "c64293e285e216743dc007f06998f61cbfd28c606bba3ad1611656d7cbdcab82",
+      "content_sha256": "374e46b4df876e6175a6bc181d6d61cb3adf04be40792fb73c961fe31e706917",
       "declarations": {
         "lemma": [
           "landauer_joules_per_bit_pos"
@@ -352,8 +756,35 @@
       "repo": "umst-formal"
     },
     {
+      "path": "DualLedger.lean",
+      "content_sha256": "a126b0a3d79ae96827a96b9f109c006547f8a6a4d141de61ef8d329ab5f24058",
+      "declarations": {
+        "def": [
+          "landauerComputeCost",
+          "materialDissipation",
+          "DualLedger.total"
+        ],
+        "theorem": [
+          "landauerComputeCost_nonneg",
+          "materialDissipation_nonneg",
+          "dualLedger_total_nonneg",
+          "dualLedger_nonneg_of_physical"
+        ],
+        "structure": [
+          "DualLedger"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Data.Rat.Defs",
+        "Mathlib.Tactic.Linarith",
+        "Mathlib.Tactic.Positivity"
+      ],
+      "module": "DualLedger",
+      "repo": "umst-formal"
+    },
+    {
       "path": "Economic/BurdenRecursionIsAdmissible.lean",
-      "content_sha256": "a50b4bfa988a6feebd853c7658c9e807d4d23da7d24ed705996382c946513e7a",
+      "content_sha256": "e3016043c79b199f5cc7aa2ff42ed5a0847f58161e36da6484709e23704287fe",
       "declarations": {
         "def": [
           "stateOfBurden",
@@ -371,7 +802,7 @@
         ]
       },
       "import_lines": [
-        "Gate"
+        "Compat.Gate"
       ],
       "module": "Economic.BurdenRecursionIsAdmissible",
       "repo": "umst-formal"
@@ -527,7 +958,7 @@
     },
     {
       "path": "Economic/KleisliAdmissibilityComposition.lean",
-      "content_sha256": "9c8bcd2861f3e0d01fe261e5f8cf226f9b43656895a435febaf9029d7a6103c9",
+      "content_sha256": "22ec33913b6cea00af66420f744bd9c0b1a4dd615286ed6d97bc071aa7490e1c",
       "declarations": {
         "theorem": [
           "econ_kleisliComposeWellTypedN",
@@ -535,7 +966,7 @@
         ]
       },
       "import_lines": [
-        "Constitutional"
+        "Compat.Constitutional"
       ],
       "module": "Economic.KleisliAdmissibilityComposition",
       "repo": "umst-formal"
@@ -606,7 +1037,7 @@
     },
     {
       "path": "Economic/StochasticBurdenExpectation.lean",
-      "content_sha256": "18adfb0a196be24ccde7cb533d1525bbc2391cda7a7ec648baf3ba7cfbd07c57",
+      "content_sha256": "8cfb5ec1d71c39c876c07072a9d8ad96713882aed3f092022fe7015ac4289fd7",
       "declarations": {
         "theorem": [
           "burden_expectation_symmetric_two_point",
@@ -642,61 +1073,8 @@
       "repo": "umst-formal"
     },
     {
-      "path": "EndConditions.lean",
-      "content_sha256": "89135b84b08e59bc60ce9413d3bc69a1e8c42bba76adae54a3f7b0a085b63214",
-      "declarations": {
-        "theorem": [
-          "accumulatedMassBound",
-          "clausiusDuhemGlobal",
-          "equilibriumExists"
-        ],
-        "def": [
-          "IsEquilibrium"
-        ]
-      },
-      "import_lines": [
-        "Gate",
-        "GraphProperties"
-      ],
-      "module": "EndConditions",
-      "repo": "umst-formal"
-    },
-    {
-      "path": "EnrichedAdmissibility.lean",
-      "content_sha256": "66d3fc94704996044a7c250a2341219a0d5c320aebd3b387f1f6f955819fdbe9",
-      "declarations": {
-        "def": [
-          "massDist"
-        ],
-        "theorem": [
-          "massDist_nonneg",
-          "massDist_self",
-          "massDist_comm",
-          "massDist_triangle",
-          "massCond_iff_massDist",
-          "orderAdmissible_refl",
-          "orderAdmissible_trans",
-          "admissibleN_decomp",
-          "admissibleN_of_decomp",
-          "admissibleN_order",
-          "admissibleN_mono",
-          "lawvere_composition"
-        ],
-        "structure": [
-          "OrderAdmissible"
-        ]
-      },
-      "import_lines": [
-        "Gate",
-        "Mathlib.Order.GaloisConnection",
-        "Mathlib.Topology.MetricSpace.Basic"
-      ],
-      "module": "EnrichedAdmissibility",
-      "repo": "umst-formal"
-    },
-    {
       "path": "EtaCog.lean",
-      "content_sha256": "3e33e0037f11777b3b17f42aa2af7d629834d73fb90b88713556d08b023c87af",
+      "content_sha256": "8bb135322596588c2b3434c0a2a8c2805e00ce4c4327fd793a657eea9b29c49f",
       "declarations": {
         "structure": [
           "EtaCogClaim"
@@ -725,74 +1103,27 @@
       "repo": "umst-formal"
     },
     {
-      "path": "GaloisGate.lean",
-      "content_sha256": "910740bb06eb3b93f7c1e3512fdc20cece499601b3c3f3f6c246743d3e0711b9",
-      "declarations": {
-        "inductive": [
-          "GateCond"
-        ],
-        "def": [
-          "evalCond"
-        ],
-        "theorem": [
-          "condMeet_full_iff_admissible",
-          "condMeet_empty",
-          "condMeet_antitone",
-          "condExtract_admissible",
-          "mass_condition_independent",
-          "hydration_condition_independent"
-        ]
-      },
-      "import_lines": [
-        "Gate",
-        "Mathlib.Data.Finset.Basic",
-        "Mathlib.Order.GaloisConnection"
-      ],
-      "module": "GaloisGate",
-      "repo": "umst-formal"
-    },
-    {
-      "path": "GraphProperties.lean",
-      "content_sha256": "483acf02bb790995fbe834d8f94250c01414686e526d4056ebe59489bea132dd",
-      "declarations": {
-        "theorem": [
-          "mass_not_transitive",
-          "admissibleTrans_refuted",
-          "dissipCond_transitive",
-          "hydratCond_transitive",
-          "strengthCond_transitive",
-          "hydration_acyclic",
-          "hydration_dag_path",
-          "admissible_not_symmetric",
-          "graded_compose_sanity",
-          "two_step_mass_bound"
-        ]
-      },
-      "import_lines": [
-        "Gate"
-      ],
-      "module": "GraphProperties",
-      "repo": "umst-formal"
-    },
-    {
-      "path": "Helmholtz.lean",
-      "content_sha256": "7b334fdccca01dcf367ab34092a146c001a5946ccaff44f96ad54fee1e428a0c",
+      "path": "FiberedActivation.lean",
+      "content_sha256": "b0c78cade425faf05daddb2e5274827a61748b89601f2f8a44c7bb895078dced",
       "declarations": {
         "def": [
-          "HelmholtzState"
+          "engineFiber"
         ],
         "theorem": [
-          "\u03c8AntitoneHelmholtz",
-          "helmholtzStateAdmissible",
-          "helmholtzLinear",
-          "helmholtzGradientConst",
-          "admissibleDirIsNegGrad"
+          "engineFiber_nonempty",
+          "strength_universal",
+          "rheology_universal",
+          "activation_at_least_two",
+          "fiber_covers",
+          "hydration_not_lime",
+          "hydration_not_earth",
+          "transport_not_opc"
         ]
       },
       "import_lines": [
-        "Gate"
+        "Concrete.Activation"
       ],
-      "module": "Helmholtz",
+      "module": "FiberedActivation",
       "repo": "umst-formal"
     },
     {
@@ -845,7 +1176,7 @@
     },
     {
       "path": "MedianConvergence.lean",
-      "content_sha256": "59de0321fa136af8373f7359b15d73e2419bbc6f9b54b251469c6d1b94bfb826",
+      "content_sha256": "76da48d2ce454b60097310c0f86216d622fa4605ce2b057632034650bea4bbde",
       "declarations": {
         "theorem": [
           "median_convergence_sample_size",
@@ -871,7 +1202,7 @@
     },
     {
       "path": "Memory/MergeSafe.lean",
-      "content_sha256": "17445c96ffbad60723c65ca2ba455b4f9c52cf3d1af5b31d4fbafb6d9394c325",
+      "content_sha256": "bde45d7b2cc10066bad40b540bcb5fba34ce38808238cbf65435401027571cb3",
       "declarations": {
         "structure": [
           "MemoryEntry"
@@ -916,8 +1247,56 @@
       "repo": "umst-formal"
     },
     {
+      "path": "MonoidalState.lean",
+      "content_sha256": "d7d7bd0e75f29dd8a76afe3a1025fc97d1a595e787a3c3fd90d585b694d1f388",
+      "declarations": {
+        "def": [
+          "combine",
+          "zeroState"
+        ],
+        "theorem": [
+          "combine_one",
+          "combine_zero",
+          "combine_half_density",
+          "combine_density_between",
+          "combine_freeEnergy_le",
+          "combine_hydration_ge"
+        ]
+      },
+      "import_lines": [
+        "Compat.Gate"
+      ],
+      "module": "MonoidalState",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Naturality.lean",
+      "content_sha256": "f702910ecd0cea6384ac4934df05c1124de98c82f59c436872ac4a3e4090f97c",
+      "declarations": {
+        "inductive": [
+          "MaterialClass"
+        ],
+        "def": [
+          "stateFor"
+        ],
+        "theorem": [
+          "gateMaterialAgnostic",
+          "gateStateDetermined",
+          "naturalitySquare",
+          "opcGateWellDefined",
+          "stateForAdmissibleRefl",
+          "initialStateMassConserved"
+        ]
+      },
+      "import_lines": [
+        "Compat.Gate"
+      ],
+      "module": "Naturality",
+      "repo": "umst-formal"
+    },
+    {
       "path": "OrderStatisticsBand.lean",
-      "content_sha256": "a980acfb8852994fdee73ed69bc6ea3e28f6d5227f449e943bca9745c67cae62",
+      "content_sha256": "3179efe79010b1563d5bc45ae09ff92d951a17910a15a2b5f810b758463c8fae",
       "declarations": {
         "theorem": [
           "order_statistic_concentration",
@@ -938,35 +1317,6 @@
         "MedianConvergence"
       ],
       "module": "OrderStatisticsBand",
-      "repo": "umst-formal"
-    },
-    {
-      "path": "Powers.lean",
-      "content_sha256": "ae7e745ef7882d13a19175c741b1efe685f5fb4937d1844a2614abc2af68135e",
-      "declarations": {
-        "def": [
-          "S_intrinsic",
-          "PowersState"
-        ],
-        "lemma": [
-          "S_intrinsic_pos",
-          "gelSpaceRatioDenom_pos",
-          "gelSpaceRatio_nonneg",
-          "powersStrength_nonneg",
-          "gelSpaceRatio_mono"
-        ],
-        "theorem": [
-          "powers_monotone",
-          "powersStateFcMonotone",
-          "powersStateAdmissible"
-        ]
-      },
-      "import_lines": [
-        "Gate",
-        "Mathlib.Algebra.Order.Field.Rat",
-        "Mathlib.Tactic"
-      ],
-      "module": "Powers",
       "repo": "umst-formal"
     },
     {
@@ -994,7 +1344,7 @@
     },
     {
       "path": "PrimeSpectralGuidance.lean",
-      "content_sha256": "2849aa35c60d7383f5c28fa0de5f67ace62003dcddbd13d8c691f571f53685d3",
+      "content_sha256": "db7a9374dfa8682719e9196e83623bd962e27d89463add81e75656ac90980dcc",
       "declarations": {
         "structure": [
           "MultiplicativeChannel",
@@ -1030,13 +1380,43 @@
         ]
       },
       "import_lines": [
-        "Gate",
+        "Compat.Gate",
         "Mathlib.Algebra.BigOperators.Group.Finset",
         "Mathlib.Algebra.IsPrimePow",
         "Mathlib.Data.Nat.Prime.Basic",
         "Mathlib.NumberTheory.VonMangoldt"
       ],
       "module": "PrimeSpectralGuidance",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Real/Gate.lean",
+      "content_sha256": "129c691a7d531e50274e00f59a7f3d767b296ee035fe0da4e84bbb689278e52f",
+      "declarations": {
+        "theorem": [
+          "realAdmissibleRefl",
+          "realAdmissible_eq_core"
+        ]
+      },
+      "import_lines": [
+        "Core.Gate",
+        "Real.State"
+      ],
+      "module": "Real.Gate",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Real/State.lean",
+      "content_sha256": "463848c3da2df0e595177d0a5cea6fc53a9908d97bda4a2e2ac454180ed8cd7e",
+      "declarations": {
+        "structure": [
+          "RealThermodynamicState"
+        ]
+      },
+      "import_lines": [
+        "Core.State"
+      ],
+      "module": "Real.State",
       "repo": "umst-formal"
     },
     {
@@ -1146,55 +1526,6 @@
       ],
       "module": "scripts.print_axioms",
       "repo": "umst-formal"
-    },
-    {
-      "path": "Activation.lean",
-      "content_sha256": "82c89554332e6212d9b73bc937fd2ac32023cbfa7197898bc40de00b45cbb2ff",
-      "declarations": {
-        "inductive": [
-          "Engine"
-        ],
-        "def": [
-          "engineMember",
-          "opcEngines",
-          "racEngines",
-          "geoEngines",
-          "limeEngines",
-          "earthEngines",
-          "activation",
-          "activateOPC",
-          "activateRAC",
-          "activateGeopolymer",
-          "activateLime",
-          "activateEarth",
-          "HasActiveEngine"
-        ],
-        "structure": [
-          "ActivatedUMST"
-        ],
-        "theorem": [
-          "activationTotal",
-          "opc_has_hydration",
-          "rac_has_transport",
-          "geo_has_alkali",
-          "lime_has_carbonation",
-          "earth_has_moisture",
-          "earth_no_hydration",
-          "lime_no_hydration",
-          "opc_no_carbonation",
-          "opc_no_transport",
-          "geo_no_hydration"
-        ],
-        "instance": [
-          "activationDecidable"
-        ]
-      },
-      "import_lines": [
-        "Gate",
-        "Naturality"
-      ],
-      "module": "Activation",
-      "repo": "umst-formal-double-slit"
     },
     {
       "path": "Complementarity.lean",
@@ -1307,7 +1638,7 @@
     },
     {
       "path": "DoubleSlitCore.lean",
-      "content_sha256": "9a839457c472c11b1594efea914853b5da3cf06a236d2aafe2984d222847ae33",
+      "content_sha256": "1999179464c72c010fe2b76beb1b8feb9e2e4c3b979e199e6c1b44775759880c",
       "declarations": {
         "structure": [
           "ObservationState",
@@ -1323,8 +1654,9 @@
         ]
       },
       "import_lines": [
+        "Core.State",
         "Mathlib",
-        "UMSTCore"
+        "Real.State"
       ],
       "module": "DoubleSlitCore",
       "repo": "umst-formal-double-slit"
@@ -1866,30 +2198,6 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "FiberedActivation.lean",
-      "content_sha256": "8287357d14b99c3cc57787e9dd2cfb922e2e4f6349f7291e2daf43a544e915ff",
-      "declarations": {
-        "def": [
-          "engineFiber"
-        ],
-        "theorem": [
-          "engineFiber_nonempty",
-          "strength_universal",
-          "rheology_universal",
-          "activation_at_least_two",
-          "fiber_covers",
-          "hydration_not_lime",
-          "hydration_not_earth",
-          "transport_not_opc"
-        ]
-      },
-      "import_lines": [
-        "Activation"
-      ],
-      "module": "FiberedActivation",
-      "repo": "umst-formal-double-slit"
-    },
-    {
       "path": "FlashMoERuntimeScaffold.lean",
       "content_sha256": "774be62d0e39063506c3466918f6ed9484d416ca0962b25d6397e21a4e2c6eac",
       "declarations": {},
@@ -1915,77 +2223,29 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "Gate.lean",
-      "content_sha256": "a349fceeb215a6b02a0b30fb1f9674a388a5eae7ca2a626c0b11ebf2c58da7fb",
-      "declarations": {
-        "structure": [
-          "ThermodynamicState",
-          "Admissible",
-          "AdmissibleN"
-        ],
-        "def": [
-          "\u03b4Mass",
-          "Q_hyd",
-          "helmholtz",
-          "gateCheck",
-          "MassCond",
-          "DissipCond",
-          "HydratCond",
-          "StrengthCond"
-        ],
-        "theorem": [
-          "helmholtzAntitone",
-          "helmholtzGradient",
-          "helmholtzAdditive",
-          "gateCheckSound",
-          "gateCheckComplete",
-          "clausiusDuhemFwd",
-          "forwardHydrationAdmissible",
-          "admissibleRefl",
-          "admissibleIffCSG",
-          "subjectReduction",
-          "kleisliAdmissibility",
-          "admissible_iff_admissibleN1",
-          "admissibleNRefl",
-          "admissibleN_compose"
-        ],
-        "inductive": [
-          "ConstitutionalSeq"
-        ]
-      },
-      "import_lines": [
-        "Mathlib.Algebra.Order.Field.Rat",
-        "Mathlib.Tactic"
-      ],
-      "module": "Gate",
-      "repo": "umst-formal-double-slit"
-    },
-    {
       "path": "GateCompat.lean",
-      "content_sha256": "9a2b1c081b1a3b06c6b2a8293380acfcc648a9df3e0324d22dfcee530638b8e9",
+      "content_sha256": "eb7ac810e19bb33af768a5b06bdd6e873c82a431c639304a7d3ca241c54968bb",
       "declarations": {
         "theorem": [
           "thermoFromQubitPath_whichPath",
           "admissible_thermoFromQubitPath_whichPath",
           "thermoCalibratedScaffold_whichPath",
           "admissible_thermoCalibratedScaffold_whichPath",
+          "admissible_densityMatrix_whichPath",
           "thermoCalibratedScaffold_freeEnergy_nonpos",
           "thermoCalibratedScaffold_freeEnergy_bounded",
-          "calibratedHydration_nonneg",
-          "calibratedHydration_le_one",
-          "calibratedHydration_whichPath",
-          "calibratedStrength_nonneg",
-          "calibratedStrength_le_one",
           "admissible_thermoCalibratedPhys_whichPath"
         ]
       },
       "import_lines": [
+        "Core.Gate",
         "EpistemicSensing",
         "GeneralVisibility",
         "LandauerBound",
         "MeasurementChannel",
         "QuantumClassicalBridge",
-        "UMSTCore"
+        "Real.Gate",
+        "Real.State"
       ],
       "module": "GateCompat",
       "repo": "umst-formal-double-slit"
@@ -2434,54 +2694,6 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "MonoidalState.lean",
-      "content_sha256": "c0656283f87d61603b7ca632f3e8d62650574ec32683ddb5216bf9b7035a7d50",
-      "declarations": {
-        "def": [
-          "combine",
-          "zeroState"
-        ],
-        "theorem": [
-          "combine_one",
-          "combine_zero",
-          "combine_half_density",
-          "combine_density_between",
-          "combine_freeEnergy_le",
-          "combine_hydration_ge"
-        ]
-      },
-      "import_lines": [
-        "Gate"
-      ],
-      "module": "MonoidalState",
-      "repo": "umst-formal-double-slit"
-    },
-    {
-      "path": "Naturality.lean",
-      "content_sha256": "ef48a40db9a45b5d4a3aeb76e53de3d4f08baf6c689e5dc5f1403670fed8b190",
-      "declarations": {
-        "inductive": [
-          "MaterialClass"
-        ],
-        "def": [
-          "stateFor"
-        ],
-        "theorem": [
-          "gateMaterialAgnostic",
-          "gateStateDetermined",
-          "naturalitySquare",
-          "opcGateWellDefined",
-          "stateForAdmissibleRefl",
-          "initialStateMassConserved"
-        ]
-      },
-      "import_lines": [
-        "Gate"
-      ],
-      "module": "Naturality",
-      "repo": "umst-formal-double-slit"
-    },
-    {
       "path": "PMICEntropyInterior.lean",
       "content_sha256": "9dba80c44ebe63d71e469601003c73e8b64df36ee72b6dddfc9cddccfb6d271a",
       "declarations": {
@@ -2596,21 +2808,6 @@
         "EpistemicTraceDrivenCalibrationWitness"
       ],
       "module": "PrototypeSolverCalibration",
-      "repo": "umst-formal-double-slit"
-    },
-    {
-      "path": "QRBridge.lean",
-      "content_sha256": "81451cb9b24724cb5cfbe1bc4a3c22f2e5657bcdf7a01804c2b84d736ba3f2de",
-      "declarations": {
-        "theorem": [
-          "admissible_thermodynamicStateToReal"
-        ]
-      },
-      "import_lines": [
-        "Gate",
-        "UMSTCore"
-      ],
-      "module": "QRBridge",
       "repo": "umst-formal-double-slit"
     },
     {
@@ -2842,40 +3039,6 @@
       "repo": "umst-formal-double-slit"
     },
     {
-      "path": "UMSTCore.lean",
-      "content_sha256": "304bf882ff1229020abeed6de7fe5c591663e4ebcc82b3630a5cf3530c88c696",
-      "declarations": {
-        "lemma": [
-          "kB_pos",
-          "cSI_pos",
-          "landauerBitEnergy_nonneg",
-          "massEquivalentOfEnergy_nonneg"
-        ],
-        "structure": [
-          "ThermodynamicState"
-        ],
-        "def": [
-          "MassCond",
-          "DissipCond",
-          "HydratCond",
-          "StrengthCond",
-          "Admissible"
-        ],
-        "theorem": [
-          "admissibleRefl",
-          "dissipCond_transitive",
-          "hydratCond_transitive",
-          "strengthCond_transitive"
-        ]
-      },
-      "import_lines": [
-        "Mathlib.Analysis.SpecialFunctions.Log.Basic",
-        "Mathlib.Tactic"
-      ],
-      "module": "UMSTCore",
-      "repo": "umst-formal-double-slit"
-    },
-    {
       "path": "VonNeumannEntropy.lean",
       "content_sha256": "7e974e084d6b0c67f2c32712092062f288881e904fbce502495a932a22beec43",
       "declarations": {
@@ -2949,7 +3112,7 @@
     },
     {
       "path": "lakefile.lean",
-      "content_sha256": "c87eda692bdedd68de20a6a54f7781a2eca6f19a692b07d2099ed8719813b029",
+      "content_sha256": "4160b23d3863d179bbd7e63cd4fa10e256c008521d8b4d590cfaebd90cfd1814",
       "declarations": {},
       "import_lines": [
         "Lake"
@@ -3009,29 +3172,204 @@
       "to_approx": "LandauerLaw"
     },
     {
-      "from": "Constitutional",
-      "import": "Gate",
-      "to_approx": "Gate"
+      "from": "Compat.Constitutional",
+      "import": "Compat.Gate",
+      "to_approx": "Compat.Gate"
     },
     {
-      "from": "Convergence",
-      "import": "Gate",
-      "to_approx": "Gate"
+      "from": "Compat.Gate",
+      "import": "Concrete.Gate",
+      "to_approx": "Concrete.Gate"
     },
     {
-      "from": "Convergence",
-      "import": "Helmholtz",
-      "to_approx": "Helmholtz"
+      "from": "Compat.Gate",
+      "import": "Concrete.State",
+      "to_approx": "Concrete.State"
     },
     {
-      "from": "Convergence",
+      "from": "Compat.Gate",
+      "import": "Core.Constitutional",
+      "to_approx": "Core.Constitutional"
+    },
+    {
+      "from": "Compat.Gate",
+      "import": "Core.Gate",
+      "to_approx": "Core.Gate"
+    },
+    {
+      "from": "Concrete.Activation",
+      "import": "Compat.Gate",
+      "to_approx": "Compat.Gate"
+    },
+    {
+      "from": "Concrete.Activation",
+      "import": "Naturality",
+      "to_approx": "Naturality"
+    },
+    {
+      "from": "Concrete.Convergence",
+      "import": "Compat.Gate",
+      "to_approx": "Compat.Gate"
+    },
+    {
+      "from": "Concrete.Convergence",
+      "import": "Concrete.Helmholtz",
+      "to_approx": "Concrete.Helmholtz"
+    },
+    {
+      "from": "Concrete.Convergence",
       "import": "Mathlib.Topology.MetricSpace.Basic",
       "to_approx": "Mathlib.Topology.MetricSpace.Basic"
     },
     {
-      "from": "Convergence",
+      "from": "Concrete.Convergence",
       "import": "Mathlib.Topology.Order.MonotoneConvergence",
       "to_approx": "Mathlib.Topology.Order.MonotoneConvergence"
+    },
+    {
+      "from": "Concrete.EndConditions",
+      "import": "Compat.Gate",
+      "to_approx": "Compat.Gate"
+    },
+    {
+      "from": "Concrete.EndConditions",
+      "import": "Concrete.GraphProperties",
+      "to_approx": "Concrete.GraphProperties"
+    },
+    {
+      "from": "Concrete.EnrichedAdmissibility",
+      "import": "Compat.Gate",
+      "to_approx": "Compat.Gate"
+    },
+    {
+      "from": "Concrete.EnrichedAdmissibility",
+      "import": "Mathlib.Order.GaloisConnection",
+      "to_approx": "Mathlib.Order.GaloisConnection"
+    },
+    {
+      "from": "Concrete.EnrichedAdmissibility",
+      "import": "Mathlib.Topology.MetricSpace.Basic",
+      "to_approx": "Mathlib.Topology.MetricSpace.Basic"
+    },
+    {
+      "from": "Concrete.GaloisGate",
+      "import": "Compat.Gate",
+      "to_approx": "Compat.Gate"
+    },
+    {
+      "from": "Concrete.GaloisGate",
+      "import": "Mathlib.Data.Finset.Basic",
+      "to_approx": "Mathlib.Data.Finset.Basic"
+    },
+    {
+      "from": "Concrete.GaloisGate",
+      "import": "Mathlib.Order.GaloisConnection",
+      "to_approx": "Mathlib.Order.GaloisConnection"
+    },
+    {
+      "from": "Concrete.Gate",
+      "import": "Concrete.State",
+      "to_approx": "Concrete.State"
+    },
+    {
+      "from": "Concrete.Gate",
+      "import": "Core.Gate",
+      "to_approx": "Core.Gate"
+    },
+    {
+      "from": "Concrete.Gate",
+      "import": "Core.State",
+      "to_approx": "Core.State"
+    },
+    {
+      "from": "Concrete.Gate",
+      "import": "Mathlib.Algebra.Order.Field.Rat",
+      "to_approx": "Mathlib.Algebra.Order.Field.Rat"
+    },
+    {
+      "from": "Concrete.Gate",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "Concrete.GraphProperties",
+      "import": "Compat.Gate",
+      "to_approx": "Compat.Gate"
+    },
+    {
+      "from": "Concrete.GraphProperties",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "Concrete.Helmholtz",
+      "import": "Compat.Gate",
+      "to_approx": "Compat.Gate"
+    },
+    {
+      "from": "Concrete.Helmholtz",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "Concrete.Powers",
+      "import": "Compat.Gate",
+      "to_approx": "Compat.Gate"
+    },
+    {
+      "from": "Concrete.Powers",
+      "import": "Mathlib.Algebra.Order.Field.Rat",
+      "to_approx": "Mathlib.Algebra.Order.Field.Rat"
+    },
+    {
+      "from": "Concrete.Powers",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "Concrete.State",
+      "import": "Core.State",
+      "to_approx": "Core.State"
+    },
+    {
+      "from": "Core.Constitutional",
+      "import": "Core.State",
+      "to_approx": "Core.State"
+    },
+    {
+      "from": "Core.Gate",
+      "import": "Core.Scalar",
+      "to_approx": "Core.Scalar"
+    },
+    {
+      "from": "Core.Gate",
+      "import": "Core.State",
+      "to_approx": "Core.State"
+    },
+    {
+      "from": "Core.Gate",
+      "import": "Mathlib.Algebra.Order.Field.Basic",
+      "to_approx": "Mathlib.Algebra.Order.Field.Basic"
+    },
+    {
+      "from": "Core.Gate",
+      "import": "Mathlib.Tactic",
+      "to_approx": "Mathlib.Tactic"
+    },
+    {
+      "from": "Core.Scalar",
+      "import": "Mathlib.Algebra.Order.Field.Rat",
+      "to_approx": "Mathlib.Algebra.Order.Field.Rat"
+    },
+    {
+      "from": "Core.Scalar",
+      "import": "Mathlib.Data.Real.Basic",
+      "to_approx": "Mathlib.Data.Real.Basic"
+    },
+    {
+      "from": "Core.State",
+      "import": "Core.Scalar",
+      "to_approx": "Core.Scalar"
     },
     {
       "from": "CreditGreedyOptimal",
@@ -3075,8 +3413,8 @@
     },
     {
       "from": "DIBKleisli",
-      "import": "Gate",
-      "to_approx": "Gate"
+      "import": "Compat.Gate",
+      "to_approx": "Compat.Gate"
     },
     {
       "from": "Dignity",
@@ -3099,9 +3437,24 @@
       "to_approx": "Mathlib.Tactic"
     },
     {
+      "from": "DualLedger",
+      "import": "Mathlib.Data.Rat.Defs",
+      "to_approx": "Mathlib.Data.Rat.Defs"
+    },
+    {
+      "from": "DualLedger",
+      "import": "Mathlib.Tactic.Linarith",
+      "to_approx": "Mathlib.Tactic.Linarith"
+    },
+    {
+      "from": "DualLedger",
+      "import": "Mathlib.Tactic.Positivity",
+      "to_approx": "Mathlib.Tactic.Positivity"
+    },
+    {
       "from": "Economic.BurdenRecursionIsAdmissible",
-      "import": "Gate",
-      "to_approx": "Gate"
+      "import": "Compat.Gate",
+      "to_approx": "Compat.Gate"
     },
     {
       "from": "Economic.CollectiveCoherenceCost",
@@ -3200,8 +3553,8 @@
     },
     {
       "from": "Economic.KleisliAdmissibilityComposition",
-      "import": "Constitutional",
-      "to_approx": "Constitutional"
+      "import": "Compat.Constitutional",
+      "to_approx": "Compat.Constitutional"
     },
     {
       "from": "Economic.LowEntropyLieDetector",
@@ -3259,31 +3612,6 @@
       "to_approx": "InfoTheory"
     },
     {
-      "from": "EndConditions",
-      "import": "Gate",
-      "to_approx": "Gate"
-    },
-    {
-      "from": "EndConditions",
-      "import": "GraphProperties",
-      "to_approx": "GraphProperties"
-    },
-    {
-      "from": "EnrichedAdmissibility",
-      "import": "Gate",
-      "to_approx": "Gate"
-    },
-    {
-      "from": "EnrichedAdmissibility",
-      "import": "Mathlib.Order.GaloisConnection",
-      "to_approx": "Mathlib.Order.GaloisConnection"
-    },
-    {
-      "from": "EnrichedAdmissibility",
-      "import": "Mathlib.Topology.MetricSpace.Basic",
-      "to_approx": "Mathlib.Topology.MetricSpace.Basic"
-    },
-    {
       "from": "EtaCog",
       "import": "Dignity",
       "to_approx": "Dignity"
@@ -3304,29 +3632,9 @@
       "to_approx": "Mathlib.Tactic"
     },
     {
-      "from": "GaloisGate",
-      "import": "Gate",
-      "to_approx": "Gate"
-    },
-    {
-      "from": "GaloisGate",
-      "import": "Mathlib.Data.Finset.Basic",
-      "to_approx": "Mathlib.Data.Finset.Basic"
-    },
-    {
-      "from": "GaloisGate",
-      "import": "Mathlib.Order.GaloisConnection",
-      "to_approx": "Mathlib.Order.GaloisConnection"
-    },
-    {
-      "from": "GraphProperties",
-      "import": "Gate",
-      "to_approx": "Gate"
-    },
-    {
-      "from": "Helmholtz",
-      "import": "Gate",
-      "to_approx": "Gate"
+      "from": "FiberedActivation",
+      "import": "Concrete.Activation",
+      "to_approx": "Concrete.Activation"
     },
     {
       "from": "InfoTheory",
@@ -3399,6 +3707,16 @@
       "to_approx": "Mathlib.Data.Set.Basic"
     },
     {
+      "from": "MonoidalState",
+      "import": "Compat.Gate",
+      "to_approx": "Compat.Gate"
+    },
+    {
+      "from": "Naturality",
+      "import": "Compat.Gate",
+      "to_approx": "Compat.Gate"
+    },
+    {
       "from": "OrderStatisticsBand",
       "import": "Mathlib.Algebra.Order.Floor",
       "to_approx": "Mathlib.Algebra.Order.Floor"
@@ -3424,29 +3742,14 @@
       "to_approx": "MedianConvergence"
     },
     {
-      "from": "Powers",
-      "import": "Gate",
-      "to_approx": "Gate"
-    },
-    {
-      "from": "Powers",
-      "import": "Mathlib.Algebra.Order.Field.Rat",
-      "to_approx": "Mathlib.Algebra.Order.Field.Rat"
-    },
-    {
-      "from": "Powers",
-      "import": "Mathlib.Tactic",
-      "to_approx": "Mathlib.Tactic"
-    },
-    {
       "from": "PrimeSpectralCategory",
       "import": "PrimeSpectralGuidance",
       "to_approx": "PrimeSpectralGuidance"
     },
     {
       "from": "PrimeSpectralGuidance",
-      "import": "Gate",
-      "to_approx": "Gate"
+      "import": "Compat.Gate",
+      "to_approx": "Compat.Gate"
     },
     {
       "from": "PrimeSpectralGuidance",
@@ -3467,6 +3770,21 @@
       "from": "PrimeSpectralGuidance",
       "import": "Mathlib.NumberTheory.VonMangoldt",
       "to_approx": "Mathlib.NumberTheory.VonMangoldt"
+    },
+    {
+      "from": "Real.Gate",
+      "import": "Core.Gate",
+      "to_approx": "Core.Gate"
+    },
+    {
+      "from": "Real.Gate",
+      "import": "Real.State",
+      "to_approx": "Real.State"
+    },
+    {
+      "from": "Real.State",
+      "import": "Core.State",
+      "to_approx": "Core.State"
     },
     {
       "from": "RegimeSoundness",
@@ -3547,16 +3865,6 @@
       "from": "scripts.print_axioms",
       "import": "Lean.Util.SearchPath",
       "to_approx": "Lean.Util.SearchPath"
-    },
-    {
-      "from": "Activation",
-      "import": "Gate",
-      "to_approx": "Gate"
-    },
-    {
-      "from": "Activation",
-      "import": "Naturality",
-      "to_approx": "Naturality"
     },
     {
       "from": "Complementarity",
@@ -3685,13 +3993,18 @@
     },
     {
       "from": "DoubleSlitCore",
+      "import": "Core.State",
+      "to_approx": "Core.State"
+    },
+    {
+      "from": "DoubleSlitCore",
       "import": "Mathlib",
       "to_approx": "Mathlib"
     },
     {
       "from": "DoubleSlitCore",
-      "import": "UMSTCore",
-      "to_approx": "UMSTCore"
+      "import": "Real.State",
+      "to_approx": "Real.State"
     },
     {
       "from": "EpistemicDynamics",
@@ -3839,11 +4152,6 @@
       "to_approx": "ProbeOptimization"
     },
     {
-      "from": "FiberedActivation",
-      "import": "Activation",
-      "to_approx": "Activation"
-    },
-    {
       "from": "FlashMoERuntimeScaffold",
       "import": "Gate",
       "to_approx": "Gate"
@@ -3859,14 +4167,9 @@
       "to_approx": "LindbladDynamics"
     },
     {
-      "from": "Gate",
-      "import": "Mathlib.Algebra.Order.Field.Rat",
-      "to_approx": "Mathlib.Algebra.Order.Field.Rat"
-    },
-    {
-      "from": "Gate",
-      "import": "Mathlib.Tactic",
-      "to_approx": "Mathlib.Tactic"
+      "from": "GateCompat",
+      "import": "Core.Gate",
+      "to_approx": "Core.Gate"
     },
     {
       "from": "GateCompat",
@@ -3895,8 +4198,13 @@
     },
     {
       "from": "GateCompat",
-      "import": "UMSTCore",
-      "to_approx": "UMSTCore"
+      "import": "Real.Gate",
+      "to_approx": "Real.Gate"
+    },
+    {
+      "from": "GateCompat",
+      "import": "Real.State",
+      "to_approx": "Real.State"
     },
     {
       "from": "GeneralDimension",
@@ -4239,16 +4547,6 @@
       "to_approx": "LandauerBound"
     },
     {
-      "from": "MonoidalState",
-      "import": "Gate",
-      "to_approx": "Gate"
-    },
-    {
-      "from": "Naturality",
-      "import": "Gate",
-      "to_approx": "Gate"
-    },
-    {
       "from": "PMICEntropyInterior",
       "import": "Mathlib.Analysis.Calculus.Deriv.Inv",
       "to_approx": "Mathlib.Analysis.Calculus.Deriv.Inv"
@@ -4302,16 +4600,6 @@
       "from": "PrototypeSolverCalibration",
       "import": "EpistemicTraceDrivenCalibrationWitness",
       "to_approx": "EpistemicTraceDrivenCalibrationWitness"
-    },
-    {
-      "from": "QRBridge",
-      "import": "Gate",
-      "to_approx": "Gate"
-    },
-    {
-      "from": "QRBridge",
-      "import": "UMSTCore",
-      "to_approx": "UMSTCore"
     },
     {
       "from": "QuantumClassicalBridge",
@@ -4504,16 +4792,6 @@
       "to_approx": "Mathlib.LinearAlgebra.Matrix.Trace"
     },
     {
-      "from": "UMSTCore",
-      "import": "Mathlib.Analysis.SpecialFunctions.Log.Basic",
-      "to_approx": "Mathlib.Analysis.SpecialFunctions.Log.Basic"
-    },
-    {
-      "from": "UMSTCore",
-      "import": "Mathlib.Tactic",
-      "to_approx": "Mathlib.Tactic"
-    },
-    {
       "from": "VonNeumannEntropy",
       "import": "DensityState",
       "to_approx": "DensityState"
@@ -4624,5 +4902,5 @@
       "to_approx": "VonNeumannEntropy"
     }
   ],
-  "digest": "c61b1befdec77a82bbb9f6c3f7562e754218ef635f0e3b9990752138df5f4bb5"
+  "digest": "17a6d8e17d9a4847231a255ffb1214db0319a7a2727ecd80708cb7f08045da1e"
 }
