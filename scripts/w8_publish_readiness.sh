@@ -3,7 +3,7 @@
 # Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 #
 # W8 publish *prep* gate (machine-verified, no git push).
-# Checks: lock 122, digest c61b1bef, 16/16 checklist evidence, manifest-bridge
+# Checks: lock 129, digest c61b1bef, 16/16 checklist evidence, manifest-bridge
 # (git-pinned cartridge G-02 OR workspace [patch]), no dirty secrets, Phase-0 preflight.
 # Operator push/clone/GHA remain human-only.
 set -euo pipefail
@@ -75,7 +75,7 @@ else
   fail "Cargo.toml missing manifest-bridge / manifold-manifest features"
 fi
 
-# --- 2. Catalog lock R0 pin (122 / c61b1bef) ---
+# --- 2. Catalog lock R0 pin (129 / 17a6d8e1) ---
 step "catalog.lock R0 pin"
 export ROOT="${MANIFOLD}"
 python3 - << 'PYLOCK'
