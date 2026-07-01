@@ -158,8 +158,8 @@ Lean path prefix: `umst-formal-double-slit/Lean/{Module}.lean`
 
 | Lean module | Lean path | `catalog_id` | Rust path | Test(s) |
 |-------------|-----------|--------------|-----------|---------|
-| `Gate` | `Lean/Gate.lean` | `umst.gate.cd_transition` | `src/gate/thermo_transition.rs`, `src/gate/evaluator.rs` | `gate_evaluator_catalog_surface_stable`, `gate_evaluator_wires_catalog_id`, `gate_evaluator_golden_*` (`tests/gate_parity_fixture.rs`); `gate_cbf_parity::gate_evaluator_wires_catalog_id` |
-| `Gate` (Kleisli lemmas) | `Lean/Gate.lean` | `umst.gate.kleisli_unit` | `src/gate/kleisli.rs` | `kleisli_compose_preserves_admissibility_chain` (`tests/gate_kleisli.rs`) — **no `catalog_id` assert** |
+| `Gate` | `Lean/Compat/Gate.lean` (+ `Concrete/Gate.lean` witnesses) | `umst.gate.cd_transition` | `src/gate/thermo_transition.rs`, `src/gate/evaluator.rs` | `gate_evaluator_catalog_surface_stable`, `gate_evaluator_wires_catalog_id`, `gate_evaluator_golden_*` (`tests/gate_parity_fixture.rs`); `gate_cbf_parity::gate_evaluator_wires_catalog_id` |
+| `Gate` (Kleisli lemmas) | `Lean/Core/Constitutional.lean`, `Lean/Compat/Constitutional.lean` | `umst.gate.kleisli_unit` | `src/gate/kleisli.rs` | `kleisli_compose_preserves_admissibility_chain` (`tests/gate_kleisli.rs`) — **no `catalog_id` assert** |
 | `UMSTCore` | `Lean/UMSTCore.lean` | `umst.gate.cd_transition` | `src/gate/thermo_transition.rs` | (shared with `Gate` golden vectors) |
 | `Naturality` | `Lean/Naturality.lean` | `umst.gate.cd_transition` | `src/manifest/umst_manifest.rs` | — |
 | `MonoidalState` | `Lean/MonoidalState.lean` | `umst.gate.cd_transition` | `src/gate/thermo_transition.rs` | — |
