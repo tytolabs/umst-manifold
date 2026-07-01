@@ -1,6 +1,6 @@
 //! MI-weighted ranking of candidate epistemic proxies (TytoLabs prototype selector port, Phase K1).
 //!
-//! Structural analogue: utility-ranked provider keys (`ranked_zeroclaw_completion_keys` in egoff) —
+//! Structural analogue: utility-ranked provider keys (`ranked_zeroclaw_completion_keys` in cockpit) —
 //! **not** imported here; this module is self-contained for `umst-math`.
 //!
 //! # Host-adaptive hooks (§0.3 I-B)

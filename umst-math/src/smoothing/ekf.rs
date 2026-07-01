@@ -45,7 +45,7 @@ impl ScalarEkf1D {
         Self::new_with_params(x0, 10.0, 500.0)
     }
 
-    /// THEOREM-BOUND: TUI-7b — per-metric process / measurement variances (positive; REGISTRY-sourced in egoff)
+    /// THEOREM-BOUND: TUI-7b — per-metric process / measurement variances (positive; REGISTRY-sourced in cockpit)
     pub fn new_with_params(x0: f64, q: f64, r: f64) -> Self {
         debug_assert!(q.is_finite() && r.is_finite() && q > 0.0 && r > 0.0);
         Self {

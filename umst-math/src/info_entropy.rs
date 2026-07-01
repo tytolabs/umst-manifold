@@ -11,7 +11,7 @@ use crate::density::DensityDiag;
 use crate::io::{strip_think_tags, token_distribution, tokenise};
 use crate::kahan::KahanSum;
 
-// ── Theorem-aligned floors (Egoff oracle until Phase 5 replaces with sharp PMIC bounds) ────────
+// ── Theorem-aligned floors (UMST oracle until Phase 5 replaces with sharp PMIC bounds) ────────
 
 /// Minimum extensive negentropy gain **J = N·H** (bits) treated as passing the thermodynamic gate.
 ///
@@ -20,7 +20,7 @@ use crate::kahan::KahanSum;
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub const MIN_NEGENTROPY_FLOOR_BITS: f64 = 0.01;
 
-/// Legacy name — same value as [`MIN_NEGENTROPY_FLOOR_BITS`] (Egoff oracle compatibility).
+/// Legacy name — same value as [`MIN_NEGENTROPY_FLOOR_BITS`] (legacy oracle compatibility).
 /// DOI: 10.5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub const MIN_NEGENTROPY: f64 = MIN_NEGENTROPY_FLOOR_BITS;
@@ -61,7 +61,7 @@ pub fn pmic_extensive_negentropy_floor_bits(text: &str) -> f64 {
 
 /// Minimum per-token Shannon entropy (bits) for participatory richness lower band.
 ///
-/// Proof context: tunable band on [`text_entropy`] until Klein/DPI v2 (`egoff` Phase 5+); not a proved sharp bound.
+/// Proof context: tunable band on [`text_entropy`] until Klein/DPI v2 (Phase 5+ sharp PMIC bounds); not a proved sharp bound.
 /// DOI: 10.5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub const MIN_RICHNESS_ENTROPY: f64 = 0.5;
@@ -88,7 +88,7 @@ pub fn entropy(dist: &HashMap<String, f64>) -> f64 {
 
 /// Shannon entropy of empirical text (token model in [`crate::io`]).
 ///
-/// Proof: classical **H** on empirical token frequencies; Egoff oracle estimator.
+/// Proof: classical **H** on empirical token frequencies; UMST oracle estimator.
 /// DOI: 10.5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn text_entropy(text: &str) -> f64 {
@@ -188,7 +188,7 @@ pub fn negentropy(text: &str) -> f64 {
     n * h
 }
 
-/// Mutual information **I(X;Y)** from concatenated joint proxy (Egoff legacy estimator).
+/// Mutual information **I(X;Y)** from concatenated joint proxy (UMST legacy estimator).
 ///
 /// Proof: classical **I = H(X)+H(Y)−H(X,Y)** on empirical marginals (surrogate).
 /// DOI: 10.5281/zenodo.19159660
@@ -225,7 +225,7 @@ pub fn thermodynamic_check(proposal: &str) -> bool {
 
 /// Participatory richness band on per-token entropy.
 ///
-/// Proof: band check on [`text_entropy`] — participatory surrogate until Klein/DPI v2 (`egoff` Phase 5+).
+/// Proof: band check on [`text_entropy`] — participatory surrogate until Klein/DPI v2 (Phase 5+ sharp PMIC bounds).
 /// DOI: 10.5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn participatory_richness_check(proposal: &str) -> bool {

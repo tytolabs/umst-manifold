@@ -16,7 +16,7 @@ pub fn landauer_bit_energy_joules(temperature_k: NotNan<f64>) -> NotNan<f64> {
 }
 
 /// Diagonal Landauer **cost proxy** in bits: **(1 − RCC) · H_bit** scale; here returns **1 − RCC**
-/// as the dimensionless factor paired with [`landauer_bit_energy_joules`] in Egoff Oracle v2.
+/// as the dimensionless factor paired with [`landauer_bit_energy_joules`] in UMST Oracle v2.
 ///
 /// Proof: `principle_of_maximal_information_collapse` linkage (PMIC + Landauer).
 /// DOI: 10.5281/zenodo.19159660

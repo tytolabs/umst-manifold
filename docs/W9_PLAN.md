@@ -25,7 +25,7 @@ Open PRs (informational, not blockers): manifold **#23**, **#25**; cartridge **#
 | Item | Definition (file:line) | Callers / refs | S1–S4 | Frozen wire? | Test coverage | Tier | Strategy |
 |------|------------------------|----------------|-------|--------------|---------------|------|----------|
 | `MixTensor` | `src/core/tensors.rs:7` — `[Batch, Features]` fractions | `traits::IScienceCartridge::compute_all`, orchestration, cartridge `implementation.rs`, PPO/gateway tests | S1 | serde via UMST paths only | `golden_path_physics_cbf`, cartridge pipeline tests | **T1** | Rename → `MaterialCompositionTensor`; `pub use` deprecated alias |
-| `mix_proposal` mod | `src/gate/mix_proposal.rs` (whole file) | `http_manifest`, `mix_eval_registry`, `gate/mod.rs`, `tests/gate_*`, `ros_contract_serde_roundtrip` | S1+S2 | C-ABI `thermodynamic_transition_admissible*` in egoff/ffi (frozen names) | `mix_proposal` unit tests; `gate_parity_fixture`, `gate_dual_run_parity` | **T1** | Rename mod → `transition_proposal`; serde `alias` on JSON fields |
+| `mix_proposal` mod | `src/gate/mix_proposal.rs` (whole file) | `http_manifest`, `mix_eval_registry`, `gate/mod.rs`, `tests/gate_*`, `ros_contract_serde_roundtrip` | S1+S2 | C-ABI `thermodynamic_transition_admissible*` in cockpit/ffi (frozen names) | `mix_proposal` unit tests; `gate_parity_fixture`, `gate_dual_run_parity` | **T1** | Rename mod → `transition_proposal`; serde `alias` on JSON fields |
 | `MixProposalScalars` | `mix_proposal.rs:18` | HTTP gate IO, registry context | S1+S2 | JSON field names in HTTP contract | `gate_parity_fixture` | **T1** | → `TransitionScalars` |
 | `DEFAULT_S_INTRINSIC_MPA`, `Q_HYDRATION_J_PER_KG` | `mix_proposal.rs:11–14` | `ThermodynamicStateSnapshot::from_mix_calibrated`, HTTP Powers closure | S2+S3 | HTTP manifest literals (`strength_intrinsic_mpa`) | `mix_proposal` tests | **T2c** | Cartridge-supplied via trait params; kernel keeps generic form |
 | `ThermodynamicMixFilter` | `mix_proposal.rs:101` | `ThermodynamicMixEvaluator`, `HttpMixGateEvaluator` | S1 | — | `mix_proposal` tests, `gate_parity_fixture` | **T1** | → `TransitionFilter` |
@@ -166,7 +166,7 @@ Phase B (B1–B5) starts only after A8 user go-ahead.
 | R1 | **Two `ConcreteCartridge` types** — conflation in docs/PRs | Rename kernel moved type to `ConcretePolicyEvaluator` or `ConcreteGateCartridge`; grep CI |
 | R2 | **GateCartridge invent** — no existing evidence method on trait | Phase B delivers `transition_evidence`; bridge from `mix_proposal` f64 during migration |
 | R3 | **THMC Wave 1 before A6/T3 locked** — rename moving physics | Guard: `thmc_drying_shrinkage` byte-equivalent; stop+report if parity breaks |
-| R4 | **Frozen HTTP/C-ABI strings** — `thermodynamic_transition_admissible`, JSON fields | `serde(alias)`, C-ABI alias layer in egoff; schema bump |
+| R4 | **Frozen HTTP/C-ABI strings** — `thermodynamic_transition_admissible`, JSON fields | `serde(alias)`, C-ABI alias layer in cockpit; schema bump |
 | R5 | **Digest pin cascade** on universal badge rename | Single logical step: Rust + `catalog.json` + digest regen + cartridge pin |
 | R6 | **ThmcSolver bound** — today requires full `IScienceCartridge` but ignores cartridge | A6 documents; B3 relaxes to `SpatialCartridge` only on solver paths |
 | R7 | **Open PRs #23–27** — ledger/docs drift | Rebase after Phase A doc-only merges; no kernel conflict expected |

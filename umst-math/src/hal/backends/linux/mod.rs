@@ -28,7 +28,7 @@ pub use self::npu::IntelNpu;
 pub use self::port::LinuxPort;
 pub use self::ram::LinuxRam;
 
-/// Assemble the seven-lane inventory + P14s profile; also returns NED permission strings for `egoff` `tracing::warn!`.
+/// Assemble the seven-lane inventory + P14s profile; also returns NED permission strings for cockpit `tracing::warn!`.
 pub fn build_linux_inventory() -> (HardwareInventory, Vec<String>, usize) {
     let mut warn = Vec::new();
     let cpu = IntelCpu::new();

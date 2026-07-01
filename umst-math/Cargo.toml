@@ -2,7 +2,7 @@
 name = "umst-math"
 version = "0.1.0"
 edition = "2021"
-description = "UMST mathematical kernel — Rust mirror of tytolabs Lean formalizations (Egoff Phase 2)"
+description = "UMST mathematical kernel — Rust mirror of tytolabs Lean formalizations (UMST Phase 2)"
 license = "MIT"
 rust-version = "1.74"
 

@@ -38,7 +38,7 @@ pub const THEOREM_REGISTRY: &[(&str, &str)] = &[
     ("UMST.Formal.Naturality::functor_compose_vertex", "10.5281/zenodo.19159660"),
     ("UMST.Formal.Naturality::relabeling_coherent", "10.5281/zenodo.19159660"),
     ("UMST.Formal.MonoidalState::tensor_product_monoid", "10.5281/zenodo.19159660"),
-    // Phase M4 — egoff consumer: `egoff/src/credit.rs` (`record_contribution` / influence mass)
+    // Phase M4 — cockpit consumer: `cockpit credit module` (`record_contribution` / influence mass)
     ("UMST.Formal.CreditGreedy::credit_greedy_optimal", "10.5281/zenodo.19159660"),
     ("UMST.Formal.Dignity::dignity_monotone_under_mi_gain", "10.5281/zenodo.19159660"),
     ("UMST.Formal.EtaCog::eta_cog_nonneg", "10.5281/zenodo.19159660"),

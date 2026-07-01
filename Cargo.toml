@@ -99,7 +99,7 @@ epistemic-ppo = ["train"]
 kleisli-ppo-hot-bind = ["train"]
 design-query = ["mechanics-adjoint-q1-hex", "topology-density-evolution"]
 design-implicit-field = ["topology-density-evolution"]
-# Landauer / CODATA via `umst-math` (enabled from egoff `manifold-integration`).
+# Landauer / CODATA via `umst-math` (enabled from cockpit manifold-integration `manifold-integration`).
 math-constants = ["dep:umst-math", "dep:ordered-float", "umst-math/math-constants"]
 
 [dependencies]
@@ -109,12 +109,12 @@ serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = "1.0"
 tracing = "0.1"
 bincode = "=2.0.0-rc.3"
-# I-0 egoff coupling: align with zeroclaw/matrix-sdk `time ^0.3.44` (was `=0.3.40`).
+# I-0 cockpit coupling: align with zeroclaw/matrix-sdk `time ^0.3.44` (was `=0.3.40`).
 time = "0.3.47"
 rand = "0.8"
 num-traits = "0.2"
 sha2 = "0.10"
-# SSOT: workspace member `umst-math/` (moved from egoff; W3).
+# SSOT: workspace member `umst-math/` (moved from legacy cockpit; W3).
 umst-math = { path = "umst-math", optional = true }
 ordered-float = { version = "5.1", optional = true }
 

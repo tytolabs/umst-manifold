@@ -5,7 +5,7 @@
 //!
 //! # I5
 //! A row [`super::presence::UnitPresence::AbsentByConfig`] means *no fabrication*; empty inventory
-//! in egoff is valid (stub).
+//! in cockpit runtime is valid (stub).
 
 use std::sync::Arc;
 

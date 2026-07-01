@@ -1,4 +1,4 @@
-# Environment variable migration (EGOFF → UMST)
+# Environment variable migration (cockpit → UMST)
 
 **Status:** Complete (2026-06-19) — env overrides and registry `name` column `umst_*` identifiers migrated.  
 **Breaking:** Operators must update shell exports and deployment configs.
@@ -14,7 +14,7 @@
 | `EGOFF_MEMORY_RETENTION_DEGRADE_FIRST` | `UMST_MEMORY_RETENTION_DEGRADE_FIRST` |
 | `EGOFF_MEMORY_HILBERT_BITS` | `UMST_MEMORY_HILBERT_BITS` |
 
-## Cockpit + TUI (batch 1)
+## cockpit + TUI (batch 1)
 
 | Legacy | New |
 |--------|-----|
@@ -65,4 +65,4 @@
 |--------|-----|
 | `EGOFF_TOOLCHAIN_PIN_STRICT` | `UMST_TOOLCHAIN_PIN_STRICT` |
 
-**Verify:** `rg 'env_override: Some\("EGOFF' umst-math/src/constants/registry.rs` → empty; `cargo test -p umst-math --lib`.
+**Verify:** `rg 'env_override: Some\("cockpit' umst-math/src/constants/registry.rs` → empty; `cargo test -p umst-math --lib`.
