@@ -2,7 +2,7 @@
 
 use crate::landauer::K_B;
 
-/// Operator UX upper bound (egoff `dignity_scalar` scale, `10 · RCC`).
+/// Operator UX upper bound (cockpit `dignity_scalar` scale, `10 · RCC`).
 pub const D_MAX: f64 = 10.0;
 
 #[inline]

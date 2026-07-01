@@ -64,10 +64,10 @@ This note is the SSOT for `into_data` / `into_scalar` allowlist rationale in [`s
 - **`umst-research/checkpoint_policy.rs`:** trait + vault/cartridge adapters.
 - Vault `DeviationTracker` → `DeviationCheckpoint`; cartridge B6 peak via `CompliancePeakCheckpoint`.
 
-## H6 — Cockpit budget (shipped 2026-06-28, manifold stub)
+## H6 — cockpit budget (shipped 2026-06-28, manifold stub)
 
-- **`solve_budget.rs`:** `CockpitSnapshot` → `Q1HexSolveOptions` (`pcg_max_iter`, warm-start, op-cache).
-- Vault `apply_cockpit_budget`; egoff wire deferred (repo absent).
+- **`solve_budget.rs`:** `cockpitSnapshot` → `Q1HexSolveOptions` (`pcg_max_iter`, warm-start, op-cache).
+- Vault `apply_cockpit_budget`; cockpit wire deferred (repo absent).
 
 ## Maintenance
 

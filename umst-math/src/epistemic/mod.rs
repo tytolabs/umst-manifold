@@ -1,7 +1,7 @@
 //! Epistemic probes, policy hooks, and **proxy ranking** (Phase K1).
 //!
 //! Host-adaptive *policy* (cockpit / meta-loop) may tune [`selector::SelectorParams`] in Phase N3+;
-//! this module stays **ISA-agnostic** pure math (§0.3 `egoffplan.md`).
+//! this module stays **ISA-agnostic** pure math (§0.3 `docs/HSAD_PLAN.md`).
 
 pub mod selector;
 

@@ -11,7 +11,7 @@ pub struct KahanSum {
 }
 
 impl KahanSum {
-    /// Proof: numerical analysis standard; used for Shannon / von Neumann sums in Egoff hot path.
+    /// Proof: numerical analysis standard; used for Shannon / von Neumann sums in cockpit hot path.
     /// DOI: 10.5281/zenodo.19159660
     pub fn new() -> Self {
         Self { sum: 0.0, c: 0.0 }

@@ -1,6 +1,6 @@
 //! Tokenisation and lightweight text normalisation (ASCII/CJK fast path).
 //!
-//! Moved from Egoff `physics.rs` — see `egoff/egoffimprov.md` Phase 2 §5.4.
+//! Moved from legacy cockpit physics module `physics.rs` — see `docs/CGD_REGISTRY.md` Phase 2 §5.4.
 
 use std::collections::HashMap;
 
@@ -8,7 +8,7 @@ use std::collections::HashMap;
 ///
 /// Handles CJK (Chinese, Japanese, Korean) characters as individual tokens.
 ///
-/// Proof: classical token distribution / mesoscopic gate input (see `egoff/egoffimprov.md` §5.4).
+/// Proof: classical token distribution / mesoscopic gate input (see `docs/CGD_REGISTRY.md` §5.4).
 /// DOI: 10.5281/zenodo.19159660
 pub fn tokenise(text: &str) -> Vec<String> {
     let mut tokens = Vec::new();
@@ -66,7 +66,7 @@ pub fn strip_think_tags(text: &str) -> String {
 
 /// Empirical token distribution from a token sequence (classical mesoscopic gate input).
 ///
-/// Proof: empirical mass vector for Shannon **H** on token multiset (see [`tokenise`] / `egoff/egoffimprov.md` §5.4).
+/// Proof: empirical mass vector for Shannon **H** on token multiset (see [`tokenise`] / `docs/CGD_REGISTRY.md` §5.4).
 /// DOI: 10.5281/zenodo.19159660
 pub fn token_distribution(tokens: &[String]) -> HashMap<String, f64> {
     if tokens.is_empty() {

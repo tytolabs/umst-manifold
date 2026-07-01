@@ -1,4 +1,4 @@
-/* Re-implemented in egoff §14bis.f-H-9; inspired by
+/* Re-implemented in cockpit §14bis.f-H-9; inspired by
  * tytolabs/umst-prototype-2a@9c0434d3ebade8f697bbd402bb080ea00da76914
  * /prototype/src/rust/core/src/hardware/rapl.rs (read-only inspiration; no code lifted).
  * SPDX-License-Identifier: MIT

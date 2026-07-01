@@ -22,7 +22,7 @@ pub use scalar::{
     sample_percentile_scalar, BandLabel,
 };
 
-/// Labels for cockpit telemetry (`KernelDispatchReport` in egoff). Values are `"scalar"` or `"simd"`.
+/// Labels for cockpit telemetry (`KernelDispatchReport` in cockpit). Values are `"scalar"` or `"simd"`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct KernelDispatchLabels {
     /// `rho_mi_from_samples` implementation.

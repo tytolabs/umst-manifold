@@ -1,6 +1,6 @@
 //! Compile-time registry of cockpit / core numerical constants (CGD).
 //!
-//! Human-readable mirror: `egoff/egoffimprov.md` §24a (Constants Grounding Registry).
+//! Human-readable mirror: `docs/CGD_REGISTRY.md` §24a (Constants Grounding Registry).
 //! Tier-2 rows carry `pending: Phase FPD-*` until the corresponding formal slice lands.
 
 /// One documented numerical parameter (value, tier, evidence, optional env).
@@ -12,7 +12,7 @@ pub struct ConstantEntry {
     pub name: &'static str,
     /// Human-readable value or derivation.
     pub expression: &'static str,
-    /// CGD tier (see `egoffplan.md` §0.4).
+    /// CGD tier (see `docs/HSAD_PLAN.md` §0.4).
     pub tier: ConstantTier,
     /// Lean path, design-brief pointer, or `pending: Phase FPD-*`.
     pub evidence: &'static str,
@@ -20,7 +20,7 @@ pub struct ConstantEntry {
     pub env_override: Option<&'static str>,
 }
 
-/// Five-tier constants grounding taxonomy (`egoffplan.md` §0.4).
+/// Five-tier constants grounding taxonomy (`docs/HSAD_PLAN.md` §0.4).
 /// ZCI-EXEMPT: `ConstantTier` is a taxonomy only; per-row theorems are on each `REGISTRY` entry.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[allow(missing_docs)]
@@ -32,8 +32,8 @@ pub enum ConstantTier {
     Tier4Infra,
 }
 
-/// Authoritative registry (keep in lock-step with `egoff/egoffimprov.md` §24a).
-/// CONSTANT-BOUND: … + §14bis.f-M-6 (+2) + §14bis.f-M-7 (+1 mcert) + foundation Phase 3 (+4) = **166** (mirror `egoff/egoffimprov.md` §24a)
+/// Authoritative registry (keep in lock-step with `docs/CGD_REGISTRY.md` §24a).
+/// CONSTANT-BOUND: … + §14bis.f-M-6 (+2) + §14bis.f-M-7 (+1 mcert) + foundation Phase 3 (+4) = **166** (mirror `docs/CGD_REGISTRY.md` §24a)
 pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "landauer_floor_j_per_bit",
@@ -102,12 +102,12 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "process_joules_estimate",
         expression: "cpu_watts · Δt · util_frac (EnergyService port)",
         tier: ConstantTier::Tier1Measurement,
-        evidence: "maos-core EnergyService.ts formulas + egoff cockpit energy unit tests",
+        evidence: "maos-core EnergyService.ts formulas + cockpit energy unit tests",
         env_override: None,
     },
     ConstantEntry {
         name: "hub_inter_sample_period_ms",
-        expression: "Wall-clock gap between consecutive CockpitHub::sample_now timestamps; fallback DEFAULT_COCKPIT_SAMPLE_PERIOD_MS=500",
+        expression: "Wall-clock gap between consecutive cockpitHub::sample_now timestamps; fallback DEFAULT_COCKPIT_SAMPLE_PERIOD_MS=500",
         tier: ConstantTier::Tier1Measurement,
         evidence: "COCKPIT_DESIGN_BRIEF.md §5 polling hold; hub.rs last_inter_sample_period_ms",
         env_override: None,
@@ -117,7 +117,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "hal_intel_cpu_logical_cores",
         expression: "provenance: /proc/cpuinfo; runtime value: umst_math::hal::backends::linux::sysfs::cpuinfo_logical_cores (H-9); unmeasured: permission_denied if file unreadable",
         tier: ConstantTier::Tier1Measurement,
-        evidence: "Measurement (H-9; NED §0.5); /proc/cpuinfo; egoff startup HAL",
+        evidence: "Measurement (H-9; NED §0.5); /proc/cpuinfo; cockpit startup HAL",
         env_override: None,
     },
     ConstantEntry {
@@ -257,28 +257,28 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "umst_ffi_abi_version_min_compatible",
         expression: "7",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Phase N-abi-version-gate — egoffimprov §24; `UMST_FFI_ABI_VERSION_MIN_COMPATIBLE` / `assertAbiCompatible`",
+        evidence: "Phase N-abi-version-gate — docs/CGD_REGISTRY.md §24; `UMST_FFI_ABI_VERSION_MIN_COMPATIBLE` / `assertAbiCompatible`",
         env_override: None,
     },
     ConstantEntry {
         name: "cockpit_http_cors_open",
         expression: "unset / not 1 → localhost-only `Origin` on GET /v1/cockpit/snapshot; 1 → permissive CORS",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Phase N6-TUI-cockpit-panels — egoffimprov §24a; egoff/src/api.rs",
+        evidence: "Phase N6-TUI-cockpit-panels — docs/CGD_REGISTRY.md §24a; cockpit HTTP API",
         env_override: Some("UMST_COCKPIT_HTTP_CORS_OPEN"),
     },
     ConstantEntry {
         name: "umst_discovery_refresh_secs",
-        expression: "default 3600 s; interval between per-provider `models` list HTTP polls in CockpitHub::start",
+        expression: "default 3600 s; interval between per-provider `models` list HTTP polls in cockpitHub::start",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Phase B-extend — model_discovery + cockpit hub; egoffimprov §24a; COCKPIT_DESIGN_BRIEF",
+        evidence: "Phase B-extend — model_discovery + cockpit hub; docs/CGD_REGISTRY.md §24a; COCKPIT_DESIGN_BRIEF",
         env_override: Some("UMST_DISCOVERY_REFRESH_SECS"),
     },
     ConstantEntry {
         name: "umst_tool_timeout_secs",
-        expression: "default 30 s; per-operator-tool wall-clock budget (egoff operator_toolpalette, shell spawn timeout, reqwest, glob/grep walk)",
+        expression: "default 30 s; per-operator-tool wall-clock budget (operator tool palette, shell spawn timeout, reqwest, glob/grep walk)",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Phase C — zeroclaw tool palette; egoffimprov §24a; egoff/COCKPIT_DESIGN_BRIEF",
+        evidence: "Phase C — zeroclaw tool palette; docs/CGD_REGISTRY.md §24a; COCKPIT_DESIGN_BRIEF.md",
         env_override: Some("UMST_TOOL_TIMEOUT_SECS"),
     },
     ConstantEntry {
@@ -306,14 +306,14 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "umst_math_simd_feature",
         expression: "default off (`cargo build -p umst-math --features simd`)",
         tier: ConstantTier::Tier4Infra,
-        evidence: "Phase M-simd — portable_simd kernels; egoffimprov §24",
+        evidence: "Phase M-simd — portable_simd kernels; docs/CGD_REGISTRY.md §24",
         env_override: None,
     },
     ConstantEntry {
         name: "umst_haskell_toolchain_reference",
-        expression: "GHC 9.10.3 + cabal ≥ 3.12.1.0 (pinned in repo root egoff-haskell-toolchain.txt)",
+        expression: "GHC 9.10.3 + cabal ≥ 3.12.1.0 (pinned in repo root umst-haskell-toolchain.txt)",
         tier: ConstantTier::Tier4Infra,
-        evidence: "egoff-haskell-toolchain.txt; scripts/run-ffi-tests.sh native Haskell gate",
+        evidence: "umst-haskell-toolchain.txt; scripts/run-ffi-tests.sh native Haskell gate",
         env_override: Some("UMST_NATIVE_GHC"),
     },
     ConstantEntry {
@@ -327,7 +327,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "umst_epistemic_proxy_estimator",
         expression: "donsker_varadhan | info_nce (default donsker_varadhan)",
         tier: ConstantTier::Tier3Policy,
-        evidence: "H-2 epistemic proxy in egoff; shape from umst-prototype-2a epistemic_proxy_selector; COCKPIT_DESIGN_BRIEF + §24a",
+        evidence: "H-2 epistemic proxy in cockpit runtime; shape from umst-prototype-2a epistemic_proxy_selector; COCKPIT_DESIGN_BRIEF + §24a",
         env_override: Some("UMST_EPISTEMIC_PROXY_ESTIMATOR"),
     },
     ConstantEntry {
@@ -382,9 +382,9 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "umst_wide_gate_strict",
-        expression: "if true, scripts/verify-egoff-wide.sh fails on soft cells (G4, G6) without --baseline-mode; policy flag is CLI-only",
+        expression: "if true, scripts/scripts/verify-umst-wide.sh fails on soft cells (G4, G6) without --baseline-mode; policy flag is CLI-only",
         tier: ConstantTier::Tier3Policy,
-        evidence: "§14bis.l W-1; `scripts/verify-egoff-wide.sh`; not env-driven (parametric: --strict default)",
+        evidence: "§14bis.l W-1; `scripts/scripts/verify-umst-wide.sh`; not env-driven (parametric: --strict default)",
         env_override: None,
     },
     ConstantEntry {
@@ -410,7 +410,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "umst_tui_render_debounce_ms",
-        expression: "16 (TUI telemetry coalescing window; §14bis.e TUI-5; UMST_TUI_RENDER_DEBOUNCE_MS; 1..=1000ms clamp in egoff tui runtime)",
+        expression: "16 (TUI telemetry coalescing window; §14bis.e TUI-5; UMST_TUI_RENDER_DEBOUNCE_MS; 1..=1000ms clamp in cockpit TUI runtime)",
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-5; coalesces idle redraws; keystroke fast path stays immediate)",
         env_override: Some("UMST_TUI_RENDER_DEBOUNCE_MS"),
@@ -425,7 +425,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     // CONSTANT-BOUND: `umst_gpu_backend_default` (Tier-3 honest disclosure; expression names default n/a)
     ConstantEntry {
         name: "umst_gpu_backend_default",
-        expression: "n/a (string policy default; unset or UMST_GPU_BACKEND=n/a → CockpitSnapshot.gpu_backend None; §0.5 NED)",
+        expression: "n/a (string policy default; unset or UMST_GPU_BACKEND=n/a → cockpitSnapshot.gpu_backend None; §0.5 NED)",
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6a + §14bis.f H-6a; no fabricated GPU energy reading)",
         env_override: Some("UMST_GPU_BACKEND"),
@@ -455,23 +455,23 @@ pub static REGISTRY: &[ConstantEntry] = &[
     // CONSTANT-BOUND: `umst_npu_backend_default` (Tier-3 honest disclosure; expression names default n/a)
     ConstantEntry {
         name: "umst_npu_backend_default",
-        expression: "n/a (string policy default; unset or UMST_NPU_BACKEND=n/a → CockpitSnapshot.npu_backend None; §0.5 NED)",
+        expression: "n/a (string policy default; unset or UMST_NPU_BACKEND=n/a → cockpitSnapshot.npu_backend None; §0.5 NED)",
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6a + §14bis.f H-6a; no fabricated NPU energy reading)",
         env_override: Some("UMST_NPU_BACKEND"),
     },
-    // CONSTANT-BOUND: `umst_closed_loop_rcc_accept_tick` (Tier-3 RCC policy per accept; egoffplan §0.4 CGD)
+    // CONSTANT-BOUND: `umst_closed_loop_rcc_accept_tick` (Tier-3 RCC policy per accept; HSAD plan §0.4 CGD)
     ConstantEntry {
         name: "umst_closed_loop_rcc_accept_tick",
         expression: "0.001 per accepted proposal (RCC += tick, cap 1.0)",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Definition (egoffplan §0.4 CGD; `closed_loop::record_proposal_with_prompt` accept path)",
+        evidence: "Definition (HSAD plan §0.4 CGD; `closed_loop::record_proposal_with_prompt` accept path)",
         env_override: None,
     },
     // CONSTANT-BOUND: `umst_cockpit_smoothing_default` (TUI-7 EKF / Kalman / none; REGISTRY string policy)
     ConstantEntry {
         name: "umst_cockpit_smoothing_default",
-        expression: "ekf (string policy; UMST_COCKPIT_SMOOTHING ∈ {ekf, kalman, none}; per-metric [`MetricSmoother`] bundle on CockpitHub::sample_now)",
+        expression: "ekf (string policy; UMST_COCKPIT_SMOOTHING ∈ {ekf, kalman, none}; per-metric [`MetricSmoother`] bundle on cockpitHub::sample_now)",
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-7; `umst-math::smoothing` vendor umst-prototype-2a; :explain raw+smoothed+variance)",
         env_override: Some("UMST_COCKPIT_SMOOTHING"),
@@ -547,7 +547,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         evidence: "TUI-7 `SEQ4`; 9c0434d3; (b) R from S_z / V4̄ clamp; excludes landauer from V4̄ to avoid scale blow-up",
         env_override: None,
     },
-    // CONSTANT-BOUND: TUI-6b sRGB (dark theme) + light pair — one stem per M0.4 color slot; leading `#RRGGBB` parse in `egoff::theme`
+    // CONSTANT-BOUND: TUI-6b sRGB (dark theme) + light pair — one stem per M0.4 color slot; leading `#RRGGBB` parse in `cockpit theme module`
     ConstantEntry {
         name: "umst_tui_color_accent_dark",
         expression: "#00FFFF sRGB; TUI-6b **dark** accent (header, sparkline); `tui(Slot::Accent, Dark)`",
@@ -721,7 +721,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "hal_badge_segment_max_chars",
         expression: "64 (TUI [hw=] width cap; H-9)",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Definition (HSAD §0.12; §14bis.f-H-9; egoff::hal::badge::render_hal_badge)",
+        evidence: "Definition (HSAD §0.12; §14bis.f-H-9; cockpit HAL badge renderer)",
         env_override: None,
     },
     ConstantEntry {
@@ -778,7 +778,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "hal_trait_method_count",
         expression: "7 (count of `HardwareUnit` trait methods: enumerate_models, supported_precisions, allocate, infer, deallocate, power_state, drift_window; §14bis.f-H-8)",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Definition (HSAD §0.12; FORWARD-PLAN v1.2 Q5/G5; H-8 trait surface; egoff/egoffimprov §24a; umst-math::hal::traits::HardwareUnit)",
+        evidence: "Definition (HSAD §0.12; FORWARD-PLAN v1.2 Q5/G5; H-8 trait surface; docs/CGD_REGISTRY.md §24a; umst-math::hal::traits::HardwareUnit)",
         env_override: None,
     },
     ConstantEntry {
@@ -888,7 +888,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         evidence: "pending: Phase FPD-M-Arc-HilbertSpan",
         env_override: None,
     },
-    // §14bis.f-M-1 — `egoff::memory` (sled schema v1; B-Arc placeholders; Tier-3 for schema + default res)
+    // §14bis.f-M-1 — `cockpit memory module` (sled schema v1; B-Arc placeholders; Tier-3 for schema + default res)
     ConstantEntry {
         name: "umst_memory_default_resolution_bits",
         expression: "12 (B-Arc; M-1 clamps to umst `canonicalize_voxelize` 1..=10; recorded `ResolutionLevel.bits` may be 12)",
@@ -919,7 +919,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "umst_memory_schema_version",
-        expression: "1 (bincode v1; see `egoff::memory::schema`)",
+        expression: "1 (bincode v1; see `cockpit memory module schema`)",
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (M-1 sled `MemoryV1` wire; migration path: bump + multi-decode in M-2+)",
         env_override: None,
@@ -936,28 +936,28 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "umst_memory_m2_promote_ceremony_atomic",
         expression: "1 (fail-fast 8-step Local→Shared promotion; operator `:promote` + registry + serial-scan + attestation)",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Definition (§14bis.f-M-2; THEOREM-BOUND ceremony; `egoff::memory::promote`)",
+        evidence: "Definition (§14bis.f-M-2; THEOREM-BOUND ceremony; `cockpit memory module promote`)",
         env_override: None,
     },
     ConstantEntry {
         name: "umst_memory_m2_sanitize_serial_kinds_count",
         expression: "5 (MAC ascii, cpuinfo serial, GPU UUID v4 ascii, IOPlatformSerialNumber, kernel leaf)",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Definition (§14bis.f-M-2 GMD-6; `egoff::memory::sanitize::SerialKind`)",
+        evidence: "Definition (§14bis.f-M-2 GMD-6; `cockpit memory module sanitize::SerialKind`)",
         env_override: None,
     },
     ConstantEntry {
         name: "umst_memory_m2_promotion_requires_theorem_default",
         expression: "1 (default `UMST_MEMORY_PROMOTION_REQUIRE_THEOREM=1`; Z-cert branch deferred)",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Definition (§14bis.f-M-2; CONSTANT-BOUND default; `egoff::memory::promotion_require_theorem_enabled`)",
+        evidence: "Definition (§14bis.f-M-2; CONSTANT-BOUND default; `cockpit memory module promotion_require_theorem_enabled`)",
         env_override: Some("UMST_MEMORY_PROMOTION_REQUIRE_THEOREM"),
     },
     ConstantEntry {
         name: "umst_memory_m2_serial_scrub_placeholder_len",
-        expression: "17 (`<EGOFF-SCRUBBED>` byte length; preview scrub only)",
+        expression: "17 (`<UMST-SCRUBBED>` byte length; preview scrub only)",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Definition (§14bis.f-M-2; `egoff::memory::sanitize::SCRUB_PLACEHOLDER`)",
+        evidence: "Definition (§14bis.f-M-2; `cockpit memory module sanitize::SCRUB_PLACEHOLDER`)",
         env_override: None,
     },
     ConstantEntry {
@@ -1130,7 +1130,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "umst_mcert_strict_paired_default",
-        expression: "0 (`egoff mcert --paired` / `:mcert --paired` opt-in heavy scripts)",
+        expression: "0 (`umst mcert --paired` / `:mcert --paired` opt-in heavy scripts)",
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-7; `run_mcert_paired`)",
         env_override: Some("UMST_MCERT_STRICT_PAIRED"),
@@ -1139,7 +1139,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "umst_action_shape_canonicalize_kind",
         expression: "blake3 preimage over FNV-8 + voxel f64 block + axis bits (§14bis.f-M-4)",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Definition (§14bis.f-M-4; `egoff::credit::action_sdf_canonicalize`)",
+        evidence: "Definition (§14bis.f-M-4; `cockpit action SDF canonicalizer`)",
         env_override: None,
     },
     ConstantEntry {
@@ -1246,7 +1246,7 @@ pub fn registry_sorted_by_tier() -> std::vec::Vec<&'static ConstantEntry> {
     v
 }
 
-/// Parse the markdown table in `egoffimprov.md` §24a: first column of each data row (after the header row).
+/// Parse the markdown table in `docs/CGD_REGISTRY.md` §24a: first column of each data row (after the header row).
 #[cfg(test)]
 fn parse_24a_first_column_names(text: &str) -> Option<std::collections::HashSet<String>> {
     use std::collections::HashSet;
@@ -1364,13 +1364,13 @@ mod tests {
         assert!(sha.chars().all(|c| c.is_ascii_hexdigit()));
     }
 
-    /// §24a first column (`egoffimprov.md`) must list the same machine ids as [`REGISTRY`] `name`s (set equality).
+    /// §24a first column (`docs/CGD_REGISTRY.md`) must list the same machine ids as [`REGISTRY`] `name`s (set equality).
     #[test]
-    fn registry_machine_ids_mirror_egoffimprov_section_24a() {
+    fn registry_machine_ids_mirror_cgd_section_24a() {
         use std::collections::HashSet;
         use std::path::PathBuf;
 
-        let md = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../egoff/egoffimprov.md");
+        let md = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../docs/CGD_REGISTRY.md");
         let Ok(raw) = std::fs::read_to_string(&md) else {
             println!(
                 "SKIP §24a parity: cannot read {} (non-dev harness)",
@@ -1379,7 +1379,7 @@ mod tests {
             return;
         };
         let parsed = super::parse_24a_first_column_names(&raw)
-            .expect("egoffimprov.md must contain ## 24a. and a following ## section header");
+            .expect("docs/CGD_REGISTRY.md must contain ## 24a. and a following ## section header");
         let expected: HashSet<&str> = REGISTRY.iter().map(|e| e.name).collect();
         let got: HashSet<&str> = parsed.iter().map(String::as_str).collect();
         assert_eq!(

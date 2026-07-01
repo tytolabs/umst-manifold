@@ -1,6 +1,6 @@
 //! Unified cryptographic surface errors (`§14bis.f-S-0`).
 
-/// Crate-wide cryptographic failures surfaced to ε-bisim witnesses (`egoff` §24).
+/// Crate-wide cryptographic failures surfaced to ε-bisim witnesses (§24 ε-bisim witnesses).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum CryptoError {
     /// ML-KEM encapsulation or decapsulation failed after parsing inputs.

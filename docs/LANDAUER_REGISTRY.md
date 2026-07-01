@@ -38,4 +38,4 @@ Solver-facing grounded rows live in `src/constants_registry.rs` (`k_boltzmann_j_
 
 - No duplicate of the full cockpit §24a [`constants::registry`](../../umst-math/src/constants/registry.rs) table.
 - No THMC reaction-extent floats (see `docs/CONSTANTS.md` TODO rows).
-- No IO or operator env overrides in this module (those stay in egoff cockpit layers).
+- No IO or operator env overrides in this module (those stay in cockpit layers).

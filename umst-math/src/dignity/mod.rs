@@ -1,6 +1,6 @@
 //! Thermodynamic–epistemic dignity scalar (Lean `UMST.Formal.Dignity`).
 //!
-//! Pure `f64` engineering mirror; see crate-level ISA note for Egoff integration.
+//! Pure `f64` engineering mirror; see crate-level ISA note for cockpit integration.
 
 pub mod core;
 

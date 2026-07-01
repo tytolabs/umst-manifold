@@ -1,68 +1,22 @@
-# Environment variable migration (EGOFF → UMST)
+# Environment variable migration (cockpit → UMST)
 
 **Status:** Complete (2026-06-19) — env overrides and registry `name` column `umst_*` identifiers migrated.  
 **Breaking:** Operators must update shell exports and deployment configs.
 
-## Memory family (H4a)
+## Pattern (all families)
 
-| Legacy | New |
-|--------|-----|
-| `EGOFF_MEMORY_PROMOTION_REQUIRE_THEOREM` | `UMST_MEMORY_PROMOTION_REQUIRE_THEOREM` |
-| `EGOFF_MEMORY_EPHEMERAL_TTL_HOURS` | `UMST_MEMORY_EPHEMERAL_TTL_HOURS` |
-| `EGOFF_MEMORY_RETENTION_ALPHA` | `UMST_MEMORY_RETENTION_ALPHA` |
-| `EGOFF_MEMORY_RETENTION_EVICT` | `UMST_MEMORY_RETENTION_EVICT` |
-| `EGOFF_MEMORY_RETENTION_DEGRADE_FIRST` | `UMST_MEMORY_RETENTION_DEGRADE_FIRST` |
-| `EGOFF_MEMORY_HILBERT_BITS` | `UMST_MEMORY_HILBERT_BITS` |
+Legacy deployments used a **vendor-prefixed** environment namespace for the external cockpit runtime.  
+All such variables now use the **`UMST_`** prefix with the same suffix (memory, cockpit, discovery, manifold, LLM, toolchain, etc.).
 
-## Cockpit + TUI (batch 1)
+| Family | Migration rule |
+|--------|----------------|
+| Memory (H4a) | `…_MEMORY_*` vendor prefix → `UMST_MEMORY_*` |
+| Cockpit + TUI | `…_COCKPIT_*` / `…_TUI_*` → `UMST_COCKPIT_*` / `UMST_TUI_*` |
+| Discovery + tools | `…_DISCOVERY_*`, `…_TOOL_*`, `…_EMBEDDING_*` → `UMST_*` |
+| Manifold + energy | `…_MANIFOLD_*`, `…_ENERGY_*`, `…_GPU_*`, `…_NPU_*` → `UMST_*` |
+| LLM + misc | `…_LLM_*`, `…_MSDF_*`, `…_MCERT_*`, `…_ACTION_SHAPE_*` → `UMST_*` |
+| Toolchain pin | `…_TOOLCHAIN_PIN_STRICT` → `UMST_TOOLCHAIN_PIN_STRICT` |
 
-| Legacy | New |
-|--------|-----|
-| `EGOFF_COCKPIT_HOST_TEMPERATURE_K` | `UMST_COCKPIT_HOST_TEMPERATURE_K` |
-| `EGOFF_COCKPIT_STALENESS_CYCLES` | `UMST_COCKPIT_STALENESS_CYCLES` |
-| `EGOFF_COCKPIT_MAX_DELTA_MI_BITS` | `UMST_COCKPIT_MAX_DELTA_MI_BITS` |
-| `EGOFF_COCKPIT_AUDIT_*` | `UMST_COCKPIT_AUDIT_*` |
-| `EGOFF_COCKPIT_HTTP_CORS_OPEN` | `UMST_COCKPIT_HTTP_CORS_OPEN` |
-| `EGOFF_COCKPIT_SMOOTHING` | `UMST_COCKPIT_SMOOTHING` |
-| `EGOFF_COCKPIT_WEIGHT_WASTEFUL` … `LANDAUER_FLOOR` (six) | `UMST_COCKPIT_WEIGHT_*` |
-| `EGOFF_TUI_RENDER_DEBOUNCE_MS` | `UMST_TUI_RENDER_DEBOUNCE_MS` |
+**Authoritative list:** `umst-math/src/constants/registry.rs` (`env_override` column).
 
-## Discovery + tool + embedding (batch 2)
-
-| Legacy | New |
-|--------|-----|
-| `EGOFF_DISCOVERY_LRU_CAPACITY` | `UMST_DISCOVERY_LRU_CAPACITY` |
-| `EGOFF_DISCOVERY_REFRESH_SECS` | `UMST_DISCOVERY_REFRESH_SECS` |
-| `EGOFF_TOOL_TIMEOUT_SECS` | `UMST_TOOL_TIMEOUT_SECS` |
-| `EGOFF_EMBEDDING_TIMEOUT_SECONDS` | `UMST_EMBEDDING_TIMEOUT_SECONDS` |
-
-## Manifold + energy + GPU + epistemic (batch 3)
-
-| Legacy | New |
-|--------|-----|
-| `EGOFF_MANIFOLD_*` (4) | `UMST_MANIFOLD_*` |
-| `EGOFF_ENERGY_BACKEND` | `UMST_ENERGY_BACKEND` |
-| `EGOFF_GPU_BACKEND` | `UMST_GPU_BACKEND` |
-| `EGOFF_NPU_BACKEND` | `UMST_NPU_BACKEND` |
-| `EGOFF_EPISTEMIC_PROXY_ESTIMATOR` | `UMST_EPISTEMIC_PROXY_ESTIMATOR` |
-
-## LLM + misc (batch 4)
-
-| Legacy | New |
-|--------|-----|
-| `EGOFF_LLM_CHAIN_MODE` | `UMST_LLM_CHAIN_MODE` |
-| `EGOFF_LLM_TIER_FALLBACK_CHAIN_GEMINI` | `UMST_LLM_TIER_FALLBACK_CHAIN_GEMINI` |
-| `EGOFF_NATIVE_GHC` | `UMST_NATIVE_GHC` |
-| `EGOFF_SEMANTIC_THRESHOLD` | `UMST_SEMANTIC_THRESHOLD` |
-| `EGOFF_MSDF_*` | `UMST_MSDF_*` |
-| `EGOFF_MCERT_STRICT_PAIRED` | `UMST_MCERT_STRICT_PAIRED` |
-| `EGOFF_ACTION_SHAPE_*` | `UMST_ACTION_SHAPE_*` |
-| `EGOFF_UCRS_MEMORY_PHASE_BIND` | `UMST_UCRS_MEMORY_PHASE_BIND` |
-
-## Toolchain pin (non-registry)
-
-| Legacy | New |
-|--------|-----|
-| `EGOFF_TOOLCHAIN_PIN_STRICT` | `UMST_TOOLCHAIN_PIN_STRICT` |
-
-**Verify:** `rg 'env_override: Some\("EGOFF' umst-math/src/constants/registry.rs` → empty; `cargo test -p umst-math --lib`.
+**Verify:** `rg 'env_override: Some\("cockpit' umst-math/src/constants/registry.rs` → empty; `cargo test -p umst-math --lib`.
