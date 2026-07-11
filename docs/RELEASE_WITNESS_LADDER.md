@@ -1,7 +1,7 @@
 # Release witness profile ladder
 
 > **Public name:** *release witness profile* (strict catalog match + ordered gate witnesses).  
-> **Filename note:** Legacy stub at `GOD_GRADE_WITNESS_LADDER.md` redirects here; use this path in new docs.
+> **Filename note:** Legacy stub at `QUALITY_WITNESS_LADDER.md` redirects here; use this path in new docs.
 
 **As of:** 2026-05-21  
 **Audience:** Integrators, reviewers, and contributors wiring UMST formal → manifold → cartridges.

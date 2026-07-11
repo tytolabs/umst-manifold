@@ -31,7 +31,7 @@ The point is what happens when the state changes. Every proposed change must pas
 
 The whole thing lives on a smooth, differentiable manifold, implemented in **Rust on Burn tensors** so it can evolve in real time. Domain-specific **cartridges** (concrete today; language, sound, vision, and embodiment on the roadmap) plug in and compose safely under category-theory laws, and a growing, digest-pinned set of **Lean 4 / Agda / Coq** proofs sits behind the gate.
 
-<!-- readme:god-grade-status -->
+<!-- readme:quality-status -->
 ### What's proven, what isn't (the honest version)
 
 We don't pretend everything is proven. Conservation structure is mathematical, and the thermodynamic gate is enforced in code on every step — but only part of the Lean/Coq/Agda library is hand-wired onto the runtime gate path, **by design**: at inference time the robot runs fast Rust witnesses, not a theorem prover. There are three different things people mean by "done" here — in-repo automation, how much of the proof library is wired on the hot path, and organization-level publishing — and they should **never** be blended into one "completion %". The honest, current accounting of each lives in one place: **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)** (verified ledger: [`docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md`](docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md) — release witness profile rollup).

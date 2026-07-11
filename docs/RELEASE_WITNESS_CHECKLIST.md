@@ -56,7 +56,7 @@ Targets are **engineering budgets** for the policy gateway + scalar gates, not W
 | `cargo test --test regime_soundness_claims_allowlist` | J.3 regime honesty allowlist | `verify_umst_stack.sh` tail |
 | `cargo test --test witness_priority_queue` | Adaptive module priority (tests only) | `verify_umst_stack.sh` tail |
 | `cargo test --test catalog_incremental_graph_drift` | Lock-pinned `module_graph_edge_count` + DAG sanity | `verify_umst_stack.sh` + `catalog_lock_verify.py` |
-| `cargo test --test ci_god_grade_profile` | `UMST_RELEASE_MANIFEST_PROFILE:-1` strict lane default | `verify_umst_stack.sh` tail |
+| `cargo test --test ci_quality_profile` | `UMST_RELEASE_MANIFEST_PROFILE:-1` strict lane default | `verify_umst_stack.sh` tail |
 | Prototype `test_gate_adversarial.py` (E6) | **Optional** — skipped when checkout absent | `verify_umst_stack.sh` |
 | `cargo test` (default) | Physics + integration regression | `umst-manifold` / `rust.yml` |
 
@@ -79,7 +79,7 @@ Targets are **engineering budgets** for the policy gateway + scalar gates, not W
 | 9 | `gate_reject_catalog_id` tests | ✅ | `tests/gate_reject_catalog_id.rs` (6/6) |
 | 10 | `gate_adversarial` golden (Rust SSOT) | ✅ | `tests/gate_adversarial.rs` FNR=0 (75 cases) in `verify_umst_stack.sh` |
 | 11 | Default manifest `catalog_hash` pins lock | ✅ | `UmstManifestBuilder::default()` → `catalog_lock_bundle_sha256_bytes()` |
-| 12 | Release strict witness CI | ✅ | `manifest_strict_witness` in `verify_umst_stack.sh` (`UMST_RELEASE_MANIFEST_PROFILE:-1`); `ci_god_grade_profile` **2/2**; workspace catalog-drift workflow sets profile **1** |
+| 12 | Release strict witness CI | ✅ | `manifest_strict_witness` in `verify_umst_stack.sh` (`UMST_RELEASE_MANIFEST_PROFILE:-1`); `ci_quality_profile` **2/2**; workspace catalog-drift workflow sets profile **1** |
 | 13 | Epistemic trace schema (G.1) | ✅ | `epistemic_trace_schema` in `verify_umst_stack.sh` tail |
 | 14 | Epistemic per-step bounds (G.2) | ✅ | `epistemic_trace_schema` in verify tail — host envelope; **`NumericTraceApproxConsistent` deferred** |
 | 15 | Epistemic η-from-traces (G.3) | ✅ | `trace_calibration` in verify tail — **catalog η stub**; Lean utility witness deferred |
@@ -123,7 +123,7 @@ Targets are **engineering budgets** for the policy gateway + scalar gates, not W
 
 | Criterion | Status | Owner | Verify | Automate? |
 |-----------|--------|-------|--------|-----------|
-| Release default `StrictCatalogMatch` | ✅ **Done** (in-repo) | code | `not(debug_assertions)` → strict; `manifest_strict_witness` + `ci_god_grade_profile` in verify tail | ✅ |
+| Release default `StrictCatalogMatch` | ✅ **Done** (in-repo) | code | `not(debug_assertions)` → strict; `manifest_strict_witness` + `ci_quality_profile` in verify tail | ✅ |
 
 Track **H.1** closed — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) G-04/G-05. Not an automation-row failure.
 
@@ -148,7 +148,7 @@ Track **H.1** closed — [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) G-04/G
 ```bash
 cd umst-manifold
 UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh
-# Tail: catalog_incremental_graph_drift, ci_god_grade_profile,
+# Tail: catalog_incremental_graph_drift, ci_quality_profile,
 # epistemic_trace_schema, trace_calibration, regime_soundness_claims_allowlist,
 # witness_priority_queue
 ```

@@ -21,7 +21,7 @@ cd /path/to/umst-manifold   # or workspace root/umst-manifold
 |----------------|---------|------|-------|
 | **2026-05-29** | `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` | **0** | Stack verify OK; GitHub CI [run 26649667467](https://github.com/tytolabs/umst-manifold/actions/runs/26649667467) success; clippy fix [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437); **G-02** concrete cartridge remote `manifest-bridge` closed; scoped blockers **G-03 + FFI** only |
 | **2026-05-21T22:24:58Z** | `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` | **0** | Recursive pass: epistemic+trace **log guard** (`VERIFY_STEP_LOG`); `w8_publish_readiness.sh` bash `[[` array check; M* matrix all exit 0 |
-| **2026-05-21T22:20:07Z** | `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` | **0** | R0 pin **119**; G.2/G.3 echoed + log guard; `ci_god_grade_profile` epistemic wiring test; solver tests gated |
+| **2026-05-21T22:20:07Z** | `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` | **0** | R0 pin **119**; G.2/G.3 echoed + log guard; `ci_quality_profile` epistemic wiring test; solver tests gated |
 | **2026-05-21T22:01:20Z** | `bash scripts/verify_umst_stack.sh` | **0** | Monorepo sibling formal + prototype E6; fixed duplicate `trace_calibration` integration target |
 | 2026-05-21T21:18:04Z | `bash scripts/verify_umst_stack.sh` | 0 | Prior pin — see [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) |
 

@@ -183,7 +183,7 @@ Define categories:
 
 i.e. \(\alpha\) only schedules **additional** checkpoints inside the fixed composite \(W_4 \circ \cdots \circ W_1\), never replaces it.
 
-**Natural transformation (calibration):** \(\eta : S \Rightarrow T\) from surrogate sensing \(S\) to trace-consistent utility \(T\) is valid only post-\(W_2\) ([GOD_GRADE_WITNESS_LADDER § decision 2](RELEASE_WITNESS_LADDER.md#2-mi-surrogate-safe-iff-gated-post-composition-calibration-η-from-traces)). \(\alpha\) may schedule \(\eta\) fitting from traces; it may not schedule “MI-only” gates.
+**Natural transformation (calibration):** \(\eta : S \Rightarrow T\) from surrogate sensing \(S\) to trace-consistent utility \(T\) is valid only post-\(W_2\) ([QUALITY_WITNESS_LADDER § decision 2](RELEASE_WITNESS_LADDER.md#2-mi-surrogate-safe-iff-gated-post-composition-calibration-η-from-traces)). \(\alpha\) may schedule \(\eta\) fitting from traces; it may not schedule “MI-only” gates.
 
 ### 8.2 Score \(\pi(c; E)\) (design)
 

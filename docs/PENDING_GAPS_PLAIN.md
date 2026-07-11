@@ -163,7 +163,7 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 |--|--|
 | **Blocks** | **0%** for release profile law — debug `cargo test` / `cargo check` still `CatalogPinnedRos2`. |
 | **Already done** | `UMST_RELEASE_MANIFEST_PROFILE=1` → `default()` strict (debug + release); `not(debug_assertions)` strict; `for_release_profile()`; `verify_umst_stack.sh` exit **0** @ **2026-05-22**; `manifest_strict_witness` **4/4**. |
-| **Proof** | `src/manifest/umst_manifest.rs` (`default_grounding_contract`); `ci_god_grade_profile` **4/4**; `manifest_strict_witness` **4/4**. |
+| **Proof** | `src/manifest/umst_manifest.rs` (`default_grounding_contract`); `ci_quality_profile` **4/4**; `manifest_strict_witness` **4/4**. |
 | **Human** | Optional org sign-off if product wants strict on **debug** `Default` too (not required for release binaries). |
 
 #### G-05 — Formal-witness digest auto-filled from lock — **closed**

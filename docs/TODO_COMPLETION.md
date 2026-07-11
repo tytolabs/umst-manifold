@@ -661,7 +661,7 @@ UMST_REQUIRE_FORMAL_EXPORT=1 UMST_FORMAL_ROOT=$WORKSPACE/umst-formal-double-slit
 # → verify_umst_stack: OK (exit 0)
 # → lock: module_count 119, digest 0697014fb5b90a3a…, version 2
 # → tail: epistemic_trace_schema, trace_calibration, regime_soundness_claims_allowlist,
-#         witness_priority_queue, catalog_incremental_graph_drift, ci_god_grade_profile
+#         witness_priority_queue, catalog_incremental_graph_drift, ci_quality_profile
 ```
 
 **Cross-read (2026-05-29):** [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) · [`RELEASE_WITNESS_CHECKLIST.md`](RELEASE_WITNESS_CHECKLIST.md) (**16/16** automation) · W8 **G-01**/**G-02** closed.
