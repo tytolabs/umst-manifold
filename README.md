@@ -693,14 +693,15 @@ The manifold is a substrate. Its value shows up in what gets built on top of it.
 
 ### Related repositories
 
-Shared gate spine (matter / knowing / acting / time) — sibling links only:
+Shared gate spine — **matter** (this repo + concrete) · **knowing** · **acting** · **time**. Each sibling below is listed for how it composes **with this manifold**, not as a generic link dump. Private / out-of-scope cartridges are omitted.
 
-- [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) — cementitious constitutive law + cold-edge MCP (**matter** cartridge)
-- [**UMST Formal Double-Slit**](https://github.com/tytolabs/umst-formal-double-slit) — observation / measurement-cost fiber (**knowing**)
-- [**UMST Formal**](https://github.com/tytolabs/umst-formal) — acting / economic-admissibility fiber (**acting**)
-- [**UMST-UCRS**](https://github.com/tytolabs/umst-ucrs) — temporal witness / stamp spine (**time**)
+| Repository | Spine role | Relation to this manifold |
+|:---|:---|:---|
+| [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) | **Matter** cartridge | Mounts `IScienceCartridge` on this DEC carrier and UMST lanes. Owns cementitious closures, CLI / Python / **stdio MCP**, and research-memory ingest. Hot physics stays here; cold agent tools live there ([`AGENT_MCP.md`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md)). |
+| [`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit) | **Knowing** | Machine-checked observation / Landauer / Englert fiber. This repo **consumes** catalog witnesses (R0) from the lock — it does not re-prove which-path cost mid-solve. |
+| [`umst-formal`](https://github.com/tytolabs/umst-formal) | **Acting** | Economic / Kleisli admissibility predicates. Catalog anchors document kernel obligations; runtime gate rejection still happens in this crate (and concrete), not by `lake build`. |
+| [`umst-ucrs`](https://github.com/tytolabs/umst-ucrs) | **Time** | Temporal witness / stamp spine. Stamps *when* a gate-admitted commit lands; does not validate constitutive law or replace DEC solvers here. |
 
-Private / out-of-scope cartridges are not listed as public stack peers here.
 ---
 
 ## Release & agent path
