@@ -315,7 +315,7 @@ End-to-end flow (same diagram as before; labels read “UMST carrier” in prose
 
 ## 3. Cross-Domain Integration Specifications
 
-This Manifold is a pure library. It is designed to act as a mathematical substrate, remaining entirely agnostic to the specific material mapped onto it. Find your domain below to see how the engine handles your integration requirements:
+This Manifold is a pure library — a mathematical substrate, agnostic to whichever material you map onto it. Open a domain below for focus, composition, outcome, and an honest limit on what this crate alone can claim:
 
 <a id="31-mathematical-foundations--formal-grounding"></a>
 <details>
