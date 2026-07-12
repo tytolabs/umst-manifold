@@ -326,6 +326,8 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 *   **Solver Composition:** Exposes Discrete Exterior Calculus (DEC) primitives to construct exact cochain complexes over sparse combinatorial graphs.
 
 *   **Computational Outcome:** A spatial substrate where mass, momentum, and energy conservation are guaranteed algebraically by the graph topology rather than bounded by numerical float approximations. Rust modules map directly to formal Lean/Coq proof references in the pinned catalog.
+
+*   **Honest limit:** Formal proofs **anchor** invariants — they do not block day-to-day kernel work; catalog witnesses link out, they are not a substitute for `cargo test` on changed solvers.
 </details>
 
 <a id="32-autonomous-control--embodied-ai"></a>
@@ -337,6 +339,8 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 *   **Solver Composition:** Hooks directly into the Thermodynamic Control Barrier Function (CBF) and local entropy-generation metrics to filter agent action trajectories.
 
 *   **Computational Outcome:** Agents and robotic controllers evaluate spatial path feasibility (e.g., 3D-printing trajectories) against thermodynamic stability limits and receive exact gradient steps to correct path drift. The per-step latency tracks the solver kernel selected — sub-second on small grids; minutes on full shell topology runs (see [`docs/Solver-Status.md`](docs/Solver-Status.md)).
+
+*   **Honest limit:** CBF semantics change **runtime** behavior in integrated stacks — this library does not ship certified robot safety products; MCP hot path lives in concrete.
 </details>
 
 <a id="33-structural-dynamics--topology-optimization"></a>
@@ -348,6 +352,8 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 *   **Solver Composition:** Employs Neural-SIMP topology solvers paired with exact Adjoint ODE gradients to trace structural sensitivities backward through the spatial domain.
 
 *   **Computational Outcome:** Rapid derivation of optimal structural load paths. While the forward PDE solvers scale with the spatial mesh discretization (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;O(N)"><img alt="O(N)" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;O(N)" style="vertical-align:middle"></picture>), the Adjoint Neural ODE backpropagation bypasses dense BPTT activation caching—yielding a constant <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;O(1)"><img alt="O(1)" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;O(1)" style="vertical-align:middle"></picture> memory footprint over integration time steps, rendering complex dynamic topology optimization highly feasible on standard CPU hardware.
+
+*   **Honest limit:** Full shell topology runs are **batch** workloads (minutes–hours) — adjoint memory claims do not imply real-time collapse analysis on production meshes without profiling.
 </details>
 
 <a id="34-constitutive-materials-chemistry"></a>
@@ -359,6 +365,8 @@ This Manifold is a pure library. It is designed to act as a mathematical substra
 *   **Solver Composition:** Inherits the `IScienceCartridge` interface to define localized constitutive relations mapped directly onto the **64-lane UMST carrier** (unified material state tensor; width is versioned — see [§2](#2-unified-material-state-pipeline-umst-carrier)).
 
 *   **Computational Outcome:** Synchronous, coupled solver execution where thermal, chemical, and mechanical variables react concurrently within single tensor operations, automatically inheriting the manifold's spatial gradients.
+
+*   **Honest limit:** Constitutive chemistry lives in **`IScienceCartridge`** implementations (e.g. concrete) — the manifold supplies the carrier and DEC substrate, not mix recipes.
 </details>
 
 ---
@@ -708,6 +716,28 @@ Hot/warm/cold boundaries: [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md)
 | **Formal** | Catalog witnesses, digest pins — [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md) |
 
 Prefer **library/arena calls over Docker MCP** for performance-sensitive proposal loops. Hot/warm/cold boundaries: [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md). **Gaps / pending (in-repo):** [`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md).
+
+---
+
+## Authors
+
+**Santhosh Shyamsundar** — Studio TYTO; IAAC Barcelona · [santhoshshyamsundar@tyto.studio](mailto:santhoshshyamsundar@tyto.studio)
+
+**Santosh Prabhu Shenbagamoorthy** — Studio TYTO; IAAC Barcelona · [santosh@tyto.studio](mailto:santosh@tyto.studio)
+
+---
+
+## Acknowledgments
+
+Portions of this work were developed in collaboration with advanced large-language-model tools, across multiple model iterations.
+Claude Opus and Sonnet (Anthropic) provided surgical precision during drafting and refinement.
+Gemini (Google) offered exceptional large-context planning and file management.
+Grok (xAI) and its collaborative reasoning team contributed core mathematical and scientific reasoning.
+The Cursor code editor, Composer, Claude Code, and Antigravity supported seamless implementation and agentic file management.
+
+The large-language models assisted with exploration, drafting, and code scaffolding — never with the validity of formal proofs or physics regression tests. `cargo test` and catalog witnesses are authoritative for kernel behavior; Lean obligations **anchor** invariants, they do not replace runtime gate checks.
+
+We gratefully acknowledge the open-source ecosystems that make this work possible: **Rust** and **Burn**; DEC/gate kernels; **Lean**-catalog witnesses; and **Python** verification scripts.
 
 ---
 
