@@ -96,8 +96,8 @@ flowchart TB
     U[PENDING_GAPS_PLAIN]
     F[FORMAL_BIDIRECTIONAL_ALIGNMENT]
     I[FORMAL_INTEGRATION_STATUS]
-    L[GOD_GRADE_WITNESS_LADDER]
-    C[GOD_GRADE_CHECKLIST]
+    L[QUALITY_WITNESS_LADDER]
+    C[QUALITY_CHECKLIST]
   end
   subgraph arch["2 — Architecture"]
     G[GateUnificationSpec]
@@ -112,7 +112,7 @@ flowchart TB
     E[PENDING_GAPS_PLAIN]
   end
   subgraph road["4 — Roadmap"]
-    R[PENDING_GOD_GRADE_ROADMAP]
+    R[PENDING_QUALITY_ROADMAP]
   end
   U --> F --> I --> L --> C
   C --> G --> P --> X --> CI

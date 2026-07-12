@@ -133,7 +133,7 @@ else
 fi
 
 # --- 4. God-grade checklist 16/16 evidence (verify_umst_stack wiring) ---
-step "god-grade checklist 16/16 evidence (verify_umst_stack.sh)"
+step "quality checklist 16/16 evidence (verify_umst_stack.sh)"
 STACK="${MANIFOLD}/scripts/verify_umst_stack.sh"
 require_file "${STACK}"
 REQUIRED_MARKERS=(
@@ -152,7 +152,7 @@ REQUIRED_MARKERS=(
   'regime_soundness_claims_allowlist'
   'witness_priority_queue'
   'catalog_incremental_graph_drift'
-  'ci_god_grade_profile'
+  'ci_quality_profile'
 )
 missing=()
 for m in "${REQUIRED_MARKERS[@]}"; do

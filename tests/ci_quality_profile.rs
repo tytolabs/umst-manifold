@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-//! God-grade CI profile law: release manifest strict lane is on unless explicitly disabled.
+//! Release CI profile law: release manifest strict lane is on unless explicitly disabled.
 
 use umst_manifold::manifest::{GroundingContract, UmstManifestBuilder};
 
@@ -14,7 +14,7 @@ fn verify_stack_script_defaults_release_manifest_profile_to_strict_lane() {
     );
 }
 
-/// CI guard: epistemic G.2 / G.3 must stay wired in `verify_umst_stack.sh` (god-grade rows 14–15).
+/// CI guard: epistemic G.2 / G.3 must stay wired in `verify_umst_stack.sh` (checklist rows 14–15).
 #[test]
 fn verify_stack_script_includes_epistemic_g2_g3_steps() {
     let script = include_str!("../scripts/verify_umst_stack.sh");
