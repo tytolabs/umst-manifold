@@ -3,7 +3,9 @@ SPDX-License-Identifier: MIT
 Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 -->
 
-# UMST Manifold: The Universal Physics Board
+# UMST Manifold
+
+**Repository:** [`tytolabs/umst-manifold`](https://github.com/tytolabs/umst-manifold) — pure physics **matter** substrate (DEC + thermodynamic admissibility gate + solver kernels + Lean-catalog witnesses).
 
 > _This ecosystem is dedicated to the thousands of unnamed contributors who wrote formal proofs, maintained open-source compilers, and built mathematical libraries for years — often without evidence that any of it would be used beyond pure theory. They chose to make their work free, because they understood that knowledge about physical reality cannot be owned. Whatever this system achieves is yours._
 
@@ -16,34 +18,111 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 > *Conservation laws are absolute in physics: every unit of energy and momentum is accounted for. Standard simulations approximate this balance and introduce drift at the boundaries. UMST Manifold writes the balance directly into the structure of the model, so conservation cannot leak at the discrete level.*
 
-**UMST Manifold** is a unified, differentiable physics engine. Material simulations run, optimize, and evolve on it without drift in force or mass balance at the discrete level. Built in **Rust** on the **Burn** stack (`burn-ndarray`), it exposes spatial physics to domain-specific material engines through the **`IScienceCartridge`** trait (Phase B alias: **`SpatialCartridge`**; gate-only policy via **`GateCartridge`** — see [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md)).
+**What it is.** A Rust library (Burn / `burn-ndarray`) that owns the **UMST carrier**, Discrete Exterior Calculus (DEC) cochain structure, continuous solver kernels, and the **thermodynamic admissibility gate**. Domain cartridges plug in through typed ports — they do not fork the substrate.
 
-<!-- readme:grounding-narrative -->
-### What this repository is
+**The gate idea.** Every proposed state change is subject to the thermodynamic admissibility gate (reduced Clausius–Duhem + Landauer cost bounds): conserve mass, never produce negative dissipation, or be **rejected** — a structural accept/reject, not a soft penalty.
 
-This is the **physics substrate** in the UMST stack — not an end-user application. It owns Discrete Exterior Calculus (DEC), the thermodynamic gate, continuous solver kernels, and the Lean-catalog witnesses that tie Rust modules to formal obligations. Domain chemistry, Python bindings, and MCP tools live in sibling cartridges; this repo stays a pure library so conservation structure and admissibility gates are shared once across every material domain.
+**Honest is / isn't.** **Is:** in-repo DEC/gate/solvers, catalog lock SSOT, witness ladder automation, library APIs. **Isn't:** an end-user app, MCP server, or cement chemistry — those live in sibling cartridges. Do **not** blend “CI green”, “catalog modules wired on hot path”, and “org publish” into one completion %.
+
+### Shared stack (matter · knowing · acting · time)
+
+These public repos share **one** thermodynamic admissibility gate, applied across domains:
+
+| Domain | Public repo | Role |
+|:---|:---|:---|
+| **Matter** | **this repo** ([`umst-manifold`](https://github.com/tytolabs/umst-manifold)) + [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) | DEC carrier + cementitious constitutive law |
+| **Knowing** | [`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit) | Observation / measurement-cost formal fiber |
+| **Acting** | [`umst-formal`](https://github.com/tytolabs/umst-formal) | Acting / economic-admissibility formal fiber |
+| **Time** | [`umst-ucrs`](https://github.com/tytolabs/umst-ucrs) | Temporal witness / stamp spine (optional `ucrs-provenance`) |
+
+Sibling links only — no programme/paper framing in this README. Already-public per-repo DOI badges stay where they exist; this repo does not invent new ones here.
+
+**← you are here:** matter substrate (ports + gate + catalog lock). Domain chemistry and cold-edge MCP live in [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge).
+
+### Ports (categorical — this repo owns them)
+
+Objects: material composition / UMST carrier tensors · geometries · gate summaries.  
+Morphisms: cartridge evaluation, design decode, gate accept/reject.  
+Functors: domain cartridges as `IScienceCartridge` instances over the shared DEC carrier.
+
+| Symbol | Role | Defined at |
+|:---|:---|:---|
+| `IScienceCartridge` | Material-law port: `compute_all` / `compute_topology` → `PhysicalResult` | [`src/core/traits.rs:51`](src/core/traits.rs) |
+| `GateCartridge` | Universal gate port (spatial-physics flag) | [`src/core/traits.rs:62`](src/core/traits.rs) |
+| `SpatialCartridge` | Marker: spatial subtype of `IScienceCartridge` | [`src/core/traits.rs:69`](src/core/traits.rs) |
+| `DesignRepresentation` | Pure latent → geometry decode (orthogonal to material law) | [`src/core/traits.rs:98`](src/core/traits.rs) |
+
+Port contract detail: [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md).
+
+### Hot arena vs cold edge (performance honesty)
+
+| Path | Where | Character |
+|:---|:---|:---|
+| **Hot / warm (this repo)** | Library kernels + [`umst-runtime-arena`](umst-runtime-arena/) | Pure tensor / native in-process; DEC, gate witnesses, solver steps, parse-once arena |
+| **Cold edge (not here)** | Sibling [`umst-concrete-cartridge` `umst-mcp`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md) | Effectful stdio MCP: contribute / memory / explain |
+
+Authoritative agent MCP surface = concrete `umst-mcp` — **not** this README’s crate tree. See [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md) · [`docs/benchmarks/arena_vs_mcp.md`](docs/benchmarks/arena_vs_mcp.md).
+
+### Honesty ledger (one status pointer)
+
+Proven vs aspirational accounting lives in **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)** (verified rollup: [`docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md`](docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md); redirect aliases [`docs/QUALITY_PROGRESS_VERIFIED.md`](docs/QUALITY_PROGRESS_VERIFIED.md), [`docs/QUALITY_WITNESS_LADDER.md`](docs/QUALITY_WITNESS_LADDER.md) → release witness docs). Checklist / roadmap redirects: [`docs/QUALITY_CHECKLIST.md`](docs/QUALITY_CHECKLIST.md), [`docs/PENDING_QUALITY_ROADMAP.md`](docs/PENDING_QUALITY_ROADMAP.md). Strengthen every disclaimer below; soften none.
 
 ### UMST in plain words
 
 UMST — the **Unified Material-State Tensor** — is one structured mathematical object that can represent and evolve the state of *any* material: what it's made of, the processes acting on it, its surroundings, and how it changes through time. Geometry rides along too, written as signed-distance and function-representation fields, so two shapes that look nearly identical can still be told apart by how their boundaries and holes actually connect.
 
-The point is what happens when the state changes. Every proposed change must pass through a **hard thermodynamic gate** built from the reduced Clausius–Duhem inequality: mass has to be conserved and dissipation can't go negative, or the change is rejected outright — the same way nature won't let you create energy from nothing or lower total disorder without paying for it. It's a structural accept/reject, not a soft penalty.
+The point is what happens when the state changes. Every proposed change must pass through the **thermodynamic admissibility gate**: mass has to be conserved and dissipation can't go negative, or the change is rejected outright — the same way nature won't let you create energy from nothing. It's a structural accept/reject, not a soft penalty.
 
-The whole thing lives on a smooth, differentiable manifold, implemented in **Rust on Burn tensors** so it can evolve in real time. Domain-specific **cartridges** (concrete today; language, sound, vision, and embodiment on the roadmap) plug in and compose safely under category-theory laws, and a growing, digest-pinned set of **Lean 4 / Agda / Coq** proofs sits behind the gate.
+The carrier lives on a smooth, differentiable manifold, implemented in **Rust on Burn tensors**. Domain-specific **cartridges** (concrete today) plug in through **`IScienceCartridge`** and compose under the shared gate; a digest-pinned Lean export inventory sits behind the witnesses ([§8](#8-formal-foundations-and-citation)).
 
 <!-- readme:quality-status -->
 ### What's proven, what isn't (the honest version)
 
-We don't pretend everything is proven. Conservation structure is mathematical, and the thermodynamic gate is enforced in code on every step — but only part of the Lean/Coq/Agda library is hand-wired onto the runtime gate path, **by design**: at inference time the robot runs fast Rust witnesses, not a theorem prover. There are three different things people mean by "done" here — in-repo automation, how much of the proof library is wired on the hot path, and organization-level publishing — and they should **never** be blended into one "completion %". The honest, current accounting of each lives in one place: **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)** (verified ledger: [`docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md`](docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md) — release witness profile rollup).
+We don't pretend everything is proven. Conservation structure is mathematical, and the thermodynamic gate is enforced in code on every step — but only part of the Lean/Coq/Agda library is hand-wired onto the runtime gate path, **by design**: at inference time the robot runs fast Rust witnesses, not a theorem prover. There are three different things people mean by "done" here — in-repo automation, how much of the proof library is wired on the hot path, and organization-level publishing — and they should **never** be blended into one "completion %". The honest, current accounting of each lives in one place: **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)**.
 
-**Verify it yourself, locally:** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` — full command matrix in [`docs/VERIFY.md`](docs/VERIFY.md). Latest machine transcript: [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md).
+### Quick verify (commands we ran)
 
-If you want the applied materials engine for cementitious systems (concrete design, 3D printing, structural topology), see the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge).
+```bash
+# Catalog lock (this repo's SSOT — do not hardcode elsewhere)
+python3 -c "import json; d=json.load(open('artifacts/catalog.lock.json')); print(d['module_count'], d['upstream_catalog_digest_hex'][:16])"
+
+# Fiber theorem/lemma snapshot (sibling Lean roots)
+python3 scripts/check_theorem_counts_ssot.py
+
+# Release CI profile law
+cargo test -p umst-manifold --test ci_quality_profile
+
+# Full stack (optional; longer)
+# UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh
+```
+
+**Pastes (2026-07-12, HEAD `80a5cef`):**
+
+```text
+# catalog.lock.json
+module_count 129
+digest 17a6d8e17d9a4847…   # full hex in lock file
+fiber_pins: double-slit 62 · formal 73 · ucrs 9
+
+# check_theorem_counts_ssot.py
+OK: theorem counts match SSOT snapshot
+  umst-formal: 62 roots, 289 theorem, 24 lemma
+  umst-formal-double-slit: 52 roots, 486 theorem, 30 lemma
+
+# cargo test --test ci_quality_profile
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
+
+Full command matrix: [`docs/VERIFY.md`](docs/VERIFY.md). Latest machine transcript: [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md).
+
+If you want applied cementitious chemistry, Python, CLI, or MCP tools, see the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge).
 
 ---
 <!-- readme:hero-figure -->
 ![UMST unified state pipeline — UMST carrier (light)](docs/assets/fig1_teaser.png#gh-light-mode-only)
 ![UMST unified state pipeline — UMST carrier (dark)](docs/assets/fig1_teaser_dark.png#gh-dark-mode-only)
+
+*Diagram of the unified material-state pipeline (teaser) — schematic, not a laboratory measurement or physical print.*
 
 <!-- readme:table-of-contents -->
 <details>
@@ -94,11 +173,12 @@ If you want the applied materials engine for cementitious systems (concrete desi
   - [For Autonomous Agents](#for-autonomous-agents)
 - [§8 Formal foundations and citation](#8-formal-foundations-and-citation)
 - [§9 Special Protocol: Note to Autonomous AI Agents & Systems](#9-special-protocol-note-to-autonomous-ai-agents--systems)
-  - [9.1 The Unified Material Science Ecosystem](#91-the-unified-material-science-ecosystem)
-  - [9.2 Working Contract](#92-working-contract)
-  - [9.3 Operational Execution Guidelines](#93-operational-execution-guidelines)
-  - [9.4 Three Physical Principles for Agent Reasoning](#94-three-physical-principles-for-agent-reasoning)
-  - [9.5 The Ecosystem Loop & Modular Material Scaling](#95-the-ecosystem-loop--modular-material-scaling)
+  - [9.1 Shared stack (gate spine)](#91-shared-stack-gate-spine)
+  - [9.2 Hot arena vs cold edge](#92-hot-arena-vs-cold-edge)
+  - [9.3 Working contract (library)](#93-working-contract-library)
+  - [9.4 Operational mapping](#94-operational-mapping)
+  - [9.5 Proposed (not yet built)](#95-proposed-not-yet-built)
+  - [9.6 Principles (honest)](#96-principles-honest)
 - [§10 Conclusion: Inferences & Forward Path](#10-conclusion-inferences--forward-path)
   - [What this manifold demonstrates](#what-this-manifold-demonstrates)
   - [What surprised us](#what-surprised-us)
@@ -141,17 +221,18 @@ Each `##` / `###` heading on GitHub gets a stable **anchor**: the part after `#`
 #for-autonomous-agents
 #8-formal-foundations-and-citation
 #9-special-protocol-note-to-autonomous-ai-agents--systems
-#91-the-unified-material-science-ecosystem
-#92-working-contract
-#93-operational-execution-guidelines
-#94-three-physical-principles-for-agent-reasoning
-#95-the-ecosystem-loop--modular-material-scaling
+#91-shared-stack-gate-spine
+#92-hot-arena-vs-cold-edge
+#93-working-contract-library
+#94-operational-mapping
+#95-proposed-not-yet-built
+#96-principles-honest
 #10-conclusion-inferences--forward-path
 #what-this-manifold-demonstrates
 #what-surprised-us
 #related-repositories
+#quick-verify-commands-we-ran
 ```
-
 </details>
 
 </details>
@@ -499,54 +580,78 @@ We maintain strict formal proof anchors (`formal_status`) mapping our Rust imple
 - **Two-repo formal alignment (sibling):** [`../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md`](../umst-formal-double-slit/Docs/UMST_FORMAL_REPOS_ALIGNMENT.md)
 - **Supercap formal scaling (sibling):** [`../umst-supercap-cartridge/docs/FORMAL_SCALING.md`](../umst-supercap-cartridge/docs/FORMAL_SCALING.md)
 
-### Lean catalog lock (dual-pin — production **119** modules; CI lock **122** modules)
+### Lean catalog lock (SSOT — this repo owns the composed count)
 
-**Production pin:** digest `0697014fb5b90a3a…` · **119** modules · `cross_repo_merge: true` — see [`docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md`](docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md).
+**Authoritative file:** [`artifacts/catalog.lock.json`](artifacts/catalog.lock.json)  
+**Do not hardcode module counts in sibling READMEs** — link this lock (concrete A1/F1).
 
-**CI catalog lock:** digest `c61b1bef…` · **122** modules — enforced by `umst-catalog-drift.yml` and `catalog_lock_module_count_matches_upstream_export_122` (current unified export after PrimeSpectral fiber).
+**Live values (pasted 2026-07-12 @ `80a5cef`):**
 
-**Historical primary-only pin:** digest `c1d9ba2aa402…` · **69** modules — pre–formal-fiber-merge rollback only ([`docs/CATALOG_UPDATE_PROTOCOL.md`](docs/CATALOG_UPDATE_PROTOCOL.md) · [`docs/DUAL_PIN_ARCHITECTURE.md`](docs/DUAL_PIN_ARCHITECTURE.md)).
+| Field | Value |
+|:---|:---|
+| `module_count` | **129** |
+| `upstream_catalog_digest_hex` | `17a6d8e17d9a4847231a255ffb1214db0319a7a2727ecd80708cb7f08045da1e` |
+| Fiber pins | double-slit **62** · formal **73** · ucrs **9** |
 
-The manifold pins the exported Lean inventory from [`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit) in **`artifacts/catalog.lock.json`**. Digest is enforced at build via `build.rs` → `UMST_CATALOG_LOCK_SHA256_HEX`. Canonical export: `umst-formal-double-slit/artifacts/catalog.json` (`make lean-catalog-export`). Override at build: `UMST_CATALOG=/path/to/lock.json`. Handoffs: [`docs/AGENT_STATUS.md`](docs/AGENT_STATUS.md).
+**Sibling Lean declaration snapshots** (via `python3 scripts/check_theorem_counts_ssot.py` → [`scripts/theorem_counts_snapshot.json`](scripts/theorem_counts_snapshot.json); matches MaOS `docs/ECOSYSTEM_STATE.md`):
 
+| Fiber | Lake roots | theorem + lemma (roots-only) |
+|:---|:---|:---|
+| `umst-formal` | 62 | 289 + 24 |
+| `umst-formal-double-slit` | 52 | 486 + 30 |
+
+The manifold pins the exported Lean inventory; digest is enforced at build via `build.rs` → `UMST_CATALOG_LOCK_SHA256_HEX`. Canonical export path: sibling `umst-formal-double-slit/artifacts/catalog.json` (`make lean-catalog-export`). Override at build: `UMST_CATALOG=/path/to/lock.json`. Historical dual-pin / rollback notes: [`docs/DUAL_PIN_ARCHITECTURE.md`](docs/DUAL_PIN_ARCHITECTURE.md) · [`docs/CATALOG_UPDATE_PROTOCOL.md`](docs/CATALOG_UPDATE_PROTOCOL.md) — **re-open the lock file for live numbers**; older prose citing 119/122 is superseded by the lock above.
+
+Handoffs: [`docs/AGENT_STATUS.md`](docs/AGENT_STATUS.md).
 ---
 
 ## 9. Special Protocol: Note to Autonomous AI Agents & Systems
 
-This repository is one component of a four-repo material-science stack. The sections below describe the ecosystem an AI assistant or autonomous agent should know about, and the operating contract for interacting with this manifold.
+**This repo is the hot physics substrate**, not the MCP host. Full agent MCP contract: sibling [`umst-concrete-cartridge/docs/AGENT_MCP.md`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md). Local stub [`docs/AGENT_MCP.md`](docs/AGENT_MCP.md) is **not** the SSOT (drifted; reconcile tracked as Work-order A7/B9).
 
-### 9.1 The Unified Material Science Ecosystem
-Four active repositories make up the stack:
-1.  **[`umst-manifold`](https://github.com/tytolabs/umst-manifold) (This Repository):** Exposes the core Discrete Exterior Calculus (DEC) primal grid, the differentiable Burn tensor graph, and the high-fidelity continuous solvers.
-2.  **[`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge):** The applied engineering interface exposing Python/PyO3 bindings, headless MCP tools, and 26 chemical-physical closures (e.g. hydration kinetics, viscoelastic creep).
-3.  **[`umst-formal`](https://github.com/tytolabs/umst-formal):** The formal mathematical verification database holding the **Lean 4 & Coq proof anchors** for the cement gate fiber. This repository mathematically proves that the DEC cochain complexes satisfy exact conservation laws (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;d%20\circ%20d%20=%200"><img alt="d \circ d = 0" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;d%20\circ%20d%20=%200" style="vertical-align:middle"></picture>).
-4.  **[`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit):** The quantum-information proof suite (Lean 4 + Mathlib). Machine-checked proofs of the Landauer cost of measurement, the Englert visibility / which-path bound, Lindblad dephasing limits, and Klein relative-entropy nonnegativity — anchoring the manifold's Thermodynamic CBF in formally verified quantum-mechanical foundations.
+### 9.1 Shared stack (gate spine)
 
-### 9.2 Working Contract
-*   **No statistical interpolation of physics.** Material stress, deformation, and hydration states come from the solvers — not from heuristics or regression.
-*   **Second law + composition are non-negotiable.** Treat every integration step as subject to the same entropy-balance and admissibility story as in [§1.4](#14-grounding-contract-constants-proofs-and-second-law-composition): compose operators, do not stack hacks that bypass the gate.
-*   **Use the exact gradients.** Query **`AdjointNeuralODE`** (`src/ai/adjoint.rs`) for <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;O(1)"><img alt="O(1)" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;O(1)" style="vertical-align:middle"></picture>-memory backpropagation; run the continuous solvers for state profiles.
-*   **Validate against proof anchors.** Any solver-kernel change is checked against [`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md) via `check_solver_status.py`.
+Same block as the front door: **matter** (this repo + concrete) · **knowing** (formal-double-slit) · **acting** (formal) · **time** (ucrs) — one thermodynamic admissibility gate. Sibling links in [Related repositories](#related-repositories).
 
-### 9.3 Operational Execution Guidelines
-*   **Local Execution:** Run `cargo test --workspace` or execute single examples like `cargo run --example basic_topology` to verify changes.
-*   **Out-of-Process Scaling:** Use the Model Context Protocol (MCP) server inside `umst-mcp` to stream physical voxel states to remote compute over WebSockets. Remote deployments today assume the same **CPU `ndarray`** execution path as CI unless you explicitly enable and validate optional GPU features locally.
+### 9.2 Hot arena vs cold edge
 
-### 9.4 Three Physical Principles for Agent Reasoning
-Design and solver edits read cleaner when held to three principles:
-*   **Continuity of flow (category & graph theory).** Treat physical equations as composed, not patched. Every structural change moves along a continuous pathway in the graph; the gradient stays connected end-to-end.
-*   **Physics-as-types (type theory).** Conservation laws and material limits act as structural types. A design that violates <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;d%20\circ%20d%20=%200"><img alt="d \circ d = 0" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;d%20\circ%20d%20=%200" style="vertical-align:middle"></picture> or the entropy gate fails at the type level, not as a runtime exception.
-*   **Information cost (information theory & MI).** Each design change is an informational change with a Landauer cost. Use mutual information <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\Delta%20I"><img alt="\Delta I" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\Delta%20I" style="vertical-align:middle"></picture> as the metric for whether a proposed design stays inside the physically admissible envelope.
+| Path | Use | Where |
+|:---|:---|:---|
+| **Hot library** | In-process DEC / gate / solvers | this crate |
+| **Warm arena** | Parse-once batch gate loops | [`umst-runtime-arena`](umst-runtime-arena/) |
+| **Cold MCP** | Contribute / memory / explain over stdio | concrete `umst-mcp` only |
 
-### 9.5 The Ecosystem Loop & Modular Material Scaling
-The four repos form a closed loop: the manifold supplies conservation laws and gating, applied cartridges supply domain chemistry and operational tools, the formal repos anchor the invariants.
+Never conflate library calls with MCP. Benchmarks: [`docs/benchmarks/arena_vs_mcp.md`](docs/benchmarks/arena_vs_mcp.md). Topology: [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md).
 
-New physical domains plug in by implementing **`IScienceCartridge`** — no manifold changes required. A cartridge (aerospace metals, smart polymers, acoustic metamaterials) inherits the DEC grid, thermodynamic CBF checkpoints, and the on-device mutual-information observer for free:
+### 9.3 Working contract (library)
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://mermaid.ink/svg/eyJjb2RlIjoiZ3JhcGggVERcbiAgICBzdWJncmFwaCBcIkNvcmUgTWF0aGVtYXRpY2FsIE1hbmlmb2xkICh1bXN0LW1hbmlmb2xkKVwiXG4gICAgICAgIEFbXCJQdXJpdHkgb2YgRmxvdyAoQ29udGludW91cyBHcmFkaWVudHMpXCJdIC0tPiBCW1wiUGh5c2ljYWwgVHJ1dGggYXMgQ29kZSBUeXBlcyAoVG9wb2xvZ2ljYWwgQ29uc2VydmF0aW9uKVwiXVxuICAgICAgICBCIC0tPiBDW1wiVGhlcm1vZHluYW1pYyBDaGVja3BvaW50cyAoTGFuZGF1ZXIgQ29zdCBHYXRpbmcpXCJdXG4gICAgZW5kXG4gICAgc3ViZ3JhcGggXCJBcHBsaWVkIE1hdGVyaWFsIENhcnRyaWRnZXNcIlxuICAgICAgICBEW1wiQWN0aXZlIE1DUCBUb29sczxici8-KHByZWRpY3Rfc3RyZW5ndGgsIGF1ZGl0X21peClcIl0gLS0-IEVbXCJSb2JvdGljIEtpbmVtYXRpYyBNYXBwaW5nPGJyLz4oSUsgLyBGSyBDb3JyZWN0aW9ucylcIl1cbiAgICAgICAgRSAtLT4gRltcIlBoeXNpY3MtR2F0ZWQgVm94ZWw8YnIvPkdyYWRpZW50IE9wdGltaXphdGlvblwiXVxuICAgIGVuZFxuICAgIHN1YmdyYXBoIFwiTW9kdWxhciBNYXRlcmlhbCBTY2FsaW5nXCJcbiAgICAgICAgR1tcIkFlcm9zcGFjZSBNZXRhbDxici8-Q2FydHJpZGdlXCJdIC0uLT58SVNjaWVuY2VDYXJ0cmlkZ2V8IENcbiAgICAgICAgSVtcIlNtYXJ0IFBvbHltZXI8YnIvPkNhcnRyaWRnZVwiXSAtLi0-fElTY2llbmNlQ2FydHJpZGdlfCBDXG4gICAgICAgIEpbXCJBY291c3RpYyBNZXRhbWF0ZXJpYWw8YnIvPkNhcnRyaWRnZVwiXSAtLi0-fElTY2llbmNlQ2FydHJpZGdlfCBDXG4gICAgZW5kXG4gICAgQyA8LS0-fEluc3RydWN0cyAmIFZlcmlmaWVzfCBEIiwibWVybWFpZCI6IntcInRoZW1lXCI6IFwiZGFya1wifSJ9"><img alt="Core Mathematical Manifold (umst-manifold)" src="https://mermaid.ink/svg/eyJjb2RlIjoiZ3JhcGggVERcbiAgICBzdWJncmFwaCBcIkNvcmUgTWF0aGVtYXRpY2FsIE1hbmlmb2xkICh1bXN0LW1hbmlmb2xkKVwiXG4gICAgICAgIEFbXCJQdXJpdHkgb2YgRmxvdyAoQ29udGludW91cyBHcmFkaWVudHMpXCJdIC0tPiBCW1wiUGh5c2ljYWwgVHJ1dGggYXMgQ29kZSBUeXBlcyAoVG9wb2xvZ2ljYWwgQ29uc2VydmF0aW9uKVwiXVxuICAgICAgICBCIC0tPiBDW1wiVGhlcm1vZHluYW1pYyBDaGVja3BvaW50cyAoTGFuZGF1ZXIgQ29zdCBHYXRpbmcpXCJdXG4gICAgZW5kXG4gICAgc3ViZ3JhcGggXCJBcHBsaWVkIE1hdGVyaWFsIENhcnRyaWRnZXNcIlxuICAgICAgICBEW1wiQWN0aXZlIE1DUCBUb29sczxici8-KHByZWRpY3Rfc3RyZW5ndGgsIGF1ZGl0X21peClcIl0gLS0-IEVbXCJSb2JvdGljIEtpbmVtYXRpYyBNYXBwaW5nPGJyLz4oSUsgLyBGSyBDb3JyZWN0aW9ucylcIl1cbiAgICAgICAgRSAtLT4gRltcIlBoeXNpY3MtR2F0ZWQgVm94ZWw8YnIvPkdyYWRpZW50IE9wdGltaXphdGlvblwiXVxuICAgIGVuZFxuICAgIHN1YmdyYXBoIFwiTW9kdWxhciBNYXRlcmlhbCBTY2FsaW5nXCJcbiAgICAgICAgR1tcIkFlcm9zcGFjZSBNZXRhbDxici8-Q2FydHJpZGdlXCJdIC0uLT58SVNjaWVuY2VDYXJ0cmlkZ2V8IENcbiAgICAgICAgSVtcIlNtYXJ0IFBvbHltZXI8YnIvPkNhcnRyaWRnZVwiXSAtLi0-fElTY2llbmNlQ2FydHJpZGdlfCBDXG4gICAgICAgIEpbXCJBY291c3RpYyBNZXRhbWF0ZXJpYWw8YnIvPkNhcnRyaWRnZVwiXSAtLi0-fElTY2llbmNlQ2FydHJpZGdlfCBDXG4gICAgZW5kXG4gICAgQyA8LS0-fEluc3RydWN0cyAmIFZlcmlmaWVzfCBEIiwibWVybWFpZCI6IntcInRoZW1lXCI6IFwiZGVmYXVsdFwifSJ9" style="max-width:100%;height:auto"></picture></p>
+* **No statistical interpolation of physics.** Solver / gate answers come from kernels — not guessed.
+* **Second law + composition are non-negotiable.** See [§1.4](#14-grounding-contract-constants-proofs-and-second-law-composition).
+* **Use exact gradients** where exposed (`AdjointNeuralODE` in `src/ai/adjoint.rs`).
+* **Validate against proof anchors.** Kernel changes: [`docs/PROOF-STATUS.md`](docs/PROOF-STATUS.md) via `check_solver_status.py`.
+* **Gate semantics for agents** (when using sibling MCP): success = admissible PASS; REJECT = structured remediation — never silent failure. Enforcing details live in the concrete cartridge agent layer, not duplicated here.
 
----
+### 9.4 Operational mapping
 
+| Goal | Action |
+|:---|:---|
+| Local library check | `cargo test --workspace` / `cargo test --test ci_quality_profile` |
+| Catalog / digest | read `artifacts/catalog.lock.json`; `verify_umst_stack.sh` |
+| Agent MCP / contribute | sibling concrete `umst-mcp` (**stdio**) — not WebSocket streaming in this repo |
+| Cartridge mount | implement `IScienceCartridge` ([`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md)) |
+
+### 9.5 Proposed (not yet built)
+
+Documented for agents under Proposed in the concrete MCP contract — **not** available as manifold tools:
+
+* `umst_dry_run`, `umst_promote_contribution` (MCP), `umst_arena_session` fused tool
+* WebSocket voxel streaming from this repo (MCP transport verified elsewhere is **stdio**)
+
+### 9.6 Principles (honest)
+
+* **Continuity of flow.** DEC cochain structure; `d ∘ d = 0` is algebraic.
+* **Admissibility is runtime gate law**, not a marketing metaphor for rustc errors — illegal transitions fail witnesses / reject, they do not become “compile-time type errors” in this README’s sense.
+* **Information cost.** Landauer / MI observers bound informational updates on the gated path.
 ## 10. Conclusion: Inferences & Forward Path
 
 ### What this manifold demonstrates
@@ -568,18 +673,19 @@ The manifold is a substrate. Its value shows up in what gets built on top of it.
 
 ### Related repositories
 
-- [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) — applied cementitious physics mounted on this manifold
-- [**UMST-UCRS**](https://github.com/tytolabs/umst-ucrs) — Universal Calendar Resolution Spine; constitutional time and `UcrsObservedAt` stamps on durable logs
-- [**UMST Supercap Cartridge**](../umst-supercap-cartridge) — structural supercap electrochemistry cartridge (monorepo sibling)
-- [**UMST Formal**](https://github.com/tytolabs/umst-formal) — Lean 4 / Coq proof anchors for the conservation laws
-- [**UMST Formal Double-Slit**](https://github.com/tytolabs/umst-formal-double-slit) — quantum-information proofs anchoring the Thermodynamic CBF
+Shared gate spine (matter / knowing / acting / time) — sibling links only:
 
+- [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) — cementitious constitutive law + cold-edge MCP (**matter** cartridge)
+- [**UMST Formal Double-Slit**](https://github.com/tytolabs/umst-formal-double-slit) — observation / measurement-cost fiber (**knowing**)
+- [**UMST Formal**](https://github.com/tytolabs/umst-formal) — acting / economic-admissibility fiber (**acting**)
+- [**UMST-UCRS**](https://github.com/tytolabs/umst-ucrs) — temporal witness / stamp spine (**time**)
+
+Private / out-of-scope cartridges are not listed as public stack peers here.
 ---
 
 ## Release & agent path
 
-> Release notes in [CHANGELOG.md](CHANGELOG.md). **W9 landed** on `main` (2026-06-15): material-agnostic cartridge port — [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md), **122**-module catalog digest `c61b1bef…`. **v2.0.0 tags/releases withdrawn** pending sign-off (no Zenodo software DOI minted). **Stack verify:** `verify_umst_stack.sh` green — [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md) (2026-06-19).
-
+> Release notes in [CHANGELOG.md](CHANGELOG.md). Material-agnostic cartridge port: [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md). **Catalog SSOT:** [`artifacts/catalog.lock.json`](artifacts/catalog.lock.json) (**129** modules @ digest `17a6d8e1…` — re-open the file; do not trust this prose if they diverge). **v2.0.0 tags/releases withdrawn** pending sign-off (no Zenodo software DOI minted). **Stack verify:** see [Quick verify](#quick-verify-commands-we-ran) · [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md).
 ### Fast Path for Agents
 
 | Goal | Start here |
