@@ -7,6 +7,8 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 **Repository:** [`tytolabs/umst-manifold`](https://github.com/tytolabs/umst-manifold) — pure physics **matter** substrate (DEC + thermodynamic admissibility gate + solver kernels + Lean-catalog witnesses).
 
+**Agents:** authoritative MCP contract = sibling [`umst-concrete-cartridge/docs/AGENT_MCP.md`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md). Local [`docs/AGENT_MCP.md`](docs/AGENT_MCP.md) is a redirect stub only.
+
 > _This ecosystem is dedicated to the thousands of unnamed contributors who wrote formal proofs, maintained open-source compilers, and built mathematical libraries for years — often without evidence that any of it would be used beyond pure theory. They chose to make their work free, because they understood that knowledge about physical reality cannot be owned. Whatever this system achieves is yours._
 
 
