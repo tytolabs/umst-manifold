@@ -138,7 +138,7 @@ If you want applied cementitious chemistry, Python, CLI, or MCP tools, see the [
 | Foundations | [§1](#1-the-core-approach) · [§2](#2-unified-material-state-pipeline-umst-carrier) · [§3](#3-cross-domain-integration-specifications) |
 | Architecture & surfaces | [§4](#4-exhaustive-architecture-topology) · [§5](#5-surfaces--entrypoints) |
 | Solvers & ops | [§6](#6-advanced-continuous-solver-specifications) · [§7](#7-technical-deployment--agentic-instructions) · [§8](#8-formal-foundations-and-citation) |
-| Agents & wrap-up | [§9](#9-special-protocol-note-to-autonomous-ai-agents--systems) · [§10](#10-conclusion-inferences--forward-path) · [Related](#related-repositories) |
+| Agents & wrap-up | [§9](#9-special-protocol-note-to-autonomous-ai-agents--systems) · [§10](#10-conclusion-inferences--forward-path) · [Related](#related-repositories) · [Authors](#authors) · [Acknowledgments](#acknowledgments) · [Contributing](#contributing) · [Citation](#citation) · [License](#license) |
 
 **Detailed outline** — every entry links to a stable anchor (`README.md#…`); collapsible sections use `<details>` but share the same deep-link fragments.
 
@@ -185,6 +185,11 @@ If you want applied cementitious chemistry, Python, CLI, or MCP tools, see the [
   - [What this manifold demonstrates](#what-this-manifold-demonstrates)
   - [What surprised us](#what-surprised-us)
 - [Related repositories](#related-repositories)
+- [Authors](#authors)
+- [Acknowledgments](#acknowledgments)
+- [Contributing](#contributing)
+- [Citation](#citation)
+- [License](#license)
 
 <details>
 <summary><b>Heading anchor list</b> (URL fragments for deep links)</summary>
@@ -233,6 +238,11 @@ Each `##` / `###` heading on GitHub gets a stable **anchor**: the part after `#`
 #what-this-manifold-demonstrates
 #what-surprised-us
 #related-repositories
+#authors
+#acknowledgments
+#contributing
+#citation
+#license
 #quick-verify-commands-we-ran
 ```
 </details>
@@ -741,5 +751,18 @@ We gratefully acknowledge the open-source ecosystems that make this work possibl
 
 ---
 
-Development processes and safety guidelines are maintained in [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [SECURITY.md](SECURITY.md).  
-Released under the [MIT License](LICENSE). © 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO.
+## Contributing
+
+Development processes and safety guidelines are maintained in [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), and [`SECURITY.md`](SECURITY.md). Corrections welcome via PR. Prefer `cargo test` / stack verify when touching solvers or gate paths.
+
+---
+
+## Citation
+
+Bibliographic metadata is maintained in [`CITATION.cff`](CITATION.cff).
+
+---
+
+## License
+
+Released under the [MIT License](LICENSE). © 2026 Studio TYTO.
