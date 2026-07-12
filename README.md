@@ -593,7 +593,7 @@ We maintain strict formal proof anchors (`formal_status`) mapping our Rust imple
 | `upstream_catalog_digest_hex` | `17a6d8e17d9a4847231a255ffb1214db0319a7a2727ecd80708cb7f08045da1e` |
 | Fiber pins | double-slit **62** · formal **73** · ucrs **9** |
 
-**Sibling Lean declaration snapshots** (via `python3 scripts/check_theorem_counts_ssot.py` → [`scripts/theorem_counts_snapshot.json`](scripts/theorem_counts_snapshot.json); matches MaOS `docs/ECOSYSTEM_STATE.md`):
+**Sibling Lean declaration snapshots** (via `python3 scripts/check_theorem_counts_ssot.py` → [`scripts/theorem_counts_snapshot.json`](scripts/theorem_counts_snapshot.json); script wins on mismatch):
 
 | Fiber | Lake roots | theorem + lemma (roots-only) |
 |:---|:---|:---|
@@ -705,7 +705,7 @@ Hot/warm/cold boundaries: [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md)
 | **MCP (cold)** | IDE agents, discovery, single-shot gate/predict — sibling [`umst-concrete-cartridge` Agent MCP](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md) |
 | **Formal** | Catalog witnesses, digest pins — [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md) |
 
-Prefer **library/arena calls over Docker MCP** for performance-sensitive proposal loops. Hot/warm/cold boundaries: [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md). **Current State** (shipped vs partial vs USER-gated): [IMPLEMENTATION_EVIDENCE.md](https://github.com/tytolabs/MaOS-Workspace/blob/master/outputs/IMPLEMENTATION_EVIDENCE.md).
+Prefer **library/arena calls over Docker MCP** for performance-sensitive proposal loops. Hot/warm/cold boundaries: [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md). **Gaps / pending (in-repo):** [`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md).
 
 ---
 
