@@ -180,7 +180,7 @@ If you want applied cementitious chemistry, Python, CLI, or MCP tools, see the [
   - [9.3 Working contract (library)](#93-working-contract-library)
   - [9.4 Operational mapping](#94-operational-mapping)
   - [9.5 Proposed (not yet built)](#95-proposed-not-yet-built)
-  - [9.6 Principles (honest)](#96-principles-honest)
+  - [9.6 Principles](#96-principles)
 - [§10 Conclusion: Inferences & Forward Path](#10-conclusion-inferences--forward-path)
   - [What this manifold demonstrates](#what-this-manifold-demonstrates)
   - [What surprised us](#what-surprised-us)
@@ -233,7 +233,7 @@ Each `##` / `###` heading on GitHub gets a stable **anchor**: the part after `#`
 #93-working-contract-library
 #94-operational-mapping
 #95-proposed-not-yet-built
-#96-principles-honest
+#96-principles
 #10-conclusion-inferences--forward-path
 #what-this-manifold-demonstrates
 #what-surprised-us
@@ -667,7 +667,7 @@ Documented for agents under Proposed in the concrete MCP contract — **not** av
 * `umst_dry_run`, `umst_promote_contribution` (MCP), `umst_arena_session` fused tool
 * WebSocket voxel streaming from this repo (MCP transport verified elsewhere is **stdio**)
 
-### 9.6 Principles (honest)
+### 9.6 Principles
 
 * **Continuity of flow.** DEC cochain structure; `d ∘ d = 0` is algebraic.
 * **Admissibility is runtime gate law**, not a marketing metaphor for rustc errors — illegal transitions fail witnesses / reject, they do not become “compile-time type errors” in this README’s sense.
