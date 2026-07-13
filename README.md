@@ -11,7 +11,6 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 > _This ecosystem is dedicated to the thousands of unnamed contributors who wrote formal proofs, maintained open-source compilers, and built mathematical libraries for years — often without evidence that any of it would be used beyond pure theory. They chose to make their work free, because they understood that knowledge about physical reality cannot be owned. Whatever this system achieves is yours._
 
-
 <!-- readme:status -->
 [![CI — Rust](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
 [![CI — Catalog drift](https://github.com/tytolabs/umst-manifold/actions/workflows/umst-catalog-drift.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/umst-catalog-drift.yml)
@@ -62,8 +61,6 @@ Functors: domain cartridges as `IScienceCartridge` instances over the shared DEC
 | `DesignRepresentation` | Pure latent → geometry decode (orthogonal to material law) | [`src/core/traits.rs:98`](src/core/traits.rs) |
 
 Port contract detail: [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md).
-
-
 
 ### Quick verify (commands we ran)
 
@@ -121,7 +118,7 @@ If you want applied cementitious chemistry, Python, CLI, or MCP tools, see the [
 | Foundations | [§1](#1-the-core-approach) · [§2](#2-unified-material-state-pipeline-umst-carrier) · [§3](#3-cross-domain-integration-specifications) |
 | Architecture & surfaces | [§4](#4-exhaustive-architecture-topology) · [§5](#5-surfaces--entrypoints) |
 | Solvers & ops | [§6](#6-advanced-continuous-solver-specifications) · [§7](#7-technical-deployment--agentic-instructions) · [§8](#8-formal-foundations-and-citation) |
-| Agents & wrap-up | [§9](#9-special-protocol-note-to-autonomous-ai-agents--systems) · [§10](#10-conclusion-inferences--forward-path) · [Related](#related-repositories) · [Authors](#authors) · [Acknowledgments](#acknowledgments) · [Contributing](#contributing) · [Citation](#citation) · [License](#license) |
+| Agents & wrap-up | [§9](#9-special-protocol-note-to-autonomous-ai-agents--systems) · [§11](#11-conclusion-inferences--forward-path) · [Related](#related-repositories) · [Authors](#authors) · [Acknowledgments](#acknowledgments) · [Contributing](#contributing) · [Citation](#citation) · [License](#license) |
 
 **Detailed outline** — every entry links to a stable anchor (`README.md#…`); collapsible sections use `<details>` but share the same deep-link fragments.
 
@@ -164,7 +161,7 @@ If you want applied cementitious chemistry, Python, CLI, or MCP tools, see the [
   - [9.4 Operational mapping](#94-operational-mapping)
   - [9.5 Proposed (not yet built)](#95-proposed-not-yet-built)
   - [9.6 Principles](#96-principles)
-- [§10 Conclusion: Inferences & Forward Path](#10-conclusion-inferences--forward-path)
+- [§11 Conclusion: Inferences & Forward Path](#11-conclusion-inferences--forward-path)
   - [What this manifold demonstrates](#what-this-manifold-demonstrates)
   - [What surprised us](#what-surprised-us)
 - [Related repositories](#related-repositories)
@@ -217,7 +214,7 @@ Each `##` / `###` heading on GitHub gets a stable **anchor**: the part after `#`
 #94-operational-mapping
 #95-proposed-not-yet-built
 #96-principles
-#10-conclusion-inferences--forward-path
+#11-conclusion-inferences--forward-path
 #what-this-manifold-demonstrates
 #what-surprised-us
 #related-repositories
@@ -671,7 +668,6 @@ Authoritative agent MCP surface = concrete `umst-mcp` — **not** this README’
 ### Honesty ledger (one status pointer)
 
 Proven vs aspirational accounting lives in **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)** (verified rollup: [`docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md`](docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md); redirect aliases [`docs/QUALITY_PROGRESS_VERIFIED.md`](docs/QUALITY_PROGRESS_VERIFIED.md), [`docs/QUALITY_WITNESS_LADDER.md`](docs/QUALITY_WITNESS_LADDER.md) → release witness docs). Checklist / roadmap redirects: [`docs/QUALITY_CHECKLIST.md`](docs/QUALITY_CHECKLIST.md), [`docs/PENDING_QUALITY_ROADMAP.md`](docs/PENDING_QUALITY_ROADMAP.md). Strengthen every disclaimer below; soften none.
-
 
 ### What's proven, what isn't (the honest version)
 
