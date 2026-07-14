@@ -11,7 +11,6 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 > _This ecosystem is dedicated to the thousands of unnamed contributors who wrote formal proofs, maintained open-source compilers, and built mathematical libraries for years — often without evidence that any of it would be used beyond pure theory. They chose to make their work free, because they understood that knowledge about physical reality cannot be owned. Whatever this system achieves is yours._
 
-
 <!-- readme:status -->
 [![CI — Rust](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
 [![CI — Catalog drift](https://github.com/tytolabs/umst-manifold/actions/workflows/umst-catalog-drift.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/umst-catalog-drift.yml)
@@ -20,11 +19,18 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 
 > *Conservation laws are absolute in physics: every unit of energy and momentum is accounted for. Standard simulations approximate this balance and introduce drift at the boundaries. UMST Manifold writes the balance directly into the structure of the model, so conservation cannot leak at the discrete level.*
 
+### UMST in plain words
+
+UMST — the **Unified Material-State Tensor** — is one structured mathematical object that can represent and evolve the state of *any* material: what it's made of, the processes acting on it, its surroundings, and how it changes through time. Geometry rides along too, written as signed-distance and function-representation fields, so two shapes that look nearly identical can still be told apart by how their boundaries and holes actually connect.
+
+The point is what happens when the state changes. Every proposed change must pass through the **thermodynamic admissibility gate**: mass has to be conserved and dissipation can't go negative, or the change is rejected outright — the same way nature won't let you create energy from nothing. It's a structural accept/reject, not a soft penalty.
+
+The carrier lives on a smooth, differentiable manifold, implemented in **Rust on Burn tensors**. Domain-specific **cartridges** (concrete today) plug in through **`IScienceCartridge`** and compose under the shared gate; a digest-pinned Lean export inventory sits behind the witnesses ([§8](#8-formal-foundations-and-citation)).
+
+<!-- readme:quality-status -->
 **What it is.** A Rust library (Burn / `burn-ndarray`) that owns the **UMST carrier**, Discrete Exterior Calculus (DEC) cochain structure, continuous solver kernels, and the **thermodynamic admissibility gate**. Domain cartridges plug in through typed ports — they do not fork the substrate.
 
 **The gate idea.** Every proposed state change is subject to the thermodynamic admissibility gate (reduced Clausius–Duhem + Landauer cost bounds): conserve mass, never produce negative dissipation, or be **rejected** — a structural accept/reject, not a soft penalty.
-
-**Honest is / isn't.** **Is:** in-repo DEC/gate/solvers, catalog lock SSOT, witness ladder automation, library APIs. **Isn't:** an end-user app, MCP server, or cement chemistry — those live in sibling cartridges. Do **not** blend “CI green”, “catalog modules wired on hot path”, and “org publish” into one completion %.
 
 ### Shared stack (matter · knowing · acting · time)
 
@@ -55,32 +61,6 @@ Functors: domain cartridges as `IScienceCartridge` instances over the shared DEC
 | `DesignRepresentation` | Pure latent → geometry decode (orthogonal to material law) | [`src/core/traits.rs:98`](src/core/traits.rs) |
 
 Port contract detail: [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md).
-
-### Hot arena vs cold edge (performance honesty)
-
-| Path | Where | Character |
-|:---|:---|:---|
-| **Hot / warm (this repo)** | Library kernels + [`umst-runtime-arena`](umst-runtime-arena/) | Pure tensor / native in-process; DEC, gate witnesses, solver steps, parse-once arena |
-| **Cold edge (not here)** | Sibling [`umst-concrete-cartridge` `umst-mcp`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md) | Effectful stdio MCP: contribute / memory / explain |
-
-Authoritative agent MCP surface = concrete `umst-mcp` — **not** this README’s crate tree. See [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md) · [`docs/benchmarks/arena_vs_mcp.md`](docs/benchmarks/arena_vs_mcp.md).
-
-### Honesty ledger (one status pointer)
-
-Proven vs aspirational accounting lives in **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)** (verified rollup: [`docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md`](docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md); redirect aliases [`docs/QUALITY_PROGRESS_VERIFIED.md`](docs/QUALITY_PROGRESS_VERIFIED.md), [`docs/QUALITY_WITNESS_LADDER.md`](docs/QUALITY_WITNESS_LADDER.md) → release witness docs). Checklist / roadmap redirects: [`docs/QUALITY_CHECKLIST.md`](docs/QUALITY_CHECKLIST.md), [`docs/PENDING_QUALITY_ROADMAP.md`](docs/PENDING_QUALITY_ROADMAP.md). Strengthen every disclaimer below; soften none.
-
-### UMST in plain words
-
-UMST — the **Unified Material-State Tensor** — is one structured mathematical object that can represent and evolve the state of *any* material: what it's made of, the processes acting on it, its surroundings, and how it changes through time. Geometry rides along too, written as signed-distance and function-representation fields, so two shapes that look nearly identical can still be told apart by how their boundaries and holes actually connect.
-
-The point is what happens when the state changes. Every proposed change must pass through the **thermodynamic admissibility gate**: mass has to be conserved and dissipation can't go negative, or the change is rejected outright — the same way nature won't let you create energy from nothing. It's a structural accept/reject, not a soft penalty.
-
-The carrier lives on a smooth, differentiable manifold, implemented in **Rust on Burn tensors**. Domain-specific **cartridges** (concrete today) plug in through **`IScienceCartridge`** and compose under the shared gate; a digest-pinned Lean export inventory sits behind the witnesses ([§8](#8-formal-foundations-and-citation)).
-
-<!-- readme:quality-status -->
-### What's proven, what isn't (the honest version)
-
-We don't pretend everything is proven. Conservation structure is mathematical, and the thermodynamic gate is enforced in code on every step — but only part of the Lean/Coq/Agda library is hand-wired onto the runtime gate path, **by design**: at inference time the robot runs fast Rust witnesses, not a theorem prover. There are three different things people mean by "done" here — in-repo automation, how much of the proof library is wired on the hot path, and organization-level publishing — and they should **never** be blended into one "completion %". The honest, current accounting of each lives in one place: **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)**.
 
 ### Quick verify (commands we ran)
 
@@ -138,7 +118,7 @@ If you want applied cementitious chemistry, Python, CLI, or MCP tools, see the [
 | Foundations | [§1](#1-the-core-approach) · [§2](#2-unified-material-state-pipeline-umst-carrier) · [§3](#3-cross-domain-integration-specifications) |
 | Architecture & surfaces | [§4](#4-exhaustive-architecture-topology) · [§5](#5-surfaces--entrypoints) |
 | Solvers & ops | [§6](#6-advanced-continuous-solver-specifications) · [§7](#7-technical-deployment--agentic-instructions) · [§8](#8-formal-foundations-and-citation) |
-| Agents & wrap-up | [§9](#9-special-protocol-note-to-autonomous-ai-agents--systems) · [§10](#10-conclusion-inferences--forward-path) · [Related](#related-repositories) · [Authors](#authors) · [Acknowledgments](#acknowledgments) · [Contributing](#contributing) · [Citation](#citation) · [License](#license) |
+| Agents & wrap-up | [§9](#9-special-protocol-note-to-autonomous-ai-agents--systems) · [§11](#11-conclusion-inferences--forward-path) · [Related](#related-repositories) · [Authors](#authors) · [Acknowledgments](#acknowledgments) · [Contributing](#contributing) · [Citation](#citation) · [License](#license) |
 
 **Detailed outline** — every entry links to a stable anchor (`README.md#…`); collapsible sections use `<details>` but share the same deep-link fragments.
 
@@ -181,7 +161,7 @@ If you want applied cementitious chemistry, Python, CLI, or MCP tools, see the [
   - [9.4 Operational mapping](#94-operational-mapping)
   - [9.5 Proposed (not yet built)](#95-proposed-not-yet-built)
   - [9.6 Principles](#96-principles)
-- [§10 Conclusion: Inferences & Forward Path](#10-conclusion-inferences--forward-path)
+- [§11 Conclusion: Inferences & Forward Path](#11-conclusion-inferences--forward-path)
   - [What this manifold demonstrates](#what-this-manifold-demonstrates)
   - [What surprised us](#what-surprised-us)
 - [Related repositories](#related-repositories)
@@ -234,7 +214,7 @@ Each `##` / `###` heading on GitHub gets a stable **anchor**: the part after `#`
 #94-operational-mapping
 #95-proposed-not-yet-built
 #96-principles
-#10-conclusion-inferences--forward-path
+#11-conclusion-inferences--forward-path
 #what-this-manifold-demonstrates
 #what-surprised-us
 #related-repositories
@@ -672,7 +652,27 @@ Documented for agents under Proposed in the concrete MCP contract — **not** av
 * **Continuity of flow.** DEC cochain structure; `d ∘ d = 0` is algebraic.
 * **Admissibility is runtime gate law**, not a marketing metaphor for rustc errors — illegal transitions fail witnesses / reject, they do not become “compile-time type errors” in this README’s sense.
 * **Information cost.** Landauer / MI observers bound informational updates on the gated path.
-## 10. Conclusion: Inferences & Forward Path
+
+## 10. Honesty and limits
+
+**Honest is / isn't.** **Is:** in-repo DEC/gate/solvers, catalog lock SSOT, witness ladder automation, library APIs. **Isn't:** an end-user app, MCP server, or cement chemistry — those live in sibling cartridges. Do **not** blend “CI green”, “catalog modules wired on hot path”, and “org publish” into one completion %.
+
+### Hot arena vs cold edge (performance honesty)
+
+| Path | Where | Character |
+|:---|:---|:---|
+| **Hot / warm (this repo)** | Library kernels + [`umst-runtime-arena`](umst-runtime-arena/) | Pure tensor / native in-process; DEC, gate witnesses, solver steps, parse-once arena |
+| **Cold edge (not here)** | Sibling [`umst-concrete-cartridge` `umst-mcp`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md) | Effectful stdio MCP: contribute / memory / explain |
+
+Authoritative agent MCP surface = concrete `umst-mcp` — **not** this README’s crate tree. See [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md) · [`docs/benchmarks/arena_vs_mcp.md`](docs/benchmarks/arena_vs_mcp.md).
+### Honesty ledger (one status pointer)
+
+Proven vs aspirational accounting lives in **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)** (verified rollup: [`docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md`](docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md); redirect aliases [`docs/QUALITY_PROGRESS_VERIFIED.md`](docs/QUALITY_PROGRESS_VERIFIED.md), [`docs/QUALITY_WITNESS_LADDER.md`](docs/QUALITY_WITNESS_LADDER.md) → release witness docs). Checklist / roadmap redirects: [`docs/QUALITY_CHECKLIST.md`](docs/QUALITY_CHECKLIST.md), [`docs/PENDING_QUALITY_ROADMAP.md`](docs/PENDING_QUALITY_ROADMAP.md). Strengthen every disclaimer below; soften none.
+
+### What's proven, what isn't (the honest version)
+
+We don't pretend everything is proven. Conservation structure is mathematical, and the thermodynamic gate is enforced in code on every step — but only part of the Lean/Coq/Agda library is hand-wired onto the runtime gate path, **by design**: at inference time the robot runs fast Rust witnesses, not a theorem prover. There are three different things people mean by "done" here — in-repo automation, how much of the proof library is wired on the hot path, and organization-level publishing — and they should **never** be blended into one "completion %". The honest, current accounting of each lives in one place: **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)**.
+## 11. Conclusion: Inferences & Forward Path
 
 ### What this manifold demonstrates
 - **Conservation by construction, not by tuning.** Mapping physics onto a discrete exterior calculus complex makes the boundary-of-a-boundary identity (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;d%20\circ%20d%20=%200"><img alt="d \circ d = 0" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;d%20\circ%20d%20=%200" style="vertical-align:middle"></picture>) a structural property of the data, not a convergence target. Drift that traditional FEM accumulates over long simulations is algebraically absent here.
