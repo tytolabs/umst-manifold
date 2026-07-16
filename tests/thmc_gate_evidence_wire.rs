@@ -91,22 +91,14 @@ mod thmc_gate_evidence_wire {
         alpha: f32,
         time: f32,
     ) -> ThmcState<B> {
-        ThmcState {
-            thermal: ThermalPlan {
-                temperature: Tensor::full([1, n, 1], temp, dev),
-            },
-            hydro: HydrologicPlan {
-                humidity: Tensor::full([1, n, 1], humidity, dev),
-            },
-            mechanical: MechanicalPlan {
-                displacement: Tensor::zeros([1, n, 3], dev),
-            },
-            chemical: ChemicalPlan {
-                reaction_extent: Tensor::full([1, n, 1], alpha, dev),
-            },
-            damage: Tensor::zeros([1, n, 1], dev),
+        ThmcState::from_tensors(
+            Tensor::full([1, n, 1], temp, dev),
+            Tensor::full([1, n, 1], humidity, dev),
+            Tensor::zeros([1, n, 3], dev),
+            Tensor::full([1, n, 1], alpha, dev),
+            Tensor::zeros([1, n, 1], dev),
             time,
-        }
+        )
     }
 
     #[test]

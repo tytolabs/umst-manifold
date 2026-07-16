@@ -181,22 +181,14 @@ fn thmc_drying_shrinkage_within_mc2010_notional_band() {
         dmg[i] = if i == 0 { 1.0_f32 } else { 0.0_f32 };
     }
     let damage = Tensor::<B, 3>::from_data(Data::new(dmg, Shape::new([1, n, 1])), &d);
-    let state = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::full([1, n, 1], h_init, &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: Tensor::<B, 3>::full([1, n, 1], 0.7_f32, &d),
-        },
+    let state =     ThmcState::from_tensors(
+        Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
+        Tensor::<B, 3>::full([1, n, 1], h_init, &d),
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        Tensor::<B, 3>::full([1, n, 1], 0.7_f32, &d),
         damage,
-        time: 0.0_f32,
-    };
+        0.0_f32,
+    );
     let mut solver = ThmcSolver {
         dt: 0.05_f32,
         max_newton: 4_usize,
@@ -212,7 +204,7 @@ fn thmc_drying_shrinkage_within_mc2010_notional_band() {
     for _ in 0..560 {
         s = solver.step(&Stub, s, &manifold).expect("THMC step Ok");
     }
-    let h = s.hydro.humidity.clone().into_data().value;
+    let h = s.hydro.humidity.as_tensor().clone().into_data().value;
     let h_surf = h[n - 1];
     let loss = (h_init - h_surf).max(0.0_f32);
     let wc = 0.4_f32;
@@ -395,22 +387,14 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
         "expected positive ψ⁺ from matrix stub; psi_sum={psi_sum}"
     );
 
-    let mk_state = |damage: Tensor<B, 3>| ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::full([batch, n, 1], 293.15_f32, &d),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::full([batch, n, 1], 0.9_f32, &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([batch, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &d),
-        },
+    let mk_state = |damage: Tensor<B, 3>|     ThmcState::from_tensors(
+        Tensor::<B, 3>::full([batch, n, 1], 293.15_f32, &d),
+        Tensor::<B, 3>::full([batch, n, 1], 0.9_f32, &d),
+        Tensor::<B, 3>::zeros([batch, n, 3], &d),
+        Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &d),
         damage,
-        time: 0.0_f32,
-    };
+        0.0_f32,
+    );
 
     let mut solver = ThmcSolver {
         dt: 0.01_f32,
@@ -431,10 +415,7 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
             &manifold,
         )
         .expect("THMC step Ok");
-    let max_d_tension = s_tension
-        .damage
-        .clone()
-        .into_data()
+    let max_d_tension = s_tension.damage.as_tensor().clone().into_data()
         .value
         .iter()
         .copied()
@@ -448,9 +429,7 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
             &manifold_flat,
         )
         .expect("THMC step Ok");
-    let max_d_flat = s_flat
-        .damage
-        .into_data()
+    let max_d_flat = s_flat.damage.as_tensor().clone().into_data()
         .value
         .iter()
         .copied()
@@ -474,22 +453,14 @@ fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
     let exx0 = 0.05_f32;
     let h = 1e-4_f32;
 
-    let mk_state = |damage: Tensor<B, 3>| ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::full([batch, n, 1], 293.15_f32, &d),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::full([batch, n, 1], 0.9_f32, &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([batch, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &d),
-        },
+    let mk_state = |damage: Tensor<B, 3>|     ThmcState::from_tensors(
+        Tensor::<B, 3>::full([batch, n, 1], 293.15_f32, &d),
+        Tensor::<B, 3>::full([batch, n, 1], 0.9_f32, &d),
+        Tensor::<B, 3>::zeros([batch, n, 3], &d),
+        Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &d),
         damage,
-        time: 0.0_f32,
-    };
+        0.0_f32,
+    );
 
     let max_damage_after_step = |exx: f32| -> f32 {
         let mut solver = ThmcSolver {
@@ -511,8 +482,7 @@ fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
                 &manifold,
             )
             .expect("THMC step Ok");
-        s.damage
-            .into_data()
+        s.damage.as_tensor().clone().into_data()
             .value
             .iter()
             .copied()
@@ -610,22 +580,14 @@ fn thmc_implicit_euler_t_alpha_residual_matches_brute_force_two_nodes() {
         damage_m: damage_m.clone(),
         kinetics: kinetics.clone(),
     };
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: trial_t.clone(),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::zeros([1, n, 1], &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: trial_alpha.clone(),
-        },
-        damage: damage_m.clone(),
-        time: 0.0_f32,
-    };
+    let trial =     ThmcState::from_tensors(
+        trial_t.clone(),
+        Tensor::<B, 3>::zeros([1, n, 1], &d),
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        trial_alpha.clone(),
+        damage_m.clone(),
+        0.0_f32,
+    );
     let (r_t, r_alpha) = assembler.assemble(&trial).expect("assemble");
 
     let t = trial_t.into_data().value;
@@ -703,22 +665,14 @@ fn thmc_implicit_euler_t_h_alpha_residual_humidity_matches_brute_force_two_nodes
         damage_m: damage_m.clone(),
         kinetics: kinetics.clone(),
     };
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: trial_t.clone(),
-        },
-        hydro: HydrologicPlan {
-            humidity: trial_h.clone(),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: trial_alpha.clone(),
-        },
-        damage: damage_m.clone(),
-        time: 0.0_f32,
-    };
+    let trial =     ThmcState::from_tensors(
+        trial_t.clone(),
+        trial_h.clone(),
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        trial_alpha.clone(),
+        damage_m.clone(),
+        0.0_f32,
+    );
     let (r_t, r_h, r_alpha) = assembler.assemble(&trial).expect("assemble");
 
     let t = trial_t.into_data().value;
@@ -840,23 +794,17 @@ fn thmc_implicit_euler_t_h_alpha_u_placeholder_r_u_and_flat_layout_two_nodes() {
         damage_m: damage_m.clone(),
         kinetics,
     };
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: trial_t,
-        },
-        hydro: HydrologicPlan { humidity: trial_h },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::from_data(
+    let trial =     ThmcState::from_tensors(
+        trial_t,
+        trial_h,
+        Tensor::<B, 3>::from_data(
                 Data::new(u_vals.clone(), Shape::new([1, n, 3])),
                 &d,
             ),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: trial_alpha,
-        },
-        damage: damage_m,
-        time: 0.0_f32,
-    };
+        trial_alpha,
+        damage_m,
+        0.0_f32,
+    );
     let (_r_t, _r_h, _r_alpha, r_u) = assembler
         .assemble_with_mechanics_placeholder_r_u(&trial)
         .expect("assemble four blocks");
@@ -967,22 +915,14 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
         damage_m: damage.clone(),
         kinetics,
     };
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::full([batch, n, 1], 0.55_f32, &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: u_star,
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: alpha_hydr,
-        },
+    let trial =     ThmcState::from_tensors(
+        Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
+        Tensor::<B, 3>::full([batch, n, 1], 0.55_f32, &d),
+        u_star,
+        alpha_hydr,
         damage,
-        time: 0.0_f32,
-    };
+        0.0_f32,
+    );
 
     let r_u = assembler
         .evaluate_quasi_static_r_u(
@@ -1115,22 +1055,14 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
         damage_m: damage.clone(),
         kinetics,
     };
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::full([batch, n, 1], h_shared, &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: u_star,
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: alpha_hydr,
-        },
+    let trial =     ThmcState::from_tensors(
+        Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
+        Tensor::<B, 3>::full([batch, n, 1], h_shared, &d),
+        u_star,
+        alpha_hydr,
         damage,
-        time: 0.0_f32,
-    };
+        0.0_f32,
+    );
 
     let r_u = assembler
         .evaluate_quasi_static_r_u(
@@ -1242,22 +1174,14 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
 
     let l2_vec = |t: Tensor<B, 3>| -> f32 { t.clone().mul(t.clone()).sum().into_scalar().sqrt() };
 
-    let trial_flat = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::full([batch, n, 1], 0.62_f32, &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: u_star.clone(),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: alpha_hydr.clone(),
-        },
-        damage: damage.clone(),
-        time: 0.0_f32,
-    };
+    let trial_flat =     ThmcState::from_tensors(
+        Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
+        Tensor::<B, 3>::full([batch, n, 1], 0.62_f32, &d),
+        u_star.clone(),
+        alpha_hydr.clone(),
+        damage.clone(),
+        0.0_f32,
+    );
     let r_flat = assembler
         .evaluate_quasi_static_r_u(
             &trial_flat,
@@ -1269,22 +1193,14 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
         .expect("evaluate_quasi_static_r_u flat humidity");
     let n_flat = l2_vec(r_flat);
 
-    let trial_dry = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::full([batch, n, 1], 0.22_f32, &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: u_star,
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: alpha_hydr,
-        },
+    let trial_dry =     ThmcState::from_tensors(
+        Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
+        Tensor::<B, 3>::full([batch, n, 1], 0.22_f32, &d),
+        u_star,
+        alpha_hydr,
         damage,
-        time: 0.0_f32,
-    };
+        0.0_f32,
+    );
     let r_dry = assembler
         .evaluate_quasi_static_r_u(
             &trial_dry,
@@ -1345,22 +1261,14 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
         damage_m: damage_m.clone(),
         kinetics,
     };
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::full([batch, n, 1], 0.55_f32, &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([batch, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: alpha_hydr,
-        },
-        damage: damage_m,
-        time: 0.0_f32,
-    };
+    let trial =     ThmcState::from_tensors(
+        Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
+        Tensor::<B, 3>::full([batch, n, 1], 0.55_f32, &d),
+        Tensor::<B, 3>::zeros([batch, n, 3], &d),
+        alpha_hydr,
+        damage_m,
+        0.0_f32,
+    );
 
     let cross_section_area = 0.01_f32;
     let l2_full = assembler
@@ -1482,20 +1390,14 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
         damage_m: damage_m.clone(),
         kinetics,
     };
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: trial_t,
-        },
-        hydro: HydrologicPlan { humidity: trial_h },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: trial_alpha,
-        },
-        damage: damage_m,
-        time: 0.0_f32,
-    };
+    let trial =     ThmcState::from_tensors(
+        trial_t,
+        trial_h,
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        trial_alpha,
+        damage_m,
+        0.0_f32,
+    );
 
     let cross_section_area = 0.01_f32;
     let (_final, norms) = assembler
@@ -1593,20 +1495,14 @@ fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() 
         damage_m: damage_m.clone(),
         kinetics,
     };
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: trial_t,
-        },
-        hydro: HydrologicPlan { humidity: trial_h },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: trial_alpha,
-        },
-        damage: damage_m,
-        time: 0.0_f32,
-    };
+    let trial =     ThmcState::from_tensors(
+        trial_t,
+        trial_h,
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        trial_alpha,
+        damage_m,
+        0.0_f32,
+    );
 
     let cross_section_area = 0.01_f32;
     let (_final, norm_before, norm_after) = assembler
@@ -1696,20 +1592,14 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
         damage_m: damage_m.clone(),
         kinetics,
     };
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: trial_t,
-        },
-        hydro: HydrologicPlan { humidity: trial_h },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: trial_alpha,
-        },
-        damage: damage_m,
-        time: 0.0_f32,
-    };
+    let trial =     ThmcState::from_tensors(
+        trial_t,
+        trial_h,
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        trial_alpha,
+        damage_m,
+        0.0_f32,
+    );
 
     let cross_section_area = 0.01_f32;
     let max_iters = 5_usize;
@@ -1843,20 +1733,14 @@ fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() 
         damage_m: damage_m.clone(),
         kinetics,
     };
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: trial_t,
-        },
-        hydro: HydrologicPlan { humidity: trial_h },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: trial_alpha,
-        },
-        damage: damage_m,
-        time: 0.0_f32,
-    };
+    let trial =     ThmcState::from_tensors(
+        trial_t,
+        trial_h,
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        trial_alpha,
+        damage_m,
+        0.0_f32,
+    );
 
     let cross_section_area = 0.01_f32;
     let max_iters = 5_usize;
@@ -1978,20 +1862,14 @@ fn thmc_implicit_euler_t_h_alpha_multi_newton_monotone_stacked_residual_norm() {
         damage_m: damage_m.clone(),
         kinetics,
     };
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: trial_t,
-        },
-        hydro: HydrologicPlan { humidity: trial_h },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: trial_alpha,
-        },
-        damage: damage_m,
-        time: 0.0_f32,
-    };
+    let trial =     ThmcState::from_tensors(
+        trial_t,
+        trial_h,
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        trial_alpha,
+        damage_m,
+        0.0_f32,
+    );
     let (_final, norms) = assembler
         .damped_newton_iterations(&trial, 2_usize, 1.0_f32, 1.0e-5_f32)
         .expect("two damped Newton iterations on (T,h,α)");
@@ -2041,22 +1919,14 @@ fn thmc_implicit_euler_t_alpha_one_newton_lowers_residual_norm() {
         damage_m: damage_m.clone(),
         kinetics,
     };
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: trial_t,
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::zeros([1, n, 1], &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: trial_alpha,
-        },
-        damage: damage_m,
-        time: 0.0_f32,
-    };
+    let trial =     ThmcState::from_tensors(
+        trial_t,
+        Tensor::<B, 3>::zeros([1, n, 1], &d),
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        trial_alpha,
+        damage_m,
+        0.0_f32,
+    );
     let (new_trial, n0, n1) = assembler
         .one_damped_newton_step(&trial, 1.0_f32, 1.0e-5_f32)
         .expect("one damped Newton step");
@@ -2110,45 +1980,37 @@ fn thmc_t_alpha_newton_residual_preserves_hydro_mechanics_fields() {
     };
     let h_vals = vec![0.71_f32, 0.84_f32];
     let disp_vals: Vec<f32> = (0..n * 3).map(|k| 0.01_f32 * (1 + k) as f32).collect();
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: trial_t,
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::from_data(
+    let trial =     ThmcState::from_tensors(
+        trial_t,
+        Tensor::<B, 3>::from_data(
                 Data::new(h_vals.clone(), Shape::new([1, n, 1])),
                 &d,
             ),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::from_data(
+        Tensor::<B, 3>::from_data(
                 Data::new(disp_vals.clone(), Shape::new([1, n, 3])),
                 &d,
             ),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: trial_alpha,
-        },
-        damage: damage_m,
-        time: 0.42_f32,
-    };
+        trial_alpha,
+        damage_m,
+        0.42_f32,
+    );
     let (new_trial, _, _) = assembler
         .one_damped_newton_step(&trial, 1.0_f32, 1.0e-5_f32)
         .expect("one damped Newton step");
     assert_eq!(
-        trial.hydro.humidity.clone().into_data().value,
-        new_trial.hydro.humidity.into_data().value,
+        trial.hydro.humidity.as_tensor().clone().into_data().value,
+        new_trial.hydro.humidity.as_tensor().clone().into_data().value,
         "humidity must be untouched by (T,α) Newton (not in stacked residual)"
     );
     assert_eq!(
-        trial.mechanical.displacement.clone().into_data().value,
-        new_trial.mechanical.displacement.into_data().value,
+        trial.mechanical.displacement.as_tensor().clone().into_data().value,
+        new_trial.mechanical.displacement.as_tensor().clone().into_data().value,
         "displacement must be untouched by (T,α) Newton (not in stacked residual)"
     );
     assert_eq!(trial.time, new_trial.time);
     assert_eq!(
-        trial.damage.clone().into_data().value,
-        new_trial.damage.into_data().value
+        trial.damage.as_tensor().clone().into_data().value,
+        new_trial.damage.as_tensor().clone().into_data().value
     );
 }
 
@@ -2186,22 +2048,14 @@ fn thmc_implicit_euler_t_alpha_multi_newton_monotone_residual_norm_decrease() {
         damage_m: damage_m.clone(),
         kinetics,
     };
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: trial_t,
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::zeros([1, n, 1], &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: trial_alpha,
-        },
-        damage: damage_m,
-        time: 0.0_f32,
-    };
+    let trial =     ThmcState::from_tensors(
+        trial_t,
+        Tensor::<B, 3>::zeros([1, n, 1], &d),
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        trial_alpha,
+        damage_m,
+        0.0_f32,
+    );
     let (_final_trial, norms) = assembler
         .damped_newton_iterations(&trial, 2_usize, 1.0_f32, 1.0e-5_f32)
         .expect("two damped Newton iterations");
@@ -2228,22 +2082,14 @@ fn thmc_implicit_euler_t_alpha_multi_newton_monotone_residual_norm_decrease() {
 }
 
 fn clone_thmc_state(s: &ThmcState<B>) -> ThmcState<B> {
-    ThmcState {
-        thermal: ThermalPlan {
-            temperature: s.thermal.temperature.clone(),
-        },
-        hydro: HydrologicPlan {
-            humidity: s.hydro.humidity.clone(),
-        },
-        mechanical: MechanicalPlan {
-            displacement: s.mechanical.displacement.clone(),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: s.chemical.reaction_extent.clone(),
-        },
-        damage: s.damage.clone(),
-        time: s.time,
-    }
+    ThmcState::from_tensors(
+        s.thermal.temperature.as_tensor().clone(),
+        s.hydro.humidity.as_tensor().clone(),
+        s.mechanical.displacement.as_tensor().clone(),
+        s.chemical.reaction_extent.as_tensor().clone(),
+        s.damage.as_tensor().clone(),
+        s.time,
+    )
 }
 
 fn thmc_state_with_t_alpha(
@@ -2251,18 +2097,14 @@ fn thmc_state_with_t_alpha(
     temperature: Tensor<B, 3>,
     reaction_extent: Tensor<B, 3>,
 ) -> ThmcState<B> {
-    ThmcState {
-        thermal: ThermalPlan { temperature },
-        hydro: HydrologicPlan {
-            humidity: base.hydro.humidity.clone(),
-        },
-        mechanical: MechanicalPlan {
-            displacement: base.mechanical.displacement.clone(),
-        },
-        chemical: ChemicalPlan { reaction_extent },
-        damage: base.damage.clone(),
-        time: base.time,
-    }
+    ThmcState::from_tensors(
+        temperature,
+        base.hydro.humidity.as_tensor().clone(),
+        base.mechanical.displacement.as_tensor().clone(),
+        reaction_extent,
+        base.damage.as_tensor().clone(),
+        base.time,
+    )
 }
 
 /// Opt-in damped Newton on \((T,\alpha)\) must change the post-step state vs the legacy explicit split
@@ -2273,28 +2115,20 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let state0 = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::from_data(
+    let state0 =     ThmcState::from_tensors(
+        Tensor::<B, 3>::from_data(
                 Data::new(vec![301.0_f32, 289.0_f32], Shape::new([1, n, 1])),
                 &d,
             ),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: Tensor::<B, 3>::from_data(
+        Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        Tensor::<B, 3>::from_data(
                 Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
                 &d,
             ),
-        },
-        damage: damage.clone(),
-        time: 0.0_f32,
-    };
+        damage.clone(),
+        0.0_f32,
+    );
 
     let kinetics = reference_reaction_extent_kinetics();
     let mut solver_explicit = ThmcSolver {
@@ -2327,16 +2161,18 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
     let t_diff = s_exp
         .thermal
         .temperature
+        .as_tensor()
         .clone()
-        .sub(s_imp.thermal.temperature.clone())
+        .sub(s_imp.thermal.temperature.as_tensor().clone())
         .abs()
         .sum()
         .into_scalar();
     let a_diff = s_exp
         .chemical
         .reaction_extent
+        .as_tensor()
         .clone()
-        .sub(s_imp.chemical.reaction_extent.clone())
+        .sub(s_imp.chemical.reaction_extent.as_tensor().clone())
         .abs()
         .sum()
         .into_scalar();
@@ -2354,22 +2190,14 @@ fn thmc_step_monolithic_newton_errors_when_both_implicit_flags_set() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let state0 = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
-        },
-        damage: damage.clone(),
-        time: 0.0_f32,
-    };
+    let state0 =     ThmcState::from_tensors(
+        Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
+        Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
+        damage.clone(),
+        0.0_f32,
+    );
     let mut solver = ThmcSolver {
         implicit_t_alpha_newton: Some(ThmcImplicitTAlphaNewtonConfig {
             iterations: 3_usize,
@@ -2402,22 +2230,14 @@ fn thmc_step_monolithic_newton_errors_when_drying_sink_enabled() {
     let d = dev();
     let n = 2usize;
     let manifold = chain_manifold(n);
-    let state0 = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
-        },
-        damage: Tensor::<B, 3>::zeros([1, n, 1], &d),
-        time: 0.0_f32,
-    };
+    let state0 =     ThmcState::from_tensors(
+        Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
+        Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
+        Tensor::<B, 3>::zeros([1, n, 1], &d),
+        0.0_f32,
+    );
     let mut solver = ThmcSolver {
         drying_last_node_evaporation_k: 0.1_f32,
         monolithic_thmc_newton: Some(ThmcMonolithicNewtonConfig::default()),
@@ -2449,22 +2269,14 @@ fn thmc_step_monolithic_newton_errors_when_stacked_dof_count_exceeds_64() {
         "test expects N such that stacked DOFs exceed dense cap"
     );
     let manifold = chain_manifold(n);
-    let state0 = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
-        },
-        damage: Tensor::<B, 3>::zeros([1, n, 1], &d),
-        time: 0.0_f32,
-    };
+    let state0 =     ThmcState::from_tensors(
+        Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
+        Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &d),
+        Tensor::<B, 3>::zeros([1, n, 1], &d),
+        0.0_f32,
+    );
     let mut solver = ThmcSolver {
         drying_last_node_evaporation_k: 0.0_f32,
         monolithic_thmc_newton: Some(ThmcMonolithicNewtonConfig::default()),
@@ -2528,22 +2340,14 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
         &d,
     );
-    let state0 = ThmcState {
-        thermal: ThermalPlan {
-            temperature: t_n.clone(),
-        },
-        hydro: HydrologicPlan {
-            humidity: h_n.clone(),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: alpha_n.clone(),
-        },
-        damage: damage.clone(),
-        time: 0.0_f32,
-    };
+    let state0 =     ThmcState::from_tensors(
+        t_n.clone(),
+        h_n.clone(),
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        alpha_n.clone(),
+        damage.clone(),
+        0.0_f32,
+    );
 
     let mut solver = ThmcSolver {
         dt,
@@ -2561,10 +2365,10 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         .expect("monolithic step");
 
     // --- Mirror `step_experimental` monolithic predictor + standalone Newton ---
-    let device = state0.thermal.temperature.device();
-    let t_old = state0.thermal.temperature.clone();
-    let h_old = state0.hydro.humidity.clone();
-    let alpha_n = state0.chemical.reaction_extent.clone();
+    let device = state0.thermal.temperature.as_tensor().device();
+    let t_old = state0.thermal.temperature.as_tensor().clone();
+    let h_old = state0.hydro.humidity.as_tensor().clone();
+    let alpha_n = state0.chemical.reaction_extent.as_tensor().clone();
     let damage_m = damage.clone();
     let lap_t =
         TopologicalLaplacian::scalar_laplacian(t_old.clone(), edges_b1.clone(), damage_m.clone());
@@ -2614,7 +2418,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         Tensor::<B, 3>::zeros([batch, n, 1], &device).add_scalar(kinetics.stiffness_nu);
     let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
     let (u_predict, _) = VectorMechanicsSolver::solve_equilibrium(
-        state0.mechanical.displacement.clone(),
+        state0.mechanical.displacement.as_tensor().clone(),
         coords_n3.clone(),
         stiffness,
         bf.clone(),
@@ -2625,29 +2429,21 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         &inner_cfg,
     );
 
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: t_predict,
-        },
-        hydro: HydrologicPlan {
-            humidity: h_predict,
-        },
-        mechanical: MechanicalPlan {
-            displacement: u_predict,
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: alpha_predict,
-        },
-        damage: state0.damage.clone(),
-        time: state0.time,
-    };
+    let trial =     ThmcState::from_tensors(
+        t_predict,
+        h_predict,
+        u_predict,
+        alpha_predict,
+        state0.damage.as_tensor().clone(),
+        state0.time,
+    );
 
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: t_old.clone(),
         humidity_n: h_old.clone(),
         alpha_n: alpha_n.clone(),
-        displacement_n: state0.mechanical.displacement.clone(),
+        displacement_n: state0.mechanical.displacement.as_tensor().clone(),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1: edges_b1.clone(),
@@ -2670,18 +2466,11 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         .expect("standalone monolithic Newton");
 
     let eps = 5e-5_f32;
-    for (a, b) in s_step
-        .thermal
-        .temperature
-        .clone()
-        .into_data()
+    for (a, b) in s_step.thermal.temperature.as_tensor().clone().into_data()
         .value
         .iter()
         .zip(
-            updated_standalone
-                .thermal
-                .temperature
-                .into_data()
+            updated_standalone.thermal.temperature.as_tensor().clone().into_data()
                 .value
                 .iter(),
         )
@@ -2691,44 +2480,31 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
     for (a, b) in s_step
         .hydro
         .humidity
+        .as_tensor()
         .clone()
         .into_data()
         .value
         .iter()
-        .zip(updated_standalone.hydro.humidity.into_data().value.iter())
+        .zip(updated_standalone.hydro.humidity.as_tensor().clone().into_data().value.iter())
     {
         assert!((a - b).abs() < eps, "h mismatch: {a} vs {b}");
     }
-    for (a, b) in s_step
-        .chemical
-        .reaction_extent
-        .clone()
-        .into_data()
+    for (a, b) in s_step.chemical.reaction_extent.as_tensor().clone().into_data()
         .value
         .iter()
         .zip(
-            updated_standalone
-                .chemical
-                .reaction_extent
-                .into_data()
+            updated_standalone.chemical.reaction_extent.as_tensor().clone().into_data()
                 .value
                 .iter(),
         )
     {
         assert!((a - b).abs() < eps, "alpha mismatch: {a} vs {b}");
     }
-    for (a, b) in s_step
-        .mechanical
-        .displacement
-        .clone()
-        .into_data()
+    for (a, b) in s_step.mechanical.displacement.as_tensor().clone().into_data()
         .value
         .iter()
         .zip(
-            updated_standalone
-                .mechanical
-                .displacement
-                .into_data()
+            updated_standalone.mechanical.displacement.as_tensor().clone().into_data()
                 .value
                 .iter(),
         )
@@ -2790,58 +2566,41 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         )
         .expect("standalone monolithic Newton with tol");
 
-    for (a, b) in s_early
-        .thermal
-        .temperature
-        .clone()
-        .into_data()
+    for (a, b) in s_early.thermal.temperature.as_tensor().clone().into_data()
         .value
         .iter()
-        .zip(updated_early.thermal.temperature.into_data().value.iter())
+        .zip(updated_early.thermal.temperature.as_tensor().clone().into_data().value.iter())
     {
         assert!((a - b).abs() < eps, "early-exit T mismatch: {a} vs {b}");
     }
     for (a, b) in s_early
         .hydro
         .humidity
+        .as_tensor()
         .clone()
         .into_data()
         .value
         .iter()
-        .zip(updated_early.hydro.humidity.into_data().value.iter())
+        .zip(updated_early.hydro.humidity.as_tensor().clone().into_data().value.iter())
     {
         assert!((a - b).abs() < eps, "early-exit h mismatch: {a} vs {b}");
     }
-    for (a, b) in s_early
-        .chemical
-        .reaction_extent
-        .clone()
-        .into_data()
+    for (a, b) in s_early.chemical.reaction_extent.as_tensor().clone().into_data()
         .value
         .iter()
         .zip(
-            updated_early
-                .chemical
-                .reaction_extent
-                .into_data()
+            updated_early.chemical.reaction_extent.as_tensor().clone().into_data()
                 .value
                 .iter(),
         )
     {
         assert!((a - b).abs() < eps, "early-exit alpha mismatch: {a} vs {b}");
     }
-    for (a, b) in s_early
-        .mechanical
-        .displacement
-        .clone()
-        .into_data()
+    for (a, b) in s_early.mechanical.displacement.as_tensor().clone().into_data()
         .value
         .iter()
         .zip(
-            updated_early
-                .mechanical
-                .displacement
-                .into_data()
+            updated_early.mechanical.displacement.as_tensor().clone().into_data()
                 .value
                 .iter(),
         )
@@ -2886,31 +2645,23 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
     };
 
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let state0 = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::from_data(
+    let state0 =     ThmcState::from_tensors(
+        Tensor::<B, 3>::from_data(
                 Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
                 &d,
             ),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::from_data(
+        Tensor::<B, 3>::from_data(
                 Data::new(vec![0.50_f32, 0.62_f32], Shape::new([1, n, 1])),
                 &d,
             ),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: Tensor::<B, 3>::from_data(
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        Tensor::<B, 3>::from_data(
                 Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
                 &d,
             ),
-        },
-        damage: damage.clone(),
-        time: 0.0_f32,
-    };
+        damage.clone(),
+        0.0_f32,
+    );
 
     let mut solver_split = ThmcSolver {
         dt,
@@ -2947,10 +2698,10 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
 
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: state0.thermal.temperature.clone(),
-        humidity_n: state0.hydro.humidity.clone(),
-        alpha_n: state0.chemical.reaction_extent.clone(),
-        displacement_n: state0.mechanical.displacement.clone(),
+        temperature_n: state0.thermal.temperature.as_tensor().clone(),
+        humidity_n: state0.hydro.humidity.as_tensor().clone(),
+        alpha_n: state0.chemical.reaction_extent.as_tensor().clone(),
+        displacement_n: state0.mechanical.displacement.as_tensor().clone(),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1: manifold.edges_b1.clone(),
@@ -2998,28 +2749,20 @@ fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
     let n = 2usize;
     let manifold = chain_manifold(n);
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let state0 = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::from_data(
+    let state0 =     ThmcState::from_tensors(
+        Tensor::<B, 3>::from_data(
                 Data::new(vec![301.0_f32, 289.0_f32], Shape::new([1, n, 1])),
                 &d,
             ),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: Tensor::<B, 3>::from_data(
+        Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        Tensor::<B, 3>::from_data(
                 Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
                 &d,
             ),
-        },
-        damage: damage.clone(),
-        time: 0.0_f32,
-    };
+        damage.clone(),
+        0.0_f32,
+    );
 
     let kinetics = reference_reaction_extent_kinetics();
     let mut solver_explicit = ThmcSolver {
@@ -3050,8 +2793,8 @@ fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
         .expect("implicit (T,α) Newton step");
 
     assert_eq!(
-        s_exp.hydro.humidity.into_data().value,
-        s_imp.hydro.humidity.into_data().value,
+        s_exp.hydro.humidity.as_tensor().clone().into_data().value,
+        s_imp.hydro.humidity.as_tensor().clone().into_data().value,
         "humidity transport must not depend on implicit vs explicit (T,α) branch"
     );
 }
@@ -3065,28 +2808,20 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
     let n = 2usize;
     let manifold = chain_manifold(n);
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let state0 = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::from_data(
+    let state0 =     ThmcState::from_tensors(
+        Tensor::<B, 3>::from_data(
                 Data::new(vec![301.0_f32, 289.0_f32], Shape::new([1, n, 1])),
                 &d,
             ),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: Tensor::<B, 3>::from_data(
+        Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        Tensor::<B, 3>::from_data(
                 Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
                 &d,
             ),
-        },
-        damage: damage.clone(),
-        time: 0.0_f32,
-    };
+        damage.clone(),
+        0.0_f32,
+    );
 
     let kinetics = reference_reaction_extent_kinetics();
     let dt = 0.08_f32;
@@ -3119,8 +2854,8 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
 
     let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
         dt,
-        temperature_n: state0.thermal.temperature.clone(),
-        alpha_n: state0.chemical.reaction_extent.clone(),
+        temperature_n: state0.thermal.temperature.as_tensor().clone(),
+        alpha_n: state0.chemical.reaction_extent.as_tensor().clone(),
         edges_b1: manifold.edges_b1.clone(),
         damage_m: damage.clone(),
         kinetics,
@@ -3128,13 +2863,13 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
 
     let trial_exp = thmc_state_with_t_alpha(
         &state0,
-        s_exp.thermal.temperature.clone(),
-        s_exp.chemical.reaction_extent.clone(),
+        s_exp.thermal.temperature.as_tensor().clone(),
+        s_exp.chemical.reaction_extent.as_tensor().clone(),
     );
     let trial_imp = thmc_state_with_t_alpha(
         &state0,
-        s_imp.thermal.temperature.clone(),
-        s_imp.chemical.reaction_extent.clone(),
+        s_imp.thermal.temperature.as_tensor().clone(),
+        s_imp.chemical.reaction_extent.as_tensor().clone(),
     );
 
     let r_exp = assembler

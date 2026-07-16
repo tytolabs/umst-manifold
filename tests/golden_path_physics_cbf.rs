@@ -245,24 +245,27 @@ impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for EmptyCartridge {
 fn physical_result_from_thmc_state<Bk: Backend<FloatElem = f32>>(
     state: &ThmcState<Bk>,
 ) -> PhysicalResult<Bk> {
-    let dev = state.thermal.temperature.device();
-    let batch = state.thermal.temperature.dims()[0];
-    let n = state.thermal.temperature.dims()[1];
+    let dev = state.thermal.temperature.as_tensor().device();
+    let batch = state.thermal.temperature.as_tensor().dims()[0];
+    let n = state.thermal.temperature.as_tensor().dims()[1];
     let t = state
         .thermal
         .temperature
+        .as_tensor()
         .clone()
         .slice([0..batch, 0..n, 0..1])
         .reshape([batch, n]);
     let h = state
         .hydro
         .humidity
+        .as_tensor()
         .clone()
         .slice([0..batch, 0..n, 0..1])
         .reshape([batch, n]);
     let u_energy = state
         .mechanical
         .displacement
+        .as_tensor()
         .clone()
         .powf_scalar(2.0)
         .sum_dim(2)
@@ -270,12 +273,14 @@ fn physical_result_from_thmc_state<Bk: Backend<FloatElem = f32>>(
     let alpha = state
         .chemical
         .reaction_extent
+        .as_tensor()
         .clone()
         .slice([0..batch, 0..n, 0..1])
         .reshape([batch, n]);
     let dissipation = t.abs().add(h.abs()).add(u_energy.clone()).add(alpha.abs());
     let damage_2 = state
         .damage
+        .as_tensor()
         .clone()
         .slice([0..batch, 0..n, 0..1])
         .reshape([batch, n]);
@@ -401,22 +406,14 @@ fn golden_path_thmc_experimental_then_cbf_apply_physics() {
     let mat = matrix_features_mild_strain(n, &dev);
     let manifold = test_umst_two_node_bar_thmc(scalars, mask, pos, mat);
 
-    let state = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::zeros([1, n, 1], &dev).add_scalar(300.0_f32),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::zeros([1, n, 1], &dev).add_scalar(0.5_f32),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &dev),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: Tensor::<B, 3>::zeros([1, n, 1], &dev).add_scalar(0.1_f32),
-        },
-        damage: Tensor::<B, 3>::zeros([1, n, 1], &dev).add_scalar(0.01_f32),
-        time: 0.0,
-    };
+    let state = ThmcState::from_tensors(
+        Tensor::<B, 3>::zeros([1, n, 1], &dev).add_scalar(300.0_f32),
+        Tensor::<B, 3>::zeros([1, n, 1], &dev).add_scalar(0.5_f32),
+        Tensor::<B, 3>::zeros([1, n, 3], &dev),
+        Tensor::<B, 3>::zeros([1, n, 1], &dev).add_scalar(0.1_f32),
+        Tensor::<B, 3>::zeros([1, n, 1], &dev).add_scalar(0.01_f32),
+        0.0,
+    );
 
     let mut orchestrator = TopologyPhysicsOrchestrator::new(ThmcSolver {
         dt: 0.01,

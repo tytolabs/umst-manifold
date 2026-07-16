@@ -137,31 +137,23 @@ fn post_newton_stacked_residual_oracle_matches_independent_recompute_two_nodes()
         Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
         &d,
     );
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::from_data(
-                Data::new(vec![299.5_f32, 305.0_f32], Shape::new([1, n, 1])),
-                &d,
-            ),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::from_data(
-                Data::new(vec![0.51_f32, 0.63_f32], Shape::new([1, n, 1])),
-                &d,
-            ),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &d),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: Tensor::<B, 3>::from_data(
-                Data::new(vec![0.33_f32, 0.56_f32], Shape::new([1, n, 1])),
-                &d,
-            ),
-        },
-        damage: Tensor::<B, 3>::zeros([1, n, 1], &d),
-        time: 0.0_f32,
-    };
+    let trial = ThmcState::from_tensors(
+        Tensor::<B, 3>::from_data(
+            Data::new(vec![299.5_f32, 305.0_f32], Shape::new([1, n, 1])),
+            &d,
+        ),
+        Tensor::<B, 3>::from_data(
+            Data::new(vec![0.51_f32, 0.63_f32], Shape::new([1, n, 1])),
+            &d,
+        ),
+        Tensor::<B, 3>::zeros([1, n, 3], &d),
+        Tensor::<B, 3>::from_data(
+            Data::new(vec![0.33_f32, 0.56_f32], Shape::new([1, n, 1])),
+            &d,
+        ),
+        Tensor::<B, 3>::zeros([1, n, 1], &d),
+        0.0_f32,
+    );
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: t_n,

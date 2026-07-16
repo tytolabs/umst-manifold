@@ -172,22 +172,14 @@ fn apply_physics_thmc_step_errors_without_thmc_coupled() {
     let mask = Tensor::<B, 2>::ones([n, 1], &dev);
     let manifold = test_umst(scalars, mask, None);
 
-    let state = ThmcState {
-        thermal: ThermalPlan {
-            temperature: Tensor::<B, 3>::zeros([1, n, 1], &dev),
-        },
-        hydro: HydrologicPlan {
-            humidity: Tensor::<B, 3>::zeros([1, n, 1], &dev),
-        },
-        mechanical: MechanicalPlan {
-            displacement: Tensor::<B, 3>::zeros([1, n, 3], &dev),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: Tensor::<B, 3>::zeros([1, n, 1], &dev),
-        },
-        damage: Tensor::<B, 3>::zeros([1, n, 1], &dev),
-        time: 0.0,
-    };
+    let state = ThmcState::from_tensors(
+        Tensor::<B, 3>::zeros([1, n, 1], &dev),
+        Tensor::<B, 3>::zeros([1, n, 1], &dev),
+        Tensor::<B, 3>::zeros([1, n, 3], &dev),
+        Tensor::<B, 3>::zeros([1, n, 1], &dev),
+        Tensor::<B, 3>::zeros([1, n, 1], &dev),
+        0.0,
+    );
 
     let mut solver = ThmcSolver {
         dt: 0.01,

@@ -209,8 +209,8 @@ pub struct ThmcImplicitEulerThermalReactionExtentResidual<B: Backend<FloatElem =
 impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual<B> {
     /// Assemble \(R_T, R_\alpha\) at `trial` (same shapes as `temperature` / `reaction_extent` plans).
     pub fn assemble(&self, trial: &ThmcState<B>) -> Result<(Tensor<B, 3>, Tensor<B, 3>), String> {
-        let t = trial.thermal.temperature.clone();
-        let alpha = trial.chemical.reaction_extent.clone();
+        let t = trial.thermal.temperature.as_tensor().clone();
+        let alpha = trial.chemical.reaction_extent.as_tensor().clone();
         let device = t.device();
         let batch = t.dims()[0];
         let n = t.dims()[1];
@@ -277,7 +277,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
     ///   as [`Self::assemble`]).
     /// - **Linear solve:** Gauss–Jordan elimination with partial pivoting on the dense system
     ///   \(J\,\delta = -R\) (host `f32`, intended for small chains / verification only).
-    /// - **Scope:** requires `trial.thermal.temperature.dims()[0] == 1` and
+    /// - **Scope:** requires `trial.thermal.temperature.as_tensor().dims()[0] == 1` and
     ///   `n (f_T + f_\alpha) \le` [`THMC_DENSE_NEWTON_MAX_STACKED_DOFS`] (hard cap).
     ///
     /// Returns `(updated_trial, \|R\|_2 \text{ before}, \|R\|_2 \text{ after})`. Hydro / mechanics /
@@ -299,8 +299,8 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
             return Err("one_damped_newton_step: fd_eps must be positive".into());
         }
 
-        let t_dims = trial.thermal.temperature.dims();
-        let a_dims = trial.chemical.reaction_extent.dims();
+        let t_dims = trial.thermal.temperature.as_tensor().dims();
+        let a_dims = trial.chemical.reaction_extent.as_tensor().dims();
         if t_dims[0] != 1 {
             return Err(format!(
                 "one_damped_newton_step: batch must be 1, got {}",
@@ -322,12 +322,12 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
             ));
         }
 
-        let device = trial.thermal.temperature.device();
+        let device = trial.thermal.temperature.as_tensor().device();
         let (r_t0, r_a0) = self.assemble(trial)?;
         let norm_before = combined_residual_l2(&r_t0, &r_a0);
         let r0 = flatten_two_residuals(&r_t0, &r_a0);
 
-        let mut u = flatten_two_fields(&trial.thermal.temperature, &trial.chemical.reaction_extent);
+        let mut u = flatten_two_fields(trial.thermal.temperature.as_tensor(), trial.chemical.reaction_extent.as_tensor());
         if u.len() != m || r0.len() != m {
             return Err("one_damped_newton_step: internal flatten length mismatch".into());
         }
@@ -446,9 +446,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         &self,
         trial: &ThmcState<B>,
     ) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>), String> {
-        let t = trial.thermal.temperature.clone();
-        let h = trial.hydro.humidity.clone();
-        let alpha = trial.chemical.reaction_extent.clone();
+        let t = trial.thermal.temperature.as_tensor().clone();
+        let h = trial.hydro.humidity.as_tensor().clone();
+        let alpha = trial.chemical.reaction_extent.as_tensor().clone();
         let device = t.device();
         let batch = t.dims()[0];
         let n = t.dims()[1];
@@ -524,7 +524,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         trial: &ThmcState<B>,
     ) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>), String> {
         let (r_t, r_h, r_alpha) = self.assemble(trial)?;
-        let u = trial.mechanical.displacement.clone();
+        let u = trial.mechanical.displacement.as_tensor().clone();
         if self.displacement_n.dims() != u.dims() {
             return Err(format!(
                 "ThmcImplicitEulerThermalHumidityReactionExtentResidual: u^n dims {:?} != trial u dims {:?}",
@@ -577,7 +577,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         body_force: &Tensor<B, 3>,
         cross_section_area: f32,
     ) -> Result<Tensor<B, 3>, String> {
-        let t_dims = trial.thermal.temperature.dims();
+        let t_dims = trial.thermal.temperature.as_tensor().dims();
         let batch = t_dims[0];
         let n = t_dims[1];
         if coords_n3.dims() != [n, 3] {
@@ -598,7 +598,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
                 body_force.dims()
             ));
         }
-        let u = trial.mechanical.displacement.clone();
+        let u = trial.mechanical.displacement.as_tensor().clone();
         if u.dims() != [batch, n, 3] {
             return Err(format!(
                 "evaluate_quasi_static_r_u: displacement dims {:?} != [{batch}, {n}, 3]",
@@ -609,12 +609,13 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         let alpha_bn1 = trial
             .chemical
             .reaction_extent
+            .as_tensor()
             .clone()
             .slice([0..batch, 0..n, 0..1])
             .clamp(1e-6_f32, 1.0_f32);
 
         let edge_shrink_strain_increment = if let Some(wc) = self.ru_shrinkage_binder_liquid_ratio {
-            let h = trial.hydro.humidity.clone();
+            let h = trial.hydro.humidity.as_tensor().clone();
             let h_n = self.humidity_n.clone();
             if h.dims() != [batch, n, 1] {
                 return Err(format!(
@@ -755,9 +756,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
             return Err("one_damped_newton_step (T,h,α): fd_eps must be positive".into());
         }
 
-        let t_dims = trial.thermal.temperature.dims();
-        let h_dims = trial.hydro.humidity.dims();
-        let a_dims = trial.chemical.reaction_extent.dims();
+        let t_dims = trial.thermal.temperature.as_tensor().dims();
+        let h_dims = trial.hydro.humidity.as_tensor().dims();
+        let a_dims = trial.chemical.reaction_extent.as_tensor().dims();
         if t_dims[0] != 1 {
             return Err(format!(
                 "one_damped_newton_step (T,h,α): batch must be 1, got {}",
@@ -785,15 +786,15 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
             ));
         }
 
-        let device = trial.thermal.temperature.device();
+        let device = trial.thermal.temperature.as_tensor().device();
         let (r_t0, r_h0, r_a0) = self.assemble(trial)?;
         let norm_before = combined_three_residual_l2(&r_t0, &r_h0, &r_a0);
         let r0 = flatten_three_residuals(&r_t0, &r_h0, &r_a0);
 
         let mut u = flatten_three_fields(
-            &trial.thermal.temperature,
-            &trial.hydro.humidity,
-            &trial.chemical.reaction_extent,
+            trial.thermal.temperature.as_tensor(),
+            trial.hydro.humidity.as_tensor(),
+            trial.chemical.reaction_extent.as_tensor(),
         );
         if u.len() != m || r0.len() != m {
             return Err("one_damped_newton_step (T,h,α): internal flatten length mismatch".into());
@@ -955,10 +956,10 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         #[cfg(not(feature = "solver-experimental"))]
         let _ = matrix_free_inner;
 
-        let t_dims = trial.thermal.temperature.dims();
-        let h_dims = trial.hydro.humidity.dims();
-        let a_dims = trial.chemical.reaction_extent.dims();
-        let u_dims = trial.mechanical.displacement.dims();
+        let t_dims = trial.thermal.temperature.as_tensor().dims();
+        let h_dims = trial.hydro.humidity.as_tensor().dims();
+        let a_dims = trial.chemical.reaction_extent.as_tensor().dims();
+        let u_dims = trial.mechanical.displacement.as_tensor().dims();
         if t_dims[0] != 1 {
             return Err(format!(
                 "one_damped_newton_step_with_quasi_static_r_u: batch must be 1, got {}",
@@ -989,7 +990,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
             ));
         }
 
-        let device = trial.thermal.temperature.device();
+        let device = trial.thermal.temperature.as_tensor().device();
         let (r_t0, r_h0, r_a0, r_u0) = self.assemble_with_quasi_static_r_u(
             trial,
             coords_n3,
@@ -1001,10 +1002,10 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         let r0 = flatten_four_residuals(&r_t0, &r_h0, &r_a0, &r_u0);
 
         let mut packed = flatten_four_fields(
-            &trial.thermal.temperature,
-            &trial.hydro.humidity,
-            &trial.chemical.reaction_extent,
-            &trial.mechanical.displacement,
+            trial.thermal.temperature.as_tensor(),
+            trial.hydro.humidity.as_tensor(),
+            trial.chemical.reaction_extent.as_tensor(),
+            trial.mechanical.displacement.as_tensor(),
         );
         if packed.len() != m || r0.len() != m {
             return Err(
@@ -1375,18 +1376,14 @@ fn trial_from_packed_three<B: Backend<FloatElem = f32>>(
         Data::new(u[nt + nh..nt + nh + na].to_vec(), Shape::new(a_shape)),
         device,
     );
-    ThmcState {
-        thermal: ThermalPlan { temperature: t_new },
-        hydro: HydrologicPlan { humidity: h_new },
-        mechanical: MechanicalPlan {
-            displacement: base.mechanical.displacement.clone(),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: a_new,
-        },
-        damage: base.damage.clone(),
-        time: base.time,
-    }
+    ThmcState::from_tensors(
+    t_new,
+    h_new,
+    base.mechanical.displacement.as_tensor().clone(),
+    a_new,
+    base.damage.as_tensor().clone(),
+    base.time,
+)
 }
 
 #[cfg(feature = "thmc-coupled")]
@@ -1458,18 +1455,14 @@ fn trial_from_packed_four<B: Backend<FloatElem = f32>>(
         ),
         device,
     );
-    ThmcState {
-        thermal: ThermalPlan { temperature: t_new },
-        hydro: HydrologicPlan { humidity: h_new },
-        mechanical: MechanicalPlan {
-            displacement: disp_new,
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: a_new,
-        },
-        damage: base.damage.clone(),
-        time: base.time,
-    }
+    ThmcState::from_tensors(
+    t_new,
+    h_new,
+    disp_new,
+    a_new,
+    base.damage.as_tensor().clone(),
+    base.time,
+)
 }
 
 #[cfg(feature = "thmc-coupled")]
@@ -1533,20 +1526,14 @@ fn trial_from_packed<B: Backend<FloatElem = f32>>(
         Data::new(u[nt..nt + na].to_vec(), Shape::new(a_shape)),
         device,
     );
-    ThmcState {
-        thermal: ThermalPlan { temperature: t_new },
-        hydro: HydrologicPlan {
-            humidity: base.hydro.humidity.clone(),
-        },
-        mechanical: MechanicalPlan {
-            displacement: base.mechanical.displacement.clone(),
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: a_new,
-        },
-        damage: base.damage.clone(),
-        time: base.time,
-    }
+    ThmcState::from_tensors(
+    t_new,
+    base.hydro.humidity.as_tensor().clone(),
+    base.mechanical.displacement.as_tensor().clone(),
+    a_new,
+    base.damage.as_tensor().clone(),
+    base.time,
+)
 }
 
 /// Gauss–Jordan elimination with partial pivoting; overwrites `a` (row-major `n`×`n`) and `b` (`n`).

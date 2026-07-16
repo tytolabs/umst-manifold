@@ -94,22 +94,14 @@ mod thmc_ok {
         let umst = umst_with_positions();
         let dev = dev();
         let n = umst.scalar_features.dims()[0];
-        let state = ThmcState {
-            thermal: ThermalPlan {
-                temperature: Tensor::zeros([1, n, 1], &dev),
-            },
-            hydro: HydrologicPlan {
-                humidity: Tensor::zeros([1, n, 1], &dev),
-            },
-            mechanical: MechanicalPlan {
-                displacement: Tensor::zeros([1, n, 3], &dev),
-            },
-            chemical: ChemicalPlan {
-                reaction_extent: Tensor::zeros([1, n, 1], &dev),
-            },
-            damage: Tensor::zeros([1, n, 1], &dev),
-            time: 0.0_f32,
-        };
+        let state =         ThmcState::from_tensors(
+            Tensor::zeros([1, n, 1], &dev),
+            Tensor::zeros([1, n, 1], &dev),
+            Tensor::zeros([1, n, 3], &dev),
+            Tensor::zeros([1, n, 1], &dev),
+            Tensor::zeros([1, n, 1], &dev),
+            0.0_f32,
+        );
         let mut solver = ThmcSolver {
             dt: 0.01_f32,
             max_newton: 2_usize,

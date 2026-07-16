@@ -198,20 +198,14 @@ fn monolithic_thmc_newton_stacked_norm_monotone_decrease_on_five_node_chain() {
         damage_m: damage_m.clone(),
         kinetics,
     };
-    let trial = ThmcState {
-        thermal: ThermalPlan {
-            temperature: trial_t,
-        },
-        hydro: HydrologicPlan { humidity: trial_h },
-        mechanical: MechanicalPlan {
-            displacement: u_predict,
-        },
-        chemical: ChemicalPlan {
-            reaction_extent: trial_alpha,
-        },
-        damage: damage_m,
-        time: 0.0_f32,
-    };
+    let trial =     ThmcState::from_tensors(
+        trial_t,
+        trial_h,
+        u_predict,
+        trial_alpha,
+        damage_m,
+        0.0_f32,
+    );
 
     let inner_iters = 4_usize;
     // Full damping (`1.0`) overshoots when the predictor is already close to the implicit root on

@@ -156,9 +156,9 @@ fn thmc_state_thermodynamic_snapshot<B>(
 where
     B: Backend<FloatElem = f32>,
 {
-    let temperature_k = thmc_tensor_batch_mean_f32(&state.thermal.temperature)?;
-    let reaction_extent = thmc_tensor_batch_mean_f32(&state.chemical.reaction_extent)?;
-    let w_c = thmc_tensor_batch_mean_f32(&state.hydro.humidity)?;
+    let temperature_k = thmc_tensor_batch_mean_f32(state.thermal.temperature.as_tensor())?;
+    let reaction_extent = thmc_tensor_batch_mean_f32(state.chemical.reaction_extent.as_tensor())?;
+    let w_c = thmc_tensor_batch_mean_f32(state.hydro.humidity.as_tensor())?;
     Ok(ThermodynamicStateSnapshot::from_mix_calibrated(
         f64::from(w_c),
         f64::from(reaction_extent),

@@ -13,8 +13,8 @@
 //!
 //! # Migration
 //!
-//! P3.1 will wrap `ThmcState` fields; until then, construct [`Field`]s at boundaries and
-//! unwrap via [`Field::as_tensor`] / [`Field::into_tensor`] for Burn kernels.
+//! P3.1 wrapped `ThmcState` plan fields; solvers unwrap via [`Field::as_tensor`] / [`Field::into_tensor`]
+//! at kernel boundaries. P3.2–P3.7 schedule in `outputs/.tmp/fp_p3_thmc_field_migration_plan.md`.
 
 use std::marker::PhantomData;
 
