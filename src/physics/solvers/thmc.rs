@@ -600,7 +600,10 @@ impl ThmcSolver {
                 let coords_n3 = manifold
                     .node_positions
                     .as_ref()
-                    .expect("monolithic: [N,3] positions validated before loop");
+                    .filter(|p| p.dims() == [n, 3])
+                    .ok_or_else(|| {
+                        "ThmcSolver::step: monolithic_thmc_newton requires manifold.node_positions with shape [N,3]".to_string()
+                    })?;
                 let mask = manifold.displacement_bc_mask.clone();
                 let bm_core = match mask.dims()[..] {
                     [nn, 3, 1] if nn == n => mask.reshape([nn, 3]),
@@ -1100,7 +1103,7 @@ impl ThmcSolver {
 
         let bc_shape = [dims[0], 1, 1];
         for _ in 0..cfg.max_iterations {
-            if *residual_norms.last().expect("non-empty") < cfg.residual_tolerance {
+            if residual_norms.last().copied().unwrap_or(f32::INFINITY) < cfg.residual_tolerance {
                 break;
             }
             let ap = a_op(p.clone()).mul(boundary_mask.clone());

@@ -452,32 +452,32 @@ impl PhaseFieldFractureSolver {
         }
 
         struct StaggeredOuterState<BB: Backend<FloatElem = f32>> {
-            damage: Option<Tensor<BB, 3>>,
+            damage: Tensor<BB, 3>,
             prev_strain: Option<Tensor<BB, 4>>,
             #[cfg_attr(not(feature = "fracture-at2"), allow(dead_code))]
             prev_psi_mean: Option<f32>,
         }
 
         let mut st = StaggeredOuterState::<B> {
-            damage: Some(damage),
+            damage,
             prev_strain: None,
             prev_psi_mean: None,
         };
 
         iterate_until(outer.max_outer_iterations, &mut st, |st| {
-            let strain_k = strain_fn(st.damage.as_ref().expect("staggered outer damage"));
-            let d_before = st.damage.as_ref().expect("staggered outer damage").clone();
+            let strain_k = strain_fn(&st.damage);
+            let d_before = st.damage.clone();
             let prev_s = st.prev_strain.as_ref();
 
-            let d_in = st.damage.take().expect("staggered outer damage");
-            st.damage = Some(self.update_damage(
+            let d_in = st.damage.clone();
+            st.damage = self.update_damage(
                 strain_k.clone(),
                 d_in,
                 fracture_energy_gc.clone(),
                 edges_b1.clone(),
-            ));
+            );
 
-            let d_after = st.damage.as_ref().expect("staggered outer damage");
+            let d_after = &st.damage;
 
             #[cfg(feature = "fracture-at2")]
             let should_break = outer_stopping_should_break(
@@ -506,7 +506,7 @@ impl PhaseFieldFractureSolver {
                 ControlFlow::Continue(())
             }
         });
-        st.damage.take().expect("staggered outer damage after loop")
+        st.damage
     }
 
     pub fn update_damage_staggered_with_stop<B, F>(
@@ -598,14 +598,14 @@ impl PhaseFieldFractureSolver {
             B0: Backend<FloatElem = f32>,
         {
             u: Tensor<B0, 3>,
-            d: Option<Tensor<B0, 3>>,
+            d: Tensor<B0, 3>,
             prev_strain: Option<Tensor<B0, 4>>,
             prev_psi_mean: Option<f32>,
         }
 
         let mut st = MechanicsOuterState::<B> {
             u: Tensor::<B, 3>::zeros([batch, n, 3], &dev),
-            d: Some(Tensor::<B, 3>::zeros([batch, n, 1], &dev)),
+            d: Tensor::<B, 3>::zeros([batch, n, 1], &dev),
             prev_strain: None,
             prev_psi_mean: None,
         };
@@ -615,7 +615,7 @@ impl PhaseFieldFractureSolver {
             // VectorMechanicsSolver also applies its own internal degradation via the `damage`
             // argument; to avoid double counting we pass damage=0 to mechanics and instead bake
             // g(d) into the effective stiffness tensor.
-            let d_ref = st.d.as_ref().expect("mechanics staggered damage");
+            let d_ref = &st.d;
             let one_minus_d = Tensor::<B, 3>::ones_like(d_ref).sub(d_ref.clone());
             let g_of_d = one_minus_d
                 .clone()
@@ -650,18 +650,18 @@ impl PhaseFieldFractureSolver {
                 n,
             );
             let strain4 = symmetric_strain_tensor_from_graph_voigt6(eps_v);
-            let d_before = st.d.as_ref().expect("mechanics staggered damage").clone();
+            let d_before = st.d.clone();
             let prev_s = st.prev_strain.as_ref();
 
-            let d_in = st.d.take().expect("mechanics staggered damage");
-            st.d = Some(solver.update_damage(
+            let d_in = st.d.clone();
+            st.d = solver.update_damage(
                 strain4.clone(),
                 d_in,
                 gc_field.clone(),
                 edges_b1.clone(),
-            ));
+            );
 
-            let d_after = st.d.as_ref().expect("mechanics staggered damage");
+            let d_after = &st.d;
 
             if outer_stopping_should_break(
                 stop,
@@ -677,10 +677,7 @@ impl PhaseFieldFractureSolver {
             ControlFlow::Continue(())
         });
 
-        (
-            st.u,
-            st.d.take().expect("mechanics staggered damage after loop"),
-        )
+        (st.u, st.d)
     }
 }
 
