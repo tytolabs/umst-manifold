@@ -5,6 +5,8 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use crate::core::field::{Field, HumidityField, StepEntryDamageMask, TemperatureField};
+
 /// The Hodge-Dirac topological flow engine.
 /// Computes physical diffusion (heat, fluid, stress) across the Cellular Sheaf.
 pub struct TopologicalLaplacian;
@@ -66,6 +68,36 @@ impl TopologicalLaplacian {
         let to_src = Tensor::<B, 3>::zeros_like(&x).scatter(1, src_indices, edge_flow.clone());
         let to_tgt = Tensor::<B, 3>::zeros_like(&x).scatter(1, tgt_indices, edge_flow.neg());
         to_src.add(to_tgt)
+    }
+
+    /// Typed Laplacian on temperature — operand swaps are compile errors (FP P3.2).
+    #[inline]
+    #[must_use]
+    pub fn scalar_laplacian_temperature<B: Backend>(
+        t: &TemperatureField<B>,
+        damage_mask: &StepEntryDamageMask<B>,
+        edges_b1: Tensor<B, 2, Int>,
+    ) -> TemperatureField<B> {
+        Field::new(Self::scalar_laplacian(
+            t.as_tensor().clone(),
+            edges_b1,
+            damage_mask.as_tensor().clone(),
+        ))
+    }
+
+    /// Typed Laplacian on humidity — operand swaps are compile errors (FP P3.2).
+    #[inline]
+    #[must_use]
+    pub fn scalar_laplacian_humidity<B: Backend>(
+        h: &HumidityField<B>,
+        damage_mask: &StepEntryDamageMask<B>,
+        edges_b1: Tensor<B, 2, Int>,
+    ) -> HumidityField<B> {
+        Field::new(Self::scalar_laplacian(
+            h.as_tensor().clone(),
+            edges_b1,
+            damage_mask.as_tensor().clone(),
+        ))
     }
 
     /// Fused scalar Laplacian: same numerics as [`Self::scalar_laplacian`] with fewer intermediate

@@ -180,6 +180,44 @@ pub type SmallStrainField<B> = Field<B, SmallStrain, 4>;
 /// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`FractureEnergy`] witness.
 pub type FractureEnergyField<B> = Field<B, FractureEnergy, 3>;
 
+/// Frozen damage mask at THMC step entry — distinct from live `state.damage` after fracture.
+#[derive(Clone, Debug)]
+pub struct StepEntryDamageMask<B: Backend>(DamageField<B>);
+
+impl<B: Backend> StepEntryDamageMask<B> {
+    #[inline]
+    #[must_use]
+    pub fn from_damage_field(damage: DamageField<B>) -> Self {
+        Self(damage)
+    }
+
+    #[must_use]
+    pub fn from_step_entry_damage(
+        state_damage: &DamageField<B>,
+        batch: usize,
+        n: usize,
+    ) -> Self {
+        let damage_tensor = state_damage.as_tensor();
+        let tensor = match damage_tensor.dims()[2] {
+            1 => damage_tensor.clone(),
+            _ => damage_tensor.clone().slice([0..batch, 0..n, 0..1]),
+        };
+        Self(Field::new(tensor))
+    }
+
+    #[deprecated(since = "0.2.0", note = "use from_step_entry_damage — FP P3.2")]
+    #[inline]
+    #[must_use]
+    pub fn from_tensor(tensor: Tensor<B, 3>) -> Self {
+        Self(Field::new(tensor))
+    }
+
+    #[inline]
+    pub fn as_tensor(&self) -> &Tensor<B, 3> {
+        self.0.as_tensor()
+    }
+}
+
 impl<B: Backend> FractureEnergyField<B> {
     /// Zero-filled fracture-energy field.
     #[must_use]

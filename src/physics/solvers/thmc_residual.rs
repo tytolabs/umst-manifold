@@ -64,6 +64,8 @@ use burn::tensor::Shape;
 use burn::tensor::Tensor;
 
 #[cfg(feature = "thmc-coupled")]
+use crate::core::field::{Field, HumidityField, ReactionExtentField, StepEntryDamageMask, TemperatureField};
+#[cfg(feature = "thmc-coupled")]
 use crate::physics::dec_operators::DecEdgeOperators;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::laplacian::TopologicalLaplacian;
@@ -71,7 +73,8 @@ use crate::physics::laplacian::TopologicalLaplacian;
 use crate::physics::mechanics::VectorMechanicsSolver;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc::{
-    reaction_extent_rate_tensor, shrink_strain_from_saturation_loss_tensor, ChemicalPlan,
+    reaction_extent_rate_field, reaction_extent_rate_tensor,
+    shrink_strain_from_saturation_loss_tensor, ChemicalPlan,
     HydrologicPlan, MechanicalPlan, ReactionExtentKinetics, ThermalPlan, ThmcState,
 };
 
@@ -198,76 +201,67 @@ impl ThmcMonolithicImplicitUnknownLayout {
 #[derive(Clone, Debug)]
 pub struct ThmcImplicitEulerThermalReactionExtentResidual<B: Backend<FloatElem = f32>> {
     pub dt: f32,
-    pub temperature_n: Tensor<B, 3>,
-    pub alpha_n: Tensor<B, 3>,
+    pub temperature_n: TemperatureField<B>,
+    pub alpha_n: ReactionExtentField<B>,
     pub edges_b1: Tensor<B, 2, Int>,
-    pub damage_m: Tensor<B, 3>,
+    pub damage_m: StepEntryDamageMask<B>,
     pub kinetics: ReactionExtentKinetics,
 }
 
 #[cfg(feature = "thmc-coupled")]
 impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual<B> {
+    #[deprecated(since = "0.2.0", note = "FP P3.2")]
+    #[must_use]
+    pub fn from_tensors(dt: f32, temperature_n: Tensor<B, 3>, alpha_n: Tensor<B, 3>, edges_b1: Tensor<B, 2, Int>, damage_m: Tensor<B, 3>, kinetics: ReactionExtentKinetics) -> Self {
+        Self { dt, temperature_n: Field::new(temperature_n), alpha_n: Field::new(alpha_n), edges_b1, damage_m: StepEntryDamageMask::from_tensor(damage_m), kinetics }
+    }
     /// Assemble \(R_T, R_\alpha\) at `trial` (same shapes as `temperature` / `reaction_extent` plans).
-    pub fn assemble(&self, trial: &ThmcState<B>) -> Result<(Tensor<B, 3>, Tensor<B, 3>), String> {
+    pub fn assemble(&self, trial: &ThmcState<B>) -> Result<(TemperatureField<B>, ReactionExtentField<B>), String> {
         let t = trial.thermal.temperature.as_tensor().clone();
         let alpha = trial.chemical.reaction_extent.as_tensor().clone();
         let device = t.device();
         let batch = t.dims()[0];
         let n = t.dims()[1];
-        if self.temperature_n.dims() != t.dims() {
+        if self.temperature_n.as_tensor().dims() != t.dims() {
             return Err(format!(
                 "ThmcImplicitEulerThermalReactionExtentResidual: T^n dims {:?} != trial T dims {:?}",
-                self.temperature_n.dims(),
+                self.temperature_n.as_tensor().dims(),
                 t.dims()
             ));
         }
-        if self.alpha_n.dims() != alpha.dims() {
+        if self.alpha_n.as_tensor().dims() != alpha.dims() {
             return Err(format!(
                 "ThmcImplicitEulerThermalReactionExtentResidual: α^n dims {:?} != trial α dims {:?}",
-                self.alpha_n.dims(),
+                self.alpha_n.as_tensor().dims(),
                 alpha.dims()
             ));
         }
 
-        let lap_t = TopologicalLaplacian::scalar_laplacian(
-            t.clone(),
-            self.edges_b1.clone(),
-            self.damage_m.clone(),
-        );
-        let dt_lap_t = lap_t.mul_scalar(self.dt);
+        let lap_t = TopologicalLaplacian::scalar_laplacian_temperature(&Field::new(t.clone()), &self.damage_m, self.edges_b1.clone());
+        let dt_lap_t = lap_t.as_tensor().clone().mul_scalar(self.dt);
 
         let f_alpha_ch = alpha.dims()[2];
         let t_bn1 = t.clone().slice([0..batch, 0..n, 0..1]);
-        let temperature_for_alpha = if f_alpha_ch == 1 {
-            t_bn1
-        } else {
-            t_bn1.expand::<3, _>([batch, n, f_alpha_ch])
-        };
-        let d_alpha = reaction_extent_rate_tensor(
-            &self.kinetics,
-            alpha.clone(),
-            temperature_for_alpha,
-            &device,
-        );
+        let temperature_for_alpha = Field::new(if f_alpha_ch == 1 { t_bn1 } else { t_bn1.expand::<3, _>([batch, n, f_alpha_ch]) });
+        let d_alpha = reaction_extent_rate_field(&self.kinetics, &Field::new(alpha.clone()), &temperature_for_alpha, &device);
 
         let f_t_ch = t.dims()[2];
-        let exo = d_alpha
-            .clone()
+        let exo = d_alpha.as_tensor().clone()
             .slice([0..batch, 0..n, 0..1])
             .mul_scalar(self.kinetics.exothermic_k_per_alpha_rate * self.dt)
             .expand::<3, _>([batch, n, f_t_ch]);
 
-        let r_t = t.sub(self.temperature_n.clone()).sub(dt_lap_t).sub(exo);
+        let r_t = t.sub(self.temperature_n.as_tensor().clone()).sub(dt_lap_t).sub(exo);
         let r_alpha = alpha
-            .sub(self.alpha_n.clone())
-            .sub(d_alpha.mul_scalar(self.dt));
-        Ok((r_t, r_alpha))
+            .sub(self.alpha_n.as_tensor().clone())
+            .sub(d_alpha.as_tensor().clone().mul_scalar(self.dt));
+        Ok((Field::new(r_t), Field::new(r_alpha)))
     }
 
     /// Combined Euclidean norm \(\sqrt{\|R_T\|_2^2 + \|R_\alpha\|_2^2}\) at `trial`.
     pub fn residual_l2(&self, trial: &ThmcState<B>) -> Result<f32, String> {
         let (r_t, r_a) = self.assemble(trial)?;
-        Ok(combined_residual_l2(&r_t, &r_a))
+        Ok(combined_residual_l2(r_t.as_tensor(), r_a.as_tensor()))
     }
 
     /// One **damped Newton** step on the coupled \((T,\alpha)\) backward-Euler residual.
@@ -324,8 +318,8 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
 
         let device = trial.thermal.temperature.as_tensor().device();
         let (r_t0, r_a0) = self.assemble(trial)?;
-        let norm_before = combined_residual_l2(&r_t0, &r_a0);
-        let r0 = flatten_two_residuals(&r_t0, &r_a0);
+        let norm_before = combined_residual_l2(r_t0.as_tensor(), r_a0.as_tensor());
+        let r0 = flatten_two_residuals(r_t0.as_tensor(), r_a0.as_tensor());
 
         let mut u = flatten_two_fields(trial.thermal.temperature.as_tensor(), trial.chemical.reaction_extent.as_tensor());
         if u.len() != m || r0.len() != m {
@@ -346,7 +340,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
             );
             u[j] -= eps_j;
             let (r_tp, r_ap) = self.assemble(&pert)?;
-            let r_pert = flatten_two_residuals(&r_tp, &r_ap);
+            let r_pert = flatten_two_residuals(r_tp.as_tensor(), r_ap.as_tensor());
             for i in 0..m {
                 jac[i * m + j] = (r_pert[i] - r0[i]) / eps_j;
             }
@@ -422,9 +416,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
 #[derive(Clone, Debug)]
 pub struct ThmcImplicitEulerThermalHumidityReactionExtentResidual<B: Backend<FloatElem = f32>> {
     pub dt: f32,
-    pub temperature_n: Tensor<B, 3>,
-    pub humidity_n: Tensor<B, 3>,
-    pub alpha_n: Tensor<B, 3>,
+    pub temperature_n: TemperatureField<B>,
+    pub humidity_n: HumidityField<B>,
+    pub alpha_n: ReactionExtentField<B>,
     /// Reference displacement \(\mathbf u^n\) for the placeholder block (same shape as
     /// [`MechanicalPlan::displacement`]: `[B, N, 3]`).
     pub displacement_n: Tensor<B, 3>,
@@ -434,87 +428,74 @@ pub struct ThmcImplicitEulerThermalHumidityReactionExtentResidual<B: Backend<Flo
     /// (coupling plan §4 Phase 4). `None` preserves shrink-free elastic \(R_u\).
     pub ru_shrinkage_binder_liquid_ratio: Option<f32>,
     pub edges_b1: Tensor<B, 2, Int>,
-    pub damage_m: Tensor<B, 3>,
+    pub damage_m: StepEntryDamageMask<B>,
     pub kinetics: ReactionExtentKinetics,
 }
 
 #[cfg(feature = "thmc-coupled")]
 impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtentResidual<B> {
+    #[deprecated(since = "0.2.0", note = "FP P3.2")]
+    #[must_use]
+    pub fn from_tensors(dt: f32, temperature_n: Tensor<B, 3>, humidity_n: Tensor<B, 3>, alpha_n: Tensor<B, 3>, displacement_n: Tensor<B, 3>, mechanics_placeholder_mass: f32, ru_shrinkage_binder_liquid_ratio: Option<f32>, edges_b1: Tensor<B, 2, Int>, damage_m: Tensor<B, 3>, kinetics: ReactionExtentKinetics) -> Self {
+        Self { dt, temperature_n: Field::new(temperature_n), humidity_n: Field::new(humidity_n), alpha_n: Field::new(alpha_n), displacement_n, mechanics_placeholder_mass, ru_shrinkage_binder_liquid_ratio, edges_b1, damage_m: StepEntryDamageMask::from_tensor(damage_m), kinetics }
+    }
     /// Assemble \((R_T, R_h, R_\alpha)\) at `trial`.
     #[allow(clippy::type_complexity)]
     pub fn assemble(
         &self,
         trial: &ThmcState<B>,
-    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>), String> {
+    ) -> Result<(TemperatureField<B>, HumidityField<B>, ReactionExtentField<B>), String> {
         let t = trial.thermal.temperature.as_tensor().clone();
         let h = trial.hydro.humidity.as_tensor().clone();
         let alpha = trial.chemical.reaction_extent.as_tensor().clone();
         let device = t.device();
         let batch = t.dims()[0];
         let n = t.dims()[1];
-        if self.temperature_n.dims() != t.dims() {
+        if self.temperature_n.as_tensor().dims() != t.dims() {
             return Err(format!(
                 "ThmcImplicitEulerThermalHumidityReactionExtentResidual: T^n dims {:?} != trial T dims {:?}",
-                self.temperature_n.dims(),
+                self.temperature_n.as_tensor().dims(),
                 t.dims()
             ));
         }
-        if self.humidity_n.dims() != h.dims() {
+        if self.humidity_n.as_tensor().dims() != h.dims() {
             return Err(format!(
                 "ThmcImplicitEulerThermalHumidityReactionExtentResidual: h^n dims {:?} != trial h dims {:?}",
-                self.humidity_n.dims(),
+                self.humidity_n.as_tensor().dims(),
                 h.dims()
             ));
         }
-        if self.alpha_n.dims() != alpha.dims() {
+        if self.alpha_n.as_tensor().dims() != alpha.dims() {
             return Err(format!(
                 "ThmcImplicitEulerThermalHumidityReactionExtentResidual: α^n dims {:?} != trial α dims {:?}",
-                self.alpha_n.dims(),
+                self.alpha_n.as_tensor().dims(),
                 alpha.dims()
             ));
         }
 
-        let lap_t = TopologicalLaplacian::scalar_laplacian(
-            t.clone(),
-            self.edges_b1.clone(),
-            self.damage_m.clone(),
-        );
-        let dt_lap_t = lap_t.mul_scalar(self.dt);
+        let lap_t = TopologicalLaplacian::scalar_laplacian_temperature(&Field::new(t.clone()), &self.damage_m, self.edges_b1.clone());
+        let dt_lap_t = lap_t.as_tensor().clone().mul_scalar(self.dt);
 
-        let lap_h = TopologicalLaplacian::scalar_laplacian(
-            h.clone(),
-            self.edges_b1.clone(),
-            self.damage_m.clone(),
-        );
-        let dt_lap_h = lap_h.mul_scalar(self.dt);
+        let lap_h = TopologicalLaplacian::scalar_laplacian_humidity(&Field::new(h.clone()), &self.damage_m, self.edges_b1.clone());
+        let dt_lap_h = lap_h.as_tensor().clone().mul_scalar(self.dt);
 
         let f_alpha_ch = alpha.dims()[2];
         let t_bn1 = t.clone().slice([0..batch, 0..n, 0..1]);
-        let temperature_for_alpha = if f_alpha_ch == 1 {
-            t_bn1
-        } else {
-            t_bn1.expand::<3, _>([batch, n, f_alpha_ch])
-        };
-        let d_alpha = reaction_extent_rate_tensor(
-            &self.kinetics,
-            alpha.clone(),
-            temperature_for_alpha,
-            &device,
-        );
+        let temperature_for_alpha = Field::new(if f_alpha_ch == 1 { t_bn1 } else { t_bn1.expand::<3, _>([batch, n, f_alpha_ch]) });
+        let d_alpha = reaction_extent_rate_field(&self.kinetics, &Field::new(alpha.clone()), &temperature_for_alpha, &device);
 
         let f_t_ch = t.dims()[2];
-        let exo = d_alpha
-            .clone()
+        let exo = d_alpha.as_tensor().clone()
             .slice([0..batch, 0..n, 0..1])
             .mul_scalar(self.kinetics.exothermic_k_per_alpha_rate * self.dt)
             .expand::<3, _>([batch, n, f_t_ch]);
 
-        let r_t = t.sub(self.temperature_n.clone()).sub(dt_lap_t).sub(exo);
-        let r_h = h.sub(self.humidity_n.clone()).sub(dt_lap_h);
+        let r_t = t.sub(self.temperature_n.as_tensor().clone()).sub(dt_lap_t).sub(exo);
+        let r_h = h.sub(self.humidity_n.as_tensor().clone()).sub(dt_lap_h);
         let r_alpha = alpha
-            .sub(self.alpha_n.clone())
-            .sub(d_alpha.mul_scalar(self.dt));
-        Ok((r_t, r_h, r_alpha))
+            .sub(self.alpha_n.as_tensor().clone())
+            .sub(d_alpha.as_tensor().clone().mul_scalar(self.dt));
+        Ok((Field::new(r_t), Field::new(r_h), Field::new(r_alpha)))
     }
 
     /// \((R_T,R_h,R_\alpha,R_u)\) with \(R_u = m(\mathbf u-\mathbf u^n)\) — see struct rustdoc (**not** bar equilibrium).
@@ -535,7 +516,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         let r_u = u
             .sub(self.displacement_n.clone())
             .mul_scalar(self.mechanics_placeholder_mass);
-        Ok((r_t, r_h, r_alpha, r_u))
+        Ok((r_t.as_tensor().clone(), r_h.as_tensor().clone(), r_alpha.as_tensor().clone(), r_u))
     }
 
     /// Field-major \([\mathrm{vec}(R_T);\mathrm{vec}(R_h);\mathrm{vec}(R_\alpha);\mathrm{vec}(R_u)]\)
@@ -616,7 +597,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
 
         let edge_shrink_strain_increment = if let Some(wc) = self.ru_shrinkage_binder_liquid_ratio {
             let h = trial.hydro.humidity.as_tensor().clone();
-            let h_n = self.humidity_n.clone();
+            let h_n = self.humidity_n.as_tensor().clone();
             if h.dims() != [batch, n, 1] {
                 return Err(format!(
                     "evaluate_quasi_static_r_u: trial humidity dims {:?} != [{batch}, {n}, 1]",
@@ -654,7 +635,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
             stiffness,
             body_force.clone(),
             self.edges_b1.clone(),
-            self.damage_m.clone(),
+            self.damage_m.as_tensor().clone(),
             boundary_mask_bn3.clone(),
             cross_section_area,
             edge_shrink_strain_increment,
@@ -690,7 +671,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
             body_force,
             cross_section_area,
         )?;
-        Ok((r_t, r_h, r_alpha, r_u))
+        Ok((r_t.as_tensor().clone(), r_h.as_tensor().clone(), r_alpha.as_tensor().clone(), r_u))
     }
 
     /// Field-major flat stack using [`Self::assemble_with_quasi_static_r_u`].
@@ -734,7 +715,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
     /// \(\sqrt{\|R_T\|_2^2 + \|R_h\|_2^2 + \|R_\alpha\|_2^2}\) (memo §B stacked norm, truncated to scalar blocks).
     pub fn residual_l2(&self, trial: &ThmcState<B>) -> Result<f32, String> {
         let (r_t, r_h, r_a) = self.assemble(trial)?;
-        Ok(combined_three_residual_l2(&r_t, &r_h, &r_a))
+        Ok(combined_three_residual_l2(r_t.as_tensor(), r_h.as_tensor(), r_a.as_tensor()))
     }
 
     /// One damped Newton step on \((T,h,\alpha)\) in **field-major** order
@@ -788,8 +769,8 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
 
         let device = trial.thermal.temperature.as_tensor().device();
         let (r_t0, r_h0, r_a0) = self.assemble(trial)?;
-        let norm_before = combined_three_residual_l2(&r_t0, &r_h0, &r_a0);
-        let r0 = flatten_three_residuals(&r_t0, &r_h0, &r_a0);
+        let norm_before = combined_three_residual_l2(r_t0.as_tensor(), r_h0.as_tensor(), r_a0.as_tensor());
+        let r0 = flatten_three_residuals(r_t0.as_tensor(), r_h0.as_tensor(), r_a0.as_tensor());
 
         let mut u = flatten_three_fields(
             trial.thermal.temperature.as_tensor(),
@@ -814,7 +795,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
             );
             u[j] -= eps_j;
             let (r_tp, r_hp, r_ap) = self.assemble(&pert)?;
-            let r_pert = flatten_three_residuals(&r_tp, &r_hp, &r_ap);
+            let r_pert = flatten_three_residuals(r_tp.as_tensor(), r_hp.as_tensor(), r_ap.as_tensor());
             for i in 0..m {
                 jac[i * m + j] = (r_pert[i] - r0[i]) / eps_j;
             }

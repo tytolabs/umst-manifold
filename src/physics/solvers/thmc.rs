@@ -90,7 +90,7 @@ use burn::tensor::{backend::Backend, Tensor};
 
 use crate::core::field::{
     DamageField, DisplacementField, Field, HumidityField, ReactionExtentField,
-    TemperatureField,
+    StepEntryDamageMask, TemperatureField,
 };
 use crate::core::material_transition::ReactionExtentKineticsSpec;
 use crate::core::tensors::UnifiedMaterialStateTensor;
@@ -600,12 +600,8 @@ impl ThmcSolver {
         // Pre-step snapshot for post-step gate evidence hook (p5-thmc-wire; see `thmc_step.rs`).
         let pre_step = state.clone();
 
-        // Damage mask `[B,N,1]` for transport coefficients (last dim 1; otherwise first channel).
-        let damage_tensor = state.damage.as_tensor();
-        let damage_m = match damage_tensor.dims()[2] {
-            1 => damage_tensor.clone(),
-            _ => damage_tensor.clone().slice([0..batch, 0..n, 0..1]),
-        };
+        // Damage mask frozen at step entry (FP P3.2).
+        let damage_m = StepEntryDamageMask::from_step_entry_damage(&state.damage, batch, n);
 
         if self.monolithic_thmc_newton.is_some() && self.implicit_t_alpha_newton.is_some() {
             return Err(
@@ -660,48 +656,49 @@ impl ThmcSolver {
 
         // Split residual Newton: exit when \(\|R\|_2 < tol\) (Wave 1 honesty).
         for _newton in 0..self.max_newton {
-            let t_old = state.thermal.temperature.as_tensor().clone();
-            let h_old = state.hydro.humidity.as_tensor().clone();
+            let t_old = state.thermal.temperature.clone();
+            let h_old = state.hydro.humidity.clone();
+            let t_old_t = t_old.as_tensor().clone();
+            let h_old_t = h_old.as_tensor().clone();
 
-            // Topological diffusion: \(\Delta U\) with flux degraded by nodal damage on edges.
-            let lap_t = TopologicalLaplacian::scalar_laplacian(
-                t_old.clone(),
+            let lap_t = TopologicalLaplacian::scalar_laplacian_temperature(
+                &t_old,
+                &damage_m,
                 edges_b1.clone(),
-                damage_m.clone(),
             );
-            let lap_h = TopologicalLaplacian::scalar_laplacian(
-                h_old.clone(),
+            let lap_h = TopologicalLaplacian::scalar_laplacian_humidity(
+                &h_old,
+                &damage_m,
                 edges_b1.clone(),
-                damage_m.clone(),
             );
+            let dt_lap_t = lap_t.as_tensor().clone().mul_scalar(self.dt);
+            let dt_lap_h = lap_h.as_tensor().clone().mul_scalar(self.dt);
 
-            let dt_lap_t = lap_t.mul_scalar(self.dt);
-            let dt_lap_h = lap_h.mul_scalar(self.dt);
-
-            // reaction extent rate uses **pre-transport** temperature (same sub-step as explicit Euler split).
             let f_alpha_ch = state.chemical.reaction_extent.as_tensor().dims()[2];
-            let t_bn1 = t_old.clone().slice([0..batch, 0..n, 0..1]);
-            let temperature_for_alpha = if f_alpha_ch == 1 {
+            let t_bn1 = t_old_t.clone().slice([0..batch, 0..n, 0..1]);
+            let temperature_for_alpha = Field::new(if f_alpha_ch == 1 {
                 t_bn1
             } else {
                 t_bn1.expand::<3, _>([batch, n, f_alpha_ch])
-            };
-            let d_alpha = reaction_extent_rate_tensor(
+            });
+            let d_alpha = reaction_extent_rate_field(
                 &self.reaction_extent_kinetics,
-                state.chemical.reaction_extent.as_tensor().clone(),
-                temperature_for_alpha.clone(),
+                &state.chemical.reaction_extent,
+                &temperature_for_alpha,
                 &device,
             );
 
-            // Exothermic heat: \(\Delta T_{\mathrm{exo}} \propto \dot\alpha\,\Delta t\) (tensor-safe).
             let f_t_ch = state.thermal.temperature.as_tensor().dims()[2];
             let exo = d_alpha
+                .as_tensor()
                 .clone()
                 .slice([0..batch, 0..n, 0..1])
                 .mul_scalar(self.reaction_extent_kinetics.exothermic_k_per_alpha_rate * self.dt)
                 .expand::<3, _>([batch, n, f_t_ch]);
 
-            let alpha_n = state.chemical.reaction_extent.as_tensor().clone();
+            let alpha_n = state.chemical.reaction_extent.clone();
+            let alpha_n_t = alpha_n.as_tensor().clone();
+            let d_alpha_t = d_alpha.as_tensor().clone();
 
             if let Some(mc) = self.monolithic_thmc_newton.as_ref() {
                 let coords_n3 = manifold
@@ -730,11 +727,11 @@ impl ThmcSolver {
                 let inner_cfg = MechanicsInnerLoopConfig::default();
                 let cross_section_area = 0.01_f32;
 
-                let t_predict = t_old.clone().add(dt_lap_t.clone()).add(exo.clone());
-                let h_predict = h_old.clone().add(dt_lap_h.clone());
-                let alpha_predict = alpha_n
+                let t_predict = t_old_t.clone().add(dt_lap_t.clone()).add(exo.clone());
+                let h_predict = h_old_t.clone().add(dt_lap_h.clone());
+                let alpha_predict = alpha_n_t
                     .clone()
-                    .add(d_alpha.clone().mul_scalar(self.dt))
+                    .add(d_alpha_t.clone().mul_scalar(self.dt))
                     .clamp(0.0_f32, 1.0_f32);
 
                 let alpha_bn1_pred = alpha_predict
@@ -752,7 +749,7 @@ impl ThmcSolver {
                     stiffness,
                     bf.clone(),
                     edges_b1.clone(),
-                    damage_m.clone(),
+                    damage_m.as_tensor().clone(),
                     bm.clone(),
                     cross_section_area,
                     &inner_cfg,
@@ -803,7 +800,7 @@ impl ThmcSolver {
                     .temperature
                     .as_tensor()
                     .clone()
-                    .sub(t_old)
+                    .sub(t_old_t.clone())
                     .sub(dt_lap_t)
                     .abs();
                 let r_h = state
@@ -811,7 +808,7 @@ impl ThmcSolver {
                     .humidity
                     .as_tensor()
                     .clone()
-                    .sub(h_old)
+                    .sub(h_old_t.clone())
                     .sub(dt_lap_h)
                     .abs();
                 let total_residual_tensor = r_t.add(r_h);
@@ -845,10 +842,10 @@ impl ThmcSolver {
                 }
 
                 // Explicit-Euler predictor as the damped-Newton initial iterate (same local closure as the split).
-                let t_predict = t_old.clone().add(dt_lap_t.clone()).add(exo.clone());
-                let alpha_predict = alpha_n
+                let t_predict = t_old_t.clone().add(dt_lap_t.clone()).add(exo.clone());
+                let alpha_predict = alpha_n_t
                     .clone()
-                    .add(d_alpha.mul_scalar(self.dt))
+                    .add(d_alpha_t.mul_scalar(self.dt))
                     .clamp(0.0_f32, 1.0_f32);
 
                 let trial = ThmcState {
@@ -884,18 +881,18 @@ impl ThmcSolver {
                 state.chemical.reaction_extent = updated.chemical.reaction_extent;
             } else {
                 state.thermal.temperature = Field::new(
-                    t_old.clone().add(dt_lap_t.clone()).add(exo),
+                    t_old_t.clone().add(dt_lap_t.clone()).add(exo),
                 );
                 state.chemical.reaction_extent = Field::new(
-                    alpha_n
+                    alpha_n_t
                         .clone()
-                        .add(d_alpha.mul_scalar(self.dt))
+                        .add(d_alpha_t.mul_scalar(self.dt))
                         .clamp(0.0_f32, 1.0_f32),
                 );
             }
 
             let f_h = state.hydro.humidity.as_tensor().dims()[2];
-            let mut h_new = h_old.clone().add(dt_lap_h.clone());
+            let mut h_new = h_old_t.clone().add(dt_lap_h.clone());
             if self.drying_last_node_evaporation_k > 0.0_f32 && n > 1 {
                 let tail = h_new.clone().slice([0..batch, (n - 1)..n, 0..1]);
                 let delta = tail
@@ -956,7 +953,7 @@ impl ThmcSolver {
                             stiffness,
                             bf,
                             edges_b1.clone(),
-                            damage_m.clone(),
+                            damage_m.as_tensor().clone(),
                             bm,
                             cross_section_area,
                             &inner_cfg,
@@ -975,7 +972,7 @@ impl ThmcSolver {
                             stiffness,
                             bf,
                             edges_b1.clone(),
-                            damage_m.clone(),
+                            damage_m.as_tensor().clone(),
                             bm,
                             cross_section_area,
                             &inner_cfg,
@@ -991,7 +988,7 @@ impl ThmcSolver {
                 .temperature
                 .as_tensor()
                 .clone()
-                .sub(t_old)
+                .sub(t_old_t.clone())
                 .sub(dt_lap_t)
                 .abs();
             let r_h = state
@@ -999,7 +996,7 @@ impl ThmcSolver {
                 .humidity
                 .as_tensor()
                 .clone()
-                .sub(h_old)
+                .sub(h_old_t.clone())
                 .sub(dt_lap_h)
                 .abs();
             let total_residual_tensor = r_t.add(r_h);
@@ -1265,6 +1262,19 @@ impl ThmcSolver {
 
         Ok((x, residual_norms))
     }
+}
+
+/// Typed reaction extent rate (FP P3.2).
+#[cfg(feature = "thmc-coupled")]
+pub fn reaction_extent_rate_field<B: Backend<FloatElem = f32>>(
+    k: &ReactionExtentKinetics,
+    alpha: &ReactionExtentField<B>,
+    temperature_for_alpha: &TemperatureField<B>,
+    device: &B::Device,
+) -> ReactionExtentField<B> {
+    Field::new(reaction_extent_rate_tensor(
+        k, alpha.as_tensor().clone(), temperature_for_alpha.as_tensor().clone(), device,
+    ))
 }
 
 /// Full tensor reaction extent rate \(\dot\alpha(\alpha,T)\) used in [`ThmcSolver::step`] and implicit residuals:

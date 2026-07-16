@@ -11,6 +11,8 @@
 
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
+use umst_manifold::core::field::{Field, HumidityField, ReactionExtentField, TemperatureField};
+use umst_manifold::core::StepEntryDamageMask;
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 use umst_manifold::physics::laplacian::TopologicalLaplacian;
@@ -188,14 +190,14 @@ fn monolithic_thmc_newton_stacked_norm_monotone_decrease_on_five_node_chain() {
 
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: t_n,
-        humidity_n: h_n,
+        temperature_n: Field::new(t_n),
+        humidity_n: Field::new(h_n),
         alpha_n: alpha_n_for_pred,
         displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
-        damage_m: damage_m.clone(),
+        damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics,
     };
     let trial =     ThmcState::from_tensors(
