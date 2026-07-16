@@ -4,6 +4,7 @@
 pub mod apply_physics;
 pub mod dec_typestate;
 pub mod field;
+pub mod material_phase;
 pub mod emergence;
 pub mod iterate_until;
 pub mod material_transition;
@@ -17,7 +18,11 @@ pub use dec_typestate::{
 };
 pub use field::{
     Damage, DamageField, Displacement, DisplacementField, Field, Humidity, HumidityField,
-    ReactionExtent, ReactionExtentField, Temperature, TemperatureField,
+    ReactionExtent, ReactionExtentField, SmallStrain, SmallStrainField, Temperature,
+    TemperatureField,
+};
+pub use material_phase::{
+    MaterialPhase, MaterialPhaseKind, MechanicsState, RheologyState, SettingState, ThmcEnvelope,
 };
 pub use material_transition::{
     MaterialTransitionParams, ReactionExtentKineticsSpec, SubstrateMaterialParams,
