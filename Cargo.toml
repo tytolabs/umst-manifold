@@ -116,6 +116,8 @@ time = "0.3.47"
 rand = "0.8"
 num-traits = "0.2"
 sha2 = "0.10"
+# Wave 2 A2 — frozen Core gate (shim re-export; sources live in umst-foundations).
+umst-gate = { path = "../umst-foundations/crates/umst-gate" }
 # SSOT: workspace member `umst-math/` (moved from legacy cockpit; W3).
 umst-math = { path = "umst-math", optional = true }
 ordered-float = { version = "5.1", optional = true }
