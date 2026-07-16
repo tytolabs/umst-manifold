@@ -288,6 +288,11 @@ path = "tests/verification/thmc_drying_shrinkage.rs"
 required-features = ["thmc-coupled"]
 
 [[test]]
+name = "thmc_idempotency_equilibrium"
+path = "tests/verification/thmc_idempotency_equilibrium.rs"
+required-features = ["thmc-coupled"]
+
+[[test]]
 name = "thmc_monolithic_newton_chain"
 path = "tests/verification/thmc_monolithic_newton_chain.rs"
 required-features = ["thmc-coupled"]

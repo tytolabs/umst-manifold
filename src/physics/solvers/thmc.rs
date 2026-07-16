@@ -310,6 +310,47 @@ impl<B: Backend> ThmcState<B> {
     pub fn damage_tensor(&self) -> &Tensor<B, 3> {
         self.damage.as_tensor()
     }
+
+    /// Hydrate scalar THMC plan fields from UMST [`UnifiedMaterialStateTensor::typed_views`].
+    ///
+    /// Inverse of [`crate::physics::thmc_umst_sync::sync_thmc_to_umst`] on temperature, humidity,
+    /// and damage. Displacement, reaction extent, and time are taken from `template` when provided;
+    /// otherwise displacement and reaction extent default to zeros and time to `0.0` (UMST scalar
+    /// columns do not carry those plans in P3.6).
+    pub fn hydrate_from_umst_typed_views(
+        umst: &UnifiedMaterialStateTensor<B>,
+        template: Option<&Self>,
+    ) -> Result<Self, PhysicsError> {
+        let views = umst.typed_views().map_err(|e| PhysicsError::Domain {
+            detail: format!("hydrate_from_umst_typed_views: typed_views: {e:?}"),
+        })?;
+        let n = umst.scalar_features.dims()[0];
+        let device = umst.scalar_features.device();
+        let (displacement, reaction_extent, time) = match template {
+            Some(t) => (
+                t.mechanical.displacement.clone(),
+                t.chemical.reaction_extent.clone(),
+                t.time,
+            ),
+            None => (
+                Field::new(Tensor::<B, 3>::zeros([1, n, 3], &device)),
+                Field::new(Tensor::<B, 3>::zeros([1, n, 1], &device)),
+                0.0_f32,
+            ),
+        };
+        Ok(Self {
+            thermal: ThermalPlan {
+                temperature: views.temperature,
+            },
+            hydro: HydrologicPlan {
+                humidity: views.humidity,
+            },
+            mechanical: MechanicalPlan { displacement },
+            chemical: ChemicalPlan { reaction_extent },
+            damage: views.damage,
+            time,
+        })
+    }
 }
 
 /// Coupled **thermo–hydro–mechanical–chemical** stepper for one material graph (`thmc-coupled`).
