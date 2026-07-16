@@ -109,15 +109,9 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
             beta: 0.5_f32,
             gamma: 2.0_f32,
             #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
-            lambda_cd: std::env::var("UMST_LAMBDA_CD")
-                .ok()
-                .and_then(|s| s.parse::<f32>().ok())
-                .unwrap_or(0.0_f32),
+            lambda_cd: 0.0_f32,
             #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
-            lambda_landauer: std::env::var("UMST_LAMBDA_LANDAUER")
-                .ok()
-                .and_then(|s| s.parse::<f32>().ok())
-                .unwrap_or(0.0_f32),
+            lambda_landauer: 0.0_f32,
             #[cfg(feature = "formal-witness")]
             expected_catalog_schema_digest: Some(
                 crate::runtime::catalog::lock_upstream_catalog_digest_bytes(),
@@ -129,6 +123,25 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
             mechanics_solve_reports: Vec::new(),
             _backend: std::marker::PhantomData,
         }
+    }
+
+    /// Inject host-parsed constraint slack weights (see [`crate::runtime::ppo_host`]).
+    #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
+    #[must_use]
+    pub fn with_constraint_weights(
+        mut self,
+        weights: crate::runtime::ppo_host::PpoConstraintWeights,
+    ) -> Self {
+        self.lambda_cd = weights.lambda_cd;
+        self.lambda_landauer = weights.lambda_landauer;
+        self
+    }
+
+    /// Apply [`crate::runtime::ppo_host::ppo_constraint_weights_from_env`] at the IO boundary.
+    #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
+    #[must_use]
+    pub fn with_constraint_weights_from_env(self) -> Self {
+        self.with_constraint_weights(crate::runtime::ppo_host::ppo_constraint_weights_from_env())
     }
 
     /// Phase 4 exit witness accessor (cold edge).
