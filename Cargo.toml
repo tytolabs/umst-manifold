@@ -2,7 +2,8 @@
 # Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
 [workspace]
-members = [".", "umst-layout-codegen", "umst-math", "umst-runtime-arena"]
+members = [".", "crates/umst-runtime", "umst-layout-codegen", "umst-math", "umst-runtime-arena"]
+# `crates/umst-manifold` facade template is NOT a member (duplicate package name until GitHub rename).
 resolver = "2"
 
 # Striatus dev loop: keep test code debuggable; compile Burn/ndarray deps at full speed.
@@ -20,10 +21,11 @@ authors = [
     "Santosh Prabhu Shenbagamoorthy",
     "Studio TYTO",
 ]
-description = "A differentiable spatiotemporal manifold for thermodynamic material evolution, built in pure Rust on the burn tensor framework."
+description = "UMST executor runtime (transitional package name umst-manifold; A3 alias umst-runtime in crates/umst-runtime)."
 documentation = "https://docs.rs/umst-manifold"
 homepage = "https://github.com/tytolabs/umst-manifold"
 repository = "https://github.com/tytolabs/umst-manifold"
+# Post-A3 operator rename: homepage/repository → tytolabs/umst-runtime (GitHub 301 preserves old URLs).
 license = "MIT"
 readme = "README.md"
 keywords = ["physics", "differentiable", "thermodynamics", "topology", "burn"]

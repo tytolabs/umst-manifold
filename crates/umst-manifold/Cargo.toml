@@ -1,0 +1,75 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
+#
+# A3 facade template — NOT a workspace member until GitHub rename (duplicate package name with root).
+# Operator step: after `umst-manifold` → `umst-runtime` GitHub rename, move root facade here and
+# remove `[package]` from workspace root (virtual manifest) OR swap root package roles per A3 plan.
+
+[package]
+name = "umst-manifold"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+authors = [
+    "Santhosh Shyamsundar <santhoshshyamsundar@gmail.com>",
+    "Santosh Prabhu Shenbagamoorthy",
+    "Studio TYTO",
+]
+description = "Deprecated compatibility facade — re-exports umst-runtime (activate after A3 GitHub rename)."
+documentation = "https://docs.rs/umst-manifold"
+homepage = "https://github.com/tytolabs/umst-runtime"
+repository = "https://github.com/tytolabs/umst-runtime"
+license = "MIT"
+publish = false
+
+[dependencies]
+umst-runtime = { path = "../umst-runtime", default-features = false }
+
+[features]
+default = ["ndarray"]
+ndarray = ["umst-runtime/ndarray"]
+blas-accelerate = ["umst-runtime/blas-accelerate"]
+mac-fast = ["umst-runtime/mac-fast"]
+wgpu = ["umst-runtime/wgpu"]
+train = ["umst-runtime/train"]
+photonics = ["umst-runtime/photonics"]
+photonics-fdfd = ["umst-runtime/photonics-fdfd"]
+photonics-scaffold = ["umst-runtime/photonics-scaffold"]
+fracture-at2 = ["umst-runtime/fracture-at2"]
+acoustics-newmark = ["umst-runtime/acoustics-newmark"]
+topology-density-evolution = ["umst-runtime/topology-density-evolution"]
+thmc-coupled = ["umst-runtime/thmc-coupled"]
+electrochemistry-mvp = ["umst-runtime/electrochemistry-mvp"]
+electrochemistry-pnp = ["umst-runtime/electrochemistry-pnp"]
+mechanics-voigt-cauchy = ["umst-runtime/mechanics-voigt-cauchy"]
+mechanics-adjoint = ["umst-runtime/mechanics-adjoint"]
+mechanics-adjoint-q1-hex = ["umst-runtime/mechanics-adjoint-q1-hex"]
+rheology-bingham = ["umst-runtime/rheology-bingham"]
+rheology_poisson_richardson_fallback = ["umst-runtime/rheology_poisson_richardson_fallback"]
+statistical-mechanics-vinet = ["umst-runtime/statistical-mechanics-vinet"]
+statistical-mechanics-johnson-reference = ["umst-runtime/statistical-mechanics-johnson-reference"]
+solver-stable = ["umst-runtime/solver-stable"]
+solver-research = ["umst-runtime/solver-research"]
+solver-experimental = ["umst-runtime/solver-experimental"]
+information_density = ["umst-runtime/information_density"]
+solver-tests = ["umst-runtime/solver-tests"]
+formal-witness = ["umst-runtime/formal-witness"]
+ucrs-provenance = ["umst-runtime/ucrs-provenance"]
+ros2-contract = ["umst-runtime/ros2-contract"]
+gate-server-bin = ["umst-runtime/gate-server-bin"]
+gate-server = ["umst-runtime/gate-server"]
+gate-full = ["umst-runtime/gate-full"]
+serde = ["umst-runtime/serde"]
+trace-calibration = ["umst-runtime/trace-calibration"]
+manifest-bridge = ["umst-runtime/manifest-bridge"]
+manifold-manifest = ["umst-runtime/manifold-manifest"]
+manifold-gate = ["umst-runtime/manifold-gate"]
+epistemic-ppo = ["umst-runtime/epistemic-ppo"]
+kleisli-ppo-hot-bind = ["umst-runtime/kleisli-ppo-hot-bind"]
+design-query = ["umst-runtime/design-query"]
+design-implicit-field = ["umst-runtime/design-implicit-field"]
+math-constants = ["umst-runtime/math-constants"]
+
+[lib]
+name = "umst_manifold"
+path = "src/lib.rs"

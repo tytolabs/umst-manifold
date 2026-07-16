@@ -3261,6 +3261,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "umst-runtime"
+version = "0.1.0"
+dependencies = [
+ "umst-manifold",
+]
+
+[[package]]
 name = "umst-runtime-arena"
 version = "0.1.0"
 dependencies = [
