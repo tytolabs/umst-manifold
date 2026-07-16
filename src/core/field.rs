@@ -68,6 +68,14 @@ pub struct ReactionExtent;
 #[derive(Clone, Copy, Debug)]
 pub struct SmallStrain;
 
+/// Phantom space marker: fracture energy release rate \(G_c\) — shape `[B, N, 1]`, J/m².
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Zero-sized space witness; AT2 fracture toughness nodal field SSOT is `[B, N, 1]` (distinct from [`Damage`] despite shared rank).
+#[derive(Clone, Copy, Debug)]
+pub struct FractureEnergy;
+
 /// Phantom-typed tensor carrier: physical meaning encoded at compile time via `Space`.
 ///
 /// Uses `PhantomData<fn() -> Space>` so the space witness is invariant (not covariant),
@@ -165,6 +173,27 @@ pub type ReactionExtentField<B> = Field<B, ReactionExtent, 3>;
 /// formal_status: Structural
 /// formal_anchor_rationale: Rank-4 alias for [`Field`] with [`SmallStrain`] witness.
 pub type SmallStrainField<B> = Field<B, SmallStrain, 4>;
+/// Fracture-energy plan field — `[B, N, 1]` \(G_c\).
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`FractureEnergy`] witness.
+pub type FractureEnergyField<B> = Field<B, FractureEnergy, 3>;
+
+impl<B: Backend> FractureEnergyField<B> {
+    /// Zero-filled fracture-energy field.
+    #[must_use]
+    pub fn zeros(dims: [usize; 3], device: &B::Device) -> Self {
+        Field::new(Tensor::<B, 3>::zeros(dims, device))
+    }
+
+    /// Wrap an existing fracture-energy tensor.
+    #[inline]
+    #[must_use]
+    pub fn from_tensor(tensor: Tensor<B, 3>) -> Self {
+        Field::new(tensor)
+    }
+}
 
 impl<B: Backend> SmallStrainField<B> {
     /// Zero-filled small-strain field.
@@ -227,6 +256,18 @@ mod tests {
         let strain_raw = Tensor::<B, 4>::zeros([1, 2, 3, 3], &device);
         let damage_raw = Tensor::<B, 3>::zeros([1, 2, 1], &device);
         accept_strain(Field::new(strain_raw));
+        accept_damage(Field::new(damage_raw));
+    }
+
+    #[test]
+    fn fracture_energy_field_distinct_from_damage() {
+        fn accept_gc(_: FractureEnergyField<B>) {}
+        fn accept_damage(_: DamageField<B>) {}
+
+        let device = Default::default();
+        let gc_raw = Tensor::<B, 3>::zeros([1, 2, 1], &device);
+        let damage_raw = Tensor::<B, 3>::zeros([1, 2, 1], &device);
+        accept_gc(FractureEnergyField::from_tensor(gc_raw));
         accept_damage(Field::new(damage_raw));
     }
 }

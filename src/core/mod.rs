@@ -17,9 +17,9 @@ pub use dec_typestate::{
     B1Incidence, DecTypestateError, ScalarChannel, ScalarChannelIdx, ScalarChannelSelector,
 };
 pub use field::{
-    Damage, DamageField, Displacement, DisplacementField, Field, Humidity, HumidityField,
-    ReactionExtent, ReactionExtentField, SmallStrain, SmallStrainField, Temperature,
-    TemperatureField,
+    Damage, DamageField, Displacement, DisplacementField, Field, FractureEnergy,
+    FractureEnergyField, Humidity, HumidityField, ReactionExtent, ReactionExtentField,
+    SmallStrain, SmallStrainField, Temperature, TemperatureField,
 };
 pub use material_phase::{
     MaterialPhase, MaterialPhaseKind, MechanicsState, RheologyState, SettingState, ThmcEnvelope,

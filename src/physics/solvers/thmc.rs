@@ -1028,7 +1028,7 @@ impl ThmcSolver {
             strain_tensor_for_fracture_from_manifold::<B>(manifold, batch, n, &device)
         };
         let strain = crate::core::field::SmallStrainField::from_tensor(strain_tensor);
-        let gc = Tensor::<B, 3>::ones([batch, n, 1], &device);
+        let gc = crate::core::field::FractureEnergyField::from_tensor(Tensor::<B, 3>::ones([batch, n, 1], &device));
         let fracture = PhaseFieldFractureSolver { length_scale: 1.0 };
 
         let d_last = state.damage.as_tensor().dims()[2];

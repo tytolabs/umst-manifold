@@ -95,7 +95,7 @@ use burn::tensor::{backend::Backend, Int, Tensor};
 
 use core::ops::ControlFlow;
 
-use crate::core::field::{DamageField, Field, SmallStrainField};
+use crate::core::field::{DamageField, Field, FractureEnergyField, SmallStrainField};
 use crate::core::iterate_until::iterate_until;
 #[cfg(feature = "fracture-at2")]
 use crate::physics::laplacian::TopologicalLaplacian;
@@ -358,7 +358,7 @@ impl PhaseFieldFractureSolver {
     /// # Shapes (contract)
     /// - `strain`: [`SmallStrainField`] — `[B, N, 3, 3]` symmetric strain tensor.
     /// - `damage`: [`DamageField`] — `[B, N, 1]`.
-    /// - `fracture_energy_gc`: `[B, N, 1]`.
+    /// - `fracture_energy_gc`: [`FractureEnergyField`] — `[B, N, 1]`.
     /// - `edges_b1`: `[2, E]`.
     /// - Returns updated [`DamageField`] `[B, N, 1]`.
     ///
@@ -372,7 +372,7 @@ impl PhaseFieldFractureSolver {
         &self,
         strain: SmallStrainField<B>,
         damage: DamageField<B>,
-        fracture_energy_gc: Tensor<B, 3>,
+        fracture_energy_gc: FractureEnergyField<B>,
         edges_b1: Tensor<B, 2, Int>,
     ) -> DamageField<B> {
         #[cfg(not(feature = "fracture-at2"))]
@@ -386,17 +386,17 @@ impl PhaseFieldFractureSolver {
                 self,
                 strain.into_tensor(),
                 damage.into_tensor(),
-                fracture_energy_gc,
+                fracture_energy_gc.into_tensor(),
                 edges_b1,
             );
             Field::new(out)
         }
     }
 
-    /// Deprecated tensor shim — use [`Self::update_damage`] with [`SmallStrainField`] / [`DamageField`].
+    /// Deprecated tensor shim — use [`Self::update_damage`] with [`SmallStrainField`] / [`DamageField`] / [`FractureEnergyField`].
     #[deprecated(
         since = "0.2.0",
-        note = "use update_damage(SmallStrainField, DamageField, …) — FP P3.3"
+        note = "use update_damage(SmallStrainField, DamageField, FractureEnergyField, …) — FP P3.3"
     )]
     pub fn update_damage_tensors<B: Backend<FloatElem = f32>>(
         &self,
@@ -408,7 +408,7 @@ impl PhaseFieldFractureSolver {
         self.update_damage(
             SmallStrainField::from_tensor(strain),
             Field::new(damage),
-            fracture_energy_gc,
+            FractureEnergyField::from_tensor(fracture_energy_gc),
             edges_b1,
         )
         .into_tensor()
@@ -503,7 +503,7 @@ impl PhaseFieldFractureSolver {
             st.damage = self.update_damage(
                 strain_k.clone(),
                 d_in,
-                fracture_energy_gc.clone(),
+                FractureEnergyField::from_tensor(fracture_energy_gc.clone()),
                 edges_b1.clone(),
             );
 
@@ -616,7 +616,8 @@ impl PhaseFieldFractureSolver {
             .reshape([batch, n_edges, 1]);
         let edge_unit = delta.div(edge_len.clone());
 
-        let gc_field = Tensor::<B, 3>::ones([batch, n, 1], &dev).mul_scalar(config.gc);
+        let gc_field =
+            FractureEnergyField::from_tensor(Tensor::<B, 3>::ones([batch, n, 1], &dev).mul_scalar(config.gc));
         let solver = PhaseFieldFractureSolver {
             length_scale: config.length_scale,
         };
@@ -1073,7 +1074,7 @@ mod fracture_at2_tests {
     use burn::tensor::{Data, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
 
-    use crate::core::field::{DamageField, Field, SmallStrainField};
+    use crate::core::field::{DamageField, Field, FractureEnergyField, SmallStrainField};
     use super::tensile_strain_energy_density_spectral_jacobi;
 
     type B = NdArray<f32>;
@@ -1084,6 +1085,10 @@ mod fracture_at2_tests {
 
     fn damage_field(t: Tensor<B, 3>) -> DamageField<B> {
         Field::new(t)
+    }
+
+    fn gc_field(t: Tensor<B, 3>) -> FractureEnergyField<B> {
+        FractureEnergyField::from_tensor(t)
     }
 
     #[test]
@@ -1175,7 +1180,7 @@ mod fracture_at2_tests {
         );
 
         let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
-        let d_new = solver.update_damage(strain_field(strain), damage_field(damage), fracture_energy_gc, edges_b1);
+        let d_new = solver.update_damage(strain_field(strain), damage_field(damage), gc_field(fracture_energy_gc), edges_b1);
         let vals = d_new.into_tensor().into_data().value;
         assert!(
             vals.iter().all(|x| x.is_finite()),
@@ -1234,7 +1239,7 @@ mod fracture_at2_tests {
             edges_b1.clone(),
             1,
         );
-        let d_once = solver.update_damage(strain_field(strain), damage_field(damage), fracture_energy_gc, edges_b1);
+        let d_once = solver.update_damage(strain_field(strain), damage_field(damage), gc_field(fracture_energy_gc), edges_b1);
         assert_eq!(
             d_stagg.into_tensor().into_data().value,
             d_once.into_tensor().into_data().value,
@@ -1286,7 +1291,7 @@ mod fracture_at2_tests {
         let d_only_weak = solver.update_damage(
             strain_field(strain_weak.clone()),
             damage_field(damage0.clone()),
-            fracture_energy_gc.clone(),
+            gc_field(fracture_energy_gc.clone()),
             edges_b1.clone(),
         );
 
@@ -1465,7 +1470,7 @@ mod fracture_idempotency_tests {
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
 
-    use crate::core::field::{DamageField, Field, SmallStrainField};
+    use crate::core::field::{DamageField, Field, FractureEnergyField, SmallStrainField};
     use super::PhaseFieldFractureSolver;
 
     type B = NdArray<f32>;
@@ -1476,6 +1481,10 @@ mod fracture_idempotency_tests {
 
     fn damage_field(t: Tensor<B, 3>) -> DamageField<B> {
         Field::new(t)
+    }
+
+    fn gc_field(t: Tensor<B, 3>) -> FractureEnergyField<B> {
+        FractureEnergyField::from_tensor(t)
     }
 
     fn max_abs_drift(a: &[f32], b: &[f32]) -> f32 {
@@ -1507,12 +1516,12 @@ mod fracture_idempotency_tests {
         let d1 = solver.update_damage(
             strain_field(strain.clone()),
             damage_field(damage),
-            fracture_energy_gc.clone(),
+            gc_field(fracture_energy_gc.clone()),
             edges_b1.clone(),
         );
         let d1_vals = d1.clone().into_tensor().into_data().value;
 
-        let d2 = solver.update_damage(strain_field(strain), d1, fracture_energy_gc, edges_b1);
+        let d2 = solver.update_damage(strain_field(strain), d1, gc_field(fracture_energy_gc), edges_b1);
         let d2_vals = d2.into_tensor().into_data().value;
 
         let tol = 1e-6_f32;
