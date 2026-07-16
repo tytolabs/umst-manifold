@@ -1,0 +1,21 @@
+# Self-description manifest (blueprint §18 / NEW_REPOS_BUILD_SPEC C8).
+# Consumed by umst-meta when implemented; not checked yet.
+
+name = "tytolabs/umst-manifold"
+path = "umst-manifold"
+
+kind = "runtime"
+spdx = "MIT"
+layer = "runtime"
+formal_anchors = ["gateMaterialAgnostic", "physicalSecondLaw"]
+status = "wip"
+
+[registry]
+id = "tytolabs/umst-manifold"
+validation_status = "unvalidated"
+notes = "Future rename target: umst-runtime (A3)."
+
+[registry.pins]
+pins_file = ".umst-pins.toml"
+umst-formal = "0aec25337758f254058ad253942e47e73d277339"
+umst-formal-double-slit = "96a5835d19172607eebd4935904844ef88c2e656"
