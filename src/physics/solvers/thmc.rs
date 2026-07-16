@@ -89,7 +89,7 @@ use burn::tensor::Int;
 use burn::tensor::{backend::Backend, Tensor};
 
 use crate::core::field::{
-    DamageField, DisplacementField, Field, HumidityField, ReactionExtentField, SmallStrainField,
+    DamageField, DisplacementField, Field, HumidityField, ReactionExtentField,
     TemperatureField,
 };
 use crate::core::material_transition::ReactionExtentKineticsSpec;
