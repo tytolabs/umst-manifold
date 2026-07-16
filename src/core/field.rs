@@ -60,6 +60,14 @@ pub struct Damage;
 #[derive(Clone, Copy, Debug)]
 pub struct ReactionExtent;
 
+/// Phantom space marker: symmetric small strain ε — shape `[B, N, 3, 3]`.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Zero-sized space witness; fracture AT2 strain rank/shape SSOT is `[B, N, 3, 3]` symmetric tensor layout.
+#[derive(Clone, Copy, Debug)]
+pub struct SmallStrain;
+
 /// Phantom-typed tensor carrier: physical meaning encoded at compile time via `Space`.
 ///
 /// Uses `PhantomData<fn() -> Space>` so the space witness is invariant (not covariant),
@@ -151,6 +159,12 @@ pub type DamageField<B> = Field<B, Damage, 3>;
 /// formal_status: Structural
 /// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`ReactionExtent`] witness.
 pub type ReactionExtentField<B> = Field<B, ReactionExtent, 3>;
+/// Small-strain tensor field — `[B, N, 3, 3]` symmetric ε.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Rank-4 alias for [`Field`] with [`SmallStrain`] witness.
+pub type SmallStrainField<B> = Field<B, SmallStrain, 4>;
 
 #[cfg(test)]
 mod tests {
@@ -187,5 +201,17 @@ mod tests {
         let raw = Tensor::<B, 3>::zeros([1, 2, 1], &device);
         accept_temperature(Field::new(raw.clone()));
         accept_damage(Field::new(raw));
+    }
+
+    #[test]
+    fn small_strain_field_distinct_from_damage() {
+        fn accept_strain(_: SmallStrainField<B>) {}
+        fn accept_damage(_: DamageField<B>) {}
+
+        let device = Default::default();
+        let strain_raw = Tensor::<B, 4>::zeros([1, 2, 3, 3], &device);
+        let damage_raw = Tensor::<B, 3>::zeros([1, 2, 1], &device);
+        accept_strain(Field::new(strain_raw));
+        accept_damage(Field::new(damage_raw));
     }
 }
