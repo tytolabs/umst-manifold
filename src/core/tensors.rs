@@ -3,7 +3,9 @@
 
 use burn::tensor::{backend::Backend, Tensor};
 
-use super::dec_typestate::{B1Incidence, DecTypestateError, ScalarChannelSelector};
+use super::dec_typestate::{B1Incidence, DecTypestateError, ScalarChannelIdx, ScalarChannelSelector};
+use super::field::{DamageField, Field, HumidityField, TemperatureField};
+use super::umst_schema::{SCALAR_DAMAGE, SCALAR_HUMIDITY, SCALAR_TEMPERATURE};
 
 /// Homogeneous material composition carrier (0D/1D batching): phase fractions / recipe columns.
 pub struct MaterialCompositionTensor<B: Backend> {
@@ -58,6 +60,17 @@ pub struct UnifiedMaterialStateTensor<B: Backend> {
     /// Only consulted when **`formal-witness`** is enabled and both UMST + gateway sides supply `Some(..)`.
     #[cfg(feature = "formal-witness")]
     pub catalog_schema_digest: Option<[u8; 32]>,
+}
+
+/// Read-only typed scalar channel bundle lifted from [`UnifiedMaterialStateTensor::scalar_features`].
+///
+/// Each field is a **copy** in rank-3 plan layout `[1, N, 1]` (inverse of
+/// [`crate::physics::thmc_umst_sync::sync_thmc_to_umst`]).
+#[derive(Clone, Debug)]
+pub struct UmstTypedScalarViews<B: Backend> {
+    pub temperature: TemperatureField<B>,
+    pub humidity: HumidityField<B>,
+    pub damage: DamageField<B>,
 }
 
 impl<B: Backend> UnifiedMaterialStateTensor<B> {
@@ -156,6 +169,57 @@ impl<B: Backend> UnifiedMaterialStateTensor<B> {
             let after = self.scalar_features.clone().slice([0..n, channel + 1..f]);
             Tensor::cat(vec![before, col, after], 1)
         };
+    }
+
+    /// Lift a nodal scalar column into a rank-3 plan-field copy `[1, N, 1]`.
+    ///
+    /// Burn's ownership model does not allow borrowing sub-columns; views are **copies**
+    /// (see FP P3.6 migration plan).
+    fn scalar_channel_plan_field<Space>(
+        &self,
+        channel: usize,
+    ) -> Result<Field<B, Space, 3>, DecTypestateError> {
+        let _ = ScalarChannelIdx::try_new(channel)?;
+        let n = self.scalar_features.dims()[0];
+        let f = self.scalar_features.dims()[1];
+        if channel >= f {
+            return Err(DecTypestateError::ScalarChannelOutOfRange {
+                index: channel,
+                channel_count: f,
+            });
+        }
+        let col = self
+            .scalar_features
+            .clone()
+            .slice([0..n, channel..channel + 1]);
+        Ok(Field::new(col.reshape([1, n, 1])))
+    }
+
+    /// Read-only typed scalar channel views from [`Self::scalar_features`].
+    ///
+    /// Returns temperature, humidity, and damage plan fields at batch `B = 1` with shape
+    /// `[1, N, 1]`, matching [`crate::physics::solvers::ThmcState`] layout contracts.
+    pub fn typed_views(&self) -> Result<UmstTypedScalarViews<B>, DecTypestateError> {
+        Ok(UmstTypedScalarViews {
+            temperature: self.temperature_scalar_channel()?,
+            humidity: self.humidity_scalar_channel()?,
+            damage: self.damage_scalar_channel()?,
+        })
+    }
+
+    /// Convenience shim: damage column as [`DamageField`].
+    pub fn damage_scalar_channel(&self) -> Result<DamageField<B>, DecTypestateError> {
+        self.scalar_channel_plan_field::<super::field::Damage>(SCALAR_DAMAGE)
+    }
+
+    /// Convenience shim: humidity column as [`HumidityField`].
+    pub fn humidity_scalar_channel(&self) -> Result<HumidityField<B>, DecTypestateError> {
+        self.scalar_channel_plan_field::<super::field::Humidity>(SCALAR_HUMIDITY)
+    }
+
+    /// Convenience shim: temperature column as [`TemperatureField`].
+    pub fn temperature_scalar_channel(&self) -> Result<TemperatureField<B>, DecTypestateError> {
+        self.scalar_channel_plan_field::<super::field::Temperature>(SCALAR_TEMPERATURE)
     }
 }
 
