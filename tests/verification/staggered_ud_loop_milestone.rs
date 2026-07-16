@@ -37,6 +37,17 @@ use umst_manifold::physics::topology::EdgeTopology;
 
 type B = NdArray<f32>;
 
+use umst_manifold::core::field::{DamageField, Field, SmallStrainField};
+
+fn strain_field(t: Tensor<B, 4>) -> SmallStrainField<B> {
+    SmallStrainField::from_tensor(t)
+}
+
+fn damage_field(t: Tensor<B, 3>) -> DamageField<B> {
+    Field::new(t)
+}
+
+
 const DAMAGE_REG: f32 = 1e-6;
 
 /// Voigt `[εxx,εyy,εzz,εxy,εyz,εxz]` → symmetric `[B,N,3,3]`.
@@ -179,11 +190,12 @@ fn milestone_one_analytic_strain_surrogate() {
     let eps_ref = 0.012_f32;
 
     let d_fin = fracture.update_damage_staggered(
-        |damage: &Tensor<B, 3>| {
-            let one = Tensor::ones_like(damage);
+        |damage: &DamageField<B>| {
+            let d = damage.as_tensor();
+            let one = Tensor::ones_like(d);
             let g = one
                 .clone()
-                .sub(damage.clone())
+                .sub(d.clone())
                 .powf_scalar(2.0)
                 .add_scalar(DAMAGE_REG);
             let scale = one.div(g);
@@ -200,15 +212,15 @@ fn milestone_one_analytic_strain_surrogate() {
                 ],
                 2,
             );
-            voigt6_to_sym_tensor3(voigt)
+            strain_field(voigt6_to_sym_tensor3(voigt))
         },
-        d0,
+        damage_field(d0),
         h.fracture_energy_gc,
         h.edges_b1,
         6,
     );
 
-    let vals = d_fin.into_data().value;
+    let vals = d_fin.into_tensor().into_data().value;
     assert!(vals.iter().all(|x| x.is_finite()));
     assert!(vals.iter().all(|&x| (0.0..=1.0).contains(&x)));
     let max_d = vals.iter().copied().fold(0.0_f32, f32::max);
@@ -222,22 +234,22 @@ fn milestone_one_analytic_strain_surrogate() {
 fn milestone_one_mechanics_equilibrium_staggered_convergence() {
     let h = chain_harness();
     let fracture = PhaseFieldFractureSolver { length_scale: 0.08 };
-    let mut damage = Tensor::<B, 3>::zeros([h.batch, h.n_nodes, 1], &h.dev);
+    let mut damage = damage_field(Tensor::<B, 3>::zeros([h.batch, h.n_nodes, 1], &h.dev));
 
     let mut linf_deltas = Vec::new();
     let max_outer = 12_usize;
 
     for _ in 0..max_outer {
-        let d_before = damage.clone();
+        let d_before = damage.as_tensor().clone();
         damage = fracture.update_damage_staggered(
-            |d: &Tensor<B, 3>| {
-                strain_tensor_for_fracture_after_mechanics(
+            |d: &DamageField<B>| {
+                strain_field(strain_tensor_for_fracture_after_mechanics(
                     h.u0.clone(),
                     h.coords.clone(),
                     h.stiffness.clone(),
                     h.body_force.clone(),
                     h.edges_b1.clone(),
-                    d.clone(),
+                    d.as_tensor().clone(),
                     h.boundary_mask.clone(),
                     h.cross_section_area,
                     &h.cfg,
@@ -246,7 +258,7 @@ fn milestone_one_mechanics_equilibrium_staggered_convergence() {
                     h.edge_unit.clone(),
                     h.edge_len.clone(),
                     h.n_nodes,
-                )
+                ))
             },
             damage,
             h.fracture_energy_gc.clone(),
@@ -254,6 +266,7 @@ fn milestone_one_mechanics_equilibrium_staggered_convergence() {
             1,
         );
         let step = damage
+            .as_tensor()
             .clone()
             .sub(d_before.clone())
             .abs()
@@ -262,6 +275,7 @@ fn milestone_one_mechanics_equilibrium_staggered_convergence() {
         linf_deltas.push(step);
 
         let min_dd = damage
+            .as_tensor()
             .clone()
             .sub(d_before)
             .greater_elem(-1e-9_f32)
@@ -280,7 +294,7 @@ fn milestone_one_mechanics_equilibrium_staggered_convergence() {
         "expected finite outer-loop convergence on this chain; last l∞ delta={last:?}, history={linf_deltas:?}"
     );
 
-    let vals = damage.clone().into_data().value;
+    let vals = damage.as_tensor().clone().into_data().value;
     let max_d = vals.iter().copied().fold(0.0_f32, f32::max);
     assert!(
         max_d > 1e-10_f32,
@@ -295,7 +309,7 @@ fn milestone_one_mechanics_equilibrium_staggered_convergence() {
         h.stiffness.clone(),
         h.body_force.clone(),
         h.edges_b1.clone(),
-        damage,
+        damage.as_tensor().clone(),
         h.boundary_mask.clone(),
         h.cross_section_area,
         &h.cfg,

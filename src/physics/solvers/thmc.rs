@@ -89,7 +89,8 @@ use burn::tensor::Int;
 use burn::tensor::{backend::Backend, Tensor};
 
 use crate::core::field::{
-    DamageField, DisplacementField, Field, HumidityField, ReactionExtentField, TemperatureField,
+    DamageField, DisplacementField, Field, HumidityField, ReactionExtentField, SmallStrainField,
+    TemperatureField,
 };
 use crate::core::material_transition::ReactionExtentKineticsSpec;
 use crate::core::tensors::UnifiedMaterialStateTensor;
@@ -179,25 +180,25 @@ pub const UNIVERSAL_GAS_CONSTANT_J_PER_MOL_K: f32 = 8.314_463_f32;
 /// Thermal plan: nodal temperature (and optional channels). Shape `[B, N, F_T]`.
 #[derive(Clone, Debug)]
 pub struct ThermalPlan<B: Backend> {
-    pub temperature: Tensor<B, 3>,
+    pub temperature: TemperatureField<B>,
 }
 
 /// Hydrologic plan: humidity / pore-fluid proxy. Shape `[B, N, F_h]`.
 #[derive(Clone, Debug)]
 pub struct HydrologicPlan<B: Backend> {
-    pub humidity: Tensor<B, 3>,
+    pub humidity: HumidityField<B>,
 }
 
 /// Mechanical plan: displacement field. Shape `[B, N, 3]`.
 #[derive(Clone, Debug)]
 pub struct MechanicalPlan<B: Backend> {
-    pub displacement: Tensor<B, 3>,
+    pub displacement: DisplacementField<B>,
 }
 
 /// Chemical / reaction extent kinetics plan. Shape `[B, N, F_α]`.
 #[derive(Clone, Debug)]
 pub struct ChemicalPlan<B: Backend> {
-    pub reaction_extent: Tensor<B, 3>,
+    pub reaction_extent: ReactionExtentField<B>,
 }
 
 /// Coupled thermo-hydro-mechanical-chemical state: one tensor bundle per physics plan plus fracture and clock.
@@ -208,8 +209,108 @@ pub struct ThmcState<B: Backend> {
     pub mechanical: MechanicalPlan<B>,
     pub chemical: ChemicalPlan<B>,
     /// Continuous damage on nodes, typically `[B, N, 1]` (fracture coupling).
-    pub damage: Tensor<B, 3>,
+    pub damage: DamageField<B>,
     pub time: f32,
+}
+
+impl<B: Backend> ThermalPlan<B> {
+    #[inline]
+    #[must_use]
+    pub fn from_temperature(tensor: Tensor<B, 3>) -> Self {
+        Self { temperature: Field::new(tensor) }
+    }
+    #[deprecated(since = "0.2.0", note = "use .temperature.as_tensor() — FP P3.1 migration")]
+    #[inline]
+    pub fn temperature_tensor(&self) -> &Tensor<B, 3> {
+        self.temperature.as_tensor()
+    }
+}
+
+impl<B: Backend> HydrologicPlan<B> {
+    #[inline]
+    #[must_use]
+    pub fn from_humidity(tensor: Tensor<B, 3>) -> Self {
+        Self { humidity: Field::new(tensor) }
+    }
+    #[deprecated(since = "0.2.0", note = "use .humidity.as_tensor() — FP P3.1 migration")]
+    #[inline]
+    pub fn humidity_tensor(&self) -> &Tensor<B, 3> {
+        self.humidity.as_tensor()
+    }
+}
+
+impl<B: Backend> MechanicalPlan<B> {
+    #[inline]
+    #[must_use]
+    pub fn from_displacement(tensor: Tensor<B, 3>) -> Self {
+        Self { displacement: Field::new(tensor) }
+    }
+    #[deprecated(since = "0.2.0", note = "use .displacement.as_tensor() — FP P3.1 migration")]
+    #[inline]
+    pub fn displacement_tensor(&self) -> &Tensor<B, 3> {
+        self.displacement.as_tensor()
+    }
+}
+
+impl<B: Backend> ChemicalPlan<B> {
+    #[inline]
+    #[must_use]
+    pub fn from_reaction_extent(tensor: Tensor<B, 3>) -> Self {
+        Self { reaction_extent: Field::new(tensor) }
+    }
+    #[deprecated(since = "0.2.0", note = "use .reaction_extent.as_tensor() — FP P3.1 migration")]
+    #[inline]
+    pub fn reaction_extent_tensor(&self) -> &Tensor<B, 3> {
+        self.reaction_extent.as_tensor()
+    }
+}
+
+impl<B: Backend> ThmcState<B> {
+    #[must_use]
+    pub fn from_tensors(
+        temperature: Tensor<B, 3>,
+        humidity: Tensor<B, 3>,
+        displacement: Tensor<B, 3>,
+        reaction_extent: Tensor<B, 3>,
+        damage: Tensor<B, 3>,
+        time: f32,
+    ) -> Self {
+        Self {
+            thermal: ThermalPlan::from_temperature(temperature),
+            hydro: HydrologicPlan::from_humidity(humidity),
+            mechanical: MechanicalPlan::from_displacement(displacement),
+            chemical: ChemicalPlan::from_reaction_extent(reaction_extent),
+            damage: Field::new(damage),
+            time,
+        }
+    }
+
+    #[must_use]
+    pub fn into_thmc_tensors(
+        self,
+    ) -> (
+        Tensor<B, 3>,
+        Tensor<B, 3>,
+        Tensor<B, 3>,
+        Tensor<B, 3>,
+        Tensor<B, 3>,
+        f32,
+    ) {
+        (
+            self.thermal.temperature.into_tensor(),
+            self.hydro.humidity.into_tensor(),
+            self.mechanical.displacement.into_tensor(),
+            self.chemical.reaction_extent.into_tensor(),
+            self.damage.into_tensor(),
+            self.time,
+        )
+    }
+
+    #[deprecated(since = "0.2.0", note = "use .damage.as_tensor() — FP P3.1 migration")]
+    #[inline]
+    pub fn damage_tensor(&self) -> &Tensor<B, 3> {
+        self.damage.as_tensor()
+    }
 }
 
 /// Coupled **thermo–hydro–mechanical–chemical** stepper for one material graph (`thmc-coupled`).
@@ -484,9 +585,9 @@ impl ThmcSolver {
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
     {
-        let device = state.thermal.temperature.device();
-        let batch = state.thermal.temperature.dims()[0];
-        let n = state.thermal.temperature.dims()[1];
+        let device = state.thermal.temperature.as_tensor().device();
+        let batch = state.thermal.temperature.as_tensor().dims()[0];
+        let n = state.thermal.temperature.as_tensor().dims()[1];
         let n_manifold = manifold.scalar_features.dims()[0];
         let edges_b1 = manifold.edges_b1.clone();
 
@@ -500,9 +601,10 @@ impl ThmcSolver {
         let pre_step = state.clone();
 
         // Damage mask `[B,N,1]` for transport coefficients (last dim 1; otherwise first channel).
-        let damage_m = match state.damage.dims()[2] {
-            1 => state.damage.clone(),
-            _ => state.damage.clone().slice([0..batch, 0..n, 0..1]),
+        let damage_tensor = state.damage.as_tensor();
+        let damage_m = match damage_tensor.dims()[2] {
+            1 => damage_tensor.clone(),
+            _ => damage_tensor.clone().slice([0..batch, 0..n, 0..1]),
         };
 
         if self.monolithic_thmc_newton.is_some() && self.implicit_t_alpha_newton.is_some() {
@@ -540,9 +642,9 @@ impl ThmcSolver {
                         .into(),
                 );
             }
-            let f_t = state.thermal.temperature.dims()[2];
-            let f_h = state.hydro.humidity.dims()[2];
-            let f_a = state.chemical.reaction_extent.dims()[2];
+            let f_t = state.thermal.temperature.as_tensor().dims()[2];
+            let f_h = state.hydro.humidity.as_tensor().dims()[2];
+            let f_a = state.chemical.reaction_extent.as_tensor().dims()[2];
             let m_dof = ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(
                 n, f_t, f_h, f_a,
             );
@@ -558,8 +660,8 @@ impl ThmcSolver {
 
         // Split residual Newton: exit when \(\|R\|_2 < tol\) (Wave 1 honesty).
         for _newton in 0..self.max_newton {
-            let t_old = state.thermal.temperature.clone();
-            let h_old = state.hydro.humidity.clone();
+            let t_old = state.thermal.temperature.as_tensor().clone();
+            let h_old = state.hydro.humidity.as_tensor().clone();
 
             // Topological diffusion: \(\Delta U\) with flux degraded by nodal damage on edges.
             let lap_t = TopologicalLaplacian::scalar_laplacian(
@@ -577,7 +679,7 @@ impl ThmcSolver {
             let dt_lap_h = lap_h.mul_scalar(self.dt);
 
             // reaction extent rate uses **pre-transport** temperature (same sub-step as explicit Euler split).
-            let f_alpha_ch = state.chemical.reaction_extent.dims()[2];
+            let f_alpha_ch = state.chemical.reaction_extent.as_tensor().dims()[2];
             let t_bn1 = t_old.clone().slice([0..batch, 0..n, 0..1]);
             let temperature_for_alpha = if f_alpha_ch == 1 {
                 t_bn1
@@ -586,20 +688,20 @@ impl ThmcSolver {
             };
             let d_alpha = reaction_extent_rate_tensor(
                 &self.reaction_extent_kinetics,
-                state.chemical.reaction_extent.clone(),
+                state.chemical.reaction_extent.as_tensor().clone(),
                 temperature_for_alpha.clone(),
                 &device,
             );
 
             // Exothermic heat: \(\Delta T_{\mathrm{exo}} \propto \dot\alpha\,\Delta t\) (tensor-safe).
-            let f_t_ch = state.thermal.temperature.dims()[2];
+            let f_t_ch = state.thermal.temperature.as_tensor().dims()[2];
             let exo = d_alpha
                 .clone()
                 .slice([0..batch, 0..n, 0..1])
                 .mul_scalar(self.reaction_extent_kinetics.exothermic_k_per_alpha_rate * self.dt)
                 .expand::<3, _>([batch, n, f_t_ch]);
 
-            let alpha_n = state.chemical.reaction_extent.clone();
+            let alpha_n = state.chemical.reaction_extent.as_tensor().clone();
 
             if let Some(mc) = self.monolithic_thmc_newton.as_ref() {
                 let coords_n3 = manifold
@@ -645,7 +747,7 @@ impl ThmcSolver {
                     .add_scalar(self.reaction_extent_kinetics.stiffness_nu);
                 let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
                 let (u_predict, _) = VectorMechanicsSolver::solve_equilibrium(
-                    state.mechanical.displacement.clone(),
+                    state.mechanical.displacement.as_tensor().clone(),
                     coords_n3.clone(),
                     stiffness,
                     bf.clone(),
@@ -657,18 +759,10 @@ impl ThmcSolver {
                 );
 
                 let trial = ThmcState {
-                    thermal: ThermalPlan {
-                        temperature: t_predict,
-                    },
-                    hydro: HydrologicPlan {
-                        humidity: h_predict,
-                    },
-                    mechanical: MechanicalPlan {
-                        displacement: u_predict,
-                    },
-                    chemical: ChemicalPlan {
-                        reaction_extent: alpha_predict,
-                    },
+                    thermal: ThermalPlan::from_temperature(t_predict),
+                    hydro: HydrologicPlan::from_humidity(h_predict),
+                    mechanical: MechanicalPlan::from_displacement(u_predict),
+                    chemical: ChemicalPlan::from_reaction_extent(alpha_predict),
                     damage: state.damage.clone(),
                     time: state.time,
                 };
@@ -678,7 +772,7 @@ impl ThmcSolver {
                     temperature_n: t_old.clone(),
                     humidity_n: h_old.clone(),
                     alpha_n: alpha_n.clone(),
-                    displacement_n: state.mechanical.displacement.clone(),
+                    displacement_n: state.mechanical.displacement.as_tensor().clone(),
                     mechanics_placeholder_mass: 1.0_f32,
                     ru_shrinkage_binder_liquid_ratio: None,
                     edges_b1: edges_b1.clone(),
@@ -707,11 +801,19 @@ impl ThmcSolver {
                 let r_t = state
                     .thermal
                     .temperature
+                    .as_tensor()
                     .clone()
                     .sub(t_old)
                     .sub(dt_lap_t)
                     .abs();
-                let r_h = state.hydro.humidity.clone().sub(h_old).sub(dt_lap_h).abs();
+                let r_h = state
+                    .hydro
+                    .humidity
+                    .as_tensor()
+                    .clone()
+                    .sub(h_old)
+                    .sub(dt_lap_h)
+                    .abs();
                 let total_residual_tensor = r_t.add(r_h);
                 if stacked_transport_residual_l2(&total_residual_tensor) <= self.tol {
                     _last_total_residual_tensor = Some(total_residual_tensor);
@@ -732,7 +834,7 @@ impl ThmcSolver {
                         "ThmcSolver::step: implicit_t_alpha_newton.iterations must be >= 2".into(),
                     );
                 }
-                let f_t_dof = state.thermal.temperature.dims()[2];
+                let f_t_dof = state.thermal.temperature.as_tensor().dims()[2];
                 let f_a_dof = f_alpha_ch;
                 let stacked = n * f_t_dof + n * f_a_dof;
                 if stacked > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
@@ -750,18 +852,14 @@ impl ThmcSolver {
                     .clamp(0.0_f32, 1.0_f32);
 
                 let trial = ThmcState {
-                    thermal: ThermalPlan {
-                        temperature: t_predict,
-                    },
+                    thermal: ThermalPlan::from_temperature(t_predict),
                     hydro: HydrologicPlan {
                         humidity: state.hydro.humidity.clone(),
                     },
                     mechanical: MechanicalPlan {
                         displacement: state.mechanical.displacement.clone(),
                     },
-                    chemical: ChemicalPlan {
-                        reaction_extent: alpha_predict,
-                    },
+                    chemical: ChemicalPlan::from_reaction_extent(alpha_predict),
                     damage: state.damage.clone(),
                     time: state.time,
                 };
@@ -785,14 +883,18 @@ impl ThmcSolver {
                 state.thermal.temperature = updated.thermal.temperature;
                 state.chemical.reaction_extent = updated.chemical.reaction_extent;
             } else {
-                state.thermal.temperature = t_old.clone().add(dt_lap_t.clone()).add(exo);
-                state.chemical.reaction_extent = alpha_n
-                    .clone()
-                    .add(d_alpha.mul_scalar(self.dt))
-                    .clamp(0.0_f32, 1.0_f32);
+                state.thermal.temperature = Field::new(
+                    t_old.clone().add(dt_lap_t.clone()).add(exo),
+                );
+                state.chemical.reaction_extent = Field::new(
+                    alpha_n
+                        .clone()
+                        .add(d_alpha.mul_scalar(self.dt))
+                        .clamp(0.0_f32, 1.0_f32),
+                );
             }
 
-            let f_h = state.hydro.humidity.dims()[2];
+            let f_h = state.hydro.humidity.as_tensor().dims()[2];
             let mut h_new = h_old.clone().add(dt_lap_h.clone());
             if self.drying_last_node_evaporation_k > 0.0_f32 && n > 1 {
                 let tail = h_new.clone().slice([0..batch, (n - 1)..n, 0..1]);
@@ -804,7 +906,7 @@ impl ThmcSolver {
                 let inner = h_new.clone().slice([0..batch, 0..(n - 1), 0..f_h]);
                 h_new = Tensor::cat(vec![inner, new_tail], 1);
             }
-            state.hydro.humidity = h_new;
+            state.hydro.humidity = Field::new(h_new);
 
             // Mechanics: bar-network equilibrium when an SI-metre embedding is supplied (`[N,3]`).
             if let Some(coords_n3) = manifold.node_positions.as_ref() {
@@ -828,6 +930,7 @@ impl ThmcSolver {
                     let alpha_bn1 = state
                         .chemical
                         .reaction_extent
+                        .as_tensor()
                         .clone()
                         .slice([0..batch, 0..n, 0..1])
                         .clamp(1e-6_f32, 1.0_f32);
@@ -848,7 +951,7 @@ impl ThmcSolver {
                             .max(inner_cfg.cg_tolerance)
                             .max(1e-6_f32);
                         let equilibrium = solve_bar_equilibrium(
-                            state.mechanical.displacement.clone(),
+                            state.mechanical.displacement.as_tensor().clone(),
                             coords_n3.clone(),
                             stiffness,
                             bf,
@@ -862,12 +965,12 @@ impl ThmcSolver {
                         let u_new = equilibrium.0;
                         let report = equilibrium.2;
                         self.mechanics_solve_reports.push(report);
-                        state.mechanical.displacement = u_new;
+                        state.mechanical.displacement = Field::new(u_new);
                     }
                     #[cfg(not(feature = "mechanics-adjoint"))]
                     {
                         let (u_new, _stress) = VectorMechanicsSolver::solve_equilibrium(
-                            state.mechanical.displacement.clone(),
+                            state.mechanical.displacement.as_tensor().clone(),
                             coords_n3.clone(),
                             stiffness,
                             bf,
@@ -877,7 +980,7 @@ impl ThmcSolver {
                             cross_section_area,
                             &inner_cfg,
                         );
-                        state.mechanical.displacement = u_new;
+                        state.mechanical.displacement = Field::new(u_new);
                     }
                 }
             }
@@ -886,11 +989,19 @@ impl ThmcSolver {
             let r_t = state
                 .thermal
                 .temperature
+                .as_tensor()
                 .clone()
                 .sub(t_old)
                 .sub(dt_lap_t)
                 .abs();
-            let r_h = state.hydro.humidity.clone().sub(h_old).sub(dt_lap_h).abs();
+            let r_h = state
+                .hydro
+                .humidity
+                .as_tensor()
+                .clone()
+                .sub(h_old)
+                .sub(dt_lap_h)
+                .abs();
             let total_residual_tensor = r_t.add(r_h);
             _last_total_residual_tensor = Some(total_residual_tensor.clone());
             if stacked_transport_residual_l2(&total_residual_tensor) <= self.tol {
@@ -902,10 +1013,10 @@ impl ThmcSolver {
 
         // Phase-field fracture: post-mechanics ε(u) when SI node_positions drive the bar solve; else
         // matrix_features slice or zeros (see module docs).
-        let strain = if let Some(coords_n3) = manifold.node_positions.as_ref() {
+        let strain_tensor = if let Some(coords_n3) = manifold.node_positions.as_ref() {
             if coords_n3.dims() == [n, 3] {
                 strain_tensor_from_bar_network_displacement::<B>(
-                    state.mechanical.displacement.clone(),
+                    state.mechanical.displacement.as_tensor().clone(),
                     coords_n3.clone(),
                     edges_b1.clone(),
                     n,
@@ -916,21 +1027,29 @@ impl ThmcSolver {
         } else {
             strain_tensor_for_fracture_from_manifold::<B>(manifold, batch, n, &device)
         };
+        let strain = crate::core::field::SmallStrainField::from_tensor(strain_tensor);
         let gc = Tensor::<B, 3>::ones([batch, n, 1], &device);
         let fracture = PhaseFieldFractureSolver { length_scale: 1.0 };
 
-        let d_last = state.damage.dims()[2];
+        let d_last = state.damage.as_tensor().dims()[2];
         let damage_core = match d_last {
             1 => state.damage.clone(),
-            _ => state.damage.clone().slice([0..batch, 0..n, 0..1]),
+            _ => state
+                .damage
+                .clone()
+                .map(|t| t.slice([0..batch, 0..n, 0..1])),
         };
         let damage_new = fracture.update_damage(strain, damage_core, gc, edges_b1.clone());
 
         state.damage = if d_last == 1 {
             damage_new
         } else {
-            let tail = state.damage.slice([0..batch, 0..n, 1..d_last]);
-            Tensor::cat(vec![damage_new, tail], 2)
+            let tail = state
+                .damage
+                .as_tensor()
+                .clone()
+                .slice([0..batch, 0..n, 1..d_last]);
+            damage_new.map(|core| Tensor::cat(vec![core, tail], 2))
         };
 
         // Post-step gate evidence via configured transition gate cartridge.

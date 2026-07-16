@@ -166,6 +166,21 @@ pub type ReactionExtentField<B> = Field<B, ReactionExtent, 3>;
 /// formal_anchor_rationale: Rank-4 alias for [`Field`] with [`SmallStrain`] witness.
 pub type SmallStrainField<B> = Field<B, SmallStrain, 4>;
 
+impl<B: Backend> SmallStrainField<B> {
+    /// Zero-filled small-strain field.
+    #[must_use]
+    pub fn zeros(dims: [usize; 4], device: &B::Device) -> Self {
+        Field::new(Tensor::<B, 4>::zeros(dims, device))
+    }
+
+    /// Wrap an existing symmetric strain tensor.
+    #[inline]
+    #[must_use]
+    pub fn from_tensor(tensor: Tensor<B, 4>) -> Self {
+        Field::new(tensor)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use burn_ndarray::NdArray;

@@ -14,6 +14,17 @@ use umst_manifold::physics::topology::EdgeTopology;
 
 type B = NdArray<f32>;
 
+use umst_manifold::core::field::{DamageField, Field, SmallStrainField};
+
+fn strain_field(t: Tensor<B, 4>) -> SmallStrainField<B> {
+    SmallStrainField::from_tensor(t)
+}
+
+fn damage_field(t: Tensor<B, 3>) -> DamageField<B> {
+    Field::new(t)
+}
+
+
 /// Voigt `[εxx,εyy,εzz,εxy,εyz,εxz]` (tensor shear) → symmetric `[B,N,3,3]`.
 fn voigt6_to_sym_tensor3<Bk: Backend<FloatElem = f32>>(v: Tensor<Bk, 3>) -> Tensor<Bk, 4> {
     let b = v.dims()[0];
@@ -111,14 +122,14 @@ fn staggered_one_outer_mechanics_strain_drives_at2_damage() {
 
     let edges_for_damage = edges_b1.clone();
     let d_out = fracture.update_damage_staggered(
-        |damage: &Tensor<B, 3>| {
+        |damage: &DamageField<B>| {
             let (u, _) = VectorMechanicsSolver::solve_equilibrium(
                 u0.clone(),
                 coords.clone(),
                 stiffness.clone(),
                 body_force.clone(),
                 edges_b1.clone(),
-                damage.clone(),
+                damage.as_tensor().clone(),
                 boundary_mask.clone(),
                 cross_section_area,
                 &cfg,
@@ -133,15 +144,15 @@ fn staggered_one_outer_mechanics_strain_drives_at2_damage() {
                 edges_b1.clone(),
                 n,
             );
-            voigt6_to_sym_tensor3(eps_v)
+            strain_field(voigt6_to_sym_tensor3(eps_v))
         },
-        Tensor::<B, 3>::zeros([batch, n, 1], &dev),
+        damage_field(Tensor::<B, 3>::zeros([batch, n, 1], &dev)),
         fracture_energy_gc,
         edges_for_damage,
         1,
     );
 
-    let vals = d_out.into_data().value;
+    let vals = d_out.into_tensor().into_data().value;
     assert!(vals.iter().all(|x| x.is_finite()));
     let max_d = vals.iter().copied().fold(0.0_f32, f32::max);
     assert!(
