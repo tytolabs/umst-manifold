@@ -18,6 +18,7 @@ use super::material_gate::{material_gate, MaterialTransitionWitness};
 use super::transition_proposal::{
     transition_outcome, ThermodynamicStateSnapshot, ThermodynamicTransitionOutcome,
 };
+use super::verdict::ConjunctVerdict;
 
 /// Landauer erasure debit expressed as open-system `P_input` (joules).
 #[must_use]
@@ -125,11 +126,13 @@ pub fn transition_outcome_with_power_input(
         tolerance,
     );
 
+    let verdict = ConjunctVerdict::compose(core.verdict, material.verdict);
     let energy_positive = core.clausius_duhem && material.strength_monotonic;
     let accepted =
         core.mass_conserved && energy_positive && material.reaction_extent_irreversible;
 
     ThermodynamicTransitionOutcome {
+        verdict,
         accepted,
         dissipation: core.dissipation,
         mass_conserved: core.mass_conserved,

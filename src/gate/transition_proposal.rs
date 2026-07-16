@@ -9,7 +9,7 @@ use super::core_gate::{
     core_gate, mass_conserved_between_densities, scalar_response_from_transition,
 };
 use super::material_gate::{material_gate, MaterialTransitionWitness};
-use super::verdict::AdmissibilityVerdict;
+use super::verdict::{AdmissibilityVerdict, ConjunctVerdict, GateRejectReason};
 use crate::core::material_transition::{MaterialTransitionParams, SubstrateMaterialParams};
 
 /// Minimal JSON-shaped proposal for a bulk material patch (host gate IO).
@@ -122,6 +122,8 @@ impl ThermodynamicStateSnapshot {
 /// Outcome parallel to prototype [`AdmissibilityResult`] fields before reason stringification.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ThermodynamicTransitionOutcome {
+    /// Primary discriminant — core ∧ material conjunct cluster.
+    pub verdict: ConjunctVerdict,
     pub accepted: bool,
     pub dissipation: f64,
     pub mass_conserved: bool,
@@ -131,12 +133,18 @@ pub struct ThermodynamicTransitionOutcome {
 }
 
 impl ThermodynamicTransitionOutcome {
-    pub fn verdict(&self) -> AdmissibilityVerdict {
-        AdmissibilityVerdict::from_thermo_flags(
+    /// REST-stable verdict via locked transition conjunct ladder (legacy `energy_positive` fold).
+    pub fn rest_verdict(&self) -> AdmissibilityVerdict {
+        AdmissibilityVerdict::from_transition_conjuncts(
             self.accepted,
             self.mass_conserved,
             self.energy_positive,
         )
+    }
+
+    /// Alias for [`Self::rest_verdict`] — preserved for call-site compatibility.
+    pub fn verdict(&self) -> AdmissibilityVerdict {
+        self.rest_verdict()
     }
 }
 
@@ -241,6 +249,7 @@ pub fn transition_outcome(
         || dt <= 0.0
     {
         return ThermodynamicTransitionOutcome {
+            verdict: ConjunctVerdict::Rejected(GateRejectReason::MalformedInput),
             accepted: false,
             dissipation: 0.0,
             mass_conserved: false,
@@ -272,12 +281,15 @@ pub fn transition_outcome(
         tolerance,
     );
 
+    let verdict = ConjunctVerdict::compose(core.verdict, material.verdict);
+
     // Legacy parity: `energy_positive` folds CD ∧ strength (not Core-only).
     let energy_positive = core.clausius_duhem && material.strength_monotonic;
     let accepted =
         core.mass_conserved && energy_positive && material.reaction_extent_irreversible;
 
     ThermodynamicTransitionOutcome {
+        verdict,
         accepted,
         dissipation: core.dissipation,
         mass_conserved: core.mass_conserved,
@@ -464,6 +476,91 @@ mod transition_outcome_tests {
         new.reaction_extent = 0.1;
         let outcome = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
         assert!(!outcome.reaction_extent_irreversible);
+        assert!(!outcome.accepted);
+    }
+
+    #[test]
+    fn transition_outcome_conjunct_verdict_matches_rest_ladder() {
+        fn rest_from_conjunct(v: ConjunctVerdict) -> AdmissibilityVerdict {
+            match v {
+                ConjunctVerdict::Accepted => AdmissibilityVerdict::Accepted,
+                ConjunctVerdict::Rejected(reason) => reason.to_rest_verdict(),
+            }
+        }
+
+        let scenarios = [
+            (
+                ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0),
+                ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0),
+            ),
+            (
+                ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0),
+                {
+                    let mut n = ThermodynamicStateSnapshot::from_mix_calibrated(
+                        0.45, 0.5, 293.15, 40.0,
+                    );
+                    n.reaction_extent = 0.1;
+                    n
+                },
+            ),
+            (
+                ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0),
+                {
+                    let mut n = ThermodynamicStateSnapshot::from_mix_calibrated(
+                        0.45, 0.35, 293.15, 42.0,
+                    );
+                    n.strength = 10.0;
+                    n
+                },
+            ),
+        ];
+
+        for (old, new) in scenarios {
+            let outcome = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
+            assert_eq!(
+                outcome.verdict(),
+                AdmissibilityVerdict::from_transition_conjuncts(
+                    outcome.accepted,
+                    outcome.mass_conserved,
+                    outcome.energy_positive,
+                ),
+                "REST ladder must match stored bool conjuncts"
+            );
+            if outcome.accepted {
+                assert_eq!(outcome.verdict, ConjunctVerdict::Accepted);
+            } else {
+                assert_ne!(outcome.verdict, ConjunctVerdict::Accepted);
+            }
+            assert_eq!(
+                rest_from_conjunct(outcome.verdict),
+                outcome.verdict(),
+                "composed ConjunctVerdict REST map must match legacy ladder"
+            );
+            if matches!(
+                outcome.verdict,
+                ConjunctVerdict::Rejected(GateRejectReason::StrengthRegression)
+            ) {
+                assert!(
+                    !outcome.energy_positive,
+                    "strength regression must fold into energy_positive=false"
+                );
+                assert_eq!(
+                    outcome.verdict(),
+                    AdmissibilityVerdict::NegativeDissipation,
+                    "strength regression → NEGATIVE_DISSIPATION via legacy fold"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn transition_outcome_rejects_malformed_input() {
+        let idle = ThermodynamicStateSnapshot::new_idle();
+        let outcome = transition_outcome(&idle, &idle, -1.0, TRANSITION_TOLERANCE);
+        assert_eq!(
+            outcome.verdict,
+            ConjunctVerdict::Rejected(GateRejectReason::MalformedInput)
+        );
         assert!(!outcome.accepted);
     }
 
