@@ -2099,9 +2099,9 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
                 };
                 (ok, false)
             } else {
-                let jac = jac_band
-                    .as_mut()
-                    .expect("band Jacobian buffer for full-SG FD Newton");
+                let Some(jac) = jac_band.as_mut() else {
+                    return None;
+                };
                 newton_fd_jacobian_full_sg_node_major_row_band(
                     solver, newton, dt64, &u, &c_plus_n, &c_minus_n, &eps, &d_plus, &d_minus, g0,
                     g1, &r, jac,
@@ -2110,15 +2110,15 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
                 for v in rhs_nm.iter_mut() {
                     *v = -*v;
                 }
-                let lu_buf = jac_lu_scratch
-                    .as_mut()
-                    .expect("band LU scratch for full-SG Newton");
-                let dense_buf = jac_dense_scratch
-                    .as_mut()
-                    .expect("dense Jacobian scratch for full-SG Newton");
-                let swaps = band_lu_swaps
-                    .as_mut()
-                    .expect("band LU swaps for full-SG Newton");
+                let Some(lu_buf) = jac_lu_scratch.as_mut() else {
+                    return None;
+                };
+                let Some(dense_buf) = jac_dense_scratch.as_mut() else {
+                    return None;
+                };
+                let Some(swaps) = band_lu_swaps.as_mut() else {
+                    return None;
+                };
                 swaps.clear();
                 let ok = solve_newton_correction_full_sg_row_band_band_lu_or_dense_expand(
                     jac,
@@ -2137,18 +2137,18 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
                 (ok, false)
             }
         } else {
-            let jac = jac_band
-                .as_mut()
-                .expect("band Jacobian buffer for full-SG FD Newton");
-            let lu_buf = jac_lu_scratch
-                .as_mut()
-                .expect("band LU scratch for full-SG Newton");
-            let dense_buf = jac_dense_scratch
-                .as_mut()
-                .expect("dense Jacobian scratch for full-SG Newton");
-            let swaps = band_lu_swaps
-                .as_mut()
-                .expect("band LU swaps for full-SG Newton");
+            let Some(jac) = jac_band.as_mut() else {
+                return None;
+            };
+            let Some(lu_buf) = jac_lu_scratch.as_mut() else {
+                return None;
+            };
+            let Some(dense_buf) = jac_dense_scratch.as_mut() else {
+                return None;
+            };
+            let Some(swaps) = band_lu_swaps.as_mut() else {
+                return None;
+            };
             newton_fd_jacobian_full_sg_node_major_row_band(
                 solver, newton, dt64, &u, &c_plus_n, &c_minus_n, &eps, &d_plus, &d_minus, g0, g1,
                 &r, jac,

@@ -615,9 +615,10 @@ fn step_wave_experimental<B: Backend<FloatElem = f32>>(
         let n_v = bar.n_v;
         let template = Tensor::<B, 3>::zeros([batch, n_v, 3], &device);
         let mut acc_acc = Tensor::<B, 3>::zeros([batch, n_v, 3], &device);
+        let mut gmres_ok = true;
         for b in 0..batch {
             let rhs_flat = pack_bn3_to_flat(rhs_acc.clone(), b, n_v);
-            let row_acc = solve_acceleration_gmres_batch_row(
+            match solve_acceleration_gmres_batch_row(
                 &device,
                 &template,
                 b,
@@ -630,13 +631,25 @@ fn step_wave_experimental<B: Backend<FloatElem = f32>>(
                 beta_dt2,
                 bar_network.as_ref(),
                 gmres_cfg,
-            )
-            .unwrap_or_else(|e| {
-                panic!("acoustic Newmark GMRES failed: {e}");
-            });
-            acc_acc = acc_acc.slice_assign([b..b + 1, 0..n_v, 0..3], row_acc);
+            ) {
+                Ok(row_acc) => {
+                    acc_acc = acc_acc.slice_assign([b..b + 1, 0..n_v, 0..3], row_acc);
+                }
+                Err(_) => {
+                    gmres_ok = false;
+                    break;
+                }
+            }
         }
-        acc_acc
+        if gmres_ok {
+            acc_acc
+        } else {
+            let s_mat = m_mat
+                .clone()
+                .add(damping_bn33.clone().mul_scalar(gamma_dt))
+                .add(stiffness_local_bn44.clone().mul_scalar(beta_dt2));
+            solve_batched_3x3(s_mat, rhs_acc)
+        }
     } else {
         let s_mat = m_mat
             .clone()
@@ -777,7 +790,9 @@ impl AcousticNewmarkBar1dPeriodic {
         debug_assert_eq!(v.len(), self.n);
         debug_assert_eq!(a.len(), self.n);
 
-        self.prepare(ws, dt);
+        if !self.prepare(ws, dt) {
+            return;
+        }
 
         let beta = self.newmark_beta;
         let gamma = self.newmark_gamma;
@@ -808,17 +823,21 @@ impl AcousticNewmarkBar1dPeriodic {
         }
     }
 
-    fn prepare(&self, ws: &mut AcousticNewmarkBar1dWork, dt: f32) {
+    fn prepare(&self, ws: &mut AcousticNewmarkBar1dWork, dt: f32) -> bool {
         if (ws.last_dt - dt).abs() <= 1e-12_f32.max(dt * 1e-7_f32) && ws.last_dt >= 0.0_f32 {
-            return;
+            return true;
         }
         let dx = self.dx() as f64;
         let m_node = self.density as f64 * dx;
         let alpha =
             self.newmark_beta as f64 * (dt as f64).powi(2) * self.youngs_modulus as f64 / (dx * dx);
         fill_system_matrix_s64(&mut ws.chol, self.n, m_node, alpha);
-        cholesky_decompose_lower64(&mut ws.chol, self.n).expect("SPD system matrix");
+        if cholesky_decompose_lower64(&mut ws.chol, self.n).is_err() {
+            ws.last_dt = -1.0_f32;
+            return false;
+        }
         ws.last_dt = dt;
+        true
     }
 }
 

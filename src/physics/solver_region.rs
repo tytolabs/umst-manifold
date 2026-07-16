@@ -106,10 +106,12 @@ impl SolverRegion {
 
     /// Store equilibrium displacement for the next outer PCG warm-start.
     pub fn store_warm_u(&mut self, u: &[f32]) {
-        if self.warm_u.as_ref().is_some_and(|w| w.len() == u.len()) {
-            self.warm_u.as_mut().unwrap().copy_from_slice(u);
-        } else {
-            self.warm_u = Some(u.to_vec());
+        if let Some(w) = self.warm_u.as_mut() {
+            if w.len() == u.len() {
+                w.copy_from_slice(u);
+                return;
+            }
         }
+        self.warm_u = Some(u.to_vec());
     }
 }
