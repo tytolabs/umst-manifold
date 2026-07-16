@@ -7,9 +7,11 @@
 //! with a [`crate::solve_report::SolveReport`] at the port boundary for adjoint / gate consumers.
 //!
 //! **Wave 9:** first production consumer via [`bar_network_equilibrium_reported`] (THMC operator-split).
+//! **FP P3.4:** displacement / damage / body_force operands are [`Field`] newtypes at the port boundary.
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use crate::core::field::{DamageField, DisplacementField, Field};
 use crate::physics::error::PhysicsError;
 use crate::solve_report::{PrecisionLane, ReportedSolve, SolveReport};
 
@@ -32,20 +34,20 @@ pub trait MechanicsSolvePort<B: Backend<FloatElem = f32>> {
     #[allow(clippy::too_many_arguments)]
     fn solve_equilibrium_reported(
         &self,
-        displacement: Tensor<B, 3>,
+        displacement: DisplacementField<B>,
         coords: Tensor<B, 2>,
         stiffness: Tensor<B, 3>,
-        body_force: Tensor<B, 3>,
+        body_force: DisplacementField<B>,
         edges_b1: Tensor<B, 2, Int>,
-        damage: Tensor<B, 3>,
+        damage: DamageField<B>,
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
         rel_tol: f32,
-    ) -> (Tensor<B, 3>, Tensor<B, 4>, SolveReport);
+    ) -> (DisplacementField<B>, Tensor<B, 4>, SolveReport);
 }
 
-/// Bar-network port — lifts [`VectorMechanicsSolver::solve_equilibrium_with_pcg_report`] into
+/// Bar-network port — lifts [`VectorMechanicsSolver::solve_equilibrium_with_pcg_report_typed`] into
 /// [`SolveReport`] via [`ReportedSolve::into_solve_report`].
 pub struct BarNetworkMechanicsSolvePort;
 
@@ -56,18 +58,18 @@ impl<B: Backend<FloatElem = f32>> MechanicsSolvePort<B> for BarNetworkMechanicsS
 
     fn solve_equilibrium_reported(
         &self,
-        displacement: Tensor<B, 3>,
+        displacement: DisplacementField<B>,
         coords: Tensor<B, 2>,
         stiffness: Tensor<B, 3>,
-        body_force: Tensor<B, 3>,
+        body_force: DisplacementField<B>,
         edges_b1: Tensor<B, 2, Int>,
-        damage: Tensor<B, 3>,
+        damage: DamageField<B>,
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
         rel_tol: f32,
-    ) -> (Tensor<B, 3>, Tensor<B, 4>, SolveReport) {
-        let (u, stress, pcg) = VectorMechanicsSolver::solve_equilibrium_with_pcg_report(
+    ) -> (DisplacementField<B>, Tensor<B, 4>, SolveReport) {
+        let (u, stress, pcg) = VectorMechanicsSolver::solve_equilibrium_with_pcg_report_typed(
             displacement,
             coords,
             stiffness,
@@ -86,17 +88,17 @@ impl<B: Backend<FloatElem = f32>> MechanicsSolvePort<B> for BarNetworkMechanicsS
 /// Fail-closed bar equilibrium via [`BarNetworkMechanicsSolvePort`] (`ops-mechanics-port-consumer`).
 #[allow(clippy::too_many_arguments)]
 pub fn bar_network_equilibrium_reported<B: Backend<FloatElem = f32>>(
-    displacement: Tensor<B, 3>,
+    displacement: DisplacementField<B>,
     coords: Tensor<B, 2>,
     stiffness: Tensor<B, 3>,
-    body_force: Tensor<B, 3>,
+    body_force: DisplacementField<B>,
     edges_b1: Tensor<B, 2, Int>,
-    damage: Tensor<B, 3>,
+    damage: DamageField<B>,
     boundary_mask: Tensor<B, 3>,
     cross_section_area: f32,
     inner_cfg: &MechanicsInnerLoopConfig,
     rel_tol: f32,
-) -> Result<(Tensor<B, 3>, Tensor<B, 4>, SolveReport), PhysicsError> {
+) -> Result<(DisplacementField<B>, Tensor<B, 4>, SolveReport), PhysicsError> {
     let port = BarNetworkMechanicsSolvePort;
     let (u, stress, report) = port.solve_equilibrium_reported(
         displacement,
@@ -119,6 +121,36 @@ pub fn bar_network_equilibrium_reported<B: Backend<FloatElem = f32>>(
     Ok((u, stress, report))
 }
 
+/// One-release tensor shim for legacy callers — wraps operands and unwraps displacement.
+#[deprecated(since = "0.2.0", note = "use Field-typed bar_network_equilibrium_reported — FP P3.4")]
+#[allow(clippy::too_many_arguments)]
+pub fn bar_network_equilibrium_reported_from_tensors<B: Backend<FloatElem = f32>>(
+    displacement: Tensor<B, 3>,
+    coords: Tensor<B, 2>,
+    stiffness: Tensor<B, 3>,
+    body_force: Tensor<B, 3>,
+    edges_b1: Tensor<B, 2, Int>,
+    damage: Tensor<B, 3>,
+    boundary_mask: Tensor<B, 3>,
+    cross_section_area: f32,
+    inner_cfg: &MechanicsInnerLoopConfig,
+    rel_tol: f32,
+) -> Result<(Tensor<B, 3>, Tensor<B, 4>, SolveReport), PhysicsError> {
+    let (u, stress, report) = bar_network_equilibrium_reported(
+        Field::new(displacement),
+        coords,
+        stiffness,
+        Field::new(body_force),
+        edges_b1,
+        Field::new(damage),
+        boundary_mask,
+        cross_section_area,
+        inner_cfg,
+        rel_tol,
+    )?;
+    Ok((u.into_tensor(), stress, report))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -131,9 +163,9 @@ mod tests {
         Tensor<B, 2>,
         Tensor<B, 2, Int>,
         Tensor<B, 3>,
+        DisplacementField<B>,
         Tensor<B, 3>,
-        Tensor<B, 3>,
-        Tensor<B, 3>,
+        DamageField<B>,
         f32,
         MechanicsInnerLoopConfig,
     );
@@ -172,7 +204,10 @@ mod tests {
 
         let mut bf = vec![0.0_f32; n * 3];
         bf[(n - 1) * 3] = 1000.0;
-        let body_force = Tensor::from_data(Data::new(bf, Shape::new([1, n, 3])), &dev);
+        let body_force = Field::new(Tensor::from_data(
+            Data::new(bf, Shape::new([1, n, 3])),
+            &dev,
+        ));
 
         let mut bm = vec![1.0_f32; n * 3];
         bm[0] = 0.0;
@@ -180,7 +215,7 @@ mod tests {
         bm[2] = 0.0;
         let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &dev);
 
-        let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+        let damage = Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev));
         let cfg = MechanicsInnerLoopConfig {
             max_cg_iterations: 500,
             cg_tolerance: 1e-10,
@@ -205,7 +240,7 @@ mod tests {
     fn bar_port_emits_converged_solve_report() {
         let (coords, edges, stiff, bf, mask, damage, area, cfg) = chain_fixture(2);
         let dev = NdArrayDevice::Cpu;
-        let u0 = Tensor::<B, 3>::zeros([1, 2, 3], &dev);
+        let u0 = Field::new(Tensor::<B, 3>::zeros([1, 2, 3], &dev));
         let rel_tol = 1e-6_f32;
 
         let (_u, _stress, report) = BarNetworkMechanicsSolvePort.solve_equilibrium_reported(
@@ -214,5 +249,16 @@ mod tests {
 
         assert_eq!(report.lane, PrecisionLane::F64AdjointBarPcg);
         assert!(report.converged());
+    }
+
+    #[test]
+    fn bar_port_rejects_displacement_damage_operand_swap_at_compile_time() {
+        fn accept_displacement(_: DisplacementField<B>) {}
+        fn accept_damage(_: DamageField<B>) {}
+
+        let device = NdArrayDevice::Cpu;
+        let raw = Tensor::<B, 3>::zeros([1, 2, 1], &device);
+        accept_damage(Field::new(raw.clone()));
+        // `accept_displacement(Field::new(raw))` would not compile — distinct space markers.
     }
 }

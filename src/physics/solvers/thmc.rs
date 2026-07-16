@@ -96,6 +96,7 @@ use crate::core::material_transition::ReactionExtentKineticsSpec;
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use crate::core::traits::IScienceCartridge;
 
+use crate::physics::error::PhysicsError;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::laplacian::TopologicalLaplacian;
 #[cfg(feature = "thmc-coupled")]
@@ -111,8 +112,6 @@ use crate::physics::solvers::thmc_residual::{
     ThmcImplicitEulerThermalReactionExtentResidual, ThmcMonolithicImplicitUnknownLayout,
     THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
 };
-#[cfg(feature = "thmc-coupled")]
-use crate::physics::error::PhysicsError;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
 
@@ -520,10 +519,9 @@ impl ThmcSolver {
             );
             let _ = (cartridge, manifold);
             drop(state);
-            Err(
-                "ThmcSolver::step: thmc-coupled feature is disabled; enable `--features thmc-coupled` (or `solver-experimental` / `solver-tests` for all opt-in solvers), or do not call this entrypoint"
-                    .to_string(),
-            )
+            Err(PhysicsError::Domain {
+                detail: "ThmcSolver::step: thmc-coupled feature is disabled; enable `--features thmc-coupled` (or `solver-experimental` / `solver-tests` for all opt-in solvers), or do not call this entrypoint".to_string(),
+            })
         }
     }
 
@@ -723,7 +721,7 @@ impl ThmcSolver {
                     }
                 };
                 let bm = bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3]);
-                let bf = Tensor::<B, 3>::zeros([batch, n, 3], &device);
+                let bf = Field::new(Tensor::<B, 3>::zeros([batch, n, 3], &device));
                 let inner_cfg = MechanicsInnerLoopConfig::default();
                 let cross_section_area = 0.01_f32;
 
@@ -743,13 +741,13 @@ impl ThmcSolver {
                 let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &device)
                     .add_scalar(self.reaction_extent_kinetics.stiffness_nu);
                 let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
-                let (u_predict, _) = VectorMechanicsSolver::solve_equilibrium(
-                    state.mechanical.displacement.as_tensor().clone(),
+                let (u_predict, _) = VectorMechanicsSolver::solve_equilibrium_typed(
+                    state.mechanical.displacement.clone(),
                     coords_n3.clone(),
                     stiffness,
                     bf.clone(),
                     edges_b1.clone(),
-                    damage_m.as_tensor().clone(),
+                    damage_m.as_damage_field().clone(),
                     bm.clone(),
                     cross_section_area,
                     &inner_cfg,
@@ -758,7 +756,7 @@ impl ThmcSolver {
                 let trial = ThmcState {
                     thermal: ThermalPlan::from_temperature(t_predict),
                     hydro: HydrologicPlan::from_humidity(h_predict),
-                    mechanical: MechanicalPlan::from_displacement(u_predict),
+                    mechanical: MechanicalPlan::from_displacement(u_predict.into_tensor()),
                     chemical: ChemicalPlan::from_reaction_extent(alpha_predict),
                     damage: state.damage.clone(),
                     time: state.time,
@@ -781,7 +779,7 @@ impl ThmcSolver {
                     &trial,
                     coords_n3,
                     &bm,
-                    &bf,
+                    bf.as_tensor(),
                     cross_section_area,
                     mc.iterations,
                     mc.damping,
@@ -937,7 +935,7 @@ impl ThmcSolver {
                     let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &device)
                         .add_scalar(self.reaction_extent_kinetics.stiffness_nu);
                     let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
-                    let bf = Tensor::<B, 3>::zeros([batch, n, 3], &device);
+                    let bf = Field::new(Tensor::<B, 3>::zeros([batch, n, 3], &device));
                     let inner_cfg = MechanicsInnerLoopConfig::default();
                     let cross_section_area = 0.01_f32;
                     #[cfg(feature = "mechanics-adjoint")]
@@ -948,12 +946,12 @@ impl ThmcSolver {
                             .max(inner_cfg.cg_tolerance)
                             .max(1e-6_f32);
                         let equilibrium = solve_bar_equilibrium(
-                            state.mechanical.displacement.as_tensor().clone(),
+                            state.mechanical.displacement.clone(),
                             coords_n3.clone(),
                             stiffness,
-                            bf,
+                            bf.clone(),
                             edges_b1.clone(),
-                            damage_m.as_tensor().clone(),
+                            damage_m.as_damage_field().clone(),
                             bm,
                             cross_section_area,
                             &inner_cfg,
@@ -962,22 +960,22 @@ impl ThmcSolver {
                         let u_new = equilibrium.0;
                         let report = equilibrium.2;
                         self.mechanics_solve_reports.push(report);
-                        state.mechanical.displacement = Field::new(u_new);
+                        state.mechanical.displacement = u_new;
                     }
                     #[cfg(not(feature = "mechanics-adjoint"))]
                     {
-                        let (u_new, _stress) = VectorMechanicsSolver::solve_equilibrium(
-                            state.mechanical.displacement.as_tensor().clone(),
+                        let (u_new, _stress) = VectorMechanicsSolver::solve_equilibrium_typed(
+                            state.mechanical.displacement.clone(),
                             coords_n3.clone(),
                             stiffness,
                             bf,
                             edges_b1.clone(),
-                            damage_m.as_tensor().clone(),
+                            damage_m.as_damage_field().clone(),
                             bm,
                             cross_section_area,
                             &inner_cfg,
                         );
-                        state.mechanical.displacement = Field::new(u_new);
+                        state.mechanical.displacement = u_new;
                     }
                 }
             }

@@ -29,6 +29,8 @@
 use burn::tensor::ElementConversion;
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use crate::core::field::{DamageField, DisplacementField, Field};
+
 use super::dec_operators::DecEdgeOperators;
 use super::framework::PhysicsSolverZst;
 use super::time_orchestration::MechanicsInnerLoopConfig;
@@ -711,14 +713,41 @@ impl VectorMechanicsSolver {
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
     ) -> (Tensor<B, 3>, Tensor<B, 4>) {
+        let (u, stress) = Self::solve_equilibrium_typed(
+            Field::new(displacement),
+            coords,
+            stiffness,
+            Field::new(body_force),
+            edges_b1,
+            Field::new(damage),
+            boundary_mask,
+            cross_section_area,
+            inner_cfg,
+        );
+        (u.into_tensor(), stress)
+    }
+
+    /// FP P3.4 — bar-network equilibrium with [`DisplacementField`] / [`DamageField`] operands.
+    #[allow(clippy::too_many_arguments)]
+    pub fn solve_equilibrium_typed<B: Backend<FloatElem = f32>>(
+        displacement: DisplacementField<B>,
+        coords: Tensor<B, 2>,
+        stiffness: Tensor<B, 3>,
+        body_force: DisplacementField<B>,
+        edges_b1: Tensor<B, 2, Int>,
+        damage: DamageField<B>,
+        boundary_mask: Tensor<B, 3>,
+        cross_section_area: f32,
+        inner_cfg: &MechanicsInnerLoopConfig,
+    ) -> (DisplacementField<B>, Tensor<B, 4>) {
         let (u, k_axial, edge_unit, _edge_len, src_indices, tgt_indices, n_v, _pcg) =
             Self::packed_bar_network_equilibrium(
-                displacement,
+                displacement.into_tensor(),
                 coords,
                 stiffness.clone(),
-                body_force,
+                body_force.into_tensor(),
                 edges_b1.clone(),
-                damage,
+                damage.into_tensor(),
                 boundary_mask,
                 cross_section_area,
                 inner_cfg,
@@ -732,7 +761,7 @@ impl VectorMechanicsSolver {
             n_v,
             cross_section_area,
         );
-        (u, stress)
+        (Field::new(u), stress)
     }
 
     /// Quasi-static bar-network equilibrium with PCG iteration / relative-residual report (B6 H4 gates).
@@ -749,14 +778,42 @@ impl VectorMechanicsSolver {
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
     ) -> (Tensor<B, 3>, Tensor<B, 4>, BarNetworkPcgReport) {
+        let (u, stress, pcg) = Self::solve_equilibrium_with_pcg_report_typed(
+            Field::new(displacement),
+            coords,
+            stiffness,
+            Field::new(body_force),
+            edges_b1,
+            Field::new(damage),
+            boundary_mask,
+            cross_section_area,
+            inner_cfg,
+        );
+        (u.into_tensor(), stress, pcg)
+    }
+
+    /// FP P3.4 — PCG-report equilibrium with [`DisplacementField`] / [`DamageField`] operands.
+    #[cfg(feature = "mechanics-adjoint")]
+    #[allow(clippy::too_many_arguments)]
+    pub fn solve_equilibrium_with_pcg_report_typed<B: Backend<FloatElem = f32>>(
+        displacement: DisplacementField<B>,
+        coords: Tensor<B, 2>,
+        stiffness: Tensor<B, 3>,
+        body_force: DisplacementField<B>,
+        edges_b1: Tensor<B, 2, Int>,
+        damage: DamageField<B>,
+        boundary_mask: Tensor<B, 3>,
+        cross_section_area: f32,
+        inner_cfg: &MechanicsInnerLoopConfig,
+    ) -> (DisplacementField<B>, Tensor<B, 4>, BarNetworkPcgReport) {
         let (u, k_axial, edge_unit, _edge_len, src_indices, tgt_indices, n_v, pcg) =
             Self::packed_bar_network_equilibrium(
-                displacement,
+                displacement.into_tensor(),
                 coords,
                 stiffness.clone(),
-                body_force,
+                body_force.into_tensor(),
                 edges_b1.clone(),
-                damage,
+                damage.into_tensor(),
                 boundary_mask,
                 cross_section_area,
                 inner_cfg,
@@ -770,7 +827,7 @@ impl VectorMechanicsSolver {
             n_v,
             cross_section_area,
         );
-        (u, stress, pcg)
+        (Field::new(u), stress, pcg)
     }
 
     #[cfg(feature = "mechanics-voigt-cauchy")]

@@ -216,6 +216,16 @@ impl<B: Backend> StepEntryDamageMask<B> {
     pub fn as_tensor(&self) -> &Tensor<B, 3> {
         self.0.as_tensor()
     }
+
+    #[inline]
+    pub fn as_damage_field(&self) -> &DamageField<B> {
+        &self.0
+    }
+
+    #[inline]
+    pub fn into_damage_field(self) -> DamageField<B> {
+        self.0
+    }
 }
 
 impl<B: Backend> FractureEnergyField<B> {
