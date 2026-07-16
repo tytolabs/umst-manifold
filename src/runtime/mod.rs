@@ -5,3 +5,5 @@
 
 pub mod catalog;
 pub mod gate;
+#[cfg(feature = "photonics")]
+pub mod photonics_host;
