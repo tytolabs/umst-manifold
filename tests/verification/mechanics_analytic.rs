@@ -144,7 +144,9 @@ fn run_plate_compliance_audit(
     };
     let bf = plate.body_force_top_uniform_pressure(q);
     let body = Tensor::from_data(Data::new(bf.clone(), Shape::new([1, n, 3])), &dev);
-    let (u, _) = plate.solve_equilibrium(rho, body, bm, mat, cfg);
+    let (u, _) = plate
+        .solve_equilibrium(rho, body, bm, mat, cfg)
+        .expect("equilibrium solve");
     let u_flat = u.into_data().value;
     let c_fe = masked_compliance_ftu(&bf, &u_flat, &mask_flat);
     let e_cell = uniform_e_cell(nx, ny, nz, mat.e0);
@@ -521,7 +523,9 @@ fn run_plate_case_details_ext_inner(
     };
     let bf = plate.body_force_top_uniform_pressure(q);
     let body = Tensor::from_data(Data::new(bf.clone(), Shape::new([1, n, 3])), &dev);
-    let (u, _) = plate.solve_equilibrium(rho, body, bm, mat, cfg);
+    let (u, _) = plate
+        .solve_equilibrium(rho, body, bm, mat, cfg)
+        .expect("equilibrium solve");
     let w = centre_top_uz(&u, nx, ny, nz);
     let u_flat = u.into_data().value;
     let e_cell = uniform_e_cell(nx, ny, nz, mat.e0);

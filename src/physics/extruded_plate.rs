@@ -33,6 +33,7 @@
 
 use burn::tensor::{backend::Backend, Data, Int, Shape, Tensor};
 
+use super::error::PhysicsError;
 use super::q1_hex_elasticity;
 use super::time_orchestration::MechanicsInnerLoopConfig;
 
@@ -71,11 +72,19 @@ impl ExtrudedPlateMechanics {
     }
 
     /// Node coordinates `[1, N, 3]` for batch-1 density networks.
-    pub fn coords_bn3<B: Backend<FloatElem = f32>>(&self, device: &B::Device) -> Tensor<B, 3> {
+    pub fn coords_bn3<B: Backend<FloatElem = f32>>(
+        &self,
+        device: &B::Device,
+    ) -> Result<Tensor<B, 3>, PhysicsError> {
         let n3 = self.node_coords_n3(device);
         let [n, three] = n3.dims();
-        assert_eq!(three, 3);
-        n3.reshape([1, n, 3])
+        if three != 3 {
+            return Err(PhysicsError::ShapeMismatch {
+                context: "ExtrudedPlateMechanics::coords_bn3",
+                detail: "expected last dim 3",
+            });
+        }
+        Ok(n3.reshape([1, n, 3]))
     }
 
     /// Q1-hex equilibrium solve and placeholder Voigt stress `[B,N,6]` (see module docs).
@@ -86,12 +95,27 @@ impl ExtrudedPlateMechanics {
         boundary_mask: Tensor<B, 3>,
         material: ElasticMaterial,
         cg_config: &CgConfig,
-    ) -> (Tensor<B, 3>, Tensor<B, 3>) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
         let n = self.n_nodes();
         let [batch, n_rho, c] = rho_projected.dims();
-        assert_eq!(batch, 1, "Q1 hex plate: batch>1 not implemented");
-        assert_eq!(n_rho, n, "rho N must match extruded grid");
-        assert_eq!(c, 1);
+        if batch != 1 {
+            return Err(PhysicsError::ShapeMismatch {
+                context: "ExtrudedPlateMechanics::solve_equilibrium",
+                detail: "batch>1 not implemented",
+            });
+        }
+        if n_rho != n {
+            return Err(PhysicsError::ShapeMismatch {
+                context: "ExtrudedPlateMechanics::solve_equilibrium",
+                detail: "rho N must match extruded grid",
+            });
+        }
+        if c != 1 {
+            return Err(PhysicsError::ShapeMismatch {
+                context: "ExtrudedPlateMechanics::solve_equilibrium",
+                detail: "rho channel must be 1",
+            });
+        }
         let device = rho_projected.device();
 
         let nx1 = self.nx + 1;
@@ -161,7 +185,7 @@ impl ExtrudedPlateMechanics {
         let u_tensor: Tensor<B, 3> =
             Tensor::from_data(Data::new(u, Shape::new([1, n, 3])), &device);
         let voigt = Tensor::<B, 3>::zeros([batch, n, 6], &device);
-        (u_tensor, voigt)
+        Ok((u_tensor, voigt))
     }
 
     /// Nodal body-force vector `[N,3]` (flat `3N`) for **uniform pressure** `q` on the top face

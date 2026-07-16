@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-//! Matrix-free linear operators as `f32` vectors for host Krylov drivers ([`super::krylov_host::gmres_f32`]).
+//! Matrix-free linear operators as `f32` vectors for host Krylov drivers ([`super::krylov_host::gmres_f32_try`]).
 //!
 //! [`BarMatvecOperator`] wraps `VectorMechanicsSolver::bar_matvec` without re-implementing bar physics.
 
 use burn::tensor::{backend::Backend, Data, Int, Shape, Tensor};
 
+use super::error::PhysicsError;
 use super::mechanics::VectorMechanicsSolver;
 
 /// Host-side linear map \( \mathbb{R}^{3N} \to \mathbb{R}^{3N} \) consumable by GMRES-style routines.
@@ -14,7 +15,7 @@ pub trait F32VecLinearOperator {
     fn vec_dim(&self) -> usize;
 
     /// Apply the operator to a packed nodal vector `[u_{0,x}, u_{0,y}, u_{0,z}, …]`.
-    fn apply_vec(&mut self, v: &[f32]) -> Vec<f32>;
+    fn apply_vec(&mut self, v: &[f32]) -> Result<Vec<f32>, PhysicsError>;
 }
 
 /// Bundles bar-network stiffness tensors so [`Self::apply_vec`] delegates to `VectorMechanicsSolver::bar_matvec`.
@@ -58,9 +59,9 @@ impl<B: Backend<FloatElem = f32>> BarMatvecOperator<B> {
         }
     }
 
-    /// Consume `self` and return a [`FnMut`] suitable for [`super::krylov_host::gmres_f32`].
-    pub fn into_gmres_matvec(mut self) -> impl FnMut(&[f32]) -> Vec<f32> {
-        move |v| self.apply_vec(v)
+    /// Consume `self` and return a fallible matvec for [`super::krylov_host::gmres_f32_try`].
+    pub fn into_gmres_matvec(mut self) -> impl FnMut(&[f32]) -> Result<Vec<f32>, String> {
+        move |v| self.apply_vec(v).map_err(String::from)
     }
 }
 
@@ -69,13 +70,13 @@ impl<B: Backend<FloatElem = f32>> F32VecLinearOperator for BarMatvecOperator<B> 
         self.n_v * 3
     }
 
-    fn apply_vec(&mut self, v: &[f32]) -> Vec<f32> {
-        assert_eq!(
-            v.len(),
-            self.vec_dim(),
-            "BarMatvecOperator: expected packed length {}",
-            self.vec_dim()
-        );
+    fn apply_vec(&mut self, v: &[f32]) -> Result<Vec<f32>, PhysicsError> {
+        if v.len() != self.vec_dim() {
+            return Err(PhysicsError::ShapeMismatch {
+                context: "BarMatvecOperator::apply_vec",
+                detail: "packed nodal vector length",
+            });
+        }
         let device = self.template.device();
         let row: Tensor<B, 3> = Tensor::from_data(
             Data::new(Vec::from(v), Shape::new([1, self.n_v, 3])),
@@ -97,6 +98,6 @@ impl<B: Backend<FloatElem = f32>> F32VecLinearOperator for BarMatvecOperator<B> 
         let row: Tensor<B, 1> = ku
             .slice([self.batch_row..self.batch_row + 1, 0..self.n_v, 0..3])
             .reshape([self.n_v * 3]);
-        row.into_data().value
+        Ok(row.into_data().value)
     }
 }

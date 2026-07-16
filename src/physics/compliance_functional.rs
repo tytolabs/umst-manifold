@@ -17,6 +17,8 @@ use super::solver_region::SolverRegion;
 use super::time_orchestration::MechanicsInnerLoopConfig;
 use crate::ai::topology::ContinuationSchedule;
 
+pub use super::error::PhysicsError;
+
 /// Cartesian Q1-hex brick mesh specification.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Q1HexBrickSpec {
@@ -75,13 +77,6 @@ pub struct ComplianceValue {
     pub pcg: BarNetworkPcgReport,
     pub penalization_p: f32,
     pub diagnostics: AdjointComplianceDiagnostics,
-}
-
-/// Physics solver failures on the compliance hot path (total functions — no panic).
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum PhysicsError {
-    Diverged { eq_rel: f32, pcg_iterations: usize },
-    NonFiniteCompliance,
 }
 
 impl ComplianceValue {

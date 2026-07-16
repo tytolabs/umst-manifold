@@ -78,12 +78,16 @@ fn extruded_plate_response_is_linear_in_pressure() {
 
     let b1 = plate.body_force_top_uniform_pressure(500.0);
     let body1 = Tensor::from_data(Data::new(b1, Shape::new([1, n, 3])), &dev);
-    let (u1, _) = plate.solve_equilibrium(rho.clone(), body1, bm.clone(), mat, &cfg);
+    let (u1, _) = plate
+        .solve_equilibrium(rho.clone(), body1, bm.clone(), mat, &cfg)
+        .expect("equilibrium solve");
     let w1 = center_top_uz(&u1, nx, ny, nz);
 
     let b2 = plate.body_force_top_uniform_pressure(1000.0);
     let body2 = Tensor::from_data(Data::new(b2, Shape::new([1, n, 3])), &dev);
-    let (u2, _) = plate.solve_equilibrium(rho, body2, bm, mat, &cfg);
+    let (u2, _) = plate
+        .solve_equilibrium(rho, body2, bm, mat, &cfg)
+        .expect("equilibrium solve");
     let w2 = center_top_uz(&u2, nx, ny, nz);
 
     assert!(w1.is_finite() && w1 > 0.0, "w1={w1}");

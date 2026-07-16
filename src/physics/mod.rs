@@ -8,6 +8,7 @@ pub mod adjoint_q1_hex;
 pub mod compliance_functional;
 pub mod dec_operators;
 pub mod dec_primal;
+pub mod error;
 #[cfg(feature = "mechanics-adjoint-q1-hex")]
 pub mod device_sheet;
 #[cfg(any(
@@ -49,3 +50,5 @@ pub mod time_orchestration;
 pub mod topology;
 #[cfg(feature = "topology-density-evolution")]
 pub mod topology_filter;
+
+pub use error::PhysicsError;

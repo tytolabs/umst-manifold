@@ -77,7 +77,10 @@ impl HarnessFixture {
         let n = plate.n_nodes();
         let ndof = n * 3;
         let edges = plate.edges_b1::<B>(&dev);
-        let coords = plate.coords_bn3::<B>(&dev).reshape(Shape::new([n, 3]));
+        let coords = plate
+            .coords_bn3::<B>(&dev)
+            .expect("coords")
+            .reshape(Shape::new([n, 3]));
         let rho = Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &dev);
         let e_node = rho
             .powf_scalar(3.0)

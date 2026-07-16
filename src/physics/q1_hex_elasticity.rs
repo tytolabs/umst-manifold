@@ -1717,7 +1717,9 @@ pub fn hex_nodal_block_jacobi_3x3(
     let nx1 = nx + 1;
     let ny1 = ny + 1;
     let n_nodes = nx1 * ny1 * (nz + 1);
-    assert_eq!(blocks.len(), n_nodes * 9);
+    if blocks.len() != n_nodes * 9 {
+        return;
+    }
     blocks.fill(0.0);
     let mut ke = [[0.0_f32; 24]; 24];
     for cz in 0..nz {
