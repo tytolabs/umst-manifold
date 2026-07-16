@@ -87,3 +87,24 @@ fn phase0f_census_surface_complete() {
 fn phase0f_m0_receipt_parity_prefix() {
     assert_eq!(GATE_PARITY_V0_SHA256_PREFIX, "149081fa81a6525f");
 }
+
+// --- FP Manifesto §6: lock-suite idempotency receipt ---
+//
+// Gate *evaluation* idempotency (solver re-application on equilibrated states) is asserted in
+// `phase0b_core_gate` and `phase0e_open_system_spike`. This suite only pins digest/census bytes;
+// re-hashing the live fixture must be stable (no drift on re-read).
+
+#[test]
+fn phase0f_fixture_digest_idempotent_on_rehash() {
+    let path = gate_parity_fixture_path();
+    let bytes = std::fs::read(&path).unwrap_or_else(|e| {
+        panic!(
+            "missing live fixture at {} — Phase 0f requires gate_parity_v0.json: {e}",
+            path.display()
+        )
+    });
+    let first = sha256_hex(&bytes);
+    let second = sha256_hex(&bytes);
+    assert_eq!(first, second, "fixture digest must be idempotent under re-hash");
+    assert_eq!(first, GATE_PARITY_V0_SHA256);
+}

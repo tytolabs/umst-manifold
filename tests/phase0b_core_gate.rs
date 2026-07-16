@@ -149,3 +149,37 @@ fn phase0b_open_system_core_gate_with_positive_power_input() {
     assert!((core.net_dissipation - 6.0).abs() < 1e-12);
     assert!(core.accepted);
 }
+
+// --- FP Manifesto §6: idempotency by construction ---
+
+#[test]
+fn phase0b_core_gate_idempotent_on_same_response() {
+    let response = ScalarConstitutiveResponse::passive(8.5);
+    let first = core_gate(&response, true, TRANSITION_TOLERANCE);
+    let second = core_gate(&response, true, TRANSITION_TOLERANCE);
+    assert_eq!(first, second, "core_gate must be idempotent on fixed inputs");
+}
+
+#[test]
+fn phase0b_transition_outcome_idempotent_on_equilibrated_snapshot() {
+    let state = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0);
+    let dt = 3600.0;
+    let first = transition_outcome(&state, &state, dt, TRANSITION_TOLERANCE);
+    let second = transition_outcome(&state, &state, dt, TRANSITION_TOLERANCE);
+    assert_eq!(first, second, "re-application on equilibrated state must not drift");
+    assert!(first.accepted, "equilibrated self-transition must remain admissible");
+    assert_eq!(first.dissipation, 0.0);
+}
+
+#[test]
+fn phase0b_transition_outcome_idempotent_on_admissible_transition() {
+    let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+    let mut new = old;
+    new.reaction_extent = 0.35;
+    new.free_energy = old.free_energy - 100.0;
+    let dt = 1.0;
+    let first = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
+    let second = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
+    assert_eq!(first, second, "re-application on admissible transition must not drift");
+    assert!(first.accepted);
+}

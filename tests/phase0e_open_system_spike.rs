@@ -232,3 +232,64 @@ fn phase0e_cbf_landauer_wired_into_open_system_gate() {
     live.verify_and_deduct_update(entropy, bits)
         .expect("CBF admission when open-system gate passes and credit suffices");
 }
+
+// --- FP Manifesto §6: idempotency by construction ---
+
+#[test]
+fn phase0e_open_system_core_gate_idempotent_at_zero_power_input() {
+    let first = open_system_core_gate(12.0, 0.0, true, TRANSITION_TOLERANCE);
+    let second = open_system_core_gate(12.0, 0.0, true, TRANSITION_TOLERANCE);
+    assert_eq!(first, second, "open_system_core_gate must not drift at P_input=0");
+}
+
+#[test]
+fn phase0e_transition_with_power_input_idempotent_at_passive_limit() {
+    let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.2, 293.15, 80.0);
+    let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.45, 293.15, 80.0);
+    let dt = 7.0 * 24.0 * 3600.0;
+    let first = transition_outcome_with_power_input(&old, &new, dt, 0.0, TRANSITION_TOLERANCE);
+    let second = transition_outcome_with_power_input(&old, &new, dt, 0.0, TRANSITION_TOLERANCE);
+    assert_eq!(
+        first, second,
+        "transition_outcome_with_power_input must not drift at P_input=0"
+    );
+}
+
+#[test]
+fn phase0e_open_system_core_gate_idempotent_on_active_fixture() {
+    let fixture = ActiveMatterFixture {
+        μ_atp_j_per_rate: 120.0,
+        reaction_rate: 0.25,
+        dissipation: 50.0,
+        temperature_k: 310.0,
+    };
+    let power_input = fixture.power_input();
+    let first = open_system_core_gate(
+        fixture.dissipation,
+        power_input,
+        true,
+        TRANSITION_TOLERANCE,
+    );
+    let second = open_system_core_gate(
+        fixture.dissipation,
+        power_input,
+        true,
+        TRANSITION_TOLERANCE,
+    );
+    assert_eq!(first, second, "active fixture core gate must be idempotent");
+    assert!(first.accepted);
+}
+
+#[test]
+fn phase0e_transition_with_power_input_idempotent_on_active_admissible_transition() {
+    let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.2, 293.15, 80.0);
+    let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.45, 293.15, 80.0);
+    let dt = 7.0 * 24.0 * 3600.0;
+    let power_input = active_matter_power_input(80.0, 0.15);
+    let first = transition_outcome_with_power_input(&old, &new, dt, power_input, TRANSITION_TOLERANCE);
+    let second = transition_outcome_with_power_input(&old, &new, dt, power_input, TRANSITION_TOLERANCE);
+    assert_eq!(
+        first, second,
+        "active open-system transition must not drift on re-application"
+    );
+}
