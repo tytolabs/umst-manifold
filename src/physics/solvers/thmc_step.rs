@@ -27,6 +27,8 @@
 //! [`docs/rfc/GATE_EVIDENCE.md`](../../../docs/rfc/GATE_EVIDENCE.md)).
 
 #[cfg(feature = "thmc-coupled")]
+use crate::physics::error::PhysicsError;
+#[cfg(feature = "thmc-coupled")]
 use burn::tensor::backend::Backend;
 #[cfg(feature = "thmc-coupled")]
 use burn::tensor::Tensor;
@@ -104,7 +106,7 @@ pub trait ThmcSolverStep<B: Backend> {
         post: &ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
         dt: f32,
-    ) -> Result<ThmcStepGateEvidence, String>;
+    ) -> Result<ThmcStepGateEvidence, PhysicsError>;
 }
 
 #[cfg(feature = "thmc-coupled")]
@@ -119,7 +121,7 @@ where
         post: &ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
         dt: f32,
-    ) -> Result<ThmcStepGateEvidence, String> {
+    ) -> Result<ThmcStepGateEvidence, PhysicsError> {
         wire_gate_evidence_post_step(
             self,
             self.gate_cartridge,
@@ -134,7 +136,7 @@ where
 
 /// Batch-mean scalar read from a `[B, N, F]` THMC plan tensor (host telemetry only).
 #[cfg(feature = "thmc-coupled")]
-fn thmc_tensor_batch_mean_f32<B>(tensor: &Tensor<B, 3>) -> Result<f32, String>
+fn thmc_tensor_batch_mean_f32<B>(tensor: &Tensor<B, 3>) -> Result<f32, PhysicsError>
 where
     B: Backend<FloatElem = f32>,
 {
@@ -142,7 +144,9 @@ where
     if value.is_finite() {
         Ok(value)
     } else {
-        Err("thmc gate evidence: non-finite tensor mean".into())
+        Err(PhysicsError::NonFinite {
+            context: "thmc gate evidence: non-finite tensor mean",
+        })
     }
 }
 
@@ -152,7 +156,7 @@ fn thmc_state_thermodynamic_snapshot<B>(
     state: &ThmcState<B>,
     _manifold: &UnifiedMaterialStateTensor<B>,
     s_intrinsic_mpa: f64,
-) -> Result<ThermodynamicStateSnapshot, String>
+) -> Result<ThermodynamicStateSnapshot, PhysicsError>
 where
     B: Backend<FloatElem = f32>,
 {
@@ -179,7 +183,7 @@ pub fn wire_gate_evidence_post_step<B>(
     manifold: &UnifiedMaterialStateTensor<B>,
     dt: f32,
     s_intrinsic_mpa: f64,
-) -> Result<ThmcStepGateEvidence, String>
+) -> Result<ThmcStepGateEvidence, PhysicsError>
 where
     B: Backend<FloatElem = f32>,
 {

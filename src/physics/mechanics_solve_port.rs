@@ -10,6 +10,7 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use crate::physics::error::PhysicsError;
 use crate::solve_report::{PrecisionLane, ReportedSolve, SolveReport};
 
 use super::mechanics::VectorMechanicsSolver;
@@ -95,7 +96,7 @@ pub fn bar_network_equilibrium_reported<B: Backend<FloatElem = f32>>(
     cross_section_area: f32,
     inner_cfg: &MechanicsInnerLoopConfig,
     rel_tol: f32,
-) -> Result<(Tensor<B, 3>, Tensor<B, 4>, SolveReport), String> {
+) -> Result<(Tensor<B, 3>, Tensor<B, 4>, SolveReport), PhysicsError> {
     let port = BarNetworkMechanicsSolvePort;
     let (u, stress, report) = port.solve_equilibrium_reported(
         displacement,
@@ -110,10 +111,10 @@ pub fn bar_network_equilibrium_reported<B: Backend<FloatElem = f32>>(
         rel_tol,
     );
     if !report.converged() {
-        return Err(format!(
-            "bar_network_equilibrium_reported: PCG did not converge (rel_residual={} rel_tol={})",
-            report.rel_residual, report.rel_tol
-        ));
+        return Err(PhysicsError::Diverged {
+            eq_rel: report.rel_residual,
+            pcg_iterations: report.iterations,
+        });
     }
     Ok((u, stress, report))
 }

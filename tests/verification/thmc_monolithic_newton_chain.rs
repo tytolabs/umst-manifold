@@ -192,7 +192,7 @@ fn monolithic_thmc_newton_stacked_norm_monotone_decrease_on_five_node_chain() {
         dt,
         temperature_n: Field::new(t_n),
         humidity_n: Field::new(h_n),
-        alpha_n: alpha_n_for_pred,
+        alpha_n: Field::new(alpha_n_for_pred),
         displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,

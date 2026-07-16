@@ -58,6 +58,7 @@ use std::ops::ControlFlow;
 use burn::tensor::backend::Backend;
 
 use crate::core::tensors::UnifiedMaterialStateTensor;
+use crate::physics::error::PhysicsError;
 use crate::core::traits::IScienceCartridge;
 use crate::physics::solvers::fixed_point::repeat_controlled;
 use crate::physics::solvers::{ThmcSolver, ThmcState};
@@ -82,8 +83,8 @@ impl TopologyPlanIntent {
         thmc: &mut ThmcSolver,
         cartridge: &C,
         state: ThmcState<B>,
-        manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+        manifold: &mut UnifiedMaterialStateTensor<B>,
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -125,8 +126,8 @@ impl TopologyPhysicsOrchestrator {
         intents: I,
         cartridge: &C,
         state: ThmcState<B>,
-        manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+        manifold: &mut UnifiedMaterialStateTensor<B>,
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -155,8 +156,8 @@ impl TopologyPhysicsOrchestrator {
         &mut self,
         cartridge: &C,
         state: ThmcState<B>,
-        manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+        manifold: &mut UnifiedMaterialStateTensor<B>,
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -169,8 +170,8 @@ impl TopologyPhysicsOrchestrator {
         &mut self,
         cartridge: &C,
         state: ThmcState<B>,
-        manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+        manifold: &mut UnifiedMaterialStateTensor<B>,
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -193,8 +194,8 @@ impl TopologyPhysicsOrchestrator {
         steps: usize,
         cartridge: &C,
         state: ThmcState<B>,
-        manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+        manifold: &mut UnifiedMaterialStateTensor<B>,
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -203,7 +204,7 @@ impl TopologyPhysicsOrchestrator {
             return Ok(state);
         }
         let mut state_cell: Option<ThmcState<B>> = Some(state);
-        let mut last_err: Option<String> = None;
+        let mut last_err: Option<PhysicsError> = None;
         repeat_controlled(steps, || {
             let Some(s) = state_cell.take() else {
                 return ControlFlow::Break(());
@@ -221,9 +222,8 @@ impl TopologyPhysicsOrchestrator {
         });
         match last_err {
             Some(e) => Err(e),
-            None => state_cell.ok_or_else(|| {
-                "TopologyPhysicsOrchestrator::run_plan_step_repeated: internal state lost"
-                    .to_string()
+            None => state_cell.ok_or(PhysicsError::InvariantViolation {
+                context: "TopologyPhysicsOrchestrator::run_plan_step_repeated: internal state lost",
             }),
         }
     }
@@ -345,9 +345,9 @@ mod tests {
         let mut o = TopologyPhysicsOrchestrator::new(ThmcSolver::default());
         let dev = ndarray_device();
         let state = toy_thmc_state(&dev, 2);
-        let manifold = toy_umst_two_node(&dev);
+        let mut manifold = toy_umst_two_node(&dev);
         let out = o
-            .run_plan_step_repeated(0, &EmptyCartridge, state.clone(), &manifold)
+            .run_plan_step_repeated(0, &EmptyCartridge, state.clone(), &mut manifold)
             .expect("zero steps");
         assert_eq!(
             out.thermal.temperature.as_tensor().clone().into_data(),
@@ -361,9 +361,9 @@ mod tests {
         let dev = ndarray_device();
         let n = 2usize;
         let state = toy_thmc_state(&dev, n);
-        let manifold = toy_umst_two_node(&dev);
-        let a = o.run_plan_step(&EmptyCartridge, state.clone(), &manifold);
-        let b = o.run_plan_step_repeated(1, &EmptyCartridge, state, &manifold);
+        let mut manifold = toy_umst_two_node(&dev);
+        let a = o.run_plan_step(&EmptyCartridge, state.clone(), &mut manifold);
+        let b = o.run_plan_step_repeated(1, &EmptyCartridge, state, &mut manifold);
         match (&a, &b) {
             (Err(ea), Err(eb)) => assert_eq!(ea, eb),
             (Ok(sa), Ok(sb)) => assert_eq!(
@@ -399,13 +399,13 @@ mod tests {
         let dev = ndarray_device();
         let n = 2usize;
         let state = toy_thmc_state(&dev, n);
-        let manifold = toy_umst_two_node(&dev);
-        let a = o.run_plan_step(&EmptyCartridge, state.clone(), &manifold);
+        let mut manifold = toy_umst_two_node(&dev);
+        let a = o.run_plan_step(&EmptyCartridge, state.clone(), &mut manifold);
         let b = o.fold_plan_step(
             default_topology_plan_intents(),
             &EmptyCartridge,
             state,
-            &manifold,
+            &mut manifold,
         );
         match (&a, &b) {
             (Err(ea), Err(eb)) => assert_eq!(ea, eb),
@@ -422,13 +422,13 @@ mod tests {
         let mut o = TopologyPhysicsOrchestrator::new(ThmcSolver::default());
         let dev = ndarray_device();
         let state = toy_thmc_state(&dev, 2);
-        let manifold = toy_umst_two_node(&dev);
+        let mut manifold = toy_umst_two_node(&dev);
         let out = o
             .fold_plan_step(
                 std::iter::empty(),
                 &EmptyCartridge,
                 state.clone(),
-                &manifold,
+                &mut manifold,
             )
             .expect("empty fold");
         assert_eq!(

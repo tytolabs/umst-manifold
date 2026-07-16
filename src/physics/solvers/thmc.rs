@@ -497,8 +497,8 @@ impl ThmcSolver {
         &mut self,
         cartridge: &C,
         state: ThmcState<B>,
-        manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+        manifold: &mut UnifiedMaterialStateTensor<B>,
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -541,8 +541,8 @@ impl ThmcSolver {
         &mut self,
         cartridge: &C,
         state: ThmcState<B>,
-        manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+        manifold: &mut UnifiedMaterialStateTensor<B>,
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -579,8 +579,8 @@ impl ThmcSolver {
         &mut self,
         _cartridge: &C,
         mut state: ThmcState<B>,
-        manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+        manifold: &mut UnifiedMaterialStateTensor<B>,
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -594,7 +594,7 @@ impl ThmcSolver {
         if n != n_manifold {
             return Err(format!(
                 "ThmcSolver::step: ThmcState thermal axis N={n} != manifold.scalar_features rows N={n_manifold}"
-            ));
+            ).into());
         }
 
         // Pre-step snapshot for post-step gate evidence hook (p5-thmc-wire; see `thmc_step.rs`).
@@ -619,7 +619,7 @@ impl ThmcSolver {
             if batch != 1 {
                 return Err(format!(
                     "ThmcSolver::step: monolithic_thmc_newton requires batch size 1, got {batch}"
-                ));
+                ).into());
             }
             let coords_ok = manifold
                 .node_positions
@@ -648,7 +648,7 @@ impl ThmcSolver {
                 let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
                 return Err(format!(
                     "ThmcSolver::step: monolithic_thmc_newton stacked DOFs > {cap} (dense Jacobian cap is {cap}), got {m_dof}",
-                ));
+                ).into());
             }
         }
 
@@ -719,7 +719,7 @@ impl ThmcSolver {
                         return Err(format!(
                             "ThmcSolver::step: displacement_bc_mask dims {:?} incompatible with N={n} (expected [N,3,1], [N,1,3], or [1,N,3])",
                             mask.dims()
-                        ));
+                        ).into());
                     }
                 };
                 let bm = bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3]);
@@ -824,7 +824,7 @@ impl ThmcSolver {
                 if batch != 1 {
                     return Err(format!(
                         "ThmcSolver::step: implicit (T,α) Newton requires batch size 1, got {batch}"
-                    ));
+                    ).into());
                 }
                 if im_cfg.iterations < 2 {
                     return Err(
@@ -838,7 +838,7 @@ impl ThmcSolver {
                     let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
                     return Err(format!(
                         "ThmcSolver::step: implicit (T,α) Newton exceeds dense-Jacobian cap ({cap} DOFs), got {stacked}",
-                    ));
+                    ).into());
                 }
 
                 // Explicit-Euler predictor as the damped-Newton initial iterate (same local closure as the split).
@@ -919,7 +919,7 @@ impl ThmcSolver {
                             return Err(format!(
                                 "ThmcSolver::step: displacement_bc_mask dims {:?} incompatible with N={n} (expected [N,3,1], [N,1,3], or [1,N,3])",
                                 mask.dims()
-                            ));
+                            ).into());
                         }
                     };
                     let bm = bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3]);
@@ -1048,6 +1048,9 @@ impl ThmcSolver {
                 .slice([0..batch, 0..n, 1..d_last]);
             damage_new.map(|core| Tensor::cat(vec![core, tail], 2))
         };
+
+        // FP P3.5: mirror post-step THMC plan fields into UMST scalar columns (closes W4/W5).
+        crate::physics::thmc_umst_sync::sync_thmc_to_umst(&state, manifold)?;
 
         // Post-step gate evidence via configured transition gate cartridge.
         let gate_evidence = super::thmc_step::ThmcSolverStep::attach_gate_evidence(

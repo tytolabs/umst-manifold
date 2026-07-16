@@ -404,7 +404,7 @@ fn golden_path_thmc_experimental_then_cbf_apply_physics() {
         &dev,
     );
     let mat = matrix_features_mild_strain(n, &dev);
-    let manifold = test_umst_two_node_bar_thmc(scalars, mask, pos, mat);
+    let mut manifold = test_umst_two_node_bar_thmc(scalars, mask, pos, mat);
 
     let state = ThmcState::from_tensors(
         Tensor::<B, 3>::zeros([1, n, 1], &dev).add_scalar(300.0_f32),
@@ -422,7 +422,7 @@ fn golden_path_thmc_experimental_then_cbf_apply_physics() {
         ..Default::default()
     });
     let state_out = orchestrator
-        .run_plan_step(&EmptyCartridge, state, &manifold)
+        .run_plan_step(&EmptyCartridge, state, &mut manifold)
         .expect("THMC experimental step");
 
     let mut pr = physical_result_from_thmc_state(&state_out);

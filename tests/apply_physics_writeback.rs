@@ -170,7 +170,7 @@ fn apply_physics_thmc_step_errors_without_thmc_coupled() {
     let n = 2usize;
     let scalars = Tensor::<B, 2>::zeros([n, UMST_SCALAR_CHANNEL_COUNT], &dev);
     let mask = Tensor::<B, 2>::ones([n, 1], &dev);
-    let manifold = test_umst(scalars, mask, None);
+    let mut manifold = test_umst(scalars, mask, None);
 
     let state = ThmcState::from_tensors(
         Tensor::<B, 3>::zeros([1, n, 1], &dev),
@@ -188,8 +188,8 @@ fn apply_physics_thmc_step_errors_without_thmc_coupled() {
         ..Default::default()
     };
     let cartridge = EmptyCartridge;
-    match solver.step(&cartridge, state, &manifold) {
-        Err(e) => assert!(e.contains("thmc-coupled"), "unexpected error: {e}"),
+    match solver.step(&cartridge, state, &mut manifold) {
+        Err(e) => assert!(e.to_string().contains("thmc-coupled"), "unexpected error: {e}"),
         Ok(_) => panic!("expected Err when thmc-coupled is disabled"),
     }
 }

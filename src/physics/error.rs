@@ -6,7 +6,7 @@
 use core::fmt;
 
 /// Physics solver failures surfaced as `Result::Err` instead of panic (Wave 3a+).
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PhysicsError {
     /// Tensor / vector shape or rank mismatch on the hot path.
     ShapeMismatch {
@@ -54,6 +54,10 @@ pub enum PhysicsError {
     GateEvidenceRejected {
         context: &'static str,
     },
+    /// Solver / sync domain error with human-readable detail (THMC `step` migration path).
+    Domain {
+        detail: String,
+    },
 }
 
 impl fmt::Display for PhysicsError {
@@ -87,6 +91,21 @@ impl fmt::Display for PhysicsError {
             Self::GateEvidenceRejected { context } => {
                 write!(f, "{context}: gate evidence rejected")
             }
+            Self::Domain { detail } => f.write_str(detail),
+        }
+    }
+}
+
+impl From<String> for PhysicsError {
+    fn from(detail: String) -> Self {
+        Self::Domain { detail }
+    }
+}
+
+impl From<&str> for PhysicsError {
+    fn from(detail: &str) -> Self {
+        Self::Domain {
+            detail: detail.to_string(),
         }
     }
 }

@@ -46,6 +46,7 @@ pub mod solve_budget;
 #[cfg(feature = "mechanics-adjoint-q1-hex")]
 pub mod solver_region;
 pub mod solvers;
+pub mod thmc_umst_sync;
 pub mod time_orchestration;
 pub mod topology;
 #[cfg(feature = "topology-density-evolution")]

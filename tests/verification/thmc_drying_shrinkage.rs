@@ -176,7 +176,7 @@ fn thmc_newton_outer_passes_within_six() {
 fn thmc_drying_shrinkage_within_mc2010_notional_band() {
     let d = dev();
     let n = 28usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let h_init = 0.92_f32;
     let mut dmg = vec![0.0_f32; n];
     for i in 0..n {
@@ -204,7 +204,7 @@ fn thmc_drying_shrinkage_within_mc2010_notional_band() {
     };
     let mut s = state;
     for _ in 0..560 {
-        s = solver.step(&Stub, s, &manifold).expect("THMC step Ok");
+        s = solver.step(&Stub, s, &mut manifold).expect("THMC step Ok");
     }
     let h = s.hydro.humidity.as_tensor().clone().into_data().value;
     let h_surf = h[n - 1];
@@ -379,9 +379,9 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
     let n = 3usize;
     let batch = 1usize;
     let exx = 0.05_f32;
-    let manifold = chain_manifold_matrix_path(n, exx);
+    let mut manifold = chain_manifold_matrix_path(n, exx);
 
-    let eps = strain_tensor_for_fracture_from_manifold(&manifold, batch, n, &d);
+    let eps = strain_tensor_for_fracture_from_manifold(&mut manifold, batch, n, &d);
     let psi = spectral_tensile_psi_plus_from_strain(eps);
     let psi_sum: f32 = psi.into_data().value.iter().sum();
     assert!(
@@ -414,7 +414,7 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
         .step(
             &Stub,
             mk_state(Tensor::<B, 3>::zeros([batch, n, 1], &d)),
-            &manifold,
+            &mut manifold,
         )
         .expect("THMC step Ok");
     let max_d_tension = s_tension.damage.as_tensor().clone().into_data()
@@ -423,12 +423,12 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
         .copied()
         .fold(0.0_f32, f32::max);
 
-    let manifold_flat = chain_manifold_matrix_path(n, 0.0_f32);
+    let mut manifold_flat = chain_manifold_matrix_path(n, 0.0_f32);
     let s_flat = solver
         .step(
             &Stub,
             mk_state(Tensor::<B, 3>::zeros([batch, n, 1], &d)),
-            &manifold_flat,
+            &mut manifold_flat,
         )
         .expect("THMC step Ok");
     let max_d_flat = s_flat.damage.as_tensor().clone().into_data()
@@ -476,12 +476,12 @@ fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
             monolithic_thmc_newton: None,
             ..Default::default()
         };
-        let manifold = chain_manifold_matrix_path(n, exx);
+        let mut manifold = chain_manifold_matrix_path(n, exx);
         let s = solver
             .step(
                 &Stub,
                 mk_state(Tensor::<B, 3>::zeros([batch, n, 1], &d)),
-                &manifold,
+                &mut manifold,
             )
             .expect("THMC step Ok");
         s.damage.as_tensor().clone().into_data()
@@ -554,7 +554,7 @@ fn thmc_reaction_extent_rate_scalar_derivative_temperature_matches_finite_differ
 fn thmc_implicit_euler_t_alpha_residual_matches_brute_force_two_nodes() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let dt = 0.02_f32;
     let kinetics = reference_reaction_extent_kinetics();
     let t_n = Tensor::<B, 3>::from_data(
@@ -627,7 +627,7 @@ fn thmc_implicit_euler_t_alpha_residual_matches_brute_force_two_nodes() {
 fn thmc_implicit_euler_t_h_alpha_residual_humidity_matches_brute_force_two_nodes() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let dt = 0.02_f32;
     let kinetics = reference_reaction_extent_kinetics();
     let t_n = Tensor::<B, 3>::from_data(
@@ -736,7 +736,7 @@ fn thmc_implicit_euler_t_h_alpha_residual_humidity_matches_brute_force_two_nodes
 fn thmc_implicit_euler_t_h_alpha_u_placeholder_r_u_and_flat_layout_two_nodes() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let dt = 0.02_f32;
     let kinetics = reference_reaction_extent_kinetics();
     let t_n = Tensor::<B, 3>::from_data(
@@ -851,7 +851,7 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
 
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let coords = manifold
         .node_positions
         .as_ref()
@@ -990,7 +990,7 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
 
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let coords = manifold
         .node_positions
         .as_ref()
@@ -1107,7 +1107,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
 
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let coords = manifold
         .node_positions
         .as_ref()
@@ -1226,7 +1226,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
 fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let coords = manifold
         .node_positions
         .as_ref()
@@ -1332,7 +1332,7 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
         ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, 1, 1, 1),
         12
     );
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let coords = manifold
         .node_positions
         .as_ref()
@@ -1437,7 +1437,7 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
 fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let coords = manifold
         .node_positions
         .as_ref()
@@ -1534,7 +1534,7 @@ fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() 
 fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let coords = manifold
         .node_positions
         .as_ref()
@@ -1675,7 +1675,7 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
 fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let coords = manifold
         .node_positions
         .as_ref()
@@ -1824,7 +1824,7 @@ fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() 
 fn thmc_implicit_euler_t_h_alpha_multi_newton_monotone_stacked_residual_norm() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let dt = 0.02_f32;
     let kinetics = reference_reaction_extent_kinetics();
     let t_n = Tensor::<B, 3>::from_data(
@@ -1893,7 +1893,7 @@ fn thmc_implicit_euler_t_h_alpha_multi_newton_monotone_stacked_residual_norm() {
 fn thmc_implicit_euler_t_alpha_one_newton_lowers_residual_norm() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let dt = 0.02_f32;
     let kinetics = reference_reaction_extent_kinetics();
     let t_n = Tensor::<B, 3>::from_data(
@@ -1952,7 +1952,7 @@ fn thmc_implicit_euler_t_alpha_one_newton_lowers_residual_norm() {
 fn thmc_t_alpha_newton_residual_preserves_hydro_mechanics_fields() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let dt = 0.02_f32;
     let kinetics = reference_reaction_extent_kinetics();
     let t_n = Tensor::<B, 3>::from_data(
@@ -2022,7 +2022,7 @@ fn thmc_t_alpha_newton_residual_preserves_hydro_mechanics_fields() {
 fn thmc_implicit_euler_t_alpha_multi_newton_monotone_residual_norm_decrease() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let dt = 0.02_f32;
     let kinetics = reference_reaction_extent_kinetics();
     let t_n = Tensor::<B, 3>::from_data(
@@ -2115,7 +2115,7 @@ fn thmc_state_with_t_alpha(
 fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let state0 =     ThmcState::from_tensors(
         Tensor::<B, 3>::from_data(
@@ -2154,10 +2154,10 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
     };
 
     let s_exp = solver_explicit
-        .step(&Stub, clone_thmc_state(&state0), &manifold)
+        .step(&Stub, clone_thmc_state(&state0), &mut manifold)
         .expect("explicit step");
     let s_imp = solver_implicit
-        .step(&Stub, clone_thmc_state(&state0), &manifold)
+        .step(&Stub, clone_thmc_state(&state0), &mut manifold)
         .expect("implicit (T,α) Newton step");
 
     let t_diff = s_exp
@@ -2190,7 +2190,7 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
 fn thmc_step_monolithic_newton_errors_when_both_implicit_flags_set() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let state0 =     ThmcState::from_tensors(
         Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
@@ -2216,12 +2216,12 @@ fn thmc_step_monolithic_newton_errors_when_both_implicit_flags_set() {
         drying_last_node_evaporation_k: 0.0_f32,
         ..Default::default()
     };
-    let err = match solver.step(&Stub, state0, &manifold) {
+    let err = match solver.step(&Stub, state0, &mut manifold) {
         Ok(_) => panic!("expected mutual exclusion error"),
         Err(e) => e,
     };
     assert!(
-        err.contains("mutually exclusive"),
+        err.to_string().contains("mutually exclusive"),
         "unexpected error: {err}"
     );
 }
@@ -2231,7 +2231,7 @@ fn thmc_step_monolithic_newton_errors_when_both_implicit_flags_set() {
 fn thmc_step_monolithic_newton_errors_when_drying_sink_enabled() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let state0 =     ThmcState::from_tensors(
         Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
         Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
@@ -2246,12 +2246,12 @@ fn thmc_step_monolithic_newton_errors_when_drying_sink_enabled() {
         implicit_t_alpha_newton: None,
         ..Default::default()
     };
-    let err = match solver.step(&Stub, state0, &manifold) {
+    let err = match solver.step(&Stub, state0, &mut manifold) {
         Ok(_) => panic!("expected drying sink incompatibility"),
         Err(e) => e,
     };
     assert!(
-        err.contains("drying_last_node_evaporation_k"),
+        err.to_string().contains("drying_last_node_evaporation_k"),
         "unexpected error: {err}"
     );
 }
@@ -2270,7 +2270,7 @@ fn thmc_step_monolithic_newton_errors_when_stacked_dof_count_exceeds_64() {
             > THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
         "test expects N such that stacked DOFs exceed dense cap"
     );
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let state0 =     ThmcState::from_tensors(
         Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
         Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
@@ -2285,11 +2285,11 @@ fn thmc_step_monolithic_newton_errors_when_stacked_dof_count_exceeds_64() {
         implicit_t_alpha_newton: None,
         ..Default::default()
     };
-    let err = match solver.step(&Stub, state0, &manifold) {
+    let err = match solver.step(&Stub, state0, &mut manifold) {
         Ok(_) => panic!("expected stacked DOF cap error"),
         Err(e) => e,
     };
-    assert!(err.contains("stacked DOFs > 64"), "unexpected error: {err}");
+    assert!(err.to_string().contains("stacked DOFs > 64"), "unexpected error: {err}");
 }
 
 /// **Phase 5 integration:** [`ThmcSolver::step`] monolithic branch matches a standalone call to
@@ -2363,7 +2363,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         ..Default::default()
     };
     let s_step = solver
-        .step(&Stub, clone_thmc_state(&state0), &manifold)
+        .step(&Stub, clone_thmc_state(&state0), &mut manifold)
         .expect("monolithic step");
 
     // --- Mirror `step_experimental` monolithic predictor + standalone Newton ---
@@ -2551,7 +2551,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         ..solver.clone()
     };
     let s_early = solver_early
-        .step(&Stub, clone_thmc_state(&state0), &manifold)
+        .step(&Stub, clone_thmc_state(&state0), &mut manifold)
         .expect("monolithic step with tol early exit");
     let (updated_early, _) = assembler
         .damped_newton_iterations_with_quasi_static_r_u(
@@ -2682,10 +2682,10 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
     };
 
     let s_split = solver_split
-        .step(&Stub, clone_thmc_state(&state0), &manifold)
+        .step(&Stub, clone_thmc_state(&state0), &mut manifold)
         .expect("split step");
     let s_mono = solver_mono
-        .step_monolithic_implicit(&Stub, clone_thmc_state(&state0), &manifold)
+        .step_monolithic_implicit(&Stub, clone_thmc_state(&state0), &mut manifold)
         .expect("monolithic implicit step");
 
     let mask = manifold.displacement_bc_mask.clone();
@@ -2749,7 +2749,7 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
 fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let state0 =     ThmcState::from_tensors(
         Tensor::<B, 3>::from_data(
@@ -2788,10 +2788,10 @@ fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
     };
 
     let s_exp = solver_explicit
-        .step(&Stub, clone_thmc_state(&state0), &manifold)
+        .step(&Stub, clone_thmc_state(&state0), &mut manifold)
         .expect("explicit step");
     let s_imp = solver_implicit
-        .step(&Stub, clone_thmc_state(&state0), &manifold)
+        .step(&Stub, clone_thmc_state(&state0), &mut manifold)
         .expect("implicit (T,α) Newton step");
 
     assert_eq!(
@@ -2808,7 +2808,7 @@ fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
 fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoint() {
     let d = dev();
     let n = 2usize;
-    let manifold = chain_manifold(n);
+    let mut manifold = chain_manifold(n);
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let state0 =     ThmcState::from_tensors(
         Tensor::<B, 3>::from_data(
@@ -2848,10 +2848,10 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
     };
 
     let s_exp = solver_explicit
-        .step(&Stub, clone_thmc_state(&state0), &manifold)
+        .step(&Stub, clone_thmc_state(&state0), &mut manifold)
         .expect("explicit step");
     let s_imp = solver_implicit
-        .step(&Stub, clone_thmc_state(&state0), &manifold)
+        .step(&Stub, clone_thmc_state(&state0), &mut manifold)
         .expect("implicit step");
 
     let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
