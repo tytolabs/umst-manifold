@@ -37,7 +37,7 @@ pub fn full_iE_alpha_rate_tensor<B: Backend<FloatElem = f32>>(
     _temp_c: Tensor<B, 1>,
     _supplementary_ratio: Tensor<B, 1>,
 ) -> Tensor<B, 1> {
-    unimplemented!("W9 Tier 2c: inject via domain cartridge")
+    unimplemented!("R-api-w9-cartridge-inject: W9 tier-2c domain cartridge injection")
 }
 
 #[deprecated(note = "cartridge-supplied gate wiring")]
