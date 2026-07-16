@@ -13,6 +13,7 @@
 
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
+use umst_manifold::core::field::{Field, StepEntryDamageMask};
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 use umst_manifold::physics::solvers::{
@@ -156,14 +157,14 @@ fn post_newton_stacked_residual_oracle_matches_independent_recompute_two_nodes()
     );
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: t_n,
-        humidity_n: h_n,
+        temperature_n: Field::new(t_n),
+        humidity_n: Field::new(h_n),
         alpha_n,
         displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
-        damage_m: Tensor::<B, 3>::zeros([1, n, 1], &d),
+        damage_m: StepEntryDamageMask::from_tensor(Tensor::<B), 3>::zeros([1, n, 1], &d),
         kinetics,
     };
 

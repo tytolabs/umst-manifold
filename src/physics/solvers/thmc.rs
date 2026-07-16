@@ -90,7 +90,7 @@ use burn::tensor::{backend::Backend, Tensor};
 
 use crate::core::field::{
     DamageField, DisplacementField, Field, HumidityField, ReactionExtentField,
-    TemperatureField,
+    StepEntryDamageMask, TemperatureField,
 };
 use crate::core::material_transition::ReactionExtentKineticsSpec;
 use crate::core::tensors::UnifiedMaterialStateTensor;
@@ -498,7 +498,7 @@ impl ThmcSolver {
         cartridge: &C,
         state: ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -520,10 +520,9 @@ impl ThmcSolver {
             );
             let _ = (cartridge, manifold);
             drop(state);
-            Err(
-                "ThmcSolver::step: thmc-coupled feature is disabled; enable `--features thmc-coupled` (or `solver-experimental` / `solver-tests` for all opt-in solvers), or do not call this entrypoint"
-                    .to_string(),
-            )
+            Err(PhysicsError::UnsupportedLayout {
+                context: "ThmcSolver::step: thmc-coupled feature is disabled",
+            })
         }
     }
 
@@ -542,16 +541,13 @@ impl ThmcSolver {
         cartridge: &C,
         state: ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
     {
         if self.monolithic_thmc_newton.is_none() {
-            return Err(
-                "ThmcSolver::step_monolithic_implicit: monolithic_thmc_newton must be Some(ThmcMonolithicNewtonConfig { .. })"
-                    .into(),
-            );
+            return Err(PhysicsError::InvariantViolation { context: "ThmcSolver::step_monolithic_implicit: monolithic_thmc_newton must be Some" });
         }
         self.step(cartridge, state, manifold)
     }
@@ -580,7 +576,7 @@ impl ThmcSolver {
         _cartridge: &C,
         mut state: ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -592,38 +588,25 @@ impl ThmcSolver {
         let edges_b1 = manifold.edges_b1.clone();
 
         if n != n_manifold {
-            return Err(format!(
-                "ThmcSolver::step: ThmcState thermal axis N={n} != manifold.scalar_features rows N={n_manifold}"
-            ));
+            return Err(PhysicsError::ShapeMismatch { context: "thmc", detail: "tensor layout mismatch" });
         }
 
         // Pre-step snapshot for post-step gate evidence hook (p5-thmc-wire; see `thmc_step.rs`).
         let pre_step = state.clone();
 
         // Damage mask `[B,N,1]` for transport coefficients (last dim 1; otherwise first channel).
-        let damage_tensor = state.damage.as_tensor();
-        let damage_m = match damage_tensor.dims()[2] {
-            1 => damage_tensor.clone(),
-            _ => damage_tensor.clone().slice([0..batch, 0..n, 0..1]),
-        };
+        let damage_m = StepEntryDamageMask::from_step_entry_damage(&state.damage, batch, n);
 
         if self.monolithic_thmc_newton.is_some() && self.implicit_t_alpha_newton.is_some() {
-            return Err(
-                "ThmcSolver::step: monolithic_thmc_newton and implicit_t_alpha_newton are mutually exclusive; set one to None"
-                    .into(),
-            );
+            return Err(PhysicsError::InvariantViolation { context: "ThmcSolver::step: monolithic_thmc_newton and implicit_t_alpha_newton are mutually exclusive" });
         }
 
         if let Some(mc) = self.monolithic_thmc_newton.as_ref() {
             if mc.iterations < 2 {
-                return Err(
-                    "ThmcSolver::step: monolithic_thmc_newton.iterations must be >= 2".into(),
-                );
+                return Err(PhysicsError::InvariantViolation { context: "ThmcSolver::step: monolithic_thmc_newton.iterations must be >= 2" });
             }
             if batch != 1 {
-                return Err(format!(
-                    "ThmcSolver::step: monolithic_thmc_newton requires batch size 1, got {batch}"
-                ));
+                return Err(PhysicsError::ShapeMismatch { context: "thmc", detail: "tensor layout mismatch" });
             }
             let coords_ok = manifold
                 .node_positions
@@ -631,16 +614,10 @@ impl ThmcSolver {
                 .map(|p| p.dims() == [n, 3])
                 .unwrap_or(false);
             if !coords_ok {
-                return Err(
-                    "ThmcSolver::step: monolithic_thmc_newton requires manifold.node_positions with shape [N,3]"
-                        .into(),
-                );
+                return Err(PhysicsError::ShapeMismatch { context: "ThmcSolver::step", detail: "monolithic requires node_positions [N,3]" });
             }
             if self.drying_last_node_evaporation_k > 0.0_f32 {
-                return Err(
-                    "ThmcSolver::step: monolithic_thmc_newton requires drying_last_node_evaporation_k == 0 (pure implicit diffusion R_h)"
-                        .into(),
-                );
+                return Err(PhysicsError::InvariantViolation { context: "ThmcSolver::step: monolithic requires drying_last_node_evaporation_k == 0" });
             }
             let f_t = state.thermal.temperature.as_tensor().dims()[2];
             let f_h = state.hydro.humidity.as_tensor().dims()[2];
@@ -650,9 +627,7 @@ impl ThmcSolver {
             );
             if m_dof > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
                 let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
-                return Err(format!(
-                    "ThmcSolver::step: monolithic_thmc_newton stacked DOFs > {cap} (dense Jacobian cap is {cap}), got {m_dof}",
-                ));
+                return Err(PhysicsError::ShapeMismatch { context: "thmc", detail: "tensor layout mismatch" });
             }
         }
 
@@ -660,57 +635,35 @@ impl ThmcSolver {
 
         // Split residual Newton: exit when \(\|R\|_2 < tol\) (Wave 1 honesty).
         for _newton in 0..self.max_newton {
-            let t_old = state.thermal.temperature.as_tensor().clone();
-            let h_old = state.hydro.humidity.as_tensor().clone();
+            let t_old = state.thermal.temperature.clone();
+            let h_old = state.hydro.humidity.clone();
 
             // Topological diffusion: \(\Delta U\) with flux degraded by nodal damage on edges.
-            let lap_t = TopologicalLaplacian::scalar_laplacian(
-                t_old.clone(),
-                edges_b1.clone(),
-                damage_m.clone(),
-            );
-            let lap_h = TopologicalLaplacian::scalar_laplacian(
-                h_old.clone(),
-                edges_b1.clone(),
-                damage_m.clone(),
-            );
-
-            let dt_lap_t = lap_t.mul_scalar(self.dt);
-            let dt_lap_h = lap_h.mul_scalar(self.dt);
+            let lap_t = TopologicalLaplacian::scalar_laplacian_temperature(&t_old, &damage_m, edges_b1.clone());
+            let lap_h = TopologicalLaplacian::scalar_laplacian_humidity(&h_old, &damage_m, edges_b1.clone());
+            let dt_lap_t = lap_t.as_tensor().clone().mul_scalar(self.dt);
+            let dt_lap_h = lap_h.as_tensor().clone().mul_scalar(self.dt);
 
             // reaction extent rate uses **pre-transport** temperature (same sub-step as explicit Euler split).
             let f_alpha_ch = state.chemical.reaction_extent.as_tensor().dims()[2];
-            let t_bn1 = t_old.clone().slice([0..batch, 0..n, 0..1]);
-            let temperature_for_alpha = if f_alpha_ch == 1 {
-                t_bn1
-            } else {
-                t_bn1.expand::<3, _>([batch, n, f_alpha_ch])
-            };
-            let d_alpha = reaction_extent_rate_tensor(
-                &self.reaction_extent_kinetics,
-                state.chemical.reaction_extent.as_tensor().clone(),
-                temperature_for_alpha.clone(),
-                &device,
-            );
+            let t_bn1 = t_old.as_tensor().clone().slice([0..batch, 0..n, 0..1]);
+            let temperature_for_alpha = Field::new(if f_alpha_ch == 1 { t_bn1 } else { t_bn1.expand::<3, _>([batch, n, f_alpha_ch]) });
+            let d_alpha = reaction_extent_rate_field(&self.reaction_extent_kinetics, &state.chemical.reaction_extent, &temperature_for_alpha, &device);
 
             // Exothermic heat: \(\Delta T_{\mathrm{exo}} \propto \dot\alpha\,\Delta t\) (tensor-safe).
             let f_t_ch = state.thermal.temperature.as_tensor().dims()[2];
-            let exo = d_alpha
-                .clone()
-                .slice([0..batch, 0..n, 0..1])
+            let exo = d_alpha.as_tensor().clone().slice([0..batch, 0..n, 0..1])
                 .mul_scalar(self.reaction_extent_kinetics.exothermic_k_per_alpha_rate * self.dt)
                 .expand::<3, _>([batch, n, f_t_ch]);
 
-            let alpha_n = state.chemical.reaction_extent.as_tensor().clone();
+            let alpha_n = state.chemical.reaction_extent.clone();
 
             if let Some(mc) = self.monolithic_thmc_newton.as_ref() {
                 let coords_n3 = manifold
                     .node_positions
                     .as_ref()
                     .filter(|p| p.dims() == [n, 3])
-                    .ok_or_else(|| {
-                        "ThmcSolver::step: monolithic_thmc_newton requires manifold.node_positions with shape [N,3]".to_string()
-                    })?;
+                    .ok_or(PhysicsError::ShapeMismatch { context: "ThmcSolver::step", detail: "monolithic requires node_positions [N,3]" })?;
                 let mask = manifold.displacement_bc_mask.clone();
                 let bm_core = match mask.dims()[..] {
                     [nn, 3, 1] if nn == n => mask.reshape([nn, 3]),
@@ -719,10 +672,7 @@ impl ThmcSolver {
                         mask.clone().slice([0..1, 0..n, 0..3]).reshape([nn, 3])
                     }
                     _ => {
-                        return Err(format!(
-                            "ThmcSolver::step: displacement_bc_mask dims {:?} incompatible with N={n} (expected [N,3,1], [N,1,3], or [1,N,3])",
-                            mask.dims()
-                        ));
+                        return Err(PhysicsError::ShapeMismatch { context: "thmc", detail: "tensor layout mismatch" });
                     }
                 };
                 let bm = bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3]);
@@ -730,11 +680,9 @@ impl ThmcSolver {
                 let inner_cfg = MechanicsInnerLoopConfig::default();
                 let cross_section_area = 0.01_f32;
 
-                let t_predict = t_old.clone().add(dt_lap_t.clone()).add(exo.clone());
-                let h_predict = h_old.clone().add(dt_lap_h.clone());
-                let alpha_predict = alpha_n
-                    .clone()
-                    .add(d_alpha.clone().mul_scalar(self.dt))
+                let t_predict = t_old.as_tensor().clone().add(dt_lap_t.clone()).add(exo.clone());
+                let h_predict = h_old.as_tensor().clone().add(dt_lap_h.clone());
+                let alpha_predict = alpha_n.as_tensor().clone().add(d_alpha.as_tensor().clone().mul_scalar(self.dt))
                     .clamp(0.0_f32, 1.0_f32);
 
                 let alpha_bn1_pred = alpha_predict
@@ -752,7 +700,7 @@ impl ThmcSolver {
                     stiffness,
                     bf.clone(),
                     edges_b1.clone(),
-                    damage_m.clone(),
+                    damage_m.as_tensor().clone(),
                     bm.clone(),
                     cross_section_area,
                     &inner_cfg,
@@ -803,7 +751,7 @@ impl ThmcSolver {
                     .temperature
                     .as_tensor()
                     .clone()
-                    .sub(t_old)
+                    .sub(t_old.as_tensor().clone())
                     .sub(dt_lap_t)
                     .abs();
                 let r_h = state
@@ -811,7 +759,7 @@ impl ThmcSolver {
                     .humidity
                     .as_tensor()
                     .clone()
-                    .sub(h_old)
+                    .sub(h_old.as_tensor().clone())
                     .sub(dt_lap_h)
                     .abs();
                 let total_residual_tensor = r_t.add(r_h);
@@ -825,30 +773,22 @@ impl ThmcSolver {
 
             if let Some(im_cfg) = self.implicit_t_alpha_newton.as_ref() {
                 if batch != 1 {
-                    return Err(format!(
-                        "ThmcSolver::step: implicit (T,α) Newton requires batch size 1, got {batch}"
-                    ));
+                    return Err(PhysicsError::ShapeMismatch { context: "thmc", detail: "tensor layout mismatch" });
                 }
                 if im_cfg.iterations < 2 {
-                    return Err(
-                        "ThmcSolver::step: implicit_t_alpha_newton.iterations must be >= 2".into(),
-                    );
+                    return Err(PhysicsError::InvariantViolation { context: "ThmcSolver::step: implicit_t_alpha_newton.iterations must be >= 2" });
                 }
                 let f_t_dof = state.thermal.temperature.as_tensor().dims()[2];
                 let f_a_dof = f_alpha_ch;
                 let stacked = n * f_t_dof + n * f_a_dof;
                 if stacked > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
                     let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
-                    return Err(format!(
-                        "ThmcSolver::step: implicit (T,α) Newton exceeds dense-Jacobian cap ({cap} DOFs), got {stacked}",
-                    ));
+                    return Err(PhysicsError::ShapeMismatch { context: "thmc", detail: "tensor layout mismatch" });
                 }
 
                 // Explicit-Euler predictor as the damped-Newton initial iterate (same local closure as the split).
-                let t_predict = t_old.clone().add(dt_lap_t.clone()).add(exo.clone());
-                let alpha_predict = alpha_n
-                    .clone()
-                    .add(d_alpha.mul_scalar(self.dt))
+                let t_predict = t_old.as_tensor().clone().add(dt_lap_t.clone()).add(exo.clone());
+                let alpha_predict = alpha_n.as_tensor().clone().add(d_alpha.as_tensor().clone().mul_scalar(self.dt))
                     .clamp(0.0_f32, 1.0_f32);
 
                 let trial = ThmcState {
@@ -884,18 +824,19 @@ impl ThmcSolver {
                 state.chemical.reaction_extent = updated.chemical.reaction_extent;
             } else {
                 state.thermal.temperature = Field::new(
-                    t_old.clone().add(dt_lap_t.clone()).add(exo),
+                    t_old.as_tensor().clone().add(dt_lap_t.clone()).add(exo),
                 );
                 state.chemical.reaction_extent = Field::new(
                     alpha_n
+                        .as_tensor()
                         .clone()
-                        .add(d_alpha.mul_scalar(self.dt))
+                        .add(d_alpha.as_tensor().clone().mul_scalar(self.dt))
                         .clamp(0.0_f32, 1.0_f32),
                 );
             }
 
             let f_h = state.hydro.humidity.as_tensor().dims()[2];
-            let mut h_new = h_old.clone().add(dt_lap_h.clone());
+            let mut h_new = h_old.as_tensor().clone().add(dt_lap_h.clone());
             if self.drying_last_node_evaporation_k > 0.0_f32 && n > 1 {
                 let tail = h_new.clone().slice([0..batch, (n - 1)..n, 0..1]);
                 let delta = tail
@@ -919,10 +860,7 @@ impl ThmcSolver {
                             mask.clone().slice([0..1, 0..n, 0..3]).reshape([nn, 3])
                         }
                         _ => {
-                            return Err(format!(
-                                "ThmcSolver::step: displacement_bc_mask dims {:?} incompatible with N={n} (expected [N,3,1], [N,1,3], or [1,N,3])",
-                                mask.dims()
-                            ));
+                            return Err(PhysicsError::ShapeMismatch { context: "thmc", detail: "tensor layout mismatch" });
                         }
                     };
                     let bm = bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3]);
@@ -956,7 +894,7 @@ impl ThmcSolver {
                             stiffness,
                             bf,
                             edges_b1.clone(),
-                            damage_m.clone(),
+                            damage_m.as_tensor().clone(),
                             bm,
                             cross_section_area,
                             &inner_cfg,
@@ -975,7 +913,7 @@ impl ThmcSolver {
                             stiffness,
                             bf,
                             edges_b1.clone(),
-                            damage_m.clone(),
+                            damage_m.as_tensor().clone(),
                             bm,
                             cross_section_area,
                             &inner_cfg,
@@ -991,7 +929,7 @@ impl ThmcSolver {
                 .temperature
                 .as_tensor()
                 .clone()
-                .sub(t_old)
+                .sub(t_old.as_tensor().clone())
                 .sub(dt_lap_t)
                 .abs();
             let r_h = state
@@ -999,7 +937,7 @@ impl ThmcSolver {
                 .humidity
                 .as_tensor()
                 .clone()
-                .sub(h_old)
+                .sub(h_old.as_tensor().clone())
                 .sub(dt_lap_h)
                 .abs();
             let total_residual_tensor = r_t.add(r_h);
@@ -1269,6 +1207,9 @@ impl ThmcSolver {
 
 /// Full tensor reaction extent rate \(\dot\alpha(\alpha,T)\) used in [`ThmcSolver::step`] and implicit residuals:
 /// Arrhenius core `reaction_extent_arrhenius_rate` times the high-temperature boost factor.
+#[cfg(feature = "thmc-coupled")]
+pub fn reaction_extent_rate_field<B: Backend<FloatElem = f32>>(k: &ReactionExtentKinetics, alpha: &ReactionExtentField<B>, temperature: &TemperatureField<B>, device: &B::Device) -> ReactionExtentField<B> { Field::new(reaction_extent_rate_tensor(k, alpha.as_tensor().clone(), temperature.as_tensor().clone(), device)) }
+
 #[cfg(feature = "thmc-coupled")]
 pub fn reaction_extent_rate_tensor<B: Backend<FloatElem = f32>>(
     k: &ReactionExtentKinetics,

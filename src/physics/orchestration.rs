@@ -58,6 +58,7 @@ use std::ops::ControlFlow;
 use burn::tensor::backend::Backend;
 
 use crate::core::tensors::UnifiedMaterialStateTensor;
+use crate::physics::error::PhysicsError;
 use crate::core::traits::IScienceCartridge;
 use crate::physics::solvers::fixed_point::repeat_controlled;
 use crate::physics::solvers::{ThmcSolver, ThmcState};
@@ -83,7 +84,7 @@ impl TopologyPlanIntent {
         cartridge: &C,
         state: ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -126,7 +127,7 @@ impl TopologyPhysicsOrchestrator {
         cartridge: &C,
         state: ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -156,7 +157,7 @@ impl TopologyPhysicsOrchestrator {
         cartridge: &C,
         state: ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -170,7 +171,7 @@ impl TopologyPhysicsOrchestrator {
         cartridge: &C,
         state: ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -194,7 +195,7 @@ impl TopologyPhysicsOrchestrator {
         cartridge: &C,
         state: ThmcState<B>,
         manifold: &UnifiedMaterialStateTensor<B>,
-    ) -> Result<ThmcState<B>, String>
+    ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         C: IScienceCartridge<B>,
@@ -203,7 +204,7 @@ impl TopologyPhysicsOrchestrator {
             return Ok(state);
         }
         let mut state_cell: Option<ThmcState<B>> = Some(state);
-        let mut last_err: Option<String> = None;
+        let mut last_err: Option<PhysicsError> = None;
         repeat_controlled(steps, || {
             let Some(s) = state_cell.take() else {
                 return ControlFlow::Break(());
@@ -221,10 +222,7 @@ impl TopologyPhysicsOrchestrator {
         });
         match last_err {
             Some(e) => Err(e),
-            None => state_cell.ok_or_else(|| {
-                "TopologyPhysicsOrchestrator::run_plan_step_repeated: internal state lost"
-                    .to_string()
-            }),
+            None => state_cell.ok_or(PhysicsError::InvariantViolation { context: "TopologyPhysicsOrchestrator::run_plan_step_repeated: internal state lost" }),
         }
     }
 
