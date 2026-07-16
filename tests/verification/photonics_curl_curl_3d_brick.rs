@@ -41,7 +41,10 @@ fn solve_maxwell_uniform_brick_tet_boundary_residual() {
     let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
     let cg = MechanicsInnerLoopConfig::default();
     let f_hz = 2.0e9_f32;
-    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let ps = PhotonicsSolver {
+        frequency_hz: f_hz,
+        ..Default::default()
+    };
     let sol = ps.solve_maxwell_curl_curl(
         e_field.clone(),
         eps_r,

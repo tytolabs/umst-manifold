@@ -55,7 +55,10 @@ pub use fracture_field::{
     strain_tensor_for_fracture_from_manifold, strain_tensor_from_bar_network_displacement,
     StaggeredDamageOuterLoopConfig, StaggeredFractureConfig, StaggeredOuterDamageStopCriteria,
 };
-pub use photonics::{PhotonicsDecFacesPatch, PhotonicsHelmholtzSolver, PhotonicsSolver};
+pub use photonics::{
+    DecPatchCsrInnerMode, PhotonicsDecFacesPatch, PhotonicsDecPatchConfig, PhotonicsHelmholtzSolver,
+    PhotonicsSolver,
+};
 pub use rheology_flow::BinghamFlowSolver;
 #[cfg(feature = "thmc-coupled")]
 pub use thmc::reaction_extent_rate_tensor;

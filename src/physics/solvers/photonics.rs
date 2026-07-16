@@ -555,6 +555,65 @@ pub struct PhotonicsDecFacesPatch<'a, B: Backend> {
     pub face_column_ranges: &'a [(usize, usize)],
 }
 
+/// Inner-solve policy for the **lossless** DEC patch path (CSR vs dense Gauss–Jordan vs matrix-free CG).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum DecPatchCsrInnerMode {
+    #[default]
+    Auto,
+    On,
+    Off,
+}
+
+/// Injected knobs for the **small dense** [`PhotonicsDecFacesPatch`] solve branch.
+///
+/// Pure config — **no `std::env` reads** in the physics core. Host / CLI layers may parse
+/// `UMST_PHOTONICS_DEC_PATCH_*` and construct this struct at the orchestrator boundary.
+#[derive(Clone, Copy, Debug)]
+pub struct PhotonicsDecPatchConfig {
+    /// When `true`, the effective dense node cap is **0**, forcing CSR / matrix-free Krylov fallbacks.
+    pub force_krylov: bool,
+    /// CSR matvec CG inner solve policy on the lossless gauge-pinned patch operator.
+    pub csr_inner: DecPatchCsrInnerMode,
+}
+
+impl Default for PhotonicsDecPatchConfig {
+    fn default() -> Self {
+        Self {
+            force_krylov: false,
+            csr_inner: DecPatchCsrInnerMode::Auto,
+        }
+    }
+}
+
+impl PhotonicsDecPatchConfig {
+    /// Lossless patch: CSR matvec CG first when \(N\le\) CSR assembly cap (`auto` default).
+    #[must_use]
+    pub const fn lossless_auto() -> Self {
+        Self {
+            force_krylov: false,
+            csr_inner: DecPatchCsrInnerMode::Auto,
+        }
+    }
+
+    /// Lossless patch: dense Gauss–Jordan only (skip CSR inner).
+    #[must_use]
+    pub const fn dense_only() -> Self {
+        Self {
+            force_krylov: false,
+            csr_inner: DecPatchCsrInnerMode::Off,
+        }
+    }
+
+    /// Lossless patch: skip dense fallback (effective dense cap **0**); CSR / matrix-free Krylov only.
+    #[must_use]
+    pub const fn force_krylov() -> Self {
+        Self {
+            force_krylov: true,
+            csr_inner: DecPatchCsrInnerMode::Auto,
+        }
+    }
+}
+
 /// Column ranges for the **two-quad strip** uniform brick (`6` nodes / `9` edges / `4` triangles) —
 /// same incidence as [`photonics_uniform_brick_two_quad_strip_tensors`].
 #[cfg(feature = "photonics")]
@@ -796,6 +855,17 @@ pub const fn photonics_dec_patch_uses_metric_dual_edge_hodge() -> bool {
 /// Phase 7 photonics driver: holds the **driving frequency** \(f\) (Hz) for phasor solves.
 pub struct PhotonicsSolver {
     pub frequency_hz: f32,
+    /// DEC patch inner-solve policy (CSR vs dense vs Krylov). Ignored when `photonics` feature is off.
+    pub dec_patch_config: PhotonicsDecPatchConfig,
+}
+
+impl Default for PhotonicsSolver {
+    fn default() -> Self {
+        Self {
+            frequency_hz: 0.0,
+            dec_patch_config: PhotonicsDecPatchConfig::default(),
+        }
+    }
 }
 
 impl PhotonicsSolver {
@@ -963,6 +1033,7 @@ impl PhotonicsSolver {
                         &coords_n3,
                         self.frequency_hz,
                         patch,
+                        self.dec_patch_config,
                     ) {
                         return out;
                     }
@@ -1538,42 +1609,8 @@ pub fn photonics_dec_patch_dense_stacked_lossy_solution_vectors(
 }
 
 #[cfg(feature = "photonics")]
-fn dec_patch_force_krylov_from_env() -> bool {
-    matches!(
-        std::env::var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV").as_deref(),
-        Ok("1")
-    )
-}
-
-#[cfg(feature = "photonics")]
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum DecPatchCsrInnerEnv {
-    Auto,
-    On,
-    Off,
-}
-
-#[cfg(feature = "photonics")]
-fn dec_patch_csr_inner_env_mode() -> DecPatchCsrInnerEnv {
-    match std::env::var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER") {
-        Ok(s) if s == "0" || s.eq_ignore_ascii_case("off") || s.eq_ignore_ascii_case("false") => {
-            DecPatchCsrInnerEnv::Off
-        }
-        Ok(s)
-            if s == "1"
-                || s.eq_ignore_ascii_case("on")
-                || s.eq_ignore_ascii_case("true")
-                || s.eq_ignore_ascii_case("force") =>
-        {
-            DecPatchCsrInnerEnv::On
-        }
-        _ => DecPatchCsrInnerEnv::Auto,
-    }
-}
-
-#[cfg(feature = "photonics")]
-fn dec_patch_effective_dense_node_cap() -> usize {
-    if dec_patch_force_krylov_from_env() {
+fn dec_patch_effective_dense_node_cap(force_krylov: bool) -> usize {
+    if force_krylov {
         0
     } else {
         PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT
@@ -1582,11 +1619,11 @@ fn dec_patch_effective_dense_node_cap() -> usize {
 
 /// Optional **CSR matvec CG** inner solve on the **lossless** gauge-pinned patch operator.
 ///
-/// **Policy:** `UMST_PHOTONICS_DEC_PATCH_CSR_INNER` — `auto` (default): caller may pass **`prefer_csr_inner`** so CSR runs
+/// **Policy:** [`DecPatchCsrInnerMode::Auto`]: caller may pass **`prefer_csr_inner`** so CSR runs
 /// before dense Gauss–Jordan when \(N\le\) [`PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY`]; otherwise (second pass) CSR runs when
-/// \(N\) exceeds the effective dense cap ([`PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT`], or **0** with `UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV=1`)
-/// or when a lossless dense attempt failed. `1`/`force` / **`on`**: try CSR whenever \(N\le\) the CSR assembly cap.
-/// `0`/`off`: skip CSR. **Cap:** [`PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY`] bounds **O(dim²)** COO assembly.
+/// \(N\) exceeds the effective dense cap ([`PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT`], or **0** with [`PhotonicsDecPatchConfig::force_krylov`])
+/// or when a lossless dense attempt failed. [`DecPatchCsrInnerMode::On`]: try CSR whenever \(N\le\) the CSR assembly cap.
+/// [`DecPatchCsrInnerMode::Off`]: skip CSR. **Cap:** [`PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY`] bounds **O(dim²)** COO assembly.
 #[cfg(feature = "photonics")]
 #[allow(clippy::too_many_arguments)]
 fn dec_patch_try_csr_inner_lossless(
@@ -1606,6 +1643,7 @@ fn dec_patch_try_csr_inner_lossless(
     dense_node_cap_eff: usize,
     lossless_dense_tried_failed: bool,
     prefer_csr_inner: bool,
+    csr_inner: DecPatchCsrInnerMode,
 ) -> Option<Vec<f32>> {
     if n > PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY {
         tracing::debug!(
@@ -1616,10 +1654,10 @@ fn dec_patch_try_csr_inner_lossless(
         return None;
     }
 
-    let want_csr = match dec_patch_csr_inner_env_mode() {
-        DecPatchCsrInnerEnv::Off => false,
-        DecPatchCsrInnerEnv::On => true,
-        DecPatchCsrInnerEnv::Auto => {
+    let want_csr = match csr_inner {
+        DecPatchCsrInnerMode::Off => false,
+        DecPatchCsrInnerMode::On => true,
+        DecPatchCsrInnerMode::Auto => {
             prefer_csr_inner || n > dense_node_cap_eff || lossless_dense_tried_failed
         }
     };
@@ -1927,6 +1965,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
     coords_n3: &Tensor<B, 2>,
     frequency_hz: f32,
     patch: &PhotonicsDecFacesPatch<'_, B>,
+    dec_patch_config: PhotonicsDecPatchConfig,
 ) -> Option<Tensor<B, 3>> {
     let n = e_field.dims()[1];
     if n > PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV {
@@ -2021,7 +2060,8 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
     let e0 = e_field.clone().into_data().value;
     b[..3].copy_from_slice(&e0[..3]);
 
-    let dense_node_cap_eff = dec_patch_effective_dense_node_cap();
+    let dense_node_cap_eff = dec_patch_effective_dense_node_cap(dec_patch_config.force_krylov);
+    let csr_inner = dec_patch_config.csr_inner;
     let mut lossless_dense_tried_failed = false;
     let mut sol: Option<Vec<f32>> = None;
 
@@ -2070,9 +2110,8 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
             );
         }
     } else {
-        let csr_mode = dec_patch_csr_inner_env_mode();
         let under_csr_cap = n <= PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY;
-        if csr_mode != DecPatchCsrInnerEnv::Off && under_csr_cap {
+        if csr_inner != DecPatchCsrInnerMode::Off && under_csr_cap {
             sol = dec_patch_try_csr_inner_lossless(
                 n,
                 n_edges,
@@ -2090,6 +2129,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
                 dense_node_cap_eff,
                 false,
                 true,
+                csr_inner,
             );
         }
         if sol.is_none() && n <= dense_node_cap_eff {
@@ -2166,6 +2206,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
                 dense_node_cap_eff,
                 lossless_dense_tried_failed,
                 false,
+                csr_inner,
             )
         })
         .or_else(|| {

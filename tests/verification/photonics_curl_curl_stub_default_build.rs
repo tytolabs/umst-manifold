@@ -64,6 +64,7 @@ mod photonics_off {
         let cg = MechanicsInnerLoopConfig::default();
         let ps = PhotonicsSolver {
             frequency_hz: 1e9_f32,
+            ..Default::default()
         };
 
         let out = ps.solve_maxwell_curl_curl(e_field, eps_r, eps_i, j, edges, coords, &cg, None);

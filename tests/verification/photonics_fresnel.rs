@@ -1033,7 +1033,10 @@ fn curl_curl_y_mode_matches_scalar_helmholtz() {
     let f_hz = 1e9_f32;
     let cg = MechanicsInnerLoopConfig::default();
 
-    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let ps = PhotonicsSolver {
+        frequency_hz: f_hz,
+        ..Default::default()
+    };
     let e_cc = ps.solve_maxwell_curl_curl(
         e0.clone(),
         eps_r.clone(),
@@ -1096,7 +1099,10 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_affine_x_metric_preserves_ex_ez() {
     let f_hz = 1e9_f32;
     let cg = MechanicsInnerLoopConfig::default();
 
-    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let ps = PhotonicsSolver {
+        frequency_hz: f_hz,
+        ..Default::default()
+    };
     let e_cc = ps.solve_maxwell_curl_curl(
         e_field.clone(),
         eps_r.clone(),
@@ -1166,7 +1172,10 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_xy_embedded_chain() {
     let f_hz = 1e9_f32;
     let cg = MechanicsInnerLoopConfig::default();
 
-    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let ps = PhotonicsSolver {
+        frequency_hz: f_hz,
+        ..Default::default()
+    };
     let e_cc = ps.solve_maxwell_curl_curl(
         e0.clone(),
         eps_r.clone(),
@@ -1232,7 +1241,10 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_piecewise_eps() {
     let f_hz = 2.2e9_f32;
     let cg = MechanicsInnerLoopConfig::default();
 
-    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let ps = PhotonicsSolver {
+        frequency_hz: f_hz,
+        ..Default::default()
+    };
     let e_cc = ps.solve_maxwell_curl_curl(
         e0.clone(),
         eps_r.clone(),
@@ -1311,7 +1323,10 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_piecewise_eps_tensor_yy() {
     let f_hz = 2.2e9_f32;
     let cg = MechanicsInnerLoopConfig::default();
 
-    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let ps = PhotonicsSolver {
+        frequency_hz: f_hz,
+        ..Default::default()
+    };
     let e_cc = ps.solve_maxwell_curl_curl(
         e0.clone(),
         eps_r_tensor,
@@ -1507,6 +1522,7 @@ fn solve_maxwell_curl_curl_pass_through_quad_split_not_chain() {
     let cg = MechanicsInnerLoopConfig::default();
     let ps = PhotonicsSolver {
         frequency_hz: 1e9_f32,
+        ..Default::default()
     };
     let out = ps.solve_maxwell_curl_curl(
         e_field.clone(),
@@ -1565,7 +1581,10 @@ fn solve_maxwell_dec_patch_quad_split_pin_residual_tight() {
     let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
     let cg = MechanicsInnerLoopConfig::default();
     let f_hz = 2.4e9_f32;
-    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let ps = PhotonicsSolver {
+        frequency_hz: f_hz,
+        ..Default::default()
+    };
     let sol = ps.solve_maxwell_curl_curl(
         e_field.clone(),
         eps_r,
@@ -1619,20 +1638,13 @@ fn solve_maxwell_dec_patch_quad_split_pin_residual_tight() {
     }
 }
 
-/// **m6-dec — CSR inner default (`auto`):** unset `UMST_PHOTONICS_DEC_PATCH_CSR_INNER` runs **CSR matvec CG** first on the
-/// lossless quad-split patch; **`UMST_PHOTONICS_DEC_PATCH_CSR_INNER=off`** forces dense Gauss–Jordan — fields must agree.
+/// **m6-dec — CSR inner default (`auto`):** [`PhotonicsDecPatchConfig::lossless_auto`] runs **CSR matvec CG** first on the
+/// lossless quad-split patch; [`PhotonicsDecPatchConfig::dense_only`] forces dense Gauss–Jordan — fields must agree.
 #[test]
 fn solve_maxwell_dec_patch_quad_split_lossless_auto_csr_matches_dense_csr_inner_off() {
-    use std::sync::Mutex;
-
-    static ENV_LOCK: Mutex<()> = Mutex::new(());
-
-    let _guard = ENV_LOCK.lock().expect("env test lock poisoned");
-
-    use umst_manifold::physics::solvers::{PhotonicsDecFacesPatch, PhotonicsSolver};
-
-    let restore_csr = std::env::var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER").ok();
-    let restore_force = std::env::var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV").ok();
+    use umst_manifold::physics::solvers::{
+        PhotonicsDecFacesPatch, PhotonicsDecPatchConfig, PhotonicsSolver,
+    };
 
     let dev = device();
     let (edges_b1, faces_b2, _) = quad_split_patch_tensors();
@@ -1663,11 +1675,16 @@ fn solve_maxwell_dec_patch_quad_split_lossless_auto_csr_matches_dense_csr_inner_
     let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
     let cg = MechanicsInnerLoopConfig::default();
     let f_hz = 2.4e9_f32;
-    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let ps_dense = PhotonicsSolver {
+        frequency_hz: f_hz,
+        dec_patch_config: PhotonicsDecPatchConfig::dense_only(),
+    };
+    let ps_auto = PhotonicsSolver {
+        frequency_hz: f_hz,
+        dec_patch_config: PhotonicsDecPatchConfig::lossless_auto(),
+    };
 
-    std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV");
-    std::env::set_var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER", "off");
-    let sol_dense = ps.solve_maxwell_curl_curl(
+    let sol_dense = ps_dense.solve_maxwell_curl_curl(
         e_field.clone(),
         eps_r.clone(),
         eps_i.clone(),
@@ -1678,8 +1695,7 @@ fn solve_maxwell_dec_patch_quad_split_lossless_auto_csr_matches_dense_csr_inner_
         Some(&patch),
     );
 
-    std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER");
-    let sol_auto = ps.solve_maxwell_curl_curl(
+    let sol_auto = ps_auto.solve_maxwell_curl_curl(
         e_field,
         eps_r,
         eps_i,
@@ -1690,15 +1706,6 @@ fn solve_maxwell_dec_patch_quad_split_lossless_auto_csr_matches_dense_csr_inner_
         Some(&patch),
     );
 
-    match restore_csr {
-        Some(ref v) => std::env::set_var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER", v),
-        None => std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER"),
-    }
-    match restore_force {
-        Some(ref v) => std::env::set_var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV", v),
-        None => std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV"),
-    }
-
     let vd = sol_dense.into_data().value;
     let va = sol_auto.into_data().value;
     let mut mx = 0.0_f32;
@@ -1708,21 +1715,14 @@ fn solve_maxwell_dec_patch_quad_split_lossless_auto_csr_matches_dense_csr_inner_
     assert_relative_eq!(mx, 0.0_f32, epsilon = 5e-4_f32, max_relative = 1.0);
 }
 
-/// **m6-dec — CSR inner Krylov wiring:** `UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV=1` skips dense Gauss–Jordan fallback so the
+/// **m6-dec — CSR inner Krylov wiring:** [`PhotonicsDecPatchConfig::force_krylov`] skips dense Gauss–Jordan fallback so the
 /// lossless patch path stays on **CSR matvec CG**; the field matches the default **`auto`** driver on the quad-split harness.
 #[test]
 fn solve_maxwell_curl_curl_dec_patch_csr_inner_matches_dense_quad_split() {
-    use std::sync::Mutex;
-
-    static ENV_LOCK: Mutex<()> = Mutex::new(());
-
-    let _guard = ENV_LOCK.lock().expect("env test lock poisoned");
-
     use umst_manifold::physics::solvers::photonics::dec_patch_maxwell_natural_matvec_flat;
-    use umst_manifold::physics::solvers::{PhotonicsDecFacesPatch, PhotonicsSolver};
-
-    let restore_force = std::env::var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV").ok();
-    let restore_csr = std::env::var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER").ok();
+    use umst_manifold::physics::solvers::{
+        PhotonicsDecFacesPatch, PhotonicsDecPatchConfig, PhotonicsSolver,
+    };
 
     let dev = device();
     let (edges_b1, faces_b2, _) = quad_split_patch_tensors();
@@ -1753,11 +1753,16 @@ fn solve_maxwell_curl_curl_dec_patch_csr_inner_matches_dense_quad_split() {
     let j = Tensor::<B, 3>::from_data(Data::new(jdat.clone(), Shape::new([1, n, 3])), &dev);
     let cg = MechanicsInnerLoopConfig::default();
     let f_hz = 2.4e9_f32;
-    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let ps_auto = PhotonicsSolver {
+        frequency_hz: f_hz,
+        dec_patch_config: PhotonicsDecPatchConfig::lossless_auto(),
+    };
+    let ps_krylov = PhotonicsSolver {
+        frequency_hz: f_hz,
+        dec_patch_config: PhotonicsDecPatchConfig::force_krylov(),
+    };
 
-    std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV");
-    std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER");
-    let sol_dense = ps.solve_maxwell_curl_curl(
+    let sol_dense = ps_auto.solve_maxwell_curl_curl(
         e_field.clone(),
         eps_r.clone(),
         eps_i.clone(),
@@ -1768,8 +1773,7 @@ fn solve_maxwell_curl_curl_dec_patch_csr_inner_matches_dense_quad_split() {
         Some(&patch),
     );
 
-    std::env::set_var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV", "1");
-    let sol_csr_path = ps.solve_maxwell_curl_curl(
+    let sol_csr_path = ps_krylov.solve_maxwell_curl_curl(
         e_field.clone(),
         eps_r.clone(),
         eps_i.clone(),
@@ -1779,15 +1783,6 @@ fn solve_maxwell_curl_curl_dec_patch_csr_inner_matches_dense_quad_split() {
         &cg,
         Some(&patch),
     );
-
-    match restore_force {
-        Some(ref v) => std::env::set_var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV", v),
-        None => std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV"),
-    }
-    match restore_csr {
-        Some(ref v) => std::env::set_var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER", v),
-        None => std::env::remove_var("UMST_PHOTONICS_DEC_PATCH_CSR_INNER"),
-    }
 
     let vd = sol_dense.into_data().value;
     let vc = sol_csr_path.into_data().value;
@@ -1883,7 +1878,10 @@ fn solve_maxwell_dec_patch_quad_split_scalar_eps_imag_stacked_residual() {
     let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
     let cg = MechanicsInnerLoopConfig::default();
     let f_hz = 2.4e9_f32;
-    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let ps = PhotonicsSolver {
+        frequency_hz: f_hz,
+        ..Default::default()
+    };
     let sol = ps.solve_maxwell_curl_curl(
         e_field.clone(),
         eps_r.clone(),
@@ -2133,7 +2131,10 @@ fn solve_maxwell_dec_patch_quad_split_tensor_eps_residual() {
     let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
     let cg = MechanicsInnerLoopConfig::default();
     let f_hz = 1.1e9_f32;
-    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let ps = PhotonicsSolver {
+        frequency_hz: f_hz,
+        ..Default::default()
+    };
     let sol = ps.solve_maxwell_curl_curl(
         e_field.clone(),
         eps_r,
@@ -2221,7 +2222,10 @@ fn solve_maxwell_dec_patch_quad_split_embedded_r3_residual() {
     let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
     let cg = MechanicsInnerLoopConfig::default();
     let f_hz = 3.0e9_f32;
-    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let ps = PhotonicsSolver {
+        frequency_hz: f_hz,
+        ..Default::default()
+    };
     let sol = ps.solve_maxwell_curl_curl(
         e_field.clone(),
         eps_r,
@@ -2313,7 +2317,10 @@ fn solve_maxwell_dec_patch_two_quads_strip_residual() {
     let j = Tensor::<B, 3>::from_data(Data::new(jdat, Shape::new([1, n, 3])), &dev);
     let cg = MechanicsInnerLoopConfig::default();
     let f_hz = 1.8e9_f32;
-    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let ps = PhotonicsSolver {
+        frequency_hz: f_hz,
+        ..Default::default()
+    };
     let sol = ps.solve_maxwell_curl_curl(
         e_field.clone(),
         eps_r,
@@ -2449,7 +2456,10 @@ fn assembled_two_quads_dec_primal_photonics_maxwell_deferred() {
     let eps_i = Tensor::<B, 3>::zeros([1, n, 1], &dev);
     let j = Tensor::<B, 3>::zeros([1, n, 3], &dev);
     let cg = MechanicsInnerLoopConfig::default();
-    let ps = PhotonicsSolver { frequency_hz: f_hz };
+    let ps = PhotonicsSolver {
+        frequency_hz: f_hz,
+        ..Default::default()
+    };
     let out = ps.solve_maxwell_curl_curl(
         e_field.clone(),
         eps_r3,
