@@ -88,6 +88,9 @@ use burn::tensor::ElementConversion;
 use burn::tensor::Int;
 use burn::tensor::{backend::Backend, Tensor};
 
+use crate::core::field::{
+    DamageField, DisplacementField, Field, HumidityField, ReactionExtentField, TemperatureField,
+};
 use crate::core::material_transition::ReactionExtentKineticsSpec;
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use crate::core::traits::IScienceCartridge;
@@ -107,6 +110,8 @@ use crate::physics::solvers::thmc_residual::{
     ThmcImplicitEulerThermalReactionExtentResidual, ThmcMonolithicImplicitUnknownLayout,
     THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
 };
+#[cfg(feature = "thmc-coupled")]
+use crate::physics::error::PhysicsError;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
 
@@ -1040,8 +1045,10 @@ impl Default for ThmcMonolithicNewtonConfig {
 impl ThmcSolver {
     /// One implicit-Euler thermal step on the graph Laplacian:
     /// \[ (I/\Delta t - \kappa\,\mathcal{L})\,T_{\mathrm{new}} = T_{\mathrm{old}}/\Delta t. \]
-    /// Solved with conjugate gradients on the SPD LHS operator. Returns `(T_new, residual_norms)`,
-    /// where `residual_norms[k]` is the L2 norm of the *physical* residual
+    /// Solved with conjugate gradients on the SPD LHS operator. Returns `Ok((T_new, residual_norms))`
+    /// when the final L2 residual is below [`ThmcNewtonConfig::residual_tolerance`], or
+    /// [`PhysicsError::Diverged`] after `max_iterations` without meeting tolerance.
+    /// `residual_norms[k]` is the L2 norm of the *physical* residual
     /// \(R = (T_k - T_{\mathrm{old}})/\Delta t - \kappa\,\mathcal{L}(T_k)\) after iteration `k`.
     /// `residual_norms[0]` is the norm at the initial guess (`T_old`).
     ///
@@ -1067,7 +1074,7 @@ impl ThmcSolver {
         edges_b1: Tensor<B, 2, Int>,
         boundary_mask: Tensor<B, 3>,
         cfg: ThmcNewtonConfig,
-    ) -> (Tensor<B, 3>, Vec<f32>) {
+    ) -> Result<(Tensor<B, 3>, Vec<f32>), PhysicsError> {
         let device = t_old.device();
         let dims = t_old.dims();
         // No damage attenuation for this verification path; full conductivity on every edge.
@@ -1129,7 +1136,15 @@ impl ThmcSolver {
             rs_old_t = rs_new_t;
         }
 
-        (x, residual_norms)
+        let eq_rel = residual_norms.last().copied().unwrap_or(f32::INFINITY);
+        if eq_rel >= cfg.residual_tolerance {
+            return Err(PhysicsError::Diverged {
+                eq_rel,
+                pcg_iterations: residual_norms.len().saturating_sub(1),
+            });
+        }
+
+        Ok((x, residual_norms))
     }
 }
 

@@ -3197,8 +3197,9 @@ fn thermal_implicit_newton_residual_decreases_monotonically() {
         finite_diff_eps: 1.0e-6_f32,
         damping: 1.0_f32,
     };
-    let (_t_new, norms) =
-        solver.step_thermal_implicit::<B>(0.05_f32, t_old, 0.1_f32, edges, mask, cfg);
+    let (_t_new, norms) = solver
+        .step_thermal_implicit::<B>(0.05_f32, t_old, 0.1_f32, edges, mask, cfg)
+        .expect("thermal implicit CG should converge");
 
     assert!(
         norms.len() >= 2,
@@ -3261,14 +3262,16 @@ fn thermal_implicit_matches_analytic_decay_mode() {
 
     let mut t = t_init.clone();
     for _ in 0..n_steps {
-        let (t_new, _norms) = solver.step_thermal_implicit::<B>(
-            dt,
-            t.clone(),
-            kappa,
-            edges.clone(),
-            mask.clone(),
-            cfg,
-        );
+        let (t_new, _norms) = solver
+            .step_thermal_implicit::<B>(
+                dt,
+                t.clone(),
+                kappa,
+                edges.clone(),
+                mask.clone(),
+                cfg,
+            )
+            .expect("thermal implicit CG should converge");
         t = t_new;
     }
 
