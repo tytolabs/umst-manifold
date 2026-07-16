@@ -250,9 +250,7 @@ mod tests {
 
     use crate::core::tensors::MaterialCompositionTensor;
     use crate::core::traits::PhysicalResult;
-    use crate::physics::solvers::{
-        ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcState,
-    };
+    use crate::physics::solvers::ThmcState;
 
     type TestBackend = NdArray<f32>;
 
@@ -312,23 +310,14 @@ mod tests {
     }
 
     fn toy_thmc_state(dev: &<TestBackend as Backend>::Device, n: usize) -> ThmcState<TestBackend> {
-        ThmcState {
-            thermal: ThermalPlan {
-                temperature: Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(300.0_f32),
-            },
-            hydro: HydrologicPlan {
-                humidity: Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(0.5_f32),
-            },
-            mechanical: MechanicalPlan {
-                displacement: Tensor::<TestBackend, 3>::zeros([1, n, 3], dev),
-            },
-            chemical: ChemicalPlan {
-                reaction_extent: Tensor::<TestBackend, 3>::zeros([1, n, 1], dev)
-                    .add_scalar(0.1_f32),
-            },
-            damage: Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(0.01_f32),
-            time: 0.0,
-        }
+        ThmcState::from_tensors(
+            Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(300.0_f32),
+            Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(0.5_f32),
+            Tensor::<TestBackend, 3>::zeros([1, n, 3], dev),
+            Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(0.1_f32),
+            Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(0.01_f32),
+            0.0,
+        )
     }
 
     struct EmptyCartridge;
@@ -361,8 +350,8 @@ mod tests {
             .run_plan_step_repeated(0, &EmptyCartridge, state.clone(), &manifold)
             .expect("zero steps");
         assert_eq!(
-            out.thermal.temperature.into_data(),
-            state.thermal.temperature.into_data()
+            out.thermal.temperature.as_tensor().clone().into_data(),
+            state.thermal.temperature.as_tensor().clone().into_data()
         );
     }
 
@@ -378,8 +367,8 @@ mod tests {
         match (&a, &b) {
             (Err(ea), Err(eb)) => assert_eq!(ea, eb),
             (Ok(sa), Ok(sb)) => assert_eq!(
-                sa.thermal.temperature.clone().into_data(),
-                sb.thermal.temperature.clone().into_data()
+                sa.thermal.temperature.as_tensor().clone().into_data(),
+                sb.thermal.temperature.as_tensor().clone().into_data()
             ),
             _ => panic!("run_plan_step vs repeated mismatch: {a:?} vs {b:?}"),
         }
@@ -421,8 +410,8 @@ mod tests {
         match (&a, &b) {
             (Err(ea), Err(eb)) => assert_eq!(ea, eb),
             (Ok(sa), Ok(sb)) => assert_eq!(
-                sa.thermal.temperature.clone().into_data(),
-                sb.thermal.temperature.clone().into_data()
+                sa.thermal.temperature.as_tensor().clone().into_data(),
+                sb.thermal.temperature.as_tensor().clone().into_data()
             ),
             _ => panic!("run_plan_step vs fold mismatch: {a:?} vs {b:?}"),
         }
@@ -443,8 +432,8 @@ mod tests {
             )
             .expect("empty fold");
         assert_eq!(
-            out.thermal.temperature.into_data(),
-            state.thermal.temperature.into_data()
+            out.thermal.temperature.as_tensor().clone().into_data(),
+            state.thermal.temperature.as_tensor().clone().into_data()
         );
     }
 }

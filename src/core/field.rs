@@ -3,34 +3,71 @@
 
 //! FP Manifesto §1 — phantom-typed Burn tensor carriers ([`Field`]).
 //!
-//! Staging layer only: solvers still accept naked [`burn::tensor::Tensor`] at call sites.
-//! This module introduces the newtype vocabulary without breaking Burn APIs; full carve deferred.
+//! Staging vocabulary for THMC / fracture migration (P3): solvers still accept naked
+//! [`burn::tensor::Tensor`] at call sites. This module introduces compile-time space
+//! witnesses without breaking Burn APIs; P3.1–P3.7 schedule in
+//! `outputs/.tmp/fp_p3_thmc_field_migration_plan.md`.
+//!
+//! Prior art: [`super::dec_typestate::B1Incidence`] (topology) and
+//! [`super::dec_typestate::ScalarChannelIdx`] (scalar layout).
+//!
+//! # Migration
+//!
+//! P3.1 will wrap `ThmcState` fields; until then, construct [`Field`]s at boundaries and
+//! unwrap via [`Field::as_tensor`] / [`Field::into_tensor`] for Burn kernels.
 
 use std::marker::PhantomData;
 
 use burn::tensor::{backend::Backend, Tensor};
 
-/// Nodal temperature field \(T\) — shape `[B, N, F_T]`, kelvin.
+/// Phantom space marker: nodal temperature field \(T\) — shape `[B, N, F_T]`, kelvin.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Zero-sized space witness; layout SSOT is `umst_schema::SCALAR_TEMPERATURE`.
 #[derive(Clone, Copy, Debug)]
 pub struct Temperature;
 
-/// Pore-fluid / humidity proxy \(h\) — shape `[B, N, F_h]`, typically in `[0, 1]`.
+/// Phantom space marker: pore-fluid / humidity proxy \(h\) — shape `[B, N, F_h]`, typically `[0, 1]`.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Zero-sized space witness; layout SSOT is `umst_schema::SCALAR_HUMIDITY`.
 #[derive(Clone, Copy, Debug)]
 pub struct Humidity;
 
-/// Mechanical displacement \(\mathbf u\) — shape `[B, N, 3]`, SI metres.
+/// Phantom space marker: mechanical displacement \(\mathbf u\) — shape `[B, N, 3]`, SI metres.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Zero-sized space witness; vector channel SSOT is `vector_features[*, 0, *]`.
 #[derive(Clone, Copy, Debug)]
 pub struct Displacement;
 
-/// Phase-field / continuum damage \(d\) — shape `[B, N, 1]` (or `[B, N, F_d]`).
+/// Phantom space marker: phase-field / continuum damage \(d\) — shape `[B, N, 1]` (or `[B, N, F_d]`).
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Zero-sized space witness; layout SSOT is `umst_schema::SCALAR_DAMAGE`.
 #[derive(Clone, Copy, Debug)]
 pub struct Damage;
 
-/// Chemical reaction extent \(\alpha\) — shape `[B, N, F_\alpha]`, clipped to `[0, 1]`.
+/// Phantom space marker: chemical reaction extent \(\alpha\) — shape `[B, N, F_\alpha]`, clipped to `[0, 1]`.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Zero-sized space witness; THMC chemical channel (P3.1 migration target).
 #[derive(Clone, Copy, Debug)]
 pub struct ReactionExtent;
 
 /// Phantom-typed tensor carrier: physical meaning encoded at compile time via `Space`.
+///
+/// Uses `PhantomData<fn() -> Space>` so the space witness is invariant (not covariant),
+/// preventing accidental subtyping between distinct material quantities that share rank/shape.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Pure newtype over Burn `Tensor`; no new physics claim beyond caller layout contracts.
 #[derive(Clone, Debug)]
 pub struct Field<B: Backend, Space, const D: usize> {
     tensor: Tensor<B, D>,
@@ -39,6 +76,10 @@ pub struct Field<B: Backend, Space, const D: usize> {
 
 impl<B: Backend, Space, const D: usize> Field<B, Space, D> {
     /// Wrap an existing Burn tensor (layout contracts remain caller-owned).
+    ///
+    /// formal_anchor: NONE
+    /// formal_status: Structural
+    /// formal_anchor_rationale: Opaque constructor; does not validate shape or units.
     #[inline]
     #[must_use]
     pub fn new(tensor: Tensor<B, D>) -> Self {
@@ -49,18 +90,30 @@ impl<B: Backend, Space, const D: usize> Field<B, Space, D> {
     }
 
     /// Borrow the underlying Burn tensor for kernel / solver ops.
+    ///
+    /// formal_anchor: NONE
+    /// formal_status: Structural
+    /// formal_anchor_rationale: Explicit escape hatch to Burn APIs; preserves staging boundary.
     #[inline]
     pub fn as_tensor(&self) -> &Tensor<B, D> {
         &self.tensor
     }
 
     /// Consume and return the underlying Burn tensor.
+    ///
+    /// formal_anchor: NONE
+    /// formal_status: Structural
+    /// formal_anchor_rationale: Explicit escape hatch to Burn APIs; preserves staging boundary.
     #[inline]
     pub fn into_tensor(self) -> Tensor<B, D> {
         self.tensor
     }
 
     /// Map the inner tensor while preserving the space witness.
+    ///
+    /// formal_anchor: NONE
+    /// formal_status: Structural
+    /// formal_anchor_rationale: Functorial map over carrier; space marker unchanged by construction.
     #[inline]
     #[must_use]
     pub fn map(self, f: impl FnOnce(Tensor<B, D>) -> Tensor<B, D>) -> Self {
@@ -69,14 +122,34 @@ impl<B: Backend, Space, const D: usize> Field<B, Space, D> {
 }
 
 /// Temperature plan field — `[B, N, F_T]`.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`Temperature`] witness.
 pub type TemperatureField<B> = Field<B, Temperature, 3>;
 /// Humidity plan field — `[B, N, F_h]`.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`Humidity`] witness.
 pub type HumidityField<B> = Field<B, Humidity, 3>;
 /// Displacement plan field — `[B, N, 3]`.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`Displacement`] witness.
 pub type DisplacementField<B> = Field<B, Displacement, 3>;
 /// Damage plan field — `[B, N, 1]` (typical).
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`Damage`] witness.
 pub type DamageField<B> = Field<B, Damage, 3>;
 /// Reaction-extent plan field — `[B, N, F_\alpha]`.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`ReactionExtent`] witness.
 pub type ReactionExtentField<B> = Field<B, ReactionExtent, 3>;
 
 #[cfg(test)]
