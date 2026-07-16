@@ -102,8 +102,11 @@ impl<B: Backend, C: IScienceCartridge<B>> std::fmt::Debug for EmbodiedOrchestrat
 impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> EmbodiedOrchestrator<B, C> {
     #[must_use]
     pub fn new(cartridge: C, temperature_k: f64, initial_credit_joules: f64) -> Self {
+        let gateway = ManifoldGateway::new(cartridge, temperature_k, initial_credit_joules);
+        #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
+        let gateway = gateway.with_constraint_weights_from_env();
         Self {
-            gateway: ManifoldGateway::new(cartridge, temperature_k, initial_credit_joules),
+            gateway,
             host_transition_gate: ThermodynamicTransitionEvaluator::new(),
             mix_gate_registry: default_host_mix_registry(),
             dual_run: false,
@@ -115,6 +118,10 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> EmbodiedOrchestrator<
         let cbf = manifest.thermodynamic_cbf.clone();
         let mut gateway =
             ManifoldGateway::new(cartridge, cbf.temperature_k, cbf.available_credit_joules);
+        #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
+        {
+            gateway = gateway.with_constraint_weights_from_env();
+        }
         gateway.cbf = cbf;
         #[cfg(feature = "formal-witness")]
         manifest.apply_witness_to_gateway(&mut gateway);
