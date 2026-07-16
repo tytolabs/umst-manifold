@@ -26,16 +26,12 @@ impl AdmissibilityResult {
 
     #[must_use]
     pub fn rejection_reason_code(&self) -> &'static str {
-        use super::verdict::AdmissibilityVerdict;
-        if self.accepted {
-            AdmissibilityVerdict::ACCEPTED
-        } else if !self.mass_conserved {
-            AdmissibilityVerdict::MASS_VIOLATION
-        } else if !self.energy_positive {
-            AdmissibilityVerdict::NEGATIVE_DISSIPATION
-        } else {
-            AdmissibilityVerdict::UNKNOWN
-        }
+        super::verdict::AdmissibilityVerdict::from_transition_conjuncts(
+            self.accepted,
+            self.mass_conserved,
+            self.energy_positive,
+        )
+        .as_str()
     }
 }
 

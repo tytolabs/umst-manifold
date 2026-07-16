@@ -24,7 +24,7 @@ pub struct TransitionVerdict {
 impl TransitionVerdict {
     #[must_use]
     pub fn rest_verdict(&self) -> super::verdict::AdmissibilityVerdict {
-        super::verdict::AdmissibilityVerdict::from_thermo_flags(
+        super::verdict::AdmissibilityVerdict::from_transition_conjuncts(
             self.admissible,
             self.mass_conserved,
             self.energy_positive,

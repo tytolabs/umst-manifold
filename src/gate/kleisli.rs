@@ -185,16 +185,7 @@ impl KleisliUnitEvaluator {
         new_state: &ThermodynamicStateSnapshot,
         dt_s: f64,
     ) -> AdmissibilityVerdict {
-        let outcome = canonical_transition_outcome(old_state, new_state, dt_s);
-        if outcome.accepted {
-            AdmissibilityVerdict::Accepted
-        } else if !outcome.mass_conserved {
-            AdmissibilityVerdict::MassViolation
-        } else if !outcome.energy_positive {
-            AdmissibilityVerdict::NegativeDissipation
-        } else {
-            AdmissibilityVerdict::Unknown
-        }
+        canonical_transition_outcome(old_state, new_state, dt_s).verdict()
     }
 }
 
