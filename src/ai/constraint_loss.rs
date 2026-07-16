@@ -3,7 +3,8 @@
 
 //! Differentiable Clausius–Duhem slack for Burn training (hot path only).
 //!
-//! Host commit semantics: [`crate::gate::transition_proposal::transition_outcome`].
+//! Host commit semantics: [`crate::gate::route::canonical_core_gate_outcome`] (Phase 0d).
+//! Hot tensors evaluate CD slack only; cold host alignment uses the canonical Core gate.
 
 use burn::tensor::activation::relu;
 use burn::tensor::{backend::Backend, Tensor};
@@ -13,6 +14,27 @@ pub use crate::runtime::gate::evidence::{
     admissibility_from_violation, AdmissibilityToken, ConstraintExplanation,
 };
 pub use crate::runtime::gate::{AdmissibilityMargin, ADMISSIBILITY_MARGIN_EPS};
+
+/// Host-side Core gate net dissipation — routes through canonical surface (Phase 0d).
+#[must_use]
+pub fn canonical_core_net_dissipation_host(
+    old_density: f64,
+    new_density: f64,
+    old_free_energy: f64,
+    new_free_energy: f64,
+    dt_s: f64,
+    power_input: f64,
+) -> f64 {
+    crate::gate::route::canonical_core_gate_outcome(
+        old_density,
+        new_density,
+        old_free_energy,
+        new_free_energy,
+        dt_s,
+        power_input,
+    )
+    .net_dissipation
+}
 
 /// Numerical floor on `dt` matching [`crate::gate::transition_proposal::transition_outcome`].
 const DT_EPS: f32 = 1e-10;
@@ -24,6 +46,9 @@ const K_BOLTZMANN_F32: f32 = 1.380_649e-23;
 const LN2_F32: f32 = std::f32::consts::LN_2;
 
 /// Per-batch signed Clausius–Duhem margin `D_int = −ρ ψ̇`.
+///
+/// Hot-path CD slack only. For Mass + CD host alignment see
+/// [`crate::gate::route::canonical_core_gate_outcome`].
 pub fn clausius_duhem_margin<B: Backend<FloatElem = f32>>(
     old_density: Tensor<B, 1>,
     new_density: Tensor<B, 1>,

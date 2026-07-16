@@ -7,6 +7,7 @@
 //! `umst.gate.kleisli_unit`, hand-aligned to `Gate.lean` (`admissibleNRefl`, `kleisliAdmissibility`).
 
 use super::evaluator::GateEvaluator;
+use super::route::canonical_transition_outcome;
 use super::transition_proposal::ThermodynamicStateSnapshot;
 use super::verdict::AdmissibilityVerdict;
 
@@ -175,6 +176,26 @@ impl KleisliUnitEvaluator {
     ) -> AdmissibilityVerdict {
         self.verdict_for_lift(*state)
     }
+
+    /// Non-reflexive transition — routes through canonical `transition_outcome` (Phase 0d).
+    #[must_use]
+    pub fn evaluate_canonical_transition(
+        &self,
+        old_state: &ThermodynamicStateSnapshot,
+        new_state: &ThermodynamicStateSnapshot,
+        dt_s: f64,
+    ) -> AdmissibilityVerdict {
+        let outcome = canonical_transition_outcome(old_state, new_state, dt_s);
+        if outcome.accepted {
+            AdmissibilityVerdict::Accepted
+        } else if !outcome.mass_conserved {
+            AdmissibilityVerdict::MassViolation
+        } else if !outcome.energy_positive {
+            AdmissibilityVerdict::NegativeDissipation
+        } else {
+            AdmissibilityVerdict::Unknown
+        }
+    }
 }
 
 impl GateEvaluator for KleisliUnitEvaluator {
@@ -200,6 +221,30 @@ pub fn gate_arrow_generic<A: Clone>(
                 admissible: ok,
                 dissipation,
                 violation,
+            },
+        }
+    })
+}
+
+/// Kleisli arrow for a thermodynamic transition — full conjunct set via canonical route (Phase 0d).
+#[must_use]
+pub fn gate_arrow_canonical_transition(
+    name: impl Into<String>,
+    old_state: ThermodynamicStateSnapshot,
+    dt_s: f64,
+) -> KleisliArrow<ThermodynamicStateSnapshot, ThermodynamicStateSnapshot> {
+    KleisliArrow::new(name, move |new_state: ThermodynamicStateSnapshot| {
+        let outcome = canonical_transition_outcome(&old_state, &new_state, dt_s);
+        Admissible {
+            value: new_state,
+            result: AdmissibilityResult {
+                admissible: outcome.accepted,
+                dissipation: outcome.dissipation as f32,
+                violation: if outcome.accepted {
+                    None
+                } else {
+                    Some("canonical_transition_reject".into())
+                },
             },
         }
     })

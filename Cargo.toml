@@ -366,7 +366,6 @@ path = "tests/gate_cbf_parity.rs"
 [[test]]
 name = "gate_dual_run_parity"
 path = "tests/gate_dual_run_parity.rs"
-
 [[test]]
 name = "gate_server_http"
 path = "tests/gate_server_http.rs"
@@ -448,6 +447,14 @@ path = "tests/verified_umst_typestate_witness.rs"
 name = "compliance_functional_identity"
 path = "tests/compliance_functional_identity.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
+
+[[test]]
+name = "phase_0a_admissibility_census"
+path = "tests/phase_0a_admissibility_census.rs"
+
+[[test]]
+name = "phase0b_core_gate"
+path = "tests/phase0b_core_gate.rs"
 
 [[test]]
 name = "admissibility_margin_soft_tracks_hard"

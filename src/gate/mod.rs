@@ -6,18 +6,45 @@
 //! Source lineage: **`umst-prototype` / `umst-prototype-2a`** `science/thermodynamic_filter.rs`,
 //! `tensors/kleisli.rs` — ported without `wasm-bindgen` (see **`docs/GateUnificationSpec.md`**).
 
+pub mod admissibility_census;
 pub mod cbf;
 pub mod cbf_bridge;
+pub mod core_gate;
 pub mod evaluator;
 pub mod http_manifest;
 pub mod kleisli;
+pub mod material_gate;
+pub mod open_system;
+pub mod route;
 pub mod thermo_transition;
 pub mod transition_eval_registry;
 pub mod transition_proposal;
 pub mod verdict;
 
+pub use admissibility_census::{
+    format_open_deltas, ADMISSIBILITY_COMPUTE_SITES, ADMISSIBILITY_CONSUME_SITES,
+    ConjunctFamily, GATE_PARITY_V0_FIXTURE_REL, GATE_PARITY_V0_SHA256,
+    GATE_PARITY_V0_SHA256_PREFIX, OPEN_RECONCILIATION_DELTAS, ReconciliationDelta,
+    SiteRole,
+};
 pub use cbf::GateThermodynamicCBF;
 pub use cbf_bridge::cd_dissipation_proxy_to_entropy_joules;
+pub use core_gate::{
+    core_gate, gate as core_gate_predicate, mass_conserved_between_densities,
+    scalar_response_from_transition, CoreGateOutcome, ScalarConstitutiveResponse,
+    GATE_MASS_TOLERANCE_KG_M3 as CORE_GATE_MASS_TOLERANCE_KG_M3,
+};
+pub use material_gate::{material_gate, MaterialGateOutcome, MaterialTransitionWitness};
+pub use open_system::{
+    active_matter_power_input, cbf_cd_matches_open_system_gate, cbf_landauer_as_power_input,
+    cbf_open_system_admissible, landauer_power_input_joules, open_system_core_gate,
+    transition_outcome_with_power_input, ActiveMatterFixture,
+};
+pub use route::{
+    canonical_core_gate_outcome, canonical_material_gate_outcome,
+    canonical_thermo_transition_admissible, canonical_transition_admissible,
+    canonical_transition_outcome,
+};
 pub use evaluator::{
     GateEvaluator, ThermodynamicTransitionEvaluator, TransitionGateEvaluator, TransitionVerdict,
 };

@@ -5,6 +5,10 @@
 //! `umst-prototype` `science/thermodynamic_filter.rs` — mass bound, Clausius–Duhem scalar gate,
 //! and strength monotonicity under a cartridge-supplied closure model.
 
+use super::core_gate::{
+    core_gate, mass_conserved_between_densities, scalar_response_from_transition,
+};
+use super::material_gate::{material_gate, MaterialTransitionWitness};
 use super::verdict::AdmissibilityVerdict;
 use crate::core::material_transition::{MaterialTransitionParams, SubstrateMaterialParams};
 
@@ -202,8 +206,8 @@ impl TransitionFilter {
 /// Default numeric tolerance for scalar transition gates (C-ABI and host evaluators).
 pub const TRANSITION_TOLERANCE: f64 = 1e-6;
 
-/// Mass jump band (kg/m³) — mirrors umst-math `GATE_MASS_TOLERANCE_KG_M3` / registry.
-pub const GATE_MASS_TOLERANCE_KG_M3: f64 = 100.0;
+/// Mass jump band (kg/m³) — re-exported from Core gate (canonical owner: [`super::core_gate`]).
+pub use super::core_gate::GATE_MASS_TOLERANCE_KG_M3;
 
 #[must_use]
 fn transition_snapshot_well_formed(s: &ThermodynamicStateSnapshot) -> bool {
@@ -218,9 +222,12 @@ fn transition_snapshot_well_formed(s: &ThermodynamicStateSnapshot) -> bool {
 
 /// Pure transition evaluator: `(old, new, dt, ε) → outcome` with no filter state.
 ///
-/// Aligns with [`thermodynamic_transition_admissible_tol`] and umst-math [`gate_sdf`]
-/// (mass, Clausius–Duhem, reaction-extent, strength). Telemetry-only wrapper:
-/// [`TransitionFilter::check_transition`].
+/// **Composition:** [`core_gate`] (Mass + CD, `P_input=0`) ∧ [`material_gate`] (strength + reaction).
+/// Legacy field `energy_positive` bundles CD with strength monotonicity for parity — use
+/// [`CoreGateOutcome`] / [`MaterialGateOutcome`] directly when you need the §17.3 split.
+///
+/// Aligns with [`thermodynamic_transition_admissible_tol`] and umst-math [`gate_sdf`].
+/// Telemetry-only wrapper: [`TransitionFilter::check_transition`].
 #[must_use]
 pub fn transition_outcome(
     old_state: &ThermodynamicStateSnapshot,
@@ -242,25 +249,40 @@ pub fn transition_outcome(
         };
     }
 
-    let mass_conserved = (new_state.density - old_state.density).abs() < GATE_MASS_TOLERANCE_KG_M3;
+    let mass_conserved =
+        mass_conserved_between_densities(old_state.density, new_state.density);
 
-    let rho = (old_state.density + new_state.density) / 2.0;
-    let psi_dot = (new_state.free_energy - old_state.free_energy) / (dt + 1e-10);
-    let d_int = -rho * psi_dot;
+    let response = scalar_response_from_transition(
+        old_state.density,
+        new_state.density,
+        old_state.free_energy,
+        new_state.free_energy,
+        dt,
+        0.0,
+    );
+    let core = core_gate(&response, mass_conserved, tolerance);
 
-    let strength_valid = new_state.strength >= old_state.strength - tolerance;
-    let reaction_extent_irreversible =
-        new_state.reaction_extent >= old_state.reaction_extent - tolerance;
+    let material = material_gate(
+        &MaterialTransitionWitness {
+            old_strength: old_state.strength,
+            new_strength: new_state.strength,
+            old_reaction_extent: old_state.reaction_extent,
+            new_reaction_extent: new_state.reaction_extent,
+        },
+        tolerance,
+    );
 
-    let energy_positive = d_int >= -tolerance && strength_valid;
-    let accepted = mass_conserved && energy_positive && reaction_extent_irreversible;
+    // Legacy parity: `energy_positive` folds CD ∧ strength (not Core-only).
+    let energy_positive = core.clausius_duhem && material.strength_monotonic;
+    let accepted =
+        core.mass_conserved && energy_positive && material.reaction_extent_irreversible;
 
     ThermodynamicTransitionOutcome {
         accepted,
-        dissipation: d_int,
-        mass_conserved,
+        dissipation: core.dissipation,
+        mass_conserved: core.mass_conserved,
         energy_positive,
-        reaction_extent_irreversible,
+        reaction_extent_irreversible: material.reaction_extent_irreversible,
     }
 }
 

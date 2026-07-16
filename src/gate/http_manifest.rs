@@ -9,6 +9,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::evaluator::GateEvaluator;
+use super::route::canonical_transition_admissible;
 use super::transition_eval_registry::{ThermodynamicTransitionContext, TransitionEvaluator};
 use super::transition_proposal::{ThermodynamicStateSnapshot, TransitionFilter};
 use crate::manifest::UmstManifest;
@@ -166,7 +167,12 @@ impl HttpTransitionEvaluator {
             proposal.temperature_c,
             supplementary_ratio,
         );
-        let old = ThermodynamicStateSnapshot::new_idle();
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(
+            w_c,
+            0.0,
+            proposal.temperature_c + 273.15,
+            self.manifest.strength_intrinsic_mpa,
+        );
         let new = ThermodynamicStateSnapshot::from_mix_calibrated(
             w_c,
             alpha,
@@ -315,6 +321,23 @@ pub fn evaluate(proposal: &MixProposal, manifest: &GateManifest) -> GateResponse
         manifest.air_void_fraction,
         manifest.strength_intrinsic_mpa,
     );
+
+    let old = ThermodynamicStateSnapshot::from_mix_calibrated(
+        w_c,
+        0.0,
+        proposal.temperature_c + 273.15,
+        manifest.strength_intrinsic_mpa,
+    );
+    let new = ThermodynamicStateSnapshot::from_mix_calibrated(
+        w_c,
+        alpha,
+        proposal.temperature_c + 273.15,
+        manifest.strength_intrinsic_mpa,
+    );
+    let dt_s = (proposal.age_days * 24.0 * 3600.0).max(1.0);
+    if !canonical_transition_admissible(&old, &new, dt_s) {
+        codes.push("THERMODYNAMIC_TRANSITION_REJECT".to_string());
+    }
 
     let bound = fc * (1.0 + manifest.admissibility_rel_margin);
     if proposal.predicted_strength_mpa > bound {
