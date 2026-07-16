@@ -45,13 +45,13 @@ fn manifold_gateway_new_pins_lock_digest() {
             &self,
             _mix: &umst_manifold::core::tensors::MaterialCompositionTensor<B>,
         ) -> umst_manifold::core::traits::PhysicalResult<B> {
-            unimplemented!()
+            unimplemented!("R-api-stub-science-cartridge")
         }
         fn compute_topology(
             &self,
             _m: &umst_manifold::core::tensors::UnifiedMaterialStateTensor<B>,
         ) -> umst_manifold::core::traits::PhysicalResult<B> {
-            unimplemented!()
+            unimplemented!("R-api-stub-science-cartridge")
         }
     }
 
