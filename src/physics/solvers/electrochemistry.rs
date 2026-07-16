@@ -4739,3 +4739,61 @@ mod newton_chain_tests {
         );
     }
 }
+
+#[cfg(all(test, feature = "electrochemistry-mvp"))]
+mod physics_idempotency_tests {
+    use super::*;
+    use burn::tensor::{Data, Int, Shape, Tensor};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+
+    type B = NdArray<f32>;
+
+    fn path_chain_edges(dev: &NdArrayDevice, n: usize) -> Tensor<B, 2, Int> {
+        let e = n - 1;
+        let mut ev = Vec::with_capacity(2 * e);
+        for i in 0..e {
+            ev.push(i as i64);
+        }
+        for i in 0..e {
+            ev.push((i + 1) as i64);
+        }
+        Tensor::<B, 2, Int>::from_data(Data::new(ev, Shape::new([2, e])), dev)
+    }
+
+    /// FP Manifesto §6: uniform electroneutral concentrations with zero potential are a split-PNP
+    /// fixed point — re-applying [`ElectroChemicalSolver::solve_pnp_step`] must not drift.
+    #[test]
+    fn solve_pnp_step_idempotent_on_uniform_electroneutral_equilibrium() {
+        let dev = NdArrayDevice::default();
+        let n = 11_usize;
+        let edges = path_chain_edges(&dev, n);
+        let phi = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+        let c = Tensor::<B, 3>::full([1, n, 2], 1.0_f32, &dev);
+        let eps = Tensor::<B, 3>::ones([1, n, 1], &dev);
+        let d = Tensor::<B, 3>::full([1, n, 2], 0.04_f32, &dev);
+        let solver = ElectroChemicalSolver::default();
+        let dt = 1e-4_f32;
+
+        let (phi1, c1) = solver.solve_pnp_step(
+            dt,
+            phi.clone(),
+            c.clone(),
+            edges.clone(),
+            eps.clone(),
+            d.clone(),
+        );
+        let (phi2, c2) = solver.solve_pnp_step(dt, phi1.clone(), c1.clone(), edges, eps, d);
+
+        let tol = 1e-6_f32;
+        assert!(
+            tensor1_bool(phi1.clone().sub(phi2).abs().lower_elem(tol).all())
+                && tensor1_bool(c1.clone().sub(c2).abs().lower_elem(tol).all()),
+            "re-application on equilibrated PNP state must not drift"
+        );
+        assert!(
+            tensor1_bool(phi1.sub(phi).abs().lower_elem(tol).all())
+                && tensor1_bool(c1.sub(c).abs().lower_elem(tol).all()),
+            "uniform electroneutral equilibrium must be a fixed point"
+        );
+    }
+}

@@ -1197,3 +1197,115 @@ mod cholesky_residual_tests {
         );
     }
 }
+
+#[cfg(all(test, feature = "acoustics-newmark"))]
+mod acoustics_idempotency_tests {
+    use super::*;
+    use burn::tensor::Tensor;
+    use burn_ndarray::{NdArray, NdArrayDevice};
+
+    type B = NdArray<f32>;
+
+    fn max_abs_drift(a: &[f32], b: &[f32]) -> f32 {
+        a.iter()
+            .zip(b.iter())
+            .map(|(&x, &y)| (x - y).abs())
+            .fold(0.0_f32, f32::max)
+    }
+
+    /// FP Manifesto §6: `step` on zero displacement/velocity/acceleration (undamped equilibrium)
+    /// must be a fixed point — re-application must not drift.
+    #[test]
+    fn acoustic_newmark_bar_step_idempotent_on_zero_equilibrium() {
+        let bar = AcousticNewmarkBar1dPeriodic {
+            n: 32,
+            length: 1.0_f32,
+            youngs_modulus: 1.0_f32,
+            density: 1.0_f32,
+            newmark_beta: 0.25_f32,
+            newmark_gamma: 0.5_f32,
+        };
+        let mut ws = bar.workspace();
+        let dt = 0.01_f32;
+        let mut u = vec![0.0_f32; bar.n];
+        let mut v = vec![0.0_f32; bar.n];
+        let mut a = vec![0.0_f32; bar.n];
+
+        bar.step(&mut ws, dt, &mut u, &mut v, &mut a);
+        let u1 = u.clone();
+        let v1 = v.clone();
+        let a1 = a.clone();
+
+        bar.step(&mut ws, dt, &mut u, &mut v, &mut a);
+        let tol = 1e-6_f32;
+        assert!(
+            max_abs_drift(&u, &u1) < tol && max_abs_drift(&v, &v1) < tol && max_abs_drift(&a, &a1) < tol,
+            "re-step on equilibrated bar state must not drift (u/v/a)"
+        );
+        assert!(
+            u.iter().chain(v.iter()).chain(a.iter()).all(|x| x.abs() < tol),
+            "zero equilibrium must remain at rest after first step"
+        );
+    }
+
+    /// FP Manifesto §6: dense nodal [`AcousticWaveSolver::step_wave`] on quiescent state with zero load.
+    #[test]
+    fn acoustic_wave_solver_step_idempotent_on_zero_equilibrium() {
+        let dev = NdArrayDevice::Cpu;
+        let n = 4_usize;
+        let solver = AcousticWaveSolver {
+            dt: 0.02_f32,
+            newmark_beta: 0.25_f32,
+            newmark_gamma: 0.5_f32,
+        };
+        let u = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let vel = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let acc = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let rho = Tensor::<B, 3>::ones([1, n, 1], &dev);
+        let vol = Tensor::<B, 3>::ones([1, n, 1], &dev);
+        let f = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let damp = Tensor::<B, 4>::zeros([1, n, 3, 3], &dev);
+        let kloc = Tensor::<B, 2>::eye(3, &dev)
+            .reshape([1, 1, 3, 3])
+            .expand([1, n, 3, 3])
+            .mul_scalar(0.5_f32);
+
+        let (u1, v1, a1) = solver.step_wave(
+            u.clone(),
+            vel.clone(),
+            acc.clone(),
+            rho.clone(),
+            vol.clone(),
+            f.clone(),
+            damp.clone(),
+            kloc.clone(),
+            None,
+            None,
+        );
+        let (u2, v2, a2) = solver.step_wave(
+            u1.clone(),
+            v1.clone(),
+            a1.clone(),
+            rho,
+            vol,
+            f,
+            damp,
+            kloc,
+            None,
+            None,
+        );
+
+        let tol = 1e-6_f32;
+        for (label, t0, t1) in [("u", u2, u1), ("v", v2, v1), ("a", a2, a1)] {
+            let max_d = t0
+                .sub(t1)
+                .abs()
+                .into_data()
+                .value
+                .iter()
+                .map(|x| x.abs())
+                .fold(0.0_f32, f32::max);
+            assert!(max_d < tol, "{label} drift after re-step: {max_d}");
+        }
+    }
+}
