@@ -31,7 +31,8 @@ pub use cbf::GateThermodynamicCBF;
 pub use cbf_bridge::cd_dissipation_proxy_to_entropy_joules;
 pub use core_gate::{
     core_gate, gate as core_gate_predicate, mass_conserved_between_densities,
-    scalar_response_from_transition, CoreGateOutcome, ScalarConstitutiveResponse,
+    scalar_response_from_transition, AdmissibilityResponse, CoreGateOutcome,
+    ScalarConstitutiveResponse,
     GATE_MASS_TOLERANCE_KG_M3 as CORE_GATE_MASS_TOLERANCE_KG_M3,
 };
 pub use material_gate::{material_gate, MaterialGateOutcome, MaterialTransitionWitness};
