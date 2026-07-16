@@ -1419,3 +1419,61 @@ mod fracture_at2_tests {
         assert_eq!(d_a.into_data().value, d_b.into_data().value);
     }
 }
+
+#[cfg(all(test, feature = "fracture-at2"))]
+mod fracture_idempotency_tests {
+    use burn::tensor::{Data, Int, Shape, Tensor};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+
+    use super::PhaseFieldFractureSolver;
+
+    type B = NdArray<f32>;
+
+    fn max_abs_drift(a: &[f32], b: &[f32]) -> f32 {
+        a.iter()
+            .zip(b.iter())
+            .map(|(&x, &y)| (x - y).abs())
+            .fold(0.0_f32, f32::max)
+    }
+
+    /// FP Manifesto §6: zero strain with frozen `d = 0` is an AT2 damage fixed point — re-applying
+    /// [`PhaseFieldFractureSolver::update_damage`] must not drift.
+    #[test]
+    fn update_damage_idempotent_on_zero_strain_frozen_damage() {
+        let dev = NdArrayDevice::Cpu;
+        let batch = 1usize;
+        let n = 3usize;
+        let e_ct = 2usize;
+
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64, 1, 1, 2], Shape::new([2, e_ct])), &dev);
+        let strain = Tensor::<B, 4>::zeros([batch, n, 3, 3], &dev);
+        let damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+        let fracture_energy_gc = Tensor::from_data(
+            Data::new(vec![150.0_f32; batch * n], Shape::new([batch, n, 1])),
+            &dev,
+        );
+
+        let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
+        let d1 = solver.update_damage(
+            strain.clone(),
+            damage,
+            fracture_energy_gc.clone(),
+            edges_b1.clone(),
+        );
+        let d1_vals = d1.clone().into_data().value;
+
+        let d2 = solver.update_damage(strain, d1, fracture_energy_gc, edges_b1);
+        let d2_vals = d2.into_data().value;
+
+        let tol = 1e-6_f32;
+        assert!(
+            max_abs_drift(&d1_vals, &d2_vals) < tol,
+            "re-application on equilibrated zero-strain damage must not drift"
+        );
+        assert!(
+            d1_vals.iter().all(|x| x.abs() < tol),
+            "zero-strain frozen damage must remain at zero"
+        );
+    }
+}
