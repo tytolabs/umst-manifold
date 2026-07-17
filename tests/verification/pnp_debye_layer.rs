@@ -263,7 +263,9 @@ fn debye_dispatch_newton_backward_euler_residual_bounded_over_screening_trajecto
             edges.clone(),
             eps.clone(),
             diff.clone(),
-        ).expect("solve_pnp_step_dispatch");
+        ).expect(
+            "ElectroChemicalSolver::solve_pnp_step_dispatch implicit Newton sweep on Debye screening trajectory (FP §6 BE residual witness)",
+        );
         let n_nodes = p_next.dims()[1];
         let mid = p_next.clone().slice([0..1, 1..(n_nodes - 1), 0..1]);
         let left = Tensor::<B, 3>::full([1, 1, 1], phi0_vt, &dev);
@@ -560,7 +562,9 @@ fn debye_implicit_dispatch_short_horizon_smoke() {
             edges.clone(),
             eps.clone(),
             diff.clone(),
-        ).expect("solve_pnp_step_dispatch");
+        ).expect(
+            "ElectroChemicalSolver::solve_pnp_step_dispatch short-horizon implicit Newton on Debye chain (FP §6 Track 14 CI-fast smoke)",
+        );
         let n_nodes = p_next.dims()[1];
         let mid = p_next.clone().slice([0..1, 1..(n_nodes - 1), 0..1]);
         let left = Tensor::<B, 3>::full([1, 1, 1], phi0_vt, &dev);
@@ -823,7 +827,9 @@ fn debye_screening_admissibility_check(
             edges.clone(),
             eps.clone(),
             diff.clone(),
-        ).expect("solve_pnp_step_dispatch");
+        ).expect(
+            "ElectroChemicalSolver::solve_pnp_step_dispatch Debye screening admissibility outer step (FP §6 λ_eff vs λ_D gate)",
+        );
         let n_nodes = p_next.dims()[1];
         let mid = p_next.clone().slice([0..1, 1..(n_nodes - 1), 0..1]);
         let left = Tensor::<B, 3>::full([1, 1, 1], phi0_vt, &dev);
@@ -894,7 +900,9 @@ fn sg_mass_conserved_on_closed_chain_over_5000_steps() {
             edges.clone(),
             eps.clone(),
             d.clone(),
-        ).expect("solve_pnp_step");
+        ).expect(
+            "ElectroChemicalSolver::solve_pnp_step SG mass-conservation step on closed chain (FP §6 Track P2.5 witness)",
+        );
         phi = p;
         c = c_next;
     }
@@ -939,7 +947,11 @@ fn picard_coupling_iters_finite_smoke() {
     };
     for _ in 0..400 {
         let (p, cn) =
-            solver.solve_pnp_step(3e-4_f32, phi, c, edges.clone(), eps.clone(), d.clone()).expect("solve_pnp_step");
+            solver
+                .solve_pnp_step(3e-4_f32, phi, c, edges.clone(), eps.clone(), d.clone())
+                .expect(
+                    "ElectroChemicalSolver::solve_pnp_step Picard coupling outer sweep (picard_coupling_iters_finite smoke)",
+                );
         let n = p.dims()[1];
         let mid = p.clone().slice([0..1, 1..(n - 1), 0..1]);
         let left = Tensor::<B, 3>::full([1, 1, 1], 0.03_f32, &dev);
@@ -987,8 +999,14 @@ fn picard_coupling_linf_tol_never_triggers_matches_full_iters() {
         edges.clone(),
         eps.clone(),
         d.clone(),
-    ).expect("solve_pnp_step");
-    let (p2, c2) = solver_tight_tol.solve_pnp_step(dt, phi, c, edges, eps, d).expect("solve_pnp_step");
+    ).expect(
+        "ElectroChemicalSolver::solve_pnp_step with coupling_picard_tol_linf=0 (Picard L∞ tol never-triggers witness)",
+    );
+    let (p2, c2) = solver_tight_tol
+        .solve_pnp_step(dt, phi, c, edges, eps, d)
+        .expect(
+            "ElectroChemicalSolver::solve_pnp_step with coupling_picard_tol_linf=1e-30 (Picard L∞ tol never-triggers witness)",
+        );
     assert_relative_eq!(max_abs_diff(&p1, &p2), 0.0_f32, epsilon = 1e-6_f32);
     assert_relative_eq!(max_abs_diff(&c1, &c2), 0.0_f32, epsilon = 1e-6_f32);
 }
@@ -1042,7 +1060,9 @@ fn picard_convergence_smoke() {
         edges.clone(),
         eps.clone(),
         d.clone(),
-    ).expect("solve_pnp_step");
+    ).expect(
+        "ElectroChemicalSolver::solve_pnp_step full Picard outer budget (picard_convergence_smoke baseline)",
+    );
     let (p1, c1) = solver_never_l2.solve_pnp_step(
         dt,
         phi.clone(),
@@ -1050,8 +1070,14 @@ fn picard_convergence_smoke() {
         edges.clone(),
         eps.clone(),
         d.clone(),
-    ).expect("solve_pnp_step");
-    let (p2, c2) = solver_never_dphi.solve_pnp_step(dt, phi, c, edges, eps, d).expect("solve_pnp_step");
+    ).expect(
+        "ElectroChemicalSolver::solve_pnp_step with tight ΔΦ L2 tol never triggering (picard_convergence_smoke)",
+    );
+    let (p2, c2) = solver_never_dphi
+        .solve_pnp_step(dt, phi, c, edges, eps, d)
+        .expect(
+            "ElectroChemicalSolver::solve_pnp_step with tight ΔΦ L∞ tol never triggering (picard_convergence_smoke)",
+        );
 
     assert_relative_eq!(max_abs_diff(&p0, &p1), 0.0_f32, epsilon = 1e-5_f32);
     assert_relative_eq!(max_abs_diff(&c0, &c1), 0.0_f32, epsilon = 1e-5_f32);
@@ -1124,7 +1150,9 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         edges.clone(),
         eps.clone(),
         d.clone(),
-    ).expect("solve_pnp_step_dispatch");
+    ).expect(
+        "ElectroChemicalSolver::solve_pnp_step_dispatch linearised implicit BE at infinitesimal dt (Track 14 split-agreement witness)",
+    );
     let be_res = pnp_backward_euler_residual_l2_chain_host_f64(
         &solver_dispatch_small,
         &newton,
@@ -1150,7 +1178,9 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         edges.clone(),
         eps.clone(),
         d.clone(),
-    ).expect("solve_pnp_step");
+    ).expect(
+        "ElectroChemicalSolver::solve_pnp_step operator-split explicit step at infinitesimal dt (Track 14 split-agreement witness)",
+    );
     let dphi = max_abs_diff(&phi_i, &phi_s);
     let dc = max_abs_diff(&c_i, &c_s);
     assert!(
@@ -1178,7 +1208,9 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         edges.clone(),
         eps.clone(),
         d.clone(),
-    ).expect("solve_pnp_step_dispatch");
+    ).expect(
+        "ElectroChemicalSolver::solve_pnp_step_dispatch linearised implicit BE at finite dt (Track 14 divergence witness)",
+    );
     let be_fin = pnp_backward_euler_residual_l2_chain_host_f64(
         &solver_dispatch_fin,
         &newton,
@@ -1195,7 +1227,11 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         be_fin < 5e-6_f64,
         "implicit solution should satisfy BE residual at finite dt, got {be_fin}"
     );
-    let (phi_sf, c_sf) = solver_split.solve_pnp_step(dt_fin, phi_n, c_n, edges, eps, d).expect("solve_pnp_step");
+    let (phi_sf, c_sf) = solver_split
+        .solve_pnp_step(dt_fin, phi_n, c_n, edges, eps, d)
+        .expect(
+            "ElectroChemicalSolver::solve_pnp_step operator-split explicit step at finite dt (Track 14 divergence witness)",
+        );
     let gap = max_abs_diff(&phi_if, &phi_sf).max(max_abs_diff(&c_if, &c_sf));
     assert!(
         gap > 1e-8_f32,
