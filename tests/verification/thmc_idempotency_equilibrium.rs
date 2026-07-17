@@ -8,15 +8,20 @@
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::field::{
-    Field, HumidityField, ReactionExtentField, StepEntryDamageMask, TemperatureField,
+    Field, FractureEnergyField, HumidityField, ReactionExtentField, SmallStrainField,
+    StepEntryDamageMask, TemperatureField,
 };
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::core::traits::IScienceCartridge;
 use umst_manifold::core::umst_schema::{UMST_SCALAR_CHANNEL_COUNT, SCALAR_DAMAGE, SCALAR_HUMIDITY, SCALAR_TEMPERATURE};
 use umst_manifold::physics::laplacian::TopologicalLaplacian;
+use umst_manifold::physics::mechanics::VectorMechanicsSolver;
+use umst_manifold::physics::orchestration::TopologyPhysicsOrchestrator;
+use umst_manifold::physics::solvers::fracture_field::PhaseFieldFractureSolver;
 use umst_manifold::physics::solvers::thmc::{reaction_extent_rate_field, ThmcNewtonConfig};
 use umst_manifold::physics::solvers::{ReactionExtentKinetics, ThmcSolver, ThmcState};
 use umst_manifold::physics::thmc_umst_sync::sync_thmc_to_umst;
+use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
 type B = NdArray<f32>;
 
@@ -359,6 +364,129 @@ fn thmc_operator_split_step_idempotent_at_quiescent_equilibrium() {
             snap.mechanical.displacement.as_tensor()
         ) < tol,
         "displacement must not drift on re-step"
+    );
+}
+
+/// FP §6: zero body force with fixed left end — bar equilibrium is a fixed point.
+#[test]
+fn thmc_mechanics_bar_idempotent_at_zero_load_equilibrium() {
+    let dev = device();
+    let n = 2usize;
+    let coords = Tensor::from_data(
+        Data::new(vec![0.0_f32, 0.0, 0.0, 1.0_f32, 0.0, 0.0], Shape::new([n, 3])),
+        &dev,
+    );
+    let edges = two_node_edges();
+    let stiffness = Tensor::cat(
+        vec![
+            Tensor::<B, 3>::full([1, n, 1], 1.0e6_f32, &dev),
+            Tensor::<B, 3>::full([1, n, 1], 0.2_f32, &dev),
+        ],
+        2,
+    );
+    let cfg = MechanicsInnerLoopConfig {
+        max_cg_iterations: 64,
+        cg_tolerance: 1e-8,
+        pcg_tolerance: 1e-8,
+        use_preconditioner: true,
+        max_equilibrium_substeps: 1,
+    };
+    let mut bm = vec![1.0_f32; n * 3];
+    bm[0] = 0.0_f32;
+    let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &dev);
+    let (u1, _) = VectorMechanicsSolver::solve_equilibrium_typed(
+        Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev)),
+        coords.clone(),
+        stiffness.clone(),
+        Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev)),
+        edges.clone(),
+        Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev)),
+        boundary_mask.clone(),
+        0.01_f32,
+        &cfg,
+    )
+    .expect("first bar equilibrium");
+    let (u2, _) = VectorMechanicsSolver::solve_equilibrium_typed(
+        u1.clone(),
+        coords,
+        stiffness,
+        Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev)),
+        edges,
+        Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev)),
+        boundary_mask,
+        0.01_f32,
+        &cfg,
+    )
+    .expect("second bar equilibrium");
+    assert!(max_abs_tensor3(u1.as_tensor(), u2.as_tensor()) < 1e-6_f32);
+}
+
+/// FP §6: zero strain with frozen damage — AT2 damage update is a fixed point.
+#[test]
+fn thmc_fracture_update_damage_idempotent_at_zero_strain() {
+    let dev = device();
+    let n = 2usize;
+    let edges = two_node_edges();
+    let strain = SmallStrainField::zeros([1, n, 3, 3], &dev);
+    let damage = Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev));
+    let gc = FractureEnergyField::from_tensor(Tensor::<B, 3>::full([1, n, 1], 150.0, &dev));
+    let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
+    let d1 = solver
+        .update_damage(strain.clone(), damage, gc.clone(), edges.clone())
+        .expect("first fracture damage update");
+    let d2 = solver
+        .update_damage(strain, d1.clone(), gc, edges)
+        .expect("second fracture damage update");
+    assert!(max_abs_tensor3(d1.as_tensor(), d2.as_tensor()) < 1e-6_f32);
+}
+
+/// FP §6: orchestrator `run_plan_step` on quiescent equilibrium is a fixed point.
+#[test]
+fn orchestrator_thmc_idempotent_at_equilibrium() {
+    let n = 2usize;
+    let mut manifold = toy_umst(n, 300.0, 0.5, 0.1);
+    let state = equilibrated_state(n);
+    let mut orch = TopologyPhysicsOrchestrator::new(ThmcSolver {
+        dt: 1e-4,
+        max_newton: 1,
+        tol: 1e-6,
+        drying_last_node_evaporation_k: 0.0,
+        ..Default::default()
+    });
+    let post1 = orch
+        .run_plan_step(&StubCartridge, state, &mut manifold)
+        .expect("first orchestrator step");
+    let snap = post1.clone();
+    let post2 = orch
+        .run_plan_step(&StubCartridge, post1, &mut manifold)
+        .expect("second orchestrator step");
+    let tol = 1e-5_f32;
+    assert!(
+        max_abs_tensor3(
+            post2.thermal.temperature.as_tensor(),
+            snap.thermal.temperature.as_tensor()
+        ) < tol
+    );
+    assert!(
+        max_abs_tensor3(post2.hydro.humidity.as_tensor(), snap.hydro.humidity.as_tensor()) < tol
+    );
+    assert!(
+        max_abs_tensor3(
+            post2.chemical.reaction_extent.as_tensor(),
+            snap.chemical.reaction_extent.as_tensor()
+        ) < tol,
+        "orchestrator reaction extent must not drift on re-step"
+    );
+    assert!(
+        max_abs_tensor3(post2.damage.as_tensor(), snap.damage.as_tensor()) < tol,
+        "orchestrator damage must not drift on re-step"
+    );
+    assert!(
+        max_abs_tensor3(
+            post2.mechanical.displacement.as_tensor(),
+            snap.mechanical.displacement.as_tensor()
+        ) < tol,
+        "orchestrator displacement must not drift on re-step"
     );
 }
 

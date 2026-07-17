@@ -1902,4 +1902,100 @@ mod tests {
             "zero-load equilibrium must remain at zero displacement"
         );
     }
+
+    /// FP Manifesto §6: [`VectorMechanicsSolver::packed_bar_network_equilibrium`] PCG path must be
+    /// idempotent when re-applied on an already equilibrated zero-load bar state.
+    #[test]
+    fn packed_bar_network_equilibrium_idempotent_on_zero_load() {
+        let dev = NdArrayDevice::Cpu;
+        let n: usize = 10;
+        let l_total = 1.0_f32;
+        let dx = l_total / (n - 1) as f32;
+        let e = 200e9_f32;
+        let a_sec = 0.01_f32;
+
+        let mut coords_data = Vec::with_capacity(n * 3);
+        for i in 0..n {
+            coords_data.push(i as f32 * dx);
+            coords_data.push(0.0);
+            coords_data.push(0.0);
+        }
+        let coords: Tensor<B, 2> =
+            Tensor::from_data(Data::new(coords_data, Shape::new([n, 3])), &dev);
+
+        let mut edges = Vec::with_capacity((n - 1) * 2);
+        for eid in 0..(n - 1) {
+            edges.push(eid as i64);
+        }
+        for eid in 0..(n - 1) {
+            edges.push((eid + 1) as i64);
+        }
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(edges, Shape::new([2, n - 1])), &dev);
+
+        let mut stiff = Vec::with_capacity(n * 2);
+        for _ in 0..n {
+            stiff.push(e);
+            stiff.push(0.3);
+        }
+        let stiffness: Tensor<B, 3> =
+            Tensor::from_data(Data::new(stiff, Shape::new([1, n, 2])), &dev);
+        let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+        let displacement = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let body_force = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+
+        let mut bm_data = vec![1.0_f32; n * 3];
+        for i in 0..n {
+            bm_data[i * 3 + 1] = 0.0;
+            bm_data[i * 3 + 2] = 0.0;
+        }
+        bm_data[0] = 0.0;
+        let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([1, n, 3])), &dev);
+
+        let cfg = MechanicsInnerLoopConfig {
+            max_cg_iterations: 500,
+            cg_tolerance: 1e-8,
+            pcg_tolerance: 1e-8,
+            use_preconditioner: true,
+            max_equilibrium_substeps: 1,
+        };
+
+        let (u1, _, _, _, _, _, _, pcg1) = VectorMechanicsSolver::packed_bar_network_equilibrium(
+            displacement,
+            coords.clone(),
+            stiffness.clone(),
+            body_force.clone(),
+            edges_b1.clone(),
+            damage.clone(),
+            boundary_mask.clone(),
+            a_sec,
+            &cfg,
+        );
+        pcg1.ensure_converged(&cfg).expect("first PCG converged");
+        let u1_flat = u1.clone().into_data().value;
+
+        let (u2, _, _, _, _, _, _, pcg2) = VectorMechanicsSolver::packed_bar_network_equilibrium(
+            u1,
+            coords,
+            stiffness,
+            body_force,
+            edges_b1,
+            damage,
+            boundary_mask,
+            a_sec,
+            &cfg,
+        );
+        pcg2.ensure_converged(&cfg).expect("second PCG converged");
+        let u2_flat = u2.into_data().value;
+
+        let tol = 1e-6_f32;
+        assert!(
+            max_abs_drift(&u1_flat, &u2_flat) < tol,
+            "re-apply packed_bar_network_equilibrium on equilibrated state must not drift"
+        );
+        assert!(
+            u1_flat.iter().all(|x| x.abs() < tol),
+            "zero-load bar-network equilibrium must remain at zero displacement"
+        );
+    }
 }
