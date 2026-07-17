@@ -3,7 +3,7 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::smoke;
-use super::sysfs;
+use crate::hal::probe_snapshot::{HalProbeSnapshot, PortProbe};
 use crate::hal::traits::{
     AllocationId, AllocationSpec, ComputePrecision, HalError, HardwareUnit, InferenceBatch,
     InferenceId, PowerState, PowerStateKind, SMOKE_INFER_OP,
@@ -24,12 +24,27 @@ impl Default for LinuxPort {
 
 impl LinuxPort {
     pub fn new() -> Self {
-        let net = sysfs::net_iface_count().unwrap_or(0);
-        let usb = sysfs::usb_device_entry_count().unwrap_or(0);
+        #[cfg(feature = "linux-hal-sysfs")]
+        {
+            return Self::from_snapshot(&crate::hal::probe_host::probe_sysfs_snapshot());
+        }
+        #[cfg(not(feature = "linux-hal-sysfs"))]
+        {
+            Self::from_snapshot(&HalProbeSnapshot::default())
+        }
+    }
+
+    /// Pure assembly from an injected probe snapshot (FP §4).
+    pub fn from_snapshot(snapshot: &HalProbeSnapshot) -> Self {
+        Self::from_port_probe(&snapshot.port)
+    }
+
+    /// Pure assembly from port probe fields.
+    pub fn from_port_probe(port: &PortProbe) -> Self {
         Self {
             next: AtomicU64::new(1),
-            net,
-            usb,
+            net: port.net,
+            usb: port.usb,
         }
     }
 

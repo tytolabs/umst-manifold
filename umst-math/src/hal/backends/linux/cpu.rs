@@ -4,15 +4,12 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::permissions::PermissionState;
-use super::rapl;
 use super::smoke;
-use super::sysfs;
+use crate::hal::probe_snapshot::{CpuProbe, HalProbeSnapshot};
 use crate::hal::traits::{
     AllocationId, AllocationSpec, ComputePrecision, HalError, HardwareUnit, InferenceBatch,
     InferenceId, PowerState, PowerStateKind, SMOKE_INFER_OP,
 };
-
-const RAPL_PATH: &str = "/sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj";
 
 /// Linux Intel host CPU
 pub struct IntelCpu {
@@ -31,28 +28,29 @@ impl Default for IntelCpu {
 }
 
 impl IntelCpu {
-    /// Construct with host probes
+    /// Construct with host probes when `linux-hal-sysfs` is enabled; otherwise empty snapshot.
     pub fn new() -> Self {
-        let path = super::sysfs::default_rapl_package_energy();
-        let perm = super::permissions::read_probe(&path, RAPL_PATH);
-        let power_readable = matches!(perm, PermissionState::Granted);
-        let rapl_uj = if power_readable {
-            rapl::read_package_energy_uj(&path)
-        } else {
-            None
-        };
-        let logical = sysfs::cpuinfo_logical_cores().unwrap_or(1);
-        let l3 = sysfs::l3_cache_kb();
+        #[cfg(feature = "linux-hal-sysfs")]
+        {
+            return Self::from_snapshot(&crate::hal::probe_host::probe_sysfs_snapshot());
+        }
+        #[cfg(not(feature = "linux-hal-sysfs"))]
+        {
+            Self::from_snapshot(&HalProbeSnapshot::default())
+        }
+    }
+
+    /// Pure assembly from an injected probe snapshot (FP §4).
+    pub fn from_snapshot(snapshot: &HalProbeSnapshot) -> Self {
+        Self::from_cpu_probe(&snapshot.cpu)
+    }
+
+    /// Pure assembly from CPU probe fields.
+    pub fn from_cpu_probe(cpu: &CpuProbe) -> Self {
+        let power_readable = matches!(cpu.rapl_permission, PermissionState::Granted);
         let mut models = Vec::new();
-        if let Ok(c) = std::fs::read_to_string("/proc/cpuinfo") {
-            for line in c.lines() {
-                if line.to_lowercase().starts_with("model name") {
-                    if let Some(n) = line.split(':').nth(1) {
-                        models.push(format!("intel-cpu#{}", n.trim()));
-                        break;
-                    }
-                }
-            }
+        if let Some(name) = &cpu.model_name {
+            models.push(format!("intel-cpu#{name}"));
         }
         if models.is_empty() {
             models.push("intel-cpu#unknown".to_string());
@@ -60,14 +58,17 @@ impl IntelCpu {
         if !power_readable {
             models.push("power_readable=false".to_string());
         }
-        models.push(format!("intel-cpu#reg#cores={logical}#l3_kb={l3}"));
+        models.push(format!(
+            "intel-cpu#reg#cores={}#l3_kb={}",
+            cpu.logical_cores, cpu.l3_cache_kb
+        ));
         Self {
             next_id: AtomicU64::new(1),
-            rapl_uj,
+            rapl_uj: cpu.rapl_uj,
             power_readable,
-            permission: perm,
+            permission: cpu.rapl_permission.clone(),
             models,
-            rapl_path: path,
+            rapl_path: cpu.rapl_path.clone(),
         }
     }
 }

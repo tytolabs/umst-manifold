@@ -5,15 +5,24 @@
 
 /// Linux/Intel `HardwareUnit` impls (§14bis.f-H-9; `cfg(target_os = "linux")` only).
 pub mod backends;
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "linux-hal-sysfs"))]
 pub use backends::build_linux_inventory;
+#[cfg(target_os = "linux")]
+pub use backends::build_linux_inventory_from_snapshot;
 
 pub mod inventory;
 pub mod kinds;
 pub mod laws;
 /// PAIRED-ARCH: [`mock_linux_intel_inventory`], [`mock_apple_m3_inventory`]
 pub mod mocks;
+pub mod permission_state;
 pub mod presence;
+/// Pure host probe snapshot — injected at runtime/CLI boundary (FP §4).
+#[cfg(target_os = "linux")]
+pub mod probe_snapshot;
+/// Host sysfs/proc probe IO (`linux-hal-sysfs` feature).
+#[cfg(all(target_os = "linux", feature = "linux-hal-sysfs"))]
+pub mod probe_host;
 /// THEOREM-BOUND: B-2.5 [`ArchitectureProfile`], [`ArchClass`]
 pub mod profile;
 /// ZCI-EXEMPT: the seven-method [`HardwareUnit`]
@@ -25,7 +34,12 @@ pub use laws::{
     example_route_ram_port, f_cpu_igpu, g_igpu_ram, h_ram_port, id_route, kcompose, route_id,
     UnitRoute,
 };
+pub use permission_state::{classify_read_probe, PermissionState};
 pub use presence::{AbsentReason, UnitPresence};
+#[cfg(target_os = "linux")]
+pub use probe_snapshot::HalProbeSnapshot;
+#[cfg(all(target_os = "linux", feature = "linux-hal-sysfs"))]
+pub use probe_host::probe_sysfs_snapshot;
 pub use profile::{ArchClass, ArchitectureProfile, ParetoReferenceLabel};
 pub use traits::{
     AllocationId, AllocationSpec, ComputePrecision, HalError, HardwareUnit, InferenceBatch,
