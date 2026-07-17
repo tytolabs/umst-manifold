@@ -4526,8 +4526,15 @@ mod newton_chain_tests {
             edges.clone(),
             eps.clone(),
             d.clone(),
-        ).expect("solve_pnp_step");
-        let (p1, c1) = solver.solve_pnp_step_dispatch(dt, phi, c, edges, eps, d).expect("solve_pnp_step_dispatch");
+        )
+        .expect(
+            "solve_pnp_step explicit split Picard on uniform electroneutral chain (FP §6 Track G dispatch parity witness)",
+        );
+        let (p1, c1) = solver
+            .solve_pnp_step_dispatch(dt, phi, c, edges, eps, d)
+            .expect(
+                "solve_pnp_step_dispatch default (no implicit Newton) parity vs explicit split (FP §6 Track G witness)",
+            );
         assert!(
             tensor1_bool(p0.sub(p1).abs().lower_elem(1e-6_f32).all())
                 && tensor1_bool(c0.sub(c1).abs().lower_elem(1e-6_f32).all()),
@@ -4585,10 +4592,15 @@ mod newton_chain_tests {
             edges.clone(),
             eps.clone(),
             d.clone(),
-        ).expect("solve_pnp_step_dispatch");
+        )
+        .expect(
+            "solve_pnp_step_dispatch implicit Newton branch on Fickian-linearized chain (FP §6 Track 14 dispatch witness)",
+        );
         let (phi_t, c_t) = solver
             .try_solve_pnp_backward_euler_newton_chain(&newton, dt, phi_n, c_n, edges, eps, d)
-            .expect("try_solve chain");
+            .expect(
+                "try_solve_pnp_backward_euler_newton_chain reference path for dispatch implicit parity (FP §6 Track 14 witness)",
+            );
         assert!(
             tensor1_bool(phi_d.sub(phi_t).abs().lower_elem(1e-5_f32).all())
                 && tensor1_bool(c_d.sub(c_t).abs().lower_elem(1e-5_f32).all()),
@@ -4861,8 +4873,15 @@ mod physics_idempotency_tests {
             edges.clone(),
             eps.clone(),
             d.clone(),
-        ).expect("solve_pnp_step");
-        let (phi2, c2) = solver.solve_pnp_step(dt, phi1.clone(), c1.clone(), edges, eps, d).expect("solve_pnp_step");
+        )
+        .expect(
+            "solve_pnp_step first application on uniform electroneutral equilibrium (FP §6 idempotency witness)",
+        );
+        let (phi2, c2) = solver
+            .solve_pnp_step(dt, phi1.clone(), c1.clone(), edges, eps, d)
+            .expect(
+                "solve_pnp_step re-application on equilibrated PNP state (FP §6 idempotency witness)",
+            );
 
         let tol = 1e-6_f32;
         assert!(
