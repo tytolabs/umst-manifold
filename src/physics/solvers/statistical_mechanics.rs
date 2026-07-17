@@ -66,6 +66,29 @@
 use burn::tensor::{backend::Backend, Tensor};
 use std::fmt;
 
+use crate::physics::error::PhysicsError;
+
+/// Fail-closed guard for LJ virial column tensors (`[B, 1]`).
+fn guard_lj_column_tensor_shape(
+    dims: [usize; 2],
+    context: &'static str,
+) -> Result<(), PhysicsError> {
+    let [batch, cols] = dims;
+    if batch == 0 {
+        return Err(PhysicsError::ShapeMismatch {
+            context,
+            detail: "batch dimension must be > 0",
+        });
+    }
+    if cols != 1 {
+        return Err(PhysicsError::ShapeMismatch {
+            context,
+            detail: "expected [B, 1] column tensor",
+        });
+    }
+    Ok(())
+}
+
 /// Reference row \((\varepsilon,\sigma,\rho^*,T^*) = (1,1,0.2,2)\) for **`[B,4]`** virial **`K^*`** (reduced).
 ///
 /// Used by [`crate::physics::mechanics::scale_stiffness_young_first_channel_with_statmech_ratio`]
@@ -121,7 +144,16 @@ pub fn lj_virial_b3_star_surrogate_scalar(t_star: f32) -> f32 {
 }
 
 /// Reduced Mayer \(B_2^*(T^*)\) surrogate as pure Burn ops; `t_star` shape **`[B, 1]`**.
-pub fn lj_mayer_b2_star_tensor<B: Backend<FloatElem = f32>>(t_star: Tensor<B, 2>) -> Tensor<B, 2> {
+///
+/// Returns [`PhysicsError::ShapeMismatch`] when `t_star` is not a non-empty `[B, 1]` column.
+pub fn lj_mayer_b2_star_tensor<B: Backend<FloatElem = f32>>(
+    t_star: Tensor<B, 2>,
+) -> Result<Tensor<B, 2>, PhysicsError> {
+    guard_lj_column_tensor_shape(t_star.dims(), "lj_mayer_b2_star_tensor")?;
+    Ok(lj_mayer_b2_star_tensor_inner(t_star))
+}
+
+fn lj_mayer_b2_star_tensor_inner<B: Backend<FloatElem = f32>>(t_star: Tensor<B, 2>) -> Tensor<B, 2> {
     let (a0, a1, a2, a3) = lj_mayer_b2_star_coeffs();
     let inv = t_star.clone().recip();
     let inv2 = inv.clone().mul(inv.clone());
@@ -134,7 +166,16 @@ pub fn lj_mayer_b2_star_tensor<B: Backend<FloatElem = f32>>(t_star: Tensor<B, 2>
 }
 
 /// \(B_3^*(T^*)\) surrogate tensor; `t_star` shape **`[B, 1]`**.
-pub fn lj_virial_b3_star_tensor<B: Backend<FloatElem = f32>>(t_star: Tensor<B, 2>) -> Tensor<B, 2> {
+///
+/// Returns [`PhysicsError::ShapeMismatch`] when `t_star` is not a non-empty `[B, 1]` column.
+pub fn lj_virial_b3_star_tensor<B: Backend<FloatElem = f32>>(
+    t_star: Tensor<B, 2>,
+) -> Result<Tensor<B, 2>, PhysicsError> {
+    guard_lj_column_tensor_shape(t_star.dims(), "lj_virial_b3_star_tensor")?;
+    Ok(lj_virial_b3_star_tensor_inner(t_star))
+}
+
+fn lj_virial_b3_star_tensor_inner<B: Backend<FloatElem = f32>>(t_star: Tensor<B, 2>) -> Tensor<B, 2> {
     t_star
         .clone()
         .add_scalar(0.15)
@@ -148,8 +189,8 @@ pub fn reduced_pressure_lj_virial_third_order<B: Backend<FloatElem = f32>>(
     rho_star: Tensor<B, 2>,
     t_star: Tensor<B, 2>,
 ) -> Tensor<B, 2> {
-    let b2 = lj_mayer_b2_star_tensor(t_star.clone());
-    let b3 = lj_virial_b3_star_tensor(t_star.clone());
+    let b2 = lj_mayer_b2_star_tensor_inner(t_star.clone());
+    let b3 = lj_virial_b3_star_tensor_inner(t_star.clone());
     let r = rho_star.clone();
     let r2 = r.clone().mul(r.clone());
     let r3 = r2.clone().mul(r.clone());
@@ -164,8 +205,8 @@ pub fn reduced_isothermal_kt_star_virial_closed_form<B: Backend<FloatElem = f32>
     rho_star: Tensor<B, 2>,
     t_star: Tensor<B, 2>,
 ) -> Tensor<B, 2> {
-    let b2 = lj_mayer_b2_star_tensor(t_star.clone());
-    let b3 = lj_virial_b3_star_tensor(t_star.clone());
+    let b2 = lj_mayer_b2_star_tensor_inner(t_star.clone());
+    let b3 = lj_virial_b3_star_tensor_inner(t_star.clone());
     let r = rho_star.clone();
     let r2 = r.clone().mul(r.clone());
     let r3 = r2.clone().mul(r.clone());
@@ -315,6 +356,7 @@ pub fn relative_placeholder_bulk_modulus_gap_vs_johnson1993(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::physics::error::PhysicsError;
     use approx::assert_abs_diff_eq;
     use burn::tensor::{Data, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
@@ -445,6 +487,35 @@ mod tests {
         );
         let err = upscale_potentials(lj).unwrap_err();
         assert_eq!(err, UpscalePotentialsShapeError { batch: 1, cols: 3 });
+    }
+
+    #[test]
+    fn lj_mayer_b2_star_tensor_rejects_non_column_shape() {
+        let dev = NdArrayDevice::Cpu;
+        let t_bad: Tensor<B, 2> =
+            Tensor::from_data(Data::new(vec![1.0_f32, 2.0_f32], Shape::new([1, 2])), &dev);
+        let err = lj_mayer_b2_star_tensor(t_bad).unwrap_err();
+        assert!(matches!(
+            err,
+            PhysicsError::ShapeMismatch {
+                context: "lj_mayer_b2_star_tensor",
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn lj_virial_b3_star_tensor_rejects_empty_batch() {
+        let dev = NdArrayDevice::Cpu;
+        let t_empty: Tensor<B, 2> = Tensor::from_data(Data::new(Vec::<f32>::new(), Shape::new([0, 1])), &dev);
+        let err = lj_virial_b3_star_tensor(t_empty).unwrap_err();
+        assert!(matches!(
+            err,
+            PhysicsError::ShapeMismatch {
+                context: "lj_virial_b3_star_tensor",
+                ..
+            }
+        ));
     }
 
     #[test]

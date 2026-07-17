@@ -26,8 +26,8 @@ type Inner = <AD as AutodiffBackend>::InnerBackend;
 fn analytic_dp_phys_drho(eps: f32, sig: f32, rho: f32, t: f32) -> f32 {
     let dev = <NdArray<f32> as BackendTrait>::Device::default();
     let t_t = Tensor::<NdArray<f32>, 2>::from_data(Data::new(vec![t], Shape::new([1, 1])), &dev);
-    let b2v = lj_mayer_b2_star_tensor(t_t.clone()).into_scalar();
-    let b3v = lj_virial_b3_star_tensor(t_t).into_scalar();
+    let b2v = lj_mayer_b2_star_tensor(t_t.clone()).unwrap().into_scalar();
+    let b3v = lj_virial_b3_star_tensor(t_t).unwrap().into_scalar();
     let dp_star = t + 2.0 * t * b2v * rho + 3.0 * t * b3v * rho * rho;
     dp_star * eps / sig.powi(3)
 }
