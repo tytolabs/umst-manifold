@@ -487,7 +487,7 @@ fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
                 mk_state(Tensor::<B, 3>::zeros([batch, n, 1], &d)),
                 &mut manifold,
             )
-            .expect("THMC step Ok");
+            .expect("ThmcSolver::step on 3-node chain for central FD of max post-step damage w.r.t. matrix_features tensile stub (FP §6 Track G striatus-scale fracture stub)");
         s.damage.as_tensor().clone().into_data()
             .value
             .iter()
@@ -681,7 +681,9 @@ fn thmc_implicit_euler_t_h_alpha_residual_humidity_matches_brute_force_two_nodes
         damage_m.clone(),
         0.0_f32,
     );
-    let (r_t, r_h, r_alpha) = assembler.assemble(&trial).expect("assemble");
+    let (r_t, r_h, r_alpha) = assembler
+        .assemble(&trial)
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::assemble on 2-node (T,h,α) trial state (FP §6 Track G implicit Euler humidity witness)");
 
     let t = trial_t.into_data().value;
     let h = trial_h.into_data().value;
@@ -909,7 +911,7 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
         cross_section_area,
         &inner_cfg,
     )
-    .expect("solve_equilibrium");
+    .expect("VectorMechanicsSolver::solve_equilibrium on 2-node SI chain for R_u zero-at-equilibrium witness (FP §6 Track G quasi-static coupling)");
 
     let dt = 0.02_f32;
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
@@ -1049,7 +1051,7 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
         cross_section_area,
         &inner_cfg,
     )
-    .expect("solve_equilibrium");
+    .expect("VectorMechanicsSolver::solve_equilibrium on 2-node SI chain for flat-humidity shrink parity (FP §6 Track G quasi-static coupling)");
 
     let h_shared = 0.58_f32;
     let dt = 0.02_f32;
@@ -1167,7 +1169,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
         cross_section_area,
         &inner_cfg,
     )
-    .expect("solve_equilibrium");
+    .expect("VectorMechanicsSolver::solve_equilibrium on 2-node SI chain for drying shrink R_u norm witness (FP §6 Track G quasi-static coupling)");
 
     let dt = 0.02_f32;
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
@@ -2439,7 +2441,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         cross_section_area,
         &inner_cfg,
     )
-    .expect("solve_equilibrium");
+    .expect("VectorMechanicsSolver::solve_equilibrium on 2-node chain for monolithic Newton parity predict (FP §6 Track G monolithic Newton witness)");
 
     let trial =     ThmcState::from_tensors(
         t_predict,
