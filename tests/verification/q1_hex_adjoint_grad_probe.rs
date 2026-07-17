@@ -89,7 +89,8 @@ fn q1_hex_adjoint_grad_nonzero_on_quick_grid() {
         &Q1HexSolveOptions::default(),
         None,
         None,
-    );
+    )
+    .expect("forward_loss_with_diagnostics");
     let loss_v = loss.clone().into_data().value[0];
     assert!(loss_v.is_finite() && loss_v > 0.0, "loss={loss_v}");
     if let Some(audit) = &diag.finite_audit {
@@ -168,7 +169,8 @@ fn q1_hex_nodal_dot_matches_gather_surrogate_grad() {
         &Q1HexSolveOptions::default(),
         None,
         None,
-    );
+    )
+    .expect("forward_loss_with_diagnostics nodal");
     let nodal_g = rho_nodal
         .grad(&nodal_loss.backward())
         .expect("nodal grad")

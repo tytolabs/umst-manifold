@@ -56,7 +56,8 @@ fn solver_region_parity_cold_vs_warm_reuse() {
         &opts_cold,
         None,
         None,
-    );
+    )
+    .expect("forward_loss_with_diagnostics cold");
 
     let mut region = SolverRegion::new();
     let opts_warm = Q1HexSolveOptions {
@@ -80,7 +81,8 @@ fn solver_region_parity_cold_vs_warm_reuse() {
         &opts_warm,
         Some(&mut region),
         None,
-    );
+    )
+    .expect("forward_loss_with_diagnostics warm");
 
     let dc = (c_cold - c_warm).abs();
     assert!(dc < 1e-4, "compliance mismatch cold={c_cold} warm={c_warm}");

@@ -105,7 +105,8 @@ fn q1_hex_harness_roof_traction_forward_converges() {
         mat,
         &cg,
         None,
-    );
+    )
+    .expect("forward_and_loss");
 
     let mut e_cell = vec![0.0_f32; n_cells];
     let rho_e = 0.5_f32;

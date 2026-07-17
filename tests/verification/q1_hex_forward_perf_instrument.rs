@@ -60,7 +60,8 @@ fn q1_hex_forward_perf_fields_smoke() {
             &opts,
             None,
             None,
-        );
+        )
+        .expect("forward_loss_with_diagnostics");
         assert_eq!(diag.pcg_iters, diag.pcg.iterations);
         assert!(diag.equilibrium_rel_residual.is_finite());
         assert_eq!(diag.precond_kind, HexPreconditionerKind::JacobiDiagonal);

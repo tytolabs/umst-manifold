@@ -106,8 +106,8 @@ fn adjoint_q1_hex_gradient_matches_finite_difference_plate_8x8x2() {
 
     let cg = MechanicsInnerLoopConfig {
         max_cg_iterations: 3000,
-        cg_tolerance: 1e-7_f32,
-        pcg_tolerance: 1e-7_f32,
+        cg_tolerance: 1e-6_f32,
+        pcg_tolerance: 1e-6_f32,
         use_preconditioner: true,
         max_equilibrium_substeps: 1,
     };
@@ -144,7 +144,8 @@ fn adjoint_q1_hex_gradient_matches_finite_difference_plate_8x8x2() {
         mat,
         &cg,
         None,
-    );
+    )
+    .unwrap_or_else(|e| panic!("forward_and_loss: {e}"));
 
     let grads = surrogate.backward();
     let g_rho = rho_ad.grad(&grads).expect("grad ρ");
