@@ -2154,7 +2154,7 @@ fn solve_maxwell_dec_patch_quad_split_tensor_eps_residual() {
         coords.clone(),
         &cg,
         Some(&patch),
-    ).expect("solve_maxwell_curl_curl");
+    ).expect("PhotonicsSolver::solve_maxwell_curl_curl on quad-split N=4 DEC patch with anisotropic [1,N,9] nodal tensor ε for pinned natural-row residual witness (FP §6 Track G photonics)");
     let x = sol.into_data().value;
     let dim = 3 * n;
     let mut y = vec![0.0_f32; dim];
@@ -2245,7 +2245,7 @@ fn solve_maxwell_dec_patch_quad_split_embedded_r3_residual() {
         coords.clone(),
         &cg,
         Some(&patch),
-    ).expect("solve_maxwell_curl_curl");
+    ).expect("PhotonicsSolver::solve_maxwell_curl_curl on quad-split N=4 non-planar R³ embedded DEC patch for natural-row residual witness (FP §6 Track G photonics)");
     let x = sol.into_data().value;
     let dim = 3 * n;
     let mut y = vec![0.0_f32; dim];
@@ -2340,7 +2340,7 @@ fn solve_maxwell_dec_patch_two_quads_strip_residual() {
         coords.clone(),
         &cg,
         Some(&patch),
-    ).expect("solve_maxwell_curl_curl");
+    ).expect("PhotonicsSolver::solve_maxwell_curl_curl on two-quad six-node strip DEC patch for natural-row residual witness (FP §6 Track G photonics)");
     let x = sol.into_data().value;
     let dim = 3 * n;
     let mut y = vec![0.0_f32; dim];
@@ -2585,7 +2585,7 @@ fn fresnel_interface_standing_wave_proxy() {
     let cg = MechanicsInnerLoopConfig::default();
     let (er, ei) = solver
         .solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg)
-        .expect("solve_helmholtz");
+        .expect("PhotonicsHelmholtzSolver::solve_helmholtz on dielectric half-space chain for Fresnel standing-wave |r|² proxy with PML (FP §6 Track G photonics)");
 
     let gr = er.into_data().value;
     let gi = ei.into_data().value;
@@ -2721,7 +2721,7 @@ fn quarter_wave_stack_high_reflectivity() {
     let cg = MechanicsInnerLoopConfig::default();
     let (er, ei) = solver
         .solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg)
-        .expect("solve_helmholtz");
+        .expect("PhotonicsHelmholtzSolver::solve_helmholtz on 10× bilayer quarter-wave stack for high-reflectivity field smoke (FP §6 Track G photonics)");
 
     let gr = er.into_data().value;
     let gi = ei.into_data().value;
