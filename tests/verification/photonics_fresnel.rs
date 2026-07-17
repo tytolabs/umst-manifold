@@ -814,7 +814,7 @@ fn helmholtz_mms_sin_mode_recover() {
     let cg = MechanicsInnerLoopConfig::default();
     let (er, ei) = solver
         .solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg)
-        .expect("solve_helmholtz");
+        .expect("PhotonicsHelmholtzSolver::solve_helmholtz on 129-node TE chain for MMS sin-mode recovery witness (FP §6 Track G photonics)");
 
     let got_r = er.into_data().value;
     let got_i = ei.into_data().value;
@@ -944,7 +944,7 @@ fn two_half_spaces_fresnel_te_no_pml_matches_analytic() {
     let cg = MechanicsInnerLoopConfig::default();
     let (er, ei) = solver
         .solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg)
-        .expect("solve_helmholtz");
+        .expect("PhotonicsHelmholtzSolver::solve_helmholtz on Dirichlet-closed two-half-space chain for TE Fresnel analytic match (FP §6 Track G photonics)");
 
     let got_r = er.into_data().value;
     let got_i = ei.into_data().value;
@@ -1050,7 +1050,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz() {
         coords.clone(),
         &cg,
         None,
-    ).expect("solve_maxwell_curl_curl");
+    ).expect("PhotonicsSolver::solve_maxwell_curl_curl on uniform 41-node chain for TE Ey vs scalar Helmholtz parity (FP §6 Track G photonics)");
 
     let helm = PhotonicsHelmholtzSolver {
         frequency_hz: f_hz,
@@ -1061,7 +1061,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz() {
     let jy_im = Tensor::<B, 3>::zeros_like(&jy);
     let (ey_h, _) = helm
         .solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg)
-        .expect("solve_helmholtz");
+        .expect("PhotonicsHelmholtzSolver::solve_helmholtz on uniform 41-node chain for TE Ey reference (FP §6 Track G photonics curl-curl parity)");
 
     let ey_cc = e_cc.narrow(2, 1, 1);
     let v_cc = ey_cc.into_data().value;
@@ -1118,7 +1118,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_affine_x_metric_preserves_ex_ez() {
         coords.clone(),
         &cg,
         None,
-    ).expect("solve_maxwell_curl_curl");
+    ).expect("PhotonicsSolver::solve_maxwell_curl_curl on affine-metric 41-node chain for Ey parity with Ex/Ez pass-through (FP §6 Track G photonics)");
 
     let helm = PhotonicsHelmholtzSolver {
         frequency_hz: f_hz,
@@ -1129,7 +1129,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_affine_x_metric_preserves_ex_ez() {
     let jy_im = Tensor::<B, 3>::zeros_like(&jy);
     let (ey_h, _) = helm
         .solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg)
-        .expect("solve_helmholtz");
+        .expect("PhotonicsHelmholtzSolver::solve_helmholtz on affine-metric 41-node chain for TE Ey reference (FP §6 Track G photonics)");
 
     let ex_cc = e_cc.clone().narrow(2, 0, 1);
     let ey_cc = e_cc.clone().narrow(2, 1, 1);
