@@ -409,6 +409,7 @@ fn mechanics_pass<B: Backend<FloatElem = f32>>(
     state: ThmcState<B>,
     _scratch: &ThmcNewtonScratch<B>,
     ctx: &ThmcStepCtx<'_, B>,
+    #[cfg_attr(not(feature = "mechanics-adjoint"), allow(unused_variables))]
     solver: &mut ThmcSolver,
 ) -> Result<ThmcState<B>, PhysicsError> {
     let batch = ctx.batch;
