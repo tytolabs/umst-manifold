@@ -1664,12 +1664,16 @@ pub fn hex_nodal_block_jacobi_3x3(
     nu: f32,
     e_cell: &[f32],
     blocks: &mut [f32],
-) {
+) -> Result<(), PhysicsError> {
     let nx1 = nx + 1;
     let ny1 = ny + 1;
     let n_nodes = nx1 * ny1 * (nz + 1);
     if blocks.len() != n_nodes * 9 {
-        return;
+        return Err(PhysicsError::BufferLength {
+            context: "hex_nodal_block_jacobi_3x3",
+            expected: n_nodes * 9,
+            got: blocks.len(),
+        });
     }
     blocks.fill(0.0);
     let mut ke = [[0.0_f32; 24]; 24];
@@ -1751,6 +1755,7 @@ pub fn hex_nodal_block_jacobi_3x3(
             }
         }
     }
+    Ok(())
 }
 
 fn apply_precond_jacobi_f32(diag: &[f32], mask: &[f32], r: &[f32], z: &mut [f32]) {
@@ -2220,7 +2225,16 @@ pub fn hex_solve_pcg_bisect(
     hex_diagonal(nx, ny, nz, dx, dy, dz, nu, &e_work, diag);
     let mut block_jacobi = vec![0.0_f32; n * 9];
     if precond == HexPcgPrecondKind::BlockJacobiNodal3x3 {
-        hex_nodal_block_jacobi_3x3(nx, ny, nz, dx, dy, dz, nu, &e_work, &mut block_jacobi);
+        if hex_nodal_block_jacobi_3x3(nx, ny, nz, dx, dy, dz, nu, &e_work, &mut block_jacobi).is_err()
+        {
+            return HexPcgBisectReport {
+                iterations: 0,
+                rel_residual_recursive: f32::INFINITY,
+                rel_residual_true: f32::INFINITY,
+                stiffness_scale: k_char,
+                u: vec![0.0_f32; ndof],
+            };
+        }
     }
 
     let mut u = vec![0.0_f32; ndof];
@@ -2409,7 +2423,17 @@ fn hex_solve_pcg_masked_f64(
     let mut block_jacobi64 = vec![0.0_f64; n_nodes * 9];
     if precond == HexPcgPrecondKind::BlockJacobiNodal3x3 {
         let mut blocks_f32 = vec![0.0_f32; n_nodes * 9];
-        hex_nodal_block_jacobi_3x3(nx, ny, nz, dx, dy, dz, nu, &e_solve_f32, &mut blocks_f32);
+        if hex_nodal_block_jacobi_3x3(nx, ny, nz, dx, dy, dz, nu, &e_solve_f32, &mut blocks_f32)
+            .is_err()
+        {
+            return HexPcgReport {
+                iterations: 0,
+                rel_residual: f32::INFINITY,
+                rel_residual_recursive: f32::INFINITY,
+                stopping_criterion: HexPcgStoppingCriterion::PlainRNorm,
+                stiffness_scale: k_char as f32,
+            };
+        }
         for (a, b) in block_jacobi64.iter_mut().zip(&blocks_f32) {
             *a = *b as f64;
         }
