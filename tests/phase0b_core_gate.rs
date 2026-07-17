@@ -59,8 +59,11 @@ fn phase0b_core_gate_accepts_mass_and_cd_with_passive_power_input() {
         0.0,
     );
     let core = core_gate(&response, true, TRANSITION_TOLERANCE);
-    assert!(core.accepted, "Core must accept when mass + CD hold and P_input=0");
-    assert!(core.clausius_duhem);
+    assert!(
+        core.is_accepted(),
+        "Core must accept when mass + CD hold and P_input=0"
+    );
+    assert!(core.is_clausius_duhem());
     assert_eq!(core.power_input, 0.0);
 }
 
@@ -81,7 +84,7 @@ fn phase0b_material_strength_failure_is_not_core_failure() {
     );
     let core = core_gate(&response, true, TRANSITION_TOLERANCE);
     assert!(
-        core.accepted,
+        core.is_accepted(),
         "strength regression must not fail Core gate"
     );
 
@@ -94,11 +97,14 @@ fn phase0b_material_strength_failure_is_not_core_failure() {
         },
         TRANSITION_TOLERANCE,
     );
-    assert!(!material.strength_monotonic);
-    assert!(!material.accepted);
+    assert!(!material.is_strength_monotonic());
+    assert!(!material.is_accepted());
 
     let legacy = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
-    assert!(!legacy.accepted, "legacy cluster still rejects strength regression");
+    assert!(
+        !legacy.is_accepted(),
+        "legacy cluster still rejects strength regression"
+    );
     assert!(core.accepted, "Core alone still accepts");
 }
 
