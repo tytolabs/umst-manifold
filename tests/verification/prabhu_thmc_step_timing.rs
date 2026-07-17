@@ -126,13 +126,13 @@ fn prabhu_thmc_step_timing() {
     // Warm-up step
     let _ = solver
         .step(&StubCartridge, state.clone(), &mut umst)
-        .expect("warm-up step");
+        .expect("ThmcSolver::step warm-up on minimal toy grid (PB-2 timing harness)");
 
     let state2 = equilibrated_state(n);
     let start = std::time::Instant::now();
     let post = solver
         .step(&StubCartridge, state2, &mut umst)
-        .expect("timed step");
+        .expect("ThmcSolver::step measured pass on equilibrated state (PB-2 thmc_step_ms_per_node witness)");
     let elapsed_ms = start.elapsed().as_secs_f64() * 1e3;
     let ms_per_node = elapsed_ms / n as f64;
 
@@ -140,7 +140,7 @@ fn prabhu_thmc_step_timing() {
     let snap = post.clone();
     let post2 = solver
         .step(&StubCartridge, post, &mut umst)
-        .expect("idempotency step");
+        .expect("ThmcSolver::step re-application on equilibrated post-step state (PB-2 FP §6 idempotency drift check)");
     let drift_tol = 1e-5_f32;
     assert!(
         max_abs_tensor3(
