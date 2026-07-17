@@ -142,7 +142,7 @@ pub struct ElectroChemicalSolver {
     pub mesh_spacing: f32,
     /// When **`Some`**, [`ElectroChemicalSolver::solve_pnp_step_dispatch`] first attempts Track 14
     /// **implicit backward Euler + damped Newton** on path-chain graphs (same contract as
-    /// [`Self::try_solve_pnp_backward_euler_newton_chain`]); on failure (`None` from that helper —
+    /// [`Self::try_solve_pnp_backward_euler_newton_chain`]); on failure (`Err` from that helper —
     /// non-chain graph, `batch≠1`, etc.) it falls back to explicit [`Self::solve_pnp_step`].
     /// Default **`None`**: dispatch matches the historical **Picard / split-explicit** behaviour only.
     pub pnp_implicit_newton_chain: Option<NewtonPnpContext>,
@@ -268,16 +268,16 @@ impl ElectroChemicalSolver {
         edges_b1: Tensor<B, 2, Int>,
         permittivity: Tensor<B, 3>,
         diffusivity: Tensor<B, 3>,
-    ) -> (Tensor<B, 3>, Tensor<B, 3>) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
         #[cfg(not(feature = "electrochemistry-mvp"))]
         {
             let _ = (dt, edges_b1, permittivity, diffusivity);
-            (electric_potential, ion_concentration)
+            Ok((electric_potential, ion_concentration))
         }
 
         #[cfg(feature = "electrochemistry-mvp")]
         {
-            solve_pnp_step_experimental(
+            Ok(solve_pnp_step_experimental(
                 self,
                 dt,
                 electric_potential,
@@ -285,7 +285,7 @@ impl ElectroChemicalSolver {
                 edges_b1,
                 permittivity,
                 diffusivity,
-            )
+            ))
         }
     }
 
@@ -304,16 +304,16 @@ impl ElectroChemicalSolver {
         edges_b1: Tensor<B, 2, Int>,
         permittivity: Tensor<B, 3>,
         diffusivity: Tensor<B, 3>,
-    ) -> (Tensor<B, 3>, Tensor<B, 3>) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
         #[cfg(not(feature = "electrochemistry-mvp"))]
         {
             let _ = (dt, edges_b1, permittivity, diffusivity);
-            (electric_potential, ion_concentration)
+            Ok((electric_potential, ion_concentration))
         }
         #[cfg(feature = "electrochemistry-mvp")]
         {
             if let Some(newton) = self.pnp_implicit_newton_chain {
-                if let Some(out) = self.try_solve_pnp_backward_euler_newton_chain(
+                if let Ok(out) = self.try_solve_pnp_backward_euler_newton_chain(
                     &newton,
                     dt,
                     electric_potential.clone(),
@@ -322,7 +322,7 @@ impl ElectroChemicalSolver {
                     permittivity.clone(),
                     diffusivity.clone(),
                 ) {
-                    return out;
+                    return Ok(out);
                 }
             }
             self.solve_pnp_step(
@@ -343,8 +343,8 @@ impl ElectroChemicalSolver {
     /// When **`linearize_sg_fickian` is `true`** (Fickian-linearised SG / Debye–Hückel residual), each
     /// Newton correction uses **three Thomas solves** on the **sparse block structure** (no dense expand).
     /// **Only** when `edges_b1` is the **contiguous** path
-    /// `0\!-\!1\!-\!\cdots\!-\!(N-1)\` and `batch=1`; otherwise returns `None` (caller keeps split
-    /// [`Self::solve_pnp_step`]).
+    /// `0\!-\!1\!-\!\cdots\!-\!(N-1)\` and `batch=1`; otherwise returns
+    /// [`PhysicsError::UnsupportedLayout`] (caller keeps split [`Self::solve_pnp_step`]).
     ///
     /// Dirichlet \(\Phi\) at the two endpoints is read from `electric_potential_n` at nodes `0` and
     /// `N-1` and enforced as algebraic rows in the residual. The discrete operators match
@@ -360,10 +360,12 @@ impl ElectroChemicalSolver {
         edges_b1: Tensor<B, 2, Int>,
         permittivity: Tensor<B, 3>,
         diffusivity: Tensor<B, 3>,
-    ) -> Option<(Tensor<B, 3>, Tensor<B, 3>)> {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
         #[cfg(not(feature = "electrochemistry-mvp"))]
         {
-            None
+            Err(PhysicsError::UnsupportedLayout {
+                context: "try_solve_pnp_backward_euler_newton_chain requires electrochemistry-mvp",
+            })
         }
         #[cfg(feature = "electrochemistry-mvp")]
         {
@@ -1973,6 +1975,9 @@ fn newton_dense_column_f64(
 }
 
 #[cfg(feature = "electrochemistry-mvp")]
+const PNP_BE_NEWTON_CHAIN_HOST_CTX: &str = "try_solve_pnp_be_newton_chain_host";
+
+#[cfg(feature = "electrochemistry-mvp")]
 #[allow(clippy::too_many_arguments)]
 fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     solver: &ElectroChemicalSolver,
@@ -1983,27 +1988,39 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     edges_b1: Tensor<B, 2, Int>,
     permittivity: Tensor<B, 3>,
     diffusivity: Tensor<B, 3>,
-) -> Option<(Tensor<B, 3>, Tensor<B, 3>)> {
+) -> Result<(Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
     let pd = electric_potential_n.dims();
     if pd[0] != 1 || pd[2] != 1 {
-        return None;
+        return Err(PhysicsError::ShapeMismatch {
+            context: PNP_BE_NEWTON_CHAIN_HOST_CTX,
+            detail: "electric_potential must be [1,N,1]",
+        });
     }
     let n = pd[1];
     if n < 2 || n > newton.max_chain_nodes {
-        return None;
+        return Err(PhysicsError::UnsupportedLayout {
+            context: PNP_BE_NEWTON_CHAIN_HOST_CTX,
+        });
     }
     let ed = edges_b1.dims();
     if ed[0] != 2 || ed[1] != n - 1 {
-        return None;
+        return Err(PhysicsError::ShapeMismatch {
+            context: PNP_BE_NEWTON_CHAIN_HOST_CTX,
+            detail: "edges_b1 must be [2,N-1]",
+        });
     }
     let layout_raw = edges_b1.clone().float().into_data().value;
     let layout: Vec<i64> = layout_raw.iter().map(|&x| x as i64).collect();
     if !is_contiguous_unit_path(n, &layout) {
-        return None;
+        return Err(PhysicsError::UnsupportedLayout {
+            context: PNP_BE_NEWTON_CHAIN_HOST_CTX,
+        });
     }
     let dt64 = dt as f64;
     if !dt64.is_finite() || dt64 <= 0.0 {
-        return None;
+        return Err(PhysicsError::InvariantViolation {
+            context: "dt must be finite and positive",
+        });
     }
     let device = ion_concentration_n.device();
     let phi_h = electric_potential_n.clone().into_data().value;
@@ -2100,12 +2117,14 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
                         pnp_delta_nm_to_fm(&dn, n, &mut x);
                         true
                     }
-                    Err(_) => false,
+                    Err(e) => return Err(e),
                 };
                 (ok, false)
             } else {
                 let Some(jac) = jac_band.as_mut() else {
-                    return None;
+                    return Err(PhysicsError::BufferExhausted {
+                        context: PNP_BE_NEWTON_CHAIN_HOST_CTX,
+                    });
                 };
                 newton_fd_jacobian_full_sg_node_major_row_band(
                     solver, newton, dt64, &u, &c_plus_n, &c_minus_n, &eps, &d_plus, &d_minus, g0,
@@ -2116,13 +2135,19 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
                     *v = -*v;
                 }
                 let Some(lu_buf) = jac_lu_scratch.as_mut() else {
-                    return None;
+                    return Err(PhysicsError::BufferExhausted {
+                        context: PNP_BE_NEWTON_CHAIN_HOST_CTX,
+                    });
                 };
                 let Some(dense_buf) = jac_dense_scratch.as_mut() else {
-                    return None;
+                    return Err(PhysicsError::BufferExhausted {
+                        context: PNP_BE_NEWTON_CHAIN_HOST_CTX,
+                    });
                 };
                 let Some(swaps) = band_lu_swaps.as_mut() else {
-                    return None;
+                    return Err(PhysicsError::BufferExhausted {
+                        context: PNP_BE_NEWTON_CHAIN_HOST_CTX,
+                    });
                 };
                 swaps.clear();
                 let ok = solve_newton_correction_full_sg_row_band_band_lu_or_dense_expand(
@@ -2143,16 +2168,24 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
             }
         } else {
             let Some(jac) = jac_band.as_mut() else {
-                return None;
+                return Err(PhysicsError::BufferExhausted {
+                    context: PNP_BE_NEWTON_CHAIN_HOST_CTX,
+                });
             };
             let Some(lu_buf) = jac_lu_scratch.as_mut() else {
-                return None;
+                return Err(PhysicsError::BufferExhausted {
+                    context: PNP_BE_NEWTON_CHAIN_HOST_CTX,
+                });
             };
             let Some(dense_buf) = jac_dense_scratch.as_mut() else {
-                return None;
+                return Err(PhysicsError::BufferExhausted {
+                    context: PNP_BE_NEWTON_CHAIN_HOST_CTX,
+                });
             };
             let Some(swaps) = band_lu_swaps.as_mut() else {
-                return None;
+                return Err(PhysicsError::BufferExhausted {
+                    context: PNP_BE_NEWTON_CHAIN_HOST_CTX,
+                });
             };
             newton_fd_jacobian_full_sg_node_major_row_band(
                 solver, newton, dt64, &u, &c_plus_n, &c_minus_n, &eps, &d_plus, &d_minus, g0, g1,
@@ -2213,7 +2246,9 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
             (ok_all, frozen_used)
         };
         if !ok {
-            return None;
+            return Err(PhysicsError::IndefiniteSystem {
+                context: PNP_BE_NEWTON_CHAIN_HOST_CTX,
+            });
         }
         if !u_frozen_inner {
             for i in 0..dim {
@@ -2232,7 +2267,10 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     );
     let n_pre = vec_l2(&r_pre);
     if !n_pre.is_finite() || n_pre > 1e-6_f64 {
-        return None;
+        return Err(PhysicsError::Diverged {
+            eq_rel: n_pre as f32,
+            pcg_iterations: 0,
+        });
     }
     let phi_out: Vec<f32> = u[0..n].iter().map(|&x| x as f32).collect();
     let mut c_out = vec![0.0_f32; n * 2];
@@ -2242,7 +2280,7 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     }
     let phi_t = Tensor::from_data(Data::new(phi_out, Shape::new([1, n, 1])), &device);
     let c_t = Tensor::from_data(Data::new(c_out, Shape::new([1, n, 2])), &device);
-    Some((phi_t, c_t))
+    Ok((phi_t, c_t))
 }
 
 /// L2 norm of the fully implicit backward Euler residual on a chain (`batch=1`), for verification.
@@ -4444,15 +4482,19 @@ mod newton_chain_tests {
         let d = Tensor::<B, 3>::full([1, n, 2], 0.04_f32, &dev);
         let solver = ElectroChemicalSolver::default();
         let dt = 1e-4_f32;
-        let (p0, c0) = solver.solve_pnp_step(
-            dt,
-            phi.clone(),
-            c.clone(),
-            edges.clone(),
-            eps.clone(),
-            d.clone(),
-        );
-        let (p1, c1) = solver.solve_pnp_step_dispatch(dt, phi, c, edges, eps, d);
+        let (p0, c0) = solver
+            .solve_pnp_step(
+                dt,
+                phi.clone(),
+                c.clone(),
+                edges.clone(),
+                eps.clone(),
+                d.clone(),
+            )
+            .expect("solve_pnp_step");
+        let (p1, c1) = solver
+            .solve_pnp_step_dispatch(dt, phi, c, edges, eps, d)
+            .expect("solve_pnp_step_dispatch");
         assert!(
             tensor1_bool(p0.sub(p1).abs().lower_elem(1e-6_f32).all())
                 && tensor1_bool(c0.sub(c1).abs().lower_elem(1e-6_f32).all()),
@@ -4503,14 +4545,16 @@ mod newton_chain_tests {
             ..Default::default()
         };
         let dt: f32 = 1e-7;
-        let (phi_d, c_d) = solver.solve_pnp_step_dispatch(
-            dt,
-            phi_n.clone(),
-            c_n.clone(),
-            edges.clone(),
-            eps.clone(),
-            d.clone(),
-        );
+        let (phi_d, c_d) = solver
+            .solve_pnp_step_dispatch(
+                dt,
+                phi_n.clone(),
+                c_n.clone(),
+                edges.clone(),
+                eps.clone(),
+                d.clone(),
+            )
+            .expect("dispatch implicit");
         let (phi_t, c_t) = solver
             .try_solve_pnp_backward_euler_newton_chain(&newton, dt, phi_n, c_n, edges, eps, d)
             .expect("try_solve chain");
@@ -4779,15 +4823,19 @@ mod physics_idempotency_tests {
         let solver = ElectroChemicalSolver::default();
         let dt = 1e-4_f32;
 
-        let (phi1, c1) = solver.solve_pnp_step(
-            dt,
-            phi.clone(),
-            c.clone(),
-            edges.clone(),
-            eps.clone(),
-            d.clone(),
-        );
-        let (phi2, c2) = solver.solve_pnp_step(dt, phi1.clone(), c1.clone(), edges, eps, d);
+        let (phi1, c1) = solver
+            .solve_pnp_step(
+                dt,
+                phi.clone(),
+                c.clone(),
+                edges.clone(),
+                eps.clone(),
+                d.clone(),
+            )
+            .expect("first solve_pnp_step");
+        let (phi2, c2) = solver
+            .solve_pnp_step(dt, phi1.clone(), c1.clone(), edges, eps, d)
+            .expect("second solve_pnp_step");
 
         let tol = 1e-6_f32;
         assert!(

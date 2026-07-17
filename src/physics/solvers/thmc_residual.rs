@@ -126,7 +126,9 @@ pub trait ResidualThmc<B: Backend<FloatElem = f32>> {
     /// Evaluate the residual map at `trial` (implementation-defined contract).
     fn evaluate_residual(&self, trial: &ThmcState<B>) -> Result<(), PhysicsError> {
         let _ = trial;
-        Err("ResidualThmc::evaluate_residual not implemented".into())
+        Err(PhysicsError::UnsupportedLayout {
+            context: "ResidualThmc::evaluate_residual not implemented",
+        })
     }
 }
 
@@ -225,18 +227,16 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
         let batch = t.dims()[0];
         let n = t.dims()[1];
         if self.temperature_n.as_tensor().dims() != t.dims() {
-            return Err(format!(
-                "ThmcImplicitEulerThermalReactionExtentResidual: T^n dims {:?} != trial T dims {:?}",
-                self.temperature_n.as_tensor().dims(),
-                t.dims()
-            ).into());
+            return Err(PhysicsError::ShapeMismatch {
+                context: "ThmcImplicitEulerThermalReactionExtentResidual::assemble",
+                detail: "T^n dims != trial T dims",
+            });
         }
         if self.alpha_n.as_tensor().dims() != alpha.dims() {
-            return Err(format!(
-                "ThmcImplicitEulerThermalReactionExtentResidual: α^n dims {:?} != trial α dims {:?}",
-                self.alpha_n.as_tensor().dims(),
-                alpha.dims()
-            ).into());
+            return Err(PhysicsError::ShapeMismatch {
+                context: "ThmcImplicitEulerThermalReactionExtentResidual::assemble",
+                detail: "alpha^n dims != trial alpha dims",
+            });
         }
 
         let lap_t = TopologicalLaplacian::scalar_laplacian_temperature(&Field::new(t.clone()), &self.damage_m, self.edges_b1.clone());
@@ -289,22 +289,28 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
         fd_eps: f32,
     ) -> Result<(ThmcState<B>, f32, f32), PhysicsError> {
         if !(damping > 0.0_f32 && damping <= 1.0_f32) {
-            return Err("one_damped_newton_step: damping must lie in (0, 1]".into());
+            return Err(PhysicsError::InvariantViolation {
+                context: "one_damped_newton_step: damping must lie in (0, 1]",
+            });
         }
         if fd_eps <= 0.0_f32 {
-            return Err("one_damped_newton_step: fd_eps must be positive".into());
+            return Err(PhysicsError::InvariantViolation {
+                context: "one_damped_newton_step: fd_eps must be positive",
+            });
         }
 
         let t_dims = trial.thermal.temperature.as_tensor().dims();
         let a_dims = trial.chemical.reaction_extent.as_tensor().dims();
         if t_dims[0] != 1 {
-            return Err(format!(
-                "one_damped_newton_step: batch must be 1, got {}",
-                t_dims[0]
-            ).into());
+            return Err(PhysicsError::InvariantViolation {
+                context: "one_damped_newton_step: batch must be 1",
+            });
         }
         if t_dims[0] != a_dims[0] || t_dims[1] != a_dims[1] {
-            return Err("one_damped_newton_step: T and α batch/node counts must match".into());
+            return Err(PhysicsError::ShapeMismatch {
+                context: "one_damped_newton_step",
+                detail: "T and alpha batch/node counts must match",
+            });
         }
 
         let n = t_dims[1];
@@ -312,10 +318,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
         let f_a = a_dims[2];
         let m = n * f_t + n * f_a;
         if m > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
-            let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
-            return Err(format!(
-                "one_damped_newton_step: {m} stacked DOFs exceeds cap {cap}",
-            ).into());
+            return Err(PhysicsError::InvariantViolation {
+                context: "one_damped_newton_step: stacked DOFs exceeds dense cap 64",
+            });
         }
 
         let device = trial.thermal.temperature.as_tensor().device();
@@ -325,7 +330,11 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
 
         let mut u = flatten_two_fields(trial.thermal.temperature.as_tensor(), trial.chemical.reaction_extent.as_tensor());
         if u.len() != m || r0.len() != m {
-            return Err("one_damped_newton_step: internal flatten length mismatch".into());
+            return Err(PhysicsError::BufferLength {
+                context: "one_damped_newton_step",
+                expected: m,
+                got: u.len(),
+            });
         }
 
         // Dense Jacobian: column j = ∂R/∂u_j (forward difference).
@@ -379,7 +388,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
         fd_eps: f32,
     ) -> Result<(ThmcState<B>, Vec<f32>), PhysicsError> {
         if iterations < 2 {
-            return Err("damped_newton_iterations: iterations must be >= 2".into());
+            return Err(PhysicsError::InvariantViolation {
+                context: "damped_newton_iterations: iterations must be >= 2",
+            });
         }
         let mut norms: Vec<f32> = Vec::with_capacity(iterations + 1);
         norms.push(self.residual_l2(trial)?);
@@ -1534,7 +1545,9 @@ fn gauss_jordan_solve(a: &mut [f32], b: &mut [f32], n: usize) -> Result<Vec<f32>
             }
         }
         if best < 1e-20_f32 {
-            return Err("gauss_jordan_solve: singular or ill-conditioned Jacobian".into());
+            return Err(PhysicsError::IndefiniteSystem {
+                context: "gauss_jordan_solve: singular or ill-conditioned Jacobian",
+            });
         }
         if piv != k {
             for c in 0..n {

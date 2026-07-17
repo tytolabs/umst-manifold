@@ -1777,7 +1777,8 @@ mod tests {
             boundary_mask,
             a_sec,
             &cfg,
-        );
+        )
+        .expect("voigt cauchy equilibrium");
 
         let u_flat = u.into_data().value;
         let u_tip = u_flat[3];
