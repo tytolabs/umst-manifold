@@ -133,7 +133,7 @@ fn staggered_one_outer_mechanics_strain_drives_at2_damage() {
                 boundary_mask.clone(),
                 cross_section_area,
                 &cfg,
-            ).expect("solve_equilibrium");
+            ).expect("VectorMechanicsSolver::solve_equilibrium on 3-node bar with damage field (FP §6 Track 12 stagger mechanics inner loop witness)");
             let u_src = u.clone().gather(1, src3.clone());
             let u_tgt = u.gather(1, tgt3.clone());
             let edge_disp = u_tgt.sub(u_src);
@@ -150,7 +150,7 @@ fn staggered_one_outer_mechanics_strain_drives_at2_damage() {
         fracture_energy_gc,
         edges_for_damage,
         1,
-    ).expect("update_damage_staggered");
+    ).expect("PhaseFieldFractureSolver::update_damage_staggered with mechanics-sourced strain on 3-node bar (FP §6 Track 12 smoke)");
 
     let vals = d_out.into_tensor().into_data().value;
     assert!(vals.iter().all(|x| x.is_finite()));
