@@ -863,7 +863,7 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
     let coords = manifold
         .node_positions
         .as_ref()
-        .expect("chain_manifold SI coords")
+        .expect("manifold.node_positions on chain_manifold(n) SI coords for quasi-static / monolithic witness (FP §6 Track G)")
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
@@ -943,7 +943,7 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
             &body_force,
             cross_section_area,
         )
-        .expect("evaluate_quasi_static_r_u");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::evaluate_quasi_static_r_u on 2-node trial (FP §6 Track G quasi-static coupling)");
 
     let pf = boundary_mask.clone().mul(body_force.clone());
     let nf = pf
@@ -1003,7 +1003,7 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
     let coords = manifold
         .node_positions
         .as_ref()
-        .expect("chain_manifold SI coords")
+        .expect("manifold.node_positions on chain_manifold(n) SI coords for quasi-static / monolithic witness (FP §6 Track G)")
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
@@ -1084,7 +1084,7 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
             &body_force,
             cross_section_area,
         )
-        .expect("evaluate_quasi_static_r_u");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::evaluate_quasi_static_r_u on 2-node trial (FP §6 Track G quasi-static coupling)");
 
     let pf = boundary_mask.clone().mul(body_force.clone());
     let nf = pf
@@ -1121,7 +1121,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
     let coords = manifold
         .node_positions
         .as_ref()
-        .expect("chain_manifold SI coords")
+        .expect("manifold.node_positions on chain_manifold(n) SI coords for quasi-static / monolithic witness (FP §6 Track G)")
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
@@ -1203,7 +1203,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
             &body_force,
             cross_section_area,
         )
-        .expect("evaluate_quasi_static_r_u flat humidity");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::evaluate_quasi_static_r_u on flat-humidity 2-node trial (FP §6 Track G shrink parity)");
     let n_flat = l2_vec(r_flat);
 
     let trial_dry =     ThmcState::from_tensors(
@@ -1222,7 +1222,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
             &body_force,
             cross_section_area,
         )
-        .expect("evaluate_quasi_static_r_u dry humidity");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::evaluate_quasi_static_r_u on dry-humidity 2-node trial (FP §6 Track G shrink increment)");
     let n_dry = l2_vec(r_dry);
 
     assert!(
@@ -1241,7 +1241,7 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
     let coords = manifold
         .node_positions
         .as_ref()
-        .expect("chain_manifold SI coords")
+        .expect("manifold.node_positions on chain_manifold(n) SI coords for quasi-static / monolithic witness (FP §6 Track G)")
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
@@ -1319,7 +1319,7 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
             &body_force,
             cross_section_area,
         )
-        .expect("assemble four blocks quasi-static");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::assemble_with_quasi_static_r_u on 2-node trial for four-block residual witness (FP §6 Track G)");
     let ru_sq = r_u
         .clone()
         .mul(r_u.clone())
@@ -1347,7 +1347,7 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
     let coords = manifold
         .node_positions
         .as_ref()
-        .expect("chain_manifold SI coords")
+        .expect("manifold.node_positions on chain_manifold(n) SI coords for quasi-static / monolithic witness (FP §6 Track G)")
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
@@ -1452,7 +1452,7 @@ fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() 
     let coords = manifold
         .node_positions
         .as_ref()
-        .expect("chain_manifold SI coords")
+        .expect("manifold.node_positions on chain_manifold(n) SI coords for quasi-static / monolithic witness (FP §6 Track G)")
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
@@ -1549,7 +1549,7 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
     let coords = manifold
         .node_positions
         .as_ref()
-        .expect("chain_manifold SI coords")
+        .expect("manifold.node_positions on chain_manifold(n) SI coords for quasi-static / monolithic witness (FP §6 Track G)")
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
@@ -1629,7 +1629,7 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
             0.0_f32,
             None,
         )
-        .expect("full fixed-count monolithic Newton");
+        .expect("damped_newton_iterations_with_quasi_static_r_u fixed-count run on 2-node (T,h,α,u) trial (FP §6 Track G monolithic Newton witness)");
     assert_eq!(
         norms_full.len(),
         max_iters + 1,
@@ -1665,7 +1665,7 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
         norms_full.len()
     );
     assert!(
-        *norms_early.last().expect("non-empty") < tol_exit,
+        *norms_early.last().expect("norm trail non-empty after tol early-exit monolithic Newton (FP §6 Track G)") < tol_exit,
         "final ||R|| should sit below tol_exit"
     );
     for k in 0..norms_early.len().saturating_sub(1) {
@@ -1690,7 +1690,7 @@ fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() 
     let coords = manifold
         .node_positions
         .as_ref()
-        .expect("chain_manifold SI coords")
+        .expect("manifold.node_positions on chain_manifold(n) SI coords for quasi-static / monolithic witness (FP §6 Track G)")
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
@@ -1770,7 +1770,7 @@ fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() 
             0.0_f32,
             None,
         )
-        .expect("full fixed-count monolithic Newton");
+        .expect("damped_newton_iterations_with_quasi_static_r_u fixed-count run on 2-node (T,h,α,u) trial (FP §6 Track G monolithic Newton witness)");
     assert_eq!(
         norms_full.len(),
         max_iters + 1,
@@ -1815,7 +1815,7 @@ fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() 
         "expected head + two Newton steps before relative exit"
     );
     assert!(
-        *norms_rel.last().expect("non-empty") < k_rel * r0,
+        *norms_rel.last().expect("norm trail non-empty after relative-tol monolithic Newton early exit (FP §6 Track G)") < k_rel * r0,
         "final ||R|| should sit below k_rel * ||R0||"
     );
     for k in 0..norms_rel.len().saturating_sub(1) {
@@ -1942,7 +1942,7 @@ fn thmc_implicit_euler_t_alpha_one_newton_lowers_residual_norm() {
     );
     let (new_trial, n0, n1) = assembler
         .one_damped_newton_step(&trial, 1.0_f32, 1.0e-5_f32)
-        .expect("one damped Newton step");
+        .expect("ThmcImplicitEulerThermalReactionExtentResidual::one_damped_newton_step on 2-node (T,α) trial (FP §6 Track G implicit Euler witness)");
     assert!(
         n0 > 1e-8_f32,
         "expected nontrivial initial residual, got {n0}"
@@ -2009,7 +2009,7 @@ fn thmc_t_alpha_newton_residual_preserves_hydro_mechanics_fields() {
     );
     let (new_trial, _, _) = assembler
         .one_damped_newton_step(&trial, 1.0_f32, 1.0e-5_f32)
-        .expect("one damped Newton step");
+        .expect("ThmcImplicitEulerThermalReactionExtentResidual::one_damped_newton_step preserving h/u fields on 2-node trial (FP §6 Track G)");
     assert_eq!(
         trial.hydro.humidity.as_tensor().clone().into_data().value,
         new_trial.hydro.humidity.as_tensor().clone().into_data().value,
@@ -2166,10 +2166,10 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
 
     let s_exp = solver_explicit
         .step(&Stub, clone_thmc_state(&state0), &mut manifold)
-        .expect("explicit step");
+        .expect("ThmcSolver::step explicit split on drying chain for implicit comparison witness (FP §6 Track G)");
     let s_imp = solver_implicit
         .step(&Stub, clone_thmc_state(&state0), &mut manifold)
-        .expect("implicit (T,α) Newton step");
+        .expect("ThmcSolver::step with implicit (T,α) Newton on drying chain (FP §6 Track G)");
 
     let t_diff = s_exp
         .thermal
@@ -2326,7 +2326,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
     let coords_n3 = manifold
         .node_positions
         .as_ref()
-        .expect("chain SI coords")
+        .expect("manifold.node_positions on chain_manifold(n) SI coords for monolithic Newton witness (FP §6 Track G)")
         .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
@@ -2645,7 +2645,7 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
     let coords_n3 = manifold
         .node_positions
         .as_ref()
-        .expect("chain SI coords")
+        .expect("manifold.node_positions on chain_manifold(n) SI coords for monolithic Newton witness (FP §6 Track G)")
         .clone();
     let batch = 1usize;
     let kinetics = reference_reaction_extent_kinetics();
@@ -2801,10 +2801,10 @@ fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
 
     let s_exp = solver_explicit
         .step(&Stub, clone_thmc_state(&state0), &mut manifold)
-        .expect("explicit step");
+        .expect("ThmcSolver::step explicit split on drying chain for implicit comparison witness (FP §6 Track G)");
     let s_imp = solver_implicit
         .step(&Stub, clone_thmc_state(&state0), &mut manifold)
-        .expect("implicit (T,α) Newton step");
+        .expect("ThmcSolver::step with implicit (T,α) Newton on drying chain (FP §6 Track G)");
 
     assert_eq!(
         s_exp.hydro.humidity.as_tensor().clone().into_data().value,
@@ -2861,7 +2861,7 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
 
     let s_exp = solver_explicit
         .step(&Stub, clone_thmc_state(&state0), &mut manifold)
-        .expect("explicit step");
+        .expect("ThmcSolver::step explicit split on drying chain for implicit comparison witness (FP §6 Track G)");
     let s_imp = solver_implicit
         .step(&Stub, clone_thmc_state(&state0), &mut manifold)
         .expect("implicit step");
@@ -2948,7 +2948,7 @@ fn thermal_implicit_newton_residual_decreases_monotonically() {
     };
     let (_t_new, norms) = solver
         .step_thermal_implicit::<B>(0.05_f32, t_old, 0.1_f32, edges, mask, cfg)
-        .expect("thermal implicit CG should converge");
+        .expect("ThmcSolver::step_thermal_implicit CG convergence on chain Laplacian witness (FP §6 Track G)");
 
     assert!(
         norms.len() >= 2,
@@ -2966,7 +2966,7 @@ fn thermal_implicit_newton_residual_decreases_monotonically() {
         );
     }
     // Converges below tolerance.
-    let last = *norms.last().expect("non-empty");
+    let last = *norms.last().expect("thermal implicit CG norm trail non-empty at convergence (FP §6 Track G)");
     assert!(
         last < 1.0e-6_f32,
         "final residual {last} did not reach 1e-6 (log = {norms:?})",
@@ -3020,7 +3020,7 @@ fn thermal_implicit_matches_analytic_decay_mode() {
                 mask.clone(),
                 cfg,
             )
-            .expect("thermal implicit CG should converge");
+            .expect("ThmcSolver::step_thermal_implicit CG convergence on chain Laplacian witness (FP §6 Track G)");
         t = t_new;
     }
 
