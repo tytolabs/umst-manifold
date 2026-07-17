@@ -227,4 +227,36 @@ mod tests {
             env.damage.as_tensor().dims()
         );
     }
+
+    #[test]
+    fn idempotency_to_flat_from_flat_fluid() {
+        let device = Default::default();
+        let flat = sample_flat(&device);
+        let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Fluid);
+        let once = to_flat(&env);
+        let env2 = ThmcEnvelope::from_flat_state(&once, MaterialPhaseKind::Fluid);
+        assert_eq!(env2.kind(), MaterialPhaseKind::Fluid);
+        assert!((env2.time - env.time).abs() < f32::EPSILON);
+        let r = env2.phase.as_fluid().expect(
+            "idempotent from_flat(Fluid) roundtrip must preserve MaterialPhase::Fluid arm \
+             (MP2 bijection witness)",
+        );
+        assert_eq!(r.velocity.dims(), [1, 4, 3]);
+    }
+
+    #[test]
+    fn idempotency_to_flat_from_flat_solid() {
+        let device = Default::default();
+        let flat = sample_flat(&device);
+        let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Solid);
+        let once = to_flat(&env);
+        let env2 = ThmcEnvelope::from_flat_state(&once, MaterialPhaseKind::Solid);
+        assert_eq!(env2.kind(), MaterialPhaseKind::Solid);
+        assert!((env2.time - env.time).abs() < f32::EPSILON);
+        let m = env2.phase.as_solid().expect(
+            "idempotent from_flat(Solid) roundtrip must preserve MaterialPhase::Solid arm \
+             (MP2 bijection witness)",
+        );
+        assert_eq!(m.displacement.dims(), [1, 4, 3]);
+    }
 }
