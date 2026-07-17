@@ -30,7 +30,7 @@ fn runtime_queue_ranks_landauer_law_after_rejects_and_learning() {
             > top
                 .iter()
                 .find(|(m, _)| *m == "EpistemicRuntimeContract")
-                .unwrap()
+                .expect("EpistemicRuntimeContract module must rank in adaptive queue after rejects")
                 .1
     );
 }

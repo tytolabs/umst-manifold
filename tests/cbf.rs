@@ -78,9 +78,13 @@ fn verify_tensor_update_credit_deduction_independent_of_d_int() {
     let bits = Tensor::<B, 1>::from_floats([4.0_f32], &dev);
     let d_zero = Tensor::<B, 1>::from_floats([0.0_f32], &dev);
     let d_big = Tensor::<B, 1>::from_floats([1.0e6_f32], &dev);
-    let cost_a = cbf_a.verify_tensor_update(d_zero, bits.clone()).unwrap();
+    let cost_a = cbf_a
+        .verify_tensor_update(d_zero, bits.clone())
+        .expect("verify_tensor_update with zero d_int and finite info gain must succeed");
     let credit_after_a = cbf_a.available_credit_joules;
-    let cost_b = cbf_b.verify_tensor_update(d_big, bits).unwrap();
+    let cost_b = cbf_b
+        .verify_tensor_update(d_big, bits)
+        .expect("verify_tensor_update with large d_int and finite info gain must succeed");
     assert_relative_eq!(cost_a, cost_b, epsilon = 1e-30, max_relative = 1e-9);
     assert_relative_eq!(
         credit_after_a,
