@@ -97,6 +97,8 @@ use burn::tensor::{backend::Backend, Int, Tensor};
 use burn::tensor::{Bool, Data, Shape};
 
 #[cfg(feature = "electrochemistry-mvp")]
+use crate::physics::PhysicsError;
+#[cfg(feature = "electrochemistry-mvp")]
 use crate::physics::dec_primal::primal_divergence_from_edge_flux_topo;
 #[cfg(feature = "electrochemistry-mvp")]
 use crate::physics::dec_primal::primal_scalar_edge_increment;
@@ -1236,7 +1238,10 @@ fn pnp_nm_index_to_fm(nm: usize, n: usize) -> usize {
         0 => node,
         1 => n + node,
         2 => 2 * n + node,
-        _ => unreachable!(),
+        rem => {
+            debug_assert!(rem < 3, "pnp_nm_index_to_fm: nm % 3 must be 0..2");
+            node
+        }
     }
 }
 
@@ -1350,7 +1355,7 @@ fn full_sg_newton_correction_gmres_nm_f64(
     r0_fm: &[f64],
     rhs_nm: &[f64],
     n: usize,
-) -> Option<Vec<f64>> {
+) -> Result<Vec<f64>, PhysicsError> {
     use super::krylov_host::gmres_f32_try;
 
     let dim = 3 * n;
@@ -1361,7 +1366,7 @@ fn full_sg_newton_correction_gmres_nm_f64(
     let b_f32: Vec<f32> = rhs_nm.iter().map(|&x| x as f32).collect();
     let beta: f32 = b_f32.iter().map(|x| x * x).sum::<f32>().sqrt();
     if beta < 1e-30_f32 {
-        return Some(vec![0.0_f64; dim]);
+        return Ok(vec![0.0_f64; dim]);
     }
 
     let max_iter = (dim + 96).min(512).max(dim);
@@ -1386,7 +1391,7 @@ fn full_sg_newton_correction_gmres_nm_f64(
     });
     let newton = *newton;
 
-    let matvec = move |v: &[f32]| -> Result<Vec<f32>, crate::physics::PhysicsError> {
+    let matvec = move |v: &[f32]| -> Result<Vec<f32>, PhysicsError> {
         let mut v_nm_loc = vec![0.0_f64; dim];
         for i in 0..dim {
             v_nm_loc[i] = v[i] as f64;
@@ -1415,8 +1420,8 @@ fn full_sg_newton_correction_gmres_nm_f64(
         Ok(out_nm.iter().map(|x| *x as f32).collect())
     };
 
-    let x_g = gmres_f32_try(matvec, &b_f32, dim, max_iter, GMRES_REL_TOL).ok()?;
-    Some(x_g.into_iter().map(|x| x as f64).collect())
+    let x_g = gmres_f32_try(matvec, &b_f32, dim, max_iter, GMRES_REL_TOL)?;
+    Ok(x_g.into_iter().map(|x| x as f64).collect())
 }
 
 #[cfg(feature = "electrochemistry-mvp")]
@@ -2087,15 +2092,15 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
                 for v in rhs_nm.iter_mut() {
                     *v = -*v;
                 }
-                let delta_nm = full_sg_newton_correction_gmres_nm_f64(
+                let ok = match full_sg_newton_correction_gmres_nm_f64(
                     solver, newton, dt64, &u, &c_plus_n, &c_minus_n, &eps, &d_plus, &d_minus, g0,
                     g1, &r, &rhs_nm, n,
-                );
-                let ok = if let Some(dn) = delta_nm {
-                    pnp_delta_nm_to_fm(&dn, n, &mut x);
-                    true
-                } else {
-                    false
+                ) {
+                    Ok(dn) => {
+                        pnp_delta_nm_to_fm(&dn, n, &mut x);
+                        true
+                    }
+                    Err(_) => false,
                 };
                 (ok, false)
             } else {
@@ -3681,7 +3686,7 @@ mod newton_chain_tests {
 
         let matvec = {
             let solver_a = std::sync::Arc::clone(&solver_a);
-            move |v: &[f32]| -> Result<Vec<f32>, crate::physics::PhysicsError> {
+            move |v: &[f32]| -> Result<Vec<f32>, PhysicsError> {
                 let mut v_nm_loc = vec![0.0_f64; dim];
                 for i in 0..dim {
                     v_nm_loc[i] = v[i] as f64;
@@ -3878,7 +3883,7 @@ mod newton_chain_tests {
 
         let matvec = {
             let solver_a = std::sync::Arc::clone(&solver_a);
-            move |v: &[f32]| -> Result<Vec<f32>, crate::physics::PhysicsError> {
+            move |v: &[f32]| -> Result<Vec<f32>, PhysicsError> {
                 let mut v_nm_loc = vec![0.0_f64; dim];
                 for i in 0..dim {
                     v_nm_loc[i] = v[i] as f64;
