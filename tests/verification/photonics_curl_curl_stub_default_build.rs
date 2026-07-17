@@ -67,7 +67,9 @@ mod photonics_off {
             ..Default::default()
         };
 
-        let out = ps.solve_maxwell_curl_curl(e_field, eps_r, eps_i, j, edges, coords, &cg, None).expect("stub returns Ok");
+        let out = ps
+            .solve_maxwell_curl_curl(e_field, eps_r, eps_i, j, edges, coords, &cg, None)
+            .expect("PhotonicsSolver::solve_maxwell_curl_curl stub build preserves e_field pass-through on uniform chain (FP §6 Track G photonics)");
 
         let got = out.into_data().value;
         assert_eq!(got.len(), e0.len());

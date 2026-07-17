@@ -54,7 +54,7 @@ fn solve_maxwell_uniform_brick_two_quad_strip_residual() {
         coords.clone(),
         &cg,
         Some(&patch),
-    ).expect("solve_maxwell_curl_curl");
+    ).expect("PhotonicsSolver::solve_maxwell_curl_curl on two-quad strip patch boundary residual witness (FP §6 Track G photonics)");
     let x = sol.into_data().value;
     let dim = 3 * n;
     let mut y = vec![0.0_f32; dim];

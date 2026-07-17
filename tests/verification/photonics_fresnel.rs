@@ -1006,7 +1006,7 @@ fn two_half_spaces_fresnel_te_no_pml_matches_analytic() {
                 None
             }
         })
-        .expect("r_disc LS / two-point system should be well-conditioned");
+        .expect("fresnel_r_disc_ls_left_bulk or fresnel_r_disc_two_point reflection coefficient on Dirichlet-closed two-half-space TE chain (FP §6 Track G photonics)");
     assert_relative_eq!(
         r_disc.re,
         r_analytic,

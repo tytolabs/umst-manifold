@@ -106,7 +106,7 @@ fn q1_hex_harness_roof_traction_forward_converges() {
         &cg,
         None,
     )
-    .expect("forward_and_loss");
+    .expect("AdjointComplianceQ1Hex::forward_and_loss harness roof traction spike forward convergence witness (FP §6 Track G Q1 hex harness roof)");
 
     let mut e_cell = vec![0.0_f32; n_cells];
     let rho_e = 0.5_f32;

@@ -61,7 +61,7 @@ fn q1_hex_forward_perf_fields_smoke() {
             None,
             None,
         )
-        .expect("forward_loss_with_diagnostics");
+        .expect("AdjointComplianceQ1Hex::forward_loss_with_diagnostics forward perf instrumentation smoke outer loop (FP §6 Track G Q1 hex perf instrument)");
         assert_eq!(diag.pcg_iters, diag.pcg.iterations);
         assert!(diag.equilibrium_rel_residual.is_finite());
         assert_eq!(diag.precond_kind, HexPreconditionerKind::JacobiDiagonal);
