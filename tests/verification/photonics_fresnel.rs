@@ -1684,27 +1684,31 @@ fn solve_maxwell_dec_patch_quad_split_lossless_auto_csr_matches_dense_csr_inner_
         dec_patch_config: PhotonicsDecPatchConfig::lossless_auto(),
     };
 
-    let sol_dense = ps_dense.solve_maxwell_curl_curl(
-        e_field.clone(),
-        eps_r.clone(),
-        eps_i.clone(),
-        j.clone(),
-        edges_b1.clone(),
-        coords.clone(),
-        &cg,
-        Some(&patch),
-    );
+    let sol_dense = ps_dense
+        .solve_maxwell_curl_curl(
+            e_field.clone(),
+            eps_r.clone(),
+            eps_i.clone(),
+            j.clone(),
+            edges_b1.clone(),
+            coords.clone(),
+            &cg,
+            Some(&patch),
+        )
+        .expect("dense-only patch solve");
 
-    let sol_auto = ps_auto.solve_maxwell_curl_curl(
-        e_field,
-        eps_r,
-        eps_i,
-        j,
-        edges_b1,
-        coords,
-        &cg,
-        Some(&patch),
-    );
+    let sol_auto = ps_auto
+        .solve_maxwell_curl_curl(
+            e_field,
+            eps_r,
+            eps_i,
+            j,
+            edges_b1,
+            coords,
+            &cg,
+            Some(&patch),
+        )
+        .expect("auto patch solve");
 
     let vd = sol_dense.into_data().value;
     let va = sol_auto.into_data().value;
