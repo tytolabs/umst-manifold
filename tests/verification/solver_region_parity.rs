@@ -57,7 +57,9 @@ fn solver_region_parity_cold_vs_warm_reuse() {
         None,
         None,
     )
-    .expect("forward_loss_with_diagnostics cold");
+    .expect(
+        "AdjointComplianceQ1Hex::forward_loss_with_diagnostics SolverRegion cold parity baseline without warm_u reuse (FP §6 Track G Q1 hex solver region parity)",
+    );
 
     let mut region = SolverRegion::new();
     let opts_warm = Q1HexSolveOptions {
@@ -82,7 +84,9 @@ fn solver_region_parity_cold_vs_warm_reuse() {
         Some(&mut region),
         None,
     )
-    .expect("forward_loss_with_diagnostics warm");
+    .expect(
+        "AdjointComplianceQ1Hex::forward_loss_with_diagnostics SolverRegion warm reuse via pcg_warm_start and operator cache (FP §6 Track G Q1 hex solver region parity)",
+    );
 
     let dc = (c_cold - c_warm).abs();
     assert!(dc < 1e-4, "compliance mismatch cold={c_cold} warm={c_warm}");
