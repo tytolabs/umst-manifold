@@ -66,7 +66,10 @@ use burn::tensor::Shape;
 use burn::tensor::Tensor;
 
 #[cfg(feature = "thmc-coupled")]
-use crate::core::field::{Field, HumidityField, ReactionExtentField, StepEntryDamageMask, TemperatureField};
+use crate::core::field::{
+    Field, HumidityField, ReactionExtentField, StepEntryDamageMask, StiffnessField,
+    TemperatureField,
+};
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::dec_operators::DecEdgeOperators;
 #[cfg(feature = "thmc-coupled")]
@@ -630,7 +633,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         let stiffness_e = alpha_bn1.mul_scalar(self.kinetics.stiffness_e_scale_pa);
         let stiffness_nu =
             Tensor::<B, 3>::zeros([batch, n, 1], &device).add_scalar(self.kinetics.stiffness_nu);
-        let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
+        let stiffness = StiffnessField::from_e_nu_cat(stiffness_e, stiffness_nu)
+            .as_tensor()
+            .clone();
         let r_eq = VectorMechanicsSolver::projected_bar_equilibrium_residual(
             u.clone(),
             coords_n3.clone(),
