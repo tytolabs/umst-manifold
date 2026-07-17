@@ -212,7 +212,3 @@ fn post_newton_stacked_residual_oracle_matches_independent_recompute_two_nodes()
     );
 }
 
-/// Placeholder for Wave 1 tol-gated exit oracle — `#[ignore]` until S1 lands.
-#[test]
-#[ignore = "Wave S1: wire ThmcPostNewtonDiagnostic + tol-stacked-R exit in ThmcSolver::step"]
-fn post_newton_tol_gated_exit_oracle_fixture_queued() {}
