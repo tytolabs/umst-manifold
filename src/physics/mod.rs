@@ -27,6 +27,7 @@ pub mod mechanics_operator;
 pub mod mechanics_solve_port;
 pub mod operator;
 pub mod orchestration;
+#[cfg(feature = "thmc-coupled")]
 pub(crate) mod pipeline;
 #[cfg(any(
     feature = "topology-density-evolution",

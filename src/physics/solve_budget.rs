@@ -149,16 +149,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn low_eta_cog_reduces_pcg_max_iter() {
+    fn low_eta_cog_reduces_pcg_max_iter() -> Result<(), CockpitParseError> {
         let snap = CockpitSnapshot::new(0.1, 100.0, 1.0);
         let opts = q1hex_opts_from_cockpit(&snap);
-        let cap = opts.pcg_max_iter.expect("pcg_max_iter set");
+        let cap = opts
+            .pcg_max_iter
+            .ok_or(CockpitParseError::Json("pcg_max_iter unset".into()))?;
         assert!(
             cap <= DEFAULT_PCG_MAX_ITER,
             "low η_cog cap {cap} should be ≤ default {DEFAULT_PCG_MAX_ITER}"
         );
         assert!(opts.pcg_warm_start);
         assert!(opts.use_operator_cache);
+        Ok(())
     }
 
     #[test]
@@ -177,25 +180,27 @@ mod tests {
     }
 
     #[test]
-    fn cockpit_from_external_json_maps_v4_fields() {
+    fn cockpit_from_external_json_maps_v4_fields() -> Result<(), CockpitParseError> {
         let json = r#"{
             "schema_version": 4,
             "eta_cog": 0.42,
             "dignity_value": 7.5,
             "tokens_per_sec": 120.0
         }"#;
-        let snap = cockpit_from_external_json(json).expect("parse");
+        let snap = cockpit_from_external_json(json)?;
         assert!((snap.eta_cog - 0.42).abs() < 1e-9);
         assert!((snap.dignity - 7.5).abs() < 1e-9);
         assert!((snap.tokens_per_sec - 120.0).abs() < 1e-9);
+        Ok(())
     }
 
     #[test]
-    fn cockpit_from_external_json_falls_back_to_raw_fields() {
+    fn cockpit_from_external_json_falls_back_to_raw_fields() -> Result<(), CockpitParseError> {
         let json = r#"{"eta_cog_raw": 0.15, "dignity_value_raw": 3.0}"#;
-        let snap = cockpit_from_external_json(json).expect("parse");
+        let snap = cockpit_from_external_json(json)?;
         assert!((snap.eta_cog - 0.15).abs() < 1e-9);
         assert!((snap.dignity - 3.0).abs() < 1e-9);
         assert_eq!(snap.tokens_per_sec, 0.0);
+        Ok(())
     }
 }

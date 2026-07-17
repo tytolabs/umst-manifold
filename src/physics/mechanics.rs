@@ -1945,8 +1945,10 @@ mod tests {
             stiff.push(e);
             stiff.push(0.3);
         }
-        let stiffness: Tensor<B, 3> =
-            Tensor::from_data(Data::new(stiff, Shape::new([1, n, 2])), &dev);
+        let stiffness = StiffnessField::from_tensor(Tensor::from_data(
+            Data::new(stiff, Shape::new([1, n, 2])),
+            &dev,
+        ));
         let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
         let displacement = Tensor::<B, 3>::zeros([1, n, 3], &dev);
         let body_force = Tensor::<B, 3>::zeros([1, n, 3], &dev);
