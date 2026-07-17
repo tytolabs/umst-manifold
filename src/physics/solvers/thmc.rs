@@ -792,7 +792,7 @@ impl ThmcSolver {
                     bm.clone(),
                     cross_section_area,
                     &inner_cfg,
-                );
+                )?;
 
                 let trial = ThmcState {
                     thermal: ThermalPlan::from_temperature(t_predict),
@@ -1015,7 +1015,7 @@ impl ThmcSolver {
                             bm,
                             cross_section_area,
                             &inner_cfg,
-                        );
+                        )?;
                         state.mechanical.displacement = u_new;
                     }
                 }
