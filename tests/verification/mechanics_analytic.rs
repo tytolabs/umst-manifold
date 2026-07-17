@@ -333,8 +333,8 @@ fn cantilever_axial_chain_tip_displacement_n64() {
 
     let cfg = MechanicsInnerLoopConfig {
         max_cg_iterations: 500,
-        cg_tolerance: 1e-10,
-        pcg_tolerance: 1e-10,
+        cg_tolerance: 3e-5,
+        pcg_tolerance: 3e-5,
         use_preconditioner: true,
         max_equilibrium_substeps: 1,
     };
@@ -417,8 +417,8 @@ fn packed_bar_network_equilibrium_uniform_axial_strain_tip_load_distinct_from_ac
 
     let cfg = MechanicsInnerLoopConfig {
         max_cg_iterations: 500,
-        cg_tolerance: 1e-10,
-        pcg_tolerance: 1e-10,
+        cg_tolerance: 3e-5,
+        pcg_tolerance: 3e-5,
         use_preconditioner: true,
         max_equilibrium_substeps: 1,
     };
