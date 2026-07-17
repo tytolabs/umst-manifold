@@ -979,7 +979,7 @@ impl ThmcSolver {
                         alpha_bn1.mul_scalar(self.reaction_extent_kinetics.stiffness_e_scale_pa);
                     let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &device)
                         .add_scalar(self.reaction_extent_kinetics.stiffness_nu);
-                    let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
+                    let stiffness = StiffnessField::from_e_nu_cat(stiffness_e, stiffness_nu);
                     let bf = Field::new(Tensor::<B, 3>::zeros([batch, n, 3], &device));
                     let inner_cfg = MechanicsInnerLoopConfig::default();
                     let cross_section_area = 0.01_f32;
@@ -993,7 +993,7 @@ impl ThmcSolver {
                         let equilibrium = solve_bar_equilibrium(
                             state.mechanical.displacement.clone(),
                             coords_n3.clone(),
-                            stiffness,
+                            stiffness.as_tensor().clone(),
                             bf.clone(),
                             edges_b1.clone(),
                             damage_m.as_damage_field().clone(),
@@ -1012,7 +1012,7 @@ impl ThmcSolver {
                         let (u_new, _stress) = VectorMechanicsSolver::solve_equilibrium_typed(
                             state.mechanical.displacement.clone(),
                             coords_n3.clone(),
-                            stiffness,
+                            stiffness.as_tensor().clone(),
                             bf,
                             edges_b1.clone(),
                             damage_m.as_damage_field().clone(),
