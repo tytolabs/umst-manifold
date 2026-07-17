@@ -403,16 +403,17 @@ fn full_sg_implicit_newton_chain_backward_euler_residual_smoke() {
         full_sg_correction_use_gmres: false,
     };
     let dt = 1e-7_f32;
-    let out = solver.try_solve_pnp_backward_euler_newton_chain(
-        &newton,
-        dt,
-        phi_n.clone(),
-        c_n.clone(),
-        edges.clone(),
-        eps.clone(),
-        d.clone(),
-    ).expect("try_solve_pnp_backward_euler_newton_chain");
-    let (phi_t, c_t) = out.expect("full-SG implicit Newton should succeed on small chain");
+    let (phi_t, c_t) = solver
+        .try_solve_pnp_backward_euler_newton_chain(
+            &newton,
+            dt,
+            phi_n.clone(),
+            c_n.clone(),
+            edges.clone(),
+            eps.clone(),
+            d.clone(),
+        )
+        .expect("full-SG implicit Newton should succeed on small chain");
     let res = pnp_backward_euler_residual_l2_chain_host_f64(
         &solver, &newton, dt, &phi_t, &c_t, &c_n, &edges, &eps, &d,
     )
@@ -461,16 +462,17 @@ fn full_sg_implicit_newton_frozen_inner_iters_residual_smoke() {
         full_sg_correction_use_gmres: false,
     };
     let dt = 1e-7_f32;
-    let out = solver.try_solve_pnp_backward_euler_newton_chain(
-        &newton,
-        dt,
-        phi_n.clone(),
-        c_n.clone(),
-        edges.clone(),
-        eps.clone(),
-        d.clone(),
-    ).expect("try_solve_pnp_backward_euler_newton_chain");
-    let (phi_t, c_t) = out.expect("full-SG frozen-inner Newton should succeed");
+    let (phi_t, c_t) = solver
+        .try_solve_pnp_backward_euler_newton_chain(
+            &newton,
+            dt,
+            phi_n.clone(),
+            c_n.clone(),
+            edges.clone(),
+            eps.clone(),
+            d.clone(),
+        )
+        .expect("full-SG frozen-inner Newton should succeed");
     let res = pnp_backward_euler_residual_l2_chain_host_f64(
         &solver, &newton, dt, &phi_t, &c_t, &c_n, &edges, &eps, &d,
     )
