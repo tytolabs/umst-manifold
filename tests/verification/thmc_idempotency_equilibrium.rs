@@ -9,7 +9,7 @@ use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::field::{
     Field, FractureEnergyField, HumidityField, ReactionExtentField, SmallStrainField,
-    StepEntryDamageMask, TemperatureField,
+    StepEntryDamageMask, StiffnessField, TemperatureField,
 };
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::core::traits::IScienceCartridge;
@@ -19,9 +19,12 @@ use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::orchestration::TopologyPhysicsOrchestrator;
 use umst_manifold::physics::solvers::fracture_field::PhaseFieldFractureSolver;
 use umst_manifold::physics::solvers::thmc::{reaction_extent_rate_field, ThmcNewtonConfig};
-use umst_manifold::physics::solvers::{ReactionExtentKinetics, ThmcSolver, ThmcState};
-use umst_manifold::physics::thmc_umst_sync::sync_thmc_to_umst;
+use umst_manifold::physics::solvers::{
+    ReactionExtentKinetics, ThmcImplicitEulerThermalHumidityReactionExtentResidual,
+    ThmcImplicitEulerThermalReactionExtentResidual, ThmcSolver, ThmcState,
+};
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
+use umst_manifold::physics::thmc_umst_sync::sync_thmc_to_umst;
 
 type B = NdArray<f32>;
 
@@ -377,12 +380,9 @@ fn thmc_mechanics_bar_idempotent_at_zero_load_equilibrium() {
         &dev,
     );
     let edges = two_node_edges();
-    let stiffness = Tensor::cat(
-        vec![
-            Tensor::<B, 3>::full([1, n, 1], 1.0e6_f32, &dev),
-            Tensor::<B, 3>::full([1, n, 1], 0.2_f32, &dev),
-        ],
-        2,
+    let stiffness = StiffnessField::from_e_nu_cat(
+        Tensor::<B, 3>::full([1, n, 1], 1.0e6_f32, &dev),
+        Tensor::<B, 3>::full([1, n, 1], 0.2_f32, &dev),
     );
     let cfg = MechanicsInnerLoopConfig {
         max_cg_iterations: 64,
@@ -488,6 +488,321 @@ fn orchestrator_thmc_idempotent_at_equilibrium() {
         ) < tol,
         "orchestrator displacement must not drift on re-step"
     );
+}
+
+/// FP §6: backward-Euler \((T,\alpha)\) residual at uniform saturated equilibrium — damped Newton re-step is a fixed point.
+#[test]
+fn thmc_t_alpha_residual_damped_newton_idempotent_at_backward_euler_equilibrium() {
+    let dev = device();
+    let n = 2usize;
+    let batch = 1usize;
+    let dt = 1e-4_f32;
+    let edges = two_node_edges();
+    let damage = zero_damage_mask(batch, n);
+    let kinetics = ReactionExtentKinetics::default();
+    let t_n = Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &dev);
+    let alpha_n = Tensor::<B, 3>::full([batch, n, 1], 1.0_f32, &dev);
+    let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
+        dt,
+        temperature_n: Field::new(t_n.clone()),
+        alpha_n: Field::new(alpha_n.clone()),
+        edges_b1: edges,
+        damage_m: damage,
+        kinetics,
+    };
+    let trial = ThmcState::from_tensors(
+        t_n,
+        Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &dev),
+        Tensor::<B, 3>::zeros([batch, n, 3], &dev),
+        alpha_n,
+        Tensor::<B, 3>::zeros([batch, n, 1], &dev),
+        0.0_f32,
+    );
+    let r0 = assembler
+        .residual_l2(&trial)
+        .expect("equilibrium residual norm");
+    assert!(
+        r0 < 1e-6_f32,
+        "uniform saturated (T,α) must satisfy backward-Euler equilibrium, got ||R||={r0}"
+    );
+    let (after_first, _) = assembler
+        .damped_newton_iterations(&trial, 2_usize, 1.0_f32, 1.0e-5_f32)
+        .expect("first damped Newton chain on equilibrated (T,α)");
+    let (after_second, _) = assembler
+        .damped_newton_iterations(&after_first, 2_usize, 1.0_f32, 1.0e-5_f32)
+        .expect("second damped Newton chain on equilibrated (T,α)");
+    let tol = 1e-5_f32;
+    assert!(
+        max_abs_tensor3(
+            after_first.thermal.temperature.as_tensor(),
+            trial.thermal.temperature.as_tensor()
+        ) < tol,
+        "(T,α) damped Newton must not drift from backward-Euler equilibrium"
+    );
+    assert!(
+        max_abs_tensor3(
+            after_first.chemical.reaction_extent.as_tensor(),
+            trial.chemical.reaction_extent.as_tensor()
+        ) < tol,
+        "(T,α) reaction extent must not drift on residual re-step"
+    );
+    assert!(
+        max_abs_tensor3(
+            after_second.thermal.temperature.as_tensor(),
+            after_first.thermal.temperature.as_tensor()
+        ) < tol,
+        "re-application of (T,α) damped Newton must not drift"
+    );
+    assert!(
+        max_abs_tensor3(
+            after_second.chemical.reaction_extent.as_tensor(),
+            after_first.chemical.reaction_extent.as_tensor()
+        ) < tol,
+        "re-application of (T,α) α must not drift"
+    );
+}
+
+/// FP §6: backward-Euler \((T,h,\alpha)\) residual at uniform saturated equilibrium — damped Newton re-step is a fixed point.
+#[test]
+fn thmc_tha_residual_damped_newton_idempotent_at_backward_euler_equilibrium() {
+    let dev = device();
+    let n = 2usize;
+    let batch = 1usize;
+    let dt = 1e-4_f32;
+    let edges = two_node_edges();
+    let damage = zero_damage_mask(batch, n);
+    let kinetics = ReactionExtentKinetics::default();
+    let t_n = Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &dev);
+    let h_n = Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &dev);
+    let alpha_n = Tensor::<B, 3>::full([batch, n, 1], 1.0_f32, &dev);
+    let u_n = Tensor::<B, 3>::zeros([batch, n, 3], &dev);
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
+        dt,
+        temperature_n: Field::new(t_n.clone()),
+        humidity_n: Field::new(h_n.clone()),
+        alpha_n: Field::new(alpha_n.clone()),
+        displacement_n: u_n.clone(),
+        mechanics_placeholder_mass: 1.0_f32,
+        ru_shrinkage_binder_liquid_ratio: None,
+        edges_b1: edges,
+        damage_m: damage,
+        kinetics,
+    };
+    let trial = ThmcState::from_tensors(
+        t_n,
+        h_n,
+        u_n,
+        alpha_n,
+        Tensor::<B, 3>::zeros([batch, n, 1], &dev),
+        0.0_f32,
+    );
+    let r0 = assembler
+        .residual_l2(&trial)
+        .expect("equilibrium residual norm");
+    assert!(
+        r0 < 1e-6_f32,
+        "uniform saturated (T,h,α) must satisfy backward-Euler equilibrium, got ||R||={r0}"
+    );
+    let (after_first, _) = assembler
+        .damped_newton_iterations(&trial, 2_usize, 1.0_f32, 1.0e-5_f32)
+        .expect("first damped Newton chain on equilibrated (T,h,α)");
+    let (after_second, _) = assembler
+        .damped_newton_iterations(&after_first, 2_usize, 1.0_f32, 1.0e-5_f32)
+        .expect("second damped Newton chain on equilibrated (T,h,α)");
+    let tol = 1e-5_f32;
+    for (label, a, b) in [
+        ("T", after_first.thermal.temperature.as_tensor(), trial.thermal.temperature.as_tensor()),
+        ("h", after_first.hydro.humidity.as_tensor(), trial.hydro.humidity.as_tensor()),
+        (
+            "α",
+            after_first.chemical.reaction_extent.as_tensor(),
+            trial.chemical.reaction_extent.as_tensor(),
+        ),
+    ] {
+        assert!(
+            max_abs_tensor3(a, b) < tol,
+            "(T,h,α) damped Newton must not drift {label} from backward-Euler equilibrium"
+        );
+    }
+    for (label, a, b) in [
+        (
+            "T",
+            after_second.thermal.temperature.as_tensor(),
+            after_first.thermal.temperature.as_tensor(),
+        ),
+        (
+            "h",
+            after_second.hydro.humidity.as_tensor(),
+            after_first.hydro.humidity.as_tensor(),
+        ),
+        (
+            "α",
+            after_second.chemical.reaction_extent.as_tensor(),
+            after_first.chemical.reaction_extent.as_tensor(),
+        ),
+    ] {
+        assert!(
+            max_abs_tensor3(a, b) < tol,
+            "re-application of (T,h,α) damped Newton must not drift {label}"
+        );
+    }
+}
+
+/// FP §6: monolithic quasi-static \((T,h,\alpha,\mathbf u)\) residual at uniform zero-load equilibrium — damped Newton re-step is a fixed point.
+#[test]
+fn thmc_monolithic_qs_r_u_residual_damped_newton_idempotent_at_equilibrium() {
+    let dev = device();
+    let n = 2usize;
+    let batch = 1usize;
+    let dt = 1e-4_f32;
+    let edges = two_node_edges();
+    let damage = zero_damage_mask(batch, n);
+    let kinetics = ReactionExtentKinetics::default();
+    let coords = Tensor::from_data(
+        Data::new(vec![0.0_f32, 0.0, 0.0, 0.01_f32, 0.0, 0.0], Shape::new([n, 3])),
+        &dev,
+    );
+    let mut bm = vec![1.0_f32; n * 3];
+    bm[0] = 0.0_f32;
+    let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([batch, n, 3])), &dev);
+    let body_force = Tensor::<B, 3>::zeros([batch, n, 3], &dev);
+    let cross_section_area = 0.01_f32;
+    let cfg = MechanicsInnerLoopConfig::default();
+    let t_n = Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &dev);
+    let h_n = Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &dev);
+    let alpha_n = Tensor::<B, 3>::full([batch, n, 1], 1.0_f32, &dev);
+    let stiffness = StiffnessField::from_e_nu_cat(
+        alpha_n.clone().mul_scalar(kinetics.stiffness_e_scale_pa),
+        Tensor::<B, 3>::full([batch, n, 1], kinetics.stiffness_nu, &dev),
+    );
+    let (u_eq, _) = VectorMechanicsSolver::solve_equilibrium_typed(
+        Field::new(Tensor::<B, 3>::zeros([batch, n, 3], &dev)),
+        coords.clone(),
+        stiffness,
+        Field::new(body_force.clone()),
+        edges.clone(),
+        Field::new(Tensor::<B, 3>::zeros([batch, n, 1], &dev)),
+        boundary_mask.clone(),
+        cross_section_area,
+        &cfg,
+    )
+    .expect("zero-load bar equilibrium");
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
+        dt,
+        temperature_n: Field::new(t_n.clone()),
+        humidity_n: Field::new(h_n.clone()),
+        alpha_n: Field::new(alpha_n.clone()),
+        displacement_n: u_eq.as_tensor().clone(),
+        mechanics_placeholder_mass: 1.0_f32,
+        ru_shrinkage_binder_liquid_ratio: None,
+        edges_b1: edges,
+        damage_m: damage,
+        kinetics,
+    };
+    let trial = ThmcState::from_tensors(
+        t_n,
+        h_n,
+        u_eq.as_tensor().clone(),
+        alpha_n,
+        Tensor::<B, 3>::zeros([batch, n, 1], &dev),
+        0.0_f32,
+    );
+    let r0 = assembler
+        .residual_l2_including_quasi_static_r_u(
+            &trial,
+            &coords,
+            &boundary_mask,
+            &body_force,
+            cross_section_area,
+        )
+        .expect("monolithic equilibrium residual norm");
+    let stacked_tol = 1e-4_f32;
+    assert!(
+        r0 < stacked_tol,
+        "uniform zero-load monolithic state must satisfy stacked equilibrium, got ||R||={r0}"
+    );
+    // Production path: tolerance early-exit when ||R||₂ already below threshold (avoids singular FD Jacobian at equilibrium).
+    let (after_first, norms1) = assembler
+        .damped_newton_iterations_with_quasi_static_r_u(
+            &trial,
+            &coords,
+            &boundary_mask,
+            &body_force,
+            cross_section_area,
+            2_usize,
+            1.0_f32,
+            1.0e-5_f32,
+            stacked_tol,
+            None,
+        )
+        .expect("first monolithic damped Newton chain (early-exit at equilibrium)");
+    assert_eq!(
+        norms1.len(),
+        1,
+        "equilibrium head iterate must early-exit before inner Newton steps"
+    );
+    let (after_second, norms2) = assembler
+        .damped_newton_iterations_with_quasi_static_r_u(
+            &after_first,
+            &coords,
+            &boundary_mask,
+            &body_force,
+            cross_section_area,
+            2_usize,
+            1.0_f32,
+            1.0e-5_f32,
+            stacked_tol,
+            None,
+        )
+        .expect("second monolithic damped Newton chain (early-exit at equilibrium)");
+    assert_eq!(norms2.len(), 1, "re-step must also early-exit at equilibrium");
+    let tol = 1e-5_f32;
+    for (label, a, b) in [
+        ("T", after_first.thermal.temperature.as_tensor(), trial.thermal.temperature.as_tensor()),
+        ("h", after_first.hydro.humidity.as_tensor(), trial.hydro.humidity.as_tensor()),
+        (
+            "α",
+            after_first.chemical.reaction_extent.as_tensor(),
+            trial.chemical.reaction_extent.as_tensor(),
+        ),
+        (
+            "u",
+            after_first.mechanical.displacement.as_tensor(),
+            trial.mechanical.displacement.as_tensor(),
+        ),
+    ] {
+        assert!(
+            max_abs_tensor3(a, b) < tol,
+            "monolithic damped Newton must not drift {label} from equilibrium"
+        );
+    }
+    for (label, a, b) in [
+        (
+            "T",
+            after_second.thermal.temperature.as_tensor(),
+            after_first.thermal.temperature.as_tensor(),
+        ),
+        (
+            "h",
+            after_second.hydro.humidity.as_tensor(),
+            after_first.hydro.humidity.as_tensor(),
+        ),
+        (
+            "α",
+            after_second.chemical.reaction_extent.as_tensor(),
+            after_first.chemical.reaction_extent.as_tensor(),
+        ),
+        (
+            "u",
+            after_second.mechanical.displacement.as_tensor(),
+            after_first.mechanical.displacement.as_tensor(),
+        ),
+    ] {
+        assert!(
+            max_abs_tensor3(a, b) < tol,
+            "re-application of monolithic damped Newton must not drift {label}"
+        );
+    }
 }
 
 /// FP §6: `sync_thmc_to_umst` ∘ `hydrate_from_umst_typed_views` roundtrip on scalar channels.
