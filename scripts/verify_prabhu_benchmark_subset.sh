@@ -2,25 +2,53 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 #
-# RW-FP-PRABHU PB-S6 prep — CI probe dry-run / enforce stub.
-# Consumes artifacts/benchmarks/prabhu_runtime_subset.json (PB-S4 baseline)
-# and artifacts/benchmarks/prabhu_thresholds.toml (PB-S5 operator — not invented here).
+# RW-FP-PRABHU PB-S6 — CI probe for prabhu_benchmark_subset (PB-1..3).
+# SSOT: outputs/.tmp/fp_prabhu_benchmark_schedule.md (§ PB-S6)
+#
+# Validates the committed PB-S4 baseline transcript and, once PB-S5 lands,
+# compares a fresh witness against operator-signed regression thresholds.
+# Agent scope: probe script + docs only — never invent prabhu_thresholds.toml.
+#
+# Inputs:
+#   artifacts/benchmarks/prabhu_runtime_subset.json   PB-S4 baseline (committed)
+#   artifacts/benchmarks/prabhu_thresholds.toml         PB-S5 operator (optional pre-S5)
+#
+# Related:
+#   scripts/collect_prabhu_benchmark_transcript.sh      PB-S3 collector (--collect)
+#   artifacts/benchmarks/prabhu_ci_probe_design.md      CI wiring notes (rust.yml post-S5)
+#
+# Modes:
+#   dry-run (default)  schema + parity check; log witnesses; exit 0 if thresholds absent
+#   enforce            regression gate — current <= baseline * (1 + max_pct/100) per metric
 #
 # Usage:
-#   bash scripts/verify_prabhu_benchmark_subset.sh              # dry-run (default)
+#   bash scripts/verify_prabhu_benchmark_subset.sh                 # dry-run (default)
 #   bash scripts/verify_prabhu_benchmark_subset.sh --dry-run
-#   bash scripts/verify_prabhu_benchmark_subset.sh --enforce    # post-S5 only
+#   bash scripts/verify_prabhu_benchmark_subset.sh --dry-run --collect
+#   bash scripts/verify_prabhu_benchmark_subset.sh --enforce       # post-PB-S5 only
 #   bash scripts/verify_prabhu_benchmark_subset.sh --enforce --collect
 #
+# Flags:
+#   --dry-run   validate baseline schema + parity; non-blocking without thresholds
+#   --enforce   fail on regression over max_regression_pct (needs operator thresholds)
+#   --collect   run collect_prabhu_benchmark_transcript.sh before compare
+#   -h, --help  print this header and exit
+#
 # Env:
-#   PRABHU_BASELINE_JSON   override baseline transcript path
-#   PRABHU_THRESHOLDS_TOML override thresholds path
-#   CARGO_TARGET_DIR       forwarded to collect script when --collect
+#   PRABHU_BASELINE_JSON    override baseline transcript path
+#   PRABHU_THRESHOLDS_TOML  override thresholds path
+#   CARGO_TARGET_DIR        forwarded to collector when --collect
+#
+# Exit codes:
+#   0  dry-run OK, or enforce gate green
+#   1  missing baseline, schema/parity failure, enforce without thresholds, or regression
+#   2  unknown argument
 set -euo pipefail
 
 MANIFOLD="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BASELINE_JSON="${PRABHU_BASELINE_JSON:-${MANIFOLD}/artifacts/benchmarks/prabhu_runtime_subset.json}"
 THRESHOLDS_TOML="${PRABHU_THRESHOLDS_TOML:-${MANIFOLD}/artifacts/benchmarks/prabhu_thresholds.toml}"
+# Locked by PB-S3 collector parity guard (phase0d + gate_parity_fixture).
 PARITY_SHA256="149081fa81a6525fb66ff01924c6656f30e2b67846d9945a25427c7be38d20f3"
 
 MODE="dry-run"
@@ -32,11 +60,11 @@ for arg in "$@"; do
     --enforce) MODE="enforce" ;;
     --collect) COLLECT=1 ;;
     -h|--help)
-      sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
+      awk '/^set -euo pipefail/{exit} NR>1{sub(/^# ?/,""); print}' "$0"
       exit 0
       ;;
     *)
-      echo "Unknown arg: ${arg}" >&2
+      echo "Unknown arg: ${arg} (try --help)" >&2
       exit 2
       ;;
   esac
@@ -63,6 +91,7 @@ if [[ "${COLLECT}" -eq 1 ]]; then
 fi
 
 python3 - "${MODE}" "${BASELINE_JSON}" "${CURRENT_JSON}" "${THRESHOLDS_TOML}" "${PARITY_SHA256}" <<'PY'
+"""PB-S6 probe: validate transcript schema/parity; optional regression gate (PB-S5)."""
 from __future__ import annotations
 
 import json
@@ -83,6 +112,7 @@ REQUIRED_METRICS = (
 )
 
 THRESHOLD_SECTIONS = {
+    # Transcript key -> TOML section (operator sets max_regression_pct in PB-S5).
     "gate_route_us_per_call": "pb1_gate_route",
     "thmc_step_ms_per_node": "pb2_thmc_step",
     "arena_100_loads_sec": "pb3_arena_alloc",
@@ -124,6 +154,7 @@ if current_path != baseline_path:
 
 thresholds_file = Path(thresholds_path)
 if not thresholds_file.is_file():
+    # Pre-S5: witness-only dry-run; enforce must fail closed.
     print(f"BLOCKED-OPERATOR: missing {thresholds_file} (PB-S5)")
     if mode == "enforce":
         raise SystemExit("FAIL: --enforce requires operator-signed prabhu_thresholds.toml")
