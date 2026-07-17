@@ -204,7 +204,9 @@ fn thmc_drying_shrinkage_within_mc2010_notional_band() {
     };
     let mut s = state;
     for _ in 0..560 {
-        s = solver.step(&Stub, s, &mut manifold).expect("THMC step Ok");
+        s = solver
+            .step(&Stub, s, &mut manifold)
+            .expect("ThmcSolver::step on 28-node drying chain for MC2010 shrink-strain band witness (FP §6 Track G drying shrinkage)");
     }
     let h = s.hydro.humidity.as_tensor().clone().into_data().value;
     let h_surf = h[n - 1];
@@ -338,7 +340,7 @@ fn bar_network_strain_matches_strain_tensor_for_fracture_after_mechanics() {
         edge_len,
         n,
     )
-    .expect("strain_tensor_for_fracture_after_mechanics");
+    .expect("strain_tensor_for_fracture_after_mechanics on 3-node bar post-equilibrium (FP §6 Track G THMC↔fracture wiring)");
 
     let (u_eq, _) = VectorMechanicsSolver::solve_equilibrium(
         u0,
@@ -351,7 +353,7 @@ fn bar_network_strain_matches_strain_tensor_for_fracture_after_mechanics() {
         cross_section_area,
         &cfg,
     )
-    .expect("solve_equilibrium");
+    .expect("VectorMechanicsSolver::solve_equilibrium on 3-node bar for strain parity check (FP §6 Track G THMC↔fracture wiring)");
     let eps_from_u = strain_tensor_from_bar_network_displacement(u_eq, coords, edges_b1.clone(), n);
 
     let v1 = eps_one_shot.into_data().value;
@@ -418,7 +420,7 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
             mk_state(Tensor::<B, 3>::zeros([batch, n, 1], &d)),
             &mut manifold,
         )
-        .expect("THMC step Ok");
+        .expect("ThmcSolver::step with tensile matrix_features stub on 3-node chain (FP §6 Track G P1 fracture feed)");
     let max_d_tension = s_tension.damage.as_tensor().clone().into_data()
         .value
         .iter()
@@ -432,7 +434,7 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
             mk_state(Tensor::<B, 3>::zeros([batch, n, 1], &d)),
             &mut manifold_flat,
         )
-        .expect("THMC step Ok");
+        .expect("ThmcSolver::step with zero-strain matrix_features control on 3-node chain (FP §6 Track G P1 fracture feed)");
     let max_d_flat = s_flat.damage.as_tensor().clone().into_data()
         .value
         .iter()
@@ -592,7 +594,9 @@ fn thmc_implicit_euler_t_alpha_residual_matches_brute_force_two_nodes() {
         damage_m.clone(),
         0.0_f32,
     );
-    let (r_t, r_alpha) = assembler.assemble(&trial).expect("assemble");
+    let (r_t, r_alpha) = assembler
+        .assemble(&trial)
+        .expect("ThmcImplicitEulerThermalReactionExtentResidual::assemble on 2-node (T,α) trial state (FP §6 Track G implicit Euler witness)");
 
     let t = trial_t.into_data().value;
     let a = trial_alpha.into_data().value;
