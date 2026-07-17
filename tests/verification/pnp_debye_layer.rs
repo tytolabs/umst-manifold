@@ -1161,7 +1161,7 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         eps.clone(),
         d.clone(),
     ).expect(
-        "ElectroChemicalSolver::solve_pnp_step_dispatch linearised implicit BE at infinitesimal dt (Track 14 split-agreement witness)",
+        "ElectroChemicalSolver::solve_pnp_step_dispatch linearised implicit BE at infinitesimal dt (FP §6 Track 14 split-agreement witness)",
     );
     let be_res = pnp_backward_euler_residual_l2_chain_host_f64(
         &solver_dispatch_small,
@@ -1175,7 +1175,7 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         &d,
     )
     .expect(
-        "pnp_backward_euler_residual_l2_chain_host_f64 at infinitesimal dt linearised split-agreement (Track 14 f32 ‖R‖₂ witness)",
+        "pnp_backward_euler_residual_l2_chain_host_f64 at infinitesimal dt linearised split-agreement (FP §6 Track 14 f32 ‖R‖₂ witness)",
     );
     // Host Newton converges in f64 to ‖R‖₂ ≪ 1e-6 before tensor export; re-evaluating R on f32
     // tensors with very small `dt` amplifies the (c−cⁿ)/Δt block (Track 14 / f32 export path).
@@ -1191,7 +1191,7 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         eps.clone(),
         d.clone(),
     ).expect(
-        "ElectroChemicalSolver::solve_pnp_step operator-split explicit step at infinitesimal dt (Track 14 split-agreement witness)",
+        "ElectroChemicalSolver::solve_pnp_step operator-split explicit step at infinitesimal dt (FP §6 Track 14 split-agreement witness)",
     );
     let dphi = max_abs_diff(&phi_i, &phi_s);
     let dc = max_abs_diff(&c_i, &c_s);
@@ -1221,7 +1221,7 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         eps.clone(),
         d.clone(),
     ).expect(
-        "ElectroChemicalSolver::solve_pnp_step_dispatch linearised implicit BE at finite dt (Track 14 divergence witness)",
+        "ElectroChemicalSolver::solve_pnp_step_dispatch linearised implicit BE at finite dt (FP §6 Track 14 divergence witness)",
     );
     let be_fin = pnp_backward_euler_residual_l2_chain_host_f64(
         &solver_dispatch_fin,
@@ -1235,7 +1235,7 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         &d,
     )
     .expect(
-        "pnp_backward_euler_residual_l2_chain_host_f64 at finite dt linearised implicit BE root (Track 14 ‖R‖₂ witness)",
+        "pnp_backward_euler_residual_l2_chain_host_f64 at finite dt linearised implicit BE root (FP §6 Track 14 ‖R‖₂ witness)",
     );
     assert!(
         be_fin < 5e-6_f64,
@@ -1244,7 +1244,7 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
     let (phi_sf, c_sf) = solver_split
         .solve_pnp_step(dt_fin, phi_n, c_n, edges, eps, d)
         .expect(
-            "ElectroChemicalSolver::solve_pnp_step operator-split explicit step at finite dt (Track 14 divergence witness)",
+            "ElectroChemicalSolver::solve_pnp_step operator-split explicit step at finite dt (FP §6 Track 14 divergence witness)",
         );
     let gap = max_abs_diff(&phi_if, &phi_sf).max(max_abs_diff(&c_if, &c_sf));
     assert!(
