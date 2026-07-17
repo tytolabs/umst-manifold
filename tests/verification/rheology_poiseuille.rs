@@ -44,7 +44,9 @@ fn analytic_newtonian_centreline_is_gh2_over_8mu() {
     let h = 0.05_f32;
     let mu = 50.0_f32;
     let want = g * h * h / (8.0 * mu);
-    let got = plane_bingham_poiseuille_u(0.0, g, h, mu, 0.0).expect("Newtonian centreline");
+    let got = plane_bingham_poiseuille_u(0.0, g, h, mu, 0.0).expect(
+        "plane_bingham_poiseuille_u at y=0 for Newtonian centreline gH²/(8μ) witness (FP §6 Track E rheology Poiseuille)",
+    );
     assert!(
         (got - want).abs() < 1e-3,
         "centreline Newtonian mismatch: got {got}, want {want}"
@@ -65,7 +67,9 @@ fn analytic_no_slip_when_yield_exceeds_wall_stress() {
     let h = 0.05_f32;
     let mu = 50.0_f32;
     let tau0 = 100.0_f32; // > g * H / 2 = 25 Pa
-    let u0 = plane_bingham_poiseuille_u(0.0, g, h, mu, tau0).expect("no-slip yield branch");
+    let u0 = plane_bingham_poiseuille_u(0.0, g, h, mu, tau0).expect(
+        "plane_bingham_poiseuille_u at y=0 when τ₀ exceeds wall stress for zero-flow no-slip witness (FP §6 Track E rheology Poiseuille)",
+    );
     assert!(u0.abs() < 1e-6, "expected zero flow, got {u0}");
 }
 
@@ -156,7 +160,9 @@ fn chorin_single_step_finite_smoke() {
             edges_b1.clone(),
             gravity.clone(),
         )
-        .expect("Bingham step");
+        .expect(
+            "BinghamFlowSolver::step on 5×5 wall-masked Chorin lattice for finite substeps smoke (FP §6 Track E rheology Poiseuille)",
+        );
         let mask3 = wall_mask.clone().expand([batch, n, 3]);
         velocity = v.mul(mask3);
         pressure = p;
@@ -250,7 +256,9 @@ fn chorin_uniform_body_force_zero_pressure_rhs_uniform_interior_one_step() {
         edges_b1,
         gravity,
     )
-    .expect("Bingham step");
+    .expect(
+        "BinghamFlowSolver::step on 7×7 uniform body-force channel for zero pressure-RHS one-step witness (FP §6 Track E rheology Poiseuille)",
+    );
     let mask3 = wall_mask.expand([batch, n, 3]);
     let vals: Vec<f32> = v.mul(mask3).into_data().convert::<f32>().value;
 
@@ -418,7 +426,9 @@ fn chorin_jacobi_pcg_step_velocity_amplification_regression_guard() {
             edges_b1.clone(),
             gravity.clone(),
         )
-        .expect("Bingham step");
+        .expect(
+            "BinghamFlowSolver::step step-0 on 65×17 channel for Jacobi-PCG amplification regression guard (FP §6 Track E rheology Poiseuille)",
+        );
         velocity = v0.mul(mask3.clone());
         pressure = p0;
         let umax0 = velocity.clone().abs().max().into_scalar();
@@ -437,7 +447,9 @@ fn chorin_jacobi_pcg_step_velocity_amplification_regression_guard() {
             edges_b1.clone(),
             gravity.clone(),
         )
-        .expect("Bingham step");
+        .expect(
+            "BinghamFlowSolver::step step-1 on 65×17 channel for Jacobi-PCG amplification regression guard (FP §6 Track E rheology Poiseuille)",
+        );
         let umax1 = v1.mul(mask3).abs().max().into_scalar();
         let pmax1 = p1.clone().abs().max().into_scalar();
         assert!(
