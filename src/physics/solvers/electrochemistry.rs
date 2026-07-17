@@ -3775,7 +3775,9 @@ mod newton_chain_tests {
             }
         };
 
-        let x_g = gmres_f32_try(matvec, &b_f32, dim, dim, 1e-5_f32).expect("GMRES solve");
+        let x_g = gmres_f32_try(matvec, &b_f32, dim, dim, 1e-5_f32).expect(
+            "gmres_f32_try Newton correction on full-SG BE Jacobian matvec small chain (FP §6 Krylov witness)",
+        );
 
         let mx_sol: f64 = (0..dim)
             .map(|i| (x_g[i] as f64 - rhs_de[i]).abs())
@@ -3973,7 +3975,9 @@ mod newton_chain_tests {
         };
 
         let max_iter = (dim + 120).min(512);
-        let x_g = gmres_f32_try(matvec, &b_f32, dim, max_iter, 5e-4_f32).expect("GMRES solve N=17");
+        let x_g = gmres_f32_try(matvec, &b_f32, dim, max_iter, 5e-4_f32).expect(
+            "gmres_f32_try Newton correction on full-SG BE Jacobian matvec N=17 chain (FP §6 Krylov witness)",
+        );
 
         let mx_sol: f64 = (0..dim)
             .map(|i| (x_g[i] as f64 - rhs_de[i]).abs())
@@ -4043,7 +4047,9 @@ mod newton_chain_tests {
             eps.clone(),
             d.clone(),
         )
-        .expect("dense full-SG Newton");
+        .expect(
+            "try_solve_pnp_be_newton_chain_host dense band Newton correction on small chain (FP §6 Track 14 witness)",
+        );
         let out_g = try_solve_pnp_be_newton_chain_host(
             &solver,
             &newton_gmres,
@@ -4054,7 +4060,9 @@ mod newton_chain_tests {
             eps.clone(),
             d.clone(),
         )
-        .expect("GMRES full-SG Newton");
+        .expect(
+            "try_solve_pnp_be_newton_chain_host GMRES full-SG Newton correction on small chain (FP §6 Track 14 witness)",
+        );
         let pd = out_d.0.into_data().value;
         let pg = out_g.0.into_data().value;
         let cd = out_d.1.into_data().value;
@@ -4125,7 +4133,9 @@ mod newton_chain_tests {
             eps.clone(),
             d.clone(),
         )
-        .expect("tensor host Newton should converge on small chain");
+        .expect(
+            "try_solve_pnp_be_newton_chain_host linearized Fickian tensor path on small chain (FP §6 Track 14 witness)",
+        );
         let g0 = phi_n.clone().into_data().value[0] as f64;
         let g1 = phi_n.clone().into_data().value[n - 1] as f64;
         let mut phi_v = vec![0.0_f64; n];
@@ -4219,7 +4229,9 @@ mod newton_chain_tests {
             eps.clone(),
             d.clone(),
         )
-        .expect("full-SG band Newton host should converge on small chain");
+        .expect(
+            "try_solve_pnp_be_newton_chain_host full-SG band Newton on small chain (FP §6 Track 14 witness)",
+        );
         let g0 = phi_n.clone().into_data().value[0] as f64;
         let g1 = phi_n.clone().into_data().value[n - 1] as f64;
         let mut phi_v = vec![0.0_f64; n];
@@ -4315,7 +4327,9 @@ mod newton_chain_tests {
             eps.clone(),
             d.clone(),
         )
-        .expect("full-SG frozen-inner Newton should converge on small chain");
+        .expect(
+            "try_solve_pnp_be_newton_chain_host full-SG frozen-inner Newton on small chain (FP §6 Track 14 witness)",
+        );
         let g0 = phi_n.clone().into_data().value[0] as f64;
         let g1 = phi_n.clone().into_data().value[n - 1] as f64;
         let mut phi_v = vec![0.0_f64; n];
@@ -4400,7 +4414,9 @@ mod newton_chain_tests {
         let res_chain = pnp_backward_euler_residual_l2_chain_host_f64(
             &solver, &newton, dt, &phi_n, &c_n, &c_n, &edges_b1, &eps_t, &d_t,
         )
-        .expect("BE residual on chain with edges_b1");
+        .expect(
+            "pnp_backward_euler_residual_l2_chain_host_f64 on chain with edges_b1 layout (FP §6 ‖R‖₂ witness)",
+        );
         assert!(res_chain.is_finite(), "BE residual L2={res_chain}");
         let dt64 = dt as f64;
         let phi_h = phi_n.into_data().value;
