@@ -34,7 +34,7 @@ pub fn canonical_transition_admissible(
     new_state: &ThermodynamicStateSnapshot,
     dt_s: f64,
 ) -> bool {
-    canonical_transition_outcome(old_state, new_state, dt_s).accepted
+    canonical_transition_outcome(old_state, new_state, dt_s).is_accepted()
 }
 
 /// Host [`ThermodynamicState`] variant (cartridge `manifest-bridge` path).
@@ -44,7 +44,7 @@ pub fn canonical_thermo_transition_admissible(
     new_state: &ThermodynamicState,
     dt_s: f64,
 ) -> bool {
-    thermo_gate_transition_outcome(old_state, new_state, dt_s, TRANSITION_TOLERANCE).accepted
+    thermo_gate_transition_outcome(old_state, new_state, dt_s, TRANSITION_TOLERANCE).is_accepted()
 }
 
 /// Core-only margin for cold/tensor alignment (Mass + CD via [`core_gate`]).

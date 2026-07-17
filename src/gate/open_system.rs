@@ -58,7 +58,7 @@ pub fn cbf_cd_matches_open_system_gate(
     tolerance: f64,
 ) -> bool {
     let power_input = landauer_power_input_joules(temperature_k, bits_resolved);
-    open_system_core_gate(entropy_production_joules, power_input, true, tolerance).clausius_duhem
+    open_system_core_gate(entropy_production_joules, power_input, true, tolerance).is_clausius_duhem()
 }
 
 /// Read-only CBF admission reconciled with open-system gate (credit budget separate).

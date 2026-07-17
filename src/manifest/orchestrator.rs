@@ -256,15 +256,7 @@ fn host_to_snapshot(s: &ThermodynamicState) -> ThermodynamicStateSnapshot {
 }
 
 fn transition_verdict_to_admissibility(tv: TransitionVerdict) -> AdmissibilityVerdict {
-    if tv.admissible {
-        AdmissibilityVerdict::Accepted
-    } else if !tv.mass_conserved {
-        AdmissibilityVerdict::MassViolation
-    } else if !tv.energy_positive {
-        AdmissibilityVerdict::NegativeDissipation
-    } else {
-        AdmissibilityVerdict::Unknown
-    }
+    tv.rest_verdict()
 }
 
 #[cfg(test)]
