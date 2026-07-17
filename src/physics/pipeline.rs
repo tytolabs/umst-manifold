@@ -7,6 +7,9 @@
 //! `validate_pre → newton_loop → fracture → sync → gate → advance_time`, chained via
 //! [`and_then_state`] / [`map_state`] instead of imperative `mut state` scripts.
 //!
+//! Compiled only with `thmc-coupled` — sole production caller is
+//! [`super::solvers::thmc_epilogue::thmc_post_step_epilogue`].
+//!
 //! **Inner-loop exemption:** CG / PCG Krylov iterations and dense FD Newton hosts stay imperative —
 //! see [`docs/FP_FIXED_POINT_CANONICAL.md`](../../docs/FP_FIXED_POINT_CANONICAL.md) and
 //! [`super::solvers::fixed_point`] (tensor `mut` inner loops are not functor-wrapped).
