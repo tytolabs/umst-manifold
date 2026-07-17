@@ -1129,7 +1129,9 @@ fn staggered_fracture_compliance_monotone_increasing() {
         compliances.push(c_k);
     }
 
-    let c_final = *compliances.last().unwrap();
+    let c_final = *compliances
+        .last()
+        .expect("final compliance from staggered outer_schedule (compliances non-empty after loop)");
     assert!(
         c_final > c0,
         "expected compliance to grow: c0={c0} c_final={c_final}"
