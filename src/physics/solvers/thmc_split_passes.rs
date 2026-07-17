@@ -178,10 +178,11 @@ fn monolithic_pass<B: Backend<FloatElem = f32>>(
     scratch: &ThmcNewtonScratch<B>,
     ctx: &ThmcStepCtx<'_, B>,
 ) -> Result<ThmcState<B>, PhysicsError> {
-    let mc = ctx
-        .monolithic_thmc_newton
-        .as_ref()
-        .expect("monolithic_pass: monolithic_thmc_newton must be Some");
+    let Some(mc) = ctx.monolithic_thmc_newton.as_ref() else {
+        return Err(PhysicsError::InvariantViolation {
+            context: "monolithic_pass: monolithic_thmc_newton must be Some",
+        });
+    };
     let batch = ctx.batch;
     let n = ctx.n;
     let device = &ctx.device;
