@@ -126,6 +126,18 @@ fn snapshot_to_state(s: &SnapshotInput) -> ThermodynamicStateSnapshot {
     }
 }
 
+#[allow(deprecated)]
+fn transition_outcome_from_gate(
+    r: umst_manifold::gate::ThermodynamicTransitionOutcome,
+) -> TransitionOutcome {
+    TransitionOutcome {
+        accepted: r.is_accepted(),
+        dissipation: r.dissipation,
+        mass_conserved: r.mass_conserved,
+        energy_positive: r.is_energy_positive(),
+    }
+}
+
 fn run_manifold_mix_gate(case: &FixtureCase) -> TransitionOutcome {
     match case {
         FixtureCase::FromMix {
@@ -144,12 +156,7 @@ fn run_manifold_mix_gate(case: &FixtureCase) -> TransitionOutcome {
                 &params,
                 TRANSITION_TOLERANCE,
             );
-            TransitionOutcome {
-                accepted: r.accepted,
-                dissipation: r.dissipation,
-                mass_conserved: r.mass_conserved,
-                energy_positive: r.energy_positive,
-            }
+            transition_outcome_from_gate(r)
         }
         FixtureCase::ExplicitSnapshot {
             old,
@@ -165,12 +172,7 @@ fn run_manifold_mix_gate(case: &FixtureCase) -> TransitionOutcome {
                 *dt_seconds,
                 TRANSITION_TOLERANCE,
             );
-            TransitionOutcome {
-                accepted: r.accepted,
-                dissipation: r.dissipation,
-                mass_conserved: r.mass_conserved,
-                energy_positive: r.energy_positive,
-            }
+            transition_outcome_from_gate(r)
         }
     }
 }
