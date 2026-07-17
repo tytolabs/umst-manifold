@@ -161,7 +161,7 @@ impl ActiveMatterFixture {
     pub fn admissible(&self, tolerance: f64) -> bool {
         self.reaction_rate > 0.0
             && self.power_input() > 0.0
-            && open_system_core_gate(self.dissipation, self.power_input(), true, tolerance).accepted
+            && open_system_core_gate(self.dissipation, self.power_input(), true, tolerance).is_accepted()
     }
 
     /// Passive limit: `Ṙ → 0` ⇒ `P_input → 0`.

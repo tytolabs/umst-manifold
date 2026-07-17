@@ -89,9 +89,10 @@ use burn::tensor::Int;
 use burn::tensor::{backend::Backend, Tensor};
 
 use crate::core::field::{
-    DamageField, DisplacementField, Field, HumidityField, ReactionExtentField,
-    StepEntryDamageMask, StiffnessField, TemperatureField,
+    DamageField, DisplacementField, Field, HumidityField, ReactionExtentField, TemperatureField,
 };
+#[cfg(feature = "thmc-coupled")]
+use crate::core::field::{StepEntryDamageMask, StiffnessField};
 use crate::core::material_transition::ReactionExtentKineticsSpec;
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use crate::core::traits::IScienceCartridge;
@@ -212,6 +213,16 @@ pub struct ThmcState<B: Backend> {
     pub time: f32,
 }
 
+/// Destructured THMC field tensors plus simulation time.
+type ThmcTensorBundle<B> = (
+    Tensor<B, 3>,
+    Tensor<B, 3>,
+    Tensor<B, 3>,
+    Tensor<B, 3>,
+    Tensor<B, 3>,
+    f32,
+);
+
 impl<B: Backend> ThermalPlan<B> {
     #[inline]
     #[must_use]
@@ -287,14 +298,7 @@ impl<B: Backend> ThmcState<B> {
     #[must_use]
     pub fn into_thmc_tensors(
         self,
-    ) -> (
-        Tensor<B, 3>,
-        Tensor<B, 3>,
-        Tensor<B, 3>,
-        Tensor<B, 3>,
-        Tensor<B, 3>,
-        f32,
-    ) {
+    ) -> ThmcTensorBundle<B> {
         (
             self.thermal.temperature.into_tensor(),
             self.hydro.humidity.into_tensor(),

@@ -20,6 +20,11 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use crate::physics::PhysicsError;
+
+/// Newmark step output: displacement, velocity, acceleration nodal vectors `[B, N, 3]`.
+type AcousticStepOut<B> = (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>);
+
 #[cfg(feature = "acoustics-newmark")]
 use burn::tensor::{Data, Shape};
 
@@ -169,7 +174,7 @@ impl AcousticWaveSolver {
         stiffness_local_bn44: Tensor<B, 4>,
         bar_network: Option<AcousticBarNetwork<B>>,
         gmres_cfg: Option<AcousticGmresConfig>,
-    ) -> (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>) {
+    ) -> Result<AcousticStepOut<B>, PhysicsError> {
         #[cfg(not(feature = "acoustics-newmark"))]
         {
             let _ = (
@@ -183,7 +188,7 @@ impl AcousticWaveSolver {
                 stiffness_local_bn44,
             );
             let _ = (bar_network, gmres_cfg);
-            (displacement, velocity, acceleration)
+            Ok((displacement, velocity, acceleration))
         }
 
         #[cfg(feature = "acoustics-newmark")]
@@ -221,7 +226,7 @@ impl AcousticWaveSolver {
         stiffness_local_bn44: Tensor<B, 4>,
         bar_network: Option<AcousticBarNetwork<B>>,
         gmres_cfg: Option<AcousticGmresConfig>,
-    ) -> (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>, usize) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>, usize), PhysicsError> {
         let mut st = (
             displacement,
             velocity,
@@ -234,6 +239,7 @@ impl AcousticWaveSolver {
             bar_network,
             gmres_cfg,
         );
+        let mut step_err: Option<PhysicsError> = None;
         let k = iterate_until(num_steps, &mut st, |s| {
             let (
                 ref mut u,
@@ -247,7 +253,7 @@ impl AcousticWaveSolver {
                 ref bar,
                 ref gcfg,
             ) = *s;
-            let (un, vn, an) = self.step_wave(
+            match self.step_wave(
                 u.clone(),
                 v.clone(),
                 a.clone(),
@@ -258,14 +264,24 @@ impl AcousticWaveSolver {
                 kloc.clone(),
                 bar.clone(),
                 gcfg.as_ref().copied(),
-            );
-            *u = un;
-            *v = vn;
-            *a = an;
-            core::ops::ControlFlow::Continue(())
+            ) {
+                Ok((un, vn, an)) => {
+                    *u = un;
+                    *v = vn;
+                    *a = an;
+                    core::ops::ControlFlow::Continue(())
+                }
+                Err(e) => {
+                    step_err = Some(e);
+                    core::ops::ControlFlow::Break(())
+                }
+            }
         });
+        if let Some(err) = step_err {
+            return Err(err);
+        }
         let (u, v, a, ..) = st;
-        (u, v, a, k)
+        Ok((u, v, a, k))
     }
 }
 
@@ -529,7 +545,7 @@ fn solve_acceleration_gmres_batch_row<B: Backend<FloatElem = f32>>(
     beta_dt2: f32,
     bar: Option<&AcousticBarNetwork<B>>,
     gmres: AcousticGmresConfig,
-) -> Result<Tensor<B, 3>, String> {
+) -> Result<Tensor<B, 3>, PhysicsError> {
     use super::krylov_host::gmres_f32_try;
 
     let n = n_v * 3;
@@ -585,7 +601,7 @@ fn step_wave_experimental<B: Backend<FloatElem = f32>>(
     stiffness_local_bn44: Tensor<B, 4>,
     bar_network: Option<AcousticBarNetwork<B>>,
     gmres_cfg: AcousticGmresConfig,
-) -> (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>) {
+) -> Result<AcousticStepOut<B>, PhysicsError> {
     let dt = solver.dt;
     let beta_nm = solver.newmark_beta;
     let gamma = solver.newmark_gamma;
@@ -615,10 +631,9 @@ fn step_wave_experimental<B: Backend<FloatElem = f32>>(
         let n_v = bar.n_v;
         let template = Tensor::<B, 3>::zeros([batch, n_v, 3], &device);
         let mut acc_acc = Tensor::<B, 3>::zeros([batch, n_v, 3], &device);
-        let mut gmres_ok = true;
         for b in 0..batch {
             let rhs_flat = pack_bn3_to_flat(rhs_acc.clone(), b, n_v);
-            match solve_acceleration_gmres_batch_row(
+            let row_acc = solve_acceleration_gmres_batch_row(
                 &device,
                 &template,
                 b,
@@ -631,25 +646,10 @@ fn step_wave_experimental<B: Backend<FloatElem = f32>>(
                 beta_dt2,
                 bar_network.as_ref(),
                 gmres_cfg,
-            ) {
-                Ok(row_acc) => {
-                    acc_acc = acc_acc.slice_assign([b..b + 1, 0..n_v, 0..3], row_acc);
-                }
-                Err(_) => {
-                    gmres_ok = false;
-                    break;
-                }
-            }
+            )?;
+            acc_acc = acc_acc.slice_assign([b..b + 1, 0..n_v, 0..3], row_acc);
         }
-        if gmres_ok {
-            acc_acc
-        } else {
-            let s_mat = m_mat
-                .clone()
-                .add(damping_bn33.clone().mul_scalar(gamma_dt))
-                .add(stiffness_local_bn44.clone().mul_scalar(beta_dt2));
-            solve_batched_3x3(s_mat, rhs_acc)
-        }
+        acc_acc
     } else {
         let s_mat = m_mat
             .clone()
@@ -671,7 +671,7 @@ fn step_wave_experimental<B: Backend<FloatElem = f32>>(
             .add(acc_next.clone().mul_scalar(dt * gamma)),
     );
 
-    (u_next, v_next, acc_next)
+    Ok((u_next, v_next, acc_next))
 }
 
 // --- 1-D periodic bar (dispersion / energy benchmarks) -------------------------------------------
@@ -785,13 +785,15 @@ impl AcousticNewmarkBar1dPeriodic {
         u: &mut [f32],
         v: &mut [f32],
         a: &mut [f32],
-    ) {
+    ) -> Result<(), PhysicsError> {
         debug_assert_eq!(u.len(), self.n);
         debug_assert_eq!(v.len(), self.n);
         debug_assert_eq!(a.len(), self.n);
 
         if !self.prepare(ws, dt) {
-            return;
+            return Err(PhysicsError::IndefiniteSystem {
+                context: "acoustic_newmark_bar_1d_periodic: cholesky factorization",
+            });
         }
 
         let beta = self.newmark_beta;
@@ -821,6 +823,7 @@ impl AcousticNewmarkBar1dPeriodic {
         for i in 0..self.n {
             v[i] += dt * ((1.0_f32 - gamma) * acc_n[i] + gamma * a[i]);
         }
+        Ok(())
     }
 
     fn prepare(&self, ws: &mut AcousticNewmarkBar1dWork, dt: f32) -> bool {
@@ -982,7 +985,9 @@ mod acoustics_newmark_tests {
             .reshape([1, 1, 3, 3])
             .expand([1, n, 3, 3])
             .mul_scalar(k_edge);
-        let (u1, _v1, a1) = solver.step_wave(u, vel, acc, rho, vol, f, damp, kloc, None, None);
+        let (u1, _v1, a1) = solver
+            .step_wave(u, vel, acc, rho, vol, f, damp, kloc, None, None)
+            .expect("step_wave");
         let _ = u1;
         let a1_flat = a1.into_data().value;
         assert_eq!(a1_flat.len(), n * 3);
@@ -1034,21 +1039,23 @@ mod acoustics_graph_gmres_tests {
         let damp = Tensor::<B, 4>::zeros([1, n, 3, 3], &dev);
         let k_zero = Tensor::<B, 4>::zeros([1, n, 3, 3], &dev);
 
-        let (_u1, _v1, a1) = solver.step_wave(
-            u,
-            vel,
-            acc,
-            rho,
-            vol,
-            f,
-            damp,
-            k_zero,
-            Some(bar),
-            Some(AcousticGmresConfig {
-                max_iter: 48,
-                rel_tol: 1e-7_f32,
-            }),
-        );
+        let (_u1, _v1, a1) = solver
+            .step_wave(
+                u,
+                vel,
+                acc,
+                rho,
+                vol,
+                f,
+                damp,
+                k_zero,
+                Some(bar),
+                Some(AcousticGmresConfig {
+                    max_iter: 48,
+                    rel_tol: 1e-7_f32,
+                }),
+            )
+            .expect("step_wave");
 
         let a_flat = a1.into_data().value;
         assert!(
@@ -1096,8 +1103,9 @@ mod acoustics_ad_iterate_tests {
         let v0 = Tensor::<B, 3>::zeros([1, n, 3], &dev);
         let a0 = Tensor::<B, 3>::zeros([1, n, 3], &dev);
 
-        let (u_end, _v, _a, _k) =
-            solver.step_wave_iterate(32, u0, v0, a0, rho.clone(), vol, f, damp, kloc, None, None);
+        let (u_end, _v, _a, _k) = solver
+            .step_wave_iterate(32, u0, v0, a0, rho.clone(), vol, f, damp, kloc, None, None)
+            .expect("step_wave_iterate");
 
         let loss = u_end.clone().sum();
         let grads = loss.backward();
@@ -1231,12 +1239,14 @@ mod acoustics_idempotency_tests {
         let mut v = vec![0.0_f32; bar.n];
         let mut a = vec![0.0_f32; bar.n];
 
-        bar.step(&mut ws, dt, &mut u, &mut v, &mut a);
+        bar.step(&mut ws, dt, &mut u, &mut v, &mut a)
+            .expect("step");
         let u1 = u.clone();
         let v1 = v.clone();
         let a1 = a.clone();
 
-        bar.step(&mut ws, dt, &mut u, &mut v, &mut a);
+        bar.step(&mut ws, dt, &mut u, &mut v, &mut a)
+            .expect("step");
         let tol = 1e-6_f32;
         assert!(
             max_abs_drift(&u, &u1) < tol && max_abs_drift(&v, &v1) < tol && max_abs_drift(&a, &a1) < tol,

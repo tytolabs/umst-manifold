@@ -54,4 +54,3 @@ pub mod topology;
 pub mod topology_filter;
 
 pub use error::PhysicsError;
-pub(crate) use pipeline::{and_then_state, map_state};
