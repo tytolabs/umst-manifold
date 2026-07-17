@@ -597,8 +597,9 @@ mod tests {
             Data::new(vec![epsilon as f32, sigma as f32], Shape::new([1, 2])),
             &dev,
         );
-        let (k_tensor, _) = upscale_potentials(lj)
-            .expect("upscale_potentials [B,2] placeholder bulk modulus row");
+        let (k_tensor, _) = upscale_potentials(lj).expect(
+            "statistical_mechanics::upscale_potentials on [B,2] placeholder bulk modulus row vs Johnson1993 scalar path (FP §6 Track G statmech residual)",
+        );
         let k_placeholder = f64::from(k_tensor.into_scalar());
         let k_johnson = super::physical_bulk_modulus_johnson1993(rho_star, t_star, epsilon, sigma);
         let rel_tensor = ((k_placeholder - k_johnson) / k_johnson).abs();
