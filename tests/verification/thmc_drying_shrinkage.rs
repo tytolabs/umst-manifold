@@ -337,7 +337,8 @@ fn bar_network_strain_matches_strain_tensor_for_fracture_after_mechanics() {
         edge_unit,
         edge_len,
         n,
-    );
+    )
+    .expect("strain_tensor_for_fracture_after_mechanics");
 
     let (u_eq, _) = VectorMechanicsSolver::solve_equilibrium(
         u0,
@@ -349,7 +350,8 @@ fn bar_network_strain_matches_strain_tensor_for_fracture_after_mechanics() {
         boundary_mask,
         cross_section_area,
         &cfg,
-    );
+    )
+    .expect("solve_equilibrium");
     let eps_from_u = strain_tensor_from_bar_network_displacement(u_eq, coords, edges_b1.clone(), n);
 
     let v1 = eps_one_shot.into_data().value;
@@ -902,7 +904,8 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
         boundary_mask.clone(),
         cross_section_area,
         &inner_cfg,
-    );
+    )
+    .expect("solve_equilibrium");
 
     let dt = 0.02_f32;
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
@@ -1041,7 +1044,8 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
         boundary_mask.clone(),
         cross_section_area,
         &inner_cfg,
-    );
+    )
+    .expect("solve_equilibrium");
 
     let h_shared = 0.58_f32;
     let dt = 0.02_f32;
@@ -1158,7 +1162,8 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
         boundary_mask.clone(),
         cross_section_area,
         &inner_cfg,
-    );
+    )
+    .expect("solve_equilibrium");
 
     let dt = 0.02_f32;
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
@@ -2429,7 +2434,8 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         bm.clone(),
         cross_section_area,
         &inner_cfg,
-    );
+    )
+    .expect("solve_equilibrium");
 
     let trial =     ThmcState::from_tensors(
         t_predict,
