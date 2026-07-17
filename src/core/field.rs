@@ -20,6 +20,8 @@ use std::marker::PhantomData;
 
 use burn::tensor::{backend::Backend, Tensor};
 
+use super::material_transition::ReactionExtentKineticsSpec;
+
 /// Phantom space marker: nodal temperature field \(T\) — shape `[B, N, F_T]`, kelvin.
 ///
 /// formal_anchor: NONE
@@ -279,6 +281,23 @@ impl<B: Backend> StiffnessField<B> {
     pub fn from_e_nu_cat(e_young: Tensor<B, 3>, nu: Tensor<B, 3>) -> Self {
         Field::new(Tensor::cat(vec![e_young, nu], 2))
     }
+
+    /// THMC reaction-extent stiffness centralizer: \(E = \alpha \cdot E_\mathrm{scale}\), \(\nu\) uniform.
+    ///
+    /// `alpha_bn1` is the clipped `[B, N, 1]` reaction-extent channel (caller-owned slice/clamp).
+    #[inline]
+    #[must_use]
+    pub fn from_alpha_kinetics(
+        alpha_bn1: Tensor<B, 3>,
+        spec: &ReactionExtentKineticsSpec,
+        device: &B::Device,
+    ) -> Self {
+        let [batch, n, _] = alpha_bn1.dims();
+        let stiffness_e = alpha_bn1.mul_scalar(spec.stiffness_e_scale_pa);
+        let stiffness_nu =
+            Tensor::<B, 3>::zeros([batch, n, 1], device).add_scalar(spec.stiffness_nu);
+        Self::from_e_nu_cat(stiffness_e, stiffness_nu)
+    }
 }
 
 impl<B: Backend> SmallStrainField<B> {
@@ -355,6 +374,30 @@ mod tests {
         let damage_raw = Tensor::<B, 3>::zeros([1, 2, 1], &device);
         accept_gc(FractureEnergyField::from_tensor(gc_raw));
         accept_damage(Field::new(damage_raw));
+    }
+
+    #[test]
+    fn stiffness_from_alpha_kinetics_matches_e_nu_cat() {
+        use crate::core::material_transition::ReactionExtentKineticsSpec;
+
+        let device = Default::default();
+        let spec = ReactionExtentKineticsSpec {
+            stiffness_e_scale_pa: 30e9,
+            stiffness_nu: 0.2,
+            ..ReactionExtentKineticsSpec::substrate_neutral()
+        };
+        let alpha = Tensor::<B, 3>::from_floats([[[0.5], [0.75]]], &device);
+        let central = StiffnessField::from_alpha_kinetics(alpha.clone(), &spec, &device);
+        let manual = StiffnessField::from_e_nu_cat(
+            alpha.mul_scalar(spec.stiffness_e_scale_pa),
+            Tensor::<B, 3>::zeros([1, 2, 1], &device).add_scalar(spec.stiffness_nu),
+        );
+        assert_eq!(central.as_tensor().dims(), [1, 2, 2]);
+        let c = central.as_tensor().clone().into_data();
+        let m = manual.as_tensor().clone().into_data();
+        for (a, b) in c.value.iter().zip(m.value.iter()) {
+            assert!((a - b).abs() < 1e-3, "mismatch: {a} vs {b}");
+        }
     }
 
     #[test]

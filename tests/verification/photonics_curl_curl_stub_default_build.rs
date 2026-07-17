@@ -67,7 +67,9 @@ mod photonics_off {
             ..Default::default()
         };
 
-        let out = ps.solve_maxwell_curl_curl(e_field, eps_r, eps_i, j, edges, coords, &cg, None);
+        let out = ps
+            .solve_maxwell_curl_curl(e_field, eps_r, eps_i, j, edges, coords, &cg, None)
+            .expect("photonics-off stub returns Ok unchanged");
 
         let got = out.into_data().value;
         assert_eq!(got.len(), e0.len());

@@ -160,8 +160,12 @@ impl ExtrudedPlateMechanics {
         let mut scratch = vec![0.0_f32; n * 3];
 
         let max_it = cg_config.max_cg_iterations.max(1);
+        let rel_tol = cg_config
+            .pcg_tolerance
+            .max(cg_config.cg_tolerance)
+            .max(0.0);
 
-        let _pcg = q1_hex_elasticity::hex_solve_pcg_masked(
+        let pcg = q1_hex_elasticity::hex_solve_pcg_masked(
             self.nx,
             self.ny,
             self.nz,
@@ -180,7 +184,14 @@ impl ExtrudedPlateMechanics {
             cg_config.cg_tolerance,
             None,
         );
-        let _ = _pcg;
+        if rel_tol > 0.0
+            && (!pcg.rel_residual.is_finite() || pcg.rel_residual > rel_tol)
+        {
+            return Err(PhysicsError::Diverged {
+                eq_rel: pcg.rel_residual,
+                pcg_iterations: pcg.iterations,
+            });
+        }
 
         let u_tensor: Tensor<B, 3> =
             Tensor::from_data(Data::new(u, Shape::new([1, n, 3])), &device);
@@ -280,5 +291,82 @@ impl ExtrudedPlateMechanics {
         Tensor::<B, 1>::from_data(Data::new(flat_f, Shape::new([ne * 2])), device)
             .reshape([2, ne])
             .int()
+    }
+}
+
+#[cfg(all(test, any(feature = "topology-density-evolution", feature = "mechanics-voigt-cauchy")))]
+mod q1_idempotency_tests {
+    use super::*;
+    use burn::tensor::{Data, Shape, Tensor};
+    use burn_ndarray::NdArray;
+
+    type B = NdArray<f32>;
+
+    fn max_abs_drift(a: &[f32], b: &[f32]) -> f32 {
+        a.iter()
+            .zip(b.iter())
+            .map(|(&x, &y)| (x - y).abs())
+            .fold(0.0_f32, f32::max)
+    }
+
+    /// FP Manifesto §6: zero body force with fully fixed BCs is a Q1-hex equilibrium — re-solving
+    /// with identical inputs must not drift.
+    #[test]
+    fn solve_equilibrium_idempotent_on_zero_load_fixed_bc() {
+        let dev = Default::default();
+        let nx = 2usize;
+        let ny = 2usize;
+        let nz = 1usize;
+        let plate = ExtrudedPlateMechanics {
+            nx,
+            ny,
+            nz,
+            dx: 0.1,
+            dy: 0.1,
+            dz: 0.05,
+        };
+        let n = plate.n_nodes();
+        let rho = Tensor::<B, 3>::full([1, n, 1], 1.0, &dev);
+        let body_force = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let boundary_mask = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let mat = ElasticMaterial {
+            e0: 30e9,
+            nu: 0.2,
+            simp_p: 1.0,
+            e_min: 1.0,
+        };
+        let cfg = MechanicsInnerLoopConfig {
+            max_cg_iterations: 400,
+            cg_tolerance: 1e-8,
+            pcg_tolerance: 1e-8,
+            use_preconditioner: true,
+            max_equilibrium_substeps: 1,
+        };
+
+        let (u1, _) = plate
+            .solve_equilibrium(
+                rho.clone(),
+                body_force.clone(),
+                boundary_mask.clone(),
+                mat,
+                &cfg,
+            )
+            .expect("first Q1-hex equilibrium");
+        let u1_flat = u1.clone().into_data().value;
+
+        let (u2, _) = plate
+            .solve_equilibrium(rho, body_force, boundary_mask, mat, &cfg)
+            .expect("second Q1-hex equilibrium");
+        let u2_flat = u2.into_data().value;
+
+        let tol = 1e-6_f32;
+        assert!(
+            max_abs_drift(&u1_flat, &u2_flat) < tol,
+            "re-solve on zero-load Q1-hex state must not drift"
+        );
+        assert!(
+            u1_flat.iter().all(|x| x.abs() < tol),
+            "zero-load fixed-BC equilibrium must remain at zero displacement"
+        );
     }
 }

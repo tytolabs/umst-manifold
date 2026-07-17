@@ -54,7 +54,8 @@ fn solve_maxwell_uniform_brick_tet_boundary_residual() {
         coords.clone(),
         &cg,
         Some(&patch),
-    );
+    )
+        .expect("3d brick patch solve");
     let x = sol.into_data().value;
     let dim = 3 * n;
     let mut y = vec![0.0_f32; dim];

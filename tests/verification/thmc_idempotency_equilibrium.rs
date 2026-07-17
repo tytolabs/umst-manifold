@@ -8,15 +8,22 @@
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::field::{
-    Field, HumidityField, ReactionExtentField, StepEntryDamageMask, TemperatureField,
+    Field, FractureEnergyField, HumidityField, ReactionExtentField, SmallStrainField,
+    StepEntryDamageMask, TemperatureField,
 };
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::core::traits::IScienceCartridge;
 use umst_manifold::core::umst_schema::{UMST_SCALAR_CHANNEL_COUNT, SCALAR_DAMAGE, SCALAR_HUMIDITY, SCALAR_TEMPERATURE};
 use umst_manifold::physics::laplacian::TopologicalLaplacian;
-use umst_manifold::physics::solvers::thmc::{reaction_extent_rate_field, ThmcNewtonConfig};
+use umst_manifold::physics::mechanics::VectorMechanicsSolver;
+use umst_manifold::physics::orchestration::TopologyPhysicsOrchestrator;
+use umst_manifold::physics::solvers::fracture_field::PhaseFieldFractureSolver;
+use umst_manifold::physics::solvers::thmc::{
+    reaction_extent_rate_field, ThmcMonolithicNewtonConfig, ThmcNewtonConfig,
+};
 use umst_manifold::physics::solvers::{ReactionExtentKinetics, ThmcSolver, ThmcState};
 use umst_manifold::physics::thmc_umst_sync::sync_thmc_to_umst;
+use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
 type B = NdArray<f32>;
 
@@ -123,7 +130,6 @@ fn zero_damage_mask(batch: usize, n: usize) -> StepEntryDamageMask<B> {
     )))
 }
 
-/// Mirrors the explicit thermal sub-step in [`ThmcSolver::step`] (Laplacian + Euler, no exothermic).
 fn apply_explicit_thermal_substep(
     t: &TemperatureField<B>,
     damage: &StepEntryDamageMask<B>,
@@ -138,7 +144,6 @@ fn apply_explicit_thermal_substep(
     )
 }
 
-/// Mirrors the explicit humidity sub-step in [`ThmcSolver::step`] (no tail drying sink).
 fn apply_explicit_humidity_substep(
     h: &HumidityField<B>,
     damage: &StepEntryDamageMask<B>,
@@ -153,7 +158,6 @@ fn apply_explicit_humidity_substep(
     )
 }
 
-/// Mirrors the explicit reaction-extent sub-step in [`ThmcSolver::step`].
 fn apply_explicit_alpha_substep(
     alpha: &ReactionExtentField<B>,
     temperature: &TemperatureField<B>,
@@ -170,6 +174,35 @@ fn apply_explicit_alpha_substep(
     )
 }
 
+fn two_node_chain_umst() -> UnifiedMaterialStateTensor<B> {
+    let dev = device();
+    let n = 2usize;
+    let f = UMST_SCALAR_CHANNEL_COUNT;
+    let coords: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(vec![0i64; n * 5], Shape::new([n, 5])), &dev);
+    let edges_b1 = two_node_edges();
+    let faces_b2: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(vec![0i64, 0i64], Shape::new([2, 1])), &dev);
+    let node_positions = Some(Tensor::from_data(
+        Data::new(vec![0.0_f32, 0.0, 0.0, 1.0, 0.0, 0.0], Shape::new([n, 3])),
+        &dev,
+    ));
+    UnifiedMaterialStateTensor {
+        coords,
+        edges_b1,
+        faces_b2,
+        scalar_features: Tensor::<B, 2>::zeros([n, f], &dev),
+        vector_features: Tensor::<B, 3>::zeros([n, 1, 3], &dev),
+        matrix_features: Tensor::<B, 4>::zeros([n, 1, 3, 3], &dev),
+        resolution_mm: [1.0, 1.0, 1.0],
+        node_positions,
+        displacement_bc_mask: Tensor::<B, 3>::ones([n, 3, 1], &dev),
+        policy_editable_mask: Tensor::<B, 2>::ones([n, 1], &dev),
+        #[cfg(feature = "formal-witness")]
+        catalog_schema_digest: None,
+    }
+}
+
 fn equilibrated_state(n: usize) -> ThmcState<B> {
     let dev = device();
     ThmcState::from_tensors(
@@ -182,7 +215,6 @@ fn equilibrated_state(n: usize) -> ThmcState<B> {
     )
 }
 
-/// FP §6: explicit thermal Laplacian increment on uniform `T` is a fixed point.
 #[test]
 fn thmc_thermal_transport_idempotent_at_laplacian_fixed_point() {
     let dev = device();
@@ -197,17 +229,10 @@ fn thmc_thermal_transport_idempotent_at_laplacian_fixed_point() {
     let t2 = apply_explicit_thermal_substep(&t1, &damage, edges, dt);
 
     let tol = 1e-6_f32;
-    assert!(
-        max_abs_tensor3(t1.as_tensor(), t0.as_tensor()) < tol,
-        "uniform T must satisfy discrete Laplacian equilibrium"
-    );
-    assert!(
-        max_abs_tensor3(t2.as_tensor(), t1.as_tensor()) < tol,
-        "re-application of explicit thermal sub-step must not drift"
-    );
+    assert!(max_abs_tensor3(t1.as_tensor(), t0.as_tensor()) < tol);
+    assert!(max_abs_tensor3(t2.as_tensor(), t1.as_tensor()) < tol);
 }
 
-/// FP §6: implicit CG thermal solve on uniform Dirichlet field is a fixed point.
 #[test]
 fn thmc_thermal_implicit_cg_idempotent_at_dirichlet_equilibrium() {
     let dev = device();
@@ -231,27 +256,12 @@ fn thmc_thermal_implicit_cg_idempotent_at_dirichlet_equilibrium() {
         .expect("second implicit thermal CG");
 
     let tol = 1e-6_f32;
-    assert!(
-        max_abs_tensor3(&t1, &t_uniform) < tol,
-        "uniform T must be implicit-Euler equilibrium"
-    );
-    assert!(
-        max_abs_tensor3(&t2, &t1) < tol,
-        "re-application of implicit thermal CG must not drift"
-    );
-    assert!(
-        norms1.last().copied().unwrap_or(f32::INFINITY) < cfg.residual_tolerance,
-        "first CG pass should converge: {:?}",
-        norms1
-    );
-    assert!(
-        norms2.last().copied().unwrap_or(f32::INFINITY) < cfg.residual_tolerance,
-        "second CG pass should converge: {:?}",
-        norms2
-    );
+    assert!(max_abs_tensor3(&t1, &t_uniform) < tol);
+    assert!(max_abs_tensor3(&t2, &t1) < tol);
+    assert!(norms1.last().copied().unwrap_or(f32::INFINITY) < cfg.residual_tolerance);
+    assert!(norms2.last().copied().unwrap_or(f32::INFINITY) < cfg.residual_tolerance);
 }
 
-/// FP §6: explicit humidity Laplacian increment on uniform `h` is a fixed point.
 #[test]
 fn thmc_humidity_transport_idempotent_at_uniform_field() {
     let dev = device();
@@ -266,17 +276,10 @@ fn thmc_humidity_transport_idempotent_at_uniform_field() {
     let h2 = apply_explicit_humidity_substep(&h1, &damage, edges, dt);
 
     let tol = 1e-6_f32;
-    assert!(
-        max_abs_tensor3(h1.as_tensor(), h0.as_tensor()) < tol,
-        "uniform h must satisfy discrete Laplacian equilibrium"
-    );
-    assert!(
-        max_abs_tensor3(h2.as_tensor(), h1.as_tensor()) < tol,
-        "re-application of explicit humidity sub-step must not drift"
-    );
+    assert!(max_abs_tensor3(h1.as_tensor(), h0.as_tensor()) < tol);
+    assert!(max_abs_tensor3(h2.as_tensor(), h1.as_tensor()) < tol);
 }
 
-/// FP §6: saturated `α=1` vanishes reaction rate — explicit α update is a fixed point.
 #[test]
 fn thmc_reaction_extent_idempotent_when_rate_vanishes() {
     let dev = device();
@@ -289,25 +292,17 @@ fn thmc_reaction_extent_idempotent_when_rate_vanishes() {
 
     let rate = reaction_extent_rate_field(&kinetics, &alpha0, &temperature, &dev);
     assert!(
-        max_abs_tensor3(rate.as_tensor(), &Tensor::<B, 3>::zeros([batch, n, 1], &dev)) < 1e-9_f32,
-        "saturated α=1 must zero the reaction rate"
+        max_abs_tensor3(rate.as_tensor(), &Tensor::<B, 3>::zeros([batch, n, 1], &dev)) < 1e-9_f32
     );
 
     let alpha1 = apply_explicit_alpha_substep(&alpha0, &temperature, &kinetics, dt);
     let alpha2 = apply_explicit_alpha_substep(&alpha1, &temperature, &kinetics, dt);
 
     let tol = 1e-6_f32;
-    assert!(
-        max_abs_tensor3(alpha1.as_tensor(), alpha0.as_tensor()) < tol,
-        "α update at vanishing rate must be identity"
-    );
-    assert!(
-        max_abs_tensor3(alpha2.as_tensor(), alpha1.as_tensor()) < tol,
-        "re-application of explicit α sub-step must not drift"
-    );
+    assert!(max_abs_tensor3(alpha1.as_tensor(), alpha0.as_tensor()) < tol);
+    assert!(max_abs_tensor3(alpha2.as_tensor(), alpha1.as_tensor()) < tol);
 }
 
-/// FP §6: operator-split `step` on uniform T/h, saturated α, zero u must be a fixed point.
 #[test]
 fn thmc_operator_split_step_idempotent_at_quiescent_equilibrium() {
     let n = 2usize;
@@ -332,37 +327,194 @@ fn thmc_operator_split_step_idempotent_at_quiescent_equilibrium() {
         max_abs_tensor3(
             post2.thermal.temperature.as_tensor(),
             snap.thermal.temperature.as_tensor()
-        ) < tol,
-        "temperature must not drift on re-step"
+        ) < tol
     );
     assert!(
-        max_abs_tensor3(
-            post2.hydro.humidity.as_tensor(),
-            snap.hydro.humidity.as_tensor()
-        ) < tol,
-        "humidity must not drift on re-step"
+        max_abs_tensor3(post2.hydro.humidity.as_tensor(), snap.hydro.humidity.as_tensor()) < tol
     );
     assert!(
         max_abs_tensor3(
             post2.chemical.reaction_extent.as_tensor(),
             snap.chemical.reaction_extent.as_tensor()
-        ) < tol,
-        "reaction extent must not drift on re-step"
+        ) < tol
+    );
+    assert!(max_abs_tensor3(post2.damage.as_tensor(), snap.damage.as_tensor()) < tol);
+    assert!(
+        max_abs_tensor3(
+            post2.mechanical.displacement.as_tensor(),
+            snap.mechanical.displacement.as_tensor()
+        ) < tol
+    );
+}
+
+#[test]
+fn thmc_mechanics_bar_idempotent_at_zero_load_equilibrium() {
+    let dev = device();
+    let n = 2usize;
+    let dx = 1.0_f32;
+    let e = 1.0e6_f32;
+    let a = 0.01_f32;
+    let coords = Tensor::from_data(
+        Data::new(vec![0.0_f32, 0.0, 0.0, dx, 0.0, 0.0], Shape::new([n, 3])),
+        &dev,
+    );
+    let edges = two_node_edges();
+    let stiffness = Tensor::cat(
+        vec![
+            Tensor::<B, 3>::full([1, n, 1], e, &dev),
+            Tensor::<B, 3>::full([1, n, 1], 0.2, &dev),
+        ],
+        2,
+    );
+    let displacement = Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev));
+    let body_force = Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev));
+    let damage = Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev));
+    let mut bm = vec![1.0_f32; n * 3];
+    bm[0] = 0.0_f32;
+    let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &dev);
+    let cfg = MechanicsInnerLoopConfig {
+        max_cg_iterations: 64,
+        cg_tolerance: 1e-8,
+        pcg_tolerance: 1e-8,
+        use_preconditioner: true,
+        max_equilibrium_substeps: 1,
+    };
+
+    let (u1, _) = VectorMechanicsSolver::solve_equilibrium_typed(
+        displacement,
+        coords.clone(),
+        stiffness.clone(),
+        body_force.clone(),
+        edges.clone(),
+        damage.clone(),
+        boundary_mask.clone(),
+        a,
+        &cfg,
+    )
+    .expect("first bar equilibrium");
+    let (u2, _) = VectorMechanicsSolver::solve_equilibrium_typed(
+        u1.clone(),
+        coords,
+        stiffness,
+        body_force,
+        edges,
+        damage,
+        boundary_mask,
+        a,
+        &cfg,
+    )
+    .expect("second bar equilibrium");
+
+    assert!(max_abs_tensor3(u1.as_tensor(), u2.as_tensor()) < 1e-6_f32);
+}
+
+#[test]
+fn thmc_fracture_update_damage_idempotent_at_zero_strain() {
+    let dev = device();
+    let n = 2usize;
+    let batch = 1usize;
+    let edges = two_node_edges();
+    let strain = SmallStrainField::zeros([batch, n, 3, 3], &dev);
+    let damage = Field::new(Tensor::<B, 3>::zeros([batch, n, 1], &dev));
+    let gc = FractureEnergyField::from_tensor(Tensor::<B, 3>::full([batch, n, 1], 150.0, &dev));
+    let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
+
+    let d1 = solver.update_damage(strain.clone(), damage, gc.clone(), edges.clone());
+    let d2 = solver.update_damage(strain, d1.clone(), gc, edges);
+
+    assert!(max_abs_tensor3(d1.as_tensor(), d2.as_tensor()) < 1e-6_f32);
+}
+
+#[test]
+fn thmc_monolithic_newton_idempotent_at_converged_trial() {
+    let n = 2usize;
+    let mut manifold = two_node_chain_umst();
+    let mut bm_flat = vec![1.0_f32; n * 3];
+    bm_flat[0] = 0.0_f32;
+    manifold.displacement_bc_mask =
+        Tensor::from_data(Data::new(bm_flat, Shape::new([n, 3, 1])), &device());
+
+    let state = equilibrated_state(n);
+    let mut solver = ThmcSolver {
+        dt: 1e-4,
+        max_newton: 1,
+        tol: 1e-6,
+        drying_last_node_evaporation_k: 0.0,
+        monolithic_thmc_newton: Some(ThmcMonolithicNewtonConfig {
+            iterations: 4,
+            damping: 1.0,
+            fd_eps: 1.0e-5,
+            stacked_residual_l2_tolerance: 0.0,
+            stacked_residual_relative_to_initial: None,
+        }),
+        ..Default::default()
+    };
+
+    let post1 = solver
+        .step_monolithic_implicit(&StubCartridge, state, &mut manifold)
+        .expect("first monolithic step");
+    let snap = post1.clone();
+    let post2 = solver
+        .step_monolithic_implicit(post1, &mut manifold)
+        .expect("second monolithic step");
+
+    let tol = 1e-5_f32;
+    assert!(
+        max_abs_tensor3(
+            post2.thermal.temperature.as_tensor(),
+            snap.thermal.temperature.as_tensor()
+        ) < tol
     );
     assert!(
-        max_abs_tensor3(post2.damage.as_tensor(), snap.damage.as_tensor()) < tol,
-        "damage must not drift on re-step"
+        max_abs_tensor3(post2.hydro.humidity.as_tensor(), snap.hydro.humidity.as_tensor()) < tol
+    );
+    assert!(
+        max_abs_tensor3(
+            post2.chemical.reaction_extent.as_tensor(),
+            snap.chemical.reaction_extent.as_tensor()
+        ) < tol
     );
     assert!(
         max_abs_tensor3(
             post2.mechanical.displacement.as_tensor(),
             snap.mechanical.displacement.as_tensor()
-        ) < tol,
-        "displacement must not drift on re-step"
+        ) < tol
     );
 }
 
-/// FP §6: `sync_thmc_to_umst` ∘ `hydrate_from_umst_typed_views` roundtrip on scalar channels.
+#[test]
+fn orchestrator_thmc_idempotent_at_equilibrium() {
+    let n = 2usize;
+    let mut manifold = toy_umst(n, 300.0, 0.5, 0.1);
+    let state = equilibrated_state(n);
+    let mut orch = TopologyPhysicsOrchestrator::new(ThmcSolver {
+        dt: 1e-4,
+        max_newton: 1,
+        tol: 1e-6,
+        drying_last_node_evaporation_k: 0.0,
+        ..Default::default()
+    });
+
+    let post1 = orch
+        .run_plan_step(&StubCartridge, state, &mut manifold)
+        .expect("first orchestrator step");
+    let snap = post1.clone();
+    let post2 = orch
+        .run_plan_step(&StubCartridge, post1, &mut manifold)
+        .expect("second orchestrator step");
+
+    let tol = 1e-5_f32;
+    assert!(
+        max_abs_tensor3(
+            post2.thermal.temperature.as_tensor(),
+            snap.thermal.temperature.as_tensor()
+        ) < tol
+    );
+    assert!(
+        max_abs_tensor3(post2.hydro.humidity.as_tensor(), snap.hydro.humidity.as_tensor()) < tol
+    );
+}
+
 #[test]
 fn thmc_hydrate_sync_roundtrip_idempotent_on_scalar_channels() {
     let n = 2usize;
@@ -398,5 +550,5 @@ fn thmc_hydrate_sync_roundtrip_idempotent_on_scalar_channels() {
     let snap = umst.scalar_features.clone().into_data().value;
     sync_thmc_to_umst(&hydrated, &mut umst).expect("re-sync");
     let again = umst.scalar_features.clone().into_data().value;
-    assert_eq!(snap, again, "second sync after hydrate must not drift UMST columns");
+    assert_eq!(snap, again);
 }
