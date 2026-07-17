@@ -24,6 +24,7 @@ PB-3 release bench rounds to zero (borrow-only hot loop); debug `bench_load_aren
 ## Operator follow-up (not invented here)
 
 - **PB-S5:** `artifacts/benchmarks/prabhu_thresholds.toml` — Prabhu sets `max_regression_pct` per PB-id.
-- **PB-S6:** CI probe `prabhu-benchmark-subset` (post-S5).
+- **PB-S6:** CI probe `prabhu-benchmark-subset` — prep stub `scripts/verify_prabhu_benchmark_subset.sh` + design `prabhu_ci_probe_design.md` (enforce post-S5).
 
-Regenerate transcript: `bash scripts/collect_prabhu_benchmark_transcript.sh`
+Regenerate transcript: `bash scripts/collect_prabhu_benchmark_transcript.sh`  
+Dry-run probe: `bash scripts/verify_prabhu_benchmark_subset.sh`
