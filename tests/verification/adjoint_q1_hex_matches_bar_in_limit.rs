@@ -179,7 +179,8 @@ fn adjoint_q1_hex_compliance_near_bar_z_skeleton_slender_limit() {
         mat,
         &cg,
         cross_section_area,
-    );
+    )
+    .unwrap();
 
     let (_, c_hex) = AdjointComplianceQ1Hex::forward_and_loss::<AD>(
         Tensor::from_inner(rho_bn1_bar),
@@ -194,7 +195,8 @@ fn adjoint_q1_hex_compliance_near_bar_z_skeleton_slender_limit() {
         mat,
         &cg,
         None,
-    );
+    )
+    .unwrap();
 
     let rel = ((c_hex - c_bar).abs() / c_bar.abs().max(1e-30_f32)).max(0.0_f32);
     assert!(

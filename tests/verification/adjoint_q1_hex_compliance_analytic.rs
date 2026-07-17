@@ -61,6 +61,7 @@ fn raw_compliance_fd(
     AdjointComplianceQ1Hex::raw_compliance_at_rho(
         rho_vals, nx, ny, nz, dx, dy, dz, bf_data, bm_data, mat, cg, None,
     )
+    .expect("raw compliance FD baseline")
 }
 
 #[test]
@@ -144,7 +145,8 @@ fn adjoint_q1_hex_gradient_matches_finite_difference_plate_8x8x2() {
         mat,
         &cg,
         None,
-    );
+    )
+    .unwrap();
 
     let grads = surrogate.backward();
     let g_rho = rho_ad.grad(&grads).expect("grad ρ");

@@ -30,7 +30,8 @@
 use burn::tensor::{backend::Backend, Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 
-use umst_manifold::physics::solvers::fracture_field::strain_tensor_for_fracture_after_mechanics;
+)
+.unwrap();
 use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 use umst_manifold::physics::topology::EdgeTopology;
@@ -318,7 +319,8 @@ fn milestone_one_mechanics_equilibrium_staggered_convergence() {
         h.edge_unit.clone(),
         h.edge_len.clone(),
         h.n_nodes,
-    );
+    )
+    .unwrap();
     let half_frob_sq = eps_fin
         .powf_scalar(2.0)
         .sum()

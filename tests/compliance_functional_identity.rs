@@ -150,7 +150,8 @@ fn compliance_functional_identity_optimizer_readout_gate() {
         },
         &cg,
         None,
-    );
+    )
+    .expect("legacy gate compliance");
 
     let eps = 1e-4_f32;
     assert!(

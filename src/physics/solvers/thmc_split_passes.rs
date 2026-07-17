@@ -158,6 +158,12 @@ where
         .elem::<f32>()
 }
 
+/// Newton outer-loop carrier for RW-FP-P53 `try_fold` early exit.
+pub(crate) enum NewtonFoldResult<B: Backend> {
+    Continue(ThmcState<B>),
+    Converged(ThmcState<B>),
+}
+
 pub(crate) fn newton_split_chain<B: Backend<FloatElem = f32>>(
     state: ThmcState<B>,
     scratch: &ThmcNewtonScratch<B>,

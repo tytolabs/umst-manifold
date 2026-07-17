@@ -55,7 +55,7 @@ fn helmholtz_delta_blob_fwhm_matches_green_scale() {
     let rho_t: Tensor<B, 3> = Tensor::from_data(Data::new(rho, Shape::new([1, n, 1])), &dev);
     let edges = grid_4_edges(nx, ny, &dev);
     let filter = HelmholtzFilter::new(r, 240, 1e-7);
-    let out = filter.apply(rho_t, edges, dx);
+    let out = filter.apply(rho_t, edges, dx).expect("helmholtz delta blob apply");
     let vals = out.into_data().value;
     let peak = vals.iter().cloned().fold(0.0_f32, f32::max);
     assert!(peak > 0.05 && peak <= 1.5, "peak out of band: {peak}");

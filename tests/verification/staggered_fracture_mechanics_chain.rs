@@ -133,7 +133,8 @@ fn staggered_one_outer_mechanics_strain_drives_at2_damage() {
                 boundary_mask.clone(),
                 cross_section_area,
                 &cfg,
-            );
+            )
+            .unwrap();
             let u_src = u.clone().gather(1, src3.clone());
             let u_tgt = u.gather(1, tgt3.clone());
             let edge_disp = u_tgt.sub(u_src);

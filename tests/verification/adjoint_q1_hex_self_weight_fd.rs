@@ -77,6 +77,7 @@ fn compliance_fd(
     AdjointComplianceQ1Hex::raw_compliance_at_rho(
         rho_flat, plate.nx, plate.ny, plate.nz, plate.dx, plate.dy, plate.dz, &f, mask, mat, cg, sw,
     )
+    .expect("raw compliance with self-weight")
 }
 
 fn adjoint_grad_at_nodes(
@@ -110,7 +111,8 @@ fn adjoint_grad_at_nodes(
         mat,
         cg,
         sw,
-    );
+    )
+    .unwrap();
     rho_ad
         .grad(&surrogate.backward())
         .expect("grad")
