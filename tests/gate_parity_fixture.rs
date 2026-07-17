@@ -100,7 +100,7 @@ fn gate_evaluator_golden_negative_dissipation() {
     let (old, new, dt) = golden_negative_dissipation_reject();
     let mut ev = ThermodynamicTransitionEvaluator::new();
     let tv = ev.check_transition_host(&old, &new, dt);
-    assert!(!tv.is_admissible());
+    assert!(!tv.admissible);
     let v = tv.rest_verdict();
     assert_eq!(v, AdmissibilityVerdict::NegativeDissipation);
     assert_eq!(v.as_str(), AdmissibilityVerdict::NEGATIVE_DISSIPATION);

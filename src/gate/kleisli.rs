@@ -48,6 +48,22 @@ impl AdmissibilityResult {
     pub fn is_accepted(&self) -> bool {
         self.is_admissible()
     }
+
+    /// Construct from primary [`AdmissibilityVerdict`] (legacy bool mirror kept for wire parity).
+    #[allow(deprecated)]
+    #[must_use]
+    pub fn from_verdict(
+        verdict: AdmissibilityVerdict,
+        dissipation: f32,
+        violation: Option<String>,
+    ) -> Self {
+        Self {
+            verdict,
+            admissible: matches!(verdict, AdmissibilityVerdict::Accepted),
+            dissipation,
+            violation,
+        }
+    }
 }
 
 #[inline]
@@ -59,14 +75,12 @@ fn kleisli_verdict_from_admissible(admissible: bool) -> AdmissibilityVerdict {
     }
 }
 
-#[allow(deprecated)]
 fn kleisli_result(admissible: bool, dissipation: f32, violation: Option<String>) -> AdmissibilityResult {
-    AdmissibilityResult {
-        verdict: kleisli_verdict_from_admissible(admissible),
-        admissible,
+    AdmissibilityResult::from_verdict(
+        kleisli_verdict_from_admissible(admissible),
         dissipation,
         violation,
-    }
+    )
 }
 
 /// The admissibility monad wraps a value with its gate status: `M(A) = (A, AdmissibilityResult)`.

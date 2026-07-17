@@ -61,7 +61,7 @@ fn kleisli_compose_preserves_admissibility_chain() {
         "inc_then_double",
     );
     let out = inc.run(5);
-    assert!(out.result.admissible);
+    assert!(out.result.is_admissible());
     assert_eq!(out.value, 12);
 }
 
@@ -108,5 +108,5 @@ fn kleisli_mass_gate_then_identity_pipeline() {
         }
     });
     let seq = pipe.run_sequence(std::f64::consts::PI, &[&ok]);
-    assert!(seq.result.admissible);
+    assert!(seq.result.is_admissible());
 }

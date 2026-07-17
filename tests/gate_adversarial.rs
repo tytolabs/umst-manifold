@@ -32,8 +32,12 @@ fn golden_path() -> PathBuf {
 
 #[test]
 fn adversarial_gate_golden_fnr_zero() {
-    let raw = fs::read_to_string(golden_path()).expect("adversarial golden JSON");
-    let doc: AdversarialGolden = serde_json::from_str(&raw).expect("parse adversarial golden");
+    let raw = fs::read_to_string(golden_path()).expect(
+        "read adversarial_gate_test.json golden fixture for FNR/FPR harness (FP §6)",
+    );
+    let doc: AdversarialGolden = serde_json::from_str(&raw).expect(
+        "serde parse AdversarialGolden summary+cases for gate adversarial harness (FP §6)",
+    );
     assert_eq!(
         doc.summary.false_negatives, 0,
         "hard safety: false_negatives must be 0 (FNR)"

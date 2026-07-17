@@ -36,7 +36,7 @@ fn cd_transition_mass_reject_maps_to_host_transition_slug() {
     let mut new = old.clone();
     new.density = 2280.0;
     let tv = eval.check_transition_host(&old, &new, 3600.0);
-    assert!(!tv.admissible);
+    assert!(!tv.is_admissible());
     let rej = EmbodiedReject::HostTransition {
         catalog_id: CD_TRANSITION_CATALOG_ID,
         verdict: tv.rest_verdict(),

@@ -104,6 +104,10 @@ pub fn default_topology_plan_intents() -> impl Iterator<Item = TopologyPlanInten
 /// profiling, or future middleware (e.g. validation gates between phases).
 pub struct TopologyPhysicsOrchestrator {
     /// Coupled THMC Newton / explicit scaffold controls and tolerances.
+    #[deprecated(
+        since = "0.2.0",
+        note = "use thmc_solver() / thmc_solver_mut() — FP orchestrator encapsulation"
+    )]
     pub thmc: ThmcSolver,
 }
 
@@ -111,6 +115,11 @@ impl TopologyPhysicsOrchestrator {
     /// Wrap an existing [`ThmcSolver`] configuration.
     pub fn new(thmc: ThmcSolver) -> Self {
         Self { thmc }
+    }
+
+    #[allow(deprecated)]
+    fn thmc_solver_inner(&mut self) -> &mut ThmcSolver {
+        &mut self.thmc
     }
 
     /// Fold an explicit iterator of [`TopologyPlanIntent`] into state, left-to-right (**composition**).
@@ -131,7 +140,7 @@ impl TopologyPhysicsOrchestrator {
         I: IntoIterator<Item = TopologyPlanIntent>,
     {
         intents.into_iter().try_fold(state, |state, intent| {
-            intent.apply(&mut self.thmc, cartridge, state, manifold)
+            intent.apply(self.thmc_solver_inner(), cartridge, state, manifold)
         })
     }
 
@@ -205,12 +214,14 @@ impl TopologyPhysicsOrchestrator {
 
     /// Borrow the inner solver for tuning `dt` / Newton counts between steps (experimental workflows).
     #[cfg(feature = "thmc-coupled")]
+    #[allow(deprecated)]
     pub fn thmc_solver_mut(&mut self) -> &mut ThmcSolver {
         &mut self.thmc
     }
 
     /// Immutable access to inner solver parameters (experimental workflows).
     #[cfg(feature = "thmc-coupled")]
+    #[allow(deprecated)]
     pub fn thmc_solver(&self) -> &ThmcSolver {
         &self.thmc
     }
@@ -359,8 +370,8 @@ mod tests {
             tol: 1e-4,
             ..Default::default()
         });
-        assert!((o.thmc.dt - 0.01).abs() < f32::EPSILON);
-        assert_eq!(o.thmc.max_newton, 4);
+        assert!((o.thmc_solver().dt - 0.01).abs() < f32::EPSILON);
+        assert_eq!(o.thmc_solver().max_newton, 4);
     }
 
     #[test]
