@@ -165,7 +165,7 @@ fn post_newton_stacked_residual_oracle_matches_independent_recompute_two_nodes()
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
-        damage_m: Tensor::<B, 3>::zeros([1, n, 1], &d),
+        damage_m: StepEntryDamageMask::from_step_entry_damage(Tensor::<B, 3>::zeros([1, n, 1], &d)),
         kinetics,
     };
 

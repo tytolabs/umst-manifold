@@ -108,7 +108,8 @@ mod thmc_ok {
             tol: 1e-3_f32,
             ..Default::default()
         };
-        let out = solver.step(&Stub, state, &umst);
+        let mut umst_mut = umst;
+        let out = solver.step(&Stub, state, &mut umst_mut);
         assert!(out.is_ok(), "expected Ok, got {:?}", out.err());
     }
 }

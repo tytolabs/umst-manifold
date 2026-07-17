@@ -245,7 +245,8 @@ mod tests {
 
         let (_u, _stress, report) = BarNetworkMechanicsSolvePort.solve_equilibrium_reported(
             u0, coords, stiff, bf, edges, damage, mask, area, &cfg, rel_tol,
-        );
+        )
+            .expect("bar port equilibrium");
 
         assert_eq!(report.lane, PrecisionLane::F64AdjointBarPcg);
         assert!(report.converged());

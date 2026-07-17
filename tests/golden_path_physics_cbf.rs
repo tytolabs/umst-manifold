@@ -180,7 +180,8 @@ impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for MechanicsBarCartrid
             bm,
             cross_section_area,
             &inner_cfg,
-        );
+        )
+        .expect("solve_equilibrium");
 
         let u_energy = u.clone().powf_scalar(2.0).sum_dim(2).reshape([batch, n]);
         // stress: [B, N, 3, 3] — per-node Frobenius energy as a tiny coupling term

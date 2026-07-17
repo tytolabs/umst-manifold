@@ -470,7 +470,8 @@ fn bar_pcg_rel_res(
         fx.mask.clone(),
         fx.area,
         cfg,
-    );
+    )
+    .expect("solve_equilibrium_with_pcg_report");
     (pcg.rel_residual, pcg.iterations)
 }
 
