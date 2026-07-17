@@ -192,9 +192,9 @@ fn monolithic_pass<B: Backend<FloatElem = f32>>(
         .node_positions
         .as_ref()
         .filter(|p| p.dims() == [n, 3])
-        .ok_or_else(|| {
-            "ThmcSolver::step: monolithic_thmc_newton requires manifold.node_positions with shape [N,3]"
-                .to_string()
+        .ok_or_else(|| PhysicsError::Domain {
+            detail: "ThmcSolver::step: monolithic_thmc_newton requires manifold.node_positions with shape [N,3]"
+                .to_string(),
         })?;
     let bm = displacement_bc_mask_expand(ctx.manifold, batch, n)?;
     let bf = Field::new(Tensor::<B, 3>::zeros([batch, n, 3], device));
