@@ -60,6 +60,7 @@ pub use fracture_field::{
     spectral_tensile_psi_plus_from_strain, strain_tensor_for_fracture_after_mechanics,
     strain_tensor_for_fracture_from_manifold, strain_tensor_from_bar_network_displacement,
     StaggeredDamageOuterLoopConfig, StaggeredFractureConfig, StaggeredOuterDamageStopCriteria,
+    StaggeredPhase,
 };
 pub use photonics::{
     DecPatchCsrInnerMode, PhotonicsDecFacesPatch, PhotonicsDecPatchConfig, PhotonicsHelmholtzSolver,
