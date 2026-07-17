@@ -93,6 +93,8 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use crate::physics::PhysicsError;
+
 #[cfg(feature = "electrochemistry-mvp")]
 use burn::tensor::{Bool, Data, Shape};
 
@@ -311,7 +313,7 @@ impl ElectroChemicalSolver {
         #[cfg(feature = "electrochemistry-mvp")]
         {
             if let Some(newton) = self.pnp_implicit_newton_chain {
-                if let Some(out) = self.try_solve_pnp_backward_euler_newton_chain(
+                if let Ok(out) = self.try_solve_pnp_backward_euler_newton_chain(
                     &newton,
                     dt,
                     electric_potential.clone(),
@@ -358,10 +360,21 @@ impl ElectroChemicalSolver {
         edges_b1: Tensor<B, 2, Int>,
         permittivity: Tensor<B, 3>,
         diffusivity: Tensor<B, 3>,
-    ) -> Option<(Tensor<B, 3>, Tensor<B, 3>)> {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
         #[cfg(not(feature = "electrochemistry-mvp"))]
         {
-            None
+            let _ = (
+                newton,
+                dt,
+                electric_potential_n,
+                ion_concentration_n,
+                edges_b1,
+                permittivity,
+                diffusivity,
+            );
+            Err(PhysicsError::UnsupportedLayout {
+                context: "try_solve_pnp_backward_euler_newton_chain",
+            })
         }
         #[cfg(feature = "electrochemistry-mvp")]
         {
@@ -700,7 +713,9 @@ fn try_solve_poisson_chain_thomas<B: Backend<FloatElem = f32>>(
     let layout_raw = edges_b1.clone().float().into_data().value;
     let layout: Vec<i64> = layout_raw.iter().map(|&x| x as i64).collect();
     if !is_contiguous_unit_path(n, &layout) {
-        return None;
+        return Err(PhysicsError::UnsupportedLayout {
+            context: "try_solve_pnp_be_newton_chain_host",
+        });
     }
     let phi_h = electric_potential.into_data().value;
     let rho_h = rho_over_eps.into_data().value;
@@ -1978,18 +1993,26 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     edges_b1: Tensor<B, 2, Int>,
     permittivity: Tensor<B, 3>,
     diffusivity: Tensor<B, 3>,
-) -> Option<(Tensor<B, 3>, Tensor<B, 3>)> {
+) -> Result<(Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
     let pd = electric_potential_n.dims();
     if pd[0] != 1 || pd[2] != 1 {
-        return None;
+        return Err(PhysicsError::ShapeMismatch {
+            context: "try_solve_pnp_be_newton_chain_host",
+            detail: "electric_potential dims [1,N,1]",
+        });
     }
     let n = pd[1];
     if n < 2 || n > newton.max_chain_nodes {
-        return None;
+        return Err(PhysicsError::UnsupportedLayout {
+            context: "try_solve_pnp_be_newton_chain_host",
+        });
     }
     let ed = edges_b1.dims();
     if ed[0] != 2 || ed[1] != n - 1 {
-        return None;
+        return Err(PhysicsError::ShapeMismatch {
+            context: "try_solve_pnp_be_newton_chain_host",
+            detail: "edges_b1 dims [2,N-1]",
+        });
     }
     let layout_raw = edges_b1.clone().float().into_data().value;
     let layout: Vec<i64> = layout_raw.iter().map(|&x| x as i64).collect();
@@ -1998,7 +2021,9 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     }
     let dt64 = dt as f64;
     if !dt64.is_finite() || dt64 <= 0.0 {
-        return None;
+        return Err(PhysicsError::NonFinite {
+            context: "try_solve_pnp_be_newton_chain_host: dt",
+        });
     }
     let device = ion_concentration_n.device();
     let phi_h = electric_potential_n.clone().into_data().value;
@@ -2100,7 +2125,9 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
                 (ok, false)
             } else {
                 let Some(jac) = jac_band.as_mut() else {
-                    return None;
+                    return Err(PhysicsError::BufferExhausted {
+                        context: "try_solve_pnp_be_newton_chain_host: jac_band",
+                    });
                 };
                 newton_fd_jacobian_full_sg_node_major_row_band(
                     solver, newton, dt64, &u, &c_plus_n, &c_minus_n, &eps, &d_plus, &d_minus, g0,
@@ -2111,13 +2138,19 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
                     *v = -*v;
                 }
                 let Some(lu_buf) = jac_lu_scratch.as_mut() else {
-                    return None;
+                    return Err(PhysicsError::BufferExhausted {
+                        context: "try_solve_pnp_be_newton_chain_host: jac_lu_scratch",
+                    });
                 };
                 let Some(dense_buf) = jac_dense_scratch.as_mut() else {
-                    return None;
+                    return Err(PhysicsError::BufferExhausted {
+                        context: "try_solve_pnp_be_newton_chain_host: jac_dense_scratch",
+                    });
                 };
                 let Some(swaps) = band_lu_swaps.as_mut() else {
-                    return None;
+                    return Err(PhysicsError::BufferExhausted {
+                        context: "try_solve_pnp_be_newton_chain_host: band_lu_swaps",
+                    });
                 };
                 swaps.clear();
                 let ok = solve_newton_correction_full_sg_row_band_band_lu_or_dense_expand(
@@ -2138,16 +2171,24 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
             }
         } else {
             let Some(jac) = jac_band.as_mut() else {
-                return None;
+                return Err(PhysicsError::BufferExhausted {
+                    context: "try_solve_pnp_be_newton_chain_host: jac_band inner",
+                });
             };
             let Some(lu_buf) = jac_lu_scratch.as_mut() else {
-                return None;
+                return Err(PhysicsError::BufferExhausted {
+                    context: "try_solve_pnp_be_newton_chain_host: jac_lu_scratch inner",
+                });
             };
             let Some(dense_buf) = jac_dense_scratch.as_mut() else {
-                return None;
+                return Err(PhysicsError::BufferExhausted {
+                    context: "try_solve_pnp_be_newton_chain_host: jac_dense_scratch inner",
+                });
             };
             let Some(swaps) = band_lu_swaps.as_mut() else {
-                return None;
+                return Err(PhysicsError::BufferExhausted {
+                    context: "try_solve_pnp_be_newton_chain_host: band_lu_swaps inner",
+                });
             };
             newton_fd_jacobian_full_sg_node_major_row_band(
                 solver, newton, dt64, &u, &c_plus_n, &c_minus_n, &eps, &d_plus, &d_minus, g0, g1,
@@ -2208,7 +2249,10 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
             (ok_all, frozen_used)
         };
         if !ok {
-            return None;
+            return Err(PhysicsError::Diverged {
+                eq_rel: newton.residual_tol_l2 as f32,
+                pcg_iterations: 0,
+            });
         }
         if !u_frozen_inner {
             for i in 0..dim {
@@ -2227,7 +2271,10 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     );
     let n_pre = vec_l2(&r_pre);
     if !n_pre.is_finite() || n_pre > 1e-6_f64 {
-        return None;
+        return Err(PhysicsError::Diverged {
+            eq_rel: n_pre as f32,
+            pcg_iterations: 0,
+        });
     }
     let phi_out: Vec<f32> = u[0..n].iter().map(|&x| x as f32).collect();
     let mut c_out = vec![0.0_f32; n * 2];
@@ -2237,7 +2284,7 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     }
     let phi_t = Tensor::from_data(Data::new(phi_out, Shape::new([1, n, 1])), &device);
     let c_t = Tensor::from_data(Data::new(c_out, Shape::new([1, n, 2])), &device);
-    Some((phi_t, c_t))
+    Ok((phi_t, c_t))
 }
 
 /// L2 norm of the fully implicit backward Euler residual on a chain (`batch=1`), for verification.

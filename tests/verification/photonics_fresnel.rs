@@ -2460,24 +2460,20 @@ fn assembled_two_quads_dec_primal_photonics_maxwell_deferred() {
         frequency_hz: f_hz,
         ..Default::default()
     };
-    let out = ps.solve_maxwell_curl_curl(
-        e_field.clone(),
-        eps_r3,
-        eps_i,
-        j,
-        edges_b1,
-        coords,
-        &cg,
-        None,
+    assert!(
+        ps.solve_maxwell_curl_curl(
+            e_field,
+            eps_r3,
+            eps_i,
+            j,
+            edges_b1,
+            coords,
+            &cg,
+            None,
+        )
+        .is_err(),
+        "non-chain two-quad topology without dec_patch must surface UnsupportedLayout"
     );
-    let vi = out.into_data().value;
-    let ei = e_field.into_data().value;
-    assert_eq!(vi.len(), ei.len());
-    let mut mx = 0.0_f32;
-    for k in 0..vi.len() {
-        mx = mx.max((vi[k] - ei[k]).abs());
-    }
-    assert_relative_eq!(mx, 0.0_f32, epsilon = 1e-6_f32, max_relative = 1.0);
 }
 
 /// Same check as [`dec_te_primal_tensor_matches_chain_stencil`], with **piecewise** \(\varepsilon_r\)

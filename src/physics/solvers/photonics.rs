@@ -2228,6 +2228,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
                 &b,
                 dim,
             )
+            .ok()
         })?;
 
     let device = e_field.device();

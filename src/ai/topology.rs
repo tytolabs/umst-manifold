@@ -73,6 +73,8 @@ impl<B: Backend<FloatElem = f32>> DensityNet<B> {
 
 #[cfg(feature = "topology-density-evolution")]
 use crate::core::traits::{DesignDecodeError, DesignLatent, DesignRepresentation, Geometry};
+#[cfg(feature = "topology-density-evolution")]
+use crate::physics::error::PhysicsError;
 
 /// R4 adapter: nodal voxel density via [`DensityNet`] (parity-first).
 #[cfg(feature = "topology-density-evolution")]
@@ -591,8 +593,7 @@ pub fn logit_offset_vf_from_slice(logits: &[f32], b: f32, beta: f32, eta: f32) -
 /// Monotone bisection on logit offset \(b\) so
 /// \(\mathrm{mean}(H_{\beta,\eta=0.5}(\sigma(z+b))) = V^\*\) within `tol` (Hoyer et al. 2019).
 ///
-/// Bracket \(b \in [-B,+B]\) expands on demand; panics if no bracket is found (should not happen
-/// in unbounded logit space).
+/// Bracket \(b \in [-B,+B]\) expands on demand; returns [`PhysicsError::Domain`] if no bracket is found.
 #[must_use]
 pub fn logit_offset_matching_from_slice(
     logits: &[f32],
@@ -600,7 +601,17 @@ pub fn logit_offset_matching_from_slice(
     target_vf: f32,
     tol: f32,
     max_iters: usize,
-) -> f32 {
+) -> Result<f32, PhysicsError> {
+    if logits.is_empty() {
+        return Err(PhysicsError::Domain {
+            detail: "logit_offset_matching_from_slice: empty logits".into(),
+        });
+    }
+    if !beta.is_finite() || beta <= 0.0 {
+        return Err(PhysicsError::Domain {
+            detail: format!("logit_offset_matching_from_slice: beta must be finite and positive (got {beta})"),
+        });
+    }
     const ETA: f32 = 0.5;
     let target = target_vf.clamp(0.0, 1.0);
     let eval = |b: f32| logit_offset_vf_from_slice(logits, b, beta, ETA);
@@ -612,10 +623,12 @@ pub fn logit_offset_matching_from_slice(
             break (-width, width);
         }
         if width > 1_000_000.0 {
-            panic!(
-                "logit_offset_matching_from_slice: bracket failed — vf@b=-{width}={vf_lo:.6} \
-vf@b=+{width}={vf_hi:.6} target={target:.6} beta={beta:.3} (logit-offset should be feasible)"
-            );
+            return Err(PhysicsError::Domain {
+                detail: format!(
+                    "logit_offset_matching_from_slice: bracket failed — vf@b=-{width}={vf_lo:.6} \
+vf@b=+{width}={vf_hi:.6} target={target:.6} beta={beta:.3}"
+                ),
+            });
         }
         width *= 2.0;
     };
@@ -629,7 +642,7 @@ vf@b=+{width}={vf_hi:.6} target={target:.6} beta={beta:.3} (logit-offset should 
             lo = mid;
         }
     }
-    0.5 * (lo + hi)
+    Ok(0.5 * (lo + hi))
 }
 
 #[cfg(feature = "topology-density-evolution")]
@@ -651,8 +664,12 @@ impl VolumeLogitOffsetProjection {
     }
 
     /// Scalar \(b^\*\) from [`logit_offset_matching_from_slice`] on detached logits.
-    #[must_use]
-    pub fn bisect_b_from_logits_slice(&self, logits: &[f32], beta: f32, target_vf: f32) -> f32 {
+    pub fn bisect_b_from_logits_slice(
+        &self,
+        logits: &[f32],
+        beta: f32,
+        target_vf: f32,
+    ) -> Result<f32, PhysicsError> {
         logit_offset_matching_from_slice(logits, beta, target_vf, self.tol, self.max_bisection)
     }
 
@@ -1277,7 +1294,7 @@ mod topology_density_evolution_tests {
         let logits: Vec<f32> = (0..64).map(|i| -2.0 + 4.0 * (i as f32 / 63.0)).collect();
         let beta = 16.0_f32;
         let target = 0.35_f32;
-        let b = logit_offset_matching_from_slice(&logits, beta, target, 1e-3, 48);
+        let b = logit_offset_matching_from_slice(&logits, beta, target, 1e-3, 48).expect("bisect b");
         let vf = logit_offset_vf_from_slice(&logits, b, beta, 0.5);
         assert!(
             (vf - target).abs() < 1e-2,
