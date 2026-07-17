@@ -1284,7 +1284,9 @@ mod topology_density_evolution_tests {
         let logits: Vec<f32> = (0..64).map(|i| -2.0 + 4.0 * (i as f32 / 63.0)).collect();
         let beta = 16.0_f32;
         let target = 0.35_f32;
-        let b = logit_offset_matching_from_slice(&logits, beta, target, 1e-3, 48).expect("bisect b");
+        let b = logit_offset_matching_from_slice(&logits, beta, target, 1e-3, 48).expect(
+            "logit_offset_matching_from_slice bisect b on 64-node logits field (FP §6 neural-SIMP volume verification witness)",
+        );
         let vf = logit_offset_vf_from_slice(&logits, b, beta, 0.5);
         assert!(
             (vf - target).abs() < 1e-2,
