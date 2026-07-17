@@ -397,7 +397,7 @@ fn thmc_mechanics_bar_idempotent_at_zero_load_equilibrium() {
     let (u1, _) = VectorMechanicsSolver::solve_equilibrium_typed(
         Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev)),
         coords.clone(),
-        stiffness.clone(),
+        stiffness.as_tensor().clone(),
         Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev)),
         edges.clone(),
         Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev)),
@@ -409,7 +409,7 @@ fn thmc_mechanics_bar_idempotent_at_zero_load_equilibrium() {
     let (u2, _) = VectorMechanicsSolver::solve_equilibrium_typed(
         u1.clone(),
         coords,
-        stiffness,
+        stiffness.as_tensor().clone(),
         Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev)),
         edges,
         Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev)),
@@ -487,6 +487,53 @@ fn orchestrator_thmc_idempotent_at_equilibrium() {
             snap.mechanical.displacement.as_tensor()
         ) < tol,
         "orchestrator displacement must not drift on re-step"
+    );
+}
+
+/// FP §6: `run_plan_step_repeated(2)` at equilibrium matches a single `run_plan_step`.
+#[test]
+fn orchestrator_run_plan_step_repeated_two_idempotent_at_equilibrium() {
+    let n = 2usize;
+    let mut manifold_a = toy_umst(n, 300.0, 0.5, 0.1);
+    let mut manifold_b = toy_umst(n, 300.0, 0.5, 0.1);
+    let state = equilibrated_state(n);
+    let mut orch = TopologyPhysicsOrchestrator::new(ThmcSolver {
+        dt: 1e-4,
+        max_newton: 1,
+        tol: 1e-6,
+        drying_last_node_evaporation_k: 0.0,
+        ..Default::default()
+    });
+    let once = orch
+        .run_plan_step(&StubCartridge, state.clone(), &mut manifold_a)
+        .expect("single orchestrator step");
+    let twice = orch
+        .run_plan_step_repeated(2, &StubCartridge, state, &mut manifold_b)
+        .expect("two repeated orchestrator steps");
+    let tol = 1e-5_f32;
+    assert!(
+        max_abs_tensor3(
+            twice.thermal.temperature.as_tensor(),
+            once.thermal.temperature.as_tensor()
+        ) < tol
+    );
+    assert!(
+        max_abs_tensor3(twice.hydro.humidity.as_tensor(), once.hydro.humidity.as_tensor()) < tol
+    );
+    assert!(
+        max_abs_tensor3(
+            twice.chemical.reaction_extent.as_tensor(),
+            once.chemical.reaction_extent.as_tensor()
+        ) < tol
+    );
+    assert!(
+        max_abs_tensor3(twice.damage.as_tensor(), once.damage.as_tensor()) < tol
+    );
+    assert!(
+        max_abs_tensor3(
+            twice.mechanical.displacement.as_tensor(),
+            once.mechanical.displacement.as_tensor()
+        ) < tol
     );
 }
 
@@ -678,7 +725,7 @@ fn thmc_monolithic_qs_r_u_residual_damped_newton_idempotent_at_equilibrium() {
     let (u_eq, _) = VectorMechanicsSolver::solve_equilibrium_typed(
         Field::new(Tensor::<B, 3>::zeros([batch, n, 3], &dev)),
         coords.clone(),
-        stiffness,
+        stiffness.as_tensor().clone(),
         Field::new(body_force.clone()),
         edges.clone(),
         Field::new(Tensor::<B, 3>::zeros([batch, n, 1], &dev)),
