@@ -73,6 +73,8 @@ impl<B: Backend<FloatElem = f32>> DensityNet<B> {
 
 #[cfg(feature = "topology-density-evolution")]
 use crate::core::traits::{DesignDecodeError, DesignLatent, DesignRepresentation, Geometry};
+#[cfg(feature = "topology-density-evolution")]
+use crate::physics::error::PhysicsError;
 
 /// R4 adapter: nodal voxel density via [`DensityNet`] (parity-first).
 #[cfg(feature = "topology-density-evolution")]
@@ -234,7 +236,7 @@ pub fn simp_compliance_step<B: Backend<FloatElem = f32>>(
     cross_section_area: f32,
     inner_cfg: &crate::physics::time_orchestration::MechanicsInnerLoopConfig,
     retain_loss_for_autodiff: bool,
-) -> SimpComplianceStepResult<B> {
+) -> Result<SimpComplianceStepResult<B>, PhysicsError> {
     use crate::physics::linear::masked_dot;
     use crate::physics::mechanics::VectorMechanicsSolver;
 
@@ -258,17 +260,17 @@ pub fn simp_compliance_step<B: Backend<FloatElem = f32>>(
         boundary_mask.clone(),
         cross_section_area,
         inner_cfg,
-    );
+    )?;
     let compliance = masked_dot(&body_force, &u, &boundary_mask);
     let loss_for_autodiff = if retain_loss_for_autodiff {
         Some(compliance.clone())
     } else {
         None
     };
-    SimpComplianceStepResult {
+    Ok(SimpComplianceStepResult {
         compliance,
         loss_for_autodiff,
-    }
+    })
 }
 
 #[cfg(feature = "topology-density-evolution")]
@@ -294,7 +296,7 @@ impl<B: Backend<FloatElem = f32>> TopologyOptimizer<B> {
         base_stiffness: f32,
         cross_section_area: f32,
         inner_cfg: &crate::physics::time_orchestration::MechanicsInnerLoopConfig,
-    ) -> (Tensor<B, 1>, Tensor<B, 3>) {
+    ) -> Result<(Tensor<B, 1>, Tensor<B, 3>), PhysicsError> {
         use crate::physics::mechanics::VectorMechanicsSolver;
 
         let [b, n, three] = coords_bn3.dims();
@@ -319,10 +321,10 @@ impl<B: Backend<FloatElem = f32>> TopologyOptimizer<B> {
             boundary_mask.clone(),
             cross_section_area,
             inner_cfg,
-        );
+        )?;
         use crate::physics::linear::masked_dot;
         let compliance = masked_dot(&body_force, &u, &boundary_mask);
-        (compliance, rho)
+        Ok((compliance, rho))
     }
 
     /// One SIMP-style forward step: effective modulus \(E_{\mathrm{eff}} = \rho^p E_0\), equilibrium
@@ -338,7 +340,7 @@ impl<B: Backend<FloatElem = f32>> TopologyOptimizer<B> {
         cross_section_area: f32,
         inner_cfg: &crate::physics::time_orchestration::MechanicsInnerLoopConfig,
         retain_loss_for_autodiff: bool,
-    ) -> SimpComplianceStepResult<B> {
+    ) -> Result<SimpComplianceStepResult<B>, PhysicsError> {
         simp_compliance_step(
             &self.density_net,
             self.penalization,
@@ -591,16 +593,26 @@ pub fn logit_offset_vf_from_slice(logits: &[f32], b: f32, beta: f32, eta: f32) -
 /// Monotone bisection on logit offset \(b\) so
 /// \(\mathrm{mean}(H_{\beta,\eta=0.5}(\sigma(z+b))) = V^\*\) within `tol` (Hoyer et al. 2019).
 ///
-/// Bracket \(b \in [-B,+B]\) expands on demand; panics if no bracket is found (should not happen
-/// in unbounded logit space).
-#[must_use]
+/// Bracket \(b \in [-B,+B]\) expands on demand; returns [`PhysicsError::Domain`] if no bracket is found.
 pub fn logit_offset_matching_from_slice(
     logits: &[f32],
     beta: f32,
     target_vf: f32,
     tol: f32,
     max_iters: usize,
-) -> f32 {
+) -> Result<f32, PhysicsError> {
+    if logits.is_empty() {
+        return Err(PhysicsError::Domain {
+            detail: "logit_offset_matching_from_slice: empty logits".into(),
+        });
+    }
+    if !beta.is_finite() || beta <= 0.0 {
+        return Err(PhysicsError::Domain {
+            detail: format!(
+                "logit_offset_matching_from_slice: beta must be finite and positive (got {beta})"
+            ),
+        });
+    }
     const ETA: f32 = 0.5;
     let target = target_vf.clamp(0.0, 1.0);
     let eval = |b: f32| logit_offset_vf_from_slice(logits, b, beta, ETA);
@@ -612,24 +624,20 @@ pub fn logit_offset_matching_from_slice(
             break (-width, width);
         }
         if width > 1_000_000.0 {
-            panic!(
-                "logit_offset_matching_from_slice: bracket failed — vf@b=-{width}={vf_lo:.6} \
-vf@b=+{width}={vf_hi:.6} target={target:.6} beta={beta:.3} (logit-offset should be feasible)"
-            );
+            return Err(PhysicsError::Domain {
+                detail: format!(
+                    "logit_offset_matching_from_slice: bracket failed — vf@b=-{width}={vf_lo:.6} vf@b=+{width}={vf_hi:.6} target={target:.6} beta={beta:.3}"
+                ),
+            });
         }
         width *= 2.0;
     };
     for _ in 0..max_iters.max(1) {
         let mid = 0.5 * (lo + hi);
         let vf = eval(mid);
-        // VF increases as b increases (sigmoid shift up → higher densities).
-        if vf > target + tol {
-            hi = mid;
-        } else {
-            lo = mid;
-        }
+        if vf > target + tol { hi = mid; } else { lo = mid; }
     }
-    0.5 * (lo + hi)
+    Ok(0.5 * (lo + hi))
 }
 
 #[cfg(feature = "topology-density-evolution")]
@@ -651,8 +659,7 @@ impl VolumeLogitOffsetProjection {
     }
 
     /// Scalar \(b^\*\) from [`logit_offset_matching_from_slice`] on detached logits.
-    #[must_use]
-    pub fn bisect_b_from_logits_slice(&self, logits: &[f32], beta: f32, target_vf: f32) -> f32 {
+    pub fn bisect_b_from_logits_slice(&self, logits: &[f32], beta: f32, target_vf: f32) -> Result<f32, PhysicsError> {
         logit_offset_matching_from_slice(logits, beta, target_vf, self.tol, self.max_bisection)
     }
 
@@ -1169,7 +1176,7 @@ mod simp_step_tests {
             a,
             &cfg,
             false,
-        );
+        ).expect("simplite bar compliance");
         let c = out.compliance.into_scalar();
         assert!(
             c.is_finite() && c > 0.0,
@@ -1239,7 +1246,7 @@ mod simp_step_tests {
             e,
             a,
             &cfg,
-        );
+        ).expect("optimize_step bar");
         let via_simplite = opt.optimize_step_simplite(
             coords_bn3,
             e_base_bn1,
@@ -1249,7 +1256,7 @@ mod simp_step_tests {
             a,
             &cfg,
             false,
-        );
+        ).expect("simplite bar parity");
         let c_step = compliance_step.clone().into_scalar();
         let c_simplite = via_simplite.compliance.into_scalar();
         assert!(
@@ -1277,7 +1284,7 @@ mod topology_density_evolution_tests {
         let logits: Vec<f32> = (0..64).map(|i| -2.0 + 4.0 * (i as f32 / 63.0)).collect();
         let beta = 16.0_f32;
         let target = 0.35_f32;
-        let b = logit_offset_matching_from_slice(&logits, beta, target, 1e-3, 48);
+        let b = logit_offset_matching_from_slice(&logits, beta, target, 1e-3, 48).expect("bisect b");
         let vf = logit_offset_vf_from_slice(&logits, b, beta, 0.5);
         assert!(
             (vf - target).abs() < 1e-2,

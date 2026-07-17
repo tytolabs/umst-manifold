@@ -69,8 +69,20 @@ fn rheology_step_idempotent_on_default_noop_placeholder() {
     let lambda_thix = Tensor::<B, 3>::ones([1, 2, 1], &dev);
     let edges_b1 = Tensor::<B, 2, Int>::from_data(Data::new(vec![0i64, 1, 1, 0], Shape::new([2, 2])), &dev);
     let gravity = Tensor::<B, 1>::zeros([3], &dev);
-    let (v1, p1, l1) = solver.step(velocity.clone(), pressure.clone(), yield_stress, density.clone(), lambda_thix.clone(), edges_b1.clone(), gravity.clone());
-    let (v2, p2, l2) = solver.step(v1, p1, l1, density, lambda_thix, edges_b1, gravity);
+    let (v1, p1, l1) = solver
+        .step(
+            velocity.clone(),
+            pressure.clone(),
+            yield_stress,
+            density.clone(),
+            lambda_thix.clone(),
+            edges_b1.clone(),
+            gravity.clone(),
+        )
+        .expect("rheology first step");
+    let (v2, p2, l2) = solver
+        .step(v1, p1, l1, density, lambda_thix.clone(), edges_b1, gravity)
+        .expect("rheology second step");
     let tol = 1e-6_f32;
     assert!(max_abs_tensor3(&v2, &velocity) < tol);
     assert!(max_abs_tensor3(&p2, &pressure) < tol);
@@ -87,16 +99,28 @@ fn rheology_step_idempotent_on_quiescent_bingham_equilibrium() {
     solver.dt = 1e-4;
     solver.t_rest_thix = BinghamFlowSolver::T_REST_NO_THIX;
     solver.gamma_crit_thix = BinghamFlowSolver::GAMMA_CRIT_NO_THIX;
-    let (v1, p1, l1) = solver.step(
-        Tensor::<B, 3>::zeros([1, 2, 3], &dev),
-        Tensor::<B, 3>::full([1, 2, 1], 1.0, &dev),
-        Tensor::<B, 3>::zeros([1, 2, 1], &dev),
-        Tensor::<B, 3>::ones([1, 2, 1], &dev),
-        Tensor::<B, 3>::ones([1, 2, 1], &dev),
-        edges_b1.clone(),
-        Tensor::<B, 1>::zeros([3], &dev),
-    );
-    let (v2, p2, l2) = solver.step(v1.clone(), p1.clone(), l1.clone(), Tensor::<B, 3>::ones([1, 2, 1], &dev), Tensor::<B, 3>::ones([1, 2, 1], &dev), edges_b1, Tensor::<B, 1>::zeros([3], &dev));
+    let (v1, p1, l1) = solver
+        .step(
+            Tensor::<B, 3>::zeros([1, 2, 3], &dev),
+            Tensor::<B, 3>::full([1, 2, 1], 1.0, &dev),
+            Tensor::<B, 3>::zeros([1, 2, 1], &dev),
+            Tensor::<B, 3>::ones([1, 2, 1], &dev),
+            Tensor::<B, 3>::ones([1, 2, 1], &dev),
+            edges_b1.clone(),
+            Tensor::<B, 1>::zeros([3], &dev),
+        )
+        .expect("bingham first step");
+    let (v2, p2, l2) = solver
+        .step(
+            v1.clone(),
+            p1.clone(),
+            l1.clone(),
+            Tensor::<B, 3>::ones([1, 2, 1], &dev),
+            Tensor::<B, 3>::ones([1, 2, 1], &dev),
+            edges_b1,
+            Tensor::<B, 1>::zeros([3], &dev),
+        )
+        .expect("bingham second step");
     let tol = 1e-5_f32;
     assert!(max_abs_tensor3(&v2, &v1) < tol);
     assert!(max_abs_tensor3(&p2, &p1) < tol);
