@@ -88,7 +88,11 @@ fn monolithic_thmc_newton_stacked_norm_monotone_decrease_on_five_node_chain() {
         "harness must stay under dense Newton cap; got {stacked}"
     );
     let manifold = chain_manifold(n);
-    let coords = manifold.node_positions.as_ref().expect("SI coords").clone();
+    let coords = manifold
+        .node_positions
+        .as_ref()
+        .expect("chain_manifold node_positions SI coords for five-node monolithic Newton chain harness (FP §6 Track G P4A)")
+        .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
     let kinetics = reference_reaction_extent_kinetics();
@@ -179,7 +183,7 @@ fn monolithic_thmc_newton_stacked_norm_monotone_decrease_on_five_node_chain() {
         cross_section_area,
         &inner_cfg,
     )
-    .expect("solve_equilibrium");
+    .expect("VectorMechanicsSolver::solve_equilibrium on five-node SI chain for quasi-static u_predict monolithic Newton witness (FP §6 Track G P4A)");
 
     let trial_t = t_predict
         .clone()
@@ -228,7 +232,7 @@ fn monolithic_thmc_newton_stacked_norm_monotone_decrease_on_five_node_chain() {
             0.0_f32,
             None,
         )
-        .expect("monolithic Newton on chain");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations_with_quasi_static_r_u on five-node SI chain for stacked ‖R‖₂ monotone decrease witness (FP §6 Track G P4A)");
     assert_eq!(
         norms.len(),
         inner_iters + 1,
