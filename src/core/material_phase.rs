@@ -176,6 +176,15 @@ pub struct TransportState<B: Backend> {
     pub temperature: TemperatureField<B>,
 }
 
+impl<B: Backend> TransportState<B> {
+    /// Bundle humidity and temperature fields for transport-only routing arms.
+    #[inline]
+    #[must_use]
+    pub fn new(humidity: HumidityField<B>, temperature: TemperatureField<B>) -> Self {
+        Self { humidity, temperature }
+    }
+}
+
 /// THMC envelope: macroscopic phase + fracture damage + simulation clock.
 ///
 /// Target replacement for flat [`crate::physics::solvers::thmc::ThmcState`] in MP2.
@@ -218,6 +227,20 @@ impl<B: Backend> ThmcEnvelope<B> {
     #[must_use]
     pub fn kind(&self) -> MaterialPhaseKind {
         self.phase.kind()
+    }
+
+    /// Borrow envelope-level fracture damage (frozen at step entry, P3.2).
+    #[inline]
+    #[must_use]
+    pub fn damage_ref(&self) -> &DamageField<B> {
+        &self.damage
+    }
+
+    /// Simulation clock carried alongside the phase variant.
+    #[inline]
+    #[must_use]
+    pub fn time(&self) -> f32 {
+        self.time
     }
 }
 
@@ -399,5 +422,22 @@ mod tests {
         let cloned = fluid_phase();
         assert_eq!(cloned.kind(), MaterialPhaseKind::Fluid);
         assert!(cloned.as_fluid().is_some());
+    }
+
+    #[test]
+    fn transport_state_new_wraps_field_channels() {
+        let humidity = Field::new(zeros_3());
+        let temperature = Field::new(zeros_3());
+        let transport = TransportState::new(humidity, temperature);
+        assert_eq!(transport.humidity.as_tensor().dims(), [1, 2, 1]);
+        assert_eq!(transport.temperature.as_tensor().dims(), [1, 2, 1]);
+    }
+
+    #[test]
+    fn thmc_envelope_damage_and_time_accessors() {
+        let device = Default::default();
+        let env = ThmcEnvelope::with_zero_damage(setting_phase(), 3.14, &device);
+        assert_eq!(env.damage_ref().as_tensor().dims(), [1, 2, 1]);
+        assert!((env.time() - 3.14).abs() < f32::EPSILON);
     }
 }
