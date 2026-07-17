@@ -1280,30 +1280,34 @@ mod acoustics_idempotency_tests {
             .expand([1, n, 3, 3])
             .mul_scalar(0.5_f32);
 
-        let (u1, v1, a1) = solver.step_wave(
-            u.clone(),
-            vel.clone(),
-            acc.clone(),
-            rho.clone(),
-            vol.clone(),
-            f.clone(),
-            damp.clone(),
-            kloc.clone(),
-            None,
-            None,
-        );
-        let (u2, v2, a2) = solver.step_wave(
-            u1.clone(),
-            v1.clone(),
-            a1.clone(),
-            rho,
-            vol,
-            f,
-            damp,
-            kloc,
-            None,
-            None,
-        );
+        let (u1, v1, a1) = solver
+            .step_wave(
+                u.clone(),
+                vel.clone(),
+                acc.clone(),
+                rho.clone(),
+                vol.clone(),
+                f.clone(),
+                damp.clone(),
+                kloc.clone(),
+                None,
+                None,
+            )
+            .expect("step_wave");
+        let (u2, v2, a2) = solver
+            .step_wave(
+                u1.clone(),
+                v1.clone(),
+                a1.clone(),
+                rho,
+                vol,
+                f,
+                damp,
+                kloc,
+                None,
+                None,
+            )
+            .expect("step_wave");
 
         let tol = 1e-6_f32;
         for (label, t0, t1) in [("u", u2, u1), ("v", v2, v1), ("a", a2, a1)] {

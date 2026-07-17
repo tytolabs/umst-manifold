@@ -1591,7 +1591,7 @@ mod fracture_idempotency_tests {
         let d_again = solver.update_damage_staggered_with_stop(
             move |_d: &DamageField<B>| strain_field(strain),
             d_eq,
-            gc_field(fracture_energy_gc),
+            fracture_energy_gc,
             edges_b1,
             8,
             stop,

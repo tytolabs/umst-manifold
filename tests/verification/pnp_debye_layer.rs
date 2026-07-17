@@ -24,7 +24,7 @@
 // Track 14 MVP-chain implicit Newton lives behind the same feature; there is no additional
 // `#[cfg(feature = "...")]` for it — opt in at runtime via `pnp_implicit_newton_chain` +
 // `solve_pnp_step_dispatch` (production path; falls back to explicit Picard if the chain helper
-// returns `None`). Direct `try_solve_pnp_backward_euler_newton_chain` remains for unit tests in
+// returns `Err`). Direct `try_solve_pnp_backward_euler_newton_chain` remains for unit tests in
 // `electrochemistry.rs` and callers who bypass dispatch. Full nonlinear SG (`linearize_sg_fickian: false`)
 // uses a **node-major band** FD Jacobian by default, then **dense expand + Gauss** on a **(3N)²** scratch
 // for each Newton correction; set [`NewtonPnpContext::full_sg_correction_use_gmres`] for a matrix-free GMRES
@@ -112,7 +112,7 @@ fn sg_zero_field_matches_explicit_fickian_graph_laplacian() {
         gas_const: 1.0_f32,
         ..Default::default()
     };
-    let (_phi2, c_sg) = solver.solve_pnp_step(dt, phi, c, edges, eps, d);
+    let (_phi2, c_sg) = solver.solve_pnp_step(dt, phi, c, edges, eps, d)).expect("solve_pnp_step");
     let err = max_abs_diff(&c_sg, &fick);
     assert_relative_eq!(err, 0.0_f32, epsilon = 5e-5_f32);
 }
@@ -142,7 +142,7 @@ fn pnp_screening_phi_decays_toward_bulk_smoke() {
     let phi0 = 0.04_f32;
     for _ in 0..8000 {
         let (p, cn) =
-            solver.solve_pnp_step(2e-4_f32, phi, c, edges.clone(), eps.clone(), d.clone());
+            solver.solve_pnp_step(2e-4_f32, phi, c, edges.clone(), eps.clone(), d.clone())).expect("solve_pnp_step");
         let n = p.dims()[1];
         let mid = p.clone().slice([0..1, 1..(n - 1), 0..1]);
         let left = Tensor::<B, 3>::full([1, 1, 1], phi0, &dev);
@@ -260,7 +260,7 @@ fn debye_dispatch_newton_backward_euler_residual_bounded_over_screening_trajecto
             edges.clone(),
             eps.clone(),
             diff.clone(),
-        );
+        )).expect("solve_pnp_step");
         let n_nodes = p_next.dims()[1];
         let mid = p_next.clone().slice([0..1, 1..(n_nodes - 1), 0..1]);
         let left = Tensor::<B, 3>::full([1, 1, 1], phi0_vt, &dev);
@@ -324,14 +324,14 @@ fn sg_flux_drift_scales_with_mesh_spacing_inverse() {
         edges.clone(),
         eps.clone(),
         d.clone(),
-    );
+    )).expect("solve_pnp_step");
     let drift_h1 = max_abs_diff_f64(&c0, &c1);
 
     let solver_h2 = ElectroChemicalSolver {
         mesh_spacing: 2.0_f32,
         ..Default::default()
     };
-    let (_, c2) = solver_h2.solve_pnp_step(dt, phi0, c0.clone(), edges, eps, d);
+    let (_, c2) = solver_h2.solve_pnp_step(dt, phi0, c0.clone(), edges, eps, d)).expect("solve_pnp_step");
     let drift_h2 = max_abs_diff_f64(&c0, &c2);
 
     // SG flux ∝ 1/h ⇒ drift ratio drift_h1 / drift_h2 ≈ 2.0. Allow ±20 % slack for boundary effects
@@ -551,7 +551,7 @@ fn debye_implicit_dispatch_short_horizon_smoke() {
             edges.clone(),
             eps.clone(),
             diff.clone(),
-        );
+        )).expect("solve_pnp_step");
         let n_nodes = p_next.dims()[1];
         let mid = p_next.clone().slice([0..1, 1..(n_nodes - 1), 0..1]);
         let left = Tensor::<B, 3>::full([1, 1, 1], phi0_vt, &dev);
@@ -662,7 +662,7 @@ fn poisson_chain_uniform_rho_matches_h_squared_rhs_scaling() {
         edges.clone(),
         eps.clone(),
         d.clone(),
-    );
+    )).expect("solve_pnp_step");
     let pv_h = phi_h.into_data().value;
     let nm1 = (n - 1) as f32;
     for (i, ph) in pv_h.iter().enumerate().take(n - 1).skip(1) {
@@ -678,7 +678,7 @@ fn poisson_chain_uniform_rho_matches_h_squared_rhs_scaling() {
         coupling_picard_iters: 1,
         ..Default::default()
     };
-    let (phi_u, _) = solver_unit.solve_pnp_step(0.0_f32, phi0, c, edges, eps, d);
+    let (phi_u, _) = solver_unit.solve_pnp_step(0.0_f32, phi0, c, edges, eps, d)).expect("solve_pnp_step");
     let pv_u = phi_u.into_data().value;
     for (i, pu) in pv_u.iter().enumerate().take(n - 1).skip(1) {
         let idx = i as f32;
@@ -810,7 +810,7 @@ fn debye_screening_admissibility_check(
             edges.clone(),
             eps.clone(),
             diff.clone(),
-        );
+        )).expect("solve_pnp_step");
         let n_nodes = p_next.dims()[1];
         let mid = p_next.clone().slice([0..1, 1..(n_nodes - 1), 0..1]);
         let left = Tensor::<B, 3>::full([1, 1, 1], phi0_vt, &dev);
@@ -881,7 +881,7 @@ fn sg_mass_conserved_on_closed_chain_over_5000_steps() {
             edges.clone(),
             eps.clone(),
             d.clone(),
-        );
+        )).expect("solve_pnp_step");
         phi = p;
         c = c_next;
     }
@@ -926,7 +926,7 @@ fn picard_coupling_iters_finite_smoke() {
     };
     for _ in 0..400 {
         let (p, cn) =
-            solver.solve_pnp_step(3e-4_f32, phi, c, edges.clone(), eps.clone(), d.clone());
+            solver.solve_pnp_step(3e-4_f32, phi, c, edges.clone(), eps.clone(), d.clone())).expect("solve_pnp_step");
         let n = p.dims()[1];
         let mid = p.clone().slice([0..1, 1..(n - 1), 0..1]);
         let left = Tensor::<B, 3>::full([1, 1, 1], 0.03_f32, &dev);
@@ -974,8 +974,8 @@ fn picard_coupling_linf_tol_never_triggers_matches_full_iters() {
         edges.clone(),
         eps.clone(),
         d.clone(),
-    );
-    let (p2, c2) = solver_tight_tol.solve_pnp_step(dt, phi, c, edges, eps, d);
+    )).expect("solve_pnp_step");
+    let (p2, c2) = solver_tight_tol.solve_pnp_step(dt, phi, c, edges, eps, d)).expect("solve_pnp_step");
     assert_relative_eq!(max_abs_diff(&p1, &p2), 0.0_f32, epsilon = 1e-6_f32);
     assert_relative_eq!(max_abs_diff(&c1, &c2), 0.0_f32, epsilon = 1e-6_f32);
 }
@@ -1029,7 +1029,7 @@ fn picard_convergence_smoke() {
         edges.clone(),
         eps.clone(),
         d.clone(),
-    );
+    )).expect("solve_pnp_step");
     let (p1, c1) = solver_never_l2.solve_pnp_step(
         dt,
         phi.clone(),
@@ -1037,8 +1037,8 @@ fn picard_convergence_smoke() {
         edges.clone(),
         eps.clone(),
         d.clone(),
-    );
-    let (p2, c2) = solver_never_dphi.solve_pnp_step(dt, phi, c, edges, eps, d);
+    )).expect("solve_pnp_step");
+    let (p2, c2) = solver_never_dphi.solve_pnp_step(dt, phi, c, edges, eps, d)).expect("solve_pnp_step");
 
     assert_relative_eq!(max_abs_diff(&p0, &p1), 0.0_f32, epsilon = 1e-5_f32);
     assert_relative_eq!(max_abs_diff(&c0, &c1), 0.0_f32, epsilon = 1e-5_f32);
@@ -1111,7 +1111,7 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         edges.clone(),
         eps.clone(),
         d.clone(),
-    );
+    )).expect("solve_pnp_step");
     let be_res = pnp_backward_euler_residual_l2_chain_host_f64(
         &solver_dispatch_small,
         &newton,
@@ -1137,7 +1137,7 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         edges.clone(),
         eps.clone(),
         d.clone(),
-    );
+    )).expect("solve_pnp_step");
     let dphi = max_abs_diff(&phi_i, &phi_s);
     let dc = max_abs_diff(&c_i, &c_s);
     assert!(
@@ -1165,7 +1165,7 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         edges.clone(),
         eps.clone(),
         d.clone(),
-    );
+    )).expect("solve_pnp_step");
     let be_fin = pnp_backward_euler_residual_l2_chain_host_f64(
         &solver_dispatch_fin,
         &newton,
@@ -1182,7 +1182,7 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         be_fin < 5e-6_f64,
         "implicit solution should satisfy BE residual at finite dt, got {be_fin}"
     );
-    let (phi_sf, c_sf) = solver_split.solve_pnp_step(dt_fin, phi_n, c_n, edges, eps, d);
+    let (phi_sf, c_sf) = solver_split.solve_pnp_step(dt_fin, phi_n, c_n, edges, eps, d)).expect("solve_pnp_step");
     let gap = max_abs_diff(&phi_if, &phi_sf).max(max_abs_diff(&c_if, &c_sf));
     assert!(
         gap > 1e-8_f32,

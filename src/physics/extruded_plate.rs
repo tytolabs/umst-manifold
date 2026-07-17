@@ -160,8 +160,12 @@ impl ExtrudedPlateMechanics {
         let mut scratch = vec![0.0_f32; n * 3];
 
         let max_it = cg_config.max_cg_iterations.max(1);
+        let rel_tol = cg_config
+            .pcg_tolerance
+            .max(cg_config.cg_tolerance)
+            .max(0.0);
 
-        let _pcg = q1_hex_elasticity::hex_solve_pcg_masked(
+        let pcg = q1_hex_elasticity::hex_solve_pcg_masked(
             self.nx,
             self.ny,
             self.nz,
@@ -180,7 +184,14 @@ impl ExtrudedPlateMechanics {
             cg_config.cg_tolerance,
             None,
         );
-        let _ = _pcg;
+        if rel_tol > 0.0
+            && (!pcg.rel_residual.is_finite() || pcg.rel_residual > rel_tol)
+        {
+            return Err(PhysicsError::Diverged {
+                eq_rel: pcg.rel_residual,
+                pcg_iterations: pcg.iterations,
+            });
+        }
 
         let u_tensor: Tensor<B, 3> =
             Tensor::from_data(Data::new(u, Shape::new([1, n, 3])), &device);

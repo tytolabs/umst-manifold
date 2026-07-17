@@ -320,7 +320,7 @@ fn nodal_eps_r_real_for_te_chain<B: Backend<FloatElem = f32>>(
 #[cfg(feature = "photonics")]
 fn scalar_eps_channel_for_dec<B: Backend<FloatElem = f32>>(
     relative_permittivity: Tensor<B, 3>,
-) -> Result<Tensor<B, 3>, PhysicsError> {
+) -> Option<Tensor<B, 3>> {
     let d = relative_permittivity.dims();
     if d.len() != 3 || d[0] != 1 {
         return None;
@@ -1946,7 +1946,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
     frequency_hz: f32,
     patch: &PhotonicsDecFacesPatch<'_, B>,
     dec_patch_config: PhotonicsDecPatchConfig,
-) -> Option<Tensor<B, 3>> {
+) -> Result<Tensor<B, 3>, PhysicsError> {
     let n = e_field.dims()[1];
     if n > PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV {
         return Err(PhysicsError::UnsupportedLayout {
