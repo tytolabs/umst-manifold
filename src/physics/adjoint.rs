@@ -24,6 +24,7 @@ use burn::tensor::{
 };
 
 use super::error::PhysicsError;
+use crate::core::field::StiffnessField;
 use super::linear::masked_dot;
 use super::mechanics::{BarNetworkPcgReport, VectorMechanicsSolver};
 use super::time_orchestration::MechanicsInnerLoopConfig;
@@ -195,13 +196,13 @@ impl AdjointCompliance {
             .add_scalar(material.e_min);
         let nu_bn = Tensor::<<B as AutodiffBackend>::InnerBackend, 3>::ones_like(&rho_inner)
             .mul_scalar(material.nu);
-        let stiffness = Tensor::cat(vec![e_node, nu_bn], 2);
+        let stiffness_field = StiffnessField::from_e_nu_cat(e_node, nu_bn);
 
         let (u, _k_axial, edge_unit, edge_len, src_ix, tgt_ix, _n_v, pcg) =
             VectorMechanicsSolver::packed_bar_network_equilibrium(
                 displacement,
                 coords_n3.clone(),
-                stiffness.clone(),
+                stiffness_field.clone(),
                 body_force.clone(),
                 edges_b1.clone(),
                 damage.clone(),
@@ -214,7 +215,7 @@ impl AdjointCompliance {
         let eq_rel = VectorMechanicsSolver::bar_network_equilibrium_rel_residual(
             u.clone(),
             coords_n3.clone(),
-            stiffness,
+            stiffness_field.as_tensor().clone(),
             body_force.clone(),
             edges_b1.clone(),
             damage,

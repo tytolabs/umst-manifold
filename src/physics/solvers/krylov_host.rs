@@ -242,7 +242,7 @@ mod tests {
         let n = 4usize;
         let b = vec![1.0_f32, 2.0_f32, -0.5_f32, 0.25_f32];
         let matvec = |v: &[f32]| v.to_vec();
-        let x = gmres_f32(matvec, &b, n, n, 1e-5_f32).expect("identity GMRES");
+        let x = gmres_f32(matvec, &b, n, n, 1e-5_f32).expect("gmres_f32 on identity should converge");
         for i in 0..n {
             assert!(
                 (x[i] - b[i]).abs() < 1e-4_f32,
@@ -275,7 +275,8 @@ mod tests {
             }
             out
         };
-        let x = gmres_f32(matvec, &b, n, n + 5, 1e-4_f32).expect("dense GMRES");
+        let x = gmres_f32(matvec, &b, n, n + 5, 1e-4_f32)
+            .expect("gmres_f32 on tridiagonal should converge");
         let ax = matvec(&x);
         let res: f32 = b
             .iter()

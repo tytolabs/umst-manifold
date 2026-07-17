@@ -29,7 +29,7 @@
 use burn::tensor::ElementConversion;
 use burn::tensor::{backend::Backend, Int, Tensor};
 
-use crate::core::field::{DamageField, DisplacementField, Field};
+use crate::core::field::{DamageField, DisplacementField, Field, StiffnessField};
 
 use super::dec_operators::DecEdgeOperators;
 use super::error::PhysicsError;
@@ -345,7 +345,7 @@ impl VectorMechanicsSolver {
     pub(crate) fn packed_bar_network_equilibrium<B: Backend<FloatElem = f32>>(
         displacement: Tensor<B, 3>,
         coords: Tensor<B, 2>,
-        stiffness: Tensor<B, 3>,
+        stiffness: StiffnessField<B>,
         body_force: Tensor<B, 3>,
         edges_b1: Tensor<B, 2, Int>,
         damage: Tensor<B, 3>,
@@ -362,6 +362,7 @@ impl VectorMechanicsSolver {
         usize,
         BarNetworkPcgReport,
     ) {
+        let stiffness = stiffness.into_tensor();
         let batch = stiffness.dims()[0];
         let n_v = coords.dims()[0];
         let topo = EdgeTopology::new(edges_b1.clone());
@@ -747,7 +748,7 @@ impl VectorMechanicsSolver {
         let (u, stress) = Self::solve_equilibrium_typed(
             Field::new(displacement),
             coords,
-            stiffness,
+            StiffnessField::from_tensor(stiffness),
             Field::new(body_force),
             edges_b1,
             Field::new(damage),
@@ -763,7 +764,7 @@ impl VectorMechanicsSolver {
     pub fn solve_equilibrium_typed<B: Backend<FloatElem = f32>>(
         displacement: DisplacementField<B>,
         coords: Tensor<B, 2>,
-        stiffness: Tensor<B, 3>,
+        stiffness: StiffnessField<B>,
         body_force: DisplacementField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: DamageField<B>,
@@ -813,7 +814,7 @@ impl VectorMechanicsSolver {
         let (u, stress, pcg) = Self::solve_equilibrium_with_pcg_report_typed(
             Field::new(displacement),
             coords,
-            stiffness,
+            StiffnessField::from_tensor(stiffness),
             Field::new(body_force),
             edges_b1,
             Field::new(damage),
@@ -830,7 +831,7 @@ impl VectorMechanicsSolver {
     pub fn solve_equilibrium_with_pcg_report_typed<B: Backend<FloatElem = f32>>(
         displacement: DisplacementField<B>,
         coords: Tensor<B, 2>,
-        stiffness: Tensor<B, 3>,
+        stiffness: StiffnessField<B>,
         body_force: DisplacementField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: DamageField<B>,
@@ -885,7 +886,7 @@ impl VectorMechanicsSolver {
             Self::packed_bar_network_equilibrium(
                 displacement,
                 coords,
-                stiffness.clone(),
+                StiffnessField::from_tensor(stiffness.clone()),
                 body_force,
                 edges_b1.clone(),
                 damage,
@@ -1945,8 +1946,10 @@ mod tests {
             stiff.push(e);
             stiff.push(0.3);
         }
-        let stiffness: Tensor<B, 3> =
-            Tensor::from_data(Data::new(stiff, Shape::new([1, n, 2])), &dev);
+        let stiffness = StiffnessField::from_tensor(Tensor::from_data(
+            Data::new(stiff, Shape::new([1, n, 2])),
+            &dev,
+        ));
         let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
         let displacement = Tensor::<B, 3>::zeros([1, n, 3], &dev);
         let body_force = Tensor::<B, 3>::zeros([1, n, 3], &dev);

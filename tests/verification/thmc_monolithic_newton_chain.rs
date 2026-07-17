@@ -178,7 +178,8 @@ fn monolithic_thmc_newton_stacked_norm_monotone_decrease_on_five_node_chain() {
         bm.clone(),
         cross_section_area,
         &inner_cfg,
-    );
+    )
+    .expect("solve_equilibrium");
 
     let trial_t = t_predict
         .clone()

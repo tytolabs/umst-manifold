@@ -4115,7 +4115,7 @@ mod newton_chain_tests {
             linearize_sg_fickian: true,
             ..Default::default()
         };
-        let out = try_solve_pnp_be_newton_chain_host(
+        let (phi_t, c_t) = try_solve_pnp_be_newton_chain_host(
             &solver,
             &newton,
             dt,
@@ -4124,8 +4124,8 @@ mod newton_chain_tests {
             edges.clone(),
             eps.clone(),
             d.clone(),
-        );
-        let (phi_t, c_t) = out.expect("tensor host Newton returned None");
+        )
+        .expect("tensor host Newton should converge on small chain");
         let g0 = phi_n.clone().into_data().value[0] as f64;
         let g1 = phi_n.clone().into_data().value[n - 1] as f64;
         let mut phi_v = vec![0.0_f64; n];
@@ -4209,7 +4209,7 @@ mod newton_chain_tests {
             linearize_sg_fickian: false,
             ..Default::default()
         };
-        let out = try_solve_pnp_be_newton_chain_host(
+        let (phi_t, c_t) = try_solve_pnp_be_newton_chain_host(
             &solver,
             &newton,
             dt,
@@ -4218,8 +4218,8 @@ mod newton_chain_tests {
             edges.clone(),
             eps.clone(),
             d.clone(),
-        );
-        let (phi_t, c_t) = out.expect("full-SG band Newton host returned None");
+        )
+        .expect("full-SG band Newton host should converge on small chain");
         let g0 = phi_n.clone().into_data().value[0] as f64;
         let g1 = phi_n.clone().into_data().value[n - 1] as f64;
         let mut phi_v = vec![0.0_f64; n];
@@ -4305,7 +4305,7 @@ mod newton_chain_tests {
             full_sg_frozen_jacobian_inner_iters: 4,
             ..Default::default()
         };
-        let out = try_solve_pnp_be_newton_chain_host(
+        let (phi_t, c_t) = try_solve_pnp_be_newton_chain_host(
             &solver,
             &newton,
             dt,
@@ -4314,8 +4314,8 @@ mod newton_chain_tests {
             edges.clone(),
             eps.clone(),
             d.clone(),
-        );
-        let (phi_t, c_t) = out.expect("full-SG frozen-inner Newton should succeed");
+        )
+        .expect("full-SG frozen-inner Newton should converge on small chain");
         let g0 = phi_n.clone().into_data().value[0] as f64;
         let g1 = phi_n.clone().into_data().value[n - 1] as f64;
         let mut phi_v = vec![0.0_f64; n];

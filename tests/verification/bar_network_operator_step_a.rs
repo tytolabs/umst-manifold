@@ -284,7 +284,8 @@ fn two_node_rel_residual_metric_sane_and_converged() {
         mask.clone(),
         area,
         &cfg,
-    );
+    )
+    .expect("solve_equilibrium_with_pcg_report");
 
     let eq_rel = VectorMechanicsSolver::bar_network_equilibrium_rel_residual(
         u.clone(),
@@ -419,7 +420,8 @@ fn nine_node_chain_manufactured_solution() {
         mask,
         area,
         &cfg,
-    );
+    )
+    .expect("solve_equilibrium_with_pcg_report");
 
     assert!(
         pcg.rel_residual < 1e-2,
@@ -466,7 +468,8 @@ fn quick_plate_harness_load_pcg_converges() {
         mask,
         area,
         &cfg,
-    );
+    )
+    .expect("solve_equilibrium_with_pcg_report");
 
     let eq_rel = VectorMechanicsSolver::bar_network_equilibrium_rel_residual(
         u, coords, stiffness, body_force, edges, damage, mask_check, area,

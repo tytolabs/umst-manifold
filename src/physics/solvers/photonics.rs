@@ -2411,7 +2411,8 @@ mod photonics_sparse_csr_cg_parity_tests {
             1e-20_f32,
         );
         let merged = dec_patch_coo_sort_merge_f32(&coo);
-        let (rp, ci, va) = dec_patch_csr_from_sorted_coo_f32(dim, &merged).expect("csr");
+        let (rp, ci, va) = dec_patch_csr_from_sorted_coo_f32(dim, &merged)
+            .expect("dec_patch_csr_from_sorted_coo_f32 on quad-split COO");
 
         let xv: Vec<f32> = (0..dim)
             .map(|i| ((i * 17 + 3) as f32 * 0.013).sin())
@@ -2474,7 +2475,8 @@ mod photonics_sparse_csr_cg_parity_tests {
             1e-20_f32,
         );
         let merged = dec_patch_coo_sort_merge_f32(&coo);
-        let (rp, ci, va) = dec_patch_csr_from_sorted_coo_f32(dim, &merged).expect("csr");
+        let (rp, ci, va) = dec_patch_csr_from_sorted_coo_f32(dim, &merged)
+            .expect("dec_patch_csr_from_sorted_coo_f32 on quad-split COO");
 
         let x_mf = solve_maxwell_dec_patch_conjugate_gradient(
             n,
@@ -2491,9 +2493,9 @@ mod photonics_sparse_csr_cg_parity_tests {
             &b,
             dim,
         )
-        .expect("matrix-free cg");
-        let x_csr =
-            solve_maxwell_dec_patch_conjugate_gradient_csr(&rp, &ci, &va, &b, dim).expect("csr cg");
+        .expect("solve_maxwell_dec_patch_conjugate_gradient matrix-free");
+        let x_csr = solve_maxwell_dec_patch_conjugate_gradient_csr(&rp, &ci, &va, &b, dim)
+            .expect("solve_maxwell_dec_patch_conjugate_gradient_csr");
 
         let mut mx = 0.0_f32;
         for i in 0..dim {

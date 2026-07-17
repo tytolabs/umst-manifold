@@ -140,9 +140,13 @@ fn q1_hex_solve_equilibrium_idempotent_on_zero_load_fixed_bc() {
     let boundary_mask = Tensor::<B, 3>::zeros([1, n, 3], &dev);
     let mat = ElasticMaterial { e0: 30e9, nu: 0.2, simp_p: 1.0, e_min: 1.0 };
     let cfg = MechanicsInnerLoopConfig { max_cg_iterations: 400, cg_tolerance: 1e-8, pcg_tolerance: 1e-8, use_preconditioner: true, max_equilibrium_substeps: 1 };
-    let (u1, _) = plate.solve_equilibrium(rho.clone(), body_force.clone(), boundary_mask.clone(), mat, &cfg).expect("first");
+    let (u1, _) = plate
+        .solve_equilibrium(rho.clone(), body_force.clone(), boundary_mask.clone(), mat, &cfg)
+        .expect("first zero-load q1_hex equilibrium solve");
     let u1_flat = u1.clone().into_data().value;
-    let (u2, _) = plate.solve_equilibrium(rho, body_force, boundary_mask, mat, &cfg).expect("second");
+    let (u2, _) = plate
+        .solve_equilibrium(rho, body_force, boundary_mask, mat, &cfg)
+        .expect("second zero-load q1_hex equilibrium solve (idempotency)");
     let tol = 1e-6_f32;
     assert!(max_abs_drift(&u1_flat, &u2.into_data().value) < tol);
     assert!(u1_flat.iter().all(|x| x.abs() < tol));

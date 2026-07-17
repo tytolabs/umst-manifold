@@ -505,6 +505,7 @@ impl PhaseFieldFractureSolver {
         let mut outer_err: Option<PhysicsError> = None;
         let mut converged = false;
 
+        #[allow(unused_variables)] // used when `fracture-at2` stopping reports max-iter divergence
         let completed = iterate_until(outer.max_outer_iterations, &mut st, |st| {
             let strain_k = strain_fn(&st.damage);
             let d_before = st.damage.as_tensor().clone();

@@ -323,7 +323,7 @@ mod tests {
         let mut manifold = toy_umst_two_node(&dev);
         let out = o
             .run_plan_step_repeated(0, &EmptyCartridge, state.clone(), &mut manifold)
-            .expect("zero steps");
+            .expect("run_plan_step_repeated(0) should succeed");
         assert_eq!(
             out.thermal.temperature.as_tensor().clone().into_data(),
             state.thermal.temperature.as_tensor().clone().into_data()
@@ -405,7 +405,7 @@ mod tests {
                 state.clone(),
                 &mut manifold,
             )
-            .expect("empty fold");
+            .expect("fold_plan_step on empty iterator should succeed");
         assert_eq!(
             out.thermal.temperature.as_tensor().clone().into_data(),
             state.thermal.temperature.as_tensor().clone().into_data()

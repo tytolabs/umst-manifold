@@ -11,7 +11,7 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
-use crate::core::field::{DamageField, DisplacementField, Field};
+use crate::core::field::{DamageField, DisplacementField, Field, StiffnessField};
 use crate::physics::error::PhysicsError;
 use crate::solve_report::{PrecisionLane, ReportedSolve, SolveReport};
 
@@ -36,7 +36,7 @@ pub trait MechanicsSolvePort<B: Backend<FloatElem = f32>> {
         &self,
         displacement: DisplacementField<B>,
         coords: Tensor<B, 2>,
-        stiffness: Tensor<B, 3>,
+        stiffness: StiffnessField<B>,
         body_force: DisplacementField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: DamageField<B>,
@@ -60,7 +60,7 @@ impl<B: Backend<FloatElem = f32>> MechanicsSolvePort<B> for BarNetworkMechanicsS
         &self,
         displacement: DisplacementField<B>,
         coords: Tensor<B, 2>,
-        stiffness: Tensor<B, 3>,
+        stiffness: StiffnessField<B>,
         body_force: DisplacementField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: DamageField<B>,
@@ -96,7 +96,7 @@ impl<B: Backend<FloatElem = f32>> MechanicsSolvePort<B> for BarNetworkMechanicsS
 pub fn bar_network_equilibrium_reported<B: Backend<FloatElem = f32>>(
     displacement: DisplacementField<B>,
     coords: Tensor<B, 2>,
-    stiffness: Tensor<B, 3>,
+    stiffness: StiffnessField<B>,
     body_force: DisplacementField<B>,
     edges_b1: Tensor<B, 2, Int>,
     damage: DamageField<B>,
@@ -139,7 +139,7 @@ pub fn bar_network_equilibrium_reported_from_tensors<B: Backend<FloatElem = f32>
     let (u, stress, report) = bar_network_equilibrium_reported(
         Field::new(displacement),
         coords,
-        stiffness,
+        StiffnessField::from_tensor(stiffness),
         Field::new(body_force),
         edges_b1,
         Field::new(damage),
@@ -162,7 +162,7 @@ mod tests {
     type ChainFixture = (
         Tensor<B, 2>,
         Tensor<B, 2, Int>,
-        Tensor<B, 3>,
+        StiffnessField<B>,
         DisplacementField<B>,
         Tensor<B, 3>,
         DamageField<B>,
@@ -195,12 +195,9 @@ mod tests {
         let edges_b1: Tensor<B, 2, Int> =
             Tensor::from_data(Data::new(edges, Shape::new([2, n - 1])), &dev);
 
-        let mut stiff = vec![0.0_f32; n * 2];
-        for i in 0..n {
-            stiff[i * 2] = e;
-            stiff[i * 2 + 1] = 0.3;
-        }
-        let stiffness = Tensor::from_data(Data::new(stiff, Shape::new([1, n, 2])), &dev);
+        let e_young = Tensor::<B, 3>::full([1, n, 1], e, &dev);
+        let nu = Tensor::<B, 3>::full([1, n, 1], 0.3_f32, &dev);
+        let stiffness = StiffnessField::from_e_nu_cat(e_young, nu);
 
         let mut bf = vec![0.0_f32; n * 3];
         bf[(n - 1) * 3] = 1000.0;
@@ -243,12 +240,25 @@ mod tests {
         let u0 = Field::new(Tensor::<B, 3>::zeros([1, 2, 3], &dev));
         let rel_tol = 1e-6_f32;
 
-        let (_u, _stress, report) = BarNetworkMechanicsSolvePort.solve_equilibrium_reported(
-            u0, coords, stiff, bf, edges, damage, mask, area, &cfg, rel_tol,
-        );
+        let (_u, _stress, report) = BarNetworkMechanicsSolvePort
+            .solve_equilibrium_reported(
+                u0, coords, stiff, bf, edges, damage, mask, area, &cfg, rel_tol,
+            )
+            .expect("bar port equilibrium");
 
         assert_eq!(report.lane, PrecisionLane::F64AdjointBarPcg);
         assert!(report.converged());
+    }
+
+    #[test]
+    fn bar_port_rejects_damage_stiffness_operand_swap_at_compile_time() {
+        fn accept_stiffness(_: StiffnessField<B>) {}
+        fn accept_damage(_: DamageField<B>) {}
+
+        let device = NdArrayDevice::Cpu;
+        let raw = Tensor::<B, 3>::zeros([1, 2, 1], &device);
+        accept_damage(Field::new(raw.clone()));
+        // `accept_stiffness(Field::new(raw))` would not compile — distinct space markers.
     }
 
     #[test]
