@@ -689,9 +689,9 @@ impl ThmcSolver {
             n,
             drying_last_node_evaporation_k: self.drying_last_node_evaporation_k,
             drying_ambient_h: self.drying_ambient_h,
-            reaction_extent_kinetics: self.reaction_extent_kinetics.clone(),
-            implicit_t_alpha_newton: self.implicit_t_alpha_newton.clone(),
-            monolithic_thmc_newton: self.monolithic_thmc_newton.clone(),
+            reaction_extent_kinetics: &self.reaction_extent_kinetics,
+            implicit_t_alpha_newton: self.implicit_t_alpha_newton.as_ref(),
+            monolithic_thmc_newton: self.monolithic_thmc_newton.as_ref(),
             manifold,
         };
 
