@@ -122,7 +122,8 @@ fn run_fixed_substeps(
     assert!(n_steps > 0);
     let dt = t_end / n_steps as f32;
     for _ in 0..n_steps {
-        bar.step(ws, dt, u, v, a).expect("step");
+        bar.step(ws, dt, u, v, a)
+            .expect("AcousticNewmarkBar1dPeriodic::step in fixed-substep plane-wave integration");
     }
 }
 
@@ -230,7 +231,7 @@ fn newmark_acceleration_matches_dense_reference_n8() {
     let a_dense = newmark_acceleration_dense_reference(n, dt, beta, e, rho, dx, &u_tilde);
 
     bar.step(&mut ws, dt, &mut u, &mut v, &mut a)
-        .expect("step");
+        .expect("AcousticNewmarkBar1dPeriodic::step vs dense Newmark acceleration (n=8)");
 
     let tol = 5e-4_f32;
     for i in 0..n {
@@ -276,7 +277,7 @@ fn newmark_acceleration_matches_dense_reference_n128() {
     let a_dense = newmark_acceleration_dense_reference(n, dt, beta, e, rho, dx, &u_tilde);
 
     bar.step(&mut ws, dt, &mut u, &mut v, &mut a)
-        .expect("step");
+        .expect("AcousticNewmarkBar1dPeriodic::step vs dense Newmark acceleration (n=128)");
 
     let tol = 1e-4_f32;
     let mut max_d = 0.0_f32;
@@ -431,7 +432,7 @@ fn undamped_energy_drift_under_half_percent_over_1000_steps() {
     let mut emin = e0;
     for _ in 0..1000 {
         bar.step(&mut ws, dt, &mut u, &mut v, &mut a)
-            .expect("step");
+            .expect("AcousticNewmarkBar1dPeriodic::step in undamped energy-drift sweep (1000 steps)");
         let en = bar.mechanical_energy(&u, &v);
         emax = emax.max(en);
         emin = emin.min(en);
