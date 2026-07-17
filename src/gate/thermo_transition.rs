@@ -6,32 +6,70 @@
 //! Ported from `umst-prototype/.../thermodynamic_filter.rs` — **wasm-free** manifold build.
 
 use super::transition_proposal::{transition_outcome, ThermodynamicStateSnapshot};
+use super::verdict::{AdmissibilityVerdict, ConjunctVerdict};
 use crate::core::material_transition::{MaterialTransitionParams, SubstrateMaterialParams};
 
 /// Result of thermodynamic admissibility check
+#[allow(missing_docs)] // Legacy bool mirrors — prefer [`Self::conjunct_verdict`] / [`Self::is_accepted`]
 #[derive(Clone, Debug)]
 pub struct AdmissibilityResult {
+    /// Primary discriminant — core ∧ material conjunct cluster.
+    pub verdict: ConjunctVerdict,
+    /// Legacy mirror of [`ConjunctVerdict::is_accepted`] — prefer [`Self::is_accepted`].
+    #[deprecated(
+        since = "0.2.0",
+        note = "use AdmissibilityResult::is_accepted() or verdict.is_accepted()"
+    )]
     pub accepted: bool,
     /// `D_int` value (W/m³) — Clausius–Duhem dissipation surrogate.
     pub dissipation: f64,
+    /// Legacy core conjunct witness — prefer [`CoreGateOutcome`] via open-system route.
+    #[deprecated(
+        since = "0.2.0",
+        note = "use CoreGateOutcome::mass_conserved or verdict reject reason"
+    )]
     pub mass_conserved: bool,
+    /// Legacy CD ∧ strength fold — prefer [`Self::rest_verdict`] / [`ConjunctVerdict`].
+    #[deprecated(
+        since = "0.2.0",
+        note = "use rest_verdict() or ConjunctVerdict reject reason"
+    )]
     pub energy_positive: bool,
 }
 
 impl AdmissibilityResult {
+    /// Borrow the primary [`ConjunctVerdict`] discriminant (FP P2.4 SSOT).
+    #[inline]
     #[must_use]
-    pub fn is_admissible(&self) -> bool {
-        self.accepted
+    pub fn conjunct_verdict(&self) -> ConjunctVerdict {
+        self.verdict
+    }
+
+    /// Whether the composed transition cluster accepted (wire bytes unchanged).
+    #[inline]
+    #[must_use]
+    pub fn is_accepted(&self) -> bool {
+        self.verdict.is_accepted()
     }
 
     #[must_use]
-    pub fn rejection_reason_code(&self) -> &'static str {
-        super::verdict::AdmissibilityVerdict::from_transition_conjuncts(
+    pub fn is_admissible(&self) -> bool {
+        self.is_accepted()
+    }
+
+    /// REST-stable verdict via locked transition conjunct ladder (legacy `energy_positive` fold).
+    #[allow(deprecated)]
+    pub fn rest_verdict(&self) -> AdmissibilityVerdict {
+        AdmissibilityVerdict::from_transition_conjuncts(
             self.accepted,
             self.mass_conserved,
             self.energy_positive,
         )
-        .as_str()
+    }
+
+    #[must_use]
+    pub fn rejection_reason_code(&self) -> &'static str {
+        self.rest_verdict().as_str()
     }
 }
 
@@ -139,6 +177,7 @@ fn thermodynamic_state_snapshot(state: &ThermodynamicState) -> ThermodynamicStat
 ///
 /// FP SSOT; [`ThermodynamicGate::check_transition`] wraps this with accept/reject counters.
 #[must_use]
+#[allow(deprecated)]
 pub fn thermo_gate_transition_outcome(
     old_state: &ThermodynamicState,
     new_state: &ThermodynamicState,
@@ -152,6 +191,7 @@ pub fn thermo_gate_transition_outcome(
         tolerance,
     );
     AdmissibilityResult {
+        verdict: outcome.conjunct_verdict(),
         accepted: outcome.accepted,
         dissipation: outcome.dissipation,
         mass_conserved: outcome.mass_conserved,
@@ -200,7 +240,7 @@ impl ThermodynamicGate {
         new_state: &ThermodynamicState,
         dt_s: f64,
     ) -> bool {
-        self.check_transition(old_state, new_state, dt_s).accepted
+        self.check_transition(old_state, new_state, dt_s).is_accepted()
     }
 
     /// Full transition evaluation with accounting statistics (telemetry wrapper).
@@ -211,7 +251,7 @@ impl ThermodynamicGate {
         dt_s: f64,
     ) -> AdmissibilityResult {
         let result = thermo_gate_transition_outcome(old_state, new_state, dt_s, self.tolerance);
-        if result.accepted {
+        if result.is_accepted() {
             self.acceptances += 1;
         } else {
             self.rejections += 1;
@@ -234,6 +274,7 @@ impl ThermodynamicGate {
 }
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod tests {
     use super::*;
     use crate::core::material_transition::SubstrateMaterialParams;
