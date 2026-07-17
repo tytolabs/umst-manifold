@@ -142,7 +142,7 @@ pub struct ElectroChemicalSolver {
     pub mesh_spacing: f32,
     /// When **`Some`**, [`ElectroChemicalSolver::solve_pnp_step_dispatch`] first attempts Track 14
     /// **implicit backward Euler + damped Newton** on path-chain graphs (same contract as
-    /// [`Self::try_solve_pnp_backward_euler_newton_chain`]); on failure (`None` from that helper —
+    /// [`Self::try_solve_pnp_backward_euler_newton_chain`]); on failure (`Err` from that helper —
     /// non-chain graph, `batch≠1`, etc.) it falls back to explicit [`Self::solve_pnp_step`].
     /// Default **`None`**: dispatch matches the historical **Picard / split-explicit** behaviour only.
     pub pnp_implicit_newton_chain: Option<NewtonPnpContext>,
@@ -343,7 +343,7 @@ impl ElectroChemicalSolver {
     /// When **`linearize_sg_fickian` is `true`** (Fickian-linearised SG / Debye–Hückel residual), each
     /// Newton correction uses **three Thomas solves** on the **sparse block structure** (no dense expand).
     /// **Only** when `edges_b1` is the **contiguous** path
-    /// `0\!-\!1\!-\!\cdots\!-\!(N-1)\` and `batch=1`; otherwise returns `None` (caller keeps split
+    /// `0\!-\!1\!-\!\cdots\!-\!(N-1)\` and `batch=1`; otherwise returns `Err(PhysicsError::…)` (caller keeps split
     /// [`Self::solve_pnp_step`]).
     ///
     /// Dirichlet \(\Phi\) at the two endpoints is read from `electric_potential_n` at nodes `0` and
@@ -685,7 +685,7 @@ fn poisson_chain_net_charge_variable_eps_thomas(
     out[1..(m + 1)].copy_from_slice(&u[..m]);
 }
 
-/// If `edges_b1` is a contiguous path on `0..n-1`, returns Poisson solution tensor; otherwise `None`.
+/// If `edges_b1` is a contiguous path on `0..n-1`, returns Poisson solution tensor; otherwise `Err(PhysicsError::UnsupportedLayout)`.
 #[cfg(feature = "electrochemistry-mvp")]
 fn try_solve_poisson_chain_thomas<B: Backend<FloatElem = f32>>(
     electric_potential: Tensor<B, 3>,
