@@ -218,7 +218,7 @@ fn milestone_one_analytic_strain_surrogate() {
         h.fracture_energy_gc,
         h.edges_b1,
         6,
-    ).expect("update_damage_staggered");
+    ).expect("PhaseFieldFractureSolver::update_damage_staggered with analytic g(d) strain surrogate on 3-node chain (FP §6 Track 12 Milestone 1 smoke)");
 
     let vals = d_fin.into_tensor().into_data().value;
     assert!(vals.iter().all(|x| x.is_finite()));
@@ -260,14 +260,14 @@ fn milestone_one_mechanics_equilibrium_staggered_convergence() {
                         h.edge_len.clone(),
                         h.n_nodes,
                     )
-                    .expect("strain after mechanics"),
+                    .expect("strain_tensor_for_fracture_after_mechanics on 3-node bar per staggered outer pass (FP §6 Track 12 Milestone 1 mechanics surrogate)"),
                 )
             },
             damage,
             h.fracture_energy_gc.clone(),
             h.edges_b1.clone(),
             1,
-        ).expect("update_damage_staggered");
+        ).expect("PhaseFieldFractureSolver::update_damage_staggered with mechanics equilibrium strain per outer pass on 3-node chain (FP §6 Track 12 Milestone 1 outer loop witness)");
         let step = damage
             .as_tensor()
             .clone()
@@ -322,7 +322,7 @@ fn milestone_one_mechanics_equilibrium_staggered_convergence() {
         h.edge_len.clone(),
         h.n_nodes,
     )
-    .expect("strain after mechanics");
+    .expect("strain_tensor_for_fracture_after_mechanics post-convergence ½‖ε‖_F² proxy on 3-node bar (FP §6 Track 12 Milestone 1 witness)");
     let half_frob_sq = eps_fin
         .powf_scalar(2.0)
         .sum()

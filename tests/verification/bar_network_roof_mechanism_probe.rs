@@ -79,7 +79,7 @@ impl HarnessFixture {
         let edges = plate.edges_b1::<B>(&dev);
         let coords = plate
             .coords_bn3::<B>(&dev)
-            .expect("coords")
+            .expect("ExtrudedPlateMechanics::coords_bn3 on 9×8×2 roof harness fixture (FP §6 Track B6 H4 mechanism probe)")
             .reshape(Shape::new([n, 3]));
         let rho = Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &dev);
         let e_node = rho
@@ -471,7 +471,7 @@ fn bar_pcg_rel_res(
         fx.area,
         cfg,
     )
-    .expect("solve_equilibrium_with_pcg_report");
+    .expect("VectorMechanicsSolver::solve_equilibrium_with_pcg_report on extruded plate bar network (FP §6 Track B6 H4 roof PCG witness)");
     (pcg.rel_residual, pcg.iterations)
 }
 
