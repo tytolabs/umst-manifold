@@ -27,10 +27,10 @@ fn analytic_dp_phys_drho(eps: f32, sig: f32, rho: f32, t: f32) -> f32 {
     let dev = <NdArray<f32> as BackendTrait>::Device::default();
     let t_t = Tensor::<NdArray<f32>, 2>::from_data(Data::new(vec![t], Shape::new([1, 1])), &dev);
     let b2v = lj_mayer_b2_star_tensor(t_t.clone())
-        .expect("lj_mayer_b2_star_tensor for analytic dP/drho*")
+        .expect("statistical_mechanics::lj_mayer_b2_star_tensor at T* for analytic dP_phys/drho* Mayer B2 witness (FP §6 Track 3D1 statmech virial bridge)")
         .into_scalar();
     let b3v = lj_virial_b3_star_tensor(t_t)
-        .expect("lj_virial_b3_star_tensor for analytic dP/drho*")
+        .expect("statistical_mechanics::lj_virial_b3_star_tensor at T* for analytic dP_phys/drho* Mayer B3 witness (FP §6 Track 3D1 statmech virial bridge)")
         .into_scalar();
     let dp_star = t + 2.0 * t * b2v * rho + 3.0 * t * b3v * rho * rho;
     dp_star * eps / sig.powi(3)
@@ -66,7 +66,7 @@ fn statmech_virial_pressure_autodiff_matches_fd_wrt_rho_star() {
     let grads = loss.backward();
     let g = rho_ad
         .grad(&grads)
-        .expect("grad w.r.t. rho*")
+        .expect("autodiff reverse-mode grad w.r.t. rho* on reduced_pressure_lj_virial_third_order physical chain (FP §6 Track 3D1 statmech virial bridge autodiff parity)")
         .into_data()
         .value[0];
 
@@ -90,7 +90,7 @@ fn statmech_mechanics_stiffness_scale_non_panic_and_ratio() {
     );
     let stiff = Tensor::<NdArray<f32>, 3>::full([batch, n, 2], 200.0_f32, &dev);
     let out = scale_stiffness_young_first_channel_with_statmech_ratio(stiff, lj)
-        .expect("scale_stiffness_young_first_channel_with_statmech_ratio");
+        .expect("mechanics::scale_stiffness_young_first_channel_with_statmech_ratio on [B,3,2] stiffness with [B,4] LJ state (FP §6 Track 3D1 statmech mechanics bridge)");
     assert_eq!(out.dims(), [batch, n, 2]);
     let e0 = out.clone().slice([0..batch, 0..n, 0..1]).into_data().value[0];
     assert!(e0.is_finite());
@@ -109,6 +109,6 @@ fn statmech_fracture_gc_scale_non_panic() {
     );
     let gc0 = Tensor::<NdArray<f32>, 2>::full([1, 1], 42.0_f32, &dev);
     let gc1 = gc_bn1_scaled_by_statmech_gamma_ratio(gc0, lj)
-        .expect("gc_bn1_scaled_by_statmech_gamma_ratio");
+        .expect("fracture_field::gc_bn1_scaled_by_statmech_gamma_ratio on Gc₀ with [B,4] LJ state (FP §6 Track 3D1 statmech fracture bridge)");
     assert!(gc1.into_scalar().is_finite());
 }
