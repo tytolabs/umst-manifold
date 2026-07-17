@@ -16,8 +16,12 @@ use umst_manifold::ros::{
 #[test]
 fn emitted_step_record_json_roundtrip() {
     let v = EmittedStepRecord::new(0.42, 2.5e-21);
-    let s = serde_json::to_string(&v).expect("serialize");
-    let back: EmittedStepRecord = serde_json::from_str(&s).expect("deserialize");
+    let s = serde_json::to_string(&v).expect(
+        "serde_json::to_string EmittedStepRecord stepMI/stepCost round-trip witness (FP §6 Track G epistemic trace schema G.1)",
+    );
+    let back: EmittedStepRecord = serde_json::from_str(&s).expect(
+        "serde_json::from_str EmittedStepRecord JSON round-trip deserialize (FP §6 Track G epistemic trace schema G.1)",
+    );
     assert_eq!(back, v);
     assert!(s.contains("stepMI"));
     assert!(s.contains("stepCost"));
@@ -26,7 +30,9 @@ fn emitted_step_record_json_roundtrip() {
 #[test]
 fn emitted_step_record_omitted_defaults_deserialize() {
     let json = r#"{"stepMI":0.1,"stepCost":1.0}"#;
-    let v: EmittedStepRecord = serde_json::from_str(json).expect("deserialize");
+    let v: EmittedStepRecord = serde_json::from_str(json).expect(
+        "serde_json::from_str EmittedStepRecord with omitted thermodynamic_admissible/confidence defaults (FP §6 Track G epistemic trace schema G.1)",
+    );
     assert!(v.thermodynamic_admissible);
     assert!((v.confidence - 1.0).abs() < f64::EPSILON);
 }
@@ -52,7 +58,9 @@ fn prototype_calibration_constants_match_lean() {
 #[test]
 fn emitted_trace_well_formed_on_sample_fixture() {
     let v = EmittedTraceSchema::sample_fixture();
-    v.check_emitted_trace_well_formed().expect("well-formed");
+    v.check_emitted_trace_well_formed().expect(
+        "EmittedTraceSchema::sample_fixture satisfies Lean EmittedTraceWellFormed per-step bounds (FP §6 Track G epistemic trace schema G.2)",
+    );
 }
 
 #[test]
