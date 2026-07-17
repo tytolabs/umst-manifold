@@ -370,14 +370,17 @@ mod tests {
             Data::new(vec![0.1_f32, 0.2_f32, 0.3_f32, 0.4_f32], Shape::new([2, 2])),
             &dev,
         );
-        let (k, gamma) = upscale_potentials(lj.clone())
-            .expect("upscale_potentials [B,2] output shapes");
+        let (k, gamma) = upscale_potentials(lj.clone()).expect(
+            "statistical_mechanics::upscale_potentials on [B,2] LJ state returns [B,1] bulk modulus and surface energy tensors (FP §6 Track G statmech residual)",
+        );
         assert_eq!(k.dims(), [2, 1]);
         assert_eq!(gamma.dims(), [2, 1]);
 
         let (k2, g2) = StatisticalBridge
             .upscale_potentials(lj)
-            .expect("StatisticalBridge::upscale_potentials [B,2]");
+            .expect(
+                "StatisticalBridge::upscale_potentials trait dispatch on [B,2] LJ state matches free fn output shapes (FP §6 Track G statmech residual)",
+            );
         assert_eq!(k2.dims(), [2, 1]);
         assert_eq!(g2.dims(), [2, 1]);
     }
@@ -389,7 +392,9 @@ mod tests {
             Data::new(vec![0.1_f32, 0.2_f32, 0.3_f32, 0.4_f32], Shape::new([2, 2])),
             &dev,
         );
-        let (k, gamma) = upscale_potentials(lj).expect("upscale_potentials analytic [B,2] scales");
+        let (k, gamma) = upscale_potentials(lj).expect(
+            "statistical_mechanics::upscale_potentials analytic ε/σ³ and ε/σ² scale law on [B,2] batch (FP §6 Track G statmech residual)",
+        );
         let k_v = k.into_data().value;
         let g_v = gamma.into_data().value;
         assert_eq!(k_v.len(), 2);
@@ -464,8 +469,9 @@ mod tests {
         let batch = 2usize;
         let lj: Tensor<B, 2> =
             Tensor::from_data(Data::new(rows.clone(), Shape::new([batch, 4])), &dev);
-        let (k, _gamma) = upscale_potentials(lj.clone())
-            .expect("upscale_potentials b4 virial per-row bulk modulus");
+        let (k, _gamma) = upscale_potentials(lj.clone()).expect(
+            "statistical_mechanics::upscale_potentials on [B,4] virial K_T per-row bulk modulus vs closed-form virial (FP §6 Track G statmech residual)",
+        );
         assert_eq!(k.dims(), [batch, 1]);
         let kv = k.into_data().value;
         for (row, &kval) in rows.chunks_exact(4).zip(kv.iter()) {
@@ -553,7 +559,9 @@ mod tests {
         let dev = NdArrayDevice::Cpu;
         let (e, s, r, t) = VIADU_LJ_STATE_EPS1_SIG1_RHO02_T2;
         let lj = Tensor::<B, 2>::from_data(Data::new(vec![e, s, r, t], Shape::new([1, 4])), &dev);
-        let (k, _) = upscale_potentials(lj).expect("upscale_potentials viadu K ref row");
+        let (k, _) = upscale_potentials(lj).expect(
+            "statistical_mechanics::upscale_potentials VIADU reference LJ row bulk modulus vs VIADU_K_REF_F32 (FP §6 Track G statmech residual)",
+        );
         assert_abs_diff_eq!(k.into_scalar(), VIADU_K_REF_F32, epsilon = 1.0e-4_f32);
     }
 
@@ -562,7 +570,9 @@ mod tests {
         let dev = NdArrayDevice::Cpu;
         let (e, s, r, t) = VIADU_LJ_STATE_EPS1_SIG1_RHO02_T2;
         let lj = Tensor::<B, 2>::from_data(Data::new(vec![e, s, r, t], Shape::new([1, 4])), &dev);
-        let (_, g) = upscale_potentials(lj).expect("upscale_potentials viadu gamma ref row");
+        let (_, g) = upscale_potentials(lj).expect(
+            "statistical_mechanics::upscale_potentials VIADU reference LJ row gamma_gc vs GAMMA_GC_REF_VIADU_F32 (FP §6 Track G statmech residual)",
+        );
         assert_abs_diff_eq!(
             g.into_scalar(),
             GAMMA_GC_REF_VIADU_F32,
