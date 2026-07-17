@@ -35,9 +35,9 @@ pub(crate) struct ThmcStepCtx<'a, B: Backend> {
     pub n: usize,
     pub drying_last_node_evaporation_k: f32,
     pub drying_ambient_h: f32,
-    pub reaction_extent_kinetics: &'a ReactionExtentKinetics,
-    pub implicit_t_alpha_newton: Option<&'a ThmcImplicitTAlphaNewtonConfig>,
-    pub monolithic_thmc_newton: Option<&'a ThmcMonolithicNewtonConfig>,
+    pub reaction_extent_kinetics: ReactionExtentKinetics,
+    pub implicit_t_alpha_newton: Option<ThmcImplicitTAlphaNewtonConfig>,
+    pub monolithic_thmc_newton: Option<ThmcMonolithicNewtonConfig>,
     pub manifold: &'a UnifiedMaterialStateTensor<B>,
 }
 
