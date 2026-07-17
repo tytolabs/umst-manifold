@@ -140,8 +140,14 @@ fn _typed_view_types_compile(
     DamageField<B>,
 ) {
     (
-        umst.temperature_scalar_channel().unwrap(),
-        umst.humidity_scalar_channel().unwrap(),
-        umst.damage_scalar_channel().unwrap(),
+        umst
+            .temperature_scalar_channel()
+            .expect("temperature scalar channel in typed-view compile witness"),
+        umst
+            .humidity_scalar_channel()
+            .expect("humidity scalar channel in typed-view compile witness"),
+        umst
+            .damage_scalar_channel()
+            .expect("damage scalar channel in typed-view compile witness"),
     )
 }

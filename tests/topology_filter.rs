@@ -64,7 +64,9 @@ fn helmholtz_delta_blob_fwhm_matches_green_scale() {
     let idx_max = vals
         .iter()
         .enumerate()
-        .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+        .max_by(|(_, a), (_, b)| {
+            a.partial_cmp(b).expect("Helmholtz peak index comparison (finite f32 densities)")
+        })
         .map(|(i, _)| i)
         .expect("non-empty");
     let ix_m = idx_max % nx;
