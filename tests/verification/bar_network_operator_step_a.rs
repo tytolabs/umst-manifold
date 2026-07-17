@@ -187,7 +187,7 @@ fn quick_plate_fixture() -> (
     let edges = plate.edges_b1::<B>(&dev);
     let coords = plate
         .coords_bn3::<B>(&dev)
-        .expect("coords")
+        .expect("ExtrudedPlateMechanics::coords_bn3 on 9×8×2 plate harness (FP §6 Track B6 H4 Step A operator probe)")
         .reshape(Shape::new([n, 3]));
     let rho = Tensor::<B, 3>::full([1, n, 1], 0.5_f32, &dev);
     let e_node = rho
@@ -285,7 +285,7 @@ fn two_node_rel_residual_metric_sane_and_converged() {
         area,
         &cfg,
     )
-    .expect("solve_equilibrium_with_pcg_report");
+    .expect("VectorMechanicsSolver::solve_equilibrium_with_pcg_report on 2-node bar chain (FP §6 Track B6 H4 Step A rel-residual witness)");
 
     let eq_rel = VectorMechanicsSolver::bar_network_equilibrium_rel_residual(
         u.clone(),
@@ -421,7 +421,7 @@ fn nine_node_chain_manufactured_solution() {
         area,
         &cfg,
     )
-    .expect("solve_equilibrium_with_pcg_report");
+    .expect("VectorMechanicsSolver::solve_equilibrium_with_pcg_report on 9-node manufactured bar chain (FP §6 Track B6 H4 Step A manufactured solution witness)");
 
     assert!(
         pcg.rel_residual < 1e-2,
@@ -469,7 +469,7 @@ fn quick_plate_harness_load_pcg_converges() {
         area,
         &cfg,
     )
-    .expect("solve_equilibrium_with_pcg_report");
+    .expect("VectorMechanicsSolver::solve_equilibrium_with_pcg_report on extruded plate bar network (FP §6 Track B6 H4 Step A roof PCG witness)");
 
     let eq_rel = VectorMechanicsSolver::bar_network_equilibrium_rel_residual(
         u, coords, stiffness, body_force, edges, damage, mask_check, area,
