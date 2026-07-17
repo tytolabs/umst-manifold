@@ -330,11 +330,11 @@ fn thmc_operator_split_step_idempotent_at_quiescent_equilibrium() {
     };
     let post1 = solver
         .step(&StubCartridge, state, &mut umst)
-        .expect("first step");
+        .expect("ThmcSolver::step on quiescent operator-split equilibrium (first idempotency pass)");
     let snap = post1.clone();
     let post2 = solver
         .step(&StubCartridge, post1, &mut umst)
-        .expect("second step");
+        .expect("ThmcSolver::step on quiescent operator-split equilibrium (re-application idempotency pass)");
     let tol = 1e-5_f32;
     assert!(
         max_abs_tensor3(
