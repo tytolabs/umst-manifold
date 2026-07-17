@@ -578,7 +578,9 @@ fn chorin_channel_65x17_thirty_substeps_remain_finite() {
             edges_b1.clone(),
             gravity.clone(),
         )
-        .expect("Bingham step");
+        .expect(
+            "BinghamFlowSolver::step on 65×17 channel for thirty-substep finiteness witness (FP §6 Track E rheology Poiseuille)",
+        );
         velocity = v.mul(mask3.clone());
         pressure = p;
     }
@@ -630,7 +632,9 @@ fn thixotropy_quiescent_explicit_euler_matches_formula() {
         edges_b1,
         gravity,
     )
-    .expect("Bingham step");
+    .expect(
+        "BinghamFlowSolver::step on 2-node quiescent lattice for Roussel λ explicit-Euler witness (FP §6 Track E rheology Poiseuille)",
+    );
 
     let lam0 = 0.3_f32;
     let expected = lam0 + dt * (1.0 - lam0) / solver.t_rest_thix;
@@ -795,7 +799,9 @@ fn chorin_developed_channel_centreline_vs_regularized_reference() {
             edges_b1.clone(),
             gravity.clone(),
         )
-        .expect("Bingham step");
+        .expect(
+            "BinghamFlowSolver::step on 65×17 developed-channel lattice for centreline-vs-reference smoke (FP §6 Track E rheology Poiseuille)",
+        );
         velocity = v.mul(mask3.clone());
         pressure = p;
     }
@@ -927,7 +933,9 @@ fn chorin_steady_channel_64x16_vs_regularized_reference() {
             edges_b1.clone(),
             gravity.clone(),
         )
-        .expect("Bingham step");
+        .expect(
+            "BinghamFlowSolver::step on 65×17 steady-channel lattice for finite-speed smoke (FP §6 Track E rheology Poiseuille)",
+        );
         velocity = v.mul(mask3.clone());
         pressure = p;
         let umax = velocity.clone().abs().max().into_scalar();
@@ -1059,7 +1067,9 @@ fn chorin_channel_65x17_longrun_wall_normal_l2_vs_regularized_reference() {
             edges_b1.clone(),
             gravity.clone(),
         )
-        .expect("Bingham step");
+        .expect(
+            "BinghamFlowSolver::step on 65×17 longrun channel for wall-normal L² opt-in harness (FP §6 Track E rheology Poiseuille)",
+        );
         velocity = v.mul(mask3.clone());
         pressure = p;
         let umax = velocity.clone().abs().max().into_scalar();
@@ -1186,7 +1196,9 @@ fn thixotropy_quiescent_yield_stress_growth_matches_wangler_2016() {
             edges_b1.clone(),
             gravity.clone(),
         )
-        .expect("Bingham step");
+        .expect(
+            "BinghamFlowSolver::step on 2-node quiescent lattice for Wangler 2016 A_thix slope witness (FP §6 Track E rheology Poiseuille)",
+        );
         // Hold quiescence: zero out velocity so γ̇ stays ~0.
         velocity = Tensor::<B, 3>::zeros_like(&v);
         pressure = p;
