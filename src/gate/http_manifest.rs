@@ -12,6 +12,7 @@ use super::evaluator::GateEvaluator;
 use super::route::canonical_transition_admissible;
 use super::transition_eval_registry::{ThermodynamicTransitionContext, TransitionEvaluator};
 use super::transition_proposal::{ThermodynamicStateSnapshot, TransitionFilter};
+use super::verdict::AdmissibilityVerdict;
 use crate::manifest::UmstManifest;
 use crate::runtime::catalog::catalog_lock_bundle_sha256_hex;
 use crate::runtime::catalog::traceability::HTTP_SHIM_CATALOG_ID;
@@ -224,8 +225,17 @@ fn default_temperature_c() -> f64 {
     20.0
 }
 
+#[allow(missing_docs)] // Legacy bool mirrors — prefer [`Self::admissibility_verdict`] / [`Self::is_admissible`]
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct GateResponse {
+    /// Primary discriminant — HTTP eval outcome fold.
+    #[serde(skip)]
+    pub verdict: AdmissibilityVerdict,
+    /// Legacy mirror — prefer [`Self::is_admissible`] / [`Self::admissibility_verdict`].
+    #[deprecated(
+        since = "0.2.0",
+        note = "use GateResponse::is_admissible() or admissibility_verdict()"
+    )]
     pub admissible: bool,
     pub codes: Vec<String>,
     /// Gate evaluator slug when `admissible == false` (telemetry / ROS alignment).
@@ -234,9 +244,43 @@ pub struct GateResponse {
     pub catalog_hash_hex: String,
 }
 
+impl GateResponse {
+    /// Borrow the primary [`AdmissibilityVerdict`] discriminant (FP P2.6 SSOT).
+    #[inline]
+    #[must_use]
+    pub fn admissibility_verdict(&self) -> AdmissibilityVerdict {
+        self.verdict
+    }
+
+    /// Whether the HTTP eval outcome passed admissibility (wire bytes unchanged).
+    #[inline]
+    #[must_use]
+    pub fn is_admissible(&self) -> bool {
+        matches!(self.verdict, AdmissibilityVerdict::Accepted)
+    }
+
+    /// Alias for [`Self::is_admissible`] — preserved for façade call-site compatibility.
+    #[inline]
+    #[must_use]
+    pub fn is_accepted(&self) -> bool {
+        self.is_admissible()
+    }
+}
+
+#[inline]
+fn http_verdict_from_admissible(admissible: bool) -> AdmissibilityVerdict {
+    if admissible {
+        AdmissibilityVerdict::Accepted
+    } else {
+        AdmissibilityVerdict::Unknown
+    }
+}
+
+#[allow(deprecated)]
 #[must_use]
 pub fn gate_json_parse_response() -> GateResponse {
     GateResponse {
+        verdict: AdmissibilityVerdict::Unknown,
         admissible: false,
         codes: vec!["GATE_JSON_PARSE_ERROR".to_string()],
         catalog_id: Some(HTTP_SHIM_CATALOG_ID.to_string()),
@@ -347,10 +391,12 @@ pub fn evaluate(proposal: &MixProposal, manifest: &GateManifest) -> GateResponse
     finalize(codes.is_empty(), codes)
 }
 
+#[allow(deprecated)]
 fn finalize(admissible: bool, mut codes: Vec<String>) -> GateResponse {
     codes.sort_unstable();
     codes.dedup();
     GateResponse {
+        verdict: http_verdict_from_admissible(admissible),
         admissible,
         codes,
         catalog_id: if admissible {
@@ -382,7 +428,8 @@ mod tests {
             temperature_c: 20.0,
         };
         let r = evaluate(&admit, &m);
-        assert!(r.admissible);
+        assert!(r.is_admissible());
+        assert_eq!(r.admissibility_verdict(), AdmissibilityVerdict::Accepted);
         assert!(r.codes.is_empty());
         assert!(r.catalog_id.is_none());
         assert_eq!(r.catalog_hash_hex.len(), 64);
@@ -392,7 +439,7 @@ mod tests {
             ..admit
         };
         let r2 = evaluate(&reject, &m);
-        assert!(!r2.admissible);
+        assert!(!r2.is_admissible());
         assert!(r2
             .codes
             .contains(&"CLAUSIUS_GATE_STRENGTH_EXCESS".to_string()));
@@ -403,7 +450,8 @@ mod tests {
     #[test]
     fn gate_json_parse_reject_carries_http_shim_catalog_id() {
         let r = gate_json_parse_response();
-        assert!(!r.admissible);
+        assert!(!r.is_admissible());
+        assert_eq!(r.admissibility_verdict(), AdmissibilityVerdict::Unknown);
         assert_eq!(r.catalog_id.as_deref(), Some(HTTP_SHIM_CATALOG_ID));
     }
 }
