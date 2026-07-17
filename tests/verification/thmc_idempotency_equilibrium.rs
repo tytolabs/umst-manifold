@@ -567,7 +567,7 @@ fn thmc_t_alpha_residual_damped_newton_idempotent_at_backward_euler_equilibrium(
     );
     let r0 = assembler
         .residual_l2(&trial)
-        .expect("equilibrium residual norm");
+        .expect("ThmcImplicitEulerThermalReactionExtentResidual::residual_l2 on saturated (T,α) backward-Euler equilibrium");
     assert!(
         r0 < 1e-6_f32,
         "uniform saturated (T,α) must satisfy backward-Euler equilibrium, got ||R||={r0}"
@@ -645,7 +645,7 @@ fn thmc_tha_residual_damped_newton_idempotent_at_backward_euler_equilibrium() {
     );
     let r0 = assembler
         .residual_l2(&trial)
-        .expect("equilibrium residual norm");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::residual_l2 on saturated (T,h,α) backward-Euler equilibrium");
     assert!(
         r0 < 1e-6_f32,
         "uniform saturated (T,h,α) must satisfy backward-Euler equilibrium, got ||R||={r0}"
@@ -733,7 +733,7 @@ fn thmc_monolithic_qs_r_u_residual_damped_newton_idempotent_at_equilibrium() {
         cross_section_area,
         &cfg,
     )
-    .expect("zero-load bar equilibrium");
+    .expect("VectorMechanicsSolver::solve_equilibrium_typed on zero-load bar for monolithic stacked residual harness");
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: Field::new(t_n.clone()),
