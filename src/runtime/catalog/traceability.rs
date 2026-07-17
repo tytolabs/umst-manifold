@@ -6,6 +6,8 @@
 //! See **`docs/CATALOG_TRACEABILITY.md`** and classical anchors in **`docs/claims-vs-proofs.md`** /
 //! **`docs/DUAL_PIN_ARCHITECTURE.md`**. CI: `tests/catalog_all_ids_registered.rs`.
 
+use crate::core::error_boundary::CatalogIoError;
+
 /// Lean modules with **no** dedicated Rust gate wiring yet (formal-only or scaffold).
 ///
 /// Every `catalog.json` `module` must appear here **or** in [`CATALOG_MODULE_WIRED`].
@@ -233,12 +235,12 @@ fn read_lock_module_count(manifest_dir: &std::path::Path) -> Option<u64> {
     lock.get("module_count")?.as_u64()
 }
 
-fn count_catalog_modules(path: &std::path::Path) -> Result<usize, String> {
-    let raw = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
-    let v: serde_json::Value = serde_json::from_str(&raw).map_err(|e| e.to_string())?;
+fn count_catalog_modules(path: &std::path::Path) -> Result<usize, CatalogIoError> {
+    let raw = std::fs::read_to_string(path)?;
+    let v: serde_json::Value = serde_json::from_str(&raw)?;
     let modules = v
         .get("modules")
         .and_then(|m| m.as_array())
-        .ok_or_else(|| "catalog.json missing modules array".to_string())?;
+        .ok_or(CatalogIoError::MissingModulesArray)?;
     Ok(modules.len())
 }

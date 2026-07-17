@@ -49,6 +49,53 @@ impl From<String> for CbfReject {
     }
 }
 
+/// Failures reading Lean `catalog.json` for traceability partition (FP §4 IO boundary).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum CatalogIoError {
+    /// Filesystem read of `catalog.json` failed.
+    Read { detail: String },
+    /// JSON parse of `catalog.json` failed.
+    Json { detail: String },
+    /// Top-level `modules` array absent or not an array.
+    MissingModulesArray,
+    /// Legacy string shim for callers still bridging `Err(String)`.
+    LegacyDetail { detail: String },
+}
+
+impl fmt::Display for CatalogIoError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CatalogIoError::Read { detail } | CatalogIoError::Json { detail } => f.write_str(detail),
+            CatalogIoError::MissingModulesArray => {
+                f.write_str("catalog.json missing modules array")
+            }
+            CatalogIoError::LegacyDetail { detail } => f.write_str(detail),
+        }
+    }
+}
+
+impl From<std::io::Error> for CatalogIoError {
+    fn from(err: std::io::Error) -> Self {
+        CatalogIoError::Read {
+            detail: err.to_string(),
+        }
+    }
+}
+
+impl From<serde_json::Error> for CatalogIoError {
+    fn from(err: serde_json::Error) -> Self {
+        CatalogIoError::Json {
+            detail: err.to_string(),
+        }
+    }
+}
+
+impl From<String> for CatalogIoError {
+    fn from(detail: String) -> Self {
+        CatalogIoError::LegacyDetail { detail }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -74,5 +121,19 @@ mod tests {
             err.to_string(),
             "REJECTED: Clausius-Duhem Violation. Generalized entropy -0.01 < 0."
         );
+    }
+
+    #[test]
+    fn catalog_io_missing_modules_display_preserves_legacy_wording() {
+        assert_eq!(
+            CatalogIoError::MissingModulesArray.to_string(),
+            "catalog.json missing modules array"
+        );
+    }
+
+    #[test]
+    fn catalog_io_from_string_shim_round_trip() {
+        let err = CatalogIoError::from("legacy catalog detail".to_string());
+        assert_eq!(err.to_string(), "legacy catalog detail");
     }
 }
