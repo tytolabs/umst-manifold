@@ -238,11 +238,11 @@ mod tests {
     use crate::physics::PhysicsError;
 
     #[test]
-    fn gmres_identity() {
+    fn gmres_identity() -> Result<(), PhysicsError> {
         let n = 4usize;
         let b = vec![1.0_f32, 2.0_f32, -0.5_f32, 0.25_f32];
         let matvec = |v: &[f32]| v.to_vec();
-        let x = gmres_f32(matvec, &b, n, n, 1e-5_f32).expect("identity GMRES");
+        let x = gmres_f32(matvec, &b, n, n, 1e-5_f32)?;
         for i in 0..n {
             assert!(
                 (x[i] - b[i]).abs() < 1e-4_f32,
@@ -251,10 +251,11 @@ mod tests {
                 b[i]
             );
         }
+        Ok(())
     }
 
     #[test]
-    fn gmres_small_dense() {
+    fn gmres_small_dense() -> Result<(), PhysicsError> {
         let a: [f32; 25] = [
             4.0, 1.0, 0.0, 0.0, 0.0, //
             1.0, 4.0, 1.0, 0.0, 0.0, //
@@ -275,7 +276,7 @@ mod tests {
             }
             out
         };
-        let x = gmres_f32(matvec, &b, n, n + 5, 1e-4_f32).expect("dense GMRES");
+        let x = gmres_f32(matvec, &b, n, n + 5, 1e-4_f32)?;
         let ax = matvec(&x);
         let res: f32 = b
             .iter()
@@ -287,6 +288,7 @@ mod tests {
             .sum::<f32>()
             .sqrt();
         assert!(res < 1e-3_f32, "residual {res}");
+        Ok(())
     }
 
     #[test]

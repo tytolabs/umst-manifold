@@ -105,12 +105,14 @@ fn update_damage_smoke_tiny_chain() {
 
     let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
 
-    let d_new = solver.update_damage_tensors(
-        strain.clone(),
-        damage.clone(),
-        fracture_energy_gc.clone(),
-        edges_b1.clone(),
-    );
+    let d_new = solver
+        .update_damage_tensors(
+            strain.clone(),
+            damage.clone(),
+            fracture_energy_gc.clone(),
+            edges_b1.clone(),
+        )
+        .expect("update_damage_tensors");
 
     assert_eq!(d_new.dims(), damage.dims());
 
@@ -130,13 +132,15 @@ fn update_damage_smoke_tiny_chain() {
             );
         }
         // `outer_iterations == 1` + fixed strain provider matches a single inner relaxation.
-        let d_stagg = solver.update_damage_staggered(
-            |_d: &DamageField<B>| strain_field(strain.clone()),
-            damage_field(Tensor::<B, 3>::zeros([batch, n, 1], &dev)),
-            fracture_energy_gc.clone(),
-            edges_b1.clone(),
-            1,
-        );
+        let d_stagg = solver
+            .update_damage_staggered(
+                |_d: &DamageField<B>| strain_field(strain.clone()),
+                damage_field(Tensor::<B, 3>::zeros([batch, n, 1], &dev)),
+                fracture_energy_gc.clone(),
+                edges_b1.clone(),
+                1,
+            )
+            .expect("update_damage_staggered");
         let v_new = d_new.clone().into_data().value;
         let v_stagg = d_stagg.into_tensor().into_data().value;
         assert_eq!(
@@ -179,12 +183,14 @@ fn at2_length_scale_sweep_non_regression() {
     for l in [0.06_f32, 0.09_f32, 0.12_f32] {
         let damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
         let solver = PhaseFieldFractureSolver { length_scale: l };
-        let d_new = solver.update_damage_tensors(
-            strain.clone(),
-            damage,
-            fracture_energy_gc.clone(),
-            edges_b1.clone(),
-        );
+        let d_new = solver
+            .update_damage_tensors(
+                strain.clone(),
+                damage,
+                fracture_energy_gc.clone(),
+                edges_b1.clone(),
+            )
+            .expect("update_damage_tensors");
         for &x in d_new.clone().into_data().value.iter() {
             assert!(x.is_finite(), "l={l}: non-finite damage");
             assert!((0.0..=1.0).contains(&x), "l={l}: damage out of range");
@@ -282,13 +288,17 @@ fn at2_gc_linear_scaling_smoke() {
 
     let solver = PhaseFieldFractureSolver { length_scale: l };
 
-    let d_lo = solver.update_damage_tensors(
-        strain.clone(),
-        damage0.clone(),
-        gc_field_lo,
-        edges_b1.clone(),
-    );
-    let d_hi = solver.update_damage_tensors(strain, damage0, gc_field_hi, edges_b1.clone());
+    let d_lo = solver
+        .update_damage_tensors(
+            strain.clone(),
+            damage0.clone(),
+            gc_field_lo,
+            edges_b1.clone(),
+        )
+        .expect("update_damage_tensors");
+    let d_hi = solver
+        .update_damage_tensors(strain, damage0, gc_field_hi, edges_b1.clone())
+        .expect("update_damage_tensors");
 
     let vals_lo = d_lo.into_data().value;
     let vals_hi = d_hi.into_data().value;
@@ -356,29 +366,33 @@ fn staggered_two_outer_strains_exceeds_single_pass_weak_strain_only() {
 
     let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
 
-    let d_single_weak = solver.update_damage_tensors(
-        strain_weak.clone(),
-        damage0.clone(),
-        fracture_energy_gc.clone(),
-        edges_b1.clone(),
-    );
+    let d_single_weak = solver
+        .update_damage_tensors(
+            strain_weak.clone(),
+            damage0.clone(),
+            fracture_energy_gc.clone(),
+            edges_b1.clone(),
+        )
+        .expect("update_damage_tensors");
 
     let mut outer_k = 0usize;
-    let d_staggered = solver.update_damage_staggered(
-        |_d: &DamageField<B>| {
-            let s = if outer_k == 0 {
-                strain_weak.clone()
-            } else {
-                strain_strong.clone()
-            };
-            outer_k += 1;
-            strain_field(s)
-        },
-        damage_field(damage0),
-        fracture_energy_gc,
-        edges_b1,
-        2,
-    );
+    let d_staggered = solver
+        .update_damage_staggered(
+            |_d: &DamageField<B>| {
+                let s = if outer_k == 0 {
+                    strain_weak.clone()
+                } else {
+                    strain_strong.clone()
+                };
+                outer_k += 1;
+                strain_field(s)
+            },
+            damage_field(damage0),
+            fracture_energy_gc,
+            edges_b1,
+            2,
+        )
+        .expect("update_damage_staggered");
 
     let sum_w: f32 = d_single_weak.into_data().value.iter().sum();
     let sum_st: f32 = d_staggered.into_tensor().into_data().value.iter().sum();
@@ -455,12 +469,14 @@ fn at2_gamma_convergence_three_length_scales() {
         // 32 outer passes of the fixed-strain relaxation (each call already runs the inner red–black loop).
         let mut d_curr = damage.clone();
         for _ in 0..32 {
-            d_curr = solver.update_damage_tensors(
-                strain.clone(),
-                d_curr,
-                fracture_energy_gc.clone(),
-                edges_b1.clone(),
-            );
+            d_curr = solver
+                .update_damage_tensors(
+                    strain.clone(),
+                    d_curr,
+                    fracture_energy_gc.clone(),
+                    edges_b1.clone(),
+                )
+                .expect("update_damage_tensors");
         }
 
         let d_vals: Vec<f32> = d_curr.into_data().value;
@@ -560,12 +576,14 @@ fn at2_gamma_convergence_multi_ratio_schedule_smoke() {
         let solver = PhaseFieldFractureSolver { length_scale: l0 };
         let mut d_curr = damage.clone();
         for _ in 0..32 {
-            d_curr = solver.update_damage_tensors(
-                strain.clone(),
-                d_curr,
-                fracture_energy_gc.clone(),
-                edges_b1.clone(),
-            );
+            d_curr = solver
+                .update_damage_tensors(
+                    strain.clone(),
+                    d_curr,
+                    fracture_energy_gc.clone(),
+                    edges_b1.clone(),
+                )
+                .expect("update_damage_tensors");
         }
 
         let d_vals: Vec<f32> = d_curr.into_data().value;
@@ -660,12 +678,14 @@ fn at2_gamma_convergence_multi_ratio_psi_plus_schedule_smoke() {
         let solver = PhaseFieldFractureSolver { length_scale: l0 };
         let mut d_curr = damage.clone();
         for _ in 0..32 {
-            d_curr = solver.update_damage_tensors(
-                strain.clone(),
-                d_curr,
-                fracture_energy_gc.clone(),
-                edges_b1.clone(),
-            );
+            d_curr = solver
+                .update_damage_tensors(
+                    strain.clone(),
+                    d_curr,
+                    fracture_energy_gc.clone(),
+                    edges_b1.clone(),
+                )
+                .expect("update_damage_tensors");
         }
 
         let d_vals: Vec<f32> = d_curr.into_data().value;
@@ -755,18 +775,20 @@ fn at2_gamma_convergence_multi_ratio_psi_plus_outer_strain_ramp_smoke() {
         let solver = PhaseFieldFractureSolver { length_scale: l0 };
         let denom = (outer_iters.saturating_sub(1).max(1)) as f32;
         let mut outer_k = 0usize;
-        let d_curr = solver.update_damage_staggered(
-            |_d: &DamageField<B>| {
-                let t = (outer_k as f32 / denom).clamp(0.0, 1.0);
-                let exx = exx_start + t * (exx_end - exx_start);
-                outer_k += 1;
-                strain_field(uniaxial_strain(&dev, batch, n, exx))
-            },
-            damage_field(damage),
-            fracture_energy_gc.clone(),
-            edges_b1.clone(),
-            outer_iters,
-        );
+        let d_curr = solver
+            .update_damage_staggered(
+                |_d: &DamageField<B>| {
+                    let t = (outer_k as f32 / denom).clamp(0.0, 1.0);
+                    let exx = exx_start + t * (exx_end - exx_start);
+                    outer_k += 1;
+                    strain_field(uniaxial_strain(&dev, batch, n, exx))
+                },
+                damage_field(damage),
+                fracture_energy_gc.clone(),
+                edges_b1.clone(),
+                outer_iters,
+            )
+            .expect("update_damage_staggered");
 
         let strain_final = uniaxial_strain(&dev, batch, n, exx_end);
         let psi_tensor = spectral_tensile_psi_plus_from_strain(strain_final);
@@ -871,12 +893,14 @@ fn at2_gamma_convergence_psi_plus_nonzero_three_length_scales() {
         let solver = PhaseFieldFractureSolver { length_scale: l0 };
         let mut d_curr = damage.clone();
         for _ in 0..32 {
-            d_curr = solver.update_damage_tensors(
-                strain.clone(),
-                d_curr,
-                fracture_energy_gc.clone(),
-                edges_b1.clone(),
-            );
+            d_curr = solver
+                .update_damage_tensors(
+                    strain.clone(),
+                    d_curr,
+                    fracture_energy_gc.clone(),
+                    edges_b1.clone(),
+                )
+                .expect("update_damage_tensors");
         }
 
         let d_vals: Vec<f32> = d_curr.into_data().value;
@@ -1088,7 +1112,8 @@ fn staggered_fracture_compliance_monotone_increasing() {
         cross_section_area,
         &cg,
         cfg_one,
-    );
+    )
+    .expect("solve_staggered_with_mechanics");
     let u0_vals = u0.into_data().value;
     let c0 = force * u0_vals[(n - 1) * 3];
 
@@ -1115,7 +1140,8 @@ fn staggered_fracture_compliance_monotone_increasing() {
             cross_section_area,
             &cg,
             cfg_k,
-        );
+        )
+        .expect("solve_staggered_with_mechanics");
         let u_vals = u_k.into_data().value;
         let d_vals = d_k.into_tensor().into_data().value;
         let tip_u = u_vals[(n - 1) * 3];
@@ -1177,21 +1203,25 @@ fn at2_staggered_outer_cfg_fixed_iters_matches_legacy() {
     );
     let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
     let strain_a = strain.clone();
-    let d_legacy = solver.update_damage_staggered(
-        move |_d: &DamageField<B>| strain_field(strain_a.clone()),
-        damage_field(damage.clone()),
-        fracture_energy_gc.clone(),
-        edges_b1.clone(),
-        4,
-    );
+    let d_legacy = solver
+        .update_damage_staggered(
+            move |_d: &DamageField<B>| strain_field(strain_a.clone()),
+            damage_field(damage.clone()),
+            fracture_energy_gc.clone(),
+            edges_b1.clone(),
+            4,
+        )
+        .expect("update_damage_staggered");
     let strain_b = strain.clone();
-    let d_cfg = solver.update_damage_staggered_with_outer_cfg(
-        move |_d: &DamageField<B>| strain_field(strain_b.clone()),
-        damage_field(damage),
-        fracture_energy_gc,
-        edges_b1,
-        StaggeredDamageOuterLoopConfig::fixed_iters(4),
-    );
+    let d_cfg = solver
+        .update_damage_staggered_with_outer_cfg(
+            move |_d: &DamageField<B>| strain_field(strain_b.clone()),
+            damage_field(damage),
+            fracture_energy_gc,
+            edges_b1,
+            StaggeredDamageOuterLoopConfig::fixed_iters(4),
+        )
+        .expect("update_damage_staggered_with_outer_cfg");
     assert_eq!(
         d_legacy.into_tensor().into_data().value,
         d_cfg.into_tensor().into_data().value,
@@ -1235,23 +1265,25 @@ fn at2_staggered_outer_loose_damage_linf_one_pass() {
     let calls = Arc::new(AtomicUsize::new(0));
     let calls_f = calls.clone();
     let strain_c = strain.clone();
-    let _ = solver.update_damage_staggered_with_outer_cfg(
-        move |_d: &DamageField<B>| {
-            calls_f.fetch_add(1, Ordering::Relaxed);
-            strain_field(strain_c.clone())
-        },
-        damage_field(damage),
-        fracture_energy_gc,
-        edges_b1,
-        StaggeredDamageOuterLoopConfig {
-            max_outer_iterations: 50,
-            stopping: StaggeredOuterDamageStopCriteria {
-                tol_damage_linf: Some(10.0),
-                tol_strain_linf: None,
-                tol_rel_degraded_psi_mean: None,
+    let _ = solver
+        .update_damage_staggered_with_outer_cfg(
+            move |_d: &DamageField<B>| {
+                calls_f.fetch_add(1, Ordering::Relaxed);
+                strain_field(strain_c.clone())
             },
-        },
-    );
+            damage_field(damage),
+            fracture_energy_gc,
+            edges_b1,
+            StaggeredDamageOuterLoopConfig {
+                max_outer_iterations: 50,
+                stopping: StaggeredOuterDamageStopCriteria {
+                    tol_damage_linf: Some(10.0),
+                    tol_strain_linf: None,
+                    tol_rel_degraded_psi_mean: None,
+                },
+            },
+        )
+        .expect("update_damage_staggered_with_outer_cfg");
     assert_eq!(
         calls.load(Ordering::Relaxed),
         1,
@@ -1295,23 +1327,25 @@ fn at2_staggered_outer_rel_psi_loose_two_passes() {
     let calls = Arc::new(AtomicUsize::new(0));
     let calls_f = calls.clone();
     let strain_c = strain.clone();
-    let _ = solver.update_damage_staggered_with_outer_cfg(
-        move |_d: &DamageField<B>| {
-            calls_f.fetch_add(1, Ordering::Relaxed);
-            strain_field(strain_c.clone())
-        },
-        damage_field(damage),
-        fracture_energy_gc,
-        edges_b1,
-        StaggeredDamageOuterLoopConfig {
-            max_outer_iterations: 2,
-            stopping: StaggeredOuterDamageStopCriteria {
-                tol_damage_linf: None,
-                tol_strain_linf: None,
-                tol_rel_degraded_psi_mean: Some(1e30),
+    let _ = solver
+        .update_damage_staggered_with_outer_cfg(
+            move |_d: &DamageField<B>| {
+                calls_f.fetch_add(1, Ordering::Relaxed);
+                strain_field(strain_c.clone())
             },
-        },
-    );
+            damage_field(damage),
+            fracture_energy_gc,
+            edges_b1,
+            StaggeredDamageOuterLoopConfig {
+                max_outer_iterations: 2,
+                stopping: StaggeredOuterDamageStopCriteria {
+                    tol_damage_linf: None,
+                    tol_strain_linf: None,
+                    tol_rel_degraded_psi_mean: Some(1e30),
+                },
+            },
+        )
+        .expect("update_damage_staggered_with_outer_cfg");
     assert_eq!(
         calls.load(Ordering::Relaxed),
         2,
@@ -1421,7 +1455,8 @@ fn at2_solve_staggered_mechanics_outer_loose_stopping_one_pass() {
         cross_section_area,
         &cg,
         cfg_one,
-    );
+    )
+    .expect("solve_staggered_with_mechanics");
     let (u2, d2) = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
         coords,
         edges_b1,
@@ -1432,7 +1467,8 @@ fn at2_solve_staggered_mechanics_outer_loose_stopping_one_pass() {
         cross_section_area,
         &cg,
         cfg_stop,
-    );
+    )
+    .expect("solve_staggered_with_mechanics");
     let v1 = u1.into_data().value;
     let v2 = u2.into_data().value;
     let tol = 1e-4_f32;
@@ -1496,7 +1532,8 @@ fn staggered_mechanics_outer_damage_stop_matches_long_budget() {
         cross_section_area,
         &cg,
         cfg_long,
-    );
+    )
+    .expect("solve_staggered_with_mechanics");
     let (u_s, d_s) = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
         coords,
         edges_b1,
@@ -1507,7 +1544,8 @@ fn staggered_mechanics_outer_damage_stop_matches_long_budget() {
         cross_section_area,
         &cg,
         cfg_inactive_stop,
-    );
+    )
+    .expect("solve_staggered_with_mechanics");
     let tol = 1e-4_f32;
     let v1 = u_long.into_data().value;
     let v2 = u_s.into_data().value;

@@ -128,7 +128,9 @@ pub trait ResidualThmc<B: Backend<FloatElem = f32>> {
     /// Evaluate the residual map at `trial` (implementation-defined contract).
     fn evaluate_residual(&self, trial: &ThmcState<B>) -> Result<(), PhysicsError> {
         let _ = trial;
-        Err("ResidualThmc::evaluate_residual not implemented".into())
+        Err(PhysicsError::UnsupportedLayout {
+            context: "ResidualThmc::evaluate_residual",
+        })
     }
 }
 
@@ -227,18 +229,22 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
         let batch = t.dims()[0];
         let n = t.dims()[1];
         if self.temperature_n.as_tensor().dims() != t.dims() {
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "ThmcImplicitEulerThermalReactionExtentResidual: T^n dims {:?} != trial T dims {:?}",
                 self.temperature_n.as_tensor().dims(),
                 t.dims()
-            ).into());
+            ),
+        });
         }
         if self.alpha_n.as_tensor().dims() != alpha.dims() {
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "ThmcImplicitEulerThermalReactionExtentResidual: α^n dims {:?} != trial α dims {:?}",
                 self.alpha_n.as_tensor().dims(),
                 alpha.dims()
-            ).into());
+            ),
+        });
         }
 
         let lap_t = TopologicalLaplacian::scalar_laplacian_temperature(&Field::new(t.clone()), &self.damage_m, self.edges_b1.clone());
@@ -291,22 +297,31 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
         fd_eps: f32,
     ) -> Result<(ThmcState<B>, f32, f32), PhysicsError> {
         if !(damping > 0.0_f32 && damping <= 1.0_f32) {
-            return Err("one_damped_newton_step: damping must lie in (0, 1]".into());
+            return Err(PhysicsError::Domain {
+            detail: "one_damped_newton_step: damping must lie in (0, 1]".to_string(),
+        });
         }
         if fd_eps <= 0.0_f32 {
-            return Err("one_damped_newton_step: fd_eps must be positive".into());
+            return Err(PhysicsError::Domain {
+            detail: "one_damped_newton_step: fd_eps must be positive".to_string(),
+        });
         }
 
         let t_dims = trial.thermal.temperature.as_tensor().dims();
         let a_dims = trial.chemical.reaction_extent.as_tensor().dims();
         if t_dims[0] != 1 {
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "one_damped_newton_step: batch must be 1, got {}",
                 t_dims[0]
-            ).into());
+            ),
+        });
         }
         if t_dims[0] != a_dims[0] || t_dims[1] != a_dims[1] {
-            return Err("one_damped_newton_step: T and α batch/node counts must match".into());
+            return Err(PhysicsError::ShapeMismatch {
+            context: "one_damped_newton_step",
+            detail: "T and α batch/node counts must match",
+        });
         }
 
         let n = t_dims[1];
@@ -315,9 +330,11 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
         let m = n * f_t + n * f_a;
         if m > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
             let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "one_damped_newton_step: {m} stacked DOFs exceeds cap {cap}",
-            ).into());
+            ),
+        });
         }
 
         let device = trial.thermal.temperature.as_tensor().device();
@@ -327,7 +344,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
 
         let mut u = flatten_two_fields(trial.thermal.temperature.as_tensor(), trial.chemical.reaction_extent.as_tensor());
         if u.len() != m || r0.len() != m {
-            return Err("one_damped_newton_step: internal flatten length mismatch".into());
+            return Err(PhysicsError::InvariantViolation {
+            context: "one_damped_newton_step: internal flatten length mismatch",
+        });
         }
 
         // Dense Jacobian: column j = ∂R/∂u_j (forward difference).
@@ -381,7 +400,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual
         fd_eps: f32,
     ) -> Result<(ThmcState<B>, Vec<f32>), PhysicsError> {
         if iterations < 2 {
-            return Err("damped_newton_iterations: iterations must be >= 2".into());
+            return Err(PhysicsError::Domain {
+            detail: "damped_newton_iterations: iterations must be >= 2".to_string(),
+        });
         }
         let mut norms: Vec<f32> = Vec::with_capacity(iterations + 1);
         norms.push(self.residual_l2(trial)?);
@@ -456,25 +477,31 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         let batch = t.dims()[0];
         let n = t.dims()[1];
         if self.temperature_n.as_tensor().dims() != t.dims() {
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "ThmcImplicitEulerThermalHumidityReactionExtentResidual: T^n dims {:?} != trial T dims {:?}",
                 self.temperature_n.as_tensor().dims(),
                 t.dims()
-            ).into());
+            ),
+        });
         }
         if self.humidity_n.as_tensor().dims() != h.dims() {
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "ThmcImplicitEulerThermalHumidityReactionExtentResidual: h^n dims {:?} != trial h dims {:?}",
                 self.humidity_n.as_tensor().dims(),
                 h.dims()
-            ).into());
+            ),
+        });
         }
         if self.alpha_n.as_tensor().dims() != alpha.dims() {
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "ThmcImplicitEulerThermalHumidityReactionExtentResidual: α^n dims {:?} != trial α dims {:?}",
                 self.alpha_n.as_tensor().dims(),
                 alpha.dims()
-            ).into());
+            ),
+        });
         }
 
         let lap_t = TopologicalLaplacian::scalar_laplacian_temperature(&Field::new(t.clone()), &self.damage_m, self.edges_b1.clone());
@@ -511,11 +538,13 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         let (r_t, r_h, r_alpha) = self.assemble(trial)?;
         let u = trial.mechanical.displacement.as_tensor().clone();
         if self.displacement_n.dims() != u.dims() {
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "ThmcImplicitEulerThermalHumidityReactionExtentResidual: u^n dims {:?} != trial u dims {:?}",
                 self.displacement_n.dims(),
                 u.dims()
-            ).into());
+            ),
+        });
         }
         let r_u = u
             .sub(self.displacement_n.clone())
@@ -566,29 +595,37 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         let batch = t_dims[0];
         let n = t_dims[1];
         if coords_n3.dims() != [n, 3] {
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "evaluate_quasi_static_r_u: coords dims {:?} != [{n}, 3]",
                 coords_n3.dims()
-            ).into());
+            ),
+        });
         }
         if boundary_mask_bn3.dims() != [batch, n, 3] {
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "evaluate_quasi_static_r_u: boundary_mask dims {:?} != [{batch}, {n}, 3]",
                 boundary_mask_bn3.dims()
-            ).into());
+            ),
+        });
         }
         if body_force.dims() != [batch, n, 3] {
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "evaluate_quasi_static_r_u: body_force dims {:?} != [{batch}, {n}, 3]",
                 body_force.dims()
-            ).into());
+            ),
+        });
         }
         let u = trial.mechanical.displacement.as_tensor().clone();
         if u.dims() != [batch, n, 3] {
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "evaluate_quasi_static_r_u: displacement dims {:?} != [{batch}, {n}, 3]",
                 u.dims()
-            ).into());
+            ),
+        });
         }
         let device = u.device();
         let alpha_bn1 = trial
@@ -603,16 +640,20 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
             let h = trial.hydro.humidity.as_tensor().clone();
             let h_n = self.humidity_n.as_tensor().clone();
             if h.dims() != [batch, n, 1] {
-                return Err(format!(
+                return Err(PhysicsError::Domain {
+            detail: format!(
                     "evaluate_quasi_static_r_u: trial humidity dims {:?} != [{batch}, {n}, 1]",
                     h.dims()
-                ).into());
+                ),
+        });
             }
             if h_n.dims() != [batch, n, 1] {
-                return Err(format!(
+                return Err(PhysicsError::Domain {
+            detail: format!(
                     "evaluate_quasi_static_r_u: humidity^n dims {:?} != [{batch}, {n}, 1]",
                     h_n.dims()
-                ).into());
+                ),
+        });
             }
             let ones_h = Tensor::<B, 3>::ones(h.dims(), &device);
             let ones_hn = Tensor::<B, 3>::ones(h_n.dims(), &device);
@@ -737,25 +778,32 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         fd_eps: f32,
     ) -> Result<(ThmcState<B>, f32, f32), PhysicsError> {
         if !(damping > 0.0_f32 && damping <= 1.0_f32) {
-            return Err("one_damped_newton_step (T,h,α): damping must lie in (0, 1]".into());
+            return Err(PhysicsError::Domain {
+            detail: "one_damped_newton_step (T,h,α): damping must lie in (0, 1]".to_string(),
+        });
         }
         if fd_eps <= 0.0_f32 {
-            return Err("one_damped_newton_step (T,h,α): fd_eps must be positive".into());
+            return Err(PhysicsError::Domain {
+            detail: "one_damped_newton_step (T,h,α): fd_eps must be positive".to_string(),
+        });
         }
 
         let t_dims = trial.thermal.temperature.as_tensor().dims();
         let h_dims = trial.hydro.humidity.as_tensor().dims();
         let a_dims = trial.chemical.reaction_extent.as_tensor().dims();
         if t_dims[0] != 1 {
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "one_damped_newton_step (T,h,α): batch must be 1, got {}",
                 t_dims[0]
-            ).into());
+            ),
+        });
         }
         if t_dims != h_dims || t_dims[0] != a_dims[0] || t_dims[1] != a_dims[1] {
-            return Err(
-                "one_damped_newton_step (T,h,α): T, h, α batch/node counts must match".into(),
-            );
+            return Err(PhysicsError::ShapeMismatch {
+                context: "one_damped_newton_step (T,h,α)",
+                detail: "T, h, α batch/node counts must match",
+            });
         }
 
         let n = t_dims[1];
@@ -768,9 +816,11 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
             );
         if m > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
             let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "one_damped_newton_step (T,h,α): {m} stacked DOFs exceeds cap {cap}",
-            ).into());
+            ),
+        });
         }
 
         let device = trial.thermal.temperature.as_tensor().device();
@@ -784,7 +834,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
             trial.chemical.reaction_extent.as_tensor(),
         );
         if u.len() != m || r0.len() != m {
-            return Err("one_damped_newton_step (T,h,α): internal flatten length mismatch".into());
+            return Err(PhysicsError::InvariantViolation {
+            context: "one_damped_newton_step (T,h,α): internal flatten length mismatch",
+        });
         }
 
         let mut jac = vec![0.0_f32; m * m];
@@ -834,7 +886,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         fd_eps: f32,
     ) -> Result<(ThmcState<B>, Vec<f32>), PhysicsError> {
         if iterations < 2 {
-            return Err("damped_newton_iterations (T,h,α): iterations must be >= 2".into());
+            return Err(PhysicsError::Domain {
+            detail: "damped_newton_iterations (T,h,α): iterations must be >= 2".to_string(),
+        });
         }
         let mut norms: Vec<f32> = Vec::with_capacity(iterations + 1);
         norms.push(self.residual_l2(trial)?);
@@ -930,14 +984,14 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         matrix_free_inner: bool,
     ) -> Result<QsRuNewtonStepTensors<B>, PhysicsError> {
         if !(damping > 0.0_f32 && damping <= 1.0_f32) {
-            return Err(
-                "one_damped_newton_step_with_quasi_static_r_u: damping must lie in (0, 1]".into(),
-            );
+            return Err(PhysicsError::Domain {
+                detail: "one_damped_newton_step_with_quasi_static_r_u: damping must lie in (0, 1]".to_string(),
+            });
         }
         if fd_eps <= 0.0_f32 {
-            return Err(
-                "one_damped_newton_step_with_quasi_static_r_u: fd_eps must be positive".into(),
-            );
+            return Err(PhysicsError::Domain {
+                detail: "one_damped_newton_step_with_quasi_static_r_u: fd_eps must be positive".to_string(),
+            });
         }
 
         #[cfg(not(feature = "solver-experimental"))]
@@ -948,20 +1002,22 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         let a_dims = trial.chemical.reaction_extent.as_tensor().dims();
         let u_dims = trial.mechanical.displacement.as_tensor().dims();
         if t_dims[0] != 1 {
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "one_damped_newton_step_with_quasi_static_r_u: batch must be 1, got {}",
                 t_dims[0]
-            ).into());
+            ),
+        });
         }
         if t_dims != h_dims
             || t_dims[0] != a_dims[0]
             || t_dims[1] != a_dims[1]
             || u_dims != [t_dims[0], t_dims[1], 3]
         {
-            return Err(
-                "one_damped_newton_step_with_quasi_static_r_u: T, h, α, u batch/node/shape mismatch"
-                    .into(),
-            );
+            return Err(PhysicsError::ShapeMismatch {
+                context: "one_damped_newton_step_with_quasi_static_r_u",
+                detail: "T, h, α, u batch/node/shape mismatch",
+            });
         }
 
         let n = t_dims[1];
@@ -972,9 +1028,11 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
             ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, f_t, f_h, f_a);
         if m > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
             let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "one_damped_newton_step_with_quasi_static_r_u: {m} stacked DOFs exceeds cap {cap}",
-            ).into());
+            ),
+        });
         }
 
         let device = trial.thermal.temperature.as_tensor().device();
@@ -995,10 +1053,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
             trial.mechanical.displacement.as_tensor(),
         );
         if packed.len() != m || r0.len() != m {
-            return Err(
-                "one_damped_newton_step_with_quasi_static_r_u: internal flatten length mismatch"
-                    .into(),
-            );
+            return Err(PhysicsError::InvariantViolation {
+                context: "one_damped_newton_step_with_quasi_static_r_u: internal flatten length mismatch",
+            });
         }
 
         let t_shape = [t_dims[0], t_dims[1], t_dims[2]];
@@ -1009,13 +1066,17 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         let active = field_major_newton_active_mask(n, f_t, f_h, f_a, boundary_mask_bn3)?;
         let m_a: usize = active.iter().filter(|&&a| a).count();
         if m_a == 0 {
-            return Err("one_damped_newton_step_with_quasi_static_r_u: zero active DOFs".into());
+            return Err(PhysicsError::Domain {
+            detail: "one_damped_newton_step_with_quasi_static_r_u: zero active DOFs".to_string(),
+        });
         }
         if m_a > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
             let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
-            return Err(format!(
+            return Err(PhysicsError::Domain {
+            detail: format!(
                 "one_damped_newton_step_with_quasi_static_r_u: {m_a} active DOFs exceeds cap {cap}",
-            ).into());
+            ),
+        });
         }
         let red_map: Vec<usize> = (0..m).filter(|&j| active[j]).collect();
         let r0_red: Vec<f32> = red_map.iter().map(|&j| r0[j]).collect();
@@ -1151,9 +1212,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         stacked_residual_relative_to_initial: Option<f32>,
     ) -> Result<(ThmcState<B>, Vec<f32>), PhysicsError> {
         if iterations < 2 {
-            return Err(
-                "damped_newton_iterations_with_quasi_static_r_u: iterations must be >= 2".into(),
-            );
+            return Err(PhysicsError::Domain {
+                detail: "damped_newton_iterations_with_quasi_static_r_u: iterations must be >= 2".to_string(),
+            });
         }
         let mut norms: Vec<f32> = Vec::with_capacity(iterations + 1);
         let (r_t0, r_h0, r_a0, r_u0) = self.assemble_with_quasi_static_r_u(
@@ -1383,9 +1444,11 @@ fn field_major_newton_active_mask<B: Backend<FloatElem = f32>>(
 ) -> Result<Vec<bool>, PhysicsError> {
     let dm = boundary_mask_bn3.dims();
     if dm[0] != 1 || dm[1] != n || dm[2] != 3 {
-        return Err(format!(
+        return Err(PhysicsError::Domain {
+            detail: format!(
             "field_major_newton_active_mask: boundary_mask dims {dm:?}, expected [1, {n}, 3]",
-        ).into());
+        ),
+        });
     }
     let m = ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, f_t, f_h, f_a);
     let mut active = vec![true; m];
@@ -1538,7 +1601,9 @@ fn gauss_jordan_solve(a: &mut [f32], b: &mut [f32], n: usize) -> Result<Vec<f32>
             }
         }
         if best < 1e-20_f32 {
-            return Err("gauss_jordan_solve: singular or ill-conditioned Jacobian".into());
+            return Err(PhysicsError::IndefiniteSystem {
+            context: "gauss_jordan_solve: singular or ill-conditioned Jacobian",
+        });
         }
         if piv != k {
             for c in 0..n {

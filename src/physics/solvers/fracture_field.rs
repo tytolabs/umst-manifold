@@ -505,7 +505,7 @@ impl PhaseFieldFractureSolver {
         let mut outer_err: Option<PhysicsError> = None;
         let mut converged = false;
 
-        let completed = iterate_until(outer.max_outer_iterations, &mut st, |st| {
+        let _completed = iterate_until(outer.max_outer_iterations, &mut st, |st| {
             let strain_k = strain_fn(&st.damage);
             let d_before = st.damage.as_tensor().clone();
             let prev_s = st.prev_strain.as_ref().map(|s| s.as_tensor());
