@@ -18,7 +18,6 @@ use super::solvers::ThmcState;
 
 /// Kleisli bind for `ThmcState` morphisms: `(A → Result<B,E>)` chained left-to-right.
 #[inline]
-#[allow(dead_code)] // wired in RW-FP-P51+
 pub(crate) fn and_then_state<B, F>(
     state: ThmcState<B>,
     f: F,
@@ -32,7 +31,6 @@ where
 
 /// Functor map on the success channel (errors short-circuit).
 #[inline]
-#[allow(dead_code)] // wired in RW-FP-P51+
 pub(crate) fn map_state<B, F>(
     state: ThmcState<B>,
     f: F,
