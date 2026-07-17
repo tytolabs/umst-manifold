@@ -116,6 +116,12 @@ mod tests {
         ThmcState::from_tensors(t, h, u, alpha, d, 1.5)
     }
 
+    /// Parity shim entry — single deprecated-allow site for MP2 golden roundtrips.
+    #[allow(deprecated)]
+    fn to_flat(env: &ThmcEnvelope<B>) -> ThmcState<B> {
+        env.to_flat_state()
+    }
+
     #[test]
     fn from_flat_setting_preserves_transport_and_time() {
         let device = Default::default();
@@ -137,8 +143,7 @@ mod tests {
         let device = Default::default();
         let flat = sample_flat(&device);
         let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Setting);
-        #[allow(deprecated)]
-        let back = env.to_flat_state();
+        let back = to_flat(&env);
         assert!((back.time - flat.time).abs() < f32::EPSILON);
         assert_eq!(back.damage.as_tensor().dims(), flat.damage.as_tensor().dims());
     }
@@ -195,8 +200,7 @@ mod tests {
         let device = Default::default();
         let flat = sample_flat(&device);
         let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Fluid);
-        #[allow(deprecated)]
-        let back = env.to_flat_state();
+        let back = to_flat(&env);
         assert_eq!(
             back.mechanical.displacement.as_tensor().dims(),
             [1, 4, 3]
@@ -208,8 +212,7 @@ mod tests {
         let device = Default::default();
         let flat = sample_flat(&device);
         let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Solid);
-        #[allow(deprecated)]
-        let back = env.to_flat_state();
+        let back = to_flat(&env);
         assert_eq!(
             back.mechanical.displacement.as_tensor().dims(),
             [1, 4, 3]
@@ -221,8 +224,7 @@ mod tests {
         let device = Default::default();
         let flat = sample_flat(&device);
         let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Setting);
-        #[allow(deprecated)]
-        let once = env.to_flat_state();
+        let once = to_flat(&env);
         let env2 = ThmcEnvelope::from_flat_state(&once, MaterialPhaseKind::Setting);
         assert_eq!(env2.kind(), MaterialPhaseKind::Setting);
         assert!((env2.time - env.time).abs() < f32::EPSILON);
