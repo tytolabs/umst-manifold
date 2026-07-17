@@ -1663,7 +1663,7 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
         norms_full.len()
     );
     assert!(
-        *norms_early.last().expect("norm trail non-empty after tol early-exit monolithic Newton (FP §6 Track G)") < tol_exit,
+        *norms_early.last().expect("norms_early.last() non-empty on damped_newton tol early-exit monolithic (T,h,α,u) witness (FP §6 Track G)") < tol_exit,
         "final ||R|| should sit below tol_exit"
     );
     for k in 0..norms_early.len().saturating_sub(1) {
@@ -2167,7 +2167,7 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
         .expect("ThmcSolver::step explicit split on drying chain for implicit comparison witness (FP §6 Track G)");
     let s_imp = solver_implicit
         .step(&Stub, clone_thmc_state(&state0), &mut manifold)
-        .expect("ThmcSolver::step with implicit (T,α) Newton on drying chain (FP §6 Track G)");
+        .expect("ThmcSolver::step with implicit_t_alpha_newton on drying chain for BE residual comparison (FP §6 Track G)");
 
     let t_diff = s_exp
         .thermal
@@ -2802,7 +2802,7 @@ fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
         .expect("ThmcSolver::step explicit split on drying chain for implicit comparison witness (FP §6 Track G)");
     let s_imp = solver_implicit
         .step(&Stub, clone_thmc_state(&state0), &mut manifold)
-        .expect("ThmcSolver::step with implicit (T,α) Newton on drying chain (FP §6 Track G)");
+        .expect("ThmcSolver::step with implicit_t_alpha_newton on drying chain for humidity parity witness (FP §6 Track G)");
 
     assert_eq!(
         s_exp.hydro.humidity.as_tensor().clone().into_data().value,
@@ -2964,7 +2964,7 @@ fn thermal_implicit_newton_residual_decreases_monotonically() {
         );
     }
     // Converges below tolerance.
-    let last = *norms.last().expect("thermal implicit CG norm trail non-empty at convergence (FP §6 Track G)");
+    let last = *norms.last().expect("norms.last() non-empty after ThmcSolver::step_thermal_implicit CG on chain Laplacian witness (FP §6 Track G)");
     assert!(
         last < 1.0e-6_f32,
         "final residual {last} did not reach 1e-6 (log = {norms:?})",

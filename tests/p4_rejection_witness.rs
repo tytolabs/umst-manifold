@@ -143,9 +143,16 @@ fn p4_rejection_baseline_measured_witness() {
 
     let path = baseline_path();
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).expect("create artifacts/training");
+        fs::create_dir_all(parent)
+            .expect("fs::create_dir_all artifacts/training for p4_rejection_baseline.json");
     }
-    fs::write(&path, serde_json::to_string_pretty(&doc).expect("json")).expect("write baseline");
+    fs::write(
+        &path,
+        serde_json::to_string_pretty(&doc).expect(
+            "serde_json::to_string_pretty p4_rejection_baseline.v1 witness doc",
+        ),
+    )
+    .expect("fs::write artifacts/training/p4_rejection_baseline.json baseline witness");
 
     assert!(
         hard_rate > soft_rate,

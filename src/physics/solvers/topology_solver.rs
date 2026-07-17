@@ -276,7 +276,7 @@ mod tests {
         let policy = Tensor::<B, 2>::ones([n, 1], &dev);
         solver
             .step_density_diffusion(0.2, edges_b1, damage, boundary_mask, policy)
-            .expect("uniform rho step");
+            .expect("TopologySolver::step_density_diffusion on uniform rho ring (FP §6 topology density diffusion verification)");
         let expected = Tensor::<B, 3>::full([1, n, 1], 0.5, &dev);
         assert!(
             solver.rho.clone().all_close(expected, Some(1e-5), Some(1e-6)),
@@ -296,7 +296,7 @@ mod tests {
         let policy = Tensor::<B, 2>::ones([n, 1], &dev);
         solver
             .step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy)
-            .expect("two-bar equilibrium step");
+            .expect("TopologySolver::step_density_diffusion on two-node bar toward 0.5 equilibrium (FP §6 topology density diffusion verification)");
         let expected = Tensor::<B, 3>::full([1, n, 1], 0.5, &dev);
         assert!(
             solver.rho.clone().all_close(expected, Some(1e-4), Some(1e-5)),
@@ -318,7 +318,7 @@ mod tests {
         let policy = Tensor::from_data(Data::new(pol, Shape::new([n, 1])), &dev);
         solver
             .step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy)
-            .expect("policy mask step");
+            .expect("TopologySolver::step_density_diffusion with policy mask freezing node 0 (FP §6 topology density diffusion verification)");
         let rho = solver.rho.clone();
         let n0 = rho.clone().slice([0..1, 0..1, 0..1]);
         let n1 = rho.slice([0..1, 1..2, 0..1]);
@@ -344,7 +344,7 @@ mod tests {
         let policy = Tensor::<B, 2>::ones([n, 1], &dev);
         solver
             .step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy)
-            .expect("boundary mask step");
+            .expect("TopologySolver::step_density_diffusion with fully fixed boundary node (FP §6 topology density diffusion verification)");
         let rho = solver.rho.clone();
         assert!(rho.clone().slice([0..1, 1..2, 0..1]).all_close(
             Tensor::<B, 3>::full([1, 1, 1], 0.3, &dev),
@@ -387,7 +387,7 @@ mod tests {
                     t
                 },
             )
-            .expect("filtered diffusion step");
+            .expect("TopologySolver::step_density_diffusion_filtered pre/post hook invocation (FP §6 topology density diffusion verification)");
         assert_eq!(pre_calls.get(), 1);
         assert_eq!(post_calls.get(), 1);
     }

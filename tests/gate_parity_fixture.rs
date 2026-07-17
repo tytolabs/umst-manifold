@@ -9,7 +9,7 @@
 use umst_manifold::gate::{
     AdmissibilityVerdict, GateEvaluator, ThermodynamicMixEvaluator, ThermodynamicMixFilter,
     ThermodynamicState, ThermodynamicStateSnapshot, ThermodynamicTransitionContext,
-    ThermodynamicTransitionEvaluator, TransitionGateEvaluator, TransitionVerdict,
+    ThermodynamicTransitionEvaluator, TransitionGateEvaluator,
 };
 
 fn host_to_snapshot(s: &ThermodynamicState) -> ThermodynamicStateSnapshot {
@@ -78,7 +78,7 @@ fn gate_evaluator_golden_identity_accepted() {
     let (old, new, dt) = golden_identity_admissible();
     let mut ev = ThermodynamicTransitionEvaluator::new();
     let tv = ev.check_transition_host(&old, &new, dt);
-    assert!(tv.admissible);
+    assert!(tv.is_admissible());
     let v = tv.rest_verdict();
     assert_eq!(v, AdmissibilityVerdict::Accepted);
     assert_eq!(v.as_str(), AdmissibilityVerdict::ACCEPTED);
@@ -89,7 +89,7 @@ fn gate_evaluator_golden_mass_violation() {
     let (old, new, dt) = golden_mass_reject();
     let mut ev = ThermodynamicTransitionEvaluator::new();
     let tv = ev.check_transition_host(&old, &new, dt);
-    assert!(!tv.admissible);
+    assert!(!tv.is_admissible());
     let v = tv.rest_verdict();
     assert_eq!(v, AdmissibilityVerdict::MassViolation);
     assert_eq!(v.as_str(), AdmissibilityVerdict::MASS_VIOLATION);
@@ -100,7 +100,7 @@ fn gate_evaluator_golden_negative_dissipation() {
     let (old, new, dt) = golden_negative_dissipation_reject();
     let mut ev = ThermodynamicTransitionEvaluator::new();
     let tv = ev.check_transition_host(&old, &new, dt);
-    assert!(!tv.admissible);
+    assert!(!tv.is_admissible());
     let v = tv.rest_verdict();
     assert_eq!(v, AdmissibilityVerdict::NegativeDissipation);
     assert_eq!(v.as_str(), AdmissibilityVerdict::NEGATIVE_DISSIPATION);

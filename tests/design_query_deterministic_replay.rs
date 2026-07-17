@@ -92,8 +92,12 @@ fn design_query_deterministic_replay() {
         dt_s: Tensor::<B, 1>::ones([1], &dev),
     };
     let q = StructuralDesignQuery;
-    let r1 = q.query_v0(&qctx, &latent, coords_t.clone()).expect("q1");
-    let r2 = q.query_v0(&qctx, &latent, coords_t).expect("q2");
+    let r1 = q
+        .query_v0(&qctx, &latent, coords_t.clone())
+        .expect("StructuralDesignQuery::query_v0 deterministic replay pass 1 (FP §6 R3)");
+    let r2 = q
+        .query_v0(&qctx, &latent, coords_t)
+        .expect("StructuralDesignQuery::query_v0 deterministic replay pass 2 (FP §6 R3)");
     assert_eq!(r1.witness.seed, r2.witness.seed);
     assert_eq!(r1.witness.repr_id, r2.witness.repr_id);
     assert!((r1.metrics.compliance_gate - r2.metrics.compliance_gate).abs() < 1e-5);

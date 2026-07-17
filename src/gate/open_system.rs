@@ -128,17 +128,17 @@ pub fn transition_outcome_with_power_input(
     );
 
     let verdict = ConjunctVerdict::compose(core.verdict, material.verdict);
-    let energy_positive = core.clausius_duhem && material.strength_monotonic;
+    let energy_positive = core.is_clausius_duhem() && material.is_strength_monotonic();
     let accepted =
-        core.mass_conserved && energy_positive && material.reaction_extent_irreversible;
+        core.is_mass_conserved() && energy_positive && material.is_reaction_extent_irreversible();
 
     ThermodynamicTransitionOutcome {
         verdict,
         accepted,
         dissipation: core.dissipation,
-        mass_conserved: core.mass_conserved,
+        mass_conserved: core.is_mass_conserved(),
         energy_positive,
-        reaction_extent_irreversible: material.reaction_extent_irreversible,
+        reaction_extent_irreversible: material.is_reaction_extent_irreversible(),
     }
 }
 

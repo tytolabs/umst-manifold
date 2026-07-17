@@ -63,20 +63,19 @@ fn penalize(pair: TransitionPair) -> Admissible<PenalizedTransition> {
     let admissible = explanation.admissibility == AdmissibilityToken::Admissible;
     Admissible {
         value: PenalizedTransition { pair, explanation },
-        result: umst_manifold::gate::KleisliAdmissibilityResult {
-            verdict: if admissible {
+        result: umst_manifold::gate::KleisliAdmissibilityResult::from_verdict(
+            if admissible {
                 AdmissibilityVerdict::Accepted
             } else {
                 AdmissibilityVerdict::Unknown
             },
-            admissible,
-            dissipation: explanation.violation,
-            violation: if admissible {
+            explanation.violation,
+            if admissible {
                 None
             } else {
                 Some("constraint_loss_violation".into())
             },
-        },
+        ),
     }
 }
 
@@ -86,20 +85,19 @@ fn witness(pen: PenalizedTransition) -> Admissible<TransitionEvidence> {
     let admissible = evidence.admissibility == AdmissibilityToken::Admissible;
     Admissible {
         value: evidence,
-        result: umst_manifold::gate::KleisliAdmissibilityResult {
-            verdict: if admissible {
+        result: umst_manifold::gate::KleisliAdmissibilityResult::from_verdict(
+            if admissible {
                 AdmissibilityVerdict::Accepted
             } else {
                 AdmissibilityVerdict::Unknown
             },
-            admissible,
-            dissipation: pen.explanation.violation,
-            violation: if admissible {
+            pen.explanation.violation,
+            if admissible {
                 None
             } else {
                 Some("witness_inadmissible".into())
             },
-        },
+        ),
     }
 }
 
@@ -129,7 +127,7 @@ fn kleisli_gate_pipeline_admissible_composition() {
     };
 
     let out = pipeline().run(intent);
-    assert!(out.result.admissible, "reflexive propose → zero slack");
+    assert!(out.result.is_admissible(), "reflexive propose → zero slack");
     assert_eq!(out.value.admissibility, AdmissibilityToken::Admissible);
     assert!(out.value.catalog_id.contains("cd_transition"));
 }
@@ -154,14 +152,14 @@ fn kleisli_gate_pipeline_inadmissible_short_circuits_penalize() {
     };
 
     let penalized = penalize(pair);
-    assert!(!penalized.result.admissible);
+    assert!(!penalized.result.is_admissible());
     assert!(
         penalized.value.explanation.violation > 0.0,
         "ψ spike must incur positive constraint_loss slack"
     );
 
     let out = penalize_then_witness(pair);
-    assert!(!out.result.admissible);
+    assert!(!out.result.is_admissible());
     assert_eq!(out.value.admissibility, AdmissibilityToken::Inadmissible);
 }
 

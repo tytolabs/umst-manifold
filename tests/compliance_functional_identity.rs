@@ -107,7 +107,7 @@ fn compliance_functional_identity_optimizer_readout_gate() {
             bm_t.clone(),
             penalization_opt,
         )
-        .expect("optimizer eval");
+        .expect("Q1HexComplianceFunctional::eval_autodiff optimizer surrogate on extruded plate R1b identity witness (FP §6 Track G compliance functional)");
     let c_surrogate: f32 = surrogate.into_scalar();
 
     let inner_opt = Q1HexComplianceFunctional
@@ -120,7 +120,7 @@ fn compliance_functional_identity_optimizer_readout_gate() {
                 penalization: penalization_opt,
             },
         )
-        .expect("inner optimizer mode");
+        .expect("Q1HexComplianceFunctional::eval_inner optimizer-mode readout on extruded plate R1b identity witness (FP §6 Track G compliance functional)");
 
     let inner_gate = Q1HexComplianceFunctional
         .eval_inner(
@@ -132,7 +132,7 @@ fn compliance_functional_identity_optimizer_readout_gate() {
                 penalization: penalization_gate,
             },
         )
-        .expect("inner gate mode");
+        .expect("Q1HexComplianceFunctional::eval_inner gate-mode readout vs legacy raw_compliance on extruded plate R1b identity witness (FP §6 Track G compliance functional)");
 
     let legacy_gate = AdjointComplianceQ1Hex::raw_compliance_at_rho(
         &rho_flat,

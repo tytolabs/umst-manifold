@@ -2412,7 +2412,7 @@ mod photonics_sparse_csr_cg_parity_tests {
         );
         let merged = dec_patch_coo_sort_merge_f32(&coo);
         let (rp, ci, va) = dec_patch_csr_from_sorted_coo_f32(dim, &merged)
-            .expect("dec_patch_csr_from_sorted_coo_f32 on quad-split COO");
+            .expect("dec_patch_csr_from_sorted_coo_f32 on quad-split N=4 DEC patch COO for CSR matvec parity witness (FP §6 Track G photonics)");
 
         let xv: Vec<f32> = (0..dim)
             .map(|i| ((i * 17 + 3) as f32 * 0.013).sin())
@@ -2476,7 +2476,7 @@ mod photonics_sparse_csr_cg_parity_tests {
         );
         let merged = dec_patch_coo_sort_merge_f32(&coo);
         let (rp, ci, va) = dec_patch_csr_from_sorted_coo_f32(dim, &merged)
-            .expect("dec_patch_csr_from_sorted_coo_f32 on quad-split COO");
+            .expect("dec_patch_csr_from_sorted_coo_f32 on quad-split N=4 DEC patch COO for CSR CG parity witness (FP §6 Track G photonics)");
 
         let x_mf = solve_maxwell_dec_patch_conjugate_gradient(
             n,
@@ -2493,9 +2493,9 @@ mod photonics_sparse_csr_cg_parity_tests {
             &b,
             dim,
         )
-        .expect("solve_maxwell_dec_patch_conjugate_gradient matrix-free");
+        .expect("solve_maxwell_dec_patch_conjugate_gradient matrix-free on quad-split N=4 DEC patch for CSR CG parity witness (FP §6 Track G photonics)");
         let x_csr = solve_maxwell_dec_patch_conjugate_gradient_csr(&rp, &ci, &va, &b, dim)
-            .expect("solve_maxwell_dec_patch_conjugate_gradient_csr");
+            .expect("solve_maxwell_dec_patch_conjugate_gradient_csr on quad-split N=4 DEC patch must match matrix-free CG reference (FP §6 Track G photonics)");
 
         let mut mx = 0.0_f32;
         for i in 0..dim {

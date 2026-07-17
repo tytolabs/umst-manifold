@@ -88,7 +88,9 @@ mod tests {
             s.time = 1.0;
             Ok(s)
         })
-        .expect("and_then_state chain on Ok morphism");
+        .expect(
+            "and_then_state on Ok morphism must chain time field on toy ThmcState (FP §6 Track G kleisli pipeline witness)",
+        );
         assert!((out.time - 1.0).abs() < f32::EPSILON);
     }
 
@@ -100,7 +102,9 @@ mod tests {
             s.time = 2.0;
             s
         })
-        .expect("map_state on toy ThmcState");
+        .expect(
+            "map_state on toy ThmcState must preserve Ok channel and set time field (FP §6 Track G kleisli pipeline witness)",
+        );
         assert!((out.time - 2.0).abs() < f32::EPSILON);
     }
 }

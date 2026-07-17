@@ -146,7 +146,9 @@ fn run_plate_compliance_audit(
     let body = Tensor::from_data(Data::new(bf.clone(), Shape::new([1, n, 3])), &dev);
     let (u, _) = plate
         .solve_equilibrium(rho, body, bm, mat, cfg)
-        .expect("equilibrium solve");
+        .expect(
+            "ExtrudedPlateMechanics::solve_equilibrium on Q1 hex plate compliance audit path (FP §6 Track A4 mechanics verification)",
+        );
     let u_flat = u.into_data().value;
     let c_fe = masked_compliance_ftu(&bf, &u_flat, &mask_flat);
     let e_cell = uniform_e_cell(nx, ny, nz, mat.e0);
@@ -351,7 +353,9 @@ fn cantilever_axial_chain_tip_displacement_n64() {
         a_sec,
         &cfg,
     )
-    .expect("solve_equilibrium");
+    .expect(
+        "VectorMechanicsSolver::solve_equilibrium on N=64 cantilever axial chain tip load (FP §6 Track A4 mechanics verification)",
+    );
 
     let u_tip = u.into_data().value[(n - 1) * 3];
     let u_analytic = f_tip * (n - 1) as f32 * dx / (e * a_sec * (1.0 + DAMAGE_REG));
@@ -435,7 +439,9 @@ fn packed_bar_network_equilibrium_uniform_axial_strain_tip_load_distinct_from_ac
         a_sec,
         &cfg,
     )
-    .expect("solve_equilibrium");
+    .expect(
+        "VectorMechanicsSolver::solve_equilibrium on uniform axial strain bar chain (FP §6 Track A4 mechanics verification)",
+    );
 
     let ud = u.into_data().value;
     let mut ux_edge = vec![0.0_f32; n - 1];
@@ -527,7 +533,9 @@ fn run_plate_case_details_ext_inner(
     let body = Tensor::from_data(Data::new(bf.clone(), Shape::new([1, n, 3])), &dev);
     let (u, _) = plate
         .solve_equilibrium(rho, body, bm, mat, cfg)
-        .expect("equilibrium solve");
+        .expect(
+            "ExtrudedPlateMechanics::solve_equilibrium on Q1 hex extruded plate centre deflection path (FP §6 Track A4 mechanics verification)",
+        );
     let w = centre_top_uz(&u, nx, ny, nz);
     let u_flat = u.into_data().value;
     let e_cell = uniform_e_cell(nx, ny, nz, mat.e0);

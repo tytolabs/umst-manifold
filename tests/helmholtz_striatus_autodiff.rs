@@ -44,7 +44,9 @@ fn helmholtz_autodiff_striatus_40x40x4() {
     );
     let filtered_inner = helm
         .apply(rho.clone().inner(), edges.clone().inner(), dx_f)
-        .expect("Helmholtz inner forward");
+        .expect(
+            "HelmholtzFilter::apply inner forward on Striatus 40×40×4 plate graph with rho [1,N,1] uniform edge length (FP §6 Track G topology Helmholtz autodiff witness)",
+        );
     let inner_sum = filtered_inner.sum().into_data().value[0];
     assert!(
         inner_sum.is_finite(),
@@ -52,7 +54,9 @@ fn helmholtz_autodiff_striatus_40x40x4() {
     );
     let filtered = helm
         .apply_straight_through(rho.clone(), edges, dx_f)
-        .expect("Helmholtz straight-through forward");
+        .expect(
+            "HelmholtzFilter::apply_straight_through forward on Striatus 40×40×4 plate graph for AD loss path (FP §6 Track G topology Helmholtz autodiff witness)",
+        );
     let loss = filtered.sum();
     assert!(
         loss.clone().into_data().value[0].is_finite(),
