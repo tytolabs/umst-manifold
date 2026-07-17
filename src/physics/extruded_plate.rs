@@ -116,6 +116,20 @@ impl ExtrudedPlateMechanics {
                 detail: "rho channel must be 1",
             });
         }
+        let [bf_batch, bf_n, bf_c] = body_force.dims();
+        if bf_batch != 1 || bf_n != n || bf_c != 3 {
+            return Err(PhysicsError::ShapeMismatch {
+                context: "ExtrudedPlateMechanics::solve_equilibrium",
+                detail: "body_force must be [1, N, 3]",
+            });
+        }
+        let [bm_batch, bm_n, bm_c] = boundary_mask.dims();
+        if bm_batch != 1 || bm_n != n || bm_c != 3 {
+            return Err(PhysicsError::ShapeMismatch {
+                context: "ExtrudedPlateMechanics::solve_equilibrium",
+                detail: "boundary_mask must be [1, N, 3]",
+            });
+        }
         let device = rho_projected.device();
 
         let nx1 = self.nx + 1;
@@ -152,8 +166,21 @@ impl ExtrudedPlateMechanics {
 
         let f_flat = body_force.clone().into_data().value;
         let m_flat = boundary_mask.clone().into_data().value;
-        debug_assert_eq!(f_flat.len(), n * 3);
-        debug_assert_eq!(m_flat.len(), n * 3);
+        let dof = n * 3;
+        if f_flat.len() != dof {
+            return Err(PhysicsError::BufferLength {
+                context: "ExtrudedPlateMechanics::solve_equilibrium body_force",
+                expected: dof,
+                got: f_flat.len(),
+            });
+        }
+        if m_flat.len() != dof {
+            return Err(PhysicsError::BufferLength {
+                context: "ExtrudedPlateMechanics::solve_equilibrium boundary_mask",
+                expected: dof,
+                got: m_flat.len(),
+            });
+        }
 
         let mut u = vec![0.0_f32; n * 3];
         let mut diag = vec![0.0_f32; n * 3];

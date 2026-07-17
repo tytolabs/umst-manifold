@@ -172,6 +172,118 @@ pub struct StaggeredFractureConfig {
     pub outer_stopping: StaggeredOuterDamageStopCriteria,
 }
 
+/// Staggered fracture outer-loop phase — invalid absent-damage states unrepresentable (FP §3 / RW-FP-MATPH).
+///
+/// Replaces ad-hoc `Option<Tensor>` carriers with an algebraic sum type so callers `match` on the
+/// active alternation mode instead of `.expect` on phase invariants.
+#[derive(Clone, Debug)]
+pub enum StaggeredPhase<B: Backend> {
+    /// Damage-only outer alternation: strain supplied by caller closure; no mechanics solve.
+    DamageOuter {
+        damage: DamageField<B>,
+        prev_strain: Option<SmallStrainField<B>>,
+        #[cfg_attr(not(feature = "fracture-at2"), allow(dead_code))]
+        prev_psi_mean: Option<f32>,
+    },
+    /// Full elasticity–damage staggered alternation with internal mechanics solve.
+    #[cfg(feature = "fracture-at2")]
+    MechanicsCoupled {
+        u: Tensor<B, 3>,
+        d: DamageField<B>,
+        prev_strain: Option<SmallStrainField<B>>,
+        prev_psi_mean: Option<f32>,
+    },
+}
+
+impl<B: Backend> StaggeredPhase<B> {
+    /// Initialize a damage-only staggered outer loop at `damage`.
+    #[must_use]
+    pub fn new_damage_outer(damage: DamageField<B>) -> Self {
+        Self::DamageOuter {
+            damage,
+            prev_strain: None,
+            prev_psi_mean: None,
+        }
+    }
+
+    /// Initialize a mechanics-coupled staggered outer loop at `(u, d)`.
+    #[cfg(feature = "fracture-at2")]
+    #[must_use]
+    pub fn new_mechanics_coupled(u: Tensor<B, 3>, d: DamageField<B>) -> Self {
+        Self::MechanicsCoupled {
+            u,
+            d,
+            prev_strain: None,
+            prev_psi_mean: None,
+        }
+    }
+
+    /// Borrow the active damage field regardless of variant.
+    #[must_use]
+    pub fn damage_field(&self) -> &DamageField<B> {
+        match self {
+            Self::DamageOuter { damage, .. } => damage,
+            #[cfg(feature = "fracture-at2")]
+            Self::MechanicsCoupled { d, .. } => d,
+        }
+    }
+
+    /// Mutably borrow the active damage field regardless of variant.
+    pub fn damage_field_mut(&mut self) -> &mut DamageField<B> {
+        match self {
+            Self::DamageOuter { damage, .. } => damage,
+            #[cfg(feature = "fracture-at2")]
+            Self::MechanicsCoupled { d, .. } => d,
+        }
+    }
+}
+
+#[cfg(test)]
+mod staggered_phase_tests {
+    use burn::tensor::Tensor;
+    use burn_ndarray::NdArray;
+
+    use crate::core::field::{DamageField, Field};
+
+    use super::StaggeredPhase;
+
+    type B = NdArray<f32>;
+
+    fn zero_damage() -> DamageField<B> {
+        Field::new(Tensor::<B, 3>::zeros([1, 2, 1], &Default::default()))
+    }
+
+    #[test]
+    fn staggered_phase_damage_outer_exhaustive_match() {
+        let phase = StaggeredPhase::new_damage_outer(zero_damage());
+        let tag = match phase {
+            StaggeredPhase::DamageOuter { .. } => "damage_outer",
+            #[cfg(feature = "fracture-at2")]
+            StaggeredPhase::MechanicsCoupled { .. } => "mechanics_coupled",
+        };
+        assert_eq!(tag, "damage_outer");
+    }
+
+    #[test]
+    fn staggered_phase_damage_field_accessor() {
+        let mut phase = StaggeredPhase::new_damage_outer(zero_damage());
+        assert_eq!(phase.damage_field().as_tensor().dims(), [1, 2, 1]);
+        let _ = phase.damage_field_mut();
+    }
+
+    #[cfg(feature = "fracture-at2")]
+    #[test]
+    fn staggered_phase_mechanics_coupled_exhaustive_match() {
+        let u = Tensor::<B, 3>::zeros([1, 2, 3], &Default::default());
+        let phase = StaggeredPhase::new_mechanics_coupled(u, zero_damage());
+        let tag = match phase {
+            StaggeredPhase::DamageOuter { .. } => "damage_outer",
+            StaggeredPhase::MechanicsCoupled { .. } => "mechanics_coupled",
+        };
+        assert_eq!(tag, "mechanics_coupled");
+    }
+}
+
 /// Scales a uniform **`Gc`** tensor (`[B,1]`) by \(\gamma_{\mathrm{gc}}/\gamma_{\mathrm{ref}}\) from
 /// [`crate::physics::solvers::statistical_mechanics::upscale_potentials`] with reference
 /// [`crate::physics::solvers::statistical_mechanics::GAMMA_GC_REF_VIADU_F32`] — Milestone **2.4**
@@ -489,42 +601,47 @@ impl PhaseFieldFractureSolver {
             return Ok(damage);
         }
 
-        struct StaggeredOuterState<BB: Backend<FloatElem = f32>> {
-            damage: DamageField<BB>,
-            prev_strain: Option<SmallStrainField<BB>>,
-            #[cfg_attr(not(feature = "fracture-at2"), allow(dead_code))]
-            prev_psi_mean: Option<f32>,
-        }
-
-        let mut st = StaggeredOuterState::<B> {
-            damage,
-            prev_strain: None,
-            prev_psi_mean: None,
-        };
+        let mut st = StaggeredPhase::new_damage_outer(damage);
 
         let mut outer_err: Option<PhysicsError> = None;
         let mut converged = false;
 
+        #[allow(unused_variables)] // read when `fracture-at2` reports max-iter divergence
         let completed = iterate_until(outer.max_outer_iterations, &mut st, |st| {
-            let strain_k = strain_fn(&st.damage);
-            let d_before = st.damage.as_tensor().clone();
-            let prev_s = st.prev_strain.as_ref().map(|s| s.as_tensor());
+            let (damage, prev_strain, prev_psi_mean) = match st {
+                StaggeredPhase::DamageOuter {
+                    damage,
+                    prev_strain,
+                    prev_psi_mean,
+                } => (damage, prev_strain, prev_psi_mean),
+                #[cfg(feature = "fracture-at2")]
+                StaggeredPhase::MechanicsCoupled { .. } => {
+                    outer_err = Some(PhysicsError::InvariantViolation {
+                        context: "DamageOuter staggered loop entered MechanicsCoupled",
+                    });
+                    return ControlFlow::Break(());
+                }
+            };
 
-            let d_in = st.damage.clone();
+            let strain_k = strain_fn(damage);
+            let d_before = damage.as_tensor().clone();
+            let prev_s = prev_strain.as_ref().map(|s| s.as_tensor());
+
+            let d_in = damage.clone();
             match self.update_damage(
                 strain_k.clone(),
                 d_in,
                 FractureEnergyField::from_tensor(fracture_energy_gc.clone()),
                 edges_b1.clone(),
             ) {
-                Ok(d) => st.damage = d,
+                Ok(d) => *damage = d,
                 Err(e) => {
                     outer_err = Some(e);
                     return ControlFlow::Break(());
                 }
             }
 
-            let d_after = st.damage.as_tensor();
+            let d_after = damage.as_tensor();
 
             #[cfg(feature = "fracture-at2")]
             let should_break = outer_stopping_should_break(
@@ -533,7 +650,7 @@ impl PhaseFieldFractureSolver {
                 d_after,
                 strain_k.as_tensor(),
                 prev_s,
-                Some(&mut st.prev_psi_mean),
+                Some(prev_psi_mean),
             );
             #[cfg(not(feature = "fracture-at2"))]
             let should_break = outer_stopping_should_break(
@@ -545,7 +662,7 @@ impl PhaseFieldFractureSolver {
                 None,
             );
 
-            st.prev_strain = Some(strain_k);
+            *prev_strain = Some(strain_k);
 
             if should_break {
                 converged = true;
@@ -570,7 +687,13 @@ impl PhaseFieldFractureSolver {
             });
         }
 
-        Ok(st.damage)
+        match st {
+            StaggeredPhase::DamageOuter { damage, .. } => Ok(damage),
+            #[cfg(feature = "fracture-at2")]
+            StaggeredPhase::MechanicsCoupled { .. } => Err(PhysicsError::InvariantViolation {
+                context: "DamageOuter staggered path ended in MechanicsCoupled",
+            }),
+        }
     }
 
     pub fn update_damage_staggered_with_stop<B, F>(
@@ -658,31 +781,29 @@ impl PhaseFieldFractureSolver {
 
         let stop = config.outer_stopping;
 
-        struct MechanicsOuterState<B0>
-        where
-            B0: Backend<FloatElem = f32>,
-        {
-            u: Tensor<B0, 3>,
-            d: DamageField<B0>,
-            prev_strain: Option<SmallStrainField<B0>>,
-            prev_psi_mean: Option<f32>,
-        }
-
-        let mut st = MechanicsOuterState::<B> {
-            u: Tensor::<B, 3>::zeros([batch, n, 3], &dev),
-            d: Field::new(Tensor::<B, 3>::zeros([batch, n, 1], &dev)),
-            prev_strain: None,
-            prev_psi_mean: None,
-        };
+        let mut st = StaggeredPhase::new_mechanics_coupled(
+            Tensor::<B, 3>::zeros([batch, n, 3], &dev),
+            Field::new(Tensor::<B, 3>::zeros([batch, n, 1], &dev)),
+        );
 
         let mut mechanics_err: Option<PhysicsError> = None;
 
         iterate_until(config.outer_iters, &mut st, |st| {
+            let StaggeredPhase::MechanicsCoupled {
+                u,
+                d,
+                prev_strain,
+                prev_psi_mean,
+            } = st
+            else {
+                return ControlFlow::Break(());
+            };
+
             // Multiplicative degradation g(d) = (1-d)^2 + k_reg applied to per-node E_young.
             // VectorMechanicsSolver also applies its own internal degradation via the `damage`
             // argument; to avoid double counting we pass damage=0 to mechanics and instead bake
             // g(d) into the effective stiffness tensor.
-            let d_ref = st.d.as_tensor();
+            let d_ref = d.as_tensor();
             let one_minus_d = Tensor::<B, 3>::ones_like(d_ref).sub(d_ref.clone());
             let g_of_d = one_minus_d
                 .clone()
@@ -693,7 +814,7 @@ impl PhaseFieldFractureSolver {
 
             let zero_damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
             let (u_k, _stress) = match VectorMechanicsSolver::solve_equilibrium(
-                st.u.clone(),
+                u.clone(),
                 coords_n3.clone(),
                 stiffness,
                 body_force.clone(),
@@ -709,11 +830,11 @@ impl PhaseFieldFractureSolver {
                     return ControlFlow::Break(());
                 }
             };
-            st.u = u_k;
+            *u = u_k;
 
             // Per-edge axial strain -> nodal symmetric strain tensor via Voigt scatter.
-            let u_src = st.u.clone().gather(1, src3.clone());
-            let u_tgt = st.u.clone().gather(1, tgt3.clone());
+            let u_src = u.clone().gather(1, src3.clone());
+            let u_tgt = u.clone().gather(1, tgt3.clone());
             let edge_disp = u_tgt.sub(u_src);
             let eps_v = VectorMechanicsSolver::voigt_strain_from_edge_displacement(
                 edge_disp,
@@ -724,24 +845,24 @@ impl PhaseFieldFractureSolver {
             );
             let strain4 = symmetric_strain_tensor_from_graph_voigt6(eps_v);
             let strain_field = SmallStrainField::from_tensor(strain4.clone());
-            let d_before = st.d.as_tensor().clone();
-            let prev_s = st.prev_strain.as_ref().map(|s| s.as_tensor());
+            let d_before = d.as_tensor().clone();
+            let prev_s = prev_strain.as_ref().map(|s| s.as_tensor());
 
-            let d_in = st.d.clone();
+            let d_in = d.clone();
             match solver.update_damage(
                 strain_field.clone(),
                 d_in,
                 gc_field.clone(),
                 edges_b1.clone(),
             ) {
-                Ok(d) => st.d = d,
+                Ok(d_new) => *d = d_new,
                 Err(e) => {
                     mechanics_err = Some(e);
                     return ControlFlow::Break(());
                 }
             }
 
-            let d_after = st.d.as_tensor();
+            let d_after = d.as_tensor();
 
             if outer_stopping_should_break(
                 stop,
@@ -749,18 +870,24 @@ impl PhaseFieldFractureSolver {
                 d_after,
                 &strain4,
                 prev_s,
-                Some(&mut st.prev_psi_mean),
+                Some(prev_psi_mean),
             ) {
                 return ControlFlow::Break(());
             }
-            st.prev_strain = Some(strain_field);
+            *prev_strain = Some(strain_field);
             ControlFlow::Continue(())
         });
 
         if let Some(e) = mechanics_err {
             return Err(e);
         }
-        Ok((st.u, st.d))
+        let StaggeredPhase::MechanicsCoupled { u, d, .. } = st else {
+            return Err(PhysicsError::Diverged {
+                eq_rel: 0.0,
+                pcg_iterations: 0,
+            });
+        };
+        Ok((u, d))
     }
 }
 
