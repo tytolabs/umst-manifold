@@ -18,6 +18,8 @@ use burn::nn::{Linear, LinearConfig};
 use burn::tensor::activation::{relu, sigmoid};
 use burn::tensor::{backend::Backend, Tensor};
 
+use crate::physics::PhysicsError;
+
 /// Small MLP: last dimension 3 → hidden → hidden → 1, then **sigmoid** so \(\rho \in (0,1)\).
 ///
 /// Generic over [`Backend`] (NdArray, WGPU, etc.). Forward accepts flattened `[..., 3]` features.
@@ -234,7 +236,7 @@ pub fn simp_compliance_step<B: Backend<FloatElem = f32>>(
     cross_section_area: f32,
     inner_cfg: &crate::physics::time_orchestration::MechanicsInnerLoopConfig,
     retain_loss_for_autodiff: bool,
-) -> SimpComplianceStepResult<B> {
+) -> Result<SimpComplianceStepResult<B>, PhysicsError> {
     use crate::physics::linear::masked_dot;
     use crate::physics::mechanics::VectorMechanicsSolver;
 
@@ -258,17 +260,17 @@ pub fn simp_compliance_step<B: Backend<FloatElem = f32>>(
         boundary_mask.clone(),
         cross_section_area,
         inner_cfg,
-    );
+    )?;
     let compliance = masked_dot(&body_force, &u, &boundary_mask);
     let loss_for_autodiff = if retain_loss_for_autodiff {
         Some(compliance.clone())
     } else {
         None
     };
-    SimpComplianceStepResult {
+    Ok(SimpComplianceStepResult {
         compliance,
         loss_for_autodiff,
-    }
+    })
 }
 
 #[cfg(feature = "topology-density-evolution")]
@@ -294,7 +296,7 @@ impl<B: Backend<FloatElem = f32>> TopologyOptimizer<B> {
         base_stiffness: f32,
         cross_section_area: f32,
         inner_cfg: &crate::physics::time_orchestration::MechanicsInnerLoopConfig,
-    ) -> (Tensor<B, 1>, Tensor<B, 3>) {
+    ) -> Result<(Tensor<B, 1>, Tensor<B, 3>), PhysicsError> {
         use crate::physics::mechanics::VectorMechanicsSolver;
 
         let [b, n, three] = coords_bn3.dims();
@@ -319,10 +321,10 @@ impl<B: Backend<FloatElem = f32>> TopologyOptimizer<B> {
             boundary_mask.clone(),
             cross_section_area,
             inner_cfg,
-        );
+        )?;
         use crate::physics::linear::masked_dot;
         let compliance = masked_dot(&body_force, &u, &boundary_mask);
-        (compliance, rho)
+        Ok((compliance, rho))
     }
 
     /// One SIMP-style forward step: effective modulus \(E_{\mathrm{eff}} = \rho^p E_0\), equilibrium
@@ -338,7 +340,7 @@ impl<B: Backend<FloatElem = f32>> TopologyOptimizer<B> {
         cross_section_area: f32,
         inner_cfg: &crate::physics::time_orchestration::MechanicsInnerLoopConfig,
         retain_loss_for_autodiff: bool,
-    ) -> SimpComplianceStepResult<B> {
+    ) -> Result<SimpComplianceStepResult<B>, PhysicsError> {
         simp_compliance_step(
             &self.density_net,
             self.penalization,
@@ -1160,16 +1162,18 @@ mod simp_step_tests {
             max_equilibrium_substeps: 1,
         };
 
-        let out = opt.optimize_step_simplite(
-            coords_bn3,
-            e_base_bn1,
-            body_force,
-            edges_b1,
-            boundary_mask,
-            a,
-            &cfg,
-            false,
-        );
+        let out = opt
+            .optimize_step_simplite(
+                coords_bn3,
+                e_base_bn1,
+                body_force,
+                edges_b1,
+                boundary_mask,
+                a,
+                &cfg,
+                false,
+            )
+            .expect("simplite bar compliance");
         let c = out.compliance.into_scalar();
         assert!(
             c.is_finite() && c > 0.0,
@@ -1230,26 +1234,30 @@ mod simp_step_tests {
         };
 
         let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
-        let (compliance_step, _rho_step) = opt.optimize_step(
-            coords_bn3.clone(),
-            body_force.clone(),
-            edges_b1.clone(),
-            damage.clone(),
-            boundary_mask.clone(),
-            e,
-            a,
-            &cfg,
-        );
-        let via_simplite = opt.optimize_step_simplite(
-            coords_bn3,
-            e_base_bn1,
-            body_force,
-            edges_b1,
-            boundary_mask,
-            a,
-            &cfg,
-            false,
-        );
+        let (compliance_step, _rho_step) = opt
+            .optimize_step(
+                coords_bn3.clone(),
+                body_force.clone(),
+                edges_b1.clone(),
+                damage.clone(),
+                boundary_mask.clone(),
+                e,
+                a,
+                &cfg,
+            )
+            .expect("optimize_step bar");
+        let via_simplite = opt
+            .optimize_step_simplite(
+                coords_bn3,
+                e_base_bn1,
+                body_force,
+                edges_b1,
+                boundary_mask,
+                a,
+                &cfg,
+                false,
+            )
+            .expect("optimize_step_simplite bar");
         let c_step = compliance_step.clone().into_scalar();
         let c_simplite = via_simplite.compliance.into_scalar();
         assert!(
