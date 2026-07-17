@@ -117,7 +117,7 @@ fn rheology_step_idempotent_on_quiescent_bingham_equilibrium() {
             edges_b1.clone(),
             Tensor::<B, 1>::zeros([3], &dev),
         )
-        .expect("bingham first step");
+        .expect("BinghamFlowSolver::step quiescent bingham equilibrium first pass (FP §6 rheology idempotency witness)");
     let (v2, p2, l2) = solver
         .step(
             v1.clone(),
@@ -128,7 +128,7 @@ fn rheology_step_idempotent_on_quiescent_bingham_equilibrium() {
             edges_b1,
             Tensor::<B, 1>::zeros([3], &dev),
         )
-        .expect("bingham second step");
+        .expect("BinghamFlowSolver::step quiescent bingham equilibrium re-step (FP §6 rheology idempotency witness)");
     let tol = 1e-5_f32;
     assert!(max_abs_tensor3(&v2, &v1) < tol);
     assert!(max_abs_tensor3(&p2, &p1) < tol);
@@ -150,11 +150,11 @@ fn q1_hex_solve_equilibrium_idempotent_on_zero_load_fixed_bc() {
     let cfg = MechanicsInnerLoopConfig { max_cg_iterations: 400, cg_tolerance: 1e-8, pcg_tolerance: 1e-8, use_preconditioner: true, max_equilibrium_substeps: 1 };
     let (u1, _) = plate
         .solve_equilibrium(rho.clone(), body_force.clone(), boundary_mask.clone(), mat, &cfg)
-        .expect("first zero-load q1_hex equilibrium solve");
+        .expect("ExtrudedPlateMechanics::solve_equilibrium zero-load fixed-bc first pass (FP §6 q1_hex idempotency witness)");
     let u1_flat = u1.clone().into_data().value;
     let (u2, _) = plate
         .solve_equilibrium(rho, body_force, boundary_mask, mat, &cfg)
-        .expect("second zero-load q1_hex equilibrium solve (idempotency)");
+        .expect("ExtrudedPlateMechanics::solve_equilibrium zero-load fixed-bc re-solve (FP §6 q1_hex idempotency witness)");
     let tol = 1e-6_f32;
     assert!(max_abs_drift(&u1_flat, &u2.into_data().value) < tol);
     assert!(u1_flat.iter().all(|x| x.abs() < tol));
