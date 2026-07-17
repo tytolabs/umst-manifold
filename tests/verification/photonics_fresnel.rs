@@ -1401,7 +1401,7 @@ fn dec_te_primal_tensor_matches_chain_stencil() {
         coords.clone(),
         f_hz,
     )
-    .expect("uniform chain");
+    .expect("apply_dec_te_curl_curl_chain_operator on 37-node vacuum TE chain for primal DEC matvec vs hand-rolled stencil parity (FP §6 Track G photonics)");
 
     let eps: Vec<C> = vec![C { re: 1.0, im: 0.0 }; n];
     let e_c: Vec<C> = eyv.iter().map(|&re| C { re, im: 0.0 }).collect();
@@ -1944,7 +1944,7 @@ fn solve_maxwell_dec_patch_quad_split_scalar_eps_imag_stacked_residual() {
         &ranges,
         &b,
     )
-    .expect("stacked lossy dense solve");
+    .expect("photonics_dec_patch_dense_stacked_lossy_solution_vectors on quad-split N=4 patch with nodal eps_r_imag for Re(E) API vs stacked residual witness (FP §6 Track G photonics)");
 
     for k in 0..dim {
         assert_relative_eq!(x_api[k], er[k], epsilon = 1e-4_f32, max_relative = 1e-3);
@@ -2531,7 +2531,7 @@ fn dec_te_primal_piecewise_eps_matches_chain_stencil() {
         coords.clone(),
         f_hz,
     )
-    .expect("uniform chain");
+    .expect("apply_dec_te_curl_curl_chain_operator on 43-node piecewise-eps TE chain for primal DEC matvec vs hand-rolled stencil parity (FP §6 Track G photonics)");
 
     let e_c: Vec<C> = eyv.iter().map(|&re| C { re, im: 0.0 }).collect();
     let stencil = apply_te_helmholtz_chain(n, h, k0, &eps_c, &e_c);
