@@ -370,4 +370,36 @@ mod optimizer_sync_tests {
             "set_rho_from_optimizer must match pseudo_density_at_coords"
         );
     }
+
+    /// FP Manifesto §6: uniform ρ on a ring is a discrete Laplacian fixed point — re-applying
+    /// [`TopologySolver::step_density_diffusion`] must not drift.
+    #[test]
+    fn step_density_diffusion_idempotent_on_uniform_rho() {
+        let dev = Default::default();
+        let n = 4_usize;
+        let mut edges = Vec::with_capacity(n * 2);
+        for e in 0..n {
+            edges.push(e as i64);
+            edges.push(((e + 1) % n) as i64);
+        }
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(edges, Shape::new([2, n])), &dev);
+
+        let rho = Tensor::<B, 3>::full([1, n, 1], 0.5, &dev);
+        let mut solver = TopologySolver::new(rho, TopologySolverConfig::default());
+        let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+        let boundary_mask = Tensor::<B, 3>::ones([1, n, 3], &dev);
+        let policy = Tensor::<B, 2>::ones([n, 1], &dev);
+
+        solver.step_density_diffusion(0.2, edges_b1.clone(), damage, boundary_mask, policy);
+        let snap = solver.rho.clone();
+        solver.step_density_diffusion(0.2, edges_b1, damage, boundary_mask, policy);
+        assert!(
+            solver
+                .rho
+                .clone()
+                .all_close(snap, Some(1e-6), Some(1e-7)),
+            "re-application of density diffusion on uniform ρ must not drift"
+        );
+    }
 }

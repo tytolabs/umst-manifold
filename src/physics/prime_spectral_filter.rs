@@ -173,4 +173,24 @@ mod tests {
             assert!((f - v - (w - 1.0) * v).abs() < 1e-5);
         }
     }
+
+    /// FP Manifesto §6: ε=0 spectral filter is the identity — re-applying must not drift.
+    #[test]
+    fn apply_idempotent_at_zero_epsilon() {
+        use burn::tensor::{Shape, Tensor};
+        use burn_ndarray::NdArray;
+
+        type B = NdArray<f32>;
+        let dev = Default::default();
+        let ps = PrimeSpectralFilter::new(0.0, false, None);
+        let n = 8_usize;
+        let rho = Tensor::<B, 3>::full(Shape::new([1, n, 1]), 0.5, &dev);
+
+        let out1 = ps.apply(rho, n);
+        let out2 = ps.apply(out1.clone(), n);
+        assert!(
+            out2.all_close(out1, Some(1e-6), Some(1e-7)),
+            "re-application of ε=0 PrimeSpectralFilter must not drift"
+        );
+    }
 }
