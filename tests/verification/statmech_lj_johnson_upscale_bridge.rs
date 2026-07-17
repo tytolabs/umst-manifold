@@ -29,10 +29,12 @@ fn upscale_bridge_b4_virial_batch_tracks_johnson_order_one_dilute_grid() {
     }
     let batch = 4usize;
     let lj: Tensor<B, 2> = Tensor::from_data(Data::new(rows, Shape::new([batch, 4])), &dev);
-    let (k_virial, _) = upscale_potentials(lj.clone())
-        .expect("upscale_potentials b4 virial batch for johnson bridge");
-    let k_johnson = upscale_potentials_b4_johnson_reference_bulk_modulus_host(lj)
-        .expect("johnson reference bulk modulus host [B,4]");
+    let (k_virial, _) = upscale_potentials(lj.clone()).expect(
+        "statistical_mechanics::upscale_potentials on [B,4] virial K_T batch for Johnson bridge order-one dilute grid (FP §6 Track G statmech Johnson upscale bridge)",
+    );
+    let k_johnson = upscale_potentials_b4_johnson_reference_bulk_modulus_host(lj).expect(
+        "upscale_potentials_b4_johnson_reference_bulk_modulus_host on [B,4] batch rows vs virial K_T (FP §6 Track G statmech Johnson upscale bridge)",
+    );
     let kv = k_virial.into_data().value;
     assert_eq!(kv.len(), batch);
     assert_eq!(k_johnson.len(), batch);
@@ -63,8 +65,9 @@ fn upscale_bridge_johnson_host_matches_physical_bulk_modulus_scalar() {
         ),
         &dev,
     );
-    let v = upscale_potentials_b4_johnson_reference_bulk_modulus_host(lj)
-        .expect("johnson reference bulk modulus host single row");
+    let v = upscale_potentials_b4_johnson_reference_bulk_modulus_host(lj).expect(
+        "upscale_potentials_b4_johnson_reference_bulk_modulus_host single-row scalar vs physical_bulk_modulus_johnson1993 (FP §6 Track G statmech Johnson upscale bridge)",
+    );
     assert_eq!(v.len(), 1);
     assert_abs_diff_eq!(
         v[0],
