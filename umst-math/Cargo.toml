@@ -10,6 +10,8 @@ rust-version = "1.74"
 default = []
 # P3: compile `landauer_registry` (CODATA / Landauer SSOT slice).
 math-constants = []
+# Host sysfs/proc probes at IO boundary; pure HAL paths use [`hal::HalProbeSnapshot`] injection.
+linux-hal-sysfs = []
 simd = ["dep:serde"]
 
 [dependencies]

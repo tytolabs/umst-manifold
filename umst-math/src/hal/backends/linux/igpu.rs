@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::smoke;
-use super::sysfs;
+use crate::hal::probe_snapshot::{HalProbeSnapshot, IgpuProbe};
 use crate::hal::traits::{
     AllocationId, AllocationSpec, ComputePrecision, HalError, HardwareUnit, InferenceBatch,
     InferenceId, PowerState, PowerStateKind, SMOKE_INFER_OP,
@@ -27,23 +27,28 @@ impl Default for IntelIgpu {
 impl IntelIgpu {
     /// `present` = Intel 0x8086 DRM `render` or `card` node
     pub fn new() -> Self {
-        let mut has_intel = false;
-        for card in sysfs::list_drm_cards().unwrap_or_default() {
-            let v = card.join("device/vendor");
-            if let Some(s) = sysfs::pci_vendor_hex(&v) {
-                if s.trim() == "0x8086" && card.join("device/uevent").exists() {
-                    has_intel = true;
-                    break;
-                }
-            }
+        #[cfg(feature = "linux-hal-sysfs")]
+        {
+            return Self::from_snapshot(&crate::hal::probe_host::probe_sysfs_snapshot());
         }
-        let p = super::sysfs::i915_gpu_info();
-        let d = p.exists() && std::fs::read(&p).is_ok();
+        #[cfg(not(feature = "linux-hal-sysfs"))]
+        {
+            Self::from_snapshot(&HalProbeSnapshot::default())
+        }
+    }
+
+    /// Pure assembly from an injected probe snapshot (FP §4).
+    pub fn from_snapshot(snapshot: &HalProbeSnapshot) -> Self {
+        Self::from_igpu_probe(&snapshot.igpu)
+    }
+
+    /// Pure assembly from iGPU probe fields.
+    pub fn from_igpu_probe(igpu: &IgpuProbe) -> Self {
         Self {
             next: AtomicU64::new(1),
-            i915_path: p,
-            has_intel_render: has_intel,
-            debug_node_readable: d,
+            i915_path: igpu.i915_path.clone(),
+            has_intel_render: igpu.has_intel_render,
+            debug_node_readable: igpu.debug_readable,
         }
     }
 

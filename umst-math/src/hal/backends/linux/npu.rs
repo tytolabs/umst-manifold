@@ -2,7 +2,7 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use super::sysfs;
+use crate::hal::probe_snapshot::{HalProbeSnapshot, NpuProbe};
 use crate::hal::traits::{
     AllocationId, AllocationSpec, ComputePrecision, HalError, HardwareUnit, InferenceBatch,
     InferenceId, PowerState, PowerStateKind, WorkloadKind, SMOKE_INFER_OP,
@@ -23,10 +23,26 @@ impl Default for IntelNpu {
 impl IntelNpu {
     /// Detect accelerator device
     pub fn new() -> Self {
-        let present = sysfs::class_accel0().exists();
+        #[cfg(feature = "linux-hal-sysfs")]
+        {
+            return Self::from_snapshot(&crate::hal::probe_host::probe_sysfs_snapshot());
+        }
+        #[cfg(not(feature = "linux-hal-sysfs"))]
+        {
+            Self::from_snapshot(&HalProbeSnapshot::default())
+        }
+    }
+
+    /// Pure assembly from an injected probe snapshot (FP §4).
+    pub fn from_snapshot(snapshot: &HalProbeSnapshot) -> Self {
+        Self::from_npu_probe(&snapshot.npu)
+    }
+
+    /// Pure assembly from NPU probe fields.
+    pub fn from_npu_probe(npu: &NpuProbe) -> Self {
         Self {
             next: AtomicU64::new(1),
-            present,
+            present: npu.present,
         }
     }
 

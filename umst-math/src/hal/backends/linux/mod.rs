@@ -8,6 +8,7 @@ use super::super::inventory::HardwareInventory;
 use super::super::kinds::UnitKind;
 use super::super::presence::UnitPresence;
 use super::super::profile::{ArchClass, ArchitectureProfile, ParetoReferenceLabel};
+use super::super::probe_snapshot::HalProbeSnapshot;
 use super::super::traits::HardwareUnit;
 use super::super::traits::WorkloadClass;
 
@@ -28,36 +29,34 @@ pub use self::npu::IntelNpu;
 pub use self::port::LinuxPort;
 pub use self::ram::LinuxRam;
 
-/// Assemble the seven-lane inventory + P14s profile; also returns NED permission strings for cockpit `tracing::warn!`.
-pub fn build_linux_inventory() -> (HardwareInventory, Vec<String>, usize) {
+/// Pure inventory assembly from an injected probe snapshot (FP §4).
+pub fn build_linux_inventory_from_snapshot(
+    snapshot: &HalProbeSnapshot,
+) -> (HardwareInventory, Vec<String>, usize) {
     let mut warn = Vec::new();
-    let cpu = IntelCpu::new();
+    let cpu = IntelCpu::from_snapshot(snapshot);
     if !cpu.power_readable {
         warn.push(format!(
             "H-9: RAPL not readable for current user: {}; energy numbers are not from RAPL (NED §0.5).",
             cpu.rapl_path_display()
         ));
     }
-    let i = IntelIgpu::new();
+    let i = IntelIgpu::from_snapshot(snapshot);
     if i.is_present() && !i.debug_readable() {
         warn.push(format!(
             "H-9: i915 debug not readable: {}; iGPU power view limited.",
             i.i915_path_str()
         ));
     }
-    let tbt = std::path::Path::new("/sys/bus/thunderbolt/devices");
-    if tbt.exists() {
-        if let Err(e) = std::fs::read_dir(tbt) {
-            if e.raw_os_error() == Some(13) || e.kind() == std::io::ErrorKind::PermissionDenied {
-                warn.push(format!(
-                    "H-9: thunderbolt enumeration denied: /sys/bus/thunderbolt/devices ({e})"
-                ));
-            }
-        }
+    if snapshot.thunderbolt_enum_denied {
+        warn.push(
+            "H-9: thunderbolt enumeration denied: /sys/bus/thunderbolt/devices (permission denied)"
+                .to_string(),
+        );
     }
-    let n = IntelNpu::new();
-    let r = LinuxRam::new();
-    let p = LinuxPort::new();
+    let n = IntelNpu::from_snapshot(snapshot);
+    let r = LinuxRam::from_snapshot(snapshot);
+    let p = LinuxPort::from_snapshot(snapshot);
     let port_count = p.total_ports();
     let profile = ArchitectureProfile {
         arch_class: ArchClass::LinuxIntelP14sGen5,
@@ -91,7 +90,17 @@ pub fn build_linux_inventory() -> (HardwareInventory, Vec<String>, usize) {
     (inv, warn, port_count)
 }
 
-pub use permissions::read_probe;
+/// Probe live host sysfs and assemble inventory (`linux-hal-sysfs` feature).
+#[cfg(feature = "linux-hal-sysfs")]
+pub fn build_linux_inventory() -> (HardwareInventory, Vec<String>, usize) {
+    build_linux_inventory_from_snapshot(&crate::hal::probe_host::probe_sysfs_snapshot())
+}
+
 pub use permissions::PermissionState;
 pub use sysfs::default_rapl_package_energy;
-pub use sysfs::read_line;
+
+#[cfg(feature = "linux-hal-sysfs")]
+pub use crate::hal::probe_host::read_probe;
+
+#[cfg(feature = "linux-hal-sysfs")]
+pub use crate::hal::probe_host::read_line;

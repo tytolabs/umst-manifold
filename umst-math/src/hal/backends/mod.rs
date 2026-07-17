@@ -3,5 +3,8 @@
 #[cfg(target_os = "linux")]
 pub mod linux;
 
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "linux-hal-sysfs"))]
 pub use linux::build_linux_inventory;
+
+#[cfg(target_os = "linux")]
+pub use linux::build_linux_inventory_from_snapshot;

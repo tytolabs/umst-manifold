@@ -2,17 +2,12 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use super::permissions::PermissionState;
-use super::rapl;
 use super::smoke;
-use super::sysfs;
-use super::sysfs::default_rapl_package_energy;
+use crate::hal::probe_snapshot::{HalProbeSnapshot, RamProbe};
 use crate::hal::traits::{
     AllocationId, AllocationSpec, ComputePrecision, HalError, HardwareUnit, InferenceBatch,
     InferenceId, PowerState, PowerStateKind, SMOKE_INFER_OP,
 };
-
-const RAPL: &str = "/sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj";
 
 /// Linux main memory lane (DRAM; RAPL vs MemTotal honest)
 pub struct LinuxRam {
@@ -30,20 +25,28 @@ impl Default for LinuxRam {
 
 impl LinuxRam {
     pub fn new() -> Self {
-        let p = default_rapl_package_energy();
-        let perm = super::permissions::read_probe(&p, RAPL);
-        let rapl_ok = matches!(perm, PermissionState::Granted);
-        let uj = if rapl_ok {
-            rapl::read_package_energy_uj(&p)
-        } else {
-            None
-        };
-        let total = sysfs::mem_total_kb().unwrap_or(0);
+        #[cfg(feature = "linux-hal-sysfs")]
+        {
+            return Self::from_snapshot(&crate::hal::probe_host::probe_sysfs_snapshot());
+        }
+        #[cfg(not(feature = "linux-hal-sysfs"))]
+        {
+            Self::from_snapshot(&HalProbeSnapshot::default())
+        }
+    }
+
+    /// Pure assembly from an injected probe snapshot (FP §4).
+    pub fn from_snapshot(snapshot: &HalProbeSnapshot) -> Self {
+        Self::from_ram_probe(&snapshot.ram)
+    }
+
+    /// Pure assembly from RAM probe fields.
+    pub fn from_ram_probe(ram: &RamProbe) -> Self {
         Self {
             next: AtomicU64::new(1),
-            total_kb: total,
-            rapl_ok,
-            uj,
+            total_kb: ram.total_kb,
+            rapl_ok: ram.rapl_ok,
+            uj: ram.rapl_uj,
         }
     }
 }
