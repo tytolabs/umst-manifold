@@ -27,6 +27,7 @@ pub mod mechanics_operator;
 pub mod mechanics_solve_port;
 pub mod operator;
 pub mod orchestration;
+pub(crate) mod pipeline;
 #[cfg(any(
     feature = "topology-density-evolution",
     feature = "mechanics-voigt-cauchy"
@@ -53,3 +54,4 @@ pub mod topology;
 pub mod topology_filter;
 
 pub use error::PhysicsError;
+pub(crate) use pipeline::{and_then_state, map_state};
