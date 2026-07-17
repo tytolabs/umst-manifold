@@ -10,14 +10,11 @@
 
 use burn::tensor::backend::Backend;
 
-use crate::core::dec_typestate::{DecTypestateError, ScalarChannelIdx};
+use crate::core::dec_typestate::ScalarChannelIdx;
+use crate::core::error_boundary::ApplyPhysicsError;
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use crate::core::traits::PhysicalResult;
 use crate::core::umst_schema::{SCALAR_DAMAGE, SCALAR_TEMPERATURE};
-
-fn dec_typestate_err(context: &str, err: DecTypestateError) -> String {
-    format!("apply_physics_to_umst: {context}: {err:?}")
-}
 
 /// Writes `damage` and optional `temperature_delta` from `result` into `umst.scalar_features`.
 ///
@@ -29,23 +26,27 @@ fn dec_typestate_err(context: &str, err: DecTypestateError) -> String {
 pub fn apply_physics_to_umst<B: Backend<FloatElem = f32>>(
     result: &PhysicalResult<B>,
     umst: &mut UnifiedMaterialStateTensor<B>,
-) -> Result<(), String> {
-    umst.try_b1_incidence()
-        .map_err(|e| dec_typestate_err("invalid B1 incidence on UMST", e))?;
+) -> Result<(), ApplyPhysicsError> {
+    umst.try_b1_incidence().map_err(|source| ApplyPhysicsError::DecTypestate {
+        context: "invalid B1 incidence on UMST",
+        source,
+    })?;
 
     let n = umst.scalar_features.dims()[0];
     let nf = umst.scalar_features.dims()[1];
     if nf <= SCALAR_DAMAGE {
-        return Err(format!(
-            "apply_physics_to_umst: scalar_features width {nf} too small for SCALAR_DAMAGE={SCALAR_DAMAGE}"
-        ));
+        return Err(ApplyPhysicsError::ScalarFeaturesTooSmallForDamage {
+            width: nf,
+            required_index: SCALAR_DAMAGE,
+        });
     }
 
     let [b, n_d] = result.damage.dims();
     if n_d != n {
-        return Err(format!(
-            "apply_physics_to_umst: damage width {n_d} != UMST nodes {n}"
-        ));
+        return Err(ApplyPhysicsError::DamageWidthMismatch {
+            damage_width: n_d,
+            umst_nodes: n,
+        });
     }
 
     let damage_col = if b == 1 {
@@ -58,22 +59,28 @@ pub fn apply_physics_to_umst<B: Backend<FloatElem = f32>>(
             .squeeze::<1>(0)
             .unsqueeze_dim::<2>(1)
     };
-    let damage_ch = ScalarChannelIdx::try_new(SCALAR_DAMAGE)
-        .map_err(|e| dec_typestate_err("invalid SCALAR_DAMAGE channel", e))?;
+    let damage_ch = ScalarChannelIdx::try_new(SCALAR_DAMAGE).map_err(|source| {
+        ApplyPhysicsError::DecTypestate {
+            context: "invalid SCALAR_DAMAGE channel",
+            source,
+        }
+    })?;
     let merged_damage = umst.project_scalar_channel(damage_ch, damage_col);
     umst.write_scalar_channel(damage_ch, merged_damage);
 
     if let Some(ref delta) = result.temperature_delta {
         if nf <= SCALAR_TEMPERATURE {
-            return Err(format!(
-                "apply_physics_to_umst: scalar_features width {nf} too small for SCALAR_TEMPERATURE={SCALAR_TEMPERATURE}"
-            ));
+            return Err(ApplyPhysicsError::ScalarFeaturesTooSmallForTemperature {
+                width: nf,
+                required_index: SCALAR_TEMPERATURE,
+            });
         }
         let [bd, nd] = delta.dims();
         if nd != n {
-            return Err(format!(
-                "apply_physics_to_umst: temperature_delta width {nd} != UMST nodes {n}"
-            ));
+            return Err(ApplyPhysicsError::TemperatureWidthMismatch {
+                delta_width: nd,
+                umst_nodes: n,
+            });
         }
         let inc = if bd == 1 {
             delta.clone().squeeze::<1>(0).unsqueeze_dim::<2>(1)
@@ -89,8 +96,12 @@ pub fn apply_physics_to_umst<B: Backend<FloatElem = f32>>(
             .clone()
             .slice([0..n, SCALAR_TEMPERATURE..SCALAR_TEMPERATURE + 1]);
         let proposed = old_t.add(inc);
-        let temp_ch = ScalarChannelIdx::try_new(SCALAR_TEMPERATURE)
-            .map_err(|e| dec_typestate_err("invalid SCALAR_TEMPERATURE channel", e))?;
+        let temp_ch = ScalarChannelIdx::try_new(SCALAR_TEMPERATURE).map_err(|source| {
+            ApplyPhysicsError::DecTypestate {
+                context: "invalid SCALAR_TEMPERATURE channel",
+                source,
+            }
+        })?;
         let merged_t = umst.project_scalar_channel(temp_ch, proposed);
         umst.write_scalar_channel(temp_ch, merged_t);
     }

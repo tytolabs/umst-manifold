@@ -14,7 +14,7 @@ pub mod traits;
 pub mod umst_schema;
 
 pub use apply_physics::apply_physics_to_umst;
-pub use error_boundary::{CatalogIoError, CbfReject};
+pub use error_boundary::{ApplyPhysicsError, CatalogIoError, CbfReject};
 pub use dec_typestate::{
     B1Incidence, DecTypestateError, ScalarChannel, ScalarChannelIdx, ScalarChannelSelector,
 };

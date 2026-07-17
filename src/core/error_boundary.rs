@@ -8,6 +8,85 @@
 
 use core::fmt;
 
+use crate::core::dec_typestate::DecTypestateError;
+
+/// Failures from [`crate::core::apply_physics::apply_physics_to_umst`] UMST writeback.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ApplyPhysicsError {
+    /// DEC typestate witness rejected on the live UMST bundle.
+    DecTypestate {
+        context: &'static str,
+        source: DecTypestateError,
+    },
+    /// `scalar_features` width cannot index the damage channel.
+    ScalarFeaturesTooSmallForDamage {
+        width: usize,
+        required_index: usize,
+    },
+    /// Sparse damage tensor node count disagrees with UMST layout.
+    DamageWidthMismatch {
+        damage_width: usize,
+        umst_nodes: usize,
+    },
+    /// `scalar_features` width cannot index the temperature channel.
+    ScalarFeaturesTooSmallForTemperature {
+        width: usize,
+        required_index: usize,
+    },
+    /// Temperature delta tensor node count disagrees with UMST layout.
+    TemperatureWidthMismatch {
+        delta_width: usize,
+        umst_nodes: usize,
+    },
+    /// Legacy string shim for callers still bridging `Err(String)`.
+    LegacyDetail { detail: String },
+}
+
+impl fmt::Display for ApplyPhysicsError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ApplyPhysicsError::DecTypestate { context, source } => {
+                write!(f, "apply_physics_to_umst: {context}: {source:?}")
+            }
+            ApplyPhysicsError::ScalarFeaturesTooSmallForDamage {
+                width,
+                required_index,
+            } => write!(
+                f,
+                "apply_physics_to_umst: scalar_features width {width} too small for SCALAR_DAMAGE={required_index}"
+            ),
+            ApplyPhysicsError::DamageWidthMismatch {
+                damage_width,
+                umst_nodes,
+            } => write!(
+                f,
+                "apply_physics_to_umst: damage width {damage_width} != UMST nodes {umst_nodes}"
+            ),
+            ApplyPhysicsError::ScalarFeaturesTooSmallForTemperature {
+                width,
+                required_index,
+            } => write!(
+                f,
+                "apply_physics_to_umst: scalar_features width {width} too small for SCALAR_TEMPERATURE={required_index}"
+            ),
+            ApplyPhysicsError::TemperatureWidthMismatch {
+                delta_width,
+                umst_nodes,
+            } => write!(
+                f,
+                "apply_physics_to_umst: temperature_delta width {delta_width} != UMST nodes {umst_nodes}"
+            ),
+            ApplyPhysicsError::LegacyDetail { detail } => f.write_str(detail),
+        }
+    }
+}
+
+impl From<String> for ApplyPhysicsError {
+    fn from(detail: String) -> Self {
+        ApplyPhysicsError::LegacyDetail { detail }
+    }
+}
+
 /// Failures from [`crate::ai::cbf::ThermodynamicCBF`] admissibility checks.
 #[derive(Clone, Debug, PartialEq)]
 pub enum CbfReject {
@@ -99,6 +178,33 @@ impl From<String> for CatalogIoError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn apply_physics_dec_typestate_display_preserves_legacy_wording() {
+        let err = ApplyPhysicsError::DecTypestate {
+            context: "invalid SCALAR_DAMAGE channel",
+            source: DecTypestateError::ScalarChannelOutOfRange {
+                index: 99,
+                channel_count: 8,
+            },
+        };
+        assert_eq!(
+            err.to_string(),
+            "apply_physics_to_umst: invalid SCALAR_DAMAGE channel: ScalarChannelOutOfRange { index: 99, channel_count: 8 }"
+        );
+    }
+
+    #[test]
+    fn apply_physics_damage_width_display_preserves_legacy_wording() {
+        let err = ApplyPhysicsError::DamageWidthMismatch {
+            damage_width: 3,
+            umst_nodes: 5,
+        };
+        assert_eq!(
+            err.to_string(),
+            "apply_physics_to_umst: damage width 3 != UMST nodes 5"
+        );
+    }
 
     #[test]
     fn cbf_insufficient_credit_display_preserves_legacy_wording() {
