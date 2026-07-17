@@ -46,6 +46,7 @@ use crate::ai::constraint_loss::scaled_constraint_violation_penalty;
 #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
 use crate::ai::constraint_loss::scaled_landauer_slack_violation;
 use crate::ai::formal::FormalReject;
+use crate::core::error_boundary::ApplyPhysicsError;
 use crate::core::traits::{IScienceCartridge, PhysicalResult};
 use burn::tensor::{backend::Backend, Tensor};
 
@@ -96,6 +97,18 @@ pub struct ManifoldGateway<B: Backend, C: IScienceCartridge<B>> {
     #[cfg(all(feature = "thmc-coupled", feature = "mechanics-adjoint"))]
     pub mechanics_solve_reports: Vec<crate::solve_report::SolveReport>,
     _backend: std::marker::PhantomData<B>,
+}
+
+/// Map [`ApplyPhysicsError`] into [`FormalReject`] at the PPO gateway writeback boundary.
+///
+/// All variants surface as [`FormalReject::DecTypestateStaging`] with
+/// [`ApplyPhysicsError`]'s [`Display`] text so legacy `evaluate_topology_step` string parity
+/// is preserved (`catalog_id`: `umst.gate.dec_typestate`).
+#[must_use]
+fn formal_reject_from_apply_physics(err: ApplyPhysicsError) -> FormalReject {
+    FormalReject::DecTypestateStaging {
+        detail: err.to_string(),
+    }
 }
 
 impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C> {
@@ -372,9 +385,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
 
         let mut secured_state = raw_state;
         crate::core::apply_physics::apply_physics_to_umst(&physical_result, &mut secured_state)
-            .map_err(|e| FormalReject::DecTypestateStaging {
-                detail: e.to_string(),
-            })?;
+            .map_err(formal_reject_from_apply_physics)?;
 
         // Keep metrics in Sparse Space [Batch, N_active_voxels]
         let free_energy = physical_result.free_energy.clone();
@@ -458,5 +469,59 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
     > {
         self.evaluate_topology_step_formal(raw_state, info_gain)
             .map_err(|e| e.to_string())
+    }
+}
+
+#[cfg(test)]
+mod apply_physics_formal_reject_tests {
+    use super::formal_reject_from_apply_physics;
+    use crate::ai::formal::FormalReject;
+    use crate::core::dec_typestate::DecTypestateError;
+    use crate::core::error_boundary::ApplyPhysicsError;
+
+    #[test]
+    fn dec_typestate_maps_to_dec_typestate_staging_with_display_detail() {
+        let err = ApplyPhysicsError::DecTypestate {
+            context: "invalid SCALAR_DAMAGE channel",
+            source: DecTypestateError::ScalarChannelOutOfRange {
+                index: 99,
+                channel_count: 8,
+            },
+        };
+        let rej = formal_reject_from_apply_physics(err.clone());
+        assert_eq!(
+            rej,
+            FormalReject::DecTypestateStaging {
+                detail: err.to_string(),
+            }
+        );
+        assert_eq!(rej.catalog_id(), "umst.gate.dec_typestate");
+    }
+
+    #[test]
+    fn damage_width_mismatch_preserves_display_parity() {
+        let err = ApplyPhysicsError::DamageWidthMismatch {
+            damage_width: 3,
+            umst_nodes: 5,
+        };
+        let rej = formal_reject_from_apply_physics(err.clone());
+        assert_eq!(
+            rej,
+            FormalReject::DecTypestateStaging {
+                detail: err.to_string(),
+            }
+        );
+        assert!(rej.to_string().contains("damage width 3 != UMST nodes 5"));
+    }
+
+    #[test]
+    fn temperature_width_mismatch_preserves_display_parity() {
+        let err = ApplyPhysicsError::TemperatureWidthMismatch {
+            delta_width: 2,
+            umst_nodes: 4,
+        };
+        let rej = formal_reject_from_apply_physics(err.clone());
+        assert_eq!(rej.catalog_id(), "umst.gate.dec_typestate");
+        assert!(rej.to_string().contains("temperature_delta width 2 != UMST nodes 4"));
     }
 }
