@@ -217,9 +217,17 @@ pub struct ThmcImplicitEulerThermalReactionExtentResidual<B: Backend<FloatElem =
 #[cfg(feature = "thmc-coupled")]
 impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual<B> {
     #[deprecated(since = "0.2.0", note = "FP P3.2")]
+    #[allow(clippy::too_many_arguments)]
     #[must_use]
     pub fn from_tensors(dt: f32, temperature_n: Tensor<B, 3>, alpha_n: Tensor<B, 3>, edges_b1: Tensor<B, 2, Int>, damage_m: Tensor<B, 3>, kinetics: ReactionExtentKinetics) -> Self {
-        Self { dt, temperature_n: Field::new(temperature_n), alpha_n: Field::new(alpha_n), edges_b1, damage_m: StepEntryDamageMask::from_tensor(damage_m), kinetics }
+        Self {
+            dt,
+            temperature_n: Field::new(temperature_n),
+            alpha_n: Field::new(alpha_n),
+            edges_b1,
+            damage_m: StepEntryDamageMask::from_damage_field(Field::new(damage_m)),
+            kinetics,
+        }
     }
     /// Assemble \(R_T, R_\alpha\) at `trial` (same shapes as `temperature` / `reaction_extent` plans).
     pub fn assemble(&self, trial: &ThmcState<B>) -> Result<(TemperatureField<B>, ReactionExtentField<B>), PhysicsError> {
@@ -460,9 +468,21 @@ pub struct ThmcImplicitEulerThermalHumidityReactionExtentResidual<B: Backend<Flo
 #[cfg(feature = "thmc-coupled")]
 impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtentResidual<B> {
     #[deprecated(since = "0.2.0", note = "FP P3.2")]
+    #[allow(clippy::too_many_arguments)]
     #[must_use]
     pub fn from_tensors(dt: f32, temperature_n: Tensor<B, 3>, humidity_n: Tensor<B, 3>, alpha_n: Tensor<B, 3>, displacement_n: Tensor<B, 3>, mechanics_placeholder_mass: f32, ru_shrinkage_binder_liquid_ratio: Option<f32>, edges_b1: Tensor<B, 2, Int>, damage_m: Tensor<B, 3>, kinetics: ReactionExtentKinetics) -> Self {
-        Self { dt, temperature_n: Field::new(temperature_n), humidity_n: Field::new(humidity_n), alpha_n: Field::new(alpha_n), displacement_n, mechanics_placeholder_mass, ru_shrinkage_binder_liquid_ratio, edges_b1, damage_m: StepEntryDamageMask::from_tensor(damage_m), kinetics }
+        Self {
+            dt,
+            temperature_n: Field::new(temperature_n),
+            humidity_n: Field::new(humidity_n),
+            alpha_n: Field::new(alpha_n),
+            displacement_n,
+            mechanics_placeholder_mass,
+            ru_shrinkage_binder_liquid_ratio,
+            edges_b1,
+            damage_m: StepEntryDamageMask::from_damage_field(Field::new(damage_m)),
+            kinetics,
+        }
     }
     /// Assemble \((R_T, R_h, R_\alpha)\) at `trial`.
     #[allow(clippy::type_complexity)]

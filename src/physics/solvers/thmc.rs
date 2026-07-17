@@ -83,8 +83,6 @@
 //!   `strain_tensor_for_fracture_from_manifold` (public stub for cartridges / tests).
 
 #[cfg(feature = "thmc-coupled")]
-use burn::tensor::ElementConversion;
-#[cfg(feature = "thmc-coupled")]
 use burn::tensor::Int;
 use burn::tensor::{backend::Backend, Tensor};
 
@@ -92,7 +90,7 @@ use crate::core::field::{
     DamageField, DisplacementField, Field, HumidityField, ReactionExtentField, TemperatureField,
 };
 #[cfg(feature = "thmc-coupled")]
-use crate::core::field::{StepEntryDamageMask, StiffnessField};
+use crate::core::field::StepEntryDamageMask;
 use crate::core::material_transition::ReactionExtentKineticsSpec;
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use crate::core::traits::IScienceCartridge;
@@ -101,19 +99,13 @@ use crate::physics::error::PhysicsError;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::laplacian::TopologicalLaplacian;
 #[cfg(feature = "thmc-coupled")]
-use crate::physics::mechanics::VectorMechanicsSolver;
-#[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc_residual::{
-    ThmcImplicitEulerThermalHumidityReactionExtentResidual,
-    ThmcImplicitEulerThermalReactionExtentResidual, ThmcMonolithicImplicitUnknownLayout,
-    THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
+    ThmcMonolithicImplicitUnknownLayout, THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
 };
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc_split_passes::{
     newton_split_chain, transport_residual_l2, ThmcNewtonScratch, ThmcStepCtx,
 };
-#[cfg(feature = "thmc-coupled")]
-use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
 
 /// Bundles reaction extent kinetics and the **uncalibrated** mechanics stiffness scale used in [`ThmcSolver::step`].
 ///
@@ -606,7 +598,7 @@ impl ThmcSolver {
     fn step_experimental<B, C>(
         &mut self,
         _cartridge: &C,
-        mut state: ThmcState<B>,
+        state: ThmcState<B>,
         manifold: &mut UnifiedMaterialStateTensor<B>,
     ) -> Result<ThmcState<B>, PhysicsError>
     where

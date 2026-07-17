@@ -11,7 +11,7 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
-use crate::core::field::{DamageField, DisplacementField, Field};
+use crate::core::field::{DamageField, DisplacementField, Field, StiffnessField};
 use crate::physics::error::PhysicsError;
 use crate::solve_report::{PrecisionLane, ReportedSolve, SolveReport};
 
@@ -36,7 +36,7 @@ pub trait MechanicsSolvePort<B: Backend<FloatElem = f32>> {
         &self,
         displacement: DisplacementField<B>,
         coords: Tensor<B, 2>,
-        stiffness: Tensor<B, 3>,
+        stiffness: StiffnessField<B>,
         body_force: DisplacementField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: DamageField<B>,
@@ -60,7 +60,7 @@ impl<B: Backend<FloatElem = f32>> MechanicsSolvePort<B> for BarNetworkMechanicsS
         &self,
         displacement: DisplacementField<B>,
         coords: Tensor<B, 2>,
-        stiffness: Tensor<B, 3>,
+        stiffness: StiffnessField<B>,
         body_force: DisplacementField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: DamageField<B>,
@@ -96,7 +96,7 @@ impl<B: Backend<FloatElem = f32>> MechanicsSolvePort<B> for BarNetworkMechanicsS
 pub fn bar_network_equilibrium_reported<B: Backend<FloatElem = f32>>(
     displacement: DisplacementField<B>,
     coords: Tensor<B, 2>,
-    stiffness: Tensor<B, 3>,
+    stiffness: StiffnessField<B>,
     body_force: DisplacementField<B>,
     edges_b1: Tensor<B, 2, Int>,
     damage: DamageField<B>,
@@ -139,7 +139,7 @@ pub fn bar_network_equilibrium_reported_from_tensors<B: Backend<FloatElem = f32>
     let (u, stress, report) = bar_network_equilibrium_reported(
         Field::new(displacement),
         coords,
-        stiffness,
+        StiffnessField::from_tensor(stiffness),
         Field::new(body_force),
         edges_b1,
         Field::new(damage),
@@ -244,7 +244,16 @@ mod tests {
         let rel_tol = 1e-6_f32;
 
         let (_u, _stress, report) = BarNetworkMechanicsSolvePort.solve_equilibrium_reported(
-            u0, coords, stiff, bf, edges, damage, mask, area, &cfg, rel_tol,
+            u0,
+            coords,
+            StiffnessField::from_tensor(stiff),
+            bf,
+            edges,
+            damage,
+            mask,
+            area,
+            &cfg,
+            rel_tol,
         )
             .expect("bar port equilibrium");
 

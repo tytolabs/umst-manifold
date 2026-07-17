@@ -23,6 +23,7 @@ use burn::tensor::{
     Int, Tensor,
 };
 
+use crate::core::field::StiffnessField;
 use super::error::PhysicsError;
 use super::linear::masked_dot;
 use super::mechanics::{BarNetworkPcgReport, VectorMechanicsSolver};
@@ -201,7 +202,7 @@ impl AdjointCompliance {
             VectorMechanicsSolver::packed_bar_network_equilibrium(
                 displacement,
                 coords_n3.clone(),
-                stiffness.clone(),
+                StiffnessField::from_tensor(stiffness.clone()),
                 body_force.clone(),
                 edges_b1.clone(),
                 damage.clone(),

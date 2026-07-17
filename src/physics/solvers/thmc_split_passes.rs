@@ -225,7 +225,7 @@ fn monolithic_pass<B: Backend<FloatElem = f32>>(
     let (u_predict, _) = VectorMechanicsSolver::solve_equilibrium_typed(
         state.mechanical.displacement.clone(),
         coords_n3.clone(),
-        stiffness.as_tensor().clone(),
+        stiffness.clone(),
         bf.clone(),
         ctx.edges_b1.clone(),
         ctx.damage_m.as_damage_field().clone(),
@@ -409,7 +409,7 @@ fn mechanics_pass<B: Backend<FloatElem = f32>>(
     state: ThmcState<B>,
     _scratch: &ThmcNewtonScratch<B>,
     ctx: &ThmcStepCtx<'_, B>,
-    solver: &mut ThmcSolver,
+    _solver: &mut ThmcSolver,
 ) -> Result<ThmcState<B>, PhysicsError> {
     let batch = ctx.batch;
     let n = ctx.n;
@@ -435,7 +435,6 @@ fn mechanics_pass<B: Backend<FloatElem = f32>>(
         Tensor::<B, 3>::zeros([batch, n, 1], device)
             .add_scalar(ctx.reaction_extent_kinetics.stiffness_nu),
     );
-    let stiffness_t = stiffness.as_tensor().clone();
     let bf = Field::new(Tensor::<B, 3>::zeros([batch, n, 3], device));
     let inner_cfg = MechanicsInnerLoopConfig::default();
     let cross_section_area = 0.01_f32;
@@ -450,7 +449,7 @@ fn mechanics_pass<B: Backend<FloatElem = f32>>(
         let equilibrium = solve_bar_equilibrium(
             state.mechanical.displacement.clone(),
             coords_n3.clone(),
-            stiffness_t.clone(),
+            stiffness.clone(),
             bf.clone(),
             ctx.edges_b1.clone(),
             ctx.damage_m.as_damage_field().clone(),
@@ -470,7 +469,7 @@ fn mechanics_pass<B: Backend<FloatElem = f32>>(
         let (u_new, _) = VectorMechanicsSolver::solve_equilibrium_typed(
             state.mechanical.displacement.clone(),
             coords_n3.clone(),
-            stiffness_t,
+            stiffness,
             bf,
             ctx.edges_b1.clone(),
             ctx.damage_m.as_damage_field().clone(),

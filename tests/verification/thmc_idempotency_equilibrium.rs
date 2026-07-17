@@ -397,7 +397,7 @@ fn thmc_mechanics_bar_idempotent_at_zero_load_equilibrium() {
     let (u1, _) = VectorMechanicsSolver::solve_equilibrium_typed(
         Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev)),
         coords.clone(),
-        stiffness.as_tensor().clone(),
+        stiffness.clone(),
         Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev)),
         edges.clone(),
         Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev)),
@@ -409,7 +409,7 @@ fn thmc_mechanics_bar_idempotent_at_zero_load_equilibrium() {
     let (u2, _) = VectorMechanicsSolver::solve_equilibrium_typed(
         u1.clone(),
         coords,
-        stiffness.as_tensor().clone(),
+        stiffness.clone(),
         Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev)),
         edges,
         Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev)),
@@ -725,7 +725,7 @@ fn thmc_monolithic_qs_r_u_residual_damped_newton_idempotent_at_equilibrium() {
     let (u_eq, _) = VectorMechanicsSolver::solve_equilibrium_typed(
         Field::new(Tensor::<B, 3>::zeros([batch, n, 3], &dev)),
         coords.clone(),
-        stiffness.as_tensor().clone(),
+        stiffness.clone(),
         Field::new(body_force.clone()),
         edges.clone(),
         Field::new(Tensor::<B, 3>::zeros([batch, n, 1], &dev)),
