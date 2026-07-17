@@ -23,6 +23,7 @@ use burn::tensor::{
     Int, Tensor,
 };
 
+use super::error::PhysicsError;
 use super::linear::masked_dot;
 use super::mechanics::{BarNetworkPcgReport, VectorMechanicsSolver};
 use super::time_orchestration::MechanicsInnerLoopConfig;
@@ -139,7 +140,7 @@ impl AdjointCompliance {
         material: SimpElasticMaterial,
         cg: &MechanicsInnerLoopConfig,
         cross_section_area: f32,
-    ) -> (Tensor<B, 1>, f32)
+    ) -> Result<(Tensor<B, 1>, f32), PhysicsError>
     where
         B: AutodiffBackend<FloatElem = f32>,
         B::InnerBackend: Backend<FloatElem = f32>,
@@ -154,8 +155,8 @@ impl AdjointCompliance {
             material,
             cg,
             cross_section_area,
-        );
-        (surrogate, c_raw)
+        )?;
+        Ok((surrogate, c_raw))
     }
 
     /// Same as [`Self::forward_and_loss`] plus PCG / equilibrium / nodal sensitivity telemetry (B6 H4).
@@ -170,7 +171,7 @@ impl AdjointCompliance {
         material: SimpElasticMaterial,
         cg: &MechanicsInnerLoopConfig,
         cross_section_area: f32,
-    ) -> (Tensor<B, 1>, f32, AdjointComplianceDiagnostics)
+    ) -> Result<(Tensor<B, 1>, f32, AdjointComplianceDiagnostics), PhysicsError>
     where
         B: AutodiffBackend<FloatElem = f32>,
         B::InnerBackend: Backend<FloatElem = f32>,
@@ -208,6 +209,7 @@ impl AdjointCompliance {
                 cross_section_area,
                 cg,
             );
+        pcg.ensure_converged(cg)?;
 
         let eq_rel = VectorMechanicsSolver::bar_network_equilibrium_rel_residual(
             u.clone(),
@@ -266,6 +268,9 @@ impl AdjointCompliance {
         let c_pad = Tensor::<B, 1>::from_inner(comp.clone());
         let surrogate = lin_a.sub(lin_b).add(c_pad).reshape([1]);
         let c_raw = comp.into_scalar();
+        if !c_raw.is_finite() {
+            return Err(PhysicsError::NonFiniteCompliance);
+        }
 
         let diag = AdjointComplianceDiagnostics {
             pcg,
@@ -278,6 +283,6 @@ impl AdjointCompliance {
             equilibrium_displacement: Vec::new(),
         };
 
-        (surrogate, c_raw, diag)
+        Ok((surrogate, c_raw, diag))
     }
 }

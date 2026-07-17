@@ -19,6 +19,7 @@ use super::adjoint::{
     AdjointComplianceDiagnostics, AdjointFiniteStageAudit, AdjointForwardPhaseTiming,
     HexPreconditionerKind, SimpElasticMaterial,
 };
+use super::error::PhysicsError;
 use super::linear::masked_dot;
 use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
 use super::q1_hex_elasticity::{
@@ -85,6 +86,23 @@ fn hex_cell_corner_gather_indices(nx: usize, ny: usize, nz: usize) -> Vec<i64> {
         }
     }
     v
+}
+
+fn ensure_hex_equilibrium(
+    eq_rel: f32,
+    pcg: &BarNetworkPcgReport,
+    cg: &MechanicsInnerLoopConfig,
+) -> Result<(), PhysicsError> {
+    if pcg.converged_with_cfg(cg) && eq_rel.is_finite() {
+        let rel_tol = BarNetworkPcgReport::rel_tol_from_cfg(cg);
+        if rel_tol <= 0.0 || eq_rel <= rel_tol {
+            return Ok(());
+        }
+    }
+    Err(PhysicsError::Diverged {
+        eq_rel,
+        pcg_iterations: pcg.iterations,
+    })
 }
 
 fn count_nonfinite(v: &[f32]) -> usize {
@@ -497,7 +515,7 @@ impl AdjointComplianceQ1Hex {
         material: SimpElasticMaterial,
         cg: &MechanicsInnerLoopConfig,
         self_weight: Option<SelfWeightConfig>,
-    ) -> (Q1HexComplianceAudit, Vec<f32>) {
+    ) -> Result<(Q1HexComplianceAudit, Vec<f32>), PhysicsError> {
         let state = Self::forward_state_for_compliance(
             rho_flat,
             nx,
@@ -514,6 +532,7 @@ impl AdjointComplianceQ1Hex {
             &Q1HexSolveOptions::default(),
             None,
         );
+        ensure_hex_equilibrium(state.eq_rel, &state.pcg, cg)?;
         let mut compliance = 0.0_f32;
         for i in 0..f_flat.len().min(state.u.len()).min(m_flat.len()) {
             if m_flat[i] > 0.5 {
@@ -527,7 +546,7 @@ impl AdjointComplianceQ1Hex {
             cell_strain_energy: state.cell_strain_energy,
             equilibrium_rel_residual: state.eq_rel,
         };
-        (audit, state.u)
+        Ok((audit, state.u))
     }
 
     /// Top-layer void-column fractions for **H-A** (roof load on non-design skin).
@@ -642,7 +661,7 @@ impl AdjointComplianceQ1Hex {
         material: SimpElasticMaterial,
         cg: &MechanicsInnerLoopConfig,
         self_weight: Option<SelfWeightConfig>,
-    ) -> (Tensor<B, 1>, f32)
+    ) -> Result<(Tensor<B, 1>, f32), PhysicsError>
     where
         B: AutodiffBackend<FloatElem = f32>,
         B::InnerBackend: Backend<FloatElem = f32>,
@@ -663,8 +682,8 @@ impl AdjointComplianceQ1Hex {
             &Q1HexSolveOptions::default(),
             None,
             None,
-        );
-        (surrogate, c_raw)
+        )?;
+        Ok((surrogate, c_raw))
     }
 
     /// Same as [`Self::forward_and_loss`] plus PCG / equilibrium / nodal sensitivity telemetry (B6 H4).
@@ -685,7 +704,7 @@ impl AdjointComplianceQ1Hex {
         solve_options: &Q1HexSolveOptions,
         region: Option<&mut SolverRegion>,
         sheet: Option<&mut DeviceSheet>,
-    ) -> (Tensor<B, 1>, f32, AdjointComplianceDiagnostics)
+    ) -> Result<(Tensor<B, 1>, f32, AdjointComplianceDiagnostics), PhysicsError>
     where
         B: AutodiffBackend<FloatElem = f32>,
         B::InnerBackend: Backend<FloatElem = f32>,
@@ -758,6 +777,10 @@ impl AdjointComplianceQ1Hex {
         let c_pad = Tensor::<B, 1>::from_inner(comp.clone());
         let surrogate = lin_a.sub(lin_b).add(c_pad).reshape([1]);
         let c_raw = comp.into_scalar();
+        ensure_hex_equilibrium(state.eq_rel, &state.pcg, cg)?;
+        if !c_raw.is_finite() {
+            return Err(PhysicsError::NonFiniteCompliance);
+        }
 
         let diag = AdjointComplianceDiagnostics {
             pcg: state.pcg,
@@ -770,7 +793,7 @@ impl AdjointComplianceQ1Hex {
             equilibrium_displacement: state.u,
         };
 
-        (surrogate, c_raw, diag)
+        Ok((surrogate, c_raw, diag))
     }
 
     /// Host diagnostics bundle at fixed nodal ρ (no autodiff).
