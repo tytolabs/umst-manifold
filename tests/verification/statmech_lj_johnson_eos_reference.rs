@@ -106,8 +106,9 @@ fn placeholder_upscale_bulk_modulus_disagrees_with_johnson_reference_documented(
         Data::new(vec![epsilon as f32, sigma as f32], Shape::new([1, 2])),
         &dev,
     );
-    let (k_tensor, _) = upscale_potentials(lj)
-        .expect("upscale_potentials [B,2] placeholder bulk modulus vs Johnson");
+    let (k_tensor, _) = upscale_potentials(lj).expect(
+        "statistical_mechanics::upscale_potentials on [B,2] placeholder bulk modulus vs Johnson 1993 reference (FP §6 Track G statmech Johnson EOS)",
+    );
     let k_placeholder = f64::from(k_tensor.into_data().value[0]);
 
     let rel_tensor = ((k_placeholder - k_johnson) / k_johnson).abs();
