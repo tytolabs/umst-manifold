@@ -671,7 +671,9 @@ fn regularized_1d_newtonian_centreline_matches_gh2_over_8mu() {
         RHEOLOGY_FLOW_BINGHAM_EPS,
         64,
     )
-    .expect("regularized Newtonian centreline");
+    .expect(
+        "plane_regularized_bingham_poiseuille_u_centreline at τ₀=0 for Newtonian gH²/(8μ) quadrature witness (FP §6 Track E rheology Poiseuille)",
+    );
     assert!(
         (got - want).abs() < 2e-4 * want.abs().max(1.0),
         "regularized Newtonian centreline: got {got}, want {want}"
@@ -695,13 +697,19 @@ fn regularized_1d_reference_near_buckingham_small_epsilon() {
         let y = t * half;
         let u_reg =
             plane_regularized_bingham_poiseuille_u_sample(y, G, H, MU, TAU0, eps, n_seg)
-                .expect("regularized profile sample");
+                .expect(
+                    "plane_regularized_bingham_poiseuille_u_sample on wall-normal station for small-ε Buckingham convergence witness (FP §6 Track E rheology Poiseuille)",
+                );
         let u_buck =
-            plane_bingham_poiseuille_u(y, G, H, MU, TAU0).expect("Buckingham profile sample");
+            plane_bingham_poiseuille_u(y, G, H, MU, TAU0).expect(
+                "plane_bingham_poiseuille_u on wall-normal station for Buckingham analytic reference witness (FP §6 Track E rheology Poiseuille)",
+            );
         max_abs = max_abs.max((u_reg - u_buck).abs());
     }
     let scale = plane_bingham_poiseuille_u(0.0, G, H, MU, TAU0)
-        .expect("Bingham centreline scale")
+        .expect(
+            "plane_bingham_poiseuille_u at y=0 for centreline scale normalization witness (FP §6 Track E rheology Poiseuille)",
+        )
         .abs()
         .max(1e-6);
     assert!(
@@ -819,7 +827,9 @@ fn chorin_developed_channel_centreline_vs_regularized_reference() {
         RHEOLOGY_FLOW_BINGHAM_EPS,
         256,
     )
-    .expect("developed centreline reference");
+    .expect(
+        "plane_regularized_bingham_poiseuille_u_centreline for developed-channel centreline comparison witness (FP §6 Track E rheology Poiseuille)",
+    );
 
     assert!(
         u_num.is_finite() && pressure.abs().max().into_scalar().is_finite(),
@@ -1101,7 +1111,9 @@ fn chorin_channel_65x17_longrun_wall_normal_l2_vs_regularized_reference() {
             RHEOLOGY_FLOW_BINGHAM_EPS,
             n_quad,
         )
-        .expect("longrun wall-normal reference");
+        .expect(
+            "plane_regularized_bingham_poiseuille_u_sample on interior wall-normal node for longrun L² reference witness (FP §6 Track E rheology Poiseuille)",
+        );
         assert!(u_ref.is_finite(), "reference u at y={y} should be finite");
         let id = j * nx + i_mid;
         let u_num = vel_flat[id * 3];
