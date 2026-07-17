@@ -278,7 +278,9 @@ fn debye_dispatch_newton_backward_euler_residual_bounded_over_screening_trajecto
             let res = pnp_backward_euler_residual_l2_chain_host_f64(
                 &solver, &newton, dt, &phi, &c, &c_n, &edges, &eps, &diff,
             )
-            .expect("BE residual L2");
+            .expect(
+                "pnp_backward_euler_residual_l2_chain_host_f64 sampling along Debye screening trajectory (FP §6 BE ‖R‖₂ witness)",
+            );
             assert!(
                 res < 3e-4_f64,
                 "implicit BE root should stay tight on f32 export; step {step}, ‖R‖₂={res:.3e}"
@@ -422,11 +424,15 @@ fn full_sg_implicit_newton_chain_backward_euler_residual_smoke() {
             eps.clone(),
             d.clone(),
         )
-        .expect("full-SG implicit Newton should succeed on small chain");
+        .expect(
+            "ElectroChemicalSolver::try_solve_pnp_backward_euler_newton_chain full-SG nonlinear implicit BE on small chain (FP §6 Track 14 witness)",
+        );
     let res = pnp_backward_euler_residual_l2_chain_host_f64(
         &solver, &newton, dt, &phi_t, &c_t, &c_n, &edges, &eps, &d,
     )
-    .expect("residual probe");
+    .expect(
+        "pnp_backward_euler_residual_l2_chain_host_f64 after full-SG implicit Newton on small chain (FP §6 ‖R‖₂ witness)",
+    );
     assert!(
         res < 2e-4_f64,
         "expected small ‖R‖₂ after full-SG Newton, got {res:.3e}"
@@ -481,11 +487,15 @@ fn full_sg_implicit_newton_frozen_inner_iters_residual_smoke() {
             eps.clone(),
             d.clone(),
         )
-        .expect("full-SG frozen-inner Newton should succeed");
+        .expect(
+            "ElectroChemicalSolver::try_solve_pnp_backward_euler_newton_chain full-SG frozen-Jacobian inner Newton (FP §6 Track 14 witness)",
+        );
     let res = pnp_backward_euler_residual_l2_chain_host_f64(
         &solver, &newton, dt, &phi_t, &c_t, &c_n, &edges, &eps, &d,
     )
-    .expect("residual probe");
+    .expect(
+        "pnp_backward_euler_residual_l2_chain_host_f64 after frozen-inner full-SG Newton (FP §6 ‖R‖₂ witness)",
+    );
     assert!(
         res < 2e-4_f64,
         "expected small ‖R‖₂ after frozen-inner full-SG Newton, got {res:.3e}"
@@ -1164,7 +1174,9 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         &eps,
         &d,
     )
-    .expect("BE residual norm");
+    .expect(
+        "pnp_backward_euler_residual_l2_chain_host_f64 at infinitesimal dt linearised split-agreement (Track 14 f32 ‖R‖₂ witness)",
+    );
     // Host Newton converges in f64 to ‖R‖₂ ≪ 1e-6 before tensor export; re-evaluating R on f32
     // tensors with very small `dt` amplifies the (c−cⁿ)/Δt block (Track 14 / f32 export path).
     assert!(
@@ -1222,7 +1234,9 @@ fn backward_euler_implicit_newton_matches_split_in_linearized_small_dt_limit() {
         &eps,
         &d,
     )
-    .expect("BE residual finite dt");
+    .expect(
+        "pnp_backward_euler_residual_l2_chain_host_f64 at finite dt linearised implicit BE root (Track 14 ‖R‖₂ witness)",
+    );
     assert!(
         be_fin < 5e-6_f64,
         "implicit solution should satisfy BE residual at finite dt, got {be_fin}"
