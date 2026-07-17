@@ -7,10 +7,15 @@
 
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
+use umst_manifold::core::field::{
+    Field, HumidityField, ReactionExtentField, StepEntryDamageMask, TemperatureField,
+};
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::core::traits::IScienceCartridge;
 use umst_manifold::core::umst_schema::{UMST_SCALAR_CHANNEL_COUNT, SCALAR_DAMAGE, SCALAR_HUMIDITY, SCALAR_TEMPERATURE};
-use umst_manifold::physics::solvers::{ThmcSolver, ThmcState};
+use umst_manifold::physics::laplacian::TopologicalLaplacian;
+use umst_manifold::physics::solvers::thmc::{reaction_extent_rate_field, ThmcNewtonConfig};
+use umst_manifold::physics::solvers::{ReactionExtentKinetics, ThmcSolver, ThmcState};
 use umst_manifold::physics::thmc_umst_sync::sync_thmc_to_umst;
 
 type B = NdArray<f32>;
@@ -104,6 +109,67 @@ fn max_abs_tensor3(a: &Tensor<B, 3>, b: &Tensor<B, 3>) -> f32 {
         .fold(0.0_f32, f32::max)
 }
 
+fn two_node_edges() -> Tensor<B, 2, Int> {
+    Tensor::from_data(
+        Data::new(vec![0i64, 1i64, 1i64, 0i64], Shape::new([2, 2])),
+        &device(),
+    )
+}
+
+fn zero_damage_mask(batch: usize, n: usize) -> StepEntryDamageMask<B> {
+    StepEntryDamageMask::from_damage_field(Field::new(Tensor::<B, 3>::zeros(
+        [batch, n, 1],
+        &device(),
+    )))
+}
+
+/// Mirrors the explicit thermal sub-step in [`ThmcSolver::step`] (Laplacian + Euler, no exothermic).
+fn apply_explicit_thermal_substep(
+    t: &TemperatureField<B>,
+    damage: &StepEntryDamageMask<B>,
+    edges: Tensor<B, 2, Int>,
+    dt: f32,
+) -> TemperatureField<B> {
+    let lap = TopologicalLaplacian::scalar_laplacian_temperature(t, damage, edges);
+    Field::new(
+        t.as_tensor()
+            .clone()
+            .add(lap.as_tensor().clone().mul_scalar(dt)),
+    )
+}
+
+/// Mirrors the explicit humidity sub-step in [`ThmcSolver::step`] (no tail drying sink).
+fn apply_explicit_humidity_substep(
+    h: &HumidityField<B>,
+    damage: &StepEntryDamageMask<B>,
+    edges: Tensor<B, 2, Int>,
+    dt: f32,
+) -> HumidityField<B> {
+    let lap = TopologicalLaplacian::scalar_laplacian_humidity(h, damage, edges);
+    Field::new(
+        h.as_tensor()
+            .clone()
+            .add(lap.as_tensor().clone().mul_scalar(dt)),
+    )
+}
+
+/// Mirrors the explicit reaction-extent sub-step in [`ThmcSolver::step`].
+fn apply_explicit_alpha_substep(
+    alpha: &ReactionExtentField<B>,
+    temperature: &TemperatureField<B>,
+    kinetics: &ReactionExtentKinetics,
+    dt: f32,
+) -> ReactionExtentField<B> {
+    let d_alpha = reaction_extent_rate_field(kinetics, alpha, temperature, &device());
+    Field::new(
+        alpha
+            .as_tensor()
+            .clone()
+            .add(d_alpha.as_tensor().clone().mul_scalar(dt))
+            .clamp(0.0_f32, 1.0_f32),
+    )
+}
+
 fn equilibrated_state(n: usize) -> ThmcState<B> {
     let dev = device();
     ThmcState::from_tensors(
@@ -114,6 +180,131 @@ fn equilibrated_state(n: usize) -> ThmcState<B> {
         Tensor::<B, 3>::full([1, n, 1], 0.1, &dev),
         0.0,
     )
+}
+
+/// FP §6: explicit thermal Laplacian increment on uniform `T` is a fixed point.
+#[test]
+fn thmc_thermal_transport_idempotent_at_laplacian_fixed_point() {
+    let dev = device();
+    let n = 2usize;
+    let batch = 1usize;
+    let dt = 1e-4_f32;
+    let edges = two_node_edges();
+    let damage = zero_damage_mask(batch, n);
+    let t0 = Field::new(Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &dev));
+
+    let t1 = apply_explicit_thermal_substep(&t0, &damage, edges.clone(), dt);
+    let t2 = apply_explicit_thermal_substep(&t1, &damage, edges, dt);
+
+    let tol = 1e-6_f32;
+    assert!(
+        max_abs_tensor3(t1.as_tensor(), t0.as_tensor()) < tol,
+        "uniform T must satisfy discrete Laplacian equilibrium"
+    );
+    assert!(
+        max_abs_tensor3(t2.as_tensor(), t1.as_tensor()) < tol,
+        "re-application of explicit thermal sub-step must not drift"
+    );
+}
+
+/// FP §6: implicit CG thermal solve on uniform Dirichlet field is a fixed point.
+#[test]
+fn thmc_thermal_implicit_cg_idempotent_at_dirichlet_equilibrium() {
+    let dev = device();
+    let n = 2usize;
+    let edges = two_node_edges();
+    let t_uniform = Tensor::<B, 3>::full([1, n, 1], 300.0_f32, &dev);
+    let mask = Tensor::<B, 3>::ones([1, n, 1], &dev);
+    let solver = ThmcSolver::default();
+    let cfg = ThmcNewtonConfig {
+        max_iterations: 20,
+        residual_tolerance: 1.0e-6_f32,
+        finite_diff_eps: 1.0e-6_f32,
+        damping: 1.0_f32,
+    };
+
+    let (t1, norms1) = solver
+        .step_thermal_implicit::<B>(1e-4_f32, t_uniform.clone(), 0.1_f32, edges.clone(), mask.clone(), cfg)
+        .expect("first implicit thermal CG");
+    let (t2, norms2) = solver
+        .step_thermal_implicit::<B>(1e-4_f32, t1.clone(), 0.1_f32, edges, mask, cfg)
+        .expect("second implicit thermal CG");
+
+    let tol = 1e-6_f32;
+    assert!(
+        max_abs_tensor3(&t1, &t_uniform) < tol,
+        "uniform T must be implicit-Euler equilibrium"
+    );
+    assert!(
+        max_abs_tensor3(&t2, &t1) < tol,
+        "re-application of implicit thermal CG must not drift"
+    );
+    assert!(
+        norms1.last().copied().unwrap_or(f32::INFINITY) < cfg.residual_tolerance,
+        "first CG pass should converge: {:?}",
+        norms1
+    );
+    assert!(
+        norms2.last().copied().unwrap_or(f32::INFINITY) < cfg.residual_tolerance,
+        "second CG pass should converge: {:?}",
+        norms2
+    );
+}
+
+/// FP §6: explicit humidity Laplacian increment on uniform `h` is a fixed point.
+#[test]
+fn thmc_humidity_transport_idempotent_at_uniform_field() {
+    let dev = device();
+    let n = 2usize;
+    let batch = 1usize;
+    let dt = 1e-4_f32;
+    let edges = two_node_edges();
+    let damage = zero_damage_mask(batch, n);
+    let h0 = Field::new(Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &dev));
+
+    let h1 = apply_explicit_humidity_substep(&h0, &damage, edges.clone(), dt);
+    let h2 = apply_explicit_humidity_substep(&h1, &damage, edges, dt);
+
+    let tol = 1e-6_f32;
+    assert!(
+        max_abs_tensor3(h1.as_tensor(), h0.as_tensor()) < tol,
+        "uniform h must satisfy discrete Laplacian equilibrium"
+    );
+    assert!(
+        max_abs_tensor3(h2.as_tensor(), h1.as_tensor()) < tol,
+        "re-application of explicit humidity sub-step must not drift"
+    );
+}
+
+/// FP §6: saturated `α=1` vanishes reaction rate — explicit α update is a fixed point.
+#[test]
+fn thmc_reaction_extent_idempotent_when_rate_vanishes() {
+    let dev = device();
+    let n = 2usize;
+    let batch = 1usize;
+    let dt = 1e-4_f32;
+    let kinetics = ReactionExtentKinetics::default();
+    let temperature = Field::new(Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &dev));
+    let alpha0 = Field::new(Tensor::<B, 3>::full([batch, n, 1], 1.0_f32, &dev));
+
+    let rate = reaction_extent_rate_field(&kinetics, &alpha0, &temperature, &dev);
+    assert!(
+        max_abs_tensor3(rate.as_tensor(), &Tensor::<B, 3>::zeros([batch, n, 1], &dev)) < 1e-9_f32,
+        "saturated α=1 must zero the reaction rate"
+    );
+
+    let alpha1 = apply_explicit_alpha_substep(&alpha0, &temperature, &kinetics, dt);
+    let alpha2 = apply_explicit_alpha_substep(&alpha1, &temperature, &kinetics, dt);
+
+    let tol = 1e-6_f32;
+    assert!(
+        max_abs_tensor3(alpha1.as_tensor(), alpha0.as_tensor()) < tol,
+        "α update at vanishing rate must be identity"
+    );
+    assert!(
+        max_abs_tensor3(alpha2.as_tensor(), alpha1.as_tensor()) < tol,
+        "re-application of explicit α sub-step must not drift"
+    );
 }
 
 /// FP §6: operator-split `step` on uniform T/h, saturated α, zero u must be a fixed point.
