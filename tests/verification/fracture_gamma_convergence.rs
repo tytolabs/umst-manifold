@@ -369,7 +369,7 @@ fn staggered_two_outer_strains_exceeds_single_pass_weak_strain_only() {
         damage0.clone(),
         fracture_energy_gc.clone(),
         edges_b1.clone(),
-    ).expect("update_damage_tensors");
+    ).expect("PhaseFieldFractureSolver::update_damage_tensors on negligible ε_xx weak-strain baseline (FP §6 Track 12 stagger weak→strong witness)");
 
     let mut outer_k = 0usize;
     let d_staggered = solver.update_damage_staggered(
@@ -386,7 +386,7 @@ fn staggered_two_outer_strains_exceeds_single_pass_weak_strain_only() {
         fracture_energy_gc,
         edges_b1,
         2,
-    ).expect("update_damage_staggered");
+    ).expect("PhaseFieldFractureSolver::update_damage_staggered weak→strong two-outer strain schedule (FP §6 Track 12 irreversibility witness)");
 
     let sum_w: f32 = d_single_weak.into_data().value.iter().sum();
     let sum_st: f32 = d_staggered.into_tensor().into_data().value.iter().sum();
@@ -468,7 +468,7 @@ fn at2_gamma_convergence_three_length_scales() {
                 d_curr,
                 fracture_energy_gc.clone(),
                 edges_b1.clone(),
-            ).expect("update_damage_tensors");
+            ).expect("PhaseFieldFractureSolver::update_damage_tensors fixed-strain pass on Γ-conv bar (FP §6 Track 12 §7.1 ψ⁺≡0 witness)");
         }
 
         let d_vals: Vec<f32> = d_curr.into_data().value;
@@ -573,7 +573,7 @@ fn at2_gamma_convergence_multi_ratio_schedule_smoke() {
                 d_curr,
                 fracture_energy_gc.clone(),
                 edges_b1.clone(),
-            ).expect("update_damage_tensors");
+            ).expect("PhaseFieldFractureSolver::update_damage_tensors 32-pass relaxation on multi-ρ schedule row (FP §6 Track 12 §7.3 ψ⁺≡0 witness)");
         }
 
         let d_vals: Vec<f32> = d_curr.into_data().value;
@@ -673,7 +673,7 @@ fn at2_gamma_convergence_multi_ratio_psi_plus_schedule_smoke() {
                 d_curr,
                 fracture_energy_gc.clone(),
                 edges_b1.clone(),
-            ).expect("update_damage_tensors");
+            ).expect("PhaseFieldFractureSolver::update_damage_tensors 32-pass relaxation on multi-ρ ψ⁺ row (FP §6 Track 12 §7.3.1 witness)");
         }
 
         let d_vals: Vec<f32> = d_curr.into_data().value;
@@ -774,7 +774,7 @@ fn at2_gamma_convergence_multi_ratio_psi_plus_outer_strain_ramp_smoke() {
             fracture_energy_gc.clone(),
             edges_b1.clone(),
             outer_iters,
-        ).expect("update_damage_staggered");
+        ).expect("PhaseFieldFractureSolver::update_damage_staggered linear outer ε_xx ramp on multi-ρ bar (FP §6 Track 12 §7.3.2 witness)");
 
         let strain_final = uniaxial_strain(&dev, batch, n, exx_end);
         let psi_tensor = spectral_tensile_psi_plus_from_strain(strain_final);
@@ -884,7 +884,7 @@ fn at2_gamma_convergence_psi_plus_nonzero_three_length_scales() {
                 d_curr,
                 fracture_energy_gc.clone(),
                 edges_b1.clone(),
-            ).expect("update_damage_tensors");
+            ).expect("PhaseFieldFractureSolver::update_damage_tensors fixed-strain pass on Γ-conv bar with tensile ψ⁺ (FP §6 Track 12 §7.2 witness)");
         }
 
         let d_vals: Vec<f32> = d_curr.into_data().value;
@@ -1098,7 +1098,7 @@ fn staggered_fracture_compliance_monotone_increasing() {
         &cg,
         cfg_one,
     )
-    .expect("solve_staggered_with_mechanics");
+    .expect("PhaseFieldFractureSolver::solve_staggered_with_mechanics outer_iters=1 baseline compliance (FP §6 Track 12 §7.4 mechanics-coupled witness)");
     let u0_vals = u0.into_data().value;
     let c0 = force * u0_vals[(n - 1) * 3];
 
@@ -1126,7 +1126,7 @@ fn staggered_fracture_compliance_monotone_increasing() {
             &cg,
             cfg_k,
         )
-        .expect("solve_staggered_with_mechanics");
+        .expect("PhaseFieldFractureSolver::solve_staggered_with_mechanics outer_iters=k compliance sweep (FP §6 Track 12 §7.4 monotone growth witness)");
         let u_vals = u_k.into_data().value;
         let d_vals = d_k.into_tensor().into_data().value;
         let tip_u = u_vals[(n - 1) * 3];
@@ -1196,7 +1196,7 @@ fn at2_staggered_outer_cfg_fixed_iters_matches_legacy() {
         fracture_energy_gc.clone(),
         edges_b1.clone(),
         4,
-    ).expect("update_damage_staggered");
+    ).expect("PhaseFieldFractureSolver::update_damage_staggered fixed 4-outer legacy loop (FP §6 Track 12 §7.4 outer_cfg parity witness)");
     let strain_b = strain.clone();
     let d_cfg = solver.update_damage_staggered_with_outer_cfg(
         move |_d: &DamageField<B>| strain_field(strain_b.clone()),
@@ -1204,7 +1204,7 @@ fn at2_staggered_outer_cfg_fixed_iters_matches_legacy() {
         fracture_energy_gc,
         edges_b1,
         StaggeredDamageOuterLoopConfig::fixed_iters(4),
-    ).expect("update_damage_staggered_with_outer_cfg");
+    ).expect("PhaseFieldFractureSolver::update_damage_staggered_with_outer_cfg fixed_iters(4) cfg loop (FP §6 Track 12 §7.4 outer_cfg parity witness)");
     assert_eq!(
         d_legacy.into_tensor().into_data().value,
         d_cfg.into_tensor().into_data().value,
@@ -1264,7 +1264,7 @@ fn at2_staggered_outer_loose_damage_linf_one_pass() {
                 tol_rel_degraded_psi_mean: None,
             },
         },
-    ).expect("update_damage_staggered_with_outer_cfg");
+    ).expect("PhaseFieldFractureSolver::update_damage_staggered_with_outer_cfg loose tol_damage_linf early stop (FP §6 Track 12 §7.4 outer stopping witness)");
     assert_eq!(
         calls.load(Ordering::Relaxed),
         1,
@@ -1324,7 +1324,7 @@ fn at2_staggered_outer_rel_psi_loose_two_passes() {
                 tol_rel_degraded_psi_mean: Some(1e30),
             },
         },
-    ).expect("update_damage_staggered_with_outer_cfg");
+    ).expect("PhaseFieldFractureSolver::update_damage_staggered_with_outer_cfg full 2-outer budget with inert ψ stop (FP §6 Track 12 §7.4 outer stopping witness)");
     assert_eq!(
         calls.load(Ordering::Relaxed),
         2,
@@ -1435,7 +1435,7 @@ fn at2_solve_staggered_mechanics_outer_loose_stopping_one_pass() {
         &cg,
         cfg_one,
     )
-    .expect("solve_staggered_with_mechanics");
+    .expect("PhaseFieldFractureSolver::solve_staggered_with_mechanics outer_iters=1 reference pass (FP §6 Track 12 §7.4 loose damage stop witness)");
     let (u2, d2) = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
         coords,
         edges_b1,
@@ -1447,7 +1447,7 @@ fn at2_solve_staggered_mechanics_outer_loose_stopping_one_pass() {
         &cg,
         cfg_stop,
     )
-    .expect("solve_staggered_with_mechanics");
+    .expect("PhaseFieldFractureSolver::solve_staggered_with_mechanics tol_damage_linf=10 early-stop vs reference (FP §6 Track 12 §7.4 mechanics stopping witness)");
     let v1 = u1.into_data().value;
     let v2 = u2.into_data().value;
     let tol = 1e-4_f32;
@@ -1512,7 +1512,7 @@ fn staggered_mechanics_outer_damage_stop_matches_long_budget() {
         &cg,
         cfg_long,
     )
-    .expect("solve_staggered_with_mechanics");
+    .expect("PhaseFieldFractureSolver::solve_staggered_with_mechanics 8-outer full budget (FP §6 Track 12 §7.4 inactive-stop parity witness)");
     let (u_s, d_s) = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
         coords,
         edges_b1,
@@ -1524,7 +1524,7 @@ fn staggered_mechanics_outer_damage_stop_matches_long_budget() {
         &cg,
         cfg_inactive_stop,
     )
-    .expect("solve_staggered_with_mechanics");
+    .expect("PhaseFieldFractureSolver::solve_staggered_with_mechanics 8-outer with inactive tol_damage_linf (FP §6 Track 12 §7.4 inactive-stop parity witness)");
     let tol = 1e-4_f32;
     let v1 = u_long.into_data().value;
     let v2 = u_s.into_data().value;
