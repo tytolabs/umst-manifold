@@ -160,7 +160,7 @@ mod information_density_reward {
         g0.eta = 0.0_f32;
         let r0 = g0
             .evaluate_topology_step(proposed.clone(), info_gain.clone())
-            .unwrap()
+            .expect("ManifoldGateway topology step with eta=0 should pass gate")
             .1
             .into_data()
             .value[0];
@@ -170,7 +170,7 @@ mod information_density_reward {
         g1.eta = eta;
         let r1 = g1
             .evaluate_topology_step(proposed, info_gain)
-            .unwrap()
+            .expect("ManifoldGateway topology step with eta=2 should pass gate")
             .1
             .into_data()
             .value[0];

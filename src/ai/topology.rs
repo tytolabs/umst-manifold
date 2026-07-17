@@ -1176,7 +1176,7 @@ mod simp_step_tests {
             a,
             &cfg,
             false,
-        ).expect("simplite bar compliance");
+        ).expect("TopologyOptimizer::optimize_step_simplite on two-node bar (FP §6 neural-SIMP compliance verification)");
         let c = out.compliance.into_scalar();
         assert!(
             c.is_finite() && c > 0.0,
@@ -1246,7 +1246,7 @@ mod simp_step_tests {
             e,
             a,
             &cfg,
-        ).expect("optimize_step bar");
+        ).expect("TopologyOptimizer::optimize_step on two-node bar (FP §6 neural-SIMP compliance verification)");
         let via_simplite = opt.optimize_step_simplite(
             coords_bn3,
             e_base_bn1,
@@ -1256,7 +1256,7 @@ mod simp_step_tests {
             a,
             &cfg,
             false,
-        ).expect("simplite bar parity");
+        ).expect("TopologyOptimizer::optimize_step_simplite parity on two-node bar (FP §6 neural-SIMP compliance verification)");
         let c_step = compliance_step.clone().into_scalar();
         let c_simplite = via_simplite.compliance.into_scalar();
         assert!(

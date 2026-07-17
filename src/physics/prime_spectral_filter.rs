@@ -221,7 +221,9 @@ mod tests {
         let ps = PrimeSpectralFilter::new(0.05, false, None);
         let n = 8_usize;
         let rho = Tensor::<B, 3>::full(Shape::new([1, n, 1]), 0.5, &dev);
-        let out = ps.apply(rho, n).expect("stable filter apply");
+        let out = ps
+            .apply(rho, n)
+            .expect("PrimeSpectralFilter::apply on uniform rho at epsilon=0.05 (FP §6 topology spectral filter verification)");
         let expected_w = ps.weight_table(n);
         for (i, &v) in out.into_data().value.iter().enumerate() {
             assert!((v - 0.5 * expected_w[i]).abs() < 1e-5);

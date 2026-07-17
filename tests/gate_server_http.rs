@@ -38,13 +38,24 @@ fn read_http_response(stream: TcpStream) -> (u16, String) {
         }
         let lower = line.to_ascii_lowercase();
         if lower.starts_with("content-length:") {
-            content_length = line.split(':').nth(1).unwrap().trim().parse().unwrap();
+            content_length = line
+                .split(':')
+                .nth(1)
+                .expect("Content-Length header must include colon-separated value")
+                .trim()
+                .parse()
+                .expect("Content-Length must parse as usize");
         }
     }
 
     let mut body = vec![0u8; content_length];
-    reader.read_exact(&mut body).unwrap();
-    (status, String::from_utf8(body).unwrap())
+    reader
+        .read_exact(&mut body)
+        .expect("HTTP response body must match Content-Length");
+    (
+        status,
+        String::from_utf8(body).expect("HTTP response body must be valid UTF-8"),
+    )
 }
 
 #[test]

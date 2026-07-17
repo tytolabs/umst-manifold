@@ -68,7 +68,7 @@ fn helmholtz_delta_blob_fwhm_matches_green_scale() {
             a.partial_cmp(b).expect("Helmholtz peak index comparison (finite f32 densities)")
         })
         .map(|(i, _)| i)
-        .expect("non-empty");
+        .expect("Helmholtz delta blob grid filtered density peak enumeration (FP §6 topology filter integration verification)");
     let ix_m = idx_max % nx;
     let iy_m = idx_max / nx;
     let mut neighbor_abs = 0.0_f32;

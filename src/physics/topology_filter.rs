@@ -264,7 +264,9 @@ mod tests {
         .reshape([2, n - 1])
         .int();
         let f = HelmholtzFilter::new(1.5, 12_000, 1e-7);
-        let out = f.apply(rho_t, edges, 1.0).expect("chain helm apply");
+        let out = f
+            .apply(rho_t, edges, 1.0)
+            .expect("HelmholtzFilter::apply on 16-node chain delta field (FP §6 topology filter verification)");
         let v = out.into_data().value;
         let mx = tensor_max(&v);
         assert!(
