@@ -76,6 +76,14 @@ pub struct SmallStrain;
 #[derive(Clone, Copy, Debug)]
 pub struct FractureEnergy;
 
+/// Phantom space marker: elastic modulus pair \((E, \nu)\) — shape `[B, N, 2]`, Pa and dimensionless.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Zero-sized space witness; mechanics stiffness nodal field SSOT is `[B, N, 2]` (Young's modulus + Poisson ratio cat).
+#[derive(Clone, Copy, Debug)]
+pub struct Stiffness;
+
 /// Phantom-typed tensor carrier: physical meaning encoded at compile time via `Space`.
 ///
 /// Uses `PhantomData<fn() -> Space>` so the space witness is invariant (not covariant),
@@ -179,6 +187,12 @@ pub type SmallStrainField<B> = Field<B, SmallStrain, 4>;
 /// formal_status: Structural
 /// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`FractureEnergy`] witness.
 pub type FractureEnergyField<B> = Field<B, FractureEnergy, 3>;
+/// Stiffness plan field — `[B, N, 2]` \((E, \nu)\).
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`Stiffness`] witness.
+pub type StiffnessField<B> = Field<B, Stiffness, 3>;
 
 /// Frozen damage mask at THMC step entry — distinct from live `state.damage` after fracture.
 #[derive(Clone, Debug)]
@@ -236,6 +250,21 @@ impl<B: Backend> FractureEnergyField<B> {
     }
 
     /// Wrap an existing fracture-energy tensor.
+    #[inline]
+    #[must_use]
+    pub fn from_tensor(tensor: Tensor<B, 3>) -> Self {
+        Field::new(tensor)
+    }
+}
+
+impl<B: Backend> StiffnessField<B> {
+    /// Zero-filled stiffness field.
+    #[must_use]
+    pub fn zeros(dims: [usize; 3], device: &B::Device) -> Self {
+        Field::new(Tensor::<B, 3>::zeros(dims, device))
+    }
+
+    /// Wrap an existing stiffness tensor.
     #[inline]
     #[must_use]
     pub fn from_tensor(tensor: Tensor<B, 3>) -> Self {
@@ -316,6 +345,18 @@ mod tests {
         let gc_raw = Tensor::<B, 3>::zeros([1, 2, 1], &device);
         let damage_raw = Tensor::<B, 3>::zeros([1, 2, 1], &device);
         accept_gc(FractureEnergyField::from_tensor(gc_raw));
+        accept_damage(Field::new(damage_raw));
+    }
+
+    #[test]
+    fn stiffness_field_distinct_from_damage() {
+        fn accept_stiffness(_: StiffnessField<B>) {}
+        fn accept_damage(_: DamageField<B>) {}
+
+        let device = Default::default();
+        let stiffness_raw = Tensor::<B, 3>::zeros([1, 2, 2], &device);
+        let damage_raw = Tensor::<B, 3>::zeros([1, 2, 1], &device);
+        accept_stiffness(StiffnessField::from_tensor(stiffness_raw));
         accept_damage(Field::new(damage_raw));
     }
 }

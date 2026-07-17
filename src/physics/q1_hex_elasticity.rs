@@ -51,6 +51,7 @@
 #![allow(clippy::needless_range_loop)]
 #![allow(clippy::too_many_arguments)]
 
+use super::error::PhysicsError;
 use super::pcg_reduction::{
     dot_f32, dot_f64, masked_dot_f32, masked_norm_sq_f32, masked_norm_sq_f64, norm_sq_f64,
 };
@@ -75,6 +76,46 @@ const WG: f32 = 1.0;
 #[inline]
 fn idx_node(nx1: usize, ny1: usize, ix: usize, iy: usize, iz: usize) -> usize {
     ix + iy * nx1 + iz * nx1 * ny1
+}
+
+/// Local corner offsets for Q1 hex cell `(cx, cy, cz)` → node `(ix, iy, iz)`.
+const HEX_CORNER_DX: [usize; 8] = [0, 1, 1, 0, 0, 1, 1, 0];
+const HEX_CORNER_DY: [usize; 8] = [0, 0, 1, 1, 0, 0, 1, 1];
+const HEX_CORNER_DZ: [usize; 8] = [0, 0, 0, 0, 1, 1, 1, 1];
+
+/// Node grid indices for corner `k` (0..8) of structured cell `(cx, cy, cz)`.
+///
+/// Hot paths that loop `k in 0..8` use [`hex_cell_corner_indices_unchecked`]; dynamic
+/// `k` should go through this fallible entry point (FP §2 — no production `unreachable!`).
+#[inline]
+pub fn hex_cell_corner_indices(
+    cx: usize,
+    cy: usize,
+    cz: usize,
+    k: usize,
+) -> Result<(usize, usize, usize), PhysicsError> {
+    if k >= 8 {
+        return Err(PhysicsError::InvariantViolation {
+            context: "hex_cell_corner_indices: corner index must be in 0..8",
+        });
+    }
+    Ok(hex_cell_corner_indices_unchecked(cx, cy, cz, k))
+}
+
+/// Infallible corner lookup when `k` is known to be in `0..8` (e.g. `for k in 0..8` loops).
+#[inline(always)]
+pub(crate) fn hex_cell_corner_indices_unchecked(
+    cx: usize,
+    cy: usize,
+    cz: usize,
+    k: usize,
+) -> (usize, usize, usize) {
+    debug_assert!(k < 8);
+    (
+        cx + HEX_CORNER_DX[k],
+        cy + HEX_CORNER_DY[k],
+        cz + HEX_CORNER_DZ[k],
+    )
 }
 
 /// Physical coordinates of the eight corners for cell `(cx, cy, cz)` with spacing `(dx,dy,dz)`.
@@ -486,17 +527,7 @@ pub fn hex_k_times_u_accumulate_f64(
                 let x_corner = cell_corner_coords(cx, cy, cz, dx, dy, dz);
                 let mut u24 = [0.0_f64; 24];
                 for (k, _corner) in CORNER_XI.iter().enumerate() {
-                    let (ix, iy, iz) = match k {
-                        0 => (cx, cy, cz),
-                        1 => (cx + 1, cy, cz),
-                        2 => (cx + 1, cy + 1, cz),
-                        3 => (cx, cy + 1, cz),
-                        4 => (cx, cy, cz + 1),
-                        5 => (cx + 1, cy, cz + 1),
-                        6 => (cx + 1, cy + 1, cz + 1),
-                        7 => (cx, cy + 1, cz + 1),
-                        _ => unreachable!(),
-                    };
+                    let (ix, iy, iz) = hex_cell_corner_indices_unchecked(cx, cy, cz, k);
                     let nid = idx_node(nx1, ny1, ix, iy, iz);
                     u24[k * 3] = u[nid * 3];
                     u24[k * 3 + 1] = u[nid * 3 + 1];
@@ -519,17 +550,7 @@ pub fn hex_k_times_u_accumulate_f64(
                             let fe =
                                 bbar_t_times_sigma_transverse_shear_centroid_f64(gn, gn_bar, &sig);
                             for k in 0..8 {
-                                let (ix, iy, iz) = match k {
-                                    0 => (cx, cy, cz),
-                                    1 => (cx + 1, cy, cz),
-                                    2 => (cx + 1, cy + 1, cz),
-                                    3 => (cx, cy + 1, cz),
-                                    4 => (cx, cy, cz + 1),
-                                    5 => (cx + 1, cy, cz + 1),
-                                    6 => (cx + 1, cy + 1, cz + 1),
-                                    7 => (cx, cy + 1, cz + 1),
-                                    _ => unreachable!(),
-                                };
+                                let (ix, iy, iz) = hex_cell_corner_indices_unchecked(cx, cy, cz, k);
                                 let nid = idx_node(nx1, ny1, ix, iy, iz);
                                 y[nid * 3] += fe[k * 3] * wdet;
                                 y[nid * 3 + 1] += fe[k * 3 + 1] * wdet;
@@ -578,17 +599,7 @@ pub fn hex_k_times_u_accumulate(
                 let mut u24 = [0.0_f32; 24];
                 for (k, corner) in CORNER_XI.iter().enumerate() {
                     let _ = corner;
-                    let (ix, iy, iz) = match k {
-                        0 => (cx, cy, cz),
-                        1 => (cx + 1, cy, cz),
-                        2 => (cx + 1, cy + 1, cz),
-                        3 => (cx, cy + 1, cz),
-                        4 => (cx, cy, cz + 1),
-                        5 => (cx + 1, cy, cz + 1),
-                        6 => (cx + 1, cy + 1, cz + 1),
-                        7 => (cx, cy + 1, cz + 1),
-                        _ => unreachable!(),
-                    };
+                    let (ix, iy, iz) = hex_cell_corner_indices_unchecked(cx, cy, cz, k);
                     let nid = idx_node(nx1, ny1, ix, iy, iz);
                     u24[k * 3] = u[nid * 3];
                     u24[k * 3 + 1] = u[nid * 3 + 1];
@@ -610,17 +621,7 @@ pub fn hex_k_times_u_accumulate(
                             let sig = d_times_eps(&d, &eps);
                             let fe = bbar_t_times_sigma_transverse_shear_centroid(gn, gn_bar, &sig);
                             for k in 0..8 {
-                                let (ix, iy, iz) = match k {
-                                    0 => (cx, cy, cz),
-                                    1 => (cx + 1, cy, cz),
-                                    2 => (cx + 1, cy + 1, cz),
-                                    3 => (cx, cy + 1, cz),
-                                    4 => (cx, cy, cz + 1),
-                                    5 => (cx + 1, cy, cz + 1),
-                                    6 => (cx + 1, cy + 1, cz + 1),
-                                    7 => (cx, cy + 1, cz + 1),
-                                    _ => unreachable!(),
-                                };
+                                let (ix, iy, iz) = hex_cell_corner_indices_unchecked(cx, cy, cz, k);
                                 let nid = idx_node(nx1, ny1, ix, iy, iz);
                                 y[nid * 3] += fe[k * 3] * wdet;
                                 y[nid * 3 + 1] += fe[k * 3 + 1] * wdet;
@@ -668,17 +669,7 @@ pub fn hex_cell_strain_energy(
                 let x_corner = cell_corner_coords(cx, cy, cz, dx, dy, dz);
                 let mut u24 = [0.0_f32; 24];
                 for (k, _corner) in CORNER_XI.iter().enumerate() {
-                    let (ix, iy, iz) = match k {
-                        0 => (cx, cy, cz),
-                        1 => (cx + 1, cy, cz),
-                        2 => (cx + 1, cy + 1, cz),
-                        3 => (cx, cy + 1, cz),
-                        4 => (cx, cy, cz + 1),
-                        5 => (cx + 1, cy, cz + 1),
-                        6 => (cx + 1, cy + 1, cz + 1),
-                        7 => (cx, cy + 1, cz + 1),
-                        _ => unreachable!(),
-                    };
+                    let (ix, iy, iz) = hex_cell_corner_indices_unchecked(cx, cy, cz, k);
                     let nid = idx_node(nx1, ny1, ix, iy, iz);
                     u24[k * 3] = u[nid * 3];
                     u24[k * 3 + 1] = u[nid * 3 + 1];
@@ -822,17 +813,7 @@ fn hex_scatter_ke_unit_times_u(
                 let e = e_cell[c].max(1e-30_f32);
                 let mut u24 = [0.0_f32; 24];
                 for k in 0..8 {
-                    let (ix, iy, iz) = match k {
-                        0 => (cx, cy, cz),
-                        1 => (cx + 1, cy, cz),
-                        2 => (cx + 1, cy + 1, cz),
-                        3 => (cx, cy + 1, cz),
-                        4 => (cx, cy, cz + 1),
-                        5 => (cx + 1, cy, cz + 1),
-                        6 => (cx + 1, cy + 1, cz + 1),
-                        7 => (cx, cy + 1, cz + 1),
-                        _ => unreachable!(),
-                    };
+                    let (ix, iy, iz) = hex_cell_corner_indices_unchecked(cx, cy, cz, k);
                     let nid = idx_node(nx1, ny1, ix, iy, iz);
                     u24[k * 3] = u[nid * 3];
                     u24[k * 3 + 1] = u[nid * 3 + 1];
@@ -847,17 +828,7 @@ fn hex_scatter_ke_unit_times_u(
                     ku24[i] = e * s;
                 }
                 for k in 0..8 {
-                    let (ix, iy, iz) = match k {
-                        0 => (cx, cy, cz),
-                        1 => (cx + 1, cy, cz),
-                        2 => (cx + 1, cy + 1, cz),
-                        3 => (cx, cy + 1, cz),
-                        4 => (cx, cy, cz + 1),
-                        5 => (cx + 1, cy, cz + 1),
-                        6 => (cx + 1, cy + 1, cz + 1),
-                        7 => (cx, cy + 1, cz + 1),
-                        _ => unreachable!(),
-                    };
+                    let (ix, iy, iz) = hex_cell_corner_indices_unchecked(cx, cy, cz, k);
                     let nid = idx_node(nx1, ny1, ix, iy, iz);
                     y[nid * 3] += ku24[k * 3];
                     y[nid * 3 + 1] += ku24[k * 3 + 1];
@@ -910,17 +881,7 @@ pub fn hex_k_times_u_accumulate_cached_f64_e(
                 let e = e_cell[c].max(1e-30_f64);
                 let mut u24 = [0.0_f64; 24];
                 for k in 0..8 {
-                    let (ix, iy, iz) = match k {
-                        0 => (cx, cy, cz),
-                        1 => (cx + 1, cy, cz),
-                        2 => (cx + 1, cy + 1, cz),
-                        3 => (cx, cy + 1, cz),
-                        4 => (cx, cy, cz + 1),
-                        5 => (cx + 1, cy, cz + 1),
-                        6 => (cx + 1, cy + 1, cz + 1),
-                        7 => (cx, cy + 1, cz + 1),
-                        _ => unreachable!(),
-                    };
+                    let (ix, iy, iz) = hex_cell_corner_indices_unchecked(cx, cy, cz, k);
                     let nid = idx_node(nx1, ny1, ix, iy, iz);
                     u24[k * 3] = u[nid * 3];
                     u24[k * 3 + 1] = u[nid * 3 + 1];
@@ -935,17 +896,7 @@ pub fn hex_k_times_u_accumulate_cached_f64_e(
                     ku24[i] = e * s;
                 }
                 for k in 0..8 {
-                    let (ix, iy, iz) = match k {
-                        0 => (cx, cy, cz),
-                        1 => (cx + 1, cy, cz),
-                        2 => (cx + 1, cy + 1, cz),
-                        3 => (cx, cy + 1, cz),
-                        4 => (cx, cy, cz + 1),
-                        5 => (cx + 1, cy, cz + 1),
-                        6 => (cx + 1, cy + 1, cz + 1),
-                        7 => (cx, cy + 1, cz + 1),
-                        _ => unreachable!(),
-                    };
+                    let (ix, iy, iz) = hex_cell_corner_indices_unchecked(cx, cy, cz, k);
                     let nid = idx_node(nx1, ny1, ix, iy, iz);
                     y[nid * 3] += ku24[k * 3];
                     y[nid * 3 + 1] += ku24[k * 3 + 1];
@@ -1786,17 +1737,7 @@ pub fn hex_nodal_block_jacobi_3x3(
                     }
                 }
                 for k in 0..8 {
-                    let (ix, iy, iz) = match k {
-                        0 => (cx, cy, cz),
-                        1 => (cx + 1, cy, cz),
-                        2 => (cx + 1, cy + 1, cz),
-                        3 => (cx, cy + 1, cz),
-                        4 => (cx, cy, cz + 1),
-                        5 => (cx + 1, cy, cz + 1),
-                        6 => (cx + 1, cy + 1, cz + 1),
-                        7 => (cx, cy + 1, cz + 1),
-                        _ => unreachable!(),
-                    };
+                    let (ix, iy, iz) = hex_cell_corner_indices_unchecked(cx, cy, cz, k);
                     let nid = idx_node(nx1, ny1, ix, iy, iz);
                     let bo = nid * 9;
                     for a in 0..3 {
@@ -1997,17 +1938,7 @@ pub fn hex_diagonal(
                     }
                 }
                 for k in 0..8 {
-                    let (ix, iy, iz) = match k {
-                        0 => (cx, cy, cz),
-                        1 => (cx + 1, cy, cz),
-                        2 => (cx + 1, cy + 1, cz),
-                        3 => (cx, cy + 1, cz),
-                        4 => (cx, cy, cz + 1),
-                        5 => (cx + 1, cy, cz + 1),
-                        6 => (cx + 1, cy + 1, cz + 1),
-                        7 => (cx, cy + 1, cz + 1),
-                        _ => unreachable!(),
-                    };
+                    let (ix, iy, iz) = hex_cell_corner_indices_unchecked(cx, cy, cz, k);
                     let nid = idx_node(nx1, ny1, ix, iy, iz);
                     for a in 0..3 {
                         let ii = nid * 3 + a;

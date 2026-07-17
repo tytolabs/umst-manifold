@@ -4439,15 +4439,19 @@ mod newton_chain_tests {
         let d = Tensor::<B, 3>::full([1, n, 2], 0.04_f32, &dev);
         let solver = ElectroChemicalSolver::default();
         let dt = 1e-4_f32;
-        let (p0, c0) = solver.solve_pnp_step(
-            dt,
-            phi.clone(),
-            c.clone(),
-            edges.clone(),
-            eps.clone(),
-            d.clone(),
-        );
-        let (p1, c1) = solver.solve_pnp_step_dispatch(dt, phi, c, edges, eps, d);
+        let (p0, c0) = solver
+            .solve_pnp_step(
+                dt,
+                phi.clone(),
+                c.clone(),
+                edges.clone(),
+                eps.clone(),
+                d.clone(),
+            )
+            .expect("solve_pnp_step");
+        let (p1, c1) = solver
+            .solve_pnp_step_dispatch(dt, phi, c, edges, eps, d)
+            .expect("solve_pnp_step_dispatch");
         assert!(
             tensor1_bool(p0.sub(p1).abs().lower_elem(1e-6_f32).all())
                 && tensor1_bool(c0.sub(c1).abs().lower_elem(1e-6_f32).all()),
@@ -4498,14 +4502,16 @@ mod newton_chain_tests {
             ..Default::default()
         };
         let dt: f32 = 1e-7;
-        let (phi_d, c_d) = solver.solve_pnp_step_dispatch(
-            dt,
-            phi_n.clone(),
-            c_n.clone(),
-            edges.clone(),
-            eps.clone(),
-            d.clone(),
-        );
+        let (phi_d, c_d) = solver
+            .solve_pnp_step_dispatch(
+                dt,
+                phi_n.clone(),
+                c_n.clone(),
+                edges.clone(),
+                eps.clone(),
+                d.clone(),
+            )
+            .expect("solve_pnp_step_dispatch");
         let (phi_t, c_t) = solver
             .try_solve_pnp_backward_euler_newton_chain(&newton, dt, phi_n, c_n, edges, eps, d)
             .expect("try_solve chain");
@@ -4774,15 +4780,19 @@ mod physics_idempotency_tests {
         let solver = ElectroChemicalSolver::default();
         let dt = 1e-4_f32;
 
-        let (phi1, c1) = solver.solve_pnp_step(
-            dt,
-            phi.clone(),
-            c.clone(),
-            edges.clone(),
-            eps.clone(),
-            d.clone(),
-        );
-        let (phi2, c2) = solver.solve_pnp_step(dt, phi1.clone(), c1.clone(), edges, eps, d);
+        let (phi1, c1) = solver
+            .solve_pnp_step(
+                dt,
+                phi.clone(),
+                c.clone(),
+                edges.clone(),
+                eps.clone(),
+                d.clone(),
+            )
+            .expect("solve_pnp_step");
+        let (phi2, c2) = solver
+            .solve_pnp_step(dt, phi1.clone(), c1.clone(), edges, eps, d)
+            .expect("solve_pnp_step");
 
         let tol = 1e-6_f32;
         assert!(
