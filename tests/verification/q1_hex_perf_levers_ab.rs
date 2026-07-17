@@ -108,7 +108,7 @@ fn run_config(
         None,
         None,
     )
-    .expect("forward_loss_with_diagnostics");
+    .expect("AdjointComplianceQ1Hex::forward_loss_with_diagnostics on 8×8×4 perf-levers A/B harness (FP §6 q1_hex compliance witness)");
     (
         c,
         diag.pcg_iters,
