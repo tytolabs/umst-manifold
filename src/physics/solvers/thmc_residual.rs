@@ -78,9 +78,8 @@ use crate::physics::laplacian::TopologicalLaplacian;
 use crate::physics::mechanics::VectorMechanicsSolver;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc::{
-    reaction_extent_rate_field, reaction_extent_rate_tensor,
-    shrink_strain_from_saturation_loss_tensor, ChemicalPlan,
-    HydrologicPlan, MechanicalPlan, ReactionExtentKinetics, ThermalPlan, ThmcState,
+    reaction_extent_rate_field, shrink_strain_from_saturation_loss_tensor, ReactionExtentKinetics,
+    ThmcState,
 };
 
 #[cfg(all(feature = "thmc-coupled", feature = "solver-experimental"))]
