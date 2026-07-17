@@ -93,11 +93,11 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use crate::physics::PhysicsError;
+
 #[cfg(feature = "electrochemistry-mvp")]
 use burn::tensor::{Bool, Data, Shape};
 
-#[cfg(feature = "electrochemistry-mvp")]
-use crate::physics::PhysicsError;
 #[cfg(feature = "electrochemistry-mvp")]
 use crate::physics::dec_primal::primal_divergence_from_edge_flux_topo;
 #[cfg(feature = "electrochemistry-mvp")]

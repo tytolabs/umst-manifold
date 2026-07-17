@@ -292,7 +292,8 @@ pub fn strain_tensor_for_fracture_after_mechanics<B: Backend<FloatElem = f32>>(
         boundary_mask,
         cross_section_area,
         cg,
-    );
+    )
+    .expect("bar-network equilibrium for fracture strain packaging");
     strain_tensor_from_bar_network_displacement(u, coords_n3, edges_b1, n_nodes)
 }
 
@@ -667,7 +668,8 @@ impl PhaseFieldFractureSolver {
                 boundary_mask.clone(),
                 cross_section_area,
                 cg,
-            );
+            )
+            .expect("staggered fracture outer mechanics equilibrium");
             st.u = u_k;
 
             // Per-edge axial strain -> nodal symmetric strain tensor via Voigt scatter.

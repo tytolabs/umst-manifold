@@ -288,6 +288,11 @@ path = "tests/verification/thmc_drying_shrinkage.rs"
 required-features = ["thmc-coupled"]
 
 [[test]]
+name = "fracture_idempotency_equilibrium"
+path = "tests/verification/fracture_idempotency_equilibrium.rs"
+required-features = ["fracture-at2"]
+
+[[test]]
 name = "thmc_idempotency_equilibrium"
 path = "tests/verification/thmc_idempotency_equilibrium.rs"
 required-features = ["thmc-coupled"]

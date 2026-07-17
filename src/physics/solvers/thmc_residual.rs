@@ -66,7 +66,10 @@ use burn::tensor::Shape;
 use burn::tensor::Tensor;
 
 #[cfg(feature = "thmc-coupled")]
-use crate::core::field::{Field, HumidityField, ReactionExtentField, StepEntryDamageMask, TemperatureField};
+use crate::core::field::{
+    Field, HumidityField, ReactionExtentField, StepEntryDamageMask, StiffnessField,
+    TemperatureField,
+};
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::dec_operators::DecEdgeOperators;
 #[cfg(feature = "thmc-coupled")]

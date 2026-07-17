@@ -428,7 +428,8 @@ fn undamped_energy_drift_under_half_percent_over_1000_steps() {
     let mut emax = e0;
     let mut emin = e0;
     for _ in 0..1000 {
-        bar.step(&mut ws, dt, &mut u, &mut v, &mut a);
+        bar.step(&mut ws, dt, &mut u, &mut v, &mut a)
+            .expect("step");
         let en = bar.mechanical_energy(&u, &v);
         emax = emax.max(en);
         emin = emin.min(en);

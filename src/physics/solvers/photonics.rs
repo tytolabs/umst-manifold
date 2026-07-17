@@ -131,6 +131,8 @@
 use burn::tensor::Shape;
 use burn::tensor::{backend::Backend, Data, Int, Tensor};
 
+use crate::physics::PhysicsError;
+
 #[cfg(feature = "photonics")]
 use crate::physics::dec_primal::{
     dec_primal_max_abs_d1_of_scalar_gradient, primal_divergence_from_edge_flux_topo,
@@ -216,20 +218,21 @@ impl PhotonicsHelmholtzSolver {
         edges_b1: Tensor<B, 2, Int>,
         coords_n3: Tensor<B, 2>,
         _cg: &MechanicsInnerLoopConfig,
-    ) -> (Tensor<B, 3>, Tensor<B, 3>) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
         let device = eps_r_real.device();
         let shape = eps_r_real.shape();
         let n = shape.dims[1];
-        let zeros = Tensor::<B, 3>::zeros(shape.clone(), &device);
 
         let chain = match extract_uniform_x_chain::<B>(n, &edges_b1, &coords_n3) {
             Some(c) => c,
             None => {
                 tracing::warn!(
                     target: "umst_manifold::photonics",
-                    "solve_helmholtz: need a single x-monotone chain with uniform spacing; returning zeros"
+                    "solve_helmholtz: need a single x-monotone chain with uniform spacing"
                 );
-                return (zeros.clone(), zeros);
+                return Err(PhysicsError::UnsupportedLayout {
+                    context: "solve_helmholtz: uniform x-monotone chain required",
+                });
             }
         };
 
@@ -261,7 +264,7 @@ impl PhotonicsHelmholtzSolver {
 
         let er = Tensor::<B, 3>::from_data(Data::new(out_re, shape.clone()), &device);
         let ei = Tensor::<B, 3>::from_data(Data::new(out_im, shape), &device);
-        (er, ei)
+        Ok((er, ei))
     }
 }
 
@@ -928,7 +931,7 @@ impl PhotonicsSolver {
         coords_n3: Tensor<B, 2>,
         cg: &MechanicsInnerLoopConfig,
         dec_patch: Option<&PhotonicsDecFacesPatch<'_, B>>,
-    ) -> Tensor<B, 3> {
+    ) -> Result<Tensor<B, 3>, PhysicsError> {
         #[cfg(not(feature = "photonics"))]
         {
             let _ = (
@@ -940,7 +943,7 @@ impl PhotonicsSolver {
                 cg,
                 dec_patch,
             );
-            e_field
+            Ok(e_field)
         }
 
         #[cfg(feature = "photonics")]
@@ -948,11 +951,10 @@ impl PhotonicsSolver {
             let _ = cg;
             let d = e_field.dims();
             if d.len() != 3 || d[2] != 3 {
-                tracing::warn!(
-                    target: "umst_manifold::photonics",
-                    "solve_maxwell_curl_curl: expected e_field [B,N,3]; returning unchanged"
-                );
-                return e_field;
+                return Err(PhysicsError::ShapeMismatch {
+                    context: "solve_maxwell_curl_curl",
+                    detail: "expected e_field [B,N,3]",
+                });
             }
             let n = d[1];
             let pe = relative_permittivity.dims();
@@ -964,29 +966,24 @@ impl PhotonicsSolver {
                     || pe[2] == RELATIVE_PERMITTIVITY_CHANNELS_TENSOR3);
             let imag_ok = pi.len() == 3 && pi == [d[0], n, RELATIVE_PERMITTIVITY_CHANNELS_SCALAR];
             if !perm_ok || !imag_ok || impressed_current.dims() != d || coords_n3.dims() != [n, 3] {
-                tracing::warn!(
-                    target: "umst_manifold::photonics",
-                    "solve_maxwell_curl_curl: shape mismatch (permittivity [B,N,1|9], imag [B,N,1], coords); returning e_field unchanged"
-                );
-                return e_field;
+                return Err(PhysicsError::ShapeMismatch {
+                    context: "solve_maxwell_curl_curl",
+                    detail: "permittivity [B,N,1|9], imag [B,N,1], impressed_current, coords",
+                });
             }
             if d[0] != 1 {
-                tracing::warn!(
-                    target: "umst_manifold::photonics",
-                    "solve_maxwell_curl_curl: only batch size 1 is supported; returning e_field unchanged"
-                );
-                return e_field;
+                return Err(PhysicsError::UnsupportedLayout {
+                    context: "solve_maxwell_curl_curl: batch size 1 only",
+                });
             }
 
             if let Some(chain) = extract_uniform_x_chain::<B>(n, &edges_b1, &coords_n3) {
                 let eps_rr = match nodal_eps_r_real_for_te_chain(&relative_permittivity, d[0], n) {
                     Some(v) => v,
                     None => {
-                        tracing::warn!(
-                            target: "umst_manifold::photonics",
-                            "solve_maxwell_curl_curl: unsupported relative_permittivity layout; returning e_field unchanged"
-                        );
-                        return e_field;
+                        return Err(PhysicsError::UnsupportedLayout {
+                            context: "solve_maxwell_curl_curl: relative_permittivity layout",
+                        });
                     }
                 };
                 let eps_ri = eps_r_imag.clone().into_data().value;
@@ -1019,12 +1016,12 @@ impl PhotonicsSolver {
                 let ey_re = Tensor::<B, 3>::from_data(Data::new(out_re, shape_ey), &device);
                 let ex = e_field.clone().narrow(2, 0, 1);
                 let ez = e_field.clone().narrow(2, 2, 1);
-                return Tensor::cat(vec![ex, ey_re, ez], 2);
+                return Ok(Tensor::cat(vec![ex, ey_re, ez], 2));
             }
 
             if let Some(patch) = dec_patch {
                 if dec_patch_topology_valid_for_solve::<B>(n, &edges_b1, patch) {
-                    if let Some(out) = solve_maxwell_dec_patch_direct::<B>(
+                    return solve_maxwell_dec_patch_direct::<B>(
                         &e_field,
                         &relative_permittivity,
                         &eps_r_imag,
@@ -1034,27 +1031,16 @@ impl PhotonicsSolver {
                         self.frequency_hz,
                         patch,
                         self.dec_patch_config,
-                    ) {
-                        return out;
-                    }
-                    tracing::warn!(
-                        target: "umst_manifold::photonics",
-                        "solve_maxwell_curl_curl: valid `faces_b2` DEC patch topology was supplied but the dense patch solve did not complete; \
-                         inspect prior photonics warnings (node cap, lossy ε_imag, or singular matrix)"
-                    );
-                } else {
-                    tracing::warn!(
-                        target: "umst_manifold::photonics",
-                        "solve_maxwell_curl_curl: `dec_patch` present but `faces_b2` / column ranges failed structural validation"
                     );
                 }
+                return Err(PhysicsError::InvariantViolation {
+                    context: "solve_maxwell_curl_curl: dec_patch faces_b2 / column ranges failed structural validation",
+                });
             }
 
-            tracing::warn!(
-                target: "umst_manifold::photonics",
-                "solve_maxwell_curl_curl: no uniform x-chain and no completed DEC patch solve; returning e_field unchanged"
-            );
-            e_field
+            Err(PhysicsError::UnsupportedLayout {
+                context: "solve_maxwell_curl_curl: no uniform x-chain and no dec_patch solve path",
+            })
         }
     }
 }
@@ -1166,7 +1152,7 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
     face_ranges: &[(usize, usize)],
     b: &[f32],
     dim: usize,
-) -> Option<Vec<f32>> {
+) -> Result<Vec<f32>, PhysicsError> {
     const REL_TOL: f32 = 1e-7_f32;
     let max_iter = PHOTONICS_DEC_PATCH_KRYLOV_MAX_ITERS.min(dim.saturating_mul(8).max(64));
 
@@ -1197,7 +1183,7 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
     let bn = vec_l2_f32(b).max(1e-30_f32);
     let mut rn = vec_l2_f32(&r);
     if rn / bn < REL_TOL {
-        return Some(x);
+        return Ok(x);
     }
     p.copy_from_slice(&r);
     let mut r_dot = vec_dot_f32(&r, &r);
@@ -1221,11 +1207,9 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
         let p_ap = vec_dot_f32(&p, &ap);
         let pn = vec_l2_f32(&p);
         if !p_ap.is_finite() || p_ap <= 1e-28_f32 * pn * pn.max(1.0_f32) {
-            tracing::warn!(
-                target: "umst_manifold::photonics",
-                "solve_maxwell_dec_patch_conjugate_gradient: breakdown (p·Ap={p_ap:.3e})"
-            );
-            return None;
+            return Err(PhysicsError::IndefiniteSystem {
+                context: "solve_maxwell_dec_patch_conjugate_gradient: CG breakdown (p·Ap nonpositive or non-finite)",
+            });
         }
         let alpha = r_dot / p_ap;
         for i in 0..dim {
@@ -1239,11 +1223,13 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
                 "solve_maxwell_dec_patch_conjugate_gradient: converged (rel residual {:.3e})",
                 rn / bn
             );
-            return Some(x);
+            return Ok(x);
         }
         let r_dot_new = vec_dot_f32(&r, &r);
         if !r_dot_new.is_finite() || r_dot_new <= 0.0_f32 {
-            return None;
+            return Err(PhysicsError::KrylovDiverged {
+                context: "solve_maxwell_dec_patch_conjugate_gradient: non-finite or nonpositive residual norm",
+            });
         }
         let beta = r_dot_new / r_dot;
         for i in 0..dim {
@@ -1251,12 +1237,9 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
         }
         r_dot = r_dot_new;
     }
-    tracing::warn!(
-        target: "umst_manifold::photonics",
-        "solve_maxwell_dec_patch_conjugate_gradient: exceeded max_iter={max_iter} (rel residual {:.3e})",
-        rn / bn
-    );
-    None
+    Err(PhysicsError::KrylovDiverged {
+        context: "solve_maxwell_dec_patch_conjugate_gradient: exceeded max_iter without meeting tolerance",
+    })
 }
 
 /// **COO** triplets \((\texttt{row},\texttt{col},\texttt{val})\) for the **gauge-pinned** patch Maxwell
@@ -1406,7 +1389,7 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
     vals: &[f32],
     b: &[f32],
     dim: usize,
-) -> Option<Vec<f32>> {
+) -> Result<Vec<f32>, PhysicsError> {
     const REL_TOL: f32 = 1e-7_f32;
     let max_iter = PHOTONICS_DEC_PATCH_KRYLOV_MAX_ITERS.min(dim.saturating_mul(8).max(64));
 
@@ -1422,7 +1405,7 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
     let bn = vec_l2_f32(b).max(1e-30_f32);
     let mut rn = vec_l2_f32(&r);
     if rn / bn < REL_TOL {
-        return Some(x);
+        return Ok(x);
     }
     p.copy_from_slice(&r);
     let mut r_dot = vec_dot_f32(&r, &r);
@@ -1432,11 +1415,9 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
         let p_ap = vec_dot_f32(&p, &ap);
         let pn = vec_l2_f32(&p);
         if !p_ap.is_finite() || p_ap <= 1e-28_f32 * pn * pn.max(1.0_f32) {
-            tracing::warn!(
-                target: "umst_manifold::photonics",
-                "solve_maxwell_dec_patch_conjugate_gradient_csr: breakdown (p·Ap={p_ap:.3e})"
-            );
-            return None;
+            return Err(PhysicsError::IndefiniteSystem {
+                context: "solve_maxwell_dec_patch_conjugate_gradient_csr: CG breakdown (p·Ap nonpositive or non-finite)",
+            });
         }
         let alpha = r_dot / p_ap;
         for i in 0..dim {
@@ -1450,11 +1431,13 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
                 "solve_maxwell_dec_patch_conjugate_gradient_csr: converged (rel residual {:.3e})",
                 rn / bn
             );
-            return Some(x);
+            return Ok(x);
         }
         let r_dot_new = vec_dot_f32(&r, &r);
         if !r_dot_new.is_finite() || r_dot_new <= 0.0_f32 {
-            return None;
+            return Err(PhysicsError::KrylovDiverged {
+                context: "solve_maxwell_dec_patch_conjugate_gradient_csr: non-finite or nonpositive residual norm",
+            });
         }
         let beta = r_dot_new / r_dot;
         for i in 0..dim {
@@ -1462,12 +1445,9 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
         }
         r_dot = r_dot_new;
     }
-    tracing::warn!(
-        target: "umst_manifold::photonics",
-        "solve_maxwell_dec_patch_conjugate_gradient_csr: exceeded max_iter={max_iter} (rel residual {:.3e})",
-        rn / bn
-    );
-    None
+    Err(PhysicsError::KrylovDiverged {
+        context: "solve_maxwell_dec_patch_conjugate_gradient_csr: exceeded max_iter without meeting tolerance",
+    })
 }
 
 /// Stacked real operator for \(\mathbf{E}=\mathbf{E}'+i\mathbf{E}''\) with nodal scalar \(\varepsilon''\)
@@ -1687,7 +1667,7 @@ fn dec_patch_try_csr_inner_lossless(
         "dec_patch_try_csr_inner_lossless: CSR matvec CG (N={n}, nnz={})",
         va.len()
     );
-    solve_maxwell_dec_patch_conjugate_gradient_csr(&rp, &ci, &va, b, dim)
+    solve_maxwell_dec_patch_conjugate_gradient_csr(&rp, &ci, &va, b, dim).ok()
 }
 
 /// Primal **SI edge lengths** \(\ell_e=\lVert \mathbf{x}_j-\mathbf{x}_i\rVert\) for each oriented edge in `edges_b1`

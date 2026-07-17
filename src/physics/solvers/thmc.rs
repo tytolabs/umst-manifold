@@ -161,6 +161,22 @@ impl ReactionExtentKinetics {
         }
     }
 
+    /// Cartridge-spec mirror for [`StiffnessField::from_alpha_kinetics`] and gate witnesses.
+    #[must_use]
+    pub fn to_spec(&self) -> ReactionExtentKineticsSpec {
+        ReactionExtentKineticsSpec {
+            arrhenius_prefactor_s: self.arrhenius_prefactor_s,
+            activation_energy_j_per_mol: self.activation_energy_j_per_mol,
+            gas_constant_j_per_mol_k: self.gas_constant_j_per_mol_k,
+            t_min_k: self.t_min_k,
+            t_boost_ref_k: self.t_boost_ref_k,
+            t_boost_per_k: self.t_boost_per_k,
+            exothermic_k_per_alpha_rate: self.exothermic_k_per_alpha_rate,
+            stiffness_e_scale_pa: self.stiffness_e_scale_pa,
+            stiffness_nu: self.stiffness_nu,
+        }
+    }
+
     /// Scalar Arrhenius rate \(f(\alpha,T)\) (1/s) matching the tensor path in `reaction_extent_arrhenius_rate`.
     #[must_use]
     pub fn alpha_rate_scalar(&self, alpha: f32, temperature_k: f32) -> f32 {
