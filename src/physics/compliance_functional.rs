@@ -249,7 +249,7 @@ impl ComplianceFunctional for Q1HexComplianceFunctional {
             &Q1HexSolveOptions::default(),
             None,
             None,
-        );
+        )?;
         let value = ComplianceValue::from_forward_state(c_raw, material.p, diagnostics)?;
         Ok((surrogate, value))
     }
