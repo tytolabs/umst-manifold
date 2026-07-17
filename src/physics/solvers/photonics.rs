@@ -323,14 +323,18 @@ fn scalar_eps_channel_for_dec<B: Backend<FloatElem = f32>>(
 ) -> Result<Tensor<B, 3>, PhysicsError> {
     let d = relative_permittivity.dims();
     if d.len() != 3 || d[0] != 1 {
-        return None;
+        return Err(PhysicsError::UnsupportedLayout {
+            context: "scalar_eps_channel_for_dec: expected batch=1 [1,N,C]",
+        });
     }
     match d[2] {
-        RELATIVE_PERMITTIVITY_CHANNELS_SCALAR => Some(relative_permittivity),
+        RELATIVE_PERMITTIVITY_CHANNELS_SCALAR => Ok(relative_permittivity),
         RELATIVE_PERMITTIVITY_CHANNELS_TENSOR3 => {
-            Some(relative_permittivity.narrow(2, EPS_TENSOR_YY, 1))
+            Ok(relative_permittivity.narrow(2, EPS_TENSOR_YY, 1))
         }
-        _ => None,
+        _ => Err(PhysicsError::UnsupportedLayout {
+            context: "scalar_eps_channel_for_dec: unsupported channel count",
+        }),
     }
 }
 
@@ -443,10 +447,15 @@ fn extract_uniform_x_chain<B: Backend<FloatElem = f32>>(
             return None;
         }
     }
-    let h0 = xs[1] - xs[0];
-    for k in 2..n {
+    // f32-safe: infer h from total x-span (translation-invariant; robust for affine x0 + j·h).
+    let h = (xs[n - 1] - xs[0]) / (n - 1) as f32;
+    if h <= 0.0 {
+        return None;
+    }
+    let rtol = 1e-2_f32;
+    for k in 1..n {
         let hk = xs[k] - xs[k - 1];
-        if (hk - h0).abs() > 1e-4 * h0.max(1e-12) {
+        if (hk - h).abs() > rtol * h.abs().max(1e-12) {
             return None;
         }
     }
@@ -454,7 +463,7 @@ fn extract_uniform_x_chain<B: Backend<FloatElem = f32>>(
     Some(UniformChain {
         order,
         len: n,
-        h: h0,
+        h,
     })
 }
 
@@ -1946,7 +1955,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
     frequency_hz: f32,
     patch: &PhotonicsDecFacesPatch<'_, B>,
     dec_patch_config: PhotonicsDecPatchConfig,
-) -> Option<Tensor<B, 3>> {
+) -> Result<Tensor<B, 3>, PhysicsError> {
     let n = e_field.dims()[1];
     if n > PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV {
         return Err(PhysicsError::UnsupportedLayout {
@@ -2248,7 +2257,7 @@ pub fn apply_dec_te_curl_curl_chain_operator<B: Backend<FloatElem = f32>>(
     {
         return None;
     }
-    let eps_s = scalar_eps_channel_for_dec(relative_permittivity)?;
+    let eps_s = scalar_eps_channel_for_dec(relative_permittivity).ok()?;
     let chain = extract_uniform_x_chain::<B>(n, &edges_b1, &coords_n3)?;
     let h = chain.h;
     let inv_h2 = 1.0 / (h * h);

@@ -812,7 +812,9 @@ fn helmholtz_mms_sin_mode_recover() {
         pml_max_sigma: 0.0,
     };
     let cg = MechanicsInnerLoopConfig::default();
-    let (er, ei) = solver.solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg);
+    let (er, ei) = solver
+        .solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg)
+        .expect("solve_helmholtz");
 
     let got_r = er.into_data().value;
     let got_i = ei.into_data().value;
@@ -940,7 +942,9 @@ fn two_half_spaces_fresnel_te_no_pml_matches_analytic() {
         pml_max_sigma: 0.0,
     };
     let cg = MechanicsInnerLoopConfig::default();
-    let (er, ei) = solver.solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg);
+    let (er, ei) = solver
+        .solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg)
+        .expect("solve_helmholtz");
 
     let got_r = er.into_data().value;
     let got_i = ei.into_data().value;
@@ -1055,7 +1059,9 @@ fn curl_curl_y_mode_matches_scalar_helmholtz() {
     };
     let jy = j.narrow(2, 1, 1);
     let jy_im = Tensor::<B, 3>::zeros_like(&jy);
-    let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg);
+    let (ey_h, _) = helm
+        .solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg)
+        .expect("solve_helmholtz");
 
     let ey_cc = e_cc.narrow(2, 1, 1);
     let v_cc = ey_cc.into_data().value;
@@ -1121,7 +1127,9 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_affine_x_metric_preserves_ex_ez() {
     };
     let jy = j.narrow(2, 1, 1);
     let jy_im = Tensor::<B, 3>::zeros_like(&jy);
-    let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg);
+    let (ey_h, _) = helm
+        .solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg)
+        .expect("solve_helmholtz");
 
     let ex_cc = e_cc.clone().narrow(2, 0, 1);
     let ey_cc = e_cc.clone().narrow(2, 1, 1);
@@ -1194,7 +1202,9 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_xy_embedded_chain() {
     };
     let jy = j.narrow(2, 1, 1);
     let jy_im = Tensor::<B, 3>::zeros_like(&jy);
-    let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg);
+    let (ey_h, _) = helm
+        .solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg)
+        .expect("solve_helmholtz");
 
     let ey_cc = e_cc.narrow(2, 1, 1);
     let v_cc = ey_cc.into_data().value;
@@ -1263,7 +1273,9 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_piecewise_eps() {
     };
     let jy = j.narrow(2, 1, 1);
     let jy_im = Tensor::<B, 3>::zeros_like(&jy);
-    let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg);
+    let (ey_h, _) = helm
+        .solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg)
+        .expect("solve_helmholtz");
 
     let ey_cc = e_cc.narrow(2, 1, 1);
     let v_cc = ey_cc.into_data().value;
@@ -1345,7 +1357,9 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_piecewise_eps_tensor_yy() {
     };
     let jy = j.narrow(2, 1, 1);
     let jy_im = Tensor::<B, 3>::zeros_like(&jy);
-    let (ey_h, _) = helm.solve_helmholtz(eps_r_scalar, eps_i, jy, jy_im, edges, coords, &cg);
+    let (ey_h, _) = helm
+        .solve_helmholtz(eps_r_scalar, eps_i, jy, jy_im, edges, coords, &cg)
+        .expect("solve_helmholtz");
 
     let ey_cc = e_cc.narrow(2, 1, 1);
     let v_cc = ey_cc.into_data().value;
@@ -2569,7 +2583,9 @@ fn fresnel_interface_standing_wave_proxy() {
         pml_max_sigma: 3.5 * omega,
     };
     let cg = MechanicsInnerLoopConfig::default();
-    let (er, ei) = solver.solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg);
+    let (er, ei) = solver
+        .solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg)
+        .expect("solve_helmholtz");
 
     let gr = er.into_data().value;
     let gi = ei.into_data().value;
@@ -2703,7 +2719,9 @@ fn quarter_wave_stack_high_reflectivity() {
         pml_max_sigma: 2.5 * omega,
     };
     let cg = MechanicsInnerLoopConfig::default();
-    let (er, ei) = solver.solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg);
+    let (er, ei) = solver
+        .solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg)
+        .expect("solve_helmholtz");
 
     let gr = er.into_data().value;
     let gi = ei.into_data().value;
