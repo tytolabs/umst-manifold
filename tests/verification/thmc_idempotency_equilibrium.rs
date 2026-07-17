@@ -233,10 +233,10 @@ fn thmc_thermal_implicit_cg_idempotent_at_dirichlet_equilibrium() {
 
     let (t1, norms1) = solver
         .step_thermal_implicit::<B>(1e-4_f32, t_uniform.clone(), 0.1_f32, edges.clone(), mask.clone(), cfg)
-        .expect("first implicit thermal CG");
+        .expect("step_thermal_implicit on uniform Dirichlet T equilibrium (first CG idempotency pass)");
     let (t2, norms2) = solver
         .step_thermal_implicit::<B>(1e-4_f32, t1.clone(), 0.1_f32, edges, mask, cfg)
-        .expect("second implicit thermal CG");
+        .expect("step_thermal_implicit re-application on equilibrated T (second CG idempotency pass)");
 
     let tol = 1e-6_f32;
     assert!(
