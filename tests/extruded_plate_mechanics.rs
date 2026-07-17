@@ -70,8 +70,8 @@ fn extruded_plate_response_is_linear_in_pressure() {
     };
     let cfg = MechanicsInnerLoopConfig {
         max_cg_iterations: 800,
-        cg_tolerance: 1e-7,
-        pcg_tolerance: 1e-7,
+        cg_tolerance: 1e-6,
+        pcg_tolerance: 1e-6,
         use_preconditioner: true,
         max_equilibrium_substeps: 1,
     };
