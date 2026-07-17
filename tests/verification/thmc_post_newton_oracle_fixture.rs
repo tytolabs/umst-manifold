@@ -100,7 +100,7 @@ fn oracle_stacked_residual_l2(
             body_force,
             cross_section_area,
         )
-        .expect("oracle residual_l2")
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::residual_l2_including_quasi_static_r_u on post-Newton oracle two-node chain (FP §6 Track G Wave S1 prep)")
 }
 
 /// Skeleton: one damped Newton step → post-step ‖R‖₂ matches independent oracle recompute.
@@ -109,7 +109,11 @@ fn post_newton_stacked_residual_oracle_matches_independent_recompute_two_nodes()
     let d = dev();
     let n = 2usize;
     let manifold = two_node_chain_manifold(n);
-    let coords = manifold.node_positions.as_ref().expect("SI coords").clone();
+    let coords = manifold
+        .node_positions
+        .as_ref()
+        .expect("two_node_chain_manifold node_positions SI coords for post-Newton oracle fixture (FP §6 Track G Wave S1 prep)")
+        .clone();
     let edges_b1 = manifold.edges_b1.clone();
     let batch = 1usize;
     let kinetics = reference_reaction_extent_kinetics();
@@ -165,7 +169,7 @@ fn post_newton_stacked_residual_oracle_matches_independent_recompute_two_nodes()
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
-        damage_m: StepEntryDamageMask::from_step_entry_damage(Tensor::<B, 3>::zeros([1, n, 1], &d)),
+        damage_m: StepEntryDamageMask::from_tensor(Tensor::<B, 3>::zeros([1, n, 1], &d)),
         kinetics,
     };
 
@@ -180,7 +184,7 @@ fn post_newton_stacked_residual_oracle_matches_independent_recompute_two_nodes()
             1.0_f32,
             1.0e-5_f32,
         )
-        .expect("one damped Newton step");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::one_damped_newton_step_with_quasi_static_r_u on two-node chain (FP §6 Track G Wave S1 prep)");
 
     let snapshot = PostNewtonOracleSnapshot {
         stacked_residual_l2: norm_after,
