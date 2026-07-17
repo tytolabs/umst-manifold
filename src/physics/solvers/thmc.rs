@@ -103,11 +103,6 @@ use crate::physics::laplacian::TopologicalLaplacian;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::mechanics::VectorMechanicsSolver;
 #[cfg(feature = "thmc-coupled")]
-use crate::physics::solvers::fracture_field::{
-    strain_tensor_for_fracture_from_manifold, strain_tensor_from_bar_network_displacement,
-    PhaseFieldFractureSolver,
-};
-#[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc_residual::{
     ThmcImplicitEulerThermalHumidityReactionExtentResidual,
     ThmcImplicitEulerThermalReactionExtentResidual, ThmcMonolithicImplicitUnknownLayout,
@@ -1051,57 +1046,21 @@ impl ThmcSolver {
 
         let _ = _last_total_residual_tensor;
 
-        // Phase-field fracture: post-mechanics ε(u) when SI node_positions drive the bar solve; else
-        // matrix_features slice or zeros (see module docs).
-        let strain_tensor = if let Some(coords_n3) = manifold.node_positions.as_ref() {
-            if coords_n3.dims() == [n, 3] {
-                strain_tensor_from_bar_network_displacement::<B>(
-                    state.mechanical.displacement.as_tensor().clone(),
-                    coords_n3.clone(),
-                    edges_b1.clone(),
-                    n,
-                )
-            } else {
-                strain_tensor_for_fracture_from_manifold::<B>(manifold, batch, n, &device)
-            }
-        } else {
-            strain_tensor_for_fracture_from_manifold::<B>(manifold, batch, n, &device)
+        let epilogue_ctx = super::thmc_epilogue::ThmcPostStepCtx {
+            batch,
+            n,
+            edges_b1,
+            dt: self.dt,
         };
-        let strain = crate::core::field::SmallStrainField::from_tensor(strain_tensor);
-        let gc = crate::core::field::FractureEnergyField::from_tensor(Tensor::<B, 3>::ones([batch, n, 1], &device));
-        let fracture = PhaseFieldFractureSolver { length_scale: 1.0 };
-
-        let d_last = state.damage.as_tensor().dims()[2];
-        let damage_core = match d_last {
-            1 => state.damage.clone(),
-            _ => state
-                .damage
-                .clone()
-                .map(|t| t.slice([0..batch, 0..n, 0..1])),
-        };
-        let damage_new = fracture.update_damage(strain, damage_core, gc, edges_b1.clone());
-
-        state.damage = if d_last == 1 {
-            damage_new
-        } else {
-            let tail = state
-                .damage
-                .as_tensor()
-                .clone()
-                .slice([0..batch, 0..n, 1..d_last]);
-            damage_new.map(|core| Tensor::cat(vec![core, tail], 2))
-        };
-
-        // FP P3.5: mirror post-step THMC plan fields into UMST scalar columns (closes W4/W5).
-        crate::physics::thmc_umst_sync::sync_thmc_to_umst(&state, manifold)?;
-
-        // Post-step gate evidence via configured transition gate cartridge.
-        let gate_evidence = super::thmc_step::ThmcSolverStep::attach_gate_evidence(
-            self, _cartridge, &pre_step, &state, manifold, self.dt,
+        let (state, gate_evidence) = super::thmc_epilogue::thmc_post_step_epilogue(
+            self,
+            _cartridge,
+            &pre_step,
+            state,
+            manifold,
+            &epilogue_ctx,
         )?;
         self.step_gate_evidence.push(gate_evidence);
-
-        state.time += self.dt;
         Ok(state)
     }
 }
