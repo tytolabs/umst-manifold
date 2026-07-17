@@ -110,7 +110,8 @@ fn update_damage_smoke_tiny_chain() {
         damage.clone(),
         fracture_energy_gc.clone(),
         edges_b1.clone(),
-    ).expect("update_damage_tensors");
+    )
+    .expect("PhaseFieldFractureSolver::update_damage_tensors on tiny-chain uniform ε_xx smoke (FP §6 Track AT2 inner relaxation witness)");
 
     assert_eq!(d_new.dims(), damage.dims());
 
@@ -136,7 +137,8 @@ fn update_damage_smoke_tiny_chain() {
             fracture_energy_gc.clone(),
             edges_b1.clone(),
             1,
-        ).expect("update_damage_staggered");
+        )
+        .expect("PhaseFieldFractureSolver::update_damage_staggered outer_iterations=1 on tiny-chain (FP §6 AT2 stagger matches single relaxation)");
         let v_new = d_new.clone().into_data().value;
         let v_stagg = d_stagg.into_tensor().into_data().value;
         assert_eq!(
@@ -184,7 +186,8 @@ fn at2_length_scale_sweep_non_regression() {
             damage,
             fracture_energy_gc.clone(),
             edges_b1.clone(),
-        ).expect("update_damage_tensors");
+        )
+        .expect("PhaseFieldFractureSolver::update_damage_tensors at length_scale=l sweep (FP §6 AT2 length-scale non-regression witness)");
         for &x in d_new.clone().into_data().value.iter() {
             assert!(x.is_finite(), "l={l}: non-finite damage");
             assert!((0.0..=1.0).contains(&x), "l={l}: damage out of range");
@@ -225,7 +228,9 @@ fn at2_surface_energy_scale_matches_gc_order_of_magnitude() {
     let solver = PhaseFieldFractureSolver {
         length_scale: 0.08_f32,
     };
-    let d_new = solver.update_damage_tensors(strain, damage, fracture_energy_gc, edges_b1).expect("update_damage_tensors");
+    let d_new = solver
+        .update_damage_tensors(strain, damage, fracture_energy_gc, edges_b1)
+        .expect("PhaseFieldFractureSolver::update_damage_tensors on tensile ε_xx for Gc/l·d̄ order-of-magnitude smoke");
     let vals = d_new.into_data().value;
     let mean_d: f32 = vals.iter().sum::<f32>() / vals.len() as f32;
     assert!(
@@ -287,8 +292,11 @@ fn at2_gc_linear_scaling_smoke() {
         damage0.clone(),
         gc_field_lo,
         edges_b1.clone(),
-    ).expect("update_damage_tensors");
-    let d_hi = solver.update_damage_tensors(strain, damage0, gc_field_hi, edges_b1.clone()).expect("update_damage_tensors");
+    )
+    .expect("PhaseFieldFractureSolver::update_damage_tensors at Gc=100 on tiny chain (FP §6 AT2 gc_linear_scaling low-Gc witness)");
+    let d_hi = solver
+        .update_damage_tensors(strain, damage0, gc_field_hi, edges_b1.clone())
+        .expect("PhaseFieldFractureSolver::update_damage_tensors at Gc=200 on tiny chain (FP §6 AT2 gc_linear_scaling high-Gc witness)");
 
     let vals_lo = d_lo.into_data().value;
     let vals_hi = d_hi.into_data().value;
