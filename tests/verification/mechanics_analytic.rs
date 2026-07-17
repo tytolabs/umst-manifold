@@ -350,7 +350,8 @@ fn cantilever_axial_chain_tip_displacement_n64() {
         boundary_mask,
         a_sec,
         &cfg,
-    );
+    )
+    .expect("solve_equilibrium");
 
     let u_tip = u.into_data().value[(n - 1) * 3];
     let u_analytic = f_tip * (n - 1) as f32 * dx / (e * a_sec * (1.0 + DAMAGE_REG));
@@ -433,7 +434,8 @@ fn packed_bar_network_equilibrium_uniform_axial_strain_tip_load_distinct_from_ac
         boundary_mask,
         a_sec,
         &cfg,
-    );
+    )
+    .expect("solve_equilibrium");
 
     let ud = u.into_data().value;
     let mut ux_edge = vec![0.0_f32; n - 1];

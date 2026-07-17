@@ -144,7 +144,8 @@ fn adjoint_q1_hex_gradient_matches_finite_difference_plate_8x8x2() {
         mat,
         &cg,
         None,
-    );
+    )
+    .expect("forward_and_loss");
 
     let grads = surrogate.backward();
     let g_rho = rho_ad.grad(&grads).expect("grad ρ");

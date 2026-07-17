@@ -269,9 +269,10 @@ fn reconcile_c10_thermodynamic_cbf_open_system_delta() {
     let err = cbf
         .verify_and_deduct_update(0.0, 1e15)
         .expect_err("Landauer debit exceeds finite credit");
+    let detail = err.to_string();
     assert!(
-        err.contains("Insufficient") || err.contains("Credit") || err.contains("Clausius"),
-        "C10 DELTA: open-system debit beyond passive C01 — {err}"
+        detail.contains("Insufficient") || detail.contains("Credit") || detail.contains("Clausius"),
+        "C10 DELTA: open-system debit beyond passive C01 — {detail}"
     );
 }
 
