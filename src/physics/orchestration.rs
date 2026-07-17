@@ -363,6 +363,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "thmc-coupled")]
     fn orchestrator_wraps_solver_config() {
         let o = TopologyPhysicsOrchestrator::new(ThmcSolver {
             dt: 0.01,
