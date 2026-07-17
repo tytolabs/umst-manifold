@@ -90,7 +90,7 @@ use burn::tensor::{backend::Backend, Tensor};
 
 use crate::core::field::{
     DamageField, DisplacementField, Field, HumidityField, ReactionExtentField,
-    StepEntryDamageMask, TemperatureField,
+    StepEntryDamageMask, StiffnessField, TemperatureField,
 };
 use crate::core::material_transition::ReactionExtentKineticsSpec;
 use crate::core::tensors::UnifiedMaterialStateTensor;
@@ -781,11 +781,11 @@ impl ThmcSolver {
                     alpha_bn1_pred.mul_scalar(self.reaction_extent_kinetics.stiffness_e_scale_pa);
                 let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &device)
                     .add_scalar(self.reaction_extent_kinetics.stiffness_nu);
-                let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
+                let stiffness = StiffnessField::from_e_nu_cat(stiffness_e, stiffness_nu);
                 let (u_predict, _) = VectorMechanicsSolver::solve_equilibrium_typed(
                     state.mechanical.displacement.clone(),
                     coords_n3.clone(),
-                    stiffness,
+                    stiffness.as_tensor().clone(),
                     bf.clone(),
                     edges_b1.clone(),
                     damage_m.as_damage_field().clone(),

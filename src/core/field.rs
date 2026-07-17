@@ -82,7 +82,7 @@ pub struct FractureEnergy;
 /// formal_status: Structural
 /// formal_anchor_rationale: Zero-sized space witness; bar-network mechanics SSOT is `[B, N, 2]` with columns `[E, ν]` (distinct from [`Damage`] / [`ReactionExtent`] despite shared rank-3).
 #[derive(Clone, Copy, Debug)]
-pub struct StiffnessModulus;
+pub struct Stiffness;
 
 /// Phantom-typed tensor carrier: physical meaning encoded at compile time via `Space`.
 ///
@@ -191,8 +191,8 @@ pub type FractureEnergyField<B> = Field<B, FractureEnergy, 3>;
 ///
 /// formal_anchor: NONE
 /// formal_status: Structural
-/// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`StiffnessModulus`] witness.
-pub type StiffnessField<B> = Field<B, StiffnessModulus, 3>;
+/// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`Stiffness`] witness.
+pub type StiffnessField<B> = Field<B, Stiffness, 3>;
 
 /// Frozen damage mask at THMC step entry — distinct from live `state.damage` after fracture.
 #[derive(Clone, Debug)]
@@ -258,6 +258,12 @@ impl<B: Backend> FractureEnergyField<B> {
 }
 
 impl<B: Backend> StiffnessField<B> {
+    /// Zero-filled stiffness field.
+    #[must_use]
+    pub fn zeros(dims: [usize; 3], device: &B::Device) -> Self {
+        Field::new(Tensor::<B, 3>::zeros(dims, device))
+    }
+
     /// Wrap an existing `[B, N, 2]` stiffness tensor.
     #[inline]
     #[must_use]
