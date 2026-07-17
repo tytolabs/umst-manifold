@@ -372,7 +372,9 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
 
         let mut secured_state = raw_state;
         crate::core::apply_physics::apply_physics_to_umst(&physical_result, &mut secured_state)
-            .map_err(|detail| FormalReject::DecTypestateStaging { detail })?;
+            .map_err(|e| FormalReject::DecTypestateStaging {
+                detail: e.to_string(),
+            })?;
 
         // Keep metrics in Sparse Space [Batch, N_active_voxels]
         let free_energy = physical_result.free_energy.clone();

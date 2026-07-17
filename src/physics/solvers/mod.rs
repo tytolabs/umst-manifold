@@ -33,6 +33,8 @@ pub mod rheology_flow;
 pub mod statistical_mechanics;
 pub mod thmc;
 #[cfg(feature = "thmc-coupled")]
+pub mod thmc_envelope;
+#[cfg(feature = "thmc-coupled")]
 pub mod thmc_epilogue;
 #[cfg(feature = "thmc-coupled")]
 pub mod thmc_split_passes;

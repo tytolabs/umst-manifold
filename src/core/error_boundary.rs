@@ -8,6 +8,71 @@
 
 use core::fmt;
 
+use crate::core::dec_typestate::DecTypestateError;
+
+/// Failures from [`crate::core::apply_physics::apply_physics_to_umst`] UMST writeback.
+#[derive(Clone, Debug, PartialEq)]
+pub enum ApplyPhysicsError {
+    DecTypestate {
+        context: &'static str,
+        source: DecTypestateError,
+    },
+    ScalarFeaturesTooSmallForDamage {
+        width: usize,
+        required_index: usize,
+    },
+    DamageWidthMismatch {
+        damage_width: usize,
+        umst_nodes: usize,
+    },
+    ScalarFeaturesTooSmallForTemperature {
+        width: usize,
+        required_index: usize,
+    },
+    TemperatureWidthMismatch {
+        delta_width: usize,
+        umst_nodes: usize,
+    },
+}
+
+impl fmt::Display for ApplyPhysicsError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ApplyPhysicsError::DecTypestate { context, source } => {
+                write!(f, "apply_physics_to_umst: {context}: {source:?}")
+            }
+            ApplyPhysicsError::ScalarFeaturesTooSmallForDamage {
+                width,
+                required_index,
+            } => write!(
+                f,
+                "apply_physics_to_umst: scalar_features width {width} too small for SCALAR_DAMAGE={required_index}"
+            ),
+            ApplyPhysicsError::ScalarFeaturesTooSmallForTemperature {
+                width,
+                required_index,
+            } => write!(
+                f,
+                "apply_physics_to_umst: scalar_features width {width} too small for SCALAR_TEMPERATURE={required_index}"
+            ),
+            ApplyPhysicsError::DamageWidthMismatch {
+                damage_width,
+                umst_nodes,
+            } => write!(
+                f,
+                "apply_physics_to_umst: damage width {damage_width} != UMST nodes {umst_nodes}"
+            ),
+            ApplyPhysicsError::TemperatureWidthMismatch {
+                delta_width,
+                umst_nodes,
+            } => write!(
+                f,
+                "apply_physics_to_umst: temperature_delta width {delta_width} != UMST nodes {umst_nodes}"
+            ),
+        }
+    }
+}
+
 /// Failures from [`crate::ai::cbf::ThermodynamicCBF`] admissibility checks.
 #[derive(Clone, Debug, PartialEq)]
 pub enum CbfReject {

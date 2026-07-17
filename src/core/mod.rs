@@ -14,7 +14,7 @@ pub mod traits;
 pub mod umst_schema;
 
 pub use apply_physics::apply_physics_to_umst;
-pub use error_boundary::CbfReject;
+pub use error_boundary::{ApplyPhysicsError, CbfReject};
 pub use dec_typestate::{
     B1Incidence, DecTypestateError, ScalarChannel, ScalarChannelIdx, ScalarChannelSelector,
 };
@@ -26,6 +26,7 @@ pub use field::{
 };
 pub use material_phase::{
     MaterialPhase, MaterialPhaseKind, MechanicsState, RheologyState, SettingState, ThmcEnvelope,
+    TransportState,
 };
 pub use material_transition::{
     MaterialTransitionParams, ReactionExtentKineticsSpec, SubstrateMaterialParams,

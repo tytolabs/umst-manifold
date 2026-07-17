@@ -13,6 +13,10 @@
 
 use burn::tensor::{backend::Backend, Tensor};
 
+use super::field::{
+    DamageField, DisplacementField, Field, HumidityField, ReactionExtentField, TemperatureField,
+};
+
 /// Discrete macroscopic phase tag for `match`-dispatched routing (no bool soup).
 ///
 /// formal_anchor: NONE
@@ -105,17 +109,30 @@ impl<B: Backend> MaterialPhase<B> {
     }
 }
 
-/// THMC envelope: macroscopic phase + simulation clock.
-///
-/// Target replacement for flat [`crate::physics::solvers::thmc::ThmcState`] in MP2.
-/// MP1 introduces the type only; legacy flat accessors remain until parity window closes.
+/// Shared transport channels present in Fluid and Setting arms (MP2).
 ///
 /// formal_anchor: NONE
 /// formal_status: Structural
-/// formal_anchor_rationale: Product of [`MaterialPhase`] and scalar clock; no solver coupling yet.
+/// formal_anchor_rationale: Humidity + temperature bundle decoupled from mechanics variant.
+#[derive(Clone, Debug)]
+pub struct TransportState<B: Backend> {
+    pub humidity: HumidityField<B>,
+    pub temperature: TemperatureField<B>,
+}
+
+/// THMC envelope: macroscopic phase + fracture damage + simulation clock.
+///
+/// Target replacement for flat [`crate::physics::solvers::thmc::ThmcState`] in MP2.
+/// MP2a adds bijection helpers in [`crate::physics::solvers::thmc_envelope`].
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Product of [`MaterialPhase`], envelope-level damage, and clock.
 #[derive(Clone, Debug)]
 pub struct ThmcEnvelope<B: Backend> {
     pub phase: MaterialPhase<B>,
+    /// Fracture coupling — lives outside variant (frozen at step entry, P3.2).
+    pub damage: DamageField<B>,
     pub time: f32,
 }
 
@@ -127,8 +144,21 @@ impl<B: Backend> ThmcEnvelope<B> {
     /// formal_anchor_rationale: Pure constructor; does not validate tensor layouts.
     #[inline]
     #[must_use]
-    pub fn new(phase: MaterialPhase<B>, time: f32) -> Self {
-        Self { phase, time }
+    pub fn new(phase: MaterialPhase<B>, damage: DamageField<B>, time: f32) -> Self {
+        Self { phase, damage, time }
+    }
+
+    /// Construct an envelope from a phase variant, zero damage, and clock (test / scaffold helper).
+    #[inline]
+    #[must_use]
+    pub fn with_zero_damage(phase: MaterialPhase<B>, time: f32, device: &B::Device) -> Self {
+        let n = match &phase {
+            MaterialPhase::Fluid(r) => r.yield_stress.dims()[1],
+            MaterialPhase::Setting(s) => s.reaction_extent.dims()[1],
+            MaterialPhase::Solid(m) => m.displacement.dims()[1],
+        };
+        let damage = Field::new(Tensor::<B, 3>::zeros([1, n, 1], device));
+        Self::new(phase, damage, time)
     }
 
     /// Project the discrete phase tag.
@@ -184,10 +214,12 @@ mod tests {
     }
 
     #[test]
-    fn thmc_envelope_carries_phase_and_time() {
-        let env = ThmcEnvelope::new(setting_phase(), 42.0);
+    fn thmc_envelope_carries_phase_damage_and_time() {
+        let device = Default::default();
+        let env = ThmcEnvelope::with_zero_damage(setting_phase(), 42.0, &device);
         assert_eq!(env.kind(), MaterialPhaseKind::Setting);
         assert!((env.time - 42.0).abs() < f32::EPSILON);
+        assert_eq!(env.damage.dims(), [1, 2, 1]);
     }
 
     #[test]
