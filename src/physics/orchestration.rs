@@ -53,14 +53,11 @@
 //!
 //! Epic cross-ref: `fp-categorical-v04`.
 
-use std::ops::ControlFlow;
-
 use burn::tensor::backend::Backend;
 
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use crate::physics::error::PhysicsError;
 use crate::core::traits::IScienceCartridge;
-use crate::physics::solvers::fixed_point::repeat_controlled;
 use crate::physics::solvers::{ThmcSolver, ThmcState};
 
 /// Back-compat alias used in v0.4 planning notes (`PhysicsOrchestrator` ↔ topology plan driver).
@@ -179,9 +176,9 @@ impl TopologyPhysicsOrchestrator {
         self.run_plan_step(cartridge, state, manifold)
     }
 
-    /// Apply [`Self::run_plan_step`] **`steps`** times in order, using [`repeat_controlled`] as the
-    /// outer fixed-point driver (same semantics as an open `for` over `0..steps` with early `break`
-    /// on the first solver `Err`).
+    /// Apply [`Self::run_plan_step`] **`steps`** times in order: **Kleisli iteration**
+    /// `(0..steps).try_fold(state, |s, _| self.run_plan_step(...))` — short-circuits on the
+    /// first solver `Err` (same semantics as composing the `run_plan_step` morphism `steps` times).
     ///
     /// **Side effects / IO:** identical to calling [`Self::run_plan_step`] in a loop — this
     /// orchestrator performs no file or network I/O; any tracing inside [`ThmcSolver::step`] is
@@ -203,29 +200,7 @@ impl TopologyPhysicsOrchestrator {
         if steps == 0 {
             return Ok(state);
         }
-        let mut state_cell: Option<ThmcState<B>> = Some(state);
-        let mut last_err: Option<PhysicsError> = None;
-        repeat_controlled(steps, || {
-            let Some(s) = state_cell.take() else {
-                return ControlFlow::Break(());
-            };
-            match self.run_plan_step(cartridge, s, manifold) {
-                Ok(next) => {
-                    state_cell = Some(next);
-                    ControlFlow::Continue(())
-                }
-                Err(e) => {
-                    last_err = Some(e);
-                    ControlFlow::Break(())
-                }
-            }
-        });
-        match last_err {
-            Some(e) => Err(e),
-            None => state_cell.ok_or(PhysicsError::InvariantViolation {
-                context: "TopologyPhysicsOrchestrator::run_plan_step_repeated: internal state lost",
-            }),
-        }
+        (0..steps).try_fold(state, |s, _| self.run_plan_step(cartridge, s, manifold))
     }
 
     /// Borrow the inner solver for tuning `dt` / Newton counts between steps (experimental workflows).
