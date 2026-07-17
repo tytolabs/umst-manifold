@@ -92,7 +92,7 @@ use crate::core::field::{
     DamageField, DisplacementField, Field, HumidityField, ReactionExtentField, TemperatureField,
 };
 #[cfg(feature = "thmc-coupled")]
-use crate::core::field::{StepEntryDamageMask, StiffnessField};
+use crate::core::field::StepEntryDamageMask;
 use crate::core::material_transition::ReactionExtentKineticsSpec;
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use crate::core::traits::IScienceCartridge;
