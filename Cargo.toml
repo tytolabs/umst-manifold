@@ -164,6 +164,11 @@ path = "tests/verification/fracture_idempotency_equilibrium.rs"
 required-features = ["fracture-at2"]
 
 [[test]]
+name = "fp_idempotency_rheology_topology_q1"
+path = "tests/verification/fp_idempotency_rheology_topology_q1.rs"
+required-features = ["topology-density-evolution", "rheology-bingham"]
+
+[[test]]
 name = "staggered_ud_loop_milestone"
 path = "tests/verification/staggered_ud_loop_milestone.rs"
 required-features = ["fracture-at2"]
