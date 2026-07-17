@@ -76,6 +76,14 @@ pub struct SmallStrain;
 #[derive(Clone, Copy, Debug)]
 pub struct FractureEnergy;
 
+/// Phantom space marker: nodal stiffness / modulus pair \([E_\mathrm{young}, \nu]\) — shape `[B, N, 2]`.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Zero-sized space witness; bar-network mechanics SSOT is `[B, N, 2]` with columns `[E, ν]` (distinct from [`Damage`] / [`ReactionExtent`] despite shared rank-3).
+#[derive(Clone, Copy, Debug)]
+pub struct StiffnessModulus;
+
 /// Phantom-typed tensor carrier: physical meaning encoded at compile time via `Space`.
 ///
 /// Uses `PhantomData<fn() -> Space>` so the space witness is invariant (not covariant),
@@ -179,6 +187,12 @@ pub type SmallStrainField<B> = Field<B, SmallStrain, 4>;
 /// formal_status: Structural
 /// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`FractureEnergy`] witness.
 pub type FractureEnergyField<B> = Field<B, FractureEnergy, 3>;
+/// Stiffness / modulus plan field — `[B, N, 2]` with columns `[E_\mathrm{young}, \nu]`.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`StiffnessModulus`] witness.
+pub type StiffnessField<B> = Field<B, StiffnessModulus, 3>;
 
 /// Frozen damage mask at THMC step entry — distinct from live `state.damage` after fracture.
 #[derive(Clone, Debug)]
@@ -240,6 +254,24 @@ impl<B: Backend> FractureEnergyField<B> {
     #[must_use]
     pub fn from_tensor(tensor: Tensor<B, 3>) -> Self {
         Field::new(tensor)
+    }
+}
+
+impl<B: Backend> StiffnessField<B> {
+    /// Wrap an existing `[B, N, 2]` stiffness tensor.
+    #[inline]
+    #[must_use]
+    pub fn from_tensor(tensor: Tensor<B, 3>) -> Self {
+        Field::new(tensor)
+    }
+
+    /// Canonical bar-network assembly: `cat([e_young, nu], dim=2)` → `[B, N, 2]`.
+    ///
+    /// `e_young` and `nu` are typically `[B, N, 1]` nodal channels.
+    #[inline]
+    #[must_use]
+    pub fn from_e_nu_cat(e_young: Tensor<B, 3>, nu: Tensor<B, 3>) -> Self {
+        Field::new(Tensor::cat(vec![e_young, nu], 2))
     }
 }
 
@@ -317,5 +349,21 @@ mod tests {
         let damage_raw = Tensor::<B, 3>::zeros([1, 2, 1], &device);
         accept_gc(FractureEnergyField::from_tensor(gc_raw));
         accept_damage(Field::new(damage_raw));
+    }
+
+    #[test]
+    fn stiffness_field_distinct_from_damage_and_reaction_extent() {
+        fn accept_stiffness(_: StiffnessField<B>) {}
+        fn accept_damage(_: DamageField<B>) {}
+        fn accept_alpha(_: ReactionExtentField<B>) {}
+
+        let device = Default::default();
+        let stiff = StiffnessField::from_e_nu_cat(
+            Tensor::<B, 3>::zeros([1, 2, 1], &device),
+            Tensor::<B, 3>::zeros([1, 2, 1], &device),
+        );
+        accept_stiffness(stiff);
+        accept_damage(Field::new(Tensor::<B, 3>::zeros([1, 2, 1], &device)));
+        accept_alpha(Field::new(Tensor::<B, 3>::zeros([1, 2, 1], &device)));
     }
 }

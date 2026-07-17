@@ -19,7 +19,8 @@ pub use dec_typestate::{
 pub use field::{
     Damage, DamageField, Displacement, DisplacementField, Field, FractureEnergy,
     FractureEnergyField, Humidity, HumidityField, ReactionExtent, ReactionExtentField,
-    SmallStrain, SmallStrainField, StepEntryDamageMask, Temperature, TemperatureField,
+    SmallStrain, SmallStrainField, StepEntryDamageMask, StiffnessField, StiffnessModulus,
+    Temperature, TemperatureField,
 };
 pub use material_phase::{
     MaterialPhase, MaterialPhaseKind, MechanicsState, RheologyState, SettingState, ThmcEnvelope,
