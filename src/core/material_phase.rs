@@ -13,6 +13,10 @@
 
 use burn::tensor::{backend::Backend, Tensor};
 
+use super::field::{
+    DamageField, Field, HumidityField, TemperatureField,
+};
+
 /// Discrete macroscopic phase tag for `match`-dispatched routing (no bool soup).
 ///
 /// formal_anchor: NONE
@@ -103,32 +107,110 @@ impl<B: Backend> MaterialPhase<B> {
             Self::Solid(_) => MaterialPhaseKind::Solid,
         }
     }
+
+    /// Borrow the fluid rheology payload when this phase is [`MaterialPhaseKind::Fluid`].
+    #[inline]
+    #[must_use]
+    pub fn as_fluid(&self) -> Option<&RheologyState<B>> {
+        match self {
+            Self::Fluid(r) => Some(r),
+            _ => None,
+        }
+    }
+
+    /// Borrow the setting-gel payload when this phase is [`MaterialPhaseKind::Setting`].
+    #[inline]
+    #[must_use]
+    pub fn as_setting(&self) -> Option<&SettingState<B>> {
+        match self {
+            Self::Setting(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Borrow the hardened-solid payload when this phase is [`MaterialPhaseKind::Solid`].
+    #[inline]
+    #[must_use]
+    pub fn as_solid(&self) -> Option<&MechanicsState<B>> {
+        match self {
+            Self::Solid(m) => Some(m),
+            _ => None,
+        }
+    }
+
+    /// Mutably borrow the fluid rheology payload when this phase is [`MaterialPhaseKind::Fluid`].
+    #[inline]
+    #[must_use]
+    pub fn as_fluid_mut(&mut self) -> Option<&mut RheologyState<B>> {
+        match self {
+            Self::Fluid(r) => Some(r),
+            _ => None,
+        }
+    }
+
+    /// Mutably borrow the setting-gel payload when this phase is [`MaterialPhaseKind::Setting`].
+    #[inline]
+    #[must_use]
+    pub fn as_setting_mut(&mut self) -> Option<&mut SettingState<B>> {
+        match self {
+            Self::Setting(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Mutably borrow the hardened-solid payload when this phase is [`MaterialPhaseKind::Solid`].
+    #[inline]
+    #[must_use]
+    pub fn as_solid_mut(&mut self) -> Option<&mut MechanicsState<B>> {
+        match self {
+            Self::Solid(m) => Some(m),
+            _ => None,
+        }
+    }
 }
 
-/// THMC envelope: macroscopic phase + simulation clock.
+/// Shared transport channels present in Fluid and Setting arms (MP2).
+#[derive(Clone, Debug)]
+pub struct TransportState<B: Backend> {
+    pub humidity: HumidityField<B>,
+    pub temperature: TemperatureField<B>,
+}
+
+/// THMC envelope: macroscopic phase + fracture damage + simulation clock.
 ///
 /// Target replacement for flat [`crate::physics::solvers::thmc::ThmcState`] in MP2.
-/// MP1 introduces the type only; legacy flat accessors remain until parity window closes.
+/// Bijection helpers live in [`crate::physics::solvers::thmc_envelope`].
 ///
 /// formal_anchor: NONE
 /// formal_status: Structural
-/// formal_anchor_rationale: Product of [`MaterialPhase`] and scalar clock; no solver coupling yet.
+/// formal_anchor_rationale: Product of [`MaterialPhase`], envelope-level damage, and clock.
 #[derive(Clone, Debug)]
 pub struct ThmcEnvelope<B: Backend> {
     pub phase: MaterialPhase<B>,
+    /// Fracture coupling — lives outside variant (frozen at step entry, P3.2).
+    pub damage: DamageField<B>,
     pub time: f32,
 }
 
 impl<B: Backend> ThmcEnvelope<B> {
-    /// Construct an envelope from a phase variant and clock.
-    ///
-    /// formal_anchor: NONE
-    /// formal_status: Structural
-    /// formal_anchor_rationale: Pure constructor; does not validate tensor layouts.
+    /// Construct an envelope from a phase variant, damage field, and clock.
     #[inline]
     #[must_use]
-    pub fn new(phase: MaterialPhase<B>, time: f32) -> Self {
-        Self { phase, time }
+    pub fn new(phase: MaterialPhase<B>, damage: DamageField<B>, time: f32) -> Self {
+        Self { phase, damage, time }
+    }
+
+    /// Construct an envelope from a phase variant, zero damage, and clock (test / scaffold helper).
+    #[inline]
+    #[must_use]
+    pub fn with_zero_damage(phase: MaterialPhase<B>, time: f32, device: &B::Device) -> Self {
+        let n = match &phase {
+            MaterialPhase::Fluid(r) => r.velocity.dims()[1],
+            MaterialPhase::Setting(s) => s.reaction_extent.dims()[1],
+            MaterialPhase::Solid(m) => m.displacement.dims()[1],
+        };
+        let damage = Field::new(Tensor::<B, 3>::zeros([1, n, 1], device));
+        Self::new(phase, damage, time)
     }
 
     /// Project the discrete phase tag.
@@ -184,10 +266,12 @@ mod tests {
     }
 
     #[test]
-    fn thmc_envelope_carries_phase_and_time() {
-        let env = ThmcEnvelope::new(setting_phase(), 42.0);
+    fn thmc_envelope_carries_phase_damage_and_time() {
+        let device = Default::default();
+        let env = ThmcEnvelope::with_zero_damage(setting_phase(), 42.0, &device);
         assert_eq!(env.kind(), MaterialPhaseKind::Setting);
         assert!((env.time - 42.0).abs() < f32::EPSILON);
+        assert_eq!(env.damage.as_tensor().dims(), [1, 2, 1]);
     }
 
     #[test]
@@ -215,6 +299,15 @@ mod tests {
             _ => panic!("expected Fluid"),
         }
 
+        match setting_phase() {
+            MaterialPhase::Setting(s) => {
+                assert_eq!(s.reaction_extent.dims(), [1, 2, 1]);
+                assert_eq!(s.humidity.dims(), [1, 2, 1]);
+                assert_eq!(s.temperature.dims(), [1, 2, 1]);
+            }
+            _ => panic!("expected Setting"),
+        }
+
         match solid_phase() {
             MaterialPhase::Solid(m) => {
                 assert_eq!(m.displacement.dims(), [1, 2, 3]);
@@ -222,5 +315,89 @@ mod tests {
             }
             _ => panic!("expected Solid"),
         }
+    }
+
+    #[test]
+    fn material_phase_variant_accessors_match_kind() {
+        let fluid = fluid_phase();
+        assert_eq!(fluid.kind(), MaterialPhaseKind::Fluid);
+        assert!(fluid.as_fluid().is_some());
+        assert!(fluid.as_setting().is_none());
+        assert!(fluid.as_solid().is_none());
+
+        let setting = setting_phase();
+        assert_eq!(setting.kind(), MaterialPhaseKind::Setting);
+        assert!(setting.as_setting().is_some());
+        assert!(setting.as_fluid().is_none());
+        assert!(setting.as_solid().is_none());
+
+        let solid = solid_phase();
+        assert_eq!(solid.kind(), MaterialPhaseKind::Solid);
+        assert!(solid.as_solid().is_some());
+        assert!(solid.as_fluid().is_none());
+        assert!(solid.as_setting().is_none());
+    }
+
+    #[test]
+    fn material_phase_mut_accessors_preserve_kind() {
+        let mut fluid = fluid_phase();
+        assert!(fluid.as_fluid_mut().is_some());
+        assert!(fluid.as_setting_mut().is_none());
+        assert_eq!(fluid.kind(), MaterialPhaseKind::Fluid);
+
+        let mut setting = setting_phase();
+        assert!(setting.as_setting_mut().is_some());
+        assert!(setting.as_solid_mut().is_none());
+        assert_eq!(setting.kind(), MaterialPhaseKind::Setting);
+
+        let mut solid = solid_phase();
+        assert!(solid.as_solid_mut().is_some());
+        assert!(solid.as_fluid_mut().is_none());
+        assert_eq!(solid.kind(), MaterialPhaseKind::Solid);
+    }
+
+    #[test]
+    fn material_phase_kind_is_copy_hash_eq() {
+        use std::collections::HashSet;
+
+        let kinds = [
+            MaterialPhaseKind::Fluid,
+            MaterialPhaseKind::Setting,
+            MaterialPhaseKind::Solid,
+        ];
+        let mut set = HashSet::new();
+        for k in kinds {
+            let copied = k;
+            assert_eq!(k, copied);
+            set.insert(k);
+        }
+        assert_eq!(set.len(), 3);
+    }
+
+    #[test]
+    fn thmc_envelope_kind_for_all_variants() {
+        for (phase, expected) in [
+            (fluid_phase(), MaterialPhaseKind::Fluid),
+            (setting_phase(), MaterialPhaseKind::Setting),
+            (solid_phase(), MaterialPhaseKind::Solid),
+        ] {
+            let device = Default::default();
+            let env = ThmcEnvelope::with_zero_damage(phase, 0.0, &device);
+            assert_eq!(env.kind(), expected);
+        }
+    }
+
+    #[test]
+    fn thmc_envelope_with_zero_damage_uses_node_count() {
+        let device = Default::default();
+        let env = ThmcEnvelope::with_zero_damage(fluid_phase(), 1.0, &device);
+        assert_eq!(env.damage.as_tensor().dims(), [1, 2, 1]);
+    }
+
+    #[test]
+    fn clone_preserves_material_phase_kind() {
+        let cloned = fluid_phase();
+        assert_eq!(cloned.kind(), MaterialPhaseKind::Fluid);
+        assert!(cloned.as_fluid().is_some());
     }
 }
