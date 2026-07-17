@@ -3,6 +3,7 @@
 
 pub mod apply_physics;
 pub mod dec_typestate;
+pub mod error_boundary;
 pub mod field;
 pub mod material_phase;
 pub mod emergence;
@@ -13,6 +14,7 @@ pub mod traits;
 pub mod umst_schema;
 
 pub use apply_physics::apply_physics_to_umst;
+pub use error_boundary::CbfReject;
 pub use dec_typestate::{
     B1Incidence, DecTypestateError, ScalarChannel, ScalarChannelIdx, ScalarChannelSelector,
 };

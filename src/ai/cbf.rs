@@ -4,6 +4,8 @@
 use burn::tensor::{backend::Backend, Tensor};
 use num_traits::ToPrimitive;
 
+pub use crate::core::error_boundary::CbfReject;
+
 /// Control Barrier Function (CBF) for Thermodynamic Admissibility.
 /// This enforces the Clausius-Duhem inequality and Landauer erasure costs.
 ///
@@ -51,26 +53,26 @@ impl ThermodynamicCBF {
         &mut self,
         entropy_production_joules: f64,
         bits_resolved: f64,
-    ) -> Result<f64, String> {
+    ) -> Result<f64, CbfReject> {
         // 1. Calculate the minimum thermodynamic cost of this computation
         let erasure_cost = self.calculate_landauer_cost(bits_resolved);
 
         // 2. Check Global Thermodynamic Limits (Economic/Computational Bound)
 
         if erasure_cost > self.available_credit_joules {
-            let avail = self.available_credit_joules;
-            return Err(format!(
-                "REJECTED: Insufficient Global Energy Credit. Required {erasure_cost} J, Available {avail} J.",
-            ));
+            return Err(CbfReject::InsufficientGlobalEnergyCredit {
+                required_j: erasure_cost,
+                available_j: self.available_credit_joules,
+            });
         }
 
         // 3. Clausius-Duhem Inequality (Physical Bound)
         // The physical entropy produced must be strictly non-negative when accounting for Landauer erasure.
         let generalized_entropy = entropy_production_joules - erasure_cost;
         if generalized_entropy < 0.0 {
-            return Err(format!(
-                "REJECTED: Clausius-Duhem Violation. Generalized entropy {generalized_entropy} < 0.",
-            ));
+            return Err(CbfReject::ClausiusDuhemViolation {
+                generalized_entropy,
+            });
         }
 
         // 4. Deduct the exact erasure cost from the agent's energy pool
@@ -91,7 +93,7 @@ impl ThermodynamicCBF {
         &mut self,
         d_int: Tensor<B, 1>,
         info_gain: Tensor<B, 1>,
-    ) -> Result<f64, String> {
+    ) -> Result<f64, CbfReject> {
         // Compute precise bits resolved via tensor sum reduction
         // info_gain contains the mutual information per batch element
         let sum_bits_tensor = info_gain.sum();

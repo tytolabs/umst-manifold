@@ -421,11 +421,11 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
 
                 Ok((verified_state, total_reward))
             }
-            Err(detail) => {
+            Err(reject) => {
                 self.rejection_telemetry.record_reject();
                 Err(FormalReject::ThermodynamicControlBarrier {
                     catalog_id: crate::ai::formal::LANDAUER_CBF_CATALOG_ID,
-                    detail,
+                    detail: reject.to_string(),
                 })
             }
         }

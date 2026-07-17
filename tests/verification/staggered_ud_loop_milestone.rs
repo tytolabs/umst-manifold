@@ -218,7 +218,7 @@ fn milestone_one_analytic_strain_surrogate() {
         h.fracture_energy_gc,
         h.edges_b1,
         6,
-    );
+    ).expect("update_damage_staggered");
 
     let vals = d_fin.into_tensor().into_data().value;
     assert!(vals.iter().all(|x| x.is_finite()));
@@ -243,28 +243,31 @@ fn milestone_one_mechanics_equilibrium_staggered_convergence() {
         let d_before = damage.as_tensor().clone();
         damage = fracture.update_damage_staggered(
             |d: &DamageField<B>| {
-                strain_field(strain_tensor_for_fracture_after_mechanics(
-                    h.u0.clone(),
-                    h.coords.clone(),
-                    h.stiffness.clone(),
-                    h.body_force.clone(),
-                    h.edges_b1.clone(),
-                    d.as_tensor().clone(),
-                    h.boundary_mask.clone(),
-                    h.cross_section_area,
-                    &h.cfg,
-                    h.src3.clone(),
-                    h.tgt3.clone(),
-                    h.edge_unit.clone(),
-                    h.edge_len.clone(),
-                    h.n_nodes,
-                ))
+                strain_field(
+                    strain_tensor_for_fracture_after_mechanics(
+                        h.u0.clone(),
+                        h.coords.clone(),
+                        h.stiffness.clone(),
+                        h.body_force.clone(),
+                        h.edges_b1.clone(),
+                        d.as_tensor().clone(),
+                        h.boundary_mask.clone(),
+                        h.cross_section_area,
+                        &h.cfg,
+                        h.src3.clone(),
+                        h.tgt3.clone(),
+                        h.edge_unit.clone(),
+                        h.edge_len.clone(),
+                        h.n_nodes,
+                    )
+                    .expect("strain after mechanics"),
+                )
             },
             damage,
             h.fracture_energy_gc.clone(),
             h.edges_b1.clone(),
             1,
-        );
+        ).expect("update_damage_staggered");
         let step = damage
             .as_tensor()
             .clone()
@@ -318,7 +321,8 @@ fn milestone_one_mechanics_equilibrium_staggered_convergence() {
         h.edge_unit.clone(),
         h.edge_len.clone(),
         h.n_nodes,
-    );
+    )
+    .expect("strain after mechanics");
     let half_frob_sq = eps_fin
         .powf_scalar(2.0)
         .sum()
