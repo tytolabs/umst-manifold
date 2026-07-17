@@ -39,7 +39,7 @@
 //! so a terminal near-checkerboard state does not cancel the integrated damage to **0** in `f32`.
 //!
 //! Default builds (no `fracture-at2`): [`PhaseFieldFractureSolver::update_damage`] is a **documented
-//! no-op** — returns `damage` unchanged so `cargo test` stays green.
+//! no-op** — returns `Ok(damage)` unchanged so `cargo test` stays green.
 //!
 //! ## Intended staggered coupling (`fracture-at2`)
 //!
@@ -73,7 +73,7 @@
 //!   updates **d** from a fixed **ε** snapshot only.
 //! - [`PhaseFieldFractureSolver::update_damage_staggered`] does **not** run mechanics solves; it
 //!   only composes multiple [`PhaseFieldFractureSolver::update_damage`] calls with a **strain
-//!   provider** `FnMut(&Tensor<B,3>) -> Tensor<B,4>` so call sites can inject refreshed **ε(d)**.
+//!   provider** `FnMut(&DamageField<B>) -> SmallStrainField<B>` so call sites can inject refreshed **ε(d)**.
 //! - **Repo status (one place):** implemented vs multi-\(l_0\) Γ-limit / full staggered open roadmap items —
 //!   `docs/Solver-Status.md` → **OPEN ROADMAP ITEM — Fracture** and table row `solvers::fracture_field`.
 //! - **Non-embedding / no bar strain:** `strain_tensor_for_fracture_from_manifold` reads
@@ -491,7 +491,7 @@ impl PhaseFieldFractureSolver {
     /// (analytic vs mechanics strain providers; outer-loop irreversibility + mechanics-side ℓ∞ convergence);
     /// `tests/verification/staggered_fracture_mechanics_chain` (single-outer mechanics wiring smoke).
     ///
-    /// Use `outer_iterations == 0` to return `damage` unchanged (no provider call).
+    /// Use `outer_iterations == 0` to return `Ok(damage)` unchanged (no provider call).
     ///
     /// **Backward compatibility:** `outer_iterations == 1` with a provider that returns the
     /// same fixed strain regardless of `d` matches one call to [`Self::update_damage`] with that
