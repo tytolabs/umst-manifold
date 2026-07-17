@@ -985,7 +985,9 @@ mod acoustics_newmark_tests {
             .reshape([1, 1, 3, 3])
             .expand([1, n, 3, 3])
             .mul_scalar(k_edge);
-        let (u1, _v1, a1) = solver.step_wave(u, vel, acc, rho, vol, f, damp, kloc, None, None).expect("step_wave");
+        let (u1, _v1, a1) = solver
+            .step_wave(u, vel, acc, rho, vol, f, damp, kloc, None, None)
+            .expect("AcousticWaveSolver::step_wave on 2-node dense homogeneous Newmark chain (FP §6 Track G acoustics residual)");
         let _ = u1;
         let a1_flat = a1.into_data().value;
         assert_eq!(a1_flat.len(), n * 3);
@@ -1051,7 +1053,8 @@ mod acoustics_graph_gmres_tests {
                 max_iter: 48,
                 rel_tol: 1e-7_f32,
             }),
-        ).expect("step_wave");
+        )
+        .expect("AcousticWaveSolver::step_wave with axial bar graph + GMRES acceleration on 2-node chain (FP §6 Track G acoustics residual)");
 
         let a_flat = a1.into_data().value;
         assert!(
@@ -1099,12 +1102,15 @@ mod acoustics_ad_iterate_tests {
         let v0 = Tensor::<B, 3>::zeros([1, n, 3], &dev);
         let a0 = Tensor::<B, 3>::zeros([1, n, 3], &dev);
 
-        let (u_end, _v, _a, _k) =
-            solver.step_wave_iterate(32, u0, v0, a0, rho.clone(), vol, f, damp, kloc, None, None).expect("step_wave_iterate");
+        let (u_end, _v, _a, _k) = solver
+            .step_wave_iterate(32, u0, v0, a0, rho.clone(), vol, f, damp, kloc, None, None)
+            .expect("AcousticWaveSolver::step_wave_iterate dense nodal Newmark loop for AD backward (FP §6 Track G acoustics residual)");
 
         let loss = u_end.clone().sum();
         let grads = loss.backward();
-        let g_rho = rho.grad(&grads).expect("grad w.r.t rho");
+        let g_rho = rho
+            .grad(&grads)
+            .expect("Autodiff grad w.r.t. rho through step_wave_iterate loss (FP §6 Track G acoustics residual)");
         assert_eq!(g_rho.dims(), [1, n, 1]);
         let gn = g_rho.into_data().value.iter().map(|x| x.abs()).sum::<f32>();
         assert!(gn > 1e-12_f32, "expected non-zero grad norm, got {gn}");
@@ -1290,7 +1296,7 @@ mod acoustics_idempotency_tests {
                 None,
                 None,
             )
-            .expect("step_wave");
+            .expect("AcousticWaveSolver::step_wave first step on quiescent dense nodal equilibrium (FP §6 Track G acoustics idempotency)");
         let (u2, v2, a2) = solver
             .step_wave(
                 u1.clone(),
@@ -1304,7 +1310,7 @@ mod acoustics_idempotency_tests {
                 None,
                 None,
             )
-            .expect("step_wave");
+            .expect("AcousticWaveSolver::step_wave idempotent re-apply on equilibrated dense nodal state (FP §6 Track G acoustics idempotency)");
 
         let tol = 1e-6_f32;
         for (label, t0, t1) in [("u", u2, u1), ("v", v2, v1), ("a", a2, a1)] {
