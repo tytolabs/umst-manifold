@@ -538,7 +538,7 @@ fn solve_acceleration_gmres_batch_row<B: Backend<FloatElem = f32>>(
     let kloc_c = stiffness_local_bn44.clone();
     let bar_owned = bar.cloned();
 
-    let mut matvec = move |v: &[f32]| -> Result<Vec<f32>, String> {
+    let mut matvec = move |v: &[f32]| -> Result<Vec<f32>, crate::physics::PhysicsError> {
         let row: Tensor<B, 3> =
             Tensor::from_data(Data::new(Vec::from(v), Shape::new([1, n_v, 3])), device);
         let u_full = crate::physics::mechanics::VectorMechanicsSolver::embed_batch_row(

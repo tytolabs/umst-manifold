@@ -60,8 +60,8 @@ impl<B: Backend<FloatElem = f32>> BarMatvecOperator<B> {
     }
 
     /// Consume `self` and return a fallible matvec for [`super::krylov_host::gmres_f32_try`].
-    pub fn into_gmres_matvec(mut self) -> impl FnMut(&[f32]) -> Result<Vec<f32>, String> {
-        move |v| self.apply_vec(v).map_err(String::from)
+    pub fn into_gmres_matvec(mut self) -> impl FnMut(&[f32]) -> Result<Vec<f32>, PhysicsError> {
+        move |v| self.apply_vec(v)
     }
 }
 

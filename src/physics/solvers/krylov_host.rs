@@ -7,6 +7,10 @@
 //! solves. Prefer
 //! [`gmres_f32_try`] with a fallible matvec in production paths.
 
+use crate::physics::PhysicsError;
+
+const GMRES_CTX: &str = "gmres_f32_try";
+
 /// GMRES without restart: solve \(A x = b\) with matrix-free \(A\) via fallible `matvec`.
 ///
 /// Any `Err` from `matvec` aborts the solve and is returned — no panics on residual assembly failure.
@@ -16,21 +20,29 @@ pub fn gmres_f32_try<F>(
     n: usize,
     max_iter: usize,
     rel_tol: f32,
-) -> Result<Vec<f32>, String>
+) -> Result<Vec<f32>, PhysicsError>
 where
-    F: FnMut(&[f32]) -> Result<Vec<f32>, String>,
+    F: FnMut(&[f32]) -> Result<Vec<f32>, PhysicsError>,
 {
     if n == 0 {
-        return Err("gmres_f32_try: n=0".into());
+        return Err(PhysicsError::InvariantViolation { context: GMRES_CTX });
     }
     if b.len() != n {
-        return Err("gmres_f32_try: rhs length mismatch".into());
+        return Err(PhysicsError::BufferLength {
+            context: GMRES_CTX,
+            expected: n,
+            got: b.len(),
+        });
     }
     if max_iter == 0 {
-        return Err("gmres_f32_try: max_iter=0".into());
+        return Err(PhysicsError::InvariantViolation {
+            context: "gmres_f32_try: max_iter=0",
+        });
     }
     if rel_tol <= 0.0_f32 {
-        return Err("gmres_f32_try: rel_tol must be positive".into());
+        return Err(PhysicsError::InvariantViolation {
+            context: "gmres_f32_try: rel_tol must be positive",
+        });
     }
 
     let beta: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
@@ -58,7 +70,11 @@ where
     for j in 0..m_max {
         let av = matvec(&v[j])?;
         if av.len() != n {
-            return Err("gmres_f32_try: matvec length mismatch".into());
+            return Err(PhysicsError::BufferLength {
+                context: GMRES_CTX,
+                expected: n,
+                got: av.len(),
+            });
         }
 
         let mut w = av;
@@ -132,7 +148,7 @@ pub fn gmres_f32<F>(
     n: usize,
     max_iter: usize,
     rel_tol: f32,
-) -> Result<Vec<f32>, String>
+) -> Result<Vec<f32>, PhysicsError>
 where
     F: FnMut(&[f32]) -> Vec<f32>,
 {
@@ -144,7 +160,7 @@ fn solve_upper_hessenberg_triangular(
     h_cols: &[Vec<f32>],
     g: &[f32],
     dim: usize,
-) -> Result<Vec<f32>, String> {
+) -> Result<Vec<f32>, PhysicsError> {
     if dim == 0 {
         return Ok(vec![]);
     }
@@ -162,7 +178,9 @@ fn solve_upper_hessenberg_triangular(
         }
         let diag = r[i * dim + i];
         if diag.abs() < 1e-30_f32 {
-            return Err("gmres_f32_try: triangular solve singular".into());
+            return Err(PhysicsError::KrylovDiverged {
+                context: "gmres_f32_try: hessenberg triangular solve singular",
+            });
         }
         rhs[i] = sum / diag;
     }
@@ -176,9 +194,9 @@ fn reconstruct_solution_try<F>(
     matvec: &mut F,
     beta: f32,
     rel_tol: f32,
-) -> Result<Vec<f32>, String>
+) -> Result<Vec<f32>, PhysicsError>
 where
-    F: FnMut(&[f32]) -> Result<Vec<f32>, String>,
+    F: FnMut(&[f32]) -> Result<Vec<f32>, PhysicsError>,
 {
     let n = b.len();
     let mut x = vec![0.0_f32; n];
@@ -190,7 +208,11 @@ where
 
     let ax = matvec(&x)?;
     if ax.len() != n {
-        return Err("gmres_f32_try: final matvec length mismatch".into());
+        return Err(PhysicsError::BufferLength {
+            context: GMRES_CTX,
+            expected: n,
+            got: ax.len(),
+        });
     }
     let res: f32 = b
         .iter()
@@ -203,9 +225,9 @@ where
         .sqrt();
     let tol = (rel_tol * 50.0_f32).max(1e-5_f32) * beta.max(1e-30_f32);
     if res > tol {
-        return Err(format!(
-            "gmres_f32_try: final residual ‖b-Ax‖={res} exceeds tolerance (‖b‖={beta})"
-        ));
+        return Err(PhysicsError::KrylovDiverged {
+            context: "gmres_f32_try: final residual exceeds tolerance",
+        });
     }
     Ok(x)
 }
@@ -213,6 +235,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{gmres_f32, gmres_f32_try};
+    use crate::physics::PhysicsError;
 
     #[test]
     fn gmres_identity() {
@@ -271,12 +294,14 @@ mod tests {
         let n = 2usize;
         let b = vec![1.0_f32, 0.0_f32];
         let mut calls = 0usize;
-        let matvec = |_v: &[f32]| -> Result<Vec<f32>, String> {
+        let matvec = |_v: &[f32]| -> Result<Vec<f32>, PhysicsError> {
             calls += 1;
-            Err("injected".into())
+            Err(PhysicsError::Domain {
+                detail: "injected".into(),
+            })
         };
         let err = gmres_f32_try(matvec, &b, n, n, 1e-5_f32).expect_err("should fail");
-        assert!(err.contains("injected"), "{err}");
+        assert!(err.to_string().contains("injected"), "{err}");
         assert_eq!(calls, 1, "should not retry after matvec Err");
     }
 }

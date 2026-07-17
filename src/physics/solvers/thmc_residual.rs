@@ -1037,6 +1037,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
                         a_shape,
                         u_shape,
                     )
+                    .map_err(crate::physics::PhysicsError::from)
                 };
                 if let Ok(d) = gmres_f32_try(matvec, &rhs, m_a, m_a.saturating_add(12), 2e-3_f32) {
                     return Ok(d);

@@ -1386,7 +1386,7 @@ fn full_sg_newton_correction_gmres_nm_f64(
     });
     let newton = *newton;
 
-    let matvec = move |v: &[f32]| -> Result<Vec<f32>, String> {
+    let matvec = move |v: &[f32]| -> Result<Vec<f32>, crate::physics::PhysicsError> {
         let mut v_nm_loc = vec![0.0_f64; dim];
         for i in 0..dim {
             v_nm_loc[i] = v[i] as f64;
@@ -3681,7 +3681,7 @@ mod newton_chain_tests {
 
         let matvec = {
             let solver_a = std::sync::Arc::clone(&solver_a);
-            move |v: &[f32]| -> Result<Vec<f32>, String> {
+            move |v: &[f32]| -> Result<Vec<f32>, crate::physics::PhysicsError> {
                 let mut v_nm_loc = vec![0.0_f64; dim];
                 for i in 0..dim {
                     v_nm_loc[i] = v[i] as f64;
@@ -3878,7 +3878,7 @@ mod newton_chain_tests {
 
         let matvec = {
             let solver_a = std::sync::Arc::clone(&solver_a);
-            move |v: &[f32]| -> Result<Vec<f32>, String> {
+            move |v: &[f32]| -> Result<Vec<f32>, crate::physics::PhysicsError> {
                 let mut v_nm_loc = vec![0.0_f64; dim];
                 for i in 0..dim {
                     v_nm_loc[i] = v[i] as f64;
