@@ -24,7 +24,7 @@
 // Track 14 MVP-chain implicit Newton lives behind the same feature; there is no additional
 // `#[cfg(feature = "...")]` for it — opt in at runtime via `pnp_implicit_newton_chain` +
 // `solve_pnp_step_dispatch` (production path; falls back to explicit Picard if the chain helper
-// returns `None`). Direct `try_solve_pnp_backward_euler_newton_chain` remains for unit tests in
+// returns `Err`). Direct `try_solve_pnp_backward_euler_newton_chain` remains for unit tests in
 // `electrochemistry.rs` and callers who bypass dispatch. Full nonlinear SG (`linearize_sg_fickian: false`)
 // uses a **node-major band** FD Jacobian by default, then **dense expand + Gauss** on a **(3N)²** scratch
 // for each Newton correction; set [`NewtonPnpContext::full_sg_correction_use_gmres`] for a matrix-free GMRES
@@ -753,7 +753,7 @@ fn debye_ls_decay_length_robust_to_multiplicative_noise_on_synthetic_screening()
 /// Uses [`ElectroChemicalSolver::solve_pnp_step_dispatch`] with
 /// [`ElectroChemicalSolver::pnp_implicit_newton_chain`] (same opt-in pattern as production: no extra
 /// `#[cfg]`, only solver fields + API). Falls back to explicit Picard only if the implicit chain
-/// helper returns `None` (should not happen for these MVP batch-1 chains).
+/// helper returns `Err` (should not happen for these MVP batch-1 chains).
 ///
 /// `steps * dt` is the outer nondimensional time budget. Pass [`NewtonPnpContext::linearize_sg_fickian`]
 /// `true` when the gate should track **Debye–Hückel** (Fickian-linearised flux); full SG exercises the
