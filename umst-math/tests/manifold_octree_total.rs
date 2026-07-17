@@ -1,6 +1,4 @@
 //! Octree: DAG, depth cap, leaves.
-#![cfg(test)]
-
 use umst_math::manifold::octree::{build_linear_octree_with_depth, no_ancestor_loop};
 
 #[test]
