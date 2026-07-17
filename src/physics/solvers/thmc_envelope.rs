@@ -129,13 +129,12 @@ mod tests {
         let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Setting);
         assert_eq!(env.kind(), MaterialPhaseKind::Setting);
         assert!((env.time - 1.5).abs() < f32::EPSILON);
-        match env.phase {
-            MaterialPhase::Setting(s) => {
-                assert_eq!(s.temperature.dims(), [1, 4, 1]);
-                assert_eq!(s.humidity.dims(), [1, 4, 1]);
-            }
-            _ => panic!("expected Setting"),
-        }
+        let s = env.phase.as_setting().expect(
+            "ThmcEnvelope::from_flat_state(Setting) must yield MaterialPhase::Setting arm \
+             (MP2 bijection witness)",
+        );
+        assert_eq!(s.temperature.dims(), [1, 4, 1]);
+        assert_eq!(s.humidity.dims(), [1, 4, 1]);
     }
 
     #[test]
@@ -154,14 +153,13 @@ mod tests {
         let flat = sample_flat(&device);
         let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Fluid);
         assert_eq!(env.kind(), MaterialPhaseKind::Fluid);
-        match env.phase {
-            MaterialPhase::Fluid(r) => {
-                assert_eq!(r.velocity.dims(), [1, 4, 3]);
-                assert_eq!(r.yield_stress.dims(), [1, 4, 1]);
-                assert_eq!(r.plastic_viscosity.dims(), [1, 4, 1]);
-            }
-            _ => panic!("expected Fluid"),
-        }
+        let r = env.phase.as_fluid().expect(
+            "ThmcEnvelope::from_flat_state(Fluid) must yield MaterialPhase::Fluid arm \
+             (MP2 bijection witness)",
+        );
+        assert_eq!(r.velocity.dims(), [1, 4, 3]);
+        assert_eq!(r.yield_stress.dims(), [1, 4, 1]);
+        assert_eq!(r.plastic_viscosity.dims(), [1, 4, 1]);
     }
 
     #[test]
@@ -170,14 +168,13 @@ mod tests {
         let flat = sample_flat(&device);
         let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Solid);
         assert_eq!(env.kind(), MaterialPhaseKind::Solid);
-        match env.phase {
-            MaterialPhase::Solid(m) => {
-                assert_eq!(m.displacement.dims(), [1, 4, 3]);
-                assert_eq!(m.damage.dims(), [1, 4, 1]);
-                assert_eq!(m.stiffness.dims(), [1, 4, 1]);
-            }
-            _ => panic!("expected Solid"),
-        }
+        let m = env.phase.as_solid().expect(
+            "ThmcEnvelope::from_flat_state(Solid) must yield MaterialPhase::Solid arm \
+             (MP2 bijection witness)",
+        );
+        assert_eq!(m.displacement.dims(), [1, 4, 3]);
+        assert_eq!(m.damage.dims(), [1, 4, 1]);
+        assert_eq!(m.stiffness.dims(), [1, 4, 1]);
     }
 
     #[test]
@@ -232,5 +229,37 @@ mod tests {
             env2.damage.as_tensor().dims(),
             env.damage.as_tensor().dims()
         );
+    }
+
+    #[test]
+    fn idempotency_to_flat_from_flat_fluid() {
+        let device = Default::default();
+        let flat = sample_flat(&device);
+        let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Fluid);
+        let once = to_flat(&env);
+        let env2 = ThmcEnvelope::from_flat_state(&once, MaterialPhaseKind::Fluid);
+        assert_eq!(env2.kind(), MaterialPhaseKind::Fluid);
+        assert!((env2.time - env.time).abs() < f32::EPSILON);
+        let r = env2.phase.as_fluid().expect(
+            "idempotent from_flat(Fluid) roundtrip must preserve MaterialPhase::Fluid arm \
+             (MP2 bijection witness)",
+        );
+        assert_eq!(r.velocity.dims(), [1, 4, 3]);
+    }
+
+    #[test]
+    fn idempotency_to_flat_from_flat_solid() {
+        let device = Default::default();
+        let flat = sample_flat(&device);
+        let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Solid);
+        let once = to_flat(&env);
+        let env2 = ThmcEnvelope::from_flat_state(&once, MaterialPhaseKind::Solid);
+        assert_eq!(env2.kind(), MaterialPhaseKind::Solid);
+        assert!((env2.time - env.time).abs() < f32::EPSILON);
+        let m = env2.phase.as_solid().expect(
+            "idempotent from_flat(Solid) roundtrip must preserve MaterialPhase::Solid arm \
+             (MP2 bijection witness)",
+        );
+        assert_eq!(m.displacement.dims(), [1, 4, 3]);
     }
 }

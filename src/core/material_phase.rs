@@ -314,30 +314,28 @@ mod tests {
 
     #[test]
     fn phase_variants_preserve_tensor_shapes() {
-        match fluid_phase() {
-            MaterialPhase::Fluid(r) => {
-                assert_eq!(r.yield_stress.dims(), [1, 2, 1]);
-                assert_eq!(r.velocity.dims(), [1, 2, 3]);
-            }
-            _ => panic!("expected Fluid"),
-        }
+        let fluid = fluid_phase();
+        let r = fluid.as_fluid().expect(
+            "fluid_phase fixture must yield MaterialPhaseKind::Fluid variant (MP1 phase ADT witness)",
+        );
+        assert_eq!(r.yield_stress.dims(), [1, 2, 1]);
+        assert_eq!(r.velocity.dims(), [1, 2, 3]);
 
-        match setting_phase() {
-            MaterialPhase::Setting(s) => {
-                assert_eq!(s.reaction_extent.dims(), [1, 2, 1]);
-                assert_eq!(s.humidity.dims(), [1, 2, 1]);
-                assert_eq!(s.temperature.dims(), [1, 2, 1]);
-            }
-            _ => panic!("expected Setting"),
-        }
+        let setting = setting_phase();
+        let s = setting.as_setting().expect(
+            "setting_phase fixture must yield MaterialPhaseKind::Setting variant \
+             (MP1 phase ADT witness)",
+        );
+        assert_eq!(s.reaction_extent.dims(), [1, 2, 1]);
+        assert_eq!(s.humidity.dims(), [1, 2, 1]);
+        assert_eq!(s.temperature.dims(), [1, 2, 1]);
 
-        match solid_phase() {
-            MaterialPhase::Solid(m) => {
-                assert_eq!(m.displacement.dims(), [1, 2, 3]);
-                assert_eq!(m.damage.dims(), [1, 2, 1]);
-            }
-            _ => panic!("expected Solid"),
-        }
+        let solid = solid_phase();
+        let m = solid.as_solid().expect(
+            "solid_phase fixture must yield MaterialPhaseKind::Solid variant (MP1 phase ADT witness)",
+        );
+        assert_eq!(m.displacement.dims(), [1, 2, 3]);
+        assert_eq!(m.damage.dims(), [1, 2, 1]);
     }
 
     #[test]
@@ -439,5 +437,15 @@ mod tests {
         let env = ThmcEnvelope::with_zero_damage(setting_phase(), 3.14, &device);
         assert_eq!(env.damage_ref().as_tensor().dims(), [1, 2, 1]);
         assert!((env.time() - 3.14).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn thmc_envelope_new_matches_with_zero_damage_shape() {
+        let phase = setting_phase();
+        let damage = Field::new(zeros_3());
+        let env = ThmcEnvelope::new(phase, damage, 7.0);
+        assert_eq!(env.kind(), MaterialPhaseKind::Setting);
+        assert!((env.time() - 7.0).abs() < f32::EPSILON);
+        assert_eq!(env.damage_ref().as_tensor().dims(), [1, 2, 1]);
     }
 }

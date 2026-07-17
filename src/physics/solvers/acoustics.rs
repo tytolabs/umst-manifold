@@ -1154,8 +1154,9 @@ mod cholesky_residual_tests {
         let mut s = vec![0.0_f64; n * n];
         fill_system_matrix_s64(&mut s, n, m_node, alpha);
         let s_orig = s.clone();
-        cholesky_decompose_lower64(&mut s, n)
-            .expect("cholesky_decompose_lower64 on periodic bar system matrix");
+        cholesky_decompose_lower64(&mut s, n).expect(
+            "cholesky_decompose_lower64 on periodic bar Newmark system matrix n=32 (FP §6 Track G acoustics residual)",
+        );
         let mut b = vec![0.0_f32; n];
         b[0] = 1.0_f32;
         let mut y = vec![0.0_f64; n];
@@ -1187,8 +1188,9 @@ mod cholesky_residual_tests {
         let mut s = vec![0.0_f64; n * n];
         fill_system_matrix_s64(&mut s, n, m_node, alpha);
         let s_orig = s.clone();
-        cholesky_decompose_lower64(&mut s, n)
-            .expect("cholesky_decompose_lower64 on periodic bar system matrix");
+        cholesky_decompose_lower64(&mut s, n).expect(
+            "cholesky_decompose_lower64 on periodic bar Newmark system matrix n=128 (FP §6 Track G acoustics residual)",
+        );
         let mut b = vec![0.0_f32; n];
         b[0] = 1.0_f32;
         let mut y = vec![0.0_f64; n];
@@ -1242,14 +1244,16 @@ mod acoustics_idempotency_tests {
         let mut v = vec![0.0_f32; bar.n];
         let mut a = vec![0.0_f32; bar.n];
 
-        bar.step(&mut ws, dt, &mut u, &mut v, &mut a)
-            .expect("AcousticNewmarkBar1dPeriodic::step on zero equilibrium");
+        bar.step(&mut ws, dt, &mut u, &mut v, &mut a).expect(
+            "AcousticNewmarkBar1dPeriodic::step first on quiescent periodic bar zero equilibrium (FP §6 Track G acoustics idempotency)",
+        );
         let u1 = u.clone();
         let v1 = v.clone();
         let a1 = a.clone();
 
-        bar.step(&mut ws, dt, &mut u, &mut v, &mut a)
-            .expect("AcousticNewmarkBar1dPeriodic::step idempotent re-apply");
+        bar.step(&mut ws, dt, &mut u, &mut v, &mut a).expect(
+            "AcousticNewmarkBar1dPeriodic::step idempotent re-apply on equilibrated periodic bar state (FP §6 Track G acoustics idempotency)",
+        );
         let tol = 1e-6_f32;
         assert!(
             max_abs_drift(&u, &u1) < tol && max_abs_drift(&v, &v1) < tol && max_abs_drift(&a, &a1) < tol,

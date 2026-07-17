@@ -1,6 +1,4 @@
 //! Resolution-level hash monotonicity + byte determinism.
-#![cfg(test)]
-
 use umst_math::manifold::canonicalize::{canonicalize_voxelize, fnv1a_64, stack_refinement_h8};
 use umst_math::manifold::csg::ThermoGateState;
 use umst_math::manifold::sdf::GateSdf;
