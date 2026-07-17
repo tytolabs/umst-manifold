@@ -574,10 +574,10 @@ fn thmc_t_alpha_residual_damped_newton_idempotent_at_backward_euler_equilibrium(
     );
     let (after_first, _) = assembler
         .damped_newton_iterations(&trial, 2_usize, 1.0_f32, 1.0e-5_f32)
-        .expect("first damped Newton chain on equilibrated (T,α)");
+        .expect("ThmcImplicitEulerThermalReactionExtentResidual::damped_newton_iterations on saturated (T,α) backward-Euler equilibrium first re-step (FP §6 Track G THMC idempotency)");
     let (after_second, _) = assembler
         .damped_newton_iterations(&after_first, 2_usize, 1.0_f32, 1.0e-5_f32)
-        .expect("second damped Newton chain on equilibrated (T,α)");
+        .expect("ThmcImplicitEulerThermalReactionExtentResidual::damped_newton_iterations re-application on saturated (T,α) backward-Euler equilibrium (FP §6 Track G THMC idempotency)");
     let tol = 1e-5_f32;
     assert!(
         max_abs_tensor3(
@@ -652,10 +652,10 @@ fn thmc_tha_residual_damped_newton_idempotent_at_backward_euler_equilibrium() {
     );
     let (after_first, _) = assembler
         .damped_newton_iterations(&trial, 2_usize, 1.0_f32, 1.0e-5_f32)
-        .expect("first damped Newton chain on equilibrated (T,h,α)");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations on saturated (T,h,α) backward-Euler equilibrium first re-step (FP §6 Track G THMC idempotency)");
     let (after_second, _) = assembler
         .damped_newton_iterations(&after_first, 2_usize, 1.0_f32, 1.0e-5_f32)
-        .expect("second damped Newton chain on equilibrated (T,h,α)");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations re-application on saturated (T,h,α) backward-Euler equilibrium (FP §6 Track G THMC idempotency)");
     let tol = 1e-5_f32;
     for (label, a, b) in [
         ("T", after_first.thermal.temperature.as_tensor(), trial.thermal.temperature.as_tensor()),
@@ -762,7 +762,7 @@ fn thmc_monolithic_qs_r_u_residual_damped_newton_idempotent_at_equilibrium() {
             &body_force,
             cross_section_area,
         )
-        .expect("monolithic equilibrium residual norm");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::residual_l2_including_quasi_static_r_u on zero-load monolithic stacked equilibrium (FP §6 Track G THMC idempotency)");
     let stacked_tol = 1e-4_f32;
     assert!(
         r0 < stacked_tol,
