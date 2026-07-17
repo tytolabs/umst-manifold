@@ -38,9 +38,13 @@ fn topology_density_diffusion_idempotent_on_uniform_rho() {
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
     let boundary_mask = Tensor::<B, 3>::ones([1, n, 3], &dev);
     let policy = Tensor::<B, 2>::ones([n, 1], &dev);
-    solver.step_density_diffusion(0.2, edges_b1.clone(), damage.clone(), boundary_mask.clone(), policy.clone()).expect("first step");
+    solver
+        .step_density_diffusion(0.2, edges_b1.clone(), damage.clone(), boundary_mask.clone(), policy.clone())
+        .expect("TopologySolver::step_density_diffusion first pass on uniform rho (FP §6 topology density diffusion idempotency witness)");
     let snap = solver.rho.clone();
-    solver.step_density_diffusion(0.2, edges_b1, damage, boundary_mask, policy).expect("second step");
+    solver
+        .step_density_diffusion(0.2, edges_b1, damage, boundary_mask, policy)
+        .expect("TopologySolver::step_density_diffusion re-step on equilibrated rho (FP §6 topology density diffusion idempotency witness)");
     assert!(solver.rho.clone().all_close(snap, Some(1e-6), Some(1e-7)));
 }
 
@@ -52,8 +56,12 @@ fn topology_spectral_filter_idempotent_at_zero_epsilon() {
     let ps = PrimeSpectralFilter::new(0.0, false, None);
     let n = 8_usize;
     let rho = Tensor::<B, 3>::full(Shape::new([1, n, 1]), 0.5, &dev);
-    let out1 = ps.apply(rho, n).expect("apply");
-    let out2 = ps.apply(out1.clone(), n).expect("re-apply");
+    let out1 = ps
+        .apply(rho, n)
+        .expect("PrimeSpectralFilter::apply at epsilon=0 identity first pass (FP §6 topology spectral filter idempotency witness)");
+    let out2 = ps
+        .apply(out1.clone(), n)
+        .expect("PrimeSpectralFilter::apply at epsilon=0 identity re-apply (FP §6 topology spectral filter idempotency witness)");
     assert!(out2.all_close(out1, Some(1e-6), Some(1e-7)));
 }
 
@@ -79,10 +87,10 @@ fn rheology_step_idempotent_on_default_noop_placeholder() {
             edges_b1.clone(),
             gravity.clone(),
         )
-        .expect("rheology first step");
+        .expect("BinghamFlowSolver::step default no-op placeholder first pass (FP §6 rheology idempotency witness)");
     let (v2, p2, l2) = solver
         .step(v1, p1, l1, density, lambda_thix.clone(), edges_b1, gravity)
-        .expect("rheology second step");
+        .expect("BinghamFlowSolver::step default no-op placeholder re-step (FP §6 rheology idempotency witness)");
     let tol = 1e-6_f32;
     assert!(max_abs_tensor3(&v2, &velocity) < tol);
     assert!(max_abs_tensor3(&p2, &pressure) < tol);
