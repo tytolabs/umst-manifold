@@ -128,6 +128,8 @@ use core::ops::ControlFlow;
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use crate::physics::error::PhysicsError;
+
 #[cfg(feature = "rheology-bingham")]
 /// Relative residual tolerance \(\|r\|_2/\|b\|_2\) for early exit in Jacobi-PCG (checked with `Tensor::all_close`).
 const POISSON_CG_REL_TOL: f32 = 2e-5;
@@ -226,10 +228,10 @@ impl BinghamFlowSolver {
         lambda_thix: Tensor<B, 3>,
         edges_b1: Tensor<B, 2, Int>,
         gravity: Tensor<B, 1>,
-    ) -> (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
         #[cfg(not(feature = "rheology-bingham"))]
         {
-            (velocity, pressure, lambda_thix)
+            Ok((velocity, pressure, lambda_thix))
         }
 
         #[cfg(feature = "rheology-bingham")]
@@ -554,6 +556,103 @@ fn chorin_pressure_rhs_mean_free_surrogate_sum_laplacian<B: Backend<FloatElem = 
 }
 
 #[cfg(feature = "rheology-bingham")]
+fn bingham_step_validate_solver(solver: &BinghamFlowSolver) -> Result<(), PhysicsError> {
+    if !solver.dt.is_finite() || solver.dt <= 0.0 {
+        return Err(PhysicsError::Domain {
+            detail: "BinghamFlowSolver: dt must be positive and finite".to_string(),
+        });
+    }
+    if !solver.mu_plastic.is_finite() || solver.mu_plastic <= 0.0 {
+        return Err(PhysicsError::Domain {
+            detail: "BinghamFlowSolver: mu_plastic must be positive and finite".to_string(),
+        });
+    }
+    if !solver.edge_length_scale.is_finite() || solver.edge_length_scale <= 0.0 {
+        return Err(PhysicsError::Domain {
+            detail: "BinghamFlowSolver: edge_length_scale must be positive and finite".to_string(),
+        });
+    }
+    Ok(())
+}
+
+#[cfg(feature = "rheology-bingham")]
+fn bingham_step_validate_shapes<B: Backend<FloatElem = f32>>(
+    velocity: &Tensor<B, 3>,
+    pressure: &Tensor<B, 3>,
+    yield_stress: &Tensor<B, 3>,
+    density: &Tensor<B, 3>,
+    lambda_thix: &Tensor<B, 3>,
+    edges_b1: &Tensor<B, 2, Int>,
+    gravity: &Tensor<B, 1>,
+) -> Result<(), PhysicsError> {
+    let [batch, n, c3] = velocity.dims();
+    if c3 != 3 {
+        return Err(PhysicsError::ShapeMismatch {
+            context: "BinghamFlowSolver::step",
+            detail: "velocity must be [B, N, 3]",
+        });
+    }
+    if batch == 0 || n == 0 {
+        return Err(PhysicsError::ShapeMismatch {
+            context: "BinghamFlowSolver::step",
+            detail: "batch and node counts must be > 0",
+        });
+    }
+    let nodal_shape = [batch, n, 1];
+    if pressure.dims() != nodal_shape {
+        return Err(PhysicsError::ShapeMismatch {
+            context: "BinghamFlowSolver::step",
+            detail: "pressure must be [B, N, 1]",
+        });
+    }
+    if yield_stress.dims() != nodal_shape {
+        return Err(PhysicsError::ShapeMismatch {
+            context: "BinghamFlowSolver::step",
+            detail: "yield_stress must be [B, N, 1]",
+        });
+    }
+    if density.dims() != nodal_shape {
+        return Err(PhysicsError::ShapeMismatch {
+            context: "BinghamFlowSolver::step",
+            detail: "density must be [B, N, 1]",
+        });
+    }
+    if lambda_thix.dims() != nodal_shape {
+        return Err(PhysicsError::ShapeMismatch {
+            context: "BinghamFlowSolver::step",
+            detail: "lambda_thix must be [B, N, 1]",
+        });
+    }
+    let [edge_rank, e_ct] = edges_b1.dims();
+    if edge_rank != 2 || e_ct == 0 {
+        return Err(PhysicsError::ShapeMismatch {
+            context: "BinghamFlowSolver::step",
+            detail: "edges_b1 must be [2, E] with E > 0",
+        });
+    }
+    if gravity.dims() != [3] {
+        return Err(PhysicsError::ShapeMismatch {
+            context: "BinghamFlowSolver::step",
+            detail: "gravity must be length 3",
+        });
+    }
+    Ok(())
+}
+
+#[cfg(feature = "rheology-bingham")]
+fn bingham_tensor_batch_mean_finite<B: Backend<FloatElem = f32>>(
+    tensor: &Tensor<B, 3>,
+    context: &'static str,
+) -> Result<f32, PhysicsError> {
+    let value: f32 = tensor.clone().mean().into_scalar();
+    if value.is_finite() {
+        Ok(value)
+    } else {
+        Err(PhysicsError::NonFinite { context })
+    }
+}
+
+#[cfg(feature = "rheology-bingham")]
 #[allow(clippy::too_many_arguments)]
 fn step_experimental<B: Backend<FloatElem = f32>>(
     solver: &BinghamFlowSolver,
@@ -564,7 +663,17 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
     lambda_thix: Tensor<B, 3>,
     edges_b1: Tensor<B, 2, Int>,
     gravity: Tensor<B, 1>,
-) -> (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>) {
+) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
+    bingham_step_validate_solver(solver)?;
+    bingham_step_validate_shapes(
+        &velocity,
+        &pressure,
+        &yield_stress,
+        &density,
+        &lambda_thix,
+        &edges_b1,
+        &gravity,
+    )?;
     let dt = solver.dt;
     let mu = solver.mu_plastic;
     let t_rest = solver.t_rest_thix.max(THIX_PARAM_EPS);
@@ -686,7 +795,11 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
 
     let pressure_new = pressure.add(phi);
 
-    (velocity_new, pressure_new, lambda_new)
+    bingham_tensor_batch_mean_finite(&velocity_new, "BinghamFlowSolver: velocity after step")?;
+    bingham_tensor_batch_mean_finite(&pressure_new, "BinghamFlowSolver: pressure after step")?;
+    bingham_tensor_batch_mean_finite(&lambda_new, "BinghamFlowSolver: lambda after step")?;
+
+    Ok((velocity_new, pressure_new, lambda_new))
 }
 
 #[cfg(all(test, feature = "rheology-bingham"))]
@@ -727,15 +840,17 @@ mod tests {
         solver.t_rest_thix = 1e6_f32;
         solver.gamma_crit_thix = 0.5_f32;
 
-        let (_v, _p, lam1) = solver.step(
-            velocity,
-            pressure,
-            yield_stress,
-            density,
-            lambda0,
-            edges_b1,
-            gravity,
-        );
+        let (_v, _p, lam1) = solver
+            .step(
+                velocity,
+                pressure,
+                yield_stress,
+                density,
+                lambda0,
+                edges_b1,
+                gravity,
+            )
+            .expect("Bingham step");
         let mid = lam1.clone().slice([0..1, 1..2, 0..1]);
         let one = Tensor::<B, 3>::ones_like(&mid);
         assert!(
@@ -760,15 +875,17 @@ mod tests {
         let gravity = Tensor::<B, 1>::zeros([3], &dev);
 
         let solver = BinghamFlowSolver::new(0.01, 1e-3);
-        let (_v, _p, lam1) = solver.step(
-            velocity,
-            pressure,
-            yield_stress,
-            density,
-            lambda0.clone(),
-            edges_b1,
-            gravity,
-        );
+        let (_v, _p, lam1) = solver
+            .step(
+                velocity,
+                pressure,
+                yield_stress,
+                density,
+                lambda0.clone(),
+                edges_b1,
+                gravity,
+            )
+            .expect("Bingham step");
         let z = Tensor::<B, 3>::zeros_like(&lam1);
         assert!(
             lam1.sub(lambda0).abs().all_close(z, None, Some(1e-5_f64)),

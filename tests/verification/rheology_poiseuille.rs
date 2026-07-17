@@ -44,7 +44,7 @@ fn analytic_newtonian_centreline_is_gh2_over_8mu() {
     let h = 0.05_f32;
     let mu = 50.0_f32;
     let want = g * h * h / (8.0 * mu);
-    let got = plane_bingham_poiseuille_u(0.0, g, h, mu, 0.0);
+    let got = plane_bingham_poiseuille_u(0.0, g, h, mu, 0.0).expect("Newtonian centreline");
     assert!(
         (got - want).abs() < 1e-3,
         "centreline Newtonian mismatch: got {got}, want {want}"
@@ -65,7 +65,7 @@ fn analytic_no_slip_when_yield_exceeds_wall_stress() {
     let h = 0.05_f32;
     let mu = 50.0_f32;
     let tau0 = 100.0_f32; // > g * H / 2 = 25 Pa
-    let u0 = plane_bingham_poiseuille_u(0.0, g, h, mu, tau0);
+    let u0 = plane_bingham_poiseuille_u(0.0, g, h, mu, tau0).expect("no-slip yield branch");
     assert!(u0.abs() < 1e-6, "expected zero flow, got {u0}");
 }
 
@@ -155,7 +155,8 @@ fn chorin_single_step_finite_smoke() {
             lambda_thix.clone(),
             edges_b1.clone(),
             gravity.clone(),
-        );
+        )
+        .expect("Bingham step");
         let mask3 = wall_mask.clone().expand([batch, n, 3]);
         velocity = v.mul(mask3);
         pressure = p;
@@ -248,7 +249,8 @@ fn chorin_uniform_body_force_zero_pressure_rhs_uniform_interior_one_step() {
         lambda_thix,
         edges_b1,
         gravity,
-    );
+    )
+    .expect("Bingham step");
     let mask3 = wall_mask.expand([batch, n, 3]);
     let vals: Vec<f32> = v.mul(mask3).into_data().convert::<f32>().value;
 
@@ -415,7 +417,8 @@ fn chorin_jacobi_pcg_step_velocity_amplification_regression_guard() {
             lambda_thix.clone(),
             edges_b1.clone(),
             gravity.clone(),
-        );
+        )
+        .expect("Bingham step");
         velocity = v0.mul(mask3.clone());
         pressure = p0;
         let umax0 = velocity.clone().abs().max().into_scalar();
@@ -433,7 +436,8 @@ fn chorin_jacobi_pcg_step_velocity_amplification_regression_guard() {
             lambda_thix.clone(),
             edges_b1.clone(),
             gravity.clone(),
-        );
+        )
+        .expect("Bingham step");
         let umax1 = v1.mul(mask3).abs().max().into_scalar();
         let pmax1 = p1.clone().abs().max().into_scalar();
         assert!(
@@ -561,7 +565,8 @@ fn chorin_channel_65x17_thirty_substeps_remain_finite() {
             lambda_thix.clone(),
             edges_b1.clone(),
             gravity.clone(),
-        );
+        )
+        .expect("Bingham step");
         velocity = v.mul(mask3.clone());
         pressure = p;
     }
@@ -612,7 +617,8 @@ fn thixotropy_quiescent_explicit_euler_matches_formula() {
         lambda0.clone(),
         edges_b1,
         gravity,
-    );
+    )
+    .expect("Bingham step");
 
     let lam0 = 0.3_f32;
     let expected = lam0 + dt * (1.0 - lam0) / solver.t_rest_thix;
@@ -648,7 +654,8 @@ fn regularized_1d_newtonian_centreline_matches_gh2_over_8mu() {
         0.0,
         RHEOLOGY_FLOW_BINGHAM_EPS,
         64,
-    );
+    )
+    .expect("regularized Newtonian centreline");
     assert!(
         (got - want).abs() < 2e-4 * want.abs().max(1.0),
         "regularized Newtonian centreline: got {got}, want {want}"
@@ -670,11 +677,15 @@ fn regularized_1d_reference_near_buckingham_small_epsilon() {
     for j in 0..8 {
         let t = j as f32 / 7.0;
         let y = t * half;
-        let u_reg = plane_regularized_bingham_poiseuille_u_sample(y, G, H, MU, TAU0, eps, n_seg);
-        let u_buck = plane_bingham_poiseuille_u(y, G, H, MU, TAU0);
+        let u_reg =
+            plane_regularized_bingham_poiseuille_u_sample(y, G, H, MU, TAU0, eps, n_seg)
+                .expect("regularized profile sample");
+        let u_buck =
+            plane_bingham_poiseuille_u(y, G, H, MU, TAU0).expect("Buckingham profile sample");
         max_abs = max_abs.max((u_reg - u_buck).abs());
     }
     let scale = plane_bingham_poiseuille_u(0.0, G, H, MU, TAU0)
+        .expect("Bingham centreline scale")
         .abs()
         .max(1e-6);
     assert!(
@@ -771,7 +782,8 @@ fn chorin_developed_channel_centreline_vs_regularized_reference() {
             lambda_thix.clone(),
             edges_b1.clone(),
             gravity.clone(),
-        );
+        )
+        .expect("Bingham step");
         velocity = v.mul(mask3.clone());
         pressure = p;
     }
@@ -788,7 +800,8 @@ fn chorin_developed_channel_centreline_vs_regularized_reference() {
         TAU0,
         RHEOLOGY_FLOW_BINGHAM_EPS,
         256,
-    );
+    )
+    .expect("developed centreline reference");
 
     assert!(
         u_num.is_finite() && pressure.abs().max().into_scalar().is_finite(),
@@ -901,7 +914,8 @@ fn chorin_steady_channel_64x16_vs_regularized_reference() {
             lambda_thix.clone(),
             edges_b1.clone(),
             gravity.clone(),
-        );
+        )
+        .expect("Bingham step");
         velocity = v.mul(mask3.clone());
         pressure = p;
         let umax = velocity.clone().abs().max().into_scalar();
@@ -1032,7 +1046,8 @@ fn chorin_channel_65x17_longrun_wall_normal_l2_vs_regularized_reference() {
             lambda_thix.clone(),
             edges_b1.clone(),
             gravity.clone(),
-        );
+        )
+        .expect("Bingham step");
         velocity = v.mul(mask3.clone());
         pressure = p;
         let umax = velocity.clone().abs().max().into_scalar();
@@ -1063,7 +1078,8 @@ fn chorin_channel_65x17_longrun_wall_normal_l2_vs_regularized_reference() {
             TAU0,
             RHEOLOGY_FLOW_BINGHAM_EPS,
             n_quad,
-        );
+        )
+        .expect("longrun wall-normal reference");
         assert!(u_ref.is_finite(), "reference u at y={y} should be finite");
         let id = j * nx + i_mid;
         let u_num = vel_flat[id * 3];
@@ -1157,7 +1173,8 @@ fn thixotropy_quiescent_yield_stress_growth_matches_wangler_2016() {
             lambda.clone(),
             edges_b1.clone(),
             gravity.clone(),
-        );
+        )
+        .expect("Bingham step");
         // Hold quiescence: zero out velocity so γ̇ stays ~0.
         velocity = Tensor::<B, 3>::zeros_like(&v);
         pressure = p;
