@@ -102,7 +102,8 @@ fn manifold_gateway_accepts_step_with_suggested_info_gain() {
     let result = gateway.evaluate_topology_step(proposed, info_gain);
     assert!(result.is_ok(), "expected Ok, got {:?}", result.err());
 
-    let (_verified, reward) = result.unwrap();
+    let (_verified, reward) = result
+        .expect("ManifoldGateway evaluate_topology_step with suggested info gain");
     let rv: Vec<f32> = reward.into_data().value;
     assert!(rv[0].is_finite(), "reward should be finite");
 }

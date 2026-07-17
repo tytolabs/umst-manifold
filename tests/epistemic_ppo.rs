@@ -164,7 +164,7 @@ fn manifold_gateway_alpha_beta_gamma_weights() {
     g_base.gamma = 0.0;
     let r_base = g_base
         .evaluate_topology_step(umst.clone(), info.clone())
-        .unwrap()
+        .expect("ManifoldGateway topology step with beta=0 should pass gate")
         .1
         .into_data()
         .value[0];
@@ -175,7 +175,7 @@ fn manifold_gateway_alpha_beta_gamma_weights() {
     g_pen.gamma = 0.0;
     let r_pen = g_pen
         .evaluate_topology_step(umst, info)
-        .unwrap()
+        .expect("ManifoldGateway topology step with beta=10 should pass gate")
         .1
         .into_data()
         .value[0];
