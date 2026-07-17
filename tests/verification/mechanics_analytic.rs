@@ -589,8 +589,9 @@ fn run_plate_case_details_ext_ssss_bottom(
 fn kirchhoff_plate_stiff_cg_cfg() -> MechanicsInnerLoopConfig {
     MechanicsInnerLoopConfig {
         max_cg_iterations: 130_000,
-        cg_tolerance: 1e-5,
-        pcg_tolerance: 1e-5,
+        // f32 Q1-hex PCG stalls near ~1e-4; keep above ensure_converged floor.
+        cg_tolerance: 1e-4,
+        pcg_tolerance: 1e-4,
         use_preconditioner: false,
         max_equilibrium_substeps: 1,
     }
@@ -634,12 +635,12 @@ fn run_plate_case_details(
 fn run_plate_case(nx: usize, ny: usize, nz: usize, q: f32) -> f32 {
     // 1e-7 is often unreachable in f32 Jacobi-PCG and only burns `max_cg_iterations`; plate checks
     // gate on masked residual / deflection trends, not machine-precision iterate tolerance.
-    run_plate_case_details(nx, ny, nz, q, 1e-5).0
+    run_plate_case_details(nx, ny, nz, q, 1e-4).0
 }
 
 #[test]
 fn plate_16x16_pc_solve_reduces_masked_ku_residual() {
-    let (w, rel) = run_plate_case_details(16, 16, 4, 10_000.0, 1e-5);
+    let (w, rel) = run_plate_case_details(16, 16, 4, 10_000.0, 1e-4);
     assert!(
         rel < 1e-3,
         "expected PCG to reduce masked relative residual; got {rel} (w={w})"
@@ -833,7 +834,7 @@ fn plate_centre_deflection_kirchhoff_ratio_q1_hex_band_coarse_regression() {
     let lz = 0.05_f32;
     let q = 10_000.0_f32;
 
-    let (w_numerical, res) = run_plate_case_details(nx, ny, nz, q, 1e-5);
+    let (w_numerical, res) = run_plate_case_details(nx, ny, nz, q, 1e-4);
     assert!(
         res < 1e-3,
         "expected masked equilibrium residual <1e-3; got {res} (w={w_numerical})"
@@ -867,9 +868,9 @@ fn plate_centre_deflection_kirchhoff_ratio_q1_hex_band_coarse_regression() {
 /// (CI name was formerly `plate_centre_deflection_vs_kirchhoff_ssss_within_5pct`, which incorrectly
 /// suggested a 5% accuracy gate.)
 ///
-/// Iterate tolerance is **`1e-5`**, not `1e-7`: f32 Jacobi-PCG rarely reaches \(10^{-7}\) relative
+/// Iterate tolerance is **`1e-4`**, not `1e-7`: f32 Jacobi-PCG rarely reaches \(10^{-7}\) relative
 /// residual cost-effectively (see [`run_plate_case`]); tighter tol mainly burns iterations without
-/// improving the masked \(\|f-Ku\|\) check below.
+/// improving the masked \(\|f-Ku\|\) check below, and trips `ensure_converged` near \(~10^{-4}\).
 #[test]
 fn plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band() {
     // w/w_K band: BC mismatch vs SSSS reference + shear locking (see module rustdoc); not §R2.1 closure.
@@ -880,7 +881,7 @@ fn plate_centre_deflection_kirchhoff_ratio_q1_hex_locked_band() {
     let lz = 0.05_f32;
     let q = 10_000.0_f32;
 
-    let (w_numerical, res) = run_plate_case_details(nx, ny, nz, q, 1e-5);
+    let (w_numerical, res) = run_plate_case_details(nx, ny, nz, q, 1e-4);
     assert!(
         res < 1e-3,
         "expected masked equilibrium residual <1e-3; got {res} (w={w_numerical})"
@@ -970,7 +971,7 @@ fn plate_r21_kirchhoff_ssss_centre_w_within_5pct_brick_path_gate() {
     let e0 = 30e9_f32;
     let nu = 0.2_f32;
 
-    let (w, res) = run_plate_case_details_ext_ssss_bottom(nx, ny, nz, lx, lx, lz, q, 1e-5);
+    let (w, res) = run_plate_case_details_ext_ssss_bottom(nx, ny, nz, lx, lx, lz, q, 1e-4);
     assert!(
         res < 1e-3,
         "expected masked equilibrium residual <1e-3; got {res} (w={w})"
