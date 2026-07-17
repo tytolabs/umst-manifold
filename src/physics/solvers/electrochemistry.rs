@@ -268,11 +268,11 @@ impl ElectroChemicalSolver {
         edges_b1: Tensor<B, 2, Int>,
         permittivity: Tensor<B, 3>,
         diffusivity: Tensor<B, 3>,
-    ) -> (Tensor<B, 3>, Tensor<B, 3>) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
         #[cfg(not(feature = "electrochemistry-mvp"))]
         {
             let _ = (dt, edges_b1, permittivity, diffusivity);
-            (electric_potential, ion_concentration)
+            Ok((electric_potential, ion_concentration))
         }
 
         #[cfg(feature = "electrochemistry-mvp")]
@@ -304,16 +304,16 @@ impl ElectroChemicalSolver {
         edges_b1: Tensor<B, 2, Int>,
         permittivity: Tensor<B, 3>,
         diffusivity: Tensor<B, 3>,
-    ) -> (Tensor<B, 3>, Tensor<B, 3>) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
         #[cfg(not(feature = "electrochemistry-mvp"))]
         {
             let _ = (dt, edges_b1, permittivity, diffusivity);
-            (electric_potential, ion_concentration)
+            Ok((electric_potential, ion_concentration))
         }
         #[cfg(feature = "electrochemistry-mvp")]
         {
             if let Some(newton) = self.pnp_implicit_newton_chain {
-                if let Some(out) = self.try_solve_pnp_backward_euler_newton_chain(
+                if let Ok(out) = self.try_solve_pnp_backward_euler_newton_chain(
                     &newton,
                     dt,
                     electric_potential.clone(),
@@ -322,7 +322,7 @@ impl ElectroChemicalSolver {
                     permittivity.clone(),
                     diffusivity.clone(),
                 ) {
-                    return out;
+                    return Ok(out).expect("try_solve_pnp_backward_euler_newton_chain");
                 }
             }
             self.solve_pnp_step(
@@ -360,10 +360,21 @@ impl ElectroChemicalSolver {
         edges_b1: Tensor<B, 2, Int>,
         permittivity: Tensor<B, 3>,
         diffusivity: Tensor<B, 3>,
-    ) -> Option<(Tensor<B, 3>, Tensor<B, 3>)> {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
         #[cfg(not(feature = "electrochemistry-mvp"))]
         {
-            None
+            let _ = (
+                newton,
+                dt,
+                electric_potential_n,
+                ion_concentration_n,
+                edges_b1,
+                permittivity,
+                diffusivity,
+            );
+            Err(PhysicsError::UnsupportedLayout {
+                context: "try_solve_pnp_backward_euler_newton_chain",
+            })
         }
         #[cfg(feature = "electrochemistry-mvp")]
         {
@@ -682,27 +693,37 @@ fn try_solve_poisson_chain_thomas<B: Backend<FloatElem = f32>>(
     permittivity: Tensor<B, 3>,
     edges_b1: Tensor<B, 2, Int>,
     mesh_spacing: f32,
-) -> Option<Tensor<B, 3>> {
+) -> Result<Tensor<B, 3>, PhysicsError> {
     let device = electric_potential.device();
     let pd = electric_potential.dims();
     let batch = pd[0];
     let n = pd[1];
     let fc = pd[2];
     if fc != 1 {
-        return None;
+        return Err(PhysicsError::ShapeMismatch {
+            context: "try_solve_poisson_chain_thomas",
+            detail: "electric_potential fc must be 1",
+        });
     }
     let ed = edges_b1.dims();
     if ed[0] != 2 {
-        return None;
+        return Err(PhysicsError::ShapeMismatch {
+            context: "try_solve_poisson_chain_thomas",
+            detail: "edges_b1 rank-0 must be 2",
+        });
     }
     let e_ct = ed[1];
     if n < 2 || e_ct != n - 1 {
-        return None;
+        return Err(PhysicsError::UnsupportedLayout {
+            context: "try_solve_poisson_chain_thomas",
+        });
     }
     let layout_raw = edges_b1.clone().float().into_data().value;
     let layout: Vec<i64> = layout_raw.iter().map(|&x| x as i64).collect();
     if !is_contiguous_unit_path(n, &layout) {
-        return None;
+        return Err(PhysicsError::UnsupportedLayout {
+            context: "try_solve_poisson_chain_thomas",
+        });
     }
     let phi_h = electric_potential.into_data().value;
     let rho_h = rho_over_eps.into_data().value;
@@ -728,7 +749,7 @@ fn try_solve_poisson_chain_thomas<B: Backend<FloatElem = f32>>(
             &mut out[off..off + stride],
         );
     }
-    Some(Tensor::from_data(
+    Ok(Tensor::from_data(
         Data::new(out, Shape::new([batch, n, fc])),
         &device,
     ))
@@ -783,7 +804,7 @@ fn solve_pnp_step_experimental<B: Backend<FloatElem = f32>>(
     edges_b1: Tensor<B, 2, Int>,
     permittivity: Tensor<B, 3>,
     diffusivity: Tensor<B, 3>,
-) -> (Tensor<B, 3>, Tensor<B, 3>) {
+) -> Result<(Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
     let iters = solver.coupling_picard_iters.max(1);
     let tol = solver.coupling_picard_tol_linf;
     let tol_dphi_linf = solver.coupling_picard_tol_delta_phi_linf;
@@ -830,7 +851,7 @@ fn solve_pnp_step_experimental<B: Backend<FloatElem = f32>>(
             }
         }
     }
-    (phi, c_work)
+    Ok((phi, c_work))
 }
 
 /// Picard L∞ gate: **`max |\Delta| < \texttt{tol}`** iff every component satisfies **`|\Delta_i| < \texttt{tol}`**
@@ -872,15 +893,15 @@ fn solve_pnp_split_step_experimental_with_refs<B: Backend<FloatElem = f32>>(
     let eps_safe = permittivity.clone().clamp_min(1e-30_f32);
     let rho_over_eps = rho_e.div(eps_safe);
 
-    let phi_next = if let Some(phi_t) = try_solve_poisson_chain_thomas(
+    let phi_next = match try_solve_poisson_chain_thomas(
         electric_potential.clone(),
         rho_over_eps.clone(),
         permittivity.clone(),
         edges_b1.clone(),
         solver.mesh_spacing,
     ) {
-        phi_t
-    } else {
+        Ok(phi_t) => phi_t,
+        Err(_) => {
         let h_sq = solver.mesh_spacing.max(1e-30_f32).powi(2);
         let rhs_lap = rho_over_eps.neg().mul_scalar(h_sq);
         let batch = electric_potential.dims()[0];
@@ -893,6 +914,7 @@ fn solve_pnp_split_step_experimental_with_refs<B: Backend<FloatElem = f32>>(
             batch,
             n,
         )
+        }
     };
 
     // Scharfetter–Gummel drift–diffusion flux on each edge, per species channel.
@@ -1983,27 +2005,36 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     edges_b1: Tensor<B, 2, Int>,
     permittivity: Tensor<B, 3>,
     diffusivity: Tensor<B, 3>,
-) -> Option<(Tensor<B, 3>, Tensor<B, 3>)> {
+) -> Result<(Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
+    const CTX: &str = "try_solve_pnp_be_newton_chain_host";
     let pd = electric_potential_n.dims();
     if pd[0] != 1 || pd[2] != 1 {
-        return None;
+        return Err(PhysicsError::ShapeMismatch {
+            context: CTX,
+            detail: "batch must be 1 and fc must be 1",
+        });
     }
     let n = pd[1];
     if n < 2 || n > newton.max_chain_nodes {
-        return None;
+        return Err(PhysicsError::UnsupportedLayout { context: CTX });
     }
     let ed = edges_b1.dims();
     if ed[0] != 2 || ed[1] != n - 1 {
-        return None;
+        return Err(PhysicsError::ShapeMismatch {
+            context: CTX,
+            detail: "edges_b1 must be [2, N-1]",
+        });
     }
     let layout_raw = edges_b1.clone().float().into_data().value;
     let layout: Vec<i64> = layout_raw.iter().map(|&x| x as i64).collect();
     if !is_contiguous_unit_path(n, &layout) {
-        return None;
+        return Err(PhysicsError::UnsupportedLayout { context: CTX });
     }
     let dt64 = dt as f64;
     if !dt64.is_finite() || dt64 <= 0.0 {
-        return None;
+        return Err(PhysicsError::InvariantViolation {
+            context: "try_solve_pnp_be_newton_chain_host: dt must be positive finite",
+        });
     }
     let device = ion_concentration_n.device();
     let phi_h = electric_potential_n.clone().into_data().value;
@@ -2105,7 +2136,9 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
                 (ok, false)
             } else {
                 let Some(jac) = jac_band.as_mut() else {
-                    return None;
+                    return Err(PhysicsError::BufferExhausted {
+                        context: "try_solve_pnp_be_newton_chain_host: jac_band",
+                    });
                 };
                 newton_fd_jacobian_full_sg_node_major_row_band(
                     solver, newton, dt64, &u, &c_plus_n, &c_minus_n, &eps, &d_plus, &d_minus, g0,
@@ -2116,13 +2149,19 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
                     *v = -*v;
                 }
                 let Some(lu_buf) = jac_lu_scratch.as_mut() else {
-                    return None;
+                    return Err(PhysicsError::BufferExhausted {
+                        context: "try_solve_pnp_be_newton_chain_host: jac_lu_scratch",
+                    });
                 };
                 let Some(dense_buf) = jac_dense_scratch.as_mut() else {
-                    return None;
+                    return Err(PhysicsError::BufferExhausted {
+                        context: "try_solve_pnp_be_newton_chain_host: jac_dense_scratch",
+                    });
                 };
                 let Some(swaps) = band_lu_swaps.as_mut() else {
-                    return None;
+                    return Err(PhysicsError::BufferExhausted {
+                        context: "try_solve_pnp_be_newton_chain_host: band_lu_swaps",
+                    });
                 };
                 swaps.clear();
                 let ok = solve_newton_correction_full_sg_row_band_band_lu_or_dense_expand(
@@ -2143,16 +2182,24 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
             }
         } else {
             let Some(jac) = jac_band.as_mut() else {
-                return None;
+                return Err(PhysicsError::BufferExhausted {
+                    context: "try_solve_pnp_be_newton_chain_host: jac_band",
+                });
             };
             let Some(lu_buf) = jac_lu_scratch.as_mut() else {
-                return None;
+                return Err(PhysicsError::BufferExhausted {
+                    context: "try_solve_pnp_be_newton_chain_host: jac_lu_scratch",
+                });
             };
             let Some(dense_buf) = jac_dense_scratch.as_mut() else {
-                return None;
+                return Err(PhysicsError::BufferExhausted {
+                    context: "try_solve_pnp_be_newton_chain_host: jac_dense_scratch",
+                });
             };
             let Some(swaps) = band_lu_swaps.as_mut() else {
-                return None;
+                return Err(PhysicsError::BufferExhausted {
+                    context: "try_solve_pnp_be_newton_chain_host: band_lu_swaps",
+                });
             };
             newton_fd_jacobian_full_sg_node_major_row_band(
                 solver, newton, dt64, &u, &c_plus_n, &c_minus_n, &eps, &d_plus, &d_minus, g0, g1,
@@ -2213,7 +2260,9 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
             (ok_all, frozen_used)
         };
         if !ok {
-            return None;
+            return Err(PhysicsError::KrylovDiverged {
+                context: "try_solve_pnp_be_newton_chain_host: Newton correction failed",
+            });
         }
         if !u_frozen_inner {
             for i in 0..dim {
@@ -2232,7 +2281,10 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     );
     let n_pre = vec_l2(&r_pre);
     if !n_pre.is_finite() || n_pre > 1e-6_f64 {
-        return None;
+        return Err(PhysicsError::Diverged {
+            eq_rel: n_pre as f32,
+            pcg_iterations: 0,
+        });
     }
     let phi_out: Vec<f32> = u[0..n].iter().map(|&x| x as f32).collect();
     let mut c_out = vec![0.0_f32; n * 2];
@@ -2242,7 +2294,7 @@ fn try_solve_pnp_be_newton_chain_host<B: Backend<FloatElem = f32>>(
     }
     let phi_t = Tensor::from_data(Data::new(phi_out, Shape::new([1, n, 1])), &device);
     let c_t = Tensor::from_data(Data::new(c_out, Shape::new([1, n, 2])), &device);
-    Some((phi_t, c_t))
+    Ok((phi_t, c_t))
 }
 
 /// L2 norm of the fully implicit backward Euler residual on a chain (`batch=1`), for verification.
@@ -2258,20 +2310,27 @@ pub fn pnp_backward_euler_residual_l2_chain_host_f64<B: Backend<FloatElem = f32>
     edges_b1: &Tensor<B, 2, Int>,
     permittivity: &Tensor<B, 3>,
     diffusivity: &Tensor<B, 3>,
-) -> Option<f64> {
+) -> Result<f64, PhysicsError> {
+    const CTX: &str = "pnp_backward_euler_residual_l2_chain_host_f64";
     let pd = phi.dims();
     if pd[0] != 1 || pd[2] != 1 {
-        return None;
+        return Err(PhysicsError::ShapeMismatch {
+            context: CTX,
+            detail: "batch must be 1 and fc must be 1",
+        });
     }
     let n = pd[1];
     let ed = edges_b1.dims();
     if ed[0] != 2 || ed[1] != n - 1 {
-        return None;
+        return Err(PhysicsError::ShapeMismatch {
+            context: CTX,
+            detail: "edges_b1 must be [2, N-1]",
+        });
     }
     let layout_raw = edges_b1.clone().float().into_data().value;
     let layout: Vec<i64> = layout_raw.iter().map(|&x| x as i64).collect();
     if !is_contiguous_unit_path(n, &layout) {
-        return None;
+        return Err(PhysicsError::UnsupportedLayout { context: CTX });
     }
     let phi_h = phi.clone().into_data().value;
     let c_h = c.clone().into_data().value;
@@ -2302,7 +2361,7 @@ pub fn pnp_backward_euler_residual_l2_chain_host_f64<B: Backend<FloatElem = f32>
         solver, newton, dt as f64, &phi_v, &cp, &cm, &c_plus_n, &c_minus_n, &eps, &d_plus,
         &d_minus, g0, g1,
     );
-    Some(vec_l2(&r))
+    Ok(vec_l2(&r))
 }
 
 #[cfg(all(test, feature = "electrochemistry-mvp"))]
@@ -4451,8 +4510,8 @@ mod newton_chain_tests {
             edges.clone(),
             eps.clone(),
             d.clone(),
-        );
-        let (p1, c1) = solver.solve_pnp_step_dispatch(dt, phi, c, edges, eps, d);
+        ).expect("solve_pnp_step");
+        let (p1, c1) = solver.solve_pnp_step_dispatch(dt, phi, c, edges, eps, d).expect("solve_pnp_step_dispatch");
         assert!(
             tensor1_bool(p0.sub(p1).abs().lower_elem(1e-6_f32).all())
                 && tensor1_bool(c0.sub(c1).abs().lower_elem(1e-6_f32).all()),
@@ -4510,10 +4569,10 @@ mod newton_chain_tests {
             edges.clone(),
             eps.clone(),
             d.clone(),
-        );
+        ).expect("solve_pnp_step_dispatch");
         let (phi_t, c_t) = solver
             .try_solve_pnp_backward_euler_newton_chain(&newton, dt, phi_n, c_n, edges, eps, d)
-            .expect("try_solve chain");
+            .expect("try_solve chain").expect("try_solve_pnp_backward_euler_newton_chain");
         assert!(
             tensor1_bool(phi_d.sub(phi_t).abs().lower_elem(1e-5_f32).all())
                 && tensor1_bool(c_d.sub(c_t).abs().lower_elem(1e-5_f32).all()),
@@ -4786,8 +4845,8 @@ mod physics_idempotency_tests {
             edges.clone(),
             eps.clone(),
             d.clone(),
-        );
-        let (phi2, c2) = solver.solve_pnp_step(dt, phi1.clone(), c1.clone(), edges, eps, d);
+        ).expect("solve_pnp_step");
+        let (phi2, c2) = solver.solve_pnp_step(dt, phi1.clone(), c1.clone(), edges, eps, d).expect("solve_pnp_step");
 
         let tol = 1e-6_f32;
         assert!(
