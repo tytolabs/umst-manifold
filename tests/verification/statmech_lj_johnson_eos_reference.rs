@@ -106,7 +106,8 @@ fn placeholder_upscale_bulk_modulus_disagrees_with_johnson_reference_documented(
         Data::new(vec![epsilon as f32, sigma as f32], Shape::new([1, 2])),
         &dev,
     );
-    let (k_tensor, _) = upscale_potentials(lj).unwrap();
+    let (k_tensor, _) = upscale_potentials(lj)
+        .expect("upscale_potentials [B,2] placeholder bulk modulus vs Johnson");
     let k_placeholder = f64::from(k_tensor.into_data().value[0]);
 
     let rel_tensor = ((k_placeholder - k_johnson) / k_johnson).abs();
@@ -134,7 +135,8 @@ fn upscale_potentials_b4_k_order_matches_johnson_at_dilute_rho() {
         ),
         &dev,
     );
-    let (k_tensor, _) = upscale_potentials(lj).unwrap();
+    let (k_tensor, _) = upscale_potentials(lj)
+        .expect("upscale_potentials [B,4] virial K at dilute rho*");
     let got = f64::from(k_tensor.into_data().value[0]);
     let ratio = got / k_j;
     assert!(
@@ -157,8 +159,10 @@ fn upscale_potentials_b4_gamma_gc_depends_on_rho_t_star_state() {
         Data::new(vec![epsilon, sigma, 0.55_f32, 2.8_f32], Shape::new([1, 4])),
         &dev,
     );
-    let (_, g4a) = upscale_potentials(lj4_a).unwrap();
-    let (_, g4b) = upscale_potentials(lj4_b).unwrap();
+    let (_, g4a) = upscale_potentials(lj4_a)
+        .expect("upscale_potentials [B,4] gamma_gc state (rho*,T*) A");
+    let (_, g4b) = upscale_potentials(lj4_b)
+        .expect("upscale_potentials [B,4] gamma_gc state (rho*,T*) B");
     let g4av = g4a.into_data().value[0];
     let g4bv = g4b.into_data().value[0];
     assert!(
