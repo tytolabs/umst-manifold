@@ -322,7 +322,7 @@ impl ElectroChemicalSolver {
                     permittivity.clone(),
                     diffusivity.clone(),
                 ) {
-                    return Ok(out).expect("try_solve_pnp_backward_euler_newton_chain");
+                    return Ok(out);
                 }
             }
             self.solve_pnp_step(
