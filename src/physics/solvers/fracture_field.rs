@@ -1356,7 +1356,14 @@ mod fracture_at2_tests {
         );
 
         let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
-        let d_new = solver.update_damage(strain_field(strain), damage_field(damage), gc_field(fracture_energy_gc), edges_b1).expect("update_damage");
+        let d_new = solver
+            .update_damage(
+                strain_field(strain),
+                damage_field(damage),
+                gc_field(fracture_energy_gc),
+                edges_b1,
+            )
+            .expect("PhaseFieldFractureSolver::update_damage on 3-node chain with uniaxial ε_xx=1e-3 (FP §6 AT2 nonzero damage smoke witness)");
         let vals = d_new.into_tensor().into_data().value;
         assert!(
             vals.iter().all(|x| x.is_finite()),
@@ -1414,8 +1421,15 @@ mod fracture_at2_tests {
             fracture_energy_gc.clone(),
             edges_b1.clone(),
             1,
-        ).expect("staggered outer one");
-        let d_once = solver.update_damage(strain_field(strain), damage_field(damage), gc_field(fracture_energy_gc), edges_b1).expect("update_damage");
+        ).expect("PhaseFieldFractureSolver::update_damage_staggered outer_iterations=1 with constant strain provider (FP §6 AT2 stagger parity witness)");
+        let d_once = solver
+            .update_damage(
+                strain_field(strain),
+                damage_field(damage),
+                gc_field(fracture_energy_gc),
+                edges_b1,
+            )
+            .expect("PhaseFieldFractureSolver::update_damage single-pass reference on constant strain (FP §6 AT2 stagger parity witness)");
         assert_eq!(
             d_stagg.into_tensor().into_data().value,
             d_once.into_tensor().into_data().value,
@@ -1469,7 +1483,7 @@ mod fracture_at2_tests {
             damage_field(damage0.clone()),
             gc_field(fracture_energy_gc.clone()),
             edges_b1.clone(),
-        ).expect("update_damage weak");
+        ).expect("PhaseFieldFractureSolver::update_damage on negligible ε_xx weak-strain baseline (FP §6 AT2 weak→strong irreversibility witness)");
 
         let mut k = 0usize;
         let d_weak_then_strong = solver.update_damage_staggered(
@@ -1486,7 +1500,7 @@ mod fracture_at2_tests {
             fracture_energy_gc,
             edges_b1,
             2,
-        ).expect("staggered weak then strong");
+        ).expect("PhaseFieldFractureSolver::update_damage_staggered weak→strong two-outer strain schedule (FP §6 AT2 irreversibility witness)");
 
         let sum_weak: f32 = d_only_weak.into_tensor().into_data().value.iter().sum();
         let sum_ws: f32 = d_weak_then_strong.into_tensor().into_data().value.iter().sum();
@@ -1538,7 +1552,7 @@ mod fracture_at2_tests {
             fracture_energy_gc.clone(),
             edges_b1.clone(),
             40,
-        ).expect("staggered full budget");
+        ).expect("PhaseFieldFractureSolver::update_damage_staggered full 40-outer budget on constant strain (FP §6 AT2 early-exit reference witness)");
 
         let calls = Arc::new(AtomicUsize::new(0));
         let calls_cl = Arc::clone(&calls);
