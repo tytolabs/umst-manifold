@@ -34,6 +34,7 @@ use crate::core::field::{DamageField, DisplacementField, Field};
 use super::dec_operators::DecEdgeOperators;
 use super::framework::PhysicsSolverZst;
 use super::time_orchestration::MechanicsInnerLoopConfig;
+use super::error::PhysicsError;
 use super::topology::EdgeTopology;
 
 /// PCG loop telemetry from [`VectorMechanicsSolver::packed_bar_network_equilibrium`].
@@ -712,7 +713,7 @@ impl VectorMechanicsSolver {
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
-    ) -> (Tensor<B, 3>, Tensor<B, 4>) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError> {
         let (u, stress) = Self::solve_equilibrium_typed(
             Field::new(displacement),
             coords,
@@ -723,8 +724,8 @@ impl VectorMechanicsSolver {
             boundary_mask,
             cross_section_area,
             inner_cfg,
-        );
-        (u.into_tensor(), stress)
+        )?;
+        Ok((u.into_tensor(), stress))
     }
 
     /// FP P3.4 — bar-network equilibrium with [`DisplacementField`] / [`DamageField`] operands.
@@ -739,7 +740,7 @@ impl VectorMechanicsSolver {
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
-    ) -> (DisplacementField<B>, Tensor<B, 4>) {
+    ) -> Result<(DisplacementField<B>, Tensor<B, 4>), PhysicsError> {
         let (u, k_axial, edge_unit, _edge_len, src_indices, tgt_indices, n_v, _pcg) =
             Self::packed_bar_network_equilibrium(
                 displacement.into_tensor(),
@@ -761,7 +762,7 @@ impl VectorMechanicsSolver {
             n_v,
             cross_section_area,
         );
-        (Field::new(u), stress)
+        Ok((Field::new(u), stress))
     }
 
     /// Quasi-static bar-network equilibrium with PCG iteration / relative-residual report (B6 H4 gates).

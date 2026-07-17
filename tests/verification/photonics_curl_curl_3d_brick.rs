@@ -55,6 +55,7 @@ fn solve_maxwell_uniform_brick_tet_boundary_residual() {
         &cg,
         Some(&patch),
     );
+        .expect(\"solve_maxwell_curl_curl patch residual test\")
     let x = sol.into_data().value;
     let dim = 3 * n;
     let mut y = vec![0.0_f32; dim];
