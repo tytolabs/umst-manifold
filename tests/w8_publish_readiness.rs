@@ -13,7 +13,9 @@ fn manifest_dir() -> PathBuf {
 #[test]
 fn w8_publish_readiness_script_is_present_and_documents_prep_vs_publish() {
     let script = manifest_dir().join("scripts/w8_publish_readiness.sh");
-    let body = std::fs::read_to_string(&script).expect("w8_publish_readiness.sh");
+    let body = std::fs::read_to_string(&script).expect(
+        "scripts/w8_publish_readiness.sh readable for module_count/digest pin + prep-vs-publish contract scan (FP §6 W8 publish readiness)",
+    );
     assert!(
         body.contains("module_count=129") || body.contains("module_count=122"),
         "script must pin module_count 129 (or legacy 122)"
@@ -45,7 +47,9 @@ fn w8_publish_readiness_script_is_present_and_documents_prep_vs_publish() {
         "script must reference verify_umst_stack.sh for 16/16 evidence"
     );
     let verify = std::fs::read_to_string(manifest_dir().join("scripts/verify_umst_stack.sh"))
-        .expect("verify_umst_stack.sh");
+        .expect(
+            "scripts/verify_umst_stack.sh readable — must invoke w8_publish_readiness.sh for 16/16 evidence (FP §6 W8 publish readiness)",
+        );
     assert!(
         verify.contains("w8_publish_readiness.sh"),
         "verify_umst_stack.sh must invoke w8_publish_readiness.sh"
@@ -66,7 +70,9 @@ fn w8_publish_readiness_exits_zero_on_current_workspace() {
     let script = manifest.join("scripts/w8_publish_readiness.sh");
     let workspace = manifest
         .parent()
-        .expect("umst-manifold parent = multi-repo workspace");
+        .expect(
+            "umst-manifold CARGO_MANIFEST_DIR parent is multi-repo workspace root with umst-concrete-cartridge sibling (FP §6 W8 publish readiness)",
+        );
     let concrete = workspace.join("umst-concrete-cartridge");
     if !concrete.join("Cargo.toml").is_file() {
         eprintln!(
@@ -80,7 +86,9 @@ fn w8_publish_readiness_exits_zero_on_current_workspace() {
         .arg(&script)
         .current_dir(&manifest)
         .output()
-        .expect("run w8_publish_readiness.sh");
+        .expect(
+            "bash scripts/w8_publish_readiness.sh exits 0 on current workspace when umst-concrete-cartridge present (FP §6 W8 publish readiness)",
+        );
 
     if !out.status.success() {
         eprintln!(
