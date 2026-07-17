@@ -222,7 +222,7 @@ fn reconcile_c11_http_shim_routes_canonical_transition() {
     let mut reject = admit;
     reject.predicted_strength_mpa = 120.0;
     let r2 = evaluate(&reject, &manifest);
-    assert!(!r2.admissible, "HTTP shim rejects strength excess");
+    assert!(!r2.is_admissible(), "HTTP shim rejects strength excess");
     assert!(
         r2.codes.iter().any(|c| c.contains("STRENGTH")),
         "HTTP shim still surfaces strength-excess codes"

@@ -81,7 +81,7 @@ fn http_mix_reject_includes_http_shim_catalog_id() {
         temperature_c: 20.0,
     };
     let r = evaluate_http_mix_manifest(&reject, &m);
-    assert!(!r.admissible);
+    assert!(!r.is_admissible());
     assert_eq!(r.catalog_id.as_deref(), Some(HTTP_SHIM_CATALOG_ID));
 }
 
