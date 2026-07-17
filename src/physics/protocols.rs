@@ -13,6 +13,7 @@ use burn::tensor::{backend::Backend, Int, Tensor};
 
 use super::laplacian::TopologicalLaplacian;
 use super::mechanics::VectorMechanicsSolver;
+use super::error::PhysicsError;
 use super::time_orchestration::MechanicsInnerLoopConfig;
 
 /// Namespace-style alias for discoverability (no state).
@@ -47,7 +48,7 @@ impl MechanicsEquilibrium {
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
-    ) -> (Tensor<B, 3>, Tensor<B, 4>) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError> {
         VectorMechanicsSolver::solve_equilibrium(
             displacement,
             coords,
@@ -103,7 +104,7 @@ pub trait MechanicsEquilibriumSolver<B: Backend<FloatElem = f32>> {
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
-    ) -> (Tensor<B, 3>, Tensor<B, 4>);
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError>;
 }
 
 impl<B: Backend<FloatElem = f32>> MechanicsEquilibriumSolver<B> for VectorMechanicsSolver {
@@ -119,7 +120,7 @@ impl<B: Backend<FloatElem = f32>> MechanicsEquilibriumSolver<B> for VectorMechan
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
-    ) -> (Tensor<B, 3>, Tensor<B, 4>) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError> {
         Self::solve_equilibrium(
             displacement,
             coords,

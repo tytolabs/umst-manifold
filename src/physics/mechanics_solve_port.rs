@@ -44,7 +44,7 @@ pub trait MechanicsSolvePort<B: Backend<FloatElem = f32>> {
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
         rel_tol: f32,
-    ) -> (DisplacementField<B>, Tensor<B, 4>, SolveReport);
+    ) -> Result<(DisplacementField<B>, Tensor<B, 4>, SolveReport), PhysicsError>;
 }
 
 /// Bar-network port — lifts [`VectorMechanicsSolver::solve_equilibrium_with_pcg_report_typed`] into
@@ -68,7 +68,7 @@ impl<B: Backend<FloatElem = f32>> MechanicsSolvePort<B> for BarNetworkMechanicsS
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
         rel_tol: f32,
-    ) -> (DisplacementField<B>, Tensor<B, 4>, SolveReport) {
+    ) -> Result<(DisplacementField<B>, Tensor<B, 4>, SolveReport), PhysicsError> {
         let (u, stress, pcg) = VectorMechanicsSolver::solve_equilibrium_with_pcg_report_typed(
             displacement,
             coords,
@@ -79,9 +79,15 @@ impl<B: Backend<FloatElem = f32>> MechanicsSolvePort<B> for BarNetworkMechanicsS
             boundary_mask,
             cross_section_area,
             inner_cfg,
-        );
+        )?;
         let report = pcg.into_solve_report(rel_tol, PrecisionLane::F64AdjointBarPcg);
-        (u, stress, report)
+        if !report.converged() {
+            return Err(PhysicsError::Diverged {
+                eq_rel: report.rel_residual,
+                pcg_iterations: report.iterations,
+            });
+        }
+        Ok((u, stress, report))
     }
 }
 
@@ -111,13 +117,7 @@ pub fn bar_network_equilibrium_reported<B: Backend<FloatElem = f32>>(
         cross_section_area,
         inner_cfg,
         rel_tol,
-    );
-    if !report.converged() {
-        return Err(PhysicsError::Diverged {
-            eq_rel: report.rel_residual,
-            pcg_iterations: report.iterations,
-        });
-    }
+    )?;
     Ok((u, stress, report))
 }
 

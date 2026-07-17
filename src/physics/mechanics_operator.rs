@@ -10,6 +10,7 @@
 use burn::tensor::{backend::Backend, Int, Tensor};
 
 use super::mechanics::VectorMechanicsSolver;
+use super::error::PhysicsError;
 use super::time_orchestration::MechanicsInnerLoopConfig;
 
 /// Equilibrium morphism \(K(\rho)\,u = f\) on the DEC 1-skeleton (bar today; Q1 hex in Wave 3).
@@ -26,7 +27,7 @@ pub trait MechanicsOperator<B: Backend<FloatElem = f32>> {
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
-    ) -> (Tensor<B, 3>, Tensor<B, 4>);
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError>;
 }
 
 /// Deprecated bar-network adapter — bit-identical to [`VectorMechanicsSolver::solve_equilibrium`].
@@ -49,7 +50,7 @@ impl<B: Backend<FloatElem = f32>> MechanicsOperator<B> for BarNetworkMechanicsAd
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
-    ) -> (Tensor<B, 3>, Tensor<B, 4>) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError> {
         VectorMechanicsSolver::solve_equilibrium(
             displacement,
             coords,
@@ -76,7 +77,7 @@ impl<B: Backend<FloatElem = f32>> MechanicsOperator<B> for VectorMechanicsSolver
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
-    ) -> (Tensor<B, 3>, Tensor<B, 4>) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError> {
         VectorMechanicsSolver::solve_equilibrium(
             displacement,
             coords,
