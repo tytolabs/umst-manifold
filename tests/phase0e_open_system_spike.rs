@@ -41,9 +41,9 @@ impl MaterialTransitionParams for PolymerSketchParams {
 
 fn outcome_verdict_bytes(outcome: &ThermodynamicTransitionOutcome) -> [u8; 5] {
     [
-        u8::from(outcome.accepted),
+        u8::from(outcome.is_accepted()),
         u8::from(outcome.mass_conserved),
-        u8::from(outcome.energy_positive),
+        u8::from(outcome.is_energy_positive()),
         u8::from(outcome.reaction_extent_irreversible),
         if outcome.dissipation.is_finite() {
             1
@@ -131,8 +131,8 @@ fn phase0e_ii_active_fixture_admissible_with_positive_power_input() {
         true,
         TRANSITION_TOLERANCE,
     );
-    assert!(gate.clausius_duhem);
-    assert!(gate.accepted);
+    assert!(gate.is_clausius_duhem());
+    assert!(gate.is_accepted());
 }
 
 #[test]
@@ -186,7 +186,7 @@ fn phase0e_iii_material_gate_unchanged_across_response_families() {
     // Same witness values — gateMaterialAgnostic: no material-class field in predicate.
     let polymer_outcome = material_gate(&witness, TRANSITION_TOLERANCE);
     assert_eq!(cement_outcome, polymer_outcome);
-    assert!(cement_outcome.accepted);
+    assert!(cement_outcome.is_accepted());
 }
 
 #[test]
@@ -200,7 +200,7 @@ fn phase0e_iii_open_system_does_not_alter_material_conjuncts() {
     let powered = transition_outcome_with_power_input(&old, &new, dt, 0.0, TRANSITION_TOLERANCE);
 
     assert_eq!(passive, powered);
-    assert!(!passive.accepted, "strength regression still rejects composed gate");
+    assert!(!passive.is_accepted(), "strength regression still rejects composed gate");
 }
 
 // --- CBF ↔ open-system reconciliation (clears census delta) ---
