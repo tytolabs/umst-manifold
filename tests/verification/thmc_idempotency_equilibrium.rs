@@ -405,7 +405,7 @@ fn thmc_mechanics_bar_idempotent_at_zero_load_equilibrium() {
         0.01_f32,
         &cfg,
     )
-    .expect("first bar equilibrium");
+    .expect("VectorMechanicsSolver::solve_equilibrium_typed on zero-load fixed-end bar (first idempotency pass)");
     let (u2, _) = VectorMechanicsSolver::solve_equilibrium_typed(
         u1.clone(),
         coords,
@@ -417,7 +417,7 @@ fn thmc_mechanics_bar_idempotent_at_zero_load_equilibrium() {
         0.01_f32,
         &cfg,
     )
-    .expect("second bar equilibrium");
+    .expect("VectorMechanicsSolver::solve_equilibrium_typed re-application on equilibrated bar u (second idempotency pass)");
     assert!(max_abs_tensor3(u1.as_tensor(), u2.as_tensor()) < 1e-6_f32);
 }
 
@@ -433,10 +433,10 @@ fn thmc_fracture_update_damage_idempotent_at_zero_strain() {
     let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
     let d1 = solver
         .update_damage(strain.clone(), damage, gc.clone(), edges.clone())
-        .expect("first fracture damage update");
+        .expect("PhaseFieldFractureSolver::update_damage on zero strain with frozen damage (first AT2 idempotency pass)");
     let d2 = solver
         .update_damage(strain, d1.clone(), gc, edges)
-        .expect("second fracture damage update");
+        .expect("PhaseFieldFractureSolver::update_damage re-application on equilibrated damage (second AT2 idempotency pass)");
     assert!(max_abs_tensor3(d1.as_tensor(), d2.as_tensor()) < 1e-6_f32);
 }
 
@@ -455,11 +455,11 @@ fn orchestrator_thmc_idempotent_at_equilibrium() {
     });
     let post1 = orch
         .run_plan_step(&StubCartridge, state, &mut manifold)
-        .expect("first orchestrator step");
+        .expect("TopologyPhysicsOrchestrator::run_plan_step on quiescent equilibrium (first idempotency pass)");
     let snap = post1.clone();
     let post2 = orch
         .run_plan_step(&StubCartridge, post1, &mut manifold)
-        .expect("second orchestrator step");
+        .expect("TopologyPhysicsOrchestrator::run_plan_step re-application on equilibrated state (second idempotency pass)");
     let tol = 1e-5_f32;
     assert!(
         max_abs_tensor3(
@@ -506,10 +506,10 @@ fn orchestrator_run_plan_step_repeated_two_idempotent_at_equilibrium() {
     });
     let once = orch
         .run_plan_step(&StubCartridge, state.clone(), &mut manifold_a)
-        .expect("single orchestrator step");
+        .expect("TopologyPhysicsOrchestrator::run_plan_step single step at quiescent equilibrium (repeated-vs-once harness)");
     let twice = orch
         .run_plan_step_repeated(2, &StubCartridge, state, &mut manifold_b)
-        .expect("two repeated orchestrator steps");
+        .expect("TopologyPhysicsOrchestrator::run_plan_step_repeated(2) at quiescent equilibrium (repeated-vs-once harness)");
     let tol = 1e-5_f32;
     assert!(
         max_abs_tensor3(
