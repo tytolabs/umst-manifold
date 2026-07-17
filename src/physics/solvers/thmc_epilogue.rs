@@ -17,7 +17,7 @@ use burn::tensor::backend::Backend;
 use burn::tensor::{Int, Tensor};
 
 #[cfg(feature = "thmc-coupled")]
-use crate::core::field::{FractureEnergyField, SmallStrainField};
+use crate::core::field::{Field, FractureEnergyField, SmallStrainField};
 #[cfg(feature = "thmc-coupled")]
 use crate::core::tensors::UnifiedMaterialStateTensor;
 #[cfg(feature = "thmc-coupled")]
@@ -105,12 +105,15 @@ fn apply_fracture_damage<B: Backend<FloatElem = f32>>(
         1 => state.damage.clone(),
         _ => state.damage.clone().map(|t| t.slice([0..batch, 0..n, 0..1])),
     };
-    let damage_new = fracture.update_damage(strain, damage_core, gc, edges_b1);
+    let damage_new = fracture.update_damage(strain, damage_core, gc, edges_b1)?;
     state.damage = if d_last == 1 {
         damage_new
     } else {
         let tail = state.damage.as_tensor().clone().slice([0..batch, 0..n, 1..d_last]);
-        damage_new.map(|core| Tensor::cat(vec![core, tail], 2))
+        Field::new(Tensor::cat(
+            vec![damage_new.as_tensor().clone(), tail],
+            2,
+        ))
     };
     Ok(state)
 }

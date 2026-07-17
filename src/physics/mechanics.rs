@@ -63,10 +63,16 @@ impl Default for BarNetworkPcgReport {
 }
 
 impl BarNetworkPcgReport {
+    /// Relative tolerance used by PCG exit and equilibrium checks.
+    #[must_use]
+    pub fn rel_tol_from_cfg(inner_cfg: &MechanicsInnerLoopConfig) -> f32 {
+        inner_cfg.pcg_tolerance.max(inner_cfg.cg_tolerance).max(0.0_f32)
+    }
+
     /// Converged predicate aligned with [`crate::solve_report::SolveReport::converged`].
     #[must_use]
     pub fn converged_with_cfg(&self, inner_cfg: &MechanicsInnerLoopConfig) -> bool {
-        let rel_tol = inner_cfg.pcg_tolerance.max(inner_cfg.cg_tolerance).max(0.0_f32);
+        let rel_tol = Self::rel_tol_from_cfg(inner_cfg);
         rel_tol > 0.0_f32 && self.rel_residual.is_finite() && self.rel_residual <= rel_tol
     }
 
@@ -1778,7 +1784,8 @@ mod tests {
             boundary_mask,
             a_sec,
             &cfg,
-        );
+        )
+        .expect("voigt cauchy solve");
 
         let u_flat = u.into_data().value;
         let u_tip = u_flat[3];
