@@ -170,7 +170,7 @@ fn reconcile_c01_transition_outcome_agrees_c02_tol_when_cap_inactive() {
         tol,
     );
     assert_eq!(
-        outcome.accepted, tol_adm,
+        outcome.is_accepted(), tol_adm,
         "C01 ↔ C02 must agree when strength cap is inactive"
     );
 }
@@ -197,7 +197,7 @@ fn reconcile_c01_c02_delta_strength_cap_can_disagree() {
         tol,
     );
     assert!(
-        outcome.accepted && !tol_adm,
+        outcome.is_accepted() && !tol_adm,
         "documented DELTA: C02 rejects when new_strength > new_max_strength even if C01 accepts"
     );
 }
@@ -216,7 +216,7 @@ fn reconcile_c11_http_shim_routes_canonical_transition() {
     };
     let r = evaluate(&admit, &manifest);
     assert!(
-        r.admissible,
+        r.is_admissible(),
         "HTTP shim admits when canonical transition + strength bound pass"
     );
     let mut reject = admit;
@@ -346,7 +346,7 @@ fn phase0a_http_shim_aligns_with_canonical_transition() {
     };
     let http = evaluate_http_mix_manifest(&proposal, &HttpGateManifest::default());
     assert!(
-        http.admissible,
+        http.is_admissible(),
         "HTTP shim should pass when canonical transition + strength bound pass"
     );
 
@@ -375,7 +375,7 @@ fn phase0a_http_shim_aligns_with_canonical_transition() {
     );
     let outcome = transition_outcome(&old, &new, proposal.age_days * 24.0 * 3600.0, TRANSITION_TOLERANCE);
     assert!(
-        outcome.accepted,
+        outcome.is_accepted(),
         "canonical transition should accept hydration lift for HTTP admit fixture"
     );
 }
