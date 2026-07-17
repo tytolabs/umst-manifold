@@ -93,11 +93,11 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use crate::physics::PhysicsError;
+
 #[cfg(feature = "electrochemistry-mvp")]
 use burn::tensor::{Bool, Data, Shape};
 
-#[cfg(feature = "electrochemistry-mvp")]
-use crate::physics::PhysicsError;
 #[cfg(feature = "electrochemistry-mvp")]
 use crate::physics::dec_primal::primal_divergence_from_edge_flux_topo;
 #[cfg(feature = "electrochemistry-mvp")]
@@ -4572,7 +4572,7 @@ mod newton_chain_tests {
         ).expect("solve_pnp_step_dispatch");
         let (phi_t, c_t) = solver
             .try_solve_pnp_backward_euler_newton_chain(&newton, dt, phi_n, c_n, edges, eps, d)
-            .expect("try_solve chain").expect("try_solve_pnp_backward_euler_newton_chain");
+            .expect("try_solve chain");
         assert!(
             tensor1_bool(phi_d.sub(phi_t).abs().lower_elem(1e-5_f32).all())
                 && tensor1_bool(c_d.sub(c_t).abs().lower_elem(1e-5_f32).all()),
