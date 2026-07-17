@@ -35,9 +35,9 @@ pub(crate) struct ThmcStepCtx<'a, B: Backend> {
     pub n: usize,
     pub drying_last_node_evaporation_k: f32,
     pub drying_ambient_h: f32,
-    pub reaction_extent_kinetics: &'a ReactionExtentKinetics,
-    pub implicit_t_alpha_newton: Option<&'a ThmcImplicitTAlphaNewtonConfig>,
-    pub monolithic_thmc_newton: Option<&'a ThmcMonolithicNewtonConfig>,
+    pub reaction_extent_kinetics: ReactionExtentKinetics,
+    pub implicit_t_alpha_newton: Option<ThmcImplicitTAlphaNewtonConfig>,
+    pub monolithic_thmc_newton: Option<ThmcMonolithicNewtonConfig>,
     pub manifold: &'a UnifiedMaterialStateTensor<B>,
 }
 
@@ -85,7 +85,7 @@ impl<B: Backend<FloatElem = f32>> ThmcNewtonScratch<B> {
             t_bn1.expand::<3, _>([batch, n, f_alpha_ch])
         });
         let d_alpha = reaction_extent_rate_field(
-            ctx.reaction_extent_kinetics,
+            &ctx.reaction_extent_kinetics,
             &state.chemical.reaction_extent,
             &temperature_for_alpha,
             &ctx.device,
@@ -180,6 +180,7 @@ fn monolithic_pass<B: Backend<FloatElem = f32>>(
 ) -> Result<ThmcState<B>, PhysicsError> {
     let mc = ctx
         .monolithic_thmc_newton
+        .as_ref()
         .expect("monolithic_pass: monolithic_thmc_newton must be Some");
     let batch = ctx.batch;
     let n = ctx.n;
@@ -282,7 +283,7 @@ fn thermal_chemistry_pass<B: Backend<FloatElem = f32>>(
     scratch: &ThmcNewtonScratch<B>,
     ctx: &ThmcStepCtx<'_, B>,
 ) -> Result<ThmcState<B>, PhysicsError> {
-    if let Some(im_cfg) = ctx.implicit_t_alpha_newton {
+    if let Some(im_cfg) = ctx.implicit_t_alpha_newton.as_ref() {
         let batch = ctx.batch;
         let n = ctx.n;
         if batch != 1 {
