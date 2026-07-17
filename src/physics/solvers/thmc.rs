@@ -109,6 +109,10 @@ use crate::physics::solvers::thmc_residual::{
     THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
 };
 #[cfg(feature = "thmc-coupled")]
+use crate::physics::solvers::thmc_split_passes::{
+    newton_split_chain, transport_residual_l2, ThmcNewtonScratch, ThmcStepCtx,
+};
+#[cfg(feature = "thmc-coupled")]
 use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
 
 /// Bundles reaction extent kinetics and the **uncalibrated** mechanics stiffness scale used in [`ThmcSolver::step`].
