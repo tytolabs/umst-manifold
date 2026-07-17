@@ -180,11 +180,12 @@ pub struct StaggeredFractureConfig {
 pub fn gc_bn1_scaled_by_statmech_gamma_ratio<B: Backend<FloatElem = f32>>(
     gc_base_bn1: Tensor<B, 2>,
     lennard_jones_params_b4: Tensor<B, 2>,
-) -> Result<Tensor<B, 2>, String> {
+) -> Result<Tensor<B, 2>, crate::physics::PhysicsError> {
     use crate::physics::solvers::statistical_mechanics::{
         upscale_potentials, GAMMA_GC_REF_VIADU_F32,
     };
-    let (_, gamma) = upscale_potentials(lennard_jones_params_b4).map_err(|e| e.to_string())?;
+    let (_, gamma) = upscale_potentials(lennard_jones_params_b4)
+        .map_err(|e| crate::physics::PhysicsError::from(e.to_string()))?;
     let ratio = gamma.div_scalar(GAMMA_GC_REF_VIADU_F32);
     Ok(gc_base_bn1.mul(ratio))
 }
