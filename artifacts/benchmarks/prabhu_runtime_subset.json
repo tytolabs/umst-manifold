@@ -1,13 +1,13 @@
 {
   "schema_version": 0,
   "workload_id": "prabhu_benchmark_subset",
-  "git_sha": "c0c621802c8353b53449b3210993f8710da222b4",
+  "git_sha": "ff61cd51086a8bf7e7829e1f2b6b85a5e3c4e1d7",
   "baseline_sha": "a7b01c5db651e8a5840d965ce1747d0f4b50163c",
   "rustc": "rustc 1.88.0 (6b00bc388 2025-06-23)",
   "host": "Darwin 25.5.0 arm64",
   "metrics": {
-    "gate_route_us_per_call": 0.072,
-    "thmc_step_ms_per_node": 3.312125,
+    "gate_route_us_per_call": 0.043,
+    "thmc_step_ms_per_node": 3.280875,
     "arena_100_loads_sec": 0.000000
   },
   "parity": {
