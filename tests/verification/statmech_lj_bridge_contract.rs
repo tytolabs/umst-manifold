@@ -27,7 +27,7 @@ fn lj_bridge_scaling_non_regression() {
         &dev,
     );
     let (k, gamma) = upscale_potentials(lj)
-        .expect("upscale_potentials [B,2] placeholder bridge scaling");
+        .expect("statistical_mechanics::upscale_potentials on [B,2] LJ ε/σ placeholder bridge scaling witness (FP §6 Track 3D1 statmech LJ bridge contract)");
     let kv = k.into_data().value;
     let gv = gamma.into_data().value;
     let c_k = ANALYTIC_BULK_MODULUS_SCALE;

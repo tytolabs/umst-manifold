@@ -291,7 +291,9 @@ fn milestone_one_mechanics_equilibrium_staggered_convergence() {
         );
     }
 
-    let last = *linf_deltas.last().expect("deltas");
+    let last = *linf_deltas
+        .last()
+        .expect("staggered outer-loop ℓ∞ damage increment history non-empty after max_outer passes (FP §6 Track 12 Milestone 1 convergence witness)");
     assert!(
         last < 0.05_f32,
         "expected finite outer-loop convergence on this chain; last l∞ delta={last:?}, history={linf_deltas:?}"
