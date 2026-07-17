@@ -689,6 +689,126 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
     (velocity_new, pressure_new, lambda_new)
 }
 
+#[cfg(test)]
+mod rheology_idempotency_tests {
+    use super::BinghamFlowSolver;
+    use burn::tensor::{Data, Int, Shape, Tensor};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+
+    type B = NdArray<f32>;
+
+    fn max_abs_tensor3(a: &Tensor<B, 3>, b: &Tensor<B, 3>) -> f32 {
+        let da = a.clone().into_data().value;
+        let db = b.clone().into_data().value;
+        da.iter()
+            .zip(db.iter())
+            .map(|(&x, &y)| (x - y).abs())
+            .fold(0.0_f32, f32::max)
+    }
+
+    /// FP Manifesto §6: default-build `step` is a documented no-op — re-application must not drift.
+    #[test]
+    fn step_idempotent_on_default_noop_placeholder() {
+        let dev = NdArrayDevice::Cpu;
+        let batch = 1usize;
+        let n = 2usize;
+        let solver = BinghamFlowSolver::default();
+        let velocity = Tensor::<B, 3>::full([batch, n, 3], 0.1, &dev);
+        let pressure = Tensor::<B, 3>::full([batch, n, 1], 2.0, &dev);
+        let yield_stress = Tensor::<B, 3>::ones([batch, n, 1], &dev);
+        let density = Tensor::<B, 3>::ones([batch, n, 1], &dev);
+        let lambda_thix = Tensor::<B, 3>::ones([batch, n, 1], &dev);
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64, 1, 1, 0], Shape::new([2, 2])), &dev);
+        let gravity = Tensor::<B, 1>::zeros([3], &dev);
+
+        let (v1, p1, l1) = solver.step(
+            velocity.clone(),
+            pressure.clone(),
+            yield_stress.clone(),
+            density.clone(),
+            lambda_thix.clone(),
+            edges_b1.clone(),
+            gravity.clone(),
+        );
+        let (v2, p2, l2) = solver.step(v1, p1, l1, density, lambda_thix, edges_b1, gravity);
+
+        let tol = 1e-6_f32;
+        assert!(
+            max_abs_tensor3(&v2, &velocity) < tol,
+            "default no-op step must preserve velocity"
+        );
+        assert!(
+            max_abs_tensor3(&p2, &pressure) < tol,
+            "default no-op step must preserve pressure"
+        );
+        assert!(
+            max_abs_tensor3(&l2, &lambda_thix) < tol,
+            "default no-op step must preserve λ"
+        );
+    }
+
+    /// FP Manifesto §6: quiescent zero-velocity / uniform-pressure state with zero yield and gravity
+    /// is a Bingham Chorin fixed point — re-applying `step` must not drift.
+    #[cfg(feature = "rheology-bingham")]
+    #[test]
+    fn step_idempotent_on_quiescent_bingham_equilibrium() {
+        let dev = NdArrayDevice::Cpu;
+        let batch = 1usize;
+        let n = 2usize;
+        let e_ct = 1usize;
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64, 1], Shape::new([2, e_ct])), &dev);
+        let velocity = Tensor::<B, 3>::zeros([batch, n, 3], &dev);
+        let pressure = Tensor::<B, 3>::full([batch, n, 1], 1.0, &dev);
+        let yield_stress = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+        let density = Tensor::<B, 3>::ones([batch, n, 1], &dev);
+        let lambda_thix = Tensor::<B, 3>::ones([batch, n, 1], &dev);
+        let gravity = Tensor::<B, 1>::zeros([3], &dev);
+
+        let mut solver = BinghamFlowSolver::new(0.01, 1e-3);
+        solver.dt = 1e-4;
+        solver.t_rest_thix = BinghamFlowSolver::T_REST_NO_THIX;
+        solver.gamma_crit_thix = BinghamFlowSolver::GAMMA_CRIT_NO_THIX;
+
+        let (v1, p1, l1) = solver.step(
+            velocity,
+            pressure,
+            yield_stress,
+            density.clone(),
+            lambda_thix.clone(),
+            edges_b1.clone(),
+            gravity.clone(),
+        );
+        let snap_v = v1.clone();
+        let snap_p = p1.clone();
+        let snap_l = l1.clone();
+        let (v2, p2, l2) = solver.step(
+            v1,
+            p1,
+            l1,
+            density,
+            lambda_thix,
+            edges_b1,
+            gravity,
+        );
+
+        let tol = 1e-5_f32;
+        assert!(
+            max_abs_tensor3(&v2, &snap_v) < tol,
+            "quiescent Bingham velocity must not drift on re-step"
+        );
+        assert!(
+            max_abs_tensor3(&p2, &snap_p) < tol,
+            "quiescent Bingham pressure must not drift on re-step"
+        );
+        assert!(
+            max_abs_tensor3(&l2, &snap_l) < tol,
+            "quiescent Bingham λ must not drift on re-step"
+        );
+    }
+}
+
 #[cfg(all(test, feature = "rheology-bingham"))]
 mod tests {
     use super::BinghamFlowSolver;

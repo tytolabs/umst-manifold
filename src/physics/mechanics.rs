@@ -32,6 +32,7 @@ use burn::tensor::{backend::Backend, Int, Tensor};
 use crate::core::field::{DamageField, DisplacementField, Field};
 
 use super::dec_operators::DecEdgeOperators;
+use super::error::PhysicsError;
 use super::framework::PhysicsSolverZst;
 use super::time_orchestration::MechanicsInnerLoopConfig;
 use super::topology::EdgeTopology;
@@ -57,6 +58,36 @@ impl Default for BarNetworkPcgReport {
             stiffness_scale: 1.0,
             e_ref: 1.0,
             dx_char: 1.0,
+        }
+    }
+}
+
+impl BarNetworkPcgReport {
+    /// Relative tolerance used for PCG exit (max of CG / PCG aliases).
+    #[must_use]
+    pub fn rel_tol_from_cfg(inner_cfg: &MechanicsInnerLoopConfig) -> f32 {
+        inner_cfg.pcg_tolerance.max(inner_cfg.cg_tolerance)
+    }
+
+    /// **Law:** converged when a positive relative tolerance was requested and the exit residual meets it.
+    #[must_use]
+    pub fn converged_with_cfg(&self, inner_cfg: &MechanicsInnerLoopConfig) -> bool {
+        let rel_tol = Self::rel_tol_from_cfg(inner_cfg);
+        rel_tol > 0.0 && self.rel_residual.is_finite() && self.rel_residual <= rel_tol
+    }
+
+    /// Fail-closed check for equilibrium solves (FP §2 Wave 3b-1).
+    pub fn ensure_converged(
+        &self,
+        inner_cfg: &MechanicsInnerLoopConfig,
+    ) -> Result<(), PhysicsError> {
+        if !self.converged_with_cfg(inner_cfg) {
+            Err(PhysicsError::Diverged {
+                eq_rel: self.rel_residual,
+                pcg_iterations: self.iterations,
+            })
+        } else {
+            Ok(())
         }
     }
 }
@@ -712,7 +743,7 @@ impl VectorMechanicsSolver {
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
-    ) -> (Tensor<B, 3>, Tensor<B, 4>) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError> {
         let (u, stress) = Self::solve_equilibrium_typed(
             Field::new(displacement),
             coords,
@@ -723,8 +754,8 @@ impl VectorMechanicsSolver {
             boundary_mask,
             cross_section_area,
             inner_cfg,
-        );
-        (u.into_tensor(), stress)
+        )?;
+        Ok((u.into_tensor(), stress))
     }
 
     /// FP P3.4 — bar-network equilibrium with [`DisplacementField`] / [`DamageField`] operands.
@@ -739,8 +770,8 @@ impl VectorMechanicsSolver {
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
-    ) -> (DisplacementField<B>, Tensor<B, 4>) {
-        let (u, k_axial, edge_unit, _edge_len, src_indices, tgt_indices, n_v, _pcg) =
+    ) -> Result<(DisplacementField<B>, Tensor<B, 4>), PhysicsError> {
+        let (u, k_axial, edge_unit, _edge_len, src_indices, tgt_indices, n_v, pcg) =
             Self::packed_bar_network_equilibrium(
                 displacement.into_tensor(),
                 coords,
@@ -752,6 +783,7 @@ impl VectorMechanicsSolver {
                 cross_section_area,
                 inner_cfg,
             );
+        pcg.ensure_converged(inner_cfg)?;
         let stress = Self::nodal_stress_from_bars(
             u.clone(),
             &k_axial,
@@ -761,7 +793,7 @@ impl VectorMechanicsSolver {
             n_v,
             cross_section_area,
         );
-        (Field::new(u), stress)
+        Ok((Field::new(u), stress))
     }
 
     /// Quasi-static bar-network equilibrium with PCG iteration / relative-residual report (B6 H4 gates).
@@ -777,7 +809,7 @@ impl VectorMechanicsSolver {
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
-    ) -> (Tensor<B, 3>, Tensor<B, 4>, BarNetworkPcgReport) {
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 4>, BarNetworkPcgReport), PhysicsError> {
         let (u, stress, pcg) = Self::solve_equilibrium_with_pcg_report_typed(
             Field::new(displacement),
             coords,
@@ -788,8 +820,8 @@ impl VectorMechanicsSolver {
             boundary_mask,
             cross_section_area,
             inner_cfg,
-        );
-        (u.into_tensor(), stress, pcg)
+        )?;
+        Ok((u.into_tensor(), stress, pcg))
     }
 
     /// FP P3.4 — PCG-report equilibrium with [`DisplacementField`] / [`DamageField`] operands.
@@ -805,7 +837,7 @@ impl VectorMechanicsSolver {
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
-    ) -> (DisplacementField<B>, Tensor<B, 4>, BarNetworkPcgReport) {
+    ) -> Result<(DisplacementField<B>, Tensor<B, 4>, BarNetworkPcgReport), PhysicsError> {
         let (u, k_axial, edge_unit, _edge_len, src_indices, tgt_indices, n_v, pcg) =
             Self::packed_bar_network_equilibrium(
                 displacement.into_tensor(),
@@ -818,6 +850,7 @@ impl VectorMechanicsSolver {
                 cross_section_area,
                 inner_cfg,
             );
+        pcg.ensure_converged(inner_cfg)?;
         let stress = Self::nodal_stress_from_bars(
             u.clone(),
             &k_axial,
@@ -827,7 +860,7 @@ impl VectorMechanicsSolver {
             n_v,
             cross_section_area,
         );
-        (Field::new(u), stress, pcg)
+        Ok((Field::new(u), stress, pcg))
     }
 
     #[cfg(feature = "mechanics-voigt-cauchy")]
@@ -847,8 +880,8 @@ impl VectorMechanicsSolver {
         boundary_mask: Tensor<B, 3>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
-    ) -> (Tensor<B, 3>, Tensor<B, 4>) {
-        let (u, _k_axial, edge_unit, edge_len, _src_indices, _tgt_indices, n_v, _pcg) =
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError> {
+        let (u, _k_axial, edge_unit, edge_len, _src_indices, _tgt_indices, n_v, pcg) =
             Self::packed_bar_network_equilibrium(
                 displacement,
                 coords,
@@ -860,6 +893,7 @@ impl VectorMechanicsSolver {
                 cross_section_area,
                 inner_cfg,
             );
+        pcg.ensure_converged(inner_cfg)?;
         let stress = Self::nodal_cauchy_stress_voigt_isotropic(
             u.clone(),
             stiffness,
@@ -868,7 +902,7 @@ impl VectorMechanicsSolver {
             edge_len,
             n_v,
         );
-        (u, stress)
+        Ok((u, stress))
     }
 
     #[allow(clippy::too_many_arguments)]

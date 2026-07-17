@@ -180,11 +180,12 @@ pub struct StaggeredFractureConfig {
 pub fn gc_bn1_scaled_by_statmech_gamma_ratio<B: Backend<FloatElem = f32>>(
     gc_base_bn1: Tensor<B, 2>,
     lennard_jones_params_b4: Tensor<B, 2>,
-) -> Result<Tensor<B, 2>, String> {
+) -> Result<Tensor<B, 2>, crate::physics::PhysicsError> {
     use crate::physics::solvers::statistical_mechanics::{
         upscale_potentials, GAMMA_GC_REF_VIADU_F32,
     };
-    let (_, gamma) = upscale_potentials(lennard_jones_params_b4).map_err(|e| e.to_string())?;
+    let (_, gamma) = upscale_potentials(lennard_jones_params_b4)
+        .map_err(|e| crate::physics::PhysicsError::from(e.to_string()))?;
     let ratio = gamma.div_scalar(GAMMA_GC_REF_VIADU_F32);
     Ok(gc_base_bn1.mul(ratio))
 }
@@ -1532,6 +1533,57 @@ mod fracture_idempotency_tests {
         assert!(
             d1_vals.iter().all(|x| x.abs() < tol),
             "zero-strain frozen damage must remain at zero"
+        );
+    }
+
+    /// FP Manifesto §6: equilibrated staggered outer loop must not drift when re-applied at ε.
+    #[test]
+    fn staggered_outer_loop_idempotent_on_equilibrated_zero_strain() {
+        let dev = NdArrayDevice::Cpu;
+        let batch = 1usize;
+        let n = 3usize;
+        let e_ct = 2usize;
+
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64, 1, 1, 2], Shape::new([2, e_ct])), &dev);
+        let strain = Tensor::<B, 4>::zeros([batch, n, 3, 3], &dev);
+        let damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+        let fracture_energy_gc = Tensor::from_data(
+            Data::new(vec![150.0_f32; batch * n], Shape::new([batch, n, 1])),
+            &dev,
+        );
+
+        let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
+        let strain_fixed = strain.clone();
+        let stop = super::StaggeredOuterDamageStopCriteria {
+            tol_damage_linf: Some(1e-6_f32),
+            ..Default::default()
+        };
+
+        let d_eq = solver.update_damage_staggered_with_stop(
+            move |_d: &DamageField<B>| strain_field(strain_fixed.clone()),
+            damage_field(damage),
+            fracture_energy_gc.clone(),
+            edges_b1.clone(),
+            8,
+            stop,
+        );
+        let d_eq_vals = d_eq.clone().into_tensor().into_data().value;
+
+        let d_again = solver.update_damage_staggered_with_stop(
+            move |_d: &DamageField<B>| strain_field(strain.clone()),
+            d_eq,
+            gc_field(fracture_energy_gc),
+            edges_b1,
+            8,
+            stop,
+        );
+        let d_again_vals = d_again.into_tensor().into_data().value;
+
+        let tol = 1e-6_f32;
+        assert!(
+            max_abs_drift(&d_eq_vals, &d_again_vals) < tol,
+            "re-application of converged staggered outer loop must not drift"
         );
     }
 }

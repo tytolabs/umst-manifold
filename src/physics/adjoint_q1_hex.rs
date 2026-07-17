@@ -22,8 +22,8 @@ use super::adjoint::{
 use super::linear::masked_dot;
 use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
 use super::q1_hex_elasticity::{
-    hex_cell_strain_energy, hex_equilibrium_rel_residual, hex_pcg_use_f64_lane,
-    hex_solve_pcg_masked, HexPcgPrecondKind, HexStructuredOperatorCache,
+    hex_cell_corner_indices_unchecked, hex_cell_strain_energy, hex_equilibrium_rel_residual,
+    hex_pcg_use_f64_lane, hex_solve_pcg_masked, HexPcgPrecondKind, HexStructuredOperatorCache,
 };
 use super::time_orchestration::MechanicsInnerLoopConfig;
 use std::time::Instant;
@@ -78,17 +78,7 @@ fn hex_cell_corner_gather_indices(nx: usize, ny: usize, nz: usize) -> Vec<i64> {
         for cy in 0..ny {
             for cx in 0..nx {
                 for k in 0usize..8 {
-                    let (ix, iy, iz) = match k {
-                        0 => (cx, cy, cz),
-                        1 => (cx + 1, cy, cz),
-                        2 => (cx + 1, cy + 1, cz),
-                        3 => (cx, cy + 1, cz),
-                        4 => (cx, cy, cz + 1),
-                        5 => (cx + 1, cy, cz + 1),
-                        6 => (cx + 1, cy + 1, cz + 1),
-                        7 => (cx, cy + 1, cz + 1),
-                        _ => unreachable!(),
-                    };
+                    let (ix, iy, iz) = hex_cell_corner_indices_unchecked(cx, cy, cz, k);
                     v.push(node_id(ix, iy, iz, nx1, ny1) as i64);
                 }
             }

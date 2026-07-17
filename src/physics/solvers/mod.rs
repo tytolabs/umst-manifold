@@ -36,6 +36,10 @@ pub mod thmc;
 pub mod thmc_jfnk;
 pub mod thmc_residual;
 #[cfg(feature = "thmc-coupled")]
+pub mod thmc_epilogue;
+#[cfg(feature = "thmc-coupled")]
+pub mod thmc_split_passes;
+#[cfg(feature = "thmc-coupled")]
 pub mod thmc_step;
 pub mod topology_solver;
 

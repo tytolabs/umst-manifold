@@ -89,9 +89,10 @@ use burn::tensor::Int;
 use burn::tensor::{backend::Backend, Tensor};
 
 use crate::core::field::{
-    DamageField, DisplacementField, Field, HumidityField, ReactionExtentField,
-    StepEntryDamageMask, TemperatureField,
+    DamageField, DisplacementField, Field, HumidityField, ReactionExtentField, TemperatureField,
 };
+#[cfg(feature = "thmc-coupled")]
+use crate::core::field::{StepEntryDamageMask, StiffnessField};
 use crate::core::material_transition::ReactionExtentKineticsSpec;
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use crate::core::traits::IScienceCartridge;
@@ -100,20 +101,14 @@ use crate::physics::error::PhysicsError;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::laplacian::TopologicalLaplacian;
 #[cfg(feature = "thmc-coupled")]
-use crate::physics::mechanics::VectorMechanicsSolver;
-#[cfg(feature = "thmc-coupled")]
-use crate::physics::solvers::fracture_field::{
-    strain_tensor_for_fracture_from_manifold, strain_tensor_from_bar_network_displacement,
-    PhaseFieldFractureSolver,
-};
-#[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc_residual::{
-    ThmcImplicitEulerThermalHumidityReactionExtentResidual,
-    ThmcImplicitEulerThermalReactionExtentResidual, ThmcMonolithicImplicitUnknownLayout,
-    THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
+    ThmcMonolithicImplicitUnknownLayout, THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
 };
 #[cfg(feature = "thmc-coupled")]
-use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
+use crate::physics::solvers::thmc_split_passes::{
+    humidity_pass, implicit_t_alpha_pass, mechanics_pass, monolithic_pass,
+    precompute_transport_inputs, thermal_chemistry_pass, transport_residual_l2, ThmcStepCtx,
+};
 
 /// Bundles reaction extent kinetics and the **uncalibrated** mechanics stiffness scale used in [`ThmcSolver::step`].
 ///
@@ -212,6 +207,16 @@ pub struct ThmcState<B: Backend> {
     pub time: f32,
 }
 
+/// Destructured THMC field tensors plus simulation time.
+type ThmcTensorBundle<B> = (
+    Tensor<B, 3>,
+    Tensor<B, 3>,
+    Tensor<B, 3>,
+    Tensor<B, 3>,
+    Tensor<B, 3>,
+    f32,
+);
+
 impl<B: Backend> ThermalPlan<B> {
     #[inline]
     #[must_use]
@@ -287,14 +292,7 @@ impl<B: Backend> ThmcState<B> {
     #[must_use]
     pub fn into_thmc_tensors(
         self,
-    ) -> (
-        Tensor<B, 3>,
-        Tensor<B, 3>,
-        Tensor<B, 3>,
-        Tensor<B, 3>,
-        Tensor<B, 3>,
-        f32,
-    ) {
+    ) -> ThmcTensorBundle<B> {
         (
             self.thermal.temperature.into_tensor(),
             self.hydro.humidity.into_tensor(),
@@ -504,21 +502,6 @@ impl ThmcSolver {
     }
 }
 
-/// Stacked transport residual \(\|R\|_2\) for operator-split THMC outer iterations (host read).
-#[cfg(feature = "thmc-coupled")]
-fn stacked_transport_residual_l2<B: Backend>(tensor: &Tensor<B, 3>) -> f32
-where
-    B::FloatElem: num_traits::float::FloatCore,
-{
-    tensor
-        .clone()
-        .powf_scalar(2.0)
-        .sum()
-        .sqrt()
-        .into_scalar()
-        .elem::<f32>()
-}
-
 impl ThmcSolver {
     /// One coupled THMC step using cartridge constitutive data.
     ///
@@ -691,412 +674,58 @@ impl ThmcSolver {
             }
         }
 
-        let mut _last_total_residual_tensor: Option<Tensor<B, 3>> = None;
+        let step_ctx = ThmcStepCtx {
+            solver: self,
+            manifold,
+            dt: self.dt,
+            batch,
+            n,
+            device: &device,
+            edges_b1: edges_b1.clone(),
+            damage_m: damage_m.clone(),
+            reaction_extent_kinetics: &self.reaction_extent_kinetics,
+            drying_last_node_evaporation_k: self.drying_last_node_evaporation_k,
+            drying_ambient_h: self.drying_ambient_h,
+        };
 
         // Split residual Newton: exit when \(\|R\|_2 < tol\) (Wave 1 honesty).
         for _newton in 0..self.max_newton {
-            let t_old = state.thermal.temperature.clone();
-            let h_old = state.hydro.humidity.clone();
-            let t_old_t = t_old.as_tensor().clone();
-            let h_old_t = h_old.as_tensor().clone();
-
-            let lap_t = TopologicalLaplacian::scalar_laplacian_temperature(
-                &t_old,
-                &damage_m,
-                edges_b1.clone(),
-            );
-            let lap_h = TopologicalLaplacian::scalar_laplacian_humidity(
-                &h_old,
-                &damage_m,
-                edges_b1.clone(),
-            );
-            let dt_lap_t = lap_t.as_tensor().clone().mul_scalar(self.dt);
-            let dt_lap_h = lap_h.as_tensor().clone().mul_scalar(self.dt);
-
-            let f_alpha_ch = state.chemical.reaction_extent.as_tensor().dims()[2];
-            let t_bn1 = t_old_t.clone().slice([0..batch, 0..n, 0..1]);
-            let temperature_for_alpha = Field::new(if f_alpha_ch == 1 {
-                t_bn1
-            } else {
-                t_bn1.expand::<3, _>([batch, n, f_alpha_ch])
-            });
-            let d_alpha = reaction_extent_rate_field(
-                &self.reaction_extent_kinetics,
-                &state.chemical.reaction_extent,
-                &temperature_for_alpha,
-                &device,
-            );
-
-            let f_t_ch = state.thermal.temperature.as_tensor().dims()[2];
-            let exo = d_alpha
-                .as_tensor()
-                .clone()
-                .slice([0..batch, 0..n, 0..1])
-                .mul_scalar(self.reaction_extent_kinetics.exothermic_k_per_alpha_rate * self.dt)
-                .expand::<3, _>([batch, n, f_t_ch]);
-
-            let alpha_n = state.chemical.reaction_extent.clone();
-            let alpha_n_t = alpha_n.as_tensor().clone();
-            let d_alpha_t = d_alpha.as_tensor().clone();
+            let pre = precompute_transport_inputs(&state, &step_ctx);
 
             if let Some(mc) = self.monolithic_thmc_newton.as_ref() {
-                let coords_n3 = manifold
-                    .node_positions
-                    .as_ref()
-                    .filter(|p| p.dims() == [n, 3])
-                    .ok_or_else(|| {
-                        "ThmcSolver::step: monolithic_thmc_newton requires manifold.node_positions with shape [N,3]".to_string()
-                    })?;
-                let mask = manifold.displacement_bc_mask.clone();
-                let bm_core = match mask.dims()[..] {
-                    [nn, 3, 1] if nn == n => mask.reshape([nn, 3]),
-                    [nn, 1, 3] if nn == n => mask.clone().reshape([nn, 3]),
-                    [1, nn, 3] if nn == n => {
-                        mask.clone().slice([0..1, 0..n, 0..3]).reshape([nn, 3])
-                    }
-                    _ => {
-                        return Err(format!(
-                            "ThmcSolver::step: displacement_bc_mask dims {:?} incompatible with N={n} (expected [N,3,1], [N,1,3], or [1,N,3])",
-                            mask.dims()
-                        ).into());
-                    }
-                };
-                let bm = bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3]);
-                let bf = Field::new(Tensor::<B, 3>::zeros([batch, n, 3], &device));
-                let inner_cfg = MechanicsInnerLoopConfig::default();
-                let cross_section_area = 0.01_f32;
-
-                let t_predict = t_old_t.clone().add(dt_lap_t.clone()).add(exo.clone());
-                let h_predict = h_old_t.clone().add(dt_lap_h.clone());
-                let alpha_predict = alpha_n_t
-                    .clone()
-                    .add(d_alpha_t.clone().mul_scalar(self.dt))
-                    .clamp(0.0_f32, 1.0_f32);
-
-                let alpha_bn1_pred = alpha_predict
-                    .clone()
-                    .slice([0..batch, 0..n, 0..1])
-                    .clamp(1e-6_f32, 1.0_f32);
-                let stiffness_e =
-                    alpha_bn1_pred.mul_scalar(self.reaction_extent_kinetics.stiffness_e_scale_pa);
-                let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &device)
-                    .add_scalar(self.reaction_extent_kinetics.stiffness_nu);
-                let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
-                let (u_predict, _) = VectorMechanicsSolver::solve_equilibrium_typed(
-                    state.mechanical.displacement.clone(),
-                    coords_n3.clone(),
-                    stiffness,
-                    bf.clone(),
-                    edges_b1.clone(),
-                    damage_m.as_damage_field().clone(),
-                    bm.clone(),
-                    cross_section_area,
-                    &inner_cfg,
-                );
-
-                let trial = ThmcState {
-                    thermal: ThermalPlan::from_temperature(t_predict),
-                    hydro: HydrologicPlan::from_humidity(h_predict),
-                    mechanical: MechanicalPlan::from_displacement(u_predict.into_tensor()),
-                    chemical: ChemicalPlan::from_reaction_extent(alpha_predict),
-                    damage: state.damage.clone(),
-                    time: state.time,
-                };
-
-                let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
-                    dt: self.dt,
-                    temperature_n: t_old.clone(),
-                    humidity_n: h_old.clone(),
-                    alpha_n: alpha_n.clone(),
-                    displacement_n: state.mechanical.displacement.as_tensor().clone(),
-                    mechanics_placeholder_mass: 1.0_f32,
-                    ru_shrinkage_binder_liquid_ratio: None,
-                    edges_b1: edges_b1.clone(),
-                    damage_m: damage_m.clone(),
-                    kinetics: self.reaction_extent_kinetics.clone(),
-                };
-
-                let (updated, _) = assembler.damped_newton_iterations_with_quasi_static_r_u(
-                    &trial,
-                    coords_n3,
-                    &bm,
-                    bf.as_tensor(),
-                    cross_section_area,
-                    mc.iterations,
-                    mc.damping,
-                    mc.fd_eps,
-                    mc.stacked_residual_l2_tolerance,
-                    mc.stacked_residual_relative_to_initial,
-                )?;
-
-                state.thermal.temperature = updated.thermal.temperature;
-                state.hydro.humidity = updated.hydro.humidity;
-                state.chemical.reaction_extent = updated.chemical.reaction_extent;
-                state.mechanical.displacement = updated.mechanical.displacement;
-
-                let r_t = state
-                    .thermal
-                    .temperature
-                    .as_tensor()
-                    .clone()
-                    .sub(t_old_t.clone())
-                    .sub(dt_lap_t)
-                    .abs();
-                let r_h = state
-                    .hydro
-                    .humidity
-                    .as_tensor()
-                    .clone()
-                    .sub(h_old_t.clone())
-                    .sub(dt_lap_h)
-                    .abs();
-                let total_residual_tensor = r_t.add(r_h);
-                if stacked_transport_residual_l2(&total_residual_tensor) <= self.tol {
-                    _last_total_residual_tensor = Some(total_residual_tensor);
+                state = monolithic_pass(state, &step_ctx, &pre, mc)?;
+                let (rel, _) = transport_residual_l2(&state, &pre);
+                if rel <= self.tol {
                     break;
                 }
-                _last_total_residual_tensor = Some(total_residual_tensor);
                 continue;
             }
 
             if let Some(im_cfg) = self.implicit_t_alpha_newton.as_ref() {
-                if batch != 1 {
-                    return Err(format!(
-                        "ThmcSolver::step: implicit (T,α) Newton requires batch size 1, got {batch}"
-                    ).into());
-                }
-                if im_cfg.iterations < 2 {
-                    return Err(
-                        "ThmcSolver::step: implicit_t_alpha_newton.iterations must be >= 2".into(),
-                    );
-                }
-                let f_t_dof = state.thermal.temperature.as_tensor().dims()[2];
-                let f_a_dof = f_alpha_ch;
-                let stacked = n * f_t_dof + n * f_a_dof;
-                if stacked > THMC_DENSE_NEWTON_MAX_STACKED_DOFS {
-                    let cap = THMC_DENSE_NEWTON_MAX_STACKED_DOFS;
-                    return Err(format!(
-                        "ThmcSolver::step: implicit (T,α) Newton exceeds dense-Jacobian cap ({cap} DOFs), got {stacked}",
-                    ).into());
-                }
-
-                // Explicit-Euler predictor as the damped-Newton initial iterate (same local closure as the split).
-                let t_predict = t_old_t.clone().add(dt_lap_t.clone()).add(exo.clone());
-                let alpha_predict = alpha_n_t
-                    .clone()
-                    .add(d_alpha_t.mul_scalar(self.dt))
-                    .clamp(0.0_f32, 1.0_f32);
-
-                let trial = ThmcState {
-                    thermal: ThermalPlan::from_temperature(t_predict),
-                    hydro: HydrologicPlan {
-                        humidity: state.hydro.humidity.clone(),
-                    },
-                    mechanical: MechanicalPlan {
-                        displacement: state.mechanical.displacement.clone(),
-                    },
-                    chemical: ChemicalPlan::from_reaction_extent(alpha_predict),
-                    damage: state.damage.clone(),
-                    time: state.time,
-                };
-
-                let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
-                    dt: self.dt,
-                    temperature_n: t_old.clone(),
-                    alpha_n: alpha_n.clone(),
-                    edges_b1: edges_b1.clone(),
-                    damage_m: damage_m.clone(),
-                    kinetics: self.reaction_extent_kinetics.clone(),
-                };
-
-                let (updated, _) = assembler.damped_newton_iterations(
-                    &trial,
-                    im_cfg.iterations,
-                    im_cfg.damping,
-                    im_cfg.fd_eps,
-                )?;
-
-                state.thermal.temperature = updated.thermal.temperature;
-                state.chemical.reaction_extent = updated.chemical.reaction_extent;
+                state = implicit_t_alpha_pass(state, &step_ctx, &pre, im_cfg)?;
             } else {
-                state.thermal.temperature = Field::new(
-                    t_old_t.clone().add(dt_lap_t.clone()).add(exo),
-                );
-                state.chemical.reaction_extent = Field::new(
-                    alpha_n_t
-                        .clone()
-                        .add(d_alpha_t.mul_scalar(self.dt))
-                        .clamp(0.0_f32, 1.0_f32),
-                );
+                state = thermal_chemistry_pass(state, &step_ctx, &pre)?;
             }
 
-            let f_h = state.hydro.humidity.as_tensor().dims()[2];
-            let mut h_new = h_old_t.clone().add(dt_lap_h.clone());
-            if self.drying_last_node_evaporation_k > 0.0_f32 && n > 1 {
-                let tail = h_new.clone().slice([0..batch, (n - 1)..n, 0..1]);
-                let delta = tail
-                    .clone()
-                    .sub_scalar(self.drying_ambient_h)
-                    .mul_scalar(self.dt * self.drying_last_node_evaporation_k);
-                let new_tail = tail.clone().sub(delta);
-                let inner = h_new.clone().slice([0..batch, 0..(n - 1), 0..f_h]);
-                h_new = Tensor::cat(vec![inner, new_tail], 1);
-            }
-            state.hydro.humidity = Field::new(h_new);
+            state = humidity_pass(state, &step_ctx, &pre)?;
+            state = mechanics_pass(state, self, &step_ctx)?;
 
-            // Mechanics: bar-network equilibrium when an SI-metre embedding is supplied (`[N,3]`).
-            if let Some(coords_n3) = manifold.node_positions.as_ref() {
-                if coords_n3.dims() == [n, 3] {
-                    let mask = manifold.displacement_bc_mask.clone();
-                    let bm_core = match mask.dims()[..] {
-                        [nn, 3, 1] if nn == n => mask.reshape([nn, 3]),
-                        [nn, 1, 3] if nn == n => mask.clone().reshape([nn, 3]),
-                        [1, nn, 3] if nn == n => {
-                            mask.clone().slice([0..1, 0..n, 0..3]).reshape([nn, 3])
-                        }
-                        _ => {
-                            return Err(format!(
-                                "ThmcSolver::step: displacement_bc_mask dims {:?} incompatible with N={n} (expected [N,3,1], [N,1,3], or [1,N,3])",
-                                mask.dims()
-                            ).into());
-                        }
-                    };
-                    let bm = bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3]);
-                    // Stiffness scales with reaction extent \(\alpha\) (full-coupling doc): \(E \propto \alpha\) on nodes.
-                    let alpha_bn1 = state
-                        .chemical
-                        .reaction_extent
-                        .as_tensor()
-                        .clone()
-                        .slice([0..batch, 0..n, 0..1])
-                        .clamp(1e-6_f32, 1.0_f32);
-                    // Uncalibrated E scale (placeholder; Solver-Status.md THMC row / module “Uncalibrated placeholders”).
-                    let stiffness_e =
-                        alpha_bn1.mul_scalar(self.reaction_extent_kinetics.stiffness_e_scale_pa);
-                    let stiffness_nu = Tensor::<B, 3>::zeros([batch, n, 1], &device)
-                        .add_scalar(self.reaction_extent_kinetics.stiffness_nu);
-                    let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
-                    let bf = Field::new(Tensor::<B, 3>::zeros([batch, n, 3], &device));
-                    let inner_cfg = MechanicsInnerLoopConfig::default();
-                    let cross_section_area = 0.01_f32;
-                    #[cfg(feature = "mechanics-adjoint")]
-                    {
-                        use crate::physics::mechanics_solve_port::bar_network_equilibrium_reported as solve_bar_equilibrium;
-                        let rel_tol = inner_cfg
-                            .pcg_tolerance
-                            .max(inner_cfg.cg_tolerance)
-                            .max(1e-6_f32);
-                        let equilibrium = solve_bar_equilibrium(
-                            state.mechanical.displacement.clone(),
-                            coords_n3.clone(),
-                            stiffness,
-                            bf.clone(),
-                            edges_b1.clone(),
-                            damage_m.as_damage_field().clone(),
-                            bm,
-                            cross_section_area,
-                            &inner_cfg,
-                            rel_tol,
-                        )?;
-                        let u_new = equilibrium.0;
-                        let report = equilibrium.2;
-                        self.mechanics_solve_reports.push(report);
-                        state.mechanical.displacement = u_new;
-                    }
-                    #[cfg(not(feature = "mechanics-adjoint"))]
-                    {
-                        let (u_new, _stress) = VectorMechanicsSolver::solve_equilibrium_typed(
-                            state.mechanical.displacement.clone(),
-                            coords_n3.clone(),
-                            stiffness,
-                            bf,
-                            edges_b1.clone(),
-                            damage_m.as_damage_field().clone(),
-                            bm,
-                            cross_section_area,
-                            &inner_cfg,
-                        );
-                        state.mechanical.displacement = u_new;
-                    }
-                }
-            }
-
-            // Residuals \(R_T = \sum|T_{\mathrm{new}}-T_{\mathrm{old}}-\Delta t\,\mathrm{lap}_T|\), same for \(h\) (mechanics quasi-static).
-            let r_t = state
-                .thermal
-                .temperature
-                .as_tensor()
-                .clone()
-                .sub(t_old_t.clone())
-                .sub(dt_lap_t)
-                .abs();
-            let r_h = state
-                .hydro
-                .humidity
-                .as_tensor()
-                .clone()
-                .sub(h_old_t.clone())
-                .sub(dt_lap_h)
-                .abs();
-            let total_residual_tensor = r_t.add(r_h);
-            _last_total_residual_tensor = Some(total_residual_tensor.clone());
-            if stacked_transport_residual_l2(&total_residual_tensor) <= self.tol {
+            let (rel, _) = transport_residual_l2(&state, &pre);
+            if rel <= self.tol {
                 break;
             }
         }
 
-        let _ = _last_total_residual_tensor;
-
-        // Phase-field fracture: post-mechanics ε(u) when SI node_positions drive the bar solve; else
-        // matrix_features slice or zeros (see module docs).
-        let strain_tensor = if let Some(coords_n3) = manifold.node_positions.as_ref() {
-            if coords_n3.dims() == [n, 3] {
-                strain_tensor_from_bar_network_displacement::<B>(
-                    state.mechanical.displacement.as_tensor().clone(),
-                    coords_n3.clone(),
-                    edges_b1.clone(),
-                    n,
-                )
-            } else {
-                strain_tensor_for_fracture_from_manifold::<B>(manifold, batch, n, &device)
-            }
-        } else {
-            strain_tensor_for_fracture_from_manifold::<B>(manifold, batch, n, &device)
+        let epilogue_ctx = super::thmc_epilogue::ThmcEpilogueCtx {
+            batch,
+            n,
+            device: &device,
+            edges_b1,
         };
-        let strain = crate::core::field::SmallStrainField::from_tensor(strain_tensor);
-        let gc = crate::core::field::FractureEnergyField::from_tensor(Tensor::<B, 3>::ones([batch, n, 1], &device));
-        let fracture = PhaseFieldFractureSolver { length_scale: 1.0 };
-
-        let d_last = state.damage.as_tensor().dims()[2];
-        let damage_core = match d_last {
-            1 => state.damage.clone(),
-            _ => state
-                .damage
-                .clone()
-                .map(|t| t.slice([0..batch, 0..n, 0..1])),
-        };
-        let damage_new = fracture.update_damage(strain, damage_core, gc, edges_b1.clone());
-
-        state.damage = if d_last == 1 {
-            damage_new
-        } else {
-            let tail = state
-                .damage
-                .as_tensor()
-                .clone()
-                .slice([0..batch, 0..n, 1..d_last]);
-            damage_new.map(|core| Tensor::cat(vec![core, tail], 2))
-        };
-
-        // FP P3.5: mirror post-step THMC plan fields into UMST scalar columns (closes W4/W5).
-        crate::physics::thmc_umst_sync::sync_thmc_to_umst(&state, manifold)?;
-
-        // Post-step gate evidence via configured transition gate cartridge.
-        let gate_evidence = super::thmc_step::ThmcSolverStep::attach_gate_evidence(
-            self, _cartridge, &pre_step, &state, manifold, self.dt,
+        let (state, gate_evidence) = super::thmc_epilogue::thmc_post_step_epilogue(
+            self, _cartridge, &pre_step, state, manifold, &epilogue_ctx,
         )?;
         self.step_gate_evidence.push(gate_evidence);
-
         state.time += self.dt;
         Ok(state)
     }

@@ -14,6 +14,8 @@
 use burn::tensor::backend::Backend;
 use burn::tensor::Tensor;
 
+use crate::physics::error::PhysicsError;
+
 /// Pure guidance endofunctor on `[B, N, C]` density fields (elementwise).
 #[derive(Clone, Debug, PartialEq)]
 pub struct PrimeSpectralFilter {
@@ -66,11 +68,49 @@ impl PrimeSpectralFilter {
     }
 
     /// Apply spectral filter: `rho' = w ⊙ rho` (same shape).
-    pub fn apply<B: Backend<FloatElem = f32>>(&self, rho: Tensor<B, 3>, n: usize) -> Tensor<B, 3> {
+    pub fn apply<B: Backend<FloatElem = f32>>(
+        &self,
+        rho: Tensor<B, 3>,
+        n: usize,
+    ) -> Result<Tensor<B, 3>, PhysicsError> {
+        let [_, n_rho, c] = rho.dims();
+        if n_rho != n {
+            return Err(PhysicsError::ShapeMismatch {
+                context: "PrimeSpectralFilter::apply",
+                detail: "n must match rho node count",
+            });
+        }
+        if c < 1 {
+            return Err(PhysicsError::ShapeMismatch {
+                context: "PrimeSpectralFilter::apply",
+                detail: "rho channel count must be >= 1",
+            });
+        }
         let weights = self.weight_table(n);
+        self.validate_weight_stability(&weights)?;
         let device = rho.device();
         let w = Tensor::<B, 1>::from_floats(weights.as_slice(), &device).reshape([1, n, 1]);
-        rho.mul(w)
+        Ok(rho.mul(w))
+    }
+
+    /// Fail-closed check that normalized weights are finite and strictly positive.
+    fn validate_weight_stability(&self, weights: &[f32]) -> Result<(), PhysicsError> {
+        for (i, &w) in weights.iter().enumerate() {
+            if !w.is_finite() {
+                return Err(PhysicsError::NonFinite {
+                    context: "PrimeSpectralFilter::apply weight table",
+                });
+            }
+            if w <= 0.0 {
+                return Err(PhysicsError::Domain {
+                    detail: format!(
+                        "PrimeSpectralFilter: non-positive weight at index {i} (ε={}, w={w})",
+                        self.epsilon
+                    ),
+                });
+            }
+        }
+        Ok(())
     }
 }
 
@@ -172,5 +212,63 @@ mod tests {
         for ((f, v), w) in filtered.iter().zip(&vals).zip(&weights) {
             assert!((f - v - (w - 1.0) * v).abs() < 1e-5);
         }
+    }
+
+    #[test]
+    fn apply_tensor_matches_weight_table() {
+        use burn::tensor::{Shape, Tensor};
+        use burn_ndarray::NdArray;
+
+        type B = NdArray<f32>;
+        let dev = Default::default();
+        let ps = PrimeSpectralFilter::new(0.05, false, None);
+        let n = 8_usize;
+        let rho = Tensor::<B, 3>::full(Shape::new([1, n, 1]), 0.5, &dev);
+        let out = ps.apply(rho, n).expect("stable filter apply");
+        let expected_w = ps.weight_table(n);
+        let out_vals = out.into_data().value;
+        for (i, &v) in out_vals.iter().enumerate() {
+            let expected = 0.5 * expected_w[i];
+            assert!(
+                (v - expected).abs() < 1e-5,
+                "index {i}: got {v}, expected {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn apply_rejects_node_count_mismatch() {
+        use burn::tensor::{Shape, Tensor};
+        use burn_ndarray::NdArray;
+
+        type B = NdArray<f32>;
+        let dev = Default::default();
+        let ps = PrimeSpectralFilter::new(0.05, false, None);
+        let rho = Tensor::<B, 3>::full(Shape::new([1, 4, 1]), 0.5, &dev);
+        let err = ps.apply(rho, 8).unwrap_err();
+        assert!(
+            matches!(err, PhysicsError::ShapeMismatch { .. }),
+            "expected ShapeMismatch, got {err}"
+        );
+    }
+
+    /// FP Manifesto §6: ε=0 spectral filter is the identity — re-applying must not drift.
+    #[test]
+    fn apply_idempotent_at_zero_epsilon() {
+        use burn::tensor::{Shape, Tensor};
+        use burn_ndarray::NdArray;
+
+        type B = NdArray<f32>;
+        let dev = Default::default();
+        let ps = PrimeSpectralFilter::new(0.0, false, None);
+        let n = 8_usize;
+        let rho = Tensor::<B, 3>::full(Shape::new([1, n, 1]), 0.5, &dev);
+
+        let out1 = ps.apply(rho, n).expect("identity filter apply");
+        let out2 = ps.apply(out1.clone(), n).expect("second identity apply");
+        assert!(
+            out2.all_close(out1, Some(1e-6), Some(1e-7)),
+            "re-application of ε=0 PrimeSpectralFilter must not drift"
+        );
     }
 }
