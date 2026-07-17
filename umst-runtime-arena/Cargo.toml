@@ -16,3 +16,8 @@ mmap = ["dep:memmap2"]
 
 [dev-dependencies]
 tempfile = "3"
+
+[[bench]]
+name = "prabhu_arena_alloc"
+path = "benches/prabhu_arena_alloc.rs"
+harness = false
