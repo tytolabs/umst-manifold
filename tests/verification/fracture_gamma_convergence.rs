@@ -230,7 +230,7 @@ fn at2_surface_energy_scale_matches_gc_order_of_magnitude() {
     };
     let d_new = solver
         .update_damage_tensors(strain, damage, fracture_energy_gc, edges_b1)
-        .expect("PhaseFieldFractureSolver::update_damage_tensors on tensile ε_xx for Gc/l·d̄ order-of-magnitude smoke");
+        .expect("PhaseFieldFractureSolver::update_damage_tensors on tensile ε_xx for Gc/l·d̄ order-of-magnitude smoke (FP §6 Track 12 AT2 surface-energy scale witness)");
     let vals = d_new.into_data().value;
     let mean_d: f32 = vals.iter().sum::<f32>() / vals.len() as f32;
     assert!(
@@ -1139,7 +1139,7 @@ fn staggered_fracture_compliance_monotone_increasing() {
 
     let c_final = *compliances
         .last()
-        .expect("final compliance from staggered outer_schedule (compliances non-empty after loop)");
+        .expect("staggered_fracture_compliance_monotone_increasing: final compliance after outer_schedule sweep (compliances non-empty) (FP §6 Track 12 §7.4 monotone compliance witness)");
     assert!(
         c_final > c0,
         "expected compliance to grow: c0={c0} c_final={c_final}"
