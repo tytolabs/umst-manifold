@@ -16,6 +16,7 @@
 use burn::tensor::{backend::Backend, Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::physics::dec_operators::DecEdgeOperators;
+use umst_manifold::physics::error::PhysicsError;
 use umst_manifold::physics::extruded_plate::ExtrudedPlateMechanics;
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
@@ -451,6 +452,11 @@ fn mode_metrics(fx: &HarnessFixture, v_raw: &[f64]) -> (f64, f64, f64) {
     (kappa, rho_pred, v_norm)
 }
 
+/// PCG relative residual + iteration count from the bar-network equilibrium witness.
+///
+/// FP §2 fail-closed: roof traction on the 9×8×2 singular harness stalls at `eq_rel ≈ 0.94`
+/// (incompatible RHS floor). `solve_equilibrium_with_pcg_report` returns `PhysicsError::Diverged`
+/// instead of `Ok` — probes 1/3 observe stall telemetry via the error arm, not a tolerance bump.
 fn bar_pcg_rel_res(
     fx: &HarnessFixture,
     f_flat: &[f32],
@@ -460,7 +466,7 @@ fn bar_pcg_rel_res(
         Data::new(f_flat.to_vec(), Shape::new([1, fx.n, 3])),
         &fx.dev,
     );
-    let (_, _, pcg) = VectorMechanicsSolver::solve_equilibrium_with_pcg_report(
+    match VectorMechanicsSolver::solve_equilibrium_with_pcg_report(
         Tensor::<B, 3>::zeros([1, fx.n, 3], &fx.dev),
         fx.coords.clone(),
         fx.stiffness.clone(),
@@ -470,9 +476,16 @@ fn bar_pcg_rel_res(
         fx.mask.clone(),
         fx.area,
         cfg,
-    )
-    .expect("VectorMechanicsSolver::solve_equilibrium_with_pcg_report on extruded plate bar network (FP §6 Track B6 H4 roof PCG witness)");
-    (pcg.rel_residual, pcg.iterations)
+    ) {
+        Ok((_, _, pcg)) => (pcg.rel_residual, pcg.iterations),
+        Err(PhysicsError::Diverged {
+            eq_rel,
+            pcg_iterations,
+        }) => (eq_rel, pcg_iterations),
+        Err(e) => panic!(
+            "VectorMechanicsSolver::solve_equilibrium_with_pcg_report on extruded plate bar network (FP §6 Track B6 H4 roof PCG witness): {e}"
+        ),
+    }
 }
 
 fn free_dof_indices(mask: &[f64]) -> Vec<usize> {
