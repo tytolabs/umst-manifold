@@ -418,7 +418,9 @@ mod tests {
                 state.clone(),
                 &mut manifold,
             )
-            .expect("fold_plan_step on empty iterator should succeed");
+            .expect(
+                "TopologyPhysicsOrchestrator::fold_plan_step on empty iterator must be no-op Ok on toy two-node state (FP §6 Track G mop orchestration witness)",
+            );
         assert_eq!(
             out.thermal.temperature.as_tensor().clone().into_data(),
             state.thermal.temperature.as_tensor().clone().into_data()
