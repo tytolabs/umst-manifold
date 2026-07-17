@@ -92,6 +92,7 @@ pub fn cbf_landauer_as_power_input(cbf: &ThermodynamicCBF, bits_resolved: f64) -
 ///
 /// When `power_input = 0`, byte-matches [`transition_outcome`] (0e-i backward compatibility).
 #[must_use]
+#[allow(deprecated)]
 pub fn transition_outcome_with_power_input(
     old_state: &ThermodynamicStateSnapshot,
     new_state: &ThermodynamicStateSnapshot,

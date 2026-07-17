@@ -120,20 +120,55 @@ impl ThermodynamicStateSnapshot {
 }
 
 /// Outcome parallel to prototype [`AdmissibilityResult`] fields before reason stringification.
+#[allow(missing_docs)] // Legacy bool mirrors — prefer [`Self::conjunct_verdict`] / [`Self::is_accepted`]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ThermodynamicTransitionOutcome {
     /// Primary discriminant — core ∧ material conjunct cluster.
     pub verdict: ConjunctVerdict,
+    /// Legacy mirror of [`ConjunctVerdict::is_accepted`] — prefer [`Self::is_accepted`].
+    #[deprecated(
+        since = "0.2.0",
+        note = "use ThermodynamicTransitionOutcome::is_accepted() or verdict.is_accepted()"
+    )]
     pub accepted: bool,
     pub dissipation: f64,
+    /// Legacy core conjunct witness — prefer [`CoreGateOutcome`] via open-system route.
+    #[deprecated(
+        since = "0.2.0",
+        note = "use CoreGateOutcome::mass_conserved or verdict reject reason"
+    )]
     pub mass_conserved: bool,
+    /// Legacy CD ∧ strength fold — prefer [`Self::rest_verdict`] / [`ConjunctVerdict`].
+    #[deprecated(
+        since = "0.2.0",
+        note = "use rest_verdict() or ConjunctVerdict reject reason"
+    )]
     pub energy_positive: bool,
     /// Reaction-extent monotonicity (`gate_sdf` conjunct).
+    #[deprecated(
+        since = "0.2.0",
+        note = "use MaterialGateOutcome::reaction_extent_irreversible or verdict"
+    )]
     pub reaction_extent_irreversible: bool,
 }
 
 impl ThermodynamicTransitionOutcome {
+    /// Borrow the primary [`ConjunctVerdict`] discriminant (FP P2.4 SSOT).
+    #[inline]
+    #[must_use]
+    pub fn conjunct_verdict(self) -> ConjunctVerdict {
+        self.verdict
+    }
+
+    /// Whether the composed transition cluster accepted (wire bytes unchanged).
+    #[inline]
+    #[must_use]
+    pub fn is_accepted(self) -> bool {
+        self.verdict.is_accepted()
+    }
+
     /// REST-stable verdict via locked transition conjunct ladder (legacy `energy_positive` fold).
+    #[allow(deprecated)]
     pub fn rest_verdict(&self) -> AdmissibilityVerdict {
         AdmissibilityVerdict::from_transition_conjuncts(
             self.accepted,
@@ -189,7 +224,7 @@ impl TransitionFilter {
         dt: f64,
     ) -> ThermodynamicTransitionOutcome {
         let outcome = transition_outcome(old_state, new_state, dt, self.tolerance);
-        if outcome.accepted {
+        if outcome.is_accepted() {
             self.acceptances += 1;
         } else {
             self.rejections += 1;
@@ -237,6 +272,7 @@ fn transition_snapshot_well_formed(s: &ThermodynamicStateSnapshot) -> bool {
 /// Aligns with [`thermodynamic_transition_admissible_tol`] and umst-math [`gate_sdf`].
 /// Telemetry-only wrapper: [`TransitionFilter::check_transition`].
 #[must_use]
+#[allow(deprecated)]
 pub fn transition_outcome(
     old_state: &ThermodynamicStateSnapshot,
     new_state: &ThermodynamicStateSnapshot,
@@ -429,6 +465,7 @@ pub type MixProposalScalars = TransitionScalars;
 pub type ThermodynamicMixFilter = TransitionFilter;
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod transition_outcome_tests {
     use super::*;
     use umst_math::manifold::csg::{gate_sdf, thermo_gate_from_reaction_extent, ThermoGateState};
