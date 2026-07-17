@@ -817,7 +817,7 @@ fn thmc_implicit_euler_t_h_alpha_u_placeholder_r_u_and_flat_layout_two_nodes() {
     );
     let (_r_t, _r_h, _r_alpha, r_u) = assembler
         .assemble_with_mechanics_placeholder_r_u(&trial)
-        .expect("assemble four blocks");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::assemble_with_mechanics_placeholder_r_u on 2-node (T,h,α,u) trial for placeholder R_u block witness (FP §6 Track G)");
     let got_ru = r_u.into_data().value;
     for i in 0..u_vals.len() {
         let want = mass * (u_vals[i] - u_n_vals[i]);
@@ -831,7 +831,7 @@ fn thmc_implicit_euler_t_h_alpha_u_placeholder_r_u_and_flat_layout_two_nodes() {
 
     let flat = assembler
         .stacked_flat_residual_field_major(&trial)
-        .expect("stacked flat");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::stacked_flat_residual_field_major on 2-node trial for field-major stacked ‖R‖₂ layout witness (FP §6 Track G)");
     let f_t = 1usize;
     let f_h = 1usize;
     let f_a = 1usize;
@@ -839,10 +839,10 @@ fn thmc_implicit_euler_t_h_alpha_u_placeholder_r_u_and_flat_layout_two_nodes() {
         ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, f_t, f_h, f_a);
     assert_eq!(flat.len(), want_len, "field-major stacked residual length");
 
-    let l2_scalar = assembler.residual_l2(&trial).expect("l2 scalar blocks");
+    let l2_scalar = assembler.residual_l2(&trial).expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::residual_l2 on 2-node trial for scalar (T,h,α) blocks witness (FP §6 Track G)");
     let l2_full = assembler
         .residual_l2_including_mechanics_placeholder(&trial)
-        .expect("l2 with placeholder R_u");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::residual_l2_including_mechanics_placeholder on 2-node trial for stacked L2 with R_u witness (FP §6 Track G)");
     let ru_sq: f32 = got_ru.iter().map(|x| x * x).sum();
     let l2_from_parts = (l2_scalar * l2_scalar + ru_sq).max(0.0_f32).sqrt();
     assert!(
@@ -2695,7 +2695,7 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
 
     let s_split = solver_split
         .step(&Stub, clone_thmc_state(&state0), &mut manifold)
-        .expect("split step");
+        .expect("ThmcSolver::step split operator on 2-node SI chain for coupled BE residual baseline (FP §6 Track G)");
     let s_mono = solver_mono
         .step_monolithic_implicit(&Stub, clone_thmc_state(&state0), &mut manifold)
         .expect("monolithic implicit step");
@@ -2731,7 +2731,7 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
             &body_force,
             cross_section_area,
         )
-        .expect("||R|| split");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::residual_l2_including_quasi_static_r_u after split step for coupled ‖R‖₂ baseline witness (FP §6 Track G)");
     let r_mono = assembler
         .residual_l2_including_quasi_static_r_u(
             &s_mono,
