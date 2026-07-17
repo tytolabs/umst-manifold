@@ -9,7 +9,7 @@
 use burn::tensor::{backend::Backend, Tensor};
 
 use crate::core::field::{
-    DisplacementField, Field, HumidityField, ReactionExtentField, TemperatureField,
+    DisplacementField, HumidityField, ReactionExtentField, TemperatureField,
 };
 use crate::core::material_phase::{
     MaterialPhase, MaterialPhaseKind, MechanicsState, RheologyState, SettingState, ThmcEnvelope,
@@ -141,5 +141,94 @@ mod tests {
         let back = env.to_flat_state();
         assert!((back.time - flat.time).abs() < f32::EPSILON);
         assert_eq!(back.damage.as_tensor().dims(), flat.damage.as_tensor().dims());
+    }
+
+    #[test]
+    fn from_flat_fluid_routes_velocity_and_kind() {
+        let device = Default::default();
+        let flat = sample_flat(&device);
+        let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Fluid);
+        assert_eq!(env.kind(), MaterialPhaseKind::Fluid);
+        match env.phase {
+            MaterialPhase::Fluid(r) => {
+                assert_eq!(r.velocity.dims(), [1, 4, 3]);
+                assert_eq!(r.yield_stress.dims(), [1, 4, 1]);
+                assert_eq!(r.plastic_viscosity.dims(), [1, 4, 1]);
+            }
+            _ => panic!("expected Fluid"),
+        }
+    }
+
+    #[test]
+    fn from_flat_solid_routes_displacement_damage_and_kind() {
+        let device = Default::default();
+        let flat = sample_flat(&device);
+        let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Solid);
+        assert_eq!(env.kind(), MaterialPhaseKind::Solid);
+        match env.phase {
+            MaterialPhase::Solid(m) => {
+                assert_eq!(m.displacement.dims(), [1, 4, 3]);
+                assert_eq!(m.damage.dims(), [1, 4, 1]);
+                assert_eq!(m.stiffness.dims(), [1, 4, 1]);
+            }
+            _ => panic!("expected Solid"),
+        }
+    }
+
+    #[test]
+    fn envelope_damage_preserved_across_all_kinds() {
+        let device = Default::default();
+        let flat = sample_flat(&device);
+        for kind in [
+            MaterialPhaseKind::Fluid,
+            MaterialPhaseKind::Setting,
+            MaterialPhaseKind::Solid,
+        ] {
+            let env = ThmcEnvelope::from_flat_state(&flat, kind);
+            assert_eq!(env.damage.as_tensor().dims(), flat.damage.as_tensor().dims());
+            assert!((env.time - flat.time).abs() < f32::EPSILON);
+        }
+    }
+
+    #[test]
+    fn flat_roundtrip_fluid_preserves_velocity_dims() {
+        let device = Default::default();
+        let flat = sample_flat(&device);
+        let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Fluid);
+        #[allow(deprecated)]
+        let back = env.to_flat_state();
+        assert_eq!(
+            back.mechanical.displacement.as_tensor().dims(),
+            [1, 4, 3]
+        );
+    }
+
+    #[test]
+    fn flat_roundtrip_solid_preserves_displacement_dims() {
+        let device = Default::default();
+        let flat = sample_flat(&device);
+        let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Solid);
+        #[allow(deprecated)]
+        let back = env.to_flat_state();
+        assert_eq!(
+            back.mechanical.displacement.as_tensor().dims(),
+            [1, 4, 3]
+        );
+    }
+
+    #[test]
+    fn idempotency_to_flat_from_flat_setting() {
+        let device = Default::default();
+        let flat = sample_flat(&device);
+        let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Setting);
+        #[allow(deprecated)]
+        let once = env.to_flat_state();
+        let env2 = ThmcEnvelope::from_flat_state(&once, MaterialPhaseKind::Setting);
+        assert_eq!(env2.kind(), MaterialPhaseKind::Setting);
+        assert!((env2.time - env.time).abs() < f32::EPSILON);
+        assert_eq!(
+            env2.damage.as_tensor().dims(),
+            env.damage.as_tensor().dims()
+        );
     }
 }
