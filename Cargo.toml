@@ -159,6 +159,11 @@ path = "tests/verification/staggered_fracture_mechanics_chain.rs"
 required-features = ["fracture-at2"]
 
 [[test]]
+name = "fracture_idempotency_equilibrium"
+path = "tests/verification/fracture_idempotency_equilibrium.rs"
+required-features = ["fracture-at2"]
+
+[[test]]
 name = "staggered_ud_loop_milestone"
 path = "tests/verification/staggered_ud_loop_milestone.rs"
 required-features = ["fracture-at2"]
