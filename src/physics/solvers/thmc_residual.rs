@@ -66,7 +66,10 @@ use burn::tensor::Shape;
 use burn::tensor::Tensor;
 
 #[cfg(feature = "thmc-coupled")]
-use crate::core::field::{Field, HumidityField, ReactionExtentField, StepEntryDamageMask, TemperatureField};
+use crate::core::field::{
+    Field, HumidityField, ReactionExtentField, StepEntryDamageMask, StiffnessField,
+    TemperatureField,
+};
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::dec_operators::DecEdgeOperators;
 #[cfg(feature = "thmc-coupled")]
@@ -75,9 +78,8 @@ use crate::physics::laplacian::TopologicalLaplacian;
 use crate::physics::mechanics::VectorMechanicsSolver;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc::{
-    reaction_extent_rate_field, reaction_extent_rate_tensor,
-    shrink_strain_from_saturation_loss_tensor, ChemicalPlan,
-    HydrologicPlan, MechanicalPlan, ReactionExtentKinetics, ThermalPlan, ThmcState,
+    reaction_extent_rate_field, shrink_strain_from_saturation_loss_tensor, ReactionExtentKinetics,
+    ThmcState,
 };
 
 #[cfg(all(feature = "thmc-coupled", feature = "solver-experimental"))]
@@ -627,10 +629,13 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
             None
         };
 
-        let stiffness_e = alpha_bn1.mul_scalar(self.kinetics.stiffness_e_scale_pa);
-        let stiffness_nu =
-            Tensor::<B, 3>::zeros([batch, n, 1], &device).add_scalar(self.kinetics.stiffness_nu);
-        let stiffness = Tensor::cat(vec![stiffness_e, stiffness_nu], 2);
+        let stiffness = StiffnessField::from_alpha_kinetics(
+            alpha_bn1,
+            &self.kinetics.to_spec(),
+            &device,
+        )
+        .as_tensor()
+        .clone();
         let r_eq = VectorMechanicsSolver::projected_bar_equilibrium_residual(
             u.clone(),
             coords_n3.clone(),

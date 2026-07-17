@@ -15,7 +15,10 @@ use umst_manifold::core::traits::IScienceCartridge;
 use umst_manifold::core::umst_schema::{UMST_SCALAR_CHANNEL_COUNT, SCALAR_DAMAGE, SCALAR_HUMIDITY, SCALAR_TEMPERATURE};
 use umst_manifold::physics::laplacian::TopologicalLaplacian;
 use umst_manifold::physics::solvers::thmc::{reaction_extent_rate_field, ThmcNewtonConfig};
-use umst_manifold::physics::solvers::{ReactionExtentKinetics, ThmcSolver, ThmcState};
+use umst_manifold::physics::solvers::{
+    ReactionExtentKinetics, ThmcImplicitEulerThermalHumidityReactionExtentResidual,
+    ThmcImplicitEulerThermalReactionExtentResidual, ThmcSolver, ThmcState,
+};
 use umst_manifold::physics::thmc_umst_sync::sync_thmc_to_umst;
 
 type B = NdArray<f32>;
@@ -399,4 +402,163 @@ fn thmc_hydrate_sync_roundtrip_idempotent_on_scalar_channels() {
     sync_thmc_to_umst(&hydrated, &mut umst).expect("re-sync");
     let again = umst.scalar_features.clone().into_data().value;
     assert_eq!(snap, again, "second sync after hydrate must not drift UMST columns");
+}
+
+/// FP §6: dense damped Newton on \((T,\alpha)\) at backward-Euler equilibrium is a fixed point.
+#[test]
+fn thmc_t_alpha_dense_newton_idempotent_at_backward_euler_equilibrium() {
+    let dev = device();
+    let n = 2usize;
+    let batch = 1usize;
+    let dt = 1e-4_f32;
+    let edges = two_node_edges();
+    let damage = zero_damage_mask(batch, n);
+    let kinetics = ReactionExtentKinetics::default();
+
+    let t_uniform = Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &dev);
+    let alpha_saturated = Tensor::<B, 3>::full([batch, n, 1], 1.0_f32, &dev);
+
+    let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
+        dt,
+        temperature_n: Field::new(t_uniform.clone()),
+        alpha_n: Field::new(alpha_saturated.clone()),
+        edges_b1: edges,
+        damage_m: damage,
+        kinetics,
+    };
+
+    let trial = ThmcState::from_tensors(
+        t_uniform,
+        Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &dev),
+        Tensor::<B, 3>::zeros([batch, n, 3], &dev),
+        alpha_saturated,
+        Tensor::<B, 3>::full([batch, n, 1], 0.1_f32, &dev),
+        0.0,
+    );
+
+    let r0 = assembler.residual_l2(&trial).expect("equilibrium residual");
+    assert!(
+        r0 < 1e-6_f32,
+        "uniform saturated state must satisfy BE residual, got ||R||={r0}"
+    );
+
+    let (after1, _, norm1) = assembler
+        .one_damped_newton_step(&trial, 1.0_f32, 1e-6_f32)
+        .expect("first (T,α) Newton");
+    let (after2, _, norm2) = assembler
+        .one_damped_newton_step(&after1, 1.0_f32, 1e-6_f32)
+        .expect("second (T,α) Newton");
+
+    let tol = 1e-5_f32;
+    assert!(norm1 < 1e-5_f32, "post-Newton residual should stay small: {norm1}");
+    assert!(norm2 < 1e-5_f32, "re-Newton residual should stay small: {norm2}");
+    assert!(
+        max_abs_tensor3(
+            after1.thermal.temperature.as_tensor(),
+            trial.thermal.temperature.as_tensor()
+        ) < tol,
+        "(T,α) Newton must not drift temperature at equilibrium"
+    );
+    assert!(
+        max_abs_tensor3(
+            after1.chemical.reaction_extent.as_tensor(),
+            trial.chemical.reaction_extent.as_tensor()
+        ) < tol,
+        "(T,α) Newton must not drift α at equilibrium"
+    );
+    assert!(
+        max_abs_tensor3(
+            after2.thermal.temperature.as_tensor(),
+            after1.thermal.temperature.as_tensor()
+        ) < tol,
+        "re-application of (T,α) Newton must not drift"
+    );
+    assert!(
+        max_abs_tensor3(
+            after2.chemical.reaction_extent.as_tensor(),
+            after1.chemical.reaction_extent.as_tensor()
+        ) < tol,
+        "re-application of (T,α) Newton must not drift α"
+    );
+}
+
+/// FP §6: dense damped Newton on \((T,h,\alpha)\) at BE equilibrium is a fixed point (no mechanics tail).
+#[test]
+fn thmc_tha_dense_newton_idempotent_at_backward_euler_equilibrium() {
+    let dev = device();
+    let n = 2usize;
+    let batch = 1usize;
+    let dt = 1e-4_f32;
+    let edges = two_node_edges();
+    let damage = zero_damage_mask(batch, n);
+    let kinetics = ReactionExtentKinetics::default();
+
+    let t_uniform = Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &dev);
+    let h_uniform = Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &dev);
+    let alpha_saturated = Tensor::<B, 3>::full([batch, n, 1], 1.0_f32, &dev);
+    let u_zero = Tensor::<B, 3>::zeros([batch, n, 3], &dev);
+
+    let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
+        dt,
+        temperature_n: Field::new(t_uniform.clone()),
+        humidity_n: Field::new(h_uniform.clone()),
+        alpha_n: Field::new(alpha_saturated.clone()),
+        displacement_n: u_zero.clone(),
+        mechanics_placeholder_mass: 1.0_f32,
+        ru_shrinkage_binder_liquid_ratio: None,
+        edges_b1: edges,
+        damage_m: damage,
+        kinetics,
+    };
+
+    let trial = ThmcState::from_tensors(
+        t_uniform,
+        h_uniform,
+        u_zero,
+        alpha_saturated,
+        Tensor::<B, 3>::full([batch, n, 1], 0.1_f32, &dev),
+        0.0,
+    );
+
+    let r0 = assembler.residual_l2(&trial).expect("equilibrium residual");
+    assert!(
+        r0 < 1e-6_f32,
+        "uniform saturated (T,h,α) must satisfy BE residual, got ||R||={r0}"
+    );
+
+    let (after1, _, norm1) = assembler
+        .one_damped_newton_step(&trial, 1.0_f32, 1e-6_f32)
+        .expect("first (T,h,α) Newton");
+    let (after2, _, norm2) = assembler
+        .one_damped_newton_step(&after1, 1.0_f32, 1e-6_f32)
+        .expect("second (T,h,α) Newton");
+
+    let tol = 1e-5_f32;
+    assert!(norm1 < 1e-5_f32, "post-Newton residual should stay small: {norm1}");
+    assert!(norm2 < 1e-5_f32, "re-Newton residual should stay small: {norm2}");
+    assert!(
+        max_abs_tensor3(
+            after1.thermal.temperature.as_tensor(),
+            trial.thermal.temperature.as_tensor()
+        ) < tol
+    );
+    assert!(
+        max_abs_tensor3(
+            after1.hydro.humidity.as_tensor(),
+            trial.hydro.humidity.as_tensor()
+        ) < tol
+    );
+    assert!(
+        max_abs_tensor3(
+            after1.chemical.reaction_extent.as_tensor(),
+            trial.chemical.reaction_extent.as_tensor()
+        ) < tol
+    );
+    assert!(
+        max_abs_tensor3(
+            after2.thermal.temperature.as_tensor(),
+            after1.thermal.temperature.as_tensor()
+        ) < tol,
+        "re-application of (T,h,α) Newton must not drift"
+    );
 }

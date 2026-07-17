@@ -411,4 +411,132 @@ mod tests {
             state.thermal.temperature.as_tensor().clone().into_data()
         );
     }
+
+    fn max_abs_tensor3(a: &Tensor<TestBackend, 3>, b: &Tensor<TestBackend, 3>) -> f32 {
+        let da = a.clone().into_data().value;
+        let db = b.clone().into_data().value;
+        da.iter()
+            .zip(db.iter())
+            .map(|(&x, &y)| (x - y).abs())
+            .fold(0.0_f32, f32::max)
+    }
+
+    /// Quiescent equilibrium: uniform T/h, saturated α, zero u — operator-split step is a fixed point.
+    fn quiescent_thmc_state(dev: &<TestBackend as Backend>::Device, n: usize) -> ThmcState<TestBackend> {
+        ThmcState::from_tensors(
+            Tensor::<TestBackend, 3>::full([1, n, 1], 300.0_f32, dev),
+            Tensor::<TestBackend, 3>::full([1, n, 1], 0.5_f32, dev),
+            Tensor::<TestBackend, 3>::zeros([1, n, 3], dev),
+            Tensor::<TestBackend, 3>::full([1, n, 1], 1.0_f32, dev),
+            Tensor::<TestBackend, 3>::full([1, n, 1], 0.1_f32, dev),
+            0.0,
+        )
+    }
+
+    /// FP §6: [`Self::run_plan_step`] on quiescent equilibrium must not drift state.
+    #[test]
+    fn run_plan_step_idempotent_at_quiescent_equilibrium() {
+        let mut o = TopologyPhysicsOrchestrator::new(ThmcSolver {
+            dt: 1e-4,
+            max_newton: 1,
+            tol: 1e-6,
+            drying_last_node_evaporation_k: 0.0,
+            ..Default::default()
+        });
+        let dev = ndarray_device();
+        let n = 2usize;
+        let state = quiescent_thmc_state(&dev, n);
+        let mut manifold = toy_umst_two_node(&dev);
+        let post1 = o
+            .run_plan_step(&EmptyCartridge, state, &mut manifold)
+            .expect("first plan step");
+        let snap = post1.clone();
+        let post2 = o
+            .run_plan_step(&EmptyCartridge, post1, &mut manifold)
+            .expect("second plan step");
+        let tol = 1e-5_f32;
+        assert!(
+            max_abs_tensor3(
+                post2.thermal.temperature.as_tensor(),
+                snap.thermal.temperature.as_tensor()
+            ) < tol,
+            "temperature must not drift on re-step"
+        );
+        assert!(
+            max_abs_tensor3(
+                post2.hydro.humidity.as_tensor(),
+                snap.hydro.humidity.as_tensor()
+            ) < tol,
+            "humidity must not drift on re-step"
+        );
+        assert!(
+            max_abs_tensor3(
+                post2.chemical.reaction_extent.as_tensor(),
+                snap.chemical.reaction_extent.as_tensor()
+            ) < tol,
+            "reaction extent must not drift on re-step"
+        );
+        assert!(
+            max_abs_tensor3(post2.damage.as_tensor(), snap.damage.as_tensor()) < tol,
+            "damage must not drift on re-step"
+        );
+        assert!(
+            max_abs_tensor3(
+                post2.mechanical.displacement.as_tensor(),
+                snap.mechanical.displacement.as_tensor()
+            ) < tol,
+            "displacement must not drift on re-step"
+        );
+    }
+
+    /// FP §6: two Kleisli folds via [`Self::run_plan_step_repeated`] match one step at equilibrium.
+    #[test]
+    fn run_plan_step_repeated_two_idempotent_at_quiescent_equilibrium() {
+        let mut o = TopologyPhysicsOrchestrator::new(ThmcSolver {
+            dt: 1e-4,
+            max_newton: 1,
+            tol: 1e-6,
+            drying_last_node_evaporation_k: 0.0,
+            ..Default::default()
+        });
+        let dev = ndarray_device();
+        let n = 2usize;
+        let state = quiescent_thmc_state(&dev, n);
+        let mut manifold_a = toy_umst_two_node(&dev);
+        let mut manifold_b = toy_umst_two_node(&dev);
+        let once = o
+            .run_plan_step(&EmptyCartridge, state.clone(), &mut manifold_a)
+            .expect("single plan step");
+        let twice = o
+            .run_plan_step_repeated(2, &EmptyCartridge, state, &mut manifold_b)
+            .expect("two repeated plan steps");
+        let tol = 1e-5_f32;
+        assert!(
+            max_abs_tensor3(
+                twice.thermal.temperature.as_tensor(),
+                once.thermal.temperature.as_tensor()
+            ) < tol
+        );
+        assert!(
+            max_abs_tensor3(
+                twice.hydro.humidity.as_tensor(),
+                once.hydro.humidity.as_tensor()
+            ) < tol
+        );
+        assert!(
+            max_abs_tensor3(
+                twice.chemical.reaction_extent.as_tensor(),
+                once.chemical.reaction_extent.as_tensor()
+            ) < tol
+        );
+        assert!(
+            max_abs_tensor3(twice.damage.as_tensor(), once.damage.as_tensor()) < tol
+        );
+        assert!(
+            max_abs_tensor3(
+                twice.mechanical.displacement.as_tensor(),
+                once.mechanical.displacement.as_tensor()
+            ) < tol
+        );
+    }
 }

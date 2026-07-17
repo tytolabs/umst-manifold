@@ -158,7 +158,7 @@ impl Q1HexComplianceFunctional {
             ctx.self_weight,
             solve_options,
             region,
-        );
+        )?;
         let diagnostics = AdjointComplianceQ1Hex::compliance_diagnostics_at_rho_with_region(
             input.rho_flat,
             m.nx,
@@ -174,7 +174,7 @@ impl Q1HexComplianceFunctional {
             ctx.self_weight,
             solve_options,
             None,
-        );
+        )?;
         ComplianceValue::from_forward_state(c_raw, material.p, diagnostics)
     }
 }
@@ -201,7 +201,7 @@ impl ComplianceFunctional for Q1HexComplianceFunctional {
             material,
             &ctx.cg,
             ctx.self_weight,
-        );
+        )?;
         let diagnostics = AdjointComplianceQ1Hex::compliance_diagnostics_at_rho(
             input.rho_flat,
             m.nx,
@@ -215,7 +215,7 @@ impl ComplianceFunctional for Q1HexComplianceFunctional {
             material,
             &ctx.cg,
             ctx.self_weight,
-        );
+        )?;
         ComplianceValue::from_forward_state(c_raw, material.p, diagnostics)
     }
 
@@ -249,7 +249,7 @@ impl ComplianceFunctional for Q1HexComplianceFunctional {
             &Q1HexSolveOptions::default(),
             None,
             None,
-        );
+        )?;
         let value = ComplianceValue::from_forward_state(c_raw, material.p, diagnostics)?;
         Ok((surrogate, value))
     }

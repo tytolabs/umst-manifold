@@ -323,14 +323,19 @@ fn scalar_eps_channel_for_dec<B: Backend<FloatElem = f32>>(
 ) -> Result<Tensor<B, 3>, PhysicsError> {
     let d = relative_permittivity.dims();
     if d.len() != 3 || d[0] != 1 {
-        return None;
+        return Err(PhysicsError::ShapeMismatch {
+            context: "scalar_eps_channel_for_dec",
+            detail: "expected [1,N,1|9]",
+        });
     }
     match d[2] {
-        RELATIVE_PERMITTIVITY_CHANNELS_SCALAR => Some(relative_permittivity),
+        RELATIVE_PERMITTIVITY_CHANNELS_SCALAR => Ok(relative_permittivity),
         RELATIVE_PERMITTIVITY_CHANNELS_TENSOR3 => {
-            Some(relative_permittivity.narrow(2, EPS_TENSOR_YY, 1))
+            Ok(relative_permittivity.narrow(2, EPS_TENSOR_YY, 1))
         }
-        _ => None,
+        _ => Err(PhysicsError::UnsupportedLayout {
+            context: "scalar_eps_channel_for_dec: channel count",
+        }),
     }
 }
 
@@ -1946,7 +1951,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
     frequency_hz: f32,
     patch: &PhotonicsDecFacesPatch<'_, B>,
     dec_patch_config: PhotonicsDecPatchConfig,
-) -> Option<Tensor<B, 3>> {
+) -> Result<Tensor<B, 3>, PhysicsError> {
     let n = e_field.dims()[1];
     if n > PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV {
         return Err(PhysicsError::UnsupportedLayout {
@@ -2211,6 +2216,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
                 &b,
                 dim,
             )
+            .ok()
         })
         .ok_or(PhysicsError::KrylovDiverged {
             context: "solve_maxwell_dec_patch_direct: patch inner solve did not converge",
@@ -2248,7 +2254,7 @@ pub fn apply_dec_te_curl_curl_chain_operator<B: Backend<FloatElem = f32>>(
     {
         return None;
     }
-    let eps_s = scalar_eps_channel_for_dec(relative_permittivity)?;
+    let eps_s = scalar_eps_channel_for_dec(relative_permittivity).ok()?;
     let chain = extract_uniform_x_chain::<B>(n, &edges_b1, &coords_n3)?;
     let h = chain.h;
     let inv_h2 = 1.0 / (h * h);

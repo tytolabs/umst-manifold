@@ -258,7 +258,8 @@ pub fn simp_compliance_step<B: Backend<FloatElem = f32>>(
         boundary_mask.clone(),
         cross_section_area,
         inner_cfg,
-    );
+    )
+    .expect("bar equilibrium converged in topology SIMP step");
     let compliance = masked_dot(&body_force, &u, &boundary_mask);
     let loss_for_autodiff = if retain_loss_for_autodiff {
         Some(compliance.clone())
@@ -319,7 +320,8 @@ impl<B: Backend<FloatElem = f32>> TopologyOptimizer<B> {
             boundary_mask.clone(),
             cross_section_area,
             inner_cfg,
-        );
+        )
+        .expect("bar equilibrium converged in topology optimize_step");
         use crate::physics::linear::masked_dot;
         let compliance = masked_dot(&body_force, &u, &boundary_mask);
         (compliance, rho)

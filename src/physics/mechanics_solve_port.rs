@@ -243,9 +243,11 @@ mod tests {
         let u0 = Field::new(Tensor::<B, 3>::zeros([1, 2, 3], &dev));
         let rel_tol = 1e-6_f32;
 
-        let (_u, _stress, report) = BarNetworkMechanicsSolvePort.solve_equilibrium_reported(
-            u0, coords, stiff, bf, edges, damage, mask, area, &cfg, rel_tol,
-        );
+        let (_u, _stress, report) = BarNetworkMechanicsSolvePort
+            .solve_equilibrium_reported(
+                u0, coords, stiff, bf, edges, damage, mask, area, &cfg, rel_tol,
+            )
+            .expect("bar port equilibrium");
 
         assert_eq!(report.lane, PrecisionLane::F64AdjointBarPcg);
         assert!(report.converged());
