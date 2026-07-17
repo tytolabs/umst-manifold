@@ -97,10 +97,9 @@ use core::ops::ControlFlow;
 
 use crate::core::field::{DamageField, Field, FractureEnergyField, SmallStrainField};
 use crate::core::iterate_until::iterate_until;
+use crate::physics::error::PhysicsError;
 #[cfg(feature = "fracture-at2")]
 use crate::physics::laplacian::TopologicalLaplacian;
-#[cfg(feature = "fracture-at2")]
-use crate::physics::error::PhysicsError;
 #[cfg(feature = "fracture-at2")]
 use crate::physics::mechanics::VectorMechanicsSolver;
 #[cfg(feature = "fracture-at2")]
@@ -382,10 +381,10 @@ impl PhaseFieldFractureSolver {
         damage: DamageField<B>,
         fracture_energy_gc: FractureEnergyField<B>,
         edges_b1: Tensor<B, 2, Int>,
-    ) -> DamageField<B> {
+    ) -> Result<DamageField<B>, PhysicsError> {
         #[cfg(not(feature = "fracture-at2"))]
         {
-            damage
+            Ok(damage)
         }
 
         #[cfg(feature = "fracture-at2")]
@@ -396,8 +395,8 @@ impl PhaseFieldFractureSolver {
                 damage.into_tensor(),
                 fracture_energy_gc.into_tensor(),
                 edges_b1,
-            );
-            Field::new(out)
+            )?;
+            Ok(Field::new(out))
         }
     }
 
@@ -412,14 +411,14 @@ impl PhaseFieldFractureSolver {
         damage: Tensor<B, 3>,
         fracture_energy_gc: Tensor<B, 3>,
         edges_b1: Tensor<B, 2, Int>,
-    ) -> Tensor<B, 3> {
+    ) -> Result<Tensor<B, 3>, PhysicsError> {
         self.update_damage(
             SmallStrainField::from_tensor(strain),
             Field::new(damage),
             FractureEnergyField::from_tensor(fracture_energy_gc),
             edges_b1,
         )
-        .into_tensor()
+        .map(|d| d.into_tensor())
     }
 
     /// Outer **staggered** damage passes: for each `k` in `0..outer_iterations`, replaces `d` with
@@ -442,7 +441,7 @@ impl PhaseFieldFractureSolver {
         fracture_energy_gc: Tensor<B, 3>,
         edges_b1: Tensor<B, 2, Int>,
         outer_iterations: usize,
-    ) -> DamageField<B>
+    ) -> Result<DamageField<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         F: FnMut(&DamageField<B>) -> SmallStrainField<B>,
@@ -463,7 +462,7 @@ impl PhaseFieldFractureSolver {
         fracture_energy_gc: Tensor<B, 3>,
         edges_b1: Tensor<B, 2, Int>,
         outer: StaggeredDamageOuterLoopConfig,
-    ) -> DamageField<B>
+    ) -> Result<DamageField<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         F: FnMut(&DamageField<B>) -> SmallStrainField<B>,
@@ -486,7 +485,7 @@ impl PhaseFieldFractureSolver {
         };
 
         if outer.max_outer_iterations == 0 {
-            return damage;
+            return Ok(damage);
         }
 
         struct StaggeredOuterState<BB: Backend<FloatElem = f32>> {
@@ -502,19 +501,17 @@ impl PhaseFieldFractureSolver {
             prev_psi_mean: None,
         };
 
+        let mut loop_err: Option<PhysicsError> = None;
         iterate_until(outer.max_outer_iterations, &mut st, |st| {
+            if loop_err.is_some() { return ControlFlow::Break(()); }
             let strain_k = strain_fn(&st.damage);
             let d_before = st.damage.as_tensor().clone();
             let prev_s = st.prev_strain.as_ref().map(|s| s.as_tensor());
-
             let d_in = st.damage.clone();
-            st.damage = self.update_damage(
-                strain_k.clone(),
-                d_in,
-                FractureEnergyField::from_tensor(fracture_energy_gc.clone()),
-                edges_b1.clone(),
-            );
-
+            match self.update_damage(strain_k.clone(), d_in, FractureEnergyField::from_tensor(fracture_energy_gc.clone()), edges_b1.clone()) {
+                Ok(d) => st.damage = d,
+                Err(e) => { loop_err = Some(e); return ControlFlow::Break(()); }
+            }
             let d_after = st.damage.as_tensor();
 
             #[cfg(feature = "fracture-at2")]
@@ -544,7 +541,8 @@ impl PhaseFieldFractureSolver {
                 ControlFlow::Continue(())
             }
         });
-        st.damage
+        if let Some(e) = loop_err { return Err(e); }
+        Ok(st.damage)
     }
 
     pub fn update_damage_staggered_with_stop<B, F>(
@@ -555,7 +553,7 @@ impl PhaseFieldFractureSolver {
         edges_b1: Tensor<B, 2, Int>,
         max_outer_iterations: usize,
         stop: StaggeredOuterDamageStopCriteria,
-    ) -> DamageField<B>
+    ) -> Result<DamageField<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
         F: FnMut(&DamageField<B>) -> SmallStrainField<B>,
@@ -702,13 +700,10 @@ impl PhaseFieldFractureSolver {
             let prev_s = st.prev_strain.as_ref().map(|s| s.as_tensor());
 
             let d_in = st.d.clone();
-            st.d = solver.update_damage(
-                strain_field.clone(),
-                d_in,
-                gc_field.clone(),
-                edges_b1.clone(),
-            );
-
+            match solver.update_damage(strain_field.clone(), d_in, gc_field.clone(), edges_b1.clone()) {
+                Ok(d) => st.d = d,
+                Err(e) => { mechanics_err = Some(e); return ControlFlow::Break(()); }
+            }
             let d_after = st.d.as_tensor();
 
             if outer_stopping_should_break(
@@ -850,13 +845,18 @@ fn damage_relaxation_one_iteration<B: Backend<FloatElem = f32>>(
 }
 
 #[cfg(feature = "fracture-at2")]
+fn damage_tensor_finite<B: Backend<FloatElem = f32>>(tensor: &Tensor<B, 3>) -> Result<(), PhysicsError> {
+    let m: f32 = tensor.clone().abs().max().into_scalar();
+    if m.is_finite() { Ok(()) } else { Err(PhysicsError::NonFinite { context: "PhaseFieldFractureSolver::update_damage" }) }
+}
+#[cfg(feature = "fracture-at2")]
 fn update_damage_experimental<B: Backend<FloatElem = f32>>(
     solver: &PhaseFieldFractureSolver,
     strain: Tensor<B, 4>,
     damage_old: Tensor<B, 3>,
     fracture_energy_gc: Tensor<B, 3>,
     edges_b1: Tensor<B, 2, Int>,
-) -> Tensor<B, 3> {
+) -> Result<Tensor<B, 3>, PhysicsError> {
     let l = solver.length_scale.max(1e-12);
     let gc = fracture_energy_gc.clone().clamp_min(1e-30_f32);
 
@@ -885,7 +885,9 @@ fn update_damage_experimental<B: Backend<FloatElem = f32>>(
         .float()
         .mul(out.clone().abs().lower_elem(f32::INFINITY).float())
         .greater_elem(0.5_f32);
-    damage_old.mask_where(elem_fin, out)
+    let result = damage_old.mask_where(elem_fin, out);
+    damage_tensor_finite(&result)?;
+    Ok(result)
 }
 
 /// Extract upper-triangle entries of symmetric strain, each `[B, N, 1]`.
