@@ -303,6 +303,15 @@ path = "tests/verification/thmc_idempotency_equilibrium.rs"
 required-features = ["thmc-coupled"]
 
 [[test]]
+name = "prabhu_gate_route_timing"
+path = "tests/verification/prabhu_gate_route_timing.rs"
+
+[[test]]
+name = "prabhu_thmc_step_timing"
+path = "tests/verification/prabhu_thmc_step_timing.rs"
+required-features = ["thmc-coupled"]
+
+[[test]]
 name = "thmc_monolithic_newton_chain"
 path = "tests/verification/thmc_monolithic_newton_chain.rs"
 required-features = ["thmc-coupled"]
