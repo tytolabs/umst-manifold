@@ -85,7 +85,7 @@ mod tests {
             s.time = 1.0;
             Ok(s)
         })
-        .expect("first morphism ok");
+        .expect("and_then_state chain on Ok morphism");
         assert!((out.time - 1.0).abs() < f32::EPSILON);
     }
 
@@ -97,7 +97,7 @@ mod tests {
             s.time = 2.0;
             s
         })
-        .expect("map_state ok");
+        .expect("map_state on toy ThmcState");
         assert!((out.time - 2.0).abs() < f32::EPSILON);
     }
 }
