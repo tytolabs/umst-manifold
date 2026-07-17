@@ -42,13 +42,17 @@ fn helmholtz_autodiff_striatus_40x40x4() {
         burn::tensor::Distribution::Uniform(0.05, 0.95),
         &device,
     );
-    let filtered_inner = helm.apply(rho.clone().inner(), edges.clone().inner(), dx_f);
+    let filtered_inner = helm
+        .apply(rho.clone().inner(), edges.clone().inner(), dx_f)
+        .expect("Helmholtz inner forward");
     let inner_sum = filtered_inner.sum().into_data().value[0];
     assert!(
         inner_sum.is_finite(),
         "Helmholtz inner forward must be finite at Striatus N={n}, got {inner_sum}"
     );
-    let filtered = helm.apply_straight_through(rho.clone(), edges, dx_f);
+    let filtered = helm
+        .apply_straight_through(rho.clone(), edges, dx_f)
+        .expect("Helmholtz straight-through forward");
     let loss = filtered.sum();
     assert!(
         loss.clone().into_data().value[0].is_finite(),
