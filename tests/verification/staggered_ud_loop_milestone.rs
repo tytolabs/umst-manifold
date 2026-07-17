@@ -218,7 +218,8 @@ fn milestone_one_analytic_strain_surrogate() {
         h.fracture_energy_gc,
         h.edges_b1,
         6,
-    );
+    )
+    .expect("update_damage_staggered");
 
     let vals = d_fin.into_tensor().into_data().value;
     assert!(vals.iter().all(|x| x.is_finite()));
@@ -264,7 +265,8 @@ fn milestone_one_mechanics_equilibrium_staggered_convergence() {
             h.fracture_energy_gc.clone(),
             h.edges_b1.clone(),
             1,
-        );
+        )
+        .expect("update_damage_staggered");
         let step = damage
             .as_tensor()
             .clone()

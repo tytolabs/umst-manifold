@@ -110,7 +110,8 @@ fn adjoint_grad_at_nodes(
         mat,
         cg,
         sw,
-    );
+    )
+    .expect("forward_and_loss");
     rho_ad
         .grad(&surrogate.backward())
         .expect("grad")

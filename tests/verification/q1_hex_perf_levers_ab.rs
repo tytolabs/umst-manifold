@@ -102,7 +102,8 @@ fn run_config(
         &solve_opts,
         None,
         None,
-    );
+    )
+    .expect("forward_loss_with_diagnostics");
     (
         c,
         diag.pcg_iters,

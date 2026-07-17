@@ -112,7 +112,8 @@ fn raw_compliance_fd(
         mat,
         cg,
         cross_section_area,
-    );
+    )
+    .expect("forward_and_loss");
     c_raw
 }
 
@@ -155,7 +156,8 @@ fn adjoint_four_node_chain_compliance_matches_series_spring() {
         mat,
         &cg,
         a_sec,
-    );
+    )
+    .expect("forward_and_loss");
 
     let rel = ((c_raw - c_exp).abs() / c_exp.abs()).max(0.0);
     assert!(
@@ -197,7 +199,8 @@ fn adjoint_four_node_chain_gradient_matches_finite_difference() {
         mat,
         &cg,
         a_sec,
-    );
+    )
+    .expect("forward_and_loss");
 
     let grads = surrogate.backward();
     let g_rho = rho_ad.grad(&grads).expect("expected gradient w.r.t. rho");
@@ -303,7 +306,8 @@ fn adjoint_four_node_chain_gradient_matches_bendsoe_sigmund_formula() {
         mat,
         &cg,
         a_sec,
-    );
+    )
+    .expect("forward_and_loss");
 
     let grads = surrogate.backward();
     let g_rho = rho_ad.grad(&grads).expect("expected gradient w.r.t. rho");
@@ -368,7 +372,8 @@ fn adjoint_gradient_sign_is_negative_along_load_path() {
         mat,
         &cg,
         a_sec,
-    );
+    )
+    .expect("forward_and_loss");
     let grads = surrogate.backward();
     let g = rho_ad.grad(&grads).expect("grad").into_data().value;
 

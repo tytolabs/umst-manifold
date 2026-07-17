@@ -138,7 +138,8 @@ fn l1_3_solver_region_ten_reuse_compliance_stable() {
             &opts,
             Some(&mut region),
             None,
-        );
+        )
+        .expect("forward_loss_with_diagnostics");
         if outer == 0 {
             c0 = c;
         } else {
@@ -191,7 +192,8 @@ fn l5_4_low_eta_cog_forward_finite() {
     let cg = MechanicsInnerLoopConfig::default();
     let (_, c, diag) = AdjointComplianceQ1Hex::forward_loss_with_diagnostics(
         rho, nx, ny, nz, 0.5, 0.5, 0.1, f, m, material, &cg, None, &opts, None, None,
-    );
+    )
+    .expect("forward_loss_with_diagnostics");
     assert!(c.is_finite() && c >= 0.0, "compliance {c}");
     assert!(diag.equilibrium_rel_residual.is_finite());
     assert!(diag.pcg_iters > 0);

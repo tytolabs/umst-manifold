@@ -121,19 +121,21 @@ fn staggered_one_outer_mechanics_strain_drives_at2_damage() {
     let fracture = PhaseFieldFractureSolver { length_scale: 0.08 };
 
     let edges_for_damage = edges_b1.clone();
-    let d_out = fracture.update_damage_staggered(
-        |damage: &DamageField<B>| {
-            let (u, _) = VectorMechanicsSolver::solve_equilibrium(
-                u0.clone(),
-                coords.clone(),
-                stiffness.clone(),
-                body_force.clone(),
-                edges_b1.clone(),
-                damage.as_tensor().clone(),
-                boundary_mask.clone(),
-                cross_section_area,
-                &cfg,
-            );
+    let d_out = fracture
+        .update_damage_staggered(
+            |damage: &DamageField<B>| {
+                let (u, _) = VectorMechanicsSolver::solve_equilibrium(
+                    u0.clone(),
+                    coords.clone(),
+                    stiffness.clone(),
+                    body_force.clone(),
+                    edges_b1.clone(),
+                    damage.as_tensor().clone(),
+                    boundary_mask.clone(),
+                    cross_section_area,
+                    &cfg,
+                )
+                .expect("solve_equilibrium");
             let u_src = u.clone().gather(1, src3.clone());
             let u_tgt = u.gather(1, tgt3.clone());
             let edge_disp = u_tgt.sub(u_src);
@@ -150,7 +152,8 @@ fn staggered_one_outer_mechanics_strain_drives_at2_damage() {
         fracture_energy_gc,
         edges_for_damage,
         1,
-    );
+    )
+    .expect("update_damage_staggered");
 
     let vals = d_out.into_tensor().into_data().value;
     assert!(vals.iter().all(|x| x.is_finite()));
