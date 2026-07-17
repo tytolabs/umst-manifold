@@ -1604,7 +1604,7 @@ fn solve_maxwell_dec_patch_quad_split_pin_residual_tight() {
         coords.clone(),
         &cg,
         Some(&patch),
-    ).expect("solve_maxwell_curl_curl");
+    ).expect("PhotonicsSolver::solve_maxwell_curl_curl on quad-split N=4 DEC patch with gauge pin at node 0 for tight natural-row residual witness (FP §6 Track G photonics)");
     let x = sol.into_data().value;
     let dim = 3 * n;
     let mut y = vec![0.0_f32; dim];
@@ -1703,7 +1703,7 @@ fn solve_maxwell_dec_patch_quad_split_lossless_auto_csr_matches_dense_csr_inner_
         coords.clone(),
         &cg,
         Some(&patch),
-    ).expect("solve_maxwell_curl_curl");
+    ).expect("PhotonicsSolver::solve_maxwell_curl_curl dense-only DEC patch on quad-split N=4 for lossless-auto CSR inner parity reference (FP §6 Track G photonics)");
 
     let sol_auto = ps_auto.solve_maxwell_curl_curl(
         e_field,
@@ -1714,7 +1714,7 @@ fn solve_maxwell_dec_patch_quad_split_lossless_auto_csr_matches_dense_csr_inner_
         coords,
         &cg,
         Some(&patch),
-    ).expect("solve_maxwell_curl_curl");
+    ).expect("PhotonicsSolver::solve_maxwell_curl_curl lossless-auto CSR inner on quad-split N=4 must match dense-only reference (FP §6 Track G photonics)");
 
     let vd = sol_dense.into_data().value;
     let va = sol_auto.into_data().value;
@@ -1781,7 +1781,7 @@ fn solve_maxwell_curl_curl_dec_patch_csr_inner_matches_dense_quad_split() {
         coords.clone(),
         &cg,
         Some(&patch),
-    ).expect("solve_maxwell_curl_curl");
+    ).expect("PhotonicsSolver::solve_maxwell_curl_curl lossless-auto DEC patch on quad-split N=4 for force-krylov CSR inner parity reference (FP §6 Track G photonics)");
 
     let sol_csr_path = ps_krylov.solve_maxwell_curl_curl(
         e_field.clone(),
@@ -1792,7 +1792,7 @@ fn solve_maxwell_curl_curl_dec_patch_csr_inner_matches_dense_quad_split() {
         coords.clone(),
         &cg,
         Some(&patch),
-    ).expect("solve_maxwell_curl_curl");
+    ).expect("PhotonicsSolver::solve_maxwell_curl_curl force-krylov CSR inner on quad-split N=4 must match lossless-auto dense path (FP §6 Track G photonics)");
 
     let vd = sol_dense.into_data().value;
     let vc = sol_csr_path.into_data().value;
@@ -1901,7 +1901,7 @@ fn solve_maxwell_dec_patch_quad_split_scalar_eps_imag_stacked_residual() {
         coords.clone(),
         &cg,
         Some(&patch),
-    ).expect("solve_maxwell_curl_curl");
+    ).expect("PhotonicsSolver::solve_maxwell_curl_curl on quad-split N=4 DEC patch with nodal scalar eps_r_imag for stacked-lossy Re(E) API witness (FP §6 Track G photonics)");
     let x_api = sol.into_data().value;
 
     let dim = 3 * n;
