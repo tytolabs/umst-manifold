@@ -152,9 +152,9 @@ mod tests {
     fn low_eta_cog_reduces_pcg_max_iter() {
         let snap = CockpitSnapshot::new(0.1, 100.0, 1.0);
         let opts = q1hex_opts_from_cockpit(&snap);
-        let cap = opts
-            .pcg_max_iter
-            .expect("low η_cog cockpit should set pcg_max_iter cap");
+        let cap = opts.pcg_max_iter.expect(
+            "q1hex_opts_from_cockpit on low η_cog snapshot must set pcg_max_iter cap (FP §6 Track G solve budget)",
+        );
         assert!(
             cap <= DEFAULT_PCG_MAX_ITER,
             "low η_cog cap {cap} should be ≤ default {DEFAULT_PCG_MAX_ITER}"
@@ -186,8 +186,9 @@ mod tests {
             "dignity_value": 7.5,
             "tokens_per_sec": 120.0
         }"#;
-        let snap = cockpit_from_external_json(json)
-            .expect("cockpit_from_external_json v4 schema fields");
+        let snap = cockpit_from_external_json(json).expect(
+            "cockpit_from_external_json on v4 schema fields (η_cog, dignity, tokens_per_sec) (FP §6 Track G solve budget)",
+        );
         assert!((snap.eta_cog - 0.42).abs() < 1e-9);
         assert!((snap.dignity - 7.5).abs() < 1e-9);
         assert!((snap.tokens_per_sec - 120.0).abs() < 1e-9);
@@ -196,8 +197,9 @@ mod tests {
     #[test]
     fn cockpit_from_external_json_falls_back_to_raw_fields() {
         let json = r#"{"eta_cog_raw": 0.15, "dignity_value_raw": 3.0}"#;
-        let snap = cockpit_from_external_json(json)
-            .expect("cockpit_from_external_json raw-field fallback");
+        let snap = cockpit_from_external_json(json).expect(
+            "cockpit_from_external_json raw-field fallback (η_cog_raw, dignity_value_raw) (FP §6 Track G solve budget)",
+        );
         assert!((snap.eta_cog - 0.15).abs() < 1e-9);
         assert!((snap.dignity - 3.0).abs() < 1e-9);
         assert_eq!(snap.tokens_per_sec, 0.0);
