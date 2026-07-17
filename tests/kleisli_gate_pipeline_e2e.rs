@@ -72,20 +72,19 @@ fn propose(intent: TransitionIntent) -> Admissible<TransitionPair> {
             new,
             dt: intent.dt,
         },
-        result: KleisliAdmissibilityResult {
-            verdict: if mass_ok {
+        result: KleisliAdmissibilityResult::from_verdict(
+            if mass_ok {
                 AdmissibilityVerdict::Accepted
             } else {
                 AdmissibilityVerdict::MassViolation
             },
-            admissible: mass_ok,
-            dissipation: outcome.dissipation as f32,
-            violation: if mass_ok {
+            outcome.dissipation as f32,
+            if mass_ok {
                 None
             } else {
                 Some("propose_mass_violation".into())
             },
-        },
+        ),
     }
 }
 
@@ -101,20 +100,19 @@ fn penalize(pair: TransitionPair) -> Admissible<PenalizedTransition> {
     let admissible = explanation.admissibility == AdmissibilityToken::Admissible;
     Admissible {
         value: PenalizedTransition { pair, explanation },
-        result: KleisliAdmissibilityResult {
-            verdict: if admissible {
+        result: KleisliAdmissibilityResult::from_verdict(
+            if admissible {
                 AdmissibilityVerdict::Accepted
             } else {
                 AdmissibilityVerdict::Unknown
             },
-            admissible,
-            dissipation: explanation.violation,
-            violation: if admissible {
+            explanation.violation,
+            if admissible {
                 None
             } else {
                 Some("constraint_loss_violation".into())
             },
-        },
+        ),
     }
 }
 
@@ -124,20 +122,19 @@ fn witness(pen: PenalizedTransition) -> Admissible<TransitionEvidence> {
     let admissible = evidence.admissibility == AdmissibilityToken::Admissible;
     Admissible {
         value: evidence,
-        result: KleisliAdmissibilityResult {
-            verdict: if admissible {
+        result: KleisliAdmissibilityResult::from_verdict(
+            if admissible {
                 AdmissibilityVerdict::Accepted
             } else {
                 AdmissibilityVerdict::Unknown
             },
-            admissible,
-            dissipation: pen.explanation.violation,
-            violation: if admissible {
+            pen.explanation.violation,
+            if admissible {
                 None
             } else {
                 Some("witness_inadmissible".into())
             },
-        },
+        ),
     }
 }
 
@@ -169,7 +166,7 @@ fn kleisli_gate_pipeline_e2e_admissible_identity_transition() {
 
     let out = pipeline().run(intent);
     assert!(
-        out.result.admissible,
+        out.result.is_admissible(),
         "identity transition must admit through full pipeline"
     );
     assert_eq!(out.value.admissibility, AdmissibilityToken::Admissible);
@@ -195,14 +192,14 @@ fn kleisli_gate_pipeline_e2e_inadmissible_psi_spike_rejects_at_penalize() {
         dt: 1.0,
     };
     let penalized = penalize(pair);
-    assert!(!penalized.result.admissible);
+    assert!(!penalized.result.is_admissible());
     assert!(
         penalized.value.explanation.violation > 0.0,
         "ψ spike must incur positive constraint_loss slack"
     );
 
     let out = penalize_then_witness(pair);
-    assert!(!out.result.admissible);
+    assert!(!out.result.is_admissible());
     assert_eq!(out.value.admissibility, AdmissibilityToken::Inadmissible);
     assert_eq!(out.value.catalog_id, CD_TRANSITION_CATALOG_ID);
 }
