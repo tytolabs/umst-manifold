@@ -134,7 +134,11 @@ fn thmc_umst_writeback_roundtrip_after_step() {
             }
         }
     }
-    let post = solver.step(&Stub, state, &mut umst).expect("step ok");
+    let post = solver
+        .step(&Stub, state, &mut umst)
+        .expect(
+            "ThmcSolver::step on 2-node toy UMST for writeback roundtrip witness (FP §6 Track G THMC UMST writeback parity)",
+        );
     let out = umst.scalar_features.clone().into_data().value;
     let t0 = post.thermal.temperature.as_tensor().clone().into_data().value[0];
     let h0 = post.hydro.humidity.as_tensor().clone().into_data().value[0];
@@ -158,9 +162,13 @@ fn sync_thmc_idempotent_on_second_sync() {
         Tensor::<B, 3>::full([1, n, 1], 0.2, &dev),
         0.0,
     );
-    sync_thmc_to_umst(&state, &mut umst).expect("first sync");
+    sync_thmc_to_umst(&state, &mut umst).expect(
+        "sync_thmc_to_umst first pass on 2-node toy UMST for idempotency baseline (FP §6 Track G THMC UMST writeback parity)",
+    );
     let snap = umst.scalar_features.clone().into_data().value;
-    sync_thmc_to_umst(&state, &mut umst).expect("second sync");
+    sync_thmc_to_umst(&state, &mut umst).expect(
+        "sync_thmc_to_umst re-application on unchanged ThmcState for FP §6 idempotency witness (FP §6 Track G THMC UMST writeback parity)",
+    );
     let again = umst.scalar_features.clone().into_data().value;
     assert_eq!(snap, again);
 }

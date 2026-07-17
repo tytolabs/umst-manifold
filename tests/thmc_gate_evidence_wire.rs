@@ -123,7 +123,9 @@ mod thmc_gate_evidence_wire {
         let evidence = umst_manifold::physics::solvers::ThmcSolverStep::attach_gate_evidence(
             &solver, &stub, &pre, &post, &umst, 1.0_f32,
         )
-        .expect("identity lift should succeed");
+        .expect(
+            "ThmcSolverStep::attach_gate_evidence identity transition lift on quiescent pre=post state (FP §6 Track G THMC gate evidence wire)",
+        );
         assert_eq!(evidence.transition.catalog_id, CD_TRANSITION_CATALOG_ID);
         assert_eq!(
             evidence.transition.admissibility,
@@ -148,7 +150,9 @@ mod thmc_gate_evidence_wire {
         let evidence = umst_manifold::physics::solvers::ThmcSolverStep::attach_gate_evidence(
             &solver, &stub, &pre, &post, &umst, 1.0_f32,
         )
-        .expect("injected cartridge lift should succeed");
+        .expect(
+            "ThmcSolverStep::attach_gate_evidence with injected CdTransitionCartridge on quiescent state (FP §6 Track G THMC gate evidence wire)",
+        );
         assert_eq!(evidence.transition.catalog_id, CD_TRANSITION_CATALOG_ID);
         assert_eq!(
             evidence.transition.admissibility,
