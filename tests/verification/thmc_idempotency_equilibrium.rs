@@ -866,9 +866,10 @@ fn thmc_hydrate_sync_roundtrip_idempotent_on_scalar_channels() {
         Tensor::<B, 3>::full([1, n, 1], 0.25, &dev),
         1.5,
     );
-    sync_thmc_to_umst(&state, &mut umst).expect("sync");
-    let hydrated =
-        ThmcState::hydrate_from_umst_typed_views(&umst, Some(&state)).expect("hydrate");
+    sync_thmc_to_umst(&state, &mut umst)
+        .expect("sync_thmc_to_umst on toy UMST scalar channels (hydrate roundtrip harness)");
+    let hydrated = ThmcState::hydrate_from_umst_typed_views(&umst, Some(&state))
+        .expect("hydrate_from_umst_typed_views after sync on scalar channels (FP §6 roundtrip)");
     let eps = 1e-5_f32;
     assert!(
         max_abs_tensor3(
@@ -886,7 +887,8 @@ fn thmc_hydrate_sync_roundtrip_idempotent_on_scalar_channels() {
         max_abs_tensor3(hydrated.damage.as_tensor(), state.damage.as_tensor()) < eps
     );
     let snap = umst.scalar_features.clone().into_data().value;
-    sync_thmc_to_umst(&hydrated, &mut umst).expect("re-sync");
+    sync_thmc_to_umst(&hydrated, &mut umst)
+        .expect("re-sync_thmc_to_umst after hydrate must not drift UMST columns");
     let again = umst.scalar_features.clone().into_data().value;
     assert_eq!(snap, again, "second sync after hydrate must not drift UMST columns");
 }
