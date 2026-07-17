@@ -17,7 +17,7 @@ use umst_manifold::ai::constraint_loss::{
 };
 use umst_manifold::core::material_transition::SubstrateMaterialParams;
 use umst_manifold::gate::{
-    evaluate_transition_pure_with_params, kleisli_compose_pair, Admissible,
+    evaluate_transition_pure_with_params, kleisli_compose_pair, AdmissibilityVerdict, Admissible,
     KleisliAdmissibilityResult, KleisliArrow, ThermodynamicStateSnapshot, TransitionScalars,
     TRANSITION_TOLERANCE,
 };
@@ -73,6 +73,11 @@ fn propose(intent: TransitionIntent) -> Admissible<TransitionPair> {
             dt: intent.dt,
         },
         result: KleisliAdmissibilityResult {
+            verdict: if mass_ok {
+                AdmissibilityVerdict::Accepted
+            } else {
+                AdmissibilityVerdict::MassViolation
+            },
             admissible: mass_ok,
             dissipation: outcome.dissipation as f32,
             violation: if mass_ok {
@@ -97,6 +102,11 @@ fn penalize(pair: TransitionPair) -> Admissible<PenalizedTransition> {
     Admissible {
         value: PenalizedTransition { pair, explanation },
         result: KleisliAdmissibilityResult {
+            verdict: if admissible {
+                AdmissibilityVerdict::Accepted
+            } else {
+                AdmissibilityVerdict::Unknown
+            },
             admissible,
             dissipation: explanation.violation,
             violation: if admissible {
@@ -115,6 +125,11 @@ fn witness(pen: PenalizedTransition) -> Admissible<TransitionEvidence> {
     Admissible {
         value: evidence,
         result: KleisliAdmissibilityResult {
+            verdict: if admissible {
+                AdmissibilityVerdict::Accepted
+            } else {
+                AdmissibilityVerdict::Unknown
+            },
             admissible,
             dissipation: pen.explanation.violation,
             violation: if admissible {

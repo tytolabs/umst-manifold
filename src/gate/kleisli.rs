@@ -12,11 +12,61 @@ use super::transition_proposal::ThermodynamicStateSnapshot;
 use super::verdict::AdmissibilityVerdict;
 
 /// Result of a thermodynamic gate check on a wrapped value.
+#[allow(missing_docs)] // Legacy bool mirrors — prefer [`Self::admissibility_verdict`] / [`Self::is_admissible`]
 #[derive(Debug, Clone)]
 pub struct AdmissibilityResult {
+    /// Primary discriminant — Kleisli monad admissibility fold.
+    pub verdict: AdmissibilityVerdict,
+    /// Legacy mirror — prefer [`Self::is_admissible`] / [`Self::admissibility_verdict`].
+    #[deprecated(
+        since = "0.2.0",
+        note = "use AdmissibilityResult::is_admissible() or admissibility_verdict()"
+    )]
     pub admissible: bool,
     pub dissipation: f32,
     pub violation: Option<String>,
+}
+
+impl AdmissibilityResult {
+    /// Borrow the primary [`AdmissibilityVerdict`] discriminant (FP P2.6 SSOT).
+    #[inline]
+    #[must_use]
+    pub fn admissibility_verdict(&self) -> AdmissibilityVerdict {
+        self.verdict
+    }
+
+    /// Whether the Kleisli carrier passed admissibility (wire bytes unchanged).
+    #[inline]
+    #[must_use]
+    pub fn is_admissible(&self) -> bool {
+        matches!(self.verdict, AdmissibilityVerdict::Accepted)
+    }
+
+    /// Alias for [`Self::is_admissible`] — preserved for façade call-site compatibility.
+    #[inline]
+    #[must_use]
+    pub fn is_accepted(&self) -> bool {
+        self.is_admissible()
+    }
+}
+
+#[inline]
+fn kleisli_verdict_from_admissible(admissible: bool) -> AdmissibilityVerdict {
+    if admissible {
+        AdmissibilityVerdict::Accepted
+    } else {
+        AdmissibilityVerdict::Unknown
+    }
+}
+
+#[allow(deprecated)]
+fn kleisli_result(admissible: bool, dissipation: f32, violation: Option<String>) -> AdmissibilityResult {
+    AdmissibilityResult {
+        verdict: kleisli_verdict_from_admissible(admissible),
+        admissible,
+        dissipation,
+        violation,
+    }
 }
 
 /// The admissibility monad wraps a value with its gate status: `M(A) = (A, AdmissibilityResult)`.
@@ -32,11 +82,7 @@ impl<A: Clone> Admissible<A> {
     pub fn pure(value: A) -> Self {
         Admissible {
             value,
-            result: AdmissibilityResult {
-                admissible: true,
-                dissipation: 0.0,
-                violation: None,
-            },
+            result: kleisli_result(true, 0.0, None),
         }
     }
 
@@ -45,7 +91,7 @@ impl<A: Clone> Admissible<A> {
     where
         F: FnOnce(A) -> Admissible<B>,
     {
-        if !self.result.admissible {
+        if !self.result.is_admissible() {
             return Admissible {
                 value: f(self.value).value,
                 result: self.result,
@@ -56,7 +102,7 @@ impl<A: Clone> Admissible<A> {
 
     #[must_use]
     pub fn join(nested: Admissible<Admissible<A>>) -> Admissible<A> {
-        if !nested.result.admissible {
+        if !nested.result.is_admissible() {
             Admissible {
                 value: nested.value.value,
                 result: nested.result,
@@ -129,7 +175,7 @@ impl KleisliPipeline {
     {
         let mut current = Admissible::pure(initial);
         for arrow in arrows {
-            if !current.result.admissible {
+            if !current.result.is_admissible() {
                 break;
             }
             current = current.bind(|state| arrow.run(state));
@@ -161,11 +207,7 @@ impl KleisliUnitEvaluator {
     /// Map a lifted carrier to REST-stable [`AdmissibilityVerdict`].
     #[must_use]
     pub fn verdict_for_lift<A: Clone>(&self, value: A) -> AdmissibilityVerdict {
-        if self.lift(value).result.admissible {
-            AdmissibilityVerdict::Accepted
-        } else {
-            AdmissibilityVerdict::Unknown
-        }
+        self.lift(value).result.admissibility_verdict()
     }
 
     /// Reflexive thermodynamic snapshot step (`AdmissibleN n s s` / `admissibleNRefl`).
@@ -208,11 +250,7 @@ pub fn gate_arrow_generic<A: Clone>(
         let (ok, dissipation, violation) = check(&state);
         Admissible {
             value: state,
-            result: AdmissibilityResult {
-                admissible: ok,
-                dissipation,
-                violation,
-            },
+            result: kleisli_result(ok, dissipation, violation),
         }
     })
 }
@@ -226,17 +264,18 @@ pub fn gate_arrow_canonical_transition(
 ) -> KleisliArrow<ThermodynamicStateSnapshot, ThermodynamicStateSnapshot> {
     KleisliArrow::new(name, move |new_state: ThermodynamicStateSnapshot| {
         let outcome = canonical_transition_outcome(&old_state, &new_state, dt_s);
+        let accepted = outcome.is_accepted();
         Admissible {
             value: new_state,
-            result: AdmissibilityResult {
-                admissible: outcome.accepted,
-                dissipation: outcome.dissipation as f32,
-                violation: if outcome.accepted {
+            result: kleisli_result(
+                accepted,
+                outcome.dissipation as f32,
+                if accepted {
                     None
                 } else {
                     Some("canonical_transition_reject".into())
                 },
-            },
+            ),
         }
     })
 }
