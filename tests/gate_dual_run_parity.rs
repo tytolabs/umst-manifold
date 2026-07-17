@@ -282,8 +282,12 @@ fn run_prototype_subprocess(fixture_json: &str) -> Option<Vec<SubprocessTransiti
 }
 
 fn load_fixtures() -> FixtureFile {
-    let raw = std::fs::read_to_string(fixture_path()).expect("read fixture JSON");
-    serde_json::from_str(&raw).expect("parse fixture JSON")
+    let raw = std::fs::read_to_string(fixture_path()).expect(
+        "std::fs::read_to_string tests/data/gate_dual_run_fixtures.json for mix-proposal gate golden parity harness (FP §6 Track G gate dual-run parity)",
+    );
+    serde_json::from_str(&raw).expect(
+        "serde_json::from_str gate_dual_run_fixtures.json schema v1 cases bundle (FP §6 Track G gate dual-run parity)",
+    )
 }
 
 #[test]
@@ -340,8 +344,9 @@ fn mix_proposal_gate_matches_prototype_golden_vectors() {
 #[test]
 fn mix_proposal_gate_live_subprocess_matches_manifold_when_available() {
     let fixtures = load_fixtures();
-    let bundle_json =
-        std::fs::read_to_string(fixture_path()).expect("read fixtures for subprocess");
+    let bundle_json = std::fs::read_to_string(fixture_path()).expect(
+        "std::fs::read_to_string tests/data/gate_dual_run_fixtures.json for prototype gate_dual_fixture subprocess stdin (FP §6 Track G gate dual-run parity)",
+    );
 
     let Some(live) = run_prototype_subprocess(&bundle_json) else {
         eprintln!(

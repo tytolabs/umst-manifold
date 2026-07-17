@@ -1571,7 +1571,7 @@ mod fracture_at2_tests {
                 tol_strain_linf: None,
                 tol_rel_degraded_psi_mean: None,
             },
-        ).expect("staggered early exit");
+        ).expect("PhaseFieldFractureSolver::update_damage_staggered_with_stop early-exit on damage stagnation vs full 40-outer budget (FP §6 AT2 early-exit parity witness)");
 
         assert!(
             calls.load(Ordering::Relaxed) < 40,
@@ -1641,7 +1641,7 @@ mod fracture_at2_tests {
             fracture_energy_gc.clone(),
             edges_b1.clone(),
             outer,
-        ).expect("outer cfg");
+        ).expect("PhaseFieldFractureSolver::update_damage_staggered_with_outer_cfg outer loop config path (FP §6 AT2 outer-cfg parity witness)");
         let strain_b = strain.clone();
         let d_b = solver.update_damage_staggered_with_stop(
             move |_d: &DamageField<B>| strain_field(strain_b.clone()),
@@ -1650,7 +1650,7 @@ mod fracture_at2_tests {
             edges_b1,
             40,
             stop,
-        ).expect("outer stop");
+        ).expect("PhaseFieldFractureSolver::update_damage_staggered_with_stop equivalent stop criteria path (FP §6 AT2 outer-stop parity witness)");
         assert_eq!(d_a.into_tensor().into_data().value, d_b.into_tensor().into_data().value);
     }
 }
@@ -1708,10 +1708,10 @@ mod fracture_idempotency_tests {
             damage_field(damage),
             gc_field(fracture_energy_gc.clone()),
             edges_b1.clone(),
-        ).expect("update_damage pass 1");
+        ).expect("PhaseFieldFractureSolver::update_damage first pass on zero-strain frozen d=0 (FP §6 AT2 idempotency equilibrate witness)");
         let d1_vals = d1.clone().into_tensor().into_data().value;
 
-        let d2 = solver.update_damage(strain_field(strain), d1, gc_field(fracture_energy_gc), edges_b1).expect("update_damage pass 2");
+        let d2 = solver.update_damage(strain_field(strain), d1, gc_field(fracture_energy_gc), edges_b1).expect("PhaseFieldFractureSolver::update_damage re-apply on equilibrated zero-strain damage (FP §6 AT2 idempotency re-apply witness)");
         let d2_vals = d2.into_tensor().into_data().value;
 
         let tol = 1e-6_f32;
@@ -1756,7 +1756,7 @@ mod fracture_idempotency_tests {
             edges_b1.clone(),
             8,
             stop,
-        ).expect("staggered equilibrate");
+        ).expect("PhaseFieldFractureSolver::update_damage_staggered_with_stop equilibrate on zero strain (FP §6 AT2 staggered idempotency equilibrate witness)");
         let d_eq_vals = d_eq.clone().into_tensor().into_data().value;
 
         let strain_re = strain.clone();
@@ -1768,7 +1768,7 @@ mod fracture_idempotency_tests {
             8,
             stop,
         )
-        .expect("staggered re-apply");
+        .expect("PhaseFieldFractureSolver::update_damage_staggered_with_stop re-apply on equilibrated zero-strain damage (FP §6 AT2 staggered idempotency re-apply witness)");
         let d_again_vals = d_again.into_tensor().into_data().value;
 
         let tol = 1e-6_f32;
