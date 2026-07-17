@@ -130,6 +130,9 @@ use burn::tensor::{backend::Backend, Int, Tensor};
 
 use crate::physics::error::PhysicsError;
 
+/// Chorin Bingham step output: velocity, pressure, Roussel λ nodal fields `[B, N, *]`.
+type RheologyStepOut<B> = (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>);
+
 #[cfg(feature = "rheology-bingham")]
 /// Relative residual tolerance \(\|r\|_2/\|b\|_2\) for early exit in Jacobi-PCG (checked with `Tensor::all_close`).
 const POISSON_CG_REL_TOL: f32 = 2e-5;
@@ -228,7 +231,7 @@ impl BinghamFlowSolver {
         lambda_thix: Tensor<B, 3>,
         edges_b1: Tensor<B, 2, Int>,
         gravity: Tensor<B, 1>,
-    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
+    ) -> Result<RheologyStepOut<B>, PhysicsError> {
         #[cfg(not(feature = "rheology-bingham"))]
         {
             Ok((velocity, pressure, lambda_thix))
@@ -663,7 +666,7 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
     lambda_thix: Tensor<B, 3>,
     edges_b1: Tensor<B, 2, Int>,
     gravity: Tensor<B, 1>,
-) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
+) -> Result<RheologyStepOut<B>, PhysicsError> {
     bingham_step_validate_solver(solver)?;
     bingham_step_validate_shapes(
         &velocity,
