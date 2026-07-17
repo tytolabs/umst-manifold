@@ -191,10 +191,12 @@ mod parity_tests {
             mask.clone(),
             area,
             &cfg,
-        );
+        )
+        .expect("solve_equilibrium");
         #[allow(deprecated)]
         let via_trait = BarNetworkMechanicsAdapter
-            .solve_equilibrium(u0, coords, stiff, bf, edges, damage, mask, area, &cfg);
+            .solve_equilibrium(u0, coords, stiff, bf, edges, damage, mask, area, &cfg)
+            .expect("solve_equilibrium");
         assert_eq!(direct.0.into_data().value, via_trait.0.into_data().value);
         assert_eq!(direct.1.into_data().value, via_trait.1.into_data().value);
     }
@@ -216,10 +218,12 @@ mod parity_tests {
             mask.clone(),
             area,
             &cfg,
-        );
+        )
+        .expect("solve_equilibrium");
         #[allow(deprecated)]
         let via_trait = BarNetworkMechanicsAdapter
-            .solve_equilibrium(u0, coords, stiff, bf, edges, damage, mask, area, &cfg);
+            .solve_equilibrium(u0, coords, stiff, bf, edges, damage, mask, area, &cfg)
+            .expect("solve_equilibrium");
         assert_eq!(direct.0.into_data().value, via_trait.0.into_data().value);
         assert_eq!(direct.1.into_data().value, via_trait.1.into_data().value);
     }
