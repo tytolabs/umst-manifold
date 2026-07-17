@@ -145,7 +145,7 @@ fn pnp_screening_phi_decays_toward_bulk_smoke() {
     for _ in 0..8000 {
         let (p, cn) = solver
             .solve_pnp_step(2e-4_f32, phi, c, edges.clone(), eps.clone(), d.clone())
-            .expect("ElectroChemicalSolver::solve_pnp_step Picard outer sweep on screening trajectory (pnp_screening_phi_decays smoke)");
+            .expect("ElectroChemicalSolver::solve_pnp_step Picard outer sweep on screening trajectory (FP §6 Track 14 pnp_screening_phi_decays smoke witness)");
         let n = p.dims()[1];
         let mid = p.clone().slice([0..1, 1..(n - 1), 0..1]);
         let left = Tensor::<B, 3>::full([1, 1, 1], phi0, &dev);
@@ -333,7 +333,7 @@ fn sg_flux_drift_scales_with_mesh_spacing_inverse() {
             eps.clone(),
             d.clone(),
         )
-        .expect("ElectroChemicalSolver::solve_pnp_step at mesh_spacing=1.0 on electroneutral bump (SG flux 1/h scaling witness)");
+        .expect("ElectroChemicalSolver::solve_pnp_step at mesh_spacing=1.0 on electroneutral bump (FP §6 Track 14 SG flux 1/h scaling witness)");
     let drift_h1 = max_abs_diff_f64(&c0, &c1);
 
     let solver_h2 = ElectroChemicalSolver {
@@ -342,7 +342,7 @@ fn sg_flux_drift_scales_with_mesh_spacing_inverse() {
     };
     let (_, c2) = solver_h2
         .solve_pnp_step(dt, phi0, c0.clone(), edges, eps, d)
-        .expect("ElectroChemicalSolver::solve_pnp_step at mesh_spacing=2.0 on electroneutral bump (SG flux 1/h scaling witness)");
+        .expect("ElectroChemicalSolver::solve_pnp_step at mesh_spacing=2.0 on electroneutral bump (FP §6 Track 14 SG flux 1/h scaling witness)");
     let drift_h2 = max_abs_diff_f64(&c0, &c2);
 
     // SG flux ∝ 1/h ⇒ drift ratio drift_h1 / drift_h2 ≈ 2.0. Allow ±20 % slack for boundary effects
@@ -687,7 +687,7 @@ fn poisson_chain_uniform_rho_matches_h_squared_rhs_scaling() {
             eps.clone(),
             d.clone(),
         )
-        .expect("ElectroChemicalSolver::solve_pnp_step quasi-steady Poisson with mesh_spacing=h on uniform rho_e chain (P1 h² RHS scaling)");
+        .expect("ElectroChemicalSolver::solve_pnp_step quasi-steady Poisson with mesh_spacing=h on uniform rho_e chain (FP §6 Track 14 P1 h² Poisson RHS witness)");
     let pv_h = phi_h.into_data().value;
     let nm1 = (n - 1) as f32;
     for (i, ph) in pv_h.iter().enumerate().take(n - 1).skip(1) {
@@ -705,7 +705,7 @@ fn poisson_chain_uniform_rho_matches_h_squared_rhs_scaling() {
     };
     let (phi_u, _) = solver_unit
         .solve_pnp_step(0.0_f32, phi0, c, edges, eps, d)
-        .expect("ElectroChemicalSolver::solve_pnp_step quasi-steady Poisson with mesh_spacing=1 on uniform rho_e chain (P1 unit-index stencil scaling)");
+        .expect("ElectroChemicalSolver::solve_pnp_step quasi-steady Poisson with mesh_spacing=1 on uniform rho_e chain (FP §6 Track 14 P1 unit-index Poisson witness)");
     let pv_u = phi_u.into_data().value;
     for (i, pu) in pv_u.iter().enumerate().take(n - 1).skip(1) {
         let idx = i as f32;
