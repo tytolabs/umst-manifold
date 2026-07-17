@@ -695,13 +695,17 @@ impl ThmcSolver {
             manifold,
         };
 
-        for _newton in 0..self.max_newton {
-            let scratch = ThmcNewtonScratch::from_state(&state, &step_ctx);
-            state = newton_split_chain(state, &scratch, &step_ctx, self)?;
-            if transport_residual_l2(&state, &scratch) <= self.tol {
-                break;
+        // RW-FP-P53: Kleisli Newton iteration — short-circuits on first `PhysicsError` (P54 orchestrator
+        // `try_fold` @ `2a9ad0a` is orthogonal; this is the interior THMC outer-Newton tail only).
+        let (state, _) = (0..self.max_newton).try_fold((state, false), |(state, converged), _| {
+            if converged {
+                return Ok::<_, PhysicsError>((state, true));
             }
-        }
+            let scratch = ThmcNewtonScratch::from_state(&state, &step_ctx);
+            let state = newton_split_chain(state, &scratch, &step_ctx, self)?;
+            let converged = transport_residual_l2(&state, &scratch) <= self.tol;
+            Ok((state, converged))
+        })?;
 
         let epilogue_ctx = super::thmc_epilogue::ThmcPostStepCtx {
             batch,
