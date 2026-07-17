@@ -231,7 +231,9 @@ mod tests {
             &dev,
         );
         let f = HelmholtzFilter::new((2.0 * dx_f).max(1e-6), 240, 1e-7);
-        let out = f.apply(rho_t, edges, dx_f).expect("striatus helm apply");
+        let out = f
+            .apply(rho_t, edges, dx_f)
+            .expect("HelmholtzFilter::apply on striatus extruded-plate random rho field (FP §6 topology filter verification)");
         let v = out.into_data().value;
         let mx = tensor_max(&v);
         let nan = v.iter().filter(|x| !x.is_finite()).count();
