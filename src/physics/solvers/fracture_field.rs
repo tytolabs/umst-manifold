@@ -281,7 +281,7 @@ pub fn strain_tensor_for_fracture_after_mechanics<B: Backend<FloatElem = f32>>(
     _edge_unit: Tensor<B, 3>,
     _edge_len: Tensor<B, 3>,
     n_nodes: usize,
-) -> Tensor<B, 4> {
+) -> Result<Tensor<B, 4>, crate::physics::error::PhysicsError> {
     let (u, _) = VectorMechanicsSolver::solve_equilibrium(
         u0,
         coords_n3.clone(),
@@ -292,8 +292,13 @@ pub fn strain_tensor_for_fracture_after_mechanics<B: Backend<FloatElem = f32>>(
         boundary_mask,
         cross_section_area,
         cg,
-    );
-    strain_tensor_from_bar_network_displacement(u, coords_n3, edges_b1, n_nodes)
+    )?;
+    Ok(strain_tensor_from_bar_network_displacement(
+        u,
+        coords_n3,
+        edges_b1,
+        n_nodes,
+    ))
 }
 
 /// **Non-embedding / cartridge stub:** symmetric strain `[B, N, 3, 3]` fed to [`PhaseFieldFractureSolver::update_damage`]
@@ -667,7 +672,8 @@ impl PhaseFieldFractureSolver {
                 boundary_mask.clone(),
                 cross_section_area,
                 cg,
-            );
+            )
+            .expect("staggered fracture mechanics equilibrium");
             st.u = u_k;
 
             // Per-edge axial strain -> nodal symmetric strain tensor via Voigt scatter.
