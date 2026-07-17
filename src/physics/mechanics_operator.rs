@@ -9,18 +9,23 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use crate::core::field::{Field, StiffnessField};
+
 use super::mechanics::VectorMechanicsSolver;
 use super::error::PhysicsError;
 use super::time_orchestration::MechanicsInnerLoopConfig;
 
 /// Equilibrium morphism \(K(\rho)\,u = f\) on the DEC 1-skeleton (bar today; Q1 hex in Wave 3).
+///
+/// **FP XS-3 step 4:** `stiffness` is [`StiffnessField`] so callers cannot pass damage/α tensors
+/// where E/ν cat is required (mirrors [`super::mechanics_solve_port::MechanicsSolvePort`]).
 pub trait MechanicsOperator<B: Backend<FloatElem = f32>> {
     #[allow(clippy::too_many_arguments)]
     fn solve_equilibrium(
         &self,
         displacement: Tensor<B, 3>,
         coords: Tensor<B, 2>,
-        stiffness: Tensor<B, 3>,
+        stiffness: StiffnessField<B>,
         body_force: Tensor<B, 3>,
         edges_b1: Tensor<B, 2, Int>,
         damage: Tensor<B, 3>,
@@ -43,7 +48,7 @@ impl<B: Backend<FloatElem = f32>> MechanicsOperator<B> for BarNetworkMechanicsAd
         &self,
         displacement: Tensor<B, 3>,
         coords: Tensor<B, 2>,
-        stiffness: Tensor<B, 3>,
+        stiffness: StiffnessField<B>,
         body_force: Tensor<B, 3>,
         edges_b1: Tensor<B, 2, Int>,
         damage: Tensor<B, 3>,
@@ -51,17 +56,18 @@ impl<B: Backend<FloatElem = f32>> MechanicsOperator<B> for BarNetworkMechanicsAd
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
     ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError> {
-        VectorMechanicsSolver::solve_equilibrium(
-            displacement,
+        let (u, stress) = VectorMechanicsSolver::solve_equilibrium_typed(
+            Field::new(displacement),
             coords,
             stiffness,
-            body_force,
+            Field::new(body_force),
             edges_b1,
-            damage,
+            Field::new(damage),
             boundary_mask,
             cross_section_area,
             inner_cfg,
-        )
+        )?;
+        Ok((u.into_tensor(), stress))
     }
 }
 
@@ -70,7 +76,7 @@ impl<B: Backend<FloatElem = f32>> MechanicsOperator<B> for VectorMechanicsSolver
         &self,
         displacement: Tensor<B, 3>,
         coords: Tensor<B, 2>,
-        stiffness: Tensor<B, 3>,
+        stiffness: StiffnessField<B>,
         body_force: Tensor<B, 3>,
         edges_b1: Tensor<B, 2, Int>,
         damage: Tensor<B, 3>,
@@ -78,17 +84,18 @@ impl<B: Backend<FloatElem = f32>> MechanicsOperator<B> for VectorMechanicsSolver
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
     ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError> {
-        VectorMechanicsSolver::solve_equilibrium(
-            displacement,
+        let (u, stress) = VectorMechanicsSolver::solve_equilibrium_typed(
+            Field::new(displacement),
             coords,
             stiffness,
-            body_force,
+            Field::new(body_force),
             edges_b1,
-            damage,
+            Field::new(damage),
             boundary_mask,
             cross_section_area,
             inner_cfg,
-        )
+        )?;
+        Ok((u.into_tensor(), stress))
     }
 }
 
@@ -106,7 +113,7 @@ mod parity_tests {
     ) -> (
         Tensor<B, 2>,
         Tensor<B, 2, Int>,
-        Tensor<B, 3>,
+        StiffnessField<B>,
         Tensor<B, 3>,
         Tensor<B, 3>,
         Tensor<B, 3>,
@@ -142,7 +149,10 @@ mod parity_tests {
             stiff[i * 2] = e;
             stiff[i * 2 + 1] = 0.3;
         }
-        let stiffness = Tensor::from_data(Data::new(stiff, Shape::new([1, n, 2])), &dev);
+        let stiffness = StiffnessField::from_tensor(Tensor::from_data(
+            Data::new(stiff, Shape::new([1, n, 2])),
+            &dev,
+        ));
 
         let mut bf = vec![0.0_f32; n * 3];
         bf[(n - 1) * 3] = 1000.0;
@@ -181,23 +191,26 @@ mod parity_tests {
         let dev = NdArrayDevice::Cpu;
         let u0 = Tensor::<B, 3>::zeros([1, 2, 3], &dev);
 
-        let direct = VectorMechanicsSolver::solve_equilibrium(
-            u0.clone(),
+        let direct = VectorMechanicsSolver::solve_equilibrium_typed(
+            Field::new(u0.clone()),
             coords.clone(),
             stiff.clone(),
-            bf.clone(),
+            Field::new(bf.clone()),
             edges.clone(),
-            damage.clone(),
+            Field::new(damage.clone()),
             mask.clone(),
             area,
             &cfg,
         )
-        .expect("solve_equilibrium");
+        .expect("solve_equilibrium_typed");
         #[allow(deprecated)]
         let via_trait = BarNetworkMechanicsAdapter
             .solve_equilibrium(u0, coords, stiff, bf, edges, damage, mask, area, &cfg)
             .expect("solve_equilibrium");
-        assert_eq!(direct.0.into_data().value, via_trait.0.into_data().value);
+        assert_eq!(
+            direct.0.clone().into_tensor().into_data().value,
+            via_trait.0.into_data().value
+        );
         assert_eq!(direct.1.into_data().value, via_trait.1.into_data().value);
     }
 
@@ -208,23 +221,26 @@ mod parity_tests {
         let n = 9usize;
         let u0 = Tensor::<B, 3>::zeros([1, n, 3], &dev);
 
-        let direct = VectorMechanicsSolver::solve_equilibrium(
-            u0.clone(),
+        let direct = VectorMechanicsSolver::solve_equilibrium_typed(
+            Field::new(u0.clone()),
             coords.clone(),
             stiff.clone(),
-            bf.clone(),
+            Field::new(bf.clone()),
             edges.clone(),
-            damage.clone(),
+            Field::new(damage.clone()),
             mask.clone(),
             area,
             &cfg,
         )
-        .expect("solve_equilibrium");
+        .expect("solve_equilibrium_typed");
         #[allow(deprecated)]
         let via_trait = BarNetworkMechanicsAdapter
             .solve_equilibrium(u0, coords, stiff, bf, edges, damage, mask, area, &cfg)
             .expect("solve_equilibrium");
-        assert_eq!(direct.0.into_data().value, via_trait.0.into_data().value);
+        assert_eq!(
+            direct.0.clone().into_tensor().into_data().value,
+            via_trait.0.into_data().value
+        );
         assert_eq!(direct.1.into_data().value, via_trait.1.into_data().value);
     }
 }
