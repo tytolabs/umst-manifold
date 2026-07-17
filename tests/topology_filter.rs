@@ -57,7 +57,9 @@ fn helmholtz_delta_blob_fwhm_matches_green_scale() {
     let filter = HelmholtzFilter::new(r, 240, 1e-7);
     let out = filter
         .apply(rho_t, edges, dx)
-        .expect("HelmholtzFilter::apply on delta blob grid");
+        .expect(
+            "HelmholtzFilter::apply on 32×32 delta-blob grid with radius r=2·dx and 240 Richardson steps (FP §6 Track G topology filter FWHM witness)",
+        );
     let vals = out.into_data().value;
     let peak = vals.iter().cloned().fold(0.0_f32, f32::max);
     assert!(peak > 0.05 && peak <= 1.5, "peak out of band: {peak}");
@@ -65,10 +67,14 @@ fn helmholtz_delta_blob_fwhm_matches_green_scale() {
         .iter()
         .enumerate()
         .max_by(|(_, a), (_, b)| {
-            a.partial_cmp(b).expect("Helmholtz peak index comparison (finite f32 densities)")
+            a.partial_cmp(b).expect(
+                "partial_cmp on finite Helmholtz filtered f32 densities for peak-index argmax (FP §6 Track G topology filter FWHM witness)",
+            )
         })
         .map(|(i, _)| i)
-        .expect("non-empty");
+        .expect(
+            "non-empty Helmholtz filtered field for delta-blob peak index (FP §6 Track G topology filter FWHM witness)",
+        );
     let ix_m = idx_max % nx;
     let iy_m = idx_max / nx;
     let mut neighbor_abs = 0.0_f32;

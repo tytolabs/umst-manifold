@@ -31,7 +31,9 @@ fn implicit_field_decode_finite_bar_fixture() {
     let latent = DesignLatent {
         tensor: Tensor::<B, 2>::zeros([1, 4], &dev),
     };
-    let geom = field.decode(&latent, coords).expect("decode");
+    let geom = field.decode(&latent, coords).expect(
+        "ImplicitField::decode on 5-node bar fixture with zero DesignLatent and coords [1,5,3] (FP §6 Track G design implicit-field R4 witness)",
+    );
     assert_eq!(geom.density.dims(), [1, n, 1]);
     assert!(geom.signed_distance.is_some());
     let vals: Vec<f32> = geom.density.into_data().value;
