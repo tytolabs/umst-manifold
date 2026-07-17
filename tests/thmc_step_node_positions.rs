@@ -12,9 +12,7 @@ mod thmc_ok {
     use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
     use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
     use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
-    use umst_manifold::physics::solvers::{
-        ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcSolver, ThmcState,
-    };
+    use umst_manifold::physics::solvers::{ThmcSolver, ThmcState};
 
     type B = NdArray<f32>;
 
