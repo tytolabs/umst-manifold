@@ -812,7 +812,7 @@ fn helmholtz_mms_sin_mode_recover() {
         pml_max_sigma: 0.0,
     };
     let cg = MechanicsInnerLoopConfig::default();
-    let (er, ei) = solver.solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg);
+    let (er, ei) = solver.solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg).expect("solve_helmholtz");
 
     let got_r = er.into_data().value;
     let got_i = ei.into_data().value;
@@ -940,7 +940,7 @@ fn two_half_spaces_fresnel_te_no_pml_matches_analytic() {
         pml_max_sigma: 0.0,
     };
     let cg = MechanicsInnerLoopConfig::default();
-    let (er, ei) = solver.solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg);
+    let (er, ei) = solver.solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg).expect("solve_helmholtz");
 
     let got_r = er.into_data().value;
     let got_i = ei.into_data().value;
@@ -1046,7 +1046,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz() {
         coords.clone(),
         &cg,
         None,
-    );
+    ).expect("solve_maxwell_curl_curl");
 
     let helm = PhotonicsHelmholtzSolver {
         frequency_hz: f_hz,
@@ -1055,7 +1055,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz() {
     };
     let jy = j.narrow(2, 1, 1);
     let jy_im = Tensor::<B, 3>::zeros_like(&jy);
-    let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg);
+    let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg).expect("solve_helmholtz");
 
     let ey_cc = e_cc.narrow(2, 1, 1);
     let v_cc = ey_cc.into_data().value;
@@ -1112,7 +1112,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_affine_x_metric_preserves_ex_ez() {
         coords.clone(),
         &cg,
         None,
-    );
+    ).expect("solve_maxwell_curl_curl");
 
     let helm = PhotonicsHelmholtzSolver {
         frequency_hz: f_hz,
@@ -1121,7 +1121,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_affine_x_metric_preserves_ex_ez() {
     };
     let jy = j.narrow(2, 1, 1);
     let jy_im = Tensor::<B, 3>::zeros_like(&jy);
-    let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg);
+    let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg).expect("solve_helmholtz");
 
     let ex_cc = e_cc.clone().narrow(2, 0, 1);
     let ey_cc = e_cc.clone().narrow(2, 1, 1);
@@ -1185,7 +1185,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_xy_embedded_chain() {
         coords.clone(),
         &cg,
         None,
-    );
+    ).expect("solve_maxwell_curl_curl");
 
     let helm = PhotonicsHelmholtzSolver {
         frequency_hz: f_hz,
@@ -1194,7 +1194,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_xy_embedded_chain() {
     };
     let jy = j.narrow(2, 1, 1);
     let jy_im = Tensor::<B, 3>::zeros_like(&jy);
-    let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg);
+    let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg).expect("solve_helmholtz");
 
     let ey_cc = e_cc.narrow(2, 1, 1);
     let v_cc = ey_cc.into_data().value;
@@ -1254,7 +1254,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_piecewise_eps() {
         coords.clone(),
         &cg,
         None,
-    );
+    ).expect("solve_maxwell_curl_curl");
 
     let helm = PhotonicsHelmholtzSolver {
         frequency_hz: f_hz,
@@ -1263,7 +1263,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_piecewise_eps() {
     };
     let jy = j.narrow(2, 1, 1);
     let jy_im = Tensor::<B, 3>::zeros_like(&jy);
-    let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg);
+    let (ey_h, _) = helm.solve_helmholtz(eps_r, eps_i, jy, jy_im, edges, coords, &cg).expect("solve_helmholtz");
 
     let ey_cc = e_cc.narrow(2, 1, 1);
     let v_cc = ey_cc.into_data().value;
@@ -1336,7 +1336,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_piecewise_eps_tensor_yy() {
         coords.clone(),
         &cg,
         None,
-    );
+    ).expect("solve_maxwell_curl_curl");
 
     let helm = PhotonicsHelmholtzSolver {
         frequency_hz: f_hz,
@@ -1345,7 +1345,7 @@ fn curl_curl_y_mode_matches_scalar_helmholtz_piecewise_eps_tensor_yy() {
     };
     let jy = j.narrow(2, 1, 1);
     let jy_im = Tensor::<B, 3>::zeros_like(&jy);
-    let (ey_h, _) = helm.solve_helmholtz(eps_r_scalar, eps_i, jy, jy_im, edges, coords, &cg);
+    let (ey_h, _) = helm.solve_helmholtz(eps_r_scalar, eps_i, jy, jy_im, edges, coords, &cg).expect("solve_helmholtz");
 
     let ey_cc = e_cc.narrow(2, 1, 1);
     let v_cc = ey_cc.into_data().value;
@@ -1484,8 +1484,8 @@ fn apply_dec_te_curl_curl_chain_operator_none_on_quad_split_expanded_patch() {
     );
 }
 
-/// Non-chain **2D patch** topology: [`PhotonicsSolver::solve_maxwell_curl_curl`] returns the
-/// incoming `e_field` unchanged (documented pass-through until vector curl–curl ships).
+/// Non-chain **2D patch** topology without `dec_patch`: [`PhotonicsSolver::solve_maxwell_curl_curl`]
+/// returns [`PhysicsError::UnsupportedLayout`] (no silent pass-through).
 #[test]
 fn solve_maxwell_curl_curl_pass_through_quad_split_not_chain() {
     use umst_manifold::physics::solvers::PhotonicsSolver;
@@ -1524,24 +1524,20 @@ fn solve_maxwell_curl_curl_pass_through_quad_split_not_chain() {
         frequency_hz: 1e9_f32,
         ..Default::default()
     };
-    let out = ps.solve_maxwell_curl_curl(
-        e_field.clone(),
-        eps_r,
-        eps_i,
-        j,
-        edges_b1,
-        coords,
-        &cg,
-        None,
+    assert!(
+        ps.solve_maxwell_curl_curl(
+            e_field,
+            eps_r,
+            eps_i,
+            j,
+            edges_b1,
+            coords,
+            &cg,
+            None,
+        )
+        .is_err(),
+        "non-chain topology without dec_patch must surface UnsupportedLayout"
     );
-    let vi = out.into_data().value;
-    let ei = e_field.into_data().value;
-    assert_eq!(vi.len(), ei.len());
-    let mut mx = 0.0_f32;
-    for k in 0..vi.len() {
-        mx = mx.max((vi[k] - ei[k]).abs());
-    }
-    assert_relative_eq!(mx, 0.0_f32, epsilon = 1e-6_f32, max_relative = 1.0);
 }
 
 /// **Verification #6 — DEC patch solve:** quad-split **\(N=4\), \(E=5\)** with [`PhotonicsDecFacesPatch`]
@@ -1594,7 +1590,7 @@ fn solve_maxwell_dec_patch_quad_split_pin_residual_tight() {
         coords.clone(),
         &cg,
         Some(&patch),
-    );
+    ).expect("solve_maxwell_curl_curl");
     let x = sol.into_data().value;
     let dim = 3 * n;
     let mut y = vec![0.0_f32; dim];
@@ -1693,7 +1689,7 @@ fn solve_maxwell_dec_patch_quad_split_lossless_auto_csr_matches_dense_csr_inner_
         coords.clone(),
         &cg,
         Some(&patch),
-    );
+    ).expect("solve_maxwell_curl_curl");
 
     let sol_auto = ps_auto.solve_maxwell_curl_curl(
         e_field,
@@ -1704,7 +1700,7 @@ fn solve_maxwell_dec_patch_quad_split_lossless_auto_csr_matches_dense_csr_inner_
         coords,
         &cg,
         Some(&patch),
-    );
+    ).expect("solve_maxwell_curl_curl");
 
     let vd = sol_dense.into_data().value;
     let va = sol_auto.into_data().value;
@@ -1771,7 +1767,7 @@ fn solve_maxwell_curl_curl_dec_patch_csr_inner_matches_dense_quad_split() {
         coords.clone(),
         &cg,
         Some(&patch),
-    );
+    ).expect("solve_maxwell_curl_curl");
 
     let sol_csr_path = ps_krylov.solve_maxwell_curl_curl(
         e_field.clone(),
@@ -1782,7 +1778,7 @@ fn solve_maxwell_curl_curl_dec_patch_csr_inner_matches_dense_quad_split() {
         coords.clone(),
         &cg,
         Some(&patch),
-    );
+    ).expect("solve_maxwell_curl_curl");
 
     let vd = sol_dense.into_data().value;
     let vc = sol_csr_path.into_data().value;
@@ -1891,7 +1887,7 @@ fn solve_maxwell_dec_patch_quad_split_scalar_eps_imag_stacked_residual() {
         coords.clone(),
         &cg,
         Some(&patch),
-    );
+    ).expect("solve_maxwell_curl_curl");
     let x_api = sol.into_data().value;
 
     let dim = 3 * n;
@@ -2144,7 +2140,7 @@ fn solve_maxwell_dec_patch_quad_split_tensor_eps_residual() {
         coords.clone(),
         &cg,
         Some(&patch),
-    );
+    ).expect("solve_maxwell_curl_curl");
     let x = sol.into_data().value;
     let dim = 3 * n;
     let mut y = vec![0.0_f32; dim];
@@ -2235,7 +2231,7 @@ fn solve_maxwell_dec_patch_quad_split_embedded_r3_residual() {
         coords.clone(),
         &cg,
         Some(&patch),
-    );
+    ).expect("solve_maxwell_curl_curl");
     let x = sol.into_data().value;
     let dim = 3 * n;
     let mut y = vec![0.0_f32; dim];
@@ -2330,7 +2326,7 @@ fn solve_maxwell_dec_patch_two_quads_strip_residual() {
         coords.clone(),
         &cg,
         Some(&patch),
-    );
+    ).expect("solve_maxwell_curl_curl");
     let x = sol.into_data().value;
     let dim = 3 * n;
     let mut y = vec![0.0_f32; dim];
@@ -2460,24 +2456,20 @@ fn assembled_two_quads_dec_primal_photonics_maxwell_deferred() {
         frequency_hz: f_hz,
         ..Default::default()
     };
-    let out = ps.solve_maxwell_curl_curl(
-        e_field.clone(),
-        eps_r3,
-        eps_i,
-        j,
-        edges_b1,
-        coords,
-        &cg,
-        None,
+    assert!(
+        ps.solve_maxwell_curl_curl(
+            e_field,
+            eps_r3,
+            eps_i,
+            j,
+            edges_b1,
+            coords,
+            &cg,
+            None,
+        )
+        .is_err(),
+        "non-chain two-quad topology without dec_patch must surface UnsupportedLayout"
     );
-    let vi = out.into_data().value;
-    let ei = e_field.into_data().value;
-    assert_eq!(vi.len(), ei.len());
-    let mut mx = 0.0_f32;
-    for k in 0..vi.len() {
-        mx = mx.max((vi[k] - ei[k]).abs());
-    }
-    assert_relative_eq!(mx, 0.0_f32, epsilon = 1e-6_f32, max_relative = 1.0);
 }
 
 /// Same check as [`dec_te_primal_tensor_matches_chain_stencil`], with **piecewise** \(\varepsilon_r\)
@@ -2577,7 +2569,7 @@ fn fresnel_interface_standing_wave_proxy() {
         pml_max_sigma: 3.5 * omega,
     };
     let cg = MechanicsInnerLoopConfig::default();
-    let (er, ei) = solver.solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg);
+    let (er, ei) = solver.solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg).expect("solve_helmholtz");
 
     let gr = er.into_data().value;
     let gi = ei.into_data().value;
@@ -2711,7 +2703,7 @@ fn quarter_wave_stack_high_reflectivity() {
         pml_max_sigma: 2.5 * omega,
     };
     let cg = MechanicsInnerLoopConfig::default();
-    let (er, ei) = solver.solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg);
+    let (er, ei) = solver.solve_helmholtz(eps_t, eps_i, jr, ji, edges, coords, &cg).expect("solve_helmholtz");
 
     let gr = er.into_data().value;
     let gi = ei.into_data().value;

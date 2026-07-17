@@ -32,6 +32,8 @@ pub mod photonics;
 pub mod rheology_flow;
 pub mod statistical_mechanics;
 pub mod thmc;
+#[cfg(feature = "thmc-coupled")]
+pub mod thmc_epilogue;
 #[cfg(feature = "solver-experimental")]
 pub mod thmc_jfnk;
 pub mod thmc_residual;

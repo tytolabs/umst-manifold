@@ -1385,7 +1385,8 @@ mod tests {
             boundary_mask.clone(),
             a,
             &cfg,
-        );
+        )
+        .expect("chain residual test equilibrium");
 
         // Consistency: static residual `(f − Ku)` on free DOFs after equilibrium solve.
         let batch = 1usize;
@@ -1845,7 +1846,8 @@ mod tests {
             boundary_mask.clone(),
             a_sec,
             &cfg,
-        );
+        )
+        .expect("bar idempotent first solve");
         let u1_flat = u1.clone().into_data().value;
 
         let (u2, _) = VectorMechanicsSolver::solve_equilibrium(
@@ -1858,7 +1860,8 @@ mod tests {
             boundary_mask,
             a_sec,
             &cfg,
-        );
+        )
+        .expect("bar idempotent second solve");
         let u2_flat = u2.into_data().value;
 
         let tol = 1e-6_f32;

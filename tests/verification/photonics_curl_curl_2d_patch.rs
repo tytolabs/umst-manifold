@@ -54,7 +54,7 @@ fn solve_maxwell_uniform_brick_two_quad_strip_residual() {
         coords.clone(),
         &cg,
         Some(&patch),
-    );
+    ).expect("solve_maxwell_curl_curl");
     let x = sol.into_data().value;
     let dim = 3 * n;
     let mut y = vec![0.0_f32; dim];
