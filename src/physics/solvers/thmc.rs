@@ -606,7 +606,7 @@ impl ThmcSolver {
     #[allow(dead_code)]
     fn _implicit_step<B, C>(
         &self,
-        _cartridge: &C,
+        cartridge: &C,
         _state: &ThmcState<B>,
         _manifold: &UnifiedMaterialStateTensor<B>,
     ) where
@@ -619,7 +619,7 @@ impl ThmcSolver {
     #[cfg(feature = "thmc-coupled")]
     fn step_experimental<B, C>(
         &mut self,
-        _cartridge: &C,
+        cartridge: &C,
         mut state: ThmcState<B>,
         manifold: &mut UnifiedMaterialStateTensor<B>,
     ) -> Result<ThmcState<B>, PhysicsError>
@@ -1058,7 +1058,7 @@ impl ThmcSolver {
         };
         let (state, gate_evidence) = super::thmc_epilogue::thmc_post_step_epilogue(
             self,
-            _cartridge,
+            cartridge,
             &pre_step,
             state,
             manifold,
