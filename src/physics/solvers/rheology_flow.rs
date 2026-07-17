@@ -128,6 +128,9 @@ use core::ops::ControlFlow;
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+/// Nodal velocity, pressure, and thixotropic internal variable after one explicit step.
+type RheologyStepOut<B> = (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>);
+
 use crate::physics::error::PhysicsError;
 
 #[cfg(feature = "rheology-bingham")]
@@ -228,7 +231,7 @@ impl BinghamFlowSolver {
         lambda_thix: Tensor<B, 3>,
         edges_b1: Tensor<B, 2, Int>,
         gravity: Tensor<B, 1>,
-    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
+    ) -> Result<RheologyStepOut<B>, PhysicsError> {
         #[cfg(not(feature = "rheology-bingham"))]
         {
             Ok((velocity, pressure, lambda_thix))
@@ -663,7 +666,7 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
     lambda_thix: Tensor<B, 3>,
     edges_b1: Tensor<B, 2, Int>,
     gravity: Tensor<B, 1>,
-) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
+) -> Result<RheologyStepOut<B>, PhysicsError> {
     bingham_step_validate_solver(solver)?;
     bingham_step_validate_shapes(
         &velocity,

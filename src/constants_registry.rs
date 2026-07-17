@@ -4,7 +4,8 @@
 //! Immutable compile-time constants registry for manifold solvers (integration-contracts D3).
 //!
 //! **Law:** migrated rows point at a single Rust `const` or `umst-math` re-export; THMC reaction-extent
-//! floats remain **TODO** until cartridge calibration lands (no duplicate literals here).
+//! floats remain pending until cartridge calibration lands (no duplicate literals here).
+//! TODO R-doc-cartridge-cal: migrate THMC reaction-extent floats from domain cartridge.
 
 /// One grounded numerical parameter (pure FP: copy types only).
 #[derive(Clone, Copy, Debug, PartialEq)]

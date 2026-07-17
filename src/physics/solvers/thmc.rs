@@ -110,7 +110,7 @@ use crate::physics::solvers::thmc_residual::{
 };
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc_split_passes::{
-    newton_split_chain, transport_residual_l2, ThmcNewtonScratch, ThmcStepCtx,
+    newton_split_chain, transport_residual_l2, NewtonFoldResult, ThmcNewtonScratch, ThmcStepCtx,
 };
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
@@ -606,7 +606,7 @@ impl ThmcSolver {
     fn step_experimental<B, C>(
         &mut self,
         _cartridge: &C,
-        mut state: ThmcState<B>,
+        state: ThmcState<B>,
         manifold: &mut UnifiedMaterialStateTensor<B>,
     ) -> Result<ThmcState<B>, PhysicsError>
     where
@@ -695,13 +695,25 @@ impl ThmcSolver {
             manifold,
         };
 
-        for _newton in 0..self.max_newton {
-            let scratch = ThmcNewtonScratch::from_state(&state, &step_ctx);
-            state = newton_split_chain(state, &scratch, &step_ctx, self)?;
-            if transport_residual_l2(&state, &scratch) <= self.tol {
-                break;
-            }
-        }
+        // FP §5 (RW-FP-P53): Newton outer loop threads owned ThmcState via try_fold.
+        let state = (0..self.max_newton)
+            .try_fold(NewtonFoldResult::Continue(state), |acc, _| match acc {
+                NewtonFoldResult::Converged(s) => {
+                    Ok::<NewtonFoldResult<B>, PhysicsError>(NewtonFoldResult::Converged(s))
+                }
+                NewtonFoldResult::Continue(s) => {
+                    let scratch = ThmcNewtonScratch::from_state(&s, &step_ctx);
+                    let s_next = newton_split_chain(s, &scratch, &step_ctx, self)?;
+                    if transport_residual_l2(&s_next, &scratch) <= self.tol {
+                        Ok(NewtonFoldResult::Converged(s_next))
+                    } else {
+                        Ok(NewtonFoldResult::Continue(s_next))
+                    }
+                }
+            })
+            .map(|acc| match acc {
+                NewtonFoldResult::Converged(s) | NewtonFoldResult::Continue(s) => s,
+            })?;
 
         let epilogue_ctx = super::thmc_epilogue::ThmcPostStepCtx {
             batch,

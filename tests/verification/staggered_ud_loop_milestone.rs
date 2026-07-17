@@ -189,7 +189,8 @@ fn milestone_one_analytic_strain_surrogate() {
     let d0 = Tensor::<B, 3>::zeros([h.batch, h.n_nodes, 1], &h.dev);
     let eps_ref = 0.012_f32;
 
-    let d_fin = fracture.update_damage_staggered(
+    let d_fin = fracture
+        .update_damage_staggered(
         |damage: &DamageField<B>| {
             let d = damage.as_tensor();
             let one = Tensor::ones_like(d);
@@ -218,7 +219,8 @@ fn milestone_one_analytic_strain_surrogate() {
         h.fracture_energy_gc,
         h.edges_b1,
         6,
-    );
+    )
+    .expect("update_damage_staggered");
 
     let vals = d_fin.into_tensor().into_data().value;
     assert!(vals.iter().all(|x| x.is_finite()));
@@ -241,7 +243,8 @@ fn milestone_one_mechanics_equilibrium_staggered_convergence() {
 
     for _ in 0..max_outer {
         let d_before = damage.as_tensor().clone();
-        damage = fracture.update_damage_staggered(
+        damage = fracture
+            .update_damage_staggered(
             |d: &DamageField<B>| {
                 strain_field(strain_tensor_for_fracture_after_mechanics(
                     h.u0.clone(),
@@ -264,7 +267,8 @@ fn milestone_one_mechanics_equilibrium_staggered_convergence() {
             h.fracture_energy_gc.clone(),
             h.edges_b1.clone(),
             1,
-        );
+        )
+        .expect("update_damage_staggered");
         let step = damage
             .as_tensor()
             .clone()

@@ -55,15 +55,19 @@ fn update_damage_idempotent_at_zero_strain_equilibrium() {
     let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
     let tol = 1e-6_f32;
 
-    let d1 = solver.update_damage(
-        strain_field(strain.clone()),
-        damage_field(damage),
-        gc_field(gc.clone()),
-        edges_b1.clone(),
-    );
+    let d1 = solver
+        .update_damage(
+            strain_field(strain.clone()),
+            damage_field(damage),
+            gc_field(gc.clone()),
+            edges_b1.clone(),
+        )
+        .expect("update_damage");
     let d1_vals = d1.clone().into_tensor().into_data().value;
 
-    let d2 = solver.update_damage(strain_field(strain), d1, gc_field(gc), edges_b1);
+    let d2 = solver
+        .update_damage(strain_field(strain), d1, gc_field(gc), edges_b1)
+        .expect("update_damage");
     let d2_vals = d2.into_tensor().into_data().value;
 
     assert!(max_abs_drift(&d1_vals, &d2_vals) < tol);
@@ -80,22 +84,26 @@ fn update_damage_staggered_idempotent_at_converged_outer_equilibrium() {
     let strain_snapshot = strain.clone();
     let mut strain_fn = move |_d: &DamageField<B>| strain_field(strain_snapshot.clone());
 
-    let d_conv = solver.update_damage_staggered(
-        &mut strain_fn,
-        damage_field(damage),
-        gc.clone(),
-        edges_b1.clone(),
-        outer_iters,
-    );
+    let d_conv = solver
+        .update_damage_staggered(
+            &mut strain_fn,
+            damage_field(damage),
+            gc.clone(),
+            edges_b1.clone(),
+            outer_iters,
+        )
+        .expect("update_damage_staggered");
     let conv_vals = d_conv.clone().into_tensor().into_data().value;
 
-    let d_repeat = solver.update_damage_staggered(
-        &mut strain_fn,
-        d_conv,
-        gc,
-        edges_b1,
-        outer_iters,
-    );
+    let d_repeat = solver
+        .update_damage_staggered(
+            &mut strain_fn,
+            d_conv,
+            gc,
+            edges_b1,
+            outer_iters,
+        )
+        .expect("update_damage_staggered");
     let repeat_vals = d_repeat.into_tensor().into_data().value;
 
     assert!(max_abs_drift(&conv_vals, &repeat_vals) < tol);

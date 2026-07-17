@@ -105,7 +105,7 @@ fn apply_fracture_damage<B: Backend<FloatElem = f32>>(
         1 => state.damage.clone(),
         _ => state.damage.clone().map(|t| t.slice([0..batch, 0..n, 0..1])),
     };
-    let damage_new = fracture.update_damage(strain, damage_core, gc, edges_b1);
+    let damage_new = fracture.update_damage(strain, damage_core, gc, edges_b1)?;
     state.damage = if d_last == 1 {
         damage_new
     } else {
