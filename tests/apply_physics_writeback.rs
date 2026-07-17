@@ -92,7 +92,8 @@ fn apply_physics_damage_writeback_respects_policy_mask() {
     let mut umst = test_umst(scalars, mask, Some(pos));
 
     let pr = physical_result(&dev, n, vec![0.9_f32, 0.9_f32], None);
-    apply_physics_to_umst(&pr, &mut umst).unwrap();
+    apply_physics_to_umst(&pr, &mut umst)
+        .expect("apply_physics_to_umst damage writeback respects policy mask");
 
     let out = umst.scalar_features.clone().into_data().value;
     let d0 = out[SCALAR_DAMAGE];
@@ -120,7 +121,8 @@ fn apply_physics_temperature_delta_respects_policy_mask() {
     let mut umst = test_umst(scalars, mask, None);
 
     let pr = physical_result(&dev, n, vec![0.0_f32; n], Some(vec![10.0_f32, 10.0_f32]));
-    apply_physics_to_umst(&pr, &mut umst).unwrap();
+    apply_physics_to_umst(&pr, &mut umst)
+        .expect("apply_physics_to_umst temperature delta respects policy mask");
 
     let out = umst.scalar_features.clone().into_data().value;
     let t0 = out[SCALAR_TEMPERATURE];
