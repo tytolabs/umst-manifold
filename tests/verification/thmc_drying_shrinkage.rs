@@ -1292,7 +1292,7 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
             &body_force,
             cross_section_area,
         )
-        .expect("l2 quasi-static four blocks");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::residual_l2_including_quasi_static_r_u on 2-node trial for four-block ‖R‖₂ witness (FP §6 Track G)");
 
     let flat = assembler
         .stacked_flat_residual_field_major_quasi_static(
@@ -1302,7 +1302,7 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
             &body_force,
             cross_section_area,
         )
-        .expect("flat quasi-static");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::stacked_flat_residual_field_major_quasi_static on 2-node trial for flat four-block layout witness (FP §6 Track G)");
     let sum_sq: f32 = flat.iter().map(|x| x * x).sum();
     let l2_from_flat = sum_sq.max(0.0_f32).sqrt();
     assert!(
@@ -1310,7 +1310,7 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
         "L2 mismatch: combined {l2_full} vs from flat {l2_from_flat}",
     );
 
-    let l2_scalar = assembler.residual_l2(&trial).expect("l2 scalar blocks");
+    let l2_scalar = assembler.residual_l2(&trial).expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::residual_l2 on 2-node quasi-static trial for scalar (T,h,α) blocks witness (FP §6 Track G)");
     let (_r_t, _r_h, _r_alpha, r_u) = assembler
         .assemble_with_quasi_static_r_u(
             &trial,
@@ -1426,7 +1426,7 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
             0.0_f32,
             None,
         )
-        .expect("two damped Newton iterations on (T,h,α,u) with quasi-static R_u");
+        .expect("damped_newton_iterations_with_quasi_static_r_u two-iteration run on 2-node (T,h,α,u) trial (FP §6 Track G monolithic Newton witness)");
     assert_eq!(norms.len(), 3);
     assert!(norms[0] > 1e-8_f32, "nontrivial R0={}", norms[0]);
     for k in 0..2 {
@@ -1528,9 +1528,7 @@ fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() 
             1.0_f32,
             1.0e-5_f32,
         )
-        .expect(
-            "one damped Newton step with quasi-static R_u (JFNK inner under solver-experimental)",
-        );
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::one_damped_newton_step_with_quasi_static_r_u with JFNK inner on 2-node trial (FP §6 Track G solver-experimental witness)");
     assert!(norm_before > 1e-8_f32, "nontrivial R0={norm_before}");
     assert!(
         norm_after < norm_before * 0.999_f32,
@@ -1657,7 +1655,7 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
             tol_exit,
             None,
         )
-        .expect("tol-triggered early exit");
+        .expect("damped_newton_iterations_with_quasi_static_r_u with stacked L2 tol early exit on 2-node (T,h,α,u) trial (FP §6 Track G)");
     assert!(
         norms_early.len() < norms_full.len(),
         "expected fewer norm samples when tol exits early: early={:?} full_len={}",
@@ -1802,7 +1800,7 @@ fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() 
             0.0_f32,
             Some(k_rel),
         )
-        .expect("relative-tol-triggered early exit");
+        .expect("damped_newton_iterations_with_quasi_static_r_u with relative-to-R0 early exit on 2-node trial (FP §6 Track G)");
     assert!(
         norms_rel.len() < norms_full.len(),
         "expected fewer norm samples when relative tol exits early: rel={:?} full_len={}",
@@ -1885,7 +1883,7 @@ fn thmc_implicit_euler_t_h_alpha_multi_newton_monotone_stacked_residual_norm() {
     );
     let (_final, norms) = assembler
         .damped_newton_iterations(&trial, 2_usize, 1.0_f32, 1.0e-5_f32)
-        .expect("two damped Newton iterations on (T,h,α)");
+        .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations two-iteration run on (T,h,α) trial (FP §6 Track G)");
     assert_eq!(norms.len(), 3);
     assert!(norms[0] > 1e-8_f32, "nontrivial R0={}", norms[0]);
     for k in 0..2 {
@@ -2071,7 +2069,7 @@ fn thmc_implicit_euler_t_alpha_multi_newton_monotone_residual_norm_decrease() {
     );
     let (_final_trial, norms) = assembler
         .damped_newton_iterations(&trial, 2_usize, 1.0_f32, 1.0e-5_f32)
-        .expect("two damped Newton iterations");
+        .expect("ThmcImplicitEulerThermalReactionExtentResidual::damped_newton_iterations two-iteration run on (T,α) trial (FP §6 Track G)");
     assert_eq!(
         norms.len(),
         3,
@@ -2375,7 +2373,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
     };
     let s_step = solver
         .step(&Stub, clone_thmc_state(&state0), &mut manifold)
-        .expect("monolithic step");
+        .expect("ThmcSolver::step with monolithic_thmc_newton on 2-node chain for parity witness (FP §6 Track G)");
 
     // --- Mirror `step_experimental` monolithic predictor + standalone Newton ---
     let device = state0.thermal.temperature.as_tensor().device();
@@ -2477,7 +2475,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
             mc.stacked_residual_l2_tolerance,
             mc.stacked_residual_relative_to_initial,
         )
-        .expect("standalone monolithic Newton");
+        .expect("damped_newton_iterations_with_quasi_static_r_u standalone run matching ThmcSolver monolithic step (FP §6 Track G)");
 
     let eps = 5e-5_f32;
     for (a, b) in s_step.thermal.temperature.as_tensor().clone().into_data()
@@ -2542,7 +2540,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
             0.0_f32,
             None,
         )
-        .expect("probe monolithic Newton norm trail");
+        .expect("damped_newton_iterations_with_quasi_static_r_u fixed-count probe for tol early-exit calibration (FP §6 Track G)");
     assert_eq!(norms_full.len(), max_probe_iters + 1);
     let tol_exit = norms_full[2] + 0.05_f32 * (norms_full[1] - norms_full[2]).max(1e-30_f32);
     assert!(
@@ -2564,7 +2562,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
     };
     let s_early = solver_early
         .step(&Stub, clone_thmc_state(&state0), &mut manifold)
-        .expect("monolithic step with tol early exit");
+        .expect("ThmcSolver::step with monolithic tol early-exit config on 2-node chain (FP §6 Track G)");
     let (updated_early, _) = assembler
         .damped_newton_iterations_with_quasi_static_r_u(
             &trial,
@@ -2578,7 +2576,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
             mc_early.stacked_residual_l2_tolerance,
             mc_early.stacked_residual_relative_to_initial,
         )
-        .expect("standalone monolithic Newton with tol");
+        .expect("damped_newton_iterations_with_quasi_static_r_u with tol matching solver early-exit config (FP §6 Track G)");
 
     for (a, b) in s_early.thermal.temperature.as_tensor().clone().into_data()
         .value
@@ -2698,7 +2696,7 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
         .expect("ThmcSolver::step split operator on 2-node SI chain for coupled BE residual baseline (FP §6 Track G)");
     let s_mono = solver_mono
         .step_monolithic_implicit(&Stub, clone_thmc_state(&state0), &mut manifold)
-        .expect("monolithic implicit step");
+        .expect("ThmcSolver::step_monolithic_implicit on 2-node chain for coupled ‖R‖₂ comparison (FP §6 Track G)");
 
     let mask = manifold.displacement_bc_mask.clone();
     let bm_core = match mask.dims()[..] {
@@ -2740,7 +2738,7 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
             &body_force,
             cross_section_area,
         )
-        .expect("||R|| monolithic");
+        .expect("residual_l2_including_quasi_static_r_u after step_monolithic_implicit for coupled ‖R‖₂ witness (FP §6 Track G)");
 
     assert!(
         r_split > 1.0e-6_f32,
@@ -2864,7 +2862,7 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
         .expect("ThmcSolver::step explicit split on drying chain for implicit comparison witness (FP §6 Track G)");
     let s_imp = solver_implicit
         .step(&Stub, clone_thmc_state(&state0), &mut manifold)
-        .expect("implicit step");
+        .expect("ThmcSolver::step with implicit_t_alpha_newton on drying chain for BE residual comparison (FP §6 Track G)");
 
     let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
         dt,
@@ -2888,10 +2886,10 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
 
     let r_exp = assembler
         .residual_l2(&trial_exp)
-        .expect("residual explicit endpoint");
+        .expect("ThmcImplicitEulerThermalReactionExtentResidual::residual_l2 at explicit split endpoint (FP §6 Track G)");
     let r_imp = assembler
         .residual_l2(&trial_imp)
-        .expect("residual implicit endpoint");
+        .expect("ThmcImplicitEulerThermalReactionExtentResidual::residual_l2 at implicit (T,α) endpoint (FP §6 Track G)");
     assert!(
         r_exp > 1.0e-5_f32,
         "expected nontrivial BE residual at explicit endpoint, got {r_exp}"
