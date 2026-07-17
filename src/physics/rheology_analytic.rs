@@ -7,8 +7,9 @@
 //! - **Steady references:** Closed-form Buckingham / Newtonian profiles below; **regularized Bingham**
 //!   steady 1D quadrature matches [`crate::physics::solvers::BinghamFlowSolver`]’s \(\eta\) law.
 //!   Transient Chorin startup on the graph is **not** claimed to match either until BCs / Poisson harden.
-//! - **NaN / domain:** `mu <= 0` returns `f32::NAN`; `g` is clamped non-negative in the yield-stress
-//!   branch so plug half-width stays finite.
+//! - **Domain:** invalid parameters (`mu <= 0`, `h <= 0`, `|y| > H/2`, non-finite inputs) return
+//!   `Err(PhysicsError::Domain { .. })` instead of `f32::NAN` signaling; `g` is clamped non-negative
+//!   in the yield-stress branch so plug half-width stays finite.
 //!
 //! # Coordinate system
 //! - \(x\): streamwise direction; favorable pressure gradient \(g = -\partial p/\partial x\) [Pa/m] (positive when \(p\) decreases in \(+x\)).
@@ -36,6 +37,8 @@
 //! ([`plane_regularized_bingham_poiseuille_u_centreline`], [`plane_regularized_bingham_poiseuille_u_sample`]).
 //! Use [`RHEOLOGY_FLOW_BINGHAM_EPS`] for \(\varepsilon\) parity with `rheology_flow.rs`.
 
+use crate::physics::error::PhysicsError;
+
 /// Regularization \(\varepsilon\) \[1/s\]; kept identical to [`crate::physics::solvers::BinghamFlowSolver`]'s ε (`rheology_flow.rs`).
 pub const RHEOLOGY_FLOW_BINGHAM_EPS: f32 = 1e-5;
 
@@ -43,26 +46,40 @@ pub const RHEOLOGY_FLOW_BINGHAM_EPS: f32 = 1e-5;
 ///
 /// `g` is the streamwise pressure-drop magnitude \(g=-\partial p/\partial x\) \[Pa/m\].
 /// `h` is the full plate spacing \[m\]. `mu` is dynamic viscosity \[Pa·s\], `tau0` yield stress \[Pa\].
-pub fn plane_bingham_poiseuille_u(y: f32, g: f32, h: f32, mu: f32, tau0: f32) -> f32 {
+pub fn plane_bingham_poiseuille_u(
+    y: f32,
+    g: f32,
+    h: f32,
+    mu: f32,
+    tau0: f32,
+) -> Result<f32, PhysicsError> {
     if mu <= 0.0 || mu.is_nan() {
-        return f32::NAN;
+        return Err(PhysicsError::Domain {
+            detail: "plane_bingham_poiseuille_u: mu must be positive and finite".into(),
+        });
+    }
+    if h <= 0.0 || !h.is_finite() || !y.is_finite() || !g.is_finite() || !tau0.is_finite() {
+        return Err(PhysicsError::Domain {
+            detail: "plane_bingham_poiseuille_u: h must be positive; y, g, h, tau0 must be finite"
+                .into(),
+        });
     }
     let half = 0.5 * h;
     let g_pos = g.max(0.0);
     if tau0 <= 0.0 {
-        return (g_pos / (2.0 * mu)) * (half * half - y * y);
+        return Ok((g_pos / (2.0 * mu)) * (half * half - y * y));
     }
     // Below yield at the wall: no steady flow with no-slip.
     if tau0 >= g_pos * half {
-        return 0.0;
+        return Ok(0.0);
     }
     let y_p = tau0 / g_pos.max(1e-30);
     let ay = y.abs();
     let u_at_yp = (g_pos / (2.0 * mu)) * (half * half - y_p * y_p) - tau0 * (half - y_p) / mu;
     if ay <= y_p {
-        return u_at_yp;
+        return Ok(u_at_yp);
     }
-    (g_pos / (2.0 * mu)) * (half * half - y * y) - tau0 * (half - ay) / mu
+    Ok((g_pos / (2.0 * mu)) * (half * half - y * y) - tau0 * (half - ay) / mu)
 }
 
 /// Half-width of the unyielded plug region from the mid-plane, \(y_p = \tau_0 / g\) \[m\].
@@ -127,21 +144,8 @@ pub fn plane_regularized_bingham_poiseuille_u_centreline(
     tau0: f32,
     eps: f32,
     n_quad: usize,
-) -> f32 {
-    let u = plane_regularized_bingham_poiseuille_u_sample_internal(
-        0.0_f64,
-        g as f64,
-        h as f64,
-        mu as f64,
-        tau0 as f64,
-        eps as f64,
-        n_quad,
-    );
-    if u.is_nan() {
-        f32::NAN
-    } else {
-        u as f32
-    }
+) -> Result<f32, PhysicsError> {
+    plane_regularized_bingham_poiseuille_u_sample(0.0, g, h, mu, tau0, eps, n_quad)
 }
 
 /// Sample \(u(y)\) \[m/s\] with \(y\) \[m\] from mid-plane; profile is even in \(y\).
@@ -155,7 +159,7 @@ pub fn plane_regularized_bingham_poiseuille_u_sample(
     tau0: f32,
     eps: f32,
     n_quad: usize,
-) -> f32 {
+) -> Result<f32, PhysicsError> {
     let u = plane_regularized_bingham_poiseuille_u_sample_internal(
         y as f64,
         g as f64,
@@ -166,9 +170,12 @@ pub fn plane_regularized_bingham_poiseuille_u_sample(
         n_quad,
     );
     if u.is_nan() {
-        f32::NAN
+        Err(PhysicsError::Domain {
+            detail: "plane_regularized_bingham_poiseuille_u_sample: invalid domain parameters"
+                .into(),
+        })
     } else {
-        u as f32
+        Ok(u as f32)
     }
 }
 
@@ -212,7 +219,7 @@ mod tests {
         let h = 0.05_f32;
         let mu = 50.0_f32;
         let expected = g * h * h / (8.0 * mu);
-        let u0 = plane_bingham_poiseuille_u(0.0, g, h, mu, 0.0);
+        let u0 = plane_bingham_poiseuille_u(0.0, g, h, mu, 0.0).expect("valid Newtonian params");
         assert!((u0 - expected).abs() < 1e-4 * expected.abs().max(1.0));
     }
 
@@ -229,7 +236,8 @@ mod tests {
             0.0,
             RHEOLOGY_FLOW_BINGHAM_EPS,
             128,
-        );
+        )
+        .expect("valid regularized Newtonian params");
         assert!((got - expected).abs() < 1e-5 * expected.abs().max(1.0));
     }
 

@@ -21,6 +21,7 @@ pub use crate::ai::topology::{DensityNet, TopologyOptimizer, TopologyOptimizerSt
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use crate::physics::error::PhysicsError;
 use crate::physics::laplacian::TopologicalLaplacian;
 
 /// Bounds for \(\rho\) after each step (SIMP-style \((0,1)\) interval).
@@ -37,6 +38,77 @@ impl Default for TopologySolverConfig {
             rho_max: 1.0 - 1e-6,
         }
     }
+}
+
+/// Pre-step validation for explicit graph diffusion (CFL + shape guards).
+fn validate_density_diffusion_inputs<B: Backend>(
+    dt: f32,
+    rho: &Tensor<B, 3>,
+    edges_b1: &Tensor<B, 2, Int>,
+    damage: &Tensor<B, 3>,
+    boundary_mask: &Tensor<B, 3>,
+    policy_editable_mask: &Tensor<B, 2>,
+) -> Result<(), PhysicsError> {
+    if !dt.is_finite() || dt <= 0.0 {
+        return Err(PhysicsError::Domain {
+            detail: format!(
+                "topology density diffusion: dt must be finite and positive (got {dt})"
+            ),
+        });
+    }
+    let [b, n, c] = rho.dims();
+    if c != 1 {
+        return Err(PhysicsError::ShapeMismatch {
+            context: "TopologySolver::step_density_diffusion",
+            detail: "rho last dim must be 1",
+        });
+    }
+    let [eb_two, e] = edges_b1.dims();
+    if eb_two != 2 {
+        return Err(PhysicsError::ShapeMismatch {
+            context: "TopologySolver::step_density_diffusion",
+            detail: "edges_b1 must be [2, E]",
+        });
+    }
+    if e == 0 && n > 1 {
+        return Err(PhysicsError::Domain {
+            detail: "topology density diffusion: zero edges with multiple nodes".into(),
+        });
+    }
+    let [db, dn, dc] = damage.dims();
+    if db != b || dn != n || dc != 1 {
+        return Err(PhysicsError::ShapeMismatch {
+            context: "TopologySolver::step_density_diffusion",
+            detail: "damage shape must match [B, N, 1]",
+        });
+    }
+    let [bb, bn, bt] = boundary_mask.dims();
+    if bb != b || bn != n || bt != 3 {
+        return Err(PhysicsError::ShapeMismatch {
+            context: "TopologySolver::step_density_diffusion",
+            detail: "boundary_mask must be [B, N, 3]",
+        });
+    }
+    let [pn, p1] = policy_editable_mask.dims();
+    if pn != n || p1 != 1 {
+        return Err(PhysicsError::ShapeMismatch {
+            context: "TopologySolver::step_density_diffusion",
+            detail: "policy_editable_mask must be [N, 1]",
+        });
+    }
+    // CFL proxy for explicit Euler on the unit-weight graph Laplacian: dt ≤ 1 / mean_degree.
+    let n_f = n.max(1) as f32;
+    let e_f = e.max(1) as f32;
+    let mean_degree = (2.0 * e_f / n_f).max(1.0);
+    let cfl_dt_max = 1.0 / mean_degree;
+    if dt > cfl_dt_max {
+        return Err(PhysicsError::Domain {
+            detail: format!(
+                "topology density diffusion: dt={dt} exceeds CFL bound {cfl_dt_max} (mean degree {mean_degree})"
+            ),
+        });
+    }
+    Ok(())
 }
 
 /// Physics-side carrier for nodal density with optional filter hooks on each step.
@@ -61,21 +133,33 @@ impl<B: Backend<FloatElem = f32>> TopologySolver<B> {
     pub fn combined_edit_mask(
         boundary_mask: Tensor<B, 3>,
         policy_editable_mask: Tensor<B, 2>,
-    ) -> Tensor<B, 3> {
+    ) -> Result<Tensor<B, 3>, PhysicsError> {
         let [b, n, three] = boundary_mask.dims();
-        debug_assert_eq!(three, 3);
+        if three != 3 {
+            return Err(PhysicsError::ShapeMismatch {
+                context: "TopologySolver::combined_edit_mask",
+                detail: "boundary_mask last dim must be 3",
+            });
+        }
         let [n_pol, one] = policy_editable_mask.dims();
-        debug_assert_eq!(one, 1);
-        debug_assert_eq!(
-            n_pol, n,
-            "combined_edit_mask: policy_editable_mask rows N must match nodal N"
-        );
+        if one != 1 {
+            return Err(PhysicsError::ShapeMismatch {
+                context: "TopologySolver::combined_edit_mask",
+                detail: "policy_editable_mask last dim must be 1",
+            });
+        }
+        if n_pol != n {
+            return Err(PhysicsError::ShapeMismatch {
+                context: "TopologySolver::combined_edit_mask",
+                detail: "policy_editable_mask rows N must match nodal N",
+            });
+        }
         let mx = boundary_mask.clone().slice([0..b, 0..n, 0..1]);
         let my = boundary_mask.clone().slice([0..b, 0..n, 1..2]);
         let mz = boundary_mask.slice([0..b, 0..n, 2..3]);
         let bc_scalar = mx.mul(my).mul(mz);
         let pol = policy_editable_mask.reshape([1, n, 1]).expand([b, n, 1]);
-        bc_scalar.mul(pol)
+        Ok(bc_scalar.mul(pol))
     }
 
     /// Blend `proposed` toward `current` where `mask` is low: `out = proposed * mask + current * (1 - mask)`.
@@ -98,7 +182,7 @@ impl<B: Backend<FloatElem = f32>> TopologySolver<B> {
         damage: Tensor<B, 3>,
         boundary_mask: Tensor<B, 3>,
         policy_editable_mask: Tensor<B, 2>,
-    ) {
+    ) -> Result<(), PhysicsError> {
         self.step_density_diffusion_filtered(
             dt,
             edges_b1,
@@ -126,18 +210,28 @@ impl<B: Backend<FloatElem = f32>> TopologySolver<B> {
         policy_editable_mask: Tensor<B, 2>,
         pre_filter: F,
         post_filter: G,
-    ) where
+    ) -> Result<(), PhysicsError>
+    where
         F: Fn(Tensor<B, 3>) -> Tensor<B, 3>,
         G: Fn(Tensor<B, 3>) -> Tensor<B, 3>,
     {
+        validate_density_diffusion_inputs(
+            dt,
+            &self.rho,
+            &edges_b1,
+            &damage,
+            &boundary_mask,
+            &policy_editable_mask,
+        )?;
         let rho_old = self.rho.clone();
         let rho_work = pre_filter(rho_old.clone());
         let lap = TopologicalLaplacian::scalar_laplacian(rho_work, edges_b1, damage);
         let proposed = rho_old.clone().add(lap.mul_scalar(dt));
         let clamped = proposed.clamp(self.config.rho_min, self.config.rho_max);
         let filtered = post_filter(clamped);
-        let m = Self::combined_edit_mask(boundary_mask, policy_editable_mask);
+        let m = Self::combined_edit_mask(boundary_mask, policy_editable_mask)?;
         self.rho = Self::blend_masked_update(rho_old, filtered, m);
+        Ok(())
     }
 }
 
@@ -189,7 +283,9 @@ mod tests {
         let boundary_mask = Tensor::<B, 3>::ones([1, n, 3], &dev);
         let policy = Tensor::<B, 2>::ones([n, 1], &dev);
 
-        solver.step_density_diffusion(0.2, edges_b1, damage, boundary_mask, policy);
+        solver
+            .step_density_diffusion(0.2, edges_b1, damage, boundary_mask, policy)
+            .expect("uniform rho step");
         let expected = Tensor::<B, 3>::full([1, n, 1], 0.5, &dev);
         assert!(
             solver
@@ -212,7 +308,9 @@ mod tests {
         let boundary_mask = Tensor::<B, 3>::ones([1, n, 3], &dev);
         let policy = Tensor::<B, 2>::ones([n, 1], &dev);
 
-        solver.step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy);
+        solver
+            .step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy)
+            .expect("two-bar equilibrium step");
         let expected = Tensor::<B, 3>::full([1, n, 1], 0.5, &dev);
         assert!(
             solver
@@ -237,7 +335,9 @@ mod tests {
         pol[1] = 1.0;
         let policy = Tensor::from_data(Data::new(pol, Shape::new([n, 1])), &dev);
 
-        solver.step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy);
+        solver
+            .step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy)
+            .expect("two-bar equilibrium step");
         let rho = solver.rho.clone();
         let n0 = rho.clone().slice([0..1, 0..1, 0..1]);
         let n1 = rho.slice([0..1, 1..2, 0..1]);
@@ -281,7 +381,9 @@ mod tests {
         let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &dev);
         let policy = Tensor::<B, 2>::ones([n, 1], &dev);
 
-        solver.step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy);
+        solver
+            .step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy)
+            .expect("two-bar equilibrium step");
         let rho = solver.rho.clone();
         let fixed = rho.clone().slice([0..1, 1..2, 0..1]);
         let free = rho.slice([0..1, 0..1, 0..1]);
@@ -318,21 +420,23 @@ mod tests {
 
         let pre_calls = Cell::new(0_u32);
         let post_calls = Cell::new(0_u32);
-        solver.step_density_diffusion_filtered(
-            0.1,
-            edges_b1,
-            damage,
-            boundary_mask,
-            policy,
-            |t| {
-                pre_calls.set(pre_calls.get() + 1);
-                t
-            },
-            |t| {
-                post_calls.set(post_calls.get() + 1);
-                t
-            },
-        );
+        solver
+            .step_density_diffusion_filtered(
+                0.1,
+                edges_b1,
+                damage,
+                boundary_mask,
+                policy,
+                |t| {
+                    pre_calls.set(pre_calls.get() + 1);
+                    t
+                },
+                |t| {
+                    post_calls.set(post_calls.get() + 1);
+                    t
+                },
+            )
+            .expect("filtered diffusion step");
         assert_eq!(pre_calls.get(), 1);
         assert_eq!(post_calls.get(), 1);
         let expected = Tensor::<B, 3>::full([1, n, 1], 0.5, &dev);
@@ -342,6 +446,51 @@ mod tests {
                 .clone()
                 .all_close(expected, Some(1e-4), Some(1e-5)),
             "uniform rho stationary under diffusion"
+        );
+    }
+
+    #[test]
+    fn cfl_violation_returns_domain_error() {
+        let dev = Default::default();
+        let n = 4_usize;
+        let mut edges = Vec::with_capacity(n * 2);
+        for e in 0..n {
+            edges.push(e as i64);
+            edges.push(((e + 1) % n) as i64);
+        }
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(edges, Shape::new([2, n])), &dev);
+        let rho = Tensor::<B, 3>::full([1, n, 1], 0.5, &dev);
+        let mut solver = TopologySolver::new(rho, TopologySolverConfig::default());
+        let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+        let boundary_mask = Tensor::<B, 3>::ones([1, n, 3], &dev);
+        let policy = Tensor::<B, 2>::ones([n, 1], &dev);
+
+        let err = solver
+            .step_density_diffusion(2.0, edges_b1, damage, boundary_mask, policy)
+            .unwrap_err();
+        assert!(
+            matches!(err, PhysicsError::Domain { .. }),
+            "expected Domain error for CFL violation, got {err}"
+        );
+    }
+
+    #[test]
+    fn non_positive_dt_returns_domain_error() {
+        let dev = Default::default();
+        let edges_b1 = two_node_edge_topology();
+        let rho = Tensor::<B, 3>::full([1, 2, 1], 0.5, &dev);
+        let mut solver = TopologySolver::new(rho, TopologySolverConfig::default());
+        let damage = Tensor::<B, 3>::zeros([1, 2, 1], &dev);
+        let boundary_mask = Tensor::<B, 3>::ones([1, 2, 3], &dev);
+        let policy = Tensor::<B, 2>::ones([2, 1], &dev);
+
+        let err = solver
+            .step_density_diffusion(0.0, edges_b1, damage, boundary_mask, policy)
+            .unwrap_err();
+        assert!(
+            matches!(err, PhysicsError::Domain { .. }),
+            "expected Domain error for dt=0, got {err}"
         );
     }
 }
