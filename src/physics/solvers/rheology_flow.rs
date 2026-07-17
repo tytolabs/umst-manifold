@@ -853,7 +853,9 @@ mod tests {
                 edges_b1,
                 gravity,
             )
-            .expect("Bingham step");
+            .expect(
+                "BinghamFlowSolver::step on 3-node shear chain for Roussel λ breakdown lib unit witness (FP §6 Track E rheology flow)",
+            );
         let mid = lam1.clone().slice([0..1, 1..2, 0..1]);
         let one = Tensor::<B, 3>::ones_like(&mid);
         assert!(
@@ -888,7 +890,9 @@ mod tests {
                 edges_b1,
                 gravity,
             )
-            .expect("Bingham step");
+            .expect(
+                "BinghamFlowSolver::step on 2-node quiescent lattice for default-freeze λ lib unit witness (FP §6 Track E rheology flow)",
+            );
         let z = Tensor::<B, 3>::zeros_like(&lam1);
         assert!(
             lam1.sub(lambda0).abs().all_close(z, None, Some(1e-5_f64)),

@@ -220,7 +220,9 @@ mod tests {
         let h = 0.05_f32;
         let mu = 50.0_f32;
         let expected = g * h * h / (8.0 * mu);
-        let u0 = plane_bingham_poiseuille_u(0.0, g, h, mu, 0.0).expect("Newtonian centreline");
+        let u0 = plane_bingham_poiseuille_u(0.0, g, h, mu, 0.0).expect(
+            "plane_bingham_poiseuille_u at y=0 for Newtonian centreline gH²/(8μ) lib unit witness (FP §6 Track E rheology analytic)",
+        );
         assert!((u0 - expected).abs() < 1e-4 * expected.abs().max(1.0));
     }
 
@@ -238,7 +240,9 @@ mod tests {
             RHEOLOGY_FLOW_BINGHAM_EPS,
             128,
         )
-        .expect("regularized Newtonian centreline");
+        .expect(
+            "plane_regularized_bingham_poiseuille_u_centreline at τ₀=0 for Newtonian gH²/(8μ) lib unit witness (FP §6 Track E rheology analytic)",
+        );
         assert!((got - expected).abs() < 1e-5 * expected.abs().max(1.0));
     }
 
@@ -262,7 +266,9 @@ mod tests {
             eps,
             n,
         )
-        .expect("regularized u(y+delta)");
+        .expect(
+            "plane_regularized_bingham_poiseuille_u_sample at y+δ for FD stress-balance lib unit witness (FP §6 Track E rheology analytic)",
+        );
         let u_m = plane_regularized_bingham_poiseuille_u_sample_internal(
             y - delta,
             g,
@@ -272,7 +278,9 @@ mod tests {
             eps,
             n,
         )
-        .expect("regularized u(y-delta)");
+        .expect(
+            "plane_regularized_bingham_poiseuille_u_sample at y−δ for FD stress-balance lib unit witness (FP §6 Track E rheology analytic)",
+        );
         let dudy = (u_p - u_m) / (2.0 * delta);
         let x_mag = dudy.abs();
         let lhs = mu * x_mag + tau0 * x_mag / (x_mag + eps);
