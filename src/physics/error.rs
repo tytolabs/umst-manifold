@@ -79,11 +79,17 @@ impl fmt::Display for PhysicsError {
                 pcg_iterations,
             } => write!(
                 f,
-                "solver diverged (eq_rel={eq_rel}, pcg_iterations={pcg_iterations})"
+                "iterative solve failed to converge within tolerance \
+                 (relative residual {eq_rel} after {pcg_iterations} iterations)"
             ),
-            Self::NonFiniteCompliance => f.write_str("non-finite compliance scalar"),
+            Self::NonFiniteCompliance => f.write_str(
+                "compliance functional is non-finite (NaN or Inf) after equilibrium forward solve",
+            ),
             Self::NonFinite { context } => write!(f, "{context}: non-finite value"),
-            Self::KrylovDiverged { context } => write!(f, "{context}: Krylov diverged"),
+            Self::KrylovDiverged { context } => write!(
+                f,
+                "{context}: Krylov/GMRES sub-solve stalled or residual blew up"
+            ),
             Self::IndefiniteSystem { context } => write!(f, "{context}: indefinite system"),
             Self::BufferExhausted { context } => write!(f, "{context}: buffer exhausted"),
             Self::InvariantViolation { context } => write!(f, "{context}: invariant violation"),
