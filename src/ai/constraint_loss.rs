@@ -233,7 +233,7 @@ mod tests {
         let new = old;
         let dt = 1.0_f64;
         let host = transition_outcome(&old, &new, dt, 1e-6);
-        assert!(host.energy_positive, "sanity: identity transition admits");
+        assert!(host.is_energy_positive(), "sanity: identity transition admits");
 
         let violation = clausius_duhem_violation(
             scalar_tensor(&dev, &[old.density as f32]),
@@ -267,7 +267,7 @@ mod tests {
         };
         let dt = 1.0_f64;
         let host = transition_outcome(&old, &new, dt, 1e-6);
-        assert!(!host.energy_positive, "sanity: ψ spike rejects on host");
+        assert!(!host.is_energy_positive(), "sanity: ψ spike rejects on host");
 
         let violation = clausius_duhem_violation(
             scalar_tensor(&dev, &[old.density as f32]),

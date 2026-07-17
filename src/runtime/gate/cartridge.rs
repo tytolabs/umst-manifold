@@ -61,7 +61,7 @@ mod tests {
         let new = old;
         let dt = 1.0_f64;
         let host = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
-        assert!(host.energy_positive, "sanity: identity transition admits");
+        assert!(host.is_energy_positive(), "sanity: identity transition admits");
 
         let evidence = CdTransitionCartridge.transition_evidence(&old, &new, dt);
         assert_eq!(evidence.catalog_id, CD_TRANSITION_CATALOG_ID);
@@ -84,7 +84,7 @@ mod tests {
         };
         let dt = 1.0_f64;
         let host = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
-        assert!(!host.energy_positive, "sanity: ψ spike rejects on host");
+        assert!(!host.is_energy_positive(), "sanity: ψ spike rejects on host");
 
         let evidence = CdTransitionCartridge.transition_evidence(&old, &new, dt);
         assert_eq!(evidence.catalog_id, CD_TRANSITION_CATALOG_ID);

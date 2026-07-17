@@ -138,10 +138,10 @@ pub struct ThermodynamicTransitionOutcome {
         note = "use CoreGateOutcome::mass_conserved or verdict reject reason"
     )]
     pub mass_conserved: bool,
-    /// Legacy CD ∧ strength fold — prefer [`Self::rest_verdict`] / [`ConjunctVerdict`].
+    /// Legacy CD ∧ strength fold — prefer [`Self::is_energy_positive`] / [`Self::rest_verdict`].
     #[deprecated(
         since = "0.2.0",
-        note = "use rest_verdict() or ConjunctVerdict reject reason"
+        note = "use ThermodynamicTransitionOutcome::is_energy_positive() or rest_verdict()"
     )]
     pub energy_positive: bool,
     /// Reaction-extent monotonicity (`gate_sdf` conjunct).
@@ -165,6 +165,14 @@ impl ThermodynamicTransitionOutcome {
     #[must_use]
     pub fn is_accepted(self) -> bool {
         self.verdict.is_accepted()
+    }
+
+    /// Legacy CD ∧ strength fold witness (unchanged semantics — not Core-only CD).
+    #[inline]
+    #[must_use]
+    #[allow(deprecated)]
+    pub fn is_energy_positive(self) -> bool {
+        self.energy_positive
     }
 
     /// REST-stable verdict via locked transition conjunct ladder (legacy `energy_positive` fold).
