@@ -15,9 +15,6 @@ use umst_manifold::core::umst_schema::{
     SCALAR_DAMAGE, SCALAR_TEMPERATURE, UMST_SCALAR_CHANNEL_COUNT,
 };
 
-#[cfg(not(feature = "thmc-coupled"))]
-use umst_manifold::physics::solvers::{ThmcSolver, ThmcState};
-
 type B = NdArray<f32>;
 
 fn device() -> NdArrayDevice {
@@ -166,6 +163,7 @@ impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for EmptyCartridge {
 #[cfg(not(feature = "thmc-coupled"))]
 #[test]
 fn apply_physics_thmc_step_errors_without_thmc_coupled() {
+    use umst_manifold::physics::solvers::{ThmcSolver, ThmcState};
     let dev = device();
     let n = 2usize;
     let scalars = Tensor::<B, 2>::zeros([n, UMST_SCALAR_CHANNEL_COUNT], &dev);
