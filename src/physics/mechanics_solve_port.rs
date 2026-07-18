@@ -11,7 +11,7 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
-use crate::core::field::{DamageField, DisplacementField, Field, StiffnessField};
+use crate::core::field::{BodyForceField, BoundaryMaskField, DamageField, DisplacementField, Field, StiffnessField};
 use crate::physics::error::PhysicsError;
 use crate::solve_report::{PrecisionLane, ReportedSolve, SolveReport};
 
@@ -37,10 +37,10 @@ pub trait MechanicsSolvePort<B: Backend<FloatElem = f32>> {
         displacement: DisplacementField<B>,
         coords: Tensor<B, 2>,
         stiffness: StiffnessField<B>,
-        body_force: DisplacementField<B>,
+        body_force: BodyForceField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: DamageField<B>,
-        boundary_mask: Tensor<B, 3>,
+        boundary_mask: BoundaryMaskField<B>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
         rel_tol: f32,
@@ -61,10 +61,10 @@ impl<B: Backend<FloatElem = f32>> MechanicsSolvePort<B> for BarNetworkMechanicsS
         displacement: DisplacementField<B>,
         coords: Tensor<B, 2>,
         stiffness: StiffnessField<B>,
-        body_force: DisplacementField<B>,
+        body_force: BodyForceField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: DamageField<B>,
-        boundary_mask: Tensor<B, 3>,
+        boundary_mask: BoundaryMaskField<B>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
         rel_tol: f32,
@@ -97,10 +97,10 @@ pub fn bar_network_equilibrium_reported<B: Backend<FloatElem = f32>>(
     displacement: DisplacementField<B>,
     coords: Tensor<B, 2>,
     stiffness: StiffnessField<B>,
-    body_force: DisplacementField<B>,
+    body_force: BodyForceField<B>,
     edges_b1: Tensor<B, 2, Int>,
     damage: DamageField<B>,
-    boundary_mask: Tensor<B, 3>,
+    boundary_mask: BoundaryMaskField<B>,
     cross_section_area: f32,
     inner_cfg: &MechanicsInnerLoopConfig,
     rel_tol: f32,
@@ -140,10 +140,10 @@ pub fn bar_network_equilibrium_reported_from_tensors<B: Backend<FloatElem = f32>
         Field::new(displacement),
         coords,
         StiffnessField::from_tensor(stiffness),
-        Field::new(body_force),
+        BodyForceField::from_tensor(body_force),
         edges_b1,
         Field::new(damage),
-        boundary_mask,
+        BoundaryMaskField::from_tensor(boundary_mask),
         cross_section_area,
         inner_cfg,
         rel_tol,
@@ -163,8 +163,8 @@ mod tests {
         Tensor<B, 2>,
         Tensor<B, 2, Int>,
         Tensor<B, 3>,
-        DisplacementField<B>,
-        Tensor<B, 3>,
+        BodyForceField<B>,
+        BoundaryMaskField<B>,
         DamageField<B>,
         f32,
         MechanicsInnerLoopConfig,
@@ -204,7 +204,7 @@ mod tests {
 
         let mut bf = vec![0.0_f32; n * 3];
         bf[(n - 1) * 3] = 1000.0;
-        let body_force = Field::new(Tensor::from_data(
+        let body_force = BodyForceField::from_tensor(Tensor::from_data(
             Data::new(bf, Shape::new([1, n, 3])),
             &dev,
         ));
@@ -213,7 +213,7 @@ mod tests {
         bm[0] = 0.0;
         bm[1] = 0.0;
         bm[2] = 0.0;
-        let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &dev);
+        let boundary_mask = BoundaryMaskField::from_tensor(Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &dev));
 
         let damage = Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev));
         let cfg = MechanicsInnerLoopConfig {
@@ -259,6 +259,17 @@ mod tests {
 
         assert_eq!(report.lane, PrecisionLane::F64AdjointBarPcg);
         assert!(report.converged());
+    }
+
+    #[test]
+    fn bar_port_rejects_body_force_boundary_mask_operand_swap_at_compile_time() {
+        fn accept_body_force(_: BodyForceField<B>) {}
+        fn accept_boundary_mask(_: BoundaryMaskField<B>) {}
+
+        let device = NdArrayDevice::Cpu;
+        let raw = Tensor::<B, 3>::zeros([1, 2, 3], &device);
+        accept_body_force(BodyForceField::from_tensor(raw.clone()));
+        accept_boundary_mask(BoundaryMaskField::from_tensor(raw));
     }
 
     #[test]

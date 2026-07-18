@@ -8,8 +8,8 @@
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::field::{
-    Field, FractureEnergyField, HumidityField, ReactionExtentField, SmallStrainField,
-    StepEntryDamageMask, StiffnessField, TemperatureField,
+    BodyForceField, BoundaryMaskField, Field, FractureEnergyField, HumidityField,
+    ReactionExtentField, SmallStrainField, StepEntryDamageMask, StiffnessField, TemperatureField,
 };
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::core::traits::IScienceCartridge;
@@ -393,12 +393,16 @@ fn thmc_mechanics_bar_idempotent_at_zero_load_equilibrium() {
     };
     let mut bm = vec![1.0_f32; n * 3];
     bm[0] = 0.0_f32;
-    let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &dev);
+    let boundary_mask = BoundaryMaskField::from_tensor(Tensor::from_data(
+        Data::new(bm, Shape::new([1, n, 3])),
+        &dev,
+    ));
+    let zero_body_force = BodyForceField::zeros([1, n, 3], &dev);
     let (u1, _) = VectorMechanicsSolver::solve_equilibrium_typed(
         Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev)),
         coords.clone(),
         stiffness.clone(),
-        Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev)),
+        zero_body_force.clone(),
         edges.clone(),
         Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev)),
         boundary_mask.clone(),
@@ -410,7 +414,7 @@ fn thmc_mechanics_bar_idempotent_at_zero_load_equilibrium() {
         u1.clone(),
         coords,
         stiffness.clone(),
-        Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev)),
+        zero_body_force,
         edges,
         Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev)),
         boundary_mask,
@@ -719,8 +723,11 @@ fn thmc_monolithic_qs_r_u_residual_damped_newton_idempotent_at_equilibrium() {
     );
     let mut bm = vec![1.0_f32; n * 3];
     bm[0] = 0.0_f32;
-    let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([batch, n, 3])), &dev);
-    let body_force = Tensor::<B, 3>::zeros([batch, n, 3], &dev);
+    let boundary_mask = BoundaryMaskField::from_tensor(Tensor::from_data(
+        Data::new(bm, Shape::new([batch, n, 3])),
+        &dev,
+    ));
+    let body_force = BodyForceField::zeros([batch, n, 3], &dev);
     let cross_section_area = 0.01_f32;
     let cfg = MechanicsInnerLoopConfig::default();
     let t_n = Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &dev);
@@ -734,7 +741,7 @@ fn thmc_monolithic_qs_r_u_residual_damped_newton_idempotent_at_equilibrium() {
         Field::new(Tensor::<B, 3>::zeros([batch, n, 3], &dev)),
         coords.clone(),
         stiffness.clone(),
-        Field::new(body_force.clone()),
+        body_force.clone(),
         edges.clone(),
         Field::new(Tensor::<B, 3>::zeros([batch, n, 1], &dev)),
         boundary_mask.clone(),
@@ -766,8 +773,8 @@ fn thmc_monolithic_qs_r_u_residual_damped_newton_idempotent_at_equilibrium() {
         .residual_l2_including_quasi_static_r_u(
             &trial,
             &coords,
-            &boundary_mask,
-            &body_force,
+            boundary_mask.as_tensor(),
+            body_force.as_tensor(),
             cross_section_area,
         )
         .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::residual_l2_including_quasi_static_r_u on zero-load monolithic stacked equilibrium (FP §6 Track G THMC idempotency)");
@@ -781,8 +788,8 @@ fn thmc_monolithic_qs_r_u_residual_damped_newton_idempotent_at_equilibrium() {
         .damped_newton_iterations_with_quasi_static_r_u(
             &trial,
             &coords,
-            &boundary_mask,
-            &body_force,
+            boundary_mask.as_tensor(),
+            body_force.as_tensor(),
             cross_section_area,
             2_usize,
             1.0_f32,
@@ -800,8 +807,8 @@ fn thmc_monolithic_qs_r_u_residual_damped_newton_idempotent_at_equilibrium() {
         .damped_newton_iterations_with_quasi_static_r_u(
             &after_first,
             &coords,
-            &boundary_mask,
-            &body_force,
+            boundary_mask.as_tensor(),
+            body_force.as_tensor(),
             cross_section_area,
             2_usize,
             1.0_f32,

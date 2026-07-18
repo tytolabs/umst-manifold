@@ -11,7 +11,7 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
-use crate::core::field::{Field, StiffnessField};
+use crate::core::field::{BodyForceField, BoundaryMaskField, Field, StiffnessField};
 
 use super::laplacian::TopologicalLaplacian;
 use super::mechanics::VectorMechanicsSolver;
@@ -55,10 +55,10 @@ impl MechanicsEquilibrium {
             Field::new(displacement),
             coords,
             stiffness,
-            Field::new(body_force),
+            BodyForceField::from_tensor(body_force),
             edges_b1,
             Field::new(damage),
-            boundary_mask,
+            BoundaryMaskField::from_tensor(boundary_mask),
             cross_section_area,
             inner_cfg,
         )?;
@@ -128,10 +128,10 @@ impl<B: Backend<FloatElem = f32>> MechanicsEquilibriumSolver<B> for VectorMechan
             Field::new(displacement),
             coords,
             stiffness,
-            Field::new(body_force),
+            BodyForceField::from_tensor(body_force),
             edges_b1,
             Field::new(damage),
-            boundary_mask,
+            BoundaryMaskField::from_tensor(boundary_mask),
             cross_section_area,
             inner_cfg,
         )?;

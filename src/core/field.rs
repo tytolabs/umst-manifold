@@ -46,6 +46,14 @@ pub struct Humidity;
 #[derive(Clone, Copy, Debug)]
 pub struct Displacement;
 
+/// Phantom space marker: nodal body-force density \(\mathbf f\) — shape `[B, N, 3]` (FP XS-6).
+#[derive(Clone, Copy, Debug)]
+pub struct BodyForce;
+
+/// Phantom space marker: Dirichlet DOF mask — shape `[B, N, 3]` (FP XS-5).
+#[derive(Clone, Copy, Debug)]
+pub struct BoundaryMask;
+
 /// Phantom space marker: phase-field / continuum damage \(d\) — shape `[B, N, 1]` (or `[B, N, F_d]`).
 ///
 /// formal_anchor: NONE
@@ -165,6 +173,8 @@ pub type HumidityField<B> = Field<B, Humidity, 3>;
 /// formal_status: Structural
 /// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`Displacement`] witness.
 pub type DisplacementField<B> = Field<B, Displacement, 3>;
+pub type BodyForceField<B> = Field<B, BodyForce, 3>;
+pub type BoundaryMaskField<B> = Field<B, BoundaryMask, 3>;
 /// Damage plan field — `[B, N, 1]` (typical).
 ///
 /// formal_anchor: NONE
@@ -300,6 +310,32 @@ impl<B: Backend> StiffnessField<B> {
     }
 }
 
+impl<B: Backend> BodyForceField<B> {
+    #[must_use]
+    pub fn zeros(dims: [usize; 3], device: &B::Device) -> Self {
+        Field::new(Tensor::<B, 3>::zeros(dims, device))
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn from_tensor(tensor: Tensor<B, 3>) -> Self {
+        Field::new(tensor)
+    }
+}
+
+impl<B: Backend> BoundaryMaskField<B> {
+    #[must_use]
+    pub fn zeros(dims: [usize; 3], device: &B::Device) -> Self {
+        Field::new(Tensor::<B, 3>::zeros(dims, device))
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn from_tensor(tensor: Tensor<B, 3>) -> Self {
+        Field::new(tensor)
+    }
+}
+
 impl<B: Backend> SmallStrainField<B> {
     /// Zero-filled small-strain field.
     #[must_use]
@@ -398,6 +434,19 @@ mod tests {
         for (a, b) in c.value.iter().zip(m.value.iter()) {
             assert!((a - b).abs() < 1e-3, "mismatch: {a} vs {b}");
         }
+    }
+
+    #[test]
+    fn body_force_field_distinct_from_displacement_and_boundary_mask() {
+        fn accept_body_force(_: BodyForceField<B>) {}
+        fn accept_displacement(_: DisplacementField<B>) {}
+        fn accept_boundary_mask(_: BoundaryMaskField<B>) {}
+
+        let device = Default::default();
+        let raw = Tensor::<B, 3>::zeros([1, 2, 3], &device);
+        accept_body_force(BodyForceField::from_tensor(raw.clone()));
+        accept_displacement(Field::new(raw.clone()));
+        accept_boundary_mask(BoundaryMaskField::from_tensor(raw));
     }
 
     #[test]

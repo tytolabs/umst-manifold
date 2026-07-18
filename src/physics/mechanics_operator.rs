@@ -9,7 +9,7 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
-use crate::core::field::{Field, StiffnessField};
+use crate::core::field::{BodyForceField, BoundaryMaskField, Field, StiffnessField};
 
 use super::mechanics::VectorMechanicsSolver;
 use super::error::PhysicsError;
@@ -60,10 +60,10 @@ impl<B: Backend<FloatElem = f32>> MechanicsOperator<B> for BarNetworkMechanicsAd
             Field::new(displacement),
             coords,
             stiffness,
-            Field::new(body_force),
+            BodyForceField::from_tensor(body_force),
             edges_b1,
             Field::new(damage),
-            boundary_mask,
+            BoundaryMaskField::from_tensor(boundary_mask),
             cross_section_area,
             inner_cfg,
         )?;
@@ -88,10 +88,10 @@ impl<B: Backend<FloatElem = f32>> MechanicsOperator<B> for VectorMechanicsSolver
             Field::new(displacement),
             coords,
             stiffness,
-            Field::new(body_force),
+            BodyForceField::from_tensor(body_force),
             edges_b1,
             Field::new(damage),
-            boundary_mask,
+            BoundaryMaskField::from_tensor(boundary_mask),
             cross_section_area,
             inner_cfg,
         )?;
@@ -195,10 +195,10 @@ mod parity_tests {
             Field::new(u0.clone()),
             coords.clone(),
             stiff.clone(),
-            Field::new(bf.clone()),
+            BodyForceField::from_tensor(bf.clone()),
             edges.clone(),
             Field::new(damage.clone()),
-            mask.clone(),
+            BoundaryMaskField::from_tensor(mask.clone()),
             area,
             &cfg,
         )
@@ -225,10 +225,10 @@ mod parity_tests {
             Field::new(u0.clone()),
             coords.clone(),
             stiff.clone(),
-            Field::new(bf.clone()),
+            BodyForceField::from_tensor(bf.clone()),
             edges.clone(),
             Field::new(damage.clone()),
-            mask.clone(),
+            BoundaryMaskField::from_tensor(mask.clone()),
             area,
             &cfg,
         )

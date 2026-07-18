@@ -9,7 +9,7 @@ use burn::tensor::backend::Backend;
 use burn::tensor::{ElementConversion, Tensor};
 
 use crate::core::field::{
-    Field, HumidityField, ReactionExtentField, StepEntryDamageMask, StiffnessField,
+    BodyForceField, BoundaryMaskField, Field, HumidityField, ReactionExtentField, StepEntryDamageMask, StiffnessField,
     TemperatureField,
 };
 use crate::core::tensors::UnifiedMaterialStateTensor;
@@ -197,7 +197,7 @@ fn monolithic_pass<B: Backend<FloatElem = f32>>(
                 .to_string(),
         })?;
     let bm = displacement_bc_mask_expand(ctx.manifold, batch, n)?;
-    let bf = Field::new(Tensor::<B, 3>::zeros([batch, n, 3], device));
+    let bf = BodyForceField::zeros([batch, n, 3], device);
     let inner_cfg = MechanicsInnerLoopConfig::default();
     let cross_section_area = 0.01_f32;
 
@@ -259,7 +259,7 @@ fn monolithic_pass<B: Backend<FloatElem = f32>>(
     let (updated, _) = assembler.damped_newton_iterations_with_quasi_static_r_u(
         &trial,
         coords_n3,
-        &bm,
+        bm.as_tensor(),
         bf.as_tensor(),
         cross_section_area,
         mc.iterations,
@@ -436,7 +436,7 @@ fn mechanics_pass<B: Backend<FloatElem = f32>>(
         Tensor::<B, 3>::zeros([batch, n, 1], device)
             .add_scalar(ctx.reaction_extent_kinetics.stiffness_nu),
     );
-    let bf = Field::new(Tensor::<B, 3>::zeros([batch, n, 3], device));
+    let bf = BodyForceField::zeros([batch, n, 3], device);
     let inner_cfg = MechanicsInnerLoopConfig::default();
     let cross_section_area = 0.01_f32;
 
@@ -489,7 +489,7 @@ fn displacement_bc_mask_expand<B: Backend<FloatElem = f32>>(
     manifold: &UnifiedMaterialStateTensor<B>,
     batch: usize,
     n: usize,
-) -> Result<Tensor<B, 3>, PhysicsError> {
+) -> Result<BoundaryMaskField<B>, PhysicsError> {
     let mask = manifold.displacement_bc_mask.clone();
     let bm_core = match mask.dims()[..] {
         [nn, 3, 1] if nn == n => mask.reshape([nn, 3]),
@@ -503,5 +503,5 @@ fn displacement_bc_mask_expand<B: Backend<FloatElem = f32>>(
             .into());
         }
     };
-    Ok(bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3]))
+    Ok(BoundaryMaskField::from_tensor(bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3])))
 }
