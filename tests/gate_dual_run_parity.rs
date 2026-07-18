@@ -133,7 +133,7 @@ fn transition_outcome_from_gate(
     TransitionOutcome {
         accepted: r.is_accepted(),
         dissipation: r.dissipation,
-        mass_conserved: r.mass_conserved,
+        mass_conserved: r.is_mass_conserved(),
         energy_positive: r.is_energy_positive(),
     }
 }
