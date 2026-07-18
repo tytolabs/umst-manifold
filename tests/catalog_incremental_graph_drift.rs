@@ -16,12 +16,12 @@ fn catalog_lock_pins_module_graph_edge_count_for_unified_export() {
     let lock_raw = fs::read_to_string(&lock_path).unwrap_or_else(|e| {
         panic!("read catalog.lock.json at {}: {e}", lock_path.display());
     });
-    let lock: serde_json::Value =
-        serde_json::from_str(&lock_raw).expect("catalog.lock.json must be valid JSON");
+    let lock: serde_json::Value = serde_json::from_str(&lock_raw)
+        .expect("catalog.lock.json must parse as valid JSON for module_graph_edge_count pin (FP §6 Track G catalog registry)");
     let pinned = lock
         .get("module_graph_edge_count")
         .and_then(|v| v.as_u64())
-        .expect("catalog.lock.json must declare module_graph_edge_count");
+        .expect("catalog.lock.json must declare module_graph_edge_count for incremental graph drift guard (FP §6 Track G catalog registry)");
     assert_eq!(
         pinned, 352,
         "bump module_graph_edge_count after Lean import-graph churn (regen export first)"

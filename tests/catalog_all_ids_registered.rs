@@ -57,7 +57,8 @@ fn load_catalog_module_ids(path: &Path) -> Vec<String> {
             path.display()
         );
     });
-    let v: serde_json::Value = serde_json::from_str(&raw).expect("catalog.json must be valid JSON");
+    let v: serde_json::Value = serde_json::from_str(&raw)
+        .expect("upstream Lean catalog.json must parse as valid JSON for module id registry scan (FP §6 Track G catalog registry)");
 
     if let Some(modules) = v.get("modules").and_then(|m| m.as_array()) {
         return modules
@@ -66,7 +67,7 @@ fn load_catalog_module_ids(path: &Path) -> Vec<String> {
                 entry
                     .get("module")
                     .and_then(|m| m.as_str())
-                    .expect("each catalog modules[] entry must have a module field")
+                    .expect("each catalog modules[] entry must declare module field for Lean id wiring (FP §6 Track G catalog registry)")
                     .to_string()
             })
             .collect();
@@ -85,7 +86,7 @@ fn load_catalog_module_ids(path: &Path) -> Vec<String> {
                             .and_then(|m| m.as_str())
                             .map(|full| full.rsplit('.').next().unwrap_or(full))
                     })
-                    .expect("each catalog entries[] row must have name or module")
+                    .expect("each catalog entries[] row must declare name or module for lake export wiring (FP §6 Track G catalog registry)")
                     .to_string()
             })
             .collect();
@@ -137,7 +138,8 @@ fn wired_catalog_id_set() -> HashSet<&'static str> {
 }
 
 fn witness_registry_ids() -> HashSet<String> {
-    let cat = WitnessCatalog::from_embedded().expect("embedded witness catalog parses");
+    let cat = WitnessCatalog::from_embedded()
+        .expect("embedded witness catalog must parse for registry id cross-check (FP §6 Track G catalog registry)");
     cat.witnesses.into_iter().map(|w| w.id).collect()
 }
 
@@ -151,12 +153,12 @@ fn catalog_lock_module_count_matches_upstream_export_122() {
     let lock_raw = fs::read_to_string(&lock_path).unwrap_or_else(|e| {
         panic!("read catalog.lock.json at {}: {e}", lock_path.display());
     });
-    let lock: serde_json::Value =
-        serde_json::from_str(&lock_raw).expect("catalog.lock.json must be valid JSON");
+    let lock: serde_json::Value = serde_json::from_str(&lock_raw)
+        .expect("catalog.lock.json must parse as valid JSON for R0 module_count pin (FP §6 Track G catalog registry)");
     let lock_count = lock
         .get("module_count")
         .and_then(|v| v.as_u64())
-        .expect("catalog.lock.json must declare module_count");
+        .expect("catalog.lock.json must declare module_count for upstream export parity (FP §6 Track G catalog registry)");
     assert_eq!(
         lock_count as usize, CATALOG_LOCK_R0_MODULE_COUNT,
         "catalog.lock.json module_count drift (expected {CATALOG_LOCK_R0_MODULE_COUNT})"
@@ -287,7 +289,8 @@ fn catalog_all_ids_gate_registry_in_catalog_or_allowlisted() {
 #[test]
 fn catalog_all_ids_spec_table_matches_constants() {
     let spec_path = manifest_dir().join("docs/GateUnificationSpec.md");
-    let spec_md = fs::read_to_string(&spec_path).expect("GateUnificationSpec.md readable");
+    let spec_md = fs::read_to_string(&spec_path)
+        .expect("GateUnificationSpec.md must be readable for catalog_id table parse (FP §6 Track G catalog registry)");
     let parsed = parse_gate_spec_catalog_ids(&spec_md);
     let expected: BTreeSet<_> = GATE_UNIFICATION_SPEC_CATALOG_IDS
         .iter()
@@ -305,7 +308,8 @@ fn catalog_all_ids_spec_table_matches_constants() {
 #[test]
 fn catalog_all_ids_wired_ids_in_spec_or_witness_registry() {
     let spec_path = manifest_dir().join("docs/GateUnificationSpec.md");
-    let spec_md = fs::read_to_string(&spec_path).expect("GateUnificationSpec.md readable");
+    let spec_md = fs::read_to_string(&spec_path)
+        .expect("GateUnificationSpec.md must be readable for wired-id spec cross-check (FP §6 Track G catalog registry)");
     let spec_ids: HashSet<String> = parse_gate_spec_catalog_ids(&spec_md)
         .into_iter()
         .chain(
