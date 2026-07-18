@@ -29,7 +29,9 @@
 use burn::tensor::ElementConversion;
 use burn::tensor::{backend::Backend, Int, Tensor};
 
-use crate::core::field::{DamageField, DisplacementField, Field, StiffnessField};
+use crate::core::field::{
+    BodyForceField, BoundaryMaskField, DamageField, DisplacementField, Field, StiffnessField,
+};
 
 use super::dec_operators::DecEdgeOperators;
 use super::error::PhysicsError;
@@ -749,26 +751,26 @@ impl VectorMechanicsSolver {
             Field::new(displacement),
             coords,
             StiffnessField::from_tensor(stiffness),
-            Field::new(body_force),
+            BodyForceField::from_tensor(body_force),
             edges_b1,
             Field::new(damage),
-            boundary_mask,
+            BoundaryMaskField::from_tensor(boundary_mask),
             cross_section_area,
             inner_cfg,
         )?;
         Ok((u.into_tensor(), stress))
     }
 
-    /// FP P3.4 — bar-network equilibrium with [`DisplacementField`] / [`DamageField`] operands.
+    /// FP P3.4 / XS-5–6 — bar-network equilibrium with typed displacement / damage / load / mask operands.
     #[allow(clippy::too_many_arguments)]
     pub fn solve_equilibrium_typed<B: Backend<FloatElem = f32>>(
         displacement: DisplacementField<B>,
         coords: Tensor<B, 2>,
         stiffness: StiffnessField<B>,
-        body_force: DisplacementField<B>,
+        body_force: BodyForceField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: DamageField<B>,
-        boundary_mask: Tensor<B, 3>,
+        boundary_mask: BoundaryMaskField<B>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
     ) -> Result<(DisplacementField<B>, Tensor<B, 4>), PhysicsError> {
@@ -780,7 +782,7 @@ impl VectorMechanicsSolver {
                 body_force.into_tensor(),
                 edges_b1.clone(),
                 damage.into_tensor(),
-                boundary_mask,
+                boundary_mask.into_tensor(),
                 cross_section_area,
                 inner_cfg,
             );
@@ -815,27 +817,27 @@ impl VectorMechanicsSolver {
             Field::new(displacement),
             coords,
             StiffnessField::from_tensor(stiffness),
-            Field::new(body_force),
+            BodyForceField::from_tensor(body_force),
             edges_b1,
             Field::new(damage),
-            boundary_mask,
+            BoundaryMaskField::from_tensor(boundary_mask),
             cross_section_area,
             inner_cfg,
         )?;
         Ok((u.into_tensor(), stress, pcg))
     }
 
-    /// FP P3.4 — PCG-report equilibrium with [`DisplacementField`] / [`DamageField`] operands.
+    /// FP P3.4 / XS-5–6 — PCG-report equilibrium with typed load / mask operands.
     #[cfg(feature = "mechanics-adjoint")]
     #[allow(clippy::too_many_arguments)]
     pub fn solve_equilibrium_with_pcg_report_typed<B: Backend<FloatElem = f32>>(
         displacement: DisplacementField<B>,
         coords: Tensor<B, 2>,
         stiffness: StiffnessField<B>,
-        body_force: DisplacementField<B>,
+        body_force: BodyForceField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: DamageField<B>,
-        boundary_mask: Tensor<B, 3>,
+        boundary_mask: BoundaryMaskField<B>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
     ) -> Result<(DisplacementField<B>, Tensor<B, 4>, BarNetworkPcgReport), PhysicsError> {
@@ -847,7 +849,7 @@ impl VectorMechanicsSolver {
                 body_force.into_tensor(),
                 edges_b1.clone(),
                 damage.into_tensor(),
-                boundary_mask,
+                boundary_mask.into_tensor(),
                 cross_section_area,
                 inner_cfg,
             );

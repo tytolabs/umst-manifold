@@ -9,7 +9,9 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
-use crate::core::field::{Field, StiffnessField};
+use crate::core::field::{
+    BodyForceField, BoundaryMaskField, DamageField, Field, StiffnessField,
+};
 
 use super::mechanics::VectorMechanicsSolver;
 use super::error::PhysicsError;
@@ -26,10 +28,10 @@ pub trait MechanicsOperator<B: Backend<FloatElem = f32>> {
         displacement: Tensor<B, 3>,
         coords: Tensor<B, 2>,
         stiffness: StiffnessField<B>,
-        body_force: Tensor<B, 3>,
+        body_force: BodyForceField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: Tensor<B, 3>,
-        boundary_mask: Tensor<B, 3>,
+        boundary_mask: BoundaryMaskField<B>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
     ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError>;
@@ -49,10 +51,10 @@ impl<B: Backend<FloatElem = f32>> MechanicsOperator<B> for BarNetworkMechanicsAd
         displacement: Tensor<B, 3>,
         coords: Tensor<B, 2>,
         stiffness: StiffnessField<B>,
-        body_force: Tensor<B, 3>,
+        body_force: BodyForceField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: Tensor<B, 3>,
-        boundary_mask: Tensor<B, 3>,
+        boundary_mask: BoundaryMaskField<B>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
     ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError> {
@@ -60,7 +62,7 @@ impl<B: Backend<FloatElem = f32>> MechanicsOperator<B> for BarNetworkMechanicsAd
             Field::new(displacement),
             coords,
             stiffness,
-            Field::new(body_force),
+            body_force,
             edges_b1,
             Field::new(damage),
             boundary_mask,
@@ -77,10 +79,10 @@ impl<B: Backend<FloatElem = f32>> MechanicsOperator<B> for VectorMechanicsSolver
         displacement: Tensor<B, 3>,
         coords: Tensor<B, 2>,
         stiffness: StiffnessField<B>,
-        body_force: Tensor<B, 3>,
+        body_force: BodyForceField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: Tensor<B, 3>,
-        boundary_mask: Tensor<B, 3>,
+        boundary_mask: BoundaryMaskField<B>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
     ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError> {
@@ -88,7 +90,7 @@ impl<B: Backend<FloatElem = f32>> MechanicsOperator<B> for VectorMechanicsSolver
             Field::new(displacement),
             coords,
             stiffness,
-            Field::new(body_force),
+            body_force,
             edges_b1,
             Field::new(damage),
             boundary_mask,
@@ -114,8 +116,8 @@ mod parity_tests {
         Tensor<B, 2>,
         Tensor<B, 2, Int>,
         StiffnessField<B>,
-        Tensor<B, 3>,
-        Tensor<B, 3>,
+        BodyForceField<B>,
+        BoundaryMaskField<B>,
         Tensor<B, 3>,
         f32,
         MechanicsInnerLoopConfig,
@@ -156,13 +158,19 @@ mod parity_tests {
 
         let mut bf = vec![0.0_f32; n * 3];
         bf[(n - 1) * 3] = 1000.0;
-        let body_force = Tensor::from_data(Data::new(bf, Shape::new([1, n, 3])), &dev);
+        let body_force = BodyForceField::from_tensor(Tensor::from_data(
+            Data::new(bf, Shape::new([1, n, 3])),
+            &dev,
+        ));
 
         let mut bm = vec![1.0_f32; n * 3];
         bm[0] = 0.0;
         bm[1] = 0.0;
         bm[2] = 0.0;
-        let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &dev);
+        let boundary_mask = BoundaryMaskField::from_tensor(Tensor::from_data(
+            Data::new(bm, Shape::new([1, n, 3])),
+            &dev,
+        ));
 
         let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
         let cfg = MechanicsInnerLoopConfig {
@@ -195,7 +203,7 @@ mod parity_tests {
             Field::new(u0.clone()),
             coords.clone(),
             stiff.clone(),
-            Field::new(bf.clone()),
+            bf.clone(),
             edges.clone(),
             Field::new(damage.clone()),
             mask.clone(),
@@ -225,7 +233,7 @@ mod parity_tests {
             Field::new(u0.clone()),
             coords.clone(),
             stiff.clone(),
-            Field::new(bf.clone()),
+            bf.clone(),
             edges.clone(),
             Field::new(damage.clone()),
             mask.clone(),

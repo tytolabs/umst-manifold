@@ -86,6 +86,22 @@ pub struct FractureEnergy;
 #[derive(Clone, Copy, Debug)]
 pub struct Stiffness;
 
+/// Phantom space marker: nodal body-force / external load \(\mathbf f\) — shape `[B, N, 3]`, SI newtons.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Zero-sized space witness; distinct from [`Displacement`] despite shared `[B, N, 3]` rank (XS-6 alias closure).
+#[derive(Clone, Copy, Debug)]
+pub struct BodyForce;
+
+/// Phantom space marker: Dirichlet DOF mask — shape `[B, N, 3]`, `0` = fixed, `1` = free.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Zero-sized space witness; distinct from [`Displacement`] and [`BodyForce`] despite shared `[B, N, 3]` rank (XS-5 alias closure).
+#[derive(Clone, Copy, Debug)]
+pub struct BoundaryMask;
+
 /// Phantom-typed tensor carrier: physical meaning encoded at compile time via `Space`.
 ///
 /// Uses `PhantomData<fn() -> Space>` so the space witness is invariant (not covariant),
@@ -195,6 +211,18 @@ pub type FractureEnergyField<B> = Field<B, FractureEnergy, 3>;
 /// formal_status: Structural
 /// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`Stiffness`] witness.
 pub type StiffnessField<B> = Field<B, Stiffness, 3>;
+/// Body-force plan field — `[B, N, 3]`.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`BodyForce`] witness.
+pub type BodyForceField<B> = Field<B, BodyForce, 3>;
+/// Dirichlet boundary mask — `[B, N, 3]`.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`BoundaryMask`] witness.
+pub type BoundaryMaskField<B> = Field<B, BoundaryMask, 3>;
 
 /// Frozen damage mask at THMC step entry — distinct from live `state.damage` after fracture.
 #[derive(Clone, Debug)]
@@ -252,6 +280,36 @@ impl<B: Backend> FractureEnergyField<B> {
     }
 
     /// Wrap an existing fracture-energy tensor.
+    #[inline]
+    #[must_use]
+    pub fn from_tensor(tensor: Tensor<B, 3>) -> Self {
+        Field::new(tensor)
+    }
+}
+
+impl<B: Backend> BodyForceField<B> {
+    /// Zero-filled body-force field.
+    #[must_use]
+    pub fn zeros(dims: [usize; 3], device: &B::Device) -> Self {
+        Field::new(Tensor::<B, 3>::zeros(dims, device))
+    }
+
+    /// Wrap an existing `[B, N, 3]` body-force tensor.
+    #[inline]
+    #[must_use]
+    pub fn from_tensor(tensor: Tensor<B, 3>) -> Self {
+        Field::new(tensor)
+    }
+}
+
+impl<B: Backend> BoundaryMaskField<B> {
+    /// Zero-filled boundary mask.
+    #[must_use]
+    pub fn zeros(dims: [usize; 3], device: &B::Device) -> Self {
+        Field::new(Tensor::<B, 3>::zeros(dims, device))
+    }
+
+    /// Wrap an existing `[B, N, 3]` boundary mask tensor.
     #[inline]
     #[must_use]
     pub fn from_tensor(tensor: Tensor<B, 3>) -> Self {
@@ -398,6 +456,19 @@ mod tests {
         for (a, b) in c.value.iter().zip(m.value.iter()) {
             assert!((a - b).abs() < 1e-3, "mismatch: {a} vs {b}");
         }
+    }
+
+    #[test]
+    fn body_force_field_distinct_from_displacement_and_boundary_mask() {
+        fn accept_body_force(_: BodyForceField<B>) {}
+        fn accept_displacement(_: DisplacementField<B>) {}
+        fn accept_boundary_mask(_: BoundaryMaskField<B>) {}
+
+        let device = Default::default();
+        let raw = Tensor::<B, 3>::zeros([1, 2, 3], &device);
+        accept_body_force(BodyForceField::from_tensor(raw.clone()));
+        accept_displacement(Field::new(raw.clone()));
+        accept_boundary_mask(BoundaryMaskField::from_tensor(raw));
     }
 
     #[test]
