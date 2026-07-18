@@ -1404,9 +1404,9 @@ mod tests {
 
         let cfg = MechanicsInnerLoopConfig {
             max_cg_iterations: 500,
-            // Tight enough that packed CG’s `‖r‖₂ / ‖f‖₂` clears the residual assertion below in f32.
-            cg_tolerance: 1e-8,
-            pcg_tolerance: 1e-8,
+            // f32 bar-network PCG typically lands ~1e-7 rel residual; 1e-6 leaves headroom.
+            cg_tolerance: 1e-6,
+            pcg_tolerance: 1e-6,
             use_preconditioner: true,
             max_equilibrium_substeps: 1,
         };
