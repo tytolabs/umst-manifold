@@ -105,7 +105,7 @@ fn phase0b_material_strength_failure_is_not_core_failure() {
         !legacy.is_accepted(),
         "legacy cluster still rejects strength regression"
     );
-    assert!(core.accepted, "Core alone still accepts");
+    assert!(core.is_accepted(), "Core alone still accepts");
 }
 
 #[test]
@@ -125,7 +125,7 @@ fn phase0b_material_reaction_failure_is_not_core_failure() {
     );
     let core = core_gate(&response, true, TRANSITION_TOLERANCE);
     assert!(
-        core.accepted,
+        core.is_accepted(),
         "reaction-extent regression must not fail Core gate when mass+CD hold"
     );
 
@@ -138,11 +138,11 @@ fn phase0b_material_reaction_failure_is_not_core_failure() {
         },
         TRANSITION_TOLERANCE,
     );
-    assert!(!material.reaction_extent_irreversible);
+    assert!(!material.is_reaction_extent_irreversible());
 
     let legacy = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
-    assert!(!legacy.accepted);
-    assert!(core.accepted);
+    assert!(!legacy.is_accepted());
+    assert!(core.is_accepted());
 }
 
 #[test]
@@ -153,7 +153,7 @@ fn phase0b_open_system_core_gate_with_positive_power_input() {
     };
     let core = core_gate(&response, true, TRANSITION_TOLERANCE);
     assert!((core.net_dissipation - 6.0).abs() < 1e-12);
-    assert!(core.accepted);
+    assert!(core.is_accepted());
 }
 
 // --- FP Manifesto §6: idempotency by construction ---
@@ -173,7 +173,7 @@ fn phase0b_transition_outcome_idempotent_on_equilibrated_snapshot() {
     let first = transition_outcome(&state, &state, dt, TRANSITION_TOLERANCE);
     let second = transition_outcome(&state, &state, dt, TRANSITION_TOLERANCE);
     assert_eq!(first, second, "re-application on equilibrated state must not drift");
-    assert!(first.accepted, "equilibrated self-transition must remain admissible");
+    assert!(first.is_accepted(), "equilibrated self-transition must remain admissible");
     assert_eq!(first.dissipation, 0.0);
 }
 
@@ -187,5 +187,5 @@ fn phase0b_transition_outcome_idempotent_on_admissible_transition() {
     let first = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
     let second = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
     assert_eq!(first, second, "re-application on admissible transition must not drift");
-    assert!(first.accepted);
+    assert!(first.is_accepted());
 }
