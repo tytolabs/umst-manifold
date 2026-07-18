@@ -11,7 +11,9 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
-use crate::core::field::{Field, StiffnessField};
+use crate::core::field::{
+    BodyForceField, BoundaryMaskField, DamageField, Field, StiffnessField,
+};
 
 use super::laplacian::TopologicalLaplacian;
 use super::mechanics::VectorMechanicsSolver;
@@ -44,10 +46,10 @@ impl MechanicsEquilibrium {
         displacement: Tensor<B, 3>,
         coords: Tensor<B, 2>,
         stiffness: StiffnessField<B>,
-        body_force: Tensor<B, 3>,
+        body_force: BodyForceField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: Tensor<B, 3>,
-        boundary_mask: Tensor<B, 3>,
+        boundary_mask: BoundaryMaskField<B>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
     ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError> {
@@ -55,7 +57,7 @@ impl MechanicsEquilibrium {
             Field::new(displacement),
             coords,
             stiffness,
-            Field::new(body_force),
+            body_force,
             edges_b1,
             Field::new(damage),
             boundary_mask,
@@ -101,10 +103,10 @@ pub trait MechanicsEquilibriumSolver<B: Backend<FloatElem = f32>> {
         displacement: Tensor<B, 3>,
         coords: Tensor<B, 2>,
         stiffness: StiffnessField<B>,
-        body_force: Tensor<B, 3>,
+        body_force: BodyForceField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: Tensor<B, 3>,
-        boundary_mask: Tensor<B, 3>,
+        boundary_mask: BoundaryMaskField<B>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
     ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError>;
@@ -117,10 +119,10 @@ impl<B: Backend<FloatElem = f32>> MechanicsEquilibriumSolver<B> for VectorMechan
         displacement: Tensor<B, 3>,
         coords: Tensor<B, 2>,
         stiffness: StiffnessField<B>,
-        body_force: Tensor<B, 3>,
+        body_force: BodyForceField<B>,
         edges_b1: Tensor<B, 2, Int>,
         damage: Tensor<B, 3>,
-        boundary_mask: Tensor<B, 3>,
+        boundary_mask: BoundaryMaskField<B>,
         cross_section_area: f32,
         inner_cfg: &MechanicsInnerLoopConfig,
     ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError> {
@@ -128,7 +130,7 @@ impl<B: Backend<FloatElem = f32>> MechanicsEquilibriumSolver<B> for VectorMechan
             Field::new(displacement),
             coords,
             stiffness,
-            Field::new(body_force),
+            body_force,
             edges_b1,
             Field::new(damage),
             boundary_mask,
