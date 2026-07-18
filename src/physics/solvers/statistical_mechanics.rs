@@ -541,15 +541,17 @@ mod tests {
             ),
             &dev,
         );
-        let (k_full, g_full) = upscale_potentials(lj.clone())
-            .expect("upscale_potentials [B,4] johnson cat parity (full tensor)");
+        let (k_full, g_full) = upscale_potentials(lj.clone()).expect(
+            "statistical_mechanics::upscale_potentials on [B,4] full LJ tensor vs column-slice cat parity (FP §6 Track G statmech residual)",
+        );
         let eps = lj.clone().slice([0..batch, 0..1]);
         let sig = lj.clone().slice([0..batch, 1..2]);
         let rho = lj.clone().slice([0..batch, 2..3]);
         let tstar = lj.clone().slice([0..batch, 3..4]);
         let lj_cat = Tensor::cat(vec![eps, sig, rho, tstar], 1);
-        let (k_cat, g_cat) = upscale_potentials(lj_cat)
-            .expect("upscale_potentials [B,4] johnson cat parity (column slices)");
+        let (k_cat, g_cat) = upscale_potentials(lj_cat).expect(
+            "statistical_mechanics::upscale_potentials on [B,4] column-sliced cat tensor matches full tensor (FP §6 Track G statmech residual)",
+        );
         assert!(k_full.clone().equal(k_cat.clone()).all().into_scalar());
         assert!(g_full.clone().equal(g_cat.clone()).all().into_scalar());
     }
