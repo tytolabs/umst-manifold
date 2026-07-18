@@ -127,8 +127,12 @@ fn typed_views_roundtrip_after_sync_thmc() {
         Tensor::<B, 3>::full([1, n, 1], 0.25, &dev),
         0.0,
     );
-    sync_thmc_to_umst(&state, &mut umst).expect("sync");
-    let views = umst.typed_views().expect("typed_views");
+    sync_thmc_to_umst(&state, &mut umst).expect(
+        "sync_thmc_to_umst on toy UMST scalar channels before typed_views roundtrip (FP §6 Track G inverse read morphism)",
+    );
+    let views = umst.typed_views().expect(
+        "UnifiedMaterialStateTensor::typed_views after sync_thmc_to_umst roundtrip on scalar channels (FP §6 Track G inverse read morphism)",
+    );
     let eps = 1e-5_f32;
     for node in 0..n {
         let t = views.temperature.as_tensor().clone().into_data().value[node];
@@ -152,12 +156,12 @@ fn _typed_view_types_compile(
     (
         umst
             .temperature_scalar_channel()
-            .expect("temperature scalar channel in typed-view compile witness"),
+            .expect("temperature scalar channel in typed-view compile witness (FP §6 Track G inverse read morphism)"),
         umst
             .humidity_scalar_channel()
-            .expect("humidity scalar channel in typed-view compile witness"),
+            .expect("humidity scalar channel in typed-view compile witness (FP §6 Track G inverse read morphism)"),
         umst
             .damage_scalar_channel()
-            .expect("damage scalar channel in typed-view compile witness"),
+            .expect("damage scalar channel in typed-view compile witness (FP §6 Track G inverse read morphism)"),
     )
 }
