@@ -88,6 +88,12 @@ pub fn canonical_material_gate_outcome(
     )
 }
 
+/// Strength upper-bound conjunct (HTTP manifest / C-ABI parity).
+#[must_use]
+pub fn canonical_strength_upper_bound_admissible(strength_mpa: f64, max_strength_mpa: f64) -> bool {
+    strength_mpa.is_finite() && max_strength_mpa.is_finite() && strength_mpa <= max_strength_mpa
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
