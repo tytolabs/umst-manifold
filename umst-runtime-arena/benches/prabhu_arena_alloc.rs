@@ -26,7 +26,7 @@ fn main() {
 
     let buf = fixture();
     let view = load_arena(&buf).expect(
-        "load_arena on PB-3 synthetic fixture with valid magic/ABI header (prabhu_arena_alloc bench)",
+        "load_arena on PB-3 synthetic fixture with valid magic/ABI header (prabhu_arena_alloc bench, FP §6 witness)",
     );
 
     // Warm-up
