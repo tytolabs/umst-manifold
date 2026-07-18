@@ -22,7 +22,7 @@ use crate::core::traits::IScienceCartridge;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::error::PhysicsError;
 #[cfg(feature = "thmc-coupled")]
-use crate::physics::pipeline::{map_result, ok_state};
+use crate::physics::pipeline::ok_state;
 
 #[cfg(feature = "thmc-coupled")]
 use super::fracture_field::{
@@ -65,7 +65,7 @@ where
     let gate_evidence = ThmcSolverStep::attach_gate_evidence(
         solver, cartridge, pre_step, &state, manifold, ctx.dt,
     )?;
-    let state = map_result(ok_state(state), |mut s| {
+    let state = ok_state(state).map(|mut s| {
         s.time += ctx.dt;
         s
     })?;
