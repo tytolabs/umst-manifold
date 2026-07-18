@@ -389,29 +389,49 @@ mod h2_sparse_lib {
         let a = SparseTensor::from_triplets([2, 3], &[0, 1], &[0, 2], &[1.0_f64, 2.0]).expect(
             "SparseTensor::from_triplets 2×3 CSR A for transpose_involutive_2x3 smoke (FP §6 Track algebra sparse CSR)",
         );
-        let t = a.transpose().expect("t");
-        let tt = t.transpose().expect("tt");
+        let t = a.transpose().expect(
+            "SparseTensor::transpose A→Aᵀ for transpose_involutive_2x3 witness (FP §6 Track algebra sparse CSR)",
+        );
+        let tt = t.transpose().expect(
+            "SparseTensor::transpose Aᵀ→A for transpose_involutive_2x3 involution witness (FP §6 Track algebra sparse CSR)",
+        );
         assert_eq!(a.shape(), tt.shape());
-        assert!((a.at(0, 0).expect("a00") - tt.at(0, 0).expect("t00")).abs() < 1e-12);
+        assert!((a.at(0, 0).expect(
+            "SparseTensor::at (0,0) original A cell for transpose_involutive_2x3 witness (FP §6 Track algebra sparse CSR)",
+        ) - tt.at(0, 0).expect(
+            "SparseTensor::at (0,0) double-transpose cell for transpose_involutive_2x3 witness (FP §6 Track algebra sparse CSR)",
+        ))
+        .abs()
+            < 1e-12);
     }
 
     #[test]
     fn dot_frobenius_smoke() {
-        let a = SparseTensor::from_triplets([2, 2], &[0, 0], &[0, 1], &[1.0_f64, 2.0]).expect("a");
-        let b = SparseTensor::from_triplets([2, 2], &[0, 0], &[0, 1], &[3.0_f64, 4.0]).expect("b");
-        let d = a.dot(&b).expect("dot");
+        let a = SparseTensor::from_triplets([2, 2], &[0, 0], &[0, 1], &[1.0_f64, 2.0]).expect(
+            "SparseTensor::from_triplets 2×2 CSR A for dot_frobenius_smoke witness (FP §6 Track algebra sparse CSR)",
+        );
+        let b = SparseTensor::from_triplets([2, 2], &[0, 0], &[0, 1], &[3.0_f64, 4.0]).expect(
+            "SparseTensor::from_triplets 2×2 CSR B for dot_frobenius_smoke witness (FP §6 Track algebra sparse CSR)",
+        );
+        let d = a.dot(&b).expect(
+            "SparseTensor::dot A·B for dot_frobenius_smoke witness (FP §6 Track algebra sparse CSR)",
+        );
         assert!((d - 11.0).abs() < 1e-9);
     }
 
     #[test]
     fn nnz_counts_unique() {
-        let a = SparseTensor::from_triplets([1, 2], &[0, 0], &[0, 1], &[1.0, 1.0]).expect("a");
+        let a = SparseTensor::from_triplets([1, 2], &[0, 0], &[0, 1], &[1.0, 1.0]).expect(
+            "SparseTensor::from_triplets 1×2 CSR A for nnz_counts_unique witness (FP §6 Track algebra sparse CSR)",
+        );
         assert_eq!(a.nnz(), 2);
     }
 
     #[test]
     fn density_range() {
-        let a = SparseTensor::from_triplets([2, 2], &[0], &[0], &[1.0_f32]).expect("a");
+        let a = SparseTensor::from_triplets([2, 2], &[0], &[0], &[1.0_f32]).expect(
+            "SparseTensor::from_triplets 2×2 CSR A for density_range witness (FP §6 Track algebra sparse CSR)",
+        );
         let d = a.density();
         assert!(d > 0.0 && d <= 1.0);
     }
