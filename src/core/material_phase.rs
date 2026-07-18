@@ -572,4 +572,102 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn material_phase_kind_roundtrip_all_fixtures() {
+        for (phase, expected) in [
+            (fluid_phase(), MaterialPhaseKind::Fluid),
+            (setting_phase(), MaterialPhaseKind::Setting),
+            (solid_phase(), MaterialPhaseKind::Solid),
+        ] {
+            assert_eq!(phase.kind(), expected);
+            let reprojected = match phase.kind() {
+                MaterialPhaseKind::Fluid => MaterialPhaseKind::Fluid,
+                MaterialPhaseKind::Setting => MaterialPhaseKind::Setting,
+                MaterialPhaseKind::Solid => MaterialPhaseKind::Solid,
+            };
+            assert_eq!(reprojected, expected);
+        }
+    }
+
+    #[test]
+    fn material_phase_clone_preserves_single_arm() {
+        for phase in [fluid_phase(), setting_phase(), solid_phase()] {
+            let cloned = phase.clone();
+            let armed = usize::from(cloned.as_fluid().is_some())
+                + usize::from(cloned.as_setting().is_some())
+                + usize::from(cloned.as_solid().is_some());
+            assert_eq!(
+                armed, 1,
+                "clone must not introduce dual MaterialPhase arms (FP §3)"
+            );
+            assert_eq!(cloned.kind(), phase.kind());
+        }
+    }
+
+    #[test]
+    fn thmc_envelope_clone_preserves_single_arm() {
+        let device = Default::default();
+        for phase in [fluid_phase(), setting_phase(), solid_phase()] {
+            let env = ThmcEnvelope::with_zero_damage(phase, 1.0, &device);
+            let cloned = env.clone();
+            let armed = usize::from(cloned.phase.as_fluid().is_some())
+                + usize::from(cloned.phase.as_setting().is_some())
+                + usize::from(cloned.phase.as_solid().is_some());
+            assert_eq!(
+                armed, 1,
+                "ThmcEnvelope clone must preserve single MaterialPhase arm (FP §3)"
+            );
+            assert_eq!(cloned.kind(), env.kind());
+        }
+    }
+
+    #[test]
+    fn invalid_fluid_mechanics_stiffness_unrepresentable() {
+        let fluid = fluid_phase();
+        assert!(fluid.as_solid().is_none());
+        assert!(fluid.as_fluid().is_some());
+    }
+
+    #[test]
+    fn invalid_solid_bingham_yield_unrepresentable() {
+        let solid = solid_phase();
+        assert!(solid.as_fluid().is_none());
+        assert!(solid.as_solid().is_some());
+    }
+
+    #[test]
+    fn invalid_setting_equilibrium_displacement_unrepresentable() {
+        let setting = setting_phase();
+        assert!(setting.as_solid().is_none());
+        assert!(setting.as_setting().is_some());
+    }
+
+    #[test]
+    fn transport_routing_excludes_solid_arm() {
+        fn try_transport_route(phase: &MaterialPhase<B>) -> bool {
+            phase.as_fluid().is_some() || phase.as_setting().is_some()
+        }
+
+        assert!(try_transport_route(&fluid_phase()));
+        assert!(try_transport_route(&setting_phase()));
+        assert!(!try_transport_route(&solid_phase()));
+    }
+
+    #[test]
+    fn material_phase_kind_matches_exhaustive_match_projection() {
+        for (phase, expected) in [
+            (fluid_phase(), MaterialPhaseKind::Fluid),
+            (setting_phase(), MaterialPhaseKind::Setting),
+            (solid_phase(), MaterialPhaseKind::Solid),
+        ] {
+            let projected = match &phase {
+                MaterialPhase::Fluid(_) => MaterialPhaseKind::Fluid,
+                MaterialPhase::Setting(_) => MaterialPhaseKind::Setting,
+                MaterialPhase::Solid(_) => MaterialPhaseKind::Solid,
+            };
+            assert_eq!(projected, expected);
+            assert_eq!(phase.kind(), projected);
+        }
+    }
 }
