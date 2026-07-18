@@ -113,6 +113,12 @@ mod tests {
             wall_ms: 1_718_745_600_000,
             ucrs_seq: 1,
         });
-        assert_eq!(stamped.observed_at.unwrap().ucrs_seq, 1);
+        assert_eq!(
+            stamped
+                .observed_at
+                .expect("with_observed_at must stamp observed_at wire")
+                .ucrs_seq,
+            1
+        );
     }
 }

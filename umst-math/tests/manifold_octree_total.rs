@@ -13,7 +13,11 @@ fn aa_manifold_octree_no_self_ancestor() {
 #[test]
 fn aa_manifold_octree_max_depth() {
     let (nodes, _, _) = build_linear_octree_with_depth(12).expect("b");
-    let mx = nodes.iter().map(|n| n.depth).max().unwrap();
+    let mx = nodes
+        .iter()
+        .map(|n| n.depth)
+        .max()
+        .expect("octree built with depth 12 must have at least one node");
     assert_eq!(mx, 12);
     assert!(mx <= 16);
 }

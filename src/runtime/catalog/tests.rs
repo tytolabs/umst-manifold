@@ -48,8 +48,14 @@ fn bundled_lock_matches_build_digest_semantics() {
         lock.version >= 2 && !lock.fiber_pins.is_empty(),
         "production lock should be v2 with fiber_pins"
     );
-    let upstream = lock.upstream_catalog_digest_hex.as_deref().unwrap();
-    let composed = lock.composed_catalog_digest_hex.as_deref().unwrap();
+    let upstream = lock
+        .upstream_catalog_digest_hex
+        .as_deref()
+        .expect("bundled v2 lock must carry upstream_catalog_digest_hex");
+    let composed = lock
+        .composed_catalog_digest_hex
+        .as_deref()
+        .expect("bundled v2 lock must carry composed_catalog_digest_hex");
     assert_eq!(
         upstream, composed,
         "composed_catalog_digest_hex must equal upstream_catalog_digest_hex"
@@ -198,8 +204,9 @@ fn roundtrip_via_vec() {
             description: Some("q".into()),
         }],
     };
-    let js = serde_json::to_vec(&cat).unwrap();
-    let back: WitnessCatalog = serde_json::from_slice(&js).unwrap();
+    let js = serde_json::to_vec(&cat).expect("WitnessCatalog roundtrip serializes to JSON");
+    let back: WitnessCatalog =
+        serde_json::from_slice(&js).expect("WitnessCatalog roundtrip deserializes from JSON");
     assert_eq!(cat, back);
 }
 
