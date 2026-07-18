@@ -5,7 +5,8 @@
 //!
 //! Outer THMC ticks should read as mathematical compositions:
 //! `validate_pre → newton_loop → fracture → sync → gate → advance_time`, chained via
-//! [`ok_state`] / [`and_then_result`] / [`map_result`] instead of imperative `mut state` scripts.
+//! [`ok_state`] / [`and_then_result`] / [`and_then_unit`] / [`map_result`] / [`or_else_result`]
+//! instead of imperative `mut state` scripts.
 //!
 //! Compiled only with `thmc-coupled` — primary production caller is
 //! [`super::solvers::thmc_epilogue::thmc_post_step_epilogue`].
@@ -46,6 +47,28 @@ where
     F: FnOnce(ThmcState<B>) -> ThmcState<B>,
 {
     result.map(f)
+}
+
+/// Recover on the `Result` carrier (Kleisli alt): `Err(e)` delegates to `f(e)`.
+#[inline]
+pub(crate) fn or_else_result<B, F>(result: ThmcStateResult<B>, f: F) -> ThmcStateResult<B>
+where
+    B: Backend<FloatElem = f32>,
+    F: FnOnce(PhysicsError) -> ThmcStateResult<B>,
+{
+    result.or_else(f)
+}
+
+/// Kleisli bind over a unit effect: run `effect` on the carrier; preserve `state` on `Ok(())`.
+///
+/// Typical for UMST writeback (`sync_thmc_to_umst`) where the morphism returns `Result<(), E>`.
+#[inline]
+pub(crate) fn and_then_unit<B, F>(state: ThmcState<B>, effect: F) -> ThmcStateResult<B>
+where
+    B: Backend<FloatElem = f32>,
+    F: FnOnce(&ThmcState<B>) -> Result<(), PhysicsError>,
+{
+    effect(&state).map(|_| state)
 }
 
 /// Kleisli bind for `ThmcState` morphisms: `(A → Result<B,E>)` chained left-to-right.
@@ -210,5 +233,63 @@ mod tests {
             "map_state on toy ThmcState must preserve Ok channel and set time field (FP §6 Track G kleisli pipeline witness)",
         );
         assert!((out.time - 2.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn map_result_preserves_ok() {
+        let dev = Default::default();
+        let state = toy_state(&dev);
+        let out = map_result(Ok(state), |mut s| {
+            s.time = 4.0;
+            s
+        })
+        .expect(
+            "map_result on Ok carrier must preserve Ok channel and set time field (FP §6 Track G kleisli pipeline witness)",
+        );
+        assert!((out.time - 4.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn and_then_unit_preserves_state_on_ok() {
+        let dev = Default::default();
+        let state = toy_state(&dev);
+        let out = and_then_unit(state, |_| Ok(())).expect(
+            "and_then_unit on Ok unit effect must preserve carrier (FP §6 Track G kleisli pipeline witness)",
+        );
+        assert!((out.time - 0.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn and_then_unit_short_circuits_on_err() {
+        let dev = Default::default();
+        let state = toy_state(&dev);
+        let err = PhysicsError::InvariantViolation {
+            context: "pipeline::tests::and_then_unit_short_circuits_on_err",
+        };
+        let out = and_then_unit(state, |_| Err(err.clone()));
+        match out {
+            Err(e) => assert_eq!(e, err),
+            Ok(_) => panic!(
+                "and_then_unit must short-circuit on Err (FP §6 Track G kleisli pipeline witness)"
+            ),
+        }
+    }
+
+    #[test]
+    fn or_else_result_recovers_on_err() {
+        let dev = Default::default();
+        let state = toy_state(&dev);
+        let err = PhysicsError::InvariantViolation {
+            context: "pipeline::tests::or_else_result_recovers_on_err",
+        };
+        let out = or_else_result(Err(err), |_| {
+            let mut s = toy_state(&dev);
+            s.time = 5.0;
+            Ok(s)
+        })
+        .expect(
+            "or_else_result must recover Ok carrier from Err via alt morphism (FP §6 Track G kleisli pipeline witness)",
+        );
+        assert!((out.time - 5.0).abs() < f32::EPSILON);
     }
 }

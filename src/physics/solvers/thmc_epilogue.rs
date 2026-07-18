@@ -22,7 +22,7 @@ use crate::core::traits::IScienceCartridge;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::error::PhysicsError;
 #[cfg(feature = "thmc-coupled")]
-use crate::physics::pipeline::{map_result, ok_state};
+use crate::physics::pipeline::{and_then_unit, map_result, ok_state};
 
 #[cfg(feature = "thmc-coupled")]
 use super::fracture_field::{
@@ -59,9 +59,7 @@ where
     let edges_b1 = ctx.edges_b1.clone();
     let state = ok_state(state)
         .and_then(|s| apply_fracture_damage(s, manifold, ctx.batch, ctx.n, edges_b1.clone()))
-        .and_then(|s| {
-            crate::physics::thmc_umst_sync::sync_thmc_to_umst(&s, manifold).map(|_| s)
-        })?;
+        .and_then(|s| and_then_unit(s, |st| crate::physics::thmc_umst_sync::sync_thmc_to_umst(st, manifold)))?;
     let gate_evidence = ThmcSolverStep::attach_gate_evidence(
         solver, cartridge, pre_step, &state, manifold, ctx.dt,
     )?;
