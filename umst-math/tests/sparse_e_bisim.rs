@@ -12,19 +12,31 @@ fn e_bisim_csr_matmul_against_2a_reference() {
         &[0, 1, 0, 1],
         &[1.0_f32, 2.0, 3.0, 4.0],
     )
-    .expect("a");
+    .expect(
+        "SparseTensor::from_triplets 2×2 CSR A fixture for RED §0.8 matmul e-bisim reference (FP §6 Track algebra sparse CSR)",
+    );
     let b = SparseTensor::from_triplets(
         [2, 2],
         &[0, 0, 1, 1],
         &[0, 1, 0, 1],
         &[1.0_f32, 0.0, 0.0, 1.0],
     )
-    .expect("b");
+    .expect(
+        "SparseTensor::from_triplets 2×2 CSR B fixture for RED §0.8 matmul e-bisim reference (FP §6 Track algebra sparse CSR)",
+    );
     let c = a.matmul(&b);
-    assert!((c.at(0, 0).expect("c00") - 1.0).abs() < 1e-5);
-    assert!((c.at(0, 1).expect("c01") - 2.0).abs() < 1e-5);
-    assert!((c.at(1, 0).expect("c10") - 3.0).abs() < 1e-5);
-    assert!((c.at(1, 1).expect("c11") - 4.0).abs() < 1e-5);
+    assert!((c.at(0, 0).expect(
+        "SparseTensor::at (0,0) matmul e-bisim reference cell c00 (FP §6 Track algebra sparse CSR)",
+    ) - 1.0).abs() < 1e-5);
+    assert!((c.at(0, 1).expect(
+        "SparseTensor::at (0,1) matmul e-bisim reference cell c01 (FP §6 Track algebra sparse CSR)",
+    ) - 2.0).abs() < 1e-5);
+    assert!((c.at(1, 0).expect(
+        "SparseTensor::at (1,0) matmul e-bisim reference cell c10 (FP §6 Track algebra sparse CSR)",
+    ) - 3.0).abs() < 1e-5);
+    assert!((c.at(1, 1).expect(
+        "SparseTensor::at (1,1) matmul e-bisim reference cell c11 (FP §6 Track algebra sparse CSR)",
+    ) - 4.0).abs() < 1e-5);
 }
 
 fn prop_add_associative_inner() -> bool {

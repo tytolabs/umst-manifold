@@ -358,8 +358,12 @@ mod h2_sparse_lib {
 
     #[test]
     fn matmul_2x2_eye() {
-        let a = SparseTensor::from_triplets([2, 2], &[0, 1], &[0, 1], &[1.0_f64, 1.0]).expect("a");
-        let i = SparseTensor::from_triplets([2, 2], &[0, 1], &[0, 1], &[1.0_f64, 1.0]).expect("i");
+        let a = SparseTensor::from_triplets([2, 2], &[0, 1], &[0, 1], &[1.0_f64, 1.0]).expect(
+            "SparseTensor::from_triplets 2×2 CSR A for h2_sparse_lib matmul smoke (FP §6 Track algebra sparse CSR)",
+        );
+        let i = SparseTensor::from_triplets([2, 2], &[0, 1], &[0, 1], &[1.0_f64, 1.0]).expect(
+            "SparseTensor::from_triplets 2×2 identity CSR I for h2_sparse_lib matmul smoke (FP §6 Track algebra sparse CSR)",
+        );
         let c = a.matmul(&i);
         assert_eq!(c.shape(), [2, 2]);
     }
