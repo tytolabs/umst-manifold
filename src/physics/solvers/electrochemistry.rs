@@ -4770,12 +4770,11 @@ mod newton_chain_tests {
         };
         let err_lu = lin_res(&rhs_lu);
         let err_de = lin_res(&rhs_de);
-        eprintln!(
-            "full-SG N={n}: Jacobian assembly {asm_s:.3}s; band-LU solve {lu_s:.4}s; dense-expand solve {de_s:.4}s (dim={dim}); max|δ_lu-δ_de|={max_nm:.3e}; max|Jδ+R|_lu={err_lu:.3e} _de={err_de:.3e}"
-        );
         assert!(
             err_de < 1e-6_f64,
-            "dense-expand linear model max|J δ − (−R)|={err_de:.3e}"
+            "full-SG N={n}: Jacobian assembly {asm_s:.3}s; band-LU solve {lu_s:.4}s; \
+             dense-expand solve {de_s:.4}s (dim={dim}); max|δ_lu-δ_de|={max_nm:.3e}; \
+             max|Jδ+R|_lu={err_lu:.3e} _de={err_de:.3e}"
         );
     }
 
