@@ -78,6 +78,14 @@ pub struct ReactionExtent;
 #[derive(Clone, Copy, Debug)]
 pub struct SmallStrain;
 
+/// Phantom space marker: nodal Cauchy stress σ — shape `[B, N, 3, 3]`, symmetric, Pa (FP XS-9a).
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Zero-sized space witness; mechanics equilibrium σ rank/shape SSOT is `[B, N, 3, 3]` (distinct from [`SmallStrain`] despite shared rank).
+#[derive(Clone, Copy, Debug)]
+pub struct CauchyStress;
+
 /// Phantom space marker: fracture energy release rate \(G_c\) — shape `[B, N, 1]`, J/m².
 ///
 /// formal_anchor: NONE
@@ -193,6 +201,12 @@ pub type ReactionExtentField<B> = Field<B, ReactionExtent, 3>;
 /// formal_status: Structural
 /// formal_anchor_rationale: Rank-4 alias for [`Field`] with [`SmallStrain`] witness.
 pub type SmallStrainField<B> = Field<B, SmallStrain, 4>;
+/// Cauchy-stress tensor field — `[B, N, 3, 3]` symmetric σ.
+///
+/// formal_anchor: NONE
+/// formal_status: Structural
+/// formal_anchor_rationale: Rank-4 alias for [`Field`] with [`CauchyStress`] witness.
+pub type CauchyStressField<B> = Field<B, CauchyStress, 4>;
 /// Fracture-energy plan field — `[B, N, 1]` \(G_c\).
 ///
 /// formal_anchor: NONE
@@ -351,6 +365,21 @@ impl<B: Backend> SmallStrainField<B> {
     }
 }
 
+impl<B: Backend> CauchyStressField<B> {
+    /// Zero-filled Cauchy-stress field.
+    #[must_use]
+    pub fn zeros(dims: [usize; 4], device: &B::Device) -> Self {
+        Field::new(Tensor::<B, 4>::zeros(dims, device))
+    }
+
+    /// Wrap an existing symmetric Cauchy-stress tensor.
+    #[inline]
+    #[must_use]
+    pub fn from_tensor(tensor: Tensor<B, 4>) -> Self {
+        Field::new(tensor)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use burn_ndarray::NdArray;
@@ -386,6 +415,17 @@ mod tests {
         let raw = Tensor::<B, 3>::zeros([1, 2, 1], &device);
         accept_temperature(Field::new(raw.clone()));
         accept_damage(Field::new(raw));
+    }
+
+    #[test]
+    fn cauchy_stress_field_distinct_from_small_strain() {
+        fn accept_sigma(_: CauchyStressField<B>) {}
+        fn accept_eps(_: SmallStrainField<B>) {}
+
+        let device = Default::default();
+        let raw = Tensor::<B, 4>::zeros([1, 2, 3, 3], &device);
+        accept_sigma(CauchyStressField::from_tensor(raw.clone()));
+        accept_eps(SmallStrainField::from_tensor(raw));
     }
 
     #[test]

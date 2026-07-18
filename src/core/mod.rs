@@ -19,10 +19,10 @@ pub use dec_typestate::{
     B1Incidence, DecTypestateError, ScalarChannel, ScalarChannelIdx, ScalarChannelSelector,
 };
 pub use field::{
-    BodyForce, BodyForceField, BoundaryMask, BoundaryMaskField, Damage, DamageField, Displacement,
-    DisplacementField, Field, FractureEnergy, FractureEnergyField, Humidity, HumidityField,
-    ReactionExtent, ReactionExtentField, SmallStrain, SmallStrainField, StepEntryDamageMask,
-    Stiffness, StiffnessField, Temperature, TemperatureField,
+    BodyForce, BodyForceField, BoundaryMask, BoundaryMaskField, CauchyStress, CauchyStressField,
+    Damage, DamageField, Displacement, DisplacementField, Field, FractureEnergy,
+    FractureEnergyField, Humidity, HumidityField, ReactionExtent, ReactionExtentField, SmallStrain,
+    SmallStrainField, StepEntryDamageMask, Stiffness, StiffnessField, Temperature, TemperatureField,
 };
 pub use material_phase::{
     MaterialPhase, MaterialPhaseKind, MechanicsState, RheologyState, SettingState, ThmcEnvelope,
