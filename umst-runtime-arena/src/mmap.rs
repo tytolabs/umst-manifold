@@ -61,7 +61,9 @@ mod tests {
         buf[0..4].copy_from_slice(&ARENA_MAGIC.to_le_bytes());
         buf[4..8].copy_from_slice(&ARENA_ABI_VERSION.to_le_bytes());
         buf[8..12].copy_from_slice(&(ARENA_HEADER_BYTES as u32).to_le_bytes());
-        write_commit_stamp(&mut buf, stamp).expect("stamp");
+        write_commit_stamp(&mut buf, stamp).expect(
+            "write_commit_stamp on synthetic v1 mmap fixture (FP §6 fixture_with_stamp witness)",
+        );
         buf[48..56].copy_from_slice(&(ARENA_HEADER_BYTES as u64).to_le_bytes());
         buf[56..64].copy_from_slice(&8u64.to_le_bytes());
         buf[ARENA_HEADER_BYTES..].fill(0x42);
@@ -71,19 +73,31 @@ mod tests {
     #[test]
     fn commit_stamp_roundtrip() {
         let mut buf = fixture_with_stamp(0);
-        write_commit_stamp(&mut buf, 0xDEAD_BEEF_CAFE_0001).expect("write");
+        write_commit_stamp(&mut buf, 0xDEAD_BEEF_CAFE_0001).expect(
+            "write_commit_stamp roundtrip on synthetic mmap fixture (FP §6 commit_stamp_roundtrip witness)",
+        );
         assert_eq!(read_commit_stamp(&buf), 0xDEAD_BEEF_CAFE_0001);
     }
 
     #[test]
     fn mmap_arena_path_loads_view() {
         let buf = fixture_with_stamp(42);
-        let mut tmp = NamedTempFile::new().expect("tmp");
-        tmp.write_all(&buf).expect("write");
-        tmp.flush().expect("flush");
-        let arena = mmap_arena_path(tmp.path()).expect("mmap");
+        let mut tmp = NamedTempFile::new().expect(
+            "NamedTempFile::new for mmap_arena_path_loads_view harness (FP §6 mmap_arena_path_loads_view witness)",
+        );
+        tmp.write_all(&buf).expect(
+            "write_all synthetic mmap fixture to temp file (FP §6 mmap_arena_path_loads_view witness)",
+        );
+        tmp.flush().expect(
+            "flush temp mmap fixture before mmap_arena_path (FP §6 mmap_arena_path_loads_view witness)",
+        );
+        let arena = mmap_arena_path(tmp.path()).expect(
+            "mmap_arena_path on synthetic v1 fixture with stamp (FP §6 mmap_arena_path_loads_view witness)",
+        );
         assert_eq!(arena.commit_stamp(), 42);
-        let view = arena.view().expect("view");
+        let view = arena.view().expect(
+            "MmappedArena::view after mmap_arena_path on synthetic fixture (FP §6 mmap_arena_path_loads_view witness)",
+        );
         assert_eq!(view.state_bytes(), &[0x42; 8]);
     }
 }
