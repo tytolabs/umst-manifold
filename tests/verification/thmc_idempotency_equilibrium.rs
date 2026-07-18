@@ -455,11 +455,15 @@ fn orchestrator_thmc_idempotent_at_equilibrium() {
     });
     let post1 = orch
         .run_plan_step(&StubCartridge, state, &mut manifold)
-        .expect("TopologyPhysicsOrchestrator::run_plan_step on quiescent equilibrium (first idempotency pass)");
+        .expect(
+            "TopologyPhysicsOrchestrator::run_plan_step on quiescent equilibrium (first idempotency pass) (FP §6 Track G mop orchestration idempotency witness)",
+        );
     let snap = post1.clone();
     let post2 = orch
         .run_plan_step(&StubCartridge, post1, &mut manifold)
-        .expect("TopologyPhysicsOrchestrator::run_plan_step re-application on equilibrated state (second idempotency pass)");
+        .expect(
+            "TopologyPhysicsOrchestrator::run_plan_step re-application on equilibrated state (second idempotency pass) (FP §6 Track G mop orchestration idempotency witness)",
+        );
     let tol = 1e-5_f32;
     assert!(
         max_abs_tensor3(
@@ -506,10 +510,14 @@ fn orchestrator_run_plan_step_repeated_two_idempotent_at_equilibrium() {
     });
     let once = orch
         .run_plan_step(&StubCartridge, state.clone(), &mut manifold_a)
-        .expect("TopologyPhysicsOrchestrator::run_plan_step single step at quiescent equilibrium (repeated-vs-once harness)");
+        .expect(
+            "TopologyPhysicsOrchestrator::run_plan_step single step at quiescent equilibrium (repeated-vs-once harness) (FP §6 Track G mop orchestration repeated-vs-once witness)",
+        );
     let twice = orch
         .run_plan_step_repeated(2, &StubCartridge, state, &mut manifold_b)
-        .expect("TopologyPhysicsOrchestrator::run_plan_step_repeated(2) at quiescent equilibrium (repeated-vs-once harness)");
+        .expect(
+            "TopologyPhysicsOrchestrator::run_plan_step_repeated(2) at quiescent equilibrium (repeated-vs-once harness) (FP §6 Track G mop orchestration repeated-vs-once witness)",
+        );
     let tol = 1e-5_f32;
     assert!(
         max_abs_tensor3(
@@ -867,7 +875,9 @@ fn thmc_hydrate_sync_roundtrip_idempotent_on_scalar_channels() {
         1.5,
     );
     sync_thmc_to_umst(&state, &mut umst)
-        .expect("sync_thmc_to_umst on toy UMST scalar channels (hydrate roundtrip harness)");
+        .expect(
+            "sync_thmc_to_umst on toy UMST scalar channels (hydrate roundtrip harness) (FP §6 Track G pipeline hydrate roundtrip witness)",
+        );
     let hydrated = ThmcState::hydrate_from_umst_typed_views(&umst, Some(&state))
         .expect("hydrate_from_umst_typed_views after sync on scalar channels (FP §6 roundtrip)");
     let eps = 1e-5_f32;
@@ -888,7 +898,9 @@ fn thmc_hydrate_sync_roundtrip_idempotent_on_scalar_channels() {
     );
     let snap = umst.scalar_features.clone().into_data().value;
     sync_thmc_to_umst(&hydrated, &mut umst)
-        .expect("re-sync_thmc_to_umst after hydrate must not drift UMST columns");
+        .expect(
+            "re-sync_thmc_to_umst after hydrate must not drift UMST columns (FP §6 Track G pipeline hydrate roundtrip witness)",
+        );
     let again = umst.scalar_features.clone().into_data().value;
     assert_eq!(snap, again, "second sync after hydrate must not drift UMST columns");
 }
