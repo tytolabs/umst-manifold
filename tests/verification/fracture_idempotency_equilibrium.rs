@@ -60,12 +60,12 @@ fn update_damage_idempotent_at_zero_strain_equilibrium() {
         damage_field(damage),
         gc_field(gc.clone()),
         edges_b1.clone(),
-    ).expect("PhaseFieldFractureSolver::update_damage on zero-strain AT2 equilibrium (first idempotency pass)");
+    ).expect("PhaseFieldFractureSolver::update_damage on zero-strain AT2 equilibrium (first idempotency pass) (FP §6 Track G AT2 fracture idempotency witness)");
     let d1_vals = d1.clone().into_tensor().into_data().value;
 
     let d2 = solver
         .update_damage(strain_field(strain), d1, gc_field(gc), edges_b1)
-        .expect("PhaseFieldFractureSolver::update_damage re-application on equilibrated damage (second idempotency pass)");
+        .expect("PhaseFieldFractureSolver::update_damage re-application on equilibrated damage (second idempotency pass) (FP §6 Track G AT2 fracture idempotency re-step witness)");
     let d2_vals = d2.into_tensor().into_data().value;
 
     assert!(max_abs_drift(&d1_vals, &d2_vals) < tol);
@@ -88,12 +88,12 @@ fn update_damage_staggered_idempotent_at_converged_outer_equilibrium() {
         gc.clone(),
         edges_b1.clone(),
         outer_iters,
-    ).expect("PhaseFieldFractureSolver::update_damage_staggered on converged outer equilibrium (first idempotency pass)");
+    ).expect("PhaseFieldFractureSolver::update_damage_staggered on converged outer equilibrium (first idempotency pass) (FP §6 Track G staggered AT2 fracture idempotency witness)");
     let conv_vals = d_conv.clone().into_tensor().into_data().value;
 
     let d_repeat = solver
         .update_damage_staggered(&mut strain_fn, d_conv, gc, edges_b1, outer_iters)
-        .expect("PhaseFieldFractureSolver::update_damage_staggered re-application on equilibrated damage (second idempotency pass)");
+        .expect("PhaseFieldFractureSolver::update_damage_staggered re-application on equilibrated damage (second idempotency pass) (FP §6 Track G staggered AT2 fracture idempotency re-step witness)");
     let repeat_vals = d_repeat.into_tensor().into_data().value;
 
     assert!(max_abs_drift(&conv_vals, &repeat_vals) < tol);
