@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
+//
+// QUARANTINE — dual writer superseded by `umst-gate::admissibility_census` (P2.0).
+// Do not import; kept for carve archaeology only.
 
 //! Phase 0a admissibility census — compute/consume site registry and open reconciliation deltas.
 //!

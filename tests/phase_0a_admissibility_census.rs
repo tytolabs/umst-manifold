@@ -87,22 +87,14 @@ use umst_manifold::gate::transition_proposal::{
 use umst_manifold::manifest::UmstManifest;
 
 use umst_manifold::gate::admissibility_census::{
-    format_open_deltas, ADMISSIBILITY_COMPUTE_SITES, ADMISSIBILITY_CONSUME_SITES,
-    ConjunctFamily, GATE_PARITY_V0_FIXTURE_REL, GATE_PARITY_V0_SHA256 as CENSUS_GATE_SHA256,
-    GATE_PARITY_V0_SHA256_PREFIX, OPEN_RECONCILIATION_DELTAS, SiteRole,
+    format_open_deltas, gate_parity_fixture_path_from, ADMISSIBILITY_COMPUTE_SITES,
+    ADMISSIBILITY_CONSUME_SITES, ConjunctFamily, GATE_PARITY_V0_FIXTURE_REL,
+    GATE_PARITY_V0_SHA256, GATE_PARITY_V0_SHA256_PREFIX, OPEN_RECONCILIATION_DELTAS, SiteRole,
 };
-use umst_manifold::gate::{
-    evaluate_http_mix_manifest, HttpGateManifest, HttpMixProposal,
-};
-
-/// Live parity fixture — repo wins over stale `a389b838…` shorthand in older docs.
-/// Same pin as `gate_parity_v0.json` / census `GATE_PARITY_V0_SHA256`.
-pub const GATE_PARITY_V0_SHA256: &str =
-    "149081fa81a6525fb66ff01924c6656f30e2b67846d9945a25427c7be38d20f3";
+use umst_manifold::gate::{evaluate_http_mix_manifest, HttpGateManifest, HttpMixProposal};
 
 fn gate_parity_fixture_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../umst-concrete-cartridge/crates/umst-mcp/tests/fixtures/gate_parity_v0.json")
+    gate_parity_fixture_path_from(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".."))
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {
@@ -325,12 +317,7 @@ fn phase0a_census_registers_anchor_compute_and_consume_sites() {
 
 #[test]
 fn phase0a_parity_fixture_path_and_digest_recorded() {
-    assert_eq!(
-        CENSUS_GATE_SHA256,
-        GATE_PARITY_V0_SHA256,
-        "test-local pin must match census module pin"
-    );
-    assert!(CENSUS_GATE_SHA256.starts_with(GATE_PARITY_V0_SHA256_PREFIX));
+    assert!(GATE_PARITY_V0_SHA256.starts_with(GATE_PARITY_V0_SHA256_PREFIX));
     assert!(GATE_PARITY_V0_FIXTURE_REL.contains("gate_parity_v0.json"));
 }
 

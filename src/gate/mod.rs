@@ -22,10 +22,9 @@ pub mod transition_proposal;
 pub mod verdict;
 
 pub use admissibility_census::{
-    format_open_deltas, ADMISSIBILITY_COMPUTE_SITES, ADMISSIBILITY_CONSUME_SITES,
-    ConjunctFamily, GATE_PARITY_V0_FIXTURE_REL, GATE_PARITY_V0_SHA256,
-    GATE_PARITY_V0_SHA256_PREFIX, OPEN_RECONCILIATION_DELTAS, ReconciliationDelta,
-    SiteRole,
+    format_open_deltas, gate_parity_fixture_path_from, ADMISSIBILITY_COMPUTE_SITES,
+    ADMISSIBILITY_CONSUME_SITES, ConjunctFamily, GATE_PARITY_V0_FIXTURE_REL, GATE_PARITY_V0_SHA256,
+    GATE_PARITY_V0_SHA256_PREFIX, OPEN_RECONCILIATION_DELTAS, ReconciliationDelta, SiteRole,
 };
 pub use cbf::GateThermodynamicCBF;
 pub use cbf_bridge::cd_dissipation_proxy_to_entropy_joules;

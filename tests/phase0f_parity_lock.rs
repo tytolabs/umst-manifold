@@ -13,14 +13,13 @@
 use std::path::PathBuf;
 
 use umst_manifold::gate::{
-    format_open_deltas, ADMISSIBILITY_COMPUTE_SITES, ADMISSIBILITY_CONSUME_SITES,
-    GATE_PARITY_V0_FIXTURE_REL, GATE_PARITY_V0_SHA256, GATE_PARITY_V0_SHA256_PREFIX,
-    OPEN_RECONCILIATION_DELTAS,
+    format_open_deltas, gate_parity_fixture_path_from, ADMISSIBILITY_COMPUTE_SITES,
+    ADMISSIBILITY_CONSUME_SITES, GATE_PARITY_V0_FIXTURE_REL, GATE_PARITY_V0_SHA256,
+    GATE_PARITY_V0_SHA256_PREFIX, OPEN_RECONCILIATION_DELTAS,
 };
 
 fn gate_parity_fixture_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../umst-concrete-cartridge/crates/umst-mcp/tests/fixtures/gate_parity_v0.json")
+    gate_parity_fixture_path_from(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".."))
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {
