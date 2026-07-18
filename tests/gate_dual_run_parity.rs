@@ -60,6 +60,20 @@ struct PrototypeGolden {
     dissipation_relative_tolerance: Option<f64>,
 }
 
+impl PrototypeGolden {
+    fn is_accepted(&self) -> bool {
+        self.accepted
+    }
+
+    fn is_mass_conserved(&self) -> bool {
+        self.mass_conserved
+    }
+
+    fn is_energy_positive(&self) -> bool {
+        self.energy_positive
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(tag = "mode", rename_all = "snake_case")]
 enum FixtureCase {
@@ -93,12 +107,40 @@ struct TransitionOutcome {
     energy_positive: bool,
 }
 
+impl TransitionOutcome {
+    const fn is_accepted(self) -> bool {
+        self.accepted
+    }
+
+    const fn is_mass_conserved(self) -> bool {
+        self.mass_conserved
+    }
+
+    const fn is_energy_positive(self) -> bool {
+        self.energy_positive
+    }
+}
+
 #[derive(Debug, Deserialize, PartialEq)]
 struct SubprocessTransitionResult {
     accepted: bool,
     dissipation: f64,
     mass_conserved: bool,
     energy_positive: bool,
+}
+
+impl SubprocessTransitionResult {
+    fn is_accepted(&self) -> bool {
+        self.accepted
+    }
+
+    fn is_mass_conserved(&self) -> bool {
+        self.mass_conserved
+    }
+
+    fn is_energy_positive(&self) -> bool {
+        self.energy_positive
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -180,10 +222,10 @@ fn run_manifold_mix_gate(case: &FixtureCase) -> TransitionOutcome {
 fn golden_to_outcome(g: &PrototypeGolden, manifold: &TransitionOutcome) -> TransitionOutcome {
     let _ = manifold;
     TransitionOutcome {
-        accepted: g.accepted,
+        accepted: g.is_accepted(),
         dissipation: 0.0,
-        mass_conserved: g.mass_conserved,
-        energy_positive: g.energy_positive,
+        mass_conserved: g.is_mass_conserved(),
+        energy_positive: g.is_energy_positive(),
     }
 }
 
@@ -204,16 +246,19 @@ fn assert_matches_golden(
     old_mix: Option<(&MixInput, &MixInput, f64)>,
 ) {
     assert_eq!(
-        got.accepted, golden.accepted,
+        got.is_accepted(),
+        golden.is_accepted(),
         "{case_id}: accepted mismatch (manifold {})",
-        got.accepted
+        got.is_accepted()
     );
     assert_eq!(
-        got.mass_conserved, golden.mass_conserved,
+        got.is_mass_conserved(),
+        golden.is_mass_conserved(),
         "{case_id}: mass_conserved mismatch"
     );
     assert_eq!(
-        got.energy_positive, golden.energy_positive,
+        got.is_energy_positive(),
+        golden.is_energy_positive(),
         "{case_id}: energy_positive mismatch"
     );
 
@@ -322,9 +367,9 @@ fn mix_proposal_gate_matches_prototype_golden_vectors() {
         assert_matches_golden(id, &manifold, golden, mix_pair);
 
         let g_out = golden_to_outcome(golden, &manifold);
-        if manifold.accepted == g_out.accepted
-            && manifold.mass_conserved == g_out.mass_conserved
-            && manifold.energy_positive == g_out.energy_positive
+        if manifold.is_accepted() == g_out.is_accepted()
+            && manifold.is_mass_conserved() == g_out.is_mass_conserved()
+            && manifold.is_energy_positive() == g_out.is_energy_positive()
         {
             golden_agree += 1;
         }
@@ -371,7 +416,8 @@ fn mix_proposal_gate_live_subprocess_matches_manifold_when_available() {
         let manifold = run_manifold_mix_gate(case);
 
         assert_eq!(
-            manifold.accepted, proto.accepted,
+            manifold.is_accepted(),
+            proto.is_accepted(),
             "{id}: live prototype accepted mismatch"
         );
         assert!(
@@ -381,11 +427,13 @@ fn mix_proposal_gate_live_subprocess_matches_manifold_when_available() {
             proto.dissipation
         );
         assert_eq!(
-            manifold.mass_conserved, proto.mass_conserved,
+            manifold.is_mass_conserved(),
+            proto.is_mass_conserved(),
             "{id}: mass_conserved live mismatch"
         );
         assert_eq!(
-            manifold.energy_positive, proto.energy_positive,
+            manifold.is_energy_positive(),
+            proto.is_energy_positive(),
             "{id}: energy_positive live mismatch"
         );
         live_agree += 1;
