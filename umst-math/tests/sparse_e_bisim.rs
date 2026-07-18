@@ -74,12 +74,26 @@ fn prop_add_associative() {
 }
 
 fn prop_dot_distributes_over_add_inner() -> bool {
-    let a = SparseTensor::from_triplets([1, 2], &[0, 0], &[0, 1], &[1.0, 2.0_f64]).expect("a");
-    let b = SparseTensor::from_triplets([1, 2], &[0, 0], &[0, 1], &[0.5, 0.5_f64]).expect("b");
-    let c = SparseTensor::from_triplets([1, 2], &[0, 0], &[0, 1], &[0.5, 0.5_f64]).expect("c");
-    let s = b.add(&c).expect("s");
-    let l = a.dot(&s).expect("ad");
-    let r = a.dot(&b).expect("ab") + a.dot(&c).expect("ac");
+    let a = SparseTensor::from_triplets([1, 2], &[0, 0], &[0, 1], &[1.0, 2.0_f64]).expect(
+        "SparseTensor::from_triplets 1×2 CSR A for prop_dot_distributes distributivity witness (FP §6 Track algebra sparse CSR)",
+    );
+    let b = SparseTensor::from_triplets([1, 2], &[0, 0], &[0, 1], &[0.5, 0.5_f64]).expect(
+        "SparseTensor::from_triplets 1×2 CSR B for prop_dot_distributes distributivity witness (FP §6 Track algebra sparse CSR)",
+    );
+    let c = SparseTensor::from_triplets([1, 2], &[0, 0], &[0, 1], &[0.5, 0.5_f64]).expect(
+        "SparseTensor::from_triplets 1×2 CSR C for prop_dot_distributes distributivity witness (FP §6 Track algebra sparse CSR)",
+    );
+    let s = b.add(&c).expect(
+        "SparseTensor::add B+C sum for prop_dot_distributes distributivity witness (FP §6 Track algebra sparse CSR)",
+    );
+    let l = a.dot(&s).expect(
+        "SparseTensor::dot A·(B+C) left-hand for prop_dot_distributes witness (FP §6 Track algebra sparse CSR)",
+    );
+    let r = a.dot(&b).expect(
+        "SparseTensor::dot A·B right-hand for prop_dot_distributes witness (FP §6 Track algebra sparse CSR)",
+    ) + a.dot(&c).expect(
+        "SparseTensor::dot A·C right-hand for prop_dot_distributes witness (FP §6 Track algebra sparse CSR)",
+    );
     (l - r).abs() < 1e-7
 }
 
@@ -90,7 +104,9 @@ fn prop_dot_distributes_over_add() {
 
 fn prop_transpose_involutive_inner() -> bool {
     let a = SparseTensor::from_triplets([3, 2], &[0, 2, 1], &[0, 1, 0], &[1.0, 2.0, 3.0_f64])
-        .expect("a");
+        .expect(
+            "SparseTensor::from_triplets 3×2 CSR A for prop_transpose_involutive witness (FP §6 Track algebra sparse CSR)",
+        );
     let t = a.transpose().expect("t");
     let tt = t.transpose().expect("tt");
     (0u32..3u32).all(|r| {
