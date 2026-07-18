@@ -9,7 +9,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::evaluator::GateEvaluator;
-use super::route::canonical_transition_admissible;
+use super::route::{canonical_strength_upper_bound_admissible, canonical_transition_outcome};
 use super::transition_eval_registry::{ThermodynamicTransitionContext, TransitionEvaluator};
 use super::transition_proposal::{ThermodynamicStateSnapshot, TransitionFilter};
 use super::verdict::AdmissibilityVerdict;
@@ -379,12 +379,13 @@ pub fn evaluate(proposal: &MixProposal, manifest: &GateManifest) -> GateResponse
         manifest.strength_intrinsic_mpa,
     );
     let dt_s = (proposal.age_days * 24.0 * 3600.0).max(1.0);
-    if !canonical_transition_admissible(&old, &new, dt_s) {
+    if !canonical_transition_outcome(&old, &new, dt_s).is_accepted() {
         codes.push("THERMODYNAMIC_TRANSITION_REJECT".to_string());
     }
 
+    // RESIDUE(R-parity-http-manifest, kind=arch, status=closed): Phase 0 one-predicate — strength via canonical_strength_upper_bound_admissible (route.rs SSOT)
     let bound = fc * (1.0 + manifest.admissibility_rel_margin);
-    if proposal.predicted_strength_mpa > bound {
+    if !canonical_strength_upper_bound_admissible(proposal.predicted_strength_mpa, bound) {
         codes.push("CLAUSIUS_GATE_STRENGTH_EXCESS".to_string());
     }
 
