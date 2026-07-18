@@ -370,7 +370,9 @@ mod h2_sparse_lib {
 
     #[test]
     fn add_merge_commutes_small() {
-        let a = SparseTensor::from_triplets([2, 2], &[0], &[0], &[1.0_f64]).expect("a");
+        let a = SparseTensor::from_triplets([2, 2], &[0], &[0], &[1.0_f64]).expect(
+            "SparseTensor::from_triplets 2×2 CSR A for add_merge_commutes_small smoke (FP §6 Track algebra sparse CSR)",
+        );
         let b = SparseTensor::from_triplets([2, 2], &[0], &[0], &[2.0_f64]).expect("b");
         let s = a.add(&b).expect("add");
         assert!((s.at(0, 0).expect("t") - 3.0).abs() < 1e-12);

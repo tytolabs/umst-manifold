@@ -40,13 +40,31 @@ fn e_bisim_csr_matmul_against_2a_reference() {
 }
 
 fn prop_add_associative_inner() -> bool {
-    let a = SparseTensor::from_triplets([2, 2], &[0, 1], &[0, 1], &[0.1, 0.2_f64]).expect("a");
-    let b = SparseTensor::from_triplets([2, 2], &[0], &[1], &[0.3_f64]).expect("b");
-    let c = SparseTensor::from_triplets([2, 2], &[1], &[0], &[0.4_f64]).expect("c");
-    let l = a.add(&b).and_then(|x| x.add(&c)).expect("l");
-    let r = b.add(&c).and_then(|x| a.add(&x)).expect("r");
+    let a = SparseTensor::from_triplets([2, 2], &[0, 1], &[0, 1], &[0.1, 0.2_f64]).expect(
+        "SparseTensor::from_triplets 2×2 CSR A for prop_add_associative associativity witness (FP §6 Track algebra sparse CSR)",
+    );
+    let b = SparseTensor::from_triplets([2, 2], &[0], &[1], &[0.3_f64]).expect(
+        "SparseTensor::from_triplets 2×2 CSR B for prop_add_associative associativity witness (FP §6 Track algebra sparse CSR)",
+    );
+    let c = SparseTensor::from_triplets([2, 2], &[1], &[0], &[0.4_f64]).expect(
+        "SparseTensor::from_triplets 2×2 CSR C for prop_add_associative associativity witness (FP §6 Track algebra sparse CSR)",
+    );
+    let l = a.add(&b).and_then(|x| x.add(&c)).expect(
+        "SparseTensor::add left-assoc chain for prop_add_associative witness (FP §6 Track algebra sparse CSR)",
+    );
+    let r = b.add(&c).and_then(|x| a.add(&x)).expect(
+        "SparseTensor::add right-assoc chain for prop_add_associative witness (FP §6 Track algebra sparse CSR)",
+    );
     (0u32..2u32).all(|r0| {
-        (0u32..2u32).all(|c0| (l.at(r0, c0).expect("l") - r.at(r0, c0).expect("r")).abs() < 1e-8)
+        (0u32..2u32).all(|c0| {
+            (l.at(r0, c0).expect(
+                "SparseTensor::at left-assoc cell for prop_add_associative witness (FP §6 Track algebra sparse CSR)",
+            ) - r.at(r0, c0).expect(
+                "SparseTensor::at right-assoc cell for prop_add_associative witness (FP §6 Track algebra sparse CSR)",
+            ))
+            .abs()
+                < 1e-8
+        })
     })
 }
 
