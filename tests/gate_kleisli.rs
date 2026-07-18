@@ -36,7 +36,9 @@ fn registry_routes_kleisli_unit_by_catalog_id() {
 
     let v = reg
         .evaluate_kleisli_unit("umst.gate.kleisli_unit")
-        .expect("registered kleisli unit evaluator");
+        .expect(
+            "GateEvaluatorRegistry::evaluate_kleisli_unit on registered KleisliUnitEvaluator catalog surface (FP §6 Track G kleisli gate harness)",
+        );
     assert_eq!(v, AdmissibilityVerdict::Accepted);
     assert_eq!(v.as_str(), AdmissibilityVerdict::ACCEPTED);
 
@@ -49,7 +51,9 @@ fn registry_routes_kleisli_unit_by_catalog_id() {
     };
     let v_reflex = reg
         .evaluate_mut("umst.gate.kleisli_unit", ctx)
-        .expect("reflexive step via registry");
+        .expect(
+            "GateEvaluatorRegistry::evaluate_mut reflexive KleisliUnitEvaluator step on zero-dt transition (FP §6 Track G kleisli gate harness)",
+        );
     assert_eq!(v_reflex, AdmissibilityVerdict::Accepted);
 }
 
@@ -79,7 +83,9 @@ fn registry_routes_mix_evaluator_to_rest_verdict_strings() {
     };
     let v = reg
         .evaluate_mut("thermodynamic_mix", ctx)
-        .expect("registered evaluator");
+        .expect(
+            "GateEvaluatorRegistry::evaluate_mut ThermodynamicMixEvaluator REST verdict string routing witness (FP §6 Track G kleisli gate harness)",
+        );
 
     assert_eq!(v, AdmissibilityVerdict::Accepted);
     assert_eq!(v.as_str(), AdmissibilityVerdict::ACCEPTED);
@@ -94,7 +100,9 @@ fn gate_cbf_delegates_verify_tensor_update() {
     let info_gain = Tensor::<B, 1>::from_floats([0.0_f32], &dev);
     gate_cbf
         .verify_tensor_update(d_int, info_gain)
-        .expect("delegate matches ThermodynamicCBF clamp semantics");
+        .expect(
+            "GateThermodynamicCBF::verify_tensor_update delegates ThermodynamicCBF clamp semantics on negative d_int (FP §6 Track G kleisli gate harness)",
+        );
 }
 
 #[test]
