@@ -450,4 +450,126 @@ mod tests {
         assert!((env.time() - 7.0).abs() < f32::EPSILON);
         assert_eq!(env.damage_ref().as_tensor().dims(), [1, 2, 1]);
     }
+
+    /// FP §3 witness: Bingham rheology routing succeeds only on the `Fluid` arm.
+    fn try_bingham_route(phase: &MaterialPhase<B>) -> Option<&RheologyState<B>> {
+        phase.as_fluid()
+    }
+
+    /// FP §3 witness: setting chemistry routing succeeds only on the `Setting` arm.
+    fn try_setting_route(phase: &MaterialPhase<B>) -> Option<&SettingState<B>> {
+        phase.as_setting()
+    }
+
+    /// FP §3 witness: equilibrium mechanics routing succeeds only on the `Solid` arm.
+    fn try_mechanics_route(phase: &MaterialPhase<B>) -> Option<&MechanicsState<B>> {
+        phase.as_solid()
+    }
+
+    #[test]
+    fn invalid_cross_phase_solver_routes_unrepresentable() {
+        assert!(try_bingham_route(&fluid_phase()).is_some());
+        assert!(try_bingham_route(&setting_phase()).is_none());
+        assert!(try_bingham_route(&solid_phase()).is_none());
+
+        assert!(try_setting_route(&setting_phase()).is_some());
+        assert!(try_setting_route(&fluid_phase()).is_none());
+        assert!(try_setting_route(&solid_phase()).is_none());
+
+        assert!(try_mechanics_route(&solid_phase()).is_some());
+        assert!(try_mechanics_route(&fluid_phase()).is_none());
+        assert!(try_mechanics_route(&setting_phase()).is_none());
+    }
+
+    #[test]
+    fn material_phase_fluid_arm_exhaustive_match() {
+        let phase = fluid_phase();
+        let _ = match phase {
+            MaterialPhase::Fluid(_) => (),
+            MaterialPhase::Setting(_) | MaterialPhase::Solid(_) => {
+                panic!(
+                    "fluid fixture must not project to Setting/Solid \
+                     (FP §3 invalid dual-phase state unrepresentable)"
+                );
+            }
+        };
+    }
+
+    #[test]
+    fn material_phase_setting_arm_exhaustive_match() {
+        let phase = setting_phase();
+        let _ = match phase {
+            MaterialPhase::Setting(_) => (),
+            MaterialPhase::Fluid(_) | MaterialPhase::Solid(_) => {
+                panic!(
+                    "setting fixture must not project to Fluid/Solid \
+                     (FP §3 invalid dual-phase state unrepresentable)"
+                );
+            }
+        };
+    }
+
+    #[test]
+    fn material_phase_solid_arm_exhaustive_match() {
+        let phase = solid_phase();
+        let _ = match phase {
+            MaterialPhase::Solid(_) => (),
+            MaterialPhase::Fluid(_) | MaterialPhase::Setting(_) => {
+                panic!(
+                    "solid fixture must not project to Fluid/Setting \
+                     (FP §3 invalid dual-phase state unrepresentable)"
+                );
+            }
+        };
+    }
+
+    #[test]
+    fn material_phase_kind_exhaustive_three_tags() {
+        for (kind, label) in [
+            (MaterialPhaseKind::Fluid, "fluid"),
+            (MaterialPhaseKind::Setting, "setting"),
+            (MaterialPhaseKind::Solid, "solid"),
+        ] {
+            let routed = match kind {
+                MaterialPhaseKind::Fluid => "fluid",
+                MaterialPhaseKind::Setting => "setting",
+                MaterialPhaseKind::Solid => "solid",
+            };
+            assert_eq!(routed, label);
+        }
+    }
+
+    #[test]
+    fn invalid_simultaneous_phase_arms_unrepresentable() {
+        for phase in [fluid_phase(), setting_phase(), solid_phase()] {
+            let armed = usize::from(phase.as_fluid().is_some())
+                + usize::from(phase.as_setting().is_some())
+                + usize::from(phase.as_solid().is_some());
+            assert_eq!(
+                armed, 1,
+                "MaterialPhase sum type must populate exactly one arm (FP §3)"
+            );
+        }
+    }
+
+    #[test]
+    fn thmc_envelope_single_phase_arm_unrepresentable_dual() {
+        let device = Default::default();
+        for (phase, expected) in [
+            (fluid_phase(), MaterialPhaseKind::Fluid),
+            (setting_phase(), MaterialPhaseKind::Setting),
+            (solid_phase(), MaterialPhaseKind::Solid),
+        ] {
+            let env = ThmcEnvelope::with_zero_damage(phase, 0.0, &device);
+            assert_eq!(env.kind(), expected);
+            let p = &env.phase;
+            let armed = usize::from(p.as_fluid().is_some())
+                + usize::from(p.as_setting().is_some())
+                + usize::from(p.as_solid().is_some());
+            assert_eq!(
+                armed, 1,
+                "ThmcEnvelope must carry exactly one MaterialPhase arm (FP §3)"
+            );
+        }
+    }
 }
