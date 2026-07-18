@@ -233,10 +233,10 @@ fn thmc_thermal_implicit_cg_idempotent_at_dirichlet_equilibrium() {
 
     let (t1, norms1) = solver
         .step_thermal_implicit::<B>(1e-4_f32, t_uniform.clone(), 0.1_f32, edges.clone(), mask.clone(), cfg)
-        .expect("step_thermal_implicit on uniform Dirichlet T equilibrium (first CG idempotency pass)");
+        .expect("step_thermal_implicit on uniform Dirichlet T equilibrium (first CG idempotency pass) (FP §6 Track G THMC idempotency)");
     let (t2, norms2) = solver
         .step_thermal_implicit::<B>(1e-4_f32, t1.clone(), 0.1_f32, edges, mask, cfg)
-        .expect("step_thermal_implicit re-application on equilibrated T (second CG idempotency pass)");
+        .expect("step_thermal_implicit re-application on equilibrated T (second CG idempotency pass) (FP §6 Track G THMC idempotency)");
 
     let tol = 1e-6_f32;
     assert!(
@@ -330,11 +330,11 @@ fn thmc_operator_split_step_idempotent_at_quiescent_equilibrium() {
     };
     let post1 = solver
         .step(&StubCartridge, state, &mut umst)
-        .expect("ThmcSolver::step on quiescent operator-split equilibrium (first idempotency pass)");
+        .expect("ThmcSolver::step on quiescent operator-split equilibrium (first idempotency pass) (FP §6 Track G THMC idempotency)");
     let snap = post1.clone();
     let post2 = solver
         .step(&StubCartridge, post1, &mut umst)
-        .expect("ThmcSolver::step on quiescent operator-split equilibrium (re-application idempotency pass)");
+        .expect("ThmcSolver::step on quiescent operator-split equilibrium (re-application idempotency pass) (FP §6 Track G THMC idempotency)");
     let tol = 1e-5_f32;
     assert!(
         max_abs_tensor3(
@@ -433,10 +433,10 @@ fn thmc_fracture_update_damage_idempotent_at_zero_strain() {
     let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
     let d1 = solver
         .update_damage(strain.clone(), damage, gc.clone(), edges.clone())
-        .expect("PhaseFieldFractureSolver::update_damage on zero strain with frozen damage (first AT2 idempotency pass)");
+        .expect("PhaseFieldFractureSolver::update_damage on zero strain with frozen damage (first AT2 idempotency pass) (FP §6 Track G THMC idempotency)");
     let d2 = solver
         .update_damage(strain, d1.clone(), gc, edges)
-        .expect("PhaseFieldFractureSolver::update_damage re-application on equilibrated damage (second AT2 idempotency pass)");
+        .expect("PhaseFieldFractureSolver::update_damage re-application on equilibrated damage (second AT2 idempotency pass) (FP §6 Track G THMC idempotency)");
     assert!(max_abs_tensor3(d1.as_tensor(), d2.as_tensor()) < 1e-6_f32);
 }
 
