@@ -304,7 +304,9 @@ mod tests {
                 detail: "injected".into(),
             })
         };
-        let err = gmres_f32_try(matvec, &b, n, n, 1e-5_f32).expect_err("should fail");
+        let err = gmres_f32_try(matvec, &b, n, n, 1e-5_f32).expect_err(
+            "gmres_f32_try must propagate injected matvec PhysicsError without retry (FP §6 Track G krylov)",
+        );
         assert!(err.to_string().contains("injected"), "{err}");
         assert_eq!(calls, 1, "should not retry after matvec Err");
     }
