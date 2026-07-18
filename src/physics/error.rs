@@ -85,18 +85,34 @@ impl fmt::Display for PhysicsError {
             Self::NonFiniteCompliance => f.write_str(
                 "compliance functional is non-finite (NaN or Inf) after equilibrium forward solve",
             ),
-            Self::NonFinite { context } => write!(f, "{context}: non-finite value"),
+            Self::NonFinite { context } => write!(
+                f,
+                "{context}: field or residual contains NaN or Inf"
+            ),
             Self::KrylovDiverged { context } => write!(
                 f,
                 "{context}: Krylov/GMRES sub-solve stalled or residual blew up"
             ),
-            Self::IndefiniteSystem { context } => write!(f, "{context}: indefinite system"),
-            Self::BufferExhausted { context } => write!(f, "{context}: buffer exhausted"),
-            Self::InvariantViolation { context } => write!(f, "{context}: invariant violation"),
-            Self::UnsupportedLayout { context } => write!(f, "{context}: unsupported layout"),
-            Self::GateEvidenceRejected { context } => {
-                write!(f, "{context}: gate evidence rejected")
-            }
+            Self::IndefiniteSystem { context } => write!(
+                f,
+                "{context}: stiffness operator indefinite or singular on masked DOF subspace"
+            ),
+            Self::BufferExhausted { context } => write!(
+                f,
+                "{context}: preallocated scratch/workspace capacity exhausted"
+            ),
+            Self::InvariantViolation { context } => write!(
+                f,
+                "{context}: internal precondition or invariant violated before solver step"
+            ),
+            Self::UnsupportedLayout { context } => write!(
+                f,
+                "{context}: mesh or discretization layout not supported by this entry point"
+            ),
+            Self::GateEvidenceRejected { context } => write!(
+                f,
+                "{context}: post-step gate or CBF evidence check rejected state"
+            ),
             Self::Domain { detail } => f.write_str(detail),
         }
     }
