@@ -425,6 +425,21 @@ mod tests {
     }
 
     #[test]
+    fn clone_preserves_setting_and_solid_kinds() {
+        let setting = setting_phase();
+        let setting_clone = setting.clone();
+        assert_eq!(setting_clone.kind(), MaterialPhaseKind::Setting);
+        assert!(setting_clone.as_setting().is_some());
+        assert!(setting_clone.as_fluid().is_none());
+
+        let solid = solid_phase();
+        let solid_clone = solid.clone();
+        assert_eq!(solid_clone.kind(), MaterialPhaseKind::Solid);
+        assert!(solid_clone.as_solid().is_some());
+        assert!(solid_clone.as_setting().is_none());
+    }
+
+    #[test]
     fn transport_state_new_wraps_field_channels() {
         let humidity = Field::new(zeros_3());
         let temperature = Field::new(zeros_3());
@@ -550,6 +565,124 @@ mod tests {
                 "MaterialPhase sum type must populate exactly one arm (FP §3)"
             );
         }
+    }
+
+    #[test]
+    fn thmc_envelope_nested_kind_agrees_with_projection() {
+        let device = Default::default();
+        for (phase, expected) in [
+            (fluid_phase(), MaterialPhaseKind::Fluid),
+            (setting_phase(), MaterialPhaseKind::Setting),
+            (solid_phase(), MaterialPhaseKind::Solid),
+        ] {
+            let env = ThmcEnvelope::with_zero_damage(phase, 0.0, &device);
+            assert_eq!(
+                env.kind(),
+                env.phase.kind(),
+                "ThmcEnvelope::kind must agree with nested MaterialPhase::kind (FP §3)"
+            );
+            assert_eq!(env.kind(), expected);
+        }
+    }
+
+    /// FP §3 witness: constitutive ops are admitted only on the matching phase arm.
+    enum PhaseOp {
+        BinghamStep,
+        SettingChemistry,
+        EquilibriumSolve,
+    }
+
+    fn admit_phase_op(phase: &MaterialPhase<B>, op: PhaseOp) -> Result<(), &'static str> {
+        match (phase, op) {
+            (MaterialPhase::Fluid(_), PhaseOp::BinghamStep) => Ok(()),
+            (MaterialPhase::Setting(_), PhaseOp::SettingChemistry) => Ok(()),
+            (MaterialPhase::Solid(_), PhaseOp::EquilibriumSolve) => Ok(()),
+            (MaterialPhase::Fluid(_), PhaseOp::SettingChemistry | PhaseOp::EquilibriumSolve)
+            | (MaterialPhase::Setting(_), PhaseOp::BinghamStep | PhaseOp::EquilibriumSolve)
+            | (MaterialPhase::Solid(_), PhaseOp::BinghamStep | PhaseOp::SettingChemistry) => {
+                Err("invalid cross-phase op — dual lifecycle state unrepresentable (FP §3)")
+            }
+        }
+    }
+
+    #[test]
+    fn phase_operation_match_rejects_cross_arm_ops() {
+        assert!(admit_phase_op(&fluid_phase(), PhaseOp::BinghamStep).is_ok());
+        assert!(admit_phase_op(&fluid_phase(), PhaseOp::EquilibriumSolve).is_err());
+        assert!(admit_phase_op(&fluid_phase(), PhaseOp::SettingChemistry).is_err());
+
+        assert!(admit_phase_op(&setting_phase(), PhaseOp::SettingChemistry).is_ok());
+        assert!(admit_phase_op(&setting_phase(), PhaseOp::BinghamStep).is_err());
+        assert!(admit_phase_op(&setting_phase(), PhaseOp::EquilibriumSolve).is_err());
+
+        assert!(admit_phase_op(&solid_phase(), PhaseOp::EquilibriumSolve).is_ok());
+        assert!(admit_phase_op(&solid_phase(), PhaseOp::BinghamStep).is_err());
+        assert!(admit_phase_op(&solid_phase(), PhaseOp::SettingChemistry).is_err());
+    }
+
+    #[test]
+    fn mut_borrow_preserves_phase_kind_after_touch() {
+        let mut fluid = fluid_phase();
+        if let Some(r) = fluid.as_fluid_mut() {
+            let _ = &mut r.velocity;
+        }
+        assert_eq!(fluid.kind(), MaterialPhaseKind::Fluid);
+
+        let mut setting = setting_phase();
+        if let Some(s) = setting.as_setting_mut() {
+            let _ = &mut s.reaction_extent;
+        }
+        assert_eq!(setting.kind(), MaterialPhaseKind::Setting);
+
+        let mut solid = solid_phase();
+        if let Some(m) = solid.as_solid_mut() {
+            let _ = &mut m.displacement;
+        }
+        assert_eq!(solid.kind(), MaterialPhaseKind::Solid);
+    }
+
+    #[test]
+    fn thmc_envelope_clone_preserves_single_phase_arm() {
+        let device = Default::default();
+        for (phase, expected) in [
+            (fluid_phase(), MaterialPhaseKind::Fluid),
+            (setting_phase(), MaterialPhaseKind::Setting),
+            (solid_phase(), MaterialPhaseKind::Solid),
+        ] {
+            let env = ThmcEnvelope::with_zero_damage(phase, 1.0, &device);
+            let cloned = env.clone();
+            assert_eq!(cloned.kind(), expected);
+            let p = &cloned.phase;
+            let armed = usize::from(p.as_fluid().is_some())
+                + usize::from(p.as_setting().is_some())
+                + usize::from(p.as_solid().is_some());
+            assert_eq!(
+                armed, 1,
+                "cloned ThmcEnvelope must retain exactly one MaterialPhase arm (FP §3)"
+            );
+        }
+    }
+
+    #[test]
+    fn material_phase_kind_route_table_bijective() {
+        fn lane(kind: MaterialPhaseKind) -> &'static str {
+            match kind {
+                MaterialPhaseKind::Fluid => "rheology",
+                MaterialPhaseKind::Setting => "setting",
+                MaterialPhaseKind::Solid => "mechanics",
+            }
+        }
+
+        let lanes: Vec<_> = [
+            MaterialPhaseKind::Fluid,
+            MaterialPhaseKind::Setting,
+            MaterialPhaseKind::Solid,
+        ]
+        .into_iter()
+        .map(lane)
+        .collect();
+        assert_eq!(lanes, ["rheology", "setting", "mechanics"]);
+        assert_eq!(lanes.len(), lanes.iter().collect::<std::collections::HashSet<_>>().len());
     }
 
     #[test]
