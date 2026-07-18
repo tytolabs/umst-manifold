@@ -65,7 +65,7 @@ fn propose(intent: TransitionIntent) -> Admissible<TransitionPair> {
         &params,
         TRANSITION_TOLERANCE,
     );
-    let mass_ok = outcome.mass_conserved;
+    let mass_ok = outcome.is_mass_conserved();
     Admissible {
         value: TransitionPair {
             old,

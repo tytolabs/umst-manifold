@@ -75,12 +75,12 @@ fn kleisli_verdict_from_admissible(admissible: bool) -> AdmissibilityVerdict {
     }
 }
 
-fn kleisli_result(admissible: bool, dissipation: f32, violation: Option<String>) -> AdmissibilityResult {
-    AdmissibilityResult::from_verdict(
-        kleisli_verdict_from_admissible(admissible),
-        dissipation,
-        violation,
-    )
+fn kleisli_result_from_verdict(
+    verdict: AdmissibilityVerdict,
+    dissipation: f32,
+    violation: Option<String>,
+) -> AdmissibilityResult {
+    AdmissibilityResult::from_verdict(verdict, dissipation, violation)
 }
 
 /// The admissibility monad wraps a value with its gate status: `M(A) = (A, AdmissibilityResult)`.
@@ -96,7 +96,7 @@ impl<A: Clone> Admissible<A> {
     pub fn pure(value: A) -> Self {
         Admissible {
             value,
-            result: kleisli_result(true, 0.0, None),
+            result: kleisli_result_from_verdict(AdmissibilityVerdict::Accepted, 0.0, None),
         }
     }
 
@@ -264,7 +264,11 @@ pub fn gate_arrow_generic<A: Clone>(
         let (ok, dissipation, violation) = check(&state);
         Admissible {
             value: state,
-            result: kleisli_result(ok, dissipation, violation),
+            result: kleisli_result_from_verdict(
+                kleisli_verdict_from_admissible(ok),
+                dissipation,
+                violation,
+            ),
         }
     })
 }
@@ -278,13 +282,13 @@ pub fn gate_arrow_canonical_transition(
 ) -> KleisliArrow<ThermodynamicStateSnapshot, ThermodynamicStateSnapshot> {
     KleisliArrow::new(name, move |new_state: ThermodynamicStateSnapshot| {
         let outcome = canonical_transition_outcome(&old_state, &new_state, dt_s);
-        let accepted = outcome.is_accepted();
+        let verdict = outcome.verdict();
         Admissible {
             value: new_state,
-            result: kleisli_result(
-                accepted,
+            result: kleisli_result_from_verdict(
+                verdict,
                 outcome.dissipation as f32,
-                if accepted {
+                if verdict == AdmissibilityVerdict::Accepted {
                     None
                 } else {
                     Some("canonical_transition_reject".into())
