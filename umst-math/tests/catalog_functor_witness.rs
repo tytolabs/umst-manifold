@@ -11,18 +11,18 @@ use umst_math::catalog_functor::{
 fn workspace_root() -> std::path::PathBuf {
     std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
-        .expect("umst-math inside umst-manifold workspace")
+        .expect("CARGO_MANIFEST_DIR parent for umst-math catalog_functor fixture path resolution (FP §6 Track G catalog harness)")
         .to_path_buf()
 }
 
 fn fixture_catalog_lock_json() -> String {
     std::fs::read_to_string(workspace_root().join("artifacts/catalog.lock.json"))
-        .expect("artifacts/catalog.lock.json")
+        .expect("read artifacts/catalog.lock.json for catalog_functor witness fixture (FP §6 Track G catalog harness)")
 }
 
 fn fixture_scalar_layout_json() -> String {
     std::fs::read_to_string(workspace_root().join("artifacts/scalar_layout.lock.json"))
-        .expect("artifacts/scalar_layout.lock.json")
+        .expect("read artifacts/scalar_layout.lock.json for catalog_functor sidecar fixture (FP §6 Track G catalog harness)")
 }
 
 #[test]
@@ -65,8 +65,8 @@ fn catalog_functor_fiber_id_maps_to_expected_scalar_channel_count_from_sidecar()
 
 #[test]
 fn catalog_functor_composed_digest_guard_holds_for_fixture_lock() {
-    let lock: Value =
-        serde_json::from_str(&fixture_catalog_lock_json()).expect("catalog lock json");
+    let lock: Value = serde_json::from_str(&fixture_catalog_lock_json())
+        .expect("parse artifacts/catalog.lock.json for catalog_functor composed digest guard witness (FP §6 Track G catalog harness)");
     assert!(
         composed_digest_guard_holds(&lock),
         "fixture catalog.lock.json must satisfy T1 composed digest guard"

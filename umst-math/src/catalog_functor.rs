@@ -183,13 +183,15 @@ mod tests {
 
     #[test]
     fn catalog_functor_manifold_runtime_maps_sidecar_count() {
-        let sidecar = parse_scalar_layout_lock(SAMPLE_SIDECAR).expect("sidecar");
+        let sidecar = parse_scalar_layout_lock(SAMPLE_SIDECAR)
+            .expect("parse SAMPLE_SIDECAR for catalog_functor manifold-runtime witness (FP §6 Track G catalog harness)");
         assert_eq!(runtime_scalar_channel_count(&sidecar), 7);
     }
 
     #[test]
     fn catalog_functor_lean_fiber_maps_to_zero() {
-        let sidecar = parse_scalar_layout_lock(SAMPLE_SIDECAR).expect("sidecar");
+        let sidecar = parse_scalar_layout_lock(SAMPLE_SIDECAR)
+            .expect("parse SAMPLE_SIDECAR for catalog_functor manifold-runtime witness (FP §6 Track G catalog harness)");
         assert_eq!(
             expected_scalar_channel_count("umst-formal", Some("lean_catalog_lock"), &sidecar),
             0
