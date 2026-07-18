@@ -41,8 +41,12 @@ fn emitted_step_record_omitted_defaults_deserialize() {
 fn emitted_trace_schema_json_roundtrip() {
     let v = EmittedTraceSchema::sample_fixture();
     assert_eq!(v.steps.len(), v.horizon_n as usize);
-    let s = serde_json::to_string(&v).expect("serialize");
-    let back: EmittedTraceSchema = serde_json::from_str(&s).expect("deserialize");
+    let s = serde_json::to_string(&v).expect(
+        "serde_json::to_string EmittedTraceSchema umst.emitted_trace.v1 round-trip witness (FP §6 Track G epistemic trace schema G.1)",
+    );
+    let back: EmittedTraceSchema = serde_json::from_str(&s).expect(
+        "serde_json::from_str EmittedTraceSchema JSON round-trip deserialize (FP §6 Track G epistemic trace schema G.1)",
+    );
     assert_eq!(back, v);
     assert!(s.contains("umst.emitted_trace.v1"));
 }
@@ -68,7 +72,9 @@ fn prototype_calibration_envelope_bounds_cases() {
     let ok = EmittedTraceSchema::sample_calibration_envelope_fixture();
     assert!(ok.within_prototype_calibration_bounds());
     ok.check_prototype_calibration_bounds()
-        .expect("envelope fixture inside epsMIAgg/epsCostAgg");
+        .expect(
+            "EmittedTraceSchema::sample_calibration_envelope_fixture within prototype epsMIAgg/epsCostAgg bounds (FP §6 Track G epistemic trace schema G.2)",
+        );
     let bad = EmittedTraceSchema::sample_calibration_envelope_violation_fixture();
     assert!(!bad.within_prototype_calibration_bounds());
     assert!(matches!(
@@ -83,7 +89,9 @@ fn well_formed_fixture_may_exceed_prototype_aggregate_envelope() {
     let trace = EmittedTraceSchema::sample_fixture();
     trace
         .check_emitted_trace_well_formed()
-        .expect("per-step EmittedTraceWellFormed");
+        .expect(
+            "EmittedTraceSchema::sample_fixture per-step EmittedTraceWellFormed without prototype aggregate envelope (FP §6 Track G epistemic trace schema G.2)",
+        );
     assert!(
         !trace.within_prototype_calibration_bounds(),
         "catalog-well-formed rollout sums can exceed prototype epsMIAgg (orthogonal morphisms)"
@@ -95,10 +103,14 @@ fn sample_fixture_respects_emitted_trace_well_formed_bounds() {
     let trace = EmittedTraceSchema::sample_fixture();
     trace
         .check_emitted_trace_well_formed()
-        .expect("sample_fixture must satisfy Lean EmittedTraceWellFormed bounds");
+        .expect(
+            "EmittedTraceSchema::sample_fixture satisfies Lean EmittedTraceWellFormed aggregate bounds (FP §6 Track G epistemic trace schema G.2)",
+        );
     for step in &trace.steps {
         step.check_emitted_trace_well_formed(trace.temperature_t)
-            .expect("each step well-formed");
+            .expect(
+                "EmittedStepRecord per-step EmittedTraceWellFormed at sample_fixture temperature_t (FP §6 Track G epistemic trace schema G.2)",
+            );
     }
 }
 
