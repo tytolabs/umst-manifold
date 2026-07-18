@@ -4,6 +4,16 @@
 //! H4 Step A — bar-network operator probes before any PCG tuning or nondimensionalization.
 //!
 //! formal_anchor: Track B6 / H4 fix sequence
+//!
+//! ## Ignored harness (Wave 2 / S3)
+//!
+//! [`quick_plate_harness_load_pcg_converges`] stays **`#[ignore]`** — roof-traction PCG stalls at
+//! `rel_res ≈ 0.94` on the singular 9×8×2 harness (incompatible-RHS floor). Symmetry/PSD/manufactured
+//! probes in this file pass; stall mechanism is witness-tested in
+//! [`bar_network_roof_mechanism_probe`]. Ledger row:
+//! [`docs/SOLVER_NEVER_RUN_LEDGER.md`](../../docs/SOLVER_NEVER_RUN_LEDGER.md).
+//!
+//! **VERIFY:** `cargo test -p umst-manifold --features mechanics-adjoint,ndarray --test bar_network_operator_step_a quick_plate_harness_load_pcg_converges -- --ignored --nocapture`
 
 #![cfg(feature = "mechanics-adjoint")]
 #![allow(clippy::type_complexity, dead_code)]
@@ -432,7 +442,7 @@ fn nine_node_chain_manufactured_solution() {
 }
 
 #[test]
-#[ignore = "H4: f64 PCG still stalls ~0.94 rel_res on 9×8×2 roof traction (operator probes pass); gate tracked in cartridge harness"]
+#[ignore = "H4 roof PCG stall rel_res≈0.94 on 9×8×2 traction — VERIFY: cargo test -p umst-manifold --features mechanics-adjoint,ndarray --test bar_network_operator_step_a quick_plate_harness_load_pcg_converges -- --ignored --nocapture; see SOLVER_NEVER_RUN_LEDGER + bar_network_roof_mechanism_probe"]
 fn quick_plate_harness_load_pcg_converges() {
     let (plate, dev, edges, coords, e_node, mask, area) = quick_plate_fixture();
     let mask_check = mask.clone();

@@ -4,6 +4,11 @@
 //! H4 roof-traction stall — mechanism probes (9×8×2 harness fixture).
 //!
 //! formal_anchor: Track B6 / b6-roof-mechanism-research
+//!
+//! Companion to [`bar_network_operator_step_a`]: PROBES 1/3 witness why
+//! [`quick_plate_harness_load_pcg_converges`] stays **`#[ignore]`** (CGLS min-residual floor ≈
+//! observed PCG stall via FP §2 `PhysicsError::Diverged`). Default CI runs all four probes here;
+//! ledger cross-ref: [`docs/SOLVER_NEVER_RUN_LEDGER.md`](../../docs/SOLVER_NEVER_RUN_LEDGER.md).
 
 #![cfg(feature = "mechanics-adjoint")]
 #![allow(
