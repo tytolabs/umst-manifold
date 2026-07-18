@@ -107,10 +107,22 @@ fn prop_transpose_involutive_inner() -> bool {
         .expect(
             "SparseTensor::from_triplets 3×2 CSR A for prop_transpose_involutive witness (FP §6 Track algebra sparse CSR)",
         );
-    let t = a.transpose().expect("t");
-    let tt = t.transpose().expect("tt");
+    let t = a.transpose().expect(
+        "SparseTensor::transpose A→Aᵀ for prop_transpose_involutive witness (FP §6 Track algebra sparse CSR)",
+    );
+    let tt = t.transpose().expect(
+        "SparseTensor::transpose Aᵀ→A for prop_transpose_involutive involution witness (FP §6 Track algebra sparse CSR)",
+    );
     (0u32..3u32).all(|r| {
-        (0u32..2u32).all(|c| (a.at(r, c).expect("a") - tt.at(r, c).expect("t")).abs() < 1e-9)
+        (0u32..2u32).all(|c| {
+            (a.at(r, c).expect(
+                "SparseTensor::at original A cell for prop_transpose_involutive witness (FP §6 Track algebra sparse CSR)",
+            ) - tt.at(r, c).expect(
+                "SparseTensor::at double-transpose cell for prop_transpose_involutive witness (FP §6 Track algebra sparse CSR)",
+            ))
+            .abs()
+                < 1e-9
+        })
     })
 }
 

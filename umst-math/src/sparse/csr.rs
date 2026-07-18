@@ -373,14 +373,22 @@ mod h2_sparse_lib {
         let a = SparseTensor::from_triplets([2, 2], &[0], &[0], &[1.0_f64]).expect(
             "SparseTensor::from_triplets 2×2 CSR A for add_merge_commutes_small smoke (FP §6 Track algebra sparse CSR)",
         );
-        let b = SparseTensor::from_triplets([2, 2], &[0], &[0], &[2.0_f64]).expect("b");
-        let s = a.add(&b).expect("add");
-        assert!((s.at(0, 0).expect("t") - 3.0).abs() < 1e-12);
+        let b = SparseTensor::from_triplets([2, 2], &[0], &[0], &[2.0_f64]).expect(
+            "SparseTensor::from_triplets 2×2 CSR B for add_merge_commutes_small smoke (FP §6 Track algebra sparse CSR)",
+        );
+        let s = a.add(&b).expect(
+            "SparseTensor::add A+B for add_merge_commutes_small smoke (FP §6 Track algebra sparse CSR)",
+        );
+        assert!((s.at(0, 0).expect(
+            "SparseTensor::at (0,0) merged sum for add_merge_commutes_small smoke (FP §6 Track algebra sparse CSR)",
+        ) - 3.0).abs() < 1e-12);
     }
 
     #[test]
     fn transpose_involutive_2x3() {
-        let a = SparseTensor::from_triplets([2, 3], &[0, 1], &[0, 2], &[1.0_f64, 2.0]).expect("a");
+        let a = SparseTensor::from_triplets([2, 3], &[0, 1], &[0, 2], &[1.0_f64, 2.0]).expect(
+            "SparseTensor::from_triplets 2×3 CSR A for transpose_involutive_2x3 smoke (FP §6 Track algebra sparse CSR)",
+        );
         let t = a.transpose().expect("t");
         let tt = t.transpose().expect("tt");
         assert_eq!(a.shape(), tt.shape());
