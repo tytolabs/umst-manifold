@@ -63,7 +63,9 @@ mod tests {
     #[test]
     fn load_returns_state_slice() {
         let buf = fixture();
-        let view = load_arena(&buf).expect("load");
+        let view = load_arena(&buf).expect(
+            "load_arena on synthetic v1 fixture with state section (FP §6 load_returns_state_slice witness)",
+        );
         assert_eq!(view.state_bytes(), &[0x42; 8]);
     }
 
@@ -72,9 +74,13 @@ mod tests {
         use crate::stamp::{read_commit_stamp, seal_arena_commit};
 
         let mut buf = fixture();
-        seal_arena_commit(&mut buf, 0xCAFE_BABE_0000_0001).expect("seal");
+        seal_arena_commit(&mut buf, 0xCAFE_BABE_0000_0001).expect(
+            "seal_arena_commit on synthetic v1 fixture (FP §6 seal_arena_commit_roundtrip witness)",
+        );
         assert_eq!(read_commit_stamp(&buf), 0xCAFE_BABE_0000_0001);
-        let view = load_arena(&buf).expect("load after seal");
+        let view = load_arena(&buf).expect(
+            "load_arena after seal_arena_commit on synthetic fixture (FP §6 seal_arena_commit_roundtrip witness)",
+        );
         assert_eq!(view.state_bytes(), &[0x42; 8]);
     }
 
@@ -85,7 +91,9 @@ mod tests {
             .and_then(|s| s.parse().ok())
             .unwrap_or(100);
         let buf = fixture();
-        let view = load_arena(&buf).expect("load");
+        let view = load_arena(&buf).expect(
+            "load_arena on synthetic v1 fixture for hot-loop timing (FP §6 bench_load_arena_hot_loop witness)",
+        );
         let start = std::time::Instant::now();
         for _ in 0..iters {
             let _ = view.state_bytes();

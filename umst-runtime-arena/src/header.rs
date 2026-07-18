@@ -141,12 +141,16 @@ mod tests {
     #[test]
     fn parse_valid_header() {
         let bytes = sample_header_bytes();
-        let header = UmstArenaHeader::parse(&bytes).expect("parse");
+        let header = UmstArenaHeader::parse(&bytes).expect(
+            "UmstArenaHeader::parse on valid v1 sample bytes (FP §6 parse_valid_header witness)",
+        );
         assert_eq!(header.magic, ARENA_MAGIC);
         assert_eq!(header.catalog_digest, [0xAB; 32]);
         assert_eq!(header.state_offset, ARENA_HEADER_BYTES as u64);
         assert_eq!(header.state_bytes, 16);
-        header.validate_sections(bytes.len()).expect("sections");
+        header.validate_sections(bytes.len()).expect(
+            "validate_sections on valid v1 sample header + payload (FP §6 parse_valid_header witness)",
+        );
     }
 
     #[test]
