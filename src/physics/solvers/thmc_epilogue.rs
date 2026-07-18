@@ -5,10 +5,7 @@
 //!
 //! ```text
 //! thmc_post_step_epilogue
-//!   and_then_state → apply_fracture_damage (PhaseFieldFractureSolver)
-//!   and_then_state → sync_thmc_to_umst (W4/W5 UMST mirror)
-//!   attach_gate_evidence → transition witness
-//!   map_state        → advance_time (state.time += dt)
+//!   ok_state → and_then fracture → and_then sync → gate witness → map advance_time
 //! ```
 
 #[cfg(feature = "thmc-coupled")]
@@ -25,7 +22,7 @@ use crate::core::traits::IScienceCartridge;
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::error::PhysicsError;
 #[cfg(feature = "thmc-coupled")]
-use crate::physics::pipeline::{and_then_state, map_state};
+use crate::physics::pipeline::{map_result, ok_state};
 
 #[cfg(feature = "thmc-coupled")]
 use super::fracture_field::{
@@ -60,16 +57,15 @@ where
     C: IScienceCartridge<B>,
 {
     let edges_b1 = ctx.edges_b1.clone();
-    let state = and_then_state(state, |s| {
-        apply_fracture_damage(s, manifold, ctx.batch, ctx.n, edges_b1.clone())
-    })?;
-    let state = and_then_state(state, |s| {
-        crate::physics::thmc_umst_sync::sync_thmc_to_umst(&s, manifold).map(|_| s)
-    })?;
+    let state = ok_state(state)
+        .and_then(|s| apply_fracture_damage(s, manifold, ctx.batch, ctx.n, edges_b1.clone()))
+        .and_then(|s| {
+            crate::physics::thmc_umst_sync::sync_thmc_to_umst(&s, manifold).map(|_| s)
+        })?;
     let gate_evidence = ThmcSolverStep::attach_gate_evidence(
         solver, cartridge, pre_step, &state, manifold, ctx.dt,
     )?;
-    let state = map_state(state, |mut s| {
+    let state = map_result(ok_state(state), |mut s| {
         s.time += ctx.dt;
         s
     })?;

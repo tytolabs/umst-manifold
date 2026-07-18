@@ -144,6 +144,23 @@ impl TopologyPhysicsOrchestrator {
         })
     }
 
+    /// FP §5 synonym for [`Self::fold_plan_step`] — Kleisli composition of plan morphisms.
+    #[inline]
+    pub fn compose_plan_step<B, C, I>(
+        &mut self,
+        intents: I,
+        cartridge: &C,
+        state: ThmcState<B>,
+        manifold: &mut UnifiedMaterialStateTensor<B>,
+    ) -> Result<ThmcState<B>, PhysicsError>
+    where
+        B: Backend<FloatElem = f32>,
+        C: IScienceCartridge<B>,
+        I: IntoIterator<Item = TopologyPlanIntent>,
+    {
+        self.fold_plan_step(intents, cartridge, state, manifold)
+    }
+
     /// Advance one orchestrated plan step: folds [`default_topology_plan_intents`] via [`Self::fold_plan_step`].
     ///
     /// This method intentionally contains no second copy of Laplacian, fracture, or rheology logic.
@@ -403,6 +420,35 @@ mod tests {
                 sb.thermal.temperature.as_tensor().clone().into_data()
             ),
             _ => panic!("run_plan_step vs fold mismatch: {a:?} vs {b:?}"),
+        }
+    }
+
+    #[test]
+    fn compose_plan_step_matches_fold_over_default_intents() {
+        let mut o = TopologyPhysicsOrchestrator::new(ThmcSolver::default());
+        let dev = ndarray_device();
+        let n = 2usize;
+        let state = toy_thmc_state(&dev, n);
+        let mut manifold = toy_umst_two_node(&dev);
+        let a = o.compose_plan_step(
+            default_topology_plan_intents(),
+            &EmptyCartridge,
+            state.clone(),
+            &mut manifold,
+        );
+        let b = o.fold_plan_step(
+            default_topology_plan_intents(),
+            &EmptyCartridge,
+            state,
+            &mut manifold,
+        );
+        match (&a, &b) {
+            (Err(ea), Err(eb)) => assert_eq!(ea, eb),
+            (Ok(sa), Ok(sb)) => assert_eq!(
+                sa.thermal.temperature.as_tensor().clone().into_data(),
+                sb.thermal.temperature.as_tensor().clone().into_data()
+            ),
+            _ => panic!("compose_plan_step vs fold mismatch: {a:?} vs {b:?}"),
         }
     }
 
