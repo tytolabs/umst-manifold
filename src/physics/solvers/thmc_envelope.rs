@@ -131,7 +131,7 @@ mod tests {
         assert!((env.time - 1.5).abs() < f32::EPSILON);
         let s = env.phase.as_setting().expect(
             "ThmcEnvelope::from_flat_state(Setting) must yield MaterialPhase::Setting arm \
-             (MP2 bijection witness)",
+             (MP2 bijection witness) (FP §6 Track MP2 transport envelope harness)",
         );
         assert_eq!(s.temperature.dims(), [1, 4, 1]);
         assert_eq!(s.humidity.dims(), [1, 4, 1]);
@@ -155,7 +155,7 @@ mod tests {
         assert_eq!(env.kind(), MaterialPhaseKind::Fluid);
         let r = env.phase.as_fluid().expect(
             "ThmcEnvelope::from_flat_state(Fluid) must yield MaterialPhase::Fluid arm \
-             (MP2 bijection witness)",
+             (MP2 bijection witness) (FP §6 Track MP2 transport envelope harness)",
         );
         assert_eq!(r.velocity.dims(), [1, 4, 3]);
         assert_eq!(r.yield_stress.dims(), [1, 4, 1]);
@@ -170,7 +170,7 @@ mod tests {
         assert_eq!(env.kind(), MaterialPhaseKind::Solid);
         let m = env.phase.as_solid().expect(
             "ThmcEnvelope::from_flat_state(Solid) must yield MaterialPhase::Solid arm \
-             (MP2 bijection witness)",
+             (MP2 bijection witness) (FP §6 Track MP2 transport envelope harness)",
         );
         assert_eq!(m.displacement.dims(), [1, 4, 3]);
         assert_eq!(m.damage.dims(), [1, 4, 1]);
@@ -242,7 +242,7 @@ mod tests {
         assert!((env2.time - env.time).abs() < f32::EPSILON);
         let r = env2.phase.as_fluid().expect(
             "idempotent from_flat(Fluid) roundtrip must preserve MaterialPhase::Fluid arm \
-             (MP2 bijection witness)",
+             (MP2 bijection witness) (FP §6 Track MP2 transport envelope harness)",
         );
         assert_eq!(r.velocity.dims(), [1, 4, 3]);
     }
@@ -258,7 +258,7 @@ mod tests {
         assert!((env2.time - env.time).abs() < f32::EPSILON);
         let m = env2.phase.as_solid().expect(
             "idempotent from_flat(Solid) roundtrip must preserve MaterialPhase::Solid arm \
-             (MP2 bijection witness)",
+             (MP2 bijection witness) (FP §6 Track MP2 transport envelope harness)",
         );
         assert_eq!(m.displacement.dims(), [1, 4, 3]);
     }

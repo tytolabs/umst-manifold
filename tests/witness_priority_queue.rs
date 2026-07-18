@@ -47,7 +47,7 @@ fn manifest_optional_witness_priority_queue() {
     let attached = manifest
         .witness_priority_queue
         .as_ref()
-        .expect("builder must attach queue");
+        .expect("UmstManifestBuilder witness_priority_queue attachment witness (FP §6 Track G formal proof harness)");
     assert!(attached.is_enabled());
     assert_eq!(attached.priority_of_module(LANDAUER_LAW_LEAN_MODULE), 15);
 }

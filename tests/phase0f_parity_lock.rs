@@ -79,7 +79,7 @@ fn phase0f_census_surface_complete() {
     let parity_consumer = ADMISSIBILITY_CONSUME_SITES
         .iter()
         .find(|s| s.symbol == "gate_check_mix_result_parity_fixture")
-        .expect("gate_parity harness must be registered as consume site");
+        .expect("gate_check_mix_result_parity_fixture consume census registration witness (FP §6 Track G formal proof harness)");
     assert_eq!(parity_consumer.repo, "umst-concrete-cartridge");
 }
 

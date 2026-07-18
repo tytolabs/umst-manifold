@@ -62,6 +62,22 @@ impl TransitionVerdict {
         self.is_accepted()
     }
 
+    /// Legacy mass-balance conjunct witness (unchanged semantics).
+    #[inline]
+    #[must_use]
+    #[allow(deprecated)]
+    pub fn is_mass_conserved(&self) -> bool {
+        self.mass_conserved
+    }
+
+    /// Legacy CD ∧ strength fold witness (unchanged semantics — not Core-only CD).
+    #[inline]
+    #[must_use]
+    #[allow(deprecated)]
+    pub fn is_energy_positive(&self) -> bool {
+        self.energy_positive
+    }
+
     /// REST-stable verdict via locked transition conjunct ladder (legacy `energy_positive` fold).
     #[allow(deprecated)]
     #[must_use]
@@ -121,8 +137,8 @@ impl TransitionGateEvaluator for ThermodynamicTransitionEvaluator {
             verdict: r.conjunct_verdict(),
             admissible: r.is_accepted(),
             dissipation_w_m3: r.dissipation,
-            mass_conserved: r.mass_conserved,
-            energy_positive: r.energy_positive,
+            mass_conserved: r.is_mass_conserved(),
+            energy_positive: r.is_energy_positive(),
         }
     }
 }

@@ -57,6 +57,22 @@ impl AdmissibilityResult {
         self.is_accepted()
     }
 
+    /// Legacy mass-balance conjunct witness (unchanged semantics).
+    #[inline]
+    #[must_use]
+    #[allow(deprecated)]
+    pub fn is_mass_conserved(&self) -> bool {
+        self.mass_conserved
+    }
+
+    /// Legacy CD ∧ strength fold witness (unchanged semantics — not Core-only CD).
+    #[inline]
+    #[must_use]
+    #[allow(deprecated)]
+    pub fn is_energy_positive(&self) -> bool {
+        self.energy_positive
+    }
+
     /// REST-stable verdict via locked transition conjunct ladder (legacy `energy_positive` fold).
     #[allow(deprecated)]
     pub fn rest_verdict(&self) -> AdmissibilityVerdict {
@@ -290,8 +306,8 @@ mod tests {
         let mut gate = ThermodynamicGate::new();
         let telemetry = gate.check_transition(&old, &new, dt);
         assert_eq!(pure.accepted, telemetry.accepted);
-        assert_eq!(pure.mass_conserved, telemetry.mass_conserved);
-        assert_eq!(pure.energy_positive, telemetry.energy_positive);
+        assert_eq!(pure.is_mass_conserved(), telemetry.is_mass_conserved());
+        assert_eq!(pure.is_energy_positive(), telemetry.is_energy_positive());
         assert!((pure.dissipation - telemetry.dissipation).abs() < 1e-12);
         assert!(gate.stats_summary().contains("Accepted: 1"));
     }

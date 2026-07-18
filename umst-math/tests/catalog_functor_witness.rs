@@ -27,7 +27,8 @@ fn fixture_scalar_layout_json() -> String {
 
 #[test]
 fn catalog_functor_fiber_id_maps_to_expected_scalar_channel_count_from_sidecar() {
-    let sidecar = parse_scalar_layout_lock(&fixture_scalar_layout_json()).expect("sidecar parse");
+    let sidecar = parse_scalar_layout_lock(&fixture_scalar_layout_json())
+        .expect("parse_scalar_layout_lock on fixture scalar_layout.lock.json for catalog_functor witness (FP §6 Track G catalog harness)");
     assert_eq!(sidecar.scalar_channel_count, 7);
     assert_eq!(
         runtime_scalar_channel_count(&sidecar),
@@ -38,15 +39,18 @@ fn catalog_functor_fiber_id_maps_to_expected_scalar_channel_count_from_sidecar()
         7
     );
 
-    let lock: Value =
-        serde_json::from_str(&fixture_catalog_lock_json()).expect("catalog lock json");
+    let lock: Value = serde_json::from_str(&fixture_catalog_lock_json())
+        .expect("parse artifacts/catalog.lock.json for catalog_functor fiber pin witness (FP §6 Track G catalog harness)");
     let pins = lock
         .get("fiber_pins")
         .and_then(Value::as_array)
-        .expect("fiber_pins");
+        .expect("catalog.lock.json fiber_pins array for catalog_functor scalar mapping witness (FP §6 Track G catalog harness)");
 
     for pin in pins {
-        let repo = pin.get("repo").and_then(Value::as_str).expect("repo");
+        let repo = pin
+            .get("repo")
+            .and_then(Value::as_str)
+            .expect("catalog.lock.json fiber_pins[].repo field for catalog_functor scalar channel witness (FP §6 Track G catalog harness)");
         let role = pin.get("lock_role").and_then(Value::as_str);
         let count = expected_scalar_channel_count(repo, role, &sidecar);
         if is_preview_fiber_role(role) {
@@ -72,12 +76,14 @@ fn catalog_functor_composed_digest_guard_holds_for_fixture_lock() {
 
 quickcheck! {
     fn catalog_functor_digest_guard_idempotent_on_fixture_clone(_pad: u8) -> bool {
-        let lock: Value = serde_json::from_str(&fixture_catalog_lock_json()).expect("lock");
+        let lock: Value = serde_json::from_str(&fixture_catalog_lock_json())
+            .expect("parse artifacts/catalog.lock.json for catalog_functor idempotency quickcheck witness (FP §6 Track G catalog harness)");
         composed_digest_guard_idempotent(&lock)
     }
 
     fn catalog_functor_preview_roles_map_to_zero_scalars(role_suffix: String) -> bool {
-        let sidecar = parse_scalar_layout_lock(&fixture_scalar_layout_json()).expect("sidecar");
+        let sidecar = parse_scalar_layout_lock(&fixture_scalar_layout_json())
+            .expect("parse_scalar_layout_lock on fixture for catalog_functor preview-role quickcheck witness (FP §6 Track G catalog harness)");
         let role = format!("ucrs_preview_{role_suffix}");
         if !is_preview_fiber_role(Some(&role)) {
             return true;

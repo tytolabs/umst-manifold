@@ -131,8 +131,10 @@ fn gate_parity_v0_fixture_digest_pinned() {
 #[test]
 fn gate_parity_v0_fixture_schema_version() {
     let path = gate_parity_fixture_path();
-    let text = std::fs::read_to_string(&path).expect("fixture readable");
-    let v: serde_json::Value = serde_json::from_str(&text).expect("valid json");
+    let text = std::fs::read_to_string(&path)
+        .expect("read gate_parity_v0.json fixture for phase0a schema witness (FP §6 Track G formal proof harness)");
+    let v: serde_json::Value = serde_json::from_str(&text)
+        .expect("parse gate_parity_v0.json as JSON for phase0a schema witness (FP §6 Track G formal proof harness)");
     assert_eq!(
         v["schema_version"].as_str(),
         Some("gate_parity_v0"),
@@ -310,14 +312,14 @@ fn phase0a_census_registers_anchor_compute_and_consume_sites() {
     let canonical = ADMISSIBILITY_COMPUTE_SITES
         .iter()
         .find(|s| s.symbol == "transition_outcome")
-        .expect("transition_outcome must appear in compute census");
+        .expect("transition_outcome site in ADMISSIBILITY_COMPUTE_SITES census witness (FP §6 Track G formal proof harness)");
     assert_eq!(canonical.role, SiteRole::Compute);
     assert!(canonical.conjuncts.contains(&ConjunctFamily::ClausiusDuhem));
 
     let mcp = ADMISSIBILITY_CONSUME_SITES
         .iter()
         .find(|s| s.symbol == "gate_check_mix_result")
-        .expect("gate_check_mix_result must appear in consume census");
+        .expect("gate_check_mix_result site in ADMISSIBILITY_CONSUME_SITES census witness (FP §6 Track G formal proof harness)");
     assert_eq!(mcp.role, SiteRole::Consume);
 }
 

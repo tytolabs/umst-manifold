@@ -57,7 +57,7 @@ fn helmholtz_delta_blob_fwhm_matches_green_scale() {
     let filter = HelmholtzFilter::new(r, 240, 1e-7);
     let out = filter
         .apply(rho_t, edges, dx)
-        .expect("HelmholtzFilter::apply on delta blob grid");
+        .expect("HelmholtzFilter::apply on delta blob grid (FP §6 topology filter integration verification)");
     let vals = out.into_data().value;
     let peak = vals.iter().cloned().fold(0.0_f32, f32::max);
     assert!(peak > 0.05 && peak <= 1.5, "peak out of band: {peak}");
@@ -65,7 +65,9 @@ fn helmholtz_delta_blob_fwhm_matches_green_scale() {
         .iter()
         .enumerate()
         .max_by(|(_, a), (_, b)| {
-            a.partial_cmp(b).expect("Helmholtz peak index comparison (finite f32 densities)")
+            a.partial_cmp(b).expect(
+                "Helmholtz peak index comparison on finite f32 densities (FP §6 topology filter integration verification)",
+            )
         })
         .map(|(i, _)| i)
         .expect("Helmholtz delta blob grid filtered density peak enumeration (FP §6 topology filter integration verification)");

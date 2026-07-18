@@ -316,7 +316,8 @@ mod tests {
     fn phase_variants_preserve_tensor_shapes() {
         let fluid = fluid_phase();
         let r = fluid.as_fluid().expect(
-            "fluid_phase fixture must yield MaterialPhaseKind::Fluid variant (MP1 phase ADT witness)",
+            "fluid_phase fixture must yield MaterialPhaseKind::Fluid variant (MP1 phase ADT witness) \
+             (FP §6 hydration/aging harness)",
         );
         assert_eq!(r.yield_stress.dims(), [1, 2, 1]);
         assert_eq!(r.velocity.dims(), [1, 2, 3]);
@@ -324,7 +325,7 @@ mod tests {
         let setting = setting_phase();
         let s = setting.as_setting().expect(
             "setting_phase fixture must yield MaterialPhaseKind::Setting variant \
-             (MP1 phase ADT witness)",
+             (MP1 phase ADT witness) (FP §6 hydration/aging harness)",
         );
         assert_eq!(s.reaction_extent.dims(), [1, 2, 1]);
         assert_eq!(s.humidity.dims(), [1, 2, 1]);
@@ -332,7 +333,8 @@ mod tests {
 
         let solid = solid_phase();
         let m = solid.as_solid().expect(
-            "solid_phase fixture must yield MaterialPhaseKind::Solid variant (MP1 phase ADT witness)",
+            "solid_phase fixture must yield MaterialPhaseKind::Solid variant (MP1 phase ADT witness) \
+             (FP §6 hydration/aging harness)",
         );
         assert_eq!(m.displacement.dims(), [1, 2, 3]);
         assert_eq!(m.damage.dims(), [1, 2, 1]);

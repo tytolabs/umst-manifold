@@ -526,8 +526,8 @@ mod transition_outcome_tests {
             dt,
             tol,
         );
-        assert_eq!(outcome.accepted, adm);
-        assert!(outcome.reaction_extent_irreversible);
+        assert_eq!(outcome.is_accepted(), adm);
+        assert!(outcome.is_reaction_extent_irreversible());
     }
 
     #[test]
@@ -536,8 +536,8 @@ mod transition_outcome_tests {
         let mut new = old;
         new.reaction_extent = 0.1;
         let outcome = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
-        assert!(!outcome.reaction_extent_irreversible);
-        assert!(!outcome.accepted);
+        assert!(!outcome.is_reaction_extent_irreversible());
+        assert!(!outcome.is_accepted());
     }
 
     #[test]
@@ -587,7 +587,7 @@ mod transition_outcome_tests {
                 ),
                 "REST ladder must match stored bool conjuncts"
             );
-            if outcome.accepted {
+            if outcome.is_accepted() {
                 assert_eq!(outcome.verdict, ConjunctVerdict::Accepted);
             } else {
                 assert_ne!(outcome.verdict, ConjunctVerdict::Accepted);
@@ -602,7 +602,7 @@ mod transition_outcome_tests {
                 ConjunctVerdict::Rejected(GateRejectReason::StrengthRegression)
             ) {
                 assert!(
-                    !outcome.energy_positive,
+                    !outcome.is_energy_positive(),
                     "strength regression must fold into energy_positive=false"
                 );
                 assert_eq!(
@@ -622,7 +622,7 @@ mod transition_outcome_tests {
             outcome.verdict,
             ConjunctVerdict::Rejected(GateRejectReason::MalformedInput)
         );
-        assert!(!outcome.accepted);
+        assert!(!outcome.is_accepted());
     }
 
     #[test]
@@ -631,7 +631,7 @@ mod transition_outcome_tests {
         let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
         let outcome = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
         let g = gate_sdf(&snapshot_to_gate(&old, 80.0), &snapshot_to_gate(&new, 80.0));
-        if outcome.accepted {
+        if outcome.is_accepted() {
             assert!(g <= TRANSITION_TOLERANCE, "accepted ⇒ gate_sdf ≤ ε ({g})");
         }
     }

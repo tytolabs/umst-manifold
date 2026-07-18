@@ -107,7 +107,9 @@ fn compliance_functional_identity_optimizer_readout_gate() {
             bm_t.clone(),
             penalization_opt,
         )
-        .expect("optimizer eval");
+        .expect(
+            "Q1HexComplianceFunctional::eval_autodiff optimizer penalization schedule on Q1 hex plate (FP §6 Track A4 solid elasticity harness)",
+        );
     let c_surrogate: f32 = surrogate.into_scalar();
 
     let inner_opt = Q1HexComplianceFunctional
@@ -120,7 +122,9 @@ fn compliance_functional_identity_optimizer_readout_gate() {
                 penalization: penalization_opt,
             },
         )
-        .expect("inner optimizer mode");
+        .expect(
+            "Q1HexComplianceFunctional::eval_inner optimizer-mode parity vs autodiff surrogate (FP §6 Track A4 solid elasticity harness)",
+        );
 
     let inner_gate = Q1HexComplianceFunctional
         .eval_inner(
@@ -132,7 +136,9 @@ fn compliance_functional_identity_optimizer_readout_gate() {
                 penalization: penalization_gate,
             },
         )
-        .expect("inner gate mode");
+        .expect(
+            "Q1HexComplianceFunctional::eval_inner gate penalization vs legacy raw_compliance (FP §6 Track A4 solid elasticity harness)",
+        );
 
     let legacy_gate = AdjointComplianceQ1Hex::raw_compliance_at_rho(
         &rho_flat,

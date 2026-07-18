@@ -34,7 +34,9 @@ fn toy_two_node_one_edge_b1() -> B1Incidence<B> {
     let device = Default::default();
     let edges_b1: Tensor<B, 2, Int> =
         Tensor::from_data(Data::new(vec![0i64, 1], Shape::new([2, 1])), &device);
-    B1Incidence::try_new(edges_b1).expect("toy mesh B1 layout [2, 1]")
+    B1Incidence::try_new(edges_b1).expect(
+        "B1Incidence::try_new on toy 2-node 1-edge DEC graph mesh (FP §6 Track DEC mesh FEM harness)",
+    )
 }
 
 #[test]

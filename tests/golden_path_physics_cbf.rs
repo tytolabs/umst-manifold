@@ -153,7 +153,9 @@ impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for MechanicsBarCartrid
         let coords = manifold
             .node_positions
             .as_ref()
-            .expect("MechanicsBarCartridge requires SI node_positions [N,3]")
+            .expect(
+                "MechanicsBarCartridge requires SI node_positions [N,3] on bar topology path (FP §6 Track G golden path CBF harness)",
+            )
             .clone();
 
         let damage_col = manifold
@@ -181,7 +183,9 @@ impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for MechanicsBarCartrid
             cross_section_area,
             &inner_cfg,
         )
-        .expect("solve_equilibrium");
+        .expect(
+            "VectorMechanicsSolver::solve_equilibrium on two-node bar MechanicsBarCartridge (FP §6 Track G golden path CBF harness)",
+        );
 
         let u_energy = u.clone().powf_scalar(2.0).sum_dim(2).reshape([batch, n]);
         // stress: [B, N, 3, 3] — per-node Frobenius energy as a tiny coupling term
@@ -334,18 +338,24 @@ fn golden_path_mechanics_physical_result_cbf_apply_physics() {
     let info_gain = Tensor::<B, 1>::zeros([1], &dev);
     let erasure = cbf
         .verify_tensor_update(d_int, info_gain.clone())
-        .expect("CBF should admit near-zero information gain with generous credit");
+        .expect(
+            "ThermodynamicCBF::verify_tensor_update admits near-zero information gain on bar dissipation (FP §6 Track G golden path CBF harness)",
+        );
     assert!(erasure.is_finite() && erasure >= 0.0);
 
     let mut gateway =
         ManifoldGateway::new(MechanicsBarCartridge::default(), 300.0_f64, 1.0e-12_f64);
     let (verified, reward) = gateway
         .evaluate_topology_step(umst.clone(), info_gain.clone())
-        .expect("ManifoldGateway CBF path should succeed");
+        .expect(
+            "ManifoldGateway::evaluate_topology_step CBF admit on bar MechanicsCartridge (FP §6 Track G golden path CBF harness)",
+        );
     assert_tensor1_finite(&reward, "gateway_reward");
     drop(verified);
 
-    apply_physics_to_umst(&pr, &mut umst).expect("apply_physics_to_umst");
+    apply_physics_to_umst(&pr, &mut umst).expect(
+        "apply_physics_to_umst merges bar PhysicalResult damage channels (FP §6 Track G golden path CBF harness)",
+    );
     let out = umst.scalar_features.clone().into_data().value;
     assert!(out[SCALAR_DAMAGE].is_finite());
     assert!(out[UMST_SCALAR_CHANNEL_COUNT + SCALAR_DAMAGE].is_finite());
@@ -424,7 +434,9 @@ fn golden_path_thmc_experimental_then_cbf_apply_physics() {
     });
     let state_out = orchestrator
         .run_plan_step(&EmptyCartridge, state, &mut manifold)
-        .expect("THMC experimental step");
+        .expect(
+            "TopologyPhysicsOrchestrator::run_plan_step on THMC Laplacian transport tick (FP §6 Track G golden path CBF harness)",
+        );
 
     let mut pr = physical_result_from_thmc_state(&state_out);
     assert_tensor2_finite(&pr.free_energy, "thmc free_energy");
@@ -443,10 +455,14 @@ fn golden_path_thmc_experimental_then_cbf_apply_physics() {
     let d_int = pr.dissipation.clone().sum_dim(1).squeeze(1);
     let info_gain = Tensor::<B, 1>::zeros([1], &dev);
     cbf.verify_tensor_update(d_int, info_gain)
-        .expect("CBF should admit zero information-gain step");
+        .expect(
+            "ThermodynamicCBF::verify_tensor_update admits zero information gain after THMC transport tick (FP §6 Track G golden path CBF harness)",
+        );
 
     let mut umst = manifold.clone();
-    apply_physics_to_umst(&pr, &mut umst).expect("apply_physics_to_umst");
+    apply_physics_to_umst(&pr, &mut umst).expect(
+        "apply_physics_to_umst merges THMC PhysicalResult after transport orchestration tick (FP §6 Track G golden path CBF harness)",
+    );
     let out = umst.scalar_features.clone().into_data().value;
     let f = umst.scalar_features.dims()[1];
     assert!((out[SCALAR_DAMAGE] - 0.04).abs() < 1e-4);

@@ -164,7 +164,9 @@ fn manifold_gateway_alpha_beta_gamma_weights() {
     g_base.gamma = 0.0;
     let r_base = g_base
         .evaluate_topology_step(umst.clone(), info.clone())
-        .expect("ManifoldGateway topology step with beta=0 should pass gate")
+        .expect(
+            "ManifoldGateway::evaluate_topology_step on GateAwareCartridge with alpha=1 beta=0 gamma=0 reward baseline witness (FP §6 Track G epistemic PPO gateway alpha-beta-gamma weights)",
+        )
         .1
         .into_data()
         .value[0];
@@ -175,7 +177,9 @@ fn manifold_gateway_alpha_beta_gamma_weights() {
     g_pen.gamma = 0.0;
     let r_pen = g_pen
         .evaluate_topology_step(umst, info)
-        .expect("ManifoldGateway topology step with beta=10 should pass gate")
+        .expect(
+            "ManifoldGateway::evaluate_topology_step on GateAwareCartridge with alpha=1 beta=10 gamma=0 dissipation-penalty reward ordering witness (FP §6 Track G epistemic PPO gateway alpha-beta-gamma weights)",
+        )
         .1
         .into_data()
         .value[0];

@@ -102,8 +102,9 @@ fn manifold_gateway_accepts_step_with_suggested_info_gain() {
     let result = gateway.evaluate_topology_step(proposed, info_gain);
     assert!(result.is_ok(), "expected Ok, got {:?}", result.err());
 
-    let (_verified, reward) = result
-        .expect("ManifoldGateway evaluate_topology_step with suggested info gain");
+    let (_verified, reward) = result.expect(
+        "ManifoldGateway::evaluate_topology_step with suggested_info_gain_from_batched_nodal_scalars surrogate (FP §6 Track G epistemic sensor harness)",
+    );
     let rv: Vec<f32> = reward.into_data().value;
     assert!(rv[0].is_finite(), "reward should be finite");
 }
@@ -160,7 +161,9 @@ mod information_density_reward {
         g0.eta = 0.0_f32;
         let r0 = g0
             .evaluate_topology_step(proposed.clone(), info_gain.clone())
-            .expect("ManifoldGateway topology step with eta=0 should pass gate")
+            .expect(
+                "ManifoldGateway topology step with eta=0 on StubConstInfo cartridge for information_density reward baseline (FP §6 Track G epistemic sensor harness)",
+            )
             .1
             .into_data()
             .value[0];
@@ -170,7 +173,9 @@ mod information_density_reward {
         g1.eta = eta;
         let r1 = g1
             .evaluate_topology_step(proposed, info_gain)
-            .expect("ManifoldGateway topology step with eta=2 should pass gate")
+            .expect(
+                "ManifoldGateway topology step with eta=2 on StubConstInfo cartridge for information_density reward scaling witness (FP §6 Track G epistemic sensor harness)",
+            )
             .1
             .into_data()
             .value[0];

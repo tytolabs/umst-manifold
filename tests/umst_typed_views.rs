@@ -75,7 +75,9 @@ fn assert_plan_field_matches_column(
 fn typed_views_lifts_scalar_columns_to_plan_fields() {
     let n = 3usize;
     let umst = toy_umst(n, 305.0, 0.55, 0.2);
-    let views = umst.typed_views().expect("typed_views");
+    let views = umst
+        .typed_views()
+        .expect("UnifiedMaterialStateTensor::typed_views lifts scalar columns to plan fields (FP §6 Track G inverse read morphism)");
     assert_plan_field_matches_column(views.temperature.as_tensor(), &umst, SCALAR_TEMPERATURE, 0);
     assert_plan_field_matches_column(views.humidity.as_tensor(), &umst, SCALAR_HUMIDITY, 0);
     assert_plan_field_matches_column(views.damage.as_tensor(), &umst, SCALAR_DAMAGE, 0);
@@ -85,10 +87,18 @@ fn typed_views_lifts_scalar_columns_to_plan_fields() {
 #[test]
 fn scalar_channel_shims_match_typed_views() {
     let umst = toy_umst(2, 300.0, 0.5, 0.1);
-    let views = umst.typed_views().expect("typed_views");
-    let t = umst.temperature_scalar_channel().expect("temperature");
-    let h = umst.humidity_scalar_channel().expect("humidity");
-    let d = umst.damage_scalar_channel().expect("damage");
+    let views = umst
+        .typed_views()
+        .expect("UnifiedMaterialStateTensor::typed_views for scalar channel shim parity (FP §6 Track G inverse read morphism)");
+    let t = umst
+        .temperature_scalar_channel()
+        .expect("temperature_scalar_channel shim matches typed_views temperature plan field (FP §6 Track G inverse read morphism)");
+    let h = umst
+        .humidity_scalar_channel()
+        .expect("humidity_scalar_channel shim matches typed_views humidity plan field (FP §6 Track G inverse read morphism)");
+    let d = umst
+        .damage_scalar_channel()
+        .expect("damage_scalar_channel shim matches typed_views damage plan field (FP §6 Track G inverse read morphism)");
     assert_eq!(
         t.as_tensor().clone().into_data().value,
         views.temperature.as_tensor().clone().into_data().value
