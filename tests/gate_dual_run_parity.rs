@@ -51,9 +51,12 @@ struct SnapshotInput {
 
 #[derive(Debug, Deserialize)]
 struct PrototypeGolden {
-    accepted: bool,
-    mass_conserved: bool,
-    energy_positive: bool,
+    #[serde(rename = "accepted")]
+    accepted_mirror: bool,
+    #[serde(rename = "mass_conserved")]
+    mass_conserved_mirror: bool,
+    #[serde(rename = "energy_positive")]
+    energy_positive_mirror: bool,
     #[serde(default)]
     dissipation_sign: Option<String>,
     #[serde(default)]
@@ -62,15 +65,15 @@ struct PrototypeGolden {
 
 impl PrototypeGolden {
     fn is_accepted(&self) -> bool {
-        self.accepted
+        self.accepted_mirror
     }
 
     fn is_mass_conserved(&self) -> bool {
-        self.mass_conserved
+        self.mass_conserved_mirror
     }
 
     fn is_energy_positive(&self) -> bool {
-        self.energy_positive
+        self.energy_positive_mirror
     }
 }
 
@@ -101,45 +104,62 @@ struct FixtureFile {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct TransitionOutcome {
-    accepted: bool,
+    accepted_mirror: bool,
     dissipation: f64,
-    mass_conserved: bool,
-    energy_positive: bool,
+    mass_conserved_mirror: bool,
+    energy_positive_mirror: bool,
 }
 
 impl TransitionOutcome {
+    const fn from_verdict(
+        accepted: bool,
+        dissipation: f64,
+        mass_conserved: bool,
+        energy_positive: bool,
+    ) -> Self {
+        Self {
+            accepted_mirror: accepted,
+            dissipation,
+            mass_conserved_mirror: mass_conserved,
+            energy_positive_mirror: energy_positive,
+        }
+    }
+
     const fn is_accepted(self) -> bool {
-        self.accepted
+        self.accepted_mirror
     }
 
     const fn is_mass_conserved(self) -> bool {
-        self.mass_conserved
+        self.mass_conserved_mirror
     }
 
     const fn is_energy_positive(self) -> bool {
-        self.energy_positive
+        self.energy_positive_mirror
     }
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
 struct SubprocessTransitionResult {
-    accepted: bool,
+    #[serde(rename = "accepted")]
+    accepted_mirror: bool,
     dissipation: f64,
-    mass_conserved: bool,
-    energy_positive: bool,
+    #[serde(rename = "mass_conserved")]
+    mass_conserved_mirror: bool,
+    #[serde(rename = "energy_positive")]
+    energy_positive_mirror: bool,
 }
 
 impl SubprocessTransitionResult {
     fn is_accepted(&self) -> bool {
-        self.accepted
+        self.accepted_mirror
     }
 
     fn is_mass_conserved(&self) -> bool {
-        self.mass_conserved
+        self.mass_conserved_mirror
     }
 
     fn is_energy_positive(&self) -> bool {
-        self.energy_positive
+        self.energy_positive_mirror
     }
 }
 
@@ -168,16 +188,15 @@ fn snapshot_to_state(s: &SnapshotInput) -> ThermodynamicStateSnapshot {
     }
 }
 
-#[allow(deprecated)]
 fn transition_outcome_from_gate(
     r: umst_manifold::gate::ThermodynamicTransitionOutcome,
 ) -> TransitionOutcome {
-    TransitionOutcome {
-        accepted: r.is_accepted(),
-        dissipation: r.dissipation,
-        mass_conserved: r.is_mass_conserved(),
-        energy_positive: r.is_energy_positive(),
-    }
+    TransitionOutcome::from_verdict(
+        r.is_accepted(),
+        r.dissipation,
+        r.is_mass_conserved(),
+        r.is_energy_positive(),
+    )
 }
 
 fn run_manifold_mix_gate(case: &FixtureCase) -> TransitionOutcome {
@@ -221,12 +240,12 @@ fn run_manifold_mix_gate(case: &FixtureCase) -> TransitionOutcome {
 
 fn golden_to_outcome(g: &PrototypeGolden, manifold: &TransitionOutcome) -> TransitionOutcome {
     let _ = manifold;
-    TransitionOutcome {
-        accepted: g.is_accepted(),
-        dissipation: 0.0,
-        mass_conserved: g.is_mass_conserved(),
-        energy_positive: g.is_energy_positive(),
-    }
+    TransitionOutcome::from_verdict(
+        g.is_accepted(),
+        0.0,
+        g.is_mass_conserved(),
+        g.is_energy_positive(),
+    )
 }
 
 fn check_dissipation_sign(sign: &str, d: f64) {

@@ -128,17 +128,7 @@ pub fn transition_outcome_with_power_input(
     );
 
     let verdict = ConjunctVerdict::compose(core.verdict, material.verdict);
-    let energy_positive = core.is_clausius_duhem() && material.is_strength_monotonic();
-    let accepted = verdict.is_accepted();
-
-    ThermodynamicTransitionOutcome {
-        verdict,
-        accepted,
-        dissipation: core.dissipation,
-        mass_conserved: core.is_mass_conserved(),
-        energy_positive,
-        reaction_extent_irreversible: material.is_reaction_extent_irreversible(),
-    }
+    super::transition_proposal::transition_outcome_from_gate_witnesses(verdict, core, material)
 }
 
 /// Minimal Wang-style active fixture: self-propelled / ATP-coupled with `P_input > 0`.
@@ -159,6 +149,12 @@ impl ActiveMatterFixture {
 
     #[must_use]
     pub fn admissible(&self, tolerance: f64) -> bool {
+        self.is_admissible(tolerance)
+    }
+
+    /// Whether the active-matter fixture satisfies open-system admissibility at `tolerance`.
+    #[must_use]
+    pub fn is_admissible(&self, tolerance: f64) -> bool {
         self.reaction_rate > 0.0
             && self.power_input() > 0.0
             && open_system_core_gate(self.dissipation, self.power_input(), true, tolerance).is_accepted()

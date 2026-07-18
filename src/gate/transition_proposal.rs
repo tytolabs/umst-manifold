@@ -7,8 +7,9 @@
 
 use super::core_gate::{
     core_gate, mass_conserved_between_densities, scalar_response_from_transition,
+    CoreGateOutcome,
 };
-use super::material_gate::{material_gate, MaterialTransitionWitness};
+use super::material_gate::{material_gate, MaterialGateOutcome, MaterialTransitionWitness};
 use super::verdict::{AdmissibilityVerdict, ConjunctVerdict, GateRejectReason};
 use crate::core::material_transition::{MaterialTransitionParams, SubstrateMaterialParams};
 
@@ -192,12 +193,11 @@ impl ThermodynamicTransitionOutcome {
     }
 
     /// REST-stable verdict via locked transition conjunct ladder (legacy `energy_positive` fold).
-    #[allow(deprecated)]
     pub fn rest_verdict(&self) -> AdmissibilityVerdict {
         AdmissibilityVerdict::from_transition_conjuncts(
-            self.accepted,
-            self.mass_conserved,
-            self.energy_positive,
+            self.is_accepted(),
+            self.is_mass_conserved(),
+            self.is_energy_positive(),
         )
     }
 
@@ -276,6 +276,28 @@ pub const TRANSITION_TOLERANCE: f64 = 1e-6;
 /// Mass jump band (kg/m³) — re-exported from Core gate (canonical owner: [`super::core_gate`]).
 pub use super::core_gate::GATE_MASS_TOLERANCE_KG_M3;
 
+/// Shared writer: legacy bool mirrors from Core ∧ Material witnesses (REST ladder SSOT).
+#[must_use]
+#[allow(deprecated)]
+pub(super) fn transition_outcome_from_gate_witnesses(
+    verdict: ConjunctVerdict,
+    core: CoreGateOutcome,
+    material: MaterialGateOutcome,
+) -> ThermodynamicTransitionOutcome {
+    let energy_positive = core.is_clausius_duhem() && material.is_strength_monotonic();
+    let mass_conserved = core.is_mass_conserved();
+    let reaction_extent_irreversible = material.is_reaction_extent_irreversible();
+    let accepted = mass_conserved && energy_positive && reaction_extent_irreversible;
+    ThermodynamicTransitionOutcome {
+        verdict,
+        accepted,
+        dissipation: core.dissipation,
+        mass_conserved,
+        energy_positive,
+        reaction_extent_irreversible,
+    }
+}
+
 #[must_use]
 fn transition_snapshot_well_formed(s: &ThermodynamicStateSnapshot) -> bool {
     s.density.is_finite()
@@ -342,20 +364,7 @@ pub fn transition_outcome(
     );
 
     let verdict = ConjunctVerdict::compose(core.verdict, material.verdict);
-
-    // Legacy parity: `energy_positive` folds CD ∧ strength (not Core-only).
-    let energy_positive = core.clausius_duhem && material.strength_monotonic;
-    let accepted =
-        core.mass_conserved && energy_positive && material.reaction_extent_irreversible;
-
-    ThermodynamicTransitionOutcome {
-        verdict,
-        accepted,
-        dissipation: core.dissipation,
-        mass_conserved: core.mass_conserved,
-        energy_positive,
-        reaction_extent_irreversible: material.reaction_extent_irreversible,
-    }
+    transition_outcome_from_gate_witnesses(verdict, core, material)
 }
 
 /// Pure transition predicate — explicit inputs → admissibility (no filter handle, no counters).
@@ -581,7 +590,7 @@ mod transition_outcome_tests {
             assert_eq!(
                 outcome.verdict(),
                 AdmissibilityVerdict::from_transition_conjuncts(
-                    outcome.accepted,
+                    outcome.is_accepted(),
                     outcome.is_mass_conserved(),
                     outcome.is_energy_positive(),
                 ),

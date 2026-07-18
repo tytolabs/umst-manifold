@@ -121,7 +121,7 @@ fn phase0e_ii_active_fixture_admissible_with_positive_power_input() {
     };
     assert!(fixture.power_input() > 0.0);
     assert!(
-        fixture.admissible(TRANSITION_TOLERANCE),
+        fixture.is_admissible(TRANSITION_TOLERANCE),
         "active fixture must satisfy 𝒟 − P_input ≥ 0 with P_input > 0"
     );
 
@@ -149,7 +149,7 @@ fn phase0e_ii_passive_limit_recovers_0e_i_verdict() {
         dissipation: passive_baseline.dissipation + active_matter_power_input(80.0, 0.15) + 1.0,
         temperature_k: 293.15,
     };
-    assert!(active.admissible(TRANSITION_TOLERANCE));
+    assert!(active.is_admissible(TRANSITION_TOLERANCE));
 
     let passive_limit = active.passive_limit();
     assert_eq!(passive_limit.power_input(), 0.0);

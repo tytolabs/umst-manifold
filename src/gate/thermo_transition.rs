@@ -74,12 +74,11 @@ impl AdmissibilityResult {
     }
 
     /// REST-stable verdict via locked transition conjunct ladder (legacy `energy_positive` fold).
-    #[allow(deprecated)]
     pub fn rest_verdict(&self) -> AdmissibilityVerdict {
         AdmissibilityVerdict::from_transition_conjuncts(
-            self.accepted,
-            self.mass_conserved,
-            self.energy_positive,
+            self.is_accepted(),
+            self.is_mass_conserved(),
+            self.is_energy_positive(),
         )
     }
 
@@ -208,10 +207,10 @@ pub fn thermo_gate_transition_outcome(
     );
     AdmissibilityResult {
         verdict: outcome.conjunct_verdict(),
-        accepted: outcome.accepted,
+        accepted: outcome.is_accepted(),
         dissipation: outcome.dissipation,
-        mass_conserved: outcome.mass_conserved,
-        energy_positive: outcome.energy_positive,
+        mass_conserved: outcome.is_mass_conserved(),
+        energy_positive: outcome.is_energy_positive(),
     }
 }
 
@@ -305,7 +304,7 @@ mod tests {
         let pure = thermo_gate_transition_outcome(&old, &new, dt, 1e-6);
         let mut gate = ThermodynamicGate::new();
         let telemetry = gate.check_transition(&old, &new, dt);
-        assert_eq!(pure.accepted, telemetry.accepted);
+        assert_eq!(pure.is_accepted(), telemetry.is_accepted());
         assert_eq!(pure.is_mass_conserved(), telemetry.is_mass_conserved());
         assert_eq!(pure.is_energy_positive(), telemetry.is_energy_positive());
         assert!((pure.dissipation - telemetry.dissipation).abs() < 1e-12);
