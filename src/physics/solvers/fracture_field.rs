@@ -555,12 +555,16 @@ impl PhaseFieldFractureSolver {
         let mut outer_err: Option<PhysicsError> = None;
         let mut converged = false;
 
+        #[cfg_attr(not(feature = "fracture-at2"), allow(unused_variables))]
         let completed = iterate_until(outer.max_outer_iterations, &mut st, |st| {
             match st {
                 StaggeredPhase::DamageOuter {
                     damage,
                     prev_strain,
+                    #[cfg(feature = "fracture-at2")]
                     prev_psi_mean,
+                    #[cfg(not(feature = "fracture-at2"))]
+                    prev_psi_mean: _,
                 } => {
                     let strain_k = strain_fn(damage);
                     let d_before = damage.as_tensor().clone();
