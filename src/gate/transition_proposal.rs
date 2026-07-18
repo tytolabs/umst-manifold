@@ -135,7 +135,7 @@ pub struct ThermodynamicTransitionOutcome {
     /// Legacy core conjunct witness — prefer [`CoreGateOutcome`] via open-system route.
     #[deprecated(
         since = "0.2.0",
-        note = "use CoreGateOutcome::mass_conserved or verdict reject reason"
+        note = "use ThermodynamicTransitionOutcome::is_mass_conserved() or CoreGateOutcome::mass_conserved"
     )]
     pub mass_conserved: bool,
     /// Legacy CD ∧ strength fold — prefer [`Self::is_energy_positive`] / [`Self::rest_verdict`].
@@ -147,7 +147,7 @@ pub struct ThermodynamicTransitionOutcome {
     /// Reaction-extent monotonicity (`gate_sdf` conjunct).
     #[deprecated(
         since = "0.2.0",
-        note = "use MaterialGateOutcome::reaction_extent_irreversible or verdict"
+        note = "use ThermodynamicTransitionOutcome::is_reaction_extent_irreversible() or verdict"
     )]
     pub reaction_extent_irreversible: bool,
 }
@@ -167,12 +167,28 @@ impl ThermodynamicTransitionOutcome {
         self.verdict.is_accepted()
     }
 
+    /// Legacy mass-balance conjunct witness (unchanged semantics).
+    #[inline]
+    #[must_use]
+    #[allow(deprecated)]
+    pub fn is_mass_conserved(self) -> bool {
+        self.mass_conserved
+    }
+
     /// Legacy CD ∧ strength fold witness (unchanged semantics — not Core-only CD).
     #[inline]
     #[must_use]
     #[allow(deprecated)]
     pub fn is_energy_positive(self) -> bool {
         self.energy_positive
+    }
+
+    /// Legacy reaction-extent irreversibility witness (unchanged semantics).
+    #[inline]
+    #[must_use]
+    #[allow(deprecated)]
+    pub fn is_reaction_extent_irreversible(self) -> bool {
+        self.reaction_extent_irreversible
     }
 
     /// REST-stable verdict via locked transition conjunct ladder (legacy `energy_positive` fold).
@@ -566,8 +582,8 @@ mod transition_outcome_tests {
                 outcome.verdict(),
                 AdmissibilityVerdict::from_transition_conjuncts(
                     outcome.accepted,
-                    outcome.mass_conserved,
-                    outcome.energy_positive,
+                    outcome.is_mass_conserved(),
+                    outcome.is_energy_positive(),
                 ),
                 "REST ladder must match stored bool conjuncts"
             );

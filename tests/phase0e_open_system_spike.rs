@@ -42,9 +42,9 @@ impl MaterialTransitionParams for PolymerSketchParams {
 fn outcome_verdict_bytes(outcome: &ThermodynamicTransitionOutcome) -> [u8; 5] {
     [
         u8::from(outcome.is_accepted()),
-        u8::from(outcome.mass_conserved),
+        u8::from(outcome.is_mass_conserved()),
         u8::from(outcome.is_energy_positive()),
-        u8::from(outcome.reaction_extent_irreversible),
+        u8::from(outcome.is_reaction_extent_irreversible()),
         if outcome.dissipation.is_finite() {
             1
         } else {
@@ -277,7 +277,7 @@ fn phase0e_open_system_core_gate_idempotent_on_active_fixture() {
         TRANSITION_TOLERANCE,
     );
     assert_eq!(first, second, "active fixture core gate must be idempotent");
-    assert!(first.accepted);
+    assert!(first.is_accepted());
 }
 
 #[test]
