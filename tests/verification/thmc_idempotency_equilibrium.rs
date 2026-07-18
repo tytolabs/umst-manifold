@@ -741,7 +741,7 @@ fn thmc_monolithic_qs_r_u_residual_damped_newton_idempotent_at_equilibrium() {
         cross_section_area,
         &cfg,
     )
-    .expect("VectorMechanicsSolver::solve_equilibrium_typed on zero-load bar for monolithic stacked residual harness");
+    .expect("VectorMechanicsSolver::solve_equilibrium_typed on zero-load bar for monolithic stacked residual harness (FP §6 Track G THMC idempotency)");
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
         temperature_n: Field::new(t_n.clone()),
