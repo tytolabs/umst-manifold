@@ -123,7 +123,7 @@ pub const LEG_INVENTORY_COUNT: usize = 4;
 
 /// Deferred legs — honest OPEN/SOFT; not witness gaps.
 pub const DEFERRED_INVENTORY: &[(&str, ThmcResidualLegGateStatus, &str)] = &[
-    ("MP2b-U3", ThmcResidualLegGateStatus::Open, "thmc.rs step_envelope — operator U3 spawn"),
+    ("MP2b-U3", ThmcResidualLegGateStatus::Closed, "thmc.rs step_envelope — operator U3 spawn @ 0721"),
     (
         "MATPH-22",
         ThmcResidualLegGateStatus::Open,
@@ -209,7 +209,7 @@ mod tests {
             .iter()
             .find(|(id, _, _)| *id == "MP2b-U3")
             .expect("mp2b row");
-        assert_eq!(mp2b.1, ThmcResidualLegGateStatus::Open);
+        assert_eq!(mp2b.1, ThmcResidualLegGateStatus::Closed);
     }
 
     #[test]

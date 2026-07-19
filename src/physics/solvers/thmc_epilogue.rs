@@ -51,14 +51,20 @@ pub fn thmc_post_step_epilogue<B, C>(
     state: ThmcState<B>,
     manifold: &mut UnifiedMaterialStateTensor<B>,
     ctx: &ThmcPostStepCtx<B>,
+    apply_fracture: bool,
 ) -> Result<(ThmcState<B>, ThmcStepGateEvidence), PhysicsError>
 where
     B: Backend<FloatElem = f32>,
     C: IScienceCartridge<B>,
 {
     let edges_b1 = ctx.edges_b1.clone();
-    let state = ok_state(state)
-        .and_then(|s| apply_fracture_damage(s, manifold, ctx.batch, ctx.n, edges_b1.clone()))
+    let state = ok_state(state);
+    let state = if apply_fracture {
+        state.and_then(|s| apply_fracture_damage(s, manifold, ctx.batch, ctx.n, edges_b1.clone()))
+    } else {
+        state
+    };
+    let state = state
         .and_then(|s| and_then_unit(s, |st| crate::physics::thmc_umst_sync::sync_thmc_to_umst(st, manifold)))?;
     let gate_evidence = ThmcSolverStep::attach_gate_evidence(
         solver, cartridge, pre_step, &state, manifold, ctx.dt,

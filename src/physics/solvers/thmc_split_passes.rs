@@ -26,6 +26,29 @@ use crate::physics::solvers::thmc_residual::{
 };
 use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
 
+/// MP2b phase-routed operator-split arms — gates mechanics / monolithic paths per [`MaterialPhaseKind`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ThmcPhaseRoute {
+    /// Transport \((T,h,\alpha)\) only — no quasi-static \(u\), no fracture epilogue.
+    Fluid,
+    /// Transport + optional bar equilibrium when `node_positions` present.
+    Setting,
+    /// Full split \((T,h,\alpha)\to u\) + fracture damage epilogue.
+    Solid,
+}
+
+impl ThmcPhaseRoute {
+    #[inline]
+    pub(crate) const fn runs_mechanics(self) -> bool {
+        matches!(self, Self::Setting | Self::Solid)
+    }
+
+    #[inline]
+    pub(crate) const fn runs_fracture_epilogue(self) -> bool {
+        matches!(self, Self::Solid)
+    }
+}
+
 pub(crate) struct ThmcStepCtx<'a, B: Backend> {
     pub dt: f32,
     pub edges_b1: Tensor<B, 2, burn::tensor::Int>,
@@ -163,13 +186,25 @@ pub(crate) fn newton_split_chain<B: Backend<FloatElem = f32>>(
     scratch: &ThmcNewtonScratch<B>,
     ctx: &ThmcStepCtx<'_, B>,
     solver: &mut ThmcSolver,
+    route: ThmcPhaseRoute,
 ) -> Result<ThmcState<B>, PhysicsError> {
     if ctx.monolithic_thmc_newton.is_some() {
+        if route != ThmcPhaseRoute::Solid {
+            return Err(PhysicsError::Domain {
+                detail: format!(
+                    "ThmcSolver::step_envelope: monolithic_thmc_newton requires MaterialPhaseKind::Solid, got {route:?}"
+                ),
+            });
+        }
         monolithic_pass(state, scratch, ctx)
     } else {
         let state = thermal_chemistry_pass(state, scratch, ctx)?;
         let state = humidity_pass(state, scratch, ctx)?;
-        mechanics_pass(state, scratch, ctx, solver)
+        if route.runs_mechanics() {
+            mechanics_pass(state, scratch, ctx, solver)
+        } else {
+            Ok(state)
+        }
     }
 }
 

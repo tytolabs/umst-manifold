@@ -97,6 +97,28 @@ impl<B: Backend> ThmcEnvelope<B> {
             self.time,
         )
     }
+
+    /// MP2b: project flat [`ThmcState`] after routed step back into the algebraic envelope.
+    ///
+    /// Preserves the active [`MaterialPhase`] arm; does not reclassify phase kind.
+    pub fn sync_from_flat_state(&mut self, flat: &ThmcState<B>) {
+        self.time = flat.time;
+        self.damage = flat.damage.clone();
+        match &mut self.phase {
+            MaterialPhase::Fluid(r) => {
+                r.velocity = flat.mechanical.displacement.as_tensor().clone();
+            }
+            MaterialPhase::Setting(s) => {
+                s.reaction_extent = flat.chemical.reaction_extent.as_tensor().clone();
+                s.humidity = flat.hydro.humidity.as_tensor().clone();
+                s.temperature = flat.thermal.temperature.as_tensor().clone();
+            }
+            MaterialPhase::Solid(m) => {
+                m.displacement = flat.mechanical.displacement.as_tensor().clone();
+                m.damage = flat.damage.as_tensor().clone();
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -214,6 +236,23 @@ mod tests {
             back.mechanical.displacement.as_tensor().dims(),
             [1, 4, 3]
         );
+    }
+
+    #[test]
+    fn sync_from_flat_setting_preserves_transport_and_clock() {
+        let device = Default::default();
+        let flat = sample_flat(&device);
+        let mut env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Setting);
+        let mut stepped = flat.clone();
+        stepped.time += 0.5;
+        env.sync_from_flat_state(&stepped);
+        assert!((env.time - stepped.time).abs() < f32::EPSILON);
+        let s = env.phase.as_setting().expect(
+            "sync_from_flat_state(Setting) must retain MaterialPhase::Setting arm \
+             (MP2b U3 envelope writeback witness)",
+        );
+        assert_eq!(s.temperature.dims(), [1, 4, 1]);
+        assert_eq!(s.humidity.dims(), [1, 4, 1]);
     }
 
     #[test]

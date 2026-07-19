@@ -89,6 +89,9 @@ use burn::tensor::{backend::Backend, Tensor};
 use crate::core::field::{
     DamageField, DisplacementField, Field, HumidityField, ReactionExtentField, TemperatureField,
 };
+use crate::core::material_phase::ThmcEnvelope;
+#[cfg(feature = "thmc-coupled")]
+use crate::core::material_phase::MaterialPhaseKind;
 #[cfg(feature = "thmc-coupled")]
 use crate::core::field::StepEntryDamageMask;
 use crate::core::material_transition::ReactionExtentKineticsSpec;
@@ -104,7 +107,7 @@ use crate::physics::solvers::thmc_residual::{
 };
 #[cfg(feature = "thmc-coupled")]
 use crate::physics::solvers::thmc_split_passes::{
-    newton_split_chain, transport_residual_l2, ThmcNewtonScratch, ThmcStepCtx,
+    newton_split_chain, transport_residual_l2, ThmcNewtonScratch, ThmcPhaseRoute, ThmcStepCtx,
 };
 
 /// Bundles reaction extent kinetics and the **uncalibrated** mechanics stiffness scale used in [`ThmcSolver::step`].
@@ -526,7 +529,7 @@ impl ThmcSolver {
     {
         #[cfg(feature = "thmc-coupled")]
         {
-            self.step_experimental(cartridge, state, manifold)
+            self.step_experimental(cartridge, state, manifold, ThmcPhaseRoute::Solid)
         }
         #[cfg(not(feature = "thmc-coupled"))]
         {
@@ -576,6 +579,53 @@ impl ThmcSolver {
         self.step(cartridge, state, manifold)
     }
 
+    /// Phase-routed THMC advance on algebraic [`ThmcEnvelope`] (MP2b U3).
+    ///
+    /// Dispatches operator-split substeps by [`MaterialPhaseKind`]:
+    /// - **Fluid:** transport \((T,h,\alpha)\) only — no quasi-static \(u\), no fracture epilogue.
+    /// - **Setting:** transport + optional bar equilibrium when `node_positions` is `[N,3]`.
+    /// - **Solid:** full split + fracture damage epilogue (parity with legacy [`Self::step`]).
+    ///
+    /// **Requires** `thmc-coupled`. Legacy flat golden tests continue to call [`Self::step`].
+    #[cfg(feature = "thmc-coupled")]
+    pub fn step_envelope<B, C>(
+        &mut self,
+        cartridge: &C,
+        envelope: &mut ThmcEnvelope<B>,
+        manifold: &mut UnifiedMaterialStateTensor<B>,
+    ) -> Result<(), PhysicsError>
+    where
+        B: Backend<FloatElem = f32>,
+        C: IScienceCartridge<B>,
+    {
+        let route = match envelope.kind() {
+            MaterialPhaseKind::Fluid => ThmcPhaseRoute::Fluid,
+            MaterialPhaseKind::Setting => ThmcPhaseRoute::Setting,
+            MaterialPhaseKind::Solid => ThmcPhaseRoute::Solid,
+        };
+        #[allow(deprecated)]
+        let flat_pre = envelope.to_flat_state();
+        let flat_post = self.step_experimental(cartridge, flat_pre, manifold, route)?;
+        envelope.sync_from_flat_state(&flat_post);
+        Ok(())
+    }
+
+    #[cfg(not(feature = "thmc-coupled"))]
+    pub fn step_envelope<B, C>(
+        &mut self,
+        _cartridge: &C,
+        _envelope: &mut ThmcEnvelope<B>,
+        _manifold: &mut UnifiedMaterialStateTensor<B>,
+    ) -> Result<(), PhysicsError>
+    where
+        B: Backend<FloatElem = f32>,
+        C: IScienceCartridge<B>,
+    {
+        Err(PhysicsError::Domain {
+            detail: "ThmcSolver::step_envelope: thmc-coupled feature is disabled; enable `--features thmc-coupled` (or `solver-experimental` / `solver-tests` for all opt-in solvers), or do not call this entrypoint".to_string(),
+        })
+    }
+
     /// Implicit-step Jacobian hook reserved for autodiff-backed Newton (experimental only).
     ///
     /// Not invoked by [`Self::step`]; exists to pin the `AutodiffBackend` bound for a future
@@ -600,6 +650,7 @@ impl ThmcSolver {
         _cartridge: &C,
         state: ThmcState<B>,
         manifold: &mut UnifiedMaterialStateTensor<B>,
+        route: ThmcPhaseRoute,
     ) -> Result<ThmcState<B>, PhysicsError>
     where
         B: Backend<FloatElem = f32>,
@@ -694,7 +745,7 @@ impl ThmcSolver {
                 return Ok::<_, PhysicsError>((state, true));
             }
             let scratch = ThmcNewtonScratch::from_state(&state, &step_ctx);
-            let state = newton_split_chain(state, &scratch, &step_ctx, self)?;
+            let state = newton_split_chain(state, &scratch, &step_ctx, self, route)?;
             let converged = transport_residual_l2(&state, &scratch) <= self.tol;
             Ok((state, converged))
         })?;
@@ -712,6 +763,7 @@ impl ThmcSolver {
             state,
             manifold,
             &epilogue_ctx,
+            route.runs_fracture_epilogue(),
         )?;
         self.step_gate_evidence.push(gate_evidence);
         Ok(state)
