@@ -1,6 +1,36 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
-//! Embodied stack composition: re-exports [`crate::manifest::orchestrator`].
+//! Embodied stack composition: orchestrator re-exports + fragment audit (W2-35).
+//!
+//! W1-19 (`M5-IMPL-INT-01`) owns cross-crate loop wiring; this module exposes the manifold
+//! composer and honest gap enumeration per [`M5_ORCH_FRAGMENT_AUDIT_1052`](../../outputs/.tmp/m5_prep/M5_ORCH_FRAGMENT_AUDIT_1052.md).
+
+pub mod fragment_audit;
+pub mod fragment_slots;
+pub mod loop_doc;
+pub mod loop_stub;
+pub mod sense_gate_stub;
 
 pub use crate::manifest::{EmbodiedOrchestrator, EmbodiedReject, HostTransitionStep};
+pub use fragment_audit::{
+    audit_report, fragment_status, phase_wired, scaffold_coverage_pct, unwired_gaps,
+    ALL_FRAGMENTS, EmbodiedFragment, FragmentWireStatus, LoopPhase,
+};
+pub use fragment_slots::{
+    ActuateDesign, ActuateError, EmbodiedLoopSlots, FieldSenseError, FieldSenseClient,
+    LoopCloseError, NullFieldSenseClient, NullRobotExecutor, NullSenseLoopCloser, NullXrPresenter,
+    PresentError, PresentScene, RobotExecutor, SenseLoopCloser, SenseObservation, XrPresenter,
+};
+pub use loop_doc::{
+    crosswalk_for, doc_code_gaps, loop_closed_per_spec, loop_composition_pct, phase_posture,
+    phases_loop_composed, phases_with_code_anchor, DocCodePosture, LoopLegCrosswalk, LOOP_CROSSWALK,
+    FUNNEL_SPEC,
+};
+pub use loop_stub::{
+    embodied_loop_tick_stub, CommandLegDeferral, EmbodiedLoopStub, GateAdmissionStub,
+    LoopStubReject, LoopTickPhase, LoopTickResult, OrchestratorLoopRole,
+};
+pub use sense_gate_stub::{
+    sense_gate_tick_stub, SenseGateReject, SenseGateResult, SenseGateStub,
+};
