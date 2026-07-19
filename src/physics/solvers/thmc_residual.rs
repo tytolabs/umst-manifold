@@ -67,7 +67,7 @@ use burn::tensor::Tensor;
 
 #[cfg(feature = "thmc-coupled")]
 use crate::core::field::{
-    Field, HumidityField, ReactionExtentField, StepEntryDamageMask, StiffnessField,
+    Field, HumidityField, ReactionExtentField, StepEntryDamageMask,
     TemperatureField,
 };
 #[cfg(feature = "thmc-coupled")]
@@ -690,10 +690,9 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
             None
         };
 
-        let stiffness_e = alpha_bn1.mul_scalar(self.kinetics.stiffness_e_scale_pa);
-        let stiffness_nu =
-            Tensor::<B, 3>::zeros([batch, n, 1], &device).add_scalar(self.kinetics.stiffness_nu);
-        let stiffness = StiffnessField::from_e_nu_cat(stiffness_e, stiffness_nu)
+        let stiffness = self
+            .kinetics
+            .stiffness_field_from_alpha_bn1(alpha_bn1, &device)
             .as_tensor()
             .clone();
         let r_eq = VectorMechanicsSolver::projected_bar_equilibrium_residual(

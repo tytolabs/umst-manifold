@@ -89,6 +89,8 @@ use burn::tensor::{backend::Backend, Tensor};
 use crate::core::field::{
     DamageField, DisplacementField, Field, HumidityField, ReactionExtentField, TemperatureField,
 };
+#[cfg(feature = "thmc-coupled")]
+use crate::core::field::StiffnessField;
 use crate::core::material_phase::ThmcEnvelope;
 #[cfg(feature = "thmc-coupled")]
 use crate::core::material_phase::MaterialPhaseKind;
@@ -165,6 +167,35 @@ impl ReactionExtentKinetics {
         let boost =
             1.0_f32 + self.t_boost_per_k * (temperature_k - self.t_boost_ref_k).max(0.0_f32);
         arr * boost
+    }
+
+    /// Project runtime kinetics into the cartridge spec witness (stiffness centralizer input).
+    #[must_use]
+    pub fn as_kinetics_spec(&self) -> ReactionExtentKineticsSpec {
+        ReactionExtentKineticsSpec {
+            arrhenius_prefactor_s: self.arrhenius_prefactor_s,
+            activation_energy_j_per_mol: self.activation_energy_j_per_mol,
+            gas_constant_j_per_mol_k: self.gas_constant_j_per_mol_k,
+            t_min_k: self.t_min_k,
+            t_boost_ref_k: self.t_boost_ref_k,
+            t_boost_per_k: self.t_boost_per_k,
+            exothermic_k_per_alpha_rate: self.exothermic_k_per_alpha_rate,
+            stiffness_e_scale_pa: self.stiffness_e_scale_pa,
+            stiffness_nu: self.stiffness_nu,
+        }
+    }
+
+    /// XS-3 step 5: typed [`StiffnessField`] centralizer for THMC mechanics fan-in.
+    ///
+    /// `alpha_bn1` must be the clipped `[B, N, 1]` reaction-extent channel (caller-owned slice/clamp).
+    #[cfg(feature = "thmc-coupled")]
+    #[must_use]
+    pub fn stiffness_field_from_alpha_bn1<B: Backend<FloatElem = f32>>(
+        &self,
+        alpha_bn1: Tensor<B, 3>,
+        device: &B::Device,
+    ) -> StiffnessField<B> {
+        StiffnessField::from_alpha_kinetics(alpha_bn1, &self.as_kinetics_spec(), device)
     }
 }
 
@@ -1073,4 +1104,29 @@ pub fn shrink_strain_from_saturation_loss_tensor<B: Backend<FloatElem = f32>>(
     let alpha_term = reaction_extent.sqrt().clamp(0.2_f32, 1.0_f32);
     let coeff = alpha_term.mul_scalar(1.1e-3_f32 * w);
     coeff.mul(humidity_loss_01.clamp(0.0_f32, 1.0_f32))
+}
+
+#[cfg(all(test, feature = "thmc-coupled"))]
+mod xs3_step5_tests {
+    use super::*;
+    use burn_ndarray::NdArray;
+
+    type B = NdArray;
+
+    #[test]
+    fn reaction_extent_kinetics_stiffness_centralizer_matches_from_alpha_kinetics() {
+        let device = Default::default();
+        let kinetics = ReactionExtentKinetics::default();
+        let alpha = Tensor::<B, 3>::from_floats([[[0.5], [0.75]]], &device);
+        let via_kinetics = kinetics.stiffness_field_from_alpha_bn1(alpha.clone(), &device);
+        let via_field = StiffnessField::from_alpha_kinetics(
+            alpha,
+            &kinetics.as_kinetics_spec(),
+            &device,
+        );
+        assert_eq!(
+            via_kinetics.as_tensor().dims(),
+            via_field.as_tensor().dims(),
+        );
+    }
 }

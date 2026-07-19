@@ -9,7 +9,7 @@ use burn::tensor::backend::Backend;
 use burn::tensor::{ElementConversion, Tensor};
 
 use crate::core::field::{
-    BodyForceField, BoundaryMaskField, Field, HumidityField, ReactionExtentField, StepEntryDamageMask, StiffnessField,
+    BodyForceField, BoundaryMaskField, Field, HumidityField, ReactionExtentField, StepEntryDamageMask,
     TemperatureField,
 };
 use crate::core::tensors::UnifiedMaterialStateTensor;
@@ -252,11 +252,9 @@ fn monolithic_pass<B: Backend<FloatElem = f32>>(
         .clone()
         .slice([0..batch, 0..n, 0..1])
         .clamp(1e-6_f32, 1.0_f32);
-    let stiffness = StiffnessField::from_e_nu_cat(
-        alpha_bn1_pred.mul_scalar(ctx.reaction_extent_kinetics.stiffness_e_scale_pa),
-        Tensor::<B, 3>::zeros([batch, n, 1], device)
-            .add_scalar(ctx.reaction_extent_kinetics.stiffness_nu),
-    );
+    let stiffness = ctx
+        .reaction_extent_kinetics
+        .stiffness_field_from_alpha_bn1(alpha_bn1_pred, device);
     let (u_predict, _) = VectorMechanicsSolver::solve_equilibrium_typed(
         state.mechanical.displacement.clone(),
         coords_n3.clone(),
@@ -466,11 +464,9 @@ fn mechanics_pass<B: Backend<FloatElem = f32>>(
         .clone()
         .slice([0..batch, 0..n, 0..1])
         .clamp(1e-6_f32, 1.0_f32);
-    let stiffness = StiffnessField::from_e_nu_cat(
-        alpha_bn1.mul_scalar(ctx.reaction_extent_kinetics.stiffness_e_scale_pa),
-        Tensor::<B, 3>::zeros([batch, n, 1], device)
-            .add_scalar(ctx.reaction_extent_kinetics.stiffness_nu),
-    );
+    let stiffness = ctx
+        .reaction_extent_kinetics
+        .stiffness_field_from_alpha_bn1(alpha_bn1, device);
     let bf = BodyForceField::zeros([batch, n, 3], device);
     let inner_cfg = MechanicsInnerLoopConfig::default();
     let cross_section_area = 0.01_f32;

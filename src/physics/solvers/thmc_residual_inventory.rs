@@ -125,6 +125,11 @@ pub const LEG_INVENTORY_COUNT: usize = 4;
 pub const DEFERRED_INVENTORY: &[(&str, ThmcResidualLegGateStatus, &str)] = &[
     ("MP2b-U3", ThmcResidualLegGateStatus::Closed, "thmc.rs step_envelope — operator U3 spawn @ 0721"),
     (
+        "XS-3-STEP5",
+        ThmcResidualLegGateStatus::Closed,
+        "thmc.rs StiffnessField centralizer — operator Seq 12 @ 0721",
+    ),
+    (
         "MATPH-22",
         ThmcResidualLegGateStatus::Open,
         "fracture_field.rs material-phase ADT — serial impl",
