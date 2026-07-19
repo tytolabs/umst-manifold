@@ -104,7 +104,9 @@ fn self_weight_beam_non_trivial_topology_smoke() {
         a,
         &cfg,
     )
-    .expect("solve_equilibrium");
+    .expect(
+        "VectorMechanicsSolver::solve_equilibrium on self-weight topology witness (FP §6 G4)",
+    );
     let tip_z = u.into_data().value[(n - 1) * 3 + 2].abs();
     assert!(tip_z > 1e-9, "self-weight should bend beam");
 

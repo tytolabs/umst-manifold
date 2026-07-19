@@ -111,10 +111,14 @@ fn adjoint_grad_at_nodes(
         cg,
         sw,
     )
-    .expect("forward_and_loss");
+    .expect(
+        "AdjointComplianceQ1Hex::forward_and_loss on self-weight FD harness (FP §6 G4 contextualize)",
+    );
     rho_ad
         .grad(&surrogate.backward())
-        .expect("grad")
+        .expect(
+            "Q1-hex self-weight adjoint backward gradient w.r.t. density on FD probe (FP §6 G4)",
+        )
         .into_data()
         .value
 }

@@ -180,7 +180,9 @@ fn adjoint_q1_hex_compliance_near_bar_z_skeleton_slender_limit() {
         &cg,
         cross_section_area,
     )
-    .expect("forward_and_loss bar");
+    .expect(
+        "AdjointCompliance::forward_and_loss bar limit witness on slender chain (FP §6 G4 harness)",
+    );
 
     let (_, c_hex) = AdjointComplianceQ1Hex::forward_and_loss::<AD>(
         Tensor::from_inner(rho_bn1_bar),
@@ -196,7 +198,9 @@ fn adjoint_q1_hex_compliance_near_bar_z_skeleton_slender_limit() {
         &cg,
         None,
     )
-    .expect("forward_and_loss hex");
+    .expect(
+        "AdjointComplianceQ1Hex::forward_and_loss hex limit witness on slender chain (FP §6 G4)",
+    );
 
     let rel = ((c_hex - c_bar).abs() / c_bar.abs().max(1e-30_f32)).max(0.0_f32);
     assert!(

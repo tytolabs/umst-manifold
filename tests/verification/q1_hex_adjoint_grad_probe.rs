@@ -90,7 +90,9 @@ fn q1_hex_adjoint_grad_nonzero_on_quick_grid() {
         None,
         None,
     )
-    .expect("forward_loss_with_diagnostics");
+    .expect(
+        "AdjointComplianceQ1Hex::forward_loss_with_diagnostics on grad probe harness (FP §6 G4)",
+    );
     let loss_v = loss.clone().into_data().value[0];
     assert!(loss_v.is_finite() && loss_v > 0.0, "loss={loss_v}");
     if let Some(audit) = &diag.finite_audit {
@@ -100,7 +102,9 @@ fn q1_hex_adjoint_grad_nonzero_on_quick_grid() {
         );
     }
     let grads = loss.backward();
-    let g_rho = rho_ad.grad(&grads).expect("grad rho");
+    let g_rho = rho_ad.grad(&grads).expect(
+        "Q1-hex adjoint backward gradient w.r.t. nodal density on grad probe (FP §6 G4 harness)",
+    );
     let g_flat = g_rho.into_data().value;
     let grad_l2: f32 = g_flat.iter().map(|x| x * x).sum::<f32>().sqrt();
     let grad_max = g_flat.iter().map(|x| x.abs()).fold(0.0_f32, f32::max);
@@ -170,10 +174,14 @@ fn q1_hex_nodal_dot_matches_gather_surrogate_grad() {
         None,
         None,
     )
-    .expect("forward_loss_with_diagnostics nodal");
+    .expect(
+        "AdjointComplianceQ1Hex nodal-dot forward_loss_with_diagnostics surrogate (FP §6 G4)",
+    );
     let nodal_g = rho_nodal
         .grad(&nodal_loss.backward())
-        .expect("nodal grad")
+        .expect(
+            "Q1-hex nodal-dot surrogate backward gradient w.r.t. nodal density (FP §6 G4 harness)",
+        )
         .into_data()
         .value;
 
@@ -195,7 +203,9 @@ fn q1_hex_nodal_dot_matches_gather_surrogate_grad() {
     );
     let gather_g = rho_gather
         .grad(&gather_loss.backward())
-        .expect("gather grad")
+        .expect(
+            "Q1-hex gather-surrogate backward gradient w.r.t. nodal density (FP §6 G4 harness)",
+        )
         .into_data()
         .value;
 

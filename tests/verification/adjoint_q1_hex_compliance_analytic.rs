@@ -148,7 +148,9 @@ fn adjoint_q1_hex_gradient_matches_finite_difference_plate_8x8x2() {
     .unwrap_or_else(|e| panic!("forward_and_loss: {e}"));
 
     let grads = surrogate.backward();
-    let g_rho = rho_ad.grad(&grads).expect("grad ρ");
+    let g_rho = rho_ad.grad(&grads).expect(
+        "Q1-hex compliance analytic backward gradient w.r.t. nodal density (FP §6 G4 harness)",
+    );
     let g_mid = g_rho.into_data().value[nid_p];
 
     let eps = 2e-3_f32;

@@ -113,7 +113,9 @@ fn raw_compliance_fd(
         cg,
         cross_section_area,
     )
-    .expect("forward_and_loss");
+    .expect(
+        "AdjointCompliance::forward_and_loss on bar-chain compliance witness (FP §6 G4 harness)",
+    );
     c_raw
 }
 
@@ -157,7 +159,9 @@ fn adjoint_four_node_chain_compliance_matches_series_spring() {
         &cg,
         a_sec,
     )
-    .expect("forward_and_loss");
+    .expect(
+        "AdjointCompliance::forward_and_loss on bar-chain compliance witness (FP §6 G4 harness)",
+    );
 
     let rel = ((c_raw - c_exp).abs() / c_exp.abs()).max(0.0);
     assert!(
@@ -200,10 +204,16 @@ fn adjoint_four_node_chain_gradient_matches_finite_difference() {
         &cg,
         a_sec,
     )
-    .expect("forward_and_loss");
+    .expect(
+        "AdjointCompliance::forward_and_loss on bar-chain compliance witness (FP §6 G4 harness)",
+    );
 
     let grads = surrogate.backward();
-    let g_rho = rho_ad.grad(&grads).expect("expected gradient w.r.t. rho");
+    let g_rho = rho_ad
+        .grad(&grads)
+        .expect(
+            "AdjointCompliance backward gradient w.r.t. nodal density on bar FD witness (FP §6 G4)",
+        );
     let g_mid = g_rho.into_data().value[2];
 
     let eps = 5e-4_f32;
@@ -307,10 +317,16 @@ fn adjoint_four_node_chain_gradient_matches_bendsoe_sigmund_formula() {
         &cg,
         a_sec,
     )
-    .expect("forward_and_loss");
+    .expect(
+        "AdjointCompliance::forward_and_loss on bar-chain compliance witness (FP §6 G4 harness)",
+    );
 
     let grads = surrogate.backward();
-    let g_rho = rho_ad.grad(&grads).expect("expected gradient w.r.t. rho");
+    let g_rho = rho_ad
+        .grad(&grads)
+        .expect(
+            "AdjointCompliance backward gradient w.r.t. nodal density on bar FD witness (FP §6 G4)",
+        );
     let g_node = g_rho.into_data().value;
 
     // Analytic edge sensitivity (uniform chain — every edge identical):
@@ -373,9 +389,17 @@ fn adjoint_gradient_sign_is_negative_along_load_path() {
         &cg,
         a_sec,
     )
-    .expect("forward_and_loss");
+    .expect(
+        "AdjointCompliance::forward_and_loss on bar-chain compliance witness (FP §6 G4 harness)",
+    );
     let grads = surrogate.backward();
-    let g = rho_ad.grad(&grads).expect("grad").into_data().value;
+    let g = rho_ad
+        .grad(&grads)
+        .expect(
+            "AdjointCompliance backward gradient on load-bearing bar nodes sign audit (FP §6 G4)",
+        )
+        .into_data()
+        .value;
 
     // Node 0 is pinned → its gradient is masked out; nodes 1,2,3 are load-bearing.
     for (i, &gi) in g.iter().enumerate().skip(1) {
