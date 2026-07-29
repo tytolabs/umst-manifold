@@ -315,7 +315,7 @@ jobs:
           echo "OK: bench_arena_vs_mcp exit 0 (ratio gate passed)"
       - name: Upload arena benchmark artifact
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: arena-vs-mcp-ci
           path: artifacts/benchmarks/arena_vs_mcp_ci.json
@@ -334,7 +334,7 @@ jobs:
           bash scripts/run_p4_gpu_witness.sh
       - name: Upload GPU baseline artifact
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: p4-rejection-baseline-gpu
           path: artifacts/training/p4_rejection_baseline_gpu.json
