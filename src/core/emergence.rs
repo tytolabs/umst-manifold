@@ -6,10 +6,275 @@
 //! [`EmergenceMonitor`] builds \(m = D_{int} + \lambda|\nabla \mathrm{SDF}|^2\) on `[B,D,H,W]`.
 //! [`nodal_defect_tensor`] uses the same `edges_b1` gather/scatter layout as
 //! [`crate::physics::laplacian::TopologicalLaplacian::scalar_laplacian`] (primal edge increment, no damage mask).
+//!
+//! ## Honest fences (W29-023)
+//!
+//! - [`GRID_HOTSPOT_MONITOR_LANDED`], [`NODAL_DEFECT_TENSOR_LANDED`],
+//!   [`NODAL_DEFECT_NO_EDGES_DEFERRED`], [`COMBINE_NODAL_REWARD_LANDED`] — measured evaluators landed.
+//! - [`PPO_TRAINER_HOT_PATH_LANDED`], [`MSDF_EMERGENCE_GRID_BRIDGE_LANDED`] stay **false** — trainer hot-path
+//!   and `sdf_grid_for_emergence_sdf` bridge remain **open**.
+//! - [`PHYSICS_GREEN`], [`PRODUCTION_WIRED`], and [`MASTER`] stay **false** — no invent GREEN / production /
+//!   MASTER. See [`emergence_posture_probe`].
 
 #![allow(clippy::single_range_in_vec_init)] // Burn `Tensor::slice` uses `[Range<usize>; k]` per dimension; Clippy misreads single-row slices.
 
 use burn::tensor::{backend::Backend, Int, Tensor};
+
+/// W29 deepen cell — emergence diagnostics honesty (no invent GREEN / PRODUCTION / MASTER).
+pub const W29_EMERGENCE_DEEPEN_CELL: &str = "W29-023-EMERGENCE";
+
+/// Slice identifier for dissipation–geometry emergence diagnostics.
+pub const SLICE_ID: &str = "phase-1-emergence-diagnostics";
+
+/// Formal gate catalog surface (hand-aligned to [`crate::ai::formal::FormalReject`]).
+pub const CATALOG_ID: &str = "umst.gate.emergence_diagnostics";
+
+/// Honest posture — evaluators landed; trainer / MSDF bridge **open**.
+pub const POSTURE_TAG: &str = "EMERGENCE_DIAGNOSTICS_PARTIAL";
+
+/// Default λ for [`EmergenceMonitor`] (registry: `umst_manifold_emergence_lambda` / `UMST_MANIFOLD_EMERGENCE_LAMBDA`).
+pub const DEFAULT_EMERGENCE_LAMBDA: f32 = 0.1;
+
+/// Default emergence SDF voxel cap (registry: `umst_msdf_emergence_max_voxels`; enforcement deferred).
+pub const DEFAULT_MAX_EMERGENCE_VOXELS: usize = 512;
+
+/// Structured-grid hotspot monitor (`[B,D,H,W]` dissipation + SDF gradient) landed.
+pub const GRID_HOTSPOT_MONITOR_LANDED: bool = true;
+
+/// Sparse nodal defect tensor with `edges_b1` gather/scatter landed.
+pub const NODAL_DEFECT_TENSOR_LANDED: bool = true;
+
+/// Honest defer when `edges_b1` is absent — returns nodal dissipation unchanged.
+pub const NODAL_DEFECT_NO_EDGES_DEFERRED: bool = true;
+
+/// Nodal hotspot aggregation for PPO / trainer logging landed.
+pub const COMBINE_NODAL_REWARD_LANDED: bool = true;
+
+/// PPO trainer hot-path wiring for emergence diagnostics — **open** (docs-only cross-ref in `ai/ppo.rs`).
+pub const PPO_TRAINER_HOT_PATH_LANDED: bool = false;
+
+/// MSDF → emergence SDF grid bridge (`sdf_grid_for_emergence_sdf`) — **not** landed.
+pub const MSDF_EMERGENCE_GRID_BRIDGE_LANDED: bool = false;
+
+/// Honest physics posture — diagnostic evaluators only; not a physics GREEN claim.
+pub const PHYSICS_GREEN: bool = false;
+
+/// Honest production emergence gateway path — **false** until measured live eval.
+pub const PRODUCTION_WIRED: bool = false;
+
+/// Honest master / fleet-complete posture — **false** at diagnostics slice.
+pub const MASTER: bool = false;
+
+/// Fence facet inventory size (landed + open gaps).
+pub const EMERGENCE_FENCE_FACET_COUNT: usize = 9;
+
+/// Wired facets today (4/9 measured: grid monitor, nodal defect, no-edges defer, reward combine).
+pub const EMERGENCE_FENCE_WIRED_COUNT: usize = 4;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const HONEST_FENCE: &str =
+    "grid_hotspot_monitor_landed=true|nodal_defect_tensor_landed=true|\
+     nodal_defect_no_edges_deferred=true|combine_nodal_reward_landed=true|\
+     ppo_trainer_hot_path_landed=false|msdf_emergence_grid_bridge_landed=false|\
+     production_wired=false|physics_green=false|master=false";
+
+/// One facet of the emergence production fence matrix.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EmergenceFenceFacet {
+    pub facet: &'static str,
+    pub wired: bool,
+    pub owning_slice: &'static str,
+}
+
+/// Emergence fence facet inventory (honest posture SSOT).
+pub const EMERGENCE_FENCE_FACETS: &[EmergenceFenceFacet] = &[
+    EmergenceFenceFacet {
+        facet: "grid_hotspot_monitor",
+        wired: true,
+        owning_slice: W29_EMERGENCE_DEEPEN_CELL,
+    },
+    EmergenceFenceFacet {
+        facet: "nodal_defect_tensor",
+        wired: true,
+        owning_slice: W29_EMERGENCE_DEEPEN_CELL,
+    },
+    EmergenceFenceFacet {
+        facet: "nodal_defect_no_edges_deferred",
+        wired: true,
+        owning_slice: W29_EMERGENCE_DEEPEN_CELL,
+    },
+    EmergenceFenceFacet {
+        facet: "combine_nodal_reward",
+        wired: true,
+        owning_slice: W29_EMERGENCE_DEEPEN_CELL,
+    },
+    EmergenceFenceFacet {
+        facet: "ppo_trainer_hot_path",
+        wired: false,
+        owning_slice: "deferred-ppo-hot-path",
+    },
+    EmergenceFenceFacet {
+        facet: "msdf_emergence_grid_bridge",
+        wired: false,
+        owning_slice: "deferred-sdf-grid-bridge",
+    },
+    EmergenceFenceFacet {
+        facet: "production_wired",
+        wired: false,
+        owning_slice: "deferred-orchestrator-pin",
+    },
+    EmergenceFenceFacet {
+        facet: "physics_green",
+        wired: false,
+        owning_slice: "deferred-physics-oracle",
+    },
+    EmergenceFenceFacet {
+        facet: "master_orchestrator_pin",
+        wired: false,
+        owning_slice: "deferred-orchestrator-pin",
+    },
+];
+
+const _: () = assert!(GRID_HOTSPOT_MONITOR_LANDED);
+const _: () = assert!(NODAL_DEFECT_TENSOR_LANDED);
+const _: () = assert!(NODAL_DEFECT_NO_EDGES_DEFERRED);
+const _: () = assert!(COMBINE_NODAL_REWARD_LANDED);
+const _: () = assert!(!PPO_TRAINER_HOT_PATH_LANDED);
+const _: () = assert!(!MSDF_EMERGENCE_GRID_BRIDGE_LANDED);
+const _: () = assert!(!PHYSICS_GREEN);
+const _: () = assert!(!PRODUCTION_WIRED);
+const _: () = assert!(!MASTER);
+const _: () = assert!(!emergence_production_wired());
+const _: () = assert!(!emergence_physics_green());
+const _: () = assert!(!emergence_master_wired());
+
+/// Honest production emergence gateway path — **false** until measured live eval.
+#[must_use]
+pub const fn emergence_production_wired() -> bool {
+    false
+}
+
+/// Honest physics GREEN claim — **false** at diagnostics slice.
+#[must_use]
+pub const fn emergence_physics_green() -> bool {
+    false
+}
+
+/// Honest master-tier wiring — **false** until fleet sign-off.
+#[must_use]
+pub const fn emergence_master_wired() -> bool {
+    false
+}
+
+/// Count wired emergence fence facets (must match [`EMERGENCE_FENCE_WIRED_COUNT`]).
+#[must_use]
+pub fn emergence_fence_wired_count() -> usize {
+    EMERGENCE_FENCE_FACETS.iter().filter(|f| f.wired).count()
+}
+
+/// Typed probe for emergence posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct EmergencePostureProbe {
+    pub deepen_cell: &'static str,
+    pub slice_id: &'static str,
+    pub catalog_id: &'static str,
+    pub posture_tag: &'static str,
+    pub grid_hotspot_monitor_landed: bool,
+    pub nodal_defect_tensor_landed: bool,
+    pub nodal_defect_no_edges_deferred: bool,
+    pub combine_nodal_reward_landed: bool,
+    pub ppo_trainer_hot_path_landed: bool,
+    pub msdf_emergence_grid_bridge_landed: bool,
+    pub default_lambda: f32,
+    pub default_max_voxels: usize,
+    pub fence_facet_count: usize,
+    pub fence_wired_count: usize,
+    pub production_wired: bool,
+    pub physics_green: bool,
+    pub master: bool,
+    pub honest_fence: &'static str,
+}
+
+/// Build introspection probe for emergence done-when checks.
+#[must_use]
+pub const fn emergence_posture_probe() -> EmergencePostureProbe {
+    EmergencePostureProbe {
+        deepen_cell: W29_EMERGENCE_DEEPEN_CELL,
+        slice_id: SLICE_ID,
+        catalog_id: CATALOG_ID,
+        posture_tag: POSTURE_TAG,
+        grid_hotspot_monitor_landed: GRID_HOTSPOT_MONITOR_LANDED,
+        nodal_defect_tensor_landed: NODAL_DEFECT_TENSOR_LANDED,
+        nodal_defect_no_edges_deferred: NODAL_DEFECT_NO_EDGES_DEFERRED,
+        combine_nodal_reward_landed: COMBINE_NODAL_REWARD_LANDED,
+        ppo_trainer_hot_path_landed: PPO_TRAINER_HOT_PATH_LANDED,
+        msdf_emergence_grid_bridge_landed: MSDF_EMERGENCE_GRID_BRIDGE_LANDED,
+        default_lambda: DEFAULT_EMERGENCE_LAMBDA,
+        default_max_voxels: DEFAULT_MAX_EMERGENCE_VOXELS,
+        fence_facet_count: EMERGENCE_FENCE_FACET_COUNT,
+        fence_wired_count: EMERGENCE_FENCE_WIRED_COUNT,
+        production_wired: emergence_production_wired(),
+        physics_green: emergence_physics_green(),
+        master: emergence_master_wired(),
+        honest_fence: HONEST_FENCE,
+    }
+}
+
+/// Evaluators landed with production / GREEN / MASTER gateway path honestly open.
+#[must_use]
+pub fn emergence_posture_honest(probe: &EmergencePostureProbe) -> bool {
+    probe.deepen_cell == W29_EMERGENCE_DEEPEN_CELL
+        && probe.slice_id == SLICE_ID
+        && probe.catalog_id == CATALOG_ID
+        && probe.posture_tag == POSTURE_TAG
+        && probe.grid_hotspot_monitor_landed
+        && probe.nodal_defect_tensor_landed
+        && probe.nodal_defect_no_edges_deferred
+        && probe.combine_nodal_reward_landed
+        && !probe.ppo_trainer_hot_path_landed
+        && !probe.msdf_emergence_grid_bridge_landed
+        && probe.default_lambda == DEFAULT_EMERGENCE_LAMBDA
+        && probe.default_max_voxels == DEFAULT_MAX_EMERGENCE_VOXELS
+        && probe.fence_facet_count == EMERGENCE_FENCE_FACET_COUNT
+        && probe.fence_wired_count == EMERGENCE_FENCE_WIRED_COUNT
+        && !probe.production_wired
+        && !probe.physics_green
+        && !probe.master
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("ppo_trainer_hot_path_landed=false")
+        && probe.honest_fence.contains("physics_green=false")
+        && probe.honest_fence.contains("master=false")
+}
+
+/// Validate emergence posture honesty — fail closed on fake production / GREEN claims.
+pub fn validate_emergence_posture_honesty() -> Result<(), &'static str> {
+    let probe = emergence_posture_probe();
+    if probe.production_wired || emergence_production_wired() || PRODUCTION_WIRED {
+        return Err("emergence_production_wired must stay false until trainer hot-path wire");
+    }
+    if probe.physics_green || emergence_physics_green() || PHYSICS_GREEN {
+        return Err("emergence PHYSICS_GREEN must stay false at diagnostics slice");
+    }
+    if probe.master || emergence_master_wired() || MASTER {
+        return Err("emergence MASTER must stay false until fleet sign-off");
+    }
+    if probe.ppo_trainer_hot_path_landed || PPO_TRAINER_HOT_PATH_LANDED {
+        return Err("ppo_trainer_hot_path_landed must stay false until PPO hot-path wire");
+    }
+    if probe.msdf_emergence_grid_bridge_landed || MSDF_EMERGENCE_GRID_BRIDGE_LANDED {
+        return Err("msdf_emergence_grid_bridge_landed must stay false until sdf grid bridge lands");
+    }
+    if emergence_fence_wired_count() != EMERGENCE_FENCE_WIRED_COUNT {
+        return Err("emergence_fence_wired_count drifted from EMERGENCE_FENCE_WIRED_COUNT");
+    }
+    if EMERGENCE_FENCE_FACETS.len() != EMERGENCE_FENCE_FACET_COUNT {
+        return Err("EMERGENCE_FENCE_FACETS length drifted from EMERGENCE_FENCE_FACET_COUNT");
+    }
+    if !emergence_posture_honest(&probe) {
+        return Err("emergence_posture_honest failed");
+    }
+    Ok(())
+}
 
 /// Numerical floor for `|Δp|` when forming edge-length weights from `node_positions`.
 const NODAL_DEFECT_LEN_EPS: f32 = 1e-12;
@@ -28,6 +293,11 @@ impl<B: Backend> EmergenceMonitor<B> {
             lambda,
             _backend: std::marker::PhantomData,
         }
+    }
+
+    /// Registry-default λ (`DEFAULT_EMERGENCE_LAMBDA` / `UMST_MANIFOLD_EMERGENCE_LAMBDA`).
+    pub fn with_default_lambda() -> Self {
+        Self::new(DEFAULT_EMERGENCE_LAMBDA)
     }
 
     /// Computes the thermo-topological defect mass field on a structured lattice `[B,D,H,W]`.
@@ -281,5 +551,71 @@ mod tests {
         for i in 0..n {
             assert_abs_diff_eq!(got[i], want[i], epsilon = 1e-4);
         }
+    }
+
+    #[test]
+    fn emergence_hotspot_constant_sdf_equals_d_int() {
+        let d_int = Tensor::<B, 4>::from_data(
+            Data::new(vec![2.0_f32; 9], Shape::new([1, 1, 3, 3])),
+            &dev(),
+        );
+        let sdf = Tensor::<B, 4>::zeros([1, 1, 3, 3], &dev());
+        let monitor = EmergenceMonitor::<B>::new(0.5);
+        let m = monitor.compute_dissipation_hotspots(d_int, sdf);
+        let v: Vec<f32> = m.into_data().convert::<f32>().value;
+        for x in v {
+            assert_abs_diff_eq!(x, 2.0_f32, epsilon = 1e-5);
+        }
+    }
+
+    #[test]
+    fn emergence_monitor_default_lambda_matches_registry() {
+        let monitor = EmergenceMonitor::<B>::with_default_lambda();
+        assert_abs_diff_eq!(monitor.lambda, DEFAULT_EMERGENCE_LAMBDA);
+    }
+
+    #[test]
+    fn emergence_posture_metadata_locked() {
+        assert_eq!(W29_EMERGENCE_DEEPEN_CELL, "W29-023-EMERGENCE");
+        assert_eq!(SLICE_ID, "phase-1-emergence-diagnostics");
+        assert_eq!(CATALOG_ID, "umst.gate.emergence_diagnostics");
+        assert_eq!(DEFAULT_MAX_EMERGENCE_VOXELS, 512);
+        assert!(HONEST_FENCE.contains("production_wired=false"));
+        assert!(HONEST_FENCE.contains("physics_green=false"));
+        assert!(HONEST_FENCE.contains("master=false"));
+    }
+
+    #[test]
+    fn emergence_posture_honest_prep_not_green() {
+        let probe = emergence_posture_probe();
+        assert!(emergence_posture_honest(&probe));
+        assert!(!probe.production_wired);
+        assert!(!probe.physics_green);
+        assert!(!probe.master);
+        assert!(!probe.ppo_trainer_hot_path_landed);
+        assert!(!probe.msdf_emergence_grid_bridge_landed);
+        assert_eq!(probe.fence_wired_count, EMERGENCE_FENCE_WIRED_COUNT);
+        assert_eq!(emergence_fence_wired_count(), EMERGENCE_FENCE_WIRED_COUNT);
+        validate_emergence_posture_honesty().expect("posture honesty");
+    }
+
+    #[test]
+    fn emergence_fake_production_probe_fails_honesty() {
+        let mut probe = emergence_posture_probe();
+        probe.production_wired = true;
+        assert!(!emergence_posture_honest(&probe));
+        probe = emergence_posture_probe();
+        probe.physics_green = true;
+        assert!(!emergence_posture_honest(&probe));
+        probe = emergence_posture_probe();
+        probe.master = true;
+        assert!(!emergence_posture_honest(&probe));
+    }
+
+    #[test]
+    fn emergence_fence_facet_inventory_matches_wired_count() {
+        assert_eq!(EMERGENCE_FENCE_FACETS.len(), EMERGENCE_FENCE_FACET_COUNT);
+        assert_eq!(emergence_fence_wired_count(), 4);
+        assert!(EMERGENCE_FENCE_FACETS.iter().filter(|f| f.wired).count() == 4);
     }
 }
