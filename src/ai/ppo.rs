@@ -38,9 +38,348 @@
 //! (both sides must opt in via `Some(digest)`; with **`formal-witness`**, [`Self::new`] pins the
 //! gateway expectation to compiled `catalog.lock.json` — UMST still needs
 //! [`UnifiedMaterialStateTensor::with_lock_catalog_schema_digest`] or an explicit digest).
+//!
+//! # Honest boundary (W29-013)
+//!
+//! [`ManifoldGateway`] is the **policy-facing IO barrier** — CBF admit/reject, scalar reward
+//! shaping (α/β/γ/ζ/η), and formal reject bridge. It does **not** attest physics GREEN,
+//! end-to-end production PPO training closure, or MASTER retick. Learner spine BIND lives in
+//! [`crate::ai::liquid_ppo`] / ADK harness — this module never flips those bits.
 
 use crate::ai::cbf::ThermodynamicCBF;
 use crate::ai::constraint_loss::scaled_clausius_duhem_violation;
+
+/// W29 wave cell id — manifold gateway SSOT deepen.
+pub const PPO_CELL_ID: &str = "W29-013-PPO";
+
+/// Primary topology-step morphism @ SSOT (not gate alias).
+pub const PPO_MORPHISM_ID: &str = "evaluate_topology_step";
+
+/// Formal reject morphism companion (structured [`FormalReject`] surface).
+pub const PPO_FORMAL_MORPHISM_ID: &str = "evaluate_topology_step_formal";
+
+/// Honest posture — gateway SSOT partial; tests deepen only (`MASTER_RETICK=no`).
+pub const PPO_POSTURE_TAG: &str = "honest-manifold-gateway-ssot-partial";
+
+/// Compile-time honest fence — no production / GREEN / MASTER flip at posture tier.
+pub const PPO_HONEST_FENCE: &str =
+    "gateway_ssot_landed=true cbf_gate_landed=true reward_weights_pinned=true production_wired=false physics_green=false master_retick=false";
+
+/// Honest non-claim @ source — CBF + reward path measured in crate tests; full training loop is not.
+pub const PPO_SOURCE_NON_CLAIM: &str =
+    "ManifoldGateway CBF admit + scalar reward shaping measured in crate tests; production PPO training loop / physics GREEN / MASTER retick not claimed at W29 deepen tier.";
+
+/// Whether production PPO training loop is closed end-to-end — **false** until orchestrator BIND + learner receipts.
+pub const PPO_PRODUCTION_WIRED: bool = false;
+
+/// Whether physics GREEN is claimed for gateway reward path — **false** (CBF gate is real; full physics closure is not).
+pub const PPO_PHYSICS_GREEN: bool = false;
+
+/// Whether MASTER retick is authorized for this cell — **false** @ W29 deepen tier.
+pub const PPO_MASTER_RETICK: bool = false;
+
+/// Whether gateway SSOT + CBF + default reward weights are landed @ this slice.
+pub const PPO_GATEWAY_SSOT_LANDED: bool = true;
+
+/// Whether CBF gate path through [`ManifoldGateway::evaluate_topology_step_formal`] is landed.
+pub const PPO_CBF_GATE_LANDED: bool = true;
+
+/// Whether default α/β/γ/ζ/η reward weights are pinned in [`ManifoldGateway::new`].
+pub const PPO_REWARD_WEIGHTS_PINNED: bool = true;
+
+/// Production fence facet count (honest census).
+pub const PPO_FENCE_FACET_COUNT: usize = 6;
+
+/// Fence facets wired today (3/6 measured; production / GREEN / MASTER remain open).
+pub const PPO_FENCE_WIRED_COUNT: usize = 3;
+
+/// Default reward weights pinned in [`ManifoldGateway::new`].
+pub const PPO_DEFAULT_ALPHA: f32 = 1.0;
+pub const PPO_DEFAULT_BETA: f32 = 0.5;
+pub const PPO_DEFAULT_GAMMA: f32 = 2.0;
+pub const PPO_DEFAULT_ZETA: f32 = 0.0;
+pub const PPO_DEFAULT_ETA: f32 = 0.0;
+
+/// Allowlisted proof filter for this cell (fleet / status crosswalk; not a GREEN claim).
+pub const PPO_PROOF_CMD: &str =
+    "bash outputs/.tmp/fleet_away_rustc188.sh --check && cargo test -p umst-manifold ppo";
+
+/// Compile-time fence — production / GREEN / MASTER flip not authorized at posture tier.
+const _: () = assert!(!PPO_PRODUCTION_WIRED);
+const _: () = assert!(!PPO_PHYSICS_GREEN);
+const _: () = assert!(!PPO_MASTER_RETICK);
+const _: () = assert!(PPO_GATEWAY_SSOT_LANDED);
+const _: () = assert!(PPO_CBF_GATE_LANDED);
+const _: () = assert!(PPO_REWARD_WEIGHTS_PINNED);
+const _: () = assert!(PPO_FENCE_WIRED_COUNT <= PPO_FENCE_FACET_COUNT);
+const _: () = assert!(PPO_FENCE_FACET_COUNT - PPO_FENCE_WIRED_COUNT == 3);
+
+/// Pinned scalar reward weights (α/β/γ/ζ/η) — host shaping only; not physics GREEN.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PpoRewardWeights {
+    pub alpha: f32,
+    pub beta: f32,
+    pub gamma: f32,
+    pub zeta: f32,
+    pub eta: f32,
+}
+
+impl PpoRewardWeights {
+    /// Defaults matching [`ManifoldGateway::new`] / [`PPO_DEFAULT_*`] pins.
+    #[must_use]
+    pub const fn defaults() -> Self {
+        Self {
+            alpha: PPO_DEFAULT_ALPHA,
+            beta: PPO_DEFAULT_BETA,
+            gamma: PPO_DEFAULT_GAMMA,
+            zeta: PPO_DEFAULT_ZETA,
+            eta: PPO_DEFAULT_ETA,
+        }
+    }
+}
+
+/// Default reward-weight snapshot @ SSOT.
+#[must_use]
+pub const fn ppo_default_reward_weights() -> PpoRewardWeights {
+    PpoRewardWeights::defaults()
+}
+
+/// One facet of the PPO production fence matrix.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PpoProductionFenceFacet {
+    /// Facet under census.
+    pub facet: &'static str,
+    /// Whether this facet is wired today.
+    pub wired: bool,
+    /// Owning slice when residue / deferred.
+    pub owning_slice: &'static str,
+}
+
+/// PPO production fence facet inventory (honest posture SSOT).
+pub const PPO_PRODUCTION_FENCE_FACETS: &[PpoProductionFenceFacet] = &[
+    PpoProductionFenceFacet {
+        facet: "gateway_ssot",
+        wired: true,
+        owning_slice: PPO_CELL_ID,
+    },
+    PpoProductionFenceFacet {
+        facet: "cbf_gate",
+        wired: true,
+        owning_slice: PPO_CELL_ID,
+    },
+    PpoProductionFenceFacet {
+        facet: "reward_weights",
+        wired: true,
+        owning_slice: PPO_CELL_ID,
+    },
+    PpoProductionFenceFacet {
+        facet: "production_wired",
+        wired: false,
+        owning_slice: "orch-bind-learner-receipts",
+    },
+    PpoProductionFenceFacet {
+        facet: "physics_green",
+        wired: false,
+        owning_slice: "continuum-physics-closure",
+    },
+    PpoProductionFenceFacet {
+        facet: "master_retick",
+        wired: false,
+        owning_slice: "operator-master-retick",
+    },
+];
+
+/// Count wired facets in [`PPO_PRODUCTION_FENCE_FACETS`] (runtime check vs [`PPO_FENCE_WIRED_COUNT`]).
+#[must_use]
+pub fn ppo_fence_wired_count() -> usize {
+    PPO_PRODUCTION_FENCE_FACETS
+        .iter()
+        .filter(|f| f.wired)
+        .count()
+}
+
+/// Count open (unwired) production-fence facets — residue census, not a GREEN claim.
+#[must_use]
+pub fn ppo_fence_open_count() -> usize {
+    PPO_PRODUCTION_FENCE_FACETS
+        .iter()
+        .filter(|f| !f.wired)
+        .count()
+}
+
+/// Open fence facets deferred to other slices (honest residue inventory).
+#[must_use]
+pub fn ppo_fence_residue_facets() -> &'static [PpoProductionFenceFacet] {
+    // Static partition: first three wired, last three open — return open slice by filter collect is not const;
+    // expose via iterator-backed helper for tests / meta.
+    const OPEN: &[PpoProductionFenceFacet] = &[
+        PpoProductionFenceFacet {
+            facet: "production_wired",
+            wired: false,
+            owning_slice: "orch-bind-learner-receipts",
+        },
+        PpoProductionFenceFacet {
+            facet: "physics_green",
+            wired: false,
+            owning_slice: "continuum-physics-closure",
+        },
+        PpoProductionFenceFacet {
+            facet: "master_retick",
+            wired: false,
+            owning_slice: "operator-master-retick",
+        },
+    ];
+    OPEN
+}
+
+/// Whether an open-fence owning_slice is deferred off this cell (refuse self-claim of GREEN/MASTER/prod).
+#[must_use]
+pub fn ppo_residue_owning_slice_deferred(owning_slice: &str) -> bool {
+    !owning_slice.is_empty()
+        && owning_slice != PPO_CELL_ID
+        && !owning_slice.eq_ignore_ascii_case("w29-013-ppo")
+}
+
+/// Typed probe for W29 PPO SSOT posture honesty (meta / fleet probes).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PpoPostureProbe {
+    pub cell_id: &'static str,
+    pub morphism_id: &'static str,
+    pub formal_morphism_id: &'static str,
+    pub posture_tag: &'static str,
+    pub honest_fence: &'static str,
+    pub source_non_claim: &'static str,
+    pub production_wired: bool,
+    pub physics_green: bool,
+    pub master_retick: bool,
+    pub gateway_ssot_landed: bool,
+    pub cbf_gate_landed: bool,
+    pub reward_weights_pinned: bool,
+    pub fence_facet_count: usize,
+    pub fence_wired_count: usize,
+}
+
+/// Build live posture probe from compile-time SSOT constants.
+#[must_use]
+pub fn ppo_posture_probe() -> PpoPostureProbe {
+    PpoPostureProbe {
+        cell_id: PPO_CELL_ID,
+        morphism_id: PPO_MORPHISM_ID,
+        formal_morphism_id: PPO_FORMAL_MORPHISM_ID,
+        posture_tag: PPO_POSTURE_TAG,
+        honest_fence: PPO_HONEST_FENCE,
+        source_non_claim: PPO_SOURCE_NON_CLAIM,
+        production_wired: PPO_PRODUCTION_WIRED,
+        physics_green: PPO_PHYSICS_GREEN,
+        master_retick: PPO_MASTER_RETICK,
+        gateway_ssot_landed: PPO_GATEWAY_SSOT_LANDED,
+        cbf_gate_landed: PPO_CBF_GATE_LANDED,
+        reward_weights_pinned: PPO_REWARD_WEIGHTS_PINNED,
+        fence_facet_count: PPO_FENCE_FACET_COUNT,
+        fence_wired_count: PPO_FENCE_WIRED_COUNT,
+    }
+}
+
+/// Whether PPO SSOT morphism metadata is pinned @ HEAD (visibility only; no GREEN invent).
+#[must_use]
+pub fn ppo_morphism_pinned() -> bool {
+    PPO_CELL_ID == "W29-013-PPO"
+        && PPO_MORPHISM_ID == "evaluate_topology_step"
+        && PPO_FORMAL_MORPHISM_ID == "evaluate_topology_step_formal"
+        && PPO_POSTURE_TAG == "honest-manifold-gateway-ssot-partial"
+        && PPO_GATEWAY_SSOT_LANDED
+        && PPO_CBF_GATE_LANDED
+        && PPO_REWARD_WEIGHTS_PINNED
+        && !PPO_PRODUCTION_WIRED
+        && !PPO_PHYSICS_GREEN
+        && !PPO_MASTER_RETICK
+}
+
+/// Validate PPO posture honesty — fail closed on fake production / GREEN / MASTER claims.
+pub fn validate_ppo_posture_honesty() -> Result<(), &'static str> {
+    let probe = ppo_posture_probe();
+    if !ppo_morphism_pinned() {
+        return Err("ppo_morphism_pinned failed");
+    }
+    if probe.posture_tag.to_ascii_lowercase().contains("green") {
+        return Err("posture_tag must not claim green");
+    }
+    let lower_claim = probe.source_non_claim.to_ascii_lowercase();
+    if lower_claim.contains("physics green") && probe.physics_green {
+        return Err("source_non_claim must not pair with physics_green=true");
+    }
+    if !probe.honest_fence.contains("gateway_ssot_landed=true") {
+        return Err("honest_fence missing gateway_ssot_landed=true");
+    }
+    if !probe.honest_fence.contains("cbf_gate_landed=true") {
+        return Err("honest_fence missing cbf_gate_landed=true");
+    }
+    if !probe.honest_fence.contains("reward_weights_pinned=true") {
+        return Err("honest_fence missing reward_weights_pinned=true");
+    }
+    if !probe.honest_fence.contains("production_wired=false") {
+        return Err("honest_fence missing production_wired=false");
+    }
+    if !probe.honest_fence.contains("physics_green=false") {
+        return Err("honest_fence missing physics_green=false");
+    }
+    if !probe.honest_fence.contains("master_retick=false") {
+        return Err("honest_fence missing master_retick=false");
+    }
+    if probe.production_wired || probe.physics_green || probe.master_retick {
+        return Err("honest booleans must stay false at W29 deepen tier");
+    }
+    if !probe.gateway_ssot_landed || !probe.cbf_gate_landed || !probe.reward_weights_pinned {
+        return Err("landed facets must stay true at W29 deepen tier");
+    }
+    if PPO_PRODUCTION_FENCE_FACETS.len() != PPO_FENCE_FACET_COUNT {
+        return Err("PPO_PRODUCTION_FENCE_FACETS length != PPO_FENCE_FACET_COUNT");
+    }
+    if ppo_fence_wired_count() != PPO_FENCE_WIRED_COUNT {
+        return Err("ppo_fence_wired_count != PPO_FENCE_WIRED_COUNT");
+    }
+    if ppo_fence_open_count() != PPO_FENCE_FACET_COUNT - PPO_FENCE_WIRED_COUNT {
+        return Err("ppo_fence_open_count mismatch vs facet census");
+    }
+    if ppo_fence_residue_facets().len() != ppo_fence_open_count() {
+        return Err("residue facet inventory length != open count");
+    }
+    for facet in PPO_PRODUCTION_FENCE_FACETS.iter().filter(|f| !f.wired) {
+        if !ppo_residue_owning_slice_deferred(facet.owning_slice) {
+            return Err("open fence facet must defer owning_slice off W29-013-PPO");
+        }
+    }
+    for residue in ppo_fence_residue_facets() {
+        if residue.wired {
+            return Err("residue inventory must only list unwired facets");
+        }
+        if !ppo_residue_owning_slice_deferred(residue.owning_slice) {
+            return Err("residue owning_slice must stay deferred");
+        }
+        let matched = PPO_PRODUCTION_FENCE_FACETS.iter().any(|f| {
+            f.facet == residue.facet && !f.wired && f.owning_slice == residue.owning_slice
+        });
+        if !matched {
+            return Err("residue inventory drifted from PPO_PRODUCTION_FENCE_FACETS");
+        }
+    }
+    if probe.fence_wired_count > probe.fence_facet_count {
+        return Err("fence_wired_count exceeds fence_facet_count");
+    }
+    if !PPO_PROOF_CMD.contains("umst-manifold") || !PPO_PROOF_CMD.contains("ppo") {
+        return Err("PPO_PROOF_CMD must stay scoped to umst-manifold ppo");
+    }
+    let defaults = ppo_default_reward_weights();
+    if defaults.alpha != PPO_DEFAULT_ALPHA
+        || defaults.beta != PPO_DEFAULT_BETA
+        || defaults.gamma != PPO_DEFAULT_GAMMA
+        || defaults.zeta != PPO_DEFAULT_ZETA
+        || defaults.eta != PPO_DEFAULT_ETA
+    {
+        return Err("ppo_default_reward_weights drift vs PPO_DEFAULT_* pins");
+    }
+    Ok(())
+}
 #[cfg(feature = "thmc-coupled")]
 use crate::ai::constraint_loss::scaled_constraint_violation_penalty;
 #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
@@ -116,11 +455,11 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
         Self {
             cartridge,
             cbf: ThermodynamicCBF::new(temperature_k, initial_credit),
-            zeta: 0.0_f32,
-            eta: 0.0_f32,
-            alpha: 1.0_f32,
-            beta: 0.5_f32,
-            gamma: 2.0_f32,
+            zeta: PPO_DEFAULT_ZETA,
+            eta: PPO_DEFAULT_ETA,
+            alpha: PPO_DEFAULT_ALPHA,
+            beta: PPO_DEFAULT_BETA,
+            gamma: PPO_DEFAULT_GAMMA,
             #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
             lambda_cd: 0.0_f32,
             #[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
@@ -136,6 +475,29 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> ManifoldGateway<B, C>
             mechanics_solve_reports: Vec::new(),
             _backend: std::marker::PhantomData,
         }
+    }
+
+    /// Snapshot pinned α/β/γ/ζ/η reward weights (host shaping; not a GREEN attest).
+    #[must_use]
+    pub fn reward_weights(&self) -> PpoRewardWeights {
+        PpoRewardWeights {
+            alpha: self.alpha,
+            beta: self.beta,
+            gamma: self.gamma,
+            zeta: self.zeta,
+            eta: self.eta,
+        }
+    }
+
+    /// Builder: replace α/β/γ/ζ/η from a typed snapshot (CBF gate unchanged).
+    #[must_use]
+    pub fn with_reward_weights(mut self, weights: PpoRewardWeights) -> Self {
+        self.alpha = weights.alpha;
+        self.beta = weights.beta;
+        self.gamma = weights.gamma;
+        self.zeta = weights.zeta;
+        self.eta = weights.eta;
+        self
     }
 
     /// Inject host-parsed constraint slack weights (see [`crate::runtime::ppo_host`]).
@@ -523,5 +885,535 @@ mod apply_physics_formal_reject_tests {
         let rej = formal_reject_from_apply_physics(err.clone());
         assert_eq!(rej.catalog_id(), "umst.gate.dec_typestate");
         assert!(rej.to_string().contains("temperature_delta width 2 != UMST nodes 4"));
+    }
+}
+
+#[cfg(test)]
+mod w29_ppo_deepen_tests {
+    use super::*;
+    use crate::ai::formal::FormalReject;
+    use crate::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
+    use crate::core::traits::{IScienceCartridge, PhysicalResult};
+    use crate::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
+    use approx::assert_relative_eq;
+    use burn::tensor::{backend::Backend, Data, Int, Shape, Tensor};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+
+    type B = NdArray<f32>;
+
+    const GATEWAY_TEMP_K: f64 = 300.0;
+    const GATEWAY_CREDIT_J: f64 = 1.0e-12;
+    const SCALAR_DELTA: f32 = 0.1_f32;
+
+    fn device() -> NdArrayDevice {
+        NdArrayDevice::default()
+    }
+
+    fn tiny_umst() -> UnifiedMaterialStateTensor<B> {
+        let dev = device();
+        let n = 2usize;
+        let f = UMST_SCALAR_CHANNEL_COUNT;
+        let coords: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64; n * 5], Shape::new([n, 5])), &dev);
+        let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
+            Data::new(vec![0i64, 1i64, 1i64, 0i64], Shape::new([2, 2])),
+            &dev,
+        );
+        let faces_b2: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64, 0i64], Shape::new([2, 1])), &dev);
+        let scalar_features = Tensor::<B, 2>::zeros([n, f], &dev);
+        let vector_features = Tensor::<B, 3>::zeros([n, 1, 3], &dev);
+        let matrix_features = Tensor::<B, 4>::zeros([n, 1, 3, 3], &dev);
+        UnifiedMaterialStateTensor {
+            coords,
+            edges_b1,
+            faces_b2,
+            scalar_features,
+            vector_features,
+            matrix_features,
+            resolution_mm: [1.0, 1.0, 1.0],
+            node_positions: None,
+            displacement_bc_mask: Tensor::<B, 3>::ones([1, n, 3], &dev),
+            policy_editable_mask: Tensor::<B, 2>::ones([n, 1], &dev),
+            #[cfg(feature = "formal-witness")]
+            catalog_schema_digest: None,
+        }
+    }
+
+    struct PpoStubCartridge;
+
+    impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoStubCartridge {
+        fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
+            let d = mix.fractions.device();
+            PhysicalResult {
+                free_energy: Tensor::zeros([1, 1], &d),
+                dissipation: Tensor::zeros([1, 1], &d),
+                safety_margin: Tensor::zeros([1, 1], &d),
+                cost: Tensor::zeros([1, 1], &d),
+                damage: Tensor::zeros([1, 1], &d),
+                temperature_delta: None,
+                #[cfg(feature = "information_density")]
+                information_density: Tensor::zeros([1, 1], &d),
+            }
+        }
+
+        fn compute_topology(&self, m: &UnifiedMaterialStateTensor<Bk>) -> PhysicalResult<Bk> {
+            let d = m.scalar_features.device();
+            let n = m.scalar_features.dims()[0];
+            PhysicalResult {
+                free_energy: Tensor::zeros([1, n], &d),
+                dissipation: Tensor::zeros([1, n], &d),
+                safety_margin: Tensor::zeros([1, n], &d),
+                cost: Tensor::zeros([1, n], &d),
+                damage: Tensor::zeros([1, n], &d),
+                temperature_delta: None,
+                #[cfg(feature = "information_density")]
+                information_density: Tensor::zeros([1, n], &d),
+            }
+        }
+    }
+
+    fn gateway() -> ManifoldGateway<B, PpoStubCartridge> {
+        ManifoldGateway::new(PpoStubCartridge, GATEWAY_TEMP_K, GATEWAY_CREDIT_J)
+    }
+
+    fn info_gain_tensor() -> Tensor<B, 1> {
+        Tensor::<B, 1>::full([1], SCALAR_DELTA, &device())
+    }
+
+    #[test]
+    fn w29_ppo_posture_probe_honest_not_green() {
+        let probe = ppo_posture_probe();
+        assert_eq!(probe.cell_id, "W29-013-PPO");
+        assert_eq!(probe.formal_morphism_id, PPO_FORMAL_MORPHISM_ID);
+        assert!(probe.posture_tag.contains("honest"));
+        assert!(!probe.posture_tag.to_ascii_lowercase().contains("green"));
+        assert!(probe.gateway_ssot_landed);
+        assert!(probe.cbf_gate_landed);
+        assert!(probe.reward_weights_pinned);
+        assert!(!probe.production_wired);
+        assert!(!probe.physics_green);
+        assert!(!probe.master_retick);
+        assert!(probe.source_non_claim.contains("not claimed"));
+        assert_eq!(probe.fence_facet_count, PPO_FENCE_FACET_COUNT);
+        assert_eq!(probe.fence_wired_count, PPO_FENCE_WIRED_COUNT);
+    }
+
+    #[test]
+    fn w29_ppo_morphism_pinned() {
+        assert!(ppo_morphism_pinned());
+        assert_eq!(PPO_MORPHISM_ID, "evaluate_topology_step");
+        assert_eq!(PPO_FORMAL_MORPHISM_ID, "evaluate_topology_step_formal");
+        assert_eq!(
+            PPO_HONEST_FENCE,
+            "gateway_ssot_landed=true cbf_gate_landed=true reward_weights_pinned=true production_wired=false physics_green=false master_retick=false"
+        );
+    }
+
+    #[test]
+    fn w29_ppo_validate_posture_honesty_ok() {
+        assert!(validate_ppo_posture_honesty().is_ok());
+    }
+
+    #[test]
+    fn w29_ppo_fence_census_partial_not_production() {
+        assert_eq!(PPO_PRODUCTION_FENCE_FACETS.len(), PPO_FENCE_FACET_COUNT);
+        assert_eq!(ppo_fence_wired_count(), PPO_FENCE_WIRED_COUNT);
+        assert_eq!(ppo_fence_open_count(), PPO_FENCE_FACET_COUNT - PPO_FENCE_WIRED_COUNT);
+        assert!(PPO_FENCE_WIRED_COUNT < PPO_FENCE_FACET_COUNT);
+        for facet in PPO_PRODUCTION_FENCE_FACETS {
+            match facet.facet {
+                "gateway_ssot" | "cbf_gate" | "reward_weights" => assert!(facet.wired),
+                "production_wired" | "physics_green" | "master_retick" => assert!(!facet.wired),
+                other => panic!("unexpected fence facet {other}"),
+            }
+        }
+    }
+
+    #[test]
+    fn w29_ppo_default_reward_weights_pinned() {
+        let gw = gateway();
+        assert_relative_eq!(f64::from(gw.alpha), f64::from(PPO_DEFAULT_ALPHA), epsilon = 1.0e-6);
+        assert_relative_eq!(f64::from(gw.beta), f64::from(PPO_DEFAULT_BETA), epsilon = 1.0e-6);
+        assert_relative_eq!(f64::from(gw.gamma), f64::from(PPO_DEFAULT_GAMMA), epsilon = 1.0e-6);
+        assert_relative_eq!(f64::from(gw.zeta), f64::from(PPO_DEFAULT_ZETA), epsilon = 1.0e-6);
+        assert_relative_eq!(f64::from(gw.eta), f64::from(PPO_DEFAULT_ETA), epsilon = 1.0e-6);
+    }
+
+    #[test]
+    fn w29_ppo_new_pins_temperature_and_credit_via_cbf() {
+        let gw = gateway();
+        assert_relative_eq!(gw.cbf.temperature_k, GATEWAY_TEMP_K, epsilon = 1.0e-9);
+        assert_relative_eq!(
+            gw.cbf.available_credit_joules,
+            GATEWAY_CREDIT_J,
+            epsilon = 1.0e-18
+        );
+    }
+
+    #[test]
+    fn w29_ppo_evaluate_topology_step_smoke_accepts_tiny_umst() {
+        let mut gw = gateway();
+        let state = tiny_umst();
+        let info = info_gain_tensor();
+        let out = gw.evaluate_topology_step(state, info);
+        assert!(out.is_ok(), "expected Ok, got {:?}", out.err());
+        let (verified, reward) = out.expect("topology step");
+        assert_eq!(verified.state.scalar_features.dims()[0], 2);
+        let reward_v: Vec<f32> = reward.into_data().value;
+        assert_eq!(reward_v.len(), 1);
+        assert!(reward_v[0].is_finite());
+    }
+
+    #[test]
+    fn w29_ppo_topology_step_records_commit_telemetry() {
+        let mut gw = gateway();
+        let state = tiny_umst();
+        let info = info_gain_tensor();
+        gw.evaluate_topology_step(state, info)
+            .expect("topology step");
+        assert_eq!(gw.telemetry().rejection_rate(), 0.0);
+        assert_relative_eq!(gw.telemetry().acceptance_rate(), 1.0, epsilon = 1.0e-9);
+    }
+
+    #[test]
+    fn w29_ppo_topology_step_deducts_credit_monotonically() {
+        let mut gw = gateway();
+        let credit0 = gw.cbf.available_credit_joules;
+        let state = tiny_umst();
+        let info = info_gain_tensor();
+        gw.evaluate_topology_step(state, info)
+            .expect("first topology step");
+        let credit1 = gw.cbf.available_credit_joules;
+        assert!(
+            credit1 <= credit0,
+            "CBF credit must not increase after admissible step: {credit0} -> {credit1}"
+        );
+    }
+
+    #[test]
+    fn w29_ppo_constraint_loss_penalty_zero_when_disabled() {
+        let gw = gateway();
+        let dev = device();
+        let batch = 1usize;
+        let zeros = Tensor::<B, 1>::zeros([batch], &dev);
+        let dt = Tensor::<B, 1>::full([batch], 1.0_f32, &dev);
+        let penalty = gw.constraint_loss_penalty(
+            zeros.clone(),
+            zeros.clone(),
+            zeros.clone(),
+            zeros,
+            dt,
+        );
+        let values: Vec<f32> = penalty.into_data().value;
+        assert_eq!(values.len(), batch);
+        assert_relative_eq!(f64::from(values[0]), 0.0, epsilon = 1.0e-30);
+    }
+
+    #[test]
+    fn w29_ppo_formal_and_string_evaluate_parity() {
+        let mut gw = gateway();
+        let state_formal = tiny_umst();
+        let state_string = tiny_umst();
+        let info = info_gain_tensor();
+        let formal = gw.evaluate_topology_step_formal(state_formal, info.clone());
+        let string = gw.evaluate_topology_step(state_string, info);
+        assert_eq!(formal.is_ok(), string.is_ok());
+        if let (Ok((_, r_formal)), Ok((_, r_string))) = (formal, string) {
+            let v_formal: Vec<f32> = r_formal.into_data().value;
+            let v_string: Vec<f32> = r_string.into_data().value;
+            assert_eq!(v_formal.len(), v_string.len());
+            for (a, b) in v_formal.iter().zip(v_string.iter()) {
+                assert_relative_eq!(f64::from(*a), f64::from(*b), epsilon = 1.0e-5);
+            }
+        }
+    }
+
+    #[test]
+    fn w29_ppo_zeta_zero_preserves_zero_margin_contribution() {
+        let mut gw = gateway();
+        assert_relative_eq!(f64::from(gw.zeta), 0.0, epsilon = 1.0e-6);
+        let state = tiny_umst();
+        let info = info_gain_tensor();
+        let reward_zeta0 = gw
+            .evaluate_topology_step(state, info.clone())
+            .expect("zeta=0 step")
+            .1;
+        gw.zeta = 0.5_f32;
+        let state2 = tiny_umst();
+        let reward_zeta_half = gw
+            .evaluate_topology_step(state2, info)
+            .expect("zeta=0.5 step")
+            .1;
+        let v0: Vec<f32> = reward_zeta0.into_data().value;
+        let v1: Vec<f32> = reward_zeta_half.into_data().value;
+        assert_eq!(v0.len(), 1);
+        assert_eq!(v1.len(), 1);
+        assert_relative_eq!(f64::from(v0[0]), f64::from(v1[0]), epsilon = 1.0e-5);
+    }
+
+    /// Stub with unit free-energy so α scaling is measurable on the reward path.
+    struct PpoValuedCartridge;
+
+    impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoValuedCartridge {
+        fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
+            let d = mix.fractions.device();
+            PhysicalResult {
+                free_energy: Tensor::ones([1, 1], &d),
+                dissipation: Tensor::zeros([1, 1], &d),
+                safety_margin: Tensor::zeros([1, 1], &d),
+                cost: Tensor::zeros([1, 1], &d),
+                damage: Tensor::zeros([1, 1], &d),
+                temperature_delta: None,
+                #[cfg(feature = "information_density")]
+                information_density: Tensor::zeros([1, 1], &d),
+            }
+        }
+
+        fn compute_topology(&self, m: &UnifiedMaterialStateTensor<Bk>) -> PhysicalResult<Bk> {
+            let d = m.scalar_features.device();
+            let n = m.scalar_features.dims()[0];
+            PhysicalResult {
+                free_energy: Tensor::ones([1, n], &d),
+                dissipation: Tensor::zeros([1, n], &d),
+                safety_margin: Tensor::zeros([1, n], &d),
+                cost: Tensor::zeros([1, n], &d),
+                damage: Tensor::zeros([1, n], &d),
+                temperature_delta: None,
+                #[cfg(feature = "information_density")]
+                information_density: Tensor::zeros([1, n], &d),
+            }
+        }
+    }
+
+    #[test]
+    fn w29_ppo_alpha_scales_free_energy_reward() {
+        let mut gw = ManifoldGateway::new(PpoValuedCartridge, GATEWAY_TEMP_K, GATEWAY_CREDIT_J);
+        let info = info_gain_tensor();
+        let r_alpha1 = gw
+            .evaluate_topology_step(tiny_umst(), info.clone())
+            .expect("alpha=1 step")
+            .1;
+        let mut gw2 = ManifoldGateway::new(PpoValuedCartridge, GATEWAY_TEMP_K, GATEWAY_CREDIT_J);
+        gw2.alpha = 2.0_f32;
+        let r_alpha2 = gw2
+            .evaluate_topology_step(tiny_umst(), info)
+            .expect("alpha=2 step")
+            .1;
+        let v1: Vec<f32> = r_alpha1.into_data().value;
+        let v2: Vec<f32> = r_alpha2.into_data().value;
+        assert_eq!(v1.len(), 1);
+        assert_eq!(v2.len(), 1);
+        // Free-energy ones → spatial sum scales with α; erasure is identical scalar debit.
+        // Δreward = (α2 − α1) * n_voxels = 1.0 * 2 = 2.0
+        assert_relative_eq!(
+            f64::from(v2[0] - v1[0]),
+            2.0,
+            epsilon = 1.0e-4
+        );
+    }
+
+    #[test]
+    fn w29_ppo_cbf_reject_records_telemetry_and_formal_barrier() {
+        // Near-zero credit → Landauer floor rejects; gateway must not invent admit.
+        let mut gw = ManifoldGateway::new(PpoStubCartridge, GATEWAY_TEMP_K, 1.0e-30_f64);
+        let info = Tensor::<B, 1>::full([1], 1.0_f32, &device());
+        let err = match gw.evaluate_topology_step_formal(tiny_umst(), info) {
+            Err(e) => e,
+            Ok(_) => panic!("insufficient credit must reject"),
+        };
+        match err {
+            FormalReject::ThermodynamicControlBarrier { catalog_id, detail } => {
+                assert_eq!(catalog_id, crate::ai::formal::LANDAUER_CBF_CATALOG_ID);
+                assert!(!detail.is_empty());
+            }
+            other => panic!("expected ThermodynamicControlBarrier, got {other:?}"),
+        }
+        assert!(gw.telemetry().rejection_rate() > 0.0);
+        assert_relative_eq!(gw.telemetry().acceptance_rate(), 0.0, epsilon = 1.0e-9);
+    }
+
+    #[test]
+    fn w29_ppo_source_non_claim_refuses_green_language_as_claim() {
+        assert!(PPO_SOURCE_NON_CLAIM.contains("not claimed"));
+        assert!(!PPO_PHYSICS_GREEN);
+        assert!(!PPO_PRODUCTION_WIRED);
+        assert!(!PPO_MASTER_RETICK);
+    }
+
+    #[test]
+    fn w29_ppo_fence_residue_deferred_off_cell() {
+        assert_eq!(ppo_fence_open_count(), 3);
+        assert_eq!(ppo_fence_residue_facets().len(), 3);
+        for facet in ppo_fence_residue_facets() {
+            assert!(!facet.wired);
+            assert!(ppo_residue_owning_slice_deferred(facet.owning_slice));
+        }
+        assert!(!ppo_residue_owning_slice_deferred(PPO_CELL_ID));
+        assert!(!ppo_residue_owning_slice_deferred(""));
+    }
+
+    #[test]
+    fn w29_ppo_reward_weights_builder_roundtrip() {
+        let defaults = ppo_default_reward_weights();
+        assert_eq!(defaults, PpoRewardWeights::defaults());
+        let gw: ManifoldGateway<B, PpoStubCartridge> =
+            ManifoldGateway::new(PpoStubCartridge, GATEWAY_TEMP_K, GATEWAY_CREDIT_J);
+        assert_eq!(gw.reward_weights(), defaults);
+        let shaped = PpoRewardWeights {
+            alpha: 1.5,
+            beta: 0.25,
+            gamma: 3.0,
+            zeta: 0.1,
+            eta: 0.0,
+        };
+        let gw2: ManifoldGateway<B, PpoStubCartridge> =
+            ManifoldGateway::new(PpoStubCartridge, GATEWAY_TEMP_K, GATEWAY_CREDIT_J)
+                .with_reward_weights(shaped);
+        assert_eq!(gw2.reward_weights(), shaped);
+        // Builder does not invent production / GREEN / MASTER.
+        assert!(!PPO_PRODUCTION_WIRED);
+        assert!(!PPO_PHYSICS_GREEN);
+        assert!(!PPO_MASTER_RETICK);
+    }
+
+    #[test]
+    fn w29_ppo_proof_cmd_allowlisted_scope() {
+        assert_eq!(
+            PPO_PROOF_CMD,
+            "bash outputs/.tmp/fleet_away_rustc188.sh --check && cargo test -p umst-manifold ppo"
+        );
+        assert!(PPO_PROOF_CMD.contains("fleet_away_rustc188"));
+        assert!(PPO_PROOF_CMD.contains("-p umst-manifold"));
+    }
+
+    /// Stub with unit dissipation so β scaling is measurable on the reward path.
+    struct PpoDissipationCartridge;
+
+    impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoDissipationCartridge {
+        fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
+            let d = mix.fractions.device();
+            PhysicalResult {
+                free_energy: Tensor::zeros([1, 1], &d),
+                dissipation: Tensor::ones([1, 1], &d),
+                safety_margin: Tensor::zeros([1, 1], &d),
+                cost: Tensor::zeros([1, 1], &d),
+                damage: Tensor::zeros([1, 1], &d),
+                temperature_delta: None,
+                #[cfg(feature = "information_density")]
+                information_density: Tensor::zeros([1, 1], &d),
+            }
+        }
+
+        fn compute_topology(&self, m: &UnifiedMaterialStateTensor<Bk>) -> PhysicalResult<Bk> {
+            let d = m.scalar_features.device();
+            let n = m.scalar_features.dims()[0];
+            PhysicalResult {
+                free_energy: Tensor::zeros([1, n], &d),
+                dissipation: Tensor::ones([1, n], &d),
+                safety_margin: Tensor::zeros([1, n], &d),
+                cost: Tensor::zeros([1, n], &d),
+                damage: Tensor::zeros([1, n], &d),
+                temperature_delta: None,
+                #[cfg(feature = "information_density")]
+                information_density: Tensor::zeros([1, n], &d),
+            }
+        }
+    }
+
+    #[test]
+    fn w29_ppo_beta_scales_dissipation_penalty() {
+        let mut gw = ManifoldGateway::new(PpoDissipationCartridge, GATEWAY_TEMP_K, GATEWAY_CREDIT_J);
+        gw.beta = 1.0_f32;
+        let info = info_gain_tensor();
+        let r_b1 = gw
+            .evaluate_topology_step(tiny_umst(), info.clone())
+            .expect("beta=1 step")
+            .1;
+        let mut gw2 = ManifoldGateway::new(PpoDissipationCartridge, GATEWAY_TEMP_K, GATEWAY_CREDIT_J);
+        gw2.beta = 2.0_f32;
+        let r_b2 = gw2
+            .evaluate_topology_step(tiny_umst(), info)
+            .expect("beta=2 step")
+            .1;
+        let v1: Vec<f32> = r_b1.into_data().value;
+        let v2: Vec<f32> = r_b2.into_data().value;
+        // Higher β → more penalty → lower reward; Δ = −(β2−β1)*n_voxels = −2.
+        assert_relative_eq!(f64::from(v2[0] - v1[0]), -2.0, epsilon = 1.0e-4);
+    }
+
+    /// Stub with unit cost so γ scaling is measurable on the reward path.
+    struct PpoCostCartridge;
+
+    impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoCostCartridge {
+        fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
+            let d = mix.fractions.device();
+            PhysicalResult {
+                free_energy: Tensor::zeros([1, 1], &d),
+                dissipation: Tensor::zeros([1, 1], &d),
+                safety_margin: Tensor::zeros([1, 1], &d),
+                cost: Tensor::ones([1, 1], &d),
+                damage: Tensor::zeros([1, 1], &d),
+                temperature_delta: None,
+                #[cfg(feature = "information_density")]
+                information_density: Tensor::zeros([1, 1], &d),
+            }
+        }
+
+        fn compute_topology(&self, m: &UnifiedMaterialStateTensor<Bk>) -> PhysicalResult<Bk> {
+            let d = m.scalar_features.device();
+            let n = m.scalar_features.dims()[0];
+            PhysicalResult {
+                free_energy: Tensor::zeros([1, n], &d),
+                dissipation: Tensor::zeros([1, n], &d),
+                safety_margin: Tensor::zeros([1, n], &d),
+                cost: Tensor::ones([1, n], &d),
+                damage: Tensor::zeros([1, n], &d),
+                temperature_delta: None,
+                #[cfg(feature = "information_density")]
+                information_density: Tensor::zeros([1, n], &d),
+            }
+        }
+    }
+
+    #[test]
+    fn w29_ppo_gamma_scales_cost_penalty() {
+        let mut gw = ManifoldGateway::new(PpoCostCartridge, GATEWAY_TEMP_K, GATEWAY_CREDIT_J);
+        gw.gamma = 1.0_f32;
+        let info = info_gain_tensor();
+        let r_g1 = gw
+            .evaluate_topology_step(tiny_umst(), info.clone())
+            .expect("gamma=1 step")
+            .1;
+        let mut gw2 = ManifoldGateway::new(PpoCostCartridge, GATEWAY_TEMP_K, GATEWAY_CREDIT_J);
+        gw2.gamma = 3.0_f32;
+        let r_g3 = gw2
+            .evaluate_topology_step(tiny_umst(), info)
+            .expect("gamma=3 step")
+            .1;
+        let v1: Vec<f32> = r_g1.into_data().value;
+        let v3: Vec<f32> = r_g3.into_data().value;
+        // Δ = −(γ3−γ1)*n_voxels = −4.
+        assert_relative_eq!(f64::from(v3[0] - v1[0]), -4.0, epsilon = 1.0e-4);
+    }
+
+    #[test]
+    fn w29_ppo_cbf_reject_string_api_display_parity() {
+        let mut gw = ManifoldGateway::new(PpoStubCartridge, GATEWAY_TEMP_K, 1.0e-30_f64);
+        let info = Tensor::<B, 1>::full([1], 1.0_f32, &device());
+        let formal_err = match gw.evaluate_topology_step_formal(tiny_umst(), info.clone()) {
+            Err(e) => e,
+            Ok(_) => panic!("formal reject"),
+        };
+        let mut gw2 = ManifoldGateway::new(PpoStubCartridge, GATEWAY_TEMP_K, 1.0e-30_f64);
+        let string_err = match gw2.evaluate_topology_step(tiny_umst(), info) {
+            Err(e) => e,
+            Ok(_) => panic!("string reject"),
+        };
+        assert_eq!(string_err, formal_err.to_string());
+        assert!(matches!(
+            formal_err,
+            FormalReject::ThermodynamicControlBarrier { .. }
+        ));
     }
 }

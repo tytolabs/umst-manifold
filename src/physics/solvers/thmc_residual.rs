@@ -49,6 +49,13 @@
 //! Newton early-exit predicates use [`Tensor::lower_elem`] + [`Tensor::all`] with a single
 //! [`tensor1_bool_thmc`] read (electrochemistry Picard pattern). Full AD through outer loops remains a
 //! **scale-out** item if stricter graph purity is required.
+//!
+//! # Honest boundary (W29-085)
+//!
+//! Implicit THMC residual assembly + capped dense Newton / opt-in matrix-free GMRES are research /
+//! verification surfaces under feature `thmc-coupled`. Contracts are exercised by
+//! `cargo test -p umst-manifold thmc_residual`. Not physics GREEN, not `PRODUCTION_WIRED`, not
+//! `MASTER`, not OP-5. Large-\(N\) sparse / AD-safe monolith remains Solver-Status **#8** (soft).
 
 use burn::tensor::backend::Backend;
 
@@ -152,6 +159,127 @@ pub struct ThmcMonolithicImplicitUnknownLayout;
 /// **not** “the same dense code with a bigger cap”; it is the **sparse / JFNK / AD-safe ‖R‖** roadmap documented in
 /// [`docs/Solver-Status.md`](../../../docs/Solver-Status.md) §THMC.
 pub const THMC_DENSE_NEWTON_MAX_STACKED_DOFS: usize = 64;
+
+/// W29 deepen cell — THMC residual honest fence bundle.
+pub const W29_THMC_RESIDUAL_DEEPEN_CELL: &str = "W29-085-THMC_RESIDUAL";
+
+/// Honest posture tag — implicit residual + capped dense Newton research lane.
+pub const THMC_RESIDUAL_POSTURE_TAG: &str = "honest-thmc-residual-implicit-newton-lane";
+
+/// Honest physics posture — residual contracts pass; does not certify fleet physics GREEN.
+pub const THMC_RESIDUAL_PHYSICS_GREEN: bool = false;
+
+/// Production wiring — not claimed by the residual module alone.
+pub const THMC_RESIDUAL_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by the residual module.
+pub const THMC_RESIDUAL_MASTER: bool = false;
+
+/// OP-5 fleet claim — refused at this deepen fence.
+pub const THMC_RESIDUAL_OP5_CLAIMED: bool = false;
+
+/// Whether residual assembly + capped dense Newton surfaces are landed in this module.
+pub const THMC_RESIDUAL_SURFACE_LANDED: bool = true;
+
+/// Dense Newton stacked-DOF cap remains the hard fence (post-`3394b96`).
+pub const THMC_RESIDUAL_DENSE_NEWTON_CAPPED: bool = true;
+
+/// Sparse / matrix-free monolith at \(N>64\) — still open (Solver-Status #8 soft).
+pub const THMC_RESIDUAL_SCALE_JFNK_CLOSED: bool = false;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const THMC_RESIDUAL_HONEST_FENCE: &str =
+    "thmc_residual_landed=true dense_newton_capped=true scale_jfnk_closed=false production_wired=false physics_green=false master=false op5=false";
+
+const _: () = assert!(!THMC_RESIDUAL_PHYSICS_GREEN);
+const _: () = assert!(!THMC_RESIDUAL_PRODUCTION_WIRED);
+const _: () = assert!(!THMC_RESIDUAL_MASTER);
+const _: () = assert!(!THMC_RESIDUAL_OP5_CLAIMED);
+const _: () = assert!(THMC_RESIDUAL_SURFACE_LANDED);
+const _: () = assert!(THMC_RESIDUAL_DENSE_NEWTON_CAPPED);
+const _: () = assert!(!THMC_RESIDUAL_SCALE_JFNK_CLOSED);
+const _: () = assert!(THMC_DENSE_NEWTON_MAX_STACKED_DOFS == 64);
+
+/// Typed probe for THMC residual posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ThmcResidualPostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub op5_claimed: bool,
+    pub residual_surface_landed: bool,
+    pub dense_newton_capped: bool,
+    pub scale_jfnk_closed: bool,
+    pub dense_newton_max_stacked_dofs: usize,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for the THMC residual module.
+#[must_use]
+pub fn thmc_residual_honest_posture_bundle() -> ThmcResidualPostureProbe {
+    ThmcResidualPostureProbe {
+        physics_green: THMC_RESIDUAL_PHYSICS_GREEN,
+        production_wired: THMC_RESIDUAL_PRODUCTION_WIRED,
+        master: THMC_RESIDUAL_MASTER,
+        op5_claimed: THMC_RESIDUAL_OP5_CLAIMED,
+        residual_surface_landed: THMC_RESIDUAL_SURFACE_LANDED,
+        dense_newton_capped: THMC_RESIDUAL_DENSE_NEWTON_CAPPED,
+        scale_jfnk_closed: THMC_RESIDUAL_SCALE_JFNK_CLOSED,
+        dense_newton_max_stacked_dofs: THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
+        honest_fence: THMC_RESIDUAL_HONEST_FENCE,
+        posture_tag: THMC_RESIDUAL_POSTURE_TAG,
+        deepen_cell: W29_THMC_RESIDUAL_DEEPEN_CELL,
+    }
+}
+
+/// Residual surface landed with production/master/GREEN/OP-5/scale-JFNK honestly open.
+#[must_use]
+pub fn thmc_residual_posture_honest(probe: &ThmcResidualPostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && !probe.op5_claimed
+        && probe.residual_surface_landed
+        && probe.dense_newton_capped
+        && !probe.scale_jfnk_closed
+        && probe.dense_newton_max_stacked_dofs == 64
+        && probe.honest_fence.contains("thmc_residual_landed=true")
+        && probe.honest_fence.contains("dense_newton_capped=true")
+        && probe.honest_fence.contains("scale_jfnk_closed=false")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+        && probe.honest_fence.contains("master=false")
+        && probe.honest_fence.contains("op5=false")
+}
+
+/// Fail closed on invented GREEN / PRODUCTION_WIRED / MASTER / OP-5 / premature scale-JFNK close.
+pub fn validate_thmc_residual_honesty() -> Result<(), &'static str> {
+    let probe = thmc_residual_honest_posture_bundle();
+    if probe.physics_green {
+        return Err("THMC_RESIDUAL_PHYSICS_GREEN must stay false — residual contracts ≠ fleet GREEN");
+    }
+    if probe.production_wired {
+        return Err("THMC_RESIDUAL_PRODUCTION_WIRED must stay false until orchestrator pin");
+    }
+    if probe.master {
+        return Err("THMC_RESIDUAL_MASTER must stay false until orchestrator pin");
+    }
+    if probe.op5_claimed {
+        return Err("THMC_RESIDUAL_OP5_CLAIMED must stay false at W29-085 fence");
+    }
+    if probe.scale_jfnk_closed {
+        return Err("THMC_RESIDUAL_SCALE_JFNK_CLOSED must stay false — Solver-Status #8 soft");
+    }
+    if probe.dense_newton_max_stacked_dofs != 64 {
+        return Err("THMC_DENSE_NEWTON_MAX_STACKED_DOFS drifted from post-3394b96 cap 64");
+    }
+    if !thmc_residual_posture_honest(&probe) {
+        return Err("thmc_residual_honest_posture_bundle failed thmc_residual_posture_honest gate");
+    }
+    Ok(())
+}
 
 impl ThmcMonolithicImplicitUnknownLayout {
     /// Displacement components per node (`MechanicalPlan`: `[B, N, 3]`).
@@ -1665,3 +1793,63 @@ impl<B: Backend<FloatElem = f32>> ResidualThmc<B>
         self.assemble(trial).map(|_| ())
     }
 }
+
+#[cfg(test)]
+mod w29_085_thmc_residual_deepen_tests {
+    use super::*;
+
+    #[test]
+    fn thmc_residual_honest_posture_refuses_green_production_master_op5() {
+        validate_thmc_residual_honesty().expect("honest fence");
+        let probe = thmc_residual_honest_posture_bundle();
+        assert!(thmc_residual_posture_honest(&probe));
+        assert!(!probe.physics_green);
+        assert!(!probe.production_wired);
+        assert!(!probe.master);
+        assert!(!probe.op5_claimed);
+        assert!(probe.residual_surface_landed);
+        assert!(probe.dense_newton_capped);
+        assert!(!probe.scale_jfnk_closed);
+        assert_eq!(probe.dense_newton_max_stacked_dofs, 64);
+        assert_eq!(probe.deepen_cell, W29_THMC_RESIDUAL_DEEPEN_CELL);
+        assert_eq!(probe.posture_tag, THMC_RESIDUAL_POSTURE_TAG);
+        assert!(probe.honest_fence.contains("dense_newton_capped=true"));
+        assert!(probe.honest_fence.contains("scale_jfnk_closed=false"));
+    }
+
+    #[test]
+    fn thmc_residual_dense_newton_cap_is_sixty_four() {
+        assert_eq!(THMC_DENSE_NEWTON_MAX_STACKED_DOFS, 64);
+        assert_eq!(
+            ThmcMonolithicImplicitUnknownLayout::MECHANICAL_DISP_PER_NODE,
+            3
+        );
+    }
+
+    #[test]
+    fn thmc_residual_field_major_layout_counts_match_cap_budget() {
+        // 2 nodes × (1+1+1) + 3×2 = 12 stacked DOFs — within dense cap.
+        let n = 2usize;
+        let stacked = ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, 1, 1, 1);
+        assert_eq!(stacked, n * 1 + n * 1 + n * 1 + n * 3);
+        assert!(stacked <= THMC_DENSE_NEWTON_MAX_STACKED_DOFS);
+        let scalar = ThmcMonolithicImplicitUnknownLayout::field_major_scalar_transport_hydration_dof_count(
+            n, 1, 1, 1,
+        );
+        assert_eq!(scalar, 6);
+        assert_eq!(
+            ThmcMonolithicImplicitUnknownLayout::batched_flat_len(2, n, 1, 1, 1),
+            2 * stacked
+        );
+    }
+
+    #[test]
+    fn thmc_residual_trait_default_dof_ordering_note_mentions_jfnk() {
+        struct Stub;
+        impl ResidualThmc<burn_ndarray::NdArray> for Stub {}
+        let note = Stub::dof_ordering_note();
+        assert!(note.contains("JFNK"));
+        assert!(note.contains("T,h,alpha,u"));
+    }
+}
+

@@ -37,6 +37,79 @@
 //! **surface-only** (the **skin** of one tet); it does **not** assemble interior facets of a volume
 //! mesh or call photonics — it exists so tests and future mesh loaders can share one **closed**
 //! volumetric **primal** boundary pattern without duplicating hand-authored COO.
+//!
+//! # Honest boundary (W29-050)
+//!
+//! Linear primal incidence (`d_0`, \(B_1^\top\), \(d_1\), \(d_1^\top\)) plus the canonical tet
+//! boundary COO and \(d_1\!\circ\!d_0\) witness are **topology-only** maps. Burn identity checks live
+//! in `tests/dec_identities.rs` (`cargo test -p umst-manifold dec_primal`). Not physics GREEN, not
+//! `PRODUCTION_WIRED`, not `MASTER`.
+
+/// W29 deepen cell — primal DEC honest fence bundle.
+pub const W29_DEC_PRIMAL_DEEPEN_CELL: &str = "W29-050-DEC_PRIMAL";
+
+/// Honest posture tag — primal incidence landed; fleet production wiring refused.
+pub const DEC_PRIMAL_POSTURE_TAG: &str = "honest-dec-primal-incidence-research-lane";
+
+/// Honest physics posture — topology identities pass Burn tests; does not certify fleet physics GREEN.
+pub const DEC_PRIMAL_PHYSICS_GREEN: bool = false;
+
+/// Production wiring — not claimed by primal incidence alone.
+pub const DEC_PRIMAL_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by this module.
+pub const DEC_PRIMAL_MASTER: bool = false;
+
+/// Whether linear \(d_0\) / divergence / \(d_1\) / \(d_1^\top\) Burn maps are landed.
+pub const DEC_PRIMAL_INCIDENCE_LANDED: bool = true;
+
+/// Whether [`canonical_tetrahedron_boundary_dec_coo`] closed-surface hook is landed.
+pub const DEC_PRIMAL_TET_BOUNDARY_COO_LANDED: bool = true;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const DEC_PRIMAL_HONEST_FENCE: &str =
+    "dec_primal_incidence_landed=true d0_wired=true d1_wired=true d1_transpose_wired=true tet_boundary_coo_wired=true production_wired=false master_composition_wired=false physics_green=false";
+
+/// Typed probe for primal DEC posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DecPrimalPostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub incidence_landed: bool,
+    pub tet_boundary_coo_landed: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for primal DEC.
+#[must_use]
+pub fn dec_primal_honest_posture_bundle() -> DecPrimalPostureProbe {
+    DecPrimalPostureProbe {
+        physics_green: DEC_PRIMAL_PHYSICS_GREEN,
+        production_wired: DEC_PRIMAL_PRODUCTION_WIRED,
+        master: DEC_PRIMAL_MASTER,
+        incidence_landed: DEC_PRIMAL_INCIDENCE_LANDED,
+        tet_boundary_coo_landed: DEC_PRIMAL_TET_BOUNDARY_COO_LANDED,
+        honest_fence: DEC_PRIMAL_HONEST_FENCE,
+        posture_tag: DEC_PRIMAL_POSTURE_TAG,
+        deepen_cell: W29_DEC_PRIMAL_DEEPEN_CELL,
+    }
+}
+
+/// Primal DEC SSOT landed with production/master composition honestly open.
+#[must_use]
+pub fn dec_primal_posture_honest(probe: &DecPrimalPostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && probe.incidence_landed
+        && probe.tet_boundary_coo_landed
+        && probe.honest_fence.contains("dec_primal_incidence_landed=true")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+}
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
@@ -241,5 +314,87 @@ pub fn canonical_tetrahedron_boundary_dec_coo() -> CanonicalTetrahedronBoundaryD
             1, 1, -1, 1, 1, -1, 1, 1, -1, 1, 1, -1,
         ],
         face_column_ranges: [(0, 3), (3, 6), (6, 9), (9, 12)],
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use burn::tensor::Data;
+    use burn_ndarray::NdArray;
+
+    type B = NdArray<f32>;
+
+    #[test]
+    fn dec_primal_honest_posture_refuses_green_and_production() {
+        let probe = dec_primal_honest_posture_bundle();
+        assert!(dec_primal_posture_honest(&probe));
+        assert!(!probe.physics_green);
+        assert!(!probe.production_wired);
+        assert!(!probe.master);
+        assert!(probe.incidence_landed);
+        assert!(probe.tet_boundary_coo_landed);
+        assert_eq!(probe.deepen_cell, W29_DEC_PRIMAL_DEEPEN_CELL);
+        assert!(DEC_PRIMAL_HONEST_FENCE.contains("production_wired=false"));
+        assert!(DEC_PRIMAL_HONEST_FENCE.contains("physics_green=false"));
+        assert!(DEC_PRIMAL_HONEST_FENCE.contains("master_composition_wired=false"));
+    }
+
+    #[test]
+    fn dec_primal_canonical_tet_coo_shape_and_ranges() {
+        let coo = canonical_tetrahedron_boundary_dec_coo();
+        assert_eq!(coo.edges_b1_flat.len(), 12);
+        assert_eq!(coo.faces_b2_flat.len(), 24);
+        assert_eq!(coo.face_column_ranges, [(0, 3), (3, 6), (6, 9), (9, 12)]);
+        // Six directed edges: src row then tgt row.
+        assert_eq!(&coo.edges_b1_flat[0..6], &[0, 0, 0, 1, 1, 2]);
+        assert_eq!(&coo.edges_b1_flat[6..12], &[1, 2, 3, 2, 3, 3]);
+        // Incidence signs are ±1.
+        for &s in &coo.faces_b2_flat[12..24] {
+            assert!(s == 1 || s == -1, "sign must be ±1, got {s}");
+        }
+        // Edge indices in faces_b2 row 0 stay in 0…5.
+        for &e in &coo.faces_b2_flat[0..12] {
+            assert!((0..6).contains(&e), "edge index out of range: {e}");
+        }
+    }
+
+    #[test]
+    fn dec_primal_d0_constant_nodal_is_zero() {
+        let device = Default::default();
+        let edges = Tensor::<B, 2, Int>::from_data(
+            Data::new(vec![0i64, 1, 1, 2], [2, 2].into()),
+            &device,
+        );
+        let topo = EdgeTopology::new(edges);
+        let nodal = Tensor::<B, 3>::from_data(
+            Data::new(vec![3.0_f32; 3], [1, 3, 1].into()),
+            &device,
+        );
+        let inc = primal_scalar_edge_increment(nodal, &topo);
+        for x in inc.into_data().value {
+            assert!(x.abs() < 1e-6, "constant field → zero d0, got {x}");
+        }
+    }
+
+    #[test]
+    fn dec_primal_divergence_of_d0_row_sum_zero_on_chain() {
+        let device = Default::default();
+        let edges = Tensor::<B, 2, Int>::from_data(
+            Data::new(vec![0i64, 1, 1, 2], [2, 2].into()),
+            &device,
+        );
+        let topo = EdgeTopology::new(edges);
+        let nodal = Tensor::<B, 3>::from_data(
+            Data::new(vec![1.0_f32, 4.0, 9.0], [1, 3, 1].into()),
+            &device,
+        );
+        let d0 = primal_scalar_edge_increment(nodal.clone(), &topo);
+        let div = primal_divergence_from_edge_flux_topo(d0, &topo, &nodal);
+        let row_sum: f32 = div.into_data().value.iter().sum();
+        assert!(
+            row_sum.abs() < 1e-5,
+            "closed incidence: row-sum of B1^T d0 x ≈ 0, got {row_sum}"
+        );
     }
 }

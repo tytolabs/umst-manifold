@@ -299,7 +299,13 @@ mod tests {
             "negative margin should push u outward to satisfy ḣ ≥ −αh"
         );
         assert!(cbf_qp_constraint_satisfied(outcome.u, margin, h_dot, alpha));
-        assert!((outcome.margin_after - (-alpha * margin.value())).abs() < 1e-5);
+        // On-boundary projection ⇒ post-projection slack ḣ+αh ≈ 0 (not the RHS −αh).
+        assert!(
+            outcome.margin_after.abs() < 1e-5,
+            "projected boundary slack should be ≈0, got {}",
+            outcome.margin_after
+        );
+        assert!((outcome.u - (-alpha * margin.value()) / h_dot).abs() < 1e-5);
         assert!((cbf_qp_project_1d(u_agent, margin, h_dot, alpha) - outcome.u).abs() < 1e-6);
     }
 
@@ -346,7 +352,11 @@ mod tests {
         let alpha = 1.0_f32;
         let batch = cbf_qp_project_batch(&u_agent, &margins, &h_dot, alpha);
         assert_eq!(batch.len(), 3);
-        for ((&u, &m), (&hd, &proj)) in u_agent.iter().zip(margins).zip(h_dot.iter().zip(batch.iter())) {
+        for ((&u, m), (&hd, &proj)) in u_agent
+            .iter()
+            .zip(margins.iter().copied())
+            .zip(h_dot.iter().zip(batch.iter()))
+        {
             let expected = cbf_qp_project_1d(u, m, hd, alpha);
             assert!((proj - expected).abs() < 1e-6);
             assert!(cbf_qp_constraint_satisfied(proj, m, hd, alpha));
