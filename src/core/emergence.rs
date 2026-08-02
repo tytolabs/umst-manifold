@@ -301,6 +301,9 @@ impl<B: Backend> EmergenceMonitor<B> {
     }
 
     /// Computes the thermo-topological defect mass field on a structured lattice `[B,D,H,W]`.
+    ///
+    /// Central differences require extent ≥ 3 along an axis; thinner axes contribute a zero
+    /// gradient component (constant field along that axis).
     pub fn compute_dissipation_hotspots(
         &self,
         d_int: Tensor<B, 4>,
@@ -308,29 +311,42 @@ impl<B: Backend> EmergenceMonitor<B> {
     ) -> Tensor<B, 4> {
         let dims = sdf.dims();
         let (batch, d, h, w) = (dims[0], dims[1], dims[2], dims[3]);
-
-        let sdf_x_plus = sdf.clone().slice([0..batch, 0..d, 0..h, 2..w]);
-        let sdf_x_minus = sdf.clone().slice([0..batch, 0..d, 0..h, 0..(w - 2)]);
-        let dx = sdf_x_plus.sub(sdf_x_minus).div_scalar(2.0);
-
-        let sdf_y_plus = sdf.clone().slice([0..batch, 0..d, 2..h, 0..w]);
-        let sdf_y_minus = sdf.clone().slice([0..batch, 0..d, 0..(h - 2), 0..w]);
-        let dy = sdf_y_plus.sub(sdf_y_minus).div_scalar(2.0);
-
-        let sdf_z_plus = sdf.clone().slice([0..batch, 2..d, 0..h, 0..w]);
-        let sdf_z_minus = sdf.clone().slice([0..batch, 0..(d - 2), 0..h, 0..w]);
-        let dz = sdf_z_plus.sub(sdf_z_minus).div_scalar(2.0);
+        let device = sdf.device();
 
         let zero = sdf
             .clone()
             .slice([0..batch, 0..1, 0..1, 0..1])
             .reshape([1])
             .into_scalar();
-        let pad_x = dx.pad((1, 1, 0, 0), zero);
-        let pad_y = dy.pad((0, 0, 1, 1), zero);
-        let dev = dz.device();
-        let mut pad_z = Tensor::<B, 4>::zeros([batch, d, h, w], &dev);
-        pad_z = pad_z.slice_assign([0..batch, 1..(d - 1), 0..h, 0..w], dz);
+
+        let pad_x = if w >= 3 {
+            let sdf_x_plus = sdf.clone().slice([0..batch, 0..d, 0..h, 2..w]);
+            let sdf_x_minus = sdf.clone().slice([0..batch, 0..d, 0..h, 0..(w - 2)]);
+            let dx = sdf_x_plus.sub(sdf_x_minus).div_scalar(2.0);
+            dx.pad((1, 1, 0, 0), zero)
+        } else {
+            Tensor::<B, 4>::zeros([batch, d, h, w], &device)
+        };
+
+        let pad_y = if h >= 3 {
+            let sdf_y_plus = sdf.clone().slice([0..batch, 0..d, 2..h, 0..w]);
+            let sdf_y_minus = sdf.clone().slice([0..batch, 0..d, 0..(h - 2), 0..w]);
+            let dy = sdf_y_plus.sub(sdf_y_minus).div_scalar(2.0);
+            dy.pad((0, 0, 1, 1), zero)
+        } else {
+            Tensor::<B, 4>::zeros([batch, d, h, w], &device)
+        };
+
+        let pad_z = if d >= 3 {
+            let sdf_z_plus = sdf.clone().slice([0..batch, 2..d, 0..h, 0..w]);
+            let sdf_z_minus = sdf.clone().slice([0..batch, 0..(d - 2), 0..h, 0..w]);
+            let dz = sdf_z_plus.sub(sdf_z_minus).div_scalar(2.0);
+            let mut pad_z = Tensor::<B, 4>::zeros([batch, d, h, w], &device);
+            pad_z = pad_z.slice_assign([0..batch, 1..(d - 1), 0..h, 0..w], dz);
+            pad_z
+        } else {
+            Tensor::<B, 4>::zeros([batch, d, h, w], &device)
+        };
 
         let grad_sdf_sq = pad_x
             .powf_scalar(2.0)
