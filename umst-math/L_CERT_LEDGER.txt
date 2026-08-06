@@ -1,0 +1,29 @@
+# L_CERT_LEDGER — POSTH-04 `:lcert --strict` capstone (SCAFFOLD ONLY)
+# Agent: FLEET-COMPOSER-G60-POSTH-04
+# Prior: SWARM-C25-0831-44 (scaffold verify)
+# Status: NOT-WIRED — honest exit 2 until L-1 + L-2 + L-6 GREEN (3/6 factors GREEN)
+# Signed: NO — scaffold receipt only; do not claim an OK receipt for L-Arc
+lcert_status=NOT_WIRED
+posth_04=PARTIAL_L2_BLOCKER
+strict_required=yes
+l0_formal_grounding=GREEN
+l1_ffi_clusters_bound=10/10
+l2_attestation=PARTIAL_FRUGALITY_CLUSTER
+l2_bound_paths=0
+l3_blurb_coverage_pct=97
+l3_gate_passes=true
+l4_ci_scripts=GREEN
+l5_extraction=GREEN
+l5_abi_version=9
+l5_haskell_modules=10
+l6_crosswalk=PARTIAL
+l6_map_rows=5
+l6_derived_covered=4
+l6_derived_total=6
+theorem_registry_rows=37
+blocked_factors=3/6
+content_fingerprint=20b2676564a9f837
+ledger_file_present=true
+g60_receipt=outputs/.tmp/COMPOSER_G60_POSTH04_2143.md
+f60_prior_receipt=outputs/.tmp/COMPOSER_F60_POSTH04_1942.md
+# Do not claim an OK receipt for L-Arc — signed exit 0 only when all factors GREEN.

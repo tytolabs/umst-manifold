@@ -81,6 +81,81 @@
 //!   If positions are missing or not `[N,3]`, strain falls back to `matrix_features[.., 0, ..]` when shapes
 //!   align (`[N,F,3,3]` → `[B,N,3,3]`); otherwise zeros — same rule as
 //!   `strain_tensor_for_fracture_from_manifold` (public stub for cartridges / tests).
+//!
+//! # Honest boundary (W29-081)
+//!
+//! Operator-split THMC + opt-in dense Newton (stacked DOFs ≤
+//! [`crate::physics::solvers::THMC_DENSE_NEWTON_MAX_STACKED_DOFS`]) are research/verification surfaces
+//! under feature `thmc-coupled`. Contracts are exercised by `cargo test -p umst-manifold thmc`.
+//! Not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER`, not OP-5.
+
+/// W29 deepen cell — THMC solver honest fence bundle.
+pub const W29_THMC_DEEPEN_CELL: &str = "W29-081-THMC";
+
+/// Honest posture tag — operator-split / capped dense Newton research lane.
+pub const THMC_POSTURE_TAG: &str = "honest-thmc-operator-split-research-lane";
+
+/// Honest physics posture — unit/verification contracts pass; does not certify fleet physics GREEN.
+pub const THMC_PHYSICS_GREEN: bool = false;
+
+/// Production wiring — not claimed by this module alone.
+pub const THMC_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by this module.
+pub const THMC_MASTER: bool = false;
+
+/// OP-5 fleet claim — refused at this deepen fence.
+pub const THMC_OP5_CLAIMED: bool = false;
+
+/// Whether the operator-split + optional dense Newton surfaces are landed in this module.
+pub const THMC_SOLVER_SURFACE_LANDED: bool = true;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const THMC_HONEST_FENCE: &str =
+    "thmc_solver_landed=true operator_split_wired=true dense_newton_capped=true production_wired=false physics_green=false master=false op5=false";
+
+/// Typed probe for THMC solver posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ThmcPostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub op5_claimed: bool,
+    pub solver_surface_landed: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for the THMC solver module.
+#[must_use]
+pub fn thmc_honest_posture_bundle() -> ThmcPostureProbe {
+    ThmcPostureProbe {
+        physics_green: THMC_PHYSICS_GREEN,
+        production_wired: THMC_PRODUCTION_WIRED,
+        master: THMC_MASTER,
+        op5_claimed: THMC_OP5_CLAIMED,
+        solver_surface_landed: THMC_SOLVER_SURFACE_LANDED,
+        honest_fence: THMC_HONEST_FENCE,
+        posture_tag: THMC_POSTURE_TAG,
+        deepen_cell: W29_THMC_DEEPEN_CELL,
+    }
+}
+
+/// THMC surface landed with production/master/GREEN/OP-5 honestly open.
+#[must_use]
+pub fn thmc_posture_honest(probe: &ThmcPostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && !probe.op5_claimed
+        && probe.solver_surface_landed
+        && probe.honest_fence.contains("thmc_solver_landed=true")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+        && probe.honest_fence.contains("master=false")
+        && probe.honest_fence.contains("op5=false")
+}
 
 #[cfg(feature = "thmc-coupled")]
 use burn::tensor::Int;
@@ -1104,6 +1179,61 @@ pub fn shrink_strain_from_saturation_loss_tensor<B: Backend<FloatElem = f32>>(
     let alpha_term = reaction_extent.sqrt().clamp(0.2_f32, 1.0_f32);
     let coeff = alpha_term.mul_scalar(1.1e-3_f32 * w);
     coeff.mul(humidity_loss_01.clamp(0.0_f32, 1.0_f32))
+}
+
+#[cfg(test)]
+mod w29_081_thmc_deepen_tests {
+    use super::*;
+
+    #[test]
+    fn thmc_honest_posture_refuses_green_production_master_op5() {
+        let probe = thmc_honest_posture_bundle();
+        assert!(thmc_posture_honest(&probe));
+        assert!(!probe.physics_green);
+        assert!(!probe.production_wired);
+        assert!(!probe.master);
+        assert!(!probe.op5_claimed);
+        assert!(probe.solver_surface_landed);
+        assert_eq!(probe.deepen_cell, W29_THMC_DEEPEN_CELL);
+        assert_eq!(probe.posture_tag, THMC_POSTURE_TAG);
+        assert!(probe.honest_fence.contains("dense_newton_capped=true"));
+    }
+
+    #[test]
+    fn thmc_default_solver_keeps_opt_in_newton_none() {
+        let s = ThmcSolver::default();
+        assert!(s.implicit_t_alpha_newton.is_none());
+        assert!(s.monolithic_thmc_newton.is_none());
+        assert!(s.drying_last_node_evaporation_k == 0.0_f32);
+        assert!(s.max_newton >= 1);
+        assert!(s.dt > 0.0_f32);
+    }
+
+    #[test]
+    fn thmc_reaction_extent_kinetics_alpha_rate_vanishes_at_full_extent() {
+        let k = ReactionExtentKinetics::default();
+        let rate = k.alpha_rate_scalar(1.0_f32, 300.0_f32);
+        assert!(rate.abs() < 1e-12_f32, "full extent ⇒ Arrhenius (1-α)_+ = 0, got {rate}");
+        let mid = k.alpha_rate_scalar(0.5_f32, 300.0_f32);
+        assert!(mid > 0.0_f32, "mid extent at room T should be positive");
+    }
+
+    #[test]
+    fn thmc_monolithic_newton_config_default_iterations_ge_two() {
+        let cfg = ThmcMonolithicNewtonConfig::default();
+        assert!(cfg.iterations >= 2);
+        assert!(cfg.damping > 0.0_f32 && cfg.damping <= 1.0_f32);
+        assert!(cfg.fd_eps > 0.0_f32);
+        assert_eq!(cfg.stacked_residual_relative_to_initial, None);
+    }
+
+    #[test]
+    fn thmc_implicit_t_alpha_newton_config_default_iterations_ge_two() {
+        let cfg = ThmcImplicitTAlphaNewtonConfig::default();
+        assert!(cfg.iterations >= 2);
+        assert!(cfg.damping > 0.0_f32 && cfg.damping <= 1.0_f32);
+        assert!(cfg.fd_eps > 0.0_f32);
+    }
 }
 
 #[cfg(all(test, feature = "thmc-coupled"))]

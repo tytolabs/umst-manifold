@@ -12,6 +12,220 @@
 //! Differentiable optimization loops live behind **`topology-density-evolution`** /
 //! **`solver-experimental`** — see `TopologyOptimizer::optimize_step` for DensityNet → SIMP →
 //! equilibrium without `.into_scalar()` on the forward path.
+//!
+//! # Honest boundary (W29-016)
+//!
+//! This module is a **Neural-SIMP shell** — DensityNet + optimizer hyperparameters + optional
+//! feature-gated equilibrium / projection helpers. It does **not** attest physics GREEN,
+//! production closed-loop topology design, MASTER retick, or Sigmund mesh-independence filter
+//! completeness (`SensitivityFilter::r_min` remains reserved). Feature
+//! `topology-density-evolution` unlocks measured SIMP forward steps; that is **not** fleet GREEN.
+//! Greyness / VF-gap / \(\rho^p\) helpers below are **descriptive witnesses**, not TO certificates.
+
+/// W29 wave cell id — Neural-SIMP topology deepen.
+pub const TOPOLOGY_CELL_ID: &str = "W29-016-TOPOLOGY";
+
+/// Primary morphism @ SSOT — density decode / pseudo-density forward (not gate alias).
+pub const TOPOLOGY_MORPHISM_ID: &str = "pseudo_density_at_coords";
+
+/// Honest posture — density shell partial; evolution path feature-gated (`MASTER_RETICK=no`).
+pub const TOPOLOGY_POSTURE_TAG: &str = "honest-neural-simp-shell-partial";
+
+/// Compile-time honest fence — no production / GREEN / MASTER / Sigmund-complete / closed-loop flip.
+pub const TOPOLOGY_HONEST_FENCE: &str =
+    "density_net_landed=true optimizer_shell_landed=true production_wired=false physics_green=false master_retick=false sigmund_filter_complete=false closed_loop_to=false";
+
+/// Honest non-claim @ source — bar / projection tests are local witnesses, not fleet GREEN.
+pub const TOPOLOGY_SOURCE_NON_CLAIM: &str =
+    "DensityNet + TopologyOptimizer shell measured in crate tests; SIMP equilibrium / Heaviside / volume match live behind topology-density-evolution; SensitivityFilter is 1-hop neighbor average (r_min reserved); greyness/VF-gap/rho^p helpers are descriptive only; not physics GREEN / not production closed-loop TO.";
+
+/// Whether a production closed-loop topology optimizer is wired end-to-end — **false** @ W29.
+pub const TOPOLOGY_PRODUCTION_WIRED: bool = false;
+
+/// Whether physics GREEN is claimed for Neural-SIMP — **false** (shell + optional feature path ≠ GREEN).
+pub const TOPOLOGY_PHYSICS_GREEN: bool = false;
+
+/// Whether MASTER retick is authorized for this cell — **false** @ W29 deepen tier.
+pub const TOPOLOGY_MASTER_RETICK: bool = false;
+
+/// Whether Sigmund mesh-independence filter (distance-weighted \(r_{\min}\)) is complete — **false**.
+pub const TOPOLOGY_SIGMUND_FILTER_COMPLETE: bool = false;
+
+/// Whether end-to-end closed-loop topology optimisation is claimed — **false** @ W29.
+pub const TOPOLOGY_CLOSED_LOOP_TO: bool = false;
+
+/// DensityNet MLP + sigmoid path is landed (always-on).
+pub const TOPOLOGY_DENSITY_NET_LANDED: bool = true;
+
+/// TopologyOptimizer hyperparameter shell is landed (always-on).
+pub const TOPOLOGY_OPTIMIZER_SHELL_LANDED: bool = true;
+
+/// Whether `topology-density-evolution` is compiled into this binary (feature presence ≠ GREEN).
+#[cfg(feature = "topology-density-evolution")]
+pub const TOPOLOGY_DENSITY_EVOLUTION_COMPILED: bool = true;
+#[cfg(not(feature = "topology-density-evolution"))]
+pub const TOPOLOGY_DENSITY_EVOLUTION_COMPILED: bool = false;
+
+/// Compile-time fence — production / MASTER / GREEN / Sigmund-complete / closed-loop flip not authorized.
+const _: () = assert!(!TOPOLOGY_PRODUCTION_WIRED);
+const _: () = assert!(!TOPOLOGY_PHYSICS_GREEN);
+const _: () = assert!(!TOPOLOGY_MASTER_RETICK);
+const _: () = assert!(!TOPOLOGY_SIGMUND_FILTER_COMPLETE);
+const _: () = assert!(!TOPOLOGY_CLOSED_LOOP_TO);
+const _: () = assert!(TOPOLOGY_DENSITY_NET_LANDED);
+const _: () = assert!(TOPOLOGY_OPTIMIZER_SHELL_LANDED);
+
+/// Typed probe for W29 Neural-SIMP topology posture honesty (meta / fleet probes).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TopologyPostureProbe {
+    pub cell_id: &'static str,
+    pub morphism_id: &'static str,
+    pub posture_tag: &'static str,
+    pub honest_fence: &'static str,
+    pub source_non_claim: &'static str,
+    pub density_net_landed: bool,
+    pub optimizer_shell_landed: bool,
+    pub density_evolution_compiled: bool,
+    pub production_wired: bool,
+    pub physics_green: bool,
+    pub master_retick: bool,
+    pub sigmund_filter_complete: bool,
+    pub closed_loop_to: bool,
+}
+
+/// Build live posture probe from compile-time SSOT constants.
+#[must_use]
+pub fn topology_posture_probe() -> TopologyPostureProbe {
+    TopologyPostureProbe {
+        cell_id: TOPOLOGY_CELL_ID,
+        morphism_id: TOPOLOGY_MORPHISM_ID,
+        posture_tag: TOPOLOGY_POSTURE_TAG,
+        honest_fence: TOPOLOGY_HONEST_FENCE,
+        source_non_claim: TOPOLOGY_SOURCE_NON_CLAIM,
+        density_net_landed: TOPOLOGY_DENSITY_NET_LANDED,
+        optimizer_shell_landed: TOPOLOGY_OPTIMIZER_SHELL_LANDED,
+        density_evolution_compiled: TOPOLOGY_DENSITY_EVOLUTION_COMPILED,
+        production_wired: TOPOLOGY_PRODUCTION_WIRED,
+        physics_green: TOPOLOGY_PHYSICS_GREEN,
+        master_retick: TOPOLOGY_MASTER_RETICK,
+        sigmund_filter_complete: TOPOLOGY_SIGMUND_FILTER_COMPLETE,
+        closed_loop_to: TOPOLOGY_CLOSED_LOOP_TO,
+    }
+}
+
+/// Whether topology morphism metadata is pinned @ HEAD (visibility only; no GREEN invent).
+#[must_use]
+pub fn topology_morphism_pinned() -> bool {
+    TOPOLOGY_CELL_ID == "W29-016-TOPOLOGY"
+        && TOPOLOGY_MORPHISM_ID == "pseudo_density_at_coords"
+        && TOPOLOGY_POSTURE_TAG == "honest-neural-simp-shell-partial"
+        && TOPOLOGY_DENSITY_NET_LANDED
+        && TOPOLOGY_OPTIMIZER_SHELL_LANDED
+        && !TOPOLOGY_PRODUCTION_WIRED
+        && !TOPOLOGY_PHYSICS_GREEN
+        && !TOPOLOGY_MASTER_RETICK
+        && !TOPOLOGY_SIGMUND_FILTER_COMPLETE
+        && !TOPOLOGY_CLOSED_LOOP_TO
+}
+
+/// Validate Neural-SIMP posture honesty — fail closed on fake production / GREEN / MASTER claims.
+pub fn validate_topology_posture_honesty() -> Result<(), &'static str> {
+    let probe = topology_posture_probe();
+    if !topology_morphism_pinned() {
+        return Err("topology_morphism_pinned failed");
+    }
+    if probe.posture_tag.to_ascii_lowercase().contains("green") {
+        return Err("posture_tag must not claim green");
+    }
+    let lower = probe.source_non_claim.to_ascii_lowercase();
+    if lower.contains("not physics green") && probe.physics_green {
+        return Err("source_non_claim must not pair with physics_green=true");
+    }
+    if !probe.honest_fence.contains("density_net_landed=true") {
+        return Err("honest_fence missing density_net_landed=true");
+    }
+    if !probe.honest_fence.contains("optimizer_shell_landed=true") {
+        return Err("honest_fence missing optimizer_shell_landed=true");
+    }
+    if !probe.honest_fence.contains("production_wired=false") {
+        return Err("honest_fence missing production_wired=false");
+    }
+    if !probe.honest_fence.contains("physics_green=false") {
+        return Err("honest_fence missing physics_green=false");
+    }
+    if !probe.honest_fence.contains("master_retick=false") {
+        return Err("honest_fence missing master_retick=false");
+    }
+    if !probe.honest_fence.contains("sigmund_filter_complete=false") {
+        return Err("honest_fence missing sigmund_filter_complete=false");
+    }
+    if !probe.honest_fence.contains("closed_loop_to=false") {
+        return Err("honest_fence missing closed_loop_to=false");
+    }
+    if !probe.density_net_landed || !probe.optimizer_shell_landed {
+        return Err("density_net / optimizer_shell must stay landed at W29 deepen tier");
+    }
+    if probe.production_wired
+        || probe.physics_green
+        || probe.master_retick
+        || probe.sigmund_filter_complete
+        || probe.closed_loop_to
+    {
+        return Err("honest refusal bits must stay false at W29 deepen tier");
+    }
+    // Feature compile bit is informational — must never upgrade refusal bits.
+    let _ = probe.density_evolution_compiled;
+    Ok(())
+}
+
+/// Volume fraction \(V^\*\) admissible for SIMP VF constraints: finite and in \((0,1)\).
+#[must_use]
+pub fn volume_target_admissible(v: f32) -> bool {
+    v.is_finite() && v > 0.0 && v < 1.0
+}
+
+/// SIMP penalization \(p\) admissible: finite and \(p \ge 1\).
+#[must_use]
+pub fn penalization_admissible(p: f32) -> bool {
+    p.is_finite() && p >= 1.0
+}
+
+/// Heaviside continuation \(\beta\) admissible: finite and \(\beta > 0\).
+#[must_use]
+pub fn heaviside_beta_admissible(beta: f32) -> bool {
+    beta.is_finite() && beta > 0.0
+}
+
+/// Heaviside threshold \(\eta\) admissible: finite and in \([0,1]\).
+#[must_use]
+pub fn heaviside_eta_admissible(eta: f32) -> bool {
+    eta.is_finite() && (0.0..=1.0).contains(&eta)
+}
+
+/// Sigmund-style greyness on a host density slice: \(4\,\mathrm{mean}(\rho(1-\rho))\in[0,1]\).
+///
+/// Descriptive intermediate-density witness for plateau / continuation callers — **not** a
+/// mesh-independence certificate and **not** physics GREEN.
+#[must_use]
+pub fn greyness_from_density_slice(rho: &[f32]) -> f32 {
+    if rho.is_empty() {
+        return 0.0;
+    }
+    let n = rho.len() as f32;
+    let sum: f32 = rho.iter().map(|&r| r * (1.0 - r)).sum();
+    (4.0 * sum / n).clamp(0.0, 1.0)
+}
+
+/// SIMP stiffness factor \(\rho^p\) on a detached host slice (always-on; no equilibrium solve).
+///
+/// Returns `None` when `p` fails [`penalization_admissible`]. Output length matches `rho`.
+#[must_use]
+pub fn simp_penalized_modulus_factor_slice(rho: &[f32], p: f32) -> Option<Vec<f32>> {
+    if !penalization_admissible(p) {
+        return None;
+    }
+    Some(rho.iter().map(|&r| r.clamp(0.0, 1.0).powf(p)).collect())
+}
 
 use burn::module::Module;
 use burn::nn::{Linear, LinearConfig};
@@ -152,6 +366,9 @@ pub struct TopologyOptimizer<B: Backend> {
 
 impl<B: Backend<FloatElem = f32>> TopologyOptimizer<B> {
     /// `penalization` is the usual SIMP stiffness exponent \(p \geq 1\) (stored as `f32`).
+    ///
+    /// Does **not** invent GREEN: stores hyperparameters as given. Prefer [`Self::try_new`] when
+    /// callers need an honest domain fence on \(V^\*\) and \(p\).
     pub fn new(
         volume_target: f32,
         penalization: f32,
@@ -165,12 +382,85 @@ impl<B: Backend<FloatElem = f32>> TopologyOptimizer<B> {
         }
     }
 
+    /// Fail-closed constructor: refuses non-admissible \(V^\*\) or \(p\) (honest domain fence).
+    ///
+    /// Returns `Err` with a static reason — never upgrades refusal into a GREEN claim.
+    pub fn try_new(
+        volume_target: f32,
+        penalization: f32,
+        hidden_dim: usize,
+        device: &B::Device,
+    ) -> Result<Self, &'static str> {
+        if !volume_target_admissible(volume_target) {
+            return Err("volume_target must be finite and in (0,1)");
+        }
+        if !penalization_admissible(penalization) {
+            return Err("penalization must be finite and >= 1");
+        }
+        if hidden_dim == 0 {
+            return Err("hidden_dim must be > 0");
+        }
+        Ok(Self::new(volume_target, penalization, hidden_dim, device))
+    }
+
+    /// Whether stored SIMP hyperparameters pass the honest domain fence.
+    #[must_use]
+    pub fn hyperparameters_admissible(&self) -> bool {
+        volume_target_admissible(self.volume_target) && penalization_admissible(self.penalization)
+    }
+
     /// Pseudo-density \(\rho \in (0,1)^{B \times N}\) from coordinates `[B, N, 3]`.
     ///
     /// For the full SIMP equilibrium forward (`optimize_step`), enable **`topology-density-evolution`**
     /// or **`solver-experimental`**.
     pub fn pseudo_density_at_coords(&self, coords: Tensor<B, 3>) -> Tensor<B, 3> {
         self.density_net.forward_batched(coords)
+    }
+
+    /// Graph-mean pseudo-density \(\mathrm{mean}(\rho)\) as rank‑1 `[1]` (volume-fraction surrogate).
+    ///
+    /// Descriptive statistic over the current DensityNet field — **not** a certificate that the
+    /// volume constraint is satisfied under production TO, and **not** physics GREEN.
+    pub fn mean_pseudo_density(&self, coords: Tensor<B, 3>) -> Tensor<B, 1> {
+        let rho = self.pseudo_density_at_coords(coords);
+        let [b, n, c] = rho.dims();
+        let count = (b * n * c) as f32;
+        rho.sum().div_scalar(count).reshape([1])
+    }
+
+    /// Absolute VF gap \(|\mathrm{mean}(\rho) - V^\*|\) as rank‑1 `[1]`.
+    ///
+    /// Descriptive mismatch vs stored `volume_target` — **not** a production volume certificate
+    /// and **not** physics GREEN / closed-loop TO.
+    pub fn volume_fraction_gap(&self, coords: Tensor<B, 3>) -> Tensor<B, 1> {
+        let mean = self.mean_pseudo_density(coords);
+        mean.sub_scalar(self.volume_target).abs()
+    }
+
+    /// Sigmund-style greyness \(4\,\mathrm{mean}(\rho(1-\rho))\) as rank‑1 `[1]` (in \([0,1]\)).
+    ///
+    /// Intermediate-density witness for continuation / plateau callers — **not** Sigmund
+    /// mesh-independence completeness (`TOPOLOGY_SIGMUND_FILTER_COMPLETE` stays false).
+    pub fn pseudo_density_greyness(&self, coords: Tensor<B, 3>) -> Tensor<B, 1> {
+        let rho = self.pseudo_density_at_coords(coords);
+        let [b, n, c] = rho.dims();
+        let count = (b * n * c) as f32;
+        let grey = rho
+            .clone()
+            .mul(rho.mul_scalar(-1.0).add_scalar(1.0))
+            .sum()
+            .div_scalar(count)
+            .mul_scalar(4.0);
+        grey.reshape([1]).clamp(0.0, 1.0)
+    }
+
+    /// Always-on SIMP factor \(\rho^p\) from DensityNet coords — **no** equilibrium solve.
+    ///
+    /// Feature `topology-density-evolution` remains required for masked compliance / Heaviside
+    /// projection. This helper does **not** invent production wiring.
+    pub fn simp_penalized_modulus_factor(&self, coords: Tensor<B, 3>) -> Tensor<B, 3> {
+        let rho = self.pseudo_density_at_coords(coords);
+        rho.powf_scalar(self.penalization)
     }
 
     /// Optimizer vs gate penalization pair for [`crate::design::query::DesignQueryContext`] (R3 v0).
@@ -196,6 +486,16 @@ impl TopologyOptimizer<burn_ndarray::NdArray<f32>> {
     pub fn new_ndarray(volume_target: f32, penalization: f32, hidden_dim: usize) -> Self {
         let device = Default::default();
         Self::new(volume_target, penalization, hidden_dim, &device)
+    }
+
+    /// Fail-closed NdArray constructor — see [`TopologyOptimizer::try_new`].
+    pub fn try_new_ndarray(
+        volume_target: f32,
+        penalization: f32,
+        hidden_dim: usize,
+    ) -> Result<Self, &'static str> {
+        let device = Default::default();
+        Self::try_new(volume_target, penalization, hidden_dim, &device)
     }
 }
 
@@ -1051,6 +1351,7 @@ impl SensitivityFilter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use burn::tensor::activation::sigmoid;
     use burn::tensor::Shape;
     use burn_ndarray::NdArray;
 
@@ -1078,6 +1379,131 @@ mod tests {
         let coords = Tensor::<B, 3>::ones(Shape::new([1, 4, 3]), &device);
         let rho = opt.pseudo_density_at_coords(coords);
         assert_eq!(rho.dims(), [1, 4, 1]);
+    }
+
+    #[test]
+    fn w29_016_topology_posture_probe_honest_not_green() {
+        let probe = topology_posture_probe();
+        assert_eq!(probe.cell_id, TOPOLOGY_CELL_ID);
+        assert_eq!(probe.morphism_id, TOPOLOGY_MORPHISM_ID);
+        assert!(probe.posture_tag.contains("honest"));
+        assert!(!probe.posture_tag.to_ascii_lowercase().contains("green"));
+        assert!(probe.density_net_landed);
+        assert!(probe.optimizer_shell_landed);
+        assert!(!probe.production_wired);
+        assert!(!probe.physics_green);
+        assert!(!probe.master_retick);
+        assert!(!probe.sigmund_filter_complete);
+        assert!(!probe.closed_loop_to);
+        assert!(!TOPOLOGY_PRODUCTION_WIRED);
+        assert!(!TOPOLOGY_PHYSICS_GREEN);
+        assert!(!TOPOLOGY_CLOSED_LOOP_TO);
+        // Feature compile bit is informational only — must not upgrade refusal bits.
+        let _ = probe.density_evolution_compiled;
+        validate_topology_posture_honesty().expect("topology posture must validate");
+    }
+
+    #[test]
+    fn w29_016_topology_morphism_pinned() {
+        assert!(topology_morphism_pinned());
+        assert_eq!(
+            TOPOLOGY_HONEST_FENCE,
+            "density_net_landed=true optimizer_shell_landed=true production_wired=false physics_green=false master_retick=false sigmund_filter_complete=false closed_loop_to=false"
+        );
+        assert!(TOPOLOGY_SOURCE_NON_CLAIM.contains("not physics GREEN"));
+        assert!(TOPOLOGY_SOURCE_NON_CLAIM.contains("r_min reserved"));
+        assert!(TOPOLOGY_SOURCE_NON_CLAIM.contains("descriptive only"));
+    }
+
+    #[test]
+    fn w29_016_hyperparameter_domain_fence() {
+        assert!(volume_target_admissible(0.4));
+        assert!(!volume_target_admissible(0.0));
+        assert!(!volume_target_admissible(1.0));
+        assert!(!volume_target_admissible(f32::NAN));
+        assert!(penalization_admissible(1.0));
+        assert!(penalization_admissible(3.0));
+        assert!(!penalization_admissible(0.5));
+        assert!(!penalization_admissible(f32::INFINITY));
+        assert!(heaviside_beta_admissible(1.0));
+        assert!(!heaviside_beta_admissible(0.0));
+        assert!(!heaviside_beta_admissible(-1.0));
+        assert!(heaviside_eta_admissible(0.5));
+        assert!(heaviside_eta_admissible(0.0));
+        assert!(heaviside_eta_admissible(1.0));
+        assert!(!heaviside_eta_admissible(1.5));
+
+        let ok = TopologyOptimizer::<B>::try_new_ndarray(0.4, 3.0, 8).expect("admissible");
+        assert!(ok.hyperparameters_admissible());
+        assert!(TopologyOptimizer::<B>::try_new_ndarray(0.0, 3.0, 8).is_err());
+        assert!(TopologyOptimizer::<B>::try_new_ndarray(0.4, 0.5, 8).is_err());
+        assert!(TopologyOptimizer::<B>::try_new_ndarray(0.4, 3.0, 0).is_err());
+    }
+
+    #[test]
+    fn w29_016_density_logits_batched_then_sigmoid_matches_forward() {
+        let device = Default::default();
+        let net = DensityNet::<B>::new(8, &device);
+        let coords = Tensor::<B, 3>::ones(Shape::new([1, 3, 3]), &device);
+        let rho = net.forward_batched(coords.clone());
+        let z = net.forward_logits_batched(coords);
+        assert_eq!(z.dims(), [1, 3, 1]);
+        let rho_from_z = sigmoid(z);
+        let a = rho.into_data().value;
+        let b = rho_from_z.into_data().value;
+        for (x, y) in a.iter().zip(b.iter()) {
+            assert!((x - y).abs() < 1e-6, "forward vs sigmoid(logits) {x} vs {y}");
+        }
+    }
+
+    #[test]
+    fn w29_016_mean_pseudo_density_in_unit_interval() {
+        let opt = TopologyOptimizer::<B>::try_new_ndarray(0.35, 3.0, 8).expect("admissible");
+        let device = Default::default();
+        let coords = Tensor::<B, 3>::zeros(Shape::new([2, 4, 3]), &device);
+        let mean = opt.mean_pseudo_density(coords).into_scalar();
+        assert!(
+            mean.is_finite() && mean > 0.0 && mean < 1.0,
+            "mean rho surrogate in (0,1), got {mean}"
+        );
+        // Descriptive VF surrogate ≠ GREEN / production volume certificate.
+        assert!(!TOPOLOGY_PHYSICS_GREEN);
+        assert!(!TOPOLOGY_PRODUCTION_WIRED);
+        assert!(!TOPOLOGY_CLOSED_LOOP_TO);
+    }
+
+    #[test]
+    fn w29_016_greyness_and_vf_gap_descriptive_witnesses() {
+        // Host greyness: binary field → 0; mid-grey → 1.
+        assert!((greyness_from_density_slice(&[0.0, 1.0, 0.0, 1.0]) - 0.0).abs() < 1e-6);
+        assert!((greyness_from_density_slice(&[0.5, 0.5]) - 1.0).abs() < 1e-6);
+        assert!((greyness_from_density_slice(&[]) - 0.0).abs() < 1e-6);
+
+        let factors = simp_penalized_modulus_factor_slice(&[0.5, 1.0], 3.0).expect("p ok");
+        assert!((factors[0] - 0.125).abs() < 1e-6);
+        assert!((factors[1] - 1.0).abs() < 1e-6);
+        assert!(simp_penalized_modulus_factor_slice(&[0.5], 0.5).is_none());
+
+        let opt = TopologyOptimizer::<B>::try_new_ndarray(0.4, 3.0, 8).expect("admissible");
+        let device = Default::default();
+        let coords = Tensor::<B, 3>::zeros(Shape::new([1, 6, 3]), &device);
+        let grey = opt.pseudo_density_greyness(coords.clone()).into_scalar();
+        assert!(
+            grey.is_finite() && (0.0..=1.0).contains(&grey),
+            "greyness in [0,1], got {grey}"
+        );
+        let gap = opt.volume_fraction_gap(coords.clone()).into_scalar();
+        assert!(gap.is_finite() && gap >= 0.0, "VF gap non-negative, got {gap}");
+        let e_factor = opt.simp_penalized_modulus_factor(coords);
+        assert_eq!(e_factor.dims(), [1, 6, 1]);
+        e_factor.into_data().value.iter().copied().for_each(|v| {
+            assert!(v.is_finite() && v >= 0.0 && v <= 1.0, "rho^p in [0,1], got {v}");
+        });
+        // Descriptive helpers must not invent GREEN / production / closed-loop.
+        assert!(!TOPOLOGY_PHYSICS_GREEN);
+        assert!(!TOPOLOGY_PRODUCTION_WIRED);
+        assert!(!TOPOLOGY_CLOSED_LOOP_TO);
+        assert!(!TOPOLOGY_SIGMUND_FILTER_COMPLETE);
     }
 }
 

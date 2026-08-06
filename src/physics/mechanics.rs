@@ -24,6 +24,138 @@
 //! [`crate::physics::dec_operators::DecEdgeOperators::arithmetic_mean_on_edges`]. Axial bar
 //! stiffness is \(k = (EA/L)\,(1-d)^2\) per edge (damage matches the spirit of
 //! [`crate::physics::laplacian::TopologicalLaplacian`]).
+//!
+//! # Honest boundary (W29-058)
+//!
+//! [`VectorMechanicsSolver`] is the **axial bar-network** equilibrium SSOT on the DEC 1-skeleton
+//! (projected PCG + Burn `bar_matvec`). Unit contracts: `cargo test -p umst-manifold mechanics`.
+//! Not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER` / OP-5. Continuum Voigt shells and
+//! anisotropic face curl remain deferred (see capability gaps above).
+
+/// W29 deepen cell — bar-network mechanics honest fence bundle.
+pub const W29_MECHANICS_DEEPEN_CELL: &str = "W29-058-MECHANICS";
+
+/// Honest posture tag — axial bar equilibrium landed; fleet production wiring refused.
+pub const MECHANICS_POSTURE_TAG: &str = "honest-bar-network-mechanics-research-lane";
+
+/// Honest physics posture — bar-network unit contracts pass; does not certify fleet physics GREEN.
+pub const MECHANICS_PHYSICS_GREEN: bool = false;
+
+/// Production wiring — not claimed by the bar-network solver alone.
+pub const MECHANICS_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by this module.
+pub const MECHANICS_MASTER: bool = false;
+
+/// OP-5 / fleet master retick eligibility — refused on this surface.
+pub const MECHANICS_OP5_CLAIMED: bool = false;
+
+/// Whether projected PCG bar-network equilibrium is landed in this module.
+pub const MECHANICS_BAR_NETWORK_LANDED: bool = true;
+
+/// Whether full 3D Voigt anisotropic shell / face-curl continuum is landed (honestly deferred).
+pub const MECHANICS_VOIGT_ANISOTROPIC_SHELL_LANDED: bool = false;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const MECHANICS_HONEST_FENCE: &str =
+    "bar_network_landed=true projected_pcg_wired=true voigt_anisotropic_shell_landed=false production_wired=false master_composition_wired=false physics_green=false op5_claimed=false";
+
+const _: () = assert!(!MECHANICS_PHYSICS_GREEN);
+const _: () = assert!(!MECHANICS_PRODUCTION_WIRED);
+const _: () = assert!(!MECHANICS_MASTER);
+const _: () = assert!(!MECHANICS_OP5_CLAIMED);
+const _: () = assert!(!MECHANICS_VOIGT_ANISOTROPIC_SHELL_LANDED);
+const _: () = assert!(MECHANICS_BAR_NETWORK_LANDED);
+
+/// Typed probe for bar-network mechanics posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MechanicsPostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub op5_claimed: bool,
+    pub bar_network_landed: bool,
+    pub voigt_anisotropic_shell_landed: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for axial bar-network mechanics.
+#[must_use]
+pub fn mechanics_honest_posture_bundle() -> MechanicsPostureProbe {
+    MechanicsPostureProbe {
+        physics_green: MECHANICS_PHYSICS_GREEN,
+        production_wired: MECHANICS_PRODUCTION_WIRED,
+        master: MECHANICS_MASTER,
+        op5_claimed: MECHANICS_OP5_CLAIMED,
+        bar_network_landed: MECHANICS_BAR_NETWORK_LANDED,
+        voigt_anisotropic_shell_landed: MECHANICS_VOIGT_ANISOTROPIC_SHELL_LANDED,
+        honest_fence: MECHANICS_HONEST_FENCE,
+        posture_tag: MECHANICS_POSTURE_TAG,
+        deepen_cell: W29_MECHANICS_DEEPEN_CELL,
+    }
+}
+
+/// Bar-network SSOT landed with production/master/GREEN/OP-5 composition honestly open.
+#[must_use]
+pub fn mechanics_posture_honest(probe: &MechanicsPostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && !probe.op5_claimed
+        && probe.bar_network_landed
+        && !probe.voigt_anisotropic_shell_landed
+        && probe.honest_fence.contains("bar_network_landed=true")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+        && probe.honest_fence.contains("op5_claimed=false")
+}
+
+/// Refuse GREEN / PRODUCTION_WIRED / MASTER / OP-5 claims on the mechanics surface.
+#[must_use]
+pub fn mechanics_refuse_overclaim(probe: &MechanicsPostureProbe) -> Result<(), &'static str> {
+    if probe.physics_green {
+        return Err("MECHANICS_PHYSICS_GREEN must stay false — bar network ≠ fleet physics GREEN");
+    }
+    if probe.production_wired {
+        return Err("MECHANICS_PRODUCTION_WIRED must stay false until embodied loop closes");
+    }
+    if probe.master {
+        return Err("MECHANICS_MASTER must stay false — not claimed by bar-network alone");
+    }
+    if probe.op5_claimed {
+        return Err("MECHANICS_OP5_CLAIMED must stay false — OP-5 not claimed here");
+    }
+    if probe.voigt_anisotropic_shell_landed {
+        return Err("voigt anisotropic shell must stay deferred on this surface");
+    }
+    if !mechanics_posture_honest(probe) {
+        return Err("mechanics posture fence inconsistent");
+    }
+    Ok(())
+}
+
+/// Characteristic axial stiffness scale `k_char` for nondimensional PCG (`K/k_char`, `f/k_char`).
+///
+/// Uses `E_max−E_min` when SIMP spans a range; on uniform modulus falls back to `E_max·A/Δx`
+/// so a flat Young field does not zero out `K`. Floors at `1e-30`.
+#[must_use]
+pub fn axial_stiffness_char_scale(
+    e_lo: f32,
+    e_hi: f32,
+    cross_section_area: f32,
+    dx_char: f32,
+) -> f32 {
+    let e_hi = e_hi.max(1e-12_f32);
+    let e_range = e_hi - e_lo;
+    let dx = dx_char.max(1e-12_f32);
+    if e_range < e_hi * 1e-8_f32 {
+        (e_hi * cross_section_area / dx).max(1e-30_f32)
+    } else {
+        (e_range * cross_section_area / dx).max(1e-30_f32)
+    }
+}
 
 #[cfg(feature = "mechanics-adjoint")]
 use burn::tensor::ElementConversion;
@@ -401,17 +533,11 @@ impl VectorMechanicsSolver {
             .div(edge_len.clone())
             .mul(dmg.clone());
 
-        // Nondimensionalize `K u = f` as `(K/k_char) u = f/k_char`. Use `E_max−E_min` when SIMP spans
-        // a range; on uniform modulus fall back to `E_max·A/Δx` so a flat field does not zero out `K`.
+        // Nondimensionalize `K u = f` as `(K/k_char) u = f/k_char` via [`axial_stiffness_char_scale`].
         let e_lo = e_young.clone().min().into_scalar();
         let e_hi = e_young.clone().max().into_scalar().max(1e-12_f32);
-        let e_range = e_hi - e_lo;
         let dx_char = edge_len.clone().mean().into_scalar().max(1e-12_f32);
-        let k_char = if e_range < e_hi * 1e-8_f32 {
-            (e_hi * cross_section_area / dx_char).max(1e-30_f32)
-        } else {
-            (e_range * cross_section_area / dx_char).max(1e-30_f32)
-        };
+        let k_char = axial_stiffness_char_scale(e_lo, e_hi, cross_section_area, dx_char);
         #[cfg(not(feature = "mechanics-adjoint"))]
         let k_solve = k_axial.clone().div_scalar(k_char);
         #[cfg(not(feature = "mechanics-adjoint"))]
@@ -1289,6 +1415,43 @@ mod tests {
     use burn_ndarray::{NdArray, NdArrayDevice};
 
     type B = NdArray<f32>;
+
+    #[test]
+    fn mechanics_honest_posture_refuses_green_production_master_op5() {
+        let probe = mechanics_honest_posture_bundle();
+        assert!(mechanics_posture_honest(&probe));
+        assert!(mechanics_refuse_overclaim(&probe).is_ok());
+        assert!(!probe.physics_green);
+        assert!(!probe.production_wired);
+        assert!(!probe.master);
+        assert!(!probe.op5_claimed);
+        assert!(probe.bar_network_landed);
+        assert!(!probe.voigt_anisotropic_shell_landed);
+        assert_eq!(probe.deepen_cell, W29_MECHANICS_DEEPEN_CELL);
+        assert_eq!(probe.posture_tag, MECHANICS_POSTURE_TAG);
+        assert!(probe.honest_fence.contains("op5_claimed=false"));
+    }
+
+    #[test]
+    fn axial_stiffness_char_scale_uniform_uses_e_max() {
+        let e = 200e9_f32;
+        let a = 0.01_f32;
+        let dx = 0.1_f32;
+        let k = axial_stiffness_char_scale(e, e, a, dx);
+        let expected = (e * a / dx).max(1e-30_f32);
+        assert!((k - expected).abs() / expected < 1e-6_f32, "uniform k_char {k} vs {expected}");
+    }
+
+    #[test]
+    fn axial_stiffness_char_scale_simp_span_uses_e_range() {
+        let e_lo = 1e6_f32;
+        let e_hi = 200e9_f32;
+        let a = 0.01_f32;
+        let dx = 0.05_f32;
+        let k = axial_stiffness_char_scale(e_lo, e_hi, a, dx);
+        let expected = ((e_hi - e_lo) * a / dx).max(1e-30_f32);
+        assert!((k - expected).abs() / expected < 1e-6_f32, "SIMP-span k_char {k} vs {expected}");
+    }
 
     /// Tip displacement of a uniform axial chain with fixed left end — same tridiagonal stencil as a
     /// line of identical DEC bars (`k` = axial stiffness per edge).

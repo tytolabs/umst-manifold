@@ -26,6 +26,7 @@ pub mod mechanics_operator;
 #[cfg(feature = "mechanics-adjoint")]
 pub mod mechanics_solve_port;
 pub mod operator;
+pub mod operators;
 pub mod orchestration;
 #[cfg(feature = "thmc-coupled")]
 pub(crate) mod pipeline;

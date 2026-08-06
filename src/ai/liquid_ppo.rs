@@ -16,12 +16,157 @@
 //! **F1.4:** The supported optimization surface is **AdamW on the flat `policy_weights` vector** paired
 //! with [`AdjointNeuralODE`], not a separate Burn `Module` + `burn::optim::Optimizer` over the same
 //! parameters (see module notes in [`crate::ai::adjoint`]).
+//!
+//! # Honest boundary (W29-012)
+//!
+//! This module is the **Burn learner spine** — ODE forward, CBF gateway, adjoint backward, AdamW on
+//! flat `policy_weights`. It does **not** attest physics GREEN, production orchestrator closure, or
+//! swarm allocate policy. BIND / `liquid_ppo_allocate_ready` attestation is **harness-only** via
+//! `umst-adk::liquid_ppo_bind` and bench witness artifacts — the source file never flips those bits.
+
+/// W29 wave cell id — Burn learner spine deepen.
+pub const LIQUID_PPO_CELL_ID: &str = "W29-012-LIQUID_PPO";
+
+/// Primary training-step morphism @ SSOT (not gate alias).
+pub const LIQUID_PPO_MORPHISM_ID: &str = "step_and_learn";
+
+/// Honest posture — learner spine partial; tests deepen only (`MASTER_RETICK=no`).
+pub const LIQUID_PPO_POSTURE_TAG: &str = "honest-burn-learner-spine-partial";
+
+/// Compile-time honest fence — no production / GREEN / MASTER / allocate flip at source tier.
+pub const LIQUID_PPO_HONEST_FENCE: &str =
+    "burn_learner_spine_landed=true production_wired=false physics_green=false master_retick=false allocate_ready_source=false";
+
+/// Honest non-claim @ source — BIND attestation is harness disk truth, not this module.
+pub const SOURCE_NON_CLAIM: &str =
+    "Burn learner spine + adjoint AdamW measured in crate tests; BIND/allocate attestation lives in umst-adk liquid_ppo_bind harness only; not physics GREEN.";
+
+/// Golden learner fixture crosswalk (read-only; bytes attested @ bench harvest).
+pub const GOLDEN_FIXTURE_PATH: &str =
+    "crates/umst-bench/fixtures/golden_learner_burnliquid_ppo_v0.json";
+
+/// Whether production training loop is closed end-to-end — **false** until orchestrator BIND + receipts.
+pub const LIQUID_PPO_PRODUCTION_WIRED: bool = false;
+
+/// Whether physics GREEN is claimed for the learner path — **false** (CBF gate is real; full closure is not).
+pub const LIQUID_PPO_PHYSICS_GREEN: bool = false;
+
+/// Whether MASTER retick is authorized for this cell — **false** @ W29 deepen tier.
+pub const LIQUID_PPO_MASTER_RETICK: bool = false;
+
+/// Source-tier allocate readiness — **false**; ADK harness decides `liquid_ppo_allocate_ready`.
+pub const LIQUID_PPO_ALLOCATE_READY_SOURCE: bool = false;
+
+/// Compile-time fence — production / MASTER flip not authorized at posture tier.
+const _: () = assert!(!LIQUID_PPO_MASTER_RETICK);
+
+/// Typed probe for W29 Burn learner posture honesty (meta / fleet probes).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LiquidPpoPostureProbe {
+    pub cell_id: &'static str,
+    pub morphism_id: &'static str,
+    pub posture_tag: &'static str,
+    pub honest_fence: &'static str,
+    pub source_non_claim: &'static str,
+    pub production_wired: bool,
+    pub physics_green: bool,
+    pub master_retick: bool,
+    pub allocate_ready_source: bool,
+}
+
+/// Build live posture probe from compile-time SSOT constants.
+#[must_use]
+pub fn liquid_ppo_posture_probe() -> LiquidPpoPostureProbe {
+    LiquidPpoPostureProbe {
+        cell_id: LIQUID_PPO_CELL_ID,
+        morphism_id: LIQUID_PPO_MORPHISM_ID,
+        posture_tag: LIQUID_PPO_POSTURE_TAG,
+        honest_fence: LIQUID_PPO_HONEST_FENCE,
+        source_non_claim: SOURCE_NON_CLAIM,
+        production_wired: LIQUID_PPO_PRODUCTION_WIRED,
+        physics_green: LIQUID_PPO_PHYSICS_GREEN,
+        master_retick: LIQUID_PPO_MASTER_RETICK,
+        allocate_ready_source: LIQUID_PPO_ALLOCATE_READY_SOURCE,
+    }
+}
+
+/// Whether Burn learner morphism metadata is pinned @ HEAD (visibility only; no GREEN invent).
+#[must_use]
+pub fn liquid_ppo_morphism_pinned() -> bool {
+    LIQUID_PPO_CELL_ID == "W29-012-LIQUID_PPO"
+        && LIQUID_PPO_MORPHISM_ID == "step_and_learn"
+        && LIQUID_PPO_POSTURE_TAG == "honest-burn-learner-spine-partial"
+        && !LIQUID_PPO_PRODUCTION_WIRED
+        && !LIQUID_PPO_PHYSICS_GREEN
+        && !LIQUID_PPO_MASTER_RETICK
+        && !LIQUID_PPO_ALLOCATE_READY_SOURCE
+}
+
+/// Validate Burn learner posture honesty — fail closed on fake production / GREEN / MASTER claims.
+pub fn validate_liquid_ppo_posture_honesty() -> Result<(), &'static str> {
+    let probe = liquid_ppo_posture_probe();
+    if !liquid_ppo_morphism_pinned() {
+        return Err("liquid_ppo_morphism_pinned failed");
+    }
+    if probe.posture_tag.to_ascii_lowercase().contains("green") {
+        return Err("posture_tag must not claim green");
+    }
+    let lower = probe.source_non_claim.to_ascii_lowercase();
+    if lower.contains("physics green") && probe.physics_green {
+        return Err("source_non_claim must not pair with physics_green=true");
+    }
+    if !probe.honest_fence.contains("production_wired=false") {
+        return Err("honest_fence missing production_wired=false");
+    }
+    if !probe.honest_fence.contains("physics_green=false") {
+        return Err("honest_fence missing physics_green=false");
+    }
+    if !probe.honest_fence.contains("master_retick=false") {
+        return Err("honest_fence missing master_retick=false");
+    }
+    if !probe.honest_fence.contains("allocate_ready_source=false") {
+        return Err("honest_fence missing allocate_ready_source=false");
+    }
+    if probe.production_wired || probe.physics_green || probe.master_retick || probe.allocate_ready_source
+    {
+        return Err("honest booleans must stay false at W29 deepen tier");
+    }
+    Ok(())
+}
 
 use crate::ai::adjoint::AdjointNeuralODE;
 use crate::ai::ppo::ManifoldGateway;
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use crate::core::traits::IScienceCartridge;
 use burn::tensor::{backend::Backend, Tensor};
+
+/// AdamW learning rate on flat `policy_weights` (Burn-default scale).
+pub const ADAM_LR_DEFAULT: f32 = 1e-3;
+
+/// Default adapt routing when no optional PPO features are enabled.
+pub const ADAPT_PATH_STUB: &str = "stub";
+
+/// Kleisli penalize adapt arm (`kleisli-ppo-hot-bind`).
+#[cfg(feature = "kleisli-ppo-hot-bind")]
+pub const ADAPT_PATH_KLEISLI: &str = "kleisli-penalize";
+
+/// Epistemic histogram-MI adapt arm (`epistemic-ppo`; wins over kleisli when both enabled).
+#[cfg(feature = "epistemic-ppo")]
+pub const ADAPT_PATH_EPISTEMIC: &str = "epistemic";
+
+/// Active `step_and_learn` routing id — compile-time feature priority: epistemic > kleisli > stub.
+#[must_use]
+pub fn active_adapt_path() -> &'static str {
+    #[cfg(feature = "epistemic-ppo")]
+    {
+        return ADAPT_PATH_EPISTEMIC;
+    }
+    #[cfg(all(feature = "kleisli-ppo-hot-bind", not(feature = "epistemic-ppo")))]
+    {
+        return ADAPT_PATH_KLEISLI;
+    }
+    ADAPT_PATH_STUB
+}
 
 #[cfg(feature = "epistemic-ppo")]
 use crate::ai::info_gain::{
@@ -132,7 +277,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
                     dt_sim_dt_global,
                 );
 
-                const ADAM_LR: f32 = 1e-3;
+                const ADAM_LR: f32 = ADAM_LR_DEFAULT;
                 let (w_new, m1, m2, t) = adamw_step_policy(
                     self.ode_solver.policy_weights.clone(),
                     gradients,
@@ -193,7 +338,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
                     dt_sim_dt_global,
                 );
 
-                const ADAM_LR: f32 = 1e-3;
+                const ADAM_LR: f32 = ADAM_LR_DEFAULT;
                 let (w_new, m1, m2, t) = adamw_step_policy(
                     self.ode_solver.policy_weights.clone(),
                     gradients,
@@ -270,7 +415,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
                     dt_sim_dt_global,
                 );
 
-                const ADAM_LR: f32 = 1e-3;
+                const ADAM_LR: f32 = ADAM_LR_DEFAULT;
                 let (w_new, m1, m2, t) = adamw_step_policy(
                     self.ode_solver.policy_weights.clone(),
                     gradients,
@@ -377,7 +522,12 @@ fn adamw_step_policy<B: Backend<FloatElem = f32>>(
     not(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))
 ))]
 mod tests {
-    use super::BurnLiquidPPOAgent;
+    use super::{
+        active_adapt_path, adamw_step_policy, liquid_ppo_morphism_pinned, liquid_ppo_posture_probe,
+        validate_liquid_ppo_posture_honesty, BurnLiquidPPOAgent, ADAM_LR_DEFAULT, ADAPT_PATH_STUB,
+        GOLDEN_FIXTURE_PATH, LIQUID_PPO_CELL_ID, LIQUID_PPO_HONEST_FENCE, LIQUID_PPO_MORPHISM_ID,
+        LIQUID_PPO_PHYSICS_GREEN, LIQUID_PPO_PRODUCTION_WIRED, SOURCE_NON_CLAIM,
+    };
     use crate::ai::ppo::ManifoldGateway;
     use crate::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
     use crate::core::traits::{IScienceCartridge, PhysicalResult};
@@ -457,6 +607,59 @@ mod tests {
     }
 
     #[test]
+    fn burn_liquid_ppo_adapt_path_routes_stub_when_no_features() {
+        assert_eq!(active_adapt_path(), ADAPT_PATH_STUB);
+    }
+
+    #[test]
+    fn w29_liquid_ppo_posture_probe_honest_not_green() {
+        let probe = liquid_ppo_posture_probe();
+        assert_eq!(probe.cell_id, LIQUID_PPO_CELL_ID);
+        assert_eq!(probe.morphism_id, LIQUID_PPO_MORPHISM_ID);
+        assert!(probe.posture_tag.contains("honest"));
+        assert!(!probe.posture_tag.to_ascii_lowercase().contains("green"));
+        assert!(!probe.production_wired);
+        assert!(!probe.physics_green);
+        assert!(!probe.master_retick);
+        assert!(!probe.allocate_ready_source);
+        assert!(!LIQUID_PPO_PRODUCTION_WIRED);
+        assert!(!LIQUID_PPO_PHYSICS_GREEN);
+    }
+
+    #[test]
+    fn w29_liquid_ppo_morphism_pinned() {
+        assert!(liquid_ppo_morphism_pinned());
+        assert_eq!(
+            LIQUID_PPO_HONEST_FENCE,
+            "burn_learner_spine_landed=true production_wired=false physics_green=false master_retick=false allocate_ready_source=false"
+        );
+        assert!(SOURCE_NON_CLAIM.contains("not physics GREEN"));
+        assert!(GOLDEN_FIXTURE_PATH.contains("golden_learner_burnliquid_ppo_v0"));
+    }
+
+    #[test]
+    fn w29_liquid_ppo_validate_posture_honesty_ok() {
+        assert!(validate_liquid_ppo_posture_honesty().is_ok());
+    }
+
+    #[test]
+    fn burn_liquid_ppo_adam_lr_default_pinned() {
+        assert!((ADAM_LR_DEFAULT - 1e-3_f32).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn burn_liquid_ppo_adamw_step_policy_moves_weights() {
+        let dev = device();
+        let w = Tensor::<B, 1>::full([4], 1.0_f32, &dev);
+        let g = Tensor::<B, 1>::full([4], 0.5_f32, &dev);
+        let (w_new, _m1, _m2, t) = adamw_step_policy(w, g, ADAM_LR_DEFAULT, None, None, 0);
+        assert_eq!(t, 1);
+        let w0 = w_new.clone().into_data().value[0];
+        assert_ne!(w0, 1.0_f32, "AdamW must move weights on non-zero grad");
+        assert!(w0.is_finite());
+    }
+
+    #[test]
     fn burn_liquid_ppo_step_finite_backward_chain_smoke() {
         let dev = device();
         let gateway = ManifoldGateway::new(PpoChainStubCartridge, 300.0_f64, 1.0e-12_f64);
@@ -473,6 +676,295 @@ mod tests {
         assert_ne!(
             w0, w1,
             "AdamW should move policy_weights after finite backward surrogate"
+        );
+    }
+}
+
+#[cfg(all(test, feature = "kleisli-ppo-hot-bind", not(feature = "epistemic-ppo")))]
+mod kleisli_adapt_tests {
+    use super::{active_adapt_path, BurnLiquidPPOAgent, ADAPT_PATH_KLEISLI};
+    use crate::ai::ppo::ManifoldGateway;
+    use crate::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
+    use crate::core::traits::{IScienceCartridge, PhysicalResult};
+    use crate::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
+    use burn::tensor::backend::Backend;
+    use burn::tensor::{Data, Int, Shape, Tensor};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+
+    type B = NdArray<f32>;
+
+    fn device() -> NdArrayDevice {
+        NdArrayDevice::default()
+    }
+
+    fn tiny_umst() -> UnifiedMaterialStateTensor<B> {
+        let dev = device();
+        let n = 2usize;
+        let f = UMST_SCALAR_CHANNEL_COUNT;
+        let coords: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64; n * 5], Shape::new([n, 5])), &dev);
+        let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
+            Data::new(vec![0i64, 1i64, 1i64, 0i64], Shape::new([2, 2])),
+            &dev,
+        );
+        let faces_b2: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64, 0i64], Shape::new([2, 1])), &dev);
+        let scalar_features = Tensor::<B, 2>::zeros([n, f], &dev);
+        let vector_features = Tensor::<B, 3>::zeros([n, 1, 3], &dev);
+        let matrix_features = Tensor::<B, 4>::zeros([n, 1, 3, 3], &dev);
+        UnifiedMaterialStateTensor {
+            coords,
+            edges_b1,
+            faces_b2,
+            scalar_features,
+            vector_features,
+            matrix_features,
+            resolution_mm: [1.0, 1.0, 1.0],
+            node_positions: None,
+            displacement_bc_mask: Tensor::<B, 3>::ones([1, n, 3], &dev),
+            policy_editable_mask: Tensor::<B, 2>::ones([n, 1], &dev),
+            #[cfg(feature = "formal-witness")]
+            catalog_schema_digest: None,
+        }
+    }
+
+    struct PpoChainStubCartridge;
+
+    impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoChainStubCartridge {
+        fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
+            let d = mix.fractions.device();
+            PhysicalResult {
+                free_energy: Tensor::zeros([1, 1], &d),
+                dissipation: Tensor::zeros([1, 1], &d),
+                safety_margin: Tensor::zeros([1, 1], &d),
+                cost: Tensor::zeros([1, 1], &d),
+                damage: Tensor::zeros([1, 1], &d),
+                temperature_delta: None,
+                #[cfg(feature = "information_density")]
+                information_density: Tensor::zeros([1, 1], &d),
+            }
+        }
+
+        fn compute_topology(&self, m: &UnifiedMaterialStateTensor<Bk>) -> PhysicalResult<Bk> {
+            let d = m.scalar_features.device();
+            let n = m.scalar_features.dims()[0];
+            PhysicalResult {
+                free_energy: Tensor::zeros([1, n], &d),
+                dissipation: Tensor::zeros([1, n], &d),
+                safety_margin: Tensor::zeros([1, n], &d),
+                cost: Tensor::zeros([1, n], &d),
+                damage: Tensor::zeros([1, n], &d),
+                temperature_delta: None,
+                #[cfg(feature = "information_density")]
+                information_density: Tensor::zeros([1, n], &d),
+            }
+        }
+    }
+
+    #[test]
+    fn burn_liquid_ppo_kleisli_adapt_path_routes_penalize() {
+        assert_eq!(active_adapt_path(), ADAPT_PATH_KLEISLI);
+    }
+
+    #[test]
+    fn burn_liquid_ppo_kleisli_penalize_finite_backward_chain_smoke() {
+        let dev = device();
+        let mut gateway = ManifoldGateway::new(PpoChainStubCartridge, 300.0_f64, 1.0e-12_f64);
+        gateway.lambda_cd = 0.5_f32;
+        let mut agent = BurnLiquidPPOAgent::new(gateway);
+        let state = tiny_umst();
+
+        let info = Tensor::<B, 1>::full([1], 0.01_f32, &dev);
+        let dt_rat = Tensor::<B, 1>::full([1], 1.0_f32, &dev);
+        let w0 = agent.ode_solver.policy_weights.clone().into_data().value[0];
+        let out = agent.step_and_learn(state, 0.0_f32, 1.0_f32, info, dt_rat);
+        assert!(out.is_ok(), "expected Ok, got {:?}", out.err());
+        let w1 = agent.ode_solver.policy_weights.clone().into_data().value[0];
+        assert!(w0.is_finite() && w1.is_finite(), "weights must stay finite");
+        assert_ne!(
+            w0, w1,
+            "Kleisli penalize path should move policy_weights after backward"
+        );
+    }
+
+    #[test]
+    fn burn_liquid_ppo_kleisli_subtract_cd_penalty_noop_when_lambdas_zero() {
+        let dev = device();
+        let mut agent = BurnLiquidPPOAgent::new(ManifoldGateway::new(
+            PpoChainStubCartridge,
+            300.0_f64,
+            1.0e-12_f64,
+        ));
+        let baseline = tiny_umst();
+        let proposed = tiny_umst();
+        let info = Tensor::<B, 1>::full([1], 0.01_f32, &dev);
+        let dt_rat = Tensor::<B, 1>::full([1], 1.0_f32, &dev);
+        let reward = Tensor::<B, 1>::full([1], 1.5_f32, &dev);
+
+        // Build a minimal VerifiedUMST wrapper for the penalty hook witness.
+        let verified = agent
+            .gateway
+            .evaluate_topology_step(proposed.clone(), info.clone())
+            .expect("stub topology must pass")
+            .0;
+
+        let adjusted = agent.subtract_cd_penalty_from_reward(
+            &baseline,
+            &verified,
+            reward.clone(),
+            &dt_rat,
+            &info,
+        );
+        let before: f32 = reward.into_data().value[0];
+        let after: f32 = adjusted.into_data().value[0];
+        assert!(
+            (before - after).abs() < 1e-6,
+            "zero lambdas must leave reward unchanged: {before} vs {after}"
+        );
+    }
+}
+
+#[cfg(all(test, feature = "epistemic-ppo"))]
+mod epistemic_adapt_tests {
+    use super::{active_adapt_path, BurnLiquidPPOAgent, ADAPT_PATH_EPISTEMIC};
+    use crate::ai::ppo::ManifoldGateway;
+    use crate::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
+    use crate::core::traits::{IScienceCartridge, PhysicalResult};
+    use crate::core::umst_schema::{SCALAR_INTERNAL_VARIABLE_0, UMST_SCALAR_CHANNEL_COUNT};
+    use burn::tensor::backend::Backend;
+    use burn::tensor::{Data, Int, Shape, Tensor};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+
+    type B = NdArray<f32>;
+
+    fn device() -> NdArrayDevice {
+        NdArrayDevice::default()
+    }
+
+    fn umst_with_hydration(hydration: f32, n: usize, f: usize) -> UnifiedMaterialStateTensor<B> {
+        let dev = device();
+        let coords: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64; n * 5], Shape::new([n, 5])), &dev);
+        let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
+            Data::new(vec![0i64, 1i64, 1i64, 0i64], Shape::new([2, 2])),
+            &dev,
+        );
+        let faces_b2: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64, 0i64], Shape::new([2, 1])), &dev);
+        let mut data = vec![0.0_f32; n * f];
+        for i in 0..n {
+            data[i * f + SCALAR_INTERNAL_VARIABLE_0] = hydration;
+        }
+        let scalar_features = Tensor::<B, 2>::from_data(Data::new(data, Shape::new([n, f])), &dev);
+        let vector_features = Tensor::<B, 3>::zeros([n, 1, 3], &dev);
+        let matrix_features = Tensor::<B, 4>::zeros([n, 1, 3, 3], &dev);
+        UnifiedMaterialStateTensor {
+            coords,
+            edges_b1,
+            faces_b2,
+            scalar_features,
+            vector_features,
+            matrix_features,
+            resolution_mm: [1.0, 1.0, 1.0],
+            node_positions: None,
+            displacement_bc_mask: Tensor::<B, 3>::ones([1, n, 3], &dev),
+            policy_editable_mask: Tensor::<B, 2>::ones([n, 1], &dev),
+            #[cfg(feature = "formal-witness")]
+            catalog_schema_digest: None,
+        }
+    }
+
+    struct GateAwareCartridge;
+
+    impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for GateAwareCartridge {
+        fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
+            let d = mix.fractions.device();
+            PhysicalResult {
+                free_energy: Tensor::zeros([1, 1], &d),
+                dissipation: Tensor::zeros([1, 1], &d),
+                safety_margin: Tensor::zeros([1, 1], &d),
+                cost: Tensor::zeros([1, 1], &d),
+                damage: Tensor::zeros([1, 1], &d),
+                temperature_delta: None,
+                #[cfg(feature = "information_density")]
+                information_density: Tensor::zeros([1, 1], &d),
+            }
+        }
+
+        fn compute_topology(&self, m: &UnifiedMaterialStateTensor<Bk>) -> PhysicalResult<Bk> {
+            let d = m.scalar_features.device();
+            let n = m.scalar_features.dims()[0];
+            let alpha_col = m.scalar_features.clone().slice([
+                0..n,
+                SCALAR_INTERNAL_VARIABLE_0..SCALAR_INTERNAL_VARIABLE_0 + 1,
+            ]);
+            let target = 0.35_f32;
+            let dissipation = alpha_col
+                .sub_scalar(target)
+                .powf_scalar(2.0)
+                .mul_scalar(50.0);
+            PhysicalResult {
+                free_energy: Tensor::zeros([1, n], &d),
+                dissipation,
+                safety_margin: Tensor::zeros([1, n], &d),
+                cost: Tensor::zeros([1, n], &d),
+                damage: Tensor::zeros([1, n], &d),
+                temperature_delta: None,
+                #[cfg(feature = "information_density")]
+                information_density: Tensor::zeros([1, n], &d),
+            }
+        }
+    }
+
+    #[test]
+    fn burn_liquid_ppo_epistemic_adapt_path_routes_histogram_mi() {
+        assert_eq!(active_adapt_path(), ADAPT_PATH_EPISTEMIC);
+    }
+
+    #[test]
+    fn burn_liquid_ppo_epistemic_step_finite_backward_chain_smoke() {
+        let dev = device();
+        let mut gateway = ManifoldGateway::new(GateAwareCartridge, 300.0_f64, 1.0e-4_f64);
+        gateway.beta = 0.1;
+        let mut agent = BurnLiquidPPOAgent::new(gateway);
+        let n = 2usize;
+        let f = UMST_SCALAR_CHANNEL_COUNT;
+        let state = umst_with_hydration(0.5, n, f);
+
+        let info = Tensor::<B, 1>::full([1], 0.01_f32, &dev);
+        let dt_rat = Tensor::<B, 1>::full([1], 1.0_f32, &dev);
+        let w0 = agent.ode_solver.policy_weights.clone().into_data().value[0];
+        let out = agent.step_and_learn(state, 0.0_f32, 1.0_f32, info, dt_rat);
+        assert!(out.is_ok(), "expected Ok, got {:?}", out.err());
+        let w1 = agent.ode_solver.policy_weights.clone().into_data().value[0];
+        assert!(w0.is_finite() && w1.is_finite(), "weights must stay finite");
+        assert_ne!(
+            w0, w1,
+            "epistemic path should move policy_weights after backward"
+        );
+    }
+
+    #[test]
+    fn burn_liquid_ppo_epistemic_tracker_updates_after_step() {
+        let dev = device();
+        let gateway = ManifoldGateway::new(GateAwareCartridge, 300.0_f64, 1.0e-4_f64);
+        let mut agent = BurnLiquidPPOAgent::new(gateway);
+        let n = 2usize;
+        let f = UMST_SCALAR_CHANNEL_COUNT;
+        let state = umst_with_hydration(0.5, n, f);
+        let info = Tensor::<B, 1>::full([1], 0.01_f32, &dev);
+        let dt_rat = Tensor::<B, 1>::full([1], 1.0_f32, &dev);
+
+        let bonus_before = agent.epistemic_tracker.epistemic_bonus();
+        let _ = agent.step_and_learn(state, 0.0_f32, 1.0_f32, info, dt_rat);
+        let bonus_after = agent.epistemic_tracker.epistemic_bonus();
+        assert!(
+            bonus_after.is_finite(),
+            "epistemic bonus must stay finite after step"
+        );
+        assert!(
+            bonus_after >= bonus_before,
+            "tracker should not decrease bonus on MI update: before={bonus_before} after={bonus_after}"
         );
     }
 }

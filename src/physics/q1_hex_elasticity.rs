@@ -46,10 +46,132 @@
 //! formal_anchor: Literature
 //! formal_citation: Bathe 2006, *Finite Element Procedures*, §5.4 (hex elements); Hughes 2000, *The Finite Element Method*, §4.5 (B-bar / SRI)
 //! formal_form: \(\int_{Ω^e} \mathbf B^{\mathsf T}\mathbf D\mathbf B\,\mathrm dΩ\,\mathbf u^e = \mathbf f^e\) with isotropic \(\mathbf D(E,\nu)\) in Voigt form; volumetric block uses \(\bar{\mathbf B}_{\text{vol}}\) (element-mean) and deviatoric block uses pointwise \(\mathbf B_{\text{dev}}\).
+//!
+//! # Honest boundary (W29-068)
+//!
+//! Matrix-free Q1-hex B-bar / transverse-shear-centroid elasticity + projected PCG is the
+//! **measured** continuum brick kernel. Unit contracts: `cargo test -p umst-manifold q1_hex_elasticity`.
+//! Kirchhoff thin-plate ≤5% SSSS centre gate remains **`#[ignore]`** / env-gated — not physics GREEN,
+//! not `PRODUCTION_WIRED`, not `MASTER` / OP-5.
 
 #![allow(clippy::excessive_precision)]
 #![allow(clippy::needless_range_loop)]
 #![allow(clippy::too_many_arguments)]
+
+/// W29 deepen cell — Q1-hex elasticity honest fence bundle.
+pub const W29_Q1_HEX_ELASTICITY_DEEPEN_CELL: &str = "W29-068-Q1_HEX_ELASTICITY";
+
+/// Deferred Kirchhoff thin-plate acceptance step (still open vs R2.1).
+pub const Q1_HEX_ELASTICITY_KIRCHHOFF_DEFERRED_STEP: &str = "R2.1-KIRCHHOFF-SSSS-5PCT";
+
+/// Honest posture tag — Q1-hex continuum kernel landed; fleet production wiring refused.
+pub const Q1_HEX_ELASTICITY_POSTURE_TAG: &str = "honest-q1-hex-elasticity-research-lane";
+
+/// Honest physics posture — B-bar/SRI kernel + PCG unit contracts; does not certify Kirchhoff R2.1-A.
+pub const Q1_HEX_ELASTICITY_PHYSICS_GREEN: bool = false;
+
+/// Production wiring — not claimed by the continuum hex kernel alone.
+pub const Q1_HEX_ELASTICITY_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by this module.
+pub const Q1_HEX_ELASTICITY_MASTER: bool = false;
+
+/// B-bar volumetric + transverse-shear centroid SRI operator landed.
+pub const Q1_HEX_ELASTICITY_BBAR_SRI_LANDED: bool = true;
+
+/// Matrix-free `K u` + Jacobi diagonal + projected PCG landed.
+pub const Q1_HEX_ELASTICITY_PCG_LANDED: bool = true;
+
+/// Structured `e=1` operator cache (`HexStructuredOperatorCache`) landed.
+pub const Q1_HEX_ELASTICITY_OP_CACHE_LANDED: bool = true;
+
+/// Strict thin-plate Kirchhoff ≤5% SSSS centre — honestly open (`#[ignore]` / env gate).
+pub const Q1_HEX_ELASTICITY_KIRCHHOFF_WIRED: bool = false;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const Q1_HEX_ELASTICITY_HONEST_FENCE: &str =
+    "q1_hex_elasticity_landed=true bbar_sri_landed=true pcg_landed=true op_cache_landed=true kirchhoff_wired=false production_wired=false master_composition_wired=false physics_green=false";
+
+const _: () = assert!(!Q1_HEX_ELASTICITY_PHYSICS_GREEN);
+const _: () = assert!(!Q1_HEX_ELASTICITY_PRODUCTION_WIRED);
+const _: () = assert!(!Q1_HEX_ELASTICITY_MASTER);
+const _: () = assert!(!Q1_HEX_ELASTICITY_KIRCHHOFF_WIRED);
+const _: () = assert!(Q1_HEX_ELASTICITY_BBAR_SRI_LANDED);
+const _: () = assert!(Q1_HEX_ELASTICITY_PCG_LANDED);
+const _: () = assert!(Q1_HEX_ELASTICITY_OP_CACHE_LANDED);
+
+/// Typed probe for Q1-hex elasticity posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Q1HexElasticityPostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub bbar_sri_landed: bool,
+    pub pcg_landed: bool,
+    pub op_cache_landed: bool,
+    pub kirchhoff_wired: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+    pub deferred_kirchhoff: &'static str,
+}
+
+/// Measured honest-posture snapshot for Q1-hex elasticity.
+#[must_use]
+pub fn q1_hex_elasticity_honest_posture_bundle() -> Q1HexElasticityPostureProbe {
+    Q1HexElasticityPostureProbe {
+        physics_green: Q1_HEX_ELASTICITY_PHYSICS_GREEN,
+        production_wired: Q1_HEX_ELASTICITY_PRODUCTION_WIRED,
+        master: Q1_HEX_ELASTICITY_MASTER,
+        bbar_sri_landed: Q1_HEX_ELASTICITY_BBAR_SRI_LANDED,
+        pcg_landed: Q1_HEX_ELASTICITY_PCG_LANDED,
+        op_cache_landed: Q1_HEX_ELASTICITY_OP_CACHE_LANDED,
+        kirchhoff_wired: Q1_HEX_ELASTICITY_KIRCHHOFF_WIRED,
+        honest_fence: Q1_HEX_ELASTICITY_HONEST_FENCE,
+        posture_tag: Q1_HEX_ELASTICITY_POSTURE_TAG,
+        deepen_cell: W29_Q1_HEX_ELASTICITY_DEEPEN_CELL,
+        deferred_kirchhoff: Q1_HEX_ELASTICITY_KIRCHHOFF_DEFERRED_STEP,
+    }
+}
+
+/// Q1-hex elasticity SSOT landed with Kirchhoff / production / master / GREEN honestly open.
+#[must_use]
+pub fn q1_hex_elasticity_posture_honest(probe: &Q1HexElasticityPostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && !probe.kirchhoff_wired
+        && probe.bbar_sri_landed
+        && probe.pcg_landed
+        && probe.op_cache_landed
+        && probe.honest_fence.contains("q1_hex_elasticity_landed=true")
+        && probe.honest_fence.contains("kirchhoff_wired=false")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+}
+
+/// Refuse GREEN / PRODUCTION_WIRED / MASTER / Kirchhoff-closed claims on this surface.
+#[must_use]
+pub fn q1_hex_elasticity_refuse_overclaim(
+    probe: &Q1HexElasticityPostureProbe,
+) -> Result<(), &'static str> {
+    if probe.physics_green {
+        return Err("Q1_HEX_ELASTICITY_PHYSICS_GREEN must stay false until Kirchhoff / fleet physics closes");
+    }
+    if probe.production_wired {
+        return Err("Q1_HEX_ELASTICITY_PRODUCTION_WIRED must stay false until embodied loop closes");
+    }
+    if probe.master {
+        return Err("Q1_HEX_ELASTICITY_MASTER must stay false — not claimed by continuum hex kernel alone");
+    }
+    if probe.kirchhoff_wired {
+        return Err("Q1_HEX_ELASTICITY_KIRCHHOFF_WIRED must stay false until SSSS ≤5% harness un-ignored");
+    }
+    if !q1_hex_elasticity_posture_honest(probe) {
+        return Err("q1_hex_elasticity posture fence inconsistent");
+    }
+    Ok(())
+}
 
 use super::error::PhysicsError;
 use super::pcg_reduction::{
@@ -2776,5 +2898,104 @@ pub fn hex_solve_pcg_masked(
         rel_residual_recursive: report.rel_residual_recursive,
         stopping_criterion: HexPcgStoppingCriterion::PlainRNorm,
         stiffness_scale: report.stiffness_scale,
+    }
+}
+
+#[cfg(test)]
+mod q1_hex_elasticity_honest_fence_tests {
+    use super::{
+        hex_cell_corner_indices, hex_cell_strain_energy, hex_diagonal, hex_k_times_u_accumulate,
+        hex_k_times_u_accumulate_cached, hex_pcg_use_f64_lane, hex_stiffness_scale,
+        q1_hex_elasticity_honest_posture_bundle, q1_hex_elasticity_posture_honest,
+        q1_hex_elasticity_refuse_overclaim, HexStructuredOperatorCache,
+        Q1_HEX_ELASTICITY_BBAR_SRI_LANDED, Q1_HEX_ELASTICITY_HONEST_FENCE,
+        Q1_HEX_ELASTICITY_KIRCHHOFF_WIRED, Q1_HEX_ELASTICITY_MASTER, Q1_HEX_ELASTICITY_OP_CACHE_LANDED,
+        Q1_HEX_ELASTICITY_PCG_LANDED, Q1_HEX_ELASTICITY_PHYSICS_GREEN,
+        Q1_HEX_ELASTICITY_POSTURE_TAG, Q1_HEX_ELASTICITY_PRODUCTION_WIRED,
+        W29_Q1_HEX_ELASTICITY_DEEPEN_CELL,
+    };
+
+    #[test]
+    fn q1_hex_elasticity_honest_fence_consts_refuse_green_production_master() {
+        assert!(!Q1_HEX_ELASTICITY_PHYSICS_GREEN);
+        assert!(!Q1_HEX_ELASTICITY_PRODUCTION_WIRED);
+        assert!(!Q1_HEX_ELASTICITY_MASTER);
+        assert!(!Q1_HEX_ELASTICITY_KIRCHHOFF_WIRED);
+        assert!(Q1_HEX_ELASTICITY_BBAR_SRI_LANDED);
+        assert!(Q1_HEX_ELASTICITY_PCG_LANDED);
+        assert!(Q1_HEX_ELASTICITY_OP_CACHE_LANDED);
+        assert!(Q1_HEX_ELASTICITY_POSTURE_TAG.contains("honest"));
+        assert!(Q1_HEX_ELASTICITY_HONEST_FENCE.contains("production_wired=false"));
+        assert!(Q1_HEX_ELASTICITY_HONEST_FENCE.contains("physics_green=false"));
+        assert!(Q1_HEX_ELASTICITY_HONEST_FENCE.contains("kirchhoff_wired=false"));
+    }
+
+    #[test]
+    fn q1_hex_elasticity_posture_probe_honest() {
+        let probe = q1_hex_elasticity_honest_posture_bundle();
+        assert_eq!(probe.deepen_cell, W29_Q1_HEX_ELASTICITY_DEEPEN_CELL);
+        assert!(q1_hex_elasticity_posture_honest(&probe));
+        q1_hex_elasticity_refuse_overclaim(&probe).expect("refuse_overclaim");
+    }
+
+    #[test]
+    fn q1_hex_elasticity_corner_index_rejects_oob() {
+        assert!(hex_cell_corner_indices(0, 0, 0, 8).is_err());
+        let (ix, iy, iz) = hex_cell_corner_indices(1, 2, 3, 7).expect("corner 7");
+        assert_eq!((ix, iy, iz), (1, 3, 4));
+    }
+
+    #[test]
+    fn q1_hex_elasticity_strain_energy_nonneg_and_diag_positive() {
+        let (nx, ny, nz) = (2usize, 2, 2);
+        let (dx, dy, dz) = (1.0_f32, 1.0, 1.0);
+        let nu = 0.3_f32;
+        let n_cells = nx * ny * nz;
+        let n_nodes = (nx + 1) * (ny + 1) * (nz + 1);
+        let e_cell = vec![1.0_f32; n_cells];
+        let mut u = vec![0.0_f32; n_nodes * 3];
+        for i in 0..n_nodes {
+            u[i * 3] = 0.01 * (i as f32 + 1.0);
+            u[i * 3 + 1] = -0.007 * ((i % 5) as f32 + 1.0);
+            u[i * 3 + 2] = 0.004 * ((i % 3) as f32 + 1.0);
+        }
+        let mut energy = vec![0.0_f32; n_cells];
+        hex_cell_strain_energy(nx, ny, nz, dx, dy, dz, nu, &e_cell, &u, &mut energy);
+        assert!(energy.iter().all(|&e| e.is_finite() && e >= -1e-6));
+        assert!(energy.iter().sum::<f32>() > 0.0);
+
+        let mut diag = vec![0.0_f32; n_nodes * 3];
+        hex_diagonal(nx, ny, nz, dx, dy, dz, nu, &e_cell, &mut diag);
+        assert!(diag.iter().all(|&d| d.is_finite() && d > 0.0));
+        assert!(hex_stiffness_scale(&e_cell, dx, dy, dz) > 0.0);
+        assert!(!hex_pcg_use_f64_lane(nx, ny, nz));
+        assert!(hex_pcg_use_f64_lane(8, 8, 8));
+    }
+
+    #[test]
+    fn q1_hex_elasticity_cached_ku_matches_direct() {
+        let (nx, ny, nz) = (2usize, 1, 1);
+        let (dx, dy, dz) = (0.5_f32, 0.5, 0.5);
+        let nu = 0.25_f32;
+        let n_cells = nx * ny * nz;
+        let n_nodes = (nx + 1) * (ny + 1) * (nz + 1);
+        let e_cell = vec![2.0_f32; n_cells];
+        let mut u = vec![0.0_f32; n_nodes * 3];
+        for i in 0..n_nodes {
+            u[i * 3 + (i % 3)] = 0.02 * (i as f32 + 0.5);
+        }
+        let mut y_direct = vec![0.0_f32; n_nodes * 3];
+        let mut y_cached = vec![0.0_f32; n_nodes * 3];
+        hex_k_times_u_accumulate(nx, ny, nz, dx, dy, dz, nu, &e_cell, &u, &mut y_direct);
+        let cache = HexStructuredOperatorCache::new(nx, ny, nz, dx, dy, dz, nu);
+        hex_k_times_u_accumulate_cached(&cache, &e_cell, &u, &mut y_cached);
+        let mut max_abs = 0.0_f32;
+        for (a, b) in y_direct.iter().zip(&y_cached) {
+            max_abs = max_abs.max((a - b).abs());
+        }
+        assert!(
+            max_abs < 1e-4,
+            "cached vs direct Ku max abs diff {max_abs}"
+        );
     }
 }

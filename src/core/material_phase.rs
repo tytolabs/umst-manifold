@@ -9,7 +9,143 @@
 //! **MP1 scope:** type introduction only — [`crate::physics::solvers::thmc::ThmcState`] remains
 //! the flat product carrier until MP2; no gate or solver wiring in this slice.
 //!
-//! Schedule: `outputs/.tmp/fp_material_phase_adt_plan.md`.
+//! ## Honest fences (W29-027)
+//!
+//! - [`MATERIAL_PHASE_ADT_LANDED`] — sum-type ADT + accessors landed (MP1).
+//! - [`MATERIAL_PHASE_ENVELOPE_STRUCTURAL`] — [`ThmcEnvelope`] product landed; full MP2 solver
+//!   routing remains **open** (see [`material_phase_posture_probe`]).
+//! - [`MATERIAL_PHASE_PHYSICS_GREEN`], [`MATERIAL_PHASE_PRODUCTION_WIRED`], and
+//!   [`MATERIAL_PHASE_MASTER`] stay **false** — no invent GREEN / production / MASTER retick.
+//!
+//! Schedule: `archived/residuals/misc-outputs-tmp/fp_material_phase_adt_plan.md`.
+
+/// W29 deepen cell — material phase ADT honesty (no invent GREEN).
+pub const W29_MATERIAL_PHASE_DEEPEN_CELL: &str = "W29-027-MATERIAL_PHASE";
+
+/// Honest posture tag — MP1 ADT landed; MP2 solver routing partial.
+pub const MATERIAL_PHASE_POSTURE_TAG: &str = "MP1_ADT_STRUCTURAL";
+
+/// Honest deepen fence for meta / fleet probes.
+pub const MATERIAL_PHASE_HONEST_FENCE: &str =
+    "phase_adt_landed=true|envelope_structural=true|solver_wiring=false|production_wired=false|physics_green=false|master=false";
+
+/// Sum-type [`MaterialPhase`] ADT with exhaustive `match` routing (MP1).
+pub const MATERIAL_PHASE_ADT_LANDED: bool = true;
+
+/// [`ThmcEnvelope`] product type landed; MP2b `step_envelope` routing **not** claimed here.
+pub const MATERIAL_PHASE_ENVELOPE_STRUCTURAL: bool = true;
+
+/// THMC solver / gate wiring through envelope — **open** until MP2b measured.
+pub const MATERIAL_PHASE_SOLVER_WIRING: bool = false;
+
+/// Honest physics posture — structural ADT only; no cast-lifecycle physics GREEN.
+pub const MATERIAL_PHASE_PHYSICS_GREEN: bool = false;
+
+/// Production orchestration pin — not claimed by type-introduction slice.
+pub const MATERIAL_PHASE_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by type-introduction slice.
+pub const MATERIAL_PHASE_MASTER: bool = false;
+
+/// Count of [`MaterialPhaseKind`] variants (exhaustive three-arm sum type).
+pub const MATERIAL_PHASE_KIND_VARIANT_COUNT: usize = 3;
+
+const _: () = assert!(MATERIAL_PHASE_ADT_LANDED);
+const _: () = assert!(MATERIAL_PHASE_ENVELOPE_STRUCTURAL);
+const _: () = assert!(!MATERIAL_PHASE_SOLVER_WIRING);
+const _: () = assert!(!MATERIAL_PHASE_PHYSICS_GREEN);
+const _: () = assert!(!MATERIAL_PHASE_PRODUCTION_WIRED);
+const _: () = assert!(!MATERIAL_PHASE_MASTER);
+
+/// Honest production gateway wiring — **false** until MP2b solver route measured.
+#[must_use]
+pub const fn material_phase_production_wired() -> bool {
+    false
+}
+
+/// Honest master-tier wiring — **false** until fleet sign-off.
+#[must_use]
+pub const fn material_phase_master_wired() -> bool {
+    false
+}
+
+const _: () = assert!(!material_phase_production_wired());
+const _: () = assert!(!material_phase_master_wired());
+
+/// Typed probe for material-phase posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MaterialPhasePostureProbe {
+    pub deepen_cell: &'static str,
+    pub posture_tag: &'static str,
+    pub phase_adt_landed: bool,
+    pub envelope_structural: bool,
+    pub solver_wiring: bool,
+    pub kind_variant_count: usize,
+    pub production_wired: bool,
+    pub master: bool,
+    pub physics_green: bool,
+    pub honest_fence: &'static str,
+}
+
+/// Build introspection probe for material-phase done-when checks.
+#[must_use]
+pub const fn material_phase_posture_probe() -> MaterialPhasePostureProbe {
+    MaterialPhasePostureProbe {
+        deepen_cell: W29_MATERIAL_PHASE_DEEPEN_CELL,
+        posture_tag: MATERIAL_PHASE_POSTURE_TAG,
+        phase_adt_landed: MATERIAL_PHASE_ADT_LANDED,
+        envelope_structural: MATERIAL_PHASE_ENVELOPE_STRUCTURAL,
+        solver_wiring: MATERIAL_PHASE_SOLVER_WIRING,
+        kind_variant_count: MATERIAL_PHASE_KIND_VARIANT_COUNT,
+        production_wired: MATERIAL_PHASE_PRODUCTION_WIRED,
+        master: MATERIAL_PHASE_MASTER,
+        physics_green: MATERIAL_PHASE_PHYSICS_GREEN,
+        honest_fence: MATERIAL_PHASE_HONEST_FENCE,
+    }
+}
+
+/// MP1 ADT landed with production / master / physics GREEN honestly open.
+#[must_use]
+pub fn material_phase_posture_honest(probe: &MaterialPhasePostureProbe) -> bool {
+    probe.deepen_cell == W29_MATERIAL_PHASE_DEEPEN_CELL
+        && probe.posture_tag == MATERIAL_PHASE_POSTURE_TAG
+        && probe.phase_adt_landed
+        && probe.envelope_structural
+        && !probe.solver_wiring
+        && probe.kind_variant_count == MATERIAL_PHASE_KIND_VARIANT_COUNT
+        && !probe.production_wired
+        && !probe.master
+        && !probe.physics_green
+        && probe.honest_fence.contains("phase_adt_landed=true")
+        && probe.honest_fence.contains("solver_wiring=false")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+        && probe.honest_fence.contains("master=false")
+}
+
+/// Validate material-phase posture honesty — fail closed on fake production / GREEN claims.
+pub fn validate_material_phase_posture_honesty() -> Result<(), &'static str> {
+    let probe = material_phase_posture_probe();
+    if probe.production_wired || material_phase_production_wired() {
+        return Err("material_phase_production_wired must stay false until MP2b solver wire");
+    }
+    if probe.master || material_phase_master_wired() {
+        return Err("material_phase_master_wired must stay false until fleet sign-off");
+    }
+    if probe.physics_green {
+        return Err("MATERIAL_PHASE_PHYSICS_GREEN must stay false at MP1 structural slice");
+    }
+    if probe.solver_wiring {
+        return Err("MATERIAL_PHASE_SOLVER_WIRING must stay false until MP2b measured");
+    }
+    if !probe.phase_adt_landed {
+        return Err("MATERIAL_PHASE_ADT_LANDED must stay true at W29-027");
+    }
+    if !material_phase_posture_honest(&probe) {
+        return Err("material_phase_posture_honest failed");
+    }
+    Ok(())
+}
 
 use burn::tensor::{backend::Backend, Tensor};
 
@@ -802,5 +938,47 @@ mod tests {
             assert_eq!(projected, expected);
             assert_eq!(phase.kind(), projected);
         }
+    }
+
+    #[test]
+    fn material_phase_posture_probe_honest_fence() {
+        let probe = material_phase_posture_probe();
+        assert_eq!(probe.deepen_cell, W29_MATERIAL_PHASE_DEEPEN_CELL);
+        assert_eq!(probe.posture_tag, MATERIAL_PHASE_POSTURE_TAG);
+        assert!(probe.phase_adt_landed);
+        assert!(probe.envelope_structural);
+        assert!(!probe.solver_wiring);
+        assert!(!probe.production_wired);
+        assert!(!probe.master);
+        assert!(!probe.physics_green);
+        assert_eq!(probe.kind_variant_count, MATERIAL_PHASE_KIND_VARIANT_COUNT);
+        assert!(probe.honest_fence.contains("phase_adt_landed=true"));
+        assert!(probe.honest_fence.contains("production_wired=false"));
+        assert!(probe.honest_fence.contains("physics_green=false"));
+        assert!(probe.honest_fence.contains("master=false"));
+        assert!(material_phase_posture_honest(&probe));
+    }
+
+    #[test]
+    fn material_phase_validate_posture_honesty_ok() {
+        validate_material_phase_posture_honesty().expect("posture must stay honest at W29-027");
+    }
+
+    #[test]
+    fn material_phase_production_and_master_wired_false() {
+        assert!(!material_phase_production_wired());
+        assert!(!material_phase_master_wired());
+        assert!(!MATERIAL_PHASE_PRODUCTION_WIRED);
+        assert!(!MATERIAL_PHASE_MASTER);
+        assert!(!MATERIAL_PHASE_PHYSICS_GREEN);
+        assert!(!MATERIAL_PHASE_SOLVER_WIRING);
+    }
+
+    #[test]
+    fn material_phase_honest_fence_no_green_invent() {
+        assert!(MATERIAL_PHASE_HONEST_FENCE.contains("physics_green=false"));
+        assert!(MATERIAL_PHASE_HONEST_FENCE.contains("production_wired=false"));
+        assert!(MATERIAL_PHASE_HONEST_FENCE.contains("master=false"));
+        assert!(MATERIAL_PHASE_HONEST_FENCE.contains("solver_wiring=false"));
     }
 }

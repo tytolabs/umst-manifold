@@ -68,9 +68,9 @@
 //!   / `strain_tensor_from_bar_network_displacement` (feature `fracture-at2`); full staggered outer
 //!   loops outside THMC still require callers to refresh **ε** after each equilibrium solve when they
 //!   do not use [`crate::physics::solvers::ThmcSolver::step`].
-//! - **Stiffness degradation** \(g(d) = (1-d)^2 + \eta\) is documented for future mechanical
-//!   coupling but is **not** consumed inside [`PhaseFieldFractureSolver::update_damage`], which
-//!   updates **d** from a fixed **ε** snapshot only.
+//! - **Stiffness degradation** \(g(d) = (1-d)^2 + \eta\) is exposed as [`degradation_g_f32`] for
+//!   call-site / staggered mechanics wiring; it is **not** consumed inside
+//!   [`PhaseFieldFractureSolver::update_damage`], which updates **d** from a fixed **ε** snapshot only.
 //! - [`PhaseFieldFractureSolver::update_damage_staggered`] does **not** run mechanics solves; it
 //!   only composes multiple [`PhaseFieldFractureSolver::update_damage`] calls with a **strain
 //!   provider** `FnMut(&DamageField<B>) -> SmallStrainField<B>` so call sites can inject refreshed **ε(d)**.
@@ -80,6 +80,11 @@
 //!   [`crate::core::tensors::UnifiedMaterialStateTensor::matrix_features`] channel `0` into `[B,N,3,3]` when SI bar
 //!   kinematics are unavailable (zeros if shapes disagree). [`crate::physics::solvers::ThmcSolver::step`]
 //!   uses the same slice at its fracture tail when `node_positions` are missing or not `[N,3]`.
+//!
+//! ## Honest posture (W29-075)
+//!
+//! AT2 minimal path + staggered outer helpers are **landed**; this module does **not** claim physics
+//! GREEN, `PRODUCTION_WIRED`, MASTER retick, or OP-5. See [`FractureFieldHonestyFence`].
 //!
 //! ## `update_damage_staggered` backward compatibility
 //!
@@ -112,6 +117,95 @@ use crate::core::tensors::UnifiedMaterialStateTensor;
 
 #[cfg(feature = "fracture-at2")]
 use burn::tensor::{Data, Shape};
+
+/// W29 deepen step — honest fence + degradation helper witnesses (no invent GREEN).
+pub const W29_075_FRACTURE_FIELD_DEEPEN_STEP: &str = "W29-075-FRACTURE_FIELD";
+
+/// Witness — AT2 damage path / staggered outer API are present (still NOT physics GREEN).
+pub const FRACTURE_FIELD_AT2_PATH_LANDED: bool = true;
+
+/// Witness — call-site degradation helper [`degradation_g_f32`] is exported.
+pub const FRACTURE_FIELD_DEGRADATION_HELPER_LANDED: bool = true;
+
+/// Honest physics posture — AT2 smoke / staggered helpers ≠ continuum GREEN claim.
+pub const FRACTURE_FIELD_PHYSICS_GREEN: bool = false;
+
+/// Honest production posture — not production-wired (orchestrator / THMC consume; no invent).
+pub const FRACTURE_FIELD_PRODUCTION_WIRED: bool = false;
+
+/// Honest MASTER retick eligibility — always refused at this module (no invent MASTER).
+pub const FRACTURE_FIELD_MASTER_RETICK_ELIGIBLE: bool = false;
+
+/// Honest OP-5 claim — always refused at this module (no invent OP-5).
+pub const FRACTURE_FIELD_OP5_CLAIMED: bool = false;
+
+/// Honesty fence for W29-075 deepen — landed helpers without GREEN / PRODUCTION / MASTER / OP-5 invent.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FractureFieldHonestyFence {
+    /// AT2 / staggered API presence witness.
+    pub at2_path_landed: bool,
+    /// Degradation helper export witness.
+    pub degradation_helper_landed: bool,
+    /// Physics GREEN claim — always **false** here.
+    pub physics_green: bool,
+    /// Production-wired claim — always **false** here.
+    pub production_wired: bool,
+    /// MASTER retick eligibility — always **false** here.
+    pub master_retick_eligible: bool,
+    /// OP-5 claim — always **false** here.
+    pub op5_claimed: bool,
+}
+
+impl FractureFieldHonestyFence {
+    /// Slice-1 honest posture for this deepen cell.
+    #[must_use]
+    pub const fn slice1() -> Self {
+        Self {
+            at2_path_landed: FRACTURE_FIELD_AT2_PATH_LANDED,
+            degradation_helper_landed: FRACTURE_FIELD_DEGRADATION_HELPER_LANDED,
+            physics_green: FRACTURE_FIELD_PHYSICS_GREEN,
+            production_wired: FRACTURE_FIELD_PRODUCTION_WIRED,
+            master_retick_eligible: FRACTURE_FIELD_MASTER_RETICK_ELIGIBLE,
+            op5_claimed: FRACTURE_FIELD_OP5_CLAIMED,
+        }
+    }
+
+    /// `true` iff helpers are landed and GREEN / PRODUCTION / MASTER / OP-5 are refused.
+    #[must_use]
+    pub const fn holds(self) -> bool {
+        self.at2_path_landed
+            && self.degradation_helper_landed
+            && !self.physics_green
+            && !self.production_wired
+            && !self.master_retick_eligible
+            && !self.op5_claimed
+    }
+}
+
+/// W29-075 honest posture bundle — fence holds; GREEN / PRODUCTION / MASTER / OP-5 refused.
+#[must_use]
+pub const fn fracture_field_w29_honest_posture_bundle() -> bool {
+    FractureFieldHonestyFence::slice1().holds()
+}
+
+/// Witness — W29 deepen step id is stable and non-empty.
+#[must_use]
+pub fn w29_075_fracture_field_deepen_step_witness() -> bool {
+    !W29_075_FRACTURE_FIELD_DEEPEN_STEP.is_empty()
+        && W29_075_FRACTURE_FIELD_DEEPEN_STEP == "W29-075-FRACTURE_FIELD"
+}
+
+/// Miehe-style stiffness degradation \(g(d) = (1-d)^2 + \kappa_{\mathrm{reg}}\).
+///
+/// Used by staggered elasticity–damage call sites (and
+/// [`PhaseFieldFractureSolver::solve_staggered_with_mechanics`]) to bake \(g(d)\) into effective
+/// Young modulus. **Not** applied inside [`PhaseFieldFractureSolver::update_damage`] (fixed-ε AT2
+/// damage update only).
+#[must_use]
+pub fn degradation_g_f32(damage: f32, kappa_reg: f32) -> f32 {
+    let one_minus_d = 1.0_f32 - damage;
+    one_minus_d * one_minus_d + kappa_reg
+}
 
 /// Optional early exit for staggered damage outers and
 /// `PhaseFieldFractureSolver::solve_staggered_with_mechanics`.
@@ -1780,5 +1874,90 @@ mod fracture_idempotency_tests {
             max_abs_drift(&d_eq_vals, &d_again_vals) < tol,
             "re-application of converged staggered outer loop must not drift"
         );
+    }
+}
+
+/// Default-build honesty / degradation witnesses (W29-075) — no `fracture-at2` required.
+#[cfg(test)]
+mod fracture_honesty_fence_tests {
+    use super::{
+        degradation_g_f32, fracture_field_w29_honest_posture_bundle,
+        w29_075_fracture_field_deepen_step_witness, FractureFieldHonestyFence,
+        PhaseFieldFractureSolver, FRACTURE_FIELD_MASTER_RETICK_ELIGIBLE,
+        FRACTURE_FIELD_OP5_CLAIMED, FRACTURE_FIELD_PHYSICS_GREEN,
+        FRACTURE_FIELD_PRODUCTION_WIRED, W29_075_FRACTURE_FIELD_DEEPEN_STEP,
+    };
+    use burn::tensor::{Data, Int, Shape, Tensor};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+    use crate::core::field::{Field, FractureEnergyField, SmallStrainField};
+
+    type B = NdArray<f32>;
+
+    #[test]
+    fn w29_075_fracture_field_deepen_step_witness_holds() {
+        assert!(w29_075_fracture_field_deepen_step_witness());
+        assert_eq!(W29_075_FRACTURE_FIELD_DEEPEN_STEP, "W29-075-FRACTURE_FIELD");
+    }
+
+    #[test]
+    fn fracture_field_honesty_fence_slice1_holds() {
+        let fence = FractureFieldHonestyFence::slice1();
+        assert!(fence.at2_path_landed);
+        assert!(fence.degradation_helper_landed);
+        assert!(!fence.physics_green);
+        assert!(!fence.production_wired);
+        assert!(!fence.master_retick_eligible);
+        assert!(!fence.op5_claimed);
+        assert!(fence.holds());
+    }
+
+    #[test]
+    fn fracture_field_production_master_op5_green_refused() {
+        assert!(!FRACTURE_FIELD_PHYSICS_GREEN);
+        assert!(!FRACTURE_FIELD_PRODUCTION_WIRED);
+        assert!(!FRACTURE_FIELD_MASTER_RETICK_ELIGIBLE);
+        assert!(!FRACTURE_FIELD_OP5_CLAIMED);
+        assert!(fracture_field_w29_honest_posture_bundle());
+    }
+
+    #[test]
+    fn degradation_g_f32_matches_miehe_quadratic() {
+        let g0 = degradation_g_f32(0.0, 1e-6);
+        assert!((g0 - (1.0 + 1e-6)).abs() < 1e-12);
+        let g_half = degradation_g_f32(0.5, 0.01);
+        assert!((g_half - (0.25 + 0.01)).abs() < 1e-12);
+        let g1 = degradation_g_f32(1.0, 0.02);
+        assert!((g1 - 0.02).abs() < 1e-12);
+    }
+
+    #[test]
+    fn update_damage_default_build_is_identity_noop() {
+        let dev = NdArrayDevice::Cpu;
+        let batch = 1usize;
+        let n = 3usize;
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64, 1, 1, 2], Shape::new([2, 2])), &dev);
+        let strain = SmallStrainField::from_tensor(Tensor::<B, 4>::zeros([batch, n, 3, 3], &dev));
+        let damage = Field::new(Tensor::from_data(
+            Data::new(vec![0.1_f32, 0.2, 0.3], Shape::new([batch, n, 1])),
+            &dev,
+        ));
+        let gc = FractureEnergyField::from_tensor(Tensor::<B, 3>::ones([batch, n, 1], &dev));
+        let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
+        let out = solver
+            .update_damage(strain, damage.clone(), gc, edges_b1)
+            .expect("default-build update_damage must succeed as documented no-op");
+        #[cfg(not(feature = "fracture-at2"))]
+        {
+            assert_eq!(
+                out.into_tensor().into_data().value,
+                damage.into_tensor().into_data().value,
+                "without fracture-at2, update_damage is identity"
+            );
+        }
+        #[cfg(feature = "fracture-at2")]
+        {
+            let _ = (out, damage);
+        }
     }
 }

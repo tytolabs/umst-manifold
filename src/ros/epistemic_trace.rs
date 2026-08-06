@@ -8,8 +8,138 @@
 //!
 //! Per-step numeric bounds follow Lean `EmittedTraceWellFormed` (proved from
 //! `EpistemicPerStepNumerics` / `epistemicMI_le_log_two`, `epistemicLandauerCost_le_landauerBitEnergy`).
+//!
+//! # Honest boundary (W29-096)
+//!
+//! Host serde + per-step / prototype-ε gate surfaces only. Does **not** certify
+//! Lean `NumericTraceApproxConsistent` (needs rollout ground truth `(π, ρ₀)`),
+//! fleet physics GREEN, `PRODUCTION_WIRED`, `MASTER`, or OP-5.
 
 use std::f64::consts::LN_2;
+
+/// W29 deepen cell — epistemic emitted-trace honest fence bundle.
+pub const W29_EPISTEMIC_TRACE_DEEPEN_CELL: &str = "W29-096-EPISTEMIC_TRACE";
+
+/// Honest posture tag — witness-envelope DTOs + well-formedness gates; no fleet claim.
+pub const EPISTEMIC_TRACE_POSTURE_TAG: &str = "honest-epistemic-emitted-trace-witness-envelope";
+
+/// Honest physics posture — catalog/well-formed checks pass; does not certify fleet physics GREEN.
+pub const EPISTEMIC_TRACE_PHYSICS_GREEN: bool = false;
+
+/// Production wiring — not claimed by the ROS serde witness envelope alone.
+pub const EPISTEMIC_TRACE_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by this module.
+pub const EPISTEMIC_TRACE_MASTER: bool = false;
+
+/// OP-5 claim — refused on this surface.
+pub const EPISTEMIC_TRACE_OP5: bool = false;
+
+/// Whether Lean-aligned `EmittedTraceWellFormed` host checks are landed.
+pub const EPISTEMIC_TRACE_WELL_FORMED_LANDED: bool = true;
+
+/// Whether prototypeCalibration rolled-up ε utility gates are landed.
+pub const EPISTEMIC_TRACE_PROTOTYPE_EPS_LANDED: bool = true;
+
+/// Whether Lean `NumericTraceApproxConsistent` (rollout `(π, ρ₀)` ground truth) is wired.
+/// Honestly open — host sum-vs-`n·ε` is a utility stub until rollout witnesses land.
+pub const EPISTEMIC_TRACE_NUMERIC_APPROX_WIRED: bool = false;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const EPISTEMIC_TRACE_HONEST_FENCE: &str =
+    "emitted_trace_well_formed_landed=true prototype_eps_gate_landed=true numeric_trace_approx_wired=false production_wired=false master_composition_wired=false physics_green=false op5=false";
+
+const _: () = assert!(!EPISTEMIC_TRACE_PHYSICS_GREEN);
+const _: () = assert!(!EPISTEMIC_TRACE_PRODUCTION_WIRED);
+const _: () = assert!(!EPISTEMIC_TRACE_MASTER);
+const _: () = assert!(!EPISTEMIC_TRACE_OP5);
+const _: () = assert!(!EPISTEMIC_TRACE_NUMERIC_APPROX_WIRED);
+const _: () = assert!(EPISTEMIC_TRACE_WELL_FORMED_LANDED);
+const _: () = assert!(EPISTEMIC_TRACE_PROTOTYPE_EPS_LANDED);
+
+/// Typed probe for epistemic emitted-trace posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EpistemicTracePostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub op5: bool,
+    pub well_formed_landed: bool,
+    pub prototype_eps_landed: bool,
+    pub numeric_approx_wired: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for the epistemic emitted-trace surface.
+#[must_use]
+pub fn epistemic_trace_honest_posture_bundle() -> EpistemicTracePostureProbe {
+    EpistemicTracePostureProbe {
+        physics_green: EPISTEMIC_TRACE_PHYSICS_GREEN,
+        production_wired: EPISTEMIC_TRACE_PRODUCTION_WIRED,
+        master: EPISTEMIC_TRACE_MASTER,
+        op5: EPISTEMIC_TRACE_OP5,
+        well_formed_landed: EPISTEMIC_TRACE_WELL_FORMED_LANDED,
+        prototype_eps_landed: EPISTEMIC_TRACE_PROTOTYPE_EPS_LANDED,
+        numeric_approx_wired: EPISTEMIC_TRACE_NUMERIC_APPROX_WIRED,
+        honest_fence: EPISTEMIC_TRACE_HONEST_FENCE,
+        posture_tag: EPISTEMIC_TRACE_POSTURE_TAG,
+        deepen_cell: W29_EPISTEMIC_TRACE_DEEPEN_CELL,
+    }
+}
+
+/// Refuse GREEN / PRODUCTION_WIRED / MASTER / OP-5 claims on the epistemic-trace surface.
+#[must_use]
+pub fn epistemic_trace_posture_honest(probe: &EpistemicTracePostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && !probe.op5
+        && !probe.numeric_approx_wired
+        && probe.well_formed_landed
+        && probe.prototype_eps_landed
+        && probe.deepen_cell == W29_EPISTEMIC_TRACE_DEEPEN_CELL
+        && probe.honest_fence.contains("emitted_trace_well_formed_landed=true")
+        && probe.honest_fence.contains("numeric_trace_approx_wired=false")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+        && probe.honest_fence.contains("op5=false")
+}
+
+/// Compile-time / runtime refuse path for invented GREEN / production pins.
+pub fn epistemic_trace_refuse_invented_pins() -> Result<(), &'static str> {
+    if EPISTEMIC_TRACE_PHYSICS_GREEN {
+        return Err("EPISTEMIC_TRACE_PHYSICS_GREEN must stay false — witness envelope ≠ fleet physics");
+    }
+    if EPISTEMIC_TRACE_PRODUCTION_WIRED {
+        return Err(
+            "EPISTEMIC_TRACE_PRODUCTION_WIRED must stay false until ROS/fleet production wire closes",
+        );
+    }
+    if EPISTEMIC_TRACE_MASTER {
+        return Err("EPISTEMIC_TRACE_MASTER must stay false — not an OP-5 composition pin");
+    }
+    if EPISTEMIC_TRACE_OP5 {
+        return Err("EPISTEMIC_TRACE_OP5 must stay false — OP-5 not claimed on this surface");
+    }
+    if EPISTEMIC_TRACE_NUMERIC_APPROX_WIRED {
+        return Err(
+            "EPISTEMIC_TRACE_NUMERIC_APPROX_WIRED must stay false until NumericTraceApproxConsistent rollout witnesses land",
+        );
+    }
+    Ok(())
+}
+
+/// Aggregate honesty gate used by unit proofs / meta probes.
+pub fn validate_epistemic_trace_honesty() -> Result<(), &'static str> {
+    epistemic_trace_refuse_invented_pins()?;
+    let probe = epistemic_trace_honest_posture_bundle();
+    if !epistemic_trace_posture_honest(&probe) {
+        return Err("epistemic_trace_posture_probe failed honest fence census");
+    }
+    Ok(())
+}
 
 /// Landauer bit energy `k_B T ln 2` (joules), matching Lean `landauerBitEnergy`.
 ///
@@ -161,6 +291,18 @@ pub fn prototype_eps_cost_agg(horizon_n: u32) -> f64 {
 impl EmittedTraceSchema {
     pub const SCHEMA_TAG: &'static str = "umst.emitted_trace.v1";
 
+    /// Whether `steps.len()` matches Lean horizon parameter `n`.
+    #[must_use]
+    pub fn horizon_matches_steps(&self) -> bool {
+        self.steps.len() == self.horizon_n as usize
+    }
+
+    /// Number of emitted steps (host length; may disagree with `horizon_n` until well-formed).
+    #[must_use]
+    pub fn step_count(&self) -> usize {
+        self.steps.len()
+    }
+
     /// Sum of per-step MI (`PerStepNumericRecord.rolledMI` fold).
     #[must_use]
     pub fn summed_step_mi(&self) -> f64 {
@@ -306,5 +448,107 @@ impl Default for EmittedTraceSchema {
             temperature_t: 0.0,
             steps: Vec::new(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn epistemic_trace_honest_fence_holds() {
+        validate_epistemic_trace_honesty().expect("W29-096 epistemic_trace honest fence");
+        let probe = epistemic_trace_honest_posture_bundle();
+        assert!(epistemic_trace_posture_honest(&probe));
+        assert_eq!(probe.deepen_cell, W29_EPISTEMIC_TRACE_DEEPEN_CELL);
+        assert!(!probe.physics_green);
+        assert!(!probe.production_wired);
+        assert!(!probe.master);
+        assert!(!probe.op5);
+        assert!(!probe.numeric_approx_wired);
+        assert!(probe.well_formed_landed);
+        assert!(probe.prototype_eps_landed);
+        assert_eq!(probe.honest_fence, EPISTEMIC_TRACE_HONEST_FENCE);
+    }
+
+    #[test]
+    fn epistemic_trace_refuse_invented_pins_ok() {
+        epistemic_trace_refuse_invented_pins().expect("invented pins refused");
+    }
+
+    #[test]
+    fn sample_fixture_horizon_matches_and_well_formed() {
+        let trace = EmittedTraceSchema::sample_fixture();
+        assert!(trace.horizon_matches_steps());
+        assert_eq!(trace.step_count(), 2);
+        assert_eq!(trace.horizon_n, 2);
+        trace
+            .check_emitted_trace_well_formed()
+            .expect("sample_fixture EmittedTraceWellFormed");
+    }
+
+    #[test]
+    fn horizon_mismatch_is_not_well_formed() {
+        let mut trace = EmittedTraceSchema::sample_fixture();
+        trace.horizon_n = 3;
+        assert!(!trace.horizon_matches_steps());
+        assert!(matches!(
+            trace.check_emitted_trace_well_formed(),
+            Err(EmittedTraceWellFormedError::HorizonStepCountMismatch {
+                horizon_n: 3,
+                step_count: 2
+            })
+        ));
+    }
+
+    #[test]
+    fn landauer_bit_energy_positive_at_room_temp() {
+        let e = landauer_bit_energy_joules(300.0);
+        assert!(e.is_finite() && e > 0.0);
+    }
+
+    #[test]
+    fn prototype_eps_agg_scales_with_horizon() {
+        assert!((prototype_eps_mi_agg(0) - 0.0).abs() < f64::EPSILON);
+        assert!((prototype_eps_mi_agg(5) - 5.0 * PROTOTYPE_EPS_MI_STEP).abs() < f64::EPSILON);
+        assert!((prototype_eps_cost_agg(5) - 5.0 * PROTOTYPE_EPS_COST_STEP).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn calibration_envelope_fixture_within_bounds() {
+        let ok = EmittedTraceSchema::sample_calibration_envelope_fixture();
+        assert!(ok.horizon_matches_steps());
+        assert!(ok.within_prototype_calibration_bounds());
+        ok.check_prototype_calibration_bounds()
+            .expect("calibration envelope fixture within epsMIAgg/epsCostAgg");
+    }
+
+    #[test]
+    fn calibration_violation_fixture_exceeds_rolled_mi() {
+        let bad = EmittedTraceSchema::sample_calibration_envelope_violation_fixture();
+        assert!(!bad.within_prototype_calibration_bounds());
+        assert!(matches!(
+            bad.check_prototype_calibration_bounds(),
+            Err(PrototypeCalibrationBoundsError::RolledMiExceeds { .. })
+                | Err(PrototypeCalibrationBoundsError::RolledCostExceeds { .. })
+        ));
+    }
+
+    #[test]
+    fn step_rejects_mi_above_ln2() {
+        let bad = EmittedStepRecord::new(LN_2 + 1e-9, 1.0e-21);
+        assert_eq!(
+            bad.check_emitted_trace_well_formed(300.0),
+            Err(EmittedStepWellFormedError::StepMiExceedsLog2)
+        );
+    }
+
+    #[test]
+    fn summed_folds_match_manual() {
+        let trace = EmittedTraceSchema::sample_fixture();
+        let mi: f64 = trace.steps.iter().map(|s| s.step_mi).sum();
+        let cost: f64 = trace.steps.iter().map(|s| s.step_cost).sum();
+        assert!((trace.summed_step_mi() - mi).abs() < f64::EPSILON);
+        assert!((trace.summed_step_cost() - cost).abs() < f64::EPSILON);
     }
 }

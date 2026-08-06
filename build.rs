@@ -245,7 +245,7 @@ fn emit_scalar_layout_guard(manifest_dir: &Path, out_dir: &Path) {
     let path = manifest_dir.join(rel);
     println!("cargo:rerun-if-changed={rel}");
     println!("cargo:rerun-if-changed=src/core/umst_schema.rs");
-    println!("cargo:rerun-if-changed=umst-layout-codegen");
+    println!("cargo:rerun-if-changed=../umst-foundations/crates/umst-layout-codegen");
 
     let raw = fs::read_to_string(&path).unwrap_or_else(|e| {
         panic!(

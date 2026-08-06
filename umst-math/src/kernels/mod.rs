@@ -18,8 +18,8 @@ mod tolerance_receipt;
 pub use tolerance_receipt::kernel_tolerance_rows;
 
 pub use scalar::{
-    classify_band_scalar, rho_mi_bits, rho_mi_from_samples_scalar, sample_percentile_presorted,
-    sample_percentile_scalar, BandLabel,
+    classify_band_scalar, downsample_sparkline_u64_scalar, rho_mi_bits,
+    rho_mi_from_samples_scalar, sample_percentile_presorted, sample_percentile_scalar, BandLabel,
 };
 
 /// Labels for cockpit telemetry (`KernelDispatchReport` in cockpit). Values are `"scalar"` or `"simd"`.
@@ -91,4 +91,10 @@ pub fn classify_band(samples: &[f64], eta: f64) -> Option<BandLabel> {
     {
         scalar::classify_band_scalar(samples, eta)
     }
+}
+
+/// Dispatched sparkline downsample (H-6b bashtop; scalar path always available).
+#[must_use]
+pub fn downsample_sparkline_u64(samples: &[f64], width: usize, max_scale: u64) -> Vec<u64> {
+    downsample_sparkline_u64_scalar(samples, width, max_scale)
 }

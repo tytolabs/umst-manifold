@@ -18,7 +18,7 @@ DOUBLE_SLIT_STATS_REL = (
 
 
 def monorepo_workspace_root(start: Path) -> Path | None:
-    """MaOS-Workspace root: ancestor directory containing formal Lean stats scripts."""
+    """tyto-workspace root: ancestor directory containing formal Lean stats scripts."""
     for parent in start.parents:
         if (parent / FORMAL_STATS_REL).is_file() and (
             parent / DOUBLE_SLIT_STATS_REL
@@ -58,7 +58,7 @@ def main() -> int:
         print(
             "SKIP: formal siblings missing (no umst-formal + umst-formal-double-slit "
             "with lean_declaration_stats.py in ancestor workspace); "
-            "run from MaOS-Workspace monorepo for SSOT check",
+            "run from tyto-workspace monorepo for SSOT check",
             file=sys.stderr,
         )
         return 0

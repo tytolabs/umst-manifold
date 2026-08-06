@@ -1,0 +1,23 @@
+# Z_CERT_LEDGER — POSTH-05 `:zerocert --strict` capstone (SCAFFOLD ONLY)
+# Agent: AGAP-2305-POSTH-057 @ 2026-07-19
+# Status: NOT-WIRED — honest exit 2 until Z-3..Z-7 GREEN + Op-1 + ≥1 upstream theorem
+# Signed: NO — scaffold deepen receipt; do not claim ZEROCERT-OK
+zerocert_status=NOT_WIRED
+posth_05=PARTIAL_SCAFFOLD_DEEPEN
+strict_required=yes
+z0_proof_palette=SCAFFOLD_PROBE_WIRED
+z1_tool_inventory=SCAFFOLD_PROBE_WIRED
+z2_lean_executor=SCAFFOLD_RED_BATTERY_WIRED
+z3a_sandbox_escape_red=3/3_DENIED
+z3_agentic_proposer=PENDING
+z3_sub_slices=6
+z4_discovery_cron=PENDING
+z4_sub_slices=5
+z5_pr_submitter=PENDING
+z6_sdf_render=DEFERRED_POST_G_GUI
+z7_tool_authorship=PENDING
+op1_pats_present=no
+op1_push_targets=none
+upstream_theorem_merged=no
+ledger_file_present=yes
+# Do not claim ZEROCERT-OK — signed exit 0 only when all factors GREEN + upstream PR.

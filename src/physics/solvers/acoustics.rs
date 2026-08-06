@@ -17,10 +17,197 @@
 //! **S = M + γΔt C + βΔt² K** is applied matrix-free with host **[`super::krylov_host::gmres_f32_try`**].
 //! When no graph is supplied and `S` is block-diagonal per node, a closed-form **batched 3×3**
 //! solve is used (differentiable through Burn).
+//!
+//! ## Honest fences (W29-072)
+//!
+//! - Dense Newmark + axial-bar GMRES + 1-D periodic host Cholesky are **landed research paths**.
+//! - [`ACOUSTICS_PHYSICS_GREEN`], [`ACOUSTICS_PRODUCTION_WIRED`], [`ACOUSTICS_MASTER`], and
+//!   [`ACOUSTICS_OP5`] stay **false** — no invented GREEN / PRODUCTION_WIRED / MASTER / OP-5.
+//! - Tensor AD through the **1-D periodic** circulant stencil remains **open** (host `Vec`/`f64`
+//!   Cholesky is the dispersion reference; see TRACKING on [`apply_k_periodic_1d`]).
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
 use crate::physics::PhysicsError;
+
+/// W29 deepen cell — acoustics honest fence bundle.
+pub const W29_ACOUSTICS_DEEPEN_CELL: &str = "W29-072-ACOUSTICS";
+
+/// Honest physics posture — research Newmark paths; does not certify production GREEN.
+pub const ACOUSTICS_PHYSICS_GREEN: bool = false;
+
+/// Production orchestration pin — not claimed by the acoustics research lane alone.
+pub const ACOUSTICS_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by the acoustics research lane alone.
+pub const ACOUSTICS_MASTER: bool = false;
+
+/// OP-5 composition pin — not claimed by the acoustics research lane alone.
+pub const ACOUSTICS_OP5: bool = false;
+
+/// Operator-visible honesty string — does **not** authorize GREEN / production / MASTER / OP-5 flip.
+pub const ACOUSTICS_HONEST_FENCE: &str =
+    "newmark_dense_bn33=true|bar_graph_gmres_forward=true|periodic_1d_host_cholesky=true|ad_dense_iterate=true|tensor_periodic_1d_ad=false|production_wired=false|physics_green=false|master=false|op5=false";
+
+/// Fence facet count for honest census.
+pub const ACOUSTICS_FENCE_FACET_COUNT: usize = 9;
+
+/// Fence facets wired today (4/9 measured).
+pub const ACOUSTICS_FENCE_WIRED_COUNT: usize = 4;
+
+/// One facet of the acoustics production fence matrix.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AcousticsFenceFacet {
+    pub facet: &'static str,
+    pub wired: bool,
+    pub owning_slice: &'static str,
+}
+
+/// Acoustics production fence facet inventory (honest posture SSOT).
+pub const ACOUSTICS_FENCE_FACETS: &[AcousticsFenceFacet] = &[
+    AcousticsFenceFacet {
+        facet: "newmark_dense_bn33",
+        wired: true,
+        owning_slice: W29_ACOUSTICS_DEEPEN_CELL,
+    },
+    AcousticsFenceFacet {
+        facet: "bar_graph_gmres_forward",
+        wired: true,
+        owning_slice: W29_ACOUSTICS_DEEPEN_CELL,
+    },
+    AcousticsFenceFacet {
+        facet: "periodic_1d_host_cholesky",
+        wired: true,
+        owning_slice: W29_ACOUSTICS_DEEPEN_CELL,
+    },
+    AcousticsFenceFacet {
+        facet: "ad_dense_iterate",
+        wired: true,
+        owning_slice: W29_ACOUSTICS_DEEPEN_CELL,
+    },
+    AcousticsFenceFacet {
+        facet: "tensor_periodic_1d_ad",
+        wired: false,
+        owning_slice: "open — host Cholesky reference; Burn circulant matvec TRACKING",
+    },
+    AcousticsFenceFacet {
+        facet: "production_wired",
+        wired: false,
+        owning_slice: "deferred-orchestrator-pin",
+    },
+    AcousticsFenceFacet {
+        facet: "physics_green",
+        wired: false,
+        owning_slice: "deferred — research lane only",
+    },
+    AcousticsFenceFacet {
+        facet: "master_orchestrator_pin",
+        wired: false,
+        owning_slice: "deferred-orchestrator-pin",
+    },
+    AcousticsFenceFacet {
+        facet: "op5_composition_pin",
+        wired: false,
+        owning_slice: "deferred-orchestrator-pin",
+    },
+];
+
+const _: () = assert!(!ACOUSTICS_PHYSICS_GREEN);
+const _: () = assert!(!ACOUSTICS_PRODUCTION_WIRED);
+const _: () = assert!(!ACOUSTICS_MASTER);
+const _: () = assert!(!ACOUSTICS_OP5);
+
+/// Count wired acoustics fence facets (must match [`ACOUSTICS_FENCE_WIRED_COUNT`]).
+#[must_use]
+pub fn acoustics_fence_wired_count() -> usize {
+    ACOUSTICS_FENCE_FACETS.iter().filter(|f| f.wired).count()
+}
+
+/// Typed probe for acoustics posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AcousticsProbe {
+    pub deepen_cell: &'static str,
+    pub fence_facet_count: usize,
+    pub fence_wired_count: usize,
+    pub newmark_dense_bn33: bool,
+    pub bar_graph_gmres_forward: bool,
+    pub periodic_1d_host_cholesky: bool,
+    pub ad_dense_iterate: bool,
+    pub tensor_periodic_1d_ad: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub physics_green: bool,
+    pub op5: bool,
+    pub honest_fence: &'static str,
+}
+
+/// Build introspection probe for acoustics done-when checks.
+#[must_use]
+pub const fn acoustics_probe() -> AcousticsProbe {
+    AcousticsProbe {
+        deepen_cell: W29_ACOUSTICS_DEEPEN_CELL,
+        fence_facet_count: ACOUSTICS_FENCE_FACET_COUNT,
+        fence_wired_count: ACOUSTICS_FENCE_WIRED_COUNT,
+        newmark_dense_bn33: true,
+        bar_graph_gmres_forward: true,
+        periodic_1d_host_cholesky: true,
+        ad_dense_iterate: true,
+        tensor_periodic_1d_ad: false,
+        production_wired: ACOUSTICS_PRODUCTION_WIRED,
+        master: ACOUSTICS_MASTER,
+        physics_green: ACOUSTICS_PHYSICS_GREEN,
+        op5: ACOUSTICS_OP5,
+        honest_fence: ACOUSTICS_HONEST_FENCE,
+    }
+}
+
+/// Acoustics landed with production/master/GREEN/OP-5 composition honestly open.
+#[must_use]
+pub fn acoustics_honest(probe: &AcousticsProbe) -> bool {
+    probe.deepen_cell == W29_ACOUSTICS_DEEPEN_CELL
+        && probe.fence_facet_count == ACOUSTICS_FENCE_FACET_COUNT
+        && probe.fence_wired_count == ACOUSTICS_FENCE_WIRED_COUNT
+        && probe.newmark_dense_bn33
+        && probe.bar_graph_gmres_forward
+        && probe.periodic_1d_host_cholesky
+        && probe.ad_dense_iterate
+        && !probe.tensor_periodic_1d_ad
+        && !probe.production_wired
+        && !probe.master
+        && !probe.physics_green
+        && !probe.op5
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+        && probe.honest_fence.contains("master=false")
+        && probe.honest_fence.contains("op5=false")
+}
+
+/// Validate acoustics honesty — fail closed on fake production/master/GREEN/OP-5 claims.
+pub fn validate_acoustics_honesty() -> Result<(), &'static str> {
+    let probe = acoustics_probe();
+    if probe.production_wired {
+        return Err("ACOUSTICS_PRODUCTION_WIRED must stay false — research Newmark lane only");
+    }
+    if probe.master {
+        return Err("ACOUSTICS_MASTER must stay false until orchestrator pin lands");
+    }
+    if probe.physics_green {
+        return Err("ACOUSTICS_PHYSICS_GREEN must stay false — no invented GREEN");
+    }
+    if probe.op5 {
+        return Err("ACOUSTICS_OP5 must stay false until orchestrator pin lands");
+    }
+    if probe.tensor_periodic_1d_ad {
+        return Err("tensor_periodic_1d_ad must stay false until Burn circulant AD lands");
+    }
+    if acoustics_fence_wired_count() != ACOUSTICS_FENCE_WIRED_COUNT {
+        return Err("acoustics_fence_wired_count drifted from ACOUSTICS_FENCE_WIRED_COUNT");
+    }
+    if !acoustics_honest(&probe) {
+        return Err("acoustics_probe failed acoustics_honest gate");
+    }
+    Ok(())
+}
 
 /// Newmark step output: displacement, velocity, acceleration nodal vectors `[B, N, 3]`.
 type AcousticStepOut<B> = (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>);
@@ -1328,5 +1515,40 @@ mod acoustics_idempotency_tests {
                 .fold(0.0_f32, f32::max);
             assert!(max_d < tol, "{label} drift after re-step: {max_d}");
         }
+    }
+}
+
+#[cfg(test)]
+mod acoustics_honest_fence_tests {
+    use super::*;
+
+    #[test]
+    fn acoustics_honest_fence_bundle() {
+        validate_acoustics_honesty().expect("acoustics honest fence");
+        let probe = acoustics_probe();
+        assert!(acoustics_honest(&probe));
+        assert_eq!(acoustics_fence_wired_count(), ACOUSTICS_FENCE_WIRED_COUNT);
+        assert_eq!(ACOUSTICS_FENCE_FACETS.len(), ACOUSTICS_FENCE_FACET_COUNT);
+        assert!(!ACOUSTICS_PHYSICS_GREEN);
+        assert!(!ACOUSTICS_PRODUCTION_WIRED);
+        assert!(!ACOUSTICS_MASTER);
+        assert!(!ACOUSTICS_OP5);
+        assert!(!probe.tensor_periodic_1d_ad);
+        assert!(probe.honest_fence.contains("tensor_periodic_1d_ad=false"));
+        assert_eq!(probe.deepen_cell, "W29-072-ACOUSTICS");
+    }
+
+    #[test]
+    fn acoustics_fence_facets_four_wired_five_open() {
+        let wired: Vec<_> = ACOUSTICS_FENCE_FACETS.iter().filter(|f| f.wired).collect();
+        let open: Vec<_> = ACOUSTICS_FENCE_FACETS.iter().filter(|f| !f.wired).collect();
+        assert_eq!(wired.len(), 4);
+        assert_eq!(open.len(), 5);
+        assert!(wired.iter().all(|f| f.owning_slice == W29_ACOUSTICS_DEEPEN_CELL));
+        assert!(open.iter().any(|f| f.facet == "tensor_periodic_1d_ad"));
+        assert!(open.iter().any(|f| f.facet == "production_wired"));
+        assert!(open.iter().any(|f| f.facet == "physics_green"));
+        assert!(open.iter().any(|f| f.facet == "master_orchestrator_pin"));
+        assert!(open.iter().any(|f| f.facet == "op5_composition_pin"));
     }
 }

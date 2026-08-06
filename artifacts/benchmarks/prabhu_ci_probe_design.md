@@ -8,7 +8,7 @@
 | **Threshold artifact** | `prabhu_thresholds.toml` (PB-S5 operator — **not shipped by agent**) |
 | **Probe script** | `scripts/verify_prabhu_benchmark_subset.sh` |
 | **Collector** | `scripts/collect_prabhu_benchmark_transcript.sh` (PB-S3) |
-| **SSOT schedule** | `outputs/.tmp/fp_prabhu_benchmark_schedule.md` |
+| **SSOT schedule** | `archived/residuals/misc-outputs-tmp/fp_prabhu_benchmark_schedule.md` |
 
 ---
 
@@ -51,7 +51,7 @@ Sections map 1:1 to transcript keys:
 | `thmc_step_ms_per_node` | `[pb2_thmc_step]` |
 | `arena_100_loads_sec` | `[pb3_arena_alloc]` |
 
-Parity guard: `gate_parity_sha256` must stay `149081fa…` (collector already runs phase0d + fixture).
+Parity guard: `gate_parity_sha256` must stay `d5608148…` (collector already runs phase0d + fixture).
 
 ---
 

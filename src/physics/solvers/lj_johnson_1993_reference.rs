@@ -34,6 +34,91 @@
 //!   Kirkwood–Buff / coexistence **scalar proxy** on **`[B,4]`** (see that module).
 //! - **Protocol:** the JZG (1993) analytic surface — not truncated/shifted MD with a particular
 //!   `r_c`; do not equate to cut-and-shifted simulation columns without an explicit mapping layer.
+//!
+//! ## Honest deepen fence (W29-077)
+//!
+//! This module is an **f64 reference surface** for parity / scalar comparisons. Passing unit tests
+//! does **not** certify fleet physics GREEN, `PRODUCTION_WIRED`, `MASTER`, or OP-5.
+
+/// W29 deepen cell — Johnson–Zollweg–Gubbins (1993) LJ MBWR reference.
+pub const W29_LJ_JOHNSON_1993_DEEPEN_CELL: &str = "W29-077-LJ_JOHNSON_1993_REFERENC";
+
+/// Honest posture tag — teqp-faithful f64 EOS reference lane (not production host wire).
+pub const LJ_JOHNSON_1993_POSTURE_TAG: &str = "honest-lj-johnson-1993-teqp-f64-reference-lane";
+
+/// Honest physics posture — reference contracts pass; does not certify fleet physics GREEN.
+pub const LJ_JOHNSON_1993_PHYSICS_GREEN: bool = false;
+
+/// Production wiring — not claimed by this reference module alone.
+pub const LJ_JOHNSON_1993_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by this module.
+pub const LJ_JOHNSON_1993_MASTER: bool = false;
+
+/// OP-5 fleet claim — refused at this deepen fence.
+pub const LJ_JOHNSON_1993_OP5_CLAIMED: bool = false;
+
+/// Whether the teqp-faithful MBWR alphar / P* / K* surface is landed in this module.
+pub const LJ_JOHNSON_1993_REFERENCE_SURFACE_LANDED: bool = true;
+
+/// Literature-approximate LJ critical temperature in reduced units (Johnson et al. 1993 regime).
+/// Used only as a **documentation / supercritical-check fence**, not a fitted critical solver.
+pub const LJ_JOHNSON_1993_T_C_STAR_APPROX: f64 = 1.32;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const LJ_JOHNSON_1993_HONEST_FENCE: &str =
+    "lj_johnson_1993_reference_landed=true teqp_mbwr_alphar=true production_wired=false physics_green=false master=false op5=false";
+
+/// Typed probe for JZG (1993) reference posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LjJohnson1993PostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub op5_claimed: bool,
+    pub reference_surface_landed: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for the Johnson 1993 LJ reference module.
+#[must_use]
+pub fn lj_johnson_1993_honest_posture_bundle() -> LjJohnson1993PostureProbe {
+    LjJohnson1993PostureProbe {
+        physics_green: LJ_JOHNSON_1993_PHYSICS_GREEN,
+        production_wired: LJ_JOHNSON_1993_PRODUCTION_WIRED,
+        master: LJ_JOHNSON_1993_MASTER,
+        op5_claimed: LJ_JOHNSON_1993_OP5_CLAIMED,
+        reference_surface_landed: LJ_JOHNSON_1993_REFERENCE_SURFACE_LANDED,
+        honest_fence: LJ_JOHNSON_1993_HONEST_FENCE,
+        posture_tag: LJ_JOHNSON_1993_POSTURE_TAG,
+        deepen_cell: W29_LJ_JOHNSON_1993_DEEPEN_CELL,
+    }
+}
+
+/// Reference surface landed with production/master/GREEN/OP-5 honestly refused.
+#[must_use]
+pub fn lj_johnson_1993_posture_honest(probe: &LjJohnson1993PostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && !probe.op5_claimed
+        && probe.reference_surface_landed
+        && probe.honest_fence.contains("lj_johnson_1993_reference_landed=true")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+        && probe.honest_fence.contains("master=false")
+        && probe.honest_fence.contains("op5=false")
+}
+
+/// Finite, physically typed reduced state for homogeneous fluid checks (`T* > 0`, `ρ* ≥ 0`).
+///
+/// Does **not** assert single-phase / outside the VLE dome — callers pick supercritical grids.
+#[must_use]
+pub fn lj_johnson_1993_reduced_state_finite(t_star: f64, rho_star: f64) -> bool {
+    t_star.is_finite() && rho_star.is_finite() && t_star > 0.0 && rho_star >= 0.0
+}
 
 const GAMMA: f64 = 3.0;
 
@@ -223,5 +308,99 @@ mod tests {
         let k = bulk_modulus_from_lj_state_johnson1993(rho_star, t_star);
         let k_explicit = johnson_lj1993_bulk_modulus_reduced_numerical(t_star, rho_star, h);
         assert!((k - k_explicit).abs() < 1.0e-15);
+    }
+
+    #[test]
+    fn compressibility_approaches_unity_in_ideal_gas_limit() {
+        let t_star = 2.5_f64;
+        let rho_star = 1.0e-6_f64;
+        let z = johnson_lj1993_compressibility_factor(t_star, rho_star, 1.0e-9);
+        assert!(
+            (z - 1.0).abs() < 1.0e-6,
+            "Z → 1 as ρ* → 0; got Z={z}"
+        );
+    }
+
+    #[test]
+    fn pressure_matches_z_rho_t_identity() {
+        let t_star = 2.0_f64;
+        let rho_star = 0.3_f64;
+        let h = 1.0e-7_f64;
+        let z = johnson_lj1993_compressibility_factor(t_star, rho_star, h);
+        let p = johnson_lj1993_pressure_reduced(t_star, rho_star, h);
+        assert!((p - z * rho_star * t_star).abs() < 1.0e-12);
+    }
+
+    #[test]
+    fn bulk_modulus_positive_on_supercritical_dense_state() {
+        let t_star = 2.0_f64; // well above T_c* ≈ 1.32
+        let rho_star = 0.6_f64;
+        assert!(t_star > LJ_JOHNSON_1993_T_C_STAR_APPROX);
+        let k = bulk_modulus_from_lj_state_johnson1993(rho_star, t_star);
+        assert!(k.is_finite() && k > 0.0, "expected K*>0 supercritical dense; got {k}");
+    }
+
+    #[test]
+    fn bulk_modulus_from_reduced_scales_as_epsilon_over_sigma_cubed() {
+        let k_star = 1.25_f64;
+        let epsilon = 2.0_f64;
+        let sigma = 0.5_f64;
+        let k_t = bulk_modulus_from_reduced(k_star, epsilon, sigma);
+        assert!((k_t - (epsilon / sigma.powi(3)) * k_star).abs() < 1.0e-15);
+    }
+
+    #[test]
+    fn reduced_state_fence_rejects_nonphysical_inputs() {
+        assert!(lj_johnson_1993_reduced_state_finite(1.5, 0.2));
+        assert!(lj_johnson_1993_reduced_state_finite(1.5, 0.0));
+        assert!(!lj_johnson_1993_reduced_state_finite(0.0, 0.2));
+        assert!(!lj_johnson_1993_reduced_state_finite(-1.0, 0.2));
+        assert!(!lj_johnson_1993_reduced_state_finite(1.5, -0.01));
+        assert!(!lj_johnson_1993_reduced_state_finite(f64::NAN, 0.2));
+        assert!(!lj_johnson_1993_reduced_state_finite(1.5, f64::INFINITY));
+    }
+
+    #[test]
+    fn alphar_finite_on_supercritical_grid() {
+        let t_star = 2.0_f64;
+        for &rho in &[0.05_f64, 0.2, 0.4, 0.7] {
+            assert!(lj_johnson_1993_reduced_state_finite(t_star, rho));
+            let a = johnson_lj1993_alphar(t_star, rho);
+            assert!(a.is_finite(), "α^r must be finite at ρ*={rho}; got {a}");
+        }
+    }
+}
+
+#[cfg(test)]
+mod w29_077_lj_johnson_1993_deepen_tests {
+    use super::*;
+
+    #[test]
+    fn lj_johnson_1993_honest_posture_refuses_green_production_master_op5() {
+        let probe = lj_johnson_1993_honest_posture_bundle();
+        assert!(lj_johnson_1993_posture_honest(&probe));
+        assert!(!probe.physics_green);
+        assert!(!probe.production_wired);
+        assert!(!probe.master);
+        assert!(!probe.op5_claimed);
+        assert!(probe.reference_surface_landed);
+        assert_eq!(probe.deepen_cell, W29_LJ_JOHNSON_1993_DEEPEN_CELL);
+        assert_eq!(probe.posture_tag, LJ_JOHNSON_1993_POSTURE_TAG);
+        assert!(probe.honest_fence.contains("teqp_mbwr_alphar=true"));
+    }
+
+    #[test]
+    fn coefficient_vector_length_matches_teqp_x1_through_x32() {
+        // Index 0 unused; teqp / paper use x[1..=32].
+        assert_eq!(X.len(), 33);
+        assert_eq!(X[0], 0.0);
+        assert!(X[1].is_finite() && X[32].is_finite());
+        assert!((X[1] - 0.8623085097507421).abs() < 1.0e-15);
+        assert!((X[32] - 1.721802063863269e2).abs() < 1.0e-12);
+    }
+
+    #[test]
+    fn gamma_matches_teqp_johnson_value() {
+        assert!((GAMMA - 3.0).abs() < 1.0e-15);
     }
 }

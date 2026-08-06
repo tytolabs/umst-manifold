@@ -9,7 +9,8 @@ use super::core_gate::{
     core_gate, mass_conserved_between_densities, scalar_response_from_transition,
     CoreGateOutcome,
 };
-use super::material_gate::{material_gate, MaterialGateOutcome, MaterialTransitionWitness};
+use super::material_gate::{MaterialGateOutcome, MaterialTransitionWitness};
+use umst_cartridge_concrete::evaluate_material_conjuncts;
 use super::verdict::{AdmissibilityVerdict, ConjunctVerdict, GateRejectReason};
 use crate::core::material_transition::{MaterialTransitionParams, SubstrateMaterialParams};
 
@@ -311,7 +312,7 @@ fn transition_snapshot_well_formed(s: &ThermodynamicStateSnapshot) -> bool {
 
 /// Pure transition evaluator: `(old, new, dt, ε) → outcome` with no filter state.
 ///
-/// **Composition:** [`core_gate`] (Mass + CD, `P_input=0`) ∧ [`material_gate`] (strength + reaction).
+/// **Composition:** [`core_gate`] (Mass + CD, `P_input=0`) ∧ consumer [`evaluate_material_conjuncts`] (strength + reaction).
 /// Legacy field `energy_positive` bundles CD with strength monotonicity for parity — use
 /// [`CoreGateOutcome`] / [`MaterialGateOutcome`] directly when you need the §17.3 split.
 ///
@@ -353,7 +354,7 @@ pub fn transition_outcome(
     );
     let core = core_gate(&response, mass_conserved, tolerance);
 
-    let material = material_gate(
+    let material = evaluate_material_conjuncts(
         &MaterialTransitionWitness {
             old_strength: old_state.strength,
             new_strength: new_state.strength,
@@ -643,5 +644,438 @@ mod transition_outcome_tests {
         if outcome.is_accepted() {
             assert!(g <= TRANSITION_TOLERANCE, "accepted ⇒ gate_sdf ≤ ε ({g})");
         }
+    }
+
+    #[test]
+    fn transition_outcome_rejects_strength_regression() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.9, 293.15, 80.0);
+        let mut new = old;
+        new.strength = 10.0;
+        new.reaction_extent = old.reaction_extent + 0.05;
+        assert!(old.strength > new.strength);
+        let outcome = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
+        assert!(!outcome.is_accepted());
+        assert!(!outcome.is_energy_positive());
+        assert_eq!(
+            outcome.verdict,
+            ConjunctVerdict::Rejected(GateRejectReason::StrengthRegression)
+        );
+    }
+
+    #[test]
+    fn transition_outcome_rejects_non_positive_temperature() {
+        let mut bad = ThermodynamicStateSnapshot::new_idle();
+        bad.temperature = 0.0;
+        let idle = ThermodynamicStateSnapshot::new_idle();
+        let outcome = transition_outcome(&idle, &bad, 1.0, TRANSITION_TOLERANCE);
+        assert_eq!(
+            outcome.verdict,
+            ConjunctVerdict::Rejected(GateRejectReason::MalformedInput)
+        );
+    }
+
+    #[test]
+    fn transition_outcome_rejects_nan_snapshot_field() {
+        let mut nan = ThermodynamicStateSnapshot::new_idle();
+        nan.density = f64::NAN;
+        let idle = ThermodynamicStateSnapshot::new_idle();
+        let outcome = transition_outcome(&idle, &nan, 1.0, TRANSITION_TOLERANCE);
+        assert_eq!(
+            outcome.verdict,
+            ConjunctVerdict::Rejected(GateRejectReason::MalformedInput)
+        );
+    }
+}
+
+#[cfg(test)]
+#[allow(deprecated)]
+mod transition_constants_tests {
+    use super::*;
+
+    #[test]
+    fn transition_tolerance_constant_pinned() {
+        assert_eq!(TRANSITION_TOLERANCE, 1e-6);
+    }
+
+    #[test]
+    fn gate_mass_tolerance_reexport_pinned() {
+        assert_eq!(GATE_MASS_TOLERANCE_KG_M3, 100.0);
+    }
+}
+
+#[cfg(test)]
+#[allow(deprecated)]
+mod transition_filter_tests {
+    use super::*;
+
+    #[test]
+    fn transition_filter_counters_and_reset() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        let good = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+        let mut bad = old;
+        bad.reaction_extent = 0.1;
+        let mut filter = TransitionFilter::new();
+        assert_eq!(filter.acceptances(), 0);
+        assert_eq!(filter.rejections(), 0);
+
+        assert!(filter.check_transition(&old, &good, 1.0).is_accepted());
+        assert!(!filter.check_transition(&old, &bad, 1.0).is_accepted());
+        assert_eq!(filter.acceptances(), 1);
+        assert_eq!(filter.rejections(), 1);
+
+        filter.reset_stats();
+        assert_eq!(filter.acceptances(), 0);
+        assert_eq!(filter.rejections(), 0);
+    }
+
+    #[test]
+    fn transition_filter_with_tolerance_accepts_boundary() {
+        let tol = TRANSITION_TOLERANCE;
+        let mut filter = TransitionFilter::with_tolerance(tol);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0);
+        let mut new = old;
+        new.reaction_extent = old.reaction_extent - tol;
+        new.strength = old.strength - tol;
+        let outcome = filter.check_transition(&old, &new, 1.0);
+        assert!(outcome.is_accepted());
+        assert_eq!(filter.acceptances(), 1);
+    }
+
+    #[test]
+    fn evaluate_transition_increments_filter_counters() {
+        let old = TransitionScalars {
+            binder_liquid_ratio: 0.45,
+            reaction_extent: 0.3,
+            temperature_k: 293.15,
+            s_intrinsic_mpa: Some(40.0),
+        };
+        let new = TransitionScalars {
+            binder_liquid_ratio: 0.45,
+            reaction_extent: 0.35,
+            temperature_k: 293.15,
+            s_intrinsic_mpa: Some(42.0),
+        };
+        let mut filter = TransitionFilter::new();
+        let outcome = evaluate_transition(&mut filter, &old, &new, 1.0);
+        assert!(outcome.is_accepted());
+        assert_eq!(filter.acceptances(), 1);
+        assert_eq!(filter.rejections(), 0);
+    }
+}
+
+#[cfg(test)]
+#[allow(deprecated)]
+mod transition_scalars_tests {
+    use super::*;
+    use crate::core::material_transition::SubstrateMaterialParams;
+
+    #[test]
+    fn transition_scalars_snapshot_matches_from_mix_calibrated() {
+        let scalars = TransitionScalars {
+            binder_liquid_ratio: 0.45,
+            reaction_extent: 0.35,
+            temperature_k: 293.15,
+            s_intrinsic_mpa: Some(42.0),
+        };
+        let via_scalars = scalars.thermodynamic_snapshot();
+        let direct =
+            ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+        assert_eq!(via_scalars.density, direct.density);
+        assert_eq!(via_scalars.temperature, direct.temperature);
+        assert_eq!(via_scalars.free_energy, direct.free_energy);
+        assert_eq!(via_scalars.reaction_extent, direct.reaction_extent);
+        assert_eq!(via_scalars.strength, direct.strength);
+    }
+
+    #[test]
+    fn evaluate_transition_pure_matches_transition_outcome() {
+        let old = TransitionScalars {
+            binder_liquid_ratio: 0.45,
+            reaction_extent: 0.3,
+            temperature_k: 293.15,
+            s_intrinsic_mpa: Some(40.0),
+        };
+        let new = TransitionScalars {
+            binder_liquid_ratio: 0.45,
+            reaction_extent: 0.35,
+            temperature_k: 293.15,
+            s_intrinsic_mpa: Some(42.0),
+        };
+        let params = SubstrateMaterialParams;
+        let pure = evaluate_transition_pure_with_params(
+            &old,
+            &new,
+            1.0,
+            &params,
+            TRANSITION_TOLERANCE,
+        );
+        let old_s = old.thermodynamic_snapshot_with_params(&params);
+        let new_s = new.thermodynamic_snapshot_with_params(&params);
+        let direct = transition_outcome(&old_s, &new_s, 1.0, TRANSITION_TOLERANCE);
+        assert_eq!(pure.is_accepted(), direct.is_accepted());
+        assert_eq!(pure.verdict, direct.verdict);
+    }
+
+    #[test]
+    fn hydration_progression_from_mix_calibrated_accepted() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        let dt = 28.0 * 24.0 * 3600.0;
+        let outcome = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
+        assert!(outcome.is_accepted());
+        assert!(new.reaction_extent > old.reaction_extent);
+        assert!(new.strength >= old.strength);
+    }
+}
+
+#[cfg(test)]
+#[allow(deprecated)]
+mod transition_admissible_tests {
+    use super::*;
+
+    #[test]
+    fn thermodynamic_admissible_delegates_to_tol() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+        let dt = 1.0;
+        let adm = thermodynamic_transition_admissible(
+            old.density,
+            old.free_energy,
+            old.reaction_extent,
+            old.strength,
+            new.density,
+            new.free_energy,
+            new.reaction_extent,
+            new.strength,
+            80.0,
+            dt,
+        );
+        let adm_tol = thermodynamic_transition_admissible_tol(
+            old.density,
+            old.free_energy,
+            old.reaction_extent,
+            old.strength,
+            new.density,
+            new.free_energy,
+            new.reaction_extent,
+            new.strength,
+            80.0,
+            dt,
+            TRANSITION_TOLERANCE,
+        );
+        assert_eq!(adm, adm_tol);
+        assert!(adm);
+    }
+
+    #[test]
+    fn thermodynamic_admissible_tol_rejects_strength_cap() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        let mut new = old;
+        new.strength = 90.0;
+        assert!(transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE).is_accepted());
+        assert!(!thermodynamic_transition_admissible_tol(
+            old.density,
+            old.free_energy,
+            old.reaction_extent,
+            old.strength,
+            new.density,
+            new.free_energy,
+            new.reaction_extent,
+            new.strength,
+            80.0,
+            1.0,
+            TRANSITION_TOLERANCE,
+        ));
+    }
+
+    #[test]
+    fn thermodynamic_admissible_tol_rejects_malformed_dt() {
+        let s = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        assert!(!thermodynamic_transition_admissible_tol(
+            s.density,
+            s.free_energy,
+            s.reaction_extent,
+            s.strength,
+            s.density,
+            s.free_energy,
+            s.reaction_extent,
+            s.strength,
+            80.0,
+            -1.0,
+            TRANSITION_TOLERANCE,
+        ));
+    }
+
+    #[test]
+    fn c01_c02_agree_when_strength_cap_inactive() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.30, 293.15, 40.0);
+        let mut new = old;
+        new.reaction_extent = 0.35;
+        new.free_energy = old.free_energy - 100.0;
+        let dt = 1.0;
+        let tol = TRANSITION_TOLERANCE;
+        let outcome = transition_outcome(&old, &new, dt, tol);
+        let tol_adm = thermodynamic_transition_admissible_tol(
+            old.density,
+            old.free_energy,
+            old.reaction_extent,
+            old.strength,
+            new.density,
+            new.free_energy,
+            new.reaction_extent,
+            new.strength,
+            80.0,
+            dt,
+            tol,
+        );
+        assert_eq!(outcome.is_accepted(), tol_adm);
+    }
+}
+
+/// Golden vectors from [`tests/gate_parity_fixture.rs`] / `docs/GOLDEN_FIXTURES.md`.
+#[cfg(test)]
+#[allow(deprecated)]
+mod golden_fixture_transition_tests {
+    use super::*;
+    use crate::gate::verdict::AdmissibilityVerdict;
+
+    fn golden_identity_admissible() -> (ThermodynamicStateSnapshot, ThermodynamicStateSnapshot, f64) {
+        let s = ThermodynamicStateSnapshot {
+            density: 2400.0,
+            temperature: 293.15,
+            free_energy: -1.35e5,
+            entropy: 0.05,
+            reaction_extent: 0.42,
+            strength: 12.7,
+        };
+        (s, s, 1.0)
+    }
+
+    fn golden_mass_reject() -> (ThermodynamicStateSnapshot, ThermodynamicStateSnapshot, f64) {
+        let old = ThermodynamicStateSnapshot {
+            density: 2400.0,
+            temperature: 293.0,
+            free_energy: 0.0,
+            entropy: 0.1,
+            reaction_extent: 0.3,
+            strength: 10.0,
+        };
+        let mut new = old;
+        new.density = 2280.0;
+        (old, new, 3600.0)
+    }
+
+    fn golden_negative_dissipation_reject() -> (
+        ThermodynamicStateSnapshot,
+        ThermodynamicStateSnapshot,
+        f64,
+    ) {
+        let old = ThermodynamicStateSnapshot {
+            density: 2200.0,
+            temperature: 300.0,
+            free_energy: -2.0e5,
+            entropy: 0.2,
+            reaction_extent: 0.5,
+            strength: 20.0,
+        };
+        let mut new = old;
+        new.free_energy = -1.0e4;
+        (old, new, 1.0)
+    }
+
+    #[test]
+    fn golden_identity_admissible_via_transition_outcome() {
+        let (old, new, dt) = golden_identity_admissible();
+        let outcome = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
+        assert!(outcome.is_accepted());
+        assert_eq!(outcome.rest_verdict(), AdmissibilityVerdict::Accepted);
+    }
+
+    #[test]
+    fn golden_mass_reject_via_transition_outcome() {
+        let (old, new, dt) = golden_mass_reject();
+        let outcome = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
+        assert!(!outcome.is_accepted());
+        assert!(!outcome.is_mass_conserved());
+        assert_eq!(outcome.rest_verdict(), AdmissibilityVerdict::MassViolation);
+    }
+
+    #[test]
+    fn golden_negative_dissipation_via_transition_outcome() {
+        let (old, new, dt) = golden_negative_dissipation_reject();
+        let outcome = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
+        assert!(!outcome.is_accepted());
+        assert!(!outcome.is_energy_positive());
+        assert_eq!(
+            outcome.rest_verdict(),
+            AdmissibilityVerdict::NegativeDissipation
+        );
+    }
+}
+
+#[cfg(test)]
+#[allow(deprecated)]
+mod transition_witness_tests {
+    use super::*;
+    use crate::gate::core_gate::{core_gate, scalar_response_from_transition};
+    use crate::gate::material_gate::MaterialTransitionWitness;
+    use crate::gate::verdict::ConjunctVerdict;
+    use umst_cartridge_concrete::evaluate_material_conjuncts;
+
+    #[test]
+    fn transition_outcome_from_gate_witnesses_composes_core_and_material() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+        let response = scalar_response_from_transition(
+            old.density,
+            new.density,
+            old.free_energy,
+            new.free_energy,
+            1.0,
+            0.0,
+        );
+        let core = core_gate(&response, true, TRANSITION_TOLERANCE);
+        let material = evaluate_material_conjuncts(
+            &MaterialTransitionWitness {
+                old_strength: old.strength,
+                new_strength: new.strength,
+                old_reaction_extent: old.reaction_extent,
+                new_reaction_extent: new.reaction_extent,
+            },
+            TRANSITION_TOLERANCE,
+        );
+        let verdict = ConjunctVerdict::compose(core.verdict, material.verdict);
+        let composed = transition_outcome_from_gate_witnesses(verdict, core, material);
+        let direct = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
+        assert_eq!(composed.is_accepted(), direct.is_accepted());
+        assert_eq!(composed.verdict, direct.verdict);
+        assert_eq!(composed.dissipation, direct.dissipation);
+    }
+
+    #[test]
+    fn w8e14_transition_outcome_from_witnesses_matches_direct_on_idle() {
+        let idle = ThermodynamicStateSnapshot::new_idle();
+        let direct = transition_outcome(&idle, &idle, 1.0, TRANSITION_TOLERANCE);
+        let response = scalar_response_from_transition(
+            idle.density,
+            idle.density,
+            idle.free_energy,
+            idle.free_energy,
+            1.0,
+            0.0,
+        );
+        let core = core_gate(&response, true, TRANSITION_TOLERANCE);
+        let material = evaluate_material_conjuncts(
+            &MaterialTransitionWitness {
+                old_strength: idle.strength,
+                new_strength: idle.strength,
+                old_reaction_extent: idle.reaction_extent,
+                new_reaction_extent: idle.reaction_extent,
+            },
+            TRANSITION_TOLERANCE,
+        );
+        let verdict = ConjunctVerdict::compose(core.verdict, material.verdict);
+        let composed = transition_outcome_from_gate_witnesses(verdict, core, material);
+        assert_eq!(composed.is_accepted(), direct.is_accepted());
     }
 }

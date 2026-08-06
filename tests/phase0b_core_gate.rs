@@ -4,7 +4,7 @@
 //! Phase 0b — Core `gate<R>` = Mass + CD only; material conjuncts separable.
 //!
 //! **Card:** Phase 0b (gate consolidation).  
-//! **Parity anchor:** `gate_parity_v0.json` · SHA256 `149081fa81a6525fb66ff01924c6656f30e2b67846d9945a25427c7be38d20f3`.  
+//! **Parity anchor:** `gate_parity_v0.json` · SHA256 `d5608148e29eeabd83935988699d08ce1233c3e87f2cd217d658e0c71c7a841e`.  
 //! **Next:** Phase 0c — three-way split of `contribution.rs`.
 
 use umst_manifold::gate::admissibility_census::{
@@ -13,7 +13,8 @@ use umst_manifold::gate::admissibility_census::{
 use umst_manifold::gate::core_gate::{
     core_gate, scalar_response_from_transition, ScalarConstitutiveResponse,
 };
-use umst_manifold::gate::material_gate::{material_gate, MaterialTransitionWitness};
+use umst_cartridge_concrete::evaluate_material_conjuncts;
+use umst_manifold::gate::material_gate::MaterialTransitionWitness;
 use umst_manifold::gate::transition_proposal::{
     transition_outcome, ThermodynamicStateSnapshot, TRANSITION_TOLERANCE,
 };
@@ -38,9 +39,9 @@ fn phase0b_census_registers_core_and_material_gate_sites() {
 fn phase0b_parity_digest_unchanged() {
     assert_eq!(
         GATE_PARITY_V0_SHA256,
-        "149081fa81a6525fb66ff01924c6656f30e2b67846d9945a25427c7be38d20f3"
+        "d5608148e29eeabd83935988699d08ce1233c3e87f2cd217d658e0c71c7a841e"
     );
-    assert_eq!(GATE_PARITY_V0_SHA256_PREFIX, "149081fa81a6525f");
+    assert_eq!(GATE_PARITY_V0_SHA256_PREFIX, "d5608148e29eeabd");
 }
 
 #[test]
@@ -88,7 +89,7 @@ fn phase0b_material_strength_failure_is_not_core_failure() {
         "strength regression must not fail Core gate"
     );
 
-    let material = material_gate(
+    let material = evaluate_material_conjuncts(
         &MaterialTransitionWitness {
             old_strength: old.strength,
             new_strength: new.strength,
@@ -129,7 +130,7 @@ fn phase0b_material_reaction_failure_is_not_core_failure() {
         "reaction-extent regression must not fail Core gate when mass+CD hold"
     );
 
-    let material = material_gate(
+    let material = evaluate_material_conjuncts(
         &MaterialTransitionWitness {
             old_strength: old.strength,
             new_strength: new.strength,

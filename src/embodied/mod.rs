@@ -4,12 +4,14 @@
 //! Embodied stack composition: orchestrator re-exports + fragment audit (W2-35).
 //!
 //! W1-19 (`M5-IMPL-INT-01`) owns cross-crate loop wiring; this module exposes the manifold
-//! composer and honest gap enumeration per [`M5_ORCH_FRAGMENT_AUDIT_1052`](../../outputs/.tmp/m5_prep/M5_ORCH_FRAGMENT_AUDIT_1052.md).
+//! composer and honest gap enumeration per [`M5_ORCH_FRAGMENT_AUDIT_1052`](../../archived/residuals/misc-outputs-tmp/m5_prep/M5_ORCH_FRAGMENT_AUDIT_1052.md).
 
 pub mod fragment_audit;
 pub mod fragment_slots;
 pub mod loop_doc;
 pub mod loop_stub;
+pub mod orch_integration;
+pub mod orch_loop_transcript;
 pub mod sense_gate_stub;
 
 pub use crate::manifest::{EmbodiedOrchestrator, EmbodiedReject, HostTransitionStep};
@@ -30,6 +32,14 @@ pub use loop_doc::{
 pub use loop_stub::{
     embodied_loop_tick_stub, CommandLegDeferral, EmbodiedLoopStub, GateAdmissionStub,
     LoopStubReject, LoopTickPhase, LoopTickResult, OrchestratorLoopRole,
+};
+pub use orch_integration::{
+    orch_sense_gate_integration_stub, OrchSenseGateIntegration, OrchSenseGateWire,
+};
+pub use orch_loop_transcript::{
+    digest_hex, orch_loop_tick_transcript_delta, OrchLoopTranscriptDelta,
+    OrchLoopTranscriptEmitter, OrchPhaseTranscriptDelta, ORCH_LOOP_HONEST_NULL_COLUMNS,
+    ORCH_LOOP_WIRED_J7_COLUMNS, SCHEMA_VERSION as ORCH_LOOP_TRANSCRIPT_SCHEMA_VERSION,
 };
 pub use sense_gate_stub::{
     sense_gate_tick_stub, SenseGateReject, SenseGateResult, SenseGateStub,

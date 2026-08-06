@@ -14,7 +14,8 @@ use super::core_gate::{
     core_gate, mass_conserved_between_densities, scalar_response_from_transition,
     CoreGateOutcome, ScalarConstitutiveResponse,
 };
-use super::material_gate::{material_gate, MaterialTransitionWitness};
+use super::material_gate::MaterialTransitionWitness;
+use umst_cartridge_concrete::evaluate_material_conjuncts;
 use super::transition_proposal::{
     transition_outcome, ThermodynamicStateSnapshot, ThermodynamicTransitionOutcome,
 };
@@ -117,7 +118,7 @@ pub fn transition_outcome_with_power_input(
     );
     let core = core_gate(&response, mass_conserved, tolerance);
 
-    let material = material_gate(
+    let material = evaluate_material_conjuncts(
         &MaterialTransitionWitness {
             old_strength: old_state.strength,
             new_strength: new_state.strength,
@@ -173,7 +174,11 @@ impl ActiveMatterFixture {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gate::TRANSITION_TOLERANCE;
+    use crate::ai::cbf::ThermodynamicCBF;
+    use crate::gate::transition_proposal::{
+        transition_outcome, ThermodynamicStateSnapshot, TRANSITION_TOLERANCE,
+    };
+    use crate::gate::verdict::{ConjunctVerdict, GateRejectReason};
 
     #[test]
     fn landauer_power_input_nonnegative() {
@@ -183,10 +188,183 @@ mod tests {
     }
 
     #[test]
+    fn landauer_power_input_clamps_negative_bits() {
+        let temp = 293.15;
+        assert_eq!(landauer_power_input_joules(temp, -5.0), 0.0);
+        assert_eq!(
+            landauer_power_input_joules(temp, 1.0),
+            landauer_power_input_joules(temp, 1.0)
+        );
+    }
+
+    #[test]
+    fn active_matter_power_input_clamps_negative_operands() {
+        assert_eq!(active_matter_power_input(-10.0, 0.5), 0.0);
+        assert_eq!(active_matter_power_input(80.0, -0.2), 0.0);
+        assert_eq!(active_matter_power_input(120.0, 0.25), 30.0);
+    }
+
+    #[test]
+    fn open_system_core_gate_accepts_positive_net_dissipation() {
+        let outcome = open_system_core_gate(10.0, 4.0, true, TRANSITION_TOLERANCE);
+        assert!(outcome.is_clausius_duhem());
+        assert!(outcome.is_accepted());
+        assert!((outcome.net_dissipation - 6.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn open_system_core_gate_rejects_power_exceeds_dissipation() {
+        let outcome = open_system_core_gate(1.0, 5.0, true, TRANSITION_TOLERANCE);
+        assert_eq!(
+            outcome.conjunct_verdict(),
+            ConjunctVerdict::Rejected(GateRejectReason::NegativeDissipation)
+        );
+        assert!(!outcome.is_clausius_duhem());
+        assert!(!outcome.is_accepted());
+    }
+
+    #[test]
+    fn open_system_core_gate_rejects_mass_violation() {
+        let outcome = open_system_core_gate(10.0, 0.0, false, TRANSITION_TOLERANCE);
+        assert_eq!(
+            outcome.conjunct_verdict(),
+            ConjunctVerdict::Rejected(GateRejectReason::MassViolation)
+        );
+        assert!(!outcome.is_mass_conserved());
+        assert!(outcome.is_clausius_duhem());
+        assert!(!outcome.is_accepted());
+    }
+
+    #[test]
+    fn open_system_core_gate_idempotent_at_zero_power_input() {
+        let first = open_system_core_gate(12.0, 0.0, true, TRANSITION_TOLERANCE);
+        let second = open_system_core_gate(12.0, 0.0, true, TRANSITION_TOLERANCE);
+        assert_eq!(first, second, "open_system_core_gate must not drift at P_input=0");
+    }
+
+    #[test]
     fn cbf_cd_matches_open_system_gate_on_positive_entropy() {
         let temp = 300.0;
         let bits = 1.0;
         let erasure = landauer_power_input_joules(temp, bits);
-        assert!(cbf_cd_matches_open_system_gate(erasure + 1.0, bits, temp, TRANSITION_TOLERANCE));
+        assert!(cbf_cd_matches_open_system_gate(
+            erasure + 1.0,
+            bits,
+            temp,
+            TRANSITION_TOLERANCE
+        ));
+    }
+
+    #[test]
+    fn cbf_cd_rejects_when_entropy_below_landauer_debit() {
+        let temp = 300.0;
+        let bits = 2.0;
+        let erasure = landauer_power_input_joules(temp, bits);
+        assert!(!cbf_cd_matches_open_system_gate(
+            erasure - 1.0,
+            bits,
+            temp,
+            TRANSITION_TOLERANCE
+        ));
+    }
+
+    #[test]
+    fn cbf_open_system_admissible_rejects_insufficient_credit() {
+        let temp = 300.0;
+        let bits = 4.0;
+        let erasure = landauer_power_input_joules(temp, bits);
+        assert!(!cbf_open_system_admissible(
+            erasure + 1.0,
+            bits,
+            temp,
+            erasure * 0.5,
+            TRANSITION_TOLERANCE
+        ));
+    }
+
+    #[test]
+    fn cbf_landauer_as_power_input_matches_formula() {
+        let temp = 300.0;
+        let bits = 2.0;
+        let cbf = ThermodynamicCBF::new(temp, 1.0e12);
+        assert_eq!(
+            cbf_landauer_as_power_input(&cbf, bits),
+            landauer_power_input_joules(temp, bits)
+        );
+    }
+
+    #[test]
+    fn transition_outcome_with_power_input_matches_passive_at_zero() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        let dt = 28.0 * 24.0 * 3600.0;
+
+        let passive = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
+        let open = transition_outcome_with_power_input(&old, &new, dt, 0.0, TRANSITION_TOLERANCE);
+        assert_eq!(passive, open, "P_input=0 must byte-match legacy transition_outcome");
+    }
+
+    #[test]
+    fn transition_outcome_with_power_input_idempotent_at_passive_limit() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.2, 293.15, 80.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.45, 293.15, 80.0);
+        let dt = 7.0 * 24.0 * 3600.0;
+        let first = transition_outcome_with_power_input(&old, &new, dt, 0.0, TRANSITION_TOLERANCE);
+        let second = transition_outcome_with_power_input(&old, &new, dt, 0.0, TRANSITION_TOLERANCE);
+        assert_eq!(
+            first, second,
+            "transition_outcome_with_power_input must not drift at P_input=0"
+        );
+    }
+
+    #[test]
+    fn active_fixture_admissible_with_positive_power_input() {
+        let fixture = ActiveMatterFixture {
+            μ_atp_j_per_rate: 120.0,
+            reaction_rate: 0.25,
+            dissipation: 50.0,
+            temperature_k: 310.0,
+        };
+        assert!(fixture.power_input() > 0.0);
+        assert!(fixture.is_admissible(TRANSITION_TOLERANCE));
+        assert!(fixture.admissible(TRANSITION_TOLERANCE));
+    }
+
+    #[test]
+    fn active_fixture_passive_limit_zeros_reaction_rate() {
+        let fixture = ActiveMatterFixture {
+            μ_atp_j_per_rate: 80.0,
+            reaction_rate: 0.15,
+            dissipation: 40.0,
+            temperature_k: 293.15,
+        };
+        let passive = fixture.passive_limit();
+        assert_eq!(passive.reaction_rate, 0.0);
+        assert_eq!(passive.power_input(), 0.0);
+        assert_eq!(passive.μ_atp_j_per_rate, fixture.μ_atp_j_per_rate);
+    }
+
+    #[test]
+    fn active_fixture_rejects_zero_reaction_rate() {
+        let fixture = ActiveMatterFixture {
+            μ_atp_j_per_rate: 120.0,
+            reaction_rate: 0.0,
+            dissipation: 50.0,
+            temperature_k: 310.0,
+        };
+        assert!(!fixture.is_admissible(TRANSITION_TOLERANCE));
+    }
+
+    #[test]
+    fn w8e14_open_system_power_input_subtracted_from_dissipation() {
+        let fixture = ActiveMatterFixture {
+            μ_atp_j_per_rate: 100.0,
+            reaction_rate: 0.2,
+            dissipation: 30.0,
+            temperature_k: 300.0,
+        };
+        let net = fixture.dissipation - fixture.power_input();
+        assert!(net < fixture.dissipation);
+        assert!(fixture.power_input().is_finite());
     }
 }

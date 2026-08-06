@@ -2,11 +2,17 @@
 // Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
 use super::{
+    bundled_catalog_lock_json, bundled_semantic_witness_section_present,
     catalog_lock_bundle_sha256_bytes, catalog_lock_bundle_sha256_hex, catalog_lock_quickcheck,
-    is_preview_fiber_pin, lock_upstream_catalog_digest_hex, witness_catalog_quickcheck_ok,
-    CatalogLock, WitnessCatalog, WitnessRecord, ENV_WITNESS_CATALOG_PATH,
-    WITNESS_CATALOG_EMBEDDED_LEN, WITNESS_CATALOG_EMBEDDED_SHA256_HEX,
+    is_preview_fiber_pin, lock_bundle_content_address_hex, lock_upstream_catalog_digest_bytes,
+    lock_upstream_catalog_digest_hex, lookup_bundled_semantic_cold_witness,
+    semantic_witness_section_quickcheck, witness_catalog_quickcheck_ok, CatalogFiberPin,
+    CatalogLoadError, CatalogLock, WitnessCatalog, WitnessRecord, CATALOG_SCHEMA_STUB_REVISION,
+    DEFAULT_SEMANTIC_COLD_WITNESS_ID, ENV_WITNESS_CATALOG_PATH, EXPECTED_MODULE_COUNT,
+    EXPECTED_UPSTREAM_CATALOG_DIGEST_HEX, WITNESS_CATALOG_EMBEDDED_LEN,
+    WITNESS_CATALOG_EMBEDDED_SHA256_HEX,
 };
+use std::path::Path;
 use std::sync::Mutex;
 
 /// Serialize env mutations touching [`ENV_WITNESS_CATALOG_PATH`].
@@ -84,7 +90,9 @@ fn v1_monolith_lock_quickcheck_backward_compat() {
         module_count: Some(119),
         composition_rule: None,
         composed_catalog_digest_hex: None,
+        composed_primary_fiber_fingerprint_hex: None,
         fiber_pins: vec![],
+        semantic_witnesses: None,
     };
     assert!(
         catalog_lock_quickcheck(&v1),
@@ -166,6 +174,42 @@ fn composed_digest_covers_non_preview_fibers() {
 }
 
 #[test]
+fn catalog_pin_manifold_ceremony_closed_on_bundled_lock() {
+    use super::sec_catalog_pin::{
+        catalog_pin_production_wired, manifold_catalog_pin_ceremony_closed,
+        resolve_catalog_digest, CatalogDigestAttachMode,
+    };
+    assert!(manifold_catalog_pin_ceremony_closed());
+    assert!(!catalog_pin_production_wired());
+    assert!(resolve_catalog_digest(CatalogDigestAttachMode::Unattached).is_none());
+}
+
+#[test]
+fn pin_witness_ok_passes_on_bundled_lock() {
+    use super::catalog_pin::pin_witness_ok;
+    pin_witness_ok().expect("pin_witness_ok on bundled lock");
+}
+
+#[test]
+fn catalog_sha3_pin_witness_roundtrip() {
+    use super::catalog_pin::catalog_sha3_pin_witness_ok;
+    use umst_algebra::crypto::hash::{digest_hex, HashPolicy};
+    let preimage = b"manifold-catalog-export";
+    let hex = digest_hex(HashPolicy::Sha3Catalog, preimage).expect("digest_hex");
+    catalog_sha3_pin_witness_ok(&hex, preimage).expect("sha3 catalog pin");
+}
+
+#[test]
+fn composed_fiber_fingerprint_guard_holds_on_bundled_lock() {
+    use super::catalog_pin::composed_fiber_fingerprint_guard_holds;
+    let lock = CatalogLock::from_bundled().expect("bundled lock");
+    assert!(
+        composed_fiber_fingerprint_guard_holds(&lock),
+        "composed_primary_fiber_fingerprint_hex must match non-preview fiber SHA-256"
+    );
+}
+
+#[test]
 fn witness_quickcheck_reports_coherent_bundle() {
     assert!(witness_catalog_quickcheck_ok());
 }
@@ -229,4 +273,134 @@ fn catalog_path_override_reads_file() {
 
     std::env::remove_var(ENV_WITNESS_CATALOG_PATH);
     std::fs::remove_file(path).ok();
+}
+
+#[test]
+fn load_default_without_override_uses_embedded() {
+    let _guard = CATALOG_ENV_LOCK.lock().expect("catalog env mutex");
+    std::env::remove_var(ENV_WITNESS_CATALOG_PATH);
+    let loaded = WitnessCatalog::load_default().expect("embedded default");
+    let embedded = WitnessCatalog::from_embedded().expect("from_embedded");
+    assert_eq!(loaded, embedded);
+}
+
+#[test]
+fn from_path_missing_file_is_io_error() {
+    let missing = Path::new("/tmp/umst_manifold_catalog_missing_does_not_exist.json");
+    let err = WitnessCatalog::from_path(missing).expect_err("missing path");
+    assert!(
+        matches!(err, CatalogLoadError::Io(_)),
+        "expected Io CatalogLoadError, got {err}"
+    );
+}
+
+#[test]
+fn upstream_digest_bytes_match_hex() {
+    let hex = lock_upstream_catalog_digest_hex();
+    let bytes = lock_upstream_catalog_digest_bytes();
+    assert_eq!(hex.len(), 64);
+    for (i, chunk) in hex.as_bytes().chunks(2).enumerate() {
+        let nibble = |c: u8| match c {
+            b'0'..=b'9' => c - b'0',
+            b'a'..=b'f' => c - b'a' + 10,
+            _ => panic!("expected lowercase hex digest"),
+        };
+        assert_eq!(bytes[i], (nibble(chunk[0]) << 4) | nibble(chunk[1]));
+    }
+}
+
+#[test]
+fn bundled_lock_json_parses_identically() {
+    let from_str: CatalogLock =
+        serde_json::from_str(bundled_catalog_lock_json()).expect("bundled JSON");
+    let from_api = CatalogLock::from_bundled().expect("from_bundled");
+    assert_eq!(from_str, from_api);
+}
+
+#[test]
+fn schema_stub_revision_is_v1() {
+    assert_eq!(CATALOG_SCHEMA_STUB_REVISION, "catalog.schema.stub.v1");
+}
+
+#[test]
+fn expected_pin_constants_match_bundled_lock() {
+    let lock = CatalogLock::from_bundled().expect("bundled lock");
+    assert_eq!(lock.module_count, Some(EXPECTED_MODULE_COUNT));
+    assert_eq!(
+        lock.upstream_catalog_digest_hex.as_deref(),
+        Some(EXPECTED_UPSTREAM_CATALOG_DIGEST_HEX)
+    );
+    assert_eq!(
+        lock_upstream_catalog_digest_hex(),
+        EXPECTED_UPSTREAM_CATALOG_DIGEST_HEX
+    );
+}
+
+#[test]
+fn lock_bundle_content_address_matches_build_hex() {
+    assert_eq!(
+        lock_bundle_content_address_hex(),
+        catalog_lock_bundle_sha256_hex()
+    );
+}
+
+#[test]
+fn preview_fiber_role_heuristics() {
+    let preview = CatalogFiberPin {
+        repo: "umst-ucrs".into(),
+        catalog_digest_hex: "a".repeat(64),
+        module_count: 1,
+        lock_role: Some("preview_fiber".into()),
+        catalog_path: None,
+        commit_stamp: None,
+    };
+    let track_f = CatalogFiberPin {
+        lock_role: Some("Track_F_audit".into()),
+        ..preview.clone()
+    };
+    let primary = CatalogFiberPin {
+        lock_role: Some("primary".into()),
+        ..preview.clone()
+    };
+    assert!(is_preview_fiber_pin(&preview));
+    assert!(is_preview_fiber_pin(&track_f));
+    assert!(!is_preview_fiber_pin(&primary));
+}
+
+#[test]
+fn catalog_lock_quickcheck_refuses_honest_fences() {
+    let good = CatalogLock::from_bundled().expect("bundled");
+    assert!(catalog_lock_quickcheck(&good));
+
+    let mut bad_role = good.clone();
+    bad_role.role = "not_manifold_runtime_lock".into();
+    assert!(!catalog_lock_quickcheck(&bad_role));
+
+    let mut mismatch = good.clone();
+    mismatch.composed_catalog_digest_hex = Some("b".repeat(64));
+    assert!(!catalog_lock_quickcheck(&mismatch));
+
+    let mut empty_repo = good.clone();
+    empty_repo.fiber_pins[0].repo.clear();
+    assert!(!catalog_lock_quickcheck(&empty_repo));
+
+    let mut bad_version = good.clone();
+    bad_version.version = 0;
+    assert!(!catalog_lock_quickcheck(&bad_version));
+}
+
+#[test]
+fn bundled_semantic_witness_surface_present_and_lookupable() {
+    assert!(bundled_semantic_witness_section_present());
+    let lock = CatalogLock::from_bundled().expect("bundled");
+    let section = lock
+        .semantic_witnesses
+        .as_ref()
+        .expect("semantic_witnesses section on bundled lock");
+    assert!(semantic_witness_section_quickcheck(section));
+    assert!(
+        lookup_bundled_semantic_cold_witness(DEFAULT_SEMANTIC_COLD_WITNESS_ID).is_some(),
+        "default cold witness must resolve from bundled lock"
+    );
+    assert!(lookup_bundled_semantic_cold_witness("nonexistent.witness.id").is_none());
 }

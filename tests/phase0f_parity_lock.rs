@@ -7,7 +7,7 @@
 //! - `cargo test -p umst-mcp --test gate_parity` (authoritative MCP byte lock)
 //! - `phase_0a_admissibility_census::phase0a_reconciliation_matrix_red` (census deltas empty)
 //!
-//! **Parity anchor:** `gate_parity_v0.json` · SHA256 `149081fa81a6525f…` (unchanged through 0a–0e).
+//! **Parity anchor:** `gate_parity_v0.json` · SHA256 `d5608148…` (5-row UNLOCK-3; unchanged through 0a–0e routing).
 //! **Next:** Wave 1 **A1** — `umst-cartridge-api`.
 
 use std::path::PathBuf;
@@ -47,9 +47,9 @@ fn phase0f_fixture_bytes_sha256_locked() {
 fn phase0f_census_pins_match_live_fixture() {
     assert_eq!(
         GATE_PARITY_V0_SHA256,
-        "149081fa81a6525fb66ff01924c6656f30e2b67846d9945a25427c7be38d20f3"
+        "d5608148e29eeabd83935988699d08ce1233c3e87f2cd217d658e0c71c7a841e"
     );
-    assert_eq!(GATE_PARITY_V0_SHA256_PREFIX, "149081fa81a6525f");
+    assert_eq!(GATE_PARITY_V0_SHA256_PREFIX, "d5608148e29eeabd");
     assert!(GATE_PARITY_V0_FIXTURE_REL.contains("gate_parity_v0.json"));
 }
 
@@ -84,7 +84,7 @@ fn phase0f_census_surface_complete() {
 
 #[test]
 fn phase0f_m0_receipt_parity_prefix() {
-    assert_eq!(GATE_PARITY_V0_SHA256_PREFIX, "149081fa81a6525f");
+    assert_eq!(GATE_PARITY_V0_SHA256_PREFIX, "d5608148e29eeabd");
 }
 
 // --- FP Manifesto §6: lock-suite idempotency receipt ---

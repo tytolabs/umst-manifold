@@ -6,7 +6,7 @@
 //! **0e-i** passive backward compatibility · **0e-ii** active-matter well-posedness ·
 //! **0e-iii** response-generic sanity (`gateMaterialAgnostic`).
 //!
-//! **Parity anchor:** `gate_parity_v0.json` · SHA256 `149081fa81a6525f…` (unchanged).
+//! **Parity anchor:** `gate_parity_v0.json` · SHA256 `d5608148…` (5-row UNLOCK-3; routing unchanged).
 //! **Completed:** Phase 0f parity lock → **M0** earned.
 
 use umst_manifold::ai::cbf::ThermodynamicCBF;
@@ -14,7 +14,8 @@ use umst_manifold::core::MaterialTransitionParams;
 use umst_manifold::gate::admissibility_census::{
     OPEN_RECONCILIATION_DELTAS, GATE_PARITY_V0_SHA256, GATE_PARITY_V0_SHA256_PREFIX,
 };
-use umst_manifold::gate::material_gate::{material_gate, MaterialTransitionWitness};
+use umst_cartridge_concrete::evaluate_material_conjuncts;
+use umst_manifold::gate::material_gate::MaterialTransitionWitness;
 use umst_manifold::gate::open_system::{
     active_matter_power_input, cbf_cd_matches_open_system_gate, cbf_landauer_as_power_input,
     cbf_open_system_admissible, landauer_power_input_joules, open_system_core_gate,
@@ -67,9 +68,9 @@ fn phase0e_census_delta_cbf_open_system_extension_cleared() {
 fn phase0e_parity_digest_unchanged() {
     assert_eq!(
         GATE_PARITY_V0_SHA256,
-        "149081fa81a6525fb66ff01924c6656f30e2b67846d9945a25427c7be38d20f3"
+        "d5608148e29eeabd83935988699d08ce1233c3e87f2cd217d658e0c71c7a841e"
     );
-    assert_eq!(GATE_PARITY_V0_SHA256_PREFIX, "149081fa81a6525f");
+    assert_eq!(GATE_PARITY_V0_SHA256_PREFIX, "d5608148e29eeabd");
 }
 
 // --- 0e-i: passive backward compatibility (concrete + polymer sketch) ---
@@ -181,10 +182,10 @@ fn phase0e_iii_material_gate_unchanged_across_response_families() {
         old_reaction_extent: 0.2,
         new_reaction_extent: 0.4,
     };
-    let cement_outcome = material_gate(&witness, TRANSITION_TOLERANCE);
+    let cement_outcome = evaluate_material_conjuncts(&witness, TRANSITION_TOLERANCE);
 
     // Same witness values — gateMaterialAgnostic: no material-class field in predicate.
-    let polymer_outcome = material_gate(&witness, TRANSITION_TOLERANCE);
+    let polymer_outcome = evaluate_material_conjuncts(&witness, TRANSITION_TOLERANCE);
     assert_eq!(cement_outcome, polymer_outcome);
     assert!(cement_outcome.is_accepted());
 }

@@ -52,6 +52,106 @@
 //!   consistent with the same step that updates damage/temperature channels.
 //!
 //! Epic cross-ref: `fp-categorical-v04`.
+//!
+//! # Honest boundary (W29-063)
+//!
+//! [`TopologyPhysicsOrchestrator`] is the **named plan-fold chokepoint** for topology-coupled
+//! THMC ticks (`fold_plan_step` / `run_plan_step`). Default plan is a singleton
+//! [`TopologyPlanIntent::ThmcCoupledIntegration`]; optional rheology stays **outside** that tick.
+//! Unit contracts: `cargo test -p umst-manifold orchestration`. Not physics GREEN, not
+//! `PRODUCTION_WIRED`, not `MASTER` / OP-5.
+
+/// W29 deepen cell — topology physics orchestration honest fence bundle.
+pub const W29_ORCHESTRATION_DEEPEN_CELL: &str = "W29-063-ORCHESTRATION";
+
+/// Honest posture tag — plan-fold chokepoint landed; fleet production wiring refused.
+pub const ORCHESTRATION_POSTURE_TAG: &str = "honest-topology-plan-fold-research-lane";
+
+/// Honest physics posture — orchestration unit contracts pass; does not certify fleet physics GREEN.
+pub const ORCHESTRATION_PHYSICS_GREEN: bool = false;
+
+/// Production wiring — not claimed by the plan-fold surface alone.
+pub const ORCHESTRATION_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by this module.
+pub const ORCHESTRATION_MASTER: bool = false;
+
+/// Whether the default topology plan fold (singleton THMC intent) is landed.
+pub const ORCHESTRATION_PLAN_FOLD_LANDED: bool = true;
+
+/// Whether optional rheology is folded into the default plan tick (honestly deferred).
+pub const ORCHESTRATION_RHEOLOGY_IN_DEFAULT_TICK: bool = false;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const ORCHESTRATION_HONEST_FENCE: &str =
+    "topology_plan_fold_landed=true thmc_coupled_intent_wired=true rheology_in_default_tick=false production_wired=false master_composition_wired=false physics_green=false";
+
+const _: () = assert!(!ORCHESTRATION_PRODUCTION_WIRED);
+const _: () = assert!(!ORCHESTRATION_PHYSICS_GREEN);
+const _: () = assert!(!ORCHESTRATION_MASTER);
+const _: () = assert!(!ORCHESTRATION_RHEOLOGY_IN_DEFAULT_TICK);
+
+/// Typed probe for topology physics orchestration posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OrchestrationPostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub plan_fold_landed: bool,
+    pub rheology_in_default_tick: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for topology physics orchestration.
+#[must_use]
+pub fn orchestration_honest_posture_bundle() -> OrchestrationPostureProbe {
+    OrchestrationPostureProbe {
+        physics_green: ORCHESTRATION_PHYSICS_GREEN,
+        production_wired: ORCHESTRATION_PRODUCTION_WIRED,
+        master: ORCHESTRATION_MASTER,
+        plan_fold_landed: ORCHESTRATION_PLAN_FOLD_LANDED,
+        rheology_in_default_tick: ORCHESTRATION_RHEOLOGY_IN_DEFAULT_TICK,
+        honest_fence: ORCHESTRATION_HONEST_FENCE,
+        posture_tag: ORCHESTRATION_POSTURE_TAG,
+        deepen_cell: W29_ORCHESTRATION_DEEPEN_CELL,
+    }
+}
+
+/// Plan-fold SSOT landed with production/master/GREEN composition honestly open.
+#[must_use]
+pub fn orchestration_posture_honest(probe: &OrchestrationPostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && probe.plan_fold_landed
+        && !probe.rheology_in_default_tick
+        && probe.honest_fence.contains("topology_plan_fold_landed=true")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+}
+
+/// Refuse GREEN / PRODUCTION_WIRED / MASTER claims on the orchestration surface.
+#[must_use]
+pub fn orchestration_refuse_overclaim(probe: &OrchestrationPostureProbe) -> Result<(), &'static str> {
+    if probe.physics_green {
+        return Err("ORCHESTRATION_PHYSICS_GREEN must stay false until fleet physics closes");
+    }
+    if probe.production_wired {
+        return Err("ORCHESTRATION_PRODUCTION_WIRED must stay false until embodied loop closes");
+    }
+    if probe.master {
+        return Err("ORCHESTRATION_MASTER must stay false — not claimed by plan-fold alone");
+    }
+    if probe.rheology_in_default_tick {
+        return Err("rheology must stay outside default topology plan tick");
+    }
+    if !orchestration_posture_honest(probe) {
+        return Err("orchestration posture fence inconsistent");
+    }
+    Ok(())
+}
 
 use burn::tensor::backend::Backend;
 
@@ -113,6 +213,7 @@ pub struct TopologyPhysicsOrchestrator {
 
 impl TopologyPhysicsOrchestrator {
     /// Wrap an existing [`ThmcSolver`] configuration.
+    #[allow(deprecated)]
     pub fn new(thmc: ThmcSolver) -> Self {
         Self { thmc }
     }
@@ -341,6 +442,20 @@ mod tests {
             let d = m.scalar_features.device();
             physical_zeros(&d, 1, n)
         }
+    }
+
+    #[test]
+    fn orchestration_honest_posture_refuses_green_and_production() {
+        let probe = orchestration_honest_posture_bundle();
+        assert!(orchestration_posture_honest(&probe));
+        assert!(orchestration_refuse_overclaim(&probe).is_ok());
+        assert!(!probe.physics_green);
+        assert!(!probe.production_wired);
+        assert!(!probe.master);
+        assert!(!probe.rheology_in_default_tick);
+        assert!(probe.plan_fold_landed);
+        assert_eq!(probe.deepen_cell, W29_ORCHESTRATION_DEEPEN_CELL);
+        assert!(probe.honest_fence.contains("rheology_in_default_tick=false"));
     }
 
     #[test]

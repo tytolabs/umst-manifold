@@ -90,6 +90,16 @@
 //!   **`fill_jacobian_linearized_sg_fickian`**. **`h = 1`** recovers legacy unit-edge behaviour.
 //!   `tests/verification/pnp_debye_layer.rs::sg_flux_drift_scales_with_mesh_spacing_inverse` still
 //!   isolates SG **`J\propto 1/h`** at \(\rho=0\).
+//!
+//! ## Honest fences (W29-073)
+//!
+//! - Default builds (`electrochemistry-mvp` **off**) return tensors unchanged — a **scaffold**
+//!   passthrough, not a production electrolyte solver.
+//! - Research PNP (Thomas chain Poisson, SG NP, Picard split, optional host Newton BE) lives behind
+//!   `electrochemistry-mvp` / `solver-research` and does **not** certify fleet physics GREEN,
+//!   `PRODUCTION_WIRED`, `MASTER`, or OP-5.
+//! - General graphs (Ring 2 R2.3), multiply-charged Stefan–Maxwell species, and production-tight
+//!   band-LU envelopes for arbitrary chain `dim` remain **open**.
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
@@ -234,6 +244,191 @@ impl Default for NewtonPnpContext {
             full_sg_correction_use_gmres: false,
         }
     }
+}
+
+/// W29 deepen cell — electrochemistry honest fence bundle.
+pub const W29_ELECTROCHEMISTRY_DEEPEN_CELL: &str = "W29-073-ELECTROCHEMISTRY";
+
+/// Honest physics posture — research PNP scaffold; does not certify fleet physics GREEN.
+pub const ELECTROCHEMISTRY_PHYSICS_GREEN: bool = false;
+
+/// Production orchestration pin — not claimed by the PNP scaffold alone.
+pub const ELECTROCHEMISTRY_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by this module.
+pub const ELECTROCHEMISTRY_MASTER: bool = false;
+
+/// OP-5 composition claim — refused (scaffold / research lane only).
+pub const ELECTROCHEMISTRY_OP5_CLAIMED: bool = false;
+
+/// Whether the public solver surface ([`ElectroChemicalSolver`]/ [`NewtonPnpContext`]) is landed.
+pub const ELECTROCHEMISTRY_SOLVER_SURFACE_LANDED: bool = true;
+
+/// Whether research PNP kernels require `electrochemistry-mvp` (honest: yes).
+pub const ELECTROCHEMISTRY_MVP_FEATURE_GATED: bool = true;
+
+/// Whether general-graph (non-chain) full PNP production wire is closed (honestly open).
+pub const ELECTROCHEMISTRY_GENERAL_GRAPH_PNP_WIRED: bool = false;
+
+/// Operator-visible honesty string — does **not** authorize GREEN / PRODUCTION / MASTER / OP-5.
+pub const ELECTROCHEMISTRY_HONEST_FENCE: &str =
+    "solver_surface_landed=true|mvp_feature_gated=true|path_chain_thomas_sg_research=true|default_passthrough=true|general_graph_pnp_wired=false|production_wired=false|physics_green=false|master=false|op5_claimed=false";
+
+/// Fence facet count for honest census.
+pub const ELECTROCHEMISTRY_FENCE_FACET_COUNT: usize = 9;
+
+/// Fence facets wired today (4/9 measured).
+pub const ELECTROCHEMISTRY_FENCE_WIRED_COUNT: usize = 4;
+
+/// One facet of the electrochemistry production fence matrix.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ElectrochemistryFenceFacet {
+    pub facet: &'static str,
+    pub wired: bool,
+    pub owning_slice: &'static str,
+}
+
+/// Electrochemistry production fence facet inventory (honest posture SSOT).
+pub const ELECTROCHEMISTRY_FENCE_FACETS: &[ElectrochemistryFenceFacet] = &[
+    ElectrochemistryFenceFacet {
+        facet: "solver_surface_landed",
+        wired: true,
+        owning_slice: W29_ELECTROCHEMISTRY_DEEPEN_CELL,
+    },
+    ElectrochemistryFenceFacet {
+        facet: "mvp_feature_gated",
+        wired: true,
+        owning_slice: W29_ELECTROCHEMISTRY_DEEPEN_CELL,
+    },
+    ElectrochemistryFenceFacet {
+        facet: "path_chain_thomas_sg_research",
+        wired: true,
+        owning_slice: W29_ELECTROCHEMISTRY_DEEPEN_CELL,
+    },
+    ElectrochemistryFenceFacet {
+        facet: "default_passthrough",
+        wired: true,
+        owning_slice: W29_ELECTROCHEMISTRY_DEEPEN_CELL,
+    },
+    ElectrochemistryFenceFacet {
+        facet: "general_graph_pnp_wired",
+        wired: false,
+        owning_slice: "open — Ring 2 R2.3 / research",
+    },
+    ElectrochemistryFenceFacet {
+        facet: "production_wired",
+        wired: false,
+        owning_slice: "deferred-orchestrator-pin",
+    },
+    ElectrochemistryFenceFacet {
+        facet: "physics_green",
+        wired: false,
+        owning_slice: "refused — scaffold ≠ fleet physics GREEN",
+    },
+    ElectrochemistryFenceFacet {
+        facet: "master_orchestrator_pin",
+        wired: false,
+        owning_slice: "deferred-orchestrator-pin",
+    },
+    ElectrochemistryFenceFacet {
+        facet: "op5_claimed",
+        wired: false,
+        owning_slice: "refused — not OP-5",
+    },
+];
+
+const _: () = assert!(!ELECTROCHEMISTRY_PHYSICS_GREEN);
+const _: () = assert!(!ELECTROCHEMISTRY_PRODUCTION_WIRED);
+const _: () = assert!(!ELECTROCHEMISTRY_MASTER);
+const _: () = assert!(!ELECTROCHEMISTRY_OP5_CLAIMED);
+const _: () = assert!(!ELECTROCHEMISTRY_GENERAL_GRAPH_PNP_WIRED);
+const _: () = assert!(ELECTROCHEMISTRY_SOLVER_SURFACE_LANDED);
+const _: () = assert!(ELECTROCHEMISTRY_MVP_FEATURE_GATED);
+
+/// Count wired electrochemistry fence facets (must match [`ELECTROCHEMISTRY_FENCE_WIRED_COUNT`]).
+#[must_use]
+pub fn electrochemistry_fence_wired_count() -> usize {
+    ELECTROCHEMISTRY_FENCE_FACETS.iter().filter(|f| f.wired).count()
+}
+
+/// Typed probe for electrochemistry posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ElectrochemistryProbe {
+    pub deepen_cell: &'static str,
+    pub fence_facet_count: usize,
+    pub fence_wired_count: usize,
+    pub solver_surface_landed: bool,
+    pub mvp_feature_gated: bool,
+    pub general_graph_pnp_wired: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub physics_green: bool,
+    pub op5_claimed: bool,
+    pub honest_fence: &'static str,
+}
+
+/// Build introspection probe for electrochemistry done-when checks.
+#[must_use]
+pub const fn electrochemistry_probe() -> ElectrochemistryProbe {
+    ElectrochemistryProbe {
+        deepen_cell: W29_ELECTROCHEMISTRY_DEEPEN_CELL,
+        fence_facet_count: ELECTROCHEMISTRY_FENCE_FACET_COUNT,
+        fence_wired_count: ELECTROCHEMISTRY_FENCE_WIRED_COUNT,
+        solver_surface_landed: ELECTROCHEMISTRY_SOLVER_SURFACE_LANDED,
+        mvp_feature_gated: ELECTROCHEMISTRY_MVP_FEATURE_GATED,
+        general_graph_pnp_wired: ELECTROCHEMISTRY_GENERAL_GRAPH_PNP_WIRED,
+        production_wired: ELECTROCHEMISTRY_PRODUCTION_WIRED,
+        master: ELECTROCHEMISTRY_MASTER,
+        physics_green: ELECTROCHEMISTRY_PHYSICS_GREEN,
+        op5_claimed: ELECTROCHEMISTRY_OP5_CLAIMED,
+        honest_fence: ELECTROCHEMISTRY_HONEST_FENCE,
+    }
+}
+
+/// Electrochemistry landed with production/master/GREEN/OP-5 composition honestly open.
+#[must_use]
+pub fn electrochemistry_honest(probe: &ElectrochemistryProbe) -> bool {
+    probe.deepen_cell == W29_ELECTROCHEMISTRY_DEEPEN_CELL
+        && probe.fence_facet_count == ELECTROCHEMISTRY_FENCE_FACET_COUNT
+        && probe.fence_wired_count == ELECTROCHEMISTRY_FENCE_WIRED_COUNT
+        && probe.solver_surface_landed
+        && probe.mvp_feature_gated
+        && !probe.general_graph_pnp_wired
+        && !probe.production_wired
+        && !probe.master
+        && !probe.physics_green
+        && !probe.op5_claimed
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+        && probe.honest_fence.contains("master=false")
+        && probe.honest_fence.contains("op5_claimed=false")
+}
+
+/// Validate electrochemistry honesty — fail closed on fake GREEN / PRODUCTION / MASTER / OP-5.
+pub fn validate_electrochemistry_honesty() -> Result<(), &'static str> {
+    let probe = electrochemistry_probe();
+    if probe.production_wired {
+        return Err("ELECTROCHEMISTRY_PRODUCTION_WIRED must stay false — PNP scaffold only");
+    }
+    if probe.master {
+        return Err("ELECTROCHEMISTRY_MASTER must stay false until orchestrator pin lands");
+    }
+    if probe.physics_green {
+        return Err("ELECTROCHEMISTRY_PHYSICS_GREEN must stay false — research scaffold ≠ fleet GREEN");
+    }
+    if probe.op5_claimed {
+        return Err("ELECTROCHEMISTRY_OP5_CLAIMED must stay false — not an OP-5 composition pin");
+    }
+    if probe.general_graph_pnp_wired {
+        return Err("ELECTROCHEMISTRY_GENERAL_GRAPH_PNP_WIRED must stay false — Ring 2 open");
+    }
+    if electrochemistry_fence_wired_count() != ELECTROCHEMISTRY_FENCE_WIRED_COUNT {
+        return Err("electrochemistry_fence_wired_count drifted from ELECTROCHEMISTRY_FENCE_WIRED_COUNT");
+    }
+    if !electrochemistry_honest(&probe) {
+        return Err("electrochemistry_probe failed electrochemistry_honest gate");
+    }
+    Ok(())
 }
 
 impl ElectroChemicalSolver {
@@ -4893,5 +5088,59 @@ mod physics_idempotency_tests {
                 && tensor1_bool(c1.sub(c).abs().lower_elem(tol).all()),
             "uniform electroneutral equilibrium must be a fixed point"
         );
+    }
+}
+
+/// Honest-fence deepen tests — **default features** (no `electrochemistry-mvp` required).
+#[cfg(test)]
+mod electrochemistry_honest_fence_tests {
+    use super::*;
+
+    #[test]
+    fn electrochemistry_honest_fence_bundle() {
+        validate_electrochemistry_honesty().expect("honest fence");
+        let probe = electrochemistry_probe();
+        assert!(electrochemistry_honest(&probe));
+        assert_eq!(
+            electrochemistry_fence_wired_count(),
+            ELECTROCHEMISTRY_FENCE_WIRED_COUNT
+        );
+        assert!(!ELECTROCHEMISTRY_PHYSICS_GREEN);
+        assert!(!ELECTROCHEMISTRY_PRODUCTION_WIRED);
+        assert!(!ELECTROCHEMISTRY_MASTER);
+        assert!(!ELECTROCHEMISTRY_OP5_CLAIMED);
+        assert!(!ELECTROCHEMISTRY_GENERAL_GRAPH_PNP_WIRED);
+        assert!(ELECTROCHEMISTRY_SOLVER_SURFACE_LANDED);
+        assert!(ELECTROCHEMISTRY_MVP_FEATURE_GATED);
+        assert_eq!(
+            W29_ELECTROCHEMISTRY_DEEPEN_CELL,
+            "W29-073-ELECTROCHEMISTRY"
+        );
+        assert_eq!(ELECTROCHEMISTRY_FENCE_FACET_COUNT, 9);
+        assert_eq!(ELECTROCHEMISTRY_FENCE_WIRED_COUNT, 4);
+        assert!(ELECTROCHEMISTRY_HONEST_FENCE.contains("physics_green=false"));
+        assert!(ELECTROCHEMISTRY_HONEST_FENCE.contains("production_wired=false"));
+        assert!(ELECTROCHEMISTRY_HONEST_FENCE.contains("master=false"));
+        assert!(ELECTROCHEMISTRY_HONEST_FENCE.contains("op5_claimed=false"));
+        assert!(ELECTROCHEMISTRY_HONEST_FENCE.contains("general_graph_pnp_wired=false"));
+    }
+
+    #[test]
+    fn electrochemistry_fence_facet_inventory_matches_wired_count() {
+        assert_eq!(
+            ELECTROCHEMISTRY_FENCE_FACETS.len(),
+            ELECTROCHEMISTRY_FENCE_FACET_COUNT
+        );
+        let wired = ELECTROCHEMISTRY_FENCE_FACETS
+            .iter()
+            .filter(|f| f.wired)
+            .count();
+        assert_eq!(wired, ELECTROCHEMISTRY_FENCE_WIRED_COUNT);
+        assert!(ELECTROCHEMISTRY_FENCE_FACETS
+            .iter()
+            .any(|f| f.facet == "production_wired" && !f.wired));
+        assert!(ELECTROCHEMISTRY_FENCE_FACETS
+            .iter()
+            .any(|f| f.facet == "op5_claimed" && !f.wired));
     }
 }

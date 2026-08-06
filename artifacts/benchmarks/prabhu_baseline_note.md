@@ -9,7 +9,7 @@
 | **Host** | Darwin 25.5.0 arm64 |
 | **Rustc** | rustc 1.88.0 (6b00bc388 2025-06-23) |
 | **Transcript** | `prabhu_runtime_subset.json` |
-| **Parity digest** | `149081fa81a6525fb66ff01924c6656f30e2b67846d9945a25427c7be38d20f3` |
+| **Parity digest** | `d5608148e29eeabd83935988699d08ce1233c3e87f2cd217d658e0c71c7a841e` |
 
 ## Metrics @ capture
 

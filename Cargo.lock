@@ -77,6 +77,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arrayref"
+version = "0.3.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76a2e8124351fda1ef8aaaa3bbd7ebbcb486bbcd4225aca0aa0d84bb2db8fecb"
+
+[[package]]
 name = "arrayvec"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -171,6 +177,20 @@ name = "bitflags"
 version = "2.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4388bee8683e3d04af747c73422af53102d2bd24d9eadb6cbc100baef4b43f8"
+
+[[package]]
+name = "blake3"
+version = "1.8.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0aa83c34e62843d924f905e0f5c866eb1dd6545fc4d719e803d9ba6030371fce"
+dependencies = [
+ "arrayref",
+ "arrayvec",
+ "cc",
+ "cfg-if",
+ "constant_time_eq 0.4.2",
+ "cpufeatures 0.3.0",
+]
 
 [[package]]
 name = "blas-src"
@@ -631,6 +651,12 @@ name = "constant_time_eq"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
+
+[[package]]
+name = "constant_time_eq"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d52eff69cd5e647efe296129160853a42795992097e8af39800e1060caeea9b"
 
 [[package]]
 name = "core-foundation"
@@ -1916,6 +1942,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "nalgebra"
+version = "0.33.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d43ddcacf343185dfd6de2ee786d9e8b1c2301622afab66b6c73baf9882abfd"
+dependencies = [
+ "approx",
+ "matrixmultiply",
+ "num-complex",
+ "num-rational",
+ "num-traits",
+ "simba",
+ "typenum",
+]
+
+[[package]]
 name = "ndarray"
 version = "0.15.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1950,6 +1991,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "num-bigint"
+version = "0.4.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c89e69e7e0f03bea5ef08013795c25018e101932225a656383bd384495ecc367"
+dependencies = [
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
 name = "num-complex"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1971,6 +2022,17 @@ version = "0.1.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7969661fd2958a5cb096e56c8e1ad0444ac2bbcd0061bd28660485a44879858f"
 dependencies = [
+ "num-traits",
+]
+
+[[package]]
+name = "num-rational"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f83d14da390562dca69fc84082e73e548e1ad308d24accdedd2720017cb37824"
+dependencies = [
+ "num-bigint",
+ "num-integer",
  "num-traits",
 ]
 
@@ -2638,6 +2700,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
+name = "safe_arch"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96b02de82ddbe1b636e6170c21be622223aea188ef2e139be0a5b219ec215323"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
 name = "safetensors"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2821,6 +2892,19 @@ checksum = "c4db69cba1110affc0e9f7bcd48bbf87b3f4fc7c61fc9155afd4c469eb3d6c1b"
 dependencies = [
  "errno",
  "libc",
+]
+
+[[package]]
+name = "simba"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c99284beb21666094ba2b75bbceda012e610f5479dfcc2d6e2426f53197ffd95"
+dependencies = [
+ "approx",
+ "num-complex",
+ "num-traits",
+ "paste",
+ "wide",
 ]
 
 [[package]]
@@ -3213,21 +3297,66 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
 name = "umst-algebra"
 version = "0.1.0"
 dependencies = [
+ "blake3",
  "ordered-float",
  "petgraph",
  "pqcrypto-dilithium",
  "pqcrypto-kyber",
  "pqcrypto-sphincsplus",
  "pqcrypto-traits",
+ "serde",
  "serde_json",
  "sha2",
  "sha3",
+ "subtle",
  "thiserror 1.0.69",
  "umst-layout-codegen",
 ]
 
 [[package]]
 name = "umst-cartridge-api"
+version = "0.1.0"
+dependencies = [
+ "umst-algebra",
+]
+
+[[package]]
+name = "umst-cartridge-concrete"
+version = "0.1.0"
+dependencies = [
+ "umst-cartridge-api",
+ "umst-cartridge-continuum",
+ "umst-cartridge-poromechanics",
+ "umst-cartridge-solid-inelastic",
+ "umst-chem",
+ "umst-gate",
+]
+
+[[package]]
+name = "umst-cartridge-continuum"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "umst-cartridge-api",
+]
+
+[[package]]
+name = "umst-cartridge-poromechanics"
+version = "0.1.0"
+dependencies = [
+ "umst-cartridge-api",
+]
+
+[[package]]
+name = "umst-cartridge-solid-inelastic"
+version = "0.1.0"
+dependencies = [
+ "umst-cartridge-api",
+]
+
+[[package]]
+name = "umst-chem"
 version = "0.1.0"
 
 [[package]]
@@ -3262,6 +3391,7 @@ dependencies = [
  "bincode",
  "burn",
  "burn-ndarray",
+ "nalgebra",
  "num-complex",
  "num-traits",
  "ordered-float",
@@ -3271,6 +3401,9 @@ dependencies = [
  "sha2",
  "time",
  "tracing",
+ "umst-algebra",
+ "umst-cartridge-api",
+ "umst-cartridge-concrete",
  "umst-gate",
  "umst-layout-codegen",
  "umst-math",
@@ -3301,6 +3434,7 @@ dependencies = [
 name = "umst-runtime"
 version = "0.1.0"
 dependencies = [
+ "umst-cartridge-api",
  "umst-manifold",
 ]
 
@@ -3681,6 +3815,16 @@ dependencies = [
  "bitflags 2.13.0",
  "js-sys",
  "web-sys",
+]
+
+[[package]]
+name = "wide"
+version = "0.7.33"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ce5da8ecb62bcd8ec8b7ea19f69a51275e91299be594ea5cc6ef7819e16cd03"
+dependencies = [
+ "bytemuck",
+ "safe_arch",
 ]
 
 [[package]]
@@ -4135,7 +4279,7 @@ dependencies = [
  "aes",
  "byteorder",
  "bzip2",
- "constant_time_eq",
+ "constant_time_eq 0.1.5",
  "crc32fast",
  "crossbeam-utils",
  "flate2",

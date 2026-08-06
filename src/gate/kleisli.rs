@@ -297,3 +297,407 @@ pub fn gate_arrow_canonical_transition(
         }
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::gate::route::canonical_transition_outcome;
+    use crate::gate::transition_proposal::{ThermodynamicStateSnapshot, TRANSITION_TOLERANCE};
+
+    #[test]
+    fn admissibility_result_from_verdict_mirrors_legacy_bool() {
+        let accepted = AdmissibilityResult::from_verdict(AdmissibilityVerdict::Accepted, 0.0, None);
+        assert!(accepted.is_admissible());
+        assert!(accepted.is_accepted());
+        assert_eq!(
+            accepted.admissibility_verdict(),
+            AdmissibilityVerdict::Accepted
+        );
+        #[allow(deprecated)]
+        {
+            assert!(accepted.admissible);
+        }
+
+        let unknown = AdmissibilityResult::from_verdict(
+            AdmissibilityVerdict::Unknown,
+            1.5,
+            Some("probe".into()),
+        );
+        assert!(!unknown.is_admissible());
+        assert_eq!(unknown.dissipation, 1.5);
+        assert_eq!(unknown.violation.as_deref(), Some("probe"));
+    }
+
+    #[test]
+    fn admissible_pure_lift_is_admissible_with_zero_dissipation() {
+        let carrier = Admissible::pure(42_i32);
+        assert!(carrier.result.is_admissible());
+        assert_eq!(carrier.value, 42);
+        assert_eq!(carrier.result.dissipation, 0.0);
+        assert!(carrier.result.violation.is_none());
+    }
+
+    #[test]
+    fn admissible_bind_short_circuits_on_inadmissible_intermediate() {
+        let inadmissible = Admissible {
+            value: 7_i32,
+            result: AdmissibilityResult::from_verdict(
+                AdmissibilityVerdict::Unknown,
+                -1.0,
+                Some("blocked".into()),
+            ),
+        };
+        let out = inadmissible.bind(|x| Admissible::pure(x * 10));
+        assert_eq!(out.value, 70);
+        assert!(!out.result.is_admissible());
+        assert_eq!(out.result.violation.as_deref(), Some("blocked"));
+    }
+
+    #[test]
+    fn admissible_bind_chains_when_admissible() {
+        let start = Admissible::pure(3_i32);
+        let out = start.bind(|x| Admissible::pure(x + 4));
+        assert!(out.result.is_admissible());
+        assert_eq!(out.value, 7);
+    }
+
+    #[test]
+    fn admissible_join_flattens_nested_admissible() {
+        let inner = Admissible::pure("inner".to_string());
+        let nested = Admissible::pure(inner);
+        let flat = Admissible::join(nested);
+        assert!(flat.result.is_admissible());
+        assert_eq!(flat.value, "inner");
+    }
+
+    #[test]
+    fn admissible_join_short_circuits_on_inadmissible_outer() {
+        let inner = Admissible::pure(99_i32);
+        let nested = Admissible {
+            value: inner,
+            result: AdmissibilityResult::from_verdict(
+                AdmissibilityVerdict::Unknown,
+                0.0,
+                Some("outer_fail".into()),
+            ),
+        };
+        let flat = Admissible::join(nested);
+        assert!(!flat.result.is_admissible());
+        assert_eq!(flat.value, 99);
+    }
+
+    #[test]
+    fn kleisli_compose_pair_runs_right_to_left_bind() {
+        let composed = kleisli_compose_pair(
+            |x: i32| Admissible::pure(x + 1),
+            |y: i32| Admissible::pure(y * 2),
+            "inc_then_double",
+        );
+        assert_eq!(composed.name, "inc_then_double");
+        let out = composed.run(5);
+        assert!(out.result.is_admissible());
+        assert_eq!(out.value, 12);
+    }
+
+    #[test]
+    fn kleisli_compose_pair_short_circuits_when_first_arrow_fails() {
+        let fail_then_pure = kleisli_compose_pair(
+            |_x: i32| Admissible {
+                value: 0,
+                result: AdmissibilityResult::from_verdict(
+                    AdmissibilityVerdict::Unknown,
+                    -1.0,
+                    Some("first_fail".into()),
+                ),
+            },
+            |y: i32| Admissible::pure(y + 100),
+            "fail_then_pure",
+        );
+        let out = fail_then_pure.run(1);
+        assert!(!out.result.is_admissible());
+        assert_eq!(out.value, 100);
+    }
+
+    #[test]
+    fn kleisli_pipeline_run_sequence_short_circuits_after_reject() {
+        let pipe = KleisliPipeline::new("two_step");
+        let ok = gate_arrow_generic("always_ok", |_x: &i32| (true, 0.0, None));
+        let bad = gate_arrow_generic("always_bad", |_x: &i32| {
+            (false, -2.0, Some("reject".into()))
+        });
+        let seq = pipe.run_sequence(1, &[&ok, &bad, &ok]);
+        assert!(!seq.result.is_admissible());
+        assert_eq!(seq.value, 1);
+    }
+
+    #[test]
+    fn kleisli_unit_evaluator_catalog_and_lift() {
+        let eval = KleisliUnitEvaluator::new();
+        assert_eq!(eval.catalog_id(), KleisliUnitEvaluator::CATALOG_ID);
+        assert_eq!(eval.gate_family(), "kleisli_admissibility_unit");
+        let lifted = eval.lift(3.14_f64);
+        assert!(lifted.result.is_admissible());
+        assert_eq!(lifted.value, 3.14);
+        assert_eq!(
+            eval.verdict_for_lift(3.14_f64),
+            AdmissibilityVerdict::Accepted
+        );
+    }
+
+    #[test]
+    fn kleisli_unit_evaluator_reflexive_step_matches_pure_lift() {
+        let eval = KleisliUnitEvaluator::new();
+        let state = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        assert_eq!(
+            eval.evaluate_reflexive_step(&state),
+            AdmissibilityVerdict::Accepted
+        );
+        assert_eq!(eval.verdict_for_lift(state), AdmissibilityVerdict::Accepted);
+    }
+
+    #[test]
+    fn kleisli_unit_evaluator_canonical_transition_delegates_to_route() {
+        let eval = KleisliUnitEvaluator::new();
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        let dt = 28.0 * 24.0 * 3600.0;
+        let routed = eval.evaluate_canonical_transition(&old, &new, dt);
+        let direct = canonical_transition_outcome(&old, &new, dt).verdict();
+        assert_eq!(routed, direct);
+        assert_eq!(routed, AdmissibilityVerdict::Accepted);
+    }
+
+    #[test]
+    fn kleisli_unit_evaluator_canonical_transition_rejects_extent_regression() {
+        let eval = KleisliUnitEvaluator::new();
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0);
+        let mut new = old;
+        new.reaction_extent = 0.1;
+        let dt = 1.0;
+        let routed = eval.evaluate_canonical_transition(&old, &new, dt);
+        let direct = canonical_transition_outcome(&old, &new, dt).verdict();
+        assert_eq!(routed, direct);
+        assert_ne!(routed, AdmissibilityVerdict::Accepted);
+    }
+
+    #[test]
+    fn gate_arrow_generic_admits_positive_carrier() {
+        let arrow = gate_arrow_generic("positive_denominator", |x: &f64| {
+            if *x > 0.0 {
+                (true, 0.0, None)
+            } else {
+                (false, -1.0, Some("non_positive".into()))
+            }
+        });
+        let ok = arrow.run(std::f64::consts::PI);
+        assert!(ok.result.is_admissible());
+        assert_eq!(ok.value, std::f64::consts::PI);
+    }
+
+    #[test]
+    fn gate_arrow_generic_rejects_non_positive_with_unknown_verdict() {
+        let arrow = gate_arrow_generic("positive_denominator", |x: &f64| {
+            if *x > 0.0 {
+                (true, 0.0, None)
+            } else {
+                (false, -1.0, Some("non_positive".into()))
+            }
+        });
+        let bad = arrow.run(-1.0_f64);
+        assert!(!bad.result.is_admissible());
+        assert_eq!(
+            bad.result.admissibility_verdict(),
+            AdmissibilityVerdict::Unknown
+        );
+        assert_eq!(bad.result.violation.as_deref(), Some("non_positive"));
+    }
+
+    #[test]
+    fn gate_arrow_canonical_transition_accepts_phase0b_fixture() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        let dt = 28.0 * 24.0 * 3600.0;
+        let arrow = gate_arrow_canonical_transition("hydration_step", old, dt);
+        let out = arrow.run(new);
+        assert!(out.result.is_admissible());
+        assert_eq!(
+            out.result.admissibility_verdict(),
+            AdmissibilityVerdict::Accepted
+        );
+        assert!(out.result.violation.is_none());
+        let expected = canonical_transition_outcome(&old, &new, dt);
+        assert!((out.result.dissipation - expected.dissipation as f32).abs() < 1e-3);
+    }
+
+    #[test]
+    fn gate_arrow_canonical_transition_rejects_reaction_extent_regression() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0);
+        let mut new = old;
+        new.reaction_extent = 0.1;
+        let dt = 1.0;
+        let arrow = gate_arrow_canonical_transition("extent_guard", old, dt);
+        let out = arrow.run(new);
+        assert!(!out.result.is_admissible());
+        assert_eq!(
+            out.result.violation.as_deref(),
+            Some("canonical_transition_reject")
+        );
+        let outcome = canonical_transition_outcome(&old, &new, dt);
+        assert_eq!(
+            out.result.admissibility_verdict(),
+            outcome.verdict()
+        );
+        assert_ne!(outcome.verdict(), AdmissibilityVerdict::Accepted);
+    }
+
+    #[test]
+    fn gate_arrow_canonical_transition_honors_transition_tolerance_route() {
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+        let dt = 1.0;
+        let arrow = gate_arrow_canonical_transition("material_step", old, dt);
+        let out = arrow.run(new);
+        let routed = canonical_transition_outcome(&old, &new, dt);
+        assert_eq!(out.result.admissibility_verdict(), routed.verdict());
+        assert!(TRANSITION_TOLERANCE.is_finite());
+    }
+
+    #[test]
+    fn kleisli_unit_evaluator_default_matches_new() {
+        let a = KleisliUnitEvaluator::default();
+        let b = KleisliUnitEvaluator::new();
+        assert_eq!(a.catalog_id(), b.catalog_id());
+        assert_eq!(a.gate_family(), b.gate_family());
+    }
+
+    #[test]
+    fn kleisli_unit_evaluator_gate_evaluator_trait_surface() {
+        let eval: &dyn GateEvaluator = &KleisliUnitEvaluator::new();
+        assert_eq!(eval.catalog_id(), KleisliUnitEvaluator::CATALOG_ID);
+        assert_eq!(eval.gate_family(), "kleisli_admissibility_unit");
+    }
+
+    #[test]
+    fn kleisli_unit_evaluator_phase0b_material_calibrated_accept() {
+        // Golden fixture: material_gate::material_gate_accepts_phase0b_calibrated_transition
+        let eval = KleisliUnitEvaluator::new();
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+        let dt = 1.0;
+        let verdict = eval.evaluate_canonical_transition(&old, &new, dt);
+        let routed = canonical_transition_outcome(&old, &new, dt);
+        assert_eq!(verdict, routed.verdict());
+        assert_eq!(verdict, AdmissibilityVerdict::Accepted);
+    }
+
+    #[test]
+    fn kleisli_unit_evaluator_idle_to_hydrated_route_fixture() {
+        // Golden fixture: route::route_delegates_to_transition_outcome
+        let eval = KleisliUnitEvaluator::new();
+        let old = ThermodynamicStateSnapshot::new_idle();
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        let dt = 28.0 * 24.0 * 3600.0;
+        let verdict = eval.evaluate_canonical_transition(&old, &new, dt);
+        assert_eq!(verdict, canonical_transition_outcome(&old, &new, dt).verdict());
+    }
+
+    #[test]
+    fn kleisli_unit_evaluator_rejects_malformed_dt() {
+        // Golden fixture: transition_proposal::transition_outcome_rejects_malformed_input
+        let eval = KleisliUnitEvaluator::new();
+        let idle = ThermodynamicStateSnapshot::new_idle();
+        let verdict = eval.evaluate_canonical_transition(&idle, &idle, -1.0);
+        let outcome = canonical_transition_outcome(&idle, &idle, -1.0);
+        assert_eq!(verdict, outcome.verdict());
+        assert_ne!(verdict, AdmissibilityVerdict::Accepted);
+    }
+
+    #[test]
+    fn kleisli_canonical_route_honors_transition_tolerance_constant() {
+        // SSOT: transition_proposal::TRANSITION_TOLERANCE = 1e-6
+        assert_eq!(TRANSITION_TOLERANCE, 1e-6);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+        let outcome = canonical_transition_outcome(&old, &new, 1.0);
+        assert!(outcome.is_accepted());
+    }
+
+    #[test]
+    fn kleisli_pipeline_run_sequence_chains_two_admissible_arrows() {
+        let pipe = KleisliPipeline::new("ok_chain");
+        let ok = gate_arrow_generic("noop_ok", |_x: &i32| (true, 0.0, None));
+        let seq = pipe.run_sequence(5, &[&ok, &ok]);
+        assert!(seq.result.is_admissible());
+        assert_eq!(seq.value, 5);
+        assert_eq!(seq.result.dissipation, 0.0);
+    }
+
+    #[test]
+    fn admissible_join_short_circuits_on_inadmissible_inner() {
+        let inner = Admissible {
+            value: 42_i32,
+            result: AdmissibilityResult::from_verdict(
+                AdmissibilityVerdict::Unknown,
+                2.0,
+                Some("inner_blocked".into()),
+            ),
+        };
+        let nested = Admissible::pure(inner);
+        let flat = Admissible::join(nested);
+        assert!(!flat.result.is_admissible());
+        assert_eq!(flat.value, 42);
+        assert_eq!(flat.result.dissipation, 2.0);
+        assert_eq!(flat.result.violation.as_deref(), Some("inner_blocked"));
+    }
+
+    #[test]
+    fn gate_arrow_canonical_transition_rejects_strength_regression() {
+        // Golden fixture: material_gate::material_strength_failure_is_not_core_failure
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0);
+        let mut new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.55, 293.15, 30.0);
+        new.free_energy = old.free_energy - 50.0;
+        let dt = 1.0;
+        let arrow = gate_arrow_canonical_transition("strength_guard", old, dt);
+        let out = arrow.run(new);
+        let outcome = canonical_transition_outcome(&old, &new, dt);
+        assert_eq!(out.result.admissibility_verdict(), outcome.verdict());
+        assert_ne!(outcome.verdict(), AdmissibilityVerdict::Accepted);
+        assert_eq!(
+            out.result.violation.as_deref(),
+            Some("canonical_transition_reject")
+        );
+    }
+
+    #[test]
+    fn gate_arrow_generic_propagates_dissipation_on_admit() {
+        let arrow = gate_arrow_generic("thermal_sink", |_x: &f64| (true, 3.5, None));
+        let out = arrow.run(2.0_f64);
+        assert!(out.result.is_admissible());
+        assert_eq!(out.result.dissipation, 3.5);
+        assert_eq!(out.value, 2.0);
+    }
+
+    #[test]
+    fn kleisli_compose_pair_chains_gate_arrows_preserving_carrier() {
+        let check = gate_arrow_generic("finite_dissipation", |_x: &f64| (true, 1.25, None));
+        let composed = kleisli_compose_pair(
+            move |x: f64| check.run(x),
+            |x: f64| Admissible::pure(x),
+            "dissipation_then_identity",
+        );
+        let out = composed.run(std::f64::consts::E);
+        assert!(out.result.is_admissible());
+        assert_eq!(out.value, std::f64::consts::E);
+        assert_eq!(
+            out.result.dissipation, 0.0,
+            "bind replaces intermediate result when second arrow is pure"
+        );
+    }
+
+    #[test]
+    fn w8e14_kleisli_unit_evaluator_catalog_id_stable() {
+        let ev = KleisliUnitEvaluator;
+        assert!(!KleisliUnitEvaluator::CATALOG_ID.is_empty());
+        assert_eq!(ev.catalog_id(), KleisliUnitEvaluator::CATALOG_ID);
+    }
+}

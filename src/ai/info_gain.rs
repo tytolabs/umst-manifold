@@ -46,6 +46,43 @@
 
 use burn::tensor::{backend::Backend, Tensor};
 
+/// LO harness morphism kind — mean squared state delta, **not** mutual information.
+pub const SURROGATE_KIND: &str = "mean_squared_state_delta";
+
+/// Honest admission: default MSE path is **not** production-wired to a calibrated MI channel.
+pub const PRODUCTION_WIRED: bool = false;
+
+/// Honest admission: surrogate magnitude does **not** certify physics GREEN.
+pub const PHYSICS_GREEN: bool = false;
+
+/// Oracle replay posture for integration harnesses (EGM-082 consumer-drift witness).
+pub const ORACLE_CARGO_TEST_STATUS: &str = "BLOCKED";
+
+/// Compile-time witness that the LO harness stays below production / physics claims.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SurrogateAdmissionPosture {
+    /// Callable MSE hooks only; histogram MI behind `epistemic-ppo`.
+    DevelopmentSurrogate,
+}
+
+/// Active admission posture for the default (non-epistemic) integration path.
+#[must_use]
+pub const fn surrogate_admission_posture() -> SurrogateAdmissionPosture {
+    SurrogateAdmissionPosture::DevelopmentSurrogate
+}
+
+/// Honest null fence: no `PRODUCTION_WIRED`, no `PHYSICS_GREEN`, oracle replay blocked.
+#[must_use]
+pub fn honest_fence_stub() -> bool {
+    !PRODUCTION_WIRED
+        && !PHYSICS_GREEN
+        && ORACLE_CARGO_TEST_STATUS == "BLOCKED"
+        && matches!(
+            surrogate_admission_posture(),
+            SurrogateAdmissionPosture::DevelopmentSurrogate
+        )
+}
+
 /// Batched mean squared delta between two **aligned** second-order tensors.
 ///
 /// # Tensor contract
@@ -176,14 +213,32 @@ pub fn nodal_scalar_means<B: Backend<FloatElem = f32>>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approx::assert_abs_diff_eq;
     use burn::tensor::{Data, Shape};
     use burn_ndarray::{NdArray, NdArrayDevice};
 
     type B = NdArray<f32>;
 
+    fn device() -> NdArrayDevice {
+        NdArrayDevice::default()
+    }
+
+    #[test]
+    fn honest_fence_pins_no_production_green() {
+        assert_eq!(SURROGATE_KIND, "mean_squared_state_delta");
+        assert!(!PRODUCTION_WIRED);
+        assert!(!PHYSICS_GREEN);
+        assert_eq!(ORACLE_CARGO_TEST_STATUS, "BLOCKED");
+        assert!(honest_fence_stub());
+        assert_eq!(
+            surrogate_admission_posture(),
+            SurrogateAdmissionPosture::DevelopmentSurrogate
+        );
+    }
+
     #[test]
     fn state_delta_matches_manual_mse_per_batch() {
-        let dev = NdArrayDevice::default();
+        let dev = device();
         // B=2, D=2: second row has larger change → larger surrogate
         let baseline = Tensor::<B, 2>::from_data(
             Data::new(vec![0.0_f32, 0.0_f32, 1.0_f32, 1.0_f32], Shape::new([2, 2])),
@@ -198,13 +253,121 @@ mod tests {
         let row0 = (1.0_f32 + 1.0_f32) / 2.0_f32;
         let row1 = (4.0_f32 + 4.0_f32) / 2.0_f32;
         let v: Vec<f32> = g.into_data().value;
-        assert!((v[0] - row0).abs() < 1e-5);
-        assert!((v[1] - row1).abs() < 1e-5);
+        assert_abs_diff_eq!(v[0], row0, epsilon = 1.0e-5);
+        assert_abs_diff_eq!(v[1], row1, epsilon = 1.0e-5);
+    }
+
+    #[test]
+    fn state_delta_zero_when_baseline_equals_proposed() {
+        let dev = device();
+        let baseline = Tensor::<B, 2>::from_data(
+            Data::new(vec![1.0_f32, 2.0_f32, 3.0_f32, 4.0_f32], Shape::new([2, 2])),
+            &dev,
+        );
+        let proposed = baseline.clone();
+        let g = suggested_info_gain_from_state_delta(baseline, proposed);
+        assert_eq!(g.dims(), [2]);
+        let v: Vec<f32> = g.into_data().value;
+        for &row in &v {
+            assert_abs_diff_eq!(row, 0.0_f32, epsilon = 1.0e-6);
+        }
+    }
+
+    #[test]
+    fn state_delta_outputs_are_non_negative() {
+        let dev = device();
+        let baseline = Tensor::<B, 2>::from_data(
+            Data::new(vec![-2.0_f32, 0.5_f32, 1.0_f32, -1.0_f32], Shape::new([2, 2])),
+            &dev,
+        );
+        let proposed = Tensor::<B, 2>::from_data(
+            Data::new(vec![2.0_f32, -0.5_f32, -3.0_f32, 1.0_f32], Shape::new([2, 2])),
+            &dev,
+        );
+        let g = suggested_info_gain_from_state_delta(baseline, proposed);
+        let v: Vec<f32> = g.into_data().value;
+        for &row in &v {
+            assert!(row >= 0.0_f32, "MSE surrogate must be non-negative, got {row}");
+        }
+    }
+
+    #[test]
+    fn state_delta_larger_delta_yields_larger_surrogate() {
+        let dev = device();
+        let baseline = Tensor::<B, 2>::zeros([1, 3], &dev);
+        let small = Tensor::<B, 2>::from_data(
+            Data::new(vec![0.1_f32, 0.1_f32, 0.1_f32], Shape::new([1, 3])),
+            &dev,
+        );
+        let large = Tensor::<B, 2>::from_data(
+            Data::new(vec![1.0_f32, 1.0_f32, 1.0_f32], Shape::new([1, 3])),
+            &dev,
+        );
+        let g_small = suggested_info_gain_from_state_delta(baseline.clone(), small);
+        let g_large = suggested_info_gain_from_state_delta(baseline, large);
+        let small_v = g_small.into_data().value[0];
+        let large_v = g_large.into_data().value[0];
+        assert!(large_v > small_v, "larger delta must yield larger surrogate");
+    }
+
+    #[test]
+    fn state_delta_single_feature_dimension() {
+        let dev = device();
+        let baseline = Tensor::<B, 2>::from_data(
+            Data::new(vec![2.0_f32, 4.0_f32], Shape::new([2, 1])),
+            &dev,
+        );
+        let proposed = Tensor::<B, 2>::from_data(
+            Data::new(vec![5.0_f32, 1.0_f32], Shape::new([2, 1])),
+            &dev,
+        );
+        let g = suggested_info_gain_from_state_delta(baseline, proposed);
+        assert_eq!(g.dims(), [2]);
+        let v: Vec<f32> = g.into_data().value;
+        assert_abs_diff_eq!(v[0], 9.0_f32, epsilon = 1.0e-5);
+        assert_abs_diff_eq!(v[1], 9.0_f32, epsilon = 1.0e-5);
+    }
+
+    #[test]
+    fn state_delta_symmetric_under_baseline_proposed_swap() {
+        let dev = device();
+        let baseline = Tensor::<B, 2>::from_data(
+            Data::new(vec![1.0_f32, 2.0_f32, 3.0_f32], Shape::new([1, 3])),
+            &dev,
+        );
+        let proposed = Tensor::<B, 2>::from_data(
+            Data::new(vec![4.0_f32, 5.0_f32, 6.0_f32], Shape::new([1, 3])),
+            &dev,
+        );
+        let g_fwd = suggested_info_gain_from_state_delta(baseline.clone(), proposed.clone());
+        let g_rev = suggested_info_gain_from_state_delta(proposed, baseline);
+        let fwd: Vec<f32> = g_fwd.into_data().value;
+        let rev: Vec<f32> = g_rev.into_data().value;
+        assert_abs_diff_eq!(fwd[0], rev[0], epsilon = 1.0e-6);
+    }
+
+    #[test]
+    fn state_delta_batch_axis_matches_gateway_contract() {
+        let dev = device();
+        let b = 4usize;
+        let d = 3usize;
+        let baseline = Tensor::<B, 2>::zeros([b, d], &dev);
+        let proposed = Tensor::<B, 2>::from_data(
+            Data::new(vec![1.0_f32; b * d], Shape::new([b, d])),
+            &dev,
+        );
+        let g = suggested_info_gain_from_state_delta(baseline, proposed);
+        assert_eq!(g.dims(), [b]);
+        let v: Vec<f32> = g.into_data().value;
+        assert_eq!(v.len(), b);
+        for &row in &v {
+            assert_abs_diff_eq!(row, 1.0_f32, epsilon = 1.0e-5);
+        }
     }
 
     #[test]
     fn nodal_scalars_agree_with_flattened_equivalent() {
-        let dev = NdArrayDevice::default();
+        let dev = device();
         let b = Tensor::<B, 3>::from_data(
             Data::new(
                 vec![0.0_f32, 2.0_f32, 4.0_f32, 6.0_f32],
@@ -223,6 +386,72 @@ mod tests {
         let g2 = suggested_info_gain_from_state_delta(b.reshape([1, 4]), p.reshape([1, 4]));
         let a: Vec<f32> = g3.into_data().value;
         let c: Vec<f32> = g2.into_data().value;
-        assert!((a[0] - c[0]).abs() < 1e-5);
+        assert_abs_diff_eq!(a[0], c[0], epsilon = 1.0e-5);
+    }
+
+    #[test]
+    fn nodal_scalars_multi_batch_rows_independent() {
+        let dev = device();
+        let b = Tensor::<B, 3>::from_data(
+            Data::new(
+                vec![
+                    0.0_f32, 0.0_f32, //
+                    1.0_f32, 1.0_f32, //
+                    0.0_f32, 0.0_f32, //
+                    0.0_f32, 0.0_f32,
+                ],
+                Shape::new([2, 2, 2]),
+            ),
+            &dev,
+        );
+        let p = Tensor::<B, 3>::from_data(
+            Data::new(
+                vec![
+                    1.0_f32, 1.0_f32, //
+                    1.0_f32, 1.0_f32, //
+                    2.0_f32, 0.0_f32, //
+                    0.0_f32, 0.0_f32,
+                ],
+                Shape::new([2, 2, 2]),
+            ),
+            &dev,
+        );
+        let g = suggested_info_gain_from_batched_nodal_scalars(b, p);
+        assert_eq!(g.dims(), [2]);
+        let v: Vec<f32> = g.into_data().value;
+        assert_abs_diff_eq!(v[0], 0.5_f32, epsilon = 1.0e-5);
+        assert_abs_diff_eq!(v[1], 1.0_f32, epsilon = 1.0e-5);
+    }
+
+    #[test]
+    fn nodal_scalars_zero_when_unchanged() {
+        let dev = device();
+        let b = Tensor::<B, 3>::from_data(
+            Data::new(
+                vec![0.5_f32, 1.5_f32, 2.5_f32, 3.5_f32],
+                Shape::new([1, 2, 2]),
+            ),
+            &dev,
+        );
+        let p = b.clone();
+        let g = suggested_info_gain_from_batched_nodal_scalars(b, p);
+        let v: Vec<f32> = g.into_data().value;
+        assert_abs_diff_eq!(v[0], 0.0_f32, epsilon = 1.0e-6);
+    }
+
+    #[test]
+    fn nodal_scalars_single_node_single_channel() {
+        let dev = device();
+        let b = Tensor::<B, 3>::from_data(
+            Data::new(vec![3.0_f32], Shape::new([1, 1, 1])),
+            &dev,
+        );
+        let p = Tensor::<B, 3>::from_data(
+            Data::new(vec![7.0_f32], Shape::new([1, 1, 1])),
+            &dev,
+        );
+        let g = suggested_info_gain_from_batched_nodal_scalars(b, p);
+        let v: Vec<f32> = g.into_data().value;
+        assert_abs_diff_eq!(v[0], 16.0_f32, epsilon = 1.0e-5);
     }
 }

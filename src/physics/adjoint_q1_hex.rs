@@ -9,6 +9,136 @@
 //! [`crate::physics::adjoint::AdjointCompliance`]: element-wise factors `g_e ≈ ∂c/∂ρ_e` paired with
 //! the differentiable relation between nodal `ρ` and element-averaged design density
 //! `ρ_e = (1/8) Σ_{k∈corners} ρ_k`.
+//!
+//! # Honest boundary (W29-047)
+//!
+//! Q1-hex continuum discrete adjoint is a **research-lane** compliance surrogate behind
+//! **`mechanics-adjoint-q1-hex`**. Verified on the 8×8×2 plate FD harness
+//! (`tests/verification/adjoint_q1_hex_compliance_analytic.rs`) and self-weight FD probe.
+//! Slender bar-limit parity (`adjoint_q1_hex_matches_bar_in_limit`) remains **`#[ignore]`**
+//! with measured ~44% compliance gap — not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER`.
+//! Bar-network adjoint lives in [`super::adjoint`].
+
+/// W29 deepen cell — Q1-hex adjoint honest fence bundle.
+pub const W29_ADJOINT_Q1_HEX_DEEPEN_CELL: &str = "W29-047-ADJOINT_Q1_HEX";
+
+/// Phase 1A bar-limit parity — ignored until `rel_err < 0.05` on reference fixture.
+pub const ADJOINT_Q1_HEX_BAR_LIMIT_DEFERRED_STEP: &str = "R2.1-PHASE1A-BAR-LIMIT";
+
+/// Honest posture tag — Q1-hex discrete adjoint landed; fleet TO wiring refused.
+pub const ADJOINT_Q1_HEX_POSTURE_TAG: &str = "honest-q1-hex-adjoint-research-lane";
+
+/// Honest physics posture — passes plate FD harness; does not certify fleet TO or Kirchhoff R2.1-A.
+pub const ADJOINT_Q1_HEX_PHYSICS_GREEN: bool = false;
+
+/// Production topology-optimisation wiring — not claimed by Q1-hex adjoint alone.
+pub const ADJOINT_Q1_HEX_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by Q1-hex adjoint module.
+pub const ADJOINT_Q1_HEX_MASTER: bool = false;
+
+/// Whether finite-stage audit is wired on the forward path ([`build_finite_audit`]).
+pub const ADJOINT_Q1_HEX_FINITE_AUDIT_WIRED: bool = true;
+
+/// Whether static equilibrium residual is checked after PCG ([`ensure_hex_equilibrium`]).
+pub const ADJOINT_Q1_HEX_EQUILIBRIUM_FENCE_WIRED: bool = true;
+
+/// Self-weight load derivative wired ([`self_weight_load_nodal_sensitivity`]).
+pub const ADJOINT_Q1_HEX_SELF_WEIGHT_SENS_WIRED: bool = true;
+
+/// [`SolverRegion`] / warm-start reuse wired on forward path.
+pub const ADJOINT_Q1_HEX_SOLVER_REGION_WIRED: bool = true;
+
+/// [`DeviceSheet`] host-buffer reuse wired on autodiff path.
+pub const ADJOINT_Q1_HEX_DEVICE_SHEET_WIRED: bool = true;
+
+/// Slender axial bar-limit compliance parity — honestly open (`#[ignore]` harness).
+pub const ADJOINT_Q1_HEX_BAR_LIMIT_WIRED: bool = false;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const ADJOINT_Q1_HEX_HONEST_FENCE: &str = "q1_hex_adjoint_landed=true finite_audit_wired=true equilibrium_fence_wired=true self_weight_sens_wired=true solver_region_wired=true device_sheet_wired=true bar_limit_wired=false production_wired=false master_composition_wired=false physics_green=false";
+
+const _: () = assert!(!ADJOINT_Q1_HEX_PHYSICS_GREEN);
+const _: () = assert!(!ADJOINT_Q1_HEX_PRODUCTION_WIRED);
+const _: () = assert!(!ADJOINT_Q1_HEX_MASTER);
+const _: () = assert!(!ADJOINT_Q1_HEX_BAR_LIMIT_WIRED);
+
+/// Typed probe for Q1-hex adjoint posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AdjointQ1HexPostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub finite_audit_wired: bool,
+    pub equilibrium_fence_wired: bool,
+    pub self_weight_sens_wired: bool,
+    pub solver_region_wired: bool,
+    pub device_sheet_wired: bool,
+    pub bar_limit_wired: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+    pub deferred_bar_limit: &'static str,
+}
+
+/// Measured honest-posture snapshot for Q1-hex adjoint.
+#[must_use]
+pub fn adjoint_q1_hex_honest_posture_bundle() -> AdjointQ1HexPostureProbe {
+    AdjointQ1HexPostureProbe {
+        physics_green: ADJOINT_Q1_HEX_PHYSICS_GREEN,
+        production_wired: ADJOINT_Q1_HEX_PRODUCTION_WIRED,
+        master: ADJOINT_Q1_HEX_MASTER,
+        finite_audit_wired: ADJOINT_Q1_HEX_FINITE_AUDIT_WIRED,
+        equilibrium_fence_wired: ADJOINT_Q1_HEX_EQUILIBRIUM_FENCE_WIRED,
+        self_weight_sens_wired: ADJOINT_Q1_HEX_SELF_WEIGHT_SENS_WIRED,
+        solver_region_wired: ADJOINT_Q1_HEX_SOLVER_REGION_WIRED,
+        device_sheet_wired: ADJOINT_Q1_HEX_DEVICE_SHEET_WIRED,
+        bar_limit_wired: ADJOINT_Q1_HEX_BAR_LIMIT_WIRED,
+        honest_fence: ADJOINT_Q1_HEX_HONEST_FENCE,
+        posture_tag: ADJOINT_Q1_HEX_POSTURE_TAG,
+        deepen_cell: W29_ADJOINT_Q1_HEX_DEEPEN_CELL,
+        deferred_bar_limit: ADJOINT_Q1_HEX_BAR_LIMIT_DEFERRED_STEP,
+    }
+}
+
+/// Q1-hex adjoint SSOT landed with production/master composition honestly open.
+#[must_use]
+pub fn adjoint_q1_hex_posture_honest(probe: &AdjointQ1HexPostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && !probe.bar_limit_wired
+        && probe.finite_audit_wired
+        && probe.equilibrium_fence_wired
+        && probe.self_weight_sens_wired
+        && probe.solver_region_wired
+        && probe.device_sheet_wired
+        && probe.honest_fence.contains("q1_hex_adjoint_landed=true")
+        && probe.honest_fence.contains("bar_limit_wired=false")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+}
+
+/// Validate Q1-hex adjoint posture honesty — fail closed on fake production/master/GREEN claims.
+pub fn validate_adjoint_q1_hex_posture_honesty() -> Result<(), &'static str> {
+    let probe = adjoint_q1_hex_honest_posture_bundle();
+    if probe.physics_green {
+        return Err("ADJOINT_Q1_HEX_PHYSICS_GREEN must stay false — plate FD ≠ fleet TO");
+    }
+    if probe.production_wired {
+        return Err("ADJOINT_Q1_HEX_PRODUCTION_WIRED must stay false until embodied loop closes");
+    }
+    if probe.master {
+        return Err("ADJOINT_Q1_HEX_MASTER must stay false until master composition pin lands");
+    }
+    if probe.bar_limit_wired {
+        return Err("ADJOINT_Q1_HEX_BAR_LIMIT_WIRED must stay false until bar-limit harness un-ignored");
+    }
+    if !adjoint_q1_hex_posture_honest(&probe) {
+        return Err("adjoint_q1_hex_posture_honest failed");
+    }
+    Ok(())
+}
 
 use burn::tensor::{
     backend::{AutodiffBackend, Backend},
@@ -1041,5 +1171,36 @@ impl AdjointComplianceQ1Hex {
         let lin_b = ge_ad.mul(rho_e_det_ad).sum();
         let c_pad = Tensor::<B, 1>::from_inner(comp);
         lin_a.sub(lin_b).add(c_pad).reshape([1])
+    }
+}
+
+#[cfg(test)]
+mod adjoint_q1_hex_honest_fence_tests {
+    use super::{
+        adjoint_q1_hex_honest_posture_bundle, adjoint_q1_hex_posture_honest,
+        validate_adjoint_q1_hex_posture_honesty, ADJOINT_Q1_HEX_BAR_LIMIT_WIRED,
+        ADJOINT_Q1_HEX_HONEST_FENCE, ADJOINT_Q1_HEX_MASTER, ADJOINT_Q1_HEX_PHYSICS_GREEN,
+        ADJOINT_Q1_HEX_POSTURE_TAG, ADJOINT_Q1_HEX_PRODUCTION_WIRED,
+        W29_ADJOINT_Q1_HEX_DEEPEN_CELL,
+    };
+
+    #[test]
+    fn adjoint_q1_hex_honest_fence_consts_refuse_green_production_master() {
+        assert!(!ADJOINT_Q1_HEX_PHYSICS_GREEN);
+        assert!(!ADJOINT_Q1_HEX_PRODUCTION_WIRED);
+        assert!(!ADJOINT_Q1_HEX_MASTER);
+        assert!(!ADJOINT_Q1_HEX_BAR_LIMIT_WIRED);
+        assert!(ADJOINT_Q1_HEX_POSTURE_TAG.contains("honest"));
+        assert!(ADJOINT_Q1_HEX_HONEST_FENCE.contains("production_wired=false"));
+        assert!(ADJOINT_Q1_HEX_HONEST_FENCE.contains("physics_green=false"));
+        assert!(ADJOINT_Q1_HEX_HONEST_FENCE.contains("bar_limit_wired=false"));
+    }
+
+    #[test]
+    fn adjoint_q1_hex_posture_probe_honest() {
+        let probe = adjoint_q1_hex_honest_posture_bundle();
+        assert_eq!(probe.deepen_cell, W29_ADJOINT_Q1_HEX_DEEPEN_CELL);
+        assert!(adjoint_q1_hex_posture_honest(&probe));
+        validate_adjoint_q1_hex_posture_honesty().expect("validate_adjoint_q1_hex_posture_honesty");
     }
 }

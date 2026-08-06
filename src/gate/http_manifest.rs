@@ -455,4 +455,13 @@ mod tests {
         assert_eq!(r.admissibility_verdict(), AdmissibilityVerdict::Unknown);
         assert_eq!(r.catalog_id.as_deref(), Some(HTTP_SHIM_CATALOG_ID));
     }
+
+    #[test]
+    fn w8e14_gate_manifest_default_literals_match_prototype() {
+        let m = GateManifest::default();
+        assert_eq!(m.catalog_version, 1);
+        assert_eq!(m.strength_intrinsic_mpa, 80.0);
+        assert_eq!(m.air_void_fraction, 0.02);
+        assert_eq!(m.admissibility_rel_margin, 0.15);
+    }
 }

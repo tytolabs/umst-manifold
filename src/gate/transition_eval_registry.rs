@@ -106,3 +106,51 @@ impl GateEvaluatorRegistry {
 
 #[deprecated(note = "renamed to TransitionEvaluator")]
 pub type ThermodynamicMixEvaluator = TransitionEvaluator;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::gate::kleisli::KleisliUnitEvaluator;
+    use crate::gate::transition_proposal::{
+        ThermodynamicStateSnapshot, TransitionFilter,
+    };
+
+    #[test]
+    fn w8e14_registry_routes_thermodynamic_mix_catalog() {
+        let old = ThermodynamicStateSnapshot::new_idle();
+        let new = old;
+        let ctx = ThermodynamicTransitionContext {
+            old_state: &old,
+            new_state: &new,
+            dt_seconds: 1.0,
+        };
+        let mut reg = GateEvaluatorRegistry::new();
+        reg.register(TransitionEvaluator::new(TransitionFilter::default()));
+        let verdict = reg
+            .evaluate_mut(THERMODYNAMIC_MIX_CATALOG_ID, ctx)
+            .expect("registered evaluator");
+        assert_eq!(verdict, AdmissibilityVerdict::Accepted);
+    }
+
+    #[test]
+    fn w8e14_registry_unknown_catalog_returns_none() {
+        let old = ThermodynamicStateSnapshot::new_idle();
+        let ctx = ThermodynamicTransitionContext {
+            old_state: &old,
+            new_state: &old,
+            dt_seconds: 1.0,
+        };
+        let mut reg = GateEvaluatorRegistry::new();
+        assert!(reg.evaluate_mut("unknown-catalog", ctx).is_none());
+    }
+
+    #[test]
+    fn w8e14_registry_kleisli_unit_ping_without_context() {
+        let mut reg = GateEvaluatorRegistry::new();
+        reg.register_kleisli(KleisliUnitEvaluator);
+        let verdict = reg
+            .evaluate_kleisli_unit(KleisliUnitEvaluator::CATALOG_ID)
+            .expect("kleisli unit registered");
+        assert_eq!(verdict, AdmissibilityVerdict::Accepted);
+    }
+}

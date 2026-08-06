@@ -6,8 +6,86 @@
 //! Shared by THMC JFNK (`thmc_jfnk` shim under `solver-experimental`) and acoustics Newmark linear
 //! solves. Prefer
 //! [`gmres_f32_try`] with a fallible matvec in production paths.
+//!
+//! # Honest boundary (W29-076)
+//!
+//! Host GMRES contracts (`gmres_f32` / [`gmres_f32_try`]) are exercised by
+//! `cargo test -p umst-manifold krylov_host`. Solves packed `f32` systems for research / shim
+//! callers. Not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER`, not OP-5.
 
 use crate::physics::PhysicsError;
+
+/// W29 deepen cell — host Krylov GMRES honest fence bundle.
+pub const W29_KRYLOV_HOST_DEEPEN_CELL: &str = "W29-076-KRYLOV_HOST";
+
+/// Honest posture tag — host GMRES landed; fleet production wiring refused.
+pub const KRYLOV_HOST_POSTURE_TAG: &str = "honest-host-gmres-f32-research-lane";
+
+/// Honest physics posture — unit contracts pass; does not certify fleet physics GREEN.
+pub const KRYLOV_HOST_PHYSICS_GREEN: bool = false;
+
+/// Production wiring — not claimed by host GMRES alone.
+pub const KRYLOV_HOST_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by this module.
+pub const KRYLOV_HOST_MASTER: bool = false;
+
+/// OP-5 ceremony pin — not claimed by this module.
+pub const KRYLOV_HOST_OP5: bool = false;
+
+/// Whether host GMRES (`gmres_f32` / [`gmres_f32_try`]) contracts are landed in this module.
+pub const KRYLOV_HOST_GMRES_LANDED: bool = true;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const KRYLOV_HOST_HONEST_FENCE: &str =
+    "host_gmres_f32_landed=true|gmres_f32_try_wired=true|matvec_error_propagates=true|production_wired=false|physics_green=false|master=false|op5=false";
+
+/// Typed probe for host Krylov GMRES posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct KrylovHostPostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub op5: bool,
+    pub gmres_landed: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for host Krylov GMRES.
+#[must_use]
+pub fn krylov_host_honest_posture_bundle() -> KrylovHostPostureProbe {
+    KrylovHostPostureProbe {
+        physics_green: KRYLOV_HOST_PHYSICS_GREEN,
+        production_wired: KRYLOV_HOST_PRODUCTION_WIRED,
+        master: KRYLOV_HOST_MASTER,
+        op5: KRYLOV_HOST_OP5,
+        gmres_landed: KRYLOV_HOST_GMRES_LANDED,
+        honest_fence: KRYLOV_HOST_HONEST_FENCE,
+        posture_tag: KRYLOV_HOST_POSTURE_TAG,
+        deepen_cell: W29_KRYLOV_HOST_DEEPEN_CELL,
+    }
+}
+
+/// Host GMRES landed with production / master / OP-5 composition honestly open.
+#[must_use]
+pub fn krylov_host_posture_honest(probe: &KrylovHostPostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && !probe.op5
+        && probe.gmres_landed
+        && probe.deepen_cell == W29_KRYLOV_HOST_DEEPEN_CELL
+        && probe.posture_tag == KRYLOV_HOST_POSTURE_TAG
+        && probe.honest_fence.contains("host_gmres_f32_landed=true")
+        && probe.honest_fence.contains("gmres_f32_try_wired=true")
+        && probe.honest_fence.contains("matvec_error_propagates=true")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+        && probe.honest_fence.contains("master=false")
+        && probe.honest_fence.contains("op5=false")
+}
 
 const GMRES_CTX: &str = "gmres_f32_try";
 
@@ -234,8 +312,33 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{gmres_f32, gmres_f32_try};
+    use super::{
+        gmres_f32, gmres_f32_try, krylov_host_honest_posture_bundle, krylov_host_posture_honest,
+        KRYLOV_HOST_GMRES_LANDED, KRYLOV_HOST_HONEST_FENCE, KRYLOV_HOST_MASTER,
+        KRYLOV_HOST_OP5, KRYLOV_HOST_PHYSICS_GREEN, KRYLOV_HOST_PRODUCTION_WIRED,
+        W29_KRYLOV_HOST_DEEPEN_CELL,
+    };
     use crate::physics::PhysicsError;
+
+    #[test]
+    fn krylov_host_honest_posture_refuses_green_production_master_op5() {
+        let probe = krylov_host_honest_posture_bundle();
+        assert!(krylov_host_posture_honest(&probe));
+        assert!(!probe.physics_green);
+        assert!(!probe.production_wired);
+        assert!(!probe.master);
+        assert!(!probe.op5);
+        assert_eq!(probe.deepen_cell, W29_KRYLOV_HOST_DEEPEN_CELL);
+        assert!(KRYLOV_HOST_GMRES_LANDED);
+        assert!(!KRYLOV_HOST_PHYSICS_GREEN);
+        assert!(!KRYLOV_HOST_PRODUCTION_WIRED);
+        assert!(!KRYLOV_HOST_MASTER);
+        assert!(!KRYLOV_HOST_OP5);
+        assert!(KRYLOV_HOST_HONEST_FENCE.contains("production_wired=false"));
+        assert!(KRYLOV_HOST_HONEST_FENCE.contains("physics_green=false"));
+        assert!(KRYLOV_HOST_HONEST_FENCE.contains("master=false"));
+        assert!(KRYLOV_HOST_HONEST_FENCE.contains("op5=false"));
+    }
 
     #[test]
     fn gmres_identity() {
@@ -253,6 +356,67 @@ mod tests {
                 b[i]
             );
         }
+    }
+
+    #[test]
+    fn gmres_zero_rhs_returns_zero() {
+        let n = 3usize;
+        let b = vec![0.0_f32; n];
+        let matvec = |v: &[f32]| v.to_vec();
+        let x = gmres_f32(matvec, &b, n, n, 1e-6_f32)
+            .expect("zero RHS must short-circuit to zero without matvec");
+        assert_eq!(x, vec![0.0_f32; n]);
+    }
+
+    #[test]
+    fn gmres_rejects_n_zero_and_buffer_mismatch() {
+        let err_n = gmres_f32(|v: &[f32]| v.to_vec(), &[], 0, 1, 1e-5_f32)
+            .expect_err("n=0 must InvariantViolation");
+        match err_n {
+            PhysicsError::InvariantViolation { context } => {
+                assert_eq!(context, "gmres_f32_try");
+            }
+            other => panic!("expected InvariantViolation, got {other:?}"),
+        }
+
+        let err_len = gmres_f32(|v: &[f32]| v.to_vec(), &[1.0_f32, 2.0_f32], 3, 3, 1e-5_f32)
+            .expect_err("b.len()!=n must BufferLength");
+        match err_len {
+            PhysicsError::BufferLength {
+                context,
+                expected,
+                got,
+            } => {
+                assert_eq!(context, "gmres_f32_try");
+                assert_eq!(expected, 3);
+                assert_eq!(got, 2);
+            }
+            other => panic!("expected BufferLength, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn gmres_rejects_max_iter_zero_and_nonpositive_tol() {
+        let n = 2usize;
+        let b = vec![1.0_f32, 0.0_f32];
+        let err_iter = gmres_f32(|v: &[f32]| v.to_vec(), &b, n, 0, 1e-5_f32)
+            .expect_err("max_iter=0 must InvariantViolation");
+        assert!(
+            matches!(
+                err_iter,
+                PhysicsError::InvariantViolation { context } if context.contains("max_iter=0")
+            ),
+            "{err_iter:?}"
+        );
+        let err_tol = gmres_f32(|v: &[f32]| v.to_vec(), &b, n, n, 0.0_f32)
+            .expect_err("rel_tol<=0 must InvariantViolation");
+        assert!(
+            matches!(
+                err_tol,
+                PhysicsError::InvariantViolation { context } if context.contains("rel_tol")
+            ),
+            "{err_tol:?}"
+        );
     }
 
     #[test]
@@ -309,5 +473,26 @@ mod tests {
         );
         assert!(err.to_string().contains("injected"), "{err}");
         assert_eq!(calls, 1, "should not retry after matvec Err");
+    }
+
+    #[test]
+    fn gmres_try_rejects_matvec_wrong_length() {
+        let n = 2usize;
+        let b = vec![1.0_f32, 0.0_f32];
+        let matvec = |_v: &[f32]| -> Result<Vec<f32>, PhysicsError> { Ok(vec![1.0_f32]) };
+        let err = gmres_f32_try(matvec, &b, n, n, 1e-5_f32)
+            .expect_err("matvec wrong length must BufferLength");
+        match err {
+            PhysicsError::BufferLength {
+                context,
+                expected,
+                got,
+            } => {
+                assert_eq!(context, "gmres_f32_try");
+                assert_eq!(expected, 2);
+                assert_eq!(got, 1);
+            }
+            other => panic!("expected BufferLength, got {other:?}"),
+        }
     }
 }

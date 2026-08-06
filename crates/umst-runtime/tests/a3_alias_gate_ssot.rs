@@ -9,10 +9,10 @@ use umst_runtime::gate::{
 
 #[test]
 fn runtime_alias_surfaces_gate_parity_anchor() {
-    assert_eq!(GATE_PARITY_V0_SHA256_PREFIX, "149081fa81a6525f");
+    assert_eq!(GATE_PARITY_V0_SHA256_PREFIX, "d5608148e29eeabd");
     assert_eq!(
         GATE_PARITY_V0_SHA256,
-        "149081fa81a6525fb66ff01924c6656f30e2b67846d9945a25427c7be38d20f3"
+        "d5608148e29eeabd83935988699d08ce1233c3e87f2cd217d658e0c71c7a841e"
     );
 }
 

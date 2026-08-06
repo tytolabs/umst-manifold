@@ -20,6 +20,11 @@ pub mod ros;
 
 pub mod runtime;
 pub mod solve_report;
+pub mod cargo_test_gap_census;
+pub mod nested_drift_census;
+pub mod night_residual_deepen;
+pub mod swarm_manifold_deepen;
+pub mod web_constitutive;
 pub mod w9_migration;
 
 #[allow(deprecated)]

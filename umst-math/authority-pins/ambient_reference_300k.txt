@@ -1,0 +1,7 @@
+# Operator ambient reference temperature anchor (cockpit fallback)
+# K-2 authority snapshot for host_temperature_fallback_k / T_ROOM
+# Aligns with umst-math::landauer_registry::HOST_TEMPERATURE_REFERENCE_K
+symbol: T_ref
+value_SI: 300.0
+unit: K
+note: operator-assumed ambient until junction-temperature telemetry is wired

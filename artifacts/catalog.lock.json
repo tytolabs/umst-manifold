@@ -37,5 +37,18 @@
     "catalog_digest_hex": "24a773ec27a0536ae4441f7dbbc6246fcf150f85ffd0b2c86ddd75b954f96eed",
     "notes": "T5 preview merge \u2014 tertiary Track F fiber; not merged into composed primary catalog until coordinator approves."
   },
-  "notes": "W10 pin bump: formal 0aec253 (K-gen) + double-slit d5ed5dd (bridge removal); merged 129 modules / 352 edges. UCRS fiber pin unchanged (preview)."
+  "semantic_witnesses": {
+    "policy_version": "semantic_cold_hot_witness_v1",
+    "cold_proofs": [
+      {
+        "witness_id": "umst.formal.semantic_second_law",
+        "lean_module": "SemanticSecondLaw",
+        "catalog_id": "umst.gate.semantic_cbf",
+        "proof_kind": "cold",
+        "formal_anchor": "UMST.SemanticSecondLaw.semanticSecondLaw",
+        "digest_hex": "b764131d11d00087624ba0249aeb1e4bcf98f8315cdd8c472705200010673e52"
+      }
+    ]
+  },
+  "notes": "W10 pin bump: formal 0aec253 (K-gen) + double-slit d5ed5dd (bridge removal); merged 129 modules / 352 edges. UCRS fiber pin unchanged (preview). HCOM-004 semantic cold proofs section."
 }

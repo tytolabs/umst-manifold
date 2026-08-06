@@ -30,6 +30,130 @@
 //!
 //! Enabled with **`topology-density-evolution`**, **`mechanics-voigt-cauchy`**, or bundles that
 //! include either (e.g. **`solver-stable`** / **`solver-experimental`**).
+//!
+//! # Honest boundary (W29-053)
+//!
+//! Q1-hex PCG equilibrium + bilinear top-pressure lumping are **landed**. Voigt Cauchy recovery
+//! remains a **zero placeholder**; thin-plate Kirchhoff centre-deflection gate stays open
+//! (shear locking). Batch `>1` is refused. Not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER`.
+
+/// W29 deepen cell — extruded-plate Q1-hex honest fence bundle.
+pub const W29_EXTRUDED_PLATE_DEEPEN_CELL: &str = "W29-053-EXTRUDED_PLATE";
+
+/// Honest posture tag — Q1-hex extruded plate landed; fleet TO / Kirchhoff GREEN refused.
+pub const EXTRUDED_PLATE_POSTURE_TAG: &str = "honest-q1-hex-extruded-plate-research-lane";
+
+/// Honest physics posture — unit/linearity contracts pass; does not certify Kirchhoff R2.1 or fleet TO.
+pub const EXTRUDED_PLATE_PHYSICS_GREEN: bool = false;
+
+/// Production topology-optimisation wiring — not claimed by extruded-plate solve alone.
+pub const EXTRUDED_PLATE_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by this module.
+pub const EXTRUDED_PLATE_MASTER: bool = false;
+
+/// Whether matrix-free Q1-hex PCG equilibrium is landed on this surface.
+pub const EXTRUDED_PLATE_Q1_HEX_EQUILIBRIUM_LANDED: bool = true;
+
+/// Whether bilinear-consistent top-face pressure lumping is landed.
+pub const EXTRUDED_PLATE_TOP_PRESSURE_LUMPING_LANDED: bool = true;
+
+/// Whether Voigt `[B,N,6]` Cauchy recovery is wired (honestly open — zeros placeholder).
+pub const EXTRUDED_PLATE_VOIGT_CAUCHY_RECOVERY_WIRED: bool = false;
+
+/// Whether thin-plate Kirchhoff centre-deflection gate is closed (honestly open — shear locking).
+pub const EXTRUDED_PLATE_KIRCHHOFF_THIN_PLATE_GATE_WIRED: bool = false;
+
+/// Whether batch>1 equilibrium is implemented (honestly open).
+pub const EXTRUDED_PLATE_BATCH_GT1_WIRED: bool = false;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const EXTRUDED_PLATE_HONEST_FENCE: &str = "q1_hex_equilibrium_landed=true top_pressure_lumping_landed=true voigt_cauchy_recovery_wired=false kirchhoff_thin_plate_gate_wired=false batch_gt1_wired=false production_wired=false master_composition_wired=false physics_green=false";
+
+const _: () = assert!(!EXTRUDED_PLATE_PHYSICS_GREEN);
+const _: () = assert!(!EXTRUDED_PLATE_PRODUCTION_WIRED);
+const _: () = assert!(!EXTRUDED_PLATE_MASTER);
+const _: () = assert!(!EXTRUDED_PLATE_VOIGT_CAUCHY_RECOVERY_WIRED);
+const _: () = assert!(!EXTRUDED_PLATE_KIRCHHOFF_THIN_PLATE_GATE_WIRED);
+const _: () = assert!(!EXTRUDED_PLATE_BATCH_GT1_WIRED);
+
+/// Typed probe for extruded-plate posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ExtrudedPlatePostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub q1_hex_equilibrium_landed: bool,
+    pub top_pressure_lumping_landed: bool,
+    pub voigt_cauchy_recovery_wired: bool,
+    pub kirchhoff_thin_plate_gate_wired: bool,
+    pub batch_gt1_wired: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for extruded-plate mechanics.
+#[must_use]
+pub fn extruded_plate_honest_posture_bundle() -> ExtrudedPlatePostureProbe {
+    ExtrudedPlatePostureProbe {
+        physics_green: EXTRUDED_PLATE_PHYSICS_GREEN,
+        production_wired: EXTRUDED_PLATE_PRODUCTION_WIRED,
+        master: EXTRUDED_PLATE_MASTER,
+        q1_hex_equilibrium_landed: EXTRUDED_PLATE_Q1_HEX_EQUILIBRIUM_LANDED,
+        top_pressure_lumping_landed: EXTRUDED_PLATE_TOP_PRESSURE_LUMPING_LANDED,
+        voigt_cauchy_recovery_wired: EXTRUDED_PLATE_VOIGT_CAUCHY_RECOVERY_WIRED,
+        kirchhoff_thin_plate_gate_wired: EXTRUDED_PLATE_KIRCHHOFF_THIN_PLATE_GATE_WIRED,
+        batch_gt1_wired: EXTRUDED_PLATE_BATCH_GT1_WIRED,
+        honest_fence: EXTRUDED_PLATE_HONEST_FENCE,
+        posture_tag: EXTRUDED_PLATE_POSTURE_TAG,
+        deepen_cell: W29_EXTRUDED_PLATE_DEEPEN_CELL,
+    }
+}
+
+/// Q1-hex extruded plate SSOT landed with production/master/GREEN composition honestly open.
+#[must_use]
+pub fn extruded_plate_posture_honest(probe: &ExtrudedPlatePostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && probe.q1_hex_equilibrium_landed
+        && probe.top_pressure_lumping_landed
+        && !probe.voigt_cauchy_recovery_wired
+        && !probe.kirchhoff_thin_plate_gate_wired
+        && !probe.batch_gt1_wired
+        && probe.honest_fence.contains("q1_hex_equilibrium_landed=true")
+        && probe.honest_fence.contains("voigt_cauchy_recovery_wired=false")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+}
+
+/// Validate extruded-plate posture honesty — fail closed on fake production/master/GREEN claims.
+pub fn validate_extruded_plate_posture_honesty() -> Result<(), &'static str> {
+    let probe = extruded_plate_honest_posture_bundle();
+    if probe.physics_green {
+        return Err("EXTRUDED_PLATE_PHYSICS_GREEN must stay false — linearity ≠ Kirchhoff/fleet TO");
+    }
+    if probe.production_wired {
+        return Err("EXTRUDED_PLATE_PRODUCTION_WIRED must stay false until embodied TO loop closes");
+    }
+    if probe.master {
+        return Err("EXTRUDED_PLATE_MASTER must stay false until master composition pin lands");
+    }
+    if probe.voigt_cauchy_recovery_wired {
+        return Err("EXTRUDED_PLATE_VOIGT_CAUCHY_RECOVERY_WIRED must stay false while return is zeros");
+    }
+    if probe.kirchhoff_thin_plate_gate_wired {
+        return Err("EXTRUDED_PLATE_KIRCHHOFF_THIN_PLATE_GATE_WIRED must stay false under shear locking");
+    }
+    if probe.batch_gt1_wired {
+        return Err("EXTRUDED_PLATE_BATCH_GT1_WIRED must stay false until batch>1 is implemented");
+    }
+    if !extruded_plate_posture_honest(&probe) {
+        return Err("extruded_plate_posture_honest failed");
+    }
+    Ok(())
+}
 
 use burn::tensor::{backend::Backend, Data, Int, Shape, Tensor};
 
@@ -116,6 +240,20 @@ impl ExtrudedPlateMechanics {
                 detail: "rho channel must be 1",
             });
         }
+        let [b_f, n_f, c_f] = body_force.dims();
+        if b_f != 1 || n_f != n || c_f != 3 {
+            return Err(PhysicsError::ShapeMismatch {
+                context: "ExtrudedPlateMechanics::solve_equilibrium",
+                detail: "body_force must be [1, N, 3] matching extruded grid",
+            });
+        }
+        let [b_m, n_m, c_m] = boundary_mask.dims();
+        if b_m != 1 || n_m != n || c_m != 3 {
+            return Err(PhysicsError::ShapeMismatch {
+                context: "ExtrudedPlateMechanics::solve_equilibrium",
+                detail: "boundary_mask must be [1, N, 3] matching extruded grid",
+            });
+        }
         let device = rho_projected.device();
 
         let nx1 = self.nx + 1;
@@ -152,8 +290,6 @@ impl ExtrudedPlateMechanics {
 
         let f_flat = body_force.clone().into_data().value;
         let m_flat = boundary_mask.clone().into_data().value;
-        debug_assert_eq!(f_flat.len(), n * 3);
-        debug_assert_eq!(m_flat.len(), n * 3);
 
         let mut u = vec![0.0_f32; n * 3];
         let mut diag = vec![0.0_f32; n * 3];
@@ -199,6 +335,12 @@ impl ExtrudedPlateMechanics {
         Ok((u_tensor, voigt))
     }
 
+    /// Analytic total transverse load for uniform pressure `q`: `-q L_x L_y`.
+    #[must_use]
+    pub fn top_uniform_pressure_total_fz(&self, q: f32) -> f32 {
+        -q * (self.nx as f32) * self.dx * (self.ny as f32) * self.dy
+    }
+
     /// Nodal body-force vector `[N,3]` (flat `3N`) for **uniform pressure** `q` on the top face
     /// `z = nz dz`: bilinear-consistent lumping on the `(nx+1)(ny+1)` top nodes so
     /// `sum_i f_z(i) = -q L_x L_y` with `L_x = nx dx`, `L_y = ny dy`.
@@ -227,6 +369,12 @@ impl ExtrudedPlateMechanics {
             }
         }
         bf
+    }
+
+    /// Sum of nodal `f_z` entries in a flat `[N,3]` body-force vector.
+    #[must_use]
+    pub fn sum_fz_flat(body_force_flat: &[f32]) -> f32 {
+        body_force_flat.chunks_exact(3).map(|uvw| uvw[2]).sum()
     }
 
     fn node_coords_n3<B: Backend<FloatElem = f32>>(&self, device: &B::Device) -> Tensor<B, 2> {
@@ -291,5 +439,80 @@ impl ExtrudedPlateMechanics {
         Tensor::<B, 1>::from_data(Data::new(flat_f, Shape::new([ne * 2])), device)
             .reshape([2, ne])
             .int()
+    }
+}
+
+#[cfg(test)]
+mod extruded_plate_honest_fence_tests {
+    use super::{
+        extruded_plate_honest_posture_bundle, extruded_plate_posture_honest,
+        validate_extruded_plate_posture_honesty, ExtrudedPlateMechanics,
+        EXTRUDED_PLATE_BATCH_GT1_WIRED, EXTRUDED_PLATE_HONEST_FENCE,
+        EXTRUDED_PLATE_KIRCHHOFF_THIN_PLATE_GATE_WIRED, EXTRUDED_PLATE_MASTER,
+        EXTRUDED_PLATE_PHYSICS_GREEN, EXTRUDED_PLATE_POSTURE_TAG,
+        EXTRUDED_PLATE_PRODUCTION_WIRED, EXTRUDED_PLATE_VOIGT_CAUCHY_RECOVERY_WIRED,
+        W29_EXTRUDED_PLATE_DEEPEN_CELL,
+    };
+
+    #[test]
+    fn extruded_plate_honest_fence_consts_refuse_green_production_master() {
+        assert!(!EXTRUDED_PLATE_PHYSICS_GREEN);
+        assert!(!EXTRUDED_PLATE_PRODUCTION_WIRED);
+        assert!(!EXTRUDED_PLATE_MASTER);
+        assert!(!EXTRUDED_PLATE_VOIGT_CAUCHY_RECOVERY_WIRED);
+        assert!(!EXTRUDED_PLATE_KIRCHHOFF_THIN_PLATE_GATE_WIRED);
+        assert!(!EXTRUDED_PLATE_BATCH_GT1_WIRED);
+        assert!(EXTRUDED_PLATE_POSTURE_TAG.contains("honest"));
+        assert!(EXTRUDED_PLATE_HONEST_FENCE.contains("production_wired=false"));
+        assert!(EXTRUDED_PLATE_HONEST_FENCE.contains("physics_green=false"));
+        assert!(EXTRUDED_PLATE_HONEST_FENCE.contains("voigt_cauchy_recovery_wired=false"));
+    }
+
+    #[test]
+    fn extruded_plate_posture_probe_honest() {
+        let probe = extruded_plate_honest_posture_bundle();
+        assert_eq!(probe.deepen_cell, W29_EXTRUDED_PLATE_DEEPEN_CELL);
+        assert!(extruded_plate_posture_honest(&probe));
+        validate_extruded_plate_posture_honesty().expect("validate_extruded_plate_posture_honesty");
+    }
+
+    #[test]
+    fn extruded_plate_top_pressure_lumping_conserves_total_fz() {
+        let plate = ExtrudedPlateMechanics {
+            nx: 4,
+            ny: 3,
+            nz: 2,
+            dx: 0.25,
+            dy: 1.0 / 3.0,
+            dz: 0.05,
+        };
+        let q = 1200.0_f32;
+        let bf = plate.body_force_top_uniform_pressure(q);
+        let sum_fz = ExtrudedPlateMechanics::sum_fz_flat(&bf);
+        let expect = plate.top_uniform_pressure_total_fz(q);
+        assert!(
+            (sum_fz - expect).abs() < 1e-4 * expect.abs().max(1.0),
+            "sum_fz={sum_fz} expect={expect}"
+        );
+        // Naive per-node -q dx dy over-counts by (nx+1)(ny+1)/(nx ny).
+        let naive = -q * plate.dx * plate.dy * ((plate.nx + 1) * (plate.ny + 1)) as f32;
+        assert!(
+            (naive / expect).abs() > 1.2,
+            "naive over-count ratio should exceed 1.2, got {}",
+            (naive / expect).abs()
+        );
+    }
+
+    #[test]
+    fn extruded_plate_n_nodes_matches_brick_lattice() {
+        let plate = ExtrudedPlateMechanics {
+            nx: 5,
+            ny: 4,
+            nz: 2,
+            dx: 0.2,
+            dy: 0.25,
+            dz: 0.05,
+        };
+        assert_eq!(plate.n_nodes(), 6 * 5 * 3);
     }
 }

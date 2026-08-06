@@ -109,6 +109,150 @@
 //! **Scope:** Wiring **2D channel MAC + consistent divergence BCs** is **not** a small patch on this scaffold
 //! (well beyond a sub-hundred-line swap). Treat the bullets above as **documentation of insertion points** until
 //! a dedicated pressure solve + boundary module ships — see **OPEN ROADMAP ITEM — Rheology** in `docs/Solver-Status.md`.
+//!
+//! # Honest boundary (W29-079)
+//!
+//! Graph Chorin + Jacobi-PCG + weak primal-divergence RHS + Roussel λ are the **measured** research lane under
+//! `rheology-bingham`. M7 MAC-upstream / open-x end-cap helpers are **building blocks**, not wired into
+//! [`BinghamFlowSolver::step`]. Unit contracts: `cargo test -p umst-manifold rheology_flow`.
+//! Not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER` / OP-5.
+
+/// W29 deepen cell — rheology flow honest fence bundle.
+pub const W29_RHEOLOGY_FLOW_DEEPEN_CELL: &str = "W29-079-RHEOLOGY_FLOW";
+
+/// Honest posture tag — graph Chorin Bingham research lane; fleet production wiring refused.
+pub const RHEOLOGY_FLOW_POSTURE_TAG: &str = "honest-rheology-chorin-bingham-research-lane";
+
+/// Honest physics posture — unit contracts pass; does not certify fleet physics GREEN.
+pub const RHEOLOGY_FLOW_PHYSICS_GREEN: bool = false;
+
+/// Production wiring — not claimed by graph Chorin / Bingham research helpers alone.
+pub const RHEOLOGY_FLOW_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by this module.
+pub const RHEOLOGY_FLOW_MASTER: bool = false;
+
+/// OP-5 composition pin — not claimed by this module.
+pub const RHEOLOGY_FLOW_OP5_WIRED: bool = false;
+
+/// Graph Chorin Jacobi-PCG pressure increment + weak primal-divergence RHS landed in this module.
+pub const RHEOLOGY_FLOW_CHORIN_JACOBI_PCG_LANDED: bool = true;
+
+/// Roussel λ thixotropy ODE + τ₀ edge scaling landed (explicit; frozen defaults keep legacy path).
+pub const RHEOLOGY_FLOW_ROUSSEL_THIX_LANDED: bool = true;
+
+/// M7 MAC-upstream / open-x end-cap helpers exist as opt-in building blocks (not step-wired).
+pub const RHEOLOGY_FLOW_M7_BUILDING_BLOCKS_LANDED: bool = true;
+
+/// M7 helpers are **not** wired into [`BinghamFlowSolver::step`] / `step_experimental`.
+pub const RHEOLOGY_FLOW_M7_WIRED_INTO_STEP: bool = false;
+
+/// Full MAC staggered pressure + developed 2D Poiseuille CI certification — still open.
+pub const RHEOLOGY_FLOW_MAC_STAGGERED_PRESSURE: bool = false;
+
+/// Plane Bingham / Newtonian Poiseuille CI-certified on the developed channel — still open.
+pub const RHEOLOGY_FLOW_PLANE_POISEUILLE_CI_CERTIFIED: bool = false;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const RHEOLOGY_FLOW_HONEST_FENCE: &str =
+    "chorin_jacobi_pcg_weak_div_landed=true roussel_thix_landed=true m7_building_blocks_landed=true m7_wired_into_step=false mac_staggered_pressure=false plane_poiseuille_ci_certified=false production_wired=false master_composition_wired=false op5_wired=false physics_green=false";
+
+const _: () = assert!(!RHEOLOGY_FLOW_PRODUCTION_WIRED);
+const _: () = assert!(!RHEOLOGY_FLOW_PHYSICS_GREEN);
+const _: () = assert!(!RHEOLOGY_FLOW_MASTER);
+const _: () = assert!(!RHEOLOGY_FLOW_OP5_WIRED);
+const _: () = assert!(!RHEOLOGY_FLOW_M7_WIRED_INTO_STEP);
+const _: () = assert!(!RHEOLOGY_FLOW_MAC_STAGGERED_PRESSURE);
+const _: () = assert!(!RHEOLOGY_FLOW_PLANE_POISEUILLE_CI_CERTIFIED);
+const _: () = assert!(RHEOLOGY_FLOW_CHORIN_JACOBI_PCG_LANDED);
+const _: () = assert!(RHEOLOGY_FLOW_ROUSSEL_THIX_LANDED);
+const _: () = assert!(RHEOLOGY_FLOW_M7_BUILDING_BLOCKS_LANDED);
+
+/// Typed probe for rheology-flow posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RheologyFlowPostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub op5_wired: bool,
+    pub chorin_jacobi_pcg_landed: bool,
+    pub roussel_thix_landed: bool,
+    pub m7_building_blocks_landed: bool,
+    pub m7_wired_into_step: bool,
+    pub mac_staggered_pressure: bool,
+    pub plane_poiseuille_ci_certified: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for graph Chorin Bingham rheology flow.
+#[must_use]
+pub fn rheology_flow_honest_posture_bundle() -> RheologyFlowPostureProbe {
+    RheologyFlowPostureProbe {
+        physics_green: RHEOLOGY_FLOW_PHYSICS_GREEN,
+        production_wired: RHEOLOGY_FLOW_PRODUCTION_WIRED,
+        master: RHEOLOGY_FLOW_MASTER,
+        op5_wired: RHEOLOGY_FLOW_OP5_WIRED,
+        chorin_jacobi_pcg_landed: RHEOLOGY_FLOW_CHORIN_JACOBI_PCG_LANDED,
+        roussel_thix_landed: RHEOLOGY_FLOW_ROUSSEL_THIX_LANDED,
+        m7_building_blocks_landed: RHEOLOGY_FLOW_M7_BUILDING_BLOCKS_LANDED,
+        m7_wired_into_step: RHEOLOGY_FLOW_M7_WIRED_INTO_STEP,
+        mac_staggered_pressure: RHEOLOGY_FLOW_MAC_STAGGERED_PRESSURE,
+        plane_poiseuille_ci_certified: RHEOLOGY_FLOW_PLANE_POISEUILLE_CI_CERTIFIED,
+        honest_fence: RHEOLOGY_FLOW_HONEST_FENCE,
+        posture_tag: RHEOLOGY_FLOW_POSTURE_TAG,
+        deepen_cell: W29_RHEOLOGY_FLOW_DEEPEN_CELL,
+    }
+}
+
+/// Research lane landed with production/master/GREEN/OP-5/MAC-CI composition honestly open.
+#[must_use]
+pub fn rheology_flow_posture_honest(probe: &RheologyFlowPostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && !probe.op5_wired
+        && probe.chorin_jacobi_pcg_landed
+        && probe.roussel_thix_landed
+        && probe.m7_building_blocks_landed
+        && !probe.m7_wired_into_step
+        && !probe.mac_staggered_pressure
+        && !probe.plane_poiseuille_ci_certified
+        && probe.honest_fence.contains("chorin_jacobi_pcg_weak_div_landed=true")
+        && probe.honest_fence.contains("m7_wired_into_step=false")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+}
+
+/// Refuse GREEN / PRODUCTION_WIRED / MASTER / OP-5 claims on the rheology-flow surface.
+#[must_use]
+pub fn rheology_flow_refuse_overclaim(
+    probe: &RheologyFlowPostureProbe,
+) -> Result<(), &'static str> {
+    if probe.physics_green {
+        return Err("RHEOLOGY_FLOW_PHYSICS_GREEN must stay false until fleet physics closes");
+    }
+    if probe.production_wired {
+        return Err("RHEOLOGY_FLOW_PRODUCTION_WIRED must stay false until embodied loop closes");
+    }
+    if probe.master {
+        return Err("RHEOLOGY_FLOW_MASTER must stay false — not claimed by graph Chorin alone");
+    }
+    if probe.op5_wired {
+        return Err("RHEOLOGY_FLOW_OP5_WIRED must stay false — not claimed by this module");
+    }
+    if probe.m7_wired_into_step {
+        return Err("RHEOLOGY_FLOW_M7_WIRED_INTO_STEP must stay false until step wiring lands");
+    }
+    if probe.mac_staggered_pressure || probe.plane_poiseuille_ci_certified {
+        return Err("MAC / Poiseuille CI flags must stay false until that lane ships");
+    }
+    if !rheology_flow_posture_honest(probe) {
+        return Err("rheology_flow posture fence inconsistent");
+    }
+    Ok(())
+}
 
 #[cfg(feature = "rheology-bingham")]
 use crate::physics::dec_primal::{
@@ -575,6 +719,16 @@ fn bingham_step_validate_solver(solver: &BinghamFlowSolver) -> Result<(), Physic
             detail: "BinghamFlowSolver: edge_length_scale must be positive and finite".to_string(),
         });
     }
+    if !solver.t_rest_thix.is_finite() || solver.t_rest_thix <= 0.0 {
+        return Err(PhysicsError::Domain {
+            detail: "BinghamFlowSolver: t_rest_thix must be positive and finite".to_string(),
+        });
+    }
+    if !solver.gamma_crit_thix.is_finite() || solver.gamma_crit_thix <= 0.0 {
+        return Err(PhysicsError::Domain {
+            detail: "BinghamFlowSolver: gamma_crit_thix must be positive and finite".to_string(),
+        });
+    }
     Ok(())
 }
 
@@ -805,6 +959,64 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
     Ok((velocity_new, pressure_new, lambda_new))
 }
 
+#[cfg(test)]
+mod honest_fence_tests {
+    use super::{
+        rheology_flow_honest_posture_bundle, rheology_flow_posture_honest,
+        rheology_flow_refuse_overclaim, RheologyFlowPostureProbe, BinghamFlowSolver,
+        RHEOLOGY_FLOW_CHORIN_JACOBI_PCG_LANDED, RHEOLOGY_FLOW_HONEST_FENCE,
+        RHEOLOGY_FLOW_M7_WIRED_INTO_STEP, RHEOLOGY_FLOW_MASTER, RHEOLOGY_FLOW_OP5_WIRED,
+        RHEOLOGY_FLOW_PHYSICS_GREEN, RHEOLOGY_FLOW_PLANE_POISEUILLE_CI_CERTIFIED,
+        RHEOLOGY_FLOW_PRODUCTION_WIRED, W29_RHEOLOGY_FLOW_DEEPEN_CELL,
+    };
+
+    #[test]
+    fn rheology_flow_honest_posture_refuses_green_production_master_op5() {
+        let probe = rheology_flow_honest_posture_bundle();
+        assert!(rheology_flow_posture_honest(&probe));
+        assert!(rheology_flow_refuse_overclaim(&probe).is_ok());
+        assert!(!probe.physics_green);
+        assert!(!probe.production_wired);
+        assert!(!probe.master);
+        assert!(!probe.op5_wired);
+        assert!(!probe.m7_wired_into_step);
+        assert!(!probe.mac_staggered_pressure);
+        assert!(!probe.plane_poiseuille_ci_certified);
+        assert!(probe.chorin_jacobi_pcg_landed);
+        assert!(probe.roussel_thix_landed);
+        assert!(probe.m7_building_blocks_landed);
+        assert_eq!(probe.deepen_cell, W29_RHEOLOGY_FLOW_DEEPEN_CELL);
+        assert!(RHEOLOGY_FLOW_HONEST_FENCE.contains("physics_green=false"));
+        assert!(RHEOLOGY_FLOW_CHORIN_JACOBI_PCG_LANDED);
+        assert!(!RHEOLOGY_FLOW_M7_WIRED_INTO_STEP);
+        assert!(!RHEOLOGY_FLOW_PHYSICS_GREEN);
+        assert!(!RHEOLOGY_FLOW_PRODUCTION_WIRED);
+        assert!(!RHEOLOGY_FLOW_MASTER);
+        assert!(!RHEOLOGY_FLOW_OP5_WIRED);
+        assert!(!RHEOLOGY_FLOW_PLANE_POISEUILLE_CI_CERTIFIED);
+    }
+
+    #[test]
+    fn rheology_flow_refuse_overclaim_rejects_tampered_green() {
+        let mut probe = rheology_flow_honest_posture_bundle();
+        probe.physics_green = true;
+        assert!(rheology_flow_refuse_overclaim(&probe).is_err());
+        assert!(!rheology_flow_posture_honest(&probe));
+    }
+
+    #[test]
+    fn rheology_flow_default_solver_constructs_with_frozen_thix() {
+        let s = BinghamFlowSolver::default();
+        assert!(s.dt > 0.0 && s.dt.is_finite());
+        assert!(s.mu_plastic > 0.0 && s.mu_plastic.is_finite());
+        assert_eq!(s.t_rest_thix, BinghamFlowSolver::T_REST_NO_THIX);
+        assert_eq!(s.gamma_crit_thix, BinghamFlowSolver::GAMMA_CRIT_NO_THIX);
+        // Compile-time fence constants stay false regardless of solver construction.
+        let _probe: RheologyFlowPostureProbe = rheology_flow_honest_posture_bundle();
+        assert!(rheology_flow_refuse_overclaim(&_probe).is_ok());
+    }
+}
+
 #[cfg(all(test, feature = "rheology-bingham"))]
 mod tests {
     use super::BinghamFlowSolver;
@@ -812,6 +1024,71 @@ mod tests {
     use burn_ndarray::{NdArray, NdArrayDevice};
 
     type B = NdArray<f32>;
+
+    #[test]
+    fn chorin_single_step_finite_smoke_two_node_edge() {
+        let dev = NdArrayDevice::Cpu;
+        let batch = 1usize;
+        let n = 2usize;
+        let e_ct = 1usize;
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64, 1], Shape::new([2, e_ct])), &dev);
+        let velocity = Tensor::<B, 3>::from_data(
+            Data::new(
+                vec![0.1_f32, 0.0, 0.0, 0.2, 0.0, 0.0],
+                Shape::new([batch, n, 3]),
+            ),
+            &dev,
+        );
+        let pressure = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
+        let yield_stress = Tensor::<B, 3>::ones([batch, n, 1], &dev);
+        let density = Tensor::<B, 3>::ones([batch, n, 1], &dev);
+        let lambda0 = Tensor::<B, 3>::ones([batch, n, 1], &dev);
+        let gravity = Tensor::<B, 1>::from_data(Data::new(vec![0.0_f32, -9.81, 0.0], Shape::new([3])), &dev);
+
+        let solver = BinghamFlowSolver::new(1e-3, 1e-2);
+        let (v1, p1, lam1) = solver
+            .step(
+                velocity,
+                pressure,
+                yield_stress,
+                density,
+                lambda0,
+                edges_b1,
+                gravity,
+            )
+            .expect("finite Chorin Bingham step on 2-node edge");
+        let z = Tensor::<B, 3>::zeros_like(&v1);
+        assert!(
+            v1.clone().all_close(v1.clone(), None, Some(0.0_f64)),
+            "velocity must stay finite"
+        );
+        assert!(
+            p1.clone().all_close(p1.clone(), None, Some(0.0_f64)),
+            "pressure must stay finite"
+        );
+        assert!(
+            lam1.clone().all_close(lam1.clone(), None, Some(0.0_f64)),
+            "lambda must stay finite"
+        );
+        // Guard against all-zero collapse under gravity+viscous predictor on this tiny graph.
+        assert!(
+            !v1.abs().sum().all_close(z.abs().sum(), None, Some(1e-30_f64)),
+            "expected non-trivial velocity after step"
+        );
+    }
+
+    #[test]
+    fn thix_param_domain_rejects_non_positive() {
+        let mut solver = BinghamFlowSolver::new(1e-3, 1.0);
+        solver.t_rest_thix = 0.0;
+        let err = super::bingham_step_validate_solver(&solver);
+        assert!(err.is_err(), "t_rest_thix=0 must Domain-fail");
+        solver.t_rest_thix = BinghamFlowSolver::T_REST_NO_THIX;
+        solver.gamma_crit_thix = f32::NAN;
+        let err2 = super::bingham_step_validate_solver(&solver);
+        assert!(err2.is_err(), "NaN gamma_crit_thix must Domain-fail");
+    }
 
     #[test]
     fn roussel_lambda_decreases_under_shear_with_finite_crit() {

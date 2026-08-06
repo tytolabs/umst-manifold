@@ -1,6 +1,6 @@
 # Repository badges
 
-**Canonical SSOT:** [`MaOS-Workspace/docs/repo-badges.v1.json`](../../docs/repo-badges.v1.json) (machine-readable catalog).
+**Canonical SSOT:** [`tyto-workspace/docs/repo-badges.v1.json`](../../docs/repo-badges.v1.json) (machine-readable catalog).
 
 This file records human rules only.
 

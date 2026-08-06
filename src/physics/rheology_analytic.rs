@@ -53,12 +53,26 @@ pub fn plane_bingham_poiseuille_u(
     mu: f32,
     tau0: f32,
 ) -> Result<f32, PhysicsError> {
-    if mu <= 0.0 || mu.is_nan() {
+    if mu <= 0.0
+        || h <= 0.0
+        || !y.is_finite()
+        || !g.is_finite()
+        || !h.is_finite()
+        || !mu.is_finite()
+        || !tau0.is_finite()
+    {
         return Err(PhysicsError::Domain {
-            detail: "plane_bingham_poiseuille_u: mu must be positive and finite".to_string(),
+            detail: "plane_bingham_poiseuille_u: invalid domain parameters (mu>0, h>0, finite y/g/h/mu/tau0)"
+                .to_string(),
         });
     }
     let half = 0.5 * h;
+    let ay = y.abs();
+    if ay > half + 1e-6 * half.max(1.0) {
+        return Err(PhysicsError::Domain {
+            detail: "plane_bingham_poiseuille_u: |y| exceeds half-channel width".to_string(),
+        });
+    }
     let g_pos = g.max(0.0);
     if tau0 <= 0.0 {
         return Ok((g_pos / (2.0 * mu)) * (half * half - y * y));
@@ -68,7 +82,6 @@ pub fn plane_bingham_poiseuille_u(
         return Ok(0.0);
     }
     let y_p = tau0 / g_pos.max(1e-30);
-    let ay = y.abs();
     let u_at_yp = (g_pos / (2.0 * mu)) * (half * half - y_p * y_p) - tau0 * (half - y_p) / mu;
     if ay <= y_p {
         return Ok(u_at_yp);
@@ -191,6 +204,8 @@ fn plane_regularized_bingham_poiseuille_u_sample_internal(
         || !y.is_finite()
         || !g.is_finite()
         || !h.is_finite()
+        || !mu.is_finite()
+        || !tau0.is_finite()
         || !eps.is_finite()
     {
         return Err(PhysicsError::Domain {
@@ -288,6 +303,84 @@ mod tests {
         assert!(
             (lhs - rhs).abs() < 5e-5 * rhs.max(1e-9),
             "stress balance mismatch: lhs={lhs} rhs={rhs}"
+        );
+    }
+
+    #[test]
+    fn plane_bingham_domain_rejects_invalid_params() {
+        assert!(plane_bingham_poiseuille_u(0.0, 1e3, 0.05, 0.0, 0.0).is_err());
+        assert!(plane_bingham_poiseuille_u(0.0, 1e3, 0.0, 50.0, 0.0).is_err());
+        assert!(plane_bingham_poiseuille_u(0.0, 1e3, -0.05, 50.0, 0.0).is_err());
+        assert!(plane_bingham_poiseuille_u(0.0, f32::NAN, 0.05, 50.0, 0.0).is_err());
+        assert!(plane_bingham_poiseuille_u(0.0, 1e3, 0.05, 50.0, f32::INFINITY).is_err());
+        // |y| beyond plate half-gap
+        assert!(plane_bingham_poiseuille_u(0.04, 1e3, 0.05, 50.0, 0.0).is_err());
+    }
+
+    #[test]
+    fn plane_bingham_wall_no_slip_and_plug_flat() {
+        let g = 1000.0_f32;
+        let h = 0.05_f32;
+        let mu = 50.0_f32;
+        let tau0 = 20.0_f32; // y_p = 0.02 < a = 0.025
+        let a = 0.5 * h;
+        let u_wall = plane_bingham_poiseuille_u(a, g, h, mu, tau0).expect(
+            "plane_bingham_poiseuille_u at wall for no-slip lib unit witness (FP §6 Track E rheology analytic)",
+        );
+        assert!(u_wall.abs() < 1e-6, "wall no-slip failed: u={u_wall}");
+        let y_p = plane_bingham_plug_half_width(tau0, g);
+        let u_mid = plane_bingham_poiseuille_u(0.0, g, h, mu, tau0).expect(
+            "plane_bingham_poiseuille_u at mid-plane for plug-flat lib unit witness (FP §6 Track E rheology analytic)",
+        );
+        let u_yp = plane_bingham_poiseuille_u(y_p, g, h, mu, tau0).expect(
+            "plane_bingham_poiseuille_u at y_p for plug-flat lib unit witness (FP §6 Track E rheology analytic)",
+        );
+        assert!(
+            (u_mid - u_yp).abs() < 1e-5 * u_mid.abs().max(1.0),
+            "plug not flat: u(0)={u_mid} u(y_p)={u_yp}"
+        );
+    }
+
+    #[test]
+    fn regularized_domain_rejects_nonfinite_mu_tau0() {
+        assert!(plane_regularized_bingham_poiseuille_u_centreline(
+            1e3,
+            0.05,
+            f32::NAN,
+            0.0,
+            RHEOLOGY_FLOW_BINGHAM_EPS,
+            16,
+        )
+        .is_err());
+        assert!(plane_regularized_bingham_poiseuille_u_sample(
+            0.0,
+            1e3,
+            0.05,
+            50.0,
+            f32::INFINITY,
+            RHEOLOGY_FLOW_BINGHAM_EPS,
+            16,
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn regularized_small_eps_centreline_near_ideal_bingham() {
+        let g = 1000.0_f32;
+        let h = 0.05_f32;
+        let mu = 50.0_f32;
+        let tau0 = 20.0_f32;
+        let ideal = plane_bingham_poiseuille_u(0.0, g, h, mu, tau0).expect(
+            "ideal Bingham centreline for eps→0 approach lib unit witness (FP §6 Track E rheology analytic)",
+        );
+        let reg = plane_regularized_bingham_poiseuille_u_centreline(g, h, mu, tau0, 1e-8, 512)
+            .expect(
+                "regularized Bingham centreline eps=1e-8 for eps→0 approach lib unit witness (FP §6 Track E rheology analytic)",
+            );
+        // Regularized η keeps a small residual shear in the plug; expect relative proximity, not identity.
+        assert!(
+            (reg - ideal).abs() < 5e-3 * ideal.abs().max(1.0),
+            "eps→0 centreline drift: reg={reg} ideal={ideal}"
         );
     }
 }

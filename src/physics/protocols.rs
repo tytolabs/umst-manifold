@@ -90,6 +90,19 @@ impl<B: Backend> ScalarTransportSolver<B> for TopologicalLaplacian {
     }
 }
 
+impl<B: Backend> ScalarTransportSolver<B> for ScalarTransport {
+    #[inline]
+    fn laplacian(
+        x: Tensor<B, 3>,
+        edges_b1: Tensor<B, 2, Int>,
+        damage: Tensor<B, 3>,
+    ) -> Tensor<B, 3> {
+        // Inherent `ScalarTransport::laplacian` shares this body; call the SSOT operator
+        // directly so the trait method cannot recurse into itself.
+        TopologicalLaplacian::scalar_laplacian(x, edges_b1, damage)
+    }
+}
+
 /// Quasi-static bar-network equilibrium (Phase 1); stress returned as `[B, N, 3, 3]`.
 ///
 /// # Contract
@@ -136,5 +149,210 @@ impl<B: Backend<FloatElem = f32>> MechanicsEquilibriumSolver<B> for VectorMechan
             inner_cfg,
         )?;
         Ok((u.into_tensor(), stress))
+    }
+}
+
+impl<B: Backend<FloatElem = f32>> MechanicsEquilibriumSolver<B> for MechanicsEquilibrium {
+    #[inline]
+    #[allow(clippy::too_many_arguments)]
+    fn solve_equilibrium(
+        displacement: Tensor<B, 3>,
+        coords: Tensor<B, 2>,
+        stiffness: StiffnessField<B>,
+        body_force: Tensor<B, 3>,
+        edges_b1: Tensor<B, 2, Int>,
+        damage: Tensor<B, 3>,
+        boundary_mask: Tensor<B, 3>,
+        cross_section_area: f32,
+        inner_cfg: &MechanicsInnerLoopConfig,
+    ) -> Result<(Tensor<B, 3>, Tensor<B, 4>), PhysicsError> {
+        Self::solve(
+            displacement,
+            coords,
+            stiffness,
+            body_force,
+            edges_b1,
+            damage,
+            boundary_mask,
+            cross_section_area,
+            inner_cfg,
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use burn::tensor::{Data, Shape};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+
+    type B = NdArray<f32>;
+
+    fn chain_edges(n: usize, device: &NdArrayDevice) -> Tensor<B, 2, Int> {
+        let ne = n.saturating_sub(1);
+        let mut e = Vec::with_capacity(ne * 2);
+        for i in 0..ne {
+            e.push(i as i64);
+        }
+        for i in 0..ne {
+            e.push((i + 1) as i64);
+        }
+        Tensor::from_data(Data::new(e, Shape::new([2, ne])), device)
+    }
+
+    #[test]
+    fn protocols_scalar_transport_namespace_matches_laplacian_and_trait() {
+        let device = NdArrayDevice::Cpu;
+        let n = 5usize;
+        let x_data: Vec<f32> = (0..n).map(|i| (i as f32 + 1.0) * 0.25).collect();
+        let x =
+            Tensor::<B, 1>::from_data(Data::new(x_data, Shape::new([n])), &device).reshape([1, n, 1]);
+        let damage = Tensor::<B, 3>::zeros([1, n, 1], &device);
+        let edges = chain_edges(n, &device);
+
+        let via_ns = ScalarTransport::laplacian(x.clone(), edges.clone(), damage.clone());
+        let via_trait_lap =
+            <TopologicalLaplacian as ScalarTransportSolver<B>>::laplacian(
+                x.clone(),
+                edges.clone(),
+                damage.clone(),
+            );
+        let via_trait_ns =
+            <ScalarTransport as ScalarTransportSolver<B>>::laplacian(x, edges, damage);
+
+        let a = via_ns.into_data().value;
+        let b = via_trait_lap.into_data().value;
+        let c = via_trait_ns.into_data().value;
+        let max_ab = a
+            .iter()
+            .zip(b.iter())
+            .map(|(u, v)| (u - v).abs())
+            .fold(0.0_f32, f32::max);
+        let max_ac = a
+            .iter()
+            .zip(c.iter())
+            .map(|(u, v)| (u - v).abs())
+            .fold(0.0_f32, f32::max);
+        assert!(max_ab < 1e-7, "namespace vs TopologicalLaplacian trait Δ={max_ab}");
+        assert!(max_ac < 1e-7, "namespace vs ScalarTransport trait Δ={max_ac}");
+    }
+
+    #[test]
+    fn protocols_scalar_transport_zero_row_sum_when_damage_zero() {
+        // Contract: damage ≡ 0 ⇒ discrete conservation (row-sum ≈ 0 per channel).
+        let device = NdArrayDevice::Cpu;
+        let n = 6usize;
+        let x = Tensor::<B, 3>::ones([1, n, 2], &device);
+        let damage = Tensor::<B, 3>::zeros([1, n, 1], &device);
+        let edges = chain_edges(n, &device);
+
+        let lx = ScalarTransport::laplacian(x, edges, damage);
+        let vals = lx.into_data().value;
+        let abs_sum: f32 = vals.iter().map(|v| v.abs()).sum();
+        assert!(
+            abs_sum < 1e-5,
+            "zero-damage constant field must have ~0 Laplacian mass; abs_sum={abs_sum}"
+        );
+    }
+
+    #[test]
+    fn protocols_mechanics_equilibrium_namespace_matches_trait_on_zero_load() {
+        let device = NdArrayDevice::Cpu;
+        let n = 4usize;
+        let dx = 0.25_f32;
+        let e = 1.0e6_f32;
+        let a = 0.01_f32;
+
+        let mut coords_data = Vec::with_capacity(n * 3);
+        for i in 0..n {
+            coords_data.push(i as f32 * dx);
+            coords_data.push(0.0);
+            coords_data.push(0.0);
+        }
+        let coords: Tensor<B, 2> =
+            Tensor::from_data(Data::new(coords_data, Shape::new([n, 3])), &device);
+        let edges = chain_edges(n, &device);
+
+        let mut stiff = Vec::with_capacity(n * 2);
+        for _ in 0..n {
+            stiff.push(e);
+            stiff.push(0.3);
+        }
+        let stiffness = StiffnessField::from_tensor(Tensor::from_data(
+            Data::new(stiff, Shape::new([1, n, 2])),
+            &device,
+        ));
+        let damage = Tensor::<B, 3>::zeros([1, n, 1], &device);
+        let displacement = Tensor::<B, 3>::zeros([1, n, 3], &device);
+        let body_force = Tensor::<B, 3>::zeros([1, n, 3], &device);
+
+        let mut bm = vec![1.0_f32; n * 3];
+        for i in 0..n {
+            bm[i * 3 + 1] = 0.0;
+            bm[i * 3 + 2] = 0.0;
+        }
+        bm[0] = 0.0; // fix left x
+        let boundary_mask =
+            Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &device);
+
+        let cfg = MechanicsInnerLoopConfig {
+            max_cg_iterations: 80,
+            cg_tolerance: 1e-6,
+            pcg_tolerance: 1e-6,
+            use_preconditioner: true,
+            max_equilibrium_substeps: 1,
+        };
+
+        let (u_ns, s_ns) = MechanicsEquilibrium::solve(
+            displacement.clone(),
+            coords.clone(),
+            stiffness.clone(),
+            body_force.clone(),
+            edges.clone(),
+            damage.clone(),
+            boundary_mask.clone(),
+            a,
+            &cfg,
+        )
+        .expect("MechanicsEquilibrium::solve");
+
+        let (u_tr, s_tr) = <MechanicsEquilibrium as MechanicsEquilibriumSolver<B>>::solve_equilibrium(
+            displacement,
+            coords,
+            stiffness,
+            body_force,
+            edges,
+            damage,
+            boundary_mask,
+            a,
+            &cfg,
+        )
+        .expect("MechanicsEquilibriumSolver::solve_equilibrium");
+
+        let du = u_ns
+            .clone()
+            .sub(u_tr)
+            .abs()
+            .into_data()
+            .value
+            .into_iter()
+            .fold(0.0_f32, f32::max);
+        let ds = s_ns
+            .sub(s_tr)
+            .abs()
+            .into_data()
+            .value
+            .into_iter()
+            .fold(0.0_f32, f32::max);
+        assert!(du < 1e-7, "namespace vs trait displacement Δ={du}");
+        assert!(ds < 1e-7, "namespace vs trait stress Δ={ds}");
+
+        // Zero-load + fixed left → displacement stays ~0 (honest fence, not physics GREEN).
+        let u_max = u_ns
+            .into_data()
+            .value
+            .into_iter()
+            .fold(0.0_f32, |m, v| m.max(v.abs()));
+        assert!(u_max < 1e-5, "zero-load equilibrium |u|_max={u_max}");
     }
 }

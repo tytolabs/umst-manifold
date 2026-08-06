@@ -3,10 +3,21 @@
 //! Human-readable mirror: `docs/CGD_REGISTRY.md` §24a (Constants Grounding Registry).
 //! Tier-2 rows carry `pending: Phase FPD-*` until the corresponding formal slice lands.
 
+use super::derivation::Derivation;
+use super::tier1_derivation::{
+    K_B_DERIVATION, LN_2_DERIVATION, RCC_FLOOR_DERIVATION, T_ROOM_DERIVATION,
+};
+use super::tier2_derivation::{
+    HAL_IGPU_PRESENT_DERIVATION, HAL_LINUX_PORT_COUNT_DERIVATION,
+    HAL_LINUX_RAM_TOTAL_DERIVATION, HAL_LOGICAL_CORES_DERIVATION, HAL_L3_CACHE_DERIVATION,
+    HAL_NPU_PRESENT_DERIVATION,
+};
+use super::tier3_derivation::{ENERGY_BACKEND_DEFINITION, TUI_BIDI_DEFINITION};
+
 /// One documented numerical parameter (value, tier, evidence, optional env).
 /// CONSTANT-BOUND: `landauer_floor_j_per_bit` (schema; each row is a `ConstantEntry`).
 #[allow(missing_docs)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ConstantEntry {
     /// Stable identifier (matches §24a “Constant” column intent).
     pub name: &'static str,
@@ -18,6 +29,8 @@ pub struct ConstantEntry {
     pub evidence: &'static str,
     /// Environment variable name when operator-overridable (`None` if not).
     pub env_override: Option<&'static str>,
+    /// CDD §0.11 — how egoff re-verifies this constant (`Pending` until K-7 backfill).
+    pub derivation: Derivation,
 }
 
 /// Five-tier constants grounding taxonomy (`docs/HSAD_PLAN.md` §0.4).
@@ -33,7 +46,7 @@ pub enum ConstantTier {
 }
 
 /// Authoritative registry (keep in lock-step with `docs/CGD_REGISTRY.md` §24a).
-/// CONSTANT-BOUND: … + §14bis.f-M-6 (+2) + §14bis.f-M-7 (+1 mcert) + foundation Phase 3 (+4) = **166** (mirror `docs/CGD_REGISTRY.md` §24a)
+/// CONSTANT-BOUND: … + §14bis.f-M-6 (+2) + §14bis.f-M-7 (+1 mcert) + foundation Phase 3 (+4) + K-2 (+2) + K-4 (+1) = **171**
 pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "landauer_floor_j_per_bit",
@@ -41,6 +54,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier0Physical,
         evidence: "UMST.FormalDoubleSlit.LandauerBound + UMST.Formal.EtaCog::etaDenom_pos",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "ln_two_eta_cog_denominator",
@@ -48,6 +62,23 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier0Physical,
         evidence: "UMST.Formal.Real.log_two_pos (ln 2 positivity chain)",
         env_override: None,
+        derivation: LN_2_DERIVATION,
+    },
+    ConstantEntry {
+        name: "k_boltzmann_j_per_k",
+        expression: "1.380649e-23 J/K (CODATA 2018; umst_math::landauer::K_B)",
+        tier: ConstantTier::Tier0Physical,
+        evidence: "CODATA 2018; umst-math::landauer::K_B",
+        env_override: None,
+        derivation: K_B_DERIVATION,
+    },
+    ConstantEntry {
+        name: "rcc_floor_residual_coherence",
+        expression: "0.25 lower bound (RCC floor; residual coherence capacity)",
+        tier: ConstantTier::Tier2Derivable,
+        evidence: "UMST.Formal.Convergence::rcc_lower_bound",
+        env_override: None,
+        derivation: RCC_FLOOR_DERIVATION,
     },
     ConstantEntry {
         name: "host_temperature_fallback_k",
@@ -55,6 +86,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "Operator-assumed ambient anchor until junction-temperature telemetry is wired",
         env_override: Some("UMST_COCKPIT_HOST_TEMPERATURE_K"),
+        derivation: T_ROOM_DERIVATION,
     },
     ConstantEntry {
         name: "gate_mass_tolerance_kg_m3",
@@ -62,6 +94,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "Measured calibration band; umst-math manifold::csg + Gate.lean mass conjunct",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "transition_tolerance",
@@ -69,6 +102,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.Formal.Gate.transitionTolerance",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "admissibility_margin_eps",
@@ -76,6 +110,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.Formal.Gate.gateCheckSound (runtime AdmissibilityMargin witness floor ε)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "min_promotion_credit_bits",
@@ -83,6 +118,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "UCRS observation credit quarantine; umst-ucrs MIN_PROMOTION_CREDIT_BITS",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "rapl_package_dram_joules",
@@ -90,6 +126,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "umst-ucrs::rapl sysfs surface (Linux-gated)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "cpu_utilization_percent",
@@ -97,6 +134,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "sysinfo::System::global_cpu_info() portable f64",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "process_joules_estimate",
@@ -104,6 +142,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "maos-core EnergyService.ts formulas + cockpit energy unit tests",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "hub_inter_sample_period_ms",
@@ -111,6 +150,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "COCKPIT_DESIGN_BRIEF.md §5 polling hold; hub.rs last_inter_sample_period_ms",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     // §14bis.f-H-9 — Linux/Intel HAL Tier-1 runtime anchors (provenance strings; NED: unmeasured if permission_denied)
     ConstantEntry {
@@ -119,6 +159,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "Measurement (H-9; NED §0.5); /proc/cpuinfo; cockpit startup HAL",
         env_override: None,
+        derivation: HAL_LOGICAL_CORES_DERIVATION,
     },
     ConstantEntry {
         name: "hal_intel_cpu_l3_cache_kb",
@@ -126,6 +167,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "Measurement (H-9; /proc/cpuinfo l3_cache_kb best-effort)",
         env_override: None,
+        derivation: HAL_L3_CACHE_DERIVATION,
     },
     ConstantEntry {
         name: "hal_intel_igpu_present_on_dev_host",
@@ -133,6 +175,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "Measurement (H-9; /sys/class/drm/*/device/vendor)",
         env_override: None,
+        derivation: HAL_IGPU_PRESENT_DERIVATION,
     },
     ConstantEntry {
         name: "hal_intel_npu_present_on_dev_host",
@@ -140,6 +183,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "Measurement (H-9; /sys/class/accel)",
         env_override: None,
+        derivation: HAL_NPU_PRESENT_DERIVATION,
     },
     ConstantEntry {
         name: "hal_linux_port_count_on_dev_host",
@@ -147,6 +191,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "Measurement (H-9; LinuxPort enumeration; NED honest empty)",
         env_override: None,
+        derivation: HAL_LINUX_PORT_COUNT_DERIVATION,
     },
     ConstantEntry {
         name: "hal_linux_ram_total_kb",
@@ -154,6 +199,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "Measurement (H-9; /proc/meminfo)",
         env_override: None,
+        derivation: HAL_LINUX_RAM_TOTAL_DERIVATION,
     },
     ConstantEntry {
         name: "warmup_sample_threshold",
@@ -161,6 +207,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "frugality_band_p25_percentile",
@@ -168,6 +215,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.Formal.OrderStatisticsBand::p25_p75_admissibility",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "frugality_band_p75_percentile",
@@ -175,6 +223,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.Formal.OrderStatisticsBand::p25_p75_admissibility",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "landauer_proximity_multiplier",
@@ -182,6 +231,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-MeasurementJitterBound",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "staleness_cycle_count",
@@ -189,6 +239,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "COCKPIT_DESIGN_BRIEF.md §12 staleness rationale; provider_frugality.rs",
         env_override: Some("UMST_COCKPIT_STALENESS_CYCLES"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "staleness_threshold_ms",
@@ -196,6 +247,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-TelemetryAutocorrelation",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "closed_loop_mi_step_per_accept",
@@ -203,6 +255,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.Formal.RhoEstimator::rho_based_mi_formula",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "delta_mi_single_turn_cap_bits",
@@ -210,6 +263,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "COCKPIT_DESIGN_BRIEF.md ΔMI governance; deception guard",
         env_override: Some("UMST_COCKPIT_MAX_DELTA_MI_BITS"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "ranker_weight_bounds",
@@ -217,6 +271,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "COCKPIT_DESIGN_BRIEF.md §12 nudge-vs-override; provider_frugality unit tests",
         env_override: Some("UMST_COCKPIT_WEIGHT_* (six vars)"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "dignity_scalar_range",
@@ -224,6 +279,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "UMST.Formal.Dignity structural bound + design brief",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "audit_rotation_keep_count",
@@ -231,6 +287,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "COCKPIT_DESIGN_BRIEF.md §12 retention policy",
         env_override: Some("UMST_COCKPIT_AUDIT_ROTATIONS"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "cockpit_audit_schema_version",
@@ -238,6 +295,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Forward-compat audit event schema; audit_persist.rs",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "cockpit_snapshot_schema_version",
@@ -245,6 +303,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Phase M-simd — `kernel_dispatch` field; COCKPIT_DESIGN_BRIEF",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_ffi_abi_version",
@@ -252,6 +311,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "UMST_FFI_ABI_VERSION in umst-ffi / ffi-bridge; Phase N-abi-version-gate (additive `umst_ffi_abi_version_expected`)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_ffi_abi_version_min_compatible",
@@ -259,6 +319,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Phase N-abi-version-gate — docs/CGD_REGISTRY.md §24; `UMST_FFI_ABI_VERSION_MIN_COMPATIBLE` / `assertAbiCompatible`",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "cockpit_http_cors_open",
@@ -266,6 +327,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Phase N6-TUI-cockpit-panels — docs/CGD_REGISTRY.md §24a; cockpit HTTP API",
         env_override: Some("UMST_COCKPIT_HTTP_CORS_OPEN"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_discovery_refresh_secs",
@@ -273,6 +335,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Phase B-extend — model_discovery + cockpit hub; docs/CGD_REGISTRY.md §24a; COCKPIT_DESIGN_BRIEF",
         env_override: Some("UMST_DISCOVERY_REFRESH_SECS"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tool_timeout_secs",
@@ -280,6 +343,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Phase C — zeroclaw tool palette; docs/CGD_REGISTRY.md §24a; COCKPIT_DESIGN_BRIEF.md",
         env_override: Some("UMST_TOOL_TIMEOUT_SECS"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "audit_max_bytes_cap",
@@ -287,6 +351,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "Typical rotation sizing; COCKPIT_DESIGN_BRIEF §12",
         env_override: Some("UMST_COCKPIT_AUDIT_MAX_BYTES"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "eta_rolling_window_capacity",
@@ -294,6 +359,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "Ring-buffer sizing for cockpit η history (no env in code path 2026-04-21)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "embedding_http_timeout_seconds",
@@ -301,6 +367,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "Design default per COCKPIT brief; UMST_EMBEDDING_TIMEOUT_SECONDS not yet wired in adapters (2026-04-21)",
         env_override: Some("UMST_EMBEDDING_TIMEOUT_SECONDS"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_math_simd_feature",
@@ -308,6 +375,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "Phase M-simd — portable_simd kernels; docs/CGD_REGISTRY.md §24",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_haskell_toolchain_reference",
@@ -315,6 +383,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "umst-haskell-toolchain.txt; scripts/run-ffi-tests.sh native Haskell gate",
         env_override: Some("UMST_NATIVE_GHC"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_energy_backend",
@@ -322,6 +391,15 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "H-1 RAPL energy honesty; COCKPIT_DESIGN_BRIEF; mirrors umst-prototype-2a/KNOWN_LIMITATIONS.md § hardware_heat_experiment (UMST_HARDWARE_STRICT=1 kin)",
         env_override: Some("UMST_ENERGY_BACKEND"),
+        derivation: ENERGY_BACKEND_DEFINITION,
+    },
+    ConstantEntry {
+        name: "egoff_tui_bidi",
+        expression: "0 (default unidirectional TUI; EGOFF_TUI_BIDI=1 enables bidirectional input paths)",
+        tier: ConstantTier::Tier3Policy,
+        evidence: "Definition (§14bis.e TUI bidirectional mode; docs/rfcs/EGOFF_TUI_BIDI.md; K-4)",
+        env_override: Some("EGOFF_TUI_BIDI"),
+        derivation: TUI_BIDI_DEFINITION,
     },
     ConstantEntry {
         name: "umst_epistemic_proxy_estimator",
@@ -329,6 +407,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "H-2 epistemic proxy in cockpit runtime; shape from umst-prototype-2a epistemic_proxy_selector; COCKPIT_DESIGN_BRIEF + §24a",
         env_override: Some("UMST_EPISTEMIC_PROXY_ESTIMATOR"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_formal_pin_sha",
@@ -336,6 +415,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "L-0 formal-grounding synchrony; `.github/workflows/formal-grounding.yml`",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     // Tier-4 toolchain ZCI (§14bis.j); future §14bis.k: lift evidence to `Derivation::Pin { repo, ref }`.
     ConstantEntry {
@@ -344,6 +424,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "§14bis.j; `umst-math/TOOLCHAIN_PIN.txt`",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "coq_version_pin",
@@ -351,6 +432,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "§14bis.j; `umst-math/TOOLCHAIN_PIN.txt`",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "agda_version_pin",
@@ -358,6 +440,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "§14bis.j; `umst-math/TOOLCHAIN_PIN.txt`",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "ghc_version_pin",
@@ -365,6 +448,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "§14bis.j; `umst-math/TOOLCHAIN_PIN.txt`",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "rustc_toolchain_pin",
@@ -372,6 +456,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "§14bis.j; `umst-math/TOOLCHAIN_PIN.txt`",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "python_version_pin",
@@ -379,6 +464,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "§14bis.j; `umst-math/TOOLCHAIN_PIN.txt`",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_wide_gate_strict",
@@ -386,6 +472,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "§14bis.l W-1; `scripts/scripts/verify-umst-wide.sh`; not env-driven (parametric: --strict default)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_discovery_lru_capacity",
@@ -393,6 +480,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-5; B-extend cache; REGISTRY-witnessed)",
         env_override: Some("UMST_DISCOVERY_LRU_CAPACITY"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_llm_chain_mode",
@@ -400,6 +488,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "§14bis.o-O-4; `llm_model_chain::chain_mode_from_env`; LHF-5 tier fold",
         env_override: Some("UMST_LLM_CHAIN_MODE"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_orchestration_intent_text_fold",
@@ -407,6 +496,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "§14bis.o-O-4; `orchestration_intent::subgraph_for_intent`; `resolve_model_chain_for_intent`",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_render_debounce_ms",
@@ -414,6 +504,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-5; coalesces idle redraws; keystroke fast path stays immediate)",
         env_override: Some("UMST_TUI_RENDER_DEBOUNCE_MS"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_semantic_coverage_threshold_w2",
@@ -421,6 +512,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12 candidate; §14bis.l W-2/W-3/W-4-H7-stop/W-4'/W-5); G8 binds `UMST_SEMANTIC_THRESHOLD` to this row’s policy intent",
         env_override: Some("UMST_SEMANTIC_THRESHOLD"),
+        derivation: Derivation::Pending,
     },
     // CONSTANT-BOUND: `umst_gpu_backend_default` (Tier-3 honest disclosure; expression names default n/a)
     ConstantEntry {
@@ -429,6 +521,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6a + §14bis.f H-6a; no fabricated GPU energy reading)",
         env_override: Some("UMST_GPU_BACKEND"),
+        derivation: Derivation::Pending,
     },
     // CONSTANT-BOUND: `umst_h3b_reward_*` — H-3b witness telemetry (FORWARD-PLAN §3.1; not production training)
     ConstantEntry {
@@ -437,6 +530,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-H-3b Path B; `h3b_witness_reward_scalar`; fixture-quality inputs in tests)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_h3b_reward_beta",
@@ -444,6 +538,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-H-3b Path B witness reward bridge)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_h3b_reward_gamma",
@@ -451,6 +546,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-H-3b Path B witness reward bridge)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     // CONSTANT-BOUND: `umst_npu_backend_default` (Tier-3 honest disclosure; expression names default n/a)
     ConstantEntry {
@@ -459,6 +555,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6a + §14bis.f H-6a; no fabricated NPU energy reading)",
         env_override: Some("UMST_NPU_BACKEND"),
+        derivation: Derivation::Pending,
     },
     // CONSTANT-BOUND: `umst_closed_loop_rcc_accept_tick` (Tier-3 RCC policy per accept; HSAD plan §0.4 CGD)
     ConstantEntry {
@@ -467,6 +564,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD plan §0.4 CGD; `closed_loop::record_proposal_with_prompt` accept path)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     // CONSTANT-BOUND: `umst_cockpit_smoothing_default` (TUI-7 EKF / Kalman / none; REGISTRY string policy)
     ConstantEntry {
@@ -475,6 +573,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-7; `umst-math::smoothing` vendor umst-prototype-2a; :explain raw+smoothed+variance)",
         env_override: Some("UMST_COCKPIT_SMOOTHING"),
+        derivation: Derivation::Pending,
     },
     // TUI-7b: per-metric (Q, R) — Tier-1 Measurement; first token in `expression` is a plain `f64` for runtime parse (see `registry_tuning_f64_value`)
     ConstantEntry {
@@ -483,6 +582,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `smoothing_{ekf,kalman}_e_bisim` SEQ0..4 @ umst-prototype-2a@9c0434d3ebade8f697bbd402bb080ea00da76914; (b) S_z, S_Δz on 8-pt, V4̄, D4̄, rmul∈[0.2,6]×500, qmul∈[0.2,6]×Q_ref",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_smoother_r_rcc",
@@ -490,6 +590,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `smoothing_{ekf,kalman}_e_bisim` SEQ0; umst-prototype-2a@9c0434d3; method (b) as `umst_smoother_q_rcc`",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_smoother_q_mi",
@@ -497,6 +598,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 ε-bisim `SEQ1` (sparse toggles); umst-prototype-2a@9c0434d3; method (b) rank+clamp to V4̄, D4̄",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_smoother_r_mi",
@@ -504,6 +606,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `SEQ1` row; 9c0434d3; (b) same scheme as rcc",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_smoother_q_eta_cog",
@@ -511,6 +614,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `SEQ2` (ramp); umst-prototype-2a@9c0434d3; (b) S_Δz floor=0.05 for near-linear D",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_smoother_r_eta_cog",
@@ -518,6 +622,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `SEQ2`; 9c0434d3; (b) S_z / V4̄ clamped",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_smoother_q_dignity",
@@ -525,6 +630,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `SEQ3` (dignity ramp); 9c0434d3; (b) ranks + clamp",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_smoother_r_dignity",
@@ -532,6 +638,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `SEQ3`; 9c0434d3; (b) as above",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_smoother_q_landauer_slack",
@@ -539,6 +646,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `SEQ4` (wide dynamic range); 9c0434d3; (b) S_Δz rank uses max(D,1e-2) floor; landauer in D4̄ (cockpit mean)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_smoother_r_landauer_slack",
@@ -546,6 +654,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `SEQ4`; 9c0434d3; (b) R from S_z / V4̄ clamp; excludes landauer from V4̄ to avoid scale blow-up",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     // CONSTANT-BOUND: TUI-6b sRGB (dark theme) + light pair — one stem per M0.4 color slot; leading `#RRGGBB` parse in `cockpit theme module`
     ConstantEntry {
@@ -554,6 +663,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_accent_light",
@@ -561,6 +671,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_body_dark",
@@ -568,6 +679,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_body_light",
@@ -575,6 +687,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_gauge_dark",
@@ -582,6 +695,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_gauge_light",
@@ -589,6 +703,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_input_prompt_dark",
@@ -596,6 +711,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_input_prompt_light",
@@ -603,6 +719,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_level_green_dark",
@@ -610,6 +727,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_level_green_light",
@@ -617,6 +735,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_level_orange_dark",
@@ -624,6 +743,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_level_orange_light",
@@ -631,6 +751,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_level_red_dark",
@@ -638,6 +759,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_level_red_light",
@@ -645,6 +767,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_level_teal_dark",
@@ -652,6 +775,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_level_teal_light",
@@ -659,6 +783,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_level_unknown_dark",
@@ -666,6 +791,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_level_unknown_light",
@@ -673,6 +799,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_level_yellow_dark",
@@ -680,6 +807,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_level_yellow_light",
@@ -687,6 +815,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_muted_dim_dark",
@@ -694,6 +823,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_muted_dim_light",
@@ -701,6 +831,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_status_muted_dark",
@@ -708,6 +839,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_tui_color_status_muted_light",
@@ -715,6 +847,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     // §14bis.f H-9 — HAL WorkloadKind::Smoke + badge (Tier-3 **Definitions**; CDD §0.11)
     ConstantEntry {
@@ -723,6 +856,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.f-H-9; cockpit HAL badge renderer)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "hal_intel_cpu_smoke_buf_size_bytes",
@@ -730,6 +864,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (H-9; `IntelCpu` allocate / smoke)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "hal_intel_cpu_smoke_iterations",
@@ -737,6 +872,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (H-9)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "hal_permission_probe_timeout_ms",
@@ -744,6 +880,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (H-9; future polkit/udev timing; placeholder)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "hal_supported_precisions_intel_cpu_count",
@@ -751,6 +888,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (H-9; `IntelCpu::supported_precisions`)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "hal_supported_precisions_intel_igpu_count",
@@ -758,6 +896,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (H-9; `IntelIgpu`)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "hal_supported_precisions_intel_npu_count",
@@ -765,6 +904,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (H-9; `IntelNpu`)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "hal_workload_smoke_byte_size",
@@ -772,6 +912,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (H-9; B-2 extends WorkloadKind)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     // §14bis.f H-8 — HAL trait surface (Tier-3 **Definitions**; CDD §0.11; FORWARD-PLAN v1.2 §3.1)
     ConstantEntry {
@@ -780,6 +921,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; FORWARD-PLAN v1.2 Q5/G5; H-8 trait surface; docs/CGD_REGISTRY.md §24a; umst-math::hal::traits::HardwareUnit)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "hal_unit_presence_variant_count",
@@ -787,6 +929,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; NED §0.5; umst-math::hal::presence::UnitPresence)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "hal_unit_kind_count",
@@ -794,6 +937,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; umst-math::hal::kinds::UnitKind)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "hal_canonical_fallback_chain_max_len",
@@ -801,6 +945,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; FORWARD-PLAN v1.2 §14.2 B-2.5; H-8 profile.rs)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     // §14bis.f-M-0 — M-Arc `umst-math::manifold` (Tier-3 Definition, MEMORY-ARC-PLAN v1.0; FORWARD-PLAN §0.4)
     ConstantEntry {
@@ -809,6 +954,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (MEMORY-ARC-PLAN §0; M-0 sphere.rs; CDD)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "manifold_hilbert_bits_default",
@@ -816,6 +962,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (MEMORY-ARC-PLAN §6; umst-math::manifold::hilbert)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "manifold_resolution_floor",
@@ -823,6 +970,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (M-Arc; umst-math::manifold::ResolutionLevel; REGISTRY M-0)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "manifold_resolution_ceiling",
@@ -830,6 +978,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (MEMORY-ARC-PLAN §6; CDD M-0)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "manifold_octree_max_depth",
@@ -837,6 +986,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (M-0 octree.rs; CDD)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "manifold_csg_smooth_k_default",
@@ -844,6 +994,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (Haskell SDFGate.smoothUnionSDF; M-0 csg)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "manifold_canonicalize_eps",
@@ -851,6 +1002,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (GMD-2; I3; umst-math::manifold::MANIFOLD_CANONICALIZE_EPS)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "manifold_hilbert_locality_constant",
@@ -858,6 +1010,24 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (MEMORY-ARC-PLAN §3.2 L-M0; empirical in `manifold` Hilbert-locality test module)",
         env_override: None,
+        derivation: Derivation::Pending,
+    },
+    // §14bis.p-PERF-MEASURE-1 — B-Arc precursor anchors (`.benchmarks_baseline.json`; witness tests)
+    ConstantEntry {
+        name: "egoff_candle_embed_batch_1000x_ceiling_us",
+        expression: "1100000 (µs ceiling for CandleLinearEmbedding::embed_batch 1000×; release; ×1.1 headroom vs 1M host; debug narrow ×20 via embed_perf_profile)",
+        tier: ConstantTier::Tier1Measurement,
+        evidence: "Measurement (PERF-MEASURE-1; `.benchmarks_baseline.json`; `candle_linear_*_under_ceiling`)",
+        env_override: None,
+        derivation: Derivation::Pending,
+    },
+    ConstantEntry {
+        name: "egoff_manifold_action_canonicalize_p99_us",
+        expression: "500 (µs p99 ceiling for action_sdf_canonicalize @ bits=3; release; debug ×20)",
+        tier: ConstantTier::Tier1Measurement,
+        evidence: "Measurement (PERF-MEASURE-1; `.benchmarks_baseline.json`; `canonicalize_runtime_p99_under_500us`)",
+        env_override: None,
+        derivation: Derivation::Pending,
     },
     // Tier-2 B-Arc / telemetry (placeholders; same debt pattern as other Tier-2)
     ConstantEntry {
@@ -866,6 +1036,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-VoxelP99 (M-B calibration)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "manifold_canonicalize_runtime_us_p99",
@@ -873,6 +1044,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-CanonicalizeP99",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "manifold_octree_density_typical",
@@ -880,6 +1052,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-OctreeDensity",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "manifold_hilbert_index_range_typical",
@@ -887,6 +1060,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-HilbertSpan",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     // §14bis.f-M-1 — `cockpit memory module` (sled schema v1; B-Arc placeholders; Tier-3 for schema + default res)
     ConstantEntry {
@@ -895,6 +1069,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (M-1 MEMORY-ARC; GMD-3; `umst-math::manifold` resolution ceiling 12 policy vs 10-bit voxels M-0)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_inspect_runtime_us_p99",
@@ -902,6 +1077,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-M1-InspectP99",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_load_runtime_us_p99",
@@ -909,6 +1085,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-M1-LoadP99",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_local_tier_size_typical",
@@ -916,6 +1093,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-M1-LocalSize",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_schema_version",
@@ -923,6 +1101,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (M-1 sled `MemoryV1` wire; migration path: bump + multi-decode in M-2+)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_store_runtime_us_p99",
@@ -930,6 +1109,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-M1-StoreP99",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     // §14bis.f-M-2 — promotion ceremony + sanitize (GMD-4..6)
     ConstantEntry {
@@ -938,6 +1118,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-2; THEOREM-BOUND ceremony; `cockpit memory module promote`)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_m2_sanitize_serial_kinds_count",
@@ -945,6 +1126,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-2 GMD-6; `cockpit memory module sanitize::SerialKind`)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_m2_promotion_requires_theorem_default",
@@ -952,6 +1134,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-2; CONSTANT-BOUND default; `cockpit memory module promotion_require_theorem_enabled`)",
         env_override: Some("UMST_MEMORY_PROMOTION_REQUIRE_THEOREM"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_m2_serial_scrub_placeholder_len",
@@ -959,6 +1142,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-2; `cockpit memory module sanitize::SCRUB_PLACEHOLDER`)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_ephemeral_ttl_hours_typical",
@@ -966,6 +1150,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3 ephemeral retention witness; MEMORY-ARC)",
         env_override: Some("UMST_MEMORY_EPHEMERAL_TTL_HOURS"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_m3_palette_federated_inspect_min_rows",
@@ -974,6 +1159,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3 federation inspector dispatch; no libp2p peers in this slice)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_merge_safe_attestation_wire_version",
@@ -981,6 +1167,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3 GMD-8; `MergeSafeAttestation` bincode shim)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_schema_version_v2",
@@ -989,6 +1176,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3 rename-fed; MEMORY-ARC schema migration posture)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_tier_repr_byte_device",
@@ -998,6 +1186,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         evidence:
             "Definition (§14bis.f-M-3 MemoryTier ABI; MEMORY-ARC local→device rename-fed witness)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_tier_repr_byte_ephemeral",
@@ -1005,6 +1194,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3 MemoryTier ABI; MEMORY-ARC §10(h) graduation)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_tier_repr_byte_federated",
@@ -1014,6 +1204,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         evidence:
             "Definition (§14bis.f-M-3 MemoryTier ABI; MEMORY-ARC promotion federation merge witnesses)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_retention_alpha_default",
@@ -1022,6 +1213,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3-retention; `memory::env::retention_alpha_or_default`)",
         env_override: Some("UMST_MEMORY_RETENTION_ALPHA"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_retention_evict_default",
@@ -1029,6 +1221,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3-retention; `UMST_MEMORY_RETENTION_EVICT`)",
         env_override: Some("UMST_MEMORY_RETENTION_EVICT"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_retention_degrade_first_default",
@@ -1036,6 +1229,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3-retention; `UMST_MEMORY_RETENTION_DEGRADE_FIRST`)",
         env_override: Some("UMST_MEMORY_RETENTION_DEGRADE_FIRST"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_retention_mi_estimate_p99_us",
@@ -1043,6 +1237,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-3-retention-MiP99",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_retention_pareto_compute_p99_us",
@@ -1050,6 +1245,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-3-retention-ParetoP99",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_manifold_liquid_ppo_witness_default",
@@ -1057,6 +1253,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (MANIFOLD-INTEGRATION-ADR; §14bis.f-H-3b; `ppo_witness_enabled` truthy_env only)",
         env_override: Some("UMST_MANIFOLD_LIQUID_PPO_WITNESS"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_manifold_ppo_info_gain_default_bits",
@@ -1064,6 +1261,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-I-4; `ppo_info_gain_bits`; proposal-length fallback when unset)",
         env_override: Some("UMST_MANIFOLD_GATEWAY_INFO_GAIN_BITS"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_manifold_emergence_lambda",
@@ -1071,6 +1269,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-I-5 / §14bis.f-M-SDF-emergence; `emergence_lambda`)",
         env_override: Some("UMST_MANIFOLD_EMERGENCE_LAMBDA"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_msdf_emergence_max_voxels",
@@ -1078,6 +1277,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-SDF-emergence; `max_emergence_voxels`)",
         env_override: Some("UMST_MSDF_EMERGENCE_MAX_VOXELS"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_ucrs_memory_phase_bind_enabled",
@@ -1085,6 +1285,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.x-M-UCRS-SDF-TIME; `ucrs_memory_bind_enabled`; umst_ucrs `phase_entropy_bits`)",
         env_override: Some("UMST_UCRS_MEMORY_PHASE_BIND"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_msdf_layer_stack_max_depth",
@@ -1092,6 +1293,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.x-M-UCRS-SDF-TIME; `msdf_layer_stack_max_depth`)",
         env_override: Some("UMST_MSDF_LAYER_STACK_MAX_DEPTH"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_observed_wall_ms_source",
@@ -1099,6 +1301,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "Definition (§14bis.x-M-UCRS-SDF-TIME; `observed_wall_ms`)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_hilbert_bits",
@@ -1106,6 +1309,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-5; `memory_hilbert_bits`; umst_math::manifold::hilbert)",
         env_override: Some("UMST_MEMORY_HILBERT_BITS"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_msdf_hilbert_persist_enabled",
@@ -1113,6 +1317,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-5; `msdf_hilbert_persist_enabled`)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_memory_cockpit_badge_format",
@@ -1120,6 +1325,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-6; `memory::badge`)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_manifold_introspect_enabled",
@@ -1127,6 +1333,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-6; `manifold_introspect_verbose_enabled`)",
         env_override: Some("UMST_MANIFOLD_INTROSPECT"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_mcert_strict_paired_default",
@@ -1134,6 +1341,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-7; `run_mcert_paired`)",
         env_override: Some("UMST_MCERT_STRICT_PAIRED"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_action_shape_canonicalize_kind",
@@ -1141,6 +1349,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-4; `cockpit action SDF canonicalizer`)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_action_shape_quotient_default_enabled",
@@ -1148,6 +1357,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-4; `UMST_ACTION_SHAPE_QUOTIENT`)",
         env_override: Some("UMST_ACTION_SHAPE_QUOTIENT"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_action_shape_palette_max_entries_default",
@@ -1155,6 +1365,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-4 `:action-shapes`; palette truncation)",
         env_override: Some("UMST_ACTION_SHAPE_PALETTE_MAX_ENTRIES"),
+        derivation: Derivation::Pending,
     },
     // §14bis.f-S-0 — PQC primitive byte widths (PQClean / NIST parameter sets; `umst-math::crypto`)
     ConstantEntry {
@@ -1163,6 +1374,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; FIPS 203 ML-KEM-768; `Crypto/KEM.lean` L-S0 stub)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "crypto_ml_kem_768_secret_key_bytes",
@@ -1170,6 +1382,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; ML-KEM-768 SK wire)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "crypto_ml_kem_768_ciphertext_bytes",
@@ -1177,6 +1390,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; ML-KEM-768 ciphertext)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "crypto_ml_dsa_65_public_key_bytes",
@@ -1184,6 +1398,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; FIPS 204 class mapping; `Crypto/Sig.lean` L-S1 stub)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "crypto_ml_dsa_65_secret_key_bytes",
@@ -1191,6 +1406,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; ML-DSA-65 SK wire)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "crypto_slh_dsa_128s_public_key_bytes",
@@ -1198,6 +1414,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; SPHINCS+ SHA2-128s-simple PK seed size)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "crypto_sha3_256_digest_bytes",
@@ -1205,6 +1422,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; FIPS 202 Keccak via `sha3` crate; `Crypto/Hash.lean` L-S2 stub)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_llm_tier_fallback_default_chain_gemini",
@@ -1212,6 +1430,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.l-LHF-5; default Gemini tier fold; override UMST_LLM_TIER_FALLBACK_CHAIN_GEMINI)",
         env_override: Some("UMST_LLM_TIER_FALLBACK_CHAIN_GEMINI"),
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "umst_llm_tier_degradation_event_kind",
@@ -1219,6 +1438,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.l-LHF-5; cockpit-honest tier-degradation witness)",
         env_override: None,
+        derivation: Derivation::Pending,
     },
 ];
 
@@ -1340,8 +1560,34 @@ mod tests {
     }
 
     #[test]
+    fn registry_rows_default_derivation_pending_except_k_arc_backfilled() {
+        use crate::constants::tier1_derivation::K2_REGISTRY_ROW_NAMES;
+        use crate::constants::tier2_derivation::K3_REGISTRY_ROW_NAMES;
+        use crate::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
+
+        for e in REGISTRY {
+            if K2_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K3_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K4_REGISTRY_ROW_NAMES.contains(&e.name)
+            {
+                assert!(
+                    !e.derivation.is_pending(),
+                    "K-Arc backfill: {} must be non-Pending",
+                    e.name
+                );
+            } else {
+                assert!(
+                    e.derivation.is_pending(),
+                    "K-1 schema: {} must default to Pending until backfill",
+                    e.name
+                );
+            }
+        }
+    }
+
+    #[test]
     fn registry_sorted_by_tier_is_sorted_and_complete() {
-        assert_eq!(REGISTRY.len(), 166);
+        assert_eq!(REGISTRY.len(), 171);
         let sorted = registry_sorted_by_tier();
         assert_eq!(sorted.len(), REGISTRY.len());
         for w in sorted.windows(2) {

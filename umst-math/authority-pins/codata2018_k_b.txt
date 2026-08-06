@@ -1,0 +1,8 @@
+# CODATA 2018 — Boltzmann constant k (NIST CUU mirror pin)
+# K-2 authority snapshot for umst-math::landauer::K_B
+# Source: NIST Reference on Constants, Units, and Uncertainty (CODATA 2018)
+symbol: k
+value_SI: 1.380649e-23
+unit: J/K
+uncertainty: 0.000000e-23
+revision: CODATA2018

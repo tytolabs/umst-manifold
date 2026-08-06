@@ -17,6 +17,78 @@
 //! formal_citation: Bendsoe & Sigmund 2003, §1.2.2; Allaire 2007, §4.4  
 //! formal_form: \(\mathrm{d}c/\mathrm{d}\rho_e = -(\partial k_e/\partial\rho_e)\,\Delta_e^2\) with
 //! \(k_e=(E_e A/L_e)((1-d)^2+\epsilon)\), \(\rho_e=\tfrac12(\rho_a+\rho_b)\), chain rule to nodes via mean.
+//!
+//! # Honest boundary (W29-046)
+//!
+//! Bar-network discrete adjoint is a **research-lane** compliance surrogate behind
+//! **`mechanics-adjoint`**. Verified on the 4-node axial chain harness
+//! (`tests/verification/adjoint_compliance_analytic.rs`). Not physics GREEN, not
+//! `PRODUCTION_WIRED`, not `MASTER`. Q1-hex continuum adjoint lives in [`super::adjoint_q1_hex`].
+
+/// W29 deepen cell — bar-network adjoint honest fence bundle.
+pub const W29_ADJOINT_BAR_DEEPEN_CELL: &str = "W29-046-ADJOINT";
+
+/// Honest posture tag — discrete adjoint landed; production TO wiring refused.
+pub const ADJOINT_BAR_POSTURE_TAG: &str = "honest-bar-adjoint-research-lane";
+
+/// Honest physics posture — bar adjoint passes analytic harness; does not certify fleet TO.
+pub const ADJOINT_BAR_PHYSICS_GREEN: bool = false;
+
+/// Production topology-optimisation wiring — not claimed by bar adjoint alone.
+pub const ADJOINT_BAR_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by bar adjoint module.
+pub const ADJOINT_BAR_MASTER: bool = false;
+
+/// Whether finite-stage audit + equilibrium residual fence is wired on the forward path.
+pub const ADJOINT_BAR_FINITE_AUDIT_WIRED: bool = true;
+
+/// Whether static equilibrium residual is checked after PCG (fail-closed).
+pub const ADJOINT_BAR_EQUILIBRIUM_FENCE_WIRED: bool = true;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const ADJOINT_BAR_HONEST_FENCE: &str =
+    "bar_adjoint_landed=true finite_audit_wired=true equilibrium_fence_wired=true production_wired=false master_composition_wired=false";
+
+/// Typed probe for bar-network adjoint posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AdjointBarPostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub finite_audit_wired: bool,
+    pub equilibrium_fence_wired: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for bar-network adjoint.
+#[must_use]
+pub fn adjoint_bar_honest_posture_bundle() -> AdjointBarPostureProbe {
+    AdjointBarPostureProbe {
+        physics_green: ADJOINT_BAR_PHYSICS_GREEN,
+        production_wired: ADJOINT_BAR_PRODUCTION_WIRED,
+        master: ADJOINT_BAR_MASTER,
+        finite_audit_wired: ADJOINT_BAR_FINITE_AUDIT_WIRED,
+        equilibrium_fence_wired: ADJOINT_BAR_EQUILIBRIUM_FENCE_WIRED,
+        honest_fence: ADJOINT_BAR_HONEST_FENCE,
+        posture_tag: ADJOINT_BAR_POSTURE_TAG,
+        deepen_cell: W29_ADJOINT_BAR_DEEPEN_CELL,
+    }
+}
+
+/// Bar adjoint SSOT landed with production/master composition honestly open.
+#[must_use]
+pub fn adjoint_bar_posture_honest(probe: &AdjointBarPostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && probe.finite_audit_wired
+        && probe.equilibrium_fence_wired
+        && probe.honest_fence.contains("bar_adjoint_landed=true")
+        && probe.honest_fence.contains("production_wired=false")
+}
 
 use burn::tensor::{
     backend::{AutodiffBackend, Backend},
@@ -37,6 +109,14 @@ pub struct SimpElasticMaterial {
     pub nu: f32,
     pub p: f32,
     pub e_min: f32,
+}
+
+impl SimpElasticMaterial {
+    /// Young's modulus at nodal density \(\rho\in[0,1]\).
+    #[must_use]
+    pub fn e_at_rho(&self, rho: f32) -> f32 {
+        self.e_min + (self.e0 - self.e_min) * rho.clamp(0.0, 1.0).powf(self.p)
+    }
 }
 
 /// Ordered finite walk for H5 gradient diagnosis (Q1-hex populates; bar network leaves `None`).
@@ -122,6 +202,74 @@ pub fn nodal_sensitivity_from_edge_ge(
         }
     }
     sens
+}
+
+fn count_nonfinite(v: &[f32]) -> usize {
+    v.iter().filter(|x| !x.is_finite()).count()
+}
+
+fn audit_u_post_solve(u: &[f32], mask: &[f32]) -> (usize, usize, f32) {
+    let mut u_nf = 0usize;
+    let mut pinned_nf = 0usize;
+    let mut pinned_abs_max = 0.0_f32;
+    for (&ui, &m) in u.iter().zip(mask) {
+        if !ui.is_finite() {
+            u_nf += 1;
+        }
+        if m < 0.5 {
+            if !ui.is_finite() {
+                pinned_nf += 1;
+            }
+            pinned_abs_max = pinned_abs_max.max(ui.abs());
+        }
+    }
+    (u_nf, pinned_nf, pinned_abs_max)
+}
+
+fn build_finite_audit(
+    u: &[f32],
+    mask: &[f32],
+    ge: &[f32],
+    nodal_sens: &[f32],
+) -> AdjointFiniteStageAudit {
+    let (u_nf, pinned_nf, pinned_max) = audit_u_post_solve(u, mask);
+    let ge_nf = count_nonfinite(ge);
+    let sens_nf = count_nonfinite(nodal_sens);
+    let first_bad = if u_nf > 0 || pinned_nf > 0 {
+        Some("u_post_solve")
+    } else if ge_nf > 0 {
+        Some("element_ge")
+    } else if sens_nf > 0 {
+        Some("nodal_scatter")
+    } else {
+        None
+    };
+    AdjointFiniteStageAudit {
+        u_nonfinite: u_nf,
+        u_pinned_nonfinite: pinned_nf,
+        u_pinned_abs_max: pinned_max,
+        ge_nonfinite: ge_nf,
+        nodal_sens_nonfinite: sens_nf,
+        first_bad_stage: first_bad,
+    }
+}
+
+/// Fail-closed when PCG or static equilibrium residual misses configured tolerance.
+pub fn ensure_bar_equilibrium(
+    eq_rel: f32,
+    pcg: &BarNetworkPcgReport,
+    cg: &MechanicsInnerLoopConfig,
+) -> Result<(), PhysicsError> {
+    if pcg.converged_with_cfg(cg) && eq_rel.is_finite() {
+        let rel_tol = BarNetworkPcgReport::rel_tol_from_cfg(cg);
+        if rel_tol <= 0.0 || eq_rel <= rel_tol {
+            return Ok(());
+        }
+    }
+    Err(PhysicsError::Diverged {
+        eq_rel,
+        pcg_iterations: pcg.iterations,
+    })
 }
 
 /// Discrete-adjoint compliance wrapper for topology optimisation.
@@ -254,6 +402,10 @@ impl AdjointCompliance {
         let nodal_sensitivity =
             nodal_sensitivity_from_edge_ge(&ge_flat, &edges_f[..n_e], &edges_f[n_e..2 * n_e], n);
 
+        let u_flat = u.clone().into_data().value;
+        let mask_flat = boundary_mask.clone().into_data().value;
+        let finite_audit = build_finite_audit(&u_flat, &mask_flat, &ge_flat, &nodal_sensitivity);
+
         let comp = masked_dot(&body_force, &u, &boundary_mask);
 
         let edges_ad = Tensor::<B, 2, Int>::from_inner(edges_b1);
@@ -269,6 +421,7 @@ impl AdjointCompliance {
         let c_pad = Tensor::<B, 1>::from_inner(comp.clone());
         let surrogate = lin_a.sub(lin_b).add(c_pad).reshape([1]);
         let c_raw = comp.into_scalar();
+        ensure_bar_equilibrium(eq_rel, &pcg, cg)?;
         if !c_raw.is_finite() {
             return Err(PhysicsError::NonFiniteCompliance);
         }
@@ -278,12 +431,105 @@ impl AdjointCompliance {
             pcg_iters: pcg.iterations,
             equilibrium_rel_residual: eq_rel,
             nodal_sensitivity,
-            finite_audit: None,
+            finite_audit: Some(finite_audit),
             phase_timing: AdjointForwardPhaseTiming::default(),
             precond_kind: HexPreconditionerKind::from_use_preconditioner(cg.use_preconditioner),
-            equilibrium_displacement: Vec::new(),
+            equilibrium_displacement: u_flat,
         };
 
         Ok((surrogate, c_raw, diag))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::physics::mechanics::BarNetworkPcgReport;
+
+    #[test]
+    fn adjoint_bar_posture_honest_refuses_green_and_production() {
+        let probe = adjoint_bar_honest_posture_bundle();
+        assert!(adjoint_bar_posture_honest(&probe));
+        assert!(!probe.physics_green);
+        assert!(!probe.production_wired);
+        assert!(!probe.master);
+        assert!(probe.finite_audit_wired);
+        assert!(probe.equilibrium_fence_wired);
+        assert_eq!(probe.deepen_cell, W29_ADJOINT_BAR_DEEPEN_CELL);
+    }
+
+    #[test]
+    fn adjoint_simp_e_at_rho_matches_linear_p1() {
+        let mat = SimpElasticMaterial {
+            e0: 10.0,
+            nu: 0.3,
+            p: 1.0,
+            e_min: 1.0,
+        };
+        assert!((mat.e_at_rho(0.0) - 1.0).abs() < 1e-6);
+        assert!((mat.e_at_rho(1.0) - 10.0).abs() < 1e-6);
+        assert!((mat.e_at_rho(0.5) - 5.5).abs() < 1e-5);
+    }
+
+    #[test]
+    fn adjoint_nodal_sensitivity_mean_split_on_two_edge_chain() {
+        // nodes 0—1—2, edges (0,1) and (1,2)
+        let ge = vec![-2.0_f32, -4.0];
+        let src = vec![0.0, 1.0];
+        let tgt = vec![1.0, 2.0];
+        let sens = nodal_sensitivity_from_edge_ge(&ge, &src, &tgt, 3);
+        assert!((sens[0] - (-1.0)).abs() < 1e-6);
+        assert!((sens[1] - (-3.0)).abs() < 1e-6); // ½(-2) + ½(-4)
+        assert!((sens[2] - (-2.0)).abs() < 1e-6);
+    }
+
+    #[test]
+    fn adjoint_finite_audit_flags_nonfinite_ge() {
+        let u = vec![0.0_f32; 6];
+        let mask = vec![1.0_f32; 6];
+        let ge = vec![1.0_f32, f32::NAN];
+        let sens = vec![0.5_f32, 0.5_f32];
+        let audit = build_finite_audit(&u, &mask, &ge, &sens);
+        assert_eq!(audit.ge_nonfinite, 1);
+        assert_eq!(audit.first_bad_stage, Some("element_ge"));
+    }
+
+    #[test]
+    fn adjoint_ensure_bar_equilibrium_accepts_converged_residual() {
+        let pcg = BarNetworkPcgReport {
+            iterations: 12,
+            rel_residual: 1e-8,
+            stiffness_scale: 1.0,
+            e_ref: 1.0,
+            dx_char: 0.25,
+        };
+        let cg = MechanicsInnerLoopConfig {
+            max_cg_iterations: 500,
+            cg_tolerance: 1e-6,
+            pcg_tolerance: 1e-6,
+            use_preconditioner: true,
+            max_equilibrium_substeps: 1,
+        };
+        assert!(ensure_bar_equilibrium(1e-7, &pcg, &cg).is_ok());
+    }
+
+    #[test]
+    fn adjoint_ensure_bar_equilibrium_rejects_large_static_residual() {
+        let pcg = BarNetworkPcgReport {
+            iterations: 500,
+            rel_residual: 1e-8,
+            stiffness_scale: 1.0,
+            e_ref: 1.0,
+            dx_char: 0.25,
+        };
+        let cg = MechanicsInnerLoopConfig {
+            max_cg_iterations: 500,
+            cg_tolerance: 1e-6,
+            pcg_tolerance: 1e-6,
+            use_preconditioner: true,
+            max_equilibrium_substeps: 1,
+        };
+        let err = ensure_bar_equilibrium(0.1, &pcg, &cg).unwrap_err();
+        assert!(matches!(err, PhysicsError::Diverged { .. }));
     }
 }

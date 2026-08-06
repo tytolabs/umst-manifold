@@ -9,6 +9,13 @@ spdx = "MIT"
 layer = "runtime"
 formal_anchors = ["gateMaterialAgnostic", "physicalSecondLaw"]
 status = "wip"
+stability = "evolving"
+semver = "0.1.0"
+
+# R4-U1 flag coverage — every manifest carries the compose pair.
+composes_into = "self"
+composes_into_satisfied = true
+composes_note = "R4-U1: already in final position (self)."
 
 [registry]
 id = "tytolabs/umst-manifold"

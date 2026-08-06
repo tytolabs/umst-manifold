@@ -291,8 +291,53 @@ impl ThermodynamicGate {
 #[cfg(test)]
 #[allow(deprecated)]
 mod tests {
+    use super::super::transition_proposal::TRANSITION_TOLERANCE;
+    use super::super::verdict::AdmissibilityVerdict;
     use super::*;
     use crate::core::material_transition::SubstrateMaterialParams;
+
+    /// Golden vectors from `docs/GOLDEN_FIXTURES.md` / `tests/gate_parity_fixture.rs`.
+    fn golden_identity_admissible() -> (ThermodynamicState, ThermodynamicState, f64) {
+        let s = ThermodynamicState {
+            density: 2400.0,
+            temperature: 293.15,
+            free_energy: -1.35e5,
+            entropy: 0.05,
+            reaction_extent: 0.42,
+            strength: 12.7,
+        };
+        (s.clone(), s, 1.0)
+    }
+
+    /// Mass bound violation: `|Δρ| = 120` kg/m³ (registry band is `< 100`).
+    fn golden_mass_reject() -> (ThermodynamicState, ThermodynamicState, f64) {
+        let old = ThermodynamicState {
+            density: 2400.0,
+            temperature: 293.0,
+            free_energy: 0.0,
+            entropy: 0.1,
+            reaction_extent: 0.3,
+            strength: 10.0,
+        };
+        let mut new = old.clone();
+        new.density = 2280.0;
+        (old, new, 3600.0)
+    }
+
+    /// Clausius–Duhem reject: free-energy spike breaks `D_int ≥ −tolerance`.
+    fn golden_negative_dissipation_reject() -> (ThermodynamicState, ThermodynamicState, f64) {
+        let old = ThermodynamicState {
+            density: 2200.0,
+            temperature: 300.0,
+            free_energy: -2.0e5,
+            entropy: 0.2,
+            reaction_extent: 0.5,
+            strength: 20.0,
+        };
+        let mut new = old.clone();
+        new.free_energy = -1.0e4;
+        (old, new, 1.0)
+    }
 
     #[test]
     fn pure_outcome_matches_telemetry_path_without_counters() {
@@ -301,7 +346,7 @@ mod tests {
         let new =
             ThermodynamicState::from_mix_with_params(0.5, 0.65, 293.0, &SubstrateMaterialParams);
         let dt = 86_400.0;
-        let pure = thermo_gate_transition_outcome(&old, &new, dt, 1e-6);
+        let pure = thermo_gate_transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
         let mut gate = ThermodynamicGate::new();
         let telemetry = gate.check_transition(&old, &new, dt);
         assert_eq!(pure.is_accepted(), telemetry.is_accepted());
@@ -309,5 +354,160 @@ mod tests {
         assert_eq!(pure.is_energy_positive(), telemetry.is_energy_positive());
         assert!((pure.dissipation - telemetry.dissipation).abs() < 1e-12);
         assert!(gate.stats_summary().contains("Accepted: 1"));
+    }
+
+    #[test]
+    fn golden_identity_admissible_accepted_via_pure_outcome() {
+        let (old, new, dt) = golden_identity_admissible();
+        let outcome = thermo_gate_transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
+        assert!(outcome.is_accepted());
+        assert!(outcome.is_admissible());
+        assert_eq!(outcome.rest_verdict(), AdmissibilityVerdict::Accepted);
+        assert_eq!(outcome.rejection_reason_code(), AdmissibilityVerdict::ACCEPTED);
+        assert!(outcome.dissipation.is_finite());
+    }
+
+    #[test]
+    fn golden_mass_reject_maps_to_mass_violation() {
+        let (old, new, dt) = golden_mass_reject();
+        let outcome = thermo_gate_transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
+        assert!(!outcome.is_accepted());
+        assert!(!outcome.is_mass_conserved());
+        assert_eq!(outcome.rest_verdict(), AdmissibilityVerdict::MassViolation);
+        assert_eq!(
+            outcome.rejection_reason_code(),
+            AdmissibilityVerdict::MASS_VIOLATION
+        );
+    }
+
+    #[test]
+    fn golden_negative_dissipation_reject_maps_to_cd_token() {
+        let (old, new, dt) = golden_negative_dissipation_reject();
+        let outcome = thermo_gate_transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
+        assert!(!outcome.is_accepted());
+        assert_eq!(outcome.rest_verdict(), AdmissibilityVerdict::NegativeDissipation);
+        assert_eq!(
+            outcome.rejection_reason_code(),
+            AdmissibilityVerdict::NEGATIVE_DISSIPATION
+        );
+    }
+
+    #[test]
+    fn gate_counters_track_accept_and_reject() {
+        let (id_old, id_new, id_dt) = golden_identity_admissible();
+        let (mass_old, mass_new, mass_dt) = golden_mass_reject();
+        let mut gate = ThermodynamicGate::with_tolerance(TRANSITION_TOLERANCE);
+
+        assert!(gate
+            .check_transition(&id_old, &id_new, id_dt)
+            .is_accepted());
+        assert!(!gate
+            .check_transition(&mass_old, &mass_new, mass_dt)
+            .is_accepted());
+
+        let summary = gate.stats_summary();
+        assert!(summary.contains("Accepted: 1"));
+        assert!(summary.contains("Rejected: 1"));
+        assert!(summary.contains("Rate: 50.0%"));
+    }
+
+    #[test]
+    fn gate_stats_summary_empty_before_any_check() {
+        let gate = ThermodynamicGate::new();
+        assert_eq!(gate.stats_summary(), "No transitions checked");
+    }
+
+    #[test]
+    fn transition_proposal_admissible_matches_check_transition() {
+        let old =
+            ThermodynamicState::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
+        let new =
+            ThermodynamicState::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        let dt = 28.0 * 24.0 * 3600.0;
+        let mut gate = ThermodynamicGate::new();
+        let admissible = gate.transition_proposal_admissible(&old, &new, dt);
+        let result = gate.check_transition(&old, &new, dt);
+        assert_eq!(admissible, result.is_accepted());
+        assert!(admissible);
+    }
+
+    #[test]
+    fn hydration_progression_from_mix_calibrated_accepted() {
+        let old =
+            ThermodynamicState::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
+        let new =
+            ThermodynamicState::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        let dt = 28.0 * 24.0 * 3600.0;
+        let outcome = thermo_gate_transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
+        assert!(outcome.is_accepted());
+        assert!(new.reaction_extent > old.reaction_extent);
+        assert!(new.strength >= old.strength);
+    }
+
+    #[test]
+    fn reaction_extent_regression_rejected() {
+        let old = ThermodynamicState::from_mix_calibrated(0.45, 0.5, 293.15, 40.0);
+        let mut new = old.clone();
+        new.reaction_extent = 0.1;
+        let outcome = thermo_gate_transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
+        assert!(!outcome.is_accepted());
+        assert_ne!(outcome.rest_verdict(), AdmissibilityVerdict::Accepted);
+    }
+
+    #[test]
+    fn malformed_dt_rejected() {
+        let idle = ThermodynamicState::new();
+        let outcome = thermo_gate_transition_outcome(&idle, &idle, -1.0, TRANSITION_TOLERANCE);
+        assert!(!outcome.is_accepted());
+    }
+
+    #[test]
+    fn thermodynamic_state_default_matches_new() {
+        let d = ThermodynamicState::default();
+        let n = ThermodynamicState::new();
+        assert_eq!(d.density, n.density);
+        assert_eq!(d.temperature, n.temperature);
+        assert_eq!(d.free_energy, n.free_energy);
+        assert_eq!(d.entropy, n.entropy);
+        assert_eq!(d.reaction_extent, n.reaction_extent);
+        assert_eq!(d.strength, n.strength);
+    }
+
+    #[test]
+    fn from_mix_with_params_matches_calibrated_intrinsic() {
+        let params = SubstrateMaterialParams;
+        let w_c = 0.45;
+        let alpha = 0.35;
+        let temp = 293.15;
+        let s_intrinsic = params.default_intrinsic_strength_mpa();
+        let via_mix =
+            ThermodynamicState::from_mix_with_params(w_c, alpha, temp, &params);
+        let via_calibrated = ThermodynamicState::from_mix_calibrated_with_params(
+            w_c,
+            alpha,
+            temp,
+            s_intrinsic,
+            &params,
+        );
+        assert_eq!(via_mix.density, via_calibrated.density);
+        assert_eq!(via_mix.strength, via_calibrated.strength);
+        assert_eq!(via_mix.free_energy, via_calibrated.free_energy);
+        assert_eq!(via_mix.reaction_extent, alpha);
+    }
+
+    #[test]
+    fn admissibility_result_conjunct_verdict_round_trips() {
+        let (old, new, dt) = golden_identity_admissible();
+        let outcome = thermo_gate_transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
+        assert_eq!(outcome.conjunct_verdict(), outcome.verdict);
+        assert_eq!(outcome.conjunct_verdict().is_accepted(), outcome.is_accepted());
+    }
+
+    #[test]
+    fn w8e14_thermo_state_new_idle_is_finite() {
+        let s = ThermodynamicState::new();
+        assert!(s.density.is_finite());
+        assert!(s.temperature.is_finite());
+        assert!(s.free_energy.is_finite());
     }
 }

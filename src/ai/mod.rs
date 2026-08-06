@@ -12,6 +12,7 @@ pub mod constraint_loss;
 #[cfg(feature = "epistemic-ppo")]
 pub mod epistemic_mi;
 pub mod formal;
+pub mod semantic_evolution_bridge;
 #[cfg(feature = "design-implicit-field")]
 pub mod implicit_field;
 pub mod info_gain;

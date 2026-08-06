@@ -33,6 +33,12 @@
 //! number of explicit backward-time tensor steps (no unbounded loops) so PPO smoke and AdamW updates
 //! exercise real arithmetic on `policy_weights`, `dL_dz`, and `dt_sim_dt_global`. This is still a
 //! **surrogate** \(dL/d\theta\), not a discretised continuous adjoint of the forward pass.
+//!
+//! **Honest status:** surrogate ODE adjoint + tensor AdamW contract is measured — not physics GREEN,
+//! not `PRODUCTION_WIRED`, not `MASTER_RETICK`. Discrete compliance adjoint lives in
+//! [`crate::physics::adjoint`]; consumer-drift witness: `crates/umst-bench/src/witness/mf_adjoint.rs`.
+//!
+//! **Witness:** `cargo test --manifest-path umst-manifold/Cargo.toml adjoint` · cell `W29-004-ADJOINT`.
 
 #![allow(non_snake_case)]
 
@@ -44,11 +50,56 @@ use burn::tensor::{backend::Backend, Shape, Tensor};
 #[cfg(feature = "epistemic-ppo")]
 use crate::core::umst_schema::SCALAR_EPISTEMIC_UNCERTAINTY;
 
+/// W29 deepen cell id — honest surrogate adjoint slice only.
+pub const ADJOINT_CELL_ID: &str = "W29-004-ADJOINT";
+
+/// Honest posture tag — tests deepen only; no GREEN invent (`MASTER_RETICK=no`).
+pub const ADJOINT_POSTURE_TAG: &str = "honest-surrogate-adjoint-only";
+
+/// LPP-004 morphism id @ AI manifold adjoint band (forward → backward_adjoint → AdamW).
+pub const ADJOINT_ODE_MORPHISM_ID: &str = "adjoint_neural_ode_surrogate_policy_gradient";
+
+/// Consumer-drift witness status — LO harness present; full replay deferred.
+pub const ADJOINT_CONSUMER_DRIFT_STATUS: &str = "LO_HARNESS_PRESENT_REPLAY_DEFERRED";
+
+/// Integration cargo-test posture — physics adjoint harness is PARTIAL (see `mf_adjoint` witness).
+pub const ADJOINT_INTEGRATION_CARGO_TEST_STATUS: &str = "PARTIAL";
+
+/// Honest physics posture — surrogate gradient computes; continuum multi-physics adjoint deferred.
+pub const ADJOINT_PHYSICS_GREEN: bool = false;
+
+/// Production wiring at cartridge / multi-physics seam — deferred beyond W29 slice.
+pub const ADJOINT_PRODUCTION_WIRED: bool = false;
+
 /// Placeholder policy vector size \(P\) for [`AdjointNeuralODE::policy_weights`] / adjoint gradients.
 pub const ADJOINT_POLICY_DIM: usize = 1024;
 
 /// Fixed backward-time substeps for [`AdjointNeuralODE::backward_adjoint`] (finite-horizon surrogate).
-const ADJOINT_BACKWARD_STEPS: usize = 10;
+pub const ADJOINT_BACKWARD_STEPS: usize = 10;
+
+/// Honest slice posture — surrogate evaluators landed, physics GREEN refused.
+#[must_use]
+pub const fn adjoint_posture_is_honest() -> bool {
+    !ADJOINT_PHYSICS_GREEN && !ADJOINT_PRODUCTION_WIRED
+}
+
+/// W29 honest posture bundle — surrogate landed, physics GREEN refused.
+#[must_use]
+pub const fn adjoint_w29_honest_posture_bundle() -> bool {
+    adjoint_posture_is_honest() && !ADJOINT_PHYSICS_GREEN && !ADJOINT_PRODUCTION_WIRED
+}
+
+/// Whether the adjoint ODE morphism is pinned @ HEAD (policy dim + backward steps + posture).
+#[must_use]
+pub fn adjoint_ode_morphism_pinned() -> bool {
+    ADJOINT_ODE_MORPHISM_ID == "adjoint_neural_ode_surrogate_policy_gradient"
+        && ADJOINT_POSTURE_TAG == "honest-surrogate-adjoint-only"
+        && ADJOINT_CELL_ID == "W29-004-ADJOINT"
+        && ADJOINT_POLICY_DIM == 1024
+        && ADJOINT_BACKWARD_STEPS == 10
+        && ADJOINT_CONSUMER_DRIFT_STATUS == "LO_HARNESS_PRESENT_REPLAY_DEFERRED"
+        && ADJOINT_INTEGRATION_CARGO_TEST_STATUS == "PARTIAL"
+}
 
 /// Augmented state tensor for the Adjoint Method.
 /// \mathbf{a}(t) = [\mathbf{z}(t), \mathbf{\lambda}(t), \frac{\partial L}{\partial \theta}]
@@ -180,5 +231,188 @@ impl<B: Backend<FloatElem = f32>> AdjointNeuralODE<B> {
         }
 
         acc.mul(seed)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approx::assert_relative_eq;
+    use burn::tensor::{Data, Shape, Tensor};
+    use burn_ndarray::{NdArray, NdArrayDevice};
+
+    type B = NdArray<f32>;
+
+    fn device() -> NdArrayDevice {
+        NdArrayDevice::default()
+    }
+
+    fn test_umst(n: usize, f: usize) -> UnifiedMaterialStateTensor<B> {
+        let dev = device();
+        let coords: Tensor<B, 2, burn::tensor::Int> =
+            Tensor::from_data(Data::new(vec![0i64; n * 5], Shape::new([n, 5])), &dev);
+        let edges_b1: Tensor<B, 2, burn::tensor::Int> = Tensor::from_data(
+            Data::new(vec![0i64, 1i64, 1i64, 0i64], Shape::new([2, 2])),
+            &dev,
+        );
+        let faces_b2: Tensor<B, 2, burn::tensor::Int> =
+            Tensor::from_data(Data::new(vec![0i64, 0i64], Shape::new([2, 1])), &dev);
+        UnifiedMaterialStateTensor {
+            coords,
+            edges_b1,
+            faces_b2,
+            scalar_features: Tensor::<B, 2>::zeros([n, f], &dev),
+            vector_features: Tensor::<B, 3>::zeros([n, 1, 3], &dev),
+            matrix_features: Tensor::<B, 4>::zeros([n, 1, 3, 3], &dev),
+            resolution_mm: [1.0, 1.0, 1.0],
+            node_positions: None,
+            displacement_bc_mask: Tensor::<B, 3>::ones([1, n, 3], &dev),
+            policy_editable_mask: Tensor::<B, 2>::ones([n, 1], &dev),
+            #[cfg(feature = "formal-witness")]
+            catalog_schema_digest: None,
+        }
+    }
+
+    #[test]
+    fn adjoint_w29_honest_posture_bundle_holds() {
+        assert!(adjoint_w29_honest_posture_bundle());
+        assert!(adjoint_posture_is_honest());
+        assert_eq!(ADJOINT_CELL_ID, "W29-004-ADJOINT");
+        assert!(!ADJOINT_PHYSICS_GREEN);
+        assert!(!ADJOINT_PRODUCTION_WIRED);
+    }
+
+    #[test]
+    fn adjoint_ode_morphism_pinned_at_head() {
+        assert!(adjoint_ode_morphism_pinned());
+        assert_eq!(
+            ADJOINT_ODE_MORPHISM_ID,
+            "adjoint_neural_ode_surrogate_policy_gradient"
+        );
+    }
+
+    #[test]
+    fn adjoint_posture_tag_honest_not_green() {
+        assert!(ADJOINT_POSTURE_TAG.contains("honest"));
+        assert!(!ADJOINT_POSTURE_TAG.to_ascii_lowercase().contains("green"));
+        assert!(!ADJOINT_POSTURE_TAG.to_ascii_lowercase().contains("production"));
+    }
+
+    #[test]
+    fn adjoint_policy_dim_anchor_pinned() {
+        assert_eq!(ADJOINT_POLICY_DIM, 1024);
+        let ode = AdjointNeuralODE::<B>::new(&device());
+        assert_eq!(ode.policy_weights.dims(), [ADJOINT_POLICY_DIM]);
+    }
+
+    #[test]
+    fn adjoint_backward_steps_anchor_pinned() {
+        assert_eq!(ADJOINT_BACKWARD_STEPS, 10);
+    }
+
+    #[test]
+    fn adjoint_consumer_drift_status_replay_deferred() {
+        assert_eq!(
+            ADJOINT_CONSUMER_DRIFT_STATUS,
+            "LO_HARNESS_PRESENT_REPLAY_DEFERRED"
+        );
+        assert_eq!(ADJOINT_INTEGRATION_CARGO_TEST_STATUS, "PARTIAL");
+        assert_ne!(ADJOINT_INTEGRATION_CARGO_TEST_STATUS, "PASS");
+    }
+
+    #[test]
+    fn adjoint_backward_adjoint_returns_policy_dim_shape() {
+        let dev = device();
+        let ode = AdjointNeuralODE::<B>::new(&dev);
+        let dL_dz = Tensor::<B, 1>::from_data(Data::new(vec![0.5_f32], Shape::new([1])), &dev);
+        let dt = Tensor::<B, 1>::from_data(Data::new(vec![1.0_f32], Shape::new([1])), &dev);
+        let grad = ode.backward_adjoint(
+            test_umst(2, 4),
+            dL_dz,
+            0.0,
+            1.0,
+            dt,
+        );
+        assert_eq!(grad.dims(), [ADJOINT_POLICY_DIM]);
+    }
+
+    #[test]
+    fn adjoint_backward_adjoint_nonzero_for_nonzero_seed() {
+        let dev = device();
+        let mut ode = AdjointNeuralODE::<B>::new(&dev);
+        ode.policy_weights = Tensor::<B, 1>::full([ADJOINT_POLICY_DIM], 0.25_f32, &dev);
+        let dL_dz = Tensor::<B, 1>::from_data(Data::new(vec![1.0_f32], Shape::new([1])), &dev);
+        let dt = Tensor::<B, 1>::from_data(Data::new(vec![1.0_f32], Shape::new([1])), &dev);
+        let grad = ode.backward_adjoint(
+            test_umst(2, 4),
+            dL_dz,
+            0.0,
+            1.0,
+            dt,
+        );
+        let l2: f32 = grad.powf_scalar(2.0).sum().into_scalar();
+        assert!(l2 > 1.0e-12, "surrogate grad must be non-zero for nonzero seed");
+    }
+
+    #[test]
+    fn adjoint_backward_adjoint_zero_seed_yields_zero_grad() {
+        let dev = device();
+        let mut ode = AdjointNeuralODE::<B>::new(&dev);
+        ode.policy_weights = Tensor::<B, 1>::full([ADJOINT_POLICY_DIM], 0.5_f32, &dev);
+        let dL_dz = Tensor::<B, 1>::from_data(Data::new(vec![0.0_f32], Shape::new([1])), &dev);
+        let dt = Tensor::<B, 1>::from_data(Data::new(vec![1.0_f32], Shape::new([1])), &dev);
+        let grad = ode.backward_adjoint(
+            test_umst(2, 4),
+            dL_dz,
+            0.0,
+            1.0,
+            dt,
+        );
+        let max_abs: f32 = grad.abs().max().into_scalar();
+        assert_relative_eq!(max_abs, 0.0, epsilon = 1.0e-12);
+    }
+
+    #[test]
+    fn adjoint_backward_adjoint_scales_linearly_with_seed() {
+        let dev = device();
+        let mut ode = AdjointNeuralODE::<B>::new(&dev);
+        ode.policy_weights = Tensor::<B, 1>::full([ADJOINT_POLICY_DIM], 0.1_f32, &dev);
+        let dt = Tensor::<B, 1>::from_data(Data::new(vec![1.0_f32], Shape::new([1])), &dev);
+        let umst = test_umst(2, 4);
+        let g1 = ode.backward_adjoint(
+            umst.clone(),
+            Tensor::<B, 1>::from_data(Data::new(vec![1.0_f32], Shape::new([1])), &dev),
+            0.0,
+            1.0,
+            dt.clone(),
+        );
+        let g2 = ode.backward_adjoint(
+            umst,
+            Tensor::<B, 1>::from_data(Data::new(vec![2.0_f32], Shape::new([1])), &dev),
+            0.0,
+            1.0,
+            dt,
+        );
+        let s1: f32 = g1.sum().into_scalar();
+        let s2: f32 = g2.sum().into_scalar();
+        assert_relative_eq!(s2, 2.0 * s1, epsilon = 1.0e-5);
+    }
+
+    #[test]
+    fn adjoint_default_forward_is_identity_without_epistemic_feature() {
+        #[cfg(not(feature = "epistemic-ppo"))]
+        {
+            let dev = device();
+            let ode = AdjointNeuralODE::<B>::new(&dev);
+            let umst = test_umst(3, 5);
+            let before: Vec<f32> = umst.scalar_features.clone().into_data().value;
+            let out = ode.forward(umst, 0.0, 1.0);
+            let after: Vec<f32> = out.scalar_features.into_data().value;
+            assert_eq!(before, after, "default build must pass through UMST unchanged");
+        }
+        #[cfg(feature = "epistemic-ppo")]
+        {
+            // epistemic path covered by tests/epistemic_ppo.rs
+        }
     }
 }

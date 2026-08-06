@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # W9 T2.1 — kernel catalog_id grep vs cartridge registry parity (Goal C).
-# Extended Track C: MaOS-Workspace verify_public_stack + rejection telemetry grep.
+# Extended Track C: tyto-workspace verify_public_stack + rejection telemetry grep.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -50,7 +50,7 @@ else
   fail "missing src/ai/rejection_telemetry.rs"
 fi
 
-echo "=== MaOS-Workspace verify_public_stack feature-gated lane ==="
+echo "=== tyto-workspace verify_public_stack feature-gated lane ==="
 VPS="${MAOS_WS}/scripts/verify_public_stack.sh"
 if [ -f "$VPS" ]; then
   if rg -q 'Feature-gated physics' "$VPS" \
@@ -61,7 +61,7 @@ if [ -f "$VPS" ]; then
     fail "verify_public_stack.sh missing feature-gated physics stanza"
   fi
 else
-  warn "MaOS-Workspace verify_public_stack.sh not found at $VPS"
+  warn "tyto-workspace verify_public_stack.sh not found at $VPS"
 fi
 
 echo "=== Cartridge CD_TRANSITION cross-repo (optional) ==="

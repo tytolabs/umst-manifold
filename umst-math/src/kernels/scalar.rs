@@ -139,6 +139,43 @@ pub fn classify_band_scalar(samples: &[f64], eta: f64) -> Option<BandLabel> {
     })
 }
 
+/// Uniform bucket-max downsample to `width` sparkline heights in `[0, max_scale]`.
+///
+/// Used by egoff H-6b bashtop cockpit stripe; scalar reference for optional SIMD path.
+#[must_use]
+pub fn downsample_sparkline_u64_scalar(samples: &[f64], width: usize, max_scale: u64) -> Vec<u64> {
+    if width == 0 {
+        return Vec::new();
+    }
+    if samples.is_empty() {
+        return vec![0; width];
+    }
+    let finite: Vec<f64> = samples.iter().copied().filter(|x| x.is_finite()).collect();
+    if finite.is_empty() {
+        return vec![0; width];
+    }
+    let lo = finite.iter().copied().fold(f64::INFINITY, f64::min);
+    let hi = finite.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    let span = if (hi - lo).abs() < 1e-12 { 1.0 } else { hi - lo };
+    let n = finite.len();
+    let mut out = Vec::with_capacity(width);
+    for bucket in 0..width {
+        let start = bucket * n / width;
+        let end = ((bucket + 1) * n / width).max(start + 1).min(n);
+        let peak = finite[start..end]
+            .iter()
+            .copied()
+            .fold(f64::NEG_INFINITY, f64::max);
+        let norm = if peak.is_finite() {
+            ((peak - lo) / span).clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+        out.push((norm * max_scale as f64).round() as u64);
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

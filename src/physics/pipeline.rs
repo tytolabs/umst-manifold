@@ -14,6 +14,122 @@
 //! **Inner-loop exemption:** CG / PCG Krylov iterations and dense FD Newton hosts stay imperative —
 //! see [`docs/FP_FIXED_POINT_CANONICAL.md`](../../docs/FP_FIXED_POINT_CANONICAL.md) and
 //! [`super::solvers::fixed_point`] (tensor `mut` inner loops are not functor-wrapped).
+//!
+//! # Honest boundary (W29-065)
+//!
+//! Kleisli `Result` helpers over [`ThmcState`] are the **outer-tick composition surface**
+//! (`ok_state` / `and_then_*` / `map_*` / `or_else_result` / `compose_state_pair` /
+//! `fold_state_steps`). Primary production caller under `thmc-coupled` is
+//! [`super::solvers::thmc_epilogue::thmc_post_step_epilogue`]. Unit contracts:
+//! `cargo test --manifest-path umst-manifold/Cargo.toml --features thmc-coupled pipeline --lib`.
+//! Not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER` / OP-5. Inner Krylov / Newton hosts
+//! stay imperative.
+
+/// W29 deepen cell — THMC Kleisli pipeline honest fence bundle.
+pub const W29_PIPELINE_DEEPEN_CELL: &str = "W29-065-PIPELINE";
+
+/// Honest posture tag — Result Kleisli helpers landed; fleet production wiring refused.
+pub const PIPELINE_POSTURE_TAG: &str = "honest-thmc-kleisli-pipeline-research-lane";
+
+/// Honest physics posture — pipeline unit contracts pass; does not certify fleet physics GREEN.
+pub const PIPELINE_PHYSICS_GREEN: bool = false;
+
+/// Production wiring — not claimed by Kleisli helpers alone.
+pub const PIPELINE_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by this module.
+pub const PIPELINE_MASTER: bool = false;
+
+/// Whether outer-tick Kleisli helpers (`ok_state` / bind / map / fold) are landed.
+pub const PIPELINE_KLEISLI_HELPERS_LANDED: bool = true;
+
+/// Whether CG / PCG / dense FD Newton inner loops are functor-wrapped (honestly deferred).
+pub const PIPELINE_INNER_LOOP_FUNCTOR_WRAPPED: bool = false;
+
+/// Whether `thmc_post_step_epilogue` is the measured primary caller under `thmc-coupled`.
+pub const PIPELINE_EPILOGUE_CALLER_WIRED: bool = true;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const PIPELINE_HONEST_FENCE: &str =
+    "kleisli_helpers_landed=true epilogue_caller_wired=true inner_loop_functor_wrapped=false production_wired=false master_composition_wired=false physics_green=false";
+
+const _: () = assert!(!PIPELINE_PRODUCTION_WIRED);
+const _: () = assert!(!PIPELINE_PHYSICS_GREEN);
+const _: () = assert!(!PIPELINE_MASTER);
+const _: () = assert!(!PIPELINE_INNER_LOOP_FUNCTOR_WRAPPED);
+const _: () = assert!(PIPELINE_KLEISLI_HELPERS_LANDED);
+const _: () = assert!(PIPELINE_EPILOGUE_CALLER_WIRED);
+
+/// Typed probe for THMC Kleisli pipeline posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PipelinePostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub kleisli_helpers_landed: bool,
+    pub inner_loop_functor_wrapped: bool,
+    pub epilogue_caller_wired: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for THMC Kleisli pipeline helpers.
+#[must_use]
+pub fn pipeline_honest_posture_bundle() -> PipelinePostureProbe {
+    PipelinePostureProbe {
+        physics_green: PIPELINE_PHYSICS_GREEN,
+        production_wired: PIPELINE_PRODUCTION_WIRED,
+        master: PIPELINE_MASTER,
+        kleisli_helpers_landed: PIPELINE_KLEISLI_HELPERS_LANDED,
+        inner_loop_functor_wrapped: PIPELINE_INNER_LOOP_FUNCTOR_WRAPPED,
+        epilogue_caller_wired: PIPELINE_EPILOGUE_CALLER_WIRED,
+        honest_fence: PIPELINE_HONEST_FENCE,
+        posture_tag: PIPELINE_POSTURE_TAG,
+        deepen_cell: W29_PIPELINE_DEEPEN_CELL,
+    }
+}
+
+/// Kleisli pipeline SSOT landed with production/master/GREEN composition honestly open.
+#[must_use]
+pub fn pipeline_posture_honest(probe: &PipelinePostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && probe.kleisli_helpers_landed
+        && !probe.inner_loop_functor_wrapped
+        && probe.epilogue_caller_wired
+        && probe.honest_fence.contains("kleisli_helpers_landed=true")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+}
+
+/// Refuse GREEN / PRODUCTION_WIRED / MASTER claims on the Kleisli pipeline surface.
+#[must_use]
+pub fn pipeline_refuse_overclaim(probe: &PipelinePostureProbe) -> Result<(), &'static str> {
+    if probe.physics_green {
+        return Err("PIPELINE_PHYSICS_GREEN must stay false until fleet physics closes");
+    }
+    if probe.production_wired {
+        return Err("PIPELINE_PRODUCTION_WIRED must stay false until embodied loop closes");
+    }
+    if probe.master {
+        return Err("PIPELINE_MASTER must stay false — not claimed by Kleisli helpers alone");
+    }
+    if probe.inner_loop_functor_wrapped {
+        return Err("inner Krylov/Newton loops must stay imperative (not functor-wrapped)");
+    }
+    if !probe.kleisli_helpers_landed {
+        return Err("kleisli helpers must stay landed");
+    }
+    if !probe.epilogue_caller_wired {
+        return Err("thmc_post_step_epilogue caller wiring must stay measured true");
+    }
+    if !pipeline_posture_honest(probe) {
+        return Err("pipeline posture fence inconsistent");
+    }
+    Ok(())
+}
 
 use burn::tensor::backend::Backend;
 
@@ -137,6 +253,22 @@ mod tests {
             Tensor::zeros([batch, n, 1], dev),
             0.0,
         )
+    }
+
+    #[test]
+    fn pipeline_honest_posture_refuses_green_and_production() {
+        let probe = pipeline_honest_posture_bundle();
+        assert!(pipeline_posture_honest(&probe));
+        assert!(pipeline_refuse_overclaim(&probe).is_ok());
+        assert!(!probe.physics_green);
+        assert!(!probe.production_wired);
+        assert!(!probe.master);
+        assert!(!probe.inner_loop_functor_wrapped);
+        assert!(probe.kleisli_helpers_landed);
+        assert!(probe.epilogue_caller_wired);
+        assert_eq!(probe.deepen_cell, W29_PIPELINE_DEEPEN_CELL);
+        assert!(probe.honest_fence.contains("inner_loop_functor_wrapped=false"));
+        assert!(probe.honest_fence.contains("epilogue_caller_wired=true"));
     }
 
     #[test]
@@ -278,7 +410,6 @@ mod tests {
     #[test]
     fn or_else_result_recovers_on_err() {
         let dev = Default::default();
-        let state = toy_state(&dev);
         let err = PhysicsError::InvariantViolation {
             context: "pipeline::tests::or_else_result_recovers_on_err",
         };

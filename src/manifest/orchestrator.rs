@@ -3,6 +3,25 @@
 
 //! Embodied policy loop: [`ManifoldGateway`] (tensor / CBF) composed with optional host gates via
 //! [`GateEvaluatorRegistry`] and [`ThermodynamicTransitionEvaluator`] (see `docs/GateUnificationSpec.md`).
+//!
+//! **Honest status:** host-before-gateway routing + registry CD / mix / Kleisli η is measured —
+//! not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER_RETICK`. Fragment audit (~22% scaffold)
+//! and embodied loop close remain deferred beyond this spine.
+
+/// W29 deepen cell id — honest orchestrator spine only.
+pub const ORCHESTRATOR_CELL_ID: &str = "W29-042-ORCHESTRATOR";
+
+/// Honest posture tag — tests deepen routing contract (`MASTER_RETICK=no`).
+pub const ORCHESTRATOR_POSTURE_TAG: &str = "honest-embodied-orchestrator-spine-only";
+
+/// Embodied orchestrator morphism id @ manifest composition band.
+pub const ORCHESTRATOR_MORPHISM_ID: &str = "embodied_orchestrator_host_before_gateway";
+
+/// Honest physics posture — routing computes; continuum lift deferred.
+pub const ORCHESTRATOR_PHYSICS_GREEN: bool = false;
+
+/// Production wiring at sense / actuate / loop-close seam — deferred beyond W29 slice.
+pub const ORCHESTRATOR_PRODUCTION_WIRED: bool = false;
 
 use crate::ai::ppo::ManifoldGateway;
 use crate::core::tensors::{ClausiusDuhemProof, UnifiedMaterialStateTensor, VerifiedUMST};
@@ -80,6 +99,32 @@ impl std::fmt::Display for EmbodiedReject {
 }
 
 impl std::error::Error for EmbodiedReject {}
+
+/// Honest slice posture — host routing landed, physics GREEN refused.
+#[must_use]
+pub const fn orchestrator_posture_is_honest() -> bool {
+    !ORCHESTRATOR_PHYSICS_GREEN && !ORCHESTRATOR_PRODUCTION_WIRED
+}
+
+/// W29 honest posture bundle — routing evaluators landed, physics GREEN refused.
+#[must_use]
+pub const fn orchestrator_w29_honest_posture_bundle() -> bool {
+    orchestrator_posture_is_honest()
+        && !ORCHESTRATOR_PHYSICS_GREEN
+        && !ORCHESTRATOR_PRODUCTION_WIRED
+}
+
+/// Whether the embodied orchestrator morphism is pinned @ HEAD (host-before-gateway semantics).
+#[must_use]
+pub fn orchestrator_morphism_pinned() -> bool {
+    ORCHESTRATOR_MORPHISM_ID == "embodied_orchestrator_host_before_gateway"
+        && ORCHESTRATOR_POSTURE_TAG == "honest-embodied-orchestrator-spine-only"
+        && ORCHESTRATOR_CELL_ID == "W29-042-ORCHESTRATOR"
+}
+
+/// Compile-time honesty fence — no fake production or master claims.
+pub const ORCHESTRATOR_HONEST_FENCE: &str =
+    "orchestrator_host_routing_landed=true production_wired=false master_composition_wired=false";
 
 /// Composes [`IScienceCartridge`] through [`ManifoldGateway`] plus optional host gates.
 pub struct EmbodiedOrchestrator<B: Backend, C: IScienceCartridge<B>> {
@@ -284,5 +329,41 @@ mod tests {
         };
         assert_eq!(rej.catalog_id(), "umst.gate.landauer_cbf");
         assert!(rej.to_string().contains("umst.gate.landauer_cbf"));
+    }
+
+    #[test]
+    fn orchestrator_posture_is_honest_witness() {
+        assert!(orchestrator_posture_is_honest());
+        assert!(!ORCHESTRATOR_PHYSICS_GREEN);
+        assert!(!ORCHESTRATOR_PRODUCTION_WIRED);
+    }
+
+    #[test]
+    fn orchestrator_w29_honest_posture_bundle_holds() {
+        assert!(orchestrator_w29_honest_posture_bundle());
+    }
+
+    #[test]
+    fn orchestrator_morphism_pinned_at_head() {
+        assert!(orchestrator_morphism_pinned());
+        assert_eq!(ORCHESTRATOR_CELL_ID, "W29-042-ORCHESTRATOR");
+        assert_eq!(
+            ORCHESTRATOR_MORPHISM_ID,
+            "embodied_orchestrator_host_before_gateway"
+        );
+    }
+
+    #[test]
+    fn orchestrator_posture_tag_honest_not_green() {
+        assert!(ORCHESTRATOR_POSTURE_TAG.contains("honest"));
+        assert!(!ORCHESTRATOR_POSTURE_TAG.contains("GREEN"));
+        assert!(!ORCHESTRATOR_POSTURE_TAG.contains("PRODUCTION"));
+    }
+
+    #[test]
+    fn orchestrator_honest_fence_refuses_production_and_master() {
+        assert!(ORCHESTRATOR_HONEST_FENCE.contains("production_wired=false"));
+        assert!(ORCHESTRATOR_HONEST_FENCE.contains("master_composition_wired=false"));
+        assert!(ORCHESTRATOR_HONEST_FENCE.contains("orchestrator_host_routing_landed=true"));
     }
 }

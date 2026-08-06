@@ -16,6 +16,19 @@
 //!
 //! Re-exports: [`DensityNet`], [`TopologyOptimizer`], [`TopologyOptimizerStub`] for callers that
 //! previously imported them only from this module.
+//!
+//! # Honest boundary (W29-089)
+//!
+//! **In scope today:** explicit CFL-guarded graph diffusion of nodal \(\rho\), policy∩BC edit masks,
+//! optional pre/post filter hooks, and feature-gated copy-in from [`TopologyOptimizer`] /
+//! [`DensityNet`]. Unit witnesses cover harmonic stationarity, two-node mix, mask freezes, CFL /
+//! `dt` domain errors, mass preservation under full-editable Neumann steps (no clamp hit), and
+//! damage-severed edges.
+//!
+//! **Out of scope / not claimed:** Neural-SIMP training loop ownership, volume-fraction projection
+//! (lives on AI [`crate::ai::topology`] helpers / continuation tests), cartridge B6/B8 / Track L
+//! shell acceptance, and fleet posture flags. Not physics GREEN, not `PRODUCTION_WIRED`, not
+//! `MASTER`, not OP-5.
 
 pub use crate::ai::topology::{DensityNet, TopologyOptimizer, TopologyOptimizerStub};
 
@@ -23,6 +36,123 @@ use burn::tensor::{backend::Backend, Int, Tensor};
 
 use crate::physics::error::PhysicsError;
 use crate::physics::laplacian::TopologicalLaplacian;
+
+/// W29 deepen cell — topology density-diffusion honest fence bundle.
+pub const W29_TOPOLOGY_SOLVER_DEEPEN_CELL: &str = "W29-089-TOPOLOGY_SOLVER";
+
+/// Honest posture tag — explicit graph diffusion + masks; training/volume/cartridge refused.
+pub const TOPOLOGY_SOLVER_POSTURE_TAG: &str = "honest-topology-solver-density-diffusion";
+
+/// Honest physics posture — unit witnesses pass; does not certify fleet physics GREEN.
+pub const TOPOLOGY_SOLVER_PHYSICS_GREEN: bool = false;
+
+/// Production / cartridge shell wiring — B6/B8 Track L not claimed by this module.
+pub const TOPOLOGY_SOLVER_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by topology_solver alone.
+pub const TOPOLOGY_SOLVER_MASTER: bool = false;
+
+/// OP-5 fleet pass — not claimed.
+pub const TOPOLOGY_SOLVER_OP5: bool = false;
+
+/// Whether explicit density diffusion + edit masks are landed.
+pub const TOPOLOGY_SOLVER_DIFFUSION_LANDED: bool = true;
+
+/// Whether Neural-SIMP training ownership lives in this module (refused — AI optimizer owns it).
+pub const TOPOLOGY_SOLVER_TRAINING_LOOP_OWNED: bool = false;
+
+/// Whether cartridge B6/B8 acceptance is certified from this module (open / elsewhere).
+pub const TOPOLOGY_SOLVER_CARTRIDGE_ACCEPTANCE_LANDED: bool = false;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const TOPOLOGY_SOLVER_HONEST_FENCE: &str = "topology_density_diffusion_landed=true training_loop_owned=false cartridge_acceptance_landed=false production_wired=false master_composition_wired=false physics_green=false op5_pass=false";
+
+/// Typed probe for topology-solver posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TopologySolverPostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub op5: bool,
+    pub diffusion_landed: bool,
+    pub training_loop_owned: bool,
+    pub cartridge_acceptance_landed: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for topology density evolution.
+#[must_use]
+pub fn topology_solver_honest_posture_bundle() -> TopologySolverPostureProbe {
+    TopologySolverPostureProbe {
+        physics_green: TOPOLOGY_SOLVER_PHYSICS_GREEN,
+        production_wired: TOPOLOGY_SOLVER_PRODUCTION_WIRED,
+        master: TOPOLOGY_SOLVER_MASTER,
+        op5: TOPOLOGY_SOLVER_OP5,
+        diffusion_landed: TOPOLOGY_SOLVER_DIFFUSION_LANDED,
+        training_loop_owned: TOPOLOGY_SOLVER_TRAINING_LOOP_OWNED,
+        cartridge_acceptance_landed: TOPOLOGY_SOLVER_CARTRIDGE_ACCEPTANCE_LANDED,
+        honest_fence: TOPOLOGY_SOLVER_HONEST_FENCE,
+        posture_tag: TOPOLOGY_SOLVER_POSTURE_TAG,
+        deepen_cell: W29_TOPOLOGY_SOLVER_DEEPEN_CELL,
+    }
+}
+
+/// Diffusion + masks landed; training/cartridge/GREEN/production/master/OP-5 honestly open/false.
+#[must_use]
+pub fn topology_solver_posture_honest(probe: &TopologySolverPostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && !probe.op5
+        && probe.diffusion_landed
+        && !probe.training_loop_owned
+        && !probe.cartridge_acceptance_landed
+        && probe.honest_fence.contains("topology_density_diffusion_landed=true")
+        && probe.honest_fence.contains("training_loop_owned=false")
+        && probe.honest_fence.contains("cartridge_acceptance_landed=false")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+        && probe.honest_fence.contains("op5_pass=false")
+}
+
+/// Validate posture honesty; returns Err with a static reason on fence violation.
+pub fn validate_topology_solver_posture_honesty() -> Result<(), &'static str> {
+    let probe = topology_solver_honest_posture_bundle();
+    if !topology_solver_posture_honest(&probe) {
+        return Err("topology_solver_posture_honest failed");
+    }
+    if probe.physics_green || TOPOLOGY_SOLVER_PHYSICS_GREEN {
+        return Err("invented physics_green");
+    }
+    if probe.production_wired || TOPOLOGY_SOLVER_PRODUCTION_WIRED {
+        return Err("invented production_wired");
+    }
+    if probe.master || TOPOLOGY_SOLVER_MASTER {
+        return Err("invented master");
+    }
+    if probe.op5 || TOPOLOGY_SOLVER_OP5 {
+        return Err("invented op5");
+    }
+    if probe.training_loop_owned || TOPOLOGY_SOLVER_TRAINING_LOOP_OWNED {
+        return Err("invented training_loop_owned");
+    }
+    if probe.cartridge_acceptance_landed || TOPOLOGY_SOLVER_CARTRIDGE_ACCEPTANCE_LANDED {
+        return Err("invented cartridge_acceptance_landed");
+    }
+    Ok(())
+}
+
+/// Explicit graph-diffusion CFL bound \(\Delta t_{\max} = 1/\overline{\deg}\) with
+/// \(\overline{\deg}=\max(1, 2E/N)\).
+#[must_use]
+pub fn topology_density_cfl_dt_max(n_nodes: usize, n_edges: usize) -> f32 {
+    let n_f = n_nodes.max(1) as f32;
+    let e_f = n_edges.max(1) as f32;
+    let mean_degree = (2.0 * e_f / n_f).max(1.0);
+    1.0 / mean_degree
+}
 
 /// Bounds for \(\rho\) after each step (SIMP-style \((0,1)\) interval).
 #[derive(Clone, Debug)]
@@ -96,10 +226,8 @@ fn validate_density_diffusion_inputs<B: Backend>(
             detail: "policy_editable_mask must be [N, 1]",
         });
     }
-    let n_f = n.max(1) as f32;
-    let e_f = e.max(1) as f32;
-    let mean_degree = (2.0 * e_f / n_f).max(1.0);
-    let cfl_dt_max = 1.0 / mean_degree;
+    let cfl_dt_max = topology_density_cfl_dt_max(n, e);
+    let mean_degree = 1.0 / cfl_dt_max;
     if dt > cfl_dt_max {
         return Err(PhysicsError::Domain {
             detail: format!(
@@ -122,6 +250,15 @@ impl<B: Backend<FloatElem = f32>> TopologySolver<B> {
     /// New solver with initial \(\rho\) and clamp bounds from `config`.
     pub fn new(rho: Tensor<B, 3>, config: TopologySolverConfig) -> Self {
         Self { rho, config }
+    }
+
+    /// Batch-wise nodal sum of \(\rho\) (shape `[B]`), for mass-preservation witnesses.
+    ///
+    /// Under a pure Neumann graph Laplacian with full edit mask and no clamp saturation,
+    /// \(\sum_i\rho_i\) is invariant to \(\rho\leftarrow\rho+\Delta t\,\Delta\rho\).
+    #[must_use]
+    pub fn rho_nodal_sum(&self) -> Tensor<B, 1> {
+        self.rho.clone().sum_dim(2).sum_dim(1).reshape([self.rho.dims()[0]])
     }
 
     /// Scalar mask `≥ 0` where **both** policy may edit density (cf. [`crate::core::tensors::UnifiedMaterialStateTensor::policy_editable_mask`])
@@ -427,6 +564,98 @@ mod tests {
             .step_density_diffusion(0.0, edges_b1, damage, boundary_mask, policy)
             .unwrap_err();
         assert!(matches!(err, PhysicsError::Domain { .. }));
+    }
+
+    #[test]
+    fn honest_posture_fence_refuses_fleet_affirmatives() {
+        validate_topology_solver_posture_honesty().expect("topology_solver honest fence");
+        let probe = topology_solver_honest_posture_bundle();
+        assert!(topology_solver_posture_honest(&probe));
+        assert!(!probe.physics_green);
+        assert!(!probe.production_wired);
+        assert!(!probe.master);
+        assert!(!probe.op5);
+        assert_eq!(probe.deepen_cell, W29_TOPOLOGY_SOLVER_DEEPEN_CELL);
+        assert!((topology_density_cfl_dt_max(4, 4) - 0.5).abs() < 1e-6);
+        assert!((topology_density_cfl_dt_max(2, 1) - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn mass_preserved_on_full_editable_neumann_step() {
+        let dev = Default::default();
+        let n = 2_usize;
+        let edges_b1 = two_node_edge_topology();
+        // Interior of (rho_min, rho_max) so clamp does not spoil discrete mass.
+        let rho = Tensor::from_data(Data::new(vec![0.8_f32, 0.2_f32], Shape::new([1, n, 1])), &dev);
+        let mut solver = TopologySolver::new(rho, TopologySolverConfig::default());
+        let sum0 = solver.rho_nodal_sum();
+        let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+        let boundary_mask = Tensor::<B, 3>::ones([1, n, 3], &dev);
+        let policy = Tensor::<B, 2>::ones([n, 1], &dev);
+        solver
+            .step_density_diffusion(0.25, edges_b1, damage, boundary_mask, policy)
+            .expect("TopologySolver mass-preservation Neumann step (W29-089 deepen)");
+        let sum1 = solver.rho_nodal_sum();
+        assert!(
+            sum0.all_close(sum1, Some(1e-5), Some(1e-6)),
+            "graph Laplacian diffusion must preserve nodal sum under full edit mask"
+        );
+    }
+
+    #[test]
+    fn full_damage_severs_edge_flow() {
+        let dev = Default::default();
+        let n = 2_usize;
+        let edges_b1 = two_node_edge_topology();
+        let rho = Tensor::from_data(Data::new(vec![1.0_f32, 0.0_f32], Shape::new([1, n, 1])), &dev);
+        let mut solver = TopologySolver::new(rho, TopologySolverConfig::default());
+        let damage = Tensor::<B, 3>::ones([1, n, 1], &dev);
+        let boundary_mask = Tensor::<B, 3>::ones([1, n, 3], &dev);
+        let policy = Tensor::<B, 2>::ones([n, 1], &dev);
+        solver
+            .step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy)
+            .expect("TopologySolver damage-severed edge step (W29-089 deepen)");
+        let expected =
+            Tensor::from_data(Data::new(vec![1.0_f32, 0.0_f32], Shape::new([1, n, 1])), &dev);
+        assert!(
+            solver.rho.clone().all_close(expected, Some(1e-5), Some(1e-6)),
+            "damage=1 must zero edge flow (no mix)"
+        );
+    }
+
+    #[test]
+    fn combined_edit_mask_shape_mismatch() {
+        let dev = Default::default();
+        let boundary_mask = Tensor::<B, 3>::ones([1, 2, 3], &dev);
+        let policy_bad = Tensor::<B, 2>::ones([3, 1], &dev);
+        let err = TopologySolver::<B>::combined_edit_mask(boundary_mask, policy_bad).unwrap_err();
+        assert!(matches!(err, PhysicsError::ShapeMismatch { .. }));
+    }
+
+    #[test]
+    fn clamp_bounds_hold_after_diffusion_step() {
+        let dev = Default::default();
+        let n = 2_usize;
+        let edges_b1 = two_node_edge_topology();
+        let cfg = TopologySolverConfig {
+            rho_min: 0.1,
+            rho_max: 0.9,
+        };
+        let rho = Tensor::from_data(Data::new(vec![0.95_f32, 0.05_f32], Shape::new([1, n, 1])), &dev);
+        let mut solver = TopologySolver::new(rho, cfg);
+        let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+        let boundary_mask = Tensor::<B, 3>::ones([1, n, 3], &dev);
+        let policy = Tensor::<B, 2>::ones([n, 1], &dev);
+        solver
+            .step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy)
+            .expect("TopologySolver clamp-bounds step (W29-089 deepen)");
+        let vals = solver.rho.into_data().value;
+        for v in vals {
+            assert!(
+                v >= 0.1 - 1e-5 && v <= 0.9 + 1e-5,
+                "rho {v} escaped config clamp"
+            );
+        }
     }
 }
 

@@ -4,7 +4,7 @@ use umst_math::constants::registry::{ConstantTier, REGISTRY};
 
 #[test]
 fn reg_has_umst_wide_gate_strict() {
-    assert_eq!(REGISTRY.len(), 162);
+    assert_eq!(REGISTRY.len(), 168);
     let names1: Vec<&'static str> = REGISTRY.iter().map(|e| e.name).collect();
     let names2: Vec<&'static str> = REGISTRY.iter().map(|e| e.name).collect();
     assert_eq!(names1, names2, "idempotent read of static REGISTRY");

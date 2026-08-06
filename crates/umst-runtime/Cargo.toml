@@ -26,6 +26,9 @@ categories = ["science", "mathematics", "simulation"]
 [dependencies]
 umst-manifold = { path = "../..", default-features = false }
 
+[dev-dependencies]
+umst-cartridge-api = { path = "../../../umst-cartridge-api" }
+
 [features]
 default = ["ndarray"]
 ndarray = ["umst-manifold/ndarray"]
@@ -70,6 +73,12 @@ kleisli-ppo-hot-bind = ["umst-manifold/kleisli-ppo-hot-bind"]
 design-query = ["umst-manifold/design-query"]
 design-implicit-field = ["umst-manifold/design-implicit-field"]
 math-constants = ["umst-manifold/math-constants"]
+nalgebra-tensor = ["umst-manifold/nalgebra-tensor"]
+
+[[test]]
+name = "nalgebra_tensor_lift_ssot"
+path = "tests/nalgebra_tensor_lift_ssot.rs"
+required-features = ["nalgebra-tensor"]
 
 [lib]
 name = "umst_runtime"

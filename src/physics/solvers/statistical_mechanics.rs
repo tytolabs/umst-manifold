@@ -62,11 +62,157 @@
 //!   calibration grid when closing matrix **#9**.
 //! - **3D topology optimisation** through mechanics equilibrium: out of scope; hooks are
 //!   tensor-local scaling only.
+//!
+//! # Honest boundary (W29-080)
+//!
+//! Measured lane: Burn `f32` third-order truncated virial \(K_T\) + KB-style \(\gamma_{\mathrm{gc}}\)
+//! proxy on **`[B,4]`**, with shape-guarded Mayer \(B_2^*\) / \(B_3^*\) surrogates and VIADU refs.
+//! Johnson host `f64` remains reference-only. Full Mayer \(B_3^*\) triangle / dense-fluid MD
+//! calibration stay open. Unit contracts: `cargo test -p umst-manifold statistical_mechanics`.
+//! Not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER`, not OP-5.
 
 use burn::tensor::{backend::Backend, Tensor};
 use std::fmt;
 
 use crate::physics::error::PhysicsError;
+
+/// W29 deepen cell — statistical_mechanics honest fence bundle.
+pub const W29_STATISTICAL_MECHANICS_DEEPEN_CELL: &str = "W29-080-STATISTICAL_MECHANICS";
+
+/// Honest posture tag — virial/KB surrogate research lane; fleet production wiring refused.
+pub const STATMECH_POSTURE_TAG: &str = "honest-statmech-virial-kb-surrogate-research-lane";
+
+/// Honest physics posture — unit contracts pass; does not certify fleet physics GREEN.
+pub const STATMECH_PHYSICS_GREEN: bool = false;
+
+/// Production wiring — not claimed by virial/KB surrogate helpers alone.
+pub const STATMECH_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by this module.
+pub const STATMECH_MASTER: bool = false;
+
+/// OP-5 composition pin — not claimed by this module.
+pub const STATMECH_OP5_WIRED: bool = false;
+
+/// Burn `f32` third-order truncated virial **`[B,4]`** \(K_T\) path landed.
+pub const STATMECH_VIRIAL_B4_BRIDGE_LANDED: bool = true;
+
+/// Shape-guarded Mayer \(B_2^*\) / Padé \(B_3^*\) surrogate tensors landed.
+pub const STATMECH_B2_B3_SURROGATES_LANDED: bool = true;
+
+/// KB-style \(\gamma_{\mathrm{gc}}\) scalar proxy landed (rank-0 coexistence approximation).
+pub const STATMECH_GAMMA_GC_KB_PROXY_LANDED: bool = true;
+
+/// Host Johnson 1993 `f64` reference helpers remain available (not the default Burn path).
+pub const STATMECH_JOHNSON_HOST_REFERENCE_LANDED: bool = true;
+
+/// Full Mayer \(B_3^*\) triangle cluster integral — still open (Padé surrogate only).
+pub const STATMECH_FULL_MAYER_B3_TRIANGLE: bool = false;
+
+/// Dense-fluid MD / Johnson agreement at \(\rho^* \gtrsim 0.15\) — still open.
+pub const STATMECH_DENSE_FLUID_MD_CALIBRATED: bool = false;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const STATMECH_HONEST_FENCE: &str =
+    "virial_b4_bridge_landed=true b2_b3_surrogates_landed=true gamma_gc_kb_proxy_landed=true johnson_host_reference_landed=true full_mayer_b3_triangle=false dense_fluid_md_calibrated=false production_wired=false master_composition_wired=false op5_wired=false physics_green=false";
+
+const _: () = assert!(!STATMECH_PHYSICS_GREEN);
+const _: () = assert!(!STATMECH_PRODUCTION_WIRED);
+const _: () = assert!(!STATMECH_MASTER);
+const _: () = assert!(!STATMECH_OP5_WIRED);
+const _: () = assert!(!STATMECH_FULL_MAYER_B3_TRIANGLE);
+const _: () = assert!(!STATMECH_DENSE_FLUID_MD_CALIBRATED);
+const _: () = assert!(STATMECH_VIRIAL_B4_BRIDGE_LANDED);
+const _: () = assert!(STATMECH_B2_B3_SURROGATES_LANDED);
+const _: () = assert!(STATMECH_GAMMA_GC_KB_PROXY_LANDED);
+const _: () = assert!(STATMECH_JOHNSON_HOST_REFERENCE_LANDED);
+
+/// Typed probe for statistical-mechanics posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StatisticalMechanicsPostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub op5_wired: bool,
+    pub virial_b4_bridge_landed: bool,
+    pub b2_b3_surrogates_landed: bool,
+    pub gamma_gc_kb_proxy_landed: bool,
+    pub johnson_host_reference_landed: bool,
+    pub full_mayer_b3_triangle: bool,
+    pub dense_fluid_md_calibrated: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for the statistical-mechanics bridge.
+#[must_use]
+pub fn statistical_mechanics_honest_posture_bundle() -> StatisticalMechanicsPostureProbe {
+    StatisticalMechanicsPostureProbe {
+        physics_green: STATMECH_PHYSICS_GREEN,
+        production_wired: STATMECH_PRODUCTION_WIRED,
+        master: STATMECH_MASTER,
+        op5_wired: STATMECH_OP5_WIRED,
+        virial_b4_bridge_landed: STATMECH_VIRIAL_B4_BRIDGE_LANDED,
+        b2_b3_surrogates_landed: STATMECH_B2_B3_SURROGATES_LANDED,
+        gamma_gc_kb_proxy_landed: STATMECH_GAMMA_GC_KB_PROXY_LANDED,
+        johnson_host_reference_landed: STATMECH_JOHNSON_HOST_REFERENCE_LANDED,
+        full_mayer_b3_triangle: STATMECH_FULL_MAYER_B3_TRIANGLE,
+        dense_fluid_md_calibrated: STATMECH_DENSE_FLUID_MD_CALIBRATED,
+        honest_fence: STATMECH_HONEST_FENCE,
+        posture_tag: STATMECH_POSTURE_TAG,
+        deepen_cell: W29_STATISTICAL_MECHANICS_DEEPEN_CELL,
+    }
+}
+
+/// Research lane landed with production/master/GREEN/OP-5/Mayer-\(B_3\)/MD composition honestly open.
+#[must_use]
+pub fn statistical_mechanics_posture_honest(probe: &StatisticalMechanicsPostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && !probe.op5_wired
+        && probe.virial_b4_bridge_landed
+        && probe.b2_b3_surrogates_landed
+        && probe.gamma_gc_kb_proxy_landed
+        && probe.johnson_host_reference_landed
+        && !probe.full_mayer_b3_triangle
+        && !probe.dense_fluid_md_calibrated
+        && probe.honest_fence.contains("virial_b4_bridge_landed=true")
+        && probe.honest_fence.contains("full_mayer_b3_triangle=false")
+        && probe.honest_fence.contains("dense_fluid_md_calibrated=false")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+}
+
+/// Refuse GREEN / PRODUCTION_WIRED / MASTER / OP-5 / full-Mayer-\(B_3\) / dense-MD claims.
+#[must_use]
+pub fn statistical_mechanics_refuse_overclaim(
+    probe: &StatisticalMechanicsPostureProbe,
+) -> Result<(), &'static str> {
+    if probe.physics_green {
+        return Err("STATMECH_PHYSICS_GREEN must stay false until fleet physics closes");
+    }
+    if probe.production_wired {
+        return Err("STATMECH_PRODUCTION_WIRED must stay false until embodied loop closes");
+    }
+    if probe.master {
+        return Err("STATMECH_MASTER must stay false — not claimed by virial/KB surrogates alone");
+    }
+    if probe.op5_wired {
+        return Err("STATMECH_OP5_WIRED must stay false — not claimed by this module");
+    }
+    if probe.full_mayer_b3_triangle {
+        return Err("STATMECH_FULL_MAYER_B3_TRIANGLE must stay false — Padé surrogate only");
+    }
+    if probe.dense_fluid_md_calibrated {
+        return Err("STATMECH_DENSE_FLUID_MD_CALIBRATED must stay false until calibration grid closes");
+    }
+    if !statistical_mechanics_posture_honest(probe) {
+        return Err("statistical_mechanics posture fence inconsistent");
+    }
+    Ok(())
+}
 
 /// Fail-closed guard for LJ virial column tensors (`[B, 1]`).
 fn guard_lj_column_tensor_shape(
@@ -611,5 +757,87 @@ mod tests {
             "expected placeholder K to disagree strongly with JZG-derived K_T at this state (rel_err={rel})"
         );
         assert_abs_diff_eq!(rel, rel_tensor, epsilon = 5.0e-4_f64);
+    }
+
+    #[test]
+    fn statistical_mechanics_honest_posture_refuses_green_production_master_op5() {
+        let probe = statistical_mechanics_honest_posture_bundle();
+        assert!(statistical_mechanics_posture_honest(&probe));
+        assert!(statistical_mechanics_refuse_overclaim(&probe).is_ok());
+        assert!(!probe.physics_green);
+        assert!(!probe.production_wired);
+        assert!(!probe.master);
+        assert!(!probe.op5_wired);
+        assert!(!probe.full_mayer_b3_triangle);
+        assert!(!probe.dense_fluid_md_calibrated);
+        assert!(probe.virial_b4_bridge_landed);
+        assert!(probe.b2_b3_surrogates_landed);
+        assert!(probe.gamma_gc_kb_proxy_landed);
+        assert!(probe.johnson_host_reference_landed);
+        assert_eq!(probe.deepen_cell, W29_STATISTICAL_MECHANICS_DEEPEN_CELL);
+        assert!(STATMECH_HONEST_FENCE.contains("physics_green=false"));
+        assert!(STATMECH_HONEST_FENCE.contains("full_mayer_b3_triangle=false"));
+        assert!(!STATMECH_PHYSICS_GREEN);
+        assert!(!STATMECH_PRODUCTION_WIRED);
+        assert!(!STATMECH_MASTER);
+        assert!(!STATMECH_OP5_WIRED);
+        assert!(!STATMECH_FULL_MAYER_B3_TRIANGLE);
+        assert!(!STATMECH_DENSE_FLUID_MD_CALIBRATED);
+    }
+
+    #[test]
+    fn statistical_mechanics_refuse_overclaim_rejects_tampered_green() {
+        let mut probe = statistical_mechanics_honest_posture_bundle();
+        probe.physics_green = true;
+        assert!(statistical_mechanics_refuse_overclaim(&probe).is_err());
+        assert!(!statistical_mechanics_posture_honest(&probe));
+    }
+
+    #[test]
+    fn statistical_mechanics_refuse_overclaim_rejects_fake_full_mayer_b3() {
+        let mut probe = statistical_mechanics_honest_posture_bundle();
+        probe.full_mayer_b3_triangle = true;
+        assert!(statistical_mechanics_refuse_overclaim(&probe).is_err());
+        assert!(!statistical_mechanics_posture_honest(&probe));
+    }
+
+    #[test]
+    fn lj_virial_b3_star_surrogate_positive_monotone_decreasing_in_tstar() {
+        let t_lo = 1.0_f32;
+        let t_hi = 4.0_f32;
+        let b_lo = lj_virial_b3_star_surrogate_scalar(t_lo);
+        let b_hi = lj_virial_b3_star_surrogate_scalar(t_hi);
+        assert!(b_lo.is_finite() && b_hi.is_finite());
+        assert!(b_lo >= 0.08 && b_lo <= 1.5);
+        assert!(b_hi >= 0.08 && b_hi <= 1.5);
+        assert!(b_lo > b_hi);
+    }
+
+    #[test]
+    fn reduced_kt_star_matches_finite_difference_of_virial_pressure() {
+        let dev = NdArrayDevice::Cpu;
+        let rho = 0.12_f32;
+        let t = 2.2_f32;
+        let h = 1.0e-3_f32;
+        let rho_t: Tensor<B, 2> =
+            Tensor::from_data(Data::new(vec![rho], Shape::new([1, 1])), &dev);
+        let t_t: Tensor<B, 2> = Tensor::from_data(Data::new(vec![t], Shape::new([1, 1])), &dev);
+        let k_closed =
+            reduced_isothermal_kt_star_virial_closed_form(rho_t.clone(), t_t.clone()).into_scalar();
+        let p_hi = reduced_pressure_lj_virial_third_order(
+            Tensor::from_data(Data::new(vec![rho + h], Shape::new([1, 1])), &dev),
+            t_t.clone(),
+        )
+        .into_scalar();
+        let p_lo = reduced_pressure_lj_virial_third_order(
+            Tensor::from_data(Data::new(vec![rho - h], Shape::new([1, 1])), &dev),
+            t_t,
+        )
+        .into_scalar();
+        let k_fd = rho * (p_hi - p_lo) / (2.0 * h);
+        assert_abs_diff_eq!(k_closed, k_fd, epsilon = 2.0e-3_f32);
+        // Compile-time fence stays open on GREEN/PRODUCTION regardless of FD parity.
+        let _probe = statistical_mechanics_honest_posture_bundle();
+        assert!(statistical_mechanics_refuse_overclaim(&_probe).is_ok());
     }
 }

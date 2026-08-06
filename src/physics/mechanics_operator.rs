@@ -6,6 +6,109 @@
 //! Two discretizations coexist today: **bar network** ([`VectorMechanicsSolver`]) and **Q1 hex**
 //! (`extruded_plate` / `q1_hex_elasticity`). This trait is the SSOT boundary for Wave 3 consumer
 //! migration; **no call sites are ported in this wave**.
+//!
+//! # Honest boundary (W29-059)
+//!
+//! Trait + bar adapters are a **research-lane** equilibrium morphism SSOT. Bar parity harnesses
+//! pass unit tests. Q1-hex `MechanicsOperator` impl and production consumer migration remain
+//! open. Not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER`.
+
+/// W29 deepen cell — mechanics-operator honest fence bundle.
+pub const W29_MECHANICS_OPERATOR_DEEPEN_CELL: &str = "W29-059-MECHANICS_OPERATOR";
+
+/// Honest posture tag — bar trait adapters landed; Q1 / production migration refused.
+pub const MECHANICS_OPERATOR_POSTURE_TAG: &str = "honest-mechanics-operator-research-lane";
+
+/// Honest physics posture — bar parity tests pass; does not certify fleet physics GREEN.
+pub const MECHANICS_OPERATOR_PHYSICS_GREEN: bool = false;
+
+/// Production consumer wiring — Wave 3 call-site port not claimed by this module.
+pub const MECHANICS_OPERATOR_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by mechanics_operator alone.
+pub const MECHANICS_OPERATOR_MASTER: bool = false;
+
+/// Whether the bar-network trait adapters are landed (deprecated adapter + VectorMechanicsSolver).
+pub const MECHANICS_OPERATOR_BAR_ADAPTERS_LANDED: bool = true;
+
+/// Whether a Q1-hex `MechanicsOperator` impl is landed in this module (Wave 3 — still open).
+pub const MECHANICS_OPERATOR_Q1_HEX_IMPL_LANDED: bool = false;
+
+/// Whether production consumers have been migrated onto `dyn MechanicsOperator` (Wave 3 — open).
+pub const MECHANICS_OPERATOR_CONSUMER_MIGRATION_LANDED: bool = false;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const MECHANICS_OPERATOR_HONEST_FENCE: &str = "mechanics_operator_trait_landed=true bar_adapters_landed=true q1_hex_impl_landed=false consumer_migration_landed=false production_wired=false master_composition_wired=false physics_green=false";
+
+/// Typed probe for mechanics-operator posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MechanicsOperatorPostureProbe {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub bar_adapters_landed: bool,
+    pub q1_hex_impl_landed: bool,
+    pub consumer_migration_landed: bool,
+    pub honest_fence: &'static str,
+    pub posture_tag: &'static str,
+    pub deepen_cell: &'static str,
+}
+
+/// Measured honest-posture snapshot for mechanics operator morphism.
+#[must_use]
+pub fn mechanics_operator_honest_posture_bundle() -> MechanicsOperatorPostureProbe {
+    MechanicsOperatorPostureProbe {
+        physics_green: MECHANICS_OPERATOR_PHYSICS_GREEN,
+        production_wired: MECHANICS_OPERATOR_PRODUCTION_WIRED,
+        master: MECHANICS_OPERATOR_MASTER,
+        bar_adapters_landed: MECHANICS_OPERATOR_BAR_ADAPTERS_LANDED,
+        q1_hex_impl_landed: MECHANICS_OPERATOR_Q1_HEX_IMPL_LANDED,
+        consumer_migration_landed: MECHANICS_OPERATOR_CONSUMER_MIGRATION_LANDED,
+        honest_fence: MECHANICS_OPERATOR_HONEST_FENCE,
+        posture_tag: MECHANICS_OPERATOR_POSTURE_TAG,
+        deepen_cell: W29_MECHANICS_OPERATOR_DEEPEN_CELL,
+    }
+}
+
+/// Bar trait SSOT landed with Q1 / production / master composition honestly open.
+#[must_use]
+pub fn mechanics_operator_posture_honest(probe: &MechanicsOperatorPostureProbe) -> bool {
+    !probe.physics_green
+        && !probe.production_wired
+        && !probe.master
+        && probe.bar_adapters_landed
+        && !probe.q1_hex_impl_landed
+        && !probe.consumer_migration_landed
+        && probe.honest_fence.contains("mechanics_operator_trait_landed=true")
+        && probe.honest_fence.contains("bar_adapters_landed=true")
+        && probe.honest_fence.contains("q1_hex_impl_landed=false")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("physics_green=false")
+}
+
+/// Validate posture honesty; returns Err with a static reason on fence violation.
+pub fn validate_mechanics_operator_posture_honesty() -> Result<(), &'static str> {
+    let probe = mechanics_operator_honest_posture_bundle();
+    if !mechanics_operator_posture_honest(&probe) {
+        return Err("mechanics_operator_posture_honest failed");
+    }
+    if probe.physics_green || MECHANICS_OPERATOR_PHYSICS_GREEN {
+        return Err("invented physics_green");
+    }
+    if probe.production_wired || MECHANICS_OPERATOR_PRODUCTION_WIRED {
+        return Err("invented production_wired");
+    }
+    if probe.master || MECHANICS_OPERATOR_MASTER {
+        return Err("invented master");
+    }
+    if probe.q1_hex_impl_landed || MECHANICS_OPERATOR_Q1_HEX_IMPL_LANDED {
+        return Err("invented q1_hex_impl_landed");
+    }
+    if probe.consumer_migration_landed || MECHANICS_OPERATOR_CONSUMER_MIGRATION_LANDED {
+        return Err("invented consumer_migration_landed");
+    }
+    Ok(())
+}
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
@@ -183,6 +286,62 @@ mod parity_tests {
             a_sec,
             cfg,
         )
+    }
+
+    #[test]
+    fn mechanics_operator_honest_fence_consts_refuse_green_production_master() {
+        assert!(!MECHANICS_OPERATOR_PHYSICS_GREEN);
+        assert!(!MECHANICS_OPERATOR_PRODUCTION_WIRED);
+        assert!(!MECHANICS_OPERATOR_MASTER);
+        assert!(MECHANICS_OPERATOR_BAR_ADAPTERS_LANDED);
+        assert!(!MECHANICS_OPERATOR_Q1_HEX_IMPL_LANDED);
+        assert!(!MECHANICS_OPERATOR_CONSUMER_MIGRATION_LANDED);
+        assert!(MECHANICS_OPERATOR_HONEST_FENCE.contains("production_wired=false"));
+        assert!(MECHANICS_OPERATOR_HONEST_FENCE.contains("physics_green=false"));
+        assert!(MECHANICS_OPERATOR_HONEST_FENCE.contains("master_composition_wired=false"));
+        assert!(MECHANICS_OPERATOR_HONEST_FENCE.contains("q1_hex_impl_landed=false"));
+        assert_eq!(
+            W29_MECHANICS_OPERATOR_DEEPEN_CELL,
+            "W29-059-MECHANICS_OPERATOR"
+        );
+    }
+
+    #[test]
+    fn mechanics_operator_posture_probe_honest() {
+        let probe = mechanics_operator_honest_posture_bundle();
+        assert!(mechanics_operator_posture_honest(&probe));
+        assert_eq!(probe.deepen_cell, W29_MECHANICS_OPERATOR_DEEPEN_CELL);
+        assert_eq!(probe.posture_tag, MECHANICS_OPERATOR_POSTURE_TAG);
+        validate_mechanics_operator_posture_honesty()
+            .expect("validate_mechanics_operator_posture_honesty");
+    }
+
+    #[test]
+    fn vector_solver_via_trait_two_node_bit_identical_to_direct() {
+        let (coords, edges, stiff, bf, mask, damage, area, cfg) = chain_fixture(2);
+        let dev = NdArrayDevice::Cpu;
+        let u0 = Tensor::<B, 3>::zeros([1, 2, 3], &dev);
+
+        let direct = VectorMechanicsSolver::solve_equilibrium_typed(
+            Field::new(u0.clone()),
+            coords.clone(),
+            stiff.clone(),
+            BodyForceField::from_tensor(bf.clone()),
+            edges.clone(),
+            Field::new(damage.clone()),
+            BoundaryMaskField::from_tensor(mask.clone()),
+            area,
+            &cfg,
+        )
+        .expect("solve_equilibrium_typed");
+        let via_trait = VectorMechanicsSolver
+            .solve_equilibrium(u0, coords, stiff, bf, edges, damage, mask, area, &cfg)
+            .expect("MechanicsOperator::solve_equilibrium");
+        assert_eq!(
+            direct.0.clone().into_tensor().into_data().value,
+            via_trait.0.into_data().value
+        );
+        assert_eq!(direct.1.into_data().value, via_trait.1.into_data().value);
     }
 
     #[test]

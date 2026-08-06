@@ -570,6 +570,20 @@ pub enum DecPatchCsrInnerMode {
     Off,
 }
 
+/// Whitney-trace constitutive on the **tensor** `[B,N,9]` DEC patch curl leg.
+///
+/// Scalar `[B,N,1]` patches remain \(\varepsilon\)-free on the curl leg regardless of this knob.
+/// Default [`EpsSymAvg`] preserves the shipped surrogate; [`EpsInvSymAvg`] is the measured deepen
+/// toward Maxwell \(\varepsilon^{-1}\) on the curl constitutive (still **not** matrix **#6** closure).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum DecPatchCurlConstitutive {
+    /// Symmetrized edge-average of nodal **3×3** \(\varepsilon\) before \(t\cdot(\cdot)\) (shipped default).
+    #[default]
+    EpsSymAvg,
+    /// Same average, then **SPD 3×3 inverse** before \(t\cdot(\cdot)\) / adjoint scatter.
+    EpsInvSymAvg,
+}
+
 /// Injected knobs for the **small dense** [`PhotonicsDecFacesPatch`] solve branch.
 ///
 /// Pure config — **no `std::env` reads** in the physics core. Host / CLI layers may parse
@@ -580,6 +594,8 @@ pub struct PhotonicsDecPatchConfig {
     pub force_krylov: bool,
     /// CSR matvec CG inner solve policy on the lossless gauge-pinned patch operator.
     pub csr_inner: DecPatchCsrInnerMode,
+    /// Tensor curl-leg constitutive (`[B,N,9]` only). Default preserves prior \(\varepsilon\)-forward surrogate.
+    pub curl_constitutive: DecPatchCurlConstitutive,
 }
 
 impl Default for PhotonicsDecPatchConfig {
@@ -587,6 +603,7 @@ impl Default for PhotonicsDecPatchConfig {
         Self {
             force_krylov: false,
             csr_inner: DecPatchCsrInnerMode::Auto,
+            curl_constitutive: DecPatchCurlConstitutive::EpsSymAvg,
         }
     }
 }
@@ -598,6 +615,7 @@ impl PhotonicsDecPatchConfig {
         Self {
             force_krylov: false,
             csr_inner: DecPatchCsrInnerMode::Auto,
+            curl_constitutive: DecPatchCurlConstitutive::EpsSymAvg,
         }
     }
 
@@ -607,6 +625,7 @@ impl PhotonicsDecPatchConfig {
         Self {
             force_krylov: false,
             csr_inner: DecPatchCsrInnerMode::Off,
+            curl_constitutive: DecPatchCurlConstitutive::EpsSymAvg,
         }
     }
 
@@ -616,8 +635,59 @@ impl PhotonicsDecPatchConfig {
         Self {
             force_krylov: true,
             csr_inner: DecPatchCsrInnerMode::Auto,
+            curl_constitutive: DecPatchCurlConstitutive::EpsSymAvg,
         }
     }
+
+    /// Same as [`lossless_auto`] but Whitney curl uses **\(\varepsilon^{-1}\)** on `[B,N,9]` tensors.
+    #[must_use]
+    pub const fn lossless_auto_eps_inv_curl() -> Self {
+        Self {
+            force_krylov: false,
+            csr_inner: DecPatchCsrInnerMode::Auto,
+            curl_constitutive: DecPatchCurlConstitutive::EpsInvSymAvg,
+        }
+    }
+}
+
+/// Measured **honesty fence** for the photonics lane (verification row **#6** stays partial).
+///
+/// Never claim `production_wired` / matrix-six closed / invented GREEN from this surface.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PhotonicsLaneHonesty {
+    pub metric_dual_edge_hodge_diagonal_primal: bool,
+    pub curl_constitutive_eps_inv_available: bool,
+    pub verification_row_six_partial: bool,
+    pub production_wired: bool,
+    pub matrix_six_closed: bool,
+    pub invented_green: bool,
+}
+
+/// Compile-time honesty snapshot for the photonics DEC / TE lane.
+#[cfg(feature = "photonics")]
+#[must_use]
+pub const fn photonics_lane_honesty() -> PhotonicsLaneHonesty {
+    PhotonicsLaneHonesty {
+        metric_dual_edge_hodge_diagonal_primal: photonics_dec_patch_uses_metric_dual_edge_hodge(),
+        curl_constitutive_eps_inv_available: true,
+        verification_row_six_partial: true,
+        production_wired: false,
+        matrix_six_closed: false,
+        invented_green: false,
+    }
+}
+
+/// Fence holds iff row **#6** remains partial and no production / GREEN theater bits are set.
+#[cfg(feature = "photonics")]
+#[must_use]
+pub const fn photonics_lane_fence_holds() -> bool {
+    let h = photonics_lane_honesty();
+    h.verification_row_six_partial
+        && !h.production_wired
+        && !h.matrix_six_closed
+        && !h.invented_green
+        && h.metric_dual_edge_hodge_diagonal_primal
+        && h.curl_constitutive_eps_inv_available
 }
 
 /// Column ranges for the **two-quad strip** uniform brick (`6` nodes / `9` edges / `4` triangles) —
@@ -922,7 +992,7 @@ impl PhotonicsSolver {
     /// uniform-chain TE + optional **small dense** `PhotonicsDecFacesPatch` branch (see also
     /// `photonics_dec_patch_uses_metric_dual_edge_hodge` (feature **`photonics`**) — diagonal primal-length \(\star_1\) on the patch curl leg;
     /// **`[B,N,9]`** tensors additionally feed a **symmetrized edge-averaged 3×3** map in the Whitney trace — **not** \(\varepsilon^{-1}\) constitutive on the curl leg).
-    /// **Completion bin remains ~50%** until production volumetrics / dual Hodge / complex patch \(\varepsilon\) / BCs land — see [`Solver-Status.md`](../../../docs/Solver-Status.md). **Still open:** circumcentric/barycentric dual metrics, sparse inner solves at production \(N\), complex \(\varepsilon\) / PML on the patch path, broader BCs, and \(\varepsilon^{-1}\) on the curl constitutive (not modelled here).
+    /// **Completion bin remains ~50%** until production volumetrics / dual Hodge / complex patch \(\varepsilon\) / BCs land — see [`Solver-Status.md`](../../../docs/Solver-Status.md). **Still open:** circumcentric/barycentric dual metrics, sparse inner solves at production \(N\), complex \(\varepsilon\) / PML on the patch path, broader BCs. **\(\varepsilon^{-1}\) on the curl constitutive** is now opt-in via [`DecPatchCurlConstitutive::EpsInvSymAvg`] / [`PhotonicsDecPatchConfig::lossless_auto_eps_inv_curl`] (default remains \(\varepsilon\)-forward surrogate) — **not** matrix **#6** closure.
     #[allow(clippy::too_many_arguments)]
     pub fn solve_maxwell_curl_curl<B: Backend<FloatElem = f32>>(
         &self,
@@ -1108,7 +1178,7 @@ pub fn dec_patch_operator_apply_gauged(
     faces_sign: &[f32],
     face_ranges: &[(usize, usize)],
 ) {
-    dec_patch_maxwell_natural_matvec_flat(
+    dec_patch_operator_apply_gauged_constitutive(
         x,
         y,
         n,
@@ -1122,6 +1192,43 @@ pub fn dec_patch_operator_apply_gauged(
         faces_edge,
         faces_sign,
         face_ranges,
+        DecPatchCurlConstitutive::EpsSymAvg,
+    );
+}
+
+#[cfg(feature = "photonics")]
+#[allow(clippy::too_many_arguments)]
+pub fn dec_patch_operator_apply_gauged_constitutive(
+    x: &[f32],
+    y: &mut [f32],
+    n: usize,
+    n_edges: usize,
+    src: &[i64],
+    tgt: &[i64],
+    coords: &[f32],
+    k0: f32,
+    eps_scalar: Option<&[f32]>,
+    eps_tensor9: Option<&[f32]>,
+    faces_edge: &[i64],
+    faces_sign: &[f32],
+    face_ranges: &[(usize, usize)],
+    curl_constitutive: DecPatchCurlConstitutive,
+) {
+    dec_patch_maxwell_natural_matvec_flat_constitutive(
+        x,
+        y,
+        n,
+        n_edges,
+        src,
+        tgt,
+        coords,
+        k0,
+        eps_scalar,
+        eps_tensor9,
+        faces_edge,
+        faces_sign,
+        face_ranges,
+        curl_constitutive,
     );
     y[0] = x[0];
     y[1] = x[1];
@@ -1155,6 +1262,7 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
     face_ranges: &[(usize, usize)],
     b: &[f32],
     dim: usize,
+    curl_constitutive: DecPatchCurlConstitutive,
 ) -> Option<Vec<f32>> {
     const REL_TOL: f32 = 1e-7_f32;
     let max_iter = PHOTONICS_DEC_PATCH_KRYLOV_MAX_ITERS.min(dim.saturating_mul(8).max(64));
@@ -1165,7 +1273,7 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
     let mut ap = vec![0.0_f32; dim];
     let mut ybuf = vec![0.0_f32; dim];
 
-    dec_patch_operator_apply_gauged(
+    dec_patch_operator_apply_gauged_constitutive(
         &x,
         &mut ybuf,
         n,
@@ -1179,6 +1287,7 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
         faces_edge,
         faces_sign,
         face_ranges,
+        curl_constitutive,
     );
     for i in 0..dim {
         r[i] = b[i] - ybuf[i];
@@ -1192,7 +1301,7 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
     let mut r_dot = vec_dot_f32(&r, &r);
 
     for _ in 0..max_iter {
-        dec_patch_operator_apply_gauged(
+        dec_patch_operator_apply_gauged_constitutive(
             &p,
             &mut ap,
             n,
@@ -1206,6 +1315,7 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
             faces_edge,
             faces_sign,
             face_ranges,
+            curl_constitutive,
         );
         let p_ap = vec_dot_f32(&p, &ap);
         let pn = vec_l2_f32(&p);
@@ -1270,6 +1380,40 @@ pub fn dec_patch_maxwell_gauged_operator_csr_coo(
     face_ranges: &[(usize, usize)],
     drop_tol: f32,
 ) -> Vec<(usize, usize, f32)> {
+    dec_patch_maxwell_gauged_operator_csr_coo_constitutive(
+        n,
+        n_edges,
+        src,
+        tgt,
+        coords,
+        k0,
+        eps_scalar,
+        eps_tensor9,
+        faces_edge,
+        faces_sign,
+        face_ranges,
+        drop_tol,
+        DecPatchCurlConstitutive::EpsSymAvg,
+    )
+}
+
+#[cfg(feature = "photonics")]
+#[allow(clippy::too_many_arguments)]
+pub fn dec_patch_maxwell_gauged_operator_csr_coo_constitutive(
+    n: usize,
+    n_edges: usize,
+    src: &[i64],
+    tgt: &[i64],
+    coords: &[f32],
+    k0: f32,
+    eps_scalar: Option<&[f32]>,
+    eps_tensor9: Option<&[f32]>,
+    faces_edge: &[i64],
+    faces_sign: &[f32],
+    face_ranges: &[(usize, usize)],
+    drop_tol: f32,
+    curl_constitutive: DecPatchCurlConstitutive,
+) -> Vec<(usize, usize, f32)> {
     let dim = 3 * n;
     let mut xv = vec![0.0_f32; dim];
     let mut yv = vec![0.0_f32; dim];
@@ -1277,7 +1421,7 @@ pub fn dec_patch_maxwell_gauged_operator_csr_coo(
     for col in 0..dim {
         xv.fill(0.0_f32);
         xv[col] = 1.0_f32;
-        dec_patch_operator_apply_gauged(
+        dec_patch_operator_apply_gauged_constitutive(
             &xv,
             &mut yv,
             n,
@@ -1291,6 +1435,7 @@ pub fn dec_patch_maxwell_gauged_operator_csr_coo(
             faces_edge,
             faces_sign,
             face_ranges,
+            curl_constitutive,
         );
         for (row, &v) in yv.iter().enumerate().take(dim) {
             if v.abs() > drop_tol {
@@ -1482,13 +1627,51 @@ pub fn dec_patch_operator_apply_gauged_stacked_lossy(
     faces_sign: &[f32],
     face_ranges: &[(usize, usize)],
 ) {
+    dec_patch_operator_apply_gauged_stacked_lossy_constitutive(
+        x_stack,
+        y_stack,
+        n,
+        n_edges,
+        src,
+        tgt,
+        coords,
+        k0,
+        eps_scalar,
+        eps_tensor9,
+        eps_imag,
+        faces_edge,
+        faces_sign,
+        face_ranges,
+        DecPatchCurlConstitutive::EpsSymAvg,
+    );
+}
+
+#[cfg(feature = "photonics")]
+#[allow(clippy::too_many_arguments)]
+pub fn dec_patch_operator_apply_gauged_stacked_lossy_constitutive(
+    x_stack: &[f32],
+    y_stack: &mut [f32],
+    n: usize,
+    n_edges: usize,
+    src: &[i64],
+    tgt: &[i64],
+    coords: &[f32],
+    k0: f32,
+    eps_scalar: Option<&[f32]>,
+    eps_tensor9: Option<&[f32]>,
+    eps_imag: &[f32],
+    faces_edge: &[i64],
+    faces_sign: &[f32],
+    face_ranges: &[(usize, usize)],
+    curl_constitutive: DecPatchCurlConstitutive,
+) {
     let dim = 3 * n;
     debug_assert_eq!(x_stack.len(), 2 * dim);
     debug_assert_eq!(y_stack.len(), 2 * dim);
     let (xr, xi) = x_stack.split_at(dim);
     let (yr, yi) = y_stack.split_at_mut(dim);
 
-    dec_patch_maxwell_natural_matvec_flat(
+    dec_patch_maxwell_natural_matvec_flat_constitutive(
         xr,
         yr,
         n,
@@ -1502,8 +1685,9 @@ pub fn dec_patch_operator_apply_gauged_stacked_lossy(
         faces_edge,
         faces_sign,
         face_ranges,
+        curl_constitutive,
     );
-    dec_patch_maxwell_natural_matvec_flat(
+    dec_patch_maxwell_natural_matvec_flat_constitutive(
         xi,
         yi,
         n,
@@ -1517,6 +1701,7 @@ pub fn dec_patch_operator_apply_gauged_stacked_lossy(
         faces_edge,
         faces_sign,
         face_ranges,
+        curl_constitutive,
     );
 
     let k02 = k0 * k0;
@@ -1633,6 +1818,7 @@ fn dec_patch_try_csr_inner_lossless(
     lossless_dense_tried_failed: bool,
     prefer_csr_inner: bool,
     csr_inner: DecPatchCsrInnerMode,
+    curl_constitutive: DecPatchCurlConstitutive,
 ) -> Option<Vec<f32>> {
     if n > PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY {
         tracing::debug!(
@@ -1655,7 +1841,7 @@ fn dec_patch_try_csr_inner_lossless(
     }
 
     const DROP_TOL: f32 = 1e-20_f32;
-    let coo = dec_patch_maxwell_gauged_operator_csr_coo(
+    let coo = dec_patch_maxwell_gauged_operator_csr_coo_constitutive(
         n,
         n_edges,
         src,
@@ -1668,6 +1854,7 @@ fn dec_patch_try_csr_inner_lossless(
         faces_sign,
         face_ranges,
         DROP_TOL,
+        curl_constitutive,
     );
     let merged = dec_patch_coo_sort_merge_f32(&coo);
     let (rp, ci, va) = dec_patch_csr_from_sorted_coo_f32(dim, &merged)?;
@@ -1764,6 +1951,46 @@ fn dec_patch_matvec_sym3(a9: &[f32; 9], v: [f32; 3]) -> [f32; 3] {
     ]
 }
 
+/// Analytic inverse of a **symmetric** row-major **3×3** (returns `None` if \(|\det|\) is tiny).
+#[cfg(feature = "photonics")]
+#[must_use]
+pub fn dec_patch_sym3_try_inverse(a9: &[f32; 9]) -> Option<[f32; 9]> {
+    let a = a9[0];
+    let b = a9[1];
+    let c = a9[2];
+    let d = a9[4];
+    let e = a9[5];
+    let f = a9[8];
+    // Use symmetrized off-diagonals (a9[1]=a9[3], a9[2]=a9[6], a9[5]=a9[7]).
+    let det = a * (d * f - e * e) - b * (b * f - c * e) + c * (b * e - c * d);
+    if !det.is_finite() || det.abs() < 1e-20_f32 {
+        return None;
+    }
+    let inv_det = 1.0_f32 / det;
+    let i00 = (d * f - e * e) * inv_det;
+    let i01 = (c * e - b * f) * inv_det;
+    let i02 = (b * e - c * d) * inv_det;
+    let i11 = (a * f - c * c) * inv_det;
+    let i12 = (c * b - a * e) * inv_det;
+    let i22 = (a * d - b * b) * inv_det;
+    Some([i00, i01, i02, i01, i11, i12, i02, i12, i22])
+}
+
+#[cfg(feature = "photonics")]
+#[inline]
+fn dec_patch_curl_constitutive_tensor9(
+    t9: &[f32],
+    i: usize,
+    j: usize,
+    mode: DecPatchCurlConstitutive,
+) -> [f32; 9] {
+    let a = dec_patch_sym_avg_eps_edge_tensor9(t9, i, j);
+    match mode {
+        DecPatchCurlConstitutive::EpsSymAvg => a,
+        DecPatchCurlConstitutive::EpsInvSymAvg => dec_patch_sym3_try_inverse(&a).unwrap_or(a),
+    }
+}
+
 /// Host reference matvec for the **DEC patch** Maxwell operator (grad–div per diagonal \(\varepsilon\)
 /// channel + \(d_1^\top d_1\) on tangential edge projections with diagonal \(\star_1\) from primal edge
 /// lengths (see [`photonics_dec_patch_uses_metric_dual_edge_hodge`]) + \(k_0^2\) nodal \(\varepsilon\) **3×3**).
@@ -1774,6 +2001,8 @@ fn dec_patch_matvec_sym3(a9: &[f32; 9], v: [f32; 3]) -> [f32; 3] {
 /// leg independent of \(\varepsilon\) as before.
 ///
 /// **Gauge:** caller applies pinning when assembling the full linear system.
+///
+/// Compatibility wrapper: curl constitutive = [`DecPatchCurlConstitutive::EpsSymAvg`].
 #[cfg(feature = "photonics")]
 #[allow(clippy::too_many_arguments)]
 pub fn dec_patch_maxwell_natural_matvec_flat(
@@ -1790,6 +2019,44 @@ pub fn dec_patch_maxwell_natural_matvec_flat(
     faces_edge: &[i64],
     faces_sign: &[f32],
     face_ranges: &[(usize, usize)],
+) {
+    dec_patch_maxwell_natural_matvec_flat_constitutive(
+        x,
+        y,
+        n,
+        n_edges,
+        src,
+        tgt,
+        coords,
+        k0,
+        eps_scalar,
+        eps_tensor9,
+        faces_edge,
+        faces_sign,
+        face_ranges,
+        DecPatchCurlConstitutive::EpsSymAvg,
+    );
+}
+
+/// Same as [`dec_patch_maxwell_natural_matvec_flat`] with explicit Whitney curl constitutive mode
+/// ([`DecPatchCurlConstitutive::EpsInvSymAvg`] applies SPD \(\varepsilon^{-1}\) on the tensor curl leg).
+#[cfg(feature = "photonics")]
+#[allow(clippy::too_many_arguments)]
+pub fn dec_patch_maxwell_natural_matvec_flat_constitutive(
+    x: &[f32],
+    y: &mut [f32],
+    n: usize,
+    n_edges: usize,
+    src: &[i64],
+    tgt: &[i64],
+    coords: &[f32],
+    k0: f32,
+    eps_scalar: Option<&[f32]>,
+    eps_tensor9: Option<&[f32]>,
+    faces_edge: &[i64],
+    faces_sign: &[f32],
+    face_ranges: &[(usize, usize)],
+    curl_constitutive: DecPatchCurlConstitutive,
 ) {
     debug_assert_eq!(x.len(), 3 * n);
     debug_assert_eq!(y.len(), 3 * n);
@@ -1856,7 +2123,7 @@ pub fn dec_patch_maxwell_natural_matvec_flat(
         let mz = 0.5_f32 * (x[3 * i + 2] + x[3 * j + 2]);
         let m = [mx, my, mz];
         u_e[e] = if let Some(t9) = eps_tensor9 {
-            let a = dec_patch_sym_avg_eps_edge_tensor9(t9, i, j);
+            let a = dec_patch_curl_constitutive_tensor9(t9, i, j, curl_constitutive);
             let d = dec_patch_matvec_sym3(&a, m);
             d[0] * tx[e] + d[1] * ty[e] + d[2] * tz[e]
         } else {
@@ -1908,7 +2175,7 @@ pub fn dec_patch_maxwell_natural_matvec_flat(
         }
         let v = 0.5_f32 * w_e[e];
         let (wx, wy, wz) = if let Some(t9) = eps_tensor9 {
-            let a = dec_patch_sym_avg_eps_edge_tensor9(t9, i, j);
+            let a = dec_patch_curl_constitutive_tensor9(t9, i, j, curl_constitutive);
             let d = dec_patch_matvec_sym3(&a, [tx[e], ty[e], tz[e]]);
             (v * d[0], v * d[1], v * d[2])
         } else {
@@ -2055,6 +2322,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
 
     let dense_node_cap_eff = dec_patch_effective_dense_node_cap(dec_patch_config.force_krylov);
     let csr_inner = dec_patch_config.csr_inner;
+    let curl_constitutive = dec_patch_config.curl_constitutive;
     let mut lossless_dense_tried_failed = false;
     let mut sol: Option<Vec<f32>> = None;
 
@@ -2070,7 +2338,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
         for col in 0..dim2 {
             xv.fill(0.0_f32);
             xv[col] = 1.0_f32;
-            dec_patch_operator_apply_gauged_stacked_lossy(
+            dec_patch_operator_apply_gauged_stacked_lossy_constitutive(
                 &xv,
                 &mut yv,
                 n,
@@ -2085,6 +2353,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
                 &faces_edge,
                 &faces_sign,
                 patch.face_column_ranges,
+                curl_constitutive,
             );
             for r in 0..dim2 {
                 a[r * dim2 + col] = yv[r];
@@ -2122,6 +2391,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
                 false,
                 true,
                 csr_inner,
+                curl_constitutive,
             );
         }
         if sol.is_none() && n <= dense_node_cap_eff {
@@ -2131,7 +2401,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
             for col in 0..dim {
                 xv.fill(0.0_f32);
                 xv[col] = 1.0_f32;
-                dec_patch_maxwell_natural_matvec_flat(
+                dec_patch_maxwell_natural_matvec_flat_constitutive(
                     &xv,
                     &mut yv,
                     n,
@@ -2145,6 +2415,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
                     &faces_edge,
                     &faces_sign,
                     patch.face_column_ranges,
+                    curl_constitutive,
                 );
                 for r in 0..dim {
                     if r < 3 {
@@ -2199,6 +2470,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
                 lossless_dense_tried_failed,
                 false,
                 csr_inner,
+                curl_constitutive,
             )
         })
         .or_else(|| {
@@ -2219,6 +2491,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
                 patch.face_column_ranges,
                 &b,
                 dim,
+                curl_constitutive,
             )
         })
         .ok_or(PhysicsError::KrylovDiverged {
@@ -2310,8 +2583,10 @@ pub mod dec_maxwell_assembly {
 #[cfg(all(test, feature = "photonics"))]
 mod photonics_matrix_six_honesty_tests {
     use super::{
-        photonics_dec_patch_uses_metric_dual_edge_hodge,
-        PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY, PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT,
+        dec_patch_maxwell_natural_matvec_flat_constitutive, dec_patch_sym3_try_inverse,
+        photonics_dec_patch_uses_metric_dual_edge_hodge, photonics_lane_fence_holds,
+        photonics_lane_honesty, DecPatchCurlConstitutive, PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY,
+        PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT,
     };
 
     #[test]
@@ -2331,6 +2606,91 @@ mod photonics_matrix_six_honesty_tests {
             "patch curl leg uses diagonal star_1 from primal edge lengths (lumped; row #6 still partial)"
         );
     }
+
+    #[test]
+    fn photonics_lane_honesty_fence_refuses_production_theater() {
+        let h = photonics_lane_honesty();
+        assert!(h.verification_row_six_partial);
+        assert!(!h.production_wired);
+        assert!(!h.matrix_six_closed);
+        assert!(!h.invented_green);
+        assert!(h.curl_constitutive_eps_inv_available);
+        assert!(photonics_lane_fence_holds());
+    }
+
+    #[test]
+    fn dec_patch_sym3_inverse_diagonal_eps() {
+        let a = [4.0_f32, 0.0, 0.0, 0.0, 9.0, 0.0, 0.0, 0.0, 1.0];
+        let inv = dec_patch_sym3_try_inverse(&a).expect("SPD diagonal invertible");
+        assert!((inv[0] - 0.25).abs() < 1e-6);
+        assert!((inv[4] - 1.0 / 9.0).abs() < 1e-6);
+        assert!((inv[8] - 1.0).abs() < 1e-6);
+        assert!(inv[1].abs() < 1e-7 && inv[2].abs() < 1e-7 && inv[5].abs() < 1e-7);
+    }
+
+    #[test]
+    fn dec_patch_eps_inv_curl_matvec_scales_diagonal_tensor() {
+        // Single edge + one face: tensor ε=4·I vs ε⁻¹ curl should differ on Whitney projection.
+        let n = 2usize;
+        let n_e = 1usize;
+        let src = vec![0_i64];
+        let tgt = vec![1_i64];
+        let coords = vec![0.0_f32, 0.0, 0.0, 1.0, 0.0, 0.0];
+        let faces_edge = vec![0_i64];
+        let faces_sign = vec![1.0_f32];
+        let ranges = [(0usize, 1usize)];
+        let k0 = 1.0_f32;
+        let mut t9 = vec![0.0_f32; n * 9];
+        for i in 0..n {
+            t9[i * 9] = 4.0;
+            t9[i * 9 + 4] = 4.0;
+            t9[i * 9 + 8] = 4.0;
+        }
+        let x = vec![0.0_f32, 1.0, 0.0, 0.0, 1.0, 0.0];
+        let mut y_fwd = vec![0.0_f32; 6];
+        let mut y_inv = vec![0.0_f32; 6];
+        dec_patch_maxwell_natural_matvec_flat_constitutive(
+            &x,
+            &mut y_fwd,
+            n,
+            n_e,
+            &src,
+            &tgt,
+            &coords,
+            k0,
+            None,
+            Some(&t9),
+            &faces_edge,
+            &faces_sign,
+            &ranges,
+            DecPatchCurlConstitutive::EpsSymAvg,
+        );
+        dec_patch_maxwell_natural_matvec_flat_constitutive(
+            &x,
+            &mut y_inv,
+            n,
+            n_e,
+            &src,
+            &tgt,
+            &coords,
+            k0,
+            None,
+            Some(&t9),
+            &faces_edge,
+            &faces_sign,
+            &ranges,
+            DecPatchCurlConstitutive::EpsInvSymAvg,
+        );
+        let mut diff = 0.0_f32;
+        for i in 0..6 {
+            diff = diff.max((y_fwd[i] - y_inv[i]).abs());
+            assert!(y_fwd[i].is_finite() && y_inv[i].is_finite());
+        }
+        assert!(
+            diff > 1e-4_f32,
+            "ε vs ε⁻¹ curl constitutive must change the matvec (max abs diff {diff:.3e})"
+        );
+    }
 }
 
 /// **Sparse inner solve harness:** CSR matvec matches COO / operator; CSR CG matches matrix-free CG
@@ -2342,6 +2702,7 @@ mod photonics_sparse_csr_cg_parity_tests {
         dec_patch_csr_from_sorted_coo_f32, dec_patch_csr_matvec_f32,
         dec_patch_maxwell_gauged_operator_csr_coo, dec_patch_operator_apply_gauged,
         solve_maxwell_dec_patch_conjugate_gradient, solve_maxwell_dec_patch_conjugate_gradient_csr,
+        DecPatchCurlConstitutive,
     };
 
     #[allow(clippy::type_complexity)]
@@ -2492,6 +2853,7 @@ mod photonics_sparse_csr_cg_parity_tests {
             &ranges,
             &b,
             dim,
+            DecPatchCurlConstitutive::EpsSymAvg,
         )
         .expect("solve_maxwell_dec_patch_conjugate_gradient matrix-free on quad-split N=4 DEC patch for CSR CG parity witness (FP §6 Track G photonics)");
         let x_csr = solve_maxwell_dec_patch_conjugate_gradient_csr(&rp, &ci, &va, &b, dim)

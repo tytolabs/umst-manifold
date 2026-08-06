@@ -4,6 +4,14 @@
 //! FP §5 — operator-split THMC sub-passes as owned-state `ThmcState → Result<ThmcState>` morphisms.
 //!
 //! Composed by the outer Newton loop in [`super::thmc::ThmcSolver::step_experimental`] (RW-FP-P52).
+//!
+//! # Honesty (W29-087 deepen — non-claims)
+//!
+//! This module deepens the operator-split chain and phase-route fences only. It does **not** invent:
+//! - physics / fleet **GREEN**
+//! - **PRODUCTION_WIRED**
+//! - **MASTER** / master retick eligibility
+//! - **OP-5 PASS**
 
 use burn::tensor::backend::Backend;
 use burn::tensor::{ElementConversion, Tensor};
@@ -535,4 +543,201 @@ fn displacement_bc_mask_expand<B: Backend<FloatElem = f32>>(
         }
     };
     Ok(BoundaryMaskField::from_tensor(bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3])))
+}
+
+// ---------------------------------------------------------------------------
+// W29-087 deepen — honest fences (no invent GREEN / PRODUCTION_WIRED / MASTER / OP-5)
+// ---------------------------------------------------------------------------
+
+/// Swarm cell id for this deepen (W29-087).
+pub const W29_087_CELL_ID: &str = "W29-087-THMC_SPLIT_PASSES";
+
+/// Honest posture — operator-split deepen only; no ceremony invent.
+pub const W29_087_HONEST_POSTURE: &str = "THMC_SPLIT_PASSES_DEEPEN_ONLY";
+
+/// Explicit non-claims (gate text).
+pub const W29_087_NON_CLAIM: &str =
+    "not GREEN; not OP-5 PASS; not production_wired; not MASTER_RETICK";
+
+/// Deepen schema version pin.
+pub const W29_087_DEEPEN_SCHEMA_VERSION: &str = "thmc_split_passes_w29_087_deepen_v1";
+
+/// Ordered operator-split chain (non-monolithic path) — thermal+chemistry → humidity → mechanics.
+pub const THMC_SPLIT_CHAIN_ORDER: &[&str] = &["thermal_chemistry", "humidity", "mechanics"];
+
+/// Count of MP2b phase-route arms (`Fluid` / `Setting` / `Solid`).
+pub const THMC_PHASE_ROUTE_ARM_COUNT: usize = 3;
+
+/// Honest fence flags for the THMC split-passes deepen (W29-087).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ThmcSplitPassesW29087DeepenProbe {
+    pub schema_version: &'static str,
+    pub cell_id: &'static str,
+    pub honest_posture: &'static str,
+    pub non_claim: &'static str,
+    pub chain_order_len: usize,
+    pub phase_route_arm_count: usize,
+    pub fluid_runs_mechanics: bool,
+    pub fluid_runs_fracture: bool,
+    pub setting_runs_mechanics: bool,
+    pub setting_runs_fracture: bool,
+    pub solid_runs_mechanics: bool,
+    pub solid_runs_fracture: bool,
+    pub production_wired_claimed: bool,
+    pub green_claimed: bool,
+    pub op5_pass_claimed: bool,
+    pub master_retick_claimed: bool,
+    pub deepen_honest: bool,
+}
+
+/// Build the W29-087 operator-split deepen honesty probe.
+#[must_use]
+pub fn thmc_split_passes_w29_087_deepen_probe() -> ThmcSplitPassesW29087DeepenProbe {
+    let production_wired_claimed = false;
+    let green_claimed = false;
+    let op5_pass_claimed = false;
+    let master_retick_claimed = false;
+
+    let fluid = ThmcPhaseRoute::Fluid;
+    let setting = ThmcPhaseRoute::Setting;
+    let solid = ThmcPhaseRoute::Solid;
+
+    let route_ok = !fluid.runs_mechanics()
+        && !fluid.runs_fracture_epilogue()
+        && setting.runs_mechanics()
+        && !setting.runs_fracture_epilogue()
+        && solid.runs_mechanics()
+        && solid.runs_fracture_epilogue();
+
+    let chain_ok = THMC_SPLIT_CHAIN_ORDER.len() == 3
+        && THMC_SPLIT_CHAIN_ORDER[0] == "thermal_chemistry"
+        && THMC_SPLIT_CHAIN_ORDER[1] == "humidity"
+        && THMC_SPLIT_CHAIN_ORDER[2] == "mechanics";
+
+    let deepen_honest = W29_087_CELL_ID == "W29-087-THMC_SPLIT_PASSES"
+        && W29_087_DEEPEN_SCHEMA_VERSION == "thmc_split_passes_w29_087_deepen_v1"
+        && W29_087_HONEST_POSTURE == "THMC_SPLIT_PASSES_DEEPEN_ONLY"
+        && THMC_PHASE_ROUTE_ARM_COUNT == 3
+        && route_ok
+        && chain_ok
+        && !production_wired_claimed
+        && !green_claimed
+        && !op5_pass_claimed
+        && !master_retick_claimed
+        && W29_087_NON_CLAIM.contains("not GREEN")
+        && W29_087_NON_CLAIM.contains("not OP-5 PASS")
+        && W29_087_NON_CLAIM.contains("not production_wired")
+        && W29_087_NON_CLAIM.contains("not MASTER_RETICK");
+
+    ThmcSplitPassesW29087DeepenProbe {
+        schema_version: W29_087_DEEPEN_SCHEMA_VERSION,
+        cell_id: W29_087_CELL_ID,
+        honest_posture: W29_087_HONEST_POSTURE,
+        non_claim: W29_087_NON_CLAIM,
+        chain_order_len: THMC_SPLIT_CHAIN_ORDER.len(),
+        phase_route_arm_count: THMC_PHASE_ROUTE_ARM_COUNT,
+        fluid_runs_mechanics: fluid.runs_mechanics(),
+        fluid_runs_fracture: fluid.runs_fracture_epilogue(),
+        setting_runs_mechanics: setting.runs_mechanics(),
+        setting_runs_fracture: setting.runs_fracture_epilogue(),
+        solid_runs_mechanics: solid.runs_mechanics(),
+        solid_runs_fracture: solid.runs_fracture_epilogue(),
+        production_wired_claimed,
+        green_claimed,
+        op5_pass_claimed,
+        master_retick_claimed,
+        deepen_honest,
+    }
+}
+
+/// Whether the W29-087 deepen honesty probe passes.
+#[must_use]
+pub fn thmc_split_passes_w29_087_deepen_honest() -> bool {
+    thmc_split_passes_w29_087_deepen_probe().deepen_honest
+}
+
+/// Module fence: refuse inventing GREEN / PRODUCTION_WIRED / MASTER / OP-5.
+#[must_use]
+pub fn thmc_split_passes_honest_fence_holds() -> bool {
+    let p = thmc_split_passes_w29_087_deepen_probe();
+    p.deepen_honest
+        && !p.green_claimed
+        && !p.production_wired_claimed
+        && !p.op5_pass_claimed
+        && !p.master_retick_claimed
+}
+
+/// Invent-claim: production wire — always **false** at this deepen.
+#[must_use]
+pub const fn thmc_split_passes_production_wired() -> bool {
+    false
+}
+
+/// Invent-claim: physics/fleet GREEN — always **false** at this deepen.
+#[must_use]
+pub const fn thmc_split_passes_physics_green() -> bool {
+    false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn thmc_split_passes_phase_route_gates() {
+        assert!(!ThmcPhaseRoute::Fluid.runs_mechanics());
+        assert!(!ThmcPhaseRoute::Fluid.runs_fracture_epilogue());
+        assert!(ThmcPhaseRoute::Setting.runs_mechanics());
+        assert!(!ThmcPhaseRoute::Setting.runs_fracture_epilogue());
+        assert!(ThmcPhaseRoute::Solid.runs_mechanics());
+        assert!(ThmcPhaseRoute::Solid.runs_fracture_epilogue());
+        assert_eq!(THMC_PHASE_ROUTE_ARM_COUNT, 3);
+    }
+
+    #[test]
+    fn thmc_split_passes_chain_order_pinned() {
+        assert_eq!(THMC_SPLIT_CHAIN_ORDER.len(), 3);
+        assert_eq!(THMC_SPLIT_CHAIN_ORDER[0], "thermal_chemistry");
+        assert_eq!(THMC_SPLIT_CHAIN_ORDER[1], "humidity");
+        assert_eq!(THMC_SPLIT_CHAIN_ORDER[2], "mechanics");
+    }
+
+    #[test]
+    fn thmc_split_passes_w29_087_deepen_honest_probe() {
+        let probe = thmc_split_passes_w29_087_deepen_probe();
+        assert_eq!(probe.cell_id, W29_087_CELL_ID);
+        assert_eq!(probe.schema_version, W29_087_DEEPEN_SCHEMA_VERSION);
+        assert_eq!(probe.honest_posture, W29_087_HONEST_POSTURE);
+        assert_eq!(probe.phase_route_arm_count, 3);
+        assert_eq!(probe.chain_order_len, 3);
+        assert!(!probe.fluid_runs_mechanics);
+        assert!(!probe.fluid_runs_fracture);
+        assert!(probe.setting_runs_mechanics);
+        assert!(!probe.setting_runs_fracture);
+        assert!(probe.solid_runs_mechanics);
+        assert!(probe.solid_runs_fracture);
+        assert!(!probe.green_claimed);
+        assert!(!probe.production_wired_claimed);
+        assert!(!probe.op5_pass_claimed);
+        assert!(!probe.master_retick_claimed);
+        assert!(thmc_split_passes_w29_087_deepen_honest());
+        assert!(thmc_split_passes_honest_fence_holds());
+        assert!(!thmc_split_passes_production_wired());
+        assert!(!thmc_split_passes_physics_green());
+    }
+
+    #[test]
+    fn thmc_split_passes_non_claim_text_covers_forbidden_invent() {
+        for needle in [
+            "not GREEN",
+            "not OP-5 PASS",
+            "not production_wired",
+            "not MASTER_RETICK",
+        ] {
+            assert!(
+                W29_087_NON_CLAIM.contains(needle),
+                "missing non-claim fragment: {needle}"
+            );
+        }
+    }
 }

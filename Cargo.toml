@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
 [workspace]
-members = [".", "crates/umst-runtime", "umst-layout-codegen", "umst-math", "umst-runtime-arena"]
+members = [".", "crates/umst-runtime", "umst-math", "umst-runtime-arena"]
 # `crates/umst-manifold` facade template is NOT a member (duplicate package name until GitHub rename).
 resolver = "2"
 
@@ -103,6 +103,8 @@ design-query = ["mechanics-adjoint-q1-hex", "topology-density-evolution"]
 design-implicit-field = ["topology-density-evolution"]
 # Landauer / CODATA via `umst-math` (enabled from cockpit manifold-integration `manifold-integration`).
 math-constants = ["dep:umst-math", "dep:ordered-float", "umst-math/math-constants"]
+# F-09 — first non-scalar `TensorAlgebra` backend (`NalgebraAlgebra` / 3×3 scaffold).
+nalgebra-tensor = ["dep:nalgebra"]
 
 [dependencies]
 burn = { version = "=0.13.2", default-features = false }
@@ -116,8 +118,16 @@ time = "0.3.47"
 rand = "0.8"
 num-traits = "0.2"
 sha2 = "0.10"
+# SEC-CATALOG-PIN — shared `pin_witness_ok(HashPolicy::Sha3Catalog)` (E-08 / SEC-HASH-PIN).
+umst-algebra = { path = "../umst-foundations/crates/umst-algebra", default-features = false }
 # Wave 2 A2 — frozen Core gate (shim re-export; sources live in umst-foundations).
 umst-gate = { path = "../umst-foundations/crates/umst-gate" }
+# B3-1 — material conjunct SSOT @ consumer compose boundary (F25-R10).
+umst-cartridge-concrete = { path = "../umst-cartridges/crates/materials/umst-cartridge-concrete" }
+# C2 / PBM-010 — `TensorAlgebra` trait contract for runtime atom tensor lift.
+umst-cartridge-api = { path = "../umst-cartridge-api" }
+# F-09 — fixed 3×3 tensor carrier for slice-4 `TensorAlgebra` scaffold (runtime home only).
+nalgebra = { version = "0.33", default-features = false, features = ["std"], optional = true }
 # SSOT: workspace member `umst-math/` (moved from legacy cockpit; W3).
 umst-math = { path = "umst-math", optional = true }
 ordered-float = { version = "5.1", optional = true }
@@ -125,7 +135,7 @@ ordered-float = { version = "5.1", optional = true }
 [build-dependencies]
 serde_json = "1.0"
 sha2 = "0.10"
-umst-layout-codegen = { path = "umst-layout-codegen" }
+umst-layout-codegen = { path = "../umst-foundations/crates/umst-layout-codegen" }
 
 [dev-dependencies]
 approx = "0.5"
@@ -134,7 +144,7 @@ serde_json = "1.0"
 burn = { version = "=0.13.2", default-features = false, features = ["std", "train", "autodiff"] }
 burn-ndarray = "=0.13.2"
 umst-math = { path = "umst-math" }
-umst-layout-codegen = { path = "umst-layout-codegen" }
+umst-layout-codegen = { path = "../umst-foundations/crates/umst-layout-codegen" }
 
 [lib]
 name = "umst_manifold"
@@ -143,6 +153,10 @@ path = "src/lib.rs"
 [[example]]
 name = "basic_topology"
 path = "examples/basic_topology.rs"
+
+[[example]]
+name = "manifoldgateway_oracle_harvest"
+path = "examples/manifoldgateway_oracle_harvest.rs"
 
 [[bin]]
 name = "gate_server"
@@ -440,6 +454,20 @@ path = "tests/epistemic_ppo.rs"
 required-features = ["epistemic-ppo"]
 
 [[test]]
+name = "mi_oracle_harvest"
+path = "tests/mi_oracle_harvest.rs"
+required-features = ["epistemic-ppo"]
+
+[[test]]
+name = "ppo_oracle_harvest"
+path = "tests/ppo_oracle_harvest.rs"
+required-features = ["epistemic-ppo"]
+
+[[test]]
+name = "manifoldgateway_oracle_harvest"
+path = "tests/manifoldgateway_oracle_harvest.rs"
+
+[[test]]
 name = "kleisli_ppo_hot_bind"
 path = "tests/kleisli_ppo_hot_bind.rs"
 required-features = ["kleisli-ppo-hot-bind"]
@@ -502,3 +530,7 @@ required-features = ["design-query", "topology-density-evolution", "mechanics-ad
 name = "implicit_field_scaffold"
 path = "tests/implicit_field_scaffold.rs"
 required-features = ["design-implicit-field"]
+
+[[test]]
+name = "semantic_lane_schema_migration"
+path = "tests/semantic_lane_schema_migration.rs"

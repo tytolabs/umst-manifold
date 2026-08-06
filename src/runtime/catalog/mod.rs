@@ -8,9 +8,32 @@
 //! - **Witness envelope** — JSON [`WitnessCatalog`] parsed from embedded bytes emitted as
 //!   `OUT_DIR/catalog_constants.rs` (see [`WITNESS_CATALOG_EMBEDDED_BYTES`]).
 
+pub mod catalog_pin;
+pub mod sec_catalog_pin;
 pub mod traceability;
 pub mod witness_priority;
+pub mod semantic_witness;
 
+pub use catalog_pin::{
+    catalog_sha3_pin_witness_ok, composed_fiber_fingerprint_guard_holds,
+    lock_bundle_content_address_hex, non_preview_fiber_fingerprint_hex, pin_witness_ok,
+    CatalogPinMismatch, EXPECTED_MODULE_COUNT, EXPECTED_UPSTREAM_CATALOG_DIGEST_HEX,
+};
+pub use sec_catalog_pin::{
+    catalog_digest, catalog_digest_hash_policy, catalog_pin_manifold_probe,
+    catalog_pin_manifold_wired, catalog_pin_production_wired, manifold_catalog_pin_ceremony_closed,
+    resolve_catalog_digest, sec_catalog_pin_p1542_a2_honest, sec_catalog_pin_p1542_a2_probe,
+    verify_ssot_catalog_digest_hex, CatalogDigestAttachMode, CatalogPinManifoldError,
+    CatalogPinManifoldProbe, FLEET_P1542_A2_JOB_ID, FLEET_P1542_A2_RECEIPT_PATH, JOB_ID,
+    MANIFOLD_CATALOG_PIN_WIRE_HOPS, BOARD_SLICE_ID as CATALOG_PIN_BOARD_SLICE_ID,
+};
+
+pub use semantic_witness::{
+    bundled_semantic_witness_section_present, lookup_bundled_semantic_cold_witness,
+    lookup_semantic_cold_witness, semantic_witness_section_quickcheck, SemanticColdProof,
+    SemanticWitnessSection, DEFAULT_SEMANTIC_COLD_WITNESS_ID, SEMANTIC_CBF_CATALOG_ID,
+    SEMANTIC_COLD_HOT_POLICY_VERSION,
+};
 pub use witness_priority::{
     tcb_axiom_token_allowed, WitnessLearningSignal, WitnessPriorityQueue, WitnessTcbAxiom,
     LANDAUER_LAW_LEAN_MODULE, PHYSICAL_SECOND_LAW_AXIOM,
@@ -134,8 +157,13 @@ pub struct CatalogLock {
     pub composition_rule: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub composed_catalog_digest_hex: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub composed_primary_fiber_fingerprint_hex: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fiber_pins: Vec<CatalogFiberPin>,
+    /// HCOM-004 cold semantic proof witnesses (build-time Lean exports).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub semantic_witnesses: Option<SemanticWitnessSection>,
 }
 
 impl CatalogLock {

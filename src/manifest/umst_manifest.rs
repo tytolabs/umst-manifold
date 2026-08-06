@@ -15,6 +15,251 @@
 //! documented in [`VERIFY.md`](../../docs/VERIFY.md) §3.3 for runtime digest reject:
 //! `formal-witness` + [`GroundingContract::StrictCatalogMatch`] + downstream `manifest-bridge`
 //! (cartridge repo).
+//!
+//! # Honest boundary (W29-043)
+//!
+//! [`UmstManifest`] / [`UmstManifestBuilder`] are **deployment SSOT scaffolds** — catalog pin,
+//! thermodynamic defaults, and grounding vocabulary. Not physics GREEN, not `PRODUCTION_WIRED`,
+//! not `MASTER`. Cartridge `manifest-bridge` and fleet orchestration remain deferred slices.
+
+/// W29 deepen cell — manifest honest fence bundle.
+pub const W29_MANIFEST_DEEPEN_CELL: &str = "W29-043-UMST_MANIFEST";
+
+/// Honest posture tag — builder + catalog pin landed; production/master refused.
+pub const MANIFEST_POSTURE_TAG: &str = "honest-manifest-ssot-only";
+
+/// Cartridge manifest-bridge integration deferred beyond in-repo builder.
+pub const MANIFEST_BRIDGE_DEFERRED_STEP: &str = "manifest-bridge-cartridge";
+
+/// Fleet production orchestration pin deferred beyond manifest SSOT.
+pub const MANIFEST_PRODUCTION_ORCH_DEFERRED_STEP: &str = "W4-JG-6-loop-close";
+
+/// Honest physics posture — manifest pins catalog identity; does not certify continuum physics.
+pub const MANIFEST_PHYSICS_GREEN: bool = false;
+
+/// Production deployment wiring — not claimed by manifest module alone.
+pub const MANIFEST_PRODUCTION_WIRED: bool = false;
+
+/// Master composition pin — not claimed by manifest module.
+pub const MANIFEST_MASTER: bool = false;
+
+/// Whether builder + catalog lock pin API is landed.
+pub const MANIFEST_BUILDER_LANDED: bool = true;
+
+/// Whether catalog lock bundle SHA-256 pin is landed.
+pub const MANIFEST_CATALOG_PIN_LANDED: bool = true;
+
+/// Whether gate-registry declaration hook is landed (telemetry only — no gate execution).
+pub const MANIFEST_GATE_REGISTRY_LANDED: bool = true;
+
+/// Honest deepen fence for meta / fleet probes.
+pub const MANIFEST_HONEST_FENCE: &str =
+    "manifest_builder_landed=true catalog_pin_landed=true production_wired=false master_composition_wired=false";
+
+/// Manifest fence facet count (honest census).
+pub const MANIFEST_FENCE_FACET_COUNT: usize = 8;
+
+/// Manifest fence facets wired today (5/8 measured; formal-witness feature-gated).
+pub const MANIFEST_FENCE_WIRED_COUNT: usize = 5;
+
+/// Stable facet ids for manifest production fence census.
+pub const MANIFEST_FENCE_FACET_IDS: &[&str] = &[
+    "catalog_lock_pin",
+    "builder_thermo_defaults",
+    "grounding_contract_vocab",
+    "gate_registry_declarations",
+    "strict_profile_env_gate",
+    "formal_witness_digest",
+    "manifest_bridge_cartridge",
+    "production_wired",
+];
+
+/// One facet of the manifest production fence matrix.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ManifestProductionFenceFacet {
+    /// Facet under census.
+    pub facet: &'static str,
+    /// Whether this facet is wired today.
+    pub wired: bool,
+    /// Owning slice when residue.
+    pub owning_slice: &'static str,
+}
+
+/// Manifest production fence facet inventory (honest posture SSOT).
+pub const MANIFEST_PRODUCTION_FENCE_FACETS: &[ManifestProductionFenceFacet] = &[
+    ManifestProductionFenceFacet {
+        facet: "catalog_lock_pin",
+        wired: true,
+        owning_slice: W29_MANIFEST_DEEPEN_CELL,
+    },
+    ManifestProductionFenceFacet {
+        facet: "builder_thermo_defaults",
+        wired: true,
+        owning_slice: W29_MANIFEST_DEEPEN_CELL,
+    },
+    ManifestProductionFenceFacet {
+        facet: "grounding_contract_vocab",
+        wired: true,
+        owning_slice: W29_MANIFEST_DEEPEN_CELL,
+    },
+    ManifestProductionFenceFacet {
+        facet: "gate_registry_declarations",
+        wired: true,
+        owning_slice: W29_MANIFEST_DEEPEN_CELL,
+    },
+    ManifestProductionFenceFacet {
+        facet: "strict_profile_env_gate",
+        wired: true,
+        owning_slice: W29_MANIFEST_DEEPEN_CELL,
+    },
+    ManifestProductionFenceFacet {
+        facet: "formal_witness_digest",
+        wired: false,
+        owning_slice: "formal-witness-feature",
+    },
+    ManifestProductionFenceFacet {
+        facet: "manifest_bridge_cartridge",
+        wired: false,
+        owning_slice: MANIFEST_BRIDGE_DEFERRED_STEP,
+    },
+    ManifestProductionFenceFacet {
+        facet: "production_wired",
+        wired: false,
+        owning_slice: MANIFEST_PRODUCTION_ORCH_DEFERRED_STEP,
+    },
+];
+
+/// Count wired manifest fence facets (must match [`MANIFEST_FENCE_WIRED_COUNT`]).
+#[must_use]
+pub fn manifest_fence_wired_count() -> usize {
+    MANIFEST_PRODUCTION_FENCE_FACETS
+        .iter()
+        .filter(|f| f.wired)
+        .count()
+}
+
+/// Honest production wiring — **false** until cartridge bridge + fleet orch measured.
+#[must_use]
+pub const fn manifest_production_wired() -> bool {
+    false
+}
+
+/// Master composition wiring — **false** until W4-JG-6 loop-close.
+#[must_use]
+pub const fn manifest_master_composition_wired() -> bool {
+    false
+}
+
+/// Compile-time fence — production flip not authorized at posture tier.
+const _: () = assert!(!manifest_production_wired());
+
+/// Measured honest-posture snapshot for manifest (cold edge only).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ManifestHonestPosture {
+    pub physics_green: bool,
+    pub production_wired: bool,
+    pub master: bool,
+    pub builder_landed: bool,
+    pub catalog_pin_landed: bool,
+    pub gate_registry_landed: bool,
+    pub fence_facet_count: usize,
+    pub fence_wired_count: usize,
+    pub honest_fence: &'static str,
+    pub deferred_manifest_bridge: &'static str,
+    pub deferred_production_orch: &'static str,
+}
+
+/// Honest posture bundle for orchestrator / census probes — no invented GREEN.
+#[must_use]
+pub fn manifest_honest_posture_bundle() -> ManifestHonestPosture {
+    ManifestHonestPosture {
+        physics_green: MANIFEST_PHYSICS_GREEN,
+        production_wired: MANIFEST_PRODUCTION_WIRED,
+        master: MANIFEST_MASTER,
+        builder_landed: MANIFEST_BUILDER_LANDED,
+        catalog_pin_landed: MANIFEST_CATALOG_PIN_LANDED,
+        gate_registry_landed: MANIFEST_GATE_REGISTRY_LANDED,
+        fence_facet_count: MANIFEST_FENCE_FACET_COUNT,
+        fence_wired_count: manifest_fence_wired_count(),
+        honest_fence: MANIFEST_HONEST_FENCE,
+        deferred_manifest_bridge: MANIFEST_BRIDGE_DEFERRED_STEP,
+        deferred_production_orch: MANIFEST_PRODUCTION_ORCH_DEFERRED_STEP,
+    }
+}
+
+/// Typed probe for manifest posture honesty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ManifestPostureProbe {
+    pub cell_id: &'static str,
+    pub posture_tag: &'static str,
+    pub builder_landed: bool,
+    pub catalog_pin_landed: bool,
+    pub gate_registry_landed: bool,
+    pub production_wired: bool,
+    pub master_composition_wired: bool,
+    pub physics_green: bool,
+    pub fence_facet_count: usize,
+    pub fence_wired_count: usize,
+    pub honest_fence: &'static str,
+}
+
+/// Build introspection probe for manifest done-when / fleet checks.
+#[must_use]
+pub const fn manifest_posture_probe() -> ManifestPostureProbe {
+    ManifestPostureProbe {
+        cell_id: W29_MANIFEST_DEEPEN_CELL,
+        posture_tag: MANIFEST_POSTURE_TAG,
+        builder_landed: MANIFEST_BUILDER_LANDED,
+        catalog_pin_landed: MANIFEST_CATALOG_PIN_LANDED,
+        gate_registry_landed: MANIFEST_GATE_REGISTRY_LANDED,
+        production_wired: manifest_production_wired(),
+        master_composition_wired: manifest_master_composition_wired(),
+        physics_green: MANIFEST_PHYSICS_GREEN,
+        fence_facet_count: MANIFEST_FENCE_FACET_COUNT,
+        fence_wired_count: MANIFEST_FENCE_WIRED_COUNT,
+        honest_fence: MANIFEST_HONEST_FENCE,
+    }
+}
+
+/// Manifest SSOT landed with production/master composition honestly open.
+#[must_use]
+pub fn manifest_posture_honest(probe: &ManifestPostureProbe) -> bool {
+    probe.cell_id == W29_MANIFEST_DEEPEN_CELL
+        && probe.posture_tag == MANIFEST_POSTURE_TAG
+        && probe.builder_landed
+        && probe.catalog_pin_landed
+        && probe.gate_registry_landed
+        && !probe.physics_green
+        && !probe.production_wired
+        && !probe.master_composition_wired
+        && probe.fence_facet_count == MANIFEST_FENCE_FACET_COUNT
+        && probe.fence_wired_count == MANIFEST_FENCE_WIRED_COUNT
+        && probe.honest_fence.contains("manifest_builder_landed=true")
+        && probe.honest_fence.contains("catalog_pin_landed=true")
+        && probe.honest_fence.contains("production_wired=false")
+        && probe.honest_fence.contains("master_composition_wired=false")
+}
+
+/// Validate manifest posture honesty — fail closed on fake production/master/GREEN claims.
+pub fn validate_manifest_posture_honesty() -> Result<(), &'static str> {
+    let probe = manifest_posture_probe();
+    if probe.physics_green {
+        return Err("MANIFEST_PHYSICS_GREEN must stay false — manifest is SSOT pin only");
+    }
+    if probe.production_wired {
+        return Err("manifest_production_wired must stay false until manifest-bridge lands");
+    }
+    if probe.master_composition_wired {
+        return Err("manifest_master_composition_wired must stay false until W4-JG-6 closes");
+    }
+    if manifest_fence_wired_count() != MANIFEST_FENCE_WIRED_COUNT {
+        return Err("manifest_fence_wired_count drift from MANIFEST_FENCE_WIRED_COUNT");
+    }
+    if !manifest_posture_honest(&probe) {
+        return Err("manifest_posture_honest failed");
+    }
+    Ok(())
+}
 
 use crate::ai::cbf::ThermodynamicCBF;
 use crate::gate::{KleisliUnitEvaluator, ThermodynamicTransitionEvaluator};
@@ -498,5 +743,55 @@ mod tests {
             manifest.grounding_contract,
             GroundingContract::CatalogPinnedRos2
         );
+    }
+
+    #[test]
+    fn umst_manifest_honest_fence_posture_probe() {
+        let probe = manifest_posture_probe();
+        assert!(manifest_posture_honest(&probe));
+        assert!(!probe.physics_green);
+        assert!(!probe.production_wired);
+        assert!(!probe.master_composition_wired);
+        assert!(probe.honest_fence.contains("production_wired=false"));
+        assert!(probe.honest_fence.contains("master_composition_wired=false"));
+        validate_manifest_posture_honesty().expect("validate_manifest_posture_honesty");
+    }
+
+    #[test]
+    fn umst_manifest_production_and_master_stay_false() {
+        assert!(!MANIFEST_PHYSICS_GREEN);
+        assert!(!MANIFEST_PRODUCTION_WIRED);
+        assert!(!MANIFEST_MASTER);
+        assert!(!manifest_production_wired());
+        assert!(!manifest_master_composition_wired());
+    }
+
+    #[test]
+    fn umst_manifest_fence_facet_census_matches_constants() {
+        assert_eq!(MANIFEST_FENCE_FACET_IDS.len(), MANIFEST_FENCE_FACET_COUNT);
+        assert_eq!(
+            MANIFEST_PRODUCTION_FENCE_FACETS.len(),
+            MANIFEST_FENCE_FACET_COUNT
+        );
+        assert_eq!(manifest_fence_wired_count(), MANIFEST_FENCE_WIRED_COUNT);
+        let bundle = manifest_honest_posture_bundle();
+        assert_eq!(bundle.fence_facet_count, MANIFEST_FENCE_FACET_COUNT);
+        assert_eq!(bundle.fence_wired_count, MANIFEST_FENCE_WIRED_COUNT);
+        assert!(!bundle.physics_green);
+        assert!(!bundle.production_wired);
+        assert!(!bundle.master);
+    }
+
+    #[test]
+    fn umst_manifest_deferred_facets_stay_unwired() {
+        let deferred: Vec<_> = MANIFEST_PRODUCTION_FENCE_FACETS
+            .iter()
+            .filter(|f| !f.wired)
+            .map(|f| f.facet)
+            .collect();
+        assert!(deferred.contains(&"formal_witness_digest"));
+        assert!(deferred.contains(&"manifest_bridge_cartridge"));
+        assert!(deferred.contains(&"production_wired"));
+        assert_eq!(deferred.len(), 3);
     }
 }
