@@ -2,7 +2,7 @@
 # Consumed by umst-meta when implemented; not checked yet.
 
 name = "tytolabs/umst-manifold"
-path = "umst-manifold"
+path = "umst/umst-manifold"
 
 kind = "runtime"
 spdx = "MIT"
