@@ -17,7 +17,7 @@
 //! W1-19 owns cross-crate loop wiring; this module sequences the manifold-side tick
 //! through [`EmbodiedLoopSlots`] without claiming loop closure.
 //!
-//! Authority: `archived/residuals/misc-outputs-tmp/m5_prep/M5_ORCHESTRATOR_WIRING_1048.md` ·
+//! Authority: `old/residuals/residuals/misc-outputs-tmp/m5_prep/M5_ORCHESTRATOR_WIRING_1048.md` ·
 //! SK-08 stub map @ `outputs/.tmp/UMST_WEB_RECONCILE_2009.md` §3.
 
 use super::fragment_audit::{phase_wired, scaffold_coverage_pct, LoopPhase};

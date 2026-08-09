@@ -19,11 +19,11 @@ use crate::web_constitutive::{
 pub const JOB_ID: &str = "AGAP-2350-MANIFOLD";
 
 /// Completion receipt cross-ref (this wave).
-pub const RECEIPT_PATH: &str = "archived/residuals/migration-2026-07-20/COMPLETION_AGAP_AGENT_MANIFOLD_2350.md";
+pub const RECEIPT_PATH: &str = "old/residuals/residuals/migration-2026-07-20/COMPLETION_AGAP_AGENT_MANIFOLD_2350.md";
 
 /// Prior manifold semantic deepen receipt.
 pub const PRIOR_RECEIPT_PATH: &str =
-    "archived/residuals/migration-2026-07-20/COMPLETION_AGAP_AGENT_MANIFOLD-SEM_2033.md";
+    "old/residuals/residuals/migration-2026-07-20/COMPLETION_AGAP_AGENT_MANIFOLD-SEM_2033.md";
 
 /// Honest adoption tier — prep wired; production flip blocked.
 pub const POSTURE_TAG: &str = "semantic-lane-prep-not-production";

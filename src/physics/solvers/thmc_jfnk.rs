@@ -17,6 +17,7 @@
 //! Host `f32` GMRES re-export for THMC JFNK under `solver-experimental`. Smoke contracts are
 //! exercised by `cargo test -p umst-manifold thmc_jfnk --features solver-experimental`.
 //! Not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER`, not OP-5.
+// RESIDUE(R-solver-jfnk-precond, kind=solver, status=open): ILU(0) JFNK preconditioner not landed; host GMRES smoke only @ solver-experimental
 
 pub use super::krylov_host::{gmres_f32, gmres_f32_try};
 

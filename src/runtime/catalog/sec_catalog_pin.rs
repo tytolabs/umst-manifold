@@ -28,7 +28,7 @@ pub const LIB_TWIN_ID: &str = "LIB-ADOPT-E-CATALOG-PIN";
 
 /// Prior AGAP deepen receipt.
 pub const PRIOR_RECEIPT_PATH: &str =
-    "archived/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-CATALOG-PIN_2350.md";
+    "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-CATALOG-PIN_2350.md";
 
 /// Trust catalog-pin delegate SSOT.
 pub const TRUST_SSOT: &str = "umst-foundations/crates/umst-trust/src/sec_catalog_pin.rs";

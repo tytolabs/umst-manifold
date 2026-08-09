@@ -29,7 +29,7 @@ pub const ADAPTER_SCAFFOLD_LANDED: bool = true;
 pub const RANK1_PLUS_IMPL_LANDED: bool = false;
 
 /// Whether the planned `umst-algebra-burn` crate exists.
-pub const ADAPTER_CRATE_LANDED: bool = false;
+pub const ADAPTER_CRATE_LANDED: bool = true;
 
 /// Slice-3 0D lift step prerequisite (PBM-010).
 pub const SLICE3_LIFT_STEP_LANDED: bool = true;
@@ -52,8 +52,8 @@ pub const SLICE3B_LEDGER_PATH: &str = "umst-manifold/src/runtime/atoms_tensor_li
 /// Slice-3 0D lift step cross-ref.
 pub const SLICE3_LIFT_STEP_PATH: &str = "umst-manifold/src/runtime/atoms_tensor_lift.rs";
 
-/// Planned adapter crate (not created).
-pub const ADAPTER_CRATE_PATH: &str = "umst-runtime/crates/umst-algebra-burn/";
+/// Planned adapter crate (R12-1 @ crates/umst-algebra-burn).
+pub const ADAPTER_CRATE_PATH: &str = "crates/umst-algebra-burn/";
 
 /// C2 design SSOT.
 pub const DESIGN_DOC_PATH: &str = "docs/C2_TENSOR_ALGEBRA_DESIGN.md";

@@ -66,7 +66,7 @@ pub const SOURCE_ANCHOR_PATH: &str = "umst-manifold/src/runtime/nalgebra_algebra
 pub const DESIGN_DOC_PATH: &str = "docs/C2_TENSOR_ALGEBRA_DESIGN.md";
 
 /// Research libs SSOT.
-pub const RESEARCH_DOC_PATH: &str = "archived/residuals/misc-outputs-tmp/RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md";
+pub const RESEARCH_DOC_PATH: &str = "old/residuals/residuals/misc-outputs-tmp/RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md";
 
 /// Absolute tolerance for symmetry / Voigt round-trip probes.
 pub const SYMMETRY_ABS_TOL: f64 = 1e-12;

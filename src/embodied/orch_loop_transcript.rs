@@ -11,8 +11,8 @@
 //! owns G-EMB-02). Read-only composition over [`super::loop_stub::EmbodiedLoopStub`].
 //! Production transcript merge and hardware timing columns remain **deferred** to W1-19.
 //!
-//! Authority: `archived/residuals/misc-outputs-tmp/m5_prep/M5_ORCHESTRATOR_WIRING_1048.md` ·
-//! `archived/residuals/misc-outputs-tmp/m5_prep/M5_JOINT_GATE_TRANSCRIPT_TEMPLATE_1100.md` §5.7.
+//! Authority: `old/residuals/residuals/misc-outputs-tmp/m5_prep/M5_ORCHESTRATOR_WIRING_1048.md` ·
+//! `old/residuals/residuals/misc-outputs-tmp/m5_prep/M5_JOINT_GATE_TRANSCRIPT_TEMPLATE_1100.md` §5.7.
 
 use serde::{Deserialize, Serialize};
 

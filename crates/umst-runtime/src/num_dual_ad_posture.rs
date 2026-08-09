@@ -6,7 +6,7 @@
 //! **Honest boundary:** scalar B1 σ landed in `umst-cartridge-continuum` behind feature `num-dual`;
 //! full 3×3 Cauchy tensor awaits F-09 `nalgebra` lift in `umst-runtime`.
 //!
-//! Witness: PBM-009 · [`RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md`](../../../../archived/residuals/misc-outputs-tmp/RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md) §3.3.
+//! Witness: PBM-009 · [`RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md`](../../../../old/residuals/residuals/misc-outputs-tmp/RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md) §3.3.
 
 /// Slice identifier for F-10 num-dual AD.
 pub const SLICE_ID: &str = "F-10-num-dual";

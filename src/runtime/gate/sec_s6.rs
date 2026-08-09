@@ -62,7 +62,7 @@ pub const PRIOR_J34_RECEIPT_PATH: &str = "outputs/.tmp/COMPOSER_J34_2348.md";
 
 /// Prior AGAP-2033 SEC-S6 upstream table receipt.
 pub const PRIOR_RECEIPT_PATH_2033: &str =
-    "archived/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S6_2033.md";
+    "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S6_2033.md";
 
 /// umst-trust S-6 inspect delegate SSOT (Z126 owner — absorb, do not redo).
 pub const TRUST_SSOT: &str = "umst-foundations/crates/umst-trust/src/s6_inspect.rs";

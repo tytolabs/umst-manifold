@@ -4,7 +4,7 @@
 //! `NalgebraAlgebra` production posture — slice-4 defer anchor for `umst-runtime`.
 //!
 //! **Honest boundary:** `umst-runtime` is the designated `nalgebra` home per
-//! [`RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md`](../../../../archived/residuals/misc-outputs-tmp/RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md).
+//! [`RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md`](../../../../old/residuals/residuals/misc-outputs-tmp/RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md).
 //! Production B1 cartridge monomorphization and `num-dual` AD pairing are **not**
 //! landed here — 3×3 scaffold only.
 //!
@@ -48,7 +48,7 @@ pub const SLICE4_SCAFFOLD_PATH: &str = "umst-manifold/src/runtime/nalgebra_algeb
 pub const DESIGN_DOC_PATH: &str = "docs/C2_TENSOR_ALGEBRA_DESIGN.md";
 
 /// Research libs SSOT.
-pub const RESEARCH_DOC_PATH: &str = "archived/residuals/misc-outputs-tmp/RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md";
+pub const RESEARCH_DOC_PATH: &str = "old/residuals/residuals/misc-outputs-tmp/RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md";
 
 /// Fleet receipt for LIB-NALGEBRA tensor row advance.
 pub const RECEIPT_SLUG: &str = "COMPLETION_AGAP_AGENT_LIB-NALGEBRA_2037";

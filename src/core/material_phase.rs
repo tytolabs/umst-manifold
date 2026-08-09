@@ -17,7 +17,7 @@
 //! - [`MATERIAL_PHASE_PHYSICS_GREEN`], [`MATERIAL_PHASE_PRODUCTION_WIRED`], and
 //!   [`MATERIAL_PHASE_MASTER`] stay **false** — no invent GREEN / production / MASTER retick.
 //!
-//! Schedule: `archived/residuals/misc-outputs-tmp/fp_material_phase_adt_plan.md`.
+//! Schedule: `old/residuals/residuals/misc-outputs-tmp/fp_material_phase_adt_plan.md`.
 
 /// W29 deepen cell — material phase ADT honesty (no invent GREEN).
 pub const W29_MATERIAL_PHASE_DEEPEN_CELL: &str = "W29-027-MATERIAL_PHASE";

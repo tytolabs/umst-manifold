@@ -12,7 +12,7 @@
 //! the full six-phase [`super::loop_stub::EmbodiedLoopStub`]. This module does not
 //! modify either.
 //!
-//! Authority: `archived/residuals/misc-outputs-tmp/m5_prep/M5_ORCHESTRATOR_WIRING_1048.md` · blueprint §14.7
+//! Authority: `old/residuals/residuals/misc-outputs-tmp/m5_prep/M5_ORCHESTRATOR_WIRING_1048.md` · blueprint §14.7
 
 use super::fragment_audit::{phase_wired, scaffold_coverage_pct, LoopPhase};
 use super::fragment_slots::FieldSenseClient;

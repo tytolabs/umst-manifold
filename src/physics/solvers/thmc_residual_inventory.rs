@@ -10,8 +10,8 @@
 //! Wave 3 THMC impl and MATPH hot-path wire stay **unauthorized** while MATPH-22 is Open —
 //! this module does not invent GREEN / PRODUCTION_WIRED / MASTER.
 //!
-//! Authority: [`archived/residuals/misc-outputs-tmp/RESEARCH_THMC_2218.md`](../../../../archived/residuals/misc-outputs-tmp/RESEARCH_THMC_2218.md)
-//! · [`archived/residuals/misc-outputs-tmp/g_spawn_i_thmc_2252.md`](../../../../archived/residuals/misc-outputs-tmp/g_spawn_i_thmc_2252.md)
+//! Authority: [`old/residuals/residuals/misc-outputs-tmp/RESEARCH_THMC_2218.md`](../../../../old/residuals/residuals/misc-outputs-tmp/RESEARCH_THMC_2218.md)
+//! · [`old/residuals/residuals/misc-outputs-tmp/g_spawn_i_thmc_2252.md`](../../../../old/residuals/residuals/misc-outputs-tmp/g_spawn_i_thmc_2252.md)
 //! · Deferred statuses deepened beyond the 22:52 research card (MP2b/XS closed; MATPH open).
 
 /// Residue conjunct — THMC residual totality + FP §6 witness stack.

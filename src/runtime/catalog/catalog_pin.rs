@@ -55,7 +55,7 @@ pub const PRIOR_RECEIPT_PATH_Y50: &str = "outputs/.tmp/COMPOSER_Y50_0808.md";
 
 /// Prior AGAP-2350 deepen receipt.
 pub const PRIOR_RECEIPT_PATH_AGAP_2350: &str =
-    "archived/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-CATALOG-PIN_2350.md";
+    "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-CATALOG-PIN_2350.md";
 
 /// Gateway catalog-pin delegate SSOT (serial next-hop — not edited this wave).
 pub const GATEWAY_SSOT: &str = "umst-gateway/crates/umst-gateway/src/sec_catalog_pin.rs";

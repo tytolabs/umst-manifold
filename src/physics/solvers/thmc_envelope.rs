@@ -4,7 +4,7 @@
 //! MP2 bridge — bijection between flat [`ThmcState`] and algebraic [`ThmcEnvelope`].
 //!
 //! Parity window: legacy golden tests continue to use flat product; envelope routing lands in
-//! `ThmcSolver::step_envelope` (MP2b). See `archived/residuals/misc-outputs-tmp/fp_matph_mp2_spec.md`.
+//! `ThmcSolver::step_envelope` (MP2b). See `old/residuals/residuals/misc-outputs-tmp/fp_matph_mp2_spec.md`.
 //!
 //! # Honest fences (W29-082)
 //!

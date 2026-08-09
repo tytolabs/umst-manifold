@@ -33,15 +33,15 @@ pub const FLEET_ACCEL_AC06_RECEIPT_PATH: &str = "outputs/.tmp/COMPOSER_ACCEL_203
 
 /// Prior AGAP-2033 SEC-S4 side-channel badge receipt.
 pub const PRIOR_RECEIPT_PATH_2033: &str =
-    "archived/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S4_2033.md";
+    "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S4_2033.md";
 
 /// Prior AGAP-2127 SEC-S4 scrub-roundtrip receipt.
 pub const PRIOR_RECEIPT_PATH_2127: &str =
-    "archived/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S4_2127.md";
+    "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S4_2127.md";
 
 /// Prior AGAP-2350 SEC-S4 K_v1 fuzz histogram receipt.
 pub const PRIOR_RECEIPT_PATH_2350: &str =
-    "archived/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_S-4_2350.md";
+    "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_S-4_2350.md";
 
 /// umst-trust SEC-S4 side-channel delegate SSOT.
 pub const TRUST_SSOT: &str = "umst-foundations/crates/umst-trust/src/sec_s4_side_channel.rs";

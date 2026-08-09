@@ -53,7 +53,7 @@ pub const FLEET_P1941_K2_RECEIPT_PATH: &str = "outputs/.tmp/COMPOSER_P1941_K2.md
 
 /// Prior AGAP-2033 SEC-S2 TrustGatePolicy receipt.
 pub const PRIOR_RECEIPT_PATH_2033: &str =
-    "archived/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S2_2033.md";
+    "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S2_2033.md";
 
 /// Prior FLEET-COMPOSER-G G73 S-2 refuse-path matrix receipt.
 pub const PRIOR_RECEIPT_PATH_G73: &str = "outputs/.tmp/COMPOSER_G73_SEC_S2_2143.md";

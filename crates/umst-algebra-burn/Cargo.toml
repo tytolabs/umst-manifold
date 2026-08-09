@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
+
+[package]
+name = "umst-algebra-burn"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+authors = [
+    "Santhosh Shyamsundar <santhoshshyamsundar@gmail.com>",
+    "Santosh Prabhu Shenbagamoorthy",
+    "Studio TYTO",
+]
+description = "impl TensorAlgebra for Burn — sole cartridge-lattice adapter naming burn (C2 / R12)"
+license = "MIT"
+readme = "README.md"
+keywords = ["physics", "burn", "tensor-algebra", "umst"]
+categories = ["science", "mathematics"]
+
+[dependencies]
+burn = { version = "=0.13.2", default-features = false, features = ["std"] }
+burn-ndarray = "=0.13.2"
+umst-cartridge-api = { path = "../../../umst-cartridge-api" }
+
+[features]
+default = []
+ndarray = ["burn/ndarray"]
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"

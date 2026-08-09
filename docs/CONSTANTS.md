@@ -21,7 +21,7 @@ or `umst-math` re-export. No runtime registry mutation.
 | `thmc_dense_newton_max_stacked_dofs` | `THMC_DENSE_NEWTON_MAX_STACKED_DOFS` | `thmc-coupled` |
 | `k_boltzmann_j_per_k` | `umst_math::landauer::K_B` | `math-constants` |
 
-## TODO rows (not migrated)
+## Pending rows (not migrated)
 
 Listed in `THMC_FLOATS_TODO` — hydration / kinetics literals remain in `solvers/thmc.rs` until Wave 1 cartridge calibration:
 

@@ -42,11 +42,11 @@ pub const ACCEL_AC08_RECEIPT_PATH: &str = "outputs/.tmp/COMPOSER_ACCEL_2030_AC08
 
 /// Prior AGAP-2033 SEC-S7 inventory receipt.
 pub const PRIOR_RECEIPT_PATH_2033: &str =
-    "archived/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S7_2033.md";
+    "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S7_2033.md";
 
 /// Prior AGAP-2127 SEC-S7-DRAIN deepen receipt.
 pub const PRIOR_RECEIPT_PATH_2127: &str =
-    "archived/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S7-DRAIN_2127.md";
+    "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S7-DRAIN_2127.md";
 
 /// Prior FLEET-COMPOSER-Y Y80 S-fed-trust drain retick receipt.
 pub const PRIOR_RECEIPT_PATH_Y80: &str = "outputs/.tmp/COMPOSER_Y80_0808.md";

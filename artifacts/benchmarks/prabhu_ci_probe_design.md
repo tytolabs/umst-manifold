@@ -8,7 +8,7 @@
 | **Threshold artifact** | `prabhu_thresholds.toml` (PB-S5 operator — **not shipped by agent**) |
 | **Probe script** | `scripts/verify_prabhu_benchmark_subset.sh` |
 | **Collector** | `scripts/collect_prabhu_benchmark_transcript.sh` (PB-S3) |
-| **SSOT schedule** | `archived/residuals/misc-outputs-tmp/fp_prabhu_benchmark_schedule.md` |
+| **SSOT schedule** | `old/residuals/residuals/misc-outputs-tmp/fp_prabhu_benchmark_schedule.md` |
 
 ---
 

@@ -17,15 +17,15 @@ use crate::web_constitutive::web_semantic_lane_overlap_valid;
 pub const JOB_ID: &str = "SWARM-C25-0831-93";
 
 /// Completion receipt cross-ref (this wave).
-pub const RECEIPT_PATH: &str = "archived/residuals/swarm-0831/COMPLETION_SWARM_SWARM-C25-0831-93_0831.md";
+pub const RECEIPT_PATH: &str = "old/residuals/residuals/swarm-0831/COMPLETION_SWARM_SWARM-C25-0831-93_0831.md";
 
 /// Prior manifold semantic deepen receipt (AGAP-2033).
 pub const PRIOR_SEM_RECEIPT_PATH: &str =
-    "archived/residuals/migration-2026-07-20/COMPLETION_AGAP_AGENT_MANIFOLD-SEM_2033.md";
+    "old/residuals/residuals/migration-2026-07-20/COMPLETION_AGAP_AGENT_MANIFOLD-SEM_2033.md";
 
 /// Prior manifold night deepen receipt (AGAP-2350).
 pub const PRIOR_NIGHT_RECEIPT_PATH: &str =
-    "archived/residuals/migration-2026-07-20/COMPLETION_AGAP_AGENT_MANIFOLD_2350.md";
+    "old/residuals/residuals/migration-2026-07-20/COMPLETION_AGAP_AGENT_MANIFOLD_2350.md";
 
 /// Kleisli unit catalog surface id (hand-aligned to `Gate.lean`).
 pub const KLEISLI_UNIT_CATALOG_ID: &str = KleisliUnitEvaluator::CATALOG_ID;

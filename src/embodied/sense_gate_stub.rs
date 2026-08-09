@@ -14,7 +14,7 @@
 //! [`super::loop_stub::EmbodiedLoopStub`]. This module sequences only the Sense and Gate
 //! legs through an optional [`super::fragment_slots::FieldSenseClient`] slot.
 //!
-//! Authority: `archived/residuals/misc-outputs-tmp/m5_prep/M5_ORCHESTRATOR_WIRING_1048.md` · blueprint §14.7
+//! Authority: `old/residuals/residuals/misc-outputs-tmp/m5_prep/M5_ORCHESTRATOR_WIRING_1048.md` · blueprint §14.7
 
 use super::fragment_audit::{phase_wired, scaffold_coverage_pct, LoopPhase};
 use super::fragment_slots::{FieldSenseClient, SenseObservation};

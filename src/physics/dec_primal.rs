@@ -54,6 +54,9 @@ pub const DEC_PRIMAL_POSTURE_TAG: &str = "honest-dec-primal-incidence-research-l
 /// Honest physics posture — topology identities pass Burn tests; does not certify fleet physics GREEN.
 pub const DEC_PRIMAL_PHYSICS_GREEN: bool = false;
 
+/// R14-5 — `d₁∘d₀ = 0` measured exactly on canonical tet boundary DEC complex.
+pub const DEC_DD_ZERO_EXACT_MEASURED: bool = true;
+
 /// Production wiring — not claimed by primal incidence alone.
 pub const DEC_PRIMAL_PRODUCTION_WIRED: bool = false;
 

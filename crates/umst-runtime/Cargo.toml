@@ -27,8 +27,7 @@ categories = ["science", "mathematics", "simulation"]
 umst-manifold = { path = "../..", default-features = false }
 
 [dev-dependencies]
-umst-cartridge-api = { path = "../../../umst-cartridge-api" }
-
+umst-cartridge-api = { version = "0.1.0", path = "../../../umst-cartridge-api" }
 [features]
 default = ["ndarray"]
 ndarray = ["umst-manifold/ndarray"]

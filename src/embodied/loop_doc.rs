@@ -11,7 +11,7 @@
 //! **deferred** to W1-19 (`M5-IMPL-INT-01`).
 //!
 //! Authority: [`docs/NEW_REPOS_BUILD_SPEC.md`](../../../docs/NEW_REPOS_BUILD_SPEC.md) §A9b ·
-//! [`M5_ORCHESTRATOR_WIRING_1048`](../../../archived/residuals/misc-outputs-tmp/m5_prep/M5_ORCHESTRATOR_WIRING_1048.md) ·
+//! [`M5_ORCHESTRATOR_WIRING_1048`](../../../old/residuals/residuals/misc-outputs-tmp/m5_prep/M5_ORCHESTRATOR_WIRING_1048.md) ·
 //! complements [`super::fragment_audit`] (orchestrator fragment wiring).
 
 use super::fragment_audit::{phase_wired, LoopPhase};

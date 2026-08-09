@@ -376,6 +376,26 @@ impl<B: Backend> ChemicalPlan<B> {
 }
 
 impl<B: Backend> ThmcState<B> {
+    /// Canonical field-wrapped constructor (R14-7).
+    #[must_use]
+    pub fn from_fields(
+        temperature: TemperatureField<B>,
+        humidity: HumidityField<B>,
+        displacement: DisplacementField<B>,
+        reaction_extent: ReactionExtentField<B>,
+        damage: DamageField<B>,
+        time: f32,
+    ) -> Self {
+        Self {
+            thermal: ThermalPlan { temperature },
+            hydro: HydrologicPlan { humidity },
+            mechanical: MechanicalPlan { displacement },
+            chemical: ChemicalPlan { reaction_extent },
+            damage,
+            time,
+        }
+    }
+
     #[must_use]
     pub fn from_tensors(
         temperature: Tensor<B, 3>,
@@ -385,14 +405,14 @@ impl<B: Backend> ThmcState<B> {
         damage: Tensor<B, 3>,
         time: f32,
     ) -> Self {
-        Self {
-            thermal: ThermalPlan::from_temperature(temperature),
-            hydro: HydrologicPlan::from_humidity(humidity),
-            mechanical: MechanicalPlan::from_displacement(displacement),
-            chemical: ChemicalPlan::from_reaction_extent(reaction_extent),
-            damage: Field::new(damage),
+        Self::from_fields(
+            Field::new(temperature),
+            Field::new(humidity),
+            Field::new(displacement),
+            Field::new(reaction_extent),
+            Field::new(damage),
             time,
-        }
+        )
     }
 
     #[must_use]

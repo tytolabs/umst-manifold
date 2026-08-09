@@ -30,7 +30,7 @@ Evidence commands are read-only checks run during audit (no plan file edits).
 | **Scoped true 100% (Done morphisms)** | **3 / 4** | **G-04** ✅ · **G-05** ✅ · **W8 (G-01+G-02)** ✅ · **FFI** — **G-03** optional; see [Remaining](#remaining-to-scoped-true-100) |
 | On-disk vs YAML | **14/14 ✅** vs 1 `in_progress` + 13 `pending` | Plan front-matter intentionally not edited |
 
-### Todo counts (this audit)
+### Open-item counts (this audit)
 
 | Bucket | Closed | Open | % |
 |--------|--------|------|---|

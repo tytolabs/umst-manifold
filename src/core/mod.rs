@@ -5,6 +5,8 @@ pub mod apply_physics;
 pub mod dec_typestate;
 pub mod error_boundary;
 pub mod field;
+pub mod field_algebra;
+pub mod solver_unwrap_inventory;
 pub mod material_phase;
 pub mod emergence;
 pub mod iterate_until;

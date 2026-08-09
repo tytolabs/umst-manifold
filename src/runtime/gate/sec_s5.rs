@@ -60,11 +60,11 @@ pub const FLEET_ACCEL_AC07_RECEIPT_PATH: &str = "outputs/.tmp/COMPOSER_ACCEL_203
 
 /// Prior AGAP-2033 SEC-S5 synthetic consensus receipt.
 pub const PRIOR_RECEIPT_PATH_2033: &str =
-    "archived/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S5_2033.md";
+    "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S5_2033.md";
 
 /// Prior AGAP-2127 SEC-S5 L-N0 crosswalk + algebra roundtrip receipt.
 pub const PRIOR_RECEIPT_PATH_2127: &str =
-    "archived/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S5_2127.md";
+    "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S5_2127.md";
 
 /// umst-trust SEC-S5 consensus delegate SSOT.
 pub const TRUST_SSOT: &str = "umst-foundations/crates/umst-trust/src/sec_s5_consensus.rs";

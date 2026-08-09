@@ -6,14 +6,16 @@ This directory is a **tombstone** after Path A1 step **a1-04** (FLEET-COMPOSER-H
 
 The canonical crate now lives at:
 
-`umst-foundations/crates/umst-layout-codegen`
+`umst/umst-foundations/crates/umst-layout-codegen`
+
+(Legacy short form `umst-foundations/crates/umst-layout-codegen` is the same tree under the reorg prefix.)
 
 ## Consumers (retargeted @ H71)
 
 | Consumer | Path |
 |----------|------|
 | `umst-algebra` | `../umst-layout-codegen` (foundations workspace) |
-| `umst-manifold/build.rs` | `../umst-foundations/crates/umst-layout-codegen` |
+| `umst/umst-manifold/build.rs` | `../umst-foundations/crates/umst-layout-codegen` |
 | `umst-math` | `../../umst-foundations/crates/umst-layout-codegen` |
 
 ## OP-5 status

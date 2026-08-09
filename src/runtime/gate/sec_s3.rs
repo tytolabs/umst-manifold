@@ -51,11 +51,11 @@ pub const EGOFF_S3_INTEGRATION_SSOT: &str = "egoff/egoff/tests/s2_s3_security_de
 
 /// Prior AGAP-2033 SEC-S3 palette/ledger receipt.
 pub const PRIOR_RECEIPT_PATH_2033: &str =
-    "archived/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S3_2033.md";
+    "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S3_2033.md";
 
 /// Prior AGAP-2127 SEC-S3 revoke posture receipt.
 pub const PRIOR_RECEIPT_PATH_2127: &str =
-    "archived/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S3_2127.md";
+    "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S3_2127.md";
 
 /// umst-trust SEC-S3 revoke posture delegate SSOT.
 pub const TRUST_SSOT: &str =

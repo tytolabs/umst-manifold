@@ -51,8 +51,8 @@ pub const PRODUCTION_WIRED: bool = false;
 /// Honest fence — rank-1+ `impl TensorAlgebra` over Burn **not** landed.
 pub const RANK1_PLUS_IMPL_LANDED: bool = false;
 
-/// Honest fence — planned `umst-algebra-burn` crate **not** on disk.
-pub const ADAPTER_CRATE_LANDED: bool = false;
+/// Honest fence — planned `umst-algebra-burn` crate on disk @ R12-1.
+pub const ADAPTER_CRATE_LANDED: bool = true;
 
 /// Sibling slice-3b ledger module on disk (path census only — not F1 close).
 pub const SLICE3B_LEDGER_LANDED: bool = true;
@@ -76,8 +76,8 @@ pub const DESIGN_DOC_PATH: &str = "docs/C2_TENSOR_ALGEBRA_DESIGN.md";
 pub const SLICE2_PROTOTYPE_PATH: &str =
     "umst-cartridges/crates/umst-cartridge-continuum/src/tensor_lift/burn_algebra.rs";
 
-/// Planned adapter crate path (not created — honest fence).
-pub const ADAPTER_CRATE_PATH: &str = "umst-runtime/crates/umst-algebra-burn/";
+/// Planned adapter crate path (R12-1 landed).
+pub const ADAPTER_CRATE_PATH: &str = "crates/umst-algebra-burn/";
 
 /// Fleet receipt for slice-3 0D lift step (PBM-010).
 pub const RECEIPT_SLUG: &str = "COMPLETION_AGAP_AGENT_PBM-010_1920";
@@ -198,14 +198,14 @@ pub const fn atoms_tensor_lift_depth_summary() -> AtomsTensorLiftDepthSummary {
     }
 }
 
-/// Honest fence probe — production-wire / rank-1+ impl claims stay false.
+/// Honest fence probe — production-wire / rank-1+ impl claims stay false; adapter crate landed.
 #[must_use]
 pub const fn honest_fences_hold() -> bool {
     LIFT_STEP_LANDED
         && RANK1_PLUS_DEFERRED
         && !PRODUCTION_WIRED
         && !RANK1_PLUS_IMPL_LANDED
-        && !ADAPTER_CRATE_LANDED
+        && ADAPTER_CRATE_LANDED
 }
 
 #[cfg(test)]
@@ -258,7 +258,7 @@ mod tests {
         assert!(honest_fences_hold());
         assert!(!PRODUCTION_WIRED);
         assert!(!RANK1_PLUS_IMPL_LANDED);
-        assert!(!ADAPTER_CRATE_LANDED);
+        assert!(ADAPTER_CRATE_LANDED);
         assert!(ADAPTER_CRATE_PATH.contains("umst-algebra-burn"));
         assert_eq!(RECEIPT_SLUG, "COMPLETION_AGAP_AGENT_PBM-010_1920");
         assert!(SOURCE_ANCHOR_PATH.ends_with("atoms_tensor_lift.rs"));

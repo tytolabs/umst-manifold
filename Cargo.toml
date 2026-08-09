@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 
 [workspace]
-members = [".", "crates/umst-runtime", "umst-math", "umst-runtime-arena"]
+members = [".", "crates/umst-runtime", "crates/umst-algebra-burn", "umst-math", "umst-runtime-arena"]
 # `crates/umst-manifold` facade template is NOT a member (duplicate package name until GitHub rename).
 resolver = "2"
 
@@ -119,13 +119,13 @@ rand = "0.8"
 num-traits = "0.2"
 sha2 = "0.10"
 # SEC-CATALOG-PIN — shared `pin_witness_ok(HashPolicy::Sha3Catalog)` (E-08 / SEC-HASH-PIN).
-umst-algebra = { path = "../umst-foundations/crates/umst-algebra", default-features = false }
+umst-algebra = { version = "0.1.0", path = "../umst-foundations/crates/umst-algebra", default-features = false }
 # Wave 2 A2 — frozen Core gate (shim re-export; sources live in umst-foundations).
-umst-gate = { path = "../umst-foundations/crates/umst-gate" }
+umst-gate = { version = "0.1.0", path = "../umst-foundations/crates/umst-gate" }
 # B3-1 — material conjunct SSOT @ consumer compose boundary (F25-R10).
-umst-cartridge-concrete = { path = "../umst-cartridges/crates/materials/umst-cartridge-concrete" }
+umst-cartridge-concrete = { version = "0.1.0", path = "../umst-cartridges/crates/materials/umst-cartridge-concrete" }
 # C2 / PBM-010 — `TensorAlgebra` trait contract for runtime atom tensor lift.
-umst-cartridge-api = { path = "../umst-cartridge-api" }
+umst-cartridge-api = { version = "0.1.0", path = "../umst-cartridge-api" }
 # F-09 — fixed 3×3 tensor carrier for slice-4 `TensorAlgebra` scaffold (runtime home only).
 nalgebra = { version = "0.33", default-features = false, features = ["std"], optional = true }
 # SSOT: workspace member `umst-math/` (moved from legacy cockpit; W3).
@@ -135,8 +135,7 @@ ordered-float = { version = "5.1", optional = true }
 [build-dependencies]
 serde_json = "1.0"
 sha2 = "0.10"
-umst-layout-codegen = { path = "../umst-foundations/crates/umst-layout-codegen" }
-
+umst-layout-codegen = { version = "0.1.0", path = "../umst-foundations/crates/umst-layout-codegen" }
 [dev-dependencies]
 approx = "0.5"
 num-complex = "0.4"
@@ -144,8 +143,7 @@ serde_json = "1.0"
 burn = { version = "=0.13.2", default-features = false, features = ["std", "train", "autodiff"] }
 burn-ndarray = "=0.13.2"
 umst-math = { path = "umst-math" }
-umst-layout-codegen = { path = "../umst-foundations/crates/umst-layout-codegen" }
-
+umst-layout-codegen = { version = "0.1.0", path = "../umst-foundations/crates/umst-layout-codegen" }
 [lib]
 name = "umst_manifold"
 path = "src/lib.rs"
@@ -314,6 +312,11 @@ required-features = ["thmc-coupled"]
 [[test]]
 name = "thmc_idempotency_equilibrium"
 path = "tests/verification/thmc_idempotency_equilibrium.rs"
+required-features = ["thmc-coupled"]
+
+[[test]]
+name = "r14_thmc_coupled_lattice_parity"
+path = "tests/verification/r14_thmc_coupled_lattice_parity.rs"
 required-features = ["thmc-coupled"]
 
 [[test]]

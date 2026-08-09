@@ -4,7 +4,7 @@
 //! Embodied stack composition: orchestrator re-exports + fragment audit (W2-35).
 //!
 //! W1-19 (`M5-IMPL-INT-01`) owns cross-crate loop wiring; this module exposes the manifold
-//! composer and honest gap enumeration per [`M5_ORCH_FRAGMENT_AUDIT_1052`](../../archived/residuals/misc-outputs-tmp/m5_prep/M5_ORCH_FRAGMENT_AUDIT_1052.md).
+//! composer and honest gap enumeration per [`M5_ORCH_FRAGMENT_AUDIT_1052`](../../old/residuals/residuals/misc-outputs-tmp/m5_prep/M5_ORCH_FRAGMENT_AUDIT_1052.md).
 
 pub mod fragment_audit;
 pub mod fragment_slots;

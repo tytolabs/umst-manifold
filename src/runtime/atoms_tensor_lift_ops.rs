@@ -32,7 +32,7 @@ pub const OP_SPEC_LANDED: bool = true;
 pub const RANK1_PLUS_IMPL_LANDED: bool = false;
 
 /// Whether the planned `umst-algebra-burn` crate exists on disk.
-pub const ADAPTER_CRATE_LANDED: bool = false;
+pub const ADAPTER_CRATE_LANDED: bool = true;
 
 /// Slice-3c adapter contract prerequisite (AGAP-2127-PBM-010).
 pub const SLICE3C_ADAPTER_LANDED: bool = true;
@@ -49,8 +49,8 @@ pub const SLICE3C_ADAPTER_PATH: &str = "umst-manifold/src/runtime/atoms_tensor_l
 /// Slice-3b ledger cross-ref.
 pub const SLICE3B_LEDGER_PATH: &str = "umst-manifold/src/runtime/atoms_tensor_lift_ledger.rs";
 
-/// Planned adapter crate path (not created).
-pub const ADAPTER_CRATE_PATH: &str = "umst-runtime/crates/umst-algebra-burn/";
+/// Planned adapter crate path (R12-1 landed @ crates/umst-algebra-burn).
+pub const ADAPTER_CRATE_PATH: &str = "crates/umst-algebra-burn/";
 
 /// P3 field carrier SSOT.
 pub const FIELD_SSOT_PATH: &str = "umst-manifold/src/core/field.rs";

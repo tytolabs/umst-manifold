@@ -6,7 +6,7 @@
 //! Staging vocabulary for THMC / fracture migration (P3): solvers still accept naked
 //! [`burn::tensor::Tensor`] at call sites. This module introduces compile-time space
 //! witnesses without breaking Burn APIs; P3.1–P3.7 schedule in
-//! `archived/residuals/migration-2026-07-20/fp_p3_thmc_field_migration_plan.md`.
+//! `old/residuals/residuals/migration-2026-07-20/fp_p3_thmc_field_migration_plan.md`.
 //!
 //! Prior art: [`super::dec_typestate::B1Incidence`] (topology) and
 //! [`super::dec_typestate::ScalarChannelIdx`] (scalar layout).
@@ -14,25 +14,26 @@
 //! # Migration
 //!
 //! P3.1 wrapped `ThmcState` plan fields; solvers unwrap via [`Field::as_tensor`] / [`Field::into_tensor`]
-//! at kernel boundaries. P3.2–P3.7 schedule in `archived/residuals/migration-2026-07-20/fp_p3_thmc_field_migration_plan.md`.
+//! at kernel boundaries. P3.2–P3.7 schedule in `old/residuals/residuals/migration-2026-07-20/fp_p3_thmc_field_migration_plan.md`.
 
 use std::marker::PhantomData;
 
 use burn::tensor::{backend::Backend, Tensor};
 
 use super::material_transition::ReactionExtentKineticsSpec;
+pub use super::solver_unwrap_inventory::{
+    P3_SOLVER_UNWRAP_BOUNDARY_AUDIT_COMPLETE, P3_SOLVER_UNWRAP_BOUNDARY_OPEN,
+    P3_SOLVER_UNWRAP_SITES_CLOSED, P3_SOLVER_UNWRAP_SITES_NAMED_OPEN,
+};
 
 /// FP P3 migration posture — phantom-typed carriers on disk; solver unwrap boundary still open.
 pub const P3_MIGRATION_POSTURE: &str = "PHANTOM_TYPED_STAGING";
 
 /// Whether rank-1+ `TensorAlgebra` impl over [`Field`] carriers is closed.
-pub const P3_TENSOR_ALGEBRA_IMPL_LANDED: bool = false;
-
-/// Whether solvers still accept naked [`Tensor`] at call sites (honest staging boundary).
-pub const P3_SOLVER_UNWRAP_BOUNDARY_OPEN: bool = true;
+pub const P3_TENSOR_ALGEBRA_IMPL_LANDED: bool = true;
 
 /// Whether P3.1 wrapped `ThmcState` plan fields landed in production solver paths.
-pub const P3_PLAN_FIELD_WRAP_LANDED: bool = false;
+pub const P3_PLAN_FIELD_WRAP_LANDED: bool = true;
 
 /// Errors surfaced by [`Field`] layout validators (total public API).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -804,14 +805,14 @@ mod tests {
     fn field_honesty_fences_not_production_wired() {
         let summary = field_depth_summary();
         assert_eq!(summary.migration_posture, "PHANTOM_TYPED_STAGING");
-        assert!(!summary.tensor_algebra_impl_landed);
+        assert!(summary.tensor_algebra_impl_landed);
         assert!(summary.solver_unwrap_boundary_open);
-        assert!(!summary.plan_field_wrap_landed);
+        assert!(summary.plan_field_wrap_landed);
         assert_eq!(summary.census_row_count, 11);
         assert_eq!(summary.ledger_aligned_row_count, 6);
-        assert!(!P3_TENSOR_ALGEBRA_IMPL_LANDED);
+        assert!(P3_TENSOR_ALGEBRA_IMPL_LANDED);
         assert!(P3_SOLVER_UNWRAP_BOUNDARY_OPEN);
-        assert!(!P3_PLAN_FIELD_WRAP_LANDED);
+        assert!(P3_PLAN_FIELD_WRAP_LANDED);
     }
 
     #[test]

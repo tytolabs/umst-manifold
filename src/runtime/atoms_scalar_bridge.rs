@@ -6,7 +6,7 @@
 //
 // Cartridge atoms remain f64 scalar-first (SC-01..03 in `umst-cartridge-api` / continuum).
 // This module owns the **one cold boundary** between Burn `f32` tensor physics and f64 gate
-// snapshots — R-ATOMS-SC-05 per `archived/residuals/misc-outputs-tmp/R_ATOMS_SCALAR_RESIDUE_MAP_1640.md` §4.5.
+// snapshots — R-ATOMS-SC-05 per `old/residuals/residuals/misc-outputs-tmp/R_ATOMS_SCALAR_RESIDUE_MAP_1640.md` §4.5.
 //
 // **Honesty:** slice-2 `BurnAlgebra` 0D prototype stays in `umst-cartridge-continuum/tensor_lift`.
 // Production `burn::Tensor` monomorphization remains **[open]** under `R-faithful-decomp-B1`.
