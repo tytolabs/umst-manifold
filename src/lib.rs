@@ -25,7 +25,7 @@ pub mod nested_drift_census;
 pub mod night_residual_deepen;
 pub mod swarm_manifold_deepen;
 pub mod web_constitutive;
-pub mod w9_migration;
+pub mod cartridge_migration_stub;
 
 #[allow(deprecated)]
-pub use w9_migration::*;
+pub use cartridge_migration_stub::*;
