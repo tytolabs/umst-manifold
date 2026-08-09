@@ -272,6 +272,8 @@ use core::ops::ControlFlow;
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use crate::core::field::{Field, NodalDensityField, ScalarPressureField, VelocityField};
+
 use crate::physics::error::PhysicsError;
 
 /// Chorin Bingham step output: velocity, pressure, Roussel λ nodal fields `[B, N, *]`.
@@ -365,6 +367,29 @@ impl BinghamFlowSolver {
     ///
     /// ## `--features solver-experimental`
     /// Runs the documented Chorin **baseline** fractional-step projection in this module and one explicit Roussel step on \(\lambda\).
+    /// Canonical field-wrapped Chorin ingress (R25).
+    #[allow(clippy::too_many_arguments)]
+    pub fn step_from_fields<B: Backend<FloatElem = f32>>(
+        &self,
+        velocity: VelocityField<B>,
+        pressure: ScalarPressureField<B>,
+        yield_stress: ScalarPressureField<B>,
+        density: NodalDensityField<B>,
+        lambda_thix: ScalarPressureField<B>,
+        edges_b1: Tensor<B, 2, Int>,
+        gravity: Tensor<B, 1>,
+    ) -> Result<RheologyStepOut<B>, PhysicsError> {
+        self.step(
+            velocity.into_tensor(),
+            pressure.into_tensor(),
+            yield_stress.into_tensor(),
+            density.into_tensor(),
+            lambda_thix.into_tensor(),
+            edges_b1,
+            gravity,
+        )
+    }
+
     #[allow(unused_variables, clippy::too_many_arguments)]
     pub fn step<B: Backend<FloatElem = f32>>(
         &self,

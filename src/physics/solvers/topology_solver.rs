@@ -34,6 +34,7 @@ pub use crate::ai::topology::{DensityNet, TopologyOptimizer, TopologyOptimizerSt
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use crate::core::field::{Field, NodalDensityField};
 use crate::physics::error::PhysicsError;
 use crate::physics::laplacian::TopologicalLaplacian;
 
@@ -247,9 +248,18 @@ pub struct TopologySolver<B: Backend> {
 }
 
 impl<B: Backend<FloatElem = f32>> TopologySolver<B> {
+    /// Canonical field-wrapped constructor (R25).
+    #[must_use]
+    pub fn new_from_field(rho: NodalDensityField<B>, config: TopologySolverConfig) -> Self {
+        Self {
+            rho: rho.into_tensor(),
+            config,
+        }
+    }
+
     /// New solver with initial \(\rho\) and clamp bounds from `config`.
     pub fn new(rho: Tensor<B, 3>, config: TopologySolverConfig) -> Self {
-        Self { rho, config }
+        Self::new_from_field(Field::new(rho), config)
     }
 
     /// Batch-wise nodal sum of \(\rho\) (shape `[B]`), for mass-preservation witnesses.

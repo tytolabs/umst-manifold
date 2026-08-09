@@ -74,7 +74,7 @@ use burn::tensor::Tensor;
 
 #[cfg(feature = "thmc-coupled")]
 use crate::core::field::{
-    Field, HumidityField, ReactionExtentField, StepEntryDamageMask,
+    DisplacementField, Field, HumidityField, ReactionExtentField, StepEntryDamageMask,
     TemperatureField,
 };
 #[cfg(feature = "thmc-coupled")]
@@ -344,18 +344,38 @@ pub struct ThmcImplicitEulerThermalReactionExtentResidual<B: Backend<FloatElem =
 
 #[cfg(feature = "thmc-coupled")]
 impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalReactionExtentResidual<B> {
-    #[deprecated(since = "0.2.0", note = "FP P3.2")]
+    /// Canonical field-wrapped constructor (R25).
+    #[must_use]
+    pub fn from_fields(
+        dt: f32,
+        temperature_n: TemperatureField<B>,
+        alpha_n: ReactionExtentField<B>,
+        edges_b1: Tensor<B, 2, Int>,
+        damage_m: StepEntryDamageMask<B>,
+        kinetics: ReactionExtentKinetics,
+    ) -> Self {
+        Self {
+            dt,
+            temperature_n,
+            alpha_n,
+            edges_b1,
+            damage_m,
+            kinetics,
+        }
+    }
+
+    #[deprecated(since = "0.2.0", note = "FP P3.2 — use from_fields")]
     #[allow(clippy::too_many_arguments)]
     #[must_use]
     pub fn from_tensors(dt: f32, temperature_n: Tensor<B, 3>, alpha_n: Tensor<B, 3>, edges_b1: Tensor<B, 2, Int>, damage_m: Tensor<B, 3>, kinetics: ReactionExtentKinetics) -> Self {
-        Self {
+        Self::from_fields(
             dt,
-            temperature_n: Field::new(temperature_n),
-            alpha_n: Field::new(alpha_n),
+            Field::new(temperature_n),
+            Field::new(alpha_n),
             edges_b1,
-            damage_m: StepEntryDamageMask::from_damage_field(Field::new(damage_m)),
+            StepEntryDamageMask::from_damage_field(Field::new(damage_m)),
             kinetics,
-        }
+        )
     }
     /// Assemble \(R_T, R_\alpha\) at `trial` (same shapes as `temperature` / `reaction_extent` plans).
     pub fn assemble(&self, trial: &ThmcState<B>) -> Result<(TemperatureField<B>, ReactionExtentField<B>), PhysicsError> {
@@ -582,7 +602,7 @@ pub struct ThmcImplicitEulerThermalHumidityReactionExtentResidual<B: Backend<Flo
     pub alpha_n: ReactionExtentField<B>,
     /// Reference displacement \(\mathbf u^n\) for the placeholder block (same shape as
     /// [`MechanicalPlan::displacement`]: `[B, N, 3]`).
-    pub displacement_n: Tensor<B, 3>,
+    pub displacement_n: DisplacementField<B>,
     /// Scalar \(m\) in \(R_u = m(\mathbf u - \mathbf u^n)\) (layout / FD scale hook; not physical mass).
     pub mechanics_placeholder_mass: f32,
     /// Optional `w/c` for notional drying-shrink **increment** in [`Self::evaluate_quasi_static_r_u`]
@@ -595,22 +615,51 @@ pub struct ThmcImplicitEulerThermalHumidityReactionExtentResidual<B: Backend<Flo
 
 #[cfg(feature = "thmc-coupled")]
 impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtentResidual<B> {
-    #[deprecated(since = "0.2.0", note = "FP P3.2")]
+    /// Canonical field-wrapped constructor (R25).
     #[allow(clippy::too_many_arguments)]
     #[must_use]
-    pub fn from_tensors(dt: f32, temperature_n: Tensor<B, 3>, humidity_n: Tensor<B, 3>, alpha_n: Tensor<B, 3>, displacement_n: Tensor<B, 3>, mechanics_placeholder_mass: f32, ru_shrinkage_binder_liquid_ratio: Option<f32>, edges_b1: Tensor<B, 2, Int>, damage_m: Tensor<B, 3>, kinetics: ReactionExtentKinetics) -> Self {
+    pub fn from_fields(
+        dt: f32,
+        temperature_n: TemperatureField<B>,
+        humidity_n: HumidityField<B>,
+        alpha_n: ReactionExtentField<B>,
+        displacement_n: DisplacementField<B>,
+        mechanics_placeholder_mass: f32,
+        ru_shrinkage_binder_liquid_ratio: Option<f32>,
+        edges_b1: Tensor<B, 2, Int>,
+        damage_m: StepEntryDamageMask<B>,
+        kinetics: ReactionExtentKinetics,
+    ) -> Self {
         Self {
             dt,
-            temperature_n: Field::new(temperature_n),
-            humidity_n: Field::new(humidity_n),
-            alpha_n: Field::new(alpha_n),
+            temperature_n,
+            humidity_n,
+            alpha_n,
             displacement_n,
             mechanics_placeholder_mass,
             ru_shrinkage_binder_liquid_ratio,
             edges_b1,
-            damage_m: StepEntryDamageMask::from_damage_field(Field::new(damage_m)),
+            damage_m,
             kinetics,
         }
+    }
+
+    #[deprecated(since = "0.2.0", note = "FP P3.2 — use from_fields")]
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn from_tensors(dt: f32, temperature_n: Tensor<B, 3>, humidity_n: Tensor<B, 3>, alpha_n: Tensor<B, 3>, displacement_n: Tensor<B, 3>, mechanics_placeholder_mass: f32, ru_shrinkage_binder_liquid_ratio: Option<f32>, edges_b1: Tensor<B, 2, Int>, damage_m: Tensor<B, 3>, kinetics: ReactionExtentKinetics) -> Self {
+        Self::from_fields(
+            dt,
+            Field::new(temperature_n),
+            Field::new(humidity_n),
+            Field::new(alpha_n),
+            Field::new(displacement_n),
+            mechanics_placeholder_mass,
+            ru_shrinkage_binder_liquid_ratio,
+            edges_b1,
+            StepEntryDamageMask::from_damage_field(Field::new(damage_m)),
+            kinetics,
+        )
     }
     /// Assemble \((R_T, R_h, R_\alpha)\) at `trial`.
     #[allow(clippy::type_complexity)]
@@ -685,17 +734,17 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
     ) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>), PhysicsError> {
         let (r_t, r_h, r_alpha) = self.assemble(trial)?;
         let u = trial.mechanical.displacement.as_tensor().clone();
-        if self.displacement_n.dims() != u.dims() {
+        if self.displacement_n.as_tensor().dims() != u.dims() {
             return Err(PhysicsError::Domain {
             detail: format!(
                 "ThmcImplicitEulerThermalHumidityReactionExtentResidual: u^n dims {:?} != trial u dims {:?}",
-                self.displacement_n.dims(),
+                self.displacement_n.as_tensor().dims(),
                 u.dims()
             ),
         });
         }
         let r_u = u
-            .sub(self.displacement_n.clone())
+            .sub(self.displacement_n.as_tensor().clone())
             .mul_scalar(self.mechanics_placeholder_mass);
         Ok((r_t.as_tensor().clone(), r_h.as_tensor().clone(), r_alpha.as_tensor().clone(), r_u))
     }
@@ -841,7 +890,7 @@ impl<B: Backend<FloatElem = f32>> ThmcImplicitEulerThermalHumidityReactionExtent
         let ones_m = Tensor::<B, 3>::ones_like(boundary_mask_bn3);
         let r_dirichlet = ones_m
             .sub(boundary_mask_bn3.clone())
-            .mul(u.sub(self.displacement_n.clone()))
+            .mul(u.sub(self.displacement_n.as_tensor().clone()))
             .mul_scalar(self.mechanics_placeholder_mass);
         Ok(r_eq.add(r_dirichlet))
     }

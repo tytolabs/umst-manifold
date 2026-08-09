@@ -132,6 +132,30 @@ pub const FIELD_CENSUS_ROWS: &[FieldCensusRow] = &[
         ledger_sub_id: None,
     },
     FieldCensusRow {
+        marker_name: "NodalDensity",
+        tensor_rank: 3,
+        typical_shape_note: "[B, N, 1]",
+        ledger_sub_id: None,
+    },
+    FieldCensusRow {
+        marker_name: "Velocity",
+        tensor_rank: 3,
+        typical_shape_note: "[B, N, 3]",
+        ledger_sub_id: None,
+    },
+    FieldCensusRow {
+        marker_name: "Acceleration",
+        tensor_rank: 3,
+        typical_shape_note: "[B, N, 3]",
+        ledger_sub_id: None,
+    },
+    FieldCensusRow {
+        marker_name: "ScalarPressure",
+        tensor_rank: 3,
+        typical_shape_note: "[B, N, 1]",
+        ledger_sub_id: None,
+    },
+    FieldCensusRow {
         marker_name: "Stiffness",
         tensor_rank: 3,
         typical_shape_note: "[B, N, 2]",
@@ -300,6 +324,39 @@ impl FieldSpace for FractureEnergy {
 pub struct Stiffness;
 impl FieldSpace for Stiffness {
     const MARKER_NAME: &'static str = "Stiffness";
+    const TENSOR_RANK: usize = 3;
+}
+
+
+/// Phantom space marker: nodal pseudo-density ρ — shape `[B, N, 1]` (topology diffusion).
+#[derive(Clone, Copy, Debug)]
+pub struct NodalDensity;
+impl FieldSpace for NodalDensity {
+    const MARKER_NAME: &'static str = "NodalDensity";
+    const TENSOR_RANK: usize = 3;
+}
+
+/// Phantom space marker: nodal velocity **u̇** — shape `[B, N, 3]`.
+#[derive(Clone, Copy, Debug)]
+pub struct Velocity;
+impl FieldSpace for Velocity {
+    const MARKER_NAME: &'static str = "Velocity";
+    const TENSOR_RANK: usize = 3;
+}
+
+/// Phantom space marker: nodal acceleration **ü** — shape `[B, N, 3]`.
+#[derive(Clone, Copy, Debug)]
+pub struct Acceleration;
+impl FieldSpace for Acceleration {
+    const MARKER_NAME: &'static str = "Acceleration";
+    const TENSOR_RANK: usize = 3;
+}
+
+/// Phantom space marker: nodal scalar pressure — shape `[B, N, 1]`.
+#[derive(Clone, Copy, Debug)]
+pub struct ScalarPressure;
+impl FieldSpace for ScalarPressure {
+    const MARKER_NAME: &'static str = "ScalarPressure";
     const TENSOR_RANK: usize = 3;
 }
 
@@ -515,6 +572,11 @@ pub type FractureEnergyField<B> = Field<B, FractureEnergy, 3>;
 /// formal_status: Structural
 /// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`Stiffness`] witness.
 pub type StiffnessField<B> = Field<B, Stiffness, 3>;
+pub type NodalDensityField<B> = Field<B, NodalDensity, 3>;
+pub type VelocityField<B> = Field<B, Velocity, 3>;
+pub type AccelerationField<B> = Field<B, Acceleration, 3>;
+pub type ScalarPressureField<B> = Field<B, ScalarPressure, 3>;
+
 
 /// Frozen damage mask at THMC step entry — distinct from live `state.damage` after fracture.
 #[derive(Clone, Debug)]

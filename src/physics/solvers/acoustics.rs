@@ -28,6 +28,9 @@
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
+use crate::core::field::{
+    AccelerationField, BodyForceField, DisplacementField, Field, NodalDensityField, VelocityField,
+};
 use crate::physics::PhysicsError;
 
 /// W29 deepen cell — acoustics honest fence bundle.
@@ -348,6 +351,35 @@ impl AcousticWaveSolver {
     ///
     /// ## Default builds (`acoustics-newmark` **off**)
     /// Returns the inputs unchanged.
+    /// Canonical field-wrapped Newmark ingress (R25).
+    #[allow(clippy::too_many_arguments)]
+    pub fn step_wave_from_fields<B: Backend<FloatElem = f32>>(
+        &self,
+        displacement: DisplacementField<B>,
+        velocity: VelocityField<B>,
+        acceleration: AccelerationField<B>,
+        nodal_density: NodalDensityField<B>,
+        nodal_volume: NodalDensityField<B>,
+        body_force: BodyForceField<B>,
+        damping_bn33: Tensor<B, 4>,
+        stiffness_local_bn44: Tensor<B, 4>,
+        bar_network: Option<AcousticBarNetwork<B>>,
+        gmres_cfg: Option<AcousticGmresConfig>,
+    ) -> Result<AcousticStepOut<B>, PhysicsError> {
+        self.step_wave(
+            displacement.into_tensor(),
+            velocity.into_tensor(),
+            acceleration.into_tensor(),
+            nodal_density.into_tensor(),
+            nodal_volume.into_tensor(),
+            body_force.into_tensor(),
+            damping_bn33,
+            stiffness_local_bn44,
+            bar_network,
+            gmres_cfg,
+        )
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn step_wave<B: Backend<FloatElem = f32>>(
         &self,

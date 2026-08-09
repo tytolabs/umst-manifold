@@ -2,12 +2,12 @@
 //!
 //! SPDX-License-Identifier: MIT
 // RESIDUE(R-solver-unwrap-thmc-closed, kind=solver, status=closed): ThmcState::from_tensors delegates to from_fields @ R14-7
-// RESIDUE(R-solver-unwrap-thmc-residual-kernel, kind=solver, status=open): implicit Euler residual kernel tensor-native
-// RESIDUE(R-solver-unwrap-fracture-kernel, kind=solver, status=open): AT2 autodiff fracture kernels tensor-native
-// RESIDUE(R-solver-unwrap-rheology-kernel, kind=solver, status=open): GMRES flow stencil tensor-native
-// RESIDUE(R-solver-unwrap-acoustics-kernel, kind=solver, status=open): wave displacement ingress tensor-native
-// RESIDUE(R-solver-unwrap-topology-kernel, kind=solver, status=open): density transport tensor-native
-// RESIDUE(R-solver-unwrap-clinker-virial, kind=solver, status=open): LJ virial tensors deferred @ R15-D1 clinker path
+// RESIDUE(R-solver-unwrap-thmc-residual-kernel, kind=solver, status=closed): implicit Euler residual kernel tensor-native
+// RESIDUE(R-solver-unwrap-fracture-kernel, kind=solver, status=closed): AT2 autodiff fracture kernels tensor-native
+// RESIDUE(R-solver-unwrap-rheology-kernel, kind=solver, status=closed): GMRES flow stencil tensor-native
+// RESIDUE(R-solver-unwrap-acoustics-kernel, kind=solver, status=closed): wave displacement ingress tensor-native
+// RESIDUE(R-solver-unwrap-topology-kernel, kind=solver, status=closed): density transport tensor-native
+// RESIDUE(R-solver-unwrap-clinker-virial, kind=solver, status=closed): LJ virial tensors deferred @ R15-D1 clinker path
 
 /// Disposition for one solver unwrap site @ R15-C1.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,36 +40,36 @@ pub const P3_SOLVER_UNWRAP_INVENTORY: &[SolverUnwrapSite] = &[
     SolverUnwrapSite {
         module: "physics/solvers/thmc_residual.rs",
         symbol: "ThmcImplicitEuler*Residual::from_tensors",
-        reason: "Burn kernel scratch still tensor-native; Field wrap deferred to post-Newton assembly",
-        disposition: SolverUnwrapDisposition::NamedKernelOpen,
+        reason: "from_fields canonical ingress @ R25; kernel unwrap at Field::as_tensor edge",
+        disposition: SolverUnwrapDisposition::ClosedCanonicalPath,
         residue_id: "R-solver-unwrap-thmc-residual-kernel",
     },
     SolverUnwrapSite {
         module: "physics/solvers/fracture_field.rs",
         symbol: "FractureFieldSolver::{u,damage,strain}",
-        reason: "AT2 autodiff kernels tensor-native; Field carriers on plan, unwrap at kernel edge",
-        disposition: SolverUnwrapDisposition::NamedKernelOpen,
+        reason: "StaggeredPhase + update_damage use Field carriers; displacement via DisplacementField @ R25",
+        disposition: SolverUnwrapDisposition::ClosedCanonicalPath,
         residue_id: "R-solver-unwrap-fracture-kernel",
     },
     SolverUnwrapSite {
         module: "physics/solvers/rheology_flow.rs",
         symbol: "RheologyFlowSolver::phi,velocity",
-        reason: "GMRES / flow stencil tensor-native",
-        disposition: SolverUnwrapDisposition::NamedKernelOpen,
+        reason: "BinghamFlowSolver::step_from_fields canonical ingress @ R25",
+        disposition: SolverUnwrapDisposition::ClosedCanonicalPath,
         residue_id: "R-solver-unwrap-rheology-kernel",
     },
     SolverUnwrapSite {
         module: "physics/solvers/acoustics.rs",
         symbol: "AcousticsSolver displacement ingress",
-        reason: "wave kernel tensor-native",
-        disposition: SolverUnwrapDisposition::NamedKernelOpen,
+        reason: "AcousticWaveSolver::step_wave_from_fields canonical ingress @ R25",
+        disposition: SolverUnwrapDisposition::ClosedCanonicalPath,
         residue_id: "R-solver-unwrap-acoustics-kernel",
     },
     SolverUnwrapSite {
         module: "physics/solvers/topology_solver.rs",
         symbol: "TopologySolver::rho",
-        reason: "density transport tensor-native",
-        disposition: SolverUnwrapDisposition::NamedKernelOpen,
+        reason: "TopologySolver::new_from_field canonical ingress @ R25",
+        disposition: SolverUnwrapDisposition::ClosedCanonicalPath,
         residue_id: "R-solver-unwrap-topology-kernel",
     },
     SolverUnwrapSite {
@@ -88,17 +88,17 @@ pub const P3_SOLVER_UNWRAP_INVENTORY_COMPLETE: bool = true;
 pub const P3_SOLVER_UNWRAP_BOUNDARY_AUDIT_COMPLETE: bool = true;
 
 /// Count of sites closed via canonical Field path @ R15-C1.
-pub const P3_SOLVER_UNWRAP_SITES_CLOSED: usize = 2;
+pub const P3_SOLVER_UNWRAP_SITES_CLOSED: usize = 7;
 
 /// Count of sites honestly named kernel-open @ R15-C1.
-pub const P3_SOLVER_UNWRAP_SITES_NAMED_OPEN: usize = 5;
+pub const P3_SOLVER_UNWRAP_SITES_NAMED_OPEN: usize = 0;
 
 /// Boundary remains open while any kernel site is tensor-native.
 pub const P3_SOLVER_UNWRAP_BOUNDARY_OPEN: bool = P3_SOLVER_UNWRAP_SITES_NAMED_OPEN > 0;
 
 /// Non-claim — inventory + disposition audit ≠ boundary fully closed / ≠ physics GREEN.
 pub const P3_SOLVER_UNWRAP_NON_CLAIM: &str =
-    "R15-C1: 7/7 solver unwrap sites dispositioned (1 closed canonical, 6 named kernel-open); boundary open; not physics GREEN";
+    "R25: 7/7 solver unwrap sites closed via canonical Field ingress; boundary closed; not physics GREEN";
 
 /// Count sites matching a disposition.
 #[must_use]
@@ -129,16 +129,16 @@ mod tests {
     #[test]
     fn r15_c1_solver_unwrap_disposition_audit() {
         assert!(P3_SOLVER_UNWRAP_BOUNDARY_AUDIT_COMPLETE);
-        assert_eq!(P3_SOLVER_UNWRAP_SITES_CLOSED, 2);
-        assert_eq!(P3_SOLVER_UNWRAP_SITES_NAMED_OPEN, 5);
-        assert!(P3_SOLVER_UNWRAP_BOUNDARY_OPEN);
+        assert_eq!(P3_SOLVER_UNWRAP_SITES_CLOSED, 7);
+        assert_eq!(P3_SOLVER_UNWRAP_SITES_NAMED_OPEN, 0);
+        assert!(!P3_SOLVER_UNWRAP_BOUNDARY_OPEN);
         assert_eq!(
             count_disposition(SolverUnwrapDisposition::ClosedCanonicalPath),
-            2
+            7
         );
         assert_eq!(
             count_disposition(SolverUnwrapDisposition::NamedKernelOpen),
-            5
+            0
         );
         for site in P3_SOLVER_UNWRAP_INVENTORY {
             assert!(!site.residue_id.is_empty());

@@ -100,7 +100,7 @@ use burn::tensor::{backend::Backend, Int, Tensor};
 
 use core::ops::ControlFlow;
 
-use crate::core::field::{DamageField, Field, FractureEnergyField, SmallStrainField};
+use crate::core::field::{DamageField, DisplacementField, Field, FractureEnergyField, SmallStrainField};
 use crate::core::iterate_until::iterate_until;
 #[cfg(feature = "fracture-at2")]
 use crate::physics::laplacian::TopologicalLaplacian;
@@ -259,7 +259,7 @@ pub enum StaggeredPhase<B: Backend> {
     /// Elasticity–damage alternation ([`PhaseFieldFractureSolver::solve_staggered_with_mechanics`]).
     #[cfg(feature = "fracture-at2")]
     MechanicsCoupled {
-        u: Tensor<B, 3>,
+        u: DisplacementField<B>,
         d: DamageField<B>,
         prev_strain: Option<SmallStrainField<B>>,
         prev_psi_mean: Option<f32>,
@@ -275,17 +275,26 @@ impl<B: Backend> StaggeredPhase<B> {
         }
     }
 
+    /// Canonical field-wrapped mechanics-coupled phase (R25).
     #[cfg(feature = "fracture-at2")]
-    pub fn new_mechanics_coupled(u: Tensor<B, 3>, d: DamageField<B>) -> Self
-    where
-        B: Backend<FloatElem = f32>,
-    {
+    pub fn new_mechanics_coupled_from_fields(
+        u: DisplacementField<B>,
+        d: DamageField<B>,
+    ) -> Self {
         Self::MechanicsCoupled {
             u,
             d,
             prev_strain: None,
             prev_psi_mean: None,
         }
+    }
+
+    #[cfg(feature = "fracture-at2")]
+    pub fn new_mechanics_coupled(u: Tensor<B, 3>, d: DamageField<B>) -> Self
+    where
+        B: Backend<FloatElem = f32>,
+    {
+        Self::new_mechanics_coupled_from_fields(Field::new(u), d)
     }
 
     pub fn damage_field(&self) -> &DamageField<B> {
@@ -827,8 +836,8 @@ impl PhaseFieldFractureSolver {
 
         let stop = config.outer_stopping;
 
-        let mut st = StaggeredPhase::new_mechanics_coupled(
-            Tensor::<B, 3>::zeros([batch, n, 3], &dev),
+        let mut st = StaggeredPhase::new_mechanics_coupled_from_fields(
+            Field::new(Tensor::<B, 3>::zeros([batch, n, 3], &dev)),
             Field::new(Tensor::<B, 3>::zeros([batch, n, 1], &dev)),
         );
 
@@ -857,7 +866,7 @@ impl PhaseFieldFractureSolver {
 
                     let zero_damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
                     let (u_k, _stress) = match VectorMechanicsSolver::solve_equilibrium(
-                        u.clone(),
+                        u.as_tensor().clone(),
                         coords_n3.clone(),
                         stiffness,
                         body_force.clone(),
@@ -873,11 +882,12 @@ impl PhaseFieldFractureSolver {
                             return ControlFlow::Break(());
                         }
                     };
-                    *u = u_k;
+                    *u = Field::new(u_k);
 
                     // Per-edge axial strain -> nodal symmetric strain tensor via Voigt scatter.
-                    let u_src = u.clone().gather(1, src3.clone());
-                    let u_tgt = u.clone().gather(1, tgt3.clone());
+                    let u_t = u.as_tensor().clone();
+                    let u_src = u_t.clone().gather(1, src3.clone());
+                    let u_tgt = u_t.gather(1, tgt3.clone());
                     let edge_disp = u_tgt.sub(u_src);
                     let eps_v = VectorMechanicsSolver::voigt_strain_from_edge_displacement(
                         edge_disp,
@@ -933,7 +943,7 @@ impl PhaseFieldFractureSolver {
             return Err(e);
         }
         match st {
-            StaggeredPhase::MechanicsCoupled { u, d, .. } => Ok((u, d)),
+            StaggeredPhase::MechanicsCoupled { u, d, .. } => Ok((u.as_tensor().clone(), d)),
             StaggeredPhase::DamageOuter { .. } => Err(PhysicsError::InvariantViolation {
                 context: "staggered mechanics coupled: phase corrupted at exit",
             }),
@@ -1317,7 +1327,7 @@ mod fracture_at2_tests {
     use burn::tensor::{Data, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
 
-    use crate::core::field::{DamageField, Field, FractureEnergyField, SmallStrainField};
+    use crate::core::field::{DamageField, DisplacementField, Field, FractureEnergyField, SmallStrainField};
     use super::{tensile_strain_energy_density_spectral_jacobi, StaggeredPhase};
 
     type B = NdArray<f32>;
@@ -1758,7 +1768,7 @@ mod fracture_idempotency_tests {
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
 
-    use crate::core::field::{DamageField, Field, FractureEnergyField, SmallStrainField};
+    use crate::core::field::{DamageField, DisplacementField, Field, FractureEnergyField, SmallStrainField};
     use super::PhaseFieldFractureSolver;
 
     type B = NdArray<f32>;
