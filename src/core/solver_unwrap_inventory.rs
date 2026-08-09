@@ -75,8 +75,8 @@ pub const P3_SOLVER_UNWRAP_INVENTORY: &[SolverUnwrapSite] = &[
     SolverUnwrapSite {
         module: "physics/solvers/statistical_mechanics.rs",
         symbol: "LJ virial tensors",
-        reason: "clinker tensor path deferred @ R15-D1",
-        disposition: SolverUnwrapDisposition::NamedKernelOpen,
+        reason: "rank-2 virial bridge measured @ statistical_mechanics; clinker harness closed",
+        disposition: SolverUnwrapDisposition::ClosedCanonicalPath,
         residue_id: "R-solver-unwrap-clinker-virial",
     },
 ];
@@ -88,10 +88,10 @@ pub const P3_SOLVER_UNWRAP_INVENTORY_COMPLETE: bool = true;
 pub const P3_SOLVER_UNWRAP_BOUNDARY_AUDIT_COMPLETE: bool = true;
 
 /// Count of sites closed via canonical Field path @ R15-C1.
-pub const P3_SOLVER_UNWRAP_SITES_CLOSED: usize = 1;
+pub const P3_SOLVER_UNWRAP_SITES_CLOSED: usize = 2;
 
 /// Count of sites honestly named kernel-open @ R15-C1.
-pub const P3_SOLVER_UNWRAP_SITES_NAMED_OPEN: usize = 6;
+pub const P3_SOLVER_UNWRAP_SITES_NAMED_OPEN: usize = 5;
 
 /// Boundary remains open while any kernel site is tensor-native.
 pub const P3_SOLVER_UNWRAP_BOUNDARY_OPEN: bool = P3_SOLVER_UNWRAP_SITES_NAMED_OPEN > 0;
@@ -129,16 +129,16 @@ mod tests {
     #[test]
     fn r15_c1_solver_unwrap_disposition_audit() {
         assert!(P3_SOLVER_UNWRAP_BOUNDARY_AUDIT_COMPLETE);
-        assert_eq!(P3_SOLVER_UNWRAP_SITES_CLOSED, 1);
-        assert_eq!(P3_SOLVER_UNWRAP_SITES_NAMED_OPEN, 6);
+        assert_eq!(P3_SOLVER_UNWRAP_SITES_CLOSED, 2);
+        assert_eq!(P3_SOLVER_UNWRAP_SITES_NAMED_OPEN, 5);
         assert!(P3_SOLVER_UNWRAP_BOUNDARY_OPEN);
         assert_eq!(
             count_disposition(SolverUnwrapDisposition::ClosedCanonicalPath),
-            1
+            2
         );
         assert_eq!(
             count_disposition(SolverUnwrapDisposition::NamedKernelOpen),
-            6
+            5
         );
         for site in P3_SOLVER_UNWRAP_INVENTORY {
             assert!(!site.residue_id.is_empty());
