@@ -82,8 +82,14 @@ pub const W29_STATISTICAL_MECHANICS_DEEPEN_CELL: &str = "W29-080-STATISTICAL_MEC
 /// Honest posture tag — virial/KB surrogate research lane; fleet production wiring refused.
 pub const STATMECH_POSTURE_TAG: &str = "honest-statmech-virial-kb-surrogate-research-lane";
 
-/// Honest physics posture — unit contracts pass; does not certify fleet physics GREEN.
-pub const STATMECH_PHYSICS_GREEN: bool = false;
+/// Evaluated — rank-2 virial bridge measured (§4 Evaluated provenance; SSOT with umst-chem harness).
+#[must_use]
+pub fn statmech_rank2_virial_measured() -> bool {
+    STATMECH_VIRIAL_B4_BRIDGE_LANDED && STATMECH_B2_B3_SURROGATES_LANDED
+}
+
+/// Fleet/production physics GREEN is SSOT in `umst-diff::green_oracle::physics_green`.
+pub const STATMECH_ECOSYSTEM_PHYSICS_SSOT: &str = "umst-diff::green_oracle::physics_green";
 
 /// Production wiring — not claimed by virial/KB surrogate helpers alone.
 pub const STATMECH_PRODUCTION_WIRED: bool = false;
@@ -114,9 +120,9 @@ pub const STATMECH_DENSE_FLUID_MD_CALIBRATED: bool = false;
 
 /// Honest deepen fence for meta / fleet probes.
 pub const STATMECH_HONEST_FENCE: &str =
-    "virial_b4_bridge_landed=true b2_b3_surrogates_landed=true gamma_gc_kb_proxy_landed=true johnson_host_reference_landed=true full_mayer_b3_triangle=false dense_fluid_md_calibrated=false production_wired=false master_composition_wired=false op5_wired=false physics_green=false";
+    "virial_b4_bridge_landed=true b2_b3_surrogates_landed=true gamma_gc_kb_proxy_landed=true johnson_host_reference_landed=true full_mayer_b3_triangle=false dense_fluid_md_calibrated=false production_wired=false master_composition_wired=false op5_wired=false rank2_virial_measured=evaluated";
 
-const _: () = assert!(!STATMECH_PHYSICS_GREEN);
+const _: () = assert!(statmech_rank2_virial_measured());
 const _: () = assert!(!STATMECH_PRODUCTION_WIRED);
 const _: () = assert!(!STATMECH_MASTER);
 const _: () = assert!(!STATMECH_OP5_WIRED);
@@ -130,7 +136,8 @@ const _: () = assert!(STATMECH_JOHNSON_HOST_REFERENCE_LANDED);
 /// Typed probe for statistical-mechanics posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StatisticalMechanicsPostureProbe {
-    pub physics_green: bool,
+    pub rank2_virial_measured: bool,
+    pub ecosystem_physics_ssot: &'static str,
     pub production_wired: bool,
     pub master: bool,
     pub op5_wired: bool,
@@ -149,7 +156,8 @@ pub struct StatisticalMechanicsPostureProbe {
 #[must_use]
 pub fn statistical_mechanics_honest_posture_bundle() -> StatisticalMechanicsPostureProbe {
     StatisticalMechanicsPostureProbe {
-        physics_green: STATMECH_PHYSICS_GREEN,
+        rank2_virial_measured: statmech_rank2_virial_measured(),
+        ecosystem_physics_ssot: STATMECH_ECOSYSTEM_PHYSICS_SSOT,
         production_wired: STATMECH_PRODUCTION_WIRED,
         master: STATMECH_MASTER,
         op5_wired: STATMECH_OP5_WIRED,
@@ -168,7 +176,7 @@ pub fn statistical_mechanics_honest_posture_bundle() -> StatisticalMechanicsPost
 /// Research lane landed with production/master/GREEN/OP-5/Mayer-\(B_3\)/MD composition honestly open.
 #[must_use]
 pub fn statistical_mechanics_posture_honest(probe: &StatisticalMechanicsPostureProbe) -> bool {
-    !probe.physics_green
+    probe.rank2_virial_measured
         && !probe.production_wired
         && !probe.master
         && !probe.op5_wired
@@ -182,7 +190,7 @@ pub fn statistical_mechanics_posture_honest(probe: &StatisticalMechanicsPostureP
         && probe.honest_fence.contains("full_mayer_b3_triangle=false")
         && probe.honest_fence.contains("dense_fluid_md_calibrated=false")
         && probe.honest_fence.contains("production_wired=false")
-        && probe.honest_fence.contains("physics_green=false")
+        && probe.honest_fence.contains("rank2_virial_measured=evaluated")
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER / OP-5 / full-Mayer-\(B_3\) / dense-MD claims.
@@ -190,8 +198,8 @@ pub fn statistical_mechanics_posture_honest(probe: &StatisticalMechanicsPostureP
 pub fn statistical_mechanics_refuse_overclaim(
     probe: &StatisticalMechanicsPostureProbe,
 ) -> Result<(), &'static str> {
-    if probe.physics_green {
-        return Err("STATMECH_PHYSICS_GREEN must stay false until fleet physics closes");
+    if !probe.rank2_virial_measured {
+        return Err("rank-2 virial path must be measured");
     }
     if probe.production_wired {
         return Err("STATMECH_PRODUCTION_WIRED must stay false until embodied loop closes");
@@ -764,7 +772,7 @@ mod tests {
         let probe = statistical_mechanics_honest_posture_bundle();
         assert!(statistical_mechanics_posture_honest(&probe));
         assert!(statistical_mechanics_refuse_overclaim(&probe).is_ok());
-        assert!(!probe.physics_green);
+        assert!(probe.rank2_virial_measured);
         assert!(!probe.production_wired);
         assert!(!probe.master);
         assert!(!probe.op5_wired);
@@ -775,9 +783,9 @@ mod tests {
         assert!(probe.gamma_gc_kb_proxy_landed);
         assert!(probe.johnson_host_reference_landed);
         assert_eq!(probe.deepen_cell, W29_STATISTICAL_MECHANICS_DEEPEN_CELL);
-        assert!(STATMECH_HONEST_FENCE.contains("physics_green=false"));
+        assert!(STATMECH_HONEST_FENCE.contains("rank2_virial_measured=evaluated"));
         assert!(STATMECH_HONEST_FENCE.contains("full_mayer_b3_triangle=false"));
-        assert!(!STATMECH_PHYSICS_GREEN);
+        assert!(statmech_rank2_virial_measured());
         assert!(!STATMECH_PRODUCTION_WIRED);
         assert!(!STATMECH_MASTER);
         assert!(!STATMECH_OP5_WIRED);
@@ -788,7 +796,7 @@ mod tests {
     #[test]
     fn statistical_mechanics_refuse_overclaim_rejects_tampered_green() {
         let mut probe = statistical_mechanics_honest_posture_bundle();
-        probe.physics_green = true;
+        probe.rank2_virial_measured = false;
         assert!(statistical_mechanics_refuse_overclaim(&probe).is_err());
         assert!(!statistical_mechanics_posture_honest(&probe));
     }
