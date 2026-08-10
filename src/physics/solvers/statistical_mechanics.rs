@@ -84,8 +84,12 @@ pub const STATMECH_POSTURE_TAG: &str = "honest-statmech-virial-kb-surrogate-rese
 
 /// Evaluated — rank-2 virial bridge measured (§4 Evaluated provenance; SSOT with umst-chem harness).
 #[must_use]
+pub const STATMECH_RANK2_VIRIAL_MEASURED: bool =
+    STATMECH_VIRIAL_B4_BRIDGE_LANDED && STATMECH_B2_B3_SURROGATES_LANDED;
+
+#[must_use]
 pub fn statmech_rank2_virial_measured() -> bool {
-    STATMECH_VIRIAL_B4_BRIDGE_LANDED && STATMECH_B2_B3_SURROGATES_LANDED
+    STATMECH_RANK2_VIRIAL_MEASURED
 }
 
 /// Fleet/production physics GREEN is SSOT in `umst-diff::green_oracle::physics_green`.
@@ -122,7 +126,7 @@ pub const STATMECH_DENSE_FLUID_MD_CALIBRATED: bool = false;
 pub const STATMECH_HONEST_FENCE: &str =
     "virial_b4_bridge_landed=true b2_b3_surrogates_landed=true gamma_gc_kb_proxy_landed=true johnson_host_reference_landed=true full_mayer_b3_triangle=false dense_fluid_md_calibrated=false production_wired=false master_composition_wired=false op5_wired=false rank2_virial_measured=evaluated";
 
-const _: () = assert!(statmech_rank2_virial_measured());
+const _: () = assert!(STATMECH_RANK2_VIRIAL_MEASURED);
 const _: () = assert!(!STATMECH_PRODUCTION_WIRED);
 const _: () = assert!(!STATMECH_MASTER);
 const _: () = assert!(!STATMECH_OP5_WIRED);
