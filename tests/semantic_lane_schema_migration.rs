@@ -8,9 +8,9 @@
 use umst_manifold::core::{
     consistency_defect_from_dec_stub, migrate_carrier_batch, migrate_carrier_row,
     stub_dec_graph_consistency, validate_v1_layout_invariants, CarrierSchemaVersion,
-    SemanticLaneBundleV1, SemanticLaneId, SemanticLaneMigrationError, UMST_CARRIER_LANE_COUNT,
-    UMST_SCALAR_CHANNEL_COUNT, LANE_RELATION_GRAPH, LANE_TOPOLOGY_SIGNATURE, RESERVED_LANE_BASE,
-    RESERVED_LANE_COUNT, SEMANTIC_LANE_BASE, SEMANTIC_LANE_SCHEMA_V1,
+    SemanticLaneBundleV1, SemanticLaneId, SemanticLaneMigrationError, LANE_RELATION_GRAPH,
+    LANE_TOPOLOGY_SIGNATURE, RESERVED_LANE_BASE, RESERVED_LANE_COUNT, SEMANTIC_LANE_BASE,
+    SEMANTIC_LANE_SCHEMA_V1, UMST_CARRIER_LANE_COUNT, UMST_SCALAR_CHANNEL_COUNT,
 };
 
 #[test]
@@ -20,13 +20,19 @@ fn idea_003_schema_v1_revision_and_physical_pin_invariants() {
         CarrierSchemaVersion::V1SemanticExtended.semantic_schema_revision(),
         SEMANTIC_LANE_SCHEMA_V1
     );
-    assert_eq!(CarrierSchemaVersion::V0PhysicalOnly.lane_count(), UMST_SCALAR_CHANNEL_COUNT);
+    assert_eq!(
+        CarrierSchemaVersion::V0PhysicalOnly.lane_count(),
+        UMST_SCALAR_CHANNEL_COUNT
+    );
     assert_eq!(
         CarrierSchemaVersion::V1SemanticExtended.lane_count(),
         UMST_CARRIER_LANE_COUNT
     );
     assert_eq!(SEMANTIC_LANE_BASE, 57);
-    assert_eq!(SEMANTIC_LANE_BASE + SemanticLaneId::ALL_V1.len(), UMST_CARRIER_LANE_COUNT);
+    assert_eq!(
+        SEMANTIC_LANE_BASE + SemanticLaneId::ALL_V1.len(),
+        UMST_CARRIER_LANE_COUNT
+    );
     assert!(validate_v1_layout_invariants());
 }
 
@@ -100,7 +106,8 @@ fn v0_to_v1_batch_migration_preserves_physical_prefix() {
 
     assert_eq!(migrated.len(), nodes * UMST_CARRIER_LANE_COUNT);
     for node in 0..nodes {
-        let phys = &physical[node * UMST_SCALAR_CHANNEL_COUNT..(node + 1) * UMST_SCALAR_CHANNEL_COUNT];
+        let phys =
+            &physical[node * UMST_SCALAR_CHANNEL_COUNT..(node + 1) * UMST_SCALAR_CHANNEL_COUNT];
         let row = &migrated[node * UMST_CARRIER_LANE_COUNT..(node + 1) * UMST_CARRIER_LANE_COUNT];
         assert_eq!(&row[..UMST_SCALAR_CHANNEL_COUNT], phys);
         assert!(row[UMST_SCALAR_CHANNEL_COUNT..SEMANTIC_LANE_BASE]
@@ -293,6 +300,9 @@ fn bundle_write_preserves_physical_prefix() {
 #[test]
 fn all_v1_lane_names_match_blueprint() {
     assert_eq!(SemanticLaneId::ConceptId.lane_name(), "ConceptID");
-    assert_eq!(SemanticLaneId::TopologySignature.lane_name(), "TopologySignature");
+    assert_eq!(
+        SemanticLaneId::TopologySignature.lane_name(),
+        "TopologySignature"
+    );
     assert_eq!(SemanticLaneId::ALL_V1.len(), 7);
 }

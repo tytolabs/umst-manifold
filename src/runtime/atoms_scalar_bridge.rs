@@ -27,8 +27,7 @@ pub const DEPTH_TIER: &str = "T4";
 pub const POSTURE_TAG: &str = "DEFERRED";
 
 /// Primary source anchor for fleet / meta hygiene (R10-b).
-pub const SOURCE_ANCHOR_PATH: &str =
-    "umst-manifold/src/runtime/atoms_scalar_bridge.rs";
+pub const SOURCE_ANCHOR_PATH: &str = "umst-manifold/src/runtime/atoms_scalar_bridge.rs";
 
 /// F1 owner rollup module cross-ref (E2 @ P1700; H4 @ P1800 deepen chain).
 pub const F1_DEEPEN_ROLLUP_PATH: &str = "umst-manifold/src/runtime/atoms_f1_deepen.rs";

@@ -187,8 +187,8 @@ pub fn ppo_host_deepen_probe() -> PpoHostDeepenProbe {
     let parsed = PpoConstraintWeights::from_env_strs(Some("0.5"), Some("1.25"));
     let non_finite_rejected =
         parse_finite_f32_env(Some("nan")) == 0.0 && parse_finite_f32_env(Some("inf")) == 0.0;
-    let env_keys_landed =
-        ENV_UMST_LAMBDA_CD == "UMST_LAMBDA_CD" && ENV_UMST_LAMBDA_LANDAUER == "UMST_LAMBDA_LANDAUER";
+    let env_keys_landed = ENV_UMST_LAMBDA_CD == "UMST_LAMBDA_CD"
+        && ENV_UMST_LAMBDA_LANDAUER == "UMST_LAMBDA_LANDAUER";
     let finite_parse_landed = parsed.weights_finite()
         && parsed.lambda_cd == 0.5
         && parsed.lambda_landauer == 1.25

@@ -9,7 +9,7 @@ use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
-use umst_manifold::gate::{GateManifoldGateway, suggested_info_gain_from_batched_nodal_scalars};
+use umst_manifold::gate::{suggested_info_gain_from_batched_nodal_scalars, GateManifoldGateway};
 
 type B = NdArray<f32>;
 

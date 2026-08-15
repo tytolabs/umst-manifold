@@ -9,8 +9,8 @@
 //! Burn `constraint_loss` is the autodiff mirror of `penalize` (see `docs/KLEISLI_GATE_PIPELINE.md`).
 
 use umst_manifold::gate::{
-    kleisli_compose_pair, AdmissibilityVerdict, Admissible, KleisliArrow, ThermodynamicStateSnapshot, TransitionScalars,
-    TRANSITION_TOLERANCE,
+    kleisli_compose_pair, AdmissibilityVerdict, Admissible, KleisliArrow,
+    ThermodynamicStateSnapshot, TransitionScalars, TRANSITION_TOLERANCE,
 };
 use umst_manifold::runtime::gate::{
     explain_cd_transition_host, AdmissibilityToken, CdTransitionCartridge, ConstraintExplanation,

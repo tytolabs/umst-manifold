@@ -114,13 +114,12 @@ mod rank1_field_harness {
         let golden_fc_mpa = 35.689_57;
         let lattice_host = golden_fc_mpa;
         let rtol = 1e-4;
-        let claim = rank1_field_parity_claim(
-            lattice_host,
-            golden_fc_mpa,
-            rtol,
-            "strength_fc_mpa",
-        );
+        let claim = rank1_field_parity_claim(lattice_host, golden_fc_mpa, rtol, "strength_fc_mpa");
         assert!(rank1_field_gate_closes(&claim).is_ok());
-        assert!(!rank1_field_parity_closes(lattice_host + 1.0, golden_fc_mpa, rtol));
+        assert!(!rank1_field_parity_closes(
+            lattice_host + 1.0,
+            golden_fc_mpa,
+            rtol
+        ));
     }
 }

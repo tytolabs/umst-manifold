@@ -17,7 +17,8 @@ use crate::web_constitutive::web_semantic_lane_overlap_valid;
 pub const JOB_ID: &str = "SWARM-C25-0831-93";
 
 /// Completion receipt cross-ref (this wave).
-pub const RECEIPT_PATH: &str = "old/residuals/residuals/swarm-0831/COMPLETION_SWARM_SWARM-C25-0831-93_0831.md";
+pub const RECEIPT_PATH: &str =
+    "old/residuals/residuals/swarm-0831/COMPLETION_SWARM_SWARM-C25-0831-93_0831.md";
 
 /// Prior manifold semantic deepen receipt (AGAP-2033).
 pub const PRIOR_SEM_RECEIPT_PATH: &str =
@@ -256,7 +257,10 @@ mod tests {
         assert_eq!(W29_131_CELL_ID, "W29-131-SWARM_MANIFOLD_DEEPEN");
         assert_eq!(DEEPEN_MODEL_SLUG, "cursor-grok-4.6-high");
         assert_eq!(DEEPEN_LANE, "umst-admit-grok");
-        assert_eq!(HONEST_DEEPEN_POSTURE, "SWARM_MANIFOLD_DEEPEN_HONEST_PROD_OPEN");
+        assert_eq!(
+            HONEST_DEEPEN_POSTURE,
+            "SWARM_MANIFOLD_DEEPEN_HONEST_PROD_OPEN"
+        );
         assert_eq!(FENCE_HOP_COUNT, PROBE_HOPS_WIRED);
         assert!(PRIOR_0831_RECEIPT_SLUG.contains("SWARM-C25-0831-93"));
     }

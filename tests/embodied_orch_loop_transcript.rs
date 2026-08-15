@@ -5,9 +5,9 @@
 
 use umst_manifold::embodied::{
     orch_loop_tick_transcript_delta, ActuateDesign, EmbodiedLoopSlots, FieldSenseClient,
-    FieldSenseError, LoopCloseError, LoopStubReject, OrchestratorLoopRole, OrchLoopTranscriptEmitter,
-    PresentError, PresentScene, RobotExecutor, SenseLoopCloser, SenseObservation, XrPresenter,
-    ORCH_LOOP_TRANSCRIPT_SCHEMA_VERSION,
+    FieldSenseError, LoopCloseError, LoopStubReject, OrchLoopTranscriptEmitter,
+    OrchestratorLoopRole, PresentError, PresentScene, RobotExecutor, SenseLoopCloser,
+    SenseObservation, XrPresenter, ORCH_LOOP_TRANSCRIPT_SCHEMA_VERSION,
 };
 
 struct MockSense;

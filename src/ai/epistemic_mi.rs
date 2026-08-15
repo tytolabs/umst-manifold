@@ -78,11 +78,8 @@ pub const MORPHISM_EPI_MI02: &str = "EPI-MI02";
 pub const MORPHISM_EPI_MI03: &str = "EPI-MI03";
 
 /// Registry of stable epistemic-MI morphism ids @ slice-1 (witness routing).
-pub const EPISTEMIC_MI_MORPHISM_IDS: &[&str] = &[
-    MORPHISM_EPI_MI01,
-    MORPHISM_EPI_MI02,
-    MORPHISM_EPI_MI03,
-];
+pub const EPISTEMIC_MI_MORPHISM_IDS: &[&str] =
+    &[MORPHISM_EPI_MI01, MORPHISM_EPI_MI02, MORPHISM_EPI_MI03];
 
 /// Stable facet ids for epistemic-MI production fence census.
 pub const EPISTEMIC_MI_FENCE_FACET_IDS: &[&str] = &[
@@ -337,7 +334,10 @@ pub fn epistemic_mi_w29_008_honest(probe: &EpistemicMiHonestProbe) -> bool {
         && probe.honest_fence.contains("master_retick=false")
         && probe.honest_fence.contains("green_claim_blocked=true")
         && probe.honest_fence.contains("estimator_landed=true")
-        && probe.source_non_claim.to_ascii_lowercase().contains("not physics green")
+        && probe
+            .source_non_claim
+            .to_ascii_lowercase()
+            .contains("not physics green")
 }
 
 /// Operator-facing honesty validation — returns `Err` when posture fences are violated.
@@ -393,7 +393,9 @@ pub fn validate_epistemic_mi_honesty() -> Result<(), &'static str> {
         }
     }
     if !epistemic_mi_w29_008_honest(&probe) {
-        return Err("epistemic_mi posture fence violated — do not invent GREEN / production_wired / master");
+        return Err(
+            "epistemic_mi posture fence violated — do not invent GREEN / production_wired / master",
+        );
     }
     Ok(())
 }
@@ -736,12 +738,18 @@ mod tests {
         assert!(EPISTEMIC_MI_MORPHISM_IDS.contains(&MORPHISM_EPI_MI01));
         assert!(EPISTEMIC_MI_MORPHISM_IDS.contains(&MORPHISM_EPI_MI02));
         assert!(EPISTEMIC_MI_MORPHISM_IDS.contains(&MORPHISM_EPI_MI03));
-        assert_eq!(EPISTEMIC_MI_FENCE_FACET_IDS.len(), EPISTEMIC_MI_FENCE_FACET_COUNT);
+        assert_eq!(
+            EPISTEMIC_MI_FENCE_FACET_IDS.len(),
+            EPISTEMIC_MI_FENCE_FACET_COUNT
+        );
         assert_eq!(
             EPISTEMIC_MI_PRODUCTION_FENCE_FACETS.len(),
             EPISTEMIC_MI_FENCE_FACET_COUNT
         );
-        assert_eq!(epistemic_mi_fence_wired_count(), EPISTEMIC_MI_FENCE_WIRED_COUNT);
+        assert_eq!(
+            epistemic_mi_fence_wired_count(),
+            EPISTEMIC_MI_FENCE_WIRED_COUNT
+        );
     }
 
     #[test]
@@ -782,13 +790,19 @@ mod tests {
             .find(|f| f.facet == "production_wired")
             .expect("production facet");
         assert!(!prod.wired);
-        assert_eq!(prod.owning_slice, EPISTEMIC_MI_PRODUCTION_ORCH_DEFERRED_STEP);
+        assert_eq!(
+            prod.owning_slice,
+            EPISTEMIC_MI_PRODUCTION_ORCH_DEFERRED_STEP
+        );
     }
 
     #[test]
     fn w29_008_wire_hops_and_residue_census() {
         assert_eq!(EPISTEMIC_MI_WIRE_HOPS.len(), EPISTEMIC_MI_WIRE_HOP_COUNT);
-        assert_eq!(epistemic_mi_wire_hops_closed(), EPISTEMIC_MI_WIRE_HOPS_CLOSED);
+        assert_eq!(
+            epistemic_mi_wire_hops_closed(),
+            EPISTEMIC_MI_WIRE_HOPS_CLOSED
+        );
         assert_eq!(
             EPISTEMIC_MI_WIRE_HOPS_CLOSED + EPISTEMIC_MI_FENCE_DEFERRED_COUNT,
             // 3 closed hops + 2 deferred hops = hop inventory

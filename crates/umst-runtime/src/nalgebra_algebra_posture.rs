@@ -48,7 +48,8 @@ pub const SLICE4_SCAFFOLD_PATH: &str = "umst-manifold/src/runtime/nalgebra_algeb
 pub const DESIGN_DOC_PATH: &str = "docs/C2_TENSOR_ALGEBRA_DESIGN.md";
 
 /// Research libs SSOT.
-pub const RESEARCH_DOC_PATH: &str = "old/residuals/residuals/misc-outputs-tmp/RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md";
+pub const RESEARCH_DOC_PATH: &str =
+    "old/residuals/residuals/misc-outputs-tmp/RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md";
 
 /// Fleet receipt for LIB-NALGEBRA tensor row advance.
 pub const RECEIPT_SLUG: &str = "COMPLETION_AGAP_AGENT_LIB-NALGEBRA_2037";

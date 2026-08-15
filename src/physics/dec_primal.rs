@@ -109,7 +109,9 @@ pub fn dec_primal_posture_honest(probe: &DecPrimalPostureProbe) -> bool {
         && !probe.master
         && probe.incidence_landed
         && probe.tet_boundary_coo_landed
-        && probe.honest_fence.contains("dec_primal_incidence_landed=true")
+        && probe
+            .honest_fence
+            .contains("dec_primal_incidence_landed=true")
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")
 }
@@ -365,15 +367,11 @@ mod tests {
     #[test]
     fn dec_primal_d0_constant_nodal_is_zero() {
         let device = Default::default();
-        let edges = Tensor::<B, 2, Int>::from_data(
-            Data::new(vec![0i64, 1, 1, 2], [2, 2].into()),
-            &device,
-        );
+        let edges =
+            Tensor::<B, 2, Int>::from_data(Data::new(vec![0i64, 1, 1, 2], [2, 2].into()), &device);
         let topo = EdgeTopology::new(edges);
-        let nodal = Tensor::<B, 3>::from_data(
-            Data::new(vec![3.0_f32; 3], [1, 3, 1].into()),
-            &device,
-        );
+        let nodal =
+            Tensor::<B, 3>::from_data(Data::new(vec![3.0_f32; 3], [1, 3, 1].into()), &device);
         let inc = primal_scalar_edge_increment(nodal, &topo);
         for x in inc.into_data().value {
             assert!(x.abs() < 1e-6, "constant field → zero d0, got {x}");
@@ -383,10 +381,8 @@ mod tests {
     #[test]
     fn dec_primal_divergence_of_d0_row_sum_zero_on_chain() {
         let device = Default::default();
-        let edges = Tensor::<B, 2, Int>::from_data(
-            Data::new(vec![0i64, 1, 1, 2], [2, 2].into()),
-            &device,
-        );
+        let edges =
+            Tensor::<B, 2, Int>::from_data(Data::new(vec![0i64, 1, 1, 2], [2, 2].into()), &device);
         let topo = EdgeTopology::new(edges);
         let nodal = Tensor::<B, 3>::from_data(
             Data::new(vec![1.0_f32, 4.0, 9.0], [1, 3, 1].into()),

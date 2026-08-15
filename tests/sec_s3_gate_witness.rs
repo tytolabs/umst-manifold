@@ -4,10 +4,11 @@
 //! SEC-S3 gate runtime witness — manifold palette/ledger census on cold-edge evidence.
 
 use umst_manifold::runtime::gate::{
-    gate_palette_ledger_census, gate_transition_evidence_probe, manifold_gate_sec_s3_ceremony_closed,
-    sec_s3_gate_manifold_probe, sec_s3_gate_wire_matrix, sec_s3_p1606_c5_honest, sec_s3_p1606_c5_probe,
-    sec_s3_production_wired, session_ledger_wired, validate_sec_s3_gate_honesty,
-    FLEET_P1606_C5_JOB_ID, MANIFOLD_SEC_S3_GATE_WIRE_HOPS, PALETTE_PERSISTED_HONEST,
+    gate_palette_ledger_census, gate_transition_evidence_probe,
+    manifold_gate_sec_s3_ceremony_closed, sec_s3_gate_manifold_probe, sec_s3_gate_wire_matrix,
+    sec_s3_p1606_c5_honest, sec_s3_p1606_c5_probe, sec_s3_production_wired, session_ledger_wired,
+    validate_sec_s3_gate_honesty, FLEET_P1606_C5_JOB_ID, MANIFOLD_SEC_S3_GATE_WIRE_HOPS,
+    PALETTE_PERSISTED_HONEST,
 };
 
 #[test]

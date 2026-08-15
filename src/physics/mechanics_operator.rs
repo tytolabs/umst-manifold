@@ -79,7 +79,9 @@ pub fn mechanics_operator_posture_honest(probe: &MechanicsOperatorPostureProbe) 
         && probe.bar_adapters_landed
         && !probe.q1_hex_impl_landed
         && !probe.consumer_migration_landed
-        && probe.honest_fence.contains("mechanics_operator_trait_landed=true")
+        && probe
+            .honest_fence
+            .contains("mechanics_operator_trait_landed=true")
         && probe.honest_fence.contains("bar_adapters_landed=true")
         && probe.honest_fence.contains("q1_hex_impl_landed=false")
         && probe.honest_fence.contains("production_wired=false")
@@ -114,8 +116,8 @@ use burn::tensor::{backend::Backend, Int, Tensor};
 
 use crate::core::field::{BodyForceField, BoundaryMaskField, Field, StiffnessField};
 
-use super::mechanics::VectorMechanicsSolver;
 use super::error::PhysicsError;
+use super::mechanics::VectorMechanicsSolver;
 use super::time_orchestration::MechanicsInnerLoopConfig;
 
 /// Equilibrium morphism \(K(\rho)\,u = f\) on the DEC 1-skeleton (bar today; Q1 hex in Wave 3).

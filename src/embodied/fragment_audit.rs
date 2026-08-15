@@ -93,10 +93,7 @@ impl EmbodiedFragment {
     pub const fn needs_slot_attachment(self) -> bool {
         matches!(
             self,
-            Self::FieldSenseClient
-                | Self::XrPresenter
-                | Self::RobotExecutor
-                | Self::SenseLoopClose
+            Self::FieldSenseClient | Self::XrPresenter | Self::RobotExecutor | Self::SenseLoopClose
         )
     }
 }
@@ -238,9 +235,7 @@ pub const FRAGMENT_AUDIT_TABLE: [FragmentAuditRow; 7] = [
         phase: LoopPhase::Present,
         code_anchor: "umst-xr/src/scene.rs::present",
         owner_card: "W4-JG-4 · XR-PV-01",
-        status: FragmentWireStatus::Unwired {
-            target: "umst-xr",
-        },
+        status: FragmentWireStatus::Unwired { target: "umst-xr" },
     },
     FragmentAuditRow {
         fragment: EmbodiedFragment::RobotExecutor,
@@ -274,9 +269,7 @@ pub const fn fragment_status(fragment: EmbodiedFragment) -> FragmentWireStatus {
         EmbodiedFragment::FieldSenseClient => FragmentWireStatus::Unwired {
             target: "umst-field",
         },
-        EmbodiedFragment::XrPresenter => FragmentWireStatus::Unwired {
-            target: "umst-xr",
-        },
+        EmbodiedFragment::XrPresenter => FragmentWireStatus::Unwired { target: "umst-xr" },
         EmbodiedFragment::RobotExecutor => FragmentWireStatus::Unwired {
             target: "umst-robots",
         },
@@ -385,7 +378,10 @@ pub const fn partial_fragment_count() -> usize {
     let mut count = 0usize;
     let mut i = 0;
     while i < ALL_FRAGMENTS.len() {
-        if matches!(fragment_status(ALL_FRAGMENTS[i]), FragmentWireStatus::Partial { .. }) {
+        if matches!(
+            fragment_status(ALL_FRAGMENTS[i]),
+            FragmentWireStatus::Partial { .. }
+        ) {
             count += 1;
         }
         i += 1;
@@ -399,7 +395,10 @@ pub const fn unwired_fragment_count() -> usize {
     let mut count = 0usize;
     let mut i = 0;
     while i < ALL_FRAGMENTS.len() {
-        if matches!(fragment_status(ALL_FRAGMENTS[i]), FragmentWireStatus::Unwired { .. }) {
+        if matches!(
+            fragment_status(ALL_FRAGMENTS[i]),
+            FragmentWireStatus::Unwired { .. }
+        ) {
             count += 1;
         }
         i += 1;
@@ -595,7 +594,8 @@ const _: () = assert!(scaffold_coverage_pct() == 22);
 const _: () = assert!(scaffold_gap_pct() == 78);
 const _: () = assert!(slot_bound_fragment_count() == 4);
 const _: () = assert!(gateway_native_fragment_count() == 3);
-const _: () = assert!(ALL_FRAGMENTS.len() == GATEWAY_NATIVE_FRAGMENTS.len() + SLOT_BOUND_FRAGMENTS.len());
+const _: () =
+    assert!(ALL_FRAGMENTS.len() == GATEWAY_NATIVE_FRAGMENTS.len() + SLOT_BOUND_FRAGMENTS.len());
 const _: () = assert!(FRAGMENT_AUDIT_TABLE.len() == ALL_FRAGMENTS.len());
 const _: () = assert!(matches!(
     FRAGMENT_AUDIT_TABLE[0].fragment,
@@ -758,9 +758,13 @@ pub fn fragment_audit_honest(probe: &FragmentAuditProbe) -> bool {
         && probe.command_phase_deferred
         && probe.owner_card == OWNER_CARD
         && probe.source_anchor == SOURCE_ANCHOR_PATH
-        && probe.honest_fence.contains("orch_fragment_audit_landed=true")
+        && probe
+            .honest_fence
+            .contains("orch_fragment_audit_landed=true")
         && probe.honest_fence.contains("production_wired=false")
-        && probe.honest_fence.contains("master_composition_wired=false")
+        && probe
+            .honest_fence
+            .contains("master_composition_wired=false")
         && probe.honest_fence.contains("physics_green=false")
         && probe.honest_fence.contains("invented_green=false")
         && fragment_audit_fence_honest(&fragment_audit_fence())
@@ -904,7 +908,9 @@ mod tests {
         ));
         assert!(matches!(
             fragment_status(EmbodiedFragment::FieldSenseClient),
-            FragmentWireStatus::Unwired { target: "umst-field" }
+            FragmentWireStatus::Unwired {
+                target: "umst-field"
+            }
         ));
         assert!(matches!(
             fragment_status(EmbodiedFragment::XrPresenter),
@@ -912,7 +918,9 @@ mod tests {
         ));
         assert!(matches!(
             fragment_status(EmbodiedFragment::RobotExecutor),
-            FragmentWireStatus::Unwired { target: "umst-robots" }
+            FragmentWireStatus::Unwired {
+                target: "umst-robots"
+            }
         ));
         assert!(matches!(
             fragment_status(EmbodiedFragment::SenseLoopClose),
@@ -1074,7 +1082,10 @@ mod tests {
             EmbodiedFragment::ManifoldGateway.as_str(),
             "manifold_gateway"
         );
-        assert_eq!(EmbodiedFragment::SenseLoopClose.as_str(), "sense_loop_close");
+        assert_eq!(
+            EmbodiedFragment::SenseLoopClose.as_str(),
+            "sense_loop_close"
+        );
         assert_eq!(LoopPhase::Gate.as_str(), "gate");
         assert_eq!(LoopPhase::Command.as_str(), "command");
         assert!(LoopPhase::Command.is_command_deferred());

@@ -209,7 +209,8 @@ pub const fn loop_doc_summary() -> LoopDocSummary {
 pub const fn phase_posture(phase: LoopPhase) -> DocCodePosture {
     match phase {
         LoopPhase::Sense => DocCodePosture::Partial {
-            gap: "FieldSense + StateDelta exist; WorldObservation ADT (W1-07) + gateway wire absent",
+            gap:
+                "FieldSense + StateDelta exist; WorldObservation ADT (W1-07) + gateway wire absent",
         },
         LoopPhase::Command => DocCodePosture::Partial {
             gap: "gate_check<R> material|informational only — no embodied StateDelta route",
@@ -284,10 +285,7 @@ pub fn crosswalk_for(phase: LoopPhase) -> Option<&'static LoopLegCrosswalk> {
 /// Gaps for `phase` from the structured ledger.
 #[must_use]
 pub fn gaps_for_phase(phase: LoopPhase) -> Vec<&'static DocCodeGap> {
-    LOOP_DOC_GAPS
-        .iter()
-        .filter(|g| g.phase == phase)
-        .collect()
+    LOOP_DOC_GAPS.iter().filter(|g| g.phase == phase).collect()
 }
 
 /// Human-readable gap strings for receipt ceremony and telemetry.

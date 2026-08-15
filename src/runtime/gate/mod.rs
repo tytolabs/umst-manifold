@@ -18,13 +18,13 @@ pub mod explain_codes;
 pub mod sec_bridge_arcs;
 pub mod sec_gw_audit;
 pub mod sec_gw_wrap;
+pub mod sec_mcp_wrap;
 pub mod sec_s1;
 pub mod sec_s2;
 pub mod sec_s3;
 pub mod sec_s4;
 pub mod sec_s5;
 pub mod sec_s6;
-pub mod sec_mcp_wrap;
 pub mod sec_s7;
 
 pub use admissibility_margin::{
@@ -44,105 +44,120 @@ pub use explain_codes::{
     TOP_GATE_EXPLAIN_CODES,
 };
 pub use sec_bridge_arcs::{
-    gate_bridge_arcs_census, gate_transition_evidence_probe as sec_bridge_arcs_gate_transition_evidence_probe,
+    gate_bridge_arcs_census,
+    gate_transition_evidence_probe as sec_bridge_arcs_gate_transition_evidence_probe,
     manifold_bridge_arcs_thermo_wire_hops_verified, manifold_bridge_arcs_trust_wire_hops_verified,
     manifold_gate_sec_bridge_arcs_ceremony_closed, sec_bridge_arcs_accel_ac35_honest,
     sec_bridge_arcs_accel_ac35_probe, sec_bridge_arcs_egoff_bridge_next_hop,
     sec_bridge_arcs_gate_manifold_probe, sec_bridge_arcs_gate_wire_matrix,
     sec_bridge_arcs_production_wired, validate_sec_bridge_arcs_gate_honesty,
+    SecBridgeArcsAccelAc35Probe, SecBridgeArcsGateCoordinationCensus,
+    SecBridgeArcsGateManifoldProbe, SecBridgeArcsGateWireHop,
     BOARD_SLICE_ID as SEC_BRIDGE_ARCS_BOARD_SLICE_ID, BRIDGE_ARCS_GREEN_CLAIM_BLOCKED,
     EGOFF_FULL_CRATE_VERIFY_BLOCKED, FLEET_ACCEL_AC35_JOB_ID, FLEET_ACCEL_AC35_RECEIPT_PATH,
-    MANIFOLD_SEC_BRIDGE_ARCS_GATE_WIRE_HOPS, SecBridgeArcsAccelAc35Probe,
-    SecBridgeArcsGateCoordinationCensus, SecBridgeArcsGateManifoldProbe,
-    SecBridgeArcsGateWireHop,
+    MANIFOLD_SEC_BRIDGE_ARCS_GATE_WIRE_HOPS,
 };
 pub use sec_gw_audit::{
     gate_admit_audit_census, manifold_gate_sec_gw_audit_ceremony_closed,
     manifold_gw_audit_all_stamp_paths_probed, manifold_gw_audit_stamp_legs_complete,
     manifold_verify_upstream_gw_wrap_delegate, sec_gw_audit_accel2_ac31_honest,
-    sec_gw_audit_accel2_ac31_probe, sec_gw_audit_manifold_probe,
-    sec_gw_audit_production_wired, sec_gw_audit_trust_chain_next_hop,
-    sec_gw_audit_wire_matrix, validate_sec_gw_audit_honesty,
+    sec_gw_audit_accel2_ac31_probe, sec_gw_audit_manifold_probe, sec_gw_audit_production_wired,
+    sec_gw_audit_trust_chain_next_hop, sec_gw_audit_wire_matrix, validate_sec_gw_audit_honesty,
+    SecGwAuditAccel2Ac31Probe, SecGwAuditManifoldAdmitCensus, SecGwAuditManifoldProbe,
+    SecGwAuditManifoldWireHop, ADMIT_STAMP_PATH_COUNT,
     BOARD_SLICE_ID as SEC_GW_AUDIT_BOARD_SLICE_ID, FLEET_ACCEL2_AC31_JOB_ID,
-    FLEET_ACCEL2_AC31_RECEIPT_PATH, MANIFOLD_GW_AUDIT_ADMIT_STAMP_PATHS,
-    MANIFOLD_GW_AUDIT_STAMP_LEGS, MANIFOLD_SEC_GW_AUDIT_WIRE_HOPS,
-    ADMIT_STAMP_PATH_COUNT, GW_AUDIT_GREEN_CLAIM_BLOCKED, SecGwAuditAccel2Ac31Probe,
-    SecGwAuditManifoldAdmitCensus, SecGwAuditManifoldProbe, SecGwAuditManifoldWireHop,
+    FLEET_ACCEL2_AC31_RECEIPT_PATH, GW_AUDIT_GREEN_CLAIM_BLOCKED,
+    MANIFOLD_GW_AUDIT_ADMIT_STAMP_PATHS, MANIFOLD_GW_AUDIT_STAMP_LEGS,
+    MANIFOLD_SEC_GW_AUDIT_WIRE_HOPS,
 };
 pub use sec_gw_wrap::{
     gate_trust_wrap_census, manifold_gate_sec_gw_wrap_ceremony_closed,
     manifold_gw_wrap_all_admit_surfaces_probed, manifold_gw_wrap_ledger_prep_complete,
     manifold_verify_upstream_gate_delegates, sec_gw_wrap_accel2_ac32_honest,
     sec_gw_wrap_accel2_ac32_probe, sec_gw_wrap_honesty_probe, sec_gw_wrap_manifold_probe,
-    sec_gw_wrap_production_wired, sec_gw_wrap_trust_wrap_next_hop,
-    sec_gw_wrap_wire_matrix, validate_sec_gw_wrap_honesty,
+    sec_gw_wrap_production_wired, sec_gw_wrap_trust_wrap_next_hop, sec_gw_wrap_wire_matrix,
+    validate_sec_gw_wrap_honesty, SecGwWrapAccel2Ac32Probe, SecGwWrapHonestyFence,
+    SecGwWrapHonestyProbe, SecGwWrapManifoldProbe, SecGwWrapManifoldTrustCensus,
+    SecGwWrapManifoldWireHop, ADMIT_SURFACE_COUNT as GW_WRAP_ADMIT_SURFACE_COUNT,
     BOARD_SLICE_ID as SEC_GW_WRAP_BOARD_SLICE_ID, FLEET_ACCEL2_AC32_JOB_ID,
-    FLEET_ACCEL2_AC32_RECEIPT_PATH, MANIFOLD_GW_WRAP_ADMIT_SURFACES,
-    MANIFOLD_GW_WRAP_LEDGER_PREP_HOPS, MANIFOLD_SEC_GW_WRAP_WIRE_HOPS,
-    ADMIT_SURFACE_COUNT as GW_WRAP_ADMIT_SURFACE_COUNT,
-    GW_WRAP_GREEN_CLAIM_BLOCKED, SEC_GW_WRAP_CELL_ID, SEC_GW_WRAP_MASTER_RETICK_ELIGIBLE,
-    SEC_GW_WRAP_OP5_CLEARED, SEC_GW_WRAP_PHYSICS_GREEN, W29_118_SEC_GW_WRAP_DEEPEN_STEP,
-    SecGwWrapAccel2Ac32Probe, SecGwWrapHonestyFence, SecGwWrapHonestyProbe,
-    SecGwWrapManifoldProbe, SecGwWrapManifoldTrustCensus, SecGwWrapManifoldWireHop,
+    FLEET_ACCEL2_AC32_RECEIPT_PATH, GW_WRAP_GREEN_CLAIM_BLOCKED, MANIFOLD_GW_WRAP_ADMIT_SURFACES,
+    MANIFOLD_GW_WRAP_LEDGER_PREP_HOPS, MANIFOLD_SEC_GW_WRAP_WIRE_HOPS, SEC_GW_WRAP_CELL_ID,
+    SEC_GW_WRAP_MASTER_RETICK_ELIGIBLE, SEC_GW_WRAP_OP5_CLEARED, SEC_GW_WRAP_PHYSICS_GREEN,
+    W29_118_SEC_GW_WRAP_DEEPEN_STEP,
+};
+pub use sec_mcp_wrap::{
+    collect_sec_mcp_wrap_gate_factor_rows, gate_mcp_wrap_census,
+    gate_transition_evidence_probe as sec_mcp_wrap_gate_transition_evidence_probe,
+    manifold_gate_sec_mcp_wrap_ceremony_closed, manifold_mcp_wrap_refuse_path_matrix_pins_verified,
+    sec_mcp_wrap_accel_ac34_honest, sec_mcp_wrap_accel_ac34_probe, sec_mcp_wrap_gate_factor_table,
+    sec_mcp_wrap_gate_manifold_probe, sec_mcp_wrap_gate_wire_matrix,
+    sec_mcp_wrap_mcp_delegate_next_hop, sec_mcp_wrap_production_wired,
+    sec_mcp_wrap_refuse_path_table, validate_sec_mcp_wrap_gate_honesty, SecMcpWrapAccelAc34Probe,
+    SecMcpWrapGateCensus, SecMcpWrapGateFactorRow, SecMcpWrapGateManifoldProbe,
+    SecMcpWrapGateWireHop, ACCEL_AC34_RECEIPT_PATH, ACCEL_B_2050_AC34_JOB_ID,
+    BOARD_SLICE_ID as SEC_MCP_WRAP_BOARD_SLICE_ID, DEEPEN_JOB_ID as SEC_MCP_WRAP_DEEPEN_JOB_ID,
+    FLEET_Z86_JOB_ID, GATEWAY_STDIO_EXEC_OWNER, MANIFOLD_SEC_MCP_WRAP_GATE_WIRE_HOPS, MCP_SSOT,
+    MCP_WRAP_GREEN_CLAIM_BLOCKED, REFUSE_PATH_MATRIX_ROW_COUNT,
 };
 pub use sec_s1::{
-    collect_sec_s1_gate_factor_rows, gate_trust_census,
-    gate_transition_evidence_probe as sec_s1_gate_transition_evidence_probe,
+    collect_sec_s1_gate_factor_rows,
+    gate_transition_evidence_probe as sec_s1_gate_transition_evidence_probe, gate_trust_census,
     manifold_gate_sec_s1_ceremony_closed, manifold_s1_all_factors_probed,
     manifold_s1_factor_coverage_probes, manifold_verify_trust_gate_s1_pins,
     sec_s1_accel_ac28_honest, sec_s1_accel_ac28_probe, sec_s1_gate_factor_table,
     sec_s1_gate_manifold_probe, sec_s1_gate_wire_matrix, sec_s1_production_wired,
     sec_s1_session_ledger_next_hop, session_ledger_wired as sec_s1_session_ledger_wired,
-    validate_sec_s1_gate_honesty, BOARD_SLICE_ID as SEC_S1_BOARD_SLICE_ID,
-    EXPECTED_GATE_EXIT as SEC_S1_EXPECTED_GATE_EXIT, FLEET_ACCEL2_AC28_JOB_ID,
-    FLEET_ACCEL2_AC28_RECEIPT_PATH, MANIFOLD_SEC_S1_GATE_WIRE_HOPS, S1_FACTOR_IDS,
-    S1_FACTOR_ROW_COUNT, S1_GREEN_CLAIM_BLOCKED, SecS1AccelAc28Probe, SecS1GateFactorRow,
-    SecS1GateManifoldProbe, SecS1GateTrustCensus, SecS1GateWireHop, ManifoldS1FactorProbe,
+    validate_sec_s1_gate_honesty, ManifoldS1FactorProbe, SecS1AccelAc28Probe, SecS1GateFactorRow,
+    SecS1GateManifoldProbe, SecS1GateTrustCensus, SecS1GateWireHop,
+    BOARD_SLICE_ID as SEC_S1_BOARD_SLICE_ID, EXPECTED_GATE_EXIT as SEC_S1_EXPECTED_GATE_EXIT,
+    FLEET_ACCEL2_AC28_JOB_ID, FLEET_ACCEL2_AC28_RECEIPT_PATH, MANIFOLD_SEC_S1_GATE_WIRE_HOPS,
+    S1_FACTOR_IDS, S1_FACTOR_ROW_COUNT, S1_GREEN_CLAIM_BLOCKED,
 };
 pub use sec_s2::{
-    collect_sec_s2_gate_factor_rows, gate_trust_refuse_census,
+    collect_sec_s2_gate_factor_rows,
     gate_transition_evidence_probe as sec_s2_gate_transition_evidence_probe,
-    manifold_gate_sec_s2_ceremony_closed, manifold_s2_all_refuse_paths_probed,
-    manifold_s2_extract_fence_facets_verified, manifold_s2_refuse_path_coverage_probes,
-    manifold_verify_trust_gate_policy_pins,
-    sec_s2_accel_ac29_honest, sec_s2_accel_ac29_probe,
-    sec_s2_extract_fence_wired_count, sec_s2_extract_production_fence_matrix,
-    sec_s2_extract_production_fence_next_hop, sec_s2_gate_factor_exit_expectations,
-    sec_s2_gate_factor_table, sec_s2_gate_manifold_probe, sec_s2_gate_wire_matrix,
-    sec_s2_p1941_k2_honest, sec_s2_p1941_k2_probe, sec_s2_production_wired,
-    sec_s2_trust_extract_production_wired, validate_sec_s2_gate_honesty,
+    gate_trust_refuse_census, manifold_gate_sec_s2_ceremony_closed,
+    manifold_s2_all_refuse_paths_probed, manifold_s2_extract_fence_facets_verified,
+    manifold_s2_refuse_path_coverage_probes, manifold_verify_trust_gate_policy_pins,
+    sec_s2_accel_ac29_honest, sec_s2_accel_ac29_probe, sec_s2_extract_fence_wired_count,
+    sec_s2_extract_production_fence_matrix, sec_s2_extract_production_fence_next_hop,
+    sec_s2_gate_factor_exit_expectations, sec_s2_gate_factor_table, sec_s2_gate_manifold_probe,
+    sec_s2_gate_wire_matrix, sec_s2_p1941_k2_honest, sec_s2_p1941_k2_probe,
+    sec_s2_production_wired, sec_s2_trust_extract_production_wired, validate_sec_s2_gate_honesty,
+    ManifoldS2ExtractProductionFenceFacet, ManifoldS2RefusePathProbe, SecS2AccelAc29Probe,
+    SecS2GateFactorExitExpectations, SecS2GateFactorRow, SecS2GateManifoldProbe,
+    SecS2GateTrustRefuseCensus, SecS2GateWireHop, SecS2P1941K2Probe,
     BOARD_SLICE_ID as SEC_S2_BOARD_SLICE_ID, CLASSICAL_WRAP_TOTAL, CLASSICAL_WRAP_WRAPPED,
     EXPECTED_GATE_EXIT, EXTRACT_SSOT, FLEET_ACCEL_AC29_JOB_ID, FLEET_ACCEL_AC29_RECEIPT_PATH,
     FLEET_P1941_K2_JOB_ID, FLEET_P1941_K2_RECEIPT_PATH,
     MANIFOLD_S2_EXTRACT_PRODUCTION_FENCE_FACETS, MANIFOLD_SEC_S2_GATE_WIRE_HOPS,
     S2_EXTRACT_FENCE_FACET_COUNT, S2_EXTRACT_FENCE_FACET_IDS, S2_EXTRACT_FENCE_WIRED_COUNT,
-    S2_FACTOR_ROW_COUNT,
-    S2_GATE_FACTOR_PALETTE_KEYS, S2_GREEN_CLAIM_BLOCKED, S2_REFUSE_PATH_FACTOR_IDS,
-    TRUST_ADT_SSOT, TRUST_GATE_POLICY_STRICT, TRUST_GATE_POLICY_WARN_ONLY, UCRS_WIRE_PARITY_TEST,
-    WRAP_QUEUE_DEPTH, ManifoldS2ExtractProductionFenceFacet, ManifoldS2RefusePathProbe,
-    SecS2AccelAc29Probe, SecS2GateFactorExitExpectations, SecS2GateFactorRow,
-    SecS2GateManifoldProbe, SecS2GateTrustRefuseCensus, SecS2GateWireHop, SecS2P1941K2Probe,
+    S2_FACTOR_ROW_COUNT, S2_GATE_FACTOR_PALETTE_KEYS, S2_GREEN_CLAIM_BLOCKED,
+    S2_REFUSE_PATH_FACTOR_IDS, TRUST_ADT_SSOT, TRUST_GATE_POLICY_STRICT,
+    TRUST_GATE_POLICY_WARN_ONLY, UCRS_WIRE_PARITY_TEST, WRAP_QUEUE_DEPTH,
 };
 pub use sec_s3::{
-    gate_palette_ledger_census, gate_transition_evidence_probe, manifold_gate_sec_s3_ceremony_closed,
-    sec_s3_accel_ac05_honest, sec_s3_accel_ac05_probe, sec_s3_gate_manifold_probe,
-    sec_s3_gate_wire_matrix, sec_s3_p1606_c5_honest, sec_s3_p1606_c5_probe,
-    sec_s3_production_wired, sec_s3_session_ledger_next_hop, session_ledger_wired,
-    validate_sec_s3_gate_honesty, BOARD_SLICE_ID as SEC_S3_BOARD_SLICE_ID,
-    FLEET_P1606_C5_JOB_ID, FLEET_P1606_C5_RECEIPT_PATH, MANIFOLD_SEC_S3_GATE_WIRE_HOPS,
-    PALETTE_PERSISTED_HONEST, S3_GREEN_CLAIM_BLOCKED, SecS3AccelAc05Probe,
+    gate_palette_ledger_census, gate_transition_evidence_probe,
+    manifold_gate_sec_s3_ceremony_closed, sec_s3_accel_ac05_honest, sec_s3_accel_ac05_probe,
+    sec_s3_gate_manifold_probe, sec_s3_gate_wire_matrix, sec_s3_p1606_c5_honest,
+    sec_s3_p1606_c5_probe, sec_s3_production_wired, sec_s3_session_ledger_next_hop,
+    session_ledger_wired, validate_sec_s3_gate_honesty, SecS3AccelAc05Probe,
     SecS3GateManifoldProbe, SecS3GatePaletteLedgerCensus, SecS3GateWireHop, SecS3P1606C5Probe,
+    BOARD_SLICE_ID as SEC_S3_BOARD_SLICE_ID, FLEET_P1606_C5_JOB_ID, FLEET_P1606_C5_RECEIPT_PATH,
+    MANIFOLD_SEC_S3_GATE_WIRE_HOPS, PALETTE_PERSISTED_HONEST, S3_GREEN_CLAIM_BLOCKED,
 };
 pub use sec_s4::{
-    gate_side_channel_scrub_census, gate_transition_evidence_probe as sec_s4_gate_transition_evidence_probe,
-    manifold_gate_sec_s4_ceremony_closed, manifold_ls5_all_k_v1_probed, manifold_ls5_k_v1_coverage_probes,
-    manifold_scrub_k_v1_tokens, manifold_verify_scrub_roundtrip, sec_s4_accel_ac06_honest,
-    sec_s4_accel_ac06_probe, sec_s4_gate_manifold_probe, sec_s4_gate_wire_matrix,
-    sec_s4_l_s5_proof_next_hop, sec_s4_p1800_h3_honest, sec_s4_p1800_h3_probe,
-    sec_s4_production_wired, validate_sec_s4_gate_honesty, BOARD_SLICE_ID as SEC_S4_BOARD_SLICE_ID,
-    FLEET_P1800_H3_JOB_ID, FLEET_P1800_H3_RECEIPT_PATH, K_V1_PATTERNS, L_S5_PROOF_WIRED_HONEST,
-    MANIFOLD_SEC_S4_GATE_WIRE_HOPS, ManifoldLs5Kv1Probe, SecS4AccelAc06Probe, SecS4GateManifoldProbe,
-    SecS4GateSideChannelScrubCensus, SecS4GateWireHop, SecS4P1800H3Probe, SCRUB_PLACEHOLDER,
+    gate_side_channel_scrub_census,
+    gate_transition_evidence_probe as sec_s4_gate_transition_evidence_probe,
+    manifold_gate_sec_s4_ceremony_closed, manifold_ls5_all_k_v1_probed,
+    manifold_ls5_k_v1_coverage_probes, manifold_scrub_k_v1_tokens, manifold_verify_scrub_roundtrip,
+    sec_s4_accel_ac06_honest, sec_s4_accel_ac06_probe, sec_s4_gate_manifold_probe,
+    sec_s4_gate_wire_matrix, sec_s4_l_s5_proof_next_hop, sec_s4_p1800_h3_honest,
+    sec_s4_p1800_h3_probe, sec_s4_production_wired, validate_sec_s4_gate_honesty,
+    ManifoldLs5Kv1Probe, SecS4AccelAc06Probe, SecS4GateManifoldProbe,
+    SecS4GateSideChannelScrubCensus, SecS4GateWireHop, SecS4P1800H3Probe,
+    BOARD_SLICE_ID as SEC_S4_BOARD_SLICE_ID, FLEET_P1800_H3_JOB_ID, FLEET_P1800_H3_RECEIPT_PATH,
+    K_V1_PATTERNS, L_S5_PROOF_WIRED_HONEST, MANIFOLD_SEC_S4_GATE_WIRE_HOPS, SCRUB_PLACEHOLDER,
 };
 pub use sec_s5::{
     collect_sec_s5_gate_factor_rows, gate_synthetic_consensus_census,
@@ -152,11 +167,11 @@ pub use sec_s5::{
     sec_s5_accel_ac07_honest, sec_s5_accel_ac07_probe, sec_s5_gate_factor_table,
     sec_s5_gate_manifold_probe, sec_s5_gate_wire_matrix, sec_s5_ln0_proof_next_hop,
     sec_s5_p1812_i2_honest, sec_s5_p1812_i2_probe, sec_s5_production_wired,
-    validate_sec_s5_gate_honesty, BOARD_SLICE_ID as SEC_S5_BOARD_SLICE_ID,
-    FLEET_P1812_I2_JOB_ID, FLEET_P1812_I2_RECEIPT_PATH, LN0_PROOF_WIRED_HONEST,
-    LIVE_FANOUT_WIRED_HONEST, MANIFOLD_SEC_S5_GATE_WIRE_HOPS, S5_CONSENSUS_PROBE_SCENARIOS,
-    S5_GREEN_CLAIM_BLOCKED, SecS5AccelAc07Probe, SecS5GateFactorRow, SecS5GateManifoldProbe,
+    validate_sec_s5_gate_honesty, SecS5AccelAc07Probe, SecS5GateFactorRow, SecS5GateManifoldProbe,
     SecS5GateSyntheticConsensusCensus, SecS5GateWireHop, SecS5P1812I2Probe,
+    BOARD_SLICE_ID as SEC_S5_BOARD_SLICE_ID, FLEET_P1812_I2_JOB_ID, FLEET_P1812_I2_RECEIPT_PATH,
+    LIVE_FANOUT_WIRED_HONEST, LN0_PROOF_WIRED_HONEST, MANIFOLD_SEC_S5_GATE_WIRE_HOPS,
+    S5_CONSENSUS_PROBE_SCENARIOS, S5_GREEN_CLAIM_BLOCKED,
 };
 pub use sec_s6::{
     collect_sec_s6_gate_factor_rows, gate_hcom_prov_gateway_fence_census,
@@ -166,28 +181,13 @@ pub use sec_s6::{
     sec_s6_accel_ac33_honest, sec_s6_accel_ac33_probe, sec_s6_gate_factor_table,
     sec_s6_gate_manifold_probe, sec_s6_gate_wire_matrix, sec_s6_hcom_prov_fence_table,
     sec_s6_hcom_prov_gw_next_hop, sec_s6_production_wired, sec_s6_scert_upstream_table,
-    validate_sec_s6_gate_honesty, BOARD_SLICE_ID as SEC_S6_BOARD_SLICE_ID,
-    ACCEL_AC33_RECEIPT_PATH, ACCEL_B_2050_AC33_JOB_ID, EXPECTED_GATE_EXIT as SEC_S6_EXPECTED_GATE_EXIT,
+    validate_sec_s6_gate_honesty, ManifoldHcomProvGwFenceHop, ManifoldS6UpstreamSlot,
+    SecS6AccelAc33Probe, SecS6GateFactorRow, SecS6GateHcomProvGatewayFenceCensus,
+    SecS6GateManifoldProbe, SecS6GateWireHop, ACCEL_AC33_RECEIPT_PATH, ACCEL_B_2050_AC33_JOB_ID,
+    BOARD_SLICE_ID as SEC_S6_BOARD_SLICE_ID, EXPECTED_GATE_EXIT as SEC_S6_EXPECTED_GATE_EXIT,
     HCOM_PROV_GW_FENCE_HOPS, HCOM_PROV_GW_WIRE_HOP_COUNT, LIVE_ATTESTATION_WIRED_HONEST,
-    MANIFOLD_SEC_S6_GATE_WIRE_HOPS, SCERT_EXIT_NOT_WIRED, SCERT_UPSTREAM_SLOTS,
-    S6_GREEN_CLAIM_BLOCKED, S6_INSPECT_FACTOR_COUNT, SecS6AccelAc33Probe,
-    SecS6GateFactorRow, SecS6GateHcomProvGatewayFenceCensus, SecS6GateManifoldProbe,
-    SecS6GateWireHop, ManifoldHcomProvGwFenceHop, ManifoldS6UpstreamSlot,
-};
-pub use sec_mcp_wrap::{
-    collect_sec_mcp_wrap_gate_factor_rows, gate_mcp_wrap_census,
-    gate_transition_evidence_probe as sec_mcp_wrap_gate_transition_evidence_probe,
-    manifold_gate_sec_mcp_wrap_ceremony_closed,
-    manifold_mcp_wrap_refuse_path_matrix_pins_verified, sec_mcp_wrap_accel_ac34_honest,
-    sec_mcp_wrap_accel_ac34_probe, sec_mcp_wrap_gate_factor_table, sec_mcp_wrap_gate_manifold_probe,
-    sec_mcp_wrap_gate_wire_matrix, sec_mcp_wrap_mcp_delegate_next_hop,
-    sec_mcp_wrap_production_wired, sec_mcp_wrap_refuse_path_table,
-    validate_sec_mcp_wrap_gate_honesty, BOARD_SLICE_ID as SEC_MCP_WRAP_BOARD_SLICE_ID,
-    ACCEL_AC34_RECEIPT_PATH, ACCEL_B_2050_AC34_JOB_ID, DEEPEN_JOB_ID as SEC_MCP_WRAP_DEEPEN_JOB_ID,
-    FLEET_Z86_JOB_ID, GATEWAY_STDIO_EXEC_OWNER, MANIFOLD_SEC_MCP_WRAP_GATE_WIRE_HOPS,
-    MCP_SSOT, MCP_WRAP_GREEN_CLAIM_BLOCKED, REFUSE_PATH_MATRIX_ROW_COUNT,
-    SecMcpWrapAccelAc34Probe, SecMcpWrapGateCensus, SecMcpWrapGateFactorRow,
-    SecMcpWrapGateManifoldProbe, SecMcpWrapGateWireHop,
+    MANIFOLD_SEC_S6_GATE_WIRE_HOPS, S6_GREEN_CLAIM_BLOCKED, S6_INSPECT_FACTOR_COUNT,
+    SCERT_EXIT_NOT_WIRED, SCERT_UPSTREAM_SLOTS,
 };
 pub use sec_s7::{
     collect_sec_s7_gate_factor_rows, gate_fed_trust_migration_census,
@@ -197,12 +197,12 @@ pub use sec_s7::{
     sec_s7_accel_ac08_honest, sec_s7_accel_ac08_probe, sec_s7_boundary_next_hop,
     sec_s7_gate_factor_table, sec_s7_gate_manifold_probe, sec_s7_gate_wire_matrix,
     sec_s7_p1931_j2_honest, sec_s7_p1931_j2_probe, sec_s7_production_wired,
-    validate_sec_s7_gate_honesty, BOARD_SLICE_ID as SEC_S7_BOARD_SLICE_ID,
-    FLEET_P1931_J2_JOB_ID, FLEET_P1931_J2_RECEIPT_PATH, INVENTORY_ROW_COUNT,
-    MANIFOLD_SEC_S7_GATE_WIRE_HOPS, MIGRATE_QUEUE_DEPTH, MIGRATION_COMPLETE_HONEST,
-    S7_GREEN_CLAIM_BLOCKED, S_FED_TRUST_PARTIAL_HONEST, S_FED_TRUST_PRODUCTION_WIRED_HONEST,
-    SecS7AccelAc08Probe, SecS7GateFedTrustMigrationCensus, SecS7GateManifoldProbe,
-    SecS7GateWireHop, SecS7P1931J2Probe,
+    validate_sec_s7_gate_honesty, SecS7AccelAc08Probe, SecS7GateFedTrustMigrationCensus,
+    SecS7GateManifoldProbe, SecS7GateWireHop, SecS7P1931J2Probe,
+    BOARD_SLICE_ID as SEC_S7_BOARD_SLICE_ID, FLEET_P1931_J2_JOB_ID, FLEET_P1931_J2_RECEIPT_PATH,
+    INVENTORY_ROW_COUNT, MANIFOLD_SEC_S7_GATE_WIRE_HOPS, MIGRATE_QUEUE_DEPTH,
+    MIGRATION_COMPLETE_HONEST, S7_GREEN_CLAIM_BLOCKED, S_FED_TRUST_PARTIAL_HONEST,
+    S_FED_TRUST_PRODUCTION_WIRED_HONEST,
 };
 
 // ── W30-234-GATE_MOD · runtime gate barrel census ────────────────────────────
@@ -450,7 +450,8 @@ pub fn runtime_gate_mod_census_probe() -> RuntimeGateModCensusProbe {
         .iter()
         .filter(|b| b.role == RuntimeGateModuleRole::SecArc)
         .count();
-    let census_deepen_honest = RUNTIME_GATE_MODULE_BANDS.len() == RUNTIME_GATE_ALWAYS_ON_MODULE_COUNT
+    let census_deepen_honest = RUNTIME_GATE_MODULE_BANDS.len()
+        == RUNTIME_GATE_ALWAYS_ON_MODULE_COUNT
         && core_module_count == RUNTIME_GATE_CORE_MODULE_COUNT
         && sec_arc_count == RUNTIME_GATE_SEC_ARC_COUNT
         && barrel_reexports_wired

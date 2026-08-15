@@ -103,7 +103,8 @@ pub const VERIFY_COMMAND: &str =
 pub const LIB_UNIT_PASS_COUNT: u32 = 271;
 
 /// Integration harness blocking full GREEN @ J11 (pre-H79 numerical residue).
-pub const INTEGRATION_BLOCKER_TEST: &str = "adjoint_compliance_analytic::adjoint_four_node_chain_gradient_matches_finite_difference";
+pub const INTEGRATION_BLOCKER_TEST: &str =
+    "adjoint_compliance_analytic::adjoint_four_node_chain_gradient_matches_finite_difference";
 
 /// META-6 freeze-monotonicity conjunct @ J11 `umst-meta check --dry-run` — honest measure.
 pub const META_6_FREEZE_AXIS: &str = "OK";
@@ -313,7 +314,9 @@ pub fn cargo_test_gap_probe(status: CargoTestGapStatus) -> CargoTestGapProbe {
 pub fn cargo_test_gap_honest(probe: &CargoTestGapProbe) -> bool {
     probe.job_id == COMPOSER_H79_JOB_ID
         && probe.receipt_path.contains("COMPOSER_H79_2242")
-        && probe.absorbed_g15_receipt.contains("COMPOSER_G15_MANIFOLD_2143")
+        && probe
+            .absorbed_g15_receipt
+            .contains("COMPOSER_G15_MANIFOLD_2143")
         && probe.hcom_anchor == HCOM_006_ANCHOR
         && probe.verify_command.contains("cargo test -p umst-manifold")
         && probe.g15_drift_honest
@@ -495,9 +498,13 @@ pub fn cargo_test_gap_posture_honest(probe: &CargoTestGapPostureProbe) -> bool {
         && probe.integration_blocker.contains("adjoint_compliance")
         && probe.fence_facet_count == CARGO_GAP_FENCE_FACET_COUNT
         && probe.fence_wired_count == CARGO_GAP_FENCE_WIRED_COUNT
-        && probe.honest_fence.contains("substrate_inventory_landed=true")
+        && probe
+            .honest_fence
+            .contains("substrate_inventory_landed=true")
         && probe.honest_fence.contains("production_wired=false")
-        && probe.honest_fence.contains("master_composition_wired=false")
+        && probe
+            .honest_fence
+            .contains("master_composition_wired=false")
 }
 
 /// Validate cargo test gap posture honesty — fail closed on fake production/master/GREEN claims.
@@ -507,10 +514,14 @@ pub fn validate_cargo_test_gap_posture_honesty() -> Result<(), &'static str> {
         return Err("CARGO_GAP_PHYSICS_GREEN must stay false — census is inventory only");
     }
     if probe.production_wired {
-        return Err("cargo_test_gap_production_wired must stay false until integration harness clears");
+        return Err(
+            "cargo_test_gap_production_wired must stay false until integration harness clears",
+        );
     }
     if probe.master_composition_wired {
-        return Err("cargo_test_gap_master_composition_wired must stay false until fleet orch closes");
+        return Err(
+            "cargo_test_gap_master_composition_wired must stay false until fleet orch closes",
+        );
     }
     if cargo_test_gap_fence_wired_count() != CARGO_GAP_FENCE_WIRED_COUNT {
         return Err("cargo_test_gap_fence_wired_count drift from CARGO_GAP_FENCE_WIRED_COUNT");
@@ -667,15 +678,24 @@ mod tests {
 
     #[test]
     fn w29_cargo_test_gap_metadata_pins() {
-        assert_eq!(W29_CARGO_TEST_GAP_DEEPEN_CELL, "W29-018-CARGO_TEST_GAP_CENSUS");
+        assert_eq!(
+            W29_CARGO_TEST_GAP_DEEPEN_CELL,
+            "W29-018-CARGO_TEST_GAP_CENSUS"
+        );
         assert_eq!(POSTURE_TAG, "cargo-test-gap-census-only");
         assert_eq!(CARGO_GAP_FENCE_FACET_IDS.len(), CARGO_GAP_FENCE_FACET_COUNT);
     }
 
     #[test]
     fn w29_cargo_test_gap_fence_wired_count_matches() {
-        assert_eq!(cargo_test_gap_fence_wired_count(), CARGO_GAP_FENCE_WIRED_COUNT);
-        assert_eq!(CARGO_GAP_PRODUCTION_FENCE_FACETS.len(), CARGO_GAP_FENCE_FACET_COUNT);
+        assert_eq!(
+            cargo_test_gap_fence_wired_count(),
+            CARGO_GAP_FENCE_WIRED_COUNT
+        );
+        assert_eq!(
+            CARGO_GAP_PRODUCTION_FENCE_FACETS.len(),
+            CARGO_GAP_FENCE_FACET_COUNT
+        );
     }
 
     #[test]

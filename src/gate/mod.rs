@@ -15,17 +15,17 @@ use crate::runtime::gate::{S2_EXTRACT_FENCE_FACET_COUNT, S2_EXTRACT_FENCE_FACET_
 
 pub mod admissibility_census;
 pub mod cbf;
-pub mod info_gain;
-pub mod liquid_ppo;
-pub mod optim;
-pub mod ppo_gateway;
 pub mod cbf_bridge;
 pub mod core_gate;
 pub mod evaluator;
 pub mod http_manifest;
+pub mod info_gain;
 pub mod kleisli;
+pub mod liquid_ppo;
 pub mod material_gate;
 pub mod open_system;
+pub mod optim;
+pub mod ppo_gateway;
 pub mod route;
 pub mod semantic_cbf;
 pub mod thermo_transition;
@@ -35,48 +35,16 @@ pub mod verdict;
 pub mod web_route;
 
 pub use admissibility_census::{
-    format_open_deltas, gate_parity_fixture_path_from, ADMISSIBILITY_COMPUTE_SITES,
-    ADMISSIBILITY_CONSUME_SITES, ConjunctFamily, GATE_PARITY_V0_FIXTURE_REL, GATE_PARITY_V0_SHA256,
-    GATE_PARITY_V0_SHA256_PREFIX, OPEN_RECONCILIATION_DELTAS, ReconciliationDelta, SiteRole,
+    format_open_deltas, gate_parity_fixture_path_from, ConjunctFamily, ReconciliationDelta,
+    SiteRole, ADMISSIBILITY_COMPUTE_SITES, ADMISSIBILITY_CONSUME_SITES, GATE_PARITY_V0_FIXTURE_REL,
+    GATE_PARITY_V0_SHA256, GATE_PARITY_V0_SHA256_PREFIX, OPEN_RECONCILIATION_DELTAS,
 };
 pub use cbf::GateThermodynamicCBF;
-pub use info_gain::{
-    suggested_info_gain_from_batched_nodal_scalars,
-    suggested_info_gain_from_state_delta,
-};
-#[cfg(feature = "epistemic-ppo")]
-pub use info_gain::nodal_scalar_means;
-pub use liquid_ppo::GateBurnLiquidPPOAgent;
-pub use optim::LPP_008_PROPOSED_HOME;
-pub use ppo_gateway::GateManifoldGateway;
 pub use cbf_bridge::cd_dissipation_proxy_to_entropy_joules;
-pub use semantic_cbf::{
-    gate_semantic_hot, gate_semantic_hot_bundled, hot_gate_lookup_cold_witness,
-    verify_cold_witness_digest, SemanticCBF, SemanticCbfReject,
-};
 pub use core_gate::{
     core_gate, gate as core_gate_predicate, mass_conserved_between_densities,
     scalar_response_from_transition, AdmissibilityResponse, CoreGateOutcome,
-    ScalarConstitutiveResponse,
-    GATE_MASS_TOLERANCE_KG_M3 as CORE_GATE_MASS_TOLERANCE_KG_M3,
-};
-#[allow(deprecated)]
-pub use material_gate::{MaterialGateOutcome, MaterialTransitionWitness};
-pub use open_system::{
-    active_matter_power_input, cbf_cd_matches_open_system_gate, cbf_landauer_as_power_input,
-    cbf_open_system_admissible, landauer_power_input_joules, open_system_core_gate,
-    transition_outcome_with_power_input, ActiveMatterFixture,
-};
-pub use route::{
-    canonical_core_gate_outcome, canonical_material_gate_outcome,
-    canonical_thermo_transition_admissible, canonical_transition_admissible,
-    canonical_transition_outcome,
-};
-pub use web_route::{
-    canonical_web_gate_from_quantities, canonical_web_gate_outcome,
-    canonical_web_semantic_gate_outcome, canonical_web_transition_admissible,
-    canonical_web_transition_from_tensors, canonical_web_transition_from_tensors_with_semantic,
-    canonical_web_transition_outcome,
+    ScalarConstitutiveResponse, GATE_MASS_TOLERANCE_KG_M3 as CORE_GATE_MASS_TOLERANCE_KG_M3,
 };
 pub use evaluator::{
     GateEvaluator, ThermodynamicTransitionEvaluator, TransitionGateEvaluator, TransitionVerdict,
@@ -88,10 +56,34 @@ pub use http_manifest::{
     GateHttpRuntime, GateManifest as HttpGateManifest, GateResponse as HttpGateResponse,
     HttpTransitionEvaluator, MixProposal as HttpMixProposal,
 };
+#[cfg(feature = "epistemic-ppo")]
+pub use info_gain::nodal_scalar_means;
+pub use info_gain::{
+    suggested_info_gain_from_batched_nodal_scalars, suggested_info_gain_from_state_delta,
+};
 pub use kleisli::{
     gate_arrow_generic as gate_arrow, kleisli_compose_pair,
     AdmissibilityResult as KleisliAdmissibilityResult, Admissible, KleisliArrow, KleisliPipeline,
     KleisliUnitEvaluator,
+};
+pub use liquid_ppo::GateBurnLiquidPPOAgent;
+#[allow(deprecated)]
+pub use material_gate::{MaterialGateOutcome, MaterialTransitionWitness};
+pub use open_system::{
+    active_matter_power_input, cbf_cd_matches_open_system_gate, cbf_landauer_as_power_input,
+    cbf_open_system_admissible, landauer_power_input_joules, open_system_core_gate,
+    transition_outcome_with_power_input, ActiveMatterFixture,
+};
+pub use optim::LPP_008_PROPOSED_HOME;
+pub use ppo_gateway::GateManifoldGateway;
+pub use route::{
+    canonical_core_gate_outcome, canonical_material_gate_outcome,
+    canonical_thermo_transition_admissible, canonical_transition_admissible,
+    canonical_transition_outcome,
+};
+pub use semantic_cbf::{
+    gate_semantic_hot, gate_semantic_hot_bundled, hot_gate_lookup_cold_witness,
+    verify_cold_witness_digest, SemanticCBF, SemanticCbfReject,
 };
 pub use thermo_transition::{
     thermo_gate_transition_outcome, AdmissibilityResult as ThermodynamicAdmissibilityResult,
@@ -107,6 +99,12 @@ pub use transition_proposal::{
     TransitionFilter, TransitionScalars, TRANSITION_TOLERANCE,
 };
 pub use verdict::AdmissibilityVerdict;
+pub use web_route::{
+    canonical_web_gate_from_quantities, canonical_web_gate_outcome,
+    canonical_web_semantic_gate_outcome, canonical_web_transition_admissible,
+    canonical_web_transition_from_tensors, canonical_web_transition_from_tensors_with_semantic,
+    canonical_web_transition_outcome,
+};
 
 // —— PORT-MF-GATE-W2 barrel census deepen (reorg consumer witness) ————————————
 
@@ -435,9 +433,9 @@ pub fn gate_consumer_reroute_witness_honest() -> bool {
             !row.band_id.is_empty()
                 && !row.target.is_empty()
                 && row.edge_count > 0
-                && GATE_MODULE_BANDS.iter().any(|band| {
-                    band.band_id == row.band_id && band.reroute_edges == row.edge_count
-                })
+                && GATE_MODULE_BANDS
+                    .iter()
+                    .any(|band| band.band_id == row.band_id && band.reroute_edges == row.edge_count)
         })
 }
 
@@ -650,7 +648,10 @@ mod gate_module_census_tests {
     #[test]
     fn gate_s2_extract_fence_export_unblocked_after_s2_export_cell() {
         assert!(gate_s2_extract_fence_export_unblocked());
-        assert_eq!(S2_EXTRACT_FENCE_FACET_IDS.len(), S2_EXTRACT_FENCE_FACET_COUNT);
+        assert_eq!(
+            S2_EXTRACT_FENCE_FACET_IDS.len(),
+            S2_EXTRACT_FENCE_FACET_COUNT
+        );
         assert_eq!(GATE_MODULE_CENSUS_S2_EXPORT_CELL_ID, "PORT-MF-S2-EXPORT-W2");
         assert_eq!(GATE_MODULE_CENSUS_CELL_ID, "PORT-MF-GATE-W2");
         assert_eq!(GATE_MODULE_CENSUS_RETRY_CELL_ID, "PORT-MF-GATE-RETRY-W2");
@@ -683,7 +684,10 @@ mod gate_module_census_tests {
         let direct = transition_outcome(&old, &new, 28.0 * 24.0 * 3600.0, TRANSITION_TOLERANCE);
         assert_eq!(routed, direct);
         assert!(CORE_GATE_MASS_TOLERANCE_KG_M3 > 0.0);
-        assert_eq!(AdmissibilityVerdict::Accepted, AdmissibilityVerdict::Accepted);
+        assert_eq!(
+            AdmissibilityVerdict::Accepted,
+            AdmissibilityVerdict::Accepted
+        );
     }
 
     #[test]

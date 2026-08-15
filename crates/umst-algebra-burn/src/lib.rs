@@ -15,20 +15,24 @@ pub mod surface_lift;
 pub mod tensor;
 
 pub use golden_harness::{
-    compare_burn_lift_to_golden, compare_host_relative, compare_host_scalar, rank1_eps, GoldenVerdict,
+    compare_burn_lift_to_golden, compare_host_relative, compare_host_scalar, rank1_eps,
+    GoldenVerdict,
+};
+pub use parity_rank::{
+    close, rank_label, rank_ordinal, CloseError, Evidence, ParityClaim, ParityRank,
 };
 pub use rank1_field_harness::{
     rank1_field_gate_closes, rank1_field_parity_claim, rank1_field_parity_closes,
     rank1_field_parity_verdict, rank1_field_perturbation_witness, RANK1_FIELD_DEFAULT_RTOL,
 };
-pub use parity_rank::{
-    close, rank_label, rank_ordinal, CloseError, Evidence, ParityClaim, ParityRank,
-};
 pub use surface_lift::{burn_scalar_lift_closes, burn_scalar_lift_verdict};
 
 pub use rank0::{BurnRank0Algebra, BurnRank0Field, RANK0_SLICE_ID};
 pub use rank1::{RANK1_PLUS_COMPARISON_EPS, RANK1_PLUS_IMPL_LANDED, RANK1_PLUS_RESIDUE_ID};
-pub use tensor::{BurnAlgebra, BurnNdArrayAlgebra, BurnTensorField, DefaultBackend, DEFAULT_BACKEND, RANK1_PLUS_DEFERRED};
+pub use tensor::{
+    BurnAlgebra, BurnNdArrayAlgebra, BurnTensorField, DefaultBackend, DEFAULT_BACKEND,
+    RANK1_PLUS_DEFERRED,
+};
 
 /// Re-export `burn` crates for lattice consumers (R13-1 single-home routing).
 pub use burn;

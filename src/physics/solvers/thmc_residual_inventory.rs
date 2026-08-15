@@ -260,8 +260,7 @@ pub fn thmc_residual_honesty_holds() -> bool {
             .is_some_and(|(_, s, _)| *s == ThmcResidualLegGateStatus::Closed)
         && deferred_by_id("XS-3-STEP5")
             .is_some_and(|(_, s, _)| *s == ThmcResidualLegGateStatus::Closed)
-        && deferred_by_id("MATPH-22")
-            .is_some_and(|(_, s, _)| *s == ThmcResidualLegGateStatus::Open)
+        && deferred_by_id("MATPH-22").is_some_and(|(_, s, _)| *s == ThmcResidualLegGateStatus::Open)
         && deferred_by_id("SCALE-JFNK")
             .is_some_and(|(_, s, _)| *s == ThmcResidualLegGateStatus::Soft)
 }
@@ -273,7 +272,10 @@ mod tests {
     #[test]
     fn thmc_residual_inventory_honest_at_2252_probe() {
         assert_eq!(LEG_INVENTORY.len(), LEG_INVENTORY_COUNT);
-        assert_eq!(residual_witness_test_sum(), RESIDUAL_WITNESS_TEST_TOTAL as usize);
+        assert_eq!(
+            residual_witness_test_sum(),
+            RESIDUAL_WITNESS_TEST_TOTAL as usize
+        );
         assert_eq!(THMC_RESIDUAL_STRING_ERROR_SITES, 0);
         assert!(residual_leg_close_authorized());
         assert!(!wave3_impl_authorized());
@@ -318,7 +320,9 @@ mod tests {
     #[test]
     fn thmc_residual_deferred_fences_block_wave3_without_inventing_green() {
         // Operator landings closed; MATPH Open alone keeps Wave 3 / MATPH wire refused.
-        assert!(deferred_by_id("MP2b-U3").is_some_and(|(_, s, _)| s.satisfies_leg_close_precondition()));
+        assert!(
+            deferred_by_id("MP2b-U3").is_some_and(|(_, s, _)| s.satisfies_leg_close_precondition())
+        );
         assert!(!matph_wire_authorized());
         assert!(!wave3_impl_authorized());
         assert_eq!(deferred_open_count(), 1);

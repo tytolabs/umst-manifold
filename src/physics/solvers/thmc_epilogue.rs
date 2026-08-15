@@ -130,7 +130,10 @@ const _: () = assert!(!THMC_EPILOGUE_OP5);
 /// Count wired thmc_epilogue fence facets (must match [`THMC_EPILOGUE_FENCE_WIRED_COUNT`]).
 #[must_use]
 pub fn thmc_epilogue_fence_wired_count() -> usize {
-    THMC_EPILOGUE_FENCE_FACETS.iter().filter(|f| f.wired).count()
+    THMC_EPILOGUE_FENCE_FACETS
+        .iter()
+        .filter(|f| f.wired)
+        .count()
 }
 
 /// Typed probe for thmc_epilogue posture honesty.
@@ -252,8 +255,11 @@ where
     } else {
         state
     };
-    let state = state
-        .and_then(|s| and_then_unit(s, |st| crate::physics::thmc_umst_sync::sync_thmc_to_umst(st, manifold)))?;
+    let state = state.and_then(|s| {
+        and_then_unit(s, |st| {
+            crate::physics::thmc_umst_sync::sync_thmc_to_umst(st, manifold)
+        })
+    })?;
     let gate_evidence = ThmcSolverStep::attach_gate_evidence(
         solver, cartridge, pre_step, &state, manifold, ctx.dt,
     )?;
@@ -276,7 +282,9 @@ fn apply_fracture_damage<B: Backend<FloatElem = f32>>(
         if coords_n3.dims() == [n, 3] {
             strain_tensor_from_bar_network_displacement::<B>(
                 state.mechanical.displacement.as_tensor().clone(),
-                coords_n3.clone(), edges_b1.clone(), n,
+                coords_n3.clone(),
+                edges_b1.clone(),
+                n,
             )
         } else {
             strain_tensor_for_fracture_from_manifold::<B>(manifold, batch, n, &device)
@@ -290,17 +298,21 @@ fn apply_fracture_damage<B: Backend<FloatElem = f32>>(
     let d_last = state.damage.as_tensor().dims()[2];
     let damage_core = match d_last {
         1 => state.damage.clone(),
-        _ => state.damage.clone().map(|t| t.slice([0..batch, 0..n, 0..1])),
+        _ => state
+            .damage
+            .clone()
+            .map(|t| t.slice([0..batch, 0..n, 0..1])),
     };
     let damage_new = fracture.update_damage(strain, damage_core, gc, edges_b1)?;
     state.damage = if d_last == 1 {
         damage_new
     } else {
-        let tail = state.damage.as_tensor().clone().slice([0..batch, 0..n, 1..d_last]);
-        Field::new(Tensor::cat(
-            vec![damage_new.as_tensor().clone(), tail],
-            2,
-        ))
+        let tail = state
+            .damage
+            .as_tensor()
+            .clone()
+            .slice([0..batch, 0..n, 1..d_last]);
+        Field::new(Tensor::cat(vec![damage_new.as_tensor().clone(), tail], 2))
     };
     Ok(state)
 }
@@ -431,7 +443,10 @@ mod tests {
 
     #[test]
     fn thmc_epilogue_fence_facets_refuse_green_production_master_op5() {
-        assert_eq!(THMC_EPILOGUE_FENCE_FACETS.len(), THMC_EPILOGUE_FENCE_FACET_COUNT);
+        assert_eq!(
+            THMC_EPILOGUE_FENCE_FACETS.len(),
+            THMC_EPILOGUE_FENCE_FACET_COUNT
+        );
         for facet in THMC_EPILOGUE_FENCE_FACETS {
             if matches!(
                 facet.facet,

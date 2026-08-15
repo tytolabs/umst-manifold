@@ -8,9 +8,9 @@
 //! - **PPO-GW-002** · thermodynamic CBF credit pinned via [`crate::ai::cbf::ThermodynamicCBF`]
 //! - **PPO-GW-003** · topology step witness @ `evaluate_topology_step` (delegates to inner)
 
-use burn::tensor::backend::Backend;
 use crate::ai::ppo::ManifoldGateway as ManifoldGatewayInner;
 use crate::core::traits::IScienceCartridge;
+use burn::tensor::backend::Backend;
 
 /// PORT_GRAIN_BAND id @ [`super::GATE_MODULE_BANDS`].
 pub const PPO_GATEWAY_BAND_ID: &str = "gate:ppo_gateway";
@@ -194,16 +194,36 @@ mod tests {
     fn gate_ppo_gateway_new_matches_inner_manifold_gateway() {
         let gate = gateway();
         let inner = inner_gateway();
-        assert_relative_eq!(gate.cbf.temperature_k, inner.cbf.temperature_k, epsilon = 1.0e-9);
+        assert_relative_eq!(
+            gate.cbf.temperature_k,
+            inner.cbf.temperature_k,
+            epsilon = 1.0e-9
+        );
         assert_relative_eq!(
             gate.cbf.available_credit_joules,
             inner.cbf.available_credit_joules,
             epsilon = 1.0e-18
         );
-        assert_relative_eq!(f64::from(gate.alpha), f64::from(inner.alpha), epsilon = 1.0e-6);
-        assert_relative_eq!(f64::from(gate.beta), f64::from(inner.beta), epsilon = 1.0e-6);
-        assert_relative_eq!(f64::from(gate.gamma), f64::from(inner.gamma), epsilon = 1.0e-6);
-        assert_relative_eq!(f64::from(gate.zeta), f64::from(inner.zeta), epsilon = 1.0e-6);
+        assert_relative_eq!(
+            f64::from(gate.alpha),
+            f64::from(inner.alpha),
+            epsilon = 1.0e-6
+        );
+        assert_relative_eq!(
+            f64::from(gate.beta),
+            f64::from(inner.beta),
+            epsilon = 1.0e-6
+        );
+        assert_relative_eq!(
+            f64::from(gate.gamma),
+            f64::from(inner.gamma),
+            epsilon = 1.0e-6
+        );
+        assert_relative_eq!(
+            f64::from(gate.zeta),
+            f64::from(inner.zeta),
+            epsilon = 1.0e-6
+        );
         assert_relative_eq!(f64::from(gate.eta), f64::from(inner.eta), epsilon = 1.0e-6);
     }
 
@@ -309,6 +329,8 @@ mod tests {
     fn w8e14_gate_ppo_gateway_posture_tag_honest_not_green() {
         assert!(ppo_gateway_morphism_pinned());
         assert!(PPO_GATEWAY_POSTURE_TAG.contains("honest"));
-        assert!(!PPO_GATEWAY_POSTURE_TAG.to_ascii_lowercase().contains("green"));
+        assert!(!PPO_GATEWAY_POSTURE_TAG
+            .to_ascii_lowercase()
+            .contains("green"));
     }
 }

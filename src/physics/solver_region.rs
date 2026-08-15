@@ -92,8 +92,12 @@ pub fn solver_region_posture_honest(probe: &SolverRegionPostureProbe) -> bool {
         && probe.ke_cache_landed
         && probe.deepen_cell == W29_SOLVER_REGION_DEEPEN_CELL
         && probe.honest_fence.contains("pcg_workspace_landed=true")
-        && probe.honest_fence.contains("geometry_nu_invalidate_wired=true")
-        && probe.honest_fence.contains("striatus_wallclock_certified=false")
+        && probe
+            .honest_fence
+            .contains("geometry_nu_invalidate_wired=true")
+        && probe
+            .honest_fence
+            .contains("striatus_wallclock_certified=false")
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")
 }

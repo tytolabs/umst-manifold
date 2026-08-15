@@ -219,7 +219,9 @@ pub fn rheology_flow_posture_honest(probe: &RheologyFlowPostureProbe) -> bool {
         && !probe.m7_wired_into_step
         && !probe.mac_staggered_pressure
         && !probe.plane_poiseuille_ci_certified
-        && probe.honest_fence.contains("chorin_jacobi_pcg_weak_div_landed=true")
+        && probe
+            .honest_fence
+            .contains("chorin_jacobi_pcg_weak_div_landed=true")
         && probe.honest_fence.contains("m7_wired_into_step=false")
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")
@@ -988,7 +990,7 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
 mod honest_fence_tests {
     use super::{
         rheology_flow_honest_posture_bundle, rheology_flow_posture_honest,
-        rheology_flow_refuse_overclaim, RheologyFlowPostureProbe, BinghamFlowSolver,
+        rheology_flow_refuse_overclaim, BinghamFlowSolver, RheologyFlowPostureProbe,
         RHEOLOGY_FLOW_CHORIN_JACOBI_PCG_LANDED, RHEOLOGY_FLOW_HONEST_FENCE,
         RHEOLOGY_FLOW_M7_WIRED_INTO_STEP, RHEOLOGY_FLOW_MASTER, RHEOLOGY_FLOW_OP5_WIRED,
         RHEOLOGY_FLOW_PHYSICS_GREEN, RHEOLOGY_FLOW_PLANE_POISEUILLE_CI_CERTIFIED,
@@ -1069,7 +1071,8 @@ mod tests {
         let yield_stress = Tensor::<B, 3>::ones([batch, n, 1], &dev);
         let density = Tensor::<B, 3>::ones([batch, n, 1], &dev);
         let lambda0 = Tensor::<B, 3>::ones([batch, n, 1], &dev);
-        let gravity = Tensor::<B, 1>::from_data(Data::new(vec![0.0_f32, -9.81, 0.0], Shape::new([3])), &dev);
+        let gravity =
+            Tensor::<B, 1>::from_data(Data::new(vec![0.0_f32, -9.81, 0.0], Shape::new([3])), &dev);
 
         let solver = BinghamFlowSolver::new(1e-3, 1e-2);
         let (v1, p1, lam1) = solver
@@ -1098,7 +1101,9 @@ mod tests {
         );
         // Guard against all-zero collapse under gravity+viscous predictor on this tiny graph.
         assert!(
-            !v1.abs().sum().all_close(z.abs().sum(), None, Some(1e-30_f64)),
+            !v1.abs()
+                .sum()
+                .all_close(z.abs().sum(), None, Some(1e-30_f64)),
             "expected non-trivial velocity after step"
         );
     }

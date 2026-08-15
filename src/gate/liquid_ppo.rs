@@ -10,23 +10,25 @@
 //! - **LPP-007** · reward hook **M-RH-033** (`subtract_cd_penalty_from_reward`; composed into M-RH-031/032 — direct gate forwarder deferred @ LP2-C stub-kill)
 //! - **LPP-008** · `adamw_step_policy` (composed into LPP-004/005/006; atom spine @ [`super::optim`] — direct forwarder deferred @ atom crate alignment)
 
-use burn::tensor::backend::Backend;
 use crate::ai::liquid_ppo::BurnLiquidPPOAgent as BurnLiquidPPOAgentInner;
 use crate::ai::ppo::ManifoldGateway;
 use crate::core::traits::IScienceCartridge;
+use burn::tensor::backend::Backend;
 
-#[cfg(any(
-    all(feature = "kleisli-ppo-hot-bind", not(feature = "epistemic-ppo")),
-    feature = "epistemic-ppo"
-))]
-use burn::tensor::Tensor;
 #[cfg(any(
     all(feature = "kleisli-ppo-hot-bind", not(feature = "epistemic-ppo")),
     feature = "epistemic-ppo"
 ))]
 use crate::core::tensors::UnifiedMaterialStateTensor;
+#[cfg(any(
+    all(feature = "kleisli-ppo-hot-bind", not(feature = "epistemic-ppo")),
+    feature = "epistemic-ppo"
+))]
+use burn::tensor::Tensor;
 
-pub struct GateBurnLiquidPPOAgent<B: Backend, C: IScienceCartridge<B>>(pub BurnLiquidPPOAgentInner<B, C>);
+pub struct GateBurnLiquidPPOAgent<B: Backend, C: IScienceCartridge<B>>(
+    pub BurnLiquidPPOAgentInner<B, C>,
+);
 
 impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> GateBurnLiquidPPOAgent<B, C> {
     pub fn new(gateway: ManifoldGateway<B, C>) -> Self {
@@ -66,13 +68,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> GateBurnLiquidPPOAgen
         crate::core::tensors::VerifiedUMST<B, crate::core::tensors::ClausiusDuhemProof>,
         String,
     > {
-        self.step_and_learn(
-            initial_state,
-            t_start,
-            t_end,
-            info_gain,
-            dt_sim_dt_global,
-        )
+        self.step_and_learn(initial_state, t_start, t_end, info_gain, dt_sim_dt_global)
     }
 }
 
@@ -90,13 +86,7 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> GateBurnLiquidPPOAgen
         crate::core::tensors::VerifiedUMST<B, crate::core::tensors::ClausiusDuhemProof>,
         String,
     > {
-        self.step_and_learn(
-            initial_state,
-            t_start,
-            t_end,
-            info_gain,
-            dt_sim_dt_global,
-        )
+        self.step_and_learn(initial_state, t_start, t_end, info_gain, dt_sim_dt_global)
     }
 }
 
@@ -241,9 +231,7 @@ mod tests {
     fn gate_liquid_ppo_gateway_temperature_credit_pinned_via_deref() {
         let gate = GateBurnLiquidPPOAgent::new(gateway());
         assert!((gate.gateway.cbf.temperature_k - GATEWAY_TEMP_K).abs() < 1.0e-9);
-        assert!(
-            (gate.gateway.cbf.available_credit_joules - GATEWAY_CREDIT_J).abs() < 1.0e-18
-        );
+        assert!((gate.gateway.cbf.available_credit_joules - GATEWAY_CREDIT_J).abs() < 1.0e-18);
     }
 
     #[test]
@@ -291,7 +279,10 @@ mod tests {
         assert!(gate_out.is_ok() && inner_out.is_ok());
         let w_gate = gate.ode_solver.policy_weights.clone().into_data().value[0];
         let w_inner = inner.ode_solver.policy_weights.clone().into_data().value[0];
-        assert_eq!(w_gate, w_inner, "gate DerefMut must delegate step_and_learn");
+        assert_eq!(
+            w_gate, w_inner,
+            "gate DerefMut must delegate step_and_learn"
+        );
         assert_eq!(gate.ode_solver.adam_t, inner.ode_solver.adam_t);
     }
 
@@ -346,13 +337,7 @@ mod tests {
         let mut gate = GateBurnLiquidPPOAgent::new(gateway());
         let (state, info, dt_rat) = step_inputs();
         let w0 = gate.ode_solver.policy_weights.clone().into_data().value[0];
-        let out = gate.step_and_learn_kleisli_penalize(
-            state,
-            0.0_f32,
-            1.0_f32,
-            info,
-            dt_rat,
-        );
+        let out = gate.step_and_learn_kleisli_penalize(state, 0.0_f32, 1.0_f32, info, dt_rat);
         assert!(out.is_ok(), "kleisli arm expected Ok, got {:?}", out.err());
         let w1 = gate.ode_solver.policy_weights.clone().into_data().value[0];
         assert!(w0.is_finite() && w1.is_finite());
@@ -365,7 +350,11 @@ mod tests {
         let (state, info, dt_rat) = step_inputs();
         let w0 = gate.ode_solver.policy_weights.clone().into_data().value[0];
         let out = gate.step_and_learn_epistemic(state, 0.0_f32, 1.0_f32, info, dt_rat);
-        assert!(out.is_ok(), "epistemic arm expected Ok, got {:?}", out.err());
+        assert!(
+            out.is_ok(),
+            "epistemic arm expected Ok, got {:?}",
+            out.err()
+        );
         let w1 = gate.ode_solver.policy_weights.clone().into_data().value[0];
         assert!(w0.is_finite() && w1.is_finite());
     }

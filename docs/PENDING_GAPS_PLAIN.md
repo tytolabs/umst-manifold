@@ -149,7 +149,7 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 |--|--|
 | **Blocks** | Supercap remote CI weaker than concrete — optional org polish. |
 | **Already done** | `formal_anchors` **6/6** locally. |
-| **Prep (machine)** | `w8_publish_readiness.sh` runs concrete `formal_anchors` under `manifest-bridge`; supercap remote CI still **human** (optional — **G-01**/**G-02** already closed). |
+| **Prep (machine)** | `publish_readiness.sh` runs concrete `formal_anchors` under `manifest-bridge`; supercap remote CI still **human** (optional — **G-01**/**G-02** already closed). |
 | **Proof** | `cargo test -p umst-supercap-cartridge --test formal_anchors`. |
 | **Human** | Wire `manifest-bridge` in supercap GHA (Track **I.3**) — does **not** block W8 Phase 1 or concrete **G-02**. |
 

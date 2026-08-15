@@ -74,8 +74,7 @@ pub const FLEET_ACCEL_AC29_JOB_ID: &str = "ACCEL-B-2050-AC29";
 pub const FLEET_ACCEL_AC29_RECEIPT_PATH: &str = "outputs/.tmp/COMPOSER_ACCEL2_AC29.md";
 
 /// umst-trust SEC-TRUST-EXTRACT production fence delegate SSOT.
-pub const EXTRACT_SSOT: &str =
-    "umst-foundations/crates/umst-trust/src/sec_ecosystem_extract.rs";
+pub const EXTRACT_SSOT: &str = "umst-foundations/crates/umst-trust/src/sec_ecosystem_extract.rs";
 
 /// Core `Trust` / `CipherSuite` ADT SSOT (pinned from `sec_ecosystem_extract`).
 pub const TRUST_ADT_SSOT: &str = "umst-foundations/crates/umst-algebra/src/crypto/trust.rs";
@@ -178,44 +177,43 @@ pub struct ManifoldS2ExtractProductionFenceFacet {
 }
 
 /// S-2 extract production fence facet inventory (pinned from `sec_ecosystem_extract` SSOT).
-pub const MANIFOLD_S2_EXTRACT_PRODUCTION_FENCE_FACETS: &[ManifoldS2ExtractProductionFenceFacet] =
-    &[
-        ManifoldS2ExtractProductionFenceFacet {
-            facet: "core_adt_ssot",
-            wired: true,
-            owning_slice: "SEC-TRUST-EXTRACT",
-        },
-        ManifoldS2ExtractProductionFenceFacet {
-            facet: "trust_crate_reexport",
-            wired: true,
-            owning_slice: "SEC-TRUST-EXTRACT",
-        },
-        ManifoldS2ExtractProductionFenceFacet {
-            facet: "wire_projection",
-            wired: true,
-            owning_slice: "SEC-TRUST-EXTRACT",
-        },
-        ManifoldS2ExtractProductionFenceFacet {
-            facet: "egoff_consumer_reexport",
-            wired: true,
-            owning_slice: "SEC-EGOFF-THIN",
-        },
-        ManifoldS2ExtractProductionFenceFacet {
-            facet: "ucrs_consumer_bridge",
-            wired: true,
-            owning_slice: "SEC-UCRS-STAMP",
-        },
-        ManifoldS2ExtractProductionFenceFacet {
-            facet: "session_ledger",
-            wired: false,
-            owning_slice: "SEC-S3",
-        },
-        ManifoldS2ExtractProductionFenceFacet {
-            facet: "production_wired",
-            wired: false,
-            owning_slice: "SEC-GW-WRAP",
-        },
-    ];
+pub const MANIFOLD_S2_EXTRACT_PRODUCTION_FENCE_FACETS: &[ManifoldS2ExtractProductionFenceFacet] = &[
+    ManifoldS2ExtractProductionFenceFacet {
+        facet: "core_adt_ssot",
+        wired: true,
+        owning_slice: "SEC-TRUST-EXTRACT",
+    },
+    ManifoldS2ExtractProductionFenceFacet {
+        facet: "trust_crate_reexport",
+        wired: true,
+        owning_slice: "SEC-TRUST-EXTRACT",
+    },
+    ManifoldS2ExtractProductionFenceFacet {
+        facet: "wire_projection",
+        wired: true,
+        owning_slice: "SEC-TRUST-EXTRACT",
+    },
+    ManifoldS2ExtractProductionFenceFacet {
+        facet: "egoff_consumer_reexport",
+        wired: true,
+        owning_slice: "SEC-EGOFF-THIN",
+    },
+    ManifoldS2ExtractProductionFenceFacet {
+        facet: "ucrs_consumer_bridge",
+        wired: true,
+        owning_slice: "SEC-UCRS-STAMP",
+    },
+    ManifoldS2ExtractProductionFenceFacet {
+        facet: "session_ledger",
+        wired: false,
+        owning_slice: "SEC-S3",
+    },
+    ManifoldS2ExtractProductionFenceFacet {
+        facet: "production_wired",
+        wired: false,
+        owning_slice: "SEC-GW-WRAP",
+    },
+];
 
 /// One hop in the manifold SEC-S2 gate runtime wire map.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -320,8 +318,7 @@ pub fn gate_transition_evidence_probe() -> bool {
     let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
     let new = old;
     let evidence = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
-    evidence.admissibility == AdmissibilityToken::Admissible
-        && !evidence.catalog_id.is_empty()
+    evidence.admissibility == AdmissibilityToken::Admissible && !evidence.catalog_id.is_empty()
 }
 
 /// Whether live gateway trust-wrap production flip is plumbed (honest `false`).
@@ -392,7 +389,8 @@ pub struct SecS2W29121DeepenProbe {
 /// Build the W29-121 SEC-S2 deepen honesty probe from live measurements.
 #[must_use]
 pub fn sec_s2_w29_121_deepen_probe() -> SecS2W29121DeepenProbe {
-    let production_wired_claimed = sec_s2_production_wired() || sec_s2_trust_extract_production_wired();
+    let production_wired_claimed =
+        sec_s2_production_wired() || sec_s2_trust_extract_production_wired();
     let green_claimed = !S2_GREEN_CLAIM_BLOCKED;
     let op5_pass_claimed = sec_s2_op5_cleared();
     let master_retick_claimed = sec_s2_master_retick_eligible();
@@ -878,7 +876,9 @@ pub fn sec_s2_extract_production_fence_matrix() -> String {
         sec_s2_trust_extract_production_wired()
     ));
     out.push_str(&format!("  trust_adt_ssot={TRUST_ADT_SSOT}\n"));
-    out.push_str(&format!("  ucrs_wire_parity_test={UCRS_WIRE_PARITY_TEST}\n"));
+    out.push_str(&format!(
+        "  ucrs_wire_parity_test={UCRS_WIRE_PARITY_TEST}\n"
+    ));
     out.push_str(&format!(
         "  w29_121_cell={W29_121_CELL_ID} honest_fence_holds={} \
          master_retick={} op5_cleared={}\n",
@@ -1133,7 +1133,10 @@ mod sec_s2_tests {
             MANIFOLD_S2_EXTRACT_PRODUCTION_FENCE_FACETS.len(),
             S2_EXTRACT_FENCE_FACET_COUNT
         );
-        assert_eq!(sec_s2_extract_fence_wired_count(), S2_EXTRACT_FENCE_WIRED_COUNT);
+        assert_eq!(
+            sec_s2_extract_fence_wired_count(),
+            S2_EXTRACT_FENCE_WIRED_COUNT
+        );
         assert!(manifold_s2_extract_fence_facets_verified());
         let matrix = sec_s2_extract_production_fence_matrix();
         assert!(matrix.contains("facets_wired=5/7"));
@@ -1155,7 +1158,10 @@ mod sec_s2_tests {
         assert!(probe.ceremony_closed);
         assert!(!probe.production_wired);
         assert!(probe.trust_extract_production_wired_honest_false);
-        assert_eq!(probe.extract_wired_facet_count, S2_EXTRACT_FENCE_WIRED_COUNT);
+        assert_eq!(
+            probe.extract_wired_facet_count,
+            S2_EXTRACT_FENCE_WIRED_COUNT
+        );
         assert!(!sec_s2_trust_extract_production_wired());
         assert_eq!(
             sec_s2_extract_production_fence_next_hop(),
@@ -1166,7 +1172,10 @@ mod sec_s2_tests {
     #[test]
     fn sec_s2_w29_121_honest_fence_no_green_production_master_op5() {
         assert_eq!(W29_121_CELL_ID, "W29-121-SEC_S2");
-        assert_eq!(W29_121_DEEPEN_SCHEMA_VERSION, "sec_s2_w29_121_honest_fence_v1");
+        assert_eq!(
+            W29_121_DEEPEN_SCHEMA_VERSION,
+            "sec_s2_w29_121_honest_fence_v1"
+        );
         assert_eq!(SCHEMA_VERSION, "sec_s2_gate_trust_refuse_census_v3");
         assert!(!sec_s2_production_wired());
         assert!(!sec_s2_trust_extract_production_wired());
@@ -1182,7 +1191,9 @@ mod sec_s2_tests {
         assert!(!probe.op5_pass_claimed);
         assert!(!probe.master_retick_claimed);
         assert!(probe.honest_fence.contains("master_retick=false"));
-        assert!(probe.honest_fence.contains("trust_extract_production_wired=false"));
+        assert!(probe
+            .honest_fence
+            .contains("trust_extract_production_wired=false"));
         assert!(probe.non_claim.contains("not MASTER_RETICK"));
         let matrix = sec_s2_gate_wire_matrix();
         assert!(matrix.contains("w29_121_cell=W29-121-SEC_S2"));

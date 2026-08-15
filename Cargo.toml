@@ -476,12 +476,12 @@ path = "tests/kleisli_ppo_hot_bind.rs"
 required-features = ["kleisli-ppo-hot-bind"]
 
 [[test]]
-name = "p4_rejection_witness"
+name = "rejection_witness"
 path = "tests/rejection_witness.rs"
 required-features = ["kleisli-ppo-hot-bind"]
 
 [[test]]
-name = "p4_rejection_witness_gpu"
+name = "rejection_witness_gpu"
 path = "tests/rejection_witness_gpu.rs"
 required-features = ["kleisli-ppo-hot-bind", "wgpu"]
 

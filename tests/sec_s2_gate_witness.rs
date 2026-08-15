@@ -7,9 +7,9 @@ use umst_manifold::runtime::gate::{
     gate_trust_refuse_census, manifold_gate_sec_s2_ceremony_closed,
     manifold_s2_all_refuse_paths_probed, manifold_verify_trust_gate_policy_pins,
     sec_s2_gate_factor_table, sec_s2_gate_manifold_probe, sec_s2_gate_transition_evidence_probe,
-    sec_s2_gate_wire_matrix, sec_s2_p1941_k2_honest, sec_s2_p1941_k2_probe, sec_s2_production_wired,
-    validate_sec_s2_gate_honesty, FLEET_P1941_K2_JOB_ID, MANIFOLD_SEC_S2_GATE_WIRE_HOPS,
-    S2_FACTOR_ROW_COUNT, S2_GREEN_CLAIM_BLOCKED,
+    sec_s2_gate_wire_matrix, sec_s2_p1941_k2_honest, sec_s2_p1941_k2_probe,
+    sec_s2_production_wired, validate_sec_s2_gate_honesty, FLEET_P1941_K2_JOB_ID,
+    MANIFOLD_SEC_S2_GATE_WIRE_HOPS, S2_FACTOR_ROW_COUNT, S2_GREEN_CLAIM_BLOCKED,
 };
 
 #[test]
@@ -57,4 +57,3 @@ fn sec_s2_gate_census_validate_and_matrix() {
     let factors = sec_s2_gate_factor_table();
     assert!(factors.contains("expected_gate_exit=BLOCKED"));
 }
-

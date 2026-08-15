@@ -109,7 +109,9 @@ pub fn mechanics_solve_port_refuse_overclaim(
     probe: &MechanicsSolvePortPostureProbe,
 ) -> Result<(), &'static str> {
     if probe.physics_green {
-        return Err("MECHANICS_SOLVE_PORT_PHYSICS_GREEN must stay false until fleet physics closes");
+        return Err(
+            "MECHANICS_SOLVE_PORT_PHYSICS_GREEN must stay false until fleet physics closes",
+        );
     }
     if probe.production_wired {
         return Err(
@@ -130,7 +132,9 @@ pub fn mechanics_solve_port_refuse_overclaim(
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
-use crate::core::field::{BodyForceField, BoundaryMaskField, DamageField, DisplacementField, Field, StiffnessField};
+use crate::core::field::{
+    BodyForceField, BoundaryMaskField, DamageField, DisplacementField, Field, StiffnessField,
+};
 use crate::physics::error::PhysicsError;
 use crate::solve_report::{PrecisionLane, ReportedSolve, SolveReport};
 
@@ -241,7 +245,10 @@ pub fn bar_network_equilibrium_reported<B: Backend<FloatElem = f32>>(
 }
 
 /// One-release tensor shim for legacy callers — wraps operands and unwraps displacement.
-#[deprecated(since = "0.2.0", note = "use Field-typed bar_network_equilibrium_reported — FP P3.4")]
+#[deprecated(
+    since = "0.2.0",
+    note = "use Field-typed bar_network_equilibrium_reported — FP P3.4"
+)]
 #[allow(clippy::too_many_arguments)]
 pub fn bar_network_equilibrium_reported_from_tensors<B: Backend<FloatElem = f32>>(
     displacement: Tensor<B, 3>,
@@ -332,7 +339,10 @@ mod tests {
         bm[0] = 0.0;
         bm[1] = 0.0;
         bm[2] = 0.0;
-        let boundary_mask = BoundaryMaskField::from_tensor(Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &dev));
+        let boundary_mask = BoundaryMaskField::from_tensor(Tensor::from_data(
+            Data::new(bm, Shape::new([1, n, 3])),
+            &dev,
+        ));
 
         let damage = Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev));
         let cfg = MechanicsInnerLoopConfig {
@@ -362,18 +372,19 @@ mod tests {
         let u0 = Field::new(Tensor::<B, 3>::zeros([1, 2, 3], &dev));
         let rel_tol = 1e-6_f32;
 
-        let (_u, _stress, report) = BarNetworkMechanicsSolvePort.solve_equilibrium_reported(
-            u0,
-            coords,
-            StiffnessField::from_tensor(stiff),
-            bf,
-            edges,
-            damage,
-            mask,
-            area,
-            &cfg,
-            rel_tol,
-        )
+        let (_u, _stress, report) = BarNetworkMechanicsSolvePort
+            .solve_equilibrium_reported(
+                u0,
+                coords,
+                StiffnessField::from_tensor(stiff),
+                bf,
+                edges,
+                damage,
+                mask,
+                area,
+                &cfg,
+                rel_tol,
+            )
             .expect("bar port equilibrium");
 
         assert_eq!(report.lane, PrecisionLane::F64AdjointBarPcg);

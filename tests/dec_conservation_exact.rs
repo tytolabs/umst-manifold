@@ -13,7 +13,9 @@ use umst_manifold::physics::topology::EdgeTopology;
 
 type B = NdArray<f32>;
 
-fn tet_topology(device: &NdArrayDevice) -> (EdgeTopology<B>, Tensor<B, 2, Int>, Vec<(usize, usize)>) {
+fn tet_topology(
+    device: &NdArrayDevice,
+) -> (EdgeTopology<B>, Tensor<B, 2, Int>, Vec<(usize, usize)>) {
     let coo = canonical_tetrahedron_boundary_dec_coo();
     let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
         Data::new(coo.edges_b1_flat.to_vec(), Shape::new([2, 6])),
@@ -50,5 +52,8 @@ fn dec_dd_zero_exact_on_quadratic_potential() {
         &device,
     );
     let max_abs = dec_primal_max_abs_d1_of_scalar_gradient(nodal, &topo, faces_b2, &ranges);
-    assert_eq!(max_abs, 0.0, "d₁∘d₀ must be exactly zero on closed chain, got {max_abs}");
+    assert_eq!(
+        max_abs, 0.0,
+        "d₁∘d₀ must be exactly zero on closed chain, got {max_abs}"
+    );
 }

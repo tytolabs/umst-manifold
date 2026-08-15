@@ -20,7 +20,7 @@ def main() -> int:
             "--features",
             "kleisli-ppo-hot-bind",
             "--test",
-            "p4_rejection_witness",
+            "rejection_witness",
             "p4_rejection_baseline_measured_witness",
             "--",
             "--exact",

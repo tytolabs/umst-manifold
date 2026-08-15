@@ -4,8 +4,7 @@
 //! Manifold shim — SSOT in `umst-gate` (P2.0).
 pub use umst_gate::core_gate::{
     core_gate, gate, mass_conserved_between_densities, scalar_response_from_transition,
-    AdmissibilityResponse, CoreGateOutcome, ScalarConstitutiveResponse,
-    GATE_MASS_TOLERANCE_KG_M3,
+    AdmissibilityResponse, CoreGateOutcome, ScalarConstitutiveResponse, GATE_MASS_TOLERANCE_KG_M3,
 };
 
 #[cfg(test)]
@@ -164,10 +163,7 @@ mod tests {
         assert!((response.power_input - power_input).abs() < 1e-12);
         let outcome = core_gate(&response, true, TRANSITION_TOLERANCE);
         assert_eq!(outcome.power_input, power_input);
-        assert_eq!(
-            outcome.net_dissipation,
-            response.dissipation - power_input
-        );
+        assert_eq!(outcome.net_dissipation, response.dissipation - power_input);
     }
 
     #[test]

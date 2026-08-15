@@ -16,11 +16,9 @@ mod tests {
 
     #[test]
     fn w8e14_admissibility_census_compute_sites_pin_core_gate() {
-        assert!(
-            ADMISSIBILITY_COMPUTE_SITES
-                .iter()
-                .any(|s| s.symbol == "core_gate" && s.repo == "umst-foundations")
-        );
+        assert!(ADMISSIBILITY_COMPUTE_SITES
+            .iter()
+            .any(|s| s.symbol == "core_gate" && s.repo == "umst-foundations"));
     }
 
     #[test]

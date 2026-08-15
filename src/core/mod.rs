@@ -3,29 +3,30 @@
 
 pub mod apply_physics;
 pub mod dec_typestate;
+pub mod emergence;
 pub mod error_boundary;
 pub mod field;
 pub mod field_algebra;
-pub mod solver_unwrap_inventory;
-pub mod material_phase;
-pub mod emergence;
 pub mod iterate_until;
+pub mod material_phase;
 pub mod material_transition;
 pub mod semantic_lane_schema;
+pub mod solver_unwrap_inventory;
 pub mod tensors;
 pub mod traits;
 pub mod umst_schema;
 
 pub use apply_physics::apply_physics_to_umst;
-pub use error_boundary::{ApplyPhysicsError, CatalogIoError, CbfReject};
 pub use dec_typestate::{
     B1Incidence, DecTypestateError, ScalarChannel, ScalarChannelIdx, ScalarChannelSelector,
 };
+pub use error_boundary::{ApplyPhysicsError, CatalogIoError, CbfReject};
 pub use field::{
     BodyForce, BodyForceField, BoundaryMask, BoundaryMaskField, CauchyStress, CauchyStressField,
     Damage, DamageField, Displacement, DisplacementField, Field, FractureEnergy,
     FractureEnergyField, Humidity, HumidityField, ReactionExtent, ReactionExtentField, SmallStrain,
-    SmallStrainField, StepEntryDamageMask, Stiffness, StiffnessField, Temperature, TemperatureField,
+    SmallStrainField, StepEntryDamageMask, Stiffness, StiffnessField, Temperature,
+    TemperatureField,
 };
 pub use material_phase::{
     MaterialPhase, MaterialPhaseKind, MechanicsState, RheologyState, SettingState, ThmcEnvelope,

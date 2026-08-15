@@ -86,7 +86,9 @@ pub fn prime_spectral_filter_posture_honest(probe: &PrimeSpectralFilterPosturePr
         && probe.contracts_landed
         && probe.epsilon_is_soft_scale
         && probe.deepen_cell == W29_PRIME_SPECTRAL_FILTER_DEEPEN_CELL
-        && probe.honest_fence.contains("prime_spectral_guidance_landed=true")
+        && probe
+            .honest_fence
+            .contains("prime_spectral_guidance_landed=true")
         && probe.honest_fence.contains("hard_l1_ball=false")
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")

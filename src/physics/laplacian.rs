@@ -223,12 +223,14 @@ impl TopologicalLaplacian {
             .clone()
             .reshape([1, num_edges, 1])
             .expand([batch_size, num_edges, features]);
-        let src_indices_dmg = src_row
-            .reshape([1, num_edges, 1])
-            .expand([batch_size, num_edges, damage_features]);
-        let tgt_indices_dmg = tgt_row
-            .reshape([1, num_edges, 1])
-            .expand([batch_size, num_edges, damage_features]);
+        let src_indices_dmg =
+            src_row
+                .reshape([1, num_edges, 1])
+                .expand([batch_size, num_edges, damage_features]);
+        let tgt_indices_dmg =
+            tgt_row
+                .reshape([1, num_edges, 1])
+                .expand([batch_size, num_edges, damage_features]);
 
         let x_src = x.clone().gather(1, src_indices.clone());
         let x_tgt = x.gather(1, tgt_indices.clone());
@@ -375,10 +377,7 @@ mod tests {
         let edges = chain_graph_edges(n, &device);
         let lap = TopologicalLaplacian::scalar_laplacian(x, edges, dmg);
         for v in lap.into_data().value {
-            assert!(
-                v.abs() < 1e-5,
-                "constant field → Laplacian zero; got {v}"
-            );
+            assert!(v.abs() < 1e-5, "constant field → Laplacian zero; got {v}");
         }
     }
 
@@ -389,18 +388,15 @@ mod tests {
         let n = 4usize;
         let dmg = Tensor::<B, 3>::zeros([1, n, 1], &device);
         let edges = chain_graph_edges(n, &device);
-        let diag = TopologicalLaplacian::scalar_laplacian_neg_opposite_diag(
-            edges.clone(),
-            dmg.clone(),
-        )
-        .into_data()
-        .value;
+        let diag =
+            TopologicalLaplacian::scalar_laplacian_neg_opposite_diag(edges.clone(), dmg.clone())
+                .into_data()
+                .value;
 
         for i in 0..n {
             let mut e = vec![0.0_f32; n];
             e[i] = 1.0;
-            let x =
-                Tensor::<B, 1>::from_data(Data::new(e, [n].into()), &device).reshape([1, n, 1]);
+            let x = Tensor::<B, 1>::from_data(Data::new(e, [n].into()), &device).reshape([1, n, 1]);
             let lx = TopologicalLaplacian::scalar_laplacian(x, edges.clone(), dmg.clone())
                 .into_data()
                 .value;
@@ -425,10 +421,7 @@ mod tests {
         let edges = chain_graph_edges(n, &device);
         let lap = TopologicalLaplacian::scalar_laplacian(x, edges, dmg);
         for v in lap.into_data().value {
-            assert!(
-                v.abs() < 1e-5,
-                "damage≡1 must zero all edge flow; got {v}"
-            );
+            assert!(v.abs() < 1e-5, "damage≡1 must zero all edge flow; got {v}");
         }
     }
 }

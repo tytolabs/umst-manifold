@@ -117,9 +117,7 @@ impl SolveReport {
     /// Negative residuals must not count as converged (`-ε ≤ tol` is true in IEEE but is not a witness).
     #[must_use]
     pub fn converged(&self) -> bool {
-        self.residual_is_admissible()
-            && self.rel_tol > 0.0
-            && self.rel_residual <= self.rel_tol
+        self.residual_is_admissible() && self.rel_tol > 0.0 && self.rel_residual <= self.rel_tol
     }
 
     /// Residual is a finite non-negative scalar (NaN / ±∞ / negative refuse as non-witness).
@@ -342,9 +340,7 @@ pub fn solve_report_posture_honest(probe: &SolveReportPostureProbe) -> bool {
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER / OP-5 / fake all-sites claims on this surface.
 #[must_use]
-pub fn solve_report_refuse_overclaim(
-    probe: &SolveReportPostureProbe,
-) -> Result<(), &'static str> {
+pub fn solve_report_refuse_overclaim(probe: &SolveReportPostureProbe) -> Result<(), &'static str> {
     if probe.physics_green || SOLVE_REPORT_PHYSICS_GREEN {
         return Err("SOLVE_REPORT_PHYSICS_GREEN must stay false until fleet physics closes");
     }
@@ -499,10 +495,7 @@ mod tests {
     #[test]
     fn precision_lane_catalog_stable() {
         assert_eq!(PrecisionLane::ALL.len(), 5);
-        let labels: Vec<_> = PrecisionLane::ALL
-            .iter()
-            .map(|l| l.audit_label())
-            .collect();
+        let labels: Vec<_> = PrecisionLane::ALL.iter().map(|l| l.audit_label()).collect();
         assert_eq!(
             labels,
             [

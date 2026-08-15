@@ -7,13 +7,13 @@
 //! **Parity anchor:** `gate_parity_v0.json` · SHA256 `d5608148e29eeabd83935988699d08ce1233c3e87f2cd217d658e0c71c7a841e`.  
 //! **Next:** Phase 0c — three-way split of `contribution.rs`.
 
+use umst_cartridge_concrete::evaluate_material_conjuncts;
 use umst_manifold::gate::admissibility_census::{
     ADMISSIBILITY_COMPUTE_SITES, GATE_PARITY_V0_SHA256, GATE_PARITY_V0_SHA256_PREFIX,
 };
 use umst_manifold::gate::core_gate::{
     core_gate, scalar_response_from_transition, ScalarConstitutiveResponse,
 };
-use umst_cartridge_concrete::evaluate_material_conjuncts;
 use umst_manifold::gate::material_gate::MaterialTransitionWitness;
 use umst_manifold::gate::transition_proposal::{
     transition_outcome, ThermodynamicStateSnapshot, TRANSITION_TOLERANCE,
@@ -164,7 +164,10 @@ fn phase0b_core_gate_idempotent_on_same_response() {
     let response = ScalarConstitutiveResponse::passive(8.5);
     let first = core_gate(&response, true, TRANSITION_TOLERANCE);
     let second = core_gate(&response, true, TRANSITION_TOLERANCE);
-    assert_eq!(first, second, "core_gate must be idempotent on fixed inputs");
+    assert_eq!(
+        first, second,
+        "core_gate must be idempotent on fixed inputs"
+    );
 }
 
 #[test]
@@ -173,8 +176,14 @@ fn phase0b_transition_outcome_idempotent_on_equilibrated_snapshot() {
     let dt = 3600.0;
     let first = transition_outcome(&state, &state, dt, TRANSITION_TOLERANCE);
     let second = transition_outcome(&state, &state, dt, TRANSITION_TOLERANCE);
-    assert_eq!(first, second, "re-application on equilibrated state must not drift");
-    assert!(first.is_accepted(), "equilibrated self-transition must remain admissible");
+    assert_eq!(
+        first, second,
+        "re-application on equilibrated state must not drift"
+    );
+    assert!(
+        first.is_accepted(),
+        "equilibrated self-transition must remain admissible"
+    );
     assert_eq!(first.dissipation, 0.0);
 }
 
@@ -187,6 +196,9 @@ fn phase0b_transition_outcome_idempotent_on_admissible_transition() {
     let dt = 1.0;
     let first = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
     let second = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
-    assert_eq!(first, second, "re-application on admissible transition must not drift");
+    assert_eq!(
+        first, second,
+        "re-application on admissible transition must not drift"
+    );
     assert!(first.is_accepted());
 }

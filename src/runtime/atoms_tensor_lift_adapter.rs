@@ -71,7 +71,8 @@ pub const RECEIPT_SLUG: &str = "COMPLETION_AGAP_AGENT_PBM-010_2127";
 pub const PRIOR_RECEIPT_SLUG: &str = "COMPLETION_AGAP_AGENT_PBM-010_2033";
 
 /// Honest deepen fence for meta / fleet probes — scaffold yes, production no.
-pub const HONEST_FENCE: &str = "adapter_scaffold_landed=true production_wired=false bind_status=UNBOUND";
+pub const HONEST_FENCE: &str =
+    "adapter_scaffold_landed=true production_wired=false bind_status=UNBOUND";
 
 /// Adapter bind posture — contract rows exist; no live `TensorAlgebra` monomorphization.
 pub const BIND_STATUS: &str = "UNBOUND";
@@ -351,8 +352,8 @@ pub fn validate_atoms_tensor_lift_adapter_honesty() -> Result<(), &'static str> 
 mod tests {
     use super::super::atoms_tensor_lift_ledger::RANK1_PLUS_LEDGER_ROWS;
     use super::super::atoms_tensor_lift_ops::TENSOR_OP_SPEC_ROWS;
-    use crate::core::field::FIELD_CENSUS_ROWS;
     use super::*;
+    use crate::core::field::FIELD_CENSUS_ROWS;
 
     #[test]
     fn pbm010_slice3c_adapter_metadata_locked() {

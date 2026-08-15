@@ -22,9 +22,8 @@ impl FieldSenseClient for HarnessSense {
 
 #[test]
 fn g75_m09_sense_gate_integration_prefix_admits() {
-    let sense: Option<Box<dyn FieldSenseClient + Send>> = Some(Box::new(HarnessSense {
-        digest: [0x75; 32],
-    }));
+    let sense: Option<Box<dyn FieldSenseClient + Send>> =
+        Some(Box::new(HarnessSense { digest: [0x75; 32] }));
     let result = orch_sense_gate_integration_stub(sense).expect("integration prefix");
     assert_eq!(result.sense_gate.sense_digest, [0x75; 32]);
     assert!(result.sense_gate.command_deferred);
@@ -51,9 +50,8 @@ fn g75_m09_tensor_path_honestly_deferred() {
 
 #[test]
 fn g75_m09_gate_admission_matches_sense_gate_stub() {
-    let sense: Option<Box<dyn FieldSenseClient + Send>> = Some(Box::new(HarnessSense {
-        digest: [0x09; 32],
-    }));
+    let sense: Option<Box<dyn FieldSenseClient + Send>> =
+        Some(Box::new(HarnessSense { digest: [0x09; 32] }));
     let integration = orch_sense_gate_integration_stub(sense).expect("integration");
     let direct = umst_manifold::embodied::sense_gate_tick_stub(Some(Box::new(HarnessSense {
         digest: [0x09; 32],

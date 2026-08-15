@@ -156,10 +156,7 @@ fn main() {
     let addr = resolve_bind_addr();
     let listener = TcpListener::bind(&addr).unwrap_or_else(|e| panic!("bind {addr}: {e}"));
     let runtime = default_gate_http_runtime();
-    eprintln!(
-        "{}",
-        startup_banner(&addr, runtime.evaluator.catalog_id())
-    );
+    eprintln!("{}", startup_banner(&addr, runtime.evaluator.catalog_id()));
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => handle_connection(&mut stream, &runtime),

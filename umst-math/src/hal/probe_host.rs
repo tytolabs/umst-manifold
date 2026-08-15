@@ -12,9 +12,7 @@ use std::path::{Path, PathBuf};
 use super::backends::linux::rapl;
 use super::backends::linux::sysfs;
 use super::permission_state::{classify_read_probe, PermissionState};
-use super::probe_snapshot::{
-    CpuProbe, HalProbeSnapshot, IgpuProbe, NpuProbe, PortProbe, RamProbe,
-};
+use super::probe_snapshot::{CpuProbe, HalProbeSnapshot, IgpuProbe, NpuProbe, PortProbe, RamProbe};
 
 const RAPL_LABEL: &str = "/sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj";
 

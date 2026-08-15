@@ -323,8 +323,7 @@ pub fn gate_transition_evidence_probe() -> bool {
     let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
     let new = old;
     let evidence = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
-    evidence.admissibility == AdmissibilityToken::Admissible
-        && !evidence.catalog_id.is_empty()
+    evidence.admissibility == AdmissibilityToken::Admissible && !evidence.catalog_id.is_empty()
 }
 
 /// Whether live gateway SEC-S7 boundary production flip is plumbed (honest `false`).
@@ -429,10 +428,7 @@ pub fn manifold_s7_all_migrate_surfaces_probed() -> bool {
 /// Verify AGAP-2033 stage-count census pins at manifold boundary.
 #[must_use]
 pub fn manifold_verify_migration_inventory_census() -> bool {
-    STAGE_COUNT_AUDIT
-        + STAGE_COUNT_WRAP
-        + STAGE_COUNT_MIGRATE
-        + STAGE_COUNT_CLOUD_BOUND
+    STAGE_COUNT_AUDIT + STAGE_COUNT_WRAP + STAGE_COUNT_MIGRATE + STAGE_COUNT_CLOUD_BOUND
         == INVENTORY_ROW_COUNT
         && STAGE_COUNT_AUDIT == 0
         && STAGE_COUNT_MIGRATE == MIGRATE_QUEUE_DEPTH
@@ -541,7 +537,8 @@ pub fn sec_s7_gate_manifold_probe() -> SecS7GateManifoldProbe {
         migration_inventory_census_verified: manifold_verify_migration_inventory_census(),
         migrate_queue_residue_pins_verified: manifold_s7_migrate_queue_residue_pins_verified(),
         open_residual_fences_verified: census.open_residual_fences_verified,
-        migration_complete_honest_false: !census.migration_complete && !migration_complete_measured(),
+        migration_complete_honest_false: !census.migration_complete
+            && !migration_complete_measured(),
         s7_green_claim_blocked: census.s7_green_claim_blocked,
         s_fed_trust_partial_honest: census.s_fed_trust_partial,
         s_fed_trust_production_honest_false: !census.s_fed_trust_production_wired,

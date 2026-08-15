@@ -192,9 +192,13 @@ pub fn statistical_mechanics_posture_honest(probe: &StatisticalMechanicsPostureP
         && !probe.dense_fluid_md_calibrated
         && probe.honest_fence.contains("virial_b4_bridge_landed=true")
         && probe.honest_fence.contains("full_mayer_b3_triangle=false")
-        && probe.honest_fence.contains("dense_fluid_md_calibrated=false")
+        && probe
+            .honest_fence
+            .contains("dense_fluid_md_calibrated=false")
         && probe.honest_fence.contains("production_wired=false")
-        && probe.honest_fence.contains("rank2_virial_measured=evaluated")
+        && probe
+            .honest_fence
+            .contains("rank2_virial_measured=evaluated")
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER / OP-5 / full-Mayer-\(B_3\) / dense-MD claims.
@@ -218,7 +222,9 @@ pub fn statistical_mechanics_refuse_overclaim(
         return Err("STATMECH_FULL_MAYER_B3_TRIANGLE must stay false — Padé surrogate only");
     }
     if probe.dense_fluid_md_calibrated {
-        return Err("STATMECH_DENSE_FLUID_MD_CALIBRATED must stay false until calibration grid closes");
+        return Err(
+            "STATMECH_DENSE_FLUID_MD_CALIBRATED must stay false until calibration grid closes",
+        );
     }
     if !statistical_mechanics_posture_honest(probe) {
         return Err("statistical_mechanics posture fence inconsistent");
@@ -311,7 +317,9 @@ pub fn lj_mayer_b2_star_tensor<B: Backend<FloatElem = f32>>(
     Ok(lj_mayer_b2_star_tensor_inner(t_star))
 }
 
-fn lj_mayer_b2_star_tensor_inner<B: Backend<FloatElem = f32>>(t_star: Tensor<B, 2>) -> Tensor<B, 2> {
+fn lj_mayer_b2_star_tensor_inner<B: Backend<FloatElem = f32>>(
+    t_star: Tensor<B, 2>,
+) -> Tensor<B, 2> {
     let (a0, a1, a2, a3) = lj_mayer_b2_star_coeffs();
     let inv = t_star.clone().recip();
     let inv2 = inv.clone().mul(inv.clone());
@@ -333,7 +341,9 @@ pub fn lj_virial_b3_star_tensor<B: Backend<FloatElem = f32>>(
     Ok(lj_virial_b3_star_tensor_inner(t_star))
 }
 
-fn lj_virial_b3_star_tensor_inner<B: Backend<FloatElem = f32>>(t_star: Tensor<B, 2>) -> Tensor<B, 2> {
+fn lj_virial_b3_star_tensor_inner<B: Backend<FloatElem = f32>>(
+    t_star: Tensor<B, 2>,
+) -> Tensor<B, 2> {
     t_star
         .clone()
         .add_scalar(0.15)
@@ -675,7 +685,8 @@ mod tests {
     #[test]
     fn lj_virial_b3_star_tensor_rejects_empty_batch() {
         let dev = NdArrayDevice::Cpu;
-        let t_empty: Tensor<B, 2> = Tensor::from_data(Data::new(Vec::<f32>::new(), Shape::new([0, 1])), &dev);
+        let t_empty: Tensor<B, 2> =
+            Tensor::from_data(Data::new(Vec::<f32>::new(), Shape::new([0, 1])), &dev);
         let err = lj_virial_b3_star_tensor(t_empty).unwrap_err();
         assert!(matches!(
             err,
@@ -831,8 +842,7 @@ mod tests {
         let rho = 0.12_f32;
         let t = 2.2_f32;
         let h = 1.0e-3_f32;
-        let rho_t: Tensor<B, 2> =
-            Tensor::from_data(Data::new(vec![rho], Shape::new([1, 1])), &dev);
+        let rho_t: Tensor<B, 2> = Tensor::from_data(Data::new(vec![rho], Shape::new([1, 1])), &dev);
         let t_t: Tensor<B, 2> = Tensor::from_data(Data::new(vec![t], Shape::new([1, 1])), &dev);
         let k_closed =
             reduced_isothermal_kt_star_virial_closed_form(rho_t.clone(), t_t.clone()).into_scalar();

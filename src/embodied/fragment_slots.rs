@@ -7,7 +7,7 @@
 //! across target repos; this module provides the manifold-side attachment points without
 //! claiming loop closure.
 
-use super::fragment_audit::{EmbodiedFragment, FragmentWireStatus, fragment_status};
+use super::fragment_audit::{fragment_status, EmbodiedFragment, FragmentWireStatus};
 
 /// Owning schedule card for cross-crate slot population.
 pub const OWNER_CARD: &str = "W1-19";
@@ -333,9 +333,7 @@ impl EmbodiedLoopSlots {
             let fragment = leg_to_fragment(leg);
             match fragment_status(fragment) {
                 FragmentWireStatus::Unwired { target } => SlotWirePosture::Unwired { target },
-                FragmentWireStatus::Partial { gap } => SlotWirePosture::Unwired {
-                    target: gap,
-                },
+                FragmentWireStatus::Partial { gap } => SlotWirePosture::Unwired { target: gap },
                 FragmentWireStatus::Wired => SlotWirePosture::Unwired {
                     target: "audit wired — slot instance absent",
                 },
@@ -442,10 +440,11 @@ mod tests {
     fn null_clients_fail_closed() {
         assert!(NullFieldSenseClient.sense().is_err());
         assert!(NullXrPresenter.present(&[0u8; 32]).is_err());
-        assert!(NullRobotExecutor.actuate(&ActuateDesign {
-            design_digest: [0u8; 32],
-        })
-        .is_err());
+        assert!(NullRobotExecutor
+            .actuate(&ActuateDesign {
+                design_digest: [0u8; 32],
+            })
+            .is_err());
         assert!(NullSenseLoopCloser.close_loop().is_err());
     }
 
@@ -470,7 +469,10 @@ mod tests {
         assert!(!summary.production_wired);
         assert!(!summary.master_loop_closed);
         assert_eq!(summary.unwired_slot_count, 4);
-        assert_eq!(SOURCE_ANCHOR_PATH, "umst-manifold/src/embodied/fragment_slots.rs");
+        assert_eq!(
+            SOURCE_ANCHOR_PATH,
+            "umst-manifold/src/embodied/fragment_slots.rs"
+        );
         assert_eq!(EmbodiedLoopSlots::tombstone_summary(), summary);
     }
 
@@ -504,9 +506,7 @@ mod tests {
         let posture = slots.leg_posture(SlotLeg::XrPresent);
         assert!(matches!(
             posture,
-            SlotWirePosture::Unwired {
-                target: "umst-xr"
-            }
+            SlotWirePosture::Unwired { target: "umst-xr" }
         ));
         let posture = slots.leg_posture(SlotLeg::RobotActuate);
         assert!(matches!(

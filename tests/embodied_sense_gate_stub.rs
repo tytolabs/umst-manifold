@@ -22,9 +22,8 @@ impl FieldSenseClient for HarnessSense {
 
 #[test]
 fn f25_m06_sense_gate_partial_chain_admits() {
-    let sense: Option<Box<dyn FieldSenseClient + Send>> = Some(Box::new(HarnessSense {
-        digest: [0x42; 32],
-    }));
+    let sense: Option<Box<dyn FieldSenseClient + Send>> =
+        Some(Box::new(HarnessSense { digest: [0x42; 32] }));
     let result = sense_gate_tick_stub(sense).expect("sense→gate");
     assert_eq!(result.sense_digest, [0x42; 32]);
     assert!(result.command_deferred);

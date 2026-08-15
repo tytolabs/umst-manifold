@@ -276,11 +276,11 @@ jobs:
         run: |
           set -euo pipefail
           cargo test -p umst-manifold --features kleisli-ppo-hot-bind \
-            --test p4_rejection_witness --test kleisli_gate_pipeline_e2e \
+            --test rejection_witness --test kleisli_gate_pipeline_e2e \
             --test explain_ssot_parity \
             landauer_slack
           cargo test -p umst-manifold --features kleisli-ppo-hot-bind \
-            --test p4_rejection_witness p4_rejection_baseline_measured_witness -- --exact
+            --test rejection_witness rejection_baseline_measured_witness -- --exact
 
   arena-vs-mcp:
     name: arena vs MCP benchmark (≥5×)
@@ -337,7 +337,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: p4-rejection-baseline-gpu
-          path: artifacts/training/p4_rejection_baseline_gpu.json
+          path: artifacts/training/rejection_baseline_gpu.json
           if-no-files-found: ignore
 
   # PR / push gate: rustfmt + clippy on the full solver-experimental graph (v0.4 acceptance; matches meta `solver-tests`).

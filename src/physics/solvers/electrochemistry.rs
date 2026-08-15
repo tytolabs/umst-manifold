@@ -348,7 +348,10 @@ const _: () = assert!(ELECTROCHEMISTRY_MVP_FEATURE_GATED);
 /// Count wired electrochemistry fence facets (must match [`ELECTROCHEMISTRY_FENCE_WIRED_COUNT`]).
 #[must_use]
 pub fn electrochemistry_fence_wired_count() -> usize {
-    ELECTROCHEMISTRY_FENCE_FACETS.iter().filter(|f| f.wired).count()
+    ELECTROCHEMISTRY_FENCE_FACETS
+        .iter()
+        .filter(|f| f.wired)
+        .count()
 }
 
 /// Typed probe for electrochemistry posture honesty.
@@ -414,7 +417,9 @@ pub fn validate_electrochemistry_honesty() -> Result<(), &'static str> {
         return Err("ELECTROCHEMISTRY_MASTER must stay false until orchestrator pin lands");
     }
     if probe.physics_green {
-        return Err("ELECTROCHEMISTRY_PHYSICS_GREEN must stay false — research scaffold ≠ fleet GREEN");
+        return Err(
+            "ELECTROCHEMISTRY_PHYSICS_GREEN must stay false — research scaffold ≠ fleet GREEN",
+        );
     }
     if probe.op5_claimed {
         return Err("ELECTROCHEMISTRY_OP5_CLAIMED must stay false — not an OP-5 composition pin");
@@ -423,7 +428,9 @@ pub fn validate_electrochemistry_honesty() -> Result<(), &'static str> {
         return Err("ELECTROCHEMISTRY_GENERAL_GRAPH_PNP_WIRED must stay false — Ring 2 open");
     }
     if electrochemistry_fence_wired_count() != ELECTROCHEMISTRY_FENCE_WIRED_COUNT {
-        return Err("electrochemistry_fence_wired_count drifted from ELECTROCHEMISTRY_FENCE_WIRED_COUNT");
+        return Err(
+            "electrochemistry_fence_wired_count drifted from ELECTROCHEMISTRY_FENCE_WIRED_COUNT",
+        );
     }
     if !electrochemistry_honest(&probe) {
         return Err("electrochemistry_probe failed electrochemistry_honest gate");
@@ -1097,18 +1104,18 @@ fn solve_pnp_split_step_experimental_with_refs<B: Backend<FloatElem = f32>>(
     ) {
         Ok(phi_t) => phi_t,
         Err(_) => {
-        let h_sq = solver.mesh_spacing.max(1e-30_f32).powi(2);
-        let rhs_lap = rho_over_eps.neg().mul_scalar(h_sq);
-        let batch = electric_potential.dims()[0];
-        let n = electric_potential.dims()[1];
-        poisson_graph_uniform_laplacian_jacobi_pcg(
-            electric_potential.clone(),
-            rhs_lap,
-            edges_b1.clone(),
-            mask_phi.clone(),
-            batch,
-            n,
-        )
+            let h_sq = solver.mesh_spacing.max(1e-30_f32).powi(2);
+            let rhs_lap = rho_over_eps.neg().mul_scalar(h_sq);
+            let batch = electric_potential.dims()[0];
+            let n = electric_potential.dims()[1];
+            poisson_graph_uniform_laplacian_jacobi_pcg(
+                electric_potential.clone(),
+                rhs_lap,
+                edges_b1.clone(),
+                mask_phi.clone(),
+                batch,
+                n,
+            )
         }
     };
 
@@ -5112,10 +5119,7 @@ mod electrochemistry_honest_fence_tests {
         assert!(!ELECTROCHEMISTRY_GENERAL_GRAPH_PNP_WIRED);
         assert!(ELECTROCHEMISTRY_SOLVER_SURFACE_LANDED);
         assert!(ELECTROCHEMISTRY_MVP_FEATURE_GATED);
-        assert_eq!(
-            W29_ELECTROCHEMISTRY_DEEPEN_CELL,
-            "W29-073-ELECTROCHEMISTRY"
-        );
+        assert_eq!(W29_ELECTROCHEMISTRY_DEEPEN_CELL, "W29-073-ELECTROCHEMISTRY");
         assert_eq!(ELECTROCHEMISTRY_FENCE_FACET_COUNT, 9);
         assert_eq!(ELECTROCHEMISTRY_FENCE_WIRED_COUNT, 4);
         assert!(ELECTROCHEMISTRY_HONEST_FENCE.contains("physics_green=false"));

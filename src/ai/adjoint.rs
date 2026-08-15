@@ -295,7 +295,9 @@ mod tests {
     fn adjoint_posture_tag_honest_not_green() {
         assert!(ADJOINT_POSTURE_TAG.contains("honest"));
         assert!(!ADJOINT_POSTURE_TAG.to_ascii_lowercase().contains("green"));
-        assert!(!ADJOINT_POSTURE_TAG.to_ascii_lowercase().contains("production"));
+        assert!(!ADJOINT_POSTURE_TAG
+            .to_ascii_lowercase()
+            .contains("production"));
     }
 
     #[test]
@@ -326,13 +328,7 @@ mod tests {
         let ode = AdjointNeuralODE::<B>::new(&dev);
         let dL_dz = Tensor::<B, 1>::from_data(Data::new(vec![0.5_f32], Shape::new([1])), &dev);
         let dt = Tensor::<B, 1>::from_data(Data::new(vec![1.0_f32], Shape::new([1])), &dev);
-        let grad = ode.backward_adjoint(
-            test_umst(2, 4),
-            dL_dz,
-            0.0,
-            1.0,
-            dt,
-        );
+        let grad = ode.backward_adjoint(test_umst(2, 4), dL_dz, 0.0, 1.0, dt);
         assert_eq!(grad.dims(), [ADJOINT_POLICY_DIM]);
     }
 
@@ -343,15 +339,12 @@ mod tests {
         ode.policy_weights = Tensor::<B, 1>::full([ADJOINT_POLICY_DIM], 0.25_f32, &dev);
         let dL_dz = Tensor::<B, 1>::from_data(Data::new(vec![1.0_f32], Shape::new([1])), &dev);
         let dt = Tensor::<B, 1>::from_data(Data::new(vec![1.0_f32], Shape::new([1])), &dev);
-        let grad = ode.backward_adjoint(
-            test_umst(2, 4),
-            dL_dz,
-            0.0,
-            1.0,
-            dt,
-        );
+        let grad = ode.backward_adjoint(test_umst(2, 4), dL_dz, 0.0, 1.0, dt);
         let l2: f32 = grad.powf_scalar(2.0).sum().into_scalar();
-        assert!(l2 > 1.0e-12, "surrogate grad must be non-zero for nonzero seed");
+        assert!(
+            l2 > 1.0e-12,
+            "surrogate grad must be non-zero for nonzero seed"
+        );
     }
 
     #[test]
@@ -361,13 +354,7 @@ mod tests {
         ode.policy_weights = Tensor::<B, 1>::full([ADJOINT_POLICY_DIM], 0.5_f32, &dev);
         let dL_dz = Tensor::<B, 1>::from_data(Data::new(vec![0.0_f32], Shape::new([1])), &dev);
         let dt = Tensor::<B, 1>::from_data(Data::new(vec![1.0_f32], Shape::new([1])), &dev);
-        let grad = ode.backward_adjoint(
-            test_umst(2, 4),
-            dL_dz,
-            0.0,
-            1.0,
-            dt,
-        );
+        let grad = ode.backward_adjoint(test_umst(2, 4), dL_dz, 0.0, 1.0, dt);
         let max_abs: f32 = grad.abs().max().into_scalar();
         assert_relative_eq!(max_abs, 0.0, epsilon = 1.0e-12);
     }
@@ -408,7 +395,10 @@ mod tests {
             let before: Vec<f32> = umst.scalar_features.clone().into_data().value;
             let out = ode.forward(umst, 0.0, 1.0);
             let after: Vec<f32> = out.scalar_features.into_data().value;
-            assert_eq!(before, after, "default build must pass through UMST unchanged");
+            assert_eq!(
+                before, after,
+                "default build must pass through UMST unchanged"
+            );
         }
         #[cfg(feature = "epistemic-ppo")]
         {

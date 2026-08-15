@@ -83,27 +83,16 @@ mod tests {
 
         for &(lhs, rhs) in PROBES {
             let s_sum = ScalarAlgebra::add(lhs, rhs);
-            let b_sum = BurnRank0Algebra::add(
-                BurnRank0Field(lhs),
-                BurnRank0Field(rhs),
-            )
-            .to_f64();
+            let b_sum = BurnRank0Algebra::add(BurnRank0Field(lhs), BurnRank0Field(rhs)).to_f64();
             assert_eq!(s_sum, b_sum);
 
             let s_mul = ScalarAlgebra::mul(lhs, rhs);
-            let b_mul = BurnRank0Algebra::mul(
-                BurnRank0Field(lhs),
-                BurnRank0Field(rhs),
-            )
-            .to_f64();
+            let b_mul = BurnRank0Algebra::mul(BurnRank0Field(lhs), BurnRank0Field(rhs)).to_f64();
             assert_eq!(s_mul, b_mul);
 
             let s_contract = ScalarAlgebra::contract(lhs, rhs);
-            let b_contract = BurnRank0Algebra::contract(
-                BurnRank0Field(lhs),
-                BurnRank0Field(rhs),
-            )
-            .to_f64();
+            let b_contract =
+                BurnRank0Algebra::contract(BurnRank0Field(lhs), BurnRank0Field(rhs)).to_f64();
             assert_eq!(s_contract, b_contract);
 
             let s_grad = ScalarAlgebra::grad(lhs);
@@ -111,9 +100,6 @@ mod tests {
             assert_eq!(s_grad, b_grad);
         }
 
-        assert_eq!(
-            ScalarAlgebra::zero(),
-            BurnRank0Algebra::zero().to_f64()
-        );
+        assert_eq!(ScalarAlgebra::zero(), BurnRank0Algebra::zero().to_f64());
     }
 }

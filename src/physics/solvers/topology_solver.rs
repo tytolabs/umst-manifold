@@ -110,9 +110,13 @@ pub fn topology_solver_posture_honest(probe: &TopologySolverPostureProbe) -> boo
         && probe.diffusion_landed
         && !probe.training_loop_owned
         && !probe.cartridge_acceptance_landed
-        && probe.honest_fence.contains("topology_density_diffusion_landed=true")
+        && probe
+            .honest_fence
+            .contains("topology_density_diffusion_landed=true")
         && probe.honest_fence.contains("training_loop_owned=false")
-        && probe.honest_fence.contains("cartridge_acceptance_landed=false")
+        && probe
+            .honest_fence
+            .contains("cartridge_acceptance_landed=false")
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")
         && probe.honest_fence.contains("op5_pass=false")
@@ -268,7 +272,11 @@ impl<B: Backend<FloatElem = f32>> TopologySolver<B> {
     /// \(\sum_i\rho_i\) is invariant to \(\rho\leftarrow\rho+\Delta t\,\Delta\rho\).
     #[must_use]
     pub fn rho_nodal_sum(&self) -> Tensor<B, 1> {
-        self.rho.clone().sum_dim(2).sum_dim(1).reshape([self.rho.dims()[0]])
+        self.rho
+            .clone()
+            .sum_dim(2)
+            .sum_dim(1)
+            .reshape([self.rho.dims()[0]])
     }
 
     /// Scalar mask `≥ 0` where **both** policy may edit density (cf. [`crate::core::tensors::UnifiedMaterialStateTensor::policy_editable_mask`])
@@ -426,7 +434,10 @@ mod tests {
             .expect("TopologySolver::step_density_diffusion on uniform rho ring (FP §6 topology density diffusion verification)");
         let expected = Tensor::<B, 3>::full([1, n, 1], 0.5, &dev);
         assert!(
-            solver.rho.clone().all_close(expected, Some(1e-5), Some(1e-6)),
+            solver
+                .rho
+                .clone()
+                .all_close(expected, Some(1e-5), Some(1e-6)),
             "uniform rho should be harmonic / stationary"
         );
     }
@@ -436,7 +447,10 @@ mod tests {
         let dev = Default::default();
         let n = 2_usize;
         let edges_b1 = two_node_edge_topology();
-        let rho = Tensor::from_data(Data::new(vec![1.0_f32, 0.0_f32], Shape::new([1, n, 1])), &dev);
+        let rho = Tensor::from_data(
+            Data::new(vec![1.0_f32, 0.0_f32], Shape::new([1, n, 1])),
+            &dev,
+        );
         let mut solver = TopologySolver::new(rho, TopologySolverConfig::default());
         let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
         let boundary_mask = Tensor::<B, 3>::ones([1, n, 3], &dev);
@@ -446,7 +460,10 @@ mod tests {
             .expect("TopologySolver::step_density_diffusion on two-node bar toward 0.5 equilibrium (FP §6 topology density diffusion verification)");
         let expected = Tensor::<B, 3>::full([1, n, 1], 0.5, &dev);
         assert!(
-            solver.rho.clone().all_close(expected, Some(1e-4), Some(1e-5)),
+            solver
+                .rho
+                .clone()
+                .all_close(expected, Some(1e-4), Some(1e-5)),
             "expected ~0.5 equilibrium on two-node bar"
         );
     }
@@ -456,7 +473,10 @@ mod tests {
         let dev = Default::default();
         let n = 2_usize;
         let edges_b1 = two_node_edge_topology();
-        let rho = Tensor::from_data(Data::new(vec![1.0_f32, 0.0_f32], Shape::new([1, n, 1])), &dev);
+        let rho = Tensor::from_data(
+            Data::new(vec![1.0_f32, 0.0_f32], Shape::new([1, n, 1])),
+            &dev,
+        );
         let mut solver = TopologySolver::new(rho, TopologySolverConfig::default());
         let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
         let boundary_mask = Tensor::<B, 3>::ones([1, n, 3], &dev);
@@ -470,9 +490,20 @@ mod tests {
         let n0 = rho.clone().slice([0..1, 0..1, 0..1]);
         let n1 = rho.slice([0..1, 1..2, 0..1]);
         let one = Tensor::<B, 3>::ones([1, 1, 1], &dev);
-        assert!(n0.all_close(Tensor::<B, 3>::full([1, 1, 1], 1.0, &dev), Some(1e-5), Some(1e-6)));
-        assert!(n1.clone().greater_elem(0.0_f32).float().all_close(one.clone(), Some(0.0), Some(0.0)));
-        assert!(n1.lower_elem(1.0_f32).float().all_close(one, Some(0.0), Some(0.0)));
+        assert!(n0.all_close(
+            Tensor::<B, 3>::full([1, 1, 1], 1.0, &dev),
+            Some(1e-5),
+            Some(1e-6)
+        ));
+        assert!(n1.clone().greater_elem(0.0_f32).float().all_close(
+            one.clone(),
+            Some(0.0),
+            Some(0.0)
+        ));
+        assert!(n1
+            .lower_elem(1.0_f32)
+            .float()
+            .all_close(one, Some(0.0), Some(0.0)));
     }
 
     #[test]
@@ -480,7 +511,10 @@ mod tests {
         let dev = Default::default();
         let n = 2_usize;
         let edges_b1 = two_node_edge_topology();
-        let rho = Tensor::from_data(Data::new(vec![1.0_f32, 0.3_f32], Shape::new([1, n, 1])), &dev);
+        let rho = Tensor::from_data(
+            Data::new(vec![1.0_f32, 0.3_f32], Shape::new([1, n, 1])),
+            &dev,
+        );
         let mut solver = TopologySolver::new(rho, TopologySolverConfig::default());
         let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
         let mut bm = vec![1.0_f32; n * 3];
@@ -596,7 +630,10 @@ mod tests {
         let n = 2_usize;
         let edges_b1 = two_node_edge_topology();
         // Interior of (rho_min, rho_max) so clamp does not spoil discrete mass.
-        let rho = Tensor::from_data(Data::new(vec![0.8_f32, 0.2_f32], Shape::new([1, n, 1])), &dev);
+        let rho = Tensor::from_data(
+            Data::new(vec![0.8_f32, 0.2_f32], Shape::new([1, n, 1])),
+            &dev,
+        );
         let mut solver = TopologySolver::new(rho, TopologySolverConfig::default());
         let sum0 = solver.rho_nodal_sum();
         let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
@@ -617,7 +654,10 @@ mod tests {
         let dev = Default::default();
         let n = 2_usize;
         let edges_b1 = two_node_edge_topology();
-        let rho = Tensor::from_data(Data::new(vec![1.0_f32, 0.0_f32], Shape::new([1, n, 1])), &dev);
+        let rho = Tensor::from_data(
+            Data::new(vec![1.0_f32, 0.0_f32], Shape::new([1, n, 1])),
+            &dev,
+        );
         let mut solver = TopologySolver::new(rho, TopologySolverConfig::default());
         let damage = Tensor::<B, 3>::ones([1, n, 1], &dev);
         let boundary_mask = Tensor::<B, 3>::ones([1, n, 3], &dev);
@@ -625,10 +665,15 @@ mod tests {
         solver
             .step_density_diffusion(0.5, edges_b1, damage, boundary_mask, policy)
             .expect("TopologySolver damage-severed edge step (W29-089 deepen)");
-        let expected =
-            Tensor::from_data(Data::new(vec![1.0_f32, 0.0_f32], Shape::new([1, n, 1])), &dev);
+        let expected = Tensor::from_data(
+            Data::new(vec![1.0_f32, 0.0_f32], Shape::new([1, n, 1])),
+            &dev,
+        );
         assert!(
-            solver.rho.clone().all_close(expected, Some(1e-5), Some(1e-6)),
+            solver
+                .rho
+                .clone()
+                .all_close(expected, Some(1e-5), Some(1e-6)),
             "damage=1 must zero edge flow (no mix)"
         );
     }
@@ -651,7 +696,10 @@ mod tests {
             rho_min: 0.1,
             rho_max: 0.9,
         };
-        let rho = Tensor::from_data(Data::new(vec![0.95_f32, 0.05_f32], Shape::new([1, n, 1])), &dev);
+        let rho = Tensor::from_data(
+            Data::new(vec![0.95_f32, 0.05_f32], Shape::new([1, n, 1])),
+            &dev,
+        );
         let mut solver = TopologySolver::new(rho, cfg);
         let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
         let boundary_mask = Tensor::<B, 3>::ones([1, n, 3], &dev);

@@ -55,10 +55,8 @@ pub const TENSOR_PATH_INVOKED: bool = false;
 pub const SCHEMA_VERSION: &str = "manifold.orch_loop_transcript_delta.v1";
 
 /// Template §5.7 columns wired on mock orchestrator loop (pre/post digests only).
-pub const ORCH_LOOP_WIRED_J7_COLUMNS: &[&str] = &[
-    "pre_state_delta_digest",
-    "post_state_delta_digest",
-];
+pub const ORCH_LOOP_WIRED_J7_COLUMNS: &[&str] =
+    &["pre_state_delta_digest", "post_state_delta_digest"];
 
 /// Columns intentionally null until hardware timing loop (honest mock posture).
 pub const ORCH_LOOP_HONEST_NULL_COLUMNS: &[&str] = &[
@@ -395,7 +393,10 @@ mod tests {
             orch_loop_tick_transcript_delta(wired_slots()).expect("tick with delta");
         assert_eq!(delta.phases.len(), 6);
         assert_eq!(delta.phases[0].phase, "sense");
-        assert_eq!(delta.phases.last().map(|p| p.phase.as_str()), Some("loop_close"));
+        assert_eq!(
+            delta.phases.last().map(|p| p.phase.as_str()),
+            Some("loop_close")
+        );
         assert!(delta.is_mock_path_honest());
         assert!(delta.command_gateway_deferred);
         assert!(delta.tensor_path_deferred);
@@ -434,10 +435,7 @@ mod tests {
             "umst-manifold/src/embodied/orch_loop_transcript.rs"
         );
         assert!(HONEST_FENCE.contains("production_wired=false"));
-        assert_eq!(
-            OrchLoopTranscriptEmitter::tombstone_summary(),
-            summary
-        );
+        assert_eq!(OrchLoopTranscriptEmitter::tombstone_summary(), summary);
         assert_eq!(OrchLoopTranscriptDelta::tombstone_summary(), summary);
         // Companion loop_stub tombstone stays aligned on owner + posture.
         let loop_summary = loop_stub_tombstone_summary();
@@ -451,18 +449,13 @@ mod tests {
             orch_loop_tick_transcript_delta(wired_slots()).expect("tick with delta");
         assert!(delta.j7_pre_post_wired());
         let coverage = delta.j7_column_coverage();
-        assert_eq!(
-            coverage.pre_state_delta_digest_hex,
-            digest_hex(&[0xAB; 32])
-        );
+        assert_eq!(coverage.pre_state_delta_digest_hex, digest_hex(&[0xAB; 32]));
         assert_eq!(
             coverage.post_state_delta_digest_hex,
             Some(digest_hex(&[0xCD; 32]))
         );
         assert_eq!(coverage.honest_null_columns.len(), 3);
-        assert!(coverage
-            .honest_null_columns
-            .contains(&"loop_latency_ms"));
+        assert!(coverage.honest_null_columns.contains(&"loop_latency_ms"));
     }
 
     #[test]
@@ -484,7 +477,12 @@ mod tests {
         assert_eq!(
             delta.phase_labels(),
             vec![
-                "sense", "command", "gate", "present", "actuate", "loop_close"
+                "sense",
+                "command",
+                "gate",
+                "present",
+                "actuate",
+                "loop_close"
             ]
         );
     }

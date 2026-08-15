@@ -207,7 +207,10 @@ mod tests {
         validate_iterate_until_honesty().expect("honest fence");
         let probe = iterate_until_probe();
         assert!(iterate_until_honest(&probe));
-        assert_eq!(iterate_until_fence_wired_count(), ITERATE_UNTIL_FENCE_WIRED_COUNT);
+        assert_eq!(
+            iterate_until_fence_wired_count(),
+            ITERATE_UNTIL_FENCE_WIRED_COUNT
+        );
         assert!(!ITERATE_UNTIL_PHYSICS_GREEN);
         assert!(!ITERATE_UNTIL_PRODUCTION_WIRED);
         assert!(!ITERATE_UNTIL_MASTER);

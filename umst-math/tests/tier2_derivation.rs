@@ -21,10 +21,7 @@ fn k3_batch_rows_have_measurement_derivation() {
             entry.derivation,
             derivation_for_registry_row(name).expect("lookup")
         );
-        assert!(matches!(
-            entry.derivation,
-            Derivation::Measurement { .. }
-        ));
+        assert!(matches!(entry.derivation, Derivation::Measurement { .. }));
     }
 }
 

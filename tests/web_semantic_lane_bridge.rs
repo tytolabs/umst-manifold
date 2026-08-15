@@ -8,11 +8,11 @@ use umst_manifold::core::{LANE_RELATION_GRAPH, LANE_TOPOLOGY_SIGNATURE, SEMANTIC
 use umst_manifold::gate::{
     canonical_web_semantic_gate_outcome, canonical_web_transition_from_tensors_with_semantic,
 };
+use umst_manifold::runtime::catalog::pin_witness_ok;
 use umst_manifold::web_constitutive::{
     semantic_transition_witness_from_tensors, slice_layout, web_semantic_lane_overlap_valid,
     WebConstitutiveModel, DEFAULT_INT_TOLERANCE, DEFAULT_SEMANTIC_DEFECT_TOLERANCE,
 };
-use umst_manifold::runtime::catalog::pin_witness_ok;
 
 #[test]
 fn semantic_lane_overlap_links_web_behavior_ucrs_head() {
@@ -63,14 +63,13 @@ fn semantic_residual_accepts_consistent_lanes_on_tensor_path() {
     new[LANE_TOPOLOGY_SIGNATURE] = 1.0;
     new[SEMANTIC_LANE_BASE + 5] = 6.0; // mi_value meets chair fixture
 
-    let (_, _, _, _, web, semantic, composed) =
-        canonical_web_transition_from_tensors_with_semantic(
-            &model,
-            &old,
-            &new,
-            DEFAULT_INT_TOLERANCE,
-            DEFAULT_SEMANTIC_DEFECT_TOLERANCE,
-        );
+    let (_, _, _, _, web, semantic, composed) = canonical_web_transition_from_tensors_with_semantic(
+        &model,
+        &old,
+        &new,
+        DEFAULT_INT_TOLERANCE,
+        DEFAULT_SEMANTIC_DEFECT_TOLERANCE,
+    );
 
     assert!(web.cost_legs_valid);
     assert!(semantic.is_accepted());

@@ -72,8 +72,7 @@ pub const EMERGENCE_FENCE_FACET_COUNT: usize = 9;
 pub const EMERGENCE_FENCE_WIRED_COUNT: usize = 4;
 
 /// Honest deepen fence for meta / fleet probes.
-pub const HONEST_FENCE: &str =
-    "grid_hotspot_monitor_landed=true|nodal_defect_tensor_landed=true|\
+pub const HONEST_FENCE: &str = "grid_hotspot_monitor_landed=true|nodal_defect_tensor_landed=true|\
      nodal_defect_no_edges_deferred=true|combine_nodal_reward_landed=true|\
      ppo_trainer_hot_path_landed=false|msdf_emergence_grid_bridge_landed=false|\
      production_wired=false|physics_green=false|master=false";
@@ -241,7 +240,9 @@ pub fn emergence_posture_honest(probe: &EmergencePostureProbe) -> bool {
         && !probe.physics_green
         && !probe.master
         && probe.honest_fence.contains("production_wired=false")
-        && probe.honest_fence.contains("ppo_trainer_hot_path_landed=false")
+        && probe
+            .honest_fence
+            .contains("ppo_trainer_hot_path_landed=false")
         && probe.honest_fence.contains("physics_green=false")
         && probe.honest_fence.contains("master=false")
 }
@@ -262,7 +263,9 @@ pub fn validate_emergence_posture_honesty() -> Result<(), &'static str> {
         return Err("ppo_trainer_hot_path_landed must stay false until PPO hot-path wire");
     }
     if probe.msdf_emergence_grid_bridge_landed || MSDF_EMERGENCE_GRID_BRIDGE_LANDED {
-        return Err("msdf_emergence_grid_bridge_landed must stay false until sdf grid bridge lands");
+        return Err(
+            "msdf_emergence_grid_bridge_landed must stay false until sdf grid bridge lands",
+        );
     }
     if emergence_fence_wired_count() != EMERGENCE_FENCE_WIRED_COUNT {
         return Err("emergence_fence_wired_count drifted from EMERGENCE_FENCE_WIRED_COUNT");

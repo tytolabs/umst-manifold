@@ -51,10 +51,7 @@ pub fn implicit_field_honesty_fence_pinned() -> bool {
 
 /// Map raw field output φ to nodal density ρ = σ(−β·φ) ∈ (0, 1).
 #[must_use]
-pub fn phi_to_density<B: Backend<FloatElem = f32>>(
-    phi: Tensor<B, 3>,
-    beta: f32,
-) -> Tensor<B, 3> {
+pub fn phi_to_density<B: Backend<FloatElem = f32>>(phi: Tensor<B, 3>, beta: f32) -> Tensor<B, 3> {
     sigmoid(phi.mul_scalar(-beta))
 }
 
@@ -191,7 +188,9 @@ mod tests {
         assert!(!IMPLICIT_FIELD_PRODUCTION_WIRED);
         assert!(!IMPLICIT_FIELD_PHYSICS_GREEN);
         assert!(IMPLICIT_FIELD_POSTURE_TAG.contains("honest"));
-        assert!(!IMPLICIT_FIELD_POSTURE_TAG.to_ascii_lowercase().contains("green"));
+        assert!(!IMPLICIT_FIELD_POSTURE_TAG
+            .to_ascii_lowercase()
+            .contains("green"));
     }
 
     #[test]
@@ -219,7 +218,10 @@ mod tests {
         let vals: Vec<f32> = geom.density.into_data().value;
         assert!(vals.iter().all(|x| x.is_finite()));
         for &rho in &vals {
-            assert!(rho > 0.0 && rho < 1.0, "sigmoid density must lie in (0,1), got {rho}");
+            assert!(
+                rho > 0.0 && rho < 1.0,
+                "sigmoid density must lie in (0,1), got {rho}"
+            );
         }
     }
 

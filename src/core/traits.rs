@@ -260,10 +260,7 @@ pub const fn traits_posture_is_honest_partial() -> bool {
 /// Returns ports still partial or unwired — honest gap inventory for orchestration.
 #[must_use]
 pub fn missing_trait_ports() -> Vec<TraitPort> {
-    TraitPort::ALL
-        .into_iter()
-        .filter(|p| p.is_gap())
-        .collect()
+    TraitPort::ALL.into_iter().filter(|p| p.is_gap()).collect()
 }
 
 /// W29-031 deepen census — lattice ports land; production / GREEN / MASTER blocked.
@@ -653,7 +650,10 @@ mod traits_tests {
     fn traits_port_wire_status_roundtrip() {
         for port in TraitPort::ALL {
             assert_eq!(port.wire_status(), trait_port_status(port));
-            assert_eq!(port.is_gap(), !matches!(port.wire_status(), TraitWireStatus::Wired));
+            assert_eq!(
+                port.is_gap(),
+                !matches!(port.wire_status(), TraitWireStatus::Wired)
+            );
         }
     }
 }

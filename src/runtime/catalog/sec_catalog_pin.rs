@@ -8,9 +8,7 @@
 //! Trust delegate: `umst-trust::sec_catalog_pin` (hop 5 owner).
 
 use serde::Serialize;
-use umst_algebra::crypto::hash::{
-    decode_digest_hex, digest_hex, is_digest_hex, HashPolicy,
-};
+use umst_algebra::crypto::hash::{decode_digest_hex, digest_hex, is_digest_hex, HashPolicy};
 
 use super::{
     catalog_sha3_pin_witness_ok, lock_upstream_catalog_digest_hex, pin_witness_ok,

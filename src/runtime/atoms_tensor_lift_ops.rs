@@ -395,7 +395,10 @@ mod tests {
         assert_eq!(TENSOR_OP_SPEC_ROWS.len(), ADAPTER_CONTRACT_ROWS.len());
         assert_eq!(TENSOR_OP_SPEC_ROWS.len(), RANK1_PLUS_LEDGER_ROWS.len());
         assert_eq!(op_design_specified_row_count(), 6);
-        assert_eq!(op_design_specified_row_count(), DESIGN_SPECIFIED_ROW_COUNT_PIN);
+        assert_eq!(
+            op_design_specified_row_count(),
+            DESIGN_SPECIFIED_ROW_COUNT_PIN
+        );
         assert_eq!(op_impl_deferred_row_count(), 6);
         assert_eq!(op_impl_deferred_row_count(), IMPL_DEFERRED_ROW_COUNT_PIN);
         for ledger_row in RANK1_PLUS_LEDGER_ROWS {

@@ -265,7 +265,12 @@ mod tests {
         let cost = gate
             .verify_tensor_update(d_int, info_gain)
             .expect("batch sum of info_gain must admit");
-        assert_relative_eq!(cost, expected_debit, epsilon = 1.0e-30, max_relative = 1.0e-9);
+        assert_relative_eq!(
+            cost,
+            expected_debit,
+            epsilon = 1.0e-30,
+            max_relative = 1.0e-9
+        );
         assert_relative_eq!(
             gate.available_credit_joules,
             CREDIT_J - expected_debit,
@@ -301,7 +306,12 @@ mod tests {
         let cost = gate
             .verify_tensor_update(d_large, bits)
             .expect("large d_int must not block when credit funds Landauer debit");
-        assert_relative_eq!(cost, expected_debit, epsilon = 1.0e-30, max_relative = 1.0e-9);
+        assert_relative_eq!(
+            cost,
+            expected_debit,
+            epsilon = 1.0e-30,
+            max_relative = 1.0e-9
+        );
         assert_relative_eq!(
             gate.available_credit_joules,
             credit - expected_debit,
@@ -335,8 +345,18 @@ mod tests {
                 required_j,
                 available_j,
             } => {
-                assert_relative_eq!(required_j, required, epsilon = 1.0e-30, max_relative = 1.0e-9);
-                assert_relative_eq!(available_j, 1.0e-20_f64, epsilon = 1.0e-30, max_relative = 1.0e-9);
+                assert_relative_eq!(
+                    required_j,
+                    required,
+                    epsilon = 1.0e-30,
+                    max_relative = 1.0e-9
+                );
+                assert_relative_eq!(
+                    available_j,
+                    1.0e-20_f64,
+                    epsilon = 1.0e-30,
+                    max_relative = 1.0e-9
+                );
             }
             other => panic!("expected InsufficientGlobalEnergyCredit, got {other:?}"),
         }

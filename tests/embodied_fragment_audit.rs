@@ -4,10 +4,10 @@
 //! W2-35 orchestrator fragment audit — extends W1-19 embodied loop wiring.
 
 use umst_manifold::embodied::{
-    audit_report, fragment_status, phase_wired, scaffold_coverage_pct, unwired_gaps,
-    ActuateDesign, EmbodiedFragment, EmbodiedLoopSlots, FieldSenseClient, FragmentWireStatus,
-    LoopPhase, NullFieldSenseClient, NullRobotExecutor, NullSenseLoopCloser, NullXrPresenter,
-    RobotExecutor, SenseLoopCloser, XrPresenter,
+    audit_report, fragment_status, phase_wired, scaffold_coverage_pct, unwired_gaps, ActuateDesign,
+    EmbodiedFragment, EmbodiedLoopSlots, FieldSenseClient, FragmentWireStatus, LoopPhase,
+    NullFieldSenseClient, NullRobotExecutor, NullSenseLoopCloser, NullXrPresenter, RobotExecutor,
+    SenseLoopCloser, XrPresenter,
 };
 
 #[test]
@@ -100,7 +100,10 @@ fn slots_populate_enables_gap_fill_check() {
 struct RecordingFieldSense;
 
 impl umst_manifold::embodied::FieldSenseClient for RecordingFieldSense {
-    fn sense(&mut self) -> Result<umst_manifold::embodied::SenseObservation, umst_manifold::embodied::FieldSenseError> {
+    fn sense(
+        &mut self,
+    ) -> Result<umst_manifold::embodied::SenseObservation, umst_manifold::embodied::FieldSenseError>
+    {
         Ok(umst_manifold::embodied::SenseObservation {
             witness_digest: [1u8; 32],
         })

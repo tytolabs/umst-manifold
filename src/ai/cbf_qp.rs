@@ -152,7 +152,12 @@ pub fn cbf_qp_constraint_rhs(margin: AdmissibilityMargin, alpha: f32) -> f32 {
 
 /// Post-projection slack `ḣ + α(h)` for scalar surrogate `ḣ = (∂h/∂u)·u`.
 #[must_use]
-pub fn cbf_qp_constraint_margin(u: f32, margin: AdmissibilityMargin, h_dot_coeff: f32, alpha: f32) -> f32 {
+pub fn cbf_qp_constraint_margin(
+    u: f32,
+    margin: AdmissibilityMargin,
+    h_dot_coeff: f32,
+    alpha: f32,
+) -> f32 {
     h_dot_coeff * u + alpha * margin.value()
 }
 

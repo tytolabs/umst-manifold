@@ -14,7 +14,7 @@
 //! of thermodynamic admissibility.
 //!
 //! Witness cross-refs: [`crate::ai::ppo::ManifoldGateway::telemetry`],
-//! `artifacts/training/p4_rejection_baseline.json`.
+//! `artifacts/training/rejection_baseline.json`.
 
 use serde::{Deserialize, Serialize};
 
@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 pub const SLICE_ID: &str = "wave-10-t3";
 
 /// P4 exit witness catalog cross-ref (cold-edge baseline JSON).
-pub const P4_WITNESS_ARTIFACT: &str = "artifacts/training/p4_rejection_baseline.json";
+pub const P4_WITNESS_ARTIFACT: &str = "artifacts/training/rejection_baseline.json";
 
 /// Honest posture — accumulator landed; production export path **open**.
 pub const POSTURE_TAG: &str = "REJECTION_ACCUMULATOR_PARTIAL";

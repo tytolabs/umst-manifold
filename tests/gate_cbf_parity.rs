@@ -32,7 +32,10 @@ fn transition_positive_drives_nonnegative_entropy_proxy_f64() {
     let new = ThermodynamicState::from_mix_with_params(0.5, 0.65, 293.0, &closure_params());
     let verdict = tg.check_transition(&old, &new, 86400.0_f64);
 
-    assert!(verdict.is_accepted(), "sanity: forward hydration should admit");
+    assert!(
+        verdict.is_accepted(),
+        "sanity: forward hydration should admit"
+    );
     let joules_like = cd_dissipation_proxy_to_entropy_joules(verdict.dissipation, 1.0, 1.0);
     assert!(
         joules_like >= 0.0,

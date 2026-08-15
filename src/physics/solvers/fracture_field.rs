@@ -100,11 +100,13 @@ use burn::tensor::{backend::Backend, Int, Tensor};
 
 use core::ops::ControlFlow;
 
-use crate::core::field::{DamageField, DisplacementField, Field, FractureEnergyField, SmallStrainField};
+use crate::core::field::{
+    DamageField, DisplacementField, Field, FractureEnergyField, SmallStrainField,
+};
 use crate::core::iterate_until::iterate_until;
+use crate::physics::error::PhysicsError;
 #[cfg(feature = "fracture-at2")]
 use crate::physics::laplacian::TopologicalLaplacian;
-use crate::physics::error::PhysicsError;
 #[cfg(feature = "fracture-at2")]
 use crate::physics::mechanics::VectorMechanicsSolver;
 #[cfg(feature = "fracture-at2")]
@@ -277,10 +279,7 @@ impl<B: Backend> StaggeredPhase<B> {
 
     /// Canonical field-wrapped mechanics-coupled phase (R25).
     #[cfg(feature = "fracture-at2")]
-    pub fn new_mechanics_coupled_from_fields(
-        u: DisplacementField<B>,
-        d: DamageField<B>,
-    ) -> Self {
+    pub fn new_mechanics_coupled_from_fields(u: DisplacementField<B>, d: DamageField<B>) -> Self {
         Self::MechanicsCoupled {
             u,
             d,
@@ -459,10 +458,7 @@ pub fn strain_tensor_for_fracture_after_mechanics<B: Backend<FloatElem = f32>>(
         cg,
     )?;
     Ok(strain_tensor_from_bar_network_displacement(
-        u,
-        coords_n3,
-        edges_b1,
-        n_nodes,
+        u, coords_n3, edges_b1, n_nodes,
     ))
 }
 
@@ -659,71 +655,69 @@ impl PhaseFieldFractureSolver {
         let mut converged = false;
 
         #[cfg_attr(not(feature = "fracture-at2"), allow(unused_variables))]
-        let completed = iterate_until(outer.max_outer_iterations, &mut st, |st| {
-            match st {
-                StaggeredPhase::DamageOuter {
-                    damage,
-                    prev_strain,
-                    #[cfg(feature = "fracture-at2")]
-                    prev_psi_mean,
-                    #[cfg(not(feature = "fracture-at2"))]
-                    prev_psi_mean: _,
-                } => {
-                    let strain_k = strain_fn(damage);
-                    let d_before = damage.as_tensor().clone();
-                    let prev_s = prev_strain.as_ref().map(|s| s.as_tensor());
-
-                    let d_in = damage.clone();
-                    match self.update_damage(
-                        strain_k.clone(),
-                        d_in,
-                        FractureEnergyField::from_tensor(fracture_energy_gc.clone()),
-                        edges_b1.clone(),
-                    ) {
-                        Ok(d) => *damage = d,
-                        Err(e) => {
-                            outer_err = Some(e);
-                            return ControlFlow::Break(());
-                        }
-                    }
-
-                    let d_after = damage.as_tensor();
-
-                    #[cfg(feature = "fracture-at2")]
-                    let should_break = outer_stopping_should_break(
-                        outer.stopping,
-                        &d_before,
-                        d_after,
-                        strain_k.as_tensor(),
-                        prev_s,
-                        Some(prev_psi_mean),
-                    );
-                    #[cfg(not(feature = "fracture-at2"))]
-                    let should_break = outer_stopping_should_break(
-                        outer.stopping,
-                        &d_before,
-                        d_after,
-                        strain_k.as_tensor(),
-                        prev_s,
-                        None,
-                    );
-
-                    *prev_strain = Some(strain_k);
-
-                    if should_break {
-                        converged = true;
-                        ControlFlow::Break(())
-                    } else {
-                        ControlFlow::Continue(())
-                    }
-                }
+        let completed = iterate_until(outer.max_outer_iterations, &mut st, |st| match st {
+            StaggeredPhase::DamageOuter {
+                damage,
+                prev_strain,
                 #[cfg(feature = "fracture-at2")]
-                StaggeredPhase::MechanicsCoupled { .. } => {
-                    outer_err = Some(PhysicsError::InvariantViolation {
-                        context: "staggered damage outer: unexpected MechanicsCoupled phase",
-                    });
-                    ControlFlow::Break(())
+                prev_psi_mean,
+                #[cfg(not(feature = "fracture-at2"))]
+                    prev_psi_mean: _,
+            } => {
+                let strain_k = strain_fn(damage);
+                let d_before = damage.as_tensor().clone();
+                let prev_s = prev_strain.as_ref().map(|s| s.as_tensor());
+
+                let d_in = damage.clone();
+                match self.update_damage(
+                    strain_k.clone(),
+                    d_in,
+                    FractureEnergyField::from_tensor(fracture_energy_gc.clone()),
+                    edges_b1.clone(),
+                ) {
+                    Ok(d) => *damage = d,
+                    Err(e) => {
+                        outer_err = Some(e);
+                        return ControlFlow::Break(());
+                    }
                 }
+
+                let d_after = damage.as_tensor();
+
+                #[cfg(feature = "fracture-at2")]
+                let should_break = outer_stopping_should_break(
+                    outer.stopping,
+                    &d_before,
+                    d_after,
+                    strain_k.as_tensor(),
+                    prev_s,
+                    Some(prev_psi_mean),
+                );
+                #[cfg(not(feature = "fracture-at2"))]
+                let should_break = outer_stopping_should_break(
+                    outer.stopping,
+                    &d_before,
+                    d_after,
+                    strain_k.as_tensor(),
+                    prev_s,
+                    None,
+                );
+
+                *prev_strain = Some(strain_k);
+
+                if should_break {
+                    converged = true;
+                    ControlFlow::Break(())
+                } else {
+                    ControlFlow::Continue(())
+                }
+            }
+            #[cfg(feature = "fracture-at2")]
+            StaggeredPhase::MechanicsCoupled { .. } => {
+                outer_err = Some(PhysicsError::InvariantViolation {
+                    context: "staggered damage outer: unexpected MechanicsCoupled phase",
+                });
+                ControlFlow::Break(())
             }
         });
 
@@ -732,10 +726,7 @@ impl PhaseFieldFractureSolver {
         }
 
         #[cfg(feature = "fracture-at2")]
-        if outer.stopping.any_enabled()
-            && !converged
-            && completed == outer.max_outer_iterations
-        {
+        if outer.stopping.any_enabled() && !converged && completed == outer.max_outer_iterations {
             return Err(PhysicsError::Diverged {
                 eq_rel: 0.0,
                 pcg_iterations: completed,
@@ -828,8 +819,9 @@ impl PhaseFieldFractureSolver {
             .reshape([batch, n_edges, 1]);
         let edge_unit = delta.div(edge_len.clone());
 
-        let gc_field =
-            FractureEnergyField::from_tensor(Tensor::<B, 3>::ones([batch, n, 1], &dev).mul_scalar(config.gc));
+        let gc_field = FractureEnergyField::from_tensor(
+            Tensor::<B, 3>::ones([batch, n, 1], &dev).mul_scalar(config.gc),
+        );
         let solver = PhaseFieldFractureSolver {
             length_scale: config.length_scale,
         };
@@ -1327,8 +1319,10 @@ mod fracture_at2_tests {
     use burn::tensor::{Data, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
 
-    use crate::core::field::{DamageField, DisplacementField, Field, FractureEnergyField, SmallStrainField};
     use super::{tensile_strain_energy_density_spectral_jacobi, StaggeredPhase};
+    use crate::core::field::{
+        DamageField, DisplacementField, Field, FractureEnergyField, SmallStrainField,
+    };
 
     type B = NdArray<f32>;
 
@@ -1360,7 +1354,10 @@ mod fracture_at2_tests {
         let dev = NdArrayDevice::Cpu;
         let d = damage_field(Tensor::<B, 3>::zeros([1, 3, 1], &dev));
         let phase = StaggeredPhase::new_damage_outer(d.clone());
-        assert_eq!(phase.damage_field().as_tensor().dims(), d.as_tensor().dims());
+        assert_eq!(
+            phase.damage_field().as_tensor().dims(),
+            d.as_tensor().dims()
+        );
     }
 
     #[test]
@@ -1611,7 +1608,12 @@ mod fracture_at2_tests {
         ).expect("PhaseFieldFractureSolver::update_damage_staggered weak→strong two-outer strain schedule (FP §6 AT2 irreversibility witness)");
 
         let sum_weak: f32 = d_only_weak.into_tensor().into_data().value.iter().sum();
-        let sum_ws: f32 = d_weak_then_strong.into_tensor().into_data().value.iter().sum();
+        let sum_ws: f32 = d_weak_then_strong
+            .into_tensor()
+            .into_data()
+            .value
+            .iter()
+            .sum();
         assert!(
             sum_ws > sum_weak + 1e-8_f32,
             "expected second outer (strong strain) to raise total damage vs single weak pass; sum_weak={sum_weak} sum_ws={sum_ws}"
@@ -1759,7 +1761,10 @@ mod fracture_at2_tests {
             40,
             stop,
         ).expect("PhaseFieldFractureSolver::update_damage_staggered_with_stop equivalent stop criteria path (FP §6 AT2 outer-stop parity witness)");
-        assert_eq!(d_a.into_tensor().into_data().value, d_b.into_tensor().into_data().value);
+        assert_eq!(
+            d_a.into_tensor().into_data().value,
+            d_b.into_tensor().into_data().value
+        );
     }
 }
 
@@ -1768,8 +1773,10 @@ mod fracture_idempotency_tests {
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
 
-    use crate::core::field::{DamageField, DisplacementField, Field, FractureEnergyField, SmallStrainField};
     use super::PhaseFieldFractureSolver;
+    use crate::core::field::{
+        DamageField, DisplacementField, Field, FractureEnergyField, SmallStrainField,
+    };
 
     type B = NdArray<f32>;
 
@@ -1894,12 +1901,12 @@ mod fracture_honesty_fence_tests {
         degradation_g_f32, fracture_field_w29_honest_posture_bundle,
         w29_075_fracture_field_deepen_step_witness, FractureFieldHonestyFence,
         PhaseFieldFractureSolver, FRACTURE_FIELD_MASTER_RETICK_ELIGIBLE,
-        FRACTURE_FIELD_OP5_CLAIMED, FRACTURE_FIELD_PHYSICS_GREEN,
-        FRACTURE_FIELD_PRODUCTION_WIRED, W29_075_FRACTURE_FIELD_DEEPEN_STEP,
+        FRACTURE_FIELD_OP5_CLAIMED, FRACTURE_FIELD_PHYSICS_GREEN, FRACTURE_FIELD_PRODUCTION_WIRED,
+        W29_075_FRACTURE_FIELD_DEEPEN_STEP,
     };
+    use crate::core::field::{Field, FractureEnergyField, SmallStrainField};
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
-    use crate::core::field::{Field, FractureEnergyField, SmallStrainField};
 
     type B = NdArray<f32>;
 

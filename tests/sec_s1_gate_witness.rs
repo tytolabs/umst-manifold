@@ -15,8 +15,7 @@ use umst_manifold::runtime::gate::{
     sec_s1_gate_wire_matrix, sec_s1_production_wired, sec_s1_session_ledger_next_hop,
     sec_s1_session_ledger_wired, validate_sec_s1_gate_honesty, FLEET_ACCEL2_AC28_JOB_ID,
     FLEET_ACCEL2_AC28_RECEIPT_PATH, MANIFOLD_SEC_S1_GATE_WIRE_HOPS, S1_FACTOR_IDS,
-    S1_FACTOR_ROW_COUNT, S1_GREEN_CLAIM_BLOCKED, SEC_S1_BOARD_SLICE_ID,
-    SEC_S1_EXPECTED_GATE_EXIT,
+    S1_FACTOR_ROW_COUNT, S1_GREEN_CLAIM_BLOCKED, SEC_S1_BOARD_SLICE_ID, SEC_S1_EXPECTED_GATE_EXIT,
 };
 
 /// FLEET-COMPOSER ACCEL-K AC352 agent job id.

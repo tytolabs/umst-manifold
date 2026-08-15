@@ -43,7 +43,10 @@ mod tests {
     #[test]
     fn cbf_bridge_morphism_identity_pinned() {
         assert!(cbf_bridge_morphism_pinned());
-        assert_eq!(CBF_BRIDGE_MORPHISM_ID, "cd_dissipation_proxy_to_entropy_joules");
+        assert_eq!(
+            CBF_BRIDGE_MORPHISM_ID,
+            "cd_dissipation_proxy_to_entropy_joules"
+        );
         assert_eq!(CBF_BRIDGE_CELL_ID, "PORT-MF-CBF-BRIDGE-W2");
     }
 
@@ -101,9 +104,18 @@ mod tests {
 
     #[test]
     fn cbf_bridge_zero_any_factor_yields_zero() {
-        assert_eq!(cd_dissipation_proxy_to_entropy_joules(0.0, VOLUME_M3, DT_S), 0.0);
-        assert_eq!(cd_dissipation_proxy_to_entropy_joules(D_INT_W_M3, 0.0, DT_S), 0.0);
-        assert_eq!(cd_dissipation_proxy_to_entropy_joules(D_INT_W_M3, VOLUME_M3, 0.0), 0.0);
+        assert_eq!(
+            cd_dissipation_proxy_to_entropy_joules(0.0, VOLUME_M3, DT_S),
+            0.0
+        );
+        assert_eq!(
+            cd_dissipation_proxy_to_entropy_joules(D_INT_W_M3, 0.0, DT_S),
+            0.0
+        );
+        assert_eq!(
+            cd_dissipation_proxy_to_entropy_joules(D_INT_W_M3, VOLUME_M3, 0.0),
+            0.0
+        );
         assert_eq!(cd_dissipation_proxy_to_entropy_joules(0.0, 0.0, 0.0), 0.0);
     }
 
@@ -226,7 +238,9 @@ mod tests {
     #[test]
     fn w8e14_cbf_bridge_posture_tag_honest_not_green() {
         assert!(CBF_BRIDGE_POSTURE_TAG.contains("honest"));
-        assert!(!CBF_BRIDGE_POSTURE_TAG.to_ascii_lowercase().contains("green"));
+        assert!(!CBF_BRIDGE_POSTURE_TAG
+            .to_ascii_lowercase()
+            .contains("green"));
         assert!(cbf_bridge_morphism_pinned());
     }
 }

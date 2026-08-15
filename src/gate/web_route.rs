@@ -10,11 +10,10 @@
 use umst_gate::{ConjunctVerdict, CoreGateOutcome};
 
 use crate::web_constitutive::{
-    evaluate_semantic_conjuncts, evaluate_web_conjuncts, web_gate,
-    web_transition_gate_outcome, web_transition_gate_outcome_with_semantic,
-    WebConstitutiveModel, WebConstitutiveQuantities, WebConstitutiveResponse, WebGateOutcome,
-    WebSemanticGateOutcome, WebSemanticTransitionWitness, WebTransitionWitness,
-    DEFAULT_INT_TOLERANCE,
+    evaluate_semantic_conjuncts, evaluate_web_conjuncts, web_gate, web_transition_gate_outcome,
+    web_transition_gate_outcome_with_semantic, WebConstitutiveModel, WebConstitutiveQuantities,
+    WebConstitutiveResponse, WebGateOutcome, WebSemanticGateOutcome, WebSemanticTransitionWitness,
+    WebTransitionWitness, DEFAULT_INT_TOLERANCE,
 };
 
 /// Canonical web domain conjunct outcome (informational cartridge).
@@ -96,13 +95,7 @@ pub fn canonical_web_transition_from_tensors_with_semantic(
     WebSemanticGateOutcome,
     ConjunctVerdict,
 ) {
-    web_transition_gate_outcome_with_semantic(
-        model,
-        old,
-        new,
-        tolerance,
-        semantic_defect_tolerance,
-    )
+    web_transition_gate_outcome_with_semantic(model, old, new, tolerance, semantic_defect_tolerance)
 }
 
 /// Semantic residual conjunct outcome from 64D tensor rows (HCOM-006 bridge).

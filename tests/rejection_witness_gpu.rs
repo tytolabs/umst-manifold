@@ -139,7 +139,7 @@ fn simulate_kleisli_penalize(dev: &WgpuDevice, seed: u64) -> RejectionTelemetry 
 
 fn baseline_gpu_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("artifacts/training/p4_rejection_baseline_gpu.json")
+        .join("artifacts/training/rejection_baseline_gpu.json")
 }
 
 struct GpuPpoStub;
@@ -206,7 +206,7 @@ fn tiny_umst(dev: &WgpuDevice) -> UnifiedMaterialStateTensor<B> {
 }
 
 #[test]
-fn p4_rejection_baseline_gpu_measured_witness() {
+fn rejection_baseline_gpu_measured_witness() {
     let dev = device();
     let seed = witness_seed();
     let hard = simulate_generate_then_filter(&dev, seed);
@@ -219,7 +219,7 @@ fn p4_rejection_baseline_gpu_measured_witness() {
     let features: Vec<&str> = features_used();
 
     let doc = serde_json::json!({
-        "schema_version": "p4_rejection_baseline.v2",
+        "schema_version": "rejection_baseline.v2",
         "generated_at": "2026-06-24",
         "seed": seed,
         "hardware_note": hardware_note(),
@@ -227,7 +227,7 @@ fn p4_rejection_baseline_gpu_measured_witness() {
         "features_used": features,
         "device": detect_device_label(),
         "backend_features": features,
-        "regenerate": "cargo test -p umst-manifold --features kleisli-ppo-hot-bind,wgpu --test p4_rejection_witness_gpu",
+        "regenerate": "cargo test -p umst-manifold --features kleisli-ppo-hot-bind,wgpu --test rejection_witness_gpu",
         "comparison": {
             "protocol": "equal_reward_budget",
             "episodes": EPISODES,
@@ -271,7 +271,7 @@ fn p4_rejection_baseline_gpu_measured_witness() {
 }
 
 #[test]
-#[ignore = "wgpu Metal min buffer alignment on tiny ODE graph; GPU constraint_loss witness is p4_rejection_baseline_gpu_measured_witness"]
+#[ignore = "wgpu Metal min buffer alignment on tiny ODE graph; GPU constraint_loss witness is rejection_baseline_gpu_measured_witness"]
 fn kleisli_ppo_gpu_autodiff_smoke() {
     let dev = device();
     let mut gateway = ManifoldGateway::new(GpuPpoStub, 300.0_f64, 1.0e-12_f64);

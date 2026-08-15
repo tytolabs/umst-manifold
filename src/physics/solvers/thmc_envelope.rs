@@ -19,9 +19,7 @@
 
 use burn::tensor::{backend::Backend, Tensor};
 
-use crate::core::field::{
-    DisplacementField, HumidityField, ReactionExtentField, TemperatureField,
-};
+use crate::core::field::{DisplacementField, HumidityField, ReactionExtentField, TemperatureField};
 use crate::core::material_phase::{
     MaterialPhase, MaterialPhaseKind, MechanicsState, RheologyState, SettingState, ThmcEnvelope,
 };
@@ -63,7 +61,11 @@ impl<B: Backend> ThmcEnvelope<B> {
                 })
             }
         };
-        Self { phase, damage, time }
+        Self {
+            phase,
+            damage,
+            time,
+        }
     }
 
     /// Parity window: reconstruct flat product for legacy callers / golden hashes.
@@ -197,7 +199,10 @@ mod tests {
         let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Setting);
         let back = to_flat(&env);
         assert!((back.time - flat.time).abs() < f32::EPSILON);
-        assert_eq!(back.damage.as_tensor().dims(), flat.damage.as_tensor().dims());
+        assert_eq!(
+            back.damage.as_tensor().dims(),
+            flat.damage.as_tensor().dims()
+        );
     }
 
     #[test]
@@ -240,7 +245,10 @@ mod tests {
             MaterialPhaseKind::Solid,
         ] {
             let env = ThmcEnvelope::from_flat_state(&flat, kind);
-            assert_eq!(env.damage.as_tensor().dims(), flat.damage.as_tensor().dims());
+            assert_eq!(
+                env.damage.as_tensor().dims(),
+                flat.damage.as_tensor().dims()
+            );
             assert!((env.time - flat.time).abs() < f32::EPSILON);
         }
     }
@@ -251,10 +259,7 @@ mod tests {
         let flat = sample_flat(&device);
         let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Fluid);
         let back = to_flat(&env);
-        assert_eq!(
-            back.mechanical.displacement.as_tensor().dims(),
-            [1, 4, 3]
-        );
+        assert_eq!(back.mechanical.displacement.as_tensor().dims(), [1, 4, 3]);
     }
 
     #[test]
@@ -263,10 +268,7 @@ mod tests {
         let flat = sample_flat(&device);
         let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Solid);
         let back = to_flat(&env);
-        assert_eq!(
-            back.mechanical.displacement.as_tensor().dims(),
-            [1, 4, 3]
-        );
+        assert_eq!(back.mechanical.displacement.as_tensor().dims(), [1, 4, 3]);
     }
 
     #[test]
@@ -425,12 +427,18 @@ mod tests {
         let device = Default::default();
         let flat = sample_flat_nonzero(&device);
         let env = ThmcEnvelope::from_flat_state(&flat, MaterialPhaseKind::Setting);
-        let s = env.phase.as_setting().expect(
-            "from_flat_state(Setting) nonzero must yield Setting arm (MP2 value witness)",
-        );
+        let s = env
+            .phase
+            .as_setting()
+            .expect("from_flat_state(Setting) nonzero must yield Setting arm (MP2 value witness)");
         assert_eq!(
             s.temperature.clone().into_data().value,
-            flat.thermal.temperature.as_tensor().clone().into_data().value
+            flat.thermal
+                .temperature
+                .as_tensor()
+                .clone()
+                .into_data()
+                .value
         );
         assert_eq!(
             s.humidity.clone().into_data().value,
@@ -461,9 +469,10 @@ mod tests {
         env.sync_from_flat_state(&stepped);
         assert_eq!(env.kind(), MaterialPhaseKind::Setting);
         assert!((env.time - stepped.time).abs() < f32::EPSILON);
-        let s = env.phase.as_setting().expect(
-            "sync Setting nonzero writeback must retain Setting arm (MP2b value witness)",
-        );
+        let s = env
+            .phase
+            .as_setting()
+            .expect("sync Setting nonzero writeback must retain Setting arm (MP2b value witness)");
         assert_eq!(
             s.temperature.clone().into_data().value,
             stepped

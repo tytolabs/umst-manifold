@@ -18,14 +18,14 @@ pub mod pnp_bridge;
 #[cfg(feature = "ros2-contract")]
 pub mod ros;
 
-pub mod runtime;
-pub mod solve_report;
 pub mod cargo_test_gap_census;
+pub mod cartridge_migration_stub;
 pub mod nested_drift_census;
 pub mod night_residual_deepen;
+pub mod runtime;
+pub mod solve_report;
 pub mod swarm_manifold_deepen;
 pub mod web_constitutive;
-pub mod cartridge_migration_stub;
 
 #[allow(deprecated)]
 pub use cartridge_migration_stub::*;

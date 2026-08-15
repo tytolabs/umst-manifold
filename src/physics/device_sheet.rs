@@ -195,10 +195,8 @@ mod tests {
     fn device_sheet_sync_from_tensors_copies_payloads() {
         let device = Default::default();
         let n = 2usize;
-        let rho = Tensor::<B, 3>::from_data(
-            Data::new(vec![0.25_f32, 0.75], [1, n, 1].into()),
-            &device,
-        );
+        let rho =
+            Tensor::<B, 3>::from_data(Data::new(vec![0.25_f32, 0.75], [1, n, 1].into()), &device);
         let body = Tensor::<B, 3>::from_data(
             Data::new(vec![1.0, 0.0, 0.0, 0.0, 2.0, 0.0], [1, n, 3].into()),
             &device,
@@ -214,10 +212,8 @@ mod tests {
         assert_eq!(sheet.m_slice(), &[1.0, 1.0, 1.0, 0.0, 0.0, 0.0]);
 
         // Second sync reuses capacity; overwrites logical window only.
-        let rho2 = Tensor::<B, 3>::from_data(
-            Data::new(vec![0.5_f32, 0.5], [1, n, 1].into()),
-            &device,
-        );
+        let rho2 =
+            Tensor::<B, 3>::from_data(Data::new(vec![0.5_f32, 0.5], [1, n, 1].into()), &device);
         sheet.sync_from_tensors(&rho2, &body, &mask, n);
         assert_eq!(sheet.rho_slice(), &[0.5, 0.5]);
         assert!(sheet.rho_flat.capacity() >= 2);

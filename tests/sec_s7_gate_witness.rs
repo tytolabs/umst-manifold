@@ -3,19 +3,19 @@
 
 //! SEC-S7 gate runtime witness — manifold fed-trust migration census on cold-edge evidence.
 
-use umst_manifold::runtime::gate::{
-    gate_fed_trust_migration_census, manifold_gate_sec_s7_ceremony_closed,
-    manifold_s7_all_migrate_surfaces_probed, manifold_verify_migration_inventory_census,
-    sec_s7_gate_factor_table, sec_s7_gate_manifold_probe,
-    sec_s7_gate_transition_evidence_probe, sec_s7_gate_wire_matrix, sec_s7_p1931_j2_honest,
-    sec_s7_p1931_j2_probe, sec_s7_production_wired, validate_sec_s7_gate_honesty,
-    FLEET_P1931_J2_JOB_ID, MANIFOLD_SEC_S7_GATE_WIRE_HOPS, MIGRATION_COMPLETE_HONEST,
-    S7_GREEN_CLAIM_BLOCKED, S_FED_TRUST_PARTIAL_HONEST, S_FED_TRUST_PRODUCTION_WIRED_HONEST,
-};
 use umst_manifold::runtime::gate::sec_s7::{
     manifold_s7_migrate_queue_residue_pins_verified, migration_complete_measured,
     sec_s7_accel_ac08_honest, sec_s7_accel_ac08_probe, sec_s7_migrate_queue_table,
     ACCEL_2030_AC08_JOB_ID,
+};
+use umst_manifold::runtime::gate::{
+    gate_fed_trust_migration_census, manifold_gate_sec_s7_ceremony_closed,
+    manifold_s7_all_migrate_surfaces_probed, manifold_verify_migration_inventory_census,
+    sec_s7_gate_factor_table, sec_s7_gate_manifold_probe, sec_s7_gate_transition_evidence_probe,
+    sec_s7_gate_wire_matrix, sec_s7_p1931_j2_honest, sec_s7_p1931_j2_probe,
+    sec_s7_production_wired, validate_sec_s7_gate_honesty, FLEET_P1931_J2_JOB_ID,
+    MANIFOLD_SEC_S7_GATE_WIRE_HOPS, MIGRATION_COMPLETE_HONEST, S7_GREEN_CLAIM_BLOCKED,
+    S_FED_TRUST_PARTIAL_HONEST, S_FED_TRUST_PRODUCTION_WIRED_HONEST,
 };
 
 #[test]

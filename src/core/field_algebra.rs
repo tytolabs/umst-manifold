@@ -130,9 +130,7 @@ pub fn rank1_field_lattice_field_vs_golden_closes<B: Backend<FloatElem = f32>>(
 
 /// Perturbation witness: `add(mul(a,a), zero)` differs from `a` when `a ≠ 0`.
 #[must_use]
-pub fn field_rank3_perturbation_witness<B: Backend<FloatElem = f32>>(
-    device: &B::Device,
-) -> bool {
+pub fn field_rank3_perturbation_witness<B: Backend<FloatElem = f32>>(device: &B::Device) -> bool {
     let a = Field::<B, Temperature, 3>::new(Tensor::<B, 3>::from_data(
         Data::new(vec![2.0_f32], Shape::new([1, 1, 1])),
         device,
@@ -180,7 +178,9 @@ mod field_rank3 {
     #[test]
     fn field_rank3_rank1_lattice_golden_parity_closes() {
         let rtol = RANK1_FIELD_DEFAULT_RTOL;
-        assert!(rank1_field_lattice_vs_golden_closes(35.689_57, 35.689_57, rtol));
+        assert!(rank1_field_lattice_vs_golden_closes(
+            35.689_57, 35.689_57, rtol
+        ));
         assert!(!rank1_field_lattice_vs_golden_closes(40.0, 35.689_57, rtol));
     }
 
@@ -206,6 +206,10 @@ mod field_rank3 {
             rtol
         ));
         let lattice_host = field_rank3_eval_host(&lattice_field).expect("host");
-        assert!(rank1_field_lattice_vs_golden_closes(lattice_host, golden_host, rtol));
+        assert!(rank1_field_lattice_vs_golden_closes(
+            lattice_host,
+            golden_host,
+            rtol
+        ));
     }
 }

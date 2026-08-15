@@ -269,11 +269,11 @@ ok "script does not invoke git push, gh, or cargo publish"
 
 # --- Summary ---
 echo ""
-echo "w8_publish_readiness: PASS=${PASS} FAIL=${FAIL} SKIP=${SKIP}"
+echo "publish_readiness: PASS=${PASS} FAIL=${FAIL} SKIP=${SKIP}"
 if [[ "${FAIL}" -gt 0 ]]; then
-  echo "w8_publish_readiness: FAILED (${FAIL} checks)" >&2
+  echo "publish_readiness: FAILED (${FAIL} checks)" >&2
   exit 1
 fi
-echo "w8_publish_readiness: READY (prep automated; publish remains human-only)"
-echo "w8_publish_readiness: OK"
+echo "publish_readiness: READY (prep automated; publish remains human-only)"
+echo "publish_readiness: OK"
 exit 0

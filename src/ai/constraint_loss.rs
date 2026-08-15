@@ -411,7 +411,9 @@ pub fn constraint_loss_posture_honest(probe: &ConstraintLossPostureProbe) -> boo
 pub fn validate_constraint_loss_posture_honesty() -> Result<(), &'static str> {
     let probe = constraint_loss_posture_probe();
     if probe.physics_green {
-        return Err("CONSTRAINT_LOSS_PHYSICS_GREEN must stay false — soft penalty is surrogate only");
+        return Err(
+            "CONSTRAINT_LOSS_PHYSICS_GREEN must stay false — soft penalty is surrogate only",
+        );
     }
     if probe.production_wired {
         return Err("constraint_loss_production_wired must stay false until P4 Kleisli compose");
@@ -794,11 +796,8 @@ pub fn explain_landauer_slack_violation<B: Backend<FloatElem = f32>>(
     let bit_energy = temperature_k * LN2_F32 * K_BOLTZMANN_F32;
     let erasure_cost = info_gain_bits.clone().mul_scalar(bit_energy);
     let margin_tensor = erasure_cost.sub_scalar(available_credit_joules);
-    let violation = landauer_slack_violation(
-        info_gain_bits,
-        temperature_k,
-        available_credit_joules,
-    );
+    let violation =
+        landauer_slack_violation(info_gain_bits, temperature_k, available_credit_joules);
     let m = margin_tensor
         .into_data()
         .value
@@ -846,7 +845,10 @@ mod tests {
         let new = old;
         let dt = 1.0_f64;
         let host = transition_outcome(&old, &new, dt, 1e-6);
-        assert!(host.is_energy_positive(), "sanity: identity transition admits");
+        assert!(
+            host.is_energy_positive(),
+            "sanity: identity transition admits"
+        );
 
         let violation = clausius_duhem_violation(
             scalar_tensor(&dev, &[old.density as f32]),
@@ -880,7 +882,10 @@ mod tests {
         };
         let dt = 1.0_f64;
         let host = transition_outcome(&old, &new, dt, 1e-6);
-        assert!(!host.is_energy_positive(), "sanity: ψ spike rejects on host");
+        assert!(
+            !host.is_energy_positive(),
+            "sanity: ψ spike rejects on host"
+        );
 
         let violation = clausius_duhem_violation(
             scalar_tensor(&dev, &[old.density as f32]),
@@ -1084,11 +1089,7 @@ mod tests {
         let dev = NdArrayDevice::default();
         let bits = scalar_tensor(&dev, &[1.0_f32]);
         let lambda = 4.0_f32;
-        let slack = landauer_slack_violation(
-            scalar_tensor(&dev, &[1.0_f32]),
-            300.0_f32,
-            0.0_f32,
-        );
+        let slack = landauer_slack_violation(scalar_tensor(&dev, &[1.0_f32]), 300.0_f32, 0.0_f32);
         let penalty = scaled_landauer_slack_violation(lambda, bits, 300.0_f32, 0.0_f32);
         let s: Vec<f32> = slack.into_data().value;
         let p: Vec<f32> = penalty.into_data().value;
@@ -1125,8 +1126,14 @@ mod tests {
         assert_eq!(posture.wire_hops_closed, constraint_loss_wire_hops_closed());
         assert_eq!(posture.honest_fence, CONSTRAINT_LOSS_HONEST_FENCE);
         assert_eq!(posture.deepen_gen, CONSTRAINT_LOSS_DEEPEN_GEN);
-        assert_eq!(posture.deferred_mass_tensor, MASS_CONSERVATION_TENSOR_DEFERRED_STEP);
-        assert_eq!(posture.deferred_kleisli_compose, P4_KLEISLI_COMPOSE_DEFERRED_STEP);
+        assert_eq!(
+            posture.deferred_mass_tensor,
+            MASS_CONSERVATION_TENSOR_DEFERRED_STEP
+        );
+        assert_eq!(
+            posture.deferred_kleisli_compose,
+            P4_KLEISLI_COMPOSE_DEFERRED_STEP
+        );
         assert!(!constraint_loss_production_wired());
         assert!(!constraint_loss_master_composition_wired());
         assert!(!CONSTRAINT_LOSS_OP5_CLAIMED);
@@ -1147,7 +1154,10 @@ mod tests {
             constraint_loss_fence_wired_count(),
             CONSTRAINT_LOSS_FENCE_WIRED_COUNT
         );
-        assert_eq!(CONSTRAINT_LOSS_WIRE_HOPS.len(), CONSTRAINT_LOSS_WIRE_HOP_COUNT);
+        assert_eq!(
+            CONSTRAINT_LOSS_WIRE_HOPS.len(),
+            CONSTRAINT_LOSS_WIRE_HOP_COUNT
+        );
         assert_eq!(
             constraint_loss_wire_hops_closed(),
             CONSTRAINT_LOSS_WIRE_HOPS_CLOSED
@@ -1281,11 +1291,8 @@ mod tests {
         // Macroscopic bit count so k_B T ln2 · bits ≫ ADMISSIBILITY_MARGIN_EPS.
         // Single-bit Landauer (~1e-21 J) is below the host eps floor and stays Admissible.
         let bits = 1.0e20_f32;
-        let explanation = explain_landauer_slack_violation(
-            scalar_tensor(&dev, &[bits]),
-            300.0_f32,
-            0.0_f32,
-        );
+        let explanation =
+            explain_landauer_slack_violation(scalar_tensor(&dev, &[bits]), 300.0_f32, 0.0_f32);
         assert!(explanation.violation > ADMISSIBILITY_MARGIN_EPS);
         assert_eq!(explanation.admissibility, AdmissibilityToken::Inadmissible);
         assert_eq!(explanation.channel_id, LANDAUER_CBF_CATALOG_ID);

@@ -109,9 +109,15 @@ pub fn witness_priority_posture_honest(probe: &WitnessPriorityPostureProbe) -> b
         && probe.posture_tag == WITNESS_PRIORITY_POSTURE_TAG
         && probe.honest_fence.contains("adaptive_queue_landed=true")
         && probe.honest_fence.contains("default_disabled=true")
-        && probe.honest_fence.contains("tcb_physical_second_law_only=true")
-        && probe.honest_fence.contains("landauer_reject_bump_landed=true")
-        && probe.honest_fence.contains("learning_signal_clamp_landed=true")
+        && probe
+            .honest_fence
+            .contains("tcb_physical_second_law_only=true")
+        && probe
+            .honest_fence
+            .contains("landauer_reject_bump_landed=true")
+        && probe
+            .honest_fence
+            .contains("learning_signal_clamp_landed=true")
         && probe.honest_fence.contains("semantic_cbf_wired=false")
         && probe.honest_fence.contains("hot_path_wired=false")
         && probe.honest_fence.contains("production_wired=false")

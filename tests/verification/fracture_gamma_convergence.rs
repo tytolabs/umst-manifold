@@ -42,7 +42,6 @@ fn damage_field(t: Tensor<B, 3>) -> DamageField<B> {
     Field::new(t)
 }
 
-
 /// Discrete AT2 **1-D bar** surface functional (same definition as `at2_gamma_convergence_three_length_scales`):
 ///
 /// \\[

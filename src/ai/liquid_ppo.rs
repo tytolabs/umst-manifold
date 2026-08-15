@@ -127,7 +127,10 @@ pub fn validate_liquid_ppo_posture_honesty() -> Result<(), &'static str> {
     if !probe.honest_fence.contains("allocate_ready_source=false") {
         return Err("honest_fence missing allocate_ready_source=false");
     }
-    if probe.production_wired || probe.physics_green || probe.master_retick || probe.allocate_ready_source
+    if probe.production_wired
+        || probe.physics_green
+        || probe.master_retick
+        || probe.allocate_ready_source
     {
         return Err("honest booleans must stay false at W29 deepen tier");
     }

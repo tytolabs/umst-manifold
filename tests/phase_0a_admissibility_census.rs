@@ -81,15 +81,15 @@ use umst_manifold::gate::http_manifest::{
     evaluate, reaction_extent_from_age, GateManifest, MixProposal,
 };
 use umst_manifold::gate::transition_proposal::{
-    transition_outcome, thermodynamic_transition_admissible_tol, ThermodynamicStateSnapshot,
+    thermodynamic_transition_admissible_tol, transition_outcome, ThermodynamicStateSnapshot,
     TRANSITION_TOLERANCE,
 };
 use umst_manifold::manifest::UmstManifest;
 
 use umst_manifold::gate::admissibility_census::{
-    format_open_deltas, gate_parity_fixture_path_from, ADMISSIBILITY_COMPUTE_SITES,
-    ADMISSIBILITY_CONSUME_SITES, ConjunctFamily, GATE_PARITY_V0_FIXTURE_REL,
-    GATE_PARITY_V0_SHA256, GATE_PARITY_V0_SHA256_PREFIX, OPEN_RECONCILIATION_DELTAS, SiteRole,
+    format_open_deltas, gate_parity_fixture_path_from, ConjunctFamily, SiteRole,
+    ADMISSIBILITY_COMPUTE_SITES, ADMISSIBILITY_CONSUME_SITES, GATE_PARITY_V0_FIXTURE_REL,
+    GATE_PARITY_V0_SHA256, GATE_PARITY_V0_SHA256_PREFIX, OPEN_RECONCILIATION_DELTAS,
 };
 use umst_manifold::gate::{evaluate_http_mix_manifest, HttpGateManifest, HttpMixProposal};
 
@@ -164,7 +164,8 @@ fn reconcile_c01_transition_outcome_agrees_c02_tol_when_cap_inactive() {
         tol,
     );
     assert_eq!(
-        outcome.is_accepted(), tol_adm,
+        outcome.is_accepted(),
+        tol_adm,
         "C01 ↔ C02 must agree when strength cap is inactive"
     );
 }
@@ -225,8 +226,8 @@ fn reconcile_c11_http_shim_routes_canonical_transition() {
 
 #[test]
 fn reconcile_c09_constraint_loss_cd_only_partial_agrees_on_cd_margin() {
-    use burn_ndarray::NdArray;
     use burn::tensor::Tensor;
+    use burn_ndarray::NdArray;
 
     type B = NdArray<f32>;
     let device = Default::default();
@@ -362,7 +363,12 @@ fn phase0a_http_shim_aligns_with_canonical_transition() {
         proposal.temperature_c + 273.15,
         80.0,
     );
-    let outcome = transition_outcome(&old, &new, proposal.age_days * 24.0 * 3600.0, TRANSITION_TOLERANCE);
+    let outcome = transition_outcome(
+        &old,
+        &new,
+        proposal.age_days * 24.0 * 3600.0,
+        TRANSITION_TOLERANCE,
+    );
     assert!(
         outcome.is_accepted(),
         "canonical transition should accept hydration lift for HTTP admit fixture"
@@ -381,4 +387,3 @@ fn phase0a_reconciliation_matrix_red() {
         GATE_PARITY_V0_SHA256_PREFIX,
     );
 }
-

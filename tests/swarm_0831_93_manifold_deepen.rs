@@ -4,11 +4,10 @@
 // SWARM-C25-0831-93 — MANIFOLD-DEEPEN integration witnesses.
 
 use umst_manifold::core::{LANE_RELATION_GRAPH, SEMANTIC_LANE_BASE};
-use umst_manifold::gate::{
-    AdmissibilityVerdict, GateEvaluatorRegistry, KleisliUnitEvaluator,
-};
+use umst_manifold::gate::{AdmissibilityVerdict, GateEvaluatorRegistry, KleisliUnitEvaluator};
 use umst_manifold::night_residual_deepen::{
-    manifold_night_2350_deepen_honest, manifold_night_2350_deepen_probe, PRIOR_RECEIPT_PATH as NIGHT_PRIOR,
+    manifold_night_2350_deepen_honest, manifold_night_2350_deepen_probe,
+    PRIOR_RECEIPT_PATH as NIGHT_PRIOR,
 };
 use umst_manifold::swarm_manifold_deepen::{
     manifold_swarm_0831_93_deepen_honest, manifold_swarm_0831_93_deepen_probe, JOB_ID,

@@ -129,7 +129,10 @@ fn liquid_ppo_oracle_harvest_pins_from_backward_chain_smoke() {
         f32_hex(w1)
     );
     assert!(w0.is_finite() && w1.is_finite());
-    assert_ne!(w0, w1, "AdamW should move policy_weights after finite backward surrogate");
+    assert_ne!(
+        w0, w1,
+        "AdamW should move policy_weights after finite backward surrogate"
+    );
     // Pin vector 1 of `golden_learner_burnliquid_ppo_v0` (oracle-run harvest @ 2026-07-22).
     assert_eq!(w0, 0.0_f32);
     assert_eq!(w1, 1.681_801_4e-24_f32);

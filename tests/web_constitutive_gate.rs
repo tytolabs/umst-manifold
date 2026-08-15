@@ -33,8 +33,7 @@ fn gate_route_balanced_fixture_accepts() {
 fn gate_route_under_budget_rejects() {
     let old = WebConstitutiveQuantities::balanced();
     let new = WebConstitutiveQuantities::under_budget();
-    let (_, _, composed) =
-        canonical_web_gate_from_quantities(new, old, DEFAULT_INT_TOLERANCE);
+    let (_, _, composed) = canonical_web_gate_from_quantities(new, old, DEFAULT_INT_TOLERANCE);
     assert_eq!(
         composed,
         ConjunctVerdict::Rejected(GateRejectReason::NegativeDissipation)

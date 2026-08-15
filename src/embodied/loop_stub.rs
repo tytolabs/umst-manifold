@@ -828,17 +828,15 @@ impl EmbodiedLoopStub {
         })
     }
 
-    fn sense_leg(
-        &mut self,
-    ) -> Result<super::fragment_slots::SenseObservation, LoopStubReject> {
+    fn sense_leg(&mut self) -> Result<super::fragment_slots::SenseObservation, LoopStubReject> {
         let client = self
             .slots
             .field_sense
             .as_mut()
             .ok_or(LoopStubReject::SenseUnwired)?;
-        client.sense().map_err(|e| LoopStubReject::SenseFailed {
-            detail: e.detail,
-        })
+        client
+            .sense()
+            .map_err(|e| LoopStubReject::SenseFailed { detail: e.detail })
     }
 
     fn present_leg(
@@ -852,9 +850,7 @@ impl EmbodiedLoopStub {
             .ok_or(LoopStubReject::PresentUnwired)?;
         presenter
             .present(admissible_digest)
-            .map_err(|e| LoopStubReject::PresentFailed {
-                detail: e.detail,
-            })
+            .map_err(|e| LoopStubReject::PresentFailed { detail: e.detail })
     }
 
     fn actuate_leg(&mut self, design_digest: &[u8; 32]) -> Result<(), LoopStubReject> {
@@ -867,9 +863,7 @@ impl EmbodiedLoopStub {
             .actuate(&ActuateDesign {
                 design_digest: *design_digest,
             })
-            .map_err(|e| LoopStubReject::ActuateFailed {
-                detail: e.detail,
-            })
+            .map_err(|e| LoopStubReject::ActuateFailed { detail: e.detail })
     }
 
     fn loop_close_leg(
@@ -880,9 +874,9 @@ impl EmbodiedLoopStub {
             .loop_close
             .as_mut()
             .ok_or(LoopStubReject::LoopCloseUnwired)?;
-        closer.close_loop().map_err(|e| LoopStubReject::LoopCloseFailed {
-            detail: e.detail,
-        })
+        closer
+            .close_loop()
+            .map_err(|e| LoopStubReject::LoopCloseFailed { detail: e.detail })
     }
 }
 
@@ -907,9 +901,7 @@ fn mint_gate_admission(
 }
 
 /// Single-shot tick convenience for harnesses.
-pub fn embodied_loop_tick_stub(
-    slots: EmbodiedLoopSlots,
-) -> Result<LoopTickResult, LoopStubReject> {
+pub fn embodied_loop_tick_stub(slots: EmbodiedLoopSlots) -> Result<LoopTickResult, LoopStubReject> {
     EmbodiedLoopStub::new(slots).tick()
 }
 
@@ -917,8 +909,8 @@ pub fn embodied_loop_tick_stub(
 mod tests {
     use super::*;
     use crate::embodied::{
-        FieldSenseError, FieldSenseClient, LoopCloseError, PresentError, PresentScene,
-        RobotExecutor, SenseObservation, SenseLoopCloser, XrPresenter,
+        FieldSenseClient, FieldSenseError, LoopCloseError, PresentError, PresentScene,
+        RobotExecutor, SenseLoopCloser, SenseObservation, XrPresenter,
     };
 
     struct StubSense;
@@ -944,7 +936,10 @@ mod tests {
     struct StubActuate;
 
     impl RobotExecutor for StubActuate {
-        fn actuate(&mut self, _design: &ActuateDesign) -> Result<(), super::super::fragment_slots::ActuateError> {
+        fn actuate(
+            &mut self,
+            _design: &ActuateDesign,
+        ) -> Result<(), super::super::fragment_slots::ActuateError> {
             Ok(())
         }
     }
@@ -991,10 +986,7 @@ mod tests {
         let mut stub = EmbodiedLoopStub::new(wired_slots());
         let result = stub.tick().expect("tick");
         assert_eq!(result.phases_completed.len(), 6);
-        assert_eq!(
-            result.phases_completed[0],
-            LoopTickPhase::Sense
-        );
+        assert_eq!(result.phases_completed[0], LoopTickPhase::Sense);
         assert_eq!(
             result.phases_completed.last(),
             Some(&LoopTickPhase::LoopClose)
@@ -1033,7 +1025,10 @@ mod tests {
         assert!(summary.production_loop_deferred);
         assert!(!summary.gateway_command_composed);
         assert_eq!(summary.scaffold_coverage_pct, SCAFFOLD_COVERAGE_PCT);
-        assert_eq!(SOURCE_ANCHOR_PATH, "umst-manifold/src/embodied/loop_stub.rs");
+        assert_eq!(
+            SOURCE_ANCHOR_PATH,
+            "umst-manifold/src/embodied/loop_stub.rs"
+        );
         assert_eq!(RECEIPT_SLUG, "COMPOSER_ACCEL_2030_AC14");
         assert_eq!(EmbodiedLoopStub::tombstone_summary(), summary);
     }
@@ -1064,8 +1059,12 @@ mod tests {
     #[test]
     fn phase_fence_matches_audit() {
         assert!(EmbodiedLoopStub::phase_wired_at_audit(LoopTickPhase::Gate));
-        assert!(!EmbodiedLoopStub::phase_wired_at_audit(LoopTickPhase::Sense));
-        assert!(!EmbodiedLoopStub::phase_wired_at_audit(LoopTickPhase::LoopClose));
+        assert!(!EmbodiedLoopStub::phase_wired_at_audit(
+            LoopTickPhase::Sense
+        ));
+        assert!(!EmbodiedLoopStub::phase_wired_at_audit(
+            LoopTickPhase::LoopClose
+        ));
         let gate_fence = EmbodiedLoopStub::phase_fence(LoopTickPhase::Gate);
         assert_eq!(gate_fence.phase, LoopTickPhase::Gate);
         assert!(gate_fence.audit_wired);
@@ -1219,7 +1218,10 @@ mod tests {
         assert_eq!(census.gap_inventory, loop_stub_gap_inventory());
         assert!(loop_stub_deepen_honest(&census.deepen));
         assert_eq!(EmbodiedLoopStub::census_probe(), census);
-        assert!(census.deepen.honest_fence.contains("production_wired=false"));
+        assert!(census
+            .deepen
+            .honest_fence
+            .contains("production_wired=false"));
         assert!(census.deepen.honest_fence.contains("physics_green=false"));
         assert!(census.deepen.honest_fence.contains("master_retick=false"));
         assert!(census.deepen.honest_fence.contains("op5=false"));
@@ -1243,7 +1245,10 @@ mod tests {
         let gaps = loop_stub_gap_inventory();
         assert_eq!(gaps.audit_wired_phase_count, 1);
         assert_eq!(gaps.audit_unwired_phase_count, 5);
-        assert_eq!(gaps.unwired_phase_slugs, ["sense", "command", "present", "actuate", "loop_close"]);
+        assert_eq!(
+            gaps.unwired_phase_slugs,
+            ["sense", "command", "present", "actuate", "loop_close"]
+        );
         assert!(!gaps.op5_claimed);
         assert!(!gaps.production_wired);
         assert!(!gaps.physics_green_claimed);

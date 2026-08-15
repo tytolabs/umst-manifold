@@ -13,7 +13,9 @@ use umst_manifold::core::field::{
 };
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::core::traits::IScienceCartridge;
-use umst_manifold::core::umst_schema::{UMST_SCALAR_CHANNEL_COUNT, SCALAR_DAMAGE, SCALAR_HUMIDITY, SCALAR_TEMPERATURE};
+use umst_manifold::core::umst_schema::{
+    SCALAR_DAMAGE, SCALAR_HUMIDITY, SCALAR_TEMPERATURE, UMST_SCALAR_CHANNEL_COUNT,
+};
 use umst_manifold::physics::laplacian::TopologicalLaplacian;
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::orchestration::TopologyPhysicsOrchestrator;
@@ -23,8 +25,8 @@ use umst_manifold::physics::solvers::{
     ReactionExtentKinetics, ThmcImplicitEulerThermalHumidityReactionExtentResidual,
     ThmcImplicitEulerThermalReactionExtentResidual, ThmcSolver, ThmcState,
 };
-use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 use umst_manifold::physics::thmc_umst_sync::sync_thmc_to_umst;
+use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
 type B = NdArray<f32>;
 
@@ -297,7 +299,10 @@ fn thmc_reaction_extent_idempotent_when_rate_vanishes() {
 
     let rate = reaction_extent_rate_field(&kinetics, &alpha0, &temperature, &dev);
     assert!(
-        max_abs_tensor3(rate.as_tensor(), &Tensor::<B, 3>::zeros([batch, n, 1], &dev)) < 1e-9_f32,
+        max_abs_tensor3(
+            rate.as_tensor(),
+            &Tensor::<B, 3>::zeros([batch, n, 1], &dev)
+        ) < 1e-9_f32,
         "saturated α=1 must zero the reaction rate"
     );
 
@@ -376,7 +381,10 @@ fn thmc_mechanics_bar_idempotent_at_zero_load_equilibrium() {
     let dev = device();
     let n = 2usize;
     let coords = Tensor::from_data(
-        Data::new(vec![0.0_f32, 0.0, 0.0, 1.0_f32, 0.0, 0.0], Shape::new([n, 3])),
+        Data::new(
+            vec![0.0_f32, 0.0, 0.0, 1.0_f32, 0.0, 0.0],
+            Shape::new([n, 3]),
+        ),
         &dev,
     );
     let edges = two_node_edges();
@@ -476,7 +484,10 @@ fn orchestrator_thmc_idempotent_at_equilibrium() {
         ) < tol
     );
     assert!(
-        max_abs_tensor3(post2.hydro.humidity.as_tensor(), snap.hydro.humidity.as_tensor()) < tol
+        max_abs_tensor3(
+            post2.hydro.humidity.as_tensor(),
+            snap.hydro.humidity.as_tensor()
+        ) < tol
     );
     assert!(
         max_abs_tensor3(
@@ -530,7 +541,10 @@ fn orchestrator_run_plan_step_repeated_two_idempotent_at_equilibrium() {
         ) < tol
     );
     assert!(
-        max_abs_tensor3(twice.hydro.humidity.as_tensor(), once.hydro.humidity.as_tensor()) < tol
+        max_abs_tensor3(
+            twice.hydro.humidity.as_tensor(),
+            once.hydro.humidity.as_tensor()
+        ) < tol
     );
     assert!(
         max_abs_tensor3(
@@ -538,9 +552,7 @@ fn orchestrator_run_plan_step_repeated_two_idempotent_at_equilibrium() {
             once.chemical.reaction_extent.as_tensor()
         ) < tol
     );
-    assert!(
-        max_abs_tensor3(twice.damage.as_tensor(), once.damage.as_tensor()) < tol
-    );
+    assert!(max_abs_tensor3(twice.damage.as_tensor(), once.damage.as_tensor()) < tol);
     assert!(
         max_abs_tensor3(
             twice.mechanical.displacement.as_tensor(),
@@ -670,8 +682,16 @@ fn thmc_tha_residual_damped_newton_idempotent_at_backward_euler_equilibrium() {
         .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations re-application on saturated (T,h,α) backward-Euler equilibrium (FP §6 Track G THMC idempotency)");
     let tol = 1e-5_f32;
     for (label, a, b) in [
-        ("T", after_first.thermal.temperature.as_tensor(), trial.thermal.temperature.as_tensor()),
-        ("h", after_first.hydro.humidity.as_tensor(), trial.hydro.humidity.as_tensor()),
+        (
+            "T",
+            after_first.thermal.temperature.as_tensor(),
+            trial.thermal.temperature.as_tensor(),
+        ),
+        (
+            "h",
+            after_first.hydro.humidity.as_tensor(),
+            trial.hydro.humidity.as_tensor(),
+        ),
         (
             "α",
             after_first.chemical.reaction_extent.as_tensor(),
@@ -718,7 +738,10 @@ fn thmc_monolithic_qs_r_u_residual_damped_newton_idempotent_at_equilibrium() {
     let damage = zero_damage_mask(batch, n);
     let kinetics = ReactionExtentKinetics::default();
     let coords = Tensor::from_data(
-        Data::new(vec![0.0_f32, 0.0, 0.0, 0.01_f32, 0.0, 0.0], Shape::new([n, 3])),
+        Data::new(
+            vec![0.0_f32, 0.0, 0.0, 0.01_f32, 0.0, 0.0],
+            Shape::new([n, 3]),
+        ),
         &dev,
     );
     let mut bm = vec![1.0_f32; n * 3];
@@ -817,11 +840,23 @@ fn thmc_monolithic_qs_r_u_residual_damped_newton_idempotent_at_equilibrium() {
             None,
         )
         .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations_with_quasi_static_r_u re-step early-exit at equilibrium (FP §6 Track G THMC idempotency)");
-    assert_eq!(norms2.len(), 1, "re-step must also early-exit at equilibrium");
+    assert_eq!(
+        norms2.len(),
+        1,
+        "re-step must also early-exit at equilibrium"
+    );
     let tol = 1e-5_f32;
     for (label, a, b) in [
-        ("T", after_first.thermal.temperature.as_tensor(), trial.thermal.temperature.as_tensor()),
-        ("h", after_first.hydro.humidity.as_tensor(), trial.hydro.humidity.as_tensor()),
+        (
+            "T",
+            after_first.thermal.temperature.as_tensor(),
+            trial.thermal.temperature.as_tensor(),
+        ),
+        (
+            "h",
+            after_first.hydro.humidity.as_tensor(),
+            trial.hydro.humidity.as_tensor(),
+        ),
         (
             "α",
             after_first.chemical.reaction_extent.as_tensor(),
@@ -900,14 +935,15 @@ fn thmc_hydrate_sync_roundtrip_idempotent_on_scalar_channels() {
             state.hydro.humidity.as_tensor()
         ) < eps
     );
-    assert!(
-        max_abs_tensor3(hydrated.damage.as_tensor(), state.damage.as_tensor()) < eps
-    );
+    assert!(max_abs_tensor3(hydrated.damage.as_tensor(), state.damage.as_tensor()) < eps);
     let snap = umst.scalar_features.clone().into_data().value;
     sync_thmc_to_umst(&hydrated, &mut umst)
         .expect(
             "re-sync_thmc_to_umst after hydrate must not drift UMST columns (FP §6 Track G pipeline hydrate roundtrip witness)",
         );
     let again = umst.scalar_features.clone().into_data().value;
-    assert_eq!(snap, again, "second sync after hydrate must not drift UMST columns");
+    assert_eq!(
+        snap, again,
+        "second sync after hydrate must not drift UMST columns"
+    );
 }

@@ -286,9 +286,13 @@ pub fn thmc_step_posture_honest(probe: &ThmcStepPostureProbe) -> bool {
         && !probe.master
         && probe.gate_evidence_wire_landed
         && (probe.default_s_intrinsic_mpa - 240.0).abs() < 1e-12
-        && probe.honest_fence.contains("gate_evidence_wire_landed=true")
+        && probe
+            .honest_fence
+            .contains("gate_evidence_wire_landed=true")
         && probe.honest_fence.contains("production_wired=false")
-        && probe.honest_fence.contains("master_composition_wired=false")
+        && probe
+            .honest_fence
+            .contains("master_composition_wired=false")
         && probe.honest_fence.contains("physics_green=false")
 }
 
@@ -312,7 +316,10 @@ mod tests {
     struct Stub;
 
     impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for Stub {
-        fn compute_all(&self, mix: &crate::core::tensors::MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
+        fn compute_all(
+            &self,
+            mix: &crate::core::tensors::MaterialCompositionTensor<Bk>,
+        ) -> PhysicalResult<Bk> {
             let d = mix.fractions.device();
             PhysicalResult {
                 free_energy: Tensor::zeros([1, 1], &d),
@@ -480,7 +487,10 @@ mod tests {
         .expect(
             "wire_gate_evidence_post_step must succeed on finite THMC plan means (FP §6 Track G THMC step deepen)",
         );
-        assert_eq!(via_trait.transition.catalog_id, via_wire.transition.catalog_id);
+        assert_eq!(
+            via_trait.transition.catalog_id,
+            via_wire.transition.catalog_id
+        );
         assert_eq!(
             via_trait.transition.admissibility,
             via_wire.transition.admissibility

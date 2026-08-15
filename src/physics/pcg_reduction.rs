@@ -77,7 +77,9 @@ pub fn pcg_reduction_posture_honest(probe: &PcgReductionPostureProbe) -> bool {
         && !probe.master
         && probe.krylov_landed
         && probe.masked_dot_f64_landed
-        && probe.honest_fence.contains("pcg_krylov_reductions_landed=true")
+        && probe
+            .honest_fence
+            .contains("pcg_krylov_reductions_landed=true")
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")
 }
@@ -94,7 +96,9 @@ pub fn pcg_reduction_refuse_overclaim(
         return Err("PCG_REDUCTION_PRODUCTION_WIRED must stay false until embodied loop closes");
     }
     if probe.master {
-        return Err("PCG_REDUCTION_MASTER must stay false — not claimed by Krylov reductions alone");
+        return Err(
+            "PCG_REDUCTION_MASTER must stay false — not claimed by Krylov reductions alone",
+        );
     }
     if !pcg_reduction_posture_honest(probe) {
         return Err("pcg_reduction posture fence inconsistent");
@@ -269,10 +273,13 @@ mod tests {
     }
 
     fn naive_masked_norm_sq_f32(a: &[f32], m: &[f32]) -> f32 {
-        a.iter().zip(m).map(|(x, w)| {
-            let v = x * w;
-            v * v
-        }).sum()
+        a.iter()
+            .zip(m)
+            .map(|(x, w)| {
+                let v = x * w;
+                v * v
+            })
+            .sum()
     }
 
     fn naive_dot_f64(a: &[f64], b: &[f64]) -> f64 {
@@ -284,10 +291,13 @@ mod tests {
     }
 
     fn naive_masked_norm_sq_f64(a: &[f64], m: &[f64]) -> f64 {
-        a.iter().zip(m).map(|(x, w)| {
-            let v = x * w;
-            v * v
-        }).sum()
+        a.iter()
+            .zip(m)
+            .map(|(x, w)| {
+                let v = x * w;
+                v * v
+            })
+            .sum()
     }
 
     fn naive_norm_sq_f64(a: &[f64]) -> f64 {
@@ -349,9 +359,7 @@ mod tests {
         let n = 37usize; // non-multiple of CHUNK
         let a: Vec<f64> = (0..n).map(|i| (i as f64) * 1e-3 - 0.2).collect();
         let b: Vec<f64> = (0..n).map(|i| ((n - i) as f64) * 2e-3).collect();
-        let m: Vec<f64> = (0..n)
-            .map(|i| if i % 4 == 0 { 0.0 } else { 1.0 })
-            .collect();
+        let m: Vec<f64> = (0..n).map(|i| if i % 4 == 0 { 0.0 } else { 1.0 }).collect();
 
         let d = dot_f64(&a, &b);
         assert!((d - naive_dot_f64(&a, &b)).abs() < 1e-12);

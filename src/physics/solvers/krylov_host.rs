@@ -314,9 +314,8 @@ where
 mod tests {
     use super::{
         gmres_f32, gmres_f32_try, krylov_host_honest_posture_bundle, krylov_host_posture_honest,
-        KRYLOV_HOST_GMRES_LANDED, KRYLOV_HOST_HONEST_FENCE, KRYLOV_HOST_MASTER,
-        KRYLOV_HOST_OP5, KRYLOV_HOST_PHYSICS_GREEN, KRYLOV_HOST_PRODUCTION_WIRED,
-        W29_KRYLOV_HOST_DEEPEN_CELL,
+        KRYLOV_HOST_GMRES_LANDED, KRYLOV_HOST_HONEST_FENCE, KRYLOV_HOST_MASTER, KRYLOV_HOST_OP5,
+        KRYLOV_HOST_PHYSICS_GREEN, KRYLOV_HOST_PRODUCTION_WIRED, W29_KRYLOV_HOST_DEEPEN_CELL,
     };
     use crate::physics::PhysicsError;
 

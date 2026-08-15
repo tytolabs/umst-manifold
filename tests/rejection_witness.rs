@@ -98,11 +98,11 @@ fn simulate_kleisli_penalize(dev: &NdArrayDevice) -> RejectionTelemetry {
 }
 
 fn baseline_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("artifacts/training/p4_rejection_baseline.json")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("artifacts/training/rejection_baseline.json")
 }
 
 #[test]
-fn p4_rejection_baseline_measured_witness() {
+fn rejection_baseline_measured_witness() {
     let dev = device();
     let hard = simulate_generate_then_filter(&dev);
     let soft = simulate_kleisli_penalize(&dev);
@@ -113,9 +113,9 @@ fn p4_rejection_baseline_measured_witness() {
     let target_met = reduction >= TARGET_REDUCTION_MIN;
 
     let doc = serde_json::json!({
-        "schema_version": "p4_rejection_baseline.v1",
+        "schema_version": "rejection_baseline.v1",
         "generated_at": "2026-06-24",
-        "regenerate": "cargo test -p umst-manifold --features kleisli-ppo-hot-bind --test p4_rejection_witness",
+        "regenerate": "cargo test -p umst-manifold --features kleisli-ppo-hot-bind --test rejection_witness",
         "comparison": {
             "protocol": "equal_reward_budget",
             "episodes": EPISODES,
@@ -144,15 +144,14 @@ fn p4_rejection_baseline_measured_witness() {
     let path = baseline_path();
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .expect("fs::create_dir_all artifacts/training for p4_rejection_baseline.json");
+            .expect("fs::create_dir_all artifacts/training for rejection_baseline.json");
     }
     fs::write(
         &path,
-        serde_json::to_string_pretty(&doc).expect(
-            "serde_json::to_string_pretty p4_rejection_baseline.v1 witness doc",
-        ),
+        serde_json::to_string_pretty(&doc)
+            .expect("serde_json::to_string_pretty rejection_baseline.v1 witness doc"),
     )
-    .expect("fs::write artifacts/training/p4_rejection_baseline.json baseline witness");
+    .expect("fs::write artifacts/training/rejection_baseline.json baseline witness");
 
     assert!(
         hard_rate > soft_rate,

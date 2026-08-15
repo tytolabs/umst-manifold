@@ -245,8 +245,7 @@ pub fn gate_transition_evidence_probe() -> bool {
     let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
     let new = old;
     let evidence = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
-    evidence.admissibility == AdmissibilityToken::Admissible
-        && !evidence.catalog_id.is_empty()
+    evidence.admissibility == AdmissibilityToken::Admissible && !evidence.catalog_id.is_empty()
 }
 
 fn haystack_contains_ci(haystack: &[u8], needle: &[u8]) -> bool {
@@ -254,14 +253,12 @@ fn haystack_contains_ci(haystack: &[u8], needle: &[u8]) -> bool {
         return false;
     }
     let needle_lower: Vec<u8> = needle.iter().map(|b| b.to_ascii_lowercase()).collect();
-    haystack
-        .windows(needle.len())
-        .any(|window| {
-            window
-                .iter()
-                .map(|b| b.to_ascii_lowercase())
-                .eq(needle_lower.iter().copied())
-        })
+    haystack.windows(needle.len()).any(|window| {
+        window
+            .iter()
+            .map(|b| b.to_ascii_lowercase())
+            .eq(needle_lower.iter().copied())
+    })
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -296,7 +293,10 @@ fn manifold_pattern_classes_in_bytes(bytes: &[u8]) -> Vec<Kv1PatternClass> {
     let probes: &[(Kv1PatternClass, &[u8])] = &[
         (Kv1PatternClass::MacAddress, b"00:11:22:33:44:55"),
         (Kv1PatternClass::MacAddress, b"aa:bb:cc:dd:ee:ff"),
-        (Kv1PatternClass::GpuUuidV4, b"12345678-1234-4123-8123-123456789abc"),
+        (
+            Kv1PatternClass::GpuUuidV4,
+            b"12345678-1234-4123-8123-123456789abc",
+        ),
         (Kv1PatternClass::IoPlatformSerial, b"IOPlatformSerialNumber"),
         (Kv1PatternClass::KernelLeaf, b"model name :"),
         (Kv1PatternClass::CpuinfoSerial, b"serial :"),
@@ -352,14 +352,12 @@ fn find_subslice_ci(haystack: &[u8], needle: &[u8]) -> Option<usize> {
         return None;
     }
     let needle_lower: Vec<u8> = needle.iter().map(|b| b.to_ascii_lowercase()).collect();
-    haystack
-        .windows(needle.len())
-        .position(|window| {
-            window
-                .iter()
-                .map(|b| b.to_ascii_lowercase())
-                .eq(needle_lower.iter().copied())
-        })
+    haystack.windows(needle.len()).position(|window| {
+        window
+            .iter()
+            .map(|b| b.to_ascii_lowercase())
+            .eq(needle_lower.iter().copied())
+    })
 }
 
 /// Scrub detected K_v1 tokens from bytes (manifold cold-edge witness).

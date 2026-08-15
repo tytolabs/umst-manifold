@@ -187,7 +187,10 @@ fn apply_physics_thmc_step_errors_without_thmc_coupled() {
     };
     let cartridge = EmptyCartridge;
     match solver.step(&cartridge, state, &mut manifold) {
-        Err(e) => assert!(e.to_string().contains("thmc-coupled"), "unexpected error: {e}"),
+        Err(e) => assert!(
+            e.to_string().contains("thmc-coupled"),
+            "unexpected error: {e}"
+        ),
         Ok(_) => panic!("expected Err when thmc-coupled is disabled"),
     }
 }

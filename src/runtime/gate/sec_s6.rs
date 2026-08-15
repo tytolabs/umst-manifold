@@ -140,12 +140,14 @@ pub const HCOM_PROV_GW_FENCE_HOPS: &[ManifoldHcomProvGwFenceHop] = &[
     },
     ManifoldHcomProvGwFenceHop {
         ordinal: 4,
-        surface: "umst-gateway/src/semantic_compose.rs::compose_j2_semantic_production_trust_stamped",
+        surface:
+            "umst-gateway/src/semantic_compose.rs::compose_j2_semantic_production_trust_stamped",
         role: "Production compose + trust stamp on semantic admit (JOINT-GATE)",
     },
     ManifoldHcomProvGwFenceHop {
         ordinal: 5,
-        surface: "umst-gateway/src/semantic_compose.rs::semantic_conjunct_witness_id_with_trust_stamp",
+        surface:
+            "umst-gateway/src/semantic_compose.rs::semantic_conjunct_witness_id_with_trust_stamp",
         role: "Bind attestation chain root prefix into conjunct witness id on admit",
     },
 ];
@@ -336,8 +338,7 @@ pub fn gate_transition_evidence_probe() -> bool {
     let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
     let new = old;
     let evidence = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
-    evidence.admissibility == AdmissibilityToken::Admissible
-        && !evidence.catalog_id.is_empty()
+    evidence.admissibility == AdmissibilityToken::Admissible && !evidence.catalog_id.is_empty()
 }
 
 /// Live operator attestation ceremony — honest false until gateway routes plumbed.
@@ -470,9 +471,10 @@ pub fn manifold_hcom_prov_gw_fence_hops_verified() -> bool {
         && HCOM_PROV_GW_FENCE_HOPS
             .iter()
             .any(|h| h.surface.contains("enforce_hcom_prov_semantic_admit"))
-        && HCOM_PROV_GW_FENCE_HOPS
-            .iter()
-            .any(|h| h.surface.contains("semantic_conjunct_witness_id_with_trust_stamp"))
+        && HCOM_PROV_GW_FENCE_HOPS.iter().any(|h| {
+            h.surface
+                .contains("semantic_conjunct_witness_id_with_trust_stamp")
+        })
         && HCOM_PROV_GW_FENCE_HOPS
             .iter()
             .all(|h| h.surface.contains("umst-") || h.surface.contains("egoff"))
@@ -503,7 +505,9 @@ pub fn manifold_sec_s6_gate_wire_integrity_verified() -> bool {
         && MANIFOLD_SEC_S6_GATE_WIRE_HOPS
             .iter()
             .any(|h| h.surface.contains("gate_hcom_prov_gateway_fence_census") && h.wired)
-        && MANIFOLD_SEC_S6_GATE_WIRE_HOPS.last().is_some_and(|h| !h.wired)
+        && MANIFOLD_SEC_S6_GATE_WIRE_HOPS
+            .last()
+            .is_some_and(|h| !h.wired)
 }
 
 /// Whether SCERT upstream hw/l/zero/m slots are pinned with honest PARTIAL posture.
@@ -701,7 +705,8 @@ pub fn sec_s6_accel_ac33_probe() -> SecS6AccelAc33Probe {
         prior_2033_absorbed: PRIOR_RECEIPT_PATH_2033.contains("SEC-S6_2033"),
         prior_z126_absorbed: PRIOR_Z126_RECEIPT_PATH.contains("COMPOSER_Z126_1232"),
         prior_h55_absorbed: PRIOR_H55_RECEIPT_PATH.contains("COMPOSER_H55_2242"),
-        hcom_prov_fence_table_residue_pinned: fence_table.contains("enforce_hcom_prov_semantic_admit")
+        hcom_prov_fence_table_residue_pinned: fence_table
+            .contains("enforce_hcom_prov_semantic_admit")
             && fence_table.contains("verified=true")
             && upstream_table.contains("upstream_green=0/4"),
         probe: sec_s6_gate_manifold_probe(),
@@ -958,8 +963,14 @@ mod sec_s6_tests {
     #[test]
     fn sec_s6_w29_125_honest_fence_no_green_production_master_op5() {
         assert_eq!(W29_125_CELL_ID, "W29-125-SEC_S6");
-        assert_eq!(W29_125_DEEPEN_SCHEMA_VERSION, "sec_s6_w29_125_honest_fence_v1");
-        assert_eq!(SCHEMA_VERSION, "sec_s6_gate_hcom_prov_gateway_fence_census_v2");
+        assert_eq!(
+            W29_125_DEEPEN_SCHEMA_VERSION,
+            "sec_s6_w29_125_honest_fence_v1"
+        );
+        assert_eq!(
+            SCHEMA_VERSION,
+            "sec_s6_gate_hcom_prov_gateway_fence_census_v2"
+        );
         assert_eq!(W29_125_HONEST_POSTURE, "SEC_S6_MANIFOLD_CENSUS_DEEPEN_ONLY");
         assert!(W29_125_NON_CLAIM.contains("not GREEN"));
         assert!(W29_125_NON_CLAIM.contains("not MASTER_RETICK"));
@@ -977,7 +988,9 @@ mod sec_s6_tests {
         assert!(probe.deepen_honest);
         assert!(probe.honest_fence.contains("master_retick=false"));
         assert!(probe.honest_fence.contains("op5_cleared=false"));
-        assert!(probe.honest_fence.contains("hcom_prov_gw_production_open=true"));
+        assert!(probe
+            .honest_fence
+            .contains("hcom_prov_gw_production_open=true"));
         let matrix = sec_s6_gate_wire_matrix();
         assert!(matrix.contains("honest_fence_holds=true"));
         assert!(matrix.contains("w29_125_cell=W29-125-SEC_S6"));

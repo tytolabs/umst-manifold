@@ -6,14 +6,14 @@
 #   bash scripts/run_p4_multiseed_witness.sh
 #
 # Writes: artifacts/training/p4_rejection_multiseed.json
-# Per-seed single-run baselines: artifacts/training/p4_rejection_baseline_gpu.json (last seed wins)
+# Per-seed single-run baselines: artifacts/training/rejection_baseline_gpu.json (last seed wins)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUT="${ROOT}/artifacts/training/p4_rejection_multiseed.json"
-BASELINE="${ROOT}/artifacts/training/p4_rejection_baseline_gpu.json"
+BASELINE="${ROOT}/artifacts/training/rejection_baseline_gpu.json"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 SEEDS=(42 43 44)
@@ -25,7 +25,7 @@ idx=0
 for seed in "${SEEDS[@]}"; do
   echo "== P4 witness seed=${seed} =="
   P4_WITNESS_SEED="${seed}" cargo test -p umst-manifold --features kleisli-ppo-hot-bind,wgpu \
-    --test p4_rejection_witness_gpu p4_rejection_baseline_gpu_measured_witness -- --exact --nocapture
+    --test rejection_witness_gpu rejection_baseline_gpu_measured_witness -- --exact --nocapture
   if [[ ! -f "${BASELINE}" ]]; then
     echo "FAIL: expected ${BASELINE} after seed ${seed}" >&2
     exit 1

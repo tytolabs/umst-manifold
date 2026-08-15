@@ -237,7 +237,9 @@ pub fn manifest_posture_honest(probe: &ManifestPostureProbe) -> bool {
         && probe.honest_fence.contains("manifest_builder_landed=true")
         && probe.honest_fence.contains("catalog_pin_landed=true")
         && probe.honest_fence.contains("production_wired=false")
-        && probe.honest_fence.contains("master_composition_wired=false")
+        && probe
+            .honest_fence
+            .contains("master_composition_wired=false")
 }
 
 /// Validate manifest posture honesty — fail closed on fake production/master/GREEN claims.
@@ -753,7 +755,9 @@ mod tests {
         assert!(!probe.production_wired);
         assert!(!probe.master_composition_wired);
         assert!(probe.honest_fence.contains("production_wired=false"));
-        assert!(probe.honest_fence.contains("master_composition_wired=false"));
+        assert!(probe
+            .honest_fence
+            .contains("master_composition_wired=false"));
         validate_manifest_posture_honesty().expect("validate_manifest_posture_honesty");
     }
 

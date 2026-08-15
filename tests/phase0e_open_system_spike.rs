@@ -9,12 +9,12 @@
 //! **Parity anchor:** `gate_parity_v0.json` · SHA256 `d5608148…` (5-row UNLOCK-3; routing unchanged).
 //! **Completed:** Phase 0f parity lock → **M0** earned.
 
+use umst_cartridge_concrete::evaluate_material_conjuncts;
 use umst_manifold::ai::cbf::ThermodynamicCBF;
 use umst_manifold::core::MaterialTransitionParams;
 use umst_manifold::gate::admissibility_census::{
-    OPEN_RECONCILIATION_DELTAS, GATE_PARITY_V0_SHA256, GATE_PARITY_V0_SHA256_PREFIX,
+    GATE_PARITY_V0_SHA256, GATE_PARITY_V0_SHA256_PREFIX, OPEN_RECONCILIATION_DELTAS,
 };
-use umst_cartridge_concrete::evaluate_material_conjuncts;
 use umst_manifold::gate::material_gate::MaterialTransitionWitness;
 use umst_manifold::gate::open_system::{
     active_matter_power_input, cbf_cd_matches_open_system_gate, cbf_landauer_as_power_input,
@@ -84,7 +84,10 @@ fn phase0e_i_concrete_passive_matches_transition_outcome_bytes() {
     let passive = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
     let open = transition_outcome_with_power_input(&old, &new, dt, 0.0, TRANSITION_TOLERANCE);
 
-    assert_eq!(passive, open, "P_input=0 must byte-match legacy transition_outcome");
+    assert_eq!(
+        passive, open,
+        "P_input=0 must byte-match legacy transition_outcome"
+    );
     assert_eq!(
         outcome_verdict_bytes(&passive),
         outcome_verdict_bytes(&open),
@@ -107,7 +110,10 @@ fn phase0e_i_polymer_sketch_passive_matches_transition_outcome_bytes() {
     let open = transition_outcome_with_power_input(&old, &new, dt, 0.0, TRANSITION_TOLERANCE);
 
     assert_eq!(passive, open);
-    assert_eq!(outcome_verdict_bytes(&passive), outcome_verdict_bytes(&open));
+    assert_eq!(
+        outcome_verdict_bytes(&passive),
+        outcome_verdict_bytes(&open)
+    );
 }
 
 // --- 0e-ii: active-matter well-posedness (Wang ATP fixture) ---
@@ -201,7 +207,10 @@ fn phase0e_iii_open_system_does_not_alter_material_conjuncts() {
     let powered = transition_outcome_with_power_input(&old, &new, dt, 0.0, TRANSITION_TOLERANCE);
 
     assert_eq!(passive, powered);
-    assert!(!passive.is_accepted(), "strength regression still rejects composed gate");
+    assert!(
+        !passive.is_accepted(),
+        "strength regression still rejects composed gate"
+    );
 }
 
 // --- CBF ↔ open-system reconciliation (clears census delta) ---
@@ -240,7 +249,10 @@ fn phase0e_cbf_landauer_wired_into_open_system_gate() {
 fn phase0e_open_system_core_gate_idempotent_at_zero_power_input() {
     let first = open_system_core_gate(12.0, 0.0, true, TRANSITION_TOLERANCE);
     let second = open_system_core_gate(12.0, 0.0, true, TRANSITION_TOLERANCE);
-    assert_eq!(first, second, "open_system_core_gate must not drift at P_input=0");
+    assert_eq!(
+        first, second,
+        "open_system_core_gate must not drift at P_input=0"
+    );
 }
 
 #[test]
@@ -265,18 +277,9 @@ fn phase0e_open_system_core_gate_idempotent_on_active_fixture() {
         temperature_k: 310.0,
     };
     let power_input = fixture.power_input();
-    let first = open_system_core_gate(
-        fixture.dissipation,
-        power_input,
-        true,
-        TRANSITION_TOLERANCE,
-    );
-    let second = open_system_core_gate(
-        fixture.dissipation,
-        power_input,
-        true,
-        TRANSITION_TOLERANCE,
-    );
+    let first = open_system_core_gate(fixture.dissipation, power_input, true, TRANSITION_TOLERANCE);
+    let second =
+        open_system_core_gate(fixture.dissipation, power_input, true, TRANSITION_TOLERANCE);
     assert_eq!(first, second, "active fixture core gate must be idempotent");
     assert!(first.is_accepted());
 }
@@ -287,8 +290,10 @@ fn phase0e_transition_with_power_input_idempotent_on_active_admissible_transitio
     let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.45, 293.15, 80.0);
     let dt = 7.0 * 24.0 * 3600.0;
     let power_input = active_matter_power_input(80.0, 0.15);
-    let first = transition_outcome_with_power_input(&old, &new, dt, power_input, TRANSITION_TOLERANCE);
-    let second = transition_outcome_with_power_input(&old, &new, dt, power_input, TRANSITION_TOLERANCE);
+    let first =
+        transition_outcome_with_power_input(&old, &new, dt, power_input, TRANSITION_TOLERANCE);
+    let second =
+        transition_outcome_with_power_input(&old, &new, dt, power_input, TRANSITION_TOLERANCE);
     assert_eq!(
         first, second,
         "active open-system transition must not drift on re-application"

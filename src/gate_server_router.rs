@@ -271,7 +271,10 @@ mod tests {
     fn gate_server_router_morphism_identity_pinned() {
         assert!(gate_server_router_morphism_pinned());
         assert_eq!(GATE_SERVER_ROUTER_CELL_ID, "W29-041-GATE_SERVER_ROUTER");
-        assert_eq!(GATE_SERVER_ROUTER_SCHEMA_VERSION, "gate_server_router_wire_census_v1");
+        assert_eq!(
+            GATE_SERVER_ROUTER_SCHEMA_VERSION,
+            "gate_server_router_wire_census_v1"
+        );
     }
 
     #[test]
@@ -286,11 +289,9 @@ mod tests {
     #[test]
     fn gate_server_router_production_wired_stays_false() {
         assert!(!gate_server_router_production_wired());
-        assert!(
-            GATE_SERVER_ROUTER_WIRE_HOPS
-                .iter()
-                .any(|h| !h.wired && h.surface.contains("TLS"))
-        );
+        assert!(GATE_SERVER_ROUTER_WIRE_HOPS
+            .iter()
+            .any(|h| !h.wired && h.surface.contains("TLS")));
     }
 
     #[test]
@@ -348,8 +349,7 @@ mod tests {
 
     #[test]
     fn build_response_gate_rejects_malformed_json() {
-        let payload =
-            build_response(&parsed("POST /gate HTTP/1.1", b"{not-json"), &runtime());
+        let payload = build_response(&parsed("POST /gate HTTP/1.1", b"{not-json"), &runtime());
         assert_eq!(status_from_payload(&payload), 200);
         let json: serde_json::Value = serde_json::from_str(&body_from_payload(&payload)).unwrap();
         assert_eq!(json["admissible"], false);

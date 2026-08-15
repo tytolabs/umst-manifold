@@ -3,9 +3,7 @@
 
 //! R14-0 — rank-indexed parity gate integration tests.
 
-use umst_algebra_burn::parity_rank::{
-    close, Evidence, ParityClaim, ParityRank,
-};
+use umst_algebra_burn::parity_rank::{close, Evidence, ParityClaim, ParityRank};
 use umst_algebra_burn::{compare_host_scalar, rank1::RANK1_PLUS_COMPARISON_EPS, GoldenVerdict};
 
 #[test]

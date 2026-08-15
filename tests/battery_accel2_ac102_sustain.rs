@@ -8,8 +8,8 @@
 use umst_manifold::cargo_test_gap_census::{
     cargo_test_gap_honest, cargo_test_gap_probe, j11_manifold_battery_honest,
     j11_manifold_battery_probe, CargoTestGapStatus, COMPOSER_H79_RECEIPT_PATH,
-    COMPOSER_J11_RECEIPT_PATH, INTEGRATION_BLOCKER_TEST, LIB_UNIT_PASS_COUNT,
-    META_6_STATUS, NESTED_REPO_CLEAN, OP5_EXCEPTION_DOC, VERIFY_COMMAND,
+    COMPOSER_J11_RECEIPT_PATH, INTEGRATION_BLOCKER_TEST, LIB_UNIT_PASS_COUNT, META_6_STATUS,
+    NESTED_REPO_CLEAN, OP5_EXCEPTION_DOC, VERIFY_COMMAND,
 };
 use umst_manifold::nested_drift_census::{
     nested_drift_census_honest, nested_drift_census_probe, OP5_STATUS,
@@ -98,7 +98,9 @@ pub fn ac102_battery_sustain_honest(probe: &Ac102BatterySustainProbe) -> bool {
         && probe.absorbed_h79.contains("COMPOSER_H79_2242")
         && probe.posture_tag == AC102_POSTURE_TAG
         && probe.lib_unit_pass_count == LIB_UNIT_PASS_COUNT
-        && probe.integration_blocker.contains("adjoint_four_node_chain")
+        && probe
+            .integration_blocker
+            .contains("adjoint_four_node_chain")
         && probe.cargo_status == CargoTestGapStatus::Partial
         && probe.j11_honest
         && probe.h79_honest
@@ -142,8 +144,12 @@ fn ac102_j11_battery_census_honest_partial() {
 #[test]
 fn ac102_integration_blocker_pinned_adjoint_fd() {
     let probe = ac102_battery_sustain_probe();
-    assert!(probe.integration_blocker.contains("adjoint_compliance_analytic"));
-    assert!(probe.integration_blocker.contains("adjoint_four_node_chain"));
+    assert!(probe
+        .integration_blocker
+        .contains("adjoint_compliance_analytic"));
+    assert!(probe
+        .integration_blocker
+        .contains("adjoint_four_node_chain"));
     assert_eq!(probe.cargo_status.tag(), "partial");
 }
 

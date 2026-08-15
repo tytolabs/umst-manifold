@@ -8,9 +8,9 @@ pub mod adjoint_q1_hex;
 pub mod compliance_functional;
 pub mod dec_operators;
 pub mod dec_primal;
-pub mod error;
 #[cfg(feature = "mechanics-adjoint-q1-hex")]
 pub mod device_sheet;
+pub mod error;
 #[cfg(any(
     feature = "topology-density-evolution",
     feature = "mechanics-voigt-cauchy"
@@ -19,6 +19,11 @@ pub mod extruded_plate;
 pub mod framework;
 #[cfg(feature = "mechanics-adjoint-q1-hex")]
 pub mod grid_witness;
+#[cfg(any(
+    feature = "topology-density-evolution",
+    feature = "mechanics-voigt-cauchy"
+))]
+pub mod hex_elasticity;
 pub mod laplacian;
 pub mod linear;
 pub mod mechanics;
@@ -28,21 +33,16 @@ pub mod mechanics_solve_port;
 pub mod operator;
 pub mod operators;
 pub mod orchestration;
-#[cfg(feature = "thmc-coupled")]
-pub(crate) mod pipeline;
 #[cfg(any(
     feature = "topology-density-evolution",
     feature = "mechanics-voigt-cauchy"
 ))]
 pub mod pcg_reduction;
+#[cfg(feature = "thmc-coupled")]
+pub(crate) mod pipeline;
 #[cfg(feature = "topology-density-evolution")]
 pub mod prime_spectral_filter;
 pub mod protocols;
-#[cfg(any(
-    feature = "topology-density-evolution",
-    feature = "mechanics-voigt-cauchy"
-))]
-pub mod hex_elasticity;
 pub mod rheology_analytic;
 #[cfg(feature = "mechanics-adjoint-q1-hex")]
 pub mod solve_budget;

@@ -191,10 +191,7 @@ fn plan_field_nodal_col<B: Backend<FloatElem = f32>>(
             detail: "plan field N != UMST nodes",
         });
     }
-    Ok(field
-        .clone()
-        .slice([0..1, 0..n, 0..1])
-        .reshape([n, 1]))
+    Ok(field.clone().slice([0..1, 0..n, 0..1]).reshape([n, 1]))
 }
 
 /// Write typed THMC plan fields into UMST scalar columns (absolute T, humidity, damage).
@@ -239,21 +236,9 @@ pub fn sync_thmc_fields_to_umst<B: Backend<FloatElem = f32>>(
         });
     }
 
-    let t_col = plan_field_nodal_col(
-        temperature.as_tensor(),
-        "sync_thmc_to_umst: temperature",
-        n,
-    )?;
-    let h_col = plan_field_nodal_col(
-        humidity.as_tensor(),
-        "sync_thmc_to_umst: humidity",
-        n,
-    )?;
-    let d_col = plan_field_nodal_col(
-        damage.as_tensor(),
-        "sync_thmc_to_umst: damage",
-        n,
-    )?;
+    let t_col = plan_field_nodal_col(temperature.as_tensor(), "sync_thmc_to_umst: temperature", n)?;
+    let h_col = plan_field_nodal_col(humidity.as_tensor(), "sync_thmc_to_umst: humidity", n)?;
+    let d_col = plan_field_nodal_col(damage.as_tensor(), "sync_thmc_to_umst: damage", n)?;
 
     let temp_ch = ScalarChannelIdx::try_new(SCALAR_TEMPERATURE)
         .map_err(|e| dec_typestate_err("invalid SCALAR_TEMPERATURE channel", e))?;
@@ -286,11 +271,11 @@ pub fn sync_thmc_to_umst<B: Backend<FloatElem = f32>>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use burn::tensor::{Data, Int, Shape, Tensor};
-    use burn_ndarray::NdArray;
     use crate::core::field::Field;
     use crate::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
     use crate::physics::error::PhysicsError;
+    use burn::tensor::{Data, Int, Shape, Tensor};
+    use burn_ndarray::NdArray;
 
     type B = NdArray<f32>;
 
@@ -378,9 +363,8 @@ mod tests {
         let n = 2usize;
         let mut umst = toy_umst(n, UMST_SCALAR_CHANNEL_COUNT);
         let (t, h, d) = plan_fields(1, n, 305.0, 0.55, 0.2);
-        sync_thmc_fields_to_umst(&t, &h, &d, &mut umst, TemperatureSyncMode::Absolute).expect(
-            "sync_thmc_fields_to_umst Absolute on 2-node toy UMST (W29-090 deepen fence)",
-        );
+        sync_thmc_fields_to_umst(&t, &h, &d, &mut umst, TemperatureSyncMode::Absolute)
+            .expect("sync_thmc_fields_to_umst Absolute on 2-node toy UMST (W29-090 deepen fence)");
         let out = umst.scalar_features.clone().into_data().value;
         let f = UMST_SCALAR_CHANNEL_COUNT;
         assert!((out[SCALAR_TEMPERATURE] - 305.0).abs() < 1e-5);
@@ -396,8 +380,9 @@ mod tests {
         let n = 2usize;
         let mut umst = toy_umst(n, UMST_SCALAR_CHANNEL_COUNT);
         let (t, h, d) = plan_fields(1, n, 300.0, 0.5, 0.1);
-        let err = sync_thmc_fields_to_umst(&t, &h, &d, &mut umst, TemperatureSyncMode::DeltaAdditive)
-            .unwrap_err();
+        let err =
+            sync_thmc_fields_to_umst(&t, &h, &d, &mut umst, TemperatureSyncMode::DeltaAdditive)
+                .unwrap_err();
         assert!(matches!(err, PhysicsError::InvariantViolation { .. }));
     }
 
@@ -443,13 +428,11 @@ mod tests {
             Tensor::<B, 3>::full([1, n, 1], 0.2, &device()),
             0.0,
         );
-        sync_thmc_to_umst(&state, &mut umst).expect(
-            "sync_thmc_to_umst first pass (W29-090 deepen idempotency baseline)",
-        );
+        sync_thmc_to_umst(&state, &mut umst)
+            .expect("sync_thmc_to_umst first pass (W29-090 deepen idempotency baseline)");
         let snap = umst.scalar_features.clone().into_data().value;
-        sync_thmc_to_umst(&state, &mut umst).expect(
-            "sync_thmc_to_umst re-application (W29-090 deepen idempotency witness)",
-        );
+        sync_thmc_to_umst(&state, &mut umst)
+            .expect("sync_thmc_to_umst re-application (W29-090 deepen idempotency witness)");
         let again = umst.scalar_features.clone().into_data().value;
         assert_eq!(snap, again);
     }

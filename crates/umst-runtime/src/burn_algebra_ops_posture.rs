@@ -318,20 +318,14 @@ mod tests {
             assert!(row.hub_path.starts_with("umst-manifold/"));
             assert!(!row.hub_path.contains("umst-algebra-burn"));
         }
-        let landed: Vec<_> = BURN_OP_HUB_ROWS
-            .iter()
-            .filter(|r| r.impl_landed)
-            .collect();
+        let landed: Vec<_> = BURN_OP_HUB_ROWS.iter().filter(|r| r.impl_landed).collect();
         assert_eq!(landed.len(), 4);
         for row in landed {
             assert_eq!(row.tensor_rank, 0);
             assert_eq!(row.hub_status, "LANDED");
             assert_eq!(row.hub_module, "atoms_tensor_lift");
         }
-        let deferred: Vec<_> = BURN_OP_HUB_ROWS
-            .iter()
-            .filter(|r| !r.impl_landed)
-            .collect();
+        let deferred: Vec<_> = BURN_OP_HUB_ROWS.iter().filter(|r| !r.impl_landed).collect();
         assert_eq!(deferred.len(), 4);
         for row in deferred {
             assert!(row.tensor_rank == 3 || row.tensor_rank == 4);

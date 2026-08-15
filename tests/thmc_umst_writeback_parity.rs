@@ -97,8 +97,8 @@ fn thmc_umst_writeback_roundtrip_after_step() {
         ..Default::default()
     };
     struct Stub;
-    impl<Bk: burn::tensor::backend::Backend<FloatElem = f32>> umst_manifold::core::traits::IScienceCartridge<Bk>
-        for Stub
+    impl<Bk: burn::tensor::backend::Backend<FloatElem = f32>>
+        umst_manifold::core::traits::IScienceCartridge<Bk> for Stub
     {
         fn compute_all(
             &self,
@@ -140,13 +140,30 @@ fn thmc_umst_writeback_roundtrip_after_step() {
             "ThmcSolver::step on 2-node toy UMST for writeback roundtrip witness (FP §6 Track G THMC UMST writeback parity)",
         );
     let out = umst.scalar_features.clone().into_data().value;
-    let t0 = post.thermal.temperature.as_tensor().clone().into_data().value[0];
+    let t0 = post
+        .thermal
+        .temperature
+        .as_tensor()
+        .clone()
+        .into_data()
+        .value[0];
     let h0 = post.hydro.humidity.as_tensor().clone().into_data().value[0];
     let d0 = post.damage.as_tensor().clone().into_data().value[0];
     assert!((out[SCALAR_TEMPERATURE] - t0).abs() < 1e-4);
     assert!((out[SCALAR_HUMIDITY] - h0).abs() < 1e-4);
     assert!((out[SCALAR_DAMAGE] - d0).abs() < 1e-4);
-    assert!((out[f + SCALAR_TEMPERATURE] - post.thermal.temperature.as_tensor().clone().into_data().value[1]).abs() < 1e-4);
+    assert!(
+        (out[f + SCALAR_TEMPERATURE]
+            - post
+                .thermal
+                .temperature
+                .as_tensor()
+                .clone()
+                .into_data()
+                .value[1])
+            .abs()
+            < 1e-4
+    );
 }
 
 #[test]

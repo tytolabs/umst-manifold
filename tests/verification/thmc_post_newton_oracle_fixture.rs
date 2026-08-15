@@ -14,9 +14,9 @@
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::field::{Field, HumidityField, ReactionExtentField, TemperatureField};
-use umst_manifold::core::StepEntryDamageMask;
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
+use umst_manifold::core::StepEntryDamageMask;
 use umst_manifold::physics::solvers::{
     ChemicalPlan, HydrologicPlan, MechanicalPlan, ReactionExtentKinetics, ThermalPlan,
     ThmcImplicitEulerThermalHumidityReactionExtentResidual, ThmcState,
@@ -211,4 +211,3 @@ fn post_newton_stacked_residual_oracle_matches_independent_recompute_two_nodes()
         "Newton step should not increase stacked ‖R‖₂: before={norm_before} after={norm_after}"
     );
 }
-

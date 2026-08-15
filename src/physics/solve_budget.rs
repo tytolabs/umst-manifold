@@ -91,7 +91,9 @@ pub fn solve_budget_posture_honest(probe: &SolveBudgetPostureProbe) -> bool {
         && probe.mapping_landed
         && probe.json_io_landed
         && probe.deepen_cell == W29_SOLVE_BUDGET_DEEPEN_CELL
-        && probe.honest_fence.contains("solve_budget_mapping_landed=true")
+        && probe
+            .honest_fence
+            .contains("solve_budget_mapping_landed=true")
         && probe.honest_fence.contains("vault_cockpit_wired=false")
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")
@@ -373,17 +375,15 @@ mod tests {
     #[test]
     fn cockpit_from_external_json_missing_eta_cog_errors() {
         let json = r#"{"dignity_value": 1.0, "tokens_per_sec": 10.0}"#;
-        let err = cockpit_from_external_json(json).expect_err(
-            "missing η_cog / η_cog_raw must yield CockpitParseError::MissingEtaCog",
-        );
+        let err = cockpit_from_external_json(json)
+            .expect_err("missing η_cog / η_cog_raw must yield CockpitParseError::MissingEtaCog");
         assert_eq!(err, CockpitParseError::MissingEtaCog);
     }
 
     #[test]
     fn cockpit_from_external_json_rejects_non_finite_eta() {
         let json = r#"{"eta_cog": null}"#;
-        let err = cockpit_from_external_json(json)
-            .expect_err("null η_cog must fail MissingEtaCog");
+        let err = cockpit_from_external_json(json).expect_err("null η_cog must fail MissingEtaCog");
         assert_eq!(err, CockpitParseError::MissingEtaCog);
 
         let json_nan = r#"{"eta_cog": "nan"}"#;

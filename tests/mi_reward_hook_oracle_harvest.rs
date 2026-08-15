@@ -8,9 +8,7 @@
 
 use burn::tensor::{Data, Shape, Tensor};
 use burn_ndarray::NdArray;
-use umst_manifold::ai::semantic_evolution_bridge::{
-    mi_reward_hook, CHAIR_I_REQUIRED_BITS,
-};
+use umst_manifold::ai::semantic_evolution_bridge::{mi_reward_hook, CHAIR_I_REQUIRED_BITS};
 
 type B = NdArray<f32>;
 
@@ -37,9 +35,7 @@ fn f32_hex(bits: f32) -> String {
 #[test]
 fn mi_reward_hook_oracle_harvest_pins_from_runtime_shape_update() {
     let reward_hook_scalar = harvest_chair_mi_reward_hook();
-    eprintln!(
-        "HARVEST chair_mi_reward_hook reward_hook_scalar={reward_hook_scalar:.17e}"
-    );
+    eprintln!("HARVEST chair_mi_reward_hook reward_hook_scalar={reward_hook_scalar:.17e}");
     eprintln!(
         "HARVEST_HEX reward_hook_scalar={}",
         f32_hex(reward_hook_scalar)

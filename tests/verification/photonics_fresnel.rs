@@ -1539,17 +1539,8 @@ fn solve_maxwell_curl_curl_pass_through_quad_split_not_chain() {
         ..Default::default()
     };
     assert!(
-        ps.solve_maxwell_curl_curl(
-            e_field,
-            eps_r,
-            eps_i,
-            j,
-            edges_b1,
-            coords,
-            &cg,
-            None,
-        )
-        .is_err(),
+        ps.solve_maxwell_curl_curl(e_field, eps_r, eps_i, j, edges_b1, coords, &cg, None,)
+            .is_err(),
         "non-chain topology without dec_patch must surface UnsupportedLayout"
     );
 }
@@ -2471,17 +2462,8 @@ fn assembled_two_quads_dec_primal_photonics_maxwell_deferred() {
         ..Default::default()
     };
     assert!(
-        ps.solve_maxwell_curl_curl(
-            e_field,
-            eps_r3,
-            eps_i,
-            j,
-            edges_b1,
-            coords,
-            &cg,
-            None,
-        )
-        .is_err(),
+        ps.solve_maxwell_curl_curl(e_field, eps_r3, eps_i, j, edges_b1, coords, &cg, None,)
+            .is_err(),
         "non-chain two-quad topology without dec_patch must surface UnsupportedLayout"
     );
 }

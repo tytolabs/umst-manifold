@@ -85,10 +85,10 @@ else
 fi
 
 echo "=== P4 training witness JSON ==="
-if [ -f artifacts/training/p4_rejection_baseline.json ]; then
-  echo "OK: artifacts/training/p4_rejection_baseline.json present"
+if [ -f artifacts/training/rejection_baseline.json ]; then
+  echo "OK: artifacts/training/rejection_baseline.json present"
 else
-  warn "missing artifacts/training/p4_rejection_baseline.json"
+  warn "missing artifacts/training/rejection_baseline.json"
 fi
 
 echo "=== Arena mmap (P2) ==="

@@ -16,7 +16,9 @@ use std::marker::PhantomData;
 
 use burn::tensor::{backend::Backend, Tensor};
 
-use super::dec_typestate::{B1Incidence, DecTypestateError, ScalarChannelIdx, ScalarChannelSelector};
+use super::dec_typestate::{
+    B1Incidence, DecTypestateError, ScalarChannelIdx, ScalarChannelSelector,
+};
 use super::field::{DamageField, Field, HumidityField, TemperatureField};
 use super::umst_schema::{
     SCALAR_DAMAGE, SCALAR_HUMIDITY, SCALAR_TEMPERATURE, UMST_SCALAR_CHANNEL_COUNT,
@@ -148,10 +150,14 @@ pub fn umst_tensors_deepen_honest(probe: &UmstTensorsDeepenProbe) -> bool {
 #[must_use]
 pub fn validate_umst_tensors_deepen_honesty() -> Result<(), &'static str> {
     if umst_tensors_production_wired() {
-        return Err("umst_tensors_production_wired must stay false until 2-cell DEC + gateway harden");
+        return Err(
+            "umst_tensors_production_wired must stay false until 2-cell DEC + gateway harden",
+        );
     }
     if umst_tensors_master_retick_eligible() {
-        return Err("umst_tensors_master_retick_eligible must stay false (gateway ≠ physics GREEN)");
+        return Err(
+            "umst_tensors_master_retick_eligible must stay false (gateway ≠ physics GREEN)",
+        );
     }
     if umst_tensors_b2_cells_landed() {
         return Err("umst_tensors_b2_cells_landed must stay false while faces_b2 is placeholder");
@@ -283,19 +289,31 @@ impl<B: Backend> UnifiedMaterialStateTensor<B> {
         let n = self.active_node_count();
         let coords_n = self.coords.dims()[0];
         if coords_n != n {
-            return Err(UmstTensorLayoutError::CoordsNodeMismatch { coords_n, scalar_n: n });
+            return Err(UmstTensorLayoutError::CoordsNodeMismatch {
+                coords_n,
+                scalar_n: n,
+            });
         }
         let mask_n = self.policy_editable_mask.dims()[0];
         if mask_n != n {
-            return Err(UmstTensorLayoutError::PolicyMaskMismatch { mask_n, scalar_n: n });
+            return Err(UmstTensorLayoutError::PolicyMaskMismatch {
+                mask_n,
+                scalar_n: n,
+            });
         }
         let vector_n = self.vector_features.dims()[0];
         if vector_n != n {
-            return Err(UmstTensorLayoutError::VectorNodeMismatch { vector_n, scalar_n: n });
+            return Err(UmstTensorLayoutError::VectorNodeMismatch {
+                vector_n,
+                scalar_n: n,
+            });
         }
         let matrix_n = self.matrix_features.dims()[0];
         if matrix_n != n {
-            return Err(UmstTensorLayoutError::MatrixNodeMismatch { matrix_n, scalar_n: n });
+            return Err(UmstTensorLayoutError::MatrixNodeMismatch {
+                matrix_n,
+                scalar_n: n,
+            });
         }
         if let Some(ref pos) = self.node_positions {
             let pos_n = pos.dims()[0];
@@ -566,7 +584,10 @@ mod tensors_tests {
         assert_eq!(umst.active_node_count(), n);
         assert_eq!(umst.n_scalar_channels(), UMST_SCALAR_CHANNEL_COUNT);
         assert!(umst.faces_b2_is_staging_placeholder());
-        assert_eq!(umst.faces_b2_column_count(), FACES_B2_STAGING_PLACEHOLDER_COLS);
+        assert_eq!(
+            umst.faces_b2_column_count(),
+            FACES_B2_STAGING_PLACEHOLDER_COLS
+        );
         // Placeholder detect ≠ B₂ landed.
         assert!(!umst_tensors_b2_cells_landed());
     }
@@ -713,8 +734,7 @@ mod tensors_tests {
         let scalars = Tensor::<B, 2>::zeros([n, f], &dev);
         let mask = Tensor::<B, 2>::ones([n, 1], &dev);
         let mut umst = staging_two_node_umst(scalars, mask, None);
-        let col =
-            Tensor::from_data(Data::new(vec![0.3_f32, 0.7_f32], Shape::new([n, 1])), &dev);
+        let col = Tensor::from_data(Data::new(vec![0.3_f32, 0.7_f32], Shape::new([n, 1])), &dev);
         umst.write_scalar_channel(SCALAR_DAMAGE, col);
         let views = umst.typed_views().expect("typed views after write");
         let d: Vec<f32> = views.damage.as_tensor().clone().into_data().value;
@@ -818,7 +838,8 @@ mod tensors_tests {
             Data::new(vec![0i64, 1i64, 1i64, -1i64], Shape::new([2, 2])),
             &dev,
         );
-        umst.try_validate_layout().expect("multi-col [2,K] layout ok");
+        umst.try_validate_layout()
+            .expect("multi-col [2,K] layout ok");
         assert!(!umst.faces_b2_is_staging_placeholder());
         assert_eq!(
             umst.faces_b2_staging_kind(),
@@ -854,9 +875,8 @@ mod tensors_tests {
         let staging = umst
             .try_as_verified_dec_bundle(SCALAR_HUMIDITY)
             .expect("DEC staging");
-        let verified = VerifiedUMST::<B, ClausiusDuhemProof>::lift_after_dec_staging_witness(
-            staging, umst,
-        );
+        let verified =
+            VerifiedUMST::<B, ClausiusDuhemProof>::lift_after_dec_staging_witness(staging, umst);
         assert_eq!(verified.state.active_node_count(), n);
         assert!(verified.state.try_validate_layout().is_ok());
         // Lift morphism ≠ MASTER / production / B₂ flip.

@@ -11,15 +11,15 @@ use crate::ai::cbf::ThermodynamicCBF;
 use crate::constants::landauer_bit_energy_joules;
 
 use super::core_gate::{
-    core_gate, mass_conserved_between_densities, scalar_response_from_transition,
-    CoreGateOutcome, ScalarConstitutiveResponse,
+    core_gate, mass_conserved_between_densities, scalar_response_from_transition, CoreGateOutcome,
+    ScalarConstitutiveResponse,
 };
 use super::material_gate::MaterialTransitionWitness;
-use umst_cartridge_concrete::evaluate_material_conjuncts;
 use super::transition_proposal::{
     transition_outcome, ThermodynamicStateSnapshot, ThermodynamicTransitionOutcome,
 };
 use super::verdict::ConjunctVerdict;
+use umst_cartridge_concrete::evaluate_material_conjuncts;
 
 /// Landauer erasure debit expressed as open-system `P_input` (joules).
 #[must_use]
@@ -59,7 +59,8 @@ pub fn cbf_cd_matches_open_system_gate(
     tolerance: f64,
 ) -> bool {
     let power_input = landauer_power_input_joules(temperature_k, bits_resolved);
-    open_system_core_gate(entropy_production_joules, power_input, true, tolerance).is_clausius_duhem()
+    open_system_core_gate(entropy_production_joules, power_input, true, tolerance)
+        .is_clausius_duhem()
 }
 
 /// Read-only CBF admission reconciled with open-system gate (credit budget separate).
@@ -105,8 +106,7 @@ pub fn transition_outcome_with_power_input(
         return transition_outcome(old_state, new_state, dt, tolerance);
     }
 
-    let mass_conserved =
-        mass_conserved_between_densities(old_state.density, new_state.density);
+    let mass_conserved = mass_conserved_between_densities(old_state.density, new_state.density);
 
     let response = scalar_response_from_transition(
         old_state.density,
@@ -158,7 +158,8 @@ impl ActiveMatterFixture {
     pub fn is_admissible(&self, tolerance: f64) -> bool {
         self.reaction_rate > 0.0
             && self.power_input() > 0.0
-            && open_system_core_gate(self.dissipation, self.power_input(), true, tolerance).is_accepted()
+            && open_system_core_gate(self.dissipation, self.power_input(), true, tolerance)
+                .is_accepted()
     }
 
     /// Passive limit: `Ṙ → 0` ⇒ `P_input → 0`.
@@ -239,7 +240,10 @@ mod tests {
     fn open_system_core_gate_idempotent_at_zero_power_input() {
         let first = open_system_core_gate(12.0, 0.0, true, TRANSITION_TOLERANCE);
         let second = open_system_core_gate(12.0, 0.0, true, TRANSITION_TOLERANCE);
-        assert_eq!(first, second, "open_system_core_gate must not drift at P_input=0");
+        assert_eq!(
+            first, second,
+            "open_system_core_gate must not drift at P_input=0"
+        );
     }
 
     #[test]
@@ -301,7 +305,10 @@ mod tests {
 
         let passive = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
         let open = transition_outcome_with_power_input(&old, &new, dt, 0.0, TRANSITION_TOLERANCE);
-        assert_eq!(passive, open, "P_input=0 must byte-match legacy transition_outcome");
+        assert_eq!(
+            passive, open,
+            "P_input=0 must byte-match legacy transition_outcome"
+        );
     }
 
     #[test]

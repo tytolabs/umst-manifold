@@ -13,13 +13,9 @@
 //! on the physics lane (`photonics_lane_fence_holds`).
 
 #[cfg(feature = "photonics")]
-use crate::physics::solvers::photonics::{
-    DecPatchCurlConstitutive, photonics_lane_fence_holds,
-};
+use crate::physics::solvers::photonics::{photonics_lane_fence_holds, DecPatchCurlConstitutive};
 #[cfg(feature = "photonics")]
-use crate::physics::solvers::{
-    DecPatchCsrInnerMode, PhotonicsDecPatchConfig, PhotonicsSolver,
-};
+use crate::physics::solvers::{DecPatchCsrInnerMode, PhotonicsDecPatchConfig, PhotonicsSolver};
 
 /// W29 deepen cell — photonics host IO honest fence bundle.
 pub const W29_128_PHOTONICS_HOST_DEEPEN_STEP: &str = "W29-128-PHOTONICS_HOST";
@@ -325,14 +321,23 @@ mod tests {
     #[test]
     fn csr_inner_env_aliases_match_legacy_physics() {
         assert_eq!(parse_csr_inner_env(None), DecPatchCsrInnerMode::Auto);
-        assert_eq!(parse_csr_inner_env(Some("auto")), DecPatchCsrInnerMode::Auto);
+        assert_eq!(
+            parse_csr_inner_env(Some("auto")),
+            DecPatchCsrInnerMode::Auto
+        );
         assert_eq!(parse_csr_inner_env(Some("OFF")), DecPatchCsrInnerMode::Off);
         assert_eq!(parse_csr_inner_env(Some("0")), DecPatchCsrInnerMode::Off);
-        assert_eq!(parse_csr_inner_env(Some("false")), DecPatchCsrInnerMode::Off);
+        assert_eq!(
+            parse_csr_inner_env(Some("false")),
+            DecPatchCsrInnerMode::Off
+        );
         assert_eq!(parse_csr_inner_env(Some("on")), DecPatchCsrInnerMode::On);
         assert_eq!(parse_csr_inner_env(Some("1")), DecPatchCsrInnerMode::On);
         assert_eq!(parse_csr_inner_env(Some("force")), DecPatchCsrInnerMode::On);
-        assert_eq!(parse_csr_inner_env(Some("weird")), DecPatchCsrInnerMode::Auto);
+        assert_eq!(
+            parse_csr_inner_env(Some("weird")),
+            DecPatchCsrInnerMode::Auto
+        );
     }
 
     #[test]
@@ -376,7 +381,10 @@ mod tests {
         let cfg = photonics_dec_patch_config_from_raw(Some("1"), Some("off"), Some("eps_inv"));
         assert!(cfg.force_krylov);
         assert_eq!(cfg.csr_inner, DecPatchCsrInnerMode::Off);
-        assert_eq!(cfg.curl_constitutive, DecPatchCurlConstitutive::EpsInvSymAvg);
+        assert_eq!(
+            cfg.curl_constitutive,
+            DecPatchCurlConstitutive::EpsInvSymAvg
+        );
     }
 
     #[test]
@@ -442,7 +450,11 @@ mod tests {
     #[test]
     fn honest_fence_string_locked() {
         assert!(fence_string_honest(PHOTONICS_HOST_HONEST_FENCE));
-        assert!(!fence_string_honest("production_wired=true|physics_green=false"));
-        assert!(!fence_string_honest("matrix_six_closed=true|host_io_boundary=true|curl_constitutive_env_landed=true"));
+        assert!(!fence_string_honest(
+            "production_wired=true|physics_green=false"
+        ));
+        assert!(!fence_string_honest(
+            "matrix_six_closed=true|host_io_boundary=true|curl_constitutive_env_landed=true"
+        ));
     }
 }

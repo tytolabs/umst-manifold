@@ -108,9 +108,7 @@ pub fn framework_refuse_invented_pins() -> Result<(), &'static str> {
         return Err("FRAMEWORK_PHYSICS_GREEN must stay false — markers ≠ fleet physics");
     }
     if FRAMEWORK_PRODUCTION_WIRED {
-        return Err(
-            "FRAMEWORK_PRODUCTION_WIRED must stay false until embodied solver loop closes",
-        );
+        return Err("FRAMEWORK_PRODUCTION_WIRED must stay false until embodied solver loop closes");
     }
     if FRAMEWORK_MASTER {
         return Err("FRAMEWORK_MASTER must stay false — not an OP-5 composition pin");

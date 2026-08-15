@@ -7,9 +7,7 @@ pub use umst_gate::verdict::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gate::evaluator::{
-        GateEvaluator, TransitionGateEvaluator, TransitionVerdict,
-    };
+    use crate::gate::evaluator::{GateEvaluator, TransitionGateEvaluator, TransitionVerdict};
     use crate::gate::thermo_transition::ThermodynamicState;
     use crate::gate::transition_eval_registry::{
         ThermodynamicMixEvaluator, ThermodynamicTransitionContext,
@@ -106,7 +104,10 @@ mod tests {
     #[test]
     fn verdict_parse_round_trips_documented_wire_tokens() {
         let tokens = [
-            (AdmissibilityVerdict::ACCEPTED, AdmissibilityVerdict::Accepted),
+            (
+                AdmissibilityVerdict::ACCEPTED,
+                AdmissibilityVerdict::Accepted,
+            ),
             (
                 AdmissibilityVerdict::MASS_VIOLATION,
                 AdmissibilityVerdict::MassViolation,
@@ -152,11 +153,7 @@ mod tests {
                 "accepted={accepted} mass={mass_conserved} energy={energy_positive}"
             );
             assert_eq!(
-                AdmissibilityVerdict::from_thermo_flags(
-                    accepted,
-                    mass_conserved,
-                    energy_positive
-                ),
+                AdmissibilityVerdict::from_thermo_flags(accepted, mass_conserved, energy_positive),
                 expected
             );
         }
@@ -247,9 +244,7 @@ mod tests {
             ConjunctVerdict::Accepted
         );
         assert!(ConjunctVerdict::Accepted.is_accepted());
-        assert!(
-            !ConjunctVerdict::Rejected(GateRejectReason::MassViolation).is_accepted()
-        );
+        assert!(!ConjunctVerdict::Rejected(GateRejectReason::MassViolation).is_accepted());
     }
 
     #[test]
@@ -401,7 +396,10 @@ mod tests {
 
         let (cd_old, cd_new, cd_dt) = golden_negative_dissipation_reject();
         let cd_tv = ev.check_transition_host(&cd_old, &cd_new, cd_dt);
-        assert_eq!(cd_tv.rest_verdict(), AdmissibilityVerdict::NegativeDissipation);
+        assert_eq!(
+            cd_tv.rest_verdict(),
+            AdmissibilityVerdict::NegativeDissipation
+        );
         assert_eq!(
             cd_tv.conjunct_verdict(),
             ConjunctVerdict::Rejected(GateRejectReason::NegativeDissipation)
@@ -425,9 +423,8 @@ mod tests {
             (
                 ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0),
                 {
-                    let mut n = ThermodynamicStateSnapshot::from_mix_calibrated(
-                        0.45, 0.5, 293.15, 40.0,
-                    );
+                    let mut n =
+                        ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0);
                     n.reaction_extent = 0.1;
                     n
                 },
@@ -435,9 +432,8 @@ mod tests {
             (
                 ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0),
                 {
-                    let mut n = ThermodynamicStateSnapshot::from_mix_calibrated(
-                        0.45, 0.35, 293.15, 42.0,
-                    );
+                    let mut n =
+                        ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
                     n.strength = 10.0;
                     n
                 },
@@ -454,7 +450,10 @@ mod tests {
                     outcome.is_energy_positive()
                 )
             );
-            assert_eq!(rest_from_conjunct(outcome.conjunct_verdict()), outcome.verdict());
+            assert_eq!(
+                rest_from_conjunct(outcome.conjunct_verdict()),
+                outcome.verdict()
+            );
             if outcome.is_accepted() {
                 assert_eq!(outcome.verdict(), AdmissibilityVerdict::Accepted);
             } else if matches!(
@@ -650,7 +649,10 @@ mod tests {
             outcome.conjunct_verdict(),
             ConjunctVerdict::Rejected(GateRejectReason::MassViolation)
         );
-        assert_eq!(rest_from_conjunct(outcome.conjunct_verdict()), outcome.verdict());
+        assert_eq!(
+            rest_from_conjunct(outcome.conjunct_verdict()),
+            outcome.verdict()
+        );
     }
 
     #[test]

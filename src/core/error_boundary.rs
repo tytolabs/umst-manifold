@@ -196,7 +196,9 @@ pub fn error_boundary_posture_honest(probe: &ErrorBoundaryPostureProbe) -> bool 
         && !probe.master_wired
         && !probe.physics_green
         && probe.honest_fence.contains("typed_variants_landed=true")
-        && probe.honest_fence.contains("legacy_string_shims_required=true")
+        && probe
+            .honest_fence
+            .contains("legacy_string_shims_required=true")
         && probe.honest_fence.contains("std_error_impl_landed=true")
         && probe.honest_fence.contains("gateway_eval_measured=false")
         && probe.honest_fence.contains("production_wired=false")
@@ -221,7 +223,9 @@ pub fn validate_error_boundary_posture_honesty() -> Result<(), &'static str> {
     if probe.gateway_eval_measured || error_boundary_gateway_eval_measured() {
         return Err("gateway_eval_measured must stay false until live gateway eval");
     }
-    if !probe.std_error_impl_landed || !STD_ERROR_IMPL_LANDED || !error_boundary_std_error_impl_landed()
+    if !probe.std_error_impl_landed
+        || !STD_ERROR_IMPL_LANDED
+        || !error_boundary_std_error_impl_landed()
     {
         return Err("STD_ERROR_IMPL_LANDED must stay true after W29-024 Error deepen");
     }
@@ -291,20 +295,14 @@ pub enum ApplyPhysicsError {
         source: DecTypestateError,
     },
     /// `scalar_features` width cannot index the damage channel.
-    ScalarFeaturesTooSmallForDamage {
-        width: usize,
-        required_index: usize,
-    },
+    ScalarFeaturesTooSmallForDamage { width: usize, required_index: usize },
     /// Sparse damage tensor node count disagrees with UMST layout.
     DamageWidthMismatch {
         damage_width: usize,
         umst_nodes: usize,
     },
     /// `scalar_features` width cannot index the temperature channel.
-    ScalarFeaturesTooSmallForTemperature {
-        width: usize,
-        required_index: usize,
-    },
+    ScalarFeaturesTooSmallForTemperature { width: usize, required_index: usize },
     /// Temperature delta tensor node count disagrees with UMST layout.
     TemperatureWidthMismatch {
         delta_width: usize,
@@ -401,10 +399,7 @@ impl Error for ApplyPhysicsError {
 #[derive(Clone, Debug, PartialEq)]
 pub enum CbfReject {
     /// Landauer erasure cost exceeds the agent's remaining energy credit.
-    InsufficientGlobalEnergyCredit {
-        required_j: f64,
-        available_j: f64,
-    },
+    InsufficientGlobalEnergyCredit { required_j: f64, available_j: f64 },
     /// Clausius–Duhem inequality violated after Landauer debit.
     ClausiusDuhemViolation { generalized_entropy: f64 },
     /// Legacy string shim for callers still bridging `Err(String)`.
@@ -505,7 +500,9 @@ impl CatalogIoError {
 impl fmt::Display for CatalogIoError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            CatalogIoError::Read { detail } | CatalogIoError::Json { detail } => f.write_str(detail),
+            CatalogIoError::Read { detail } | CatalogIoError::Json { detail } => {
+                f.write_str(detail)
+            }
             CatalogIoError::MissingModulesArray => {
                 f.write_str("catalog.json missing modules array")
             }
@@ -661,7 +658,10 @@ mod tests {
             err.to_string(),
             "apply_physics_to_umst: scalar_features width 3 too small for SCALAR_TEMPERATURE=5"
         );
-        assert_eq!(err.variant_tag(), "scalar_features_too_small_for_temperature");
+        assert_eq!(
+            err.variant_tag(),
+            "scalar_features_too_small_for_temperature"
+        );
     }
 
     #[test]
@@ -826,9 +826,7 @@ mod tests {
             "apply_physics_to_umst: invalid SCALAR_DAMAGE channel: ScalarChannelOutOfRange { index: 99, channel_count: 8 }"
         );
         let src = as_err.source().expect("DecTypestate must expose source");
-        assert!(src
-            .to_string()
-            .contains("scalar channel 99 out of range"));
+        assert!(src.to_string().contains("scalar channel 99 out of range"));
 
         let width = ApplyPhysicsError::DamageWidthMismatch {
             damage_width: 1,

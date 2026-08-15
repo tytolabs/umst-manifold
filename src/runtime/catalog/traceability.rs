@@ -374,9 +374,7 @@ pub fn traceability_partition_quickcheck() -> bool {
     }
     // Gate registry rows must be Lean-wired or gate-allowlisted.
     for id in GATE_REGISTRY_CATALOG_IDS {
-        let lean_wired = CATALOG_MODULE_WIRED
-            .iter()
-            .any(|(_, ids)| ids.contains(id));
+        let lean_wired = CATALOG_MODULE_WIRED.iter().any(|(_, ids)| ids.contains(id));
         let gate_allow = ALLOW_UNUSED_GATE_CATALOG_IDS.contains(id);
         if !lean_wired && !gate_allow {
             return false;
@@ -395,10 +393,7 @@ pub fn traceability_partition_quickcheck() -> bool {
 #[must_use]
 pub fn traceability_partition_ceremony_closed() -> bool {
     traceability_partition_quickcheck()
-        && TRACEABILITY_WIRE_HOPS
-            .iter()
-            .filter(|h| h.wired)
-            .count()
+        && TRACEABILITY_WIRE_HOPS.iter().filter(|h| h.wired).count()
             == W29_109_WIRE_HOP_WIRED_COUNT as usize
         && TRACEABILITY_WIRE_HOPS.len() == W29_109_WIRE_HOP_TOTAL
         && !traceability_production_wired()
@@ -445,10 +440,7 @@ pub fn traceability_partition_probe() -> TraceabilityPartitionProbe {
         partition_quickcheck_ok: traceability_partition_quickcheck(),
         ceremony_closed: traceability_partition_ceremony_closed(),
         production_wired: traceability_production_wired(),
-        wire_hop_wired_count: TRACEABILITY_WIRE_HOPS
-            .iter()
-            .filter(|h| h.wired)
-            .count() as u8,
+        wire_hop_wired_count: TRACEABILITY_WIRE_HOPS.iter().filter(|h| h.wired).count() as u8,
         wire_hop_total: TRACEABILITY_WIRE_HOPS.len(),
         spec_catalog_id_count: GATE_UNIFICATION_SPEC_CATALOG_IDS.len(),
         gate_registry_count: GATE_REGISTRY_CATALOG_IDS.len(),
@@ -584,10 +576,7 @@ pub fn traceability_w29_109_census() -> TraceabilityW29109Census {
         partition_total,
         spec_catalog_id_count: GATE_UNIFICATION_SPEC_CATALOG_IDS.len(),
         gate_registry_count: GATE_REGISTRY_CATALOG_IDS.len(),
-        wire_hop_wired: TRACEABILITY_WIRE_HOPS
-            .iter()
-            .filter(|h| h.wired)
-            .count() as u8,
+        wire_hop_wired: TRACEABILITY_WIRE_HOPS.iter().filter(|h| h.wired).count() as u8,
         wire_hop_total: TRACEABILITY_WIRE_HOPS.len(),
         unit_tests_in_module: W29_109_UNIT_TESTS_IN_MODULE,
     }
@@ -637,9 +626,7 @@ mod tests {
     #[test]
     fn gate_registry_backed_by_lean_or_allowlist() {
         for id in GATE_REGISTRY_CATALOG_IDS {
-            let lean = CATALOG_MODULE_WIRED
-                .iter()
-                .any(|(_, ids)| ids.contains(id));
+            let lean = CATALOG_MODULE_WIRED.iter().any(|(_, ids)| ids.contains(id));
             let allow = ALLOW_UNUSED_GATE_CATALOG_IDS.contains(id);
             assert!(lean || allow, "gate registry orphan: {id}");
         }

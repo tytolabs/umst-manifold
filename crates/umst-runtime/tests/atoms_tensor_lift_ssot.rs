@@ -3,6 +3,7 @@
 
 //! AGAP-1920-PBM-010 — `umst-runtime` alias surfaces slice-3 atom tensor lift step.
 
+use umst_cartridge_api::TensorAlgebra;
 use umst_runtime::burn_algebra_posture::{
     ADAPTER_SCAFFOLD_LANDED, LIFT_STEP_LANDED, OP_SPEC_LANDED, PBM010_ID, PBM010_RECEIPT_SLUG,
     PBM010_SLICE3C_RECEIPT_SLUG, PBM010_SLICE3D_RECEIPT_SLUG, PBM010_SLICE_RESIDUAL_RECEIPT_SLUG,
@@ -10,28 +11,27 @@ use umst_runtime::burn_algebra_posture::{
     SLICE3B_LEDGER_PATH, SLICE3C_ADAPTER_PATH, SLICE3C_ID, SLICE3D_ID, SLICE3D_OPS_PATH,
     SLICE3_LIFT_STEP_PATH, SLICE_RESIDUAL_PATH, SLICE_RESIDUAL_ROWS_LANDED,
 };
+use umst_runtime::runtime::atoms_tensor_lift::{
+    atoms_tensor_lift_depth_summary, lift_atom_scalar, BurnAtomAlgebra,
+    LIFT_STEP_LANDED as ATOMS_LIFT, PBM_ID, RANK1_PLUS_DEFERRED,
+};
 use umst_runtime::runtime::atoms_tensor_lift_adapter::{
     adapter_deferred_row_count, atoms_tensor_lift_adapter_depth_summary, ADAPTER_CONTRACT_ROWS,
     ADAPTER_SCAFFOLD_LANDED as ADAPTER_SCAFFOLD,
 };
-use umst_runtime::runtime::atoms_tensor_lift::{
-    atoms_tensor_lift_depth_summary, lift_atom_scalar, BurnAtomAlgebra, LIFT_STEP_LANDED as ATOMS_LIFT,
-    PBM_ID, RANK1_PLUS_DEFERRED,
-};
 use umst_runtime::runtime::atoms_tensor_lift_ledger::{
-    atoms_tensor_lift_ledger_depth_summary, rank1_plus_open_row_count, RANK1_PLUS_LEDGER_ROWS,
-    RANK1_PLUS_LEDGER_LANDED as LEDGER_LANDED,
+    atoms_tensor_lift_ledger_depth_summary, rank1_plus_open_row_count,
+    RANK1_PLUS_LEDGER_LANDED as LEDGER_LANDED, RANK1_PLUS_LEDGER_ROWS,
 };
 use umst_runtime::runtime::atoms_tensor_lift_ops::{
     atoms_tensor_lift_ops_depth_summary, op_design_specified_row_count, op_impl_deferred_row_count,
-    TENSOR_OP_SPEC_ROWS, OP_SPEC_LANDED as OPS_LANDED,
+    OP_SPEC_LANDED as OPS_LANDED, TENSOR_OP_SPEC_ROWS,
 };
 use umst_runtime::runtime::atoms_tensor_lift_residual::{
     atoms_tensor_lift_residual_depth_summary, f1_fully_closed, slice_residual_blocking_row_count,
     slice_residual_open_row_count, F1SliceResidualId, SLICE_RESIDUAL_ROWS,
     SLICE_RESIDUAL_ROWS_LANDED as RESIDUAL_LANDED,
 };
-use umst_cartridge_api::TensorAlgebra;
 
 #[test]
 fn runtime_alias_surfaces_pbm010_tensor_lift_posture() {

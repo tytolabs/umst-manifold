@@ -47,8 +47,5 @@ fn catalog_pin_manifold_ceremony_predicate_and_honest_residue() {
 #[test]
 fn catalog_pin_witness_rejects_tampered_digest_constant() {
     // Document mismatch variant exists — cannot mutate const; structural check only.
-    assert_ne!(
-        CatalogPinMismatch::Digest,
-        CatalogPinMismatch::ModuleCount
-    );
+    assert_ne!(CatalogPinMismatch::Digest, CatalogPinMismatch::ModuleCount);
 }

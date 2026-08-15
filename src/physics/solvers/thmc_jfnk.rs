@@ -96,7 +96,9 @@ pub fn thmc_jfnk_posture_honest(probe: &ThmcJfnkPostureProbe) -> bool {
         && probe.host_gmres_landed
         && !probe.production_scale_claimed
         && probe.deepen_cell == W29_THMC_JFNK_DEEPEN_CELL
-        && probe.honest_fence.contains("thmc_jfnk_host_gmres_landed=true")
+        && probe
+            .honest_fence
+            .contains("thmc_jfnk_host_gmres_landed=true")
         && probe.honest_fence.contains("production_scale_jfnk=false")
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")
@@ -178,9 +180,8 @@ mod w29_084_thmc_jfnk_deepen_tests {
                 detail: "thmc_jfnk_injected".into(),
             })
         };
-        let err = gmres_f32_try(matvec, &b, n, n, 1e-5_f32).expect_err(
-            "thmc_jfnk::gmres_f32_try must propagate matvec PhysicsError (W29-084)",
-        );
+        let err = gmres_f32_try(matvec, &b, n, n, 1e-5_f32)
+            .expect_err("thmc_jfnk::gmres_f32_try must propagate matvec PhysicsError (W29-084)");
         assert!(err.to_string().contains("thmc_jfnk_injected"), "{err}");
         assert_eq!(calls, 1, "should not retry after matvec Err");
     }
@@ -206,9 +207,8 @@ mod w29_084_thmc_jfnk_deepen_tests {
             }
             out
         };
-        let x = gmres_f32(matvec, &b, n, n + 4, 1e-4_f32).expect(
-            "thmc_jfnk::gmres_f32 3×3 SPD tridiagonal must converge (W29-084)",
-        );
+        let x = gmres_f32(matvec, &b, n, n + 4, 1e-4_f32)
+            .expect("thmc_jfnk::gmres_f32 3×3 SPD tridiagonal must converge (W29-084)");
         let ax = matvec(&x);
         let res: f32 = b
             .iter()

@@ -5,8 +5,8 @@
 
 use umst_manifold::embodied::{
     crosswalk_for, doc_code_gaps, loop_closed_per_spec, loop_composition_pct, phase_posture,
-    phases_loop_composed, phases_with_code_anchor, DocCodePosture, FUNNEL_SPEC, LOOP_CROSSWALK,
-    LoopPhase,
+    phases_loop_composed, phases_with_code_anchor, DocCodePosture, LoopPhase, FUNNEL_SPEC,
+    LOOP_CROSSWALK,
 };
 
 #[test]
@@ -54,10 +54,7 @@ fn actuate_leg_scaffold_robot_adapter() {
 
 #[test]
 fn loop_close_absent() {
-    assert_eq!(
-        phase_posture(LoopPhase::LoopClose),
-        DocCodePosture::Absent
-    );
+    assert_eq!(phase_posture(LoopPhase::LoopClose), DocCodePosture::Absent);
 }
 
 #[test]

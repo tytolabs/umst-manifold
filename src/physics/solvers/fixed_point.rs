@@ -216,7 +216,10 @@ mod tests {
         validate_fixed_point_honesty().expect("honest fence");
         let probe = fixed_point_probe();
         assert!(fixed_point_honest(&probe));
-        assert_eq!(fixed_point_fence_wired_count(), FIXED_POINT_FENCE_WIRED_COUNT);
+        assert_eq!(
+            fixed_point_fence_wired_count(),
+            FIXED_POINT_FENCE_WIRED_COUNT
+        );
         assert!(!FIXED_POINT_PHYSICS_GREEN);
         assert!(!FIXED_POINT_PRODUCTION_WIRED);
         assert!(!FIXED_POINT_MASTER);

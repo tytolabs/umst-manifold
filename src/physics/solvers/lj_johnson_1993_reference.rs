@@ -105,7 +105,9 @@ pub fn lj_johnson_1993_posture_honest(probe: &LjJohnson1993PostureProbe) -> bool
         && !probe.master
         && !probe.op5_claimed
         && probe.reference_surface_landed
-        && probe.honest_fence.contains("lj_johnson_1993_reference_landed=true")
+        && probe
+            .honest_fence
+            .contains("lj_johnson_1993_reference_landed=true")
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")
         && probe.honest_fence.contains("master=false")
@@ -315,10 +317,7 @@ mod tests {
         let t_star = 2.5_f64;
         let rho_star = 1.0e-6_f64;
         let z = johnson_lj1993_compressibility_factor(t_star, rho_star, 1.0e-9);
-        assert!(
-            (z - 1.0).abs() < 1.0e-6,
-            "Z → 1 as ρ* → 0; got Z={z}"
-        );
+        assert!((z - 1.0).abs() < 1.0e-6, "Z → 1 as ρ* → 0; got Z={z}");
     }
 
     #[test]
@@ -337,7 +336,10 @@ mod tests {
         let rho_star = 0.6_f64;
         assert!(t_star > LJ_JOHNSON_1993_T_C_STAR_APPROX);
         let k = bulk_modulus_from_lj_state_johnson1993(rho_star, t_star);
-        assert!(k.is_finite() && k > 0.0, "expected K*>0 supercritical dense; got {k}");
+        assert!(
+            k.is_finite() && k > 0.0,
+            "expected K*>0 supercritical dense; got {k}"
+        );
     }
 
     #[test]

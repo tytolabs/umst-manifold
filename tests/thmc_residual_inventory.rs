@@ -5,8 +5,8 @@
 
 use umst_manifold::physics::solvers::{
     residual_leg_close_authorized, thmc_residual_honesty_holds, thmc_residual_leg_by_id,
-    ThmcResidualLegGateStatus, THMC_RESIDUAL_INVENTORY, THMC_RESIDUAL_RECEIPT,
-    DRIP_INTEGRATION_TESTS, IDEM_INTEGRATION_TESTS, RESIDUAL_WITNESS_TEST_TOTAL,
+    ThmcResidualLegGateStatus, DRIP_INTEGRATION_TESTS, IDEM_INTEGRATION_TESTS,
+    RESIDUAL_WITNESS_TEST_TOTAL, THMC_RESIDUAL_INVENTORY, THMC_RESIDUAL_RECEIPT,
     THMC_RESIDUAL_STRING_ERROR_SITES,
 };
 

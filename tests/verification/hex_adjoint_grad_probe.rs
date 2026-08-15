@@ -174,9 +174,7 @@ fn q1_hex_nodal_dot_matches_gather_surrogate_grad() {
         None,
         None,
     )
-    .expect(
-        "AdjointComplianceQ1Hex nodal-dot forward_loss_with_diagnostics surrogate (FP §6 G4)",
-    );
+    .expect("AdjointComplianceQ1Hex nodal-dot forward_loss_with_diagnostics surrogate (FP §6 G4)");
     let nodal_g = rho_nodal
         .grad(&nodal_loss.backward())
         .expect(
@@ -203,9 +201,7 @@ fn q1_hex_nodal_dot_matches_gather_surrogate_grad() {
     );
     let gather_g = rho_gather
         .grad(&gather_loss.backward())
-        .expect(
-            "Q1-hex gather-surrogate backward gradient w.r.t. nodal density (FP §6 G4 harness)",
-        )
+        .expect("Q1-hex gather-surrogate backward gradient w.r.t. nodal density (FP §6 G4 harness)")
         .into_data()
         .value;
 

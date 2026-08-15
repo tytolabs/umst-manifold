@@ -8,7 +8,7 @@
 | Discretization | SSOT module | Consumers (today) |
 | --- | --- | --- |
 | **Bar network** (DEC 1-skeleton) | `mechanics::VectorMechanicsSolver` | `thmc`, `fracture_field`, `adjoint`, `topology` |
-| **Q1 hex** (extruded brick) | `extruded_plate`, `q1_hex_elasticity` | `AdjointComplianceQ1Hex`, verification harnesses |
+| **Q1 hex** (extruded brick) | `extruded_plate`, `hex_elasticity` | `AdjointComplianceQ1Hex`, verification harnesses |
 
 The [`MechanicsOperator`](../../src/physics/mechanics_operator.rs) trait is the typed morphism for quasi-static equilibrium
 \(K(\rho)u = f\). **This wave** ships the trait + deprecated [`BarNetworkMechanicsAdapter`] only — **zero consumer ports**.

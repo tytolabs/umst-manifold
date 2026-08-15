@@ -9,8 +9,8 @@ use umst_runtime::nalgebra_algebra_posture::{
     SCAFFOLD_LANDED, SLICE4_SCAFFOLD_PATH, SLICE_ID,
 };
 use umst_runtime::runtime::nalgebra_algebra::{
-    lift_strain_voigt6, nalgebra_tensor_lift_depth_summary, NalgebraAlgebra, SCAFFOLD_LANDED as ATOMS_SCAFFOLD,
-    CARTRIDGE_LIFT_DEFERRED, NUM_DUAL_DEFERRED,
+    lift_strain_voigt6, nalgebra_tensor_lift_depth_summary, NalgebraAlgebra,
+    CARTRIDGE_LIFT_DEFERRED, NUM_DUAL_DEFERRED, SCAFFOLD_LANDED as ATOMS_SCAFFOLD,
 };
 
 #[test]

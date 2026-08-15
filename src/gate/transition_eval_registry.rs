@@ -111,9 +111,7 @@ pub type ThermodynamicMixEvaluator = TransitionEvaluator;
 mod tests {
     use super::*;
     use crate::gate::kleisli::KleisliUnitEvaluator;
-    use crate::gate::transition_proposal::{
-        ThermodynamicStateSnapshot, TransitionFilter,
-    };
+    use crate::gate::transition_proposal::{ThermodynamicStateSnapshot, TransitionFilter};
 
     #[test]
     fn w8e14_registry_routes_thermodynamic_mix_catalog() {

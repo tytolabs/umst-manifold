@@ -277,17 +277,26 @@ mod tests {
     fn state_delta_outputs_are_non_negative() {
         let dev = device();
         let baseline = Tensor::<B, 2>::from_data(
-            Data::new(vec![-2.0_f32, 0.5_f32, 1.0_f32, -1.0_f32], Shape::new([2, 2])),
+            Data::new(
+                vec![-2.0_f32, 0.5_f32, 1.0_f32, -1.0_f32],
+                Shape::new([2, 2]),
+            ),
             &dev,
         );
         let proposed = Tensor::<B, 2>::from_data(
-            Data::new(vec![2.0_f32, -0.5_f32, -3.0_f32, 1.0_f32], Shape::new([2, 2])),
+            Data::new(
+                vec![2.0_f32, -0.5_f32, -3.0_f32, 1.0_f32],
+                Shape::new([2, 2]),
+            ),
             &dev,
         );
         let g = suggested_info_gain_from_state_delta(baseline, proposed);
         let v: Vec<f32> = g.into_data().value;
         for &row in &v {
-            assert!(row >= 0.0_f32, "MSE surrogate must be non-negative, got {row}");
+            assert!(
+                row >= 0.0_f32,
+                "MSE surrogate must be non-negative, got {row}"
+            );
         }
     }
 
@@ -307,20 +316,19 @@ mod tests {
         let g_large = suggested_info_gain_from_state_delta(baseline, large);
         let small_v = g_small.into_data().value[0];
         let large_v = g_large.into_data().value[0];
-        assert!(large_v > small_v, "larger delta must yield larger surrogate");
+        assert!(
+            large_v > small_v,
+            "larger delta must yield larger surrogate"
+        );
     }
 
     #[test]
     fn state_delta_single_feature_dimension() {
         let dev = device();
-        let baseline = Tensor::<B, 2>::from_data(
-            Data::new(vec![2.0_f32, 4.0_f32], Shape::new([2, 1])),
-            &dev,
-        );
-        let proposed = Tensor::<B, 2>::from_data(
-            Data::new(vec![5.0_f32, 1.0_f32], Shape::new([2, 1])),
-            &dev,
-        );
+        let baseline =
+            Tensor::<B, 2>::from_data(Data::new(vec![2.0_f32, 4.0_f32], Shape::new([2, 1])), &dev);
+        let proposed =
+            Tensor::<B, 2>::from_data(Data::new(vec![5.0_f32, 1.0_f32], Shape::new([2, 1])), &dev);
         let g = suggested_info_gain_from_state_delta(baseline, proposed);
         assert_eq!(g.dims(), [2]);
         let v: Vec<f32> = g.into_data().value;
@@ -352,10 +360,8 @@ mod tests {
         let b = 4usize;
         let d = 3usize;
         let baseline = Tensor::<B, 2>::zeros([b, d], &dev);
-        let proposed = Tensor::<B, 2>::from_data(
-            Data::new(vec![1.0_f32; b * d], Shape::new([b, d])),
-            &dev,
-        );
+        let proposed =
+            Tensor::<B, 2>::from_data(Data::new(vec![1.0_f32; b * d], Shape::new([b, d])), &dev);
         let g = suggested_info_gain_from_state_delta(baseline, proposed);
         assert_eq!(g.dims(), [b]);
         let v: Vec<f32> = g.into_data().value;
@@ -442,14 +448,8 @@ mod tests {
     #[test]
     fn nodal_scalars_single_node_single_channel() {
         let dev = device();
-        let b = Tensor::<B, 3>::from_data(
-            Data::new(vec![3.0_f32], Shape::new([1, 1, 1])),
-            &dev,
-        );
-        let p = Tensor::<B, 3>::from_data(
-            Data::new(vec![7.0_f32], Shape::new([1, 1, 1])),
-            &dev,
-        );
+        let b = Tensor::<B, 3>::from_data(Data::new(vec![3.0_f32], Shape::new([1, 1, 1])), &dev);
+        let p = Tensor::<B, 3>::from_data(Data::new(vec![7.0_f32], Shape::new([1, 1, 1])), &dev);
         let g = suggested_info_gain_from_batched_nodal_scalars(b, p);
         let v: Vec<f32> = g.into_data().value;
         assert_abs_diff_eq!(v[0], 16.0_f32, epsilon = 1.0e-5);

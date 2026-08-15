@@ -11,7 +11,7 @@ fn manifest_dir() -> PathBuf {
 }
 
 #[test]
-fn w8_publish_readiness_script_is_present_and_documents_prep_vs_publish() {
+fn publish_readiness_script_is_present_and_documents_prep_vs_publish() {
     let script = manifest_dir().join("scripts/publish_readiness.sh");
     let body = std::fs::read_to_string(&script).expect(
         "scripts/publish_readiness.sh readable for module_count/digest pin + prep-vs-publish contract scan (FP §6 W8 publish readiness)",
@@ -48,11 +48,11 @@ fn w8_publish_readiness_script_is_present_and_documents_prep_vs_publish() {
     );
     let verify = std::fs::read_to_string(manifest_dir().join("scripts/verify_umst_stack.sh"))
         .expect(
-            "scripts/verify_umst_stack.sh readable — must invoke w8_publish_readiness.sh for 16/16 evidence (FP §6 W8 publish readiness)",
+            "scripts/verify_umst_stack.sh readable — must invoke publish_readiness.sh for 16/16 evidence (FP §6 publish readiness)",
         );
     assert!(
-        verify.contains("w8_publish_readiness.sh"),
-        "verify_umst_stack.sh must invoke w8_publish_readiness.sh"
+        verify.contains("publish_readiness.sh"),
+        "verify_umst_stack.sh must invoke publish_readiness.sh"
     );
     assert!(
         body.contains("16/16"),
@@ -65,7 +65,7 @@ fn w8_publish_readiness_script_is_present_and_documents_prep_vs_publish() {
 }
 
 #[test]
-fn w8_publish_readiness_exits_zero_on_current_workspace() {
+fn publish_readiness_exits_zero_on_current_workspace() {
     let manifest = manifest_dir();
     let script = manifest.join("scripts/publish_readiness.sh");
     let workspace = manifest
@@ -99,12 +99,12 @@ fn w8_publish_readiness_exits_zero_on_current_workspace() {
     }
     assert!(
         out.status.success(),
-        "w8_publish_readiness.sh must exit 0 (status={:?})",
+        "publish_readiness.sh must exit 0 (status={:?})",
         out.status.code()
     );
     let stdout = String::from_utf8_lossy(&out.stdout);
     assert!(
-        stdout.contains("w8_publish_readiness: READY"),
+        stdout.contains("publish_readiness: READY"),
         "expected READY banner in stdout"
     );
 }

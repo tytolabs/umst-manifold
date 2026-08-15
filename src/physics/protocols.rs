@@ -13,9 +13,9 @@ use burn::tensor::{backend::Backend, Int, Tensor};
 
 use crate::core::field::{BodyForceField, BoundaryMaskField, Field, StiffnessField};
 
+use super::error::PhysicsError;
 use super::laplacian::TopologicalLaplacian;
 use super::mechanics::VectorMechanicsSolver;
-use super::error::PhysicsError;
 use super::time_orchestration::MechanicsInnerLoopConfig;
 
 /// Namespace-style alias for discoverability (no state).
@@ -205,18 +205,17 @@ mod tests {
         let device = NdArrayDevice::Cpu;
         let n = 5usize;
         let x_data: Vec<f32> = (0..n).map(|i| (i as f32 + 1.0) * 0.25).collect();
-        let x =
-            Tensor::<B, 1>::from_data(Data::new(x_data, Shape::new([n])), &device).reshape([1, n, 1]);
+        let x = Tensor::<B, 1>::from_data(Data::new(x_data, Shape::new([n])), &device)
+            .reshape([1, n, 1]);
         let damage = Tensor::<B, 3>::zeros([1, n, 1], &device);
         let edges = chain_edges(n, &device);
 
         let via_ns = ScalarTransport::laplacian(x.clone(), edges.clone(), damage.clone());
-        let via_trait_lap =
-            <TopologicalLaplacian as ScalarTransportSolver<B>>::laplacian(
-                x.clone(),
-                edges.clone(),
-                damage.clone(),
-            );
+        let via_trait_lap = <TopologicalLaplacian as ScalarTransportSolver<B>>::laplacian(
+            x.clone(),
+            edges.clone(),
+            damage.clone(),
+        );
         let via_trait_ns =
             <ScalarTransport as ScalarTransportSolver<B>>::laplacian(x, edges, damage);
 
@@ -233,8 +232,14 @@ mod tests {
             .zip(c.iter())
             .map(|(u, v)| (u - v).abs())
             .fold(0.0_f32, f32::max);
-        assert!(max_ab < 1e-7, "namespace vs TopologicalLaplacian trait Δ={max_ab}");
-        assert!(max_ac < 1e-7, "namespace vs ScalarTransport trait Δ={max_ac}");
+        assert!(
+            max_ab < 1e-7,
+            "namespace vs TopologicalLaplacian trait Δ={max_ab}"
+        );
+        assert!(
+            max_ac < 1e-7,
+            "namespace vs ScalarTransport trait Δ={max_ac}"
+        );
     }
 
     #[test]
@@ -292,8 +297,7 @@ mod tests {
             bm[i * 3 + 2] = 0.0;
         }
         bm[0] = 0.0; // fix left x
-        let boundary_mask =
-            Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &device);
+        let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &device);
 
         let cfg = MechanicsInnerLoopConfig {
             max_cg_iterations: 80,
@@ -316,18 +320,19 @@ mod tests {
         )
         .expect("MechanicsEquilibrium::solve");
 
-        let (u_tr, s_tr) = <MechanicsEquilibrium as MechanicsEquilibriumSolver<B>>::solve_equilibrium(
-            displacement,
-            coords,
-            stiffness,
-            body_force,
-            edges,
-            damage,
-            boundary_mask,
-            a,
-            &cfg,
-        )
-        .expect("MechanicsEquilibriumSolver::solve_equilibrium");
+        let (u_tr, s_tr) =
+            <MechanicsEquilibrium as MechanicsEquilibriumSolver<B>>::solve_equilibrium(
+                displacement,
+                coords,
+                stiffness,
+                body_force,
+                edges,
+                damage,
+                boundary_mask,
+                a,
+                &cfg,
+            )
+            .expect("MechanicsEquilibriumSolver::solve_equilibrium");
 
         let du = u_ns
             .clone()

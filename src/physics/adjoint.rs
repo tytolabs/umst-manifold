@@ -95,12 +95,12 @@ use burn::tensor::{
     Int, Tensor,
 };
 
-use crate::core::field::StiffnessField;
 use super::error::PhysicsError;
 use super::linear::masked_dot;
 use super::mechanics::{BarNetworkPcgReport, VectorMechanicsSolver};
 use super::time_orchestration::MechanicsInnerLoopConfig;
 use super::topology::EdgeTopology;
+use crate::core::field::StiffnessField;
 
 /// SIMP elastic parameters for \(E(\rho)=E_{\min}+(E_0-E_{\min})\rho^p\).
 #[derive(Clone, Copy, Debug)]

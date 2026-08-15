@@ -53,7 +53,8 @@ pub const PRIOR_Y51_RECEIPT_PATH: &str = "outputs/.tmp/COMPOSER_Y51_0808.md";
 pub const MCP_SSOT: &str = "umst-concrete-cartridge/crates/umst-mcp/src/sec_mcp_wrap.rs";
 
 /// umst-mcp HCOM-029 trust gate delegate SSOT.
-pub const MCP_TRUST_GATE_SSOT: &str = "umst-concrete-cartridge/crates/umst-mcp/src/mcp_trust_gate.rs";
+pub const MCP_TRUST_GATE_SSOT: &str =
+    "umst-concrete-cartridge/crates/umst-mcp/src/mcp_trust_gate.rs";
 
 /// Gateway stdio exec trust pre-check owner (honest open residue).
 pub const GATEWAY_SSOT: &str = "umst-gateway/crates/umst-gateway/src/sec_mcp_wrap.rs";
@@ -360,8 +361,7 @@ pub fn gate_transition_evidence_probe() -> bool {
     let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
     let new = old;
     let evidence = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
-    evidence.admissibility == AdmissibilityToken::Admissible
-        && !evidence.catalog_id.is_empty()
+    evidence.admissibility == AdmissibilityToken::Admissible && !evidence.catalog_id.is_empty()
 }
 
 /// Gateway stdio exec trust pre-check — owned by umst-gateway; honest open.
@@ -391,9 +391,15 @@ pub fn manifold_mcp_wrap_refuse_path_matrix_pins_verified() -> bool {
             .iter()
             .zip(EXPECTED_ROW_IDS.iter())
             .all(|(row, expected_id)| row.row_id == *expected_id && !row.tool_name.is_empty())
-        && REFUSE_PATH_MATRIX.iter().any(|r| r.row_id == "R1" && !r.expect_admit)
-        && REFUSE_PATH_MATRIX.iter().any(|r| r.row_id == "R2" && r.expect_admit)
-        && REFUSE_PATH_MATRIX.iter().any(|r| r.row_id == "R6" && r.revoked && !r.expect_admit)
+        && REFUSE_PATH_MATRIX
+            .iter()
+            .any(|r| r.row_id == "R1" && !r.expect_admit)
+        && REFUSE_PATH_MATRIX
+            .iter()
+            .any(|r| r.row_id == "R2" && r.expect_admit)
+        && REFUSE_PATH_MATRIX
+            .iter()
+            .any(|r| r.row_id == "R6" && r.revoked && !r.expect_admit)
         && REFUSE_PATH_MATRIX
             .iter()
             .all(|r| r.delegate_ssot.contains("mcp_trust_gate"))
@@ -801,8 +807,12 @@ mod sec_mcp_wrap_tests {
     fn sec_mcp_wrap_refuse_path_matrix_six_rows_pinned() {
         assert_eq!(REFUSE_PATH_MATRIX.len(), REFUSE_PATH_MATRIX_ROW_COUNT);
         assert!(manifold_mcp_wrap_refuse_path_matrix_pins_verified());
-        assert!(REFUSE_PATH_MATRIX.iter().any(|r| r.row_id == "R1" && !r.expect_admit));
-        assert!(REFUSE_PATH_MATRIX.iter().any(|r| r.row_id == "R6" && r.revoked));
+        assert!(REFUSE_PATH_MATRIX
+            .iter()
+            .any(|r| r.row_id == "R1" && !r.expect_admit));
+        assert!(REFUSE_PATH_MATRIX
+            .iter()
+            .any(|r| r.row_id == "R6" && r.revoked));
     }
 
     #[test]

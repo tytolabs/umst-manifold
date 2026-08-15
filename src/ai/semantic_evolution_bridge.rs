@@ -11,7 +11,7 @@ use burn::tensor::activation::relu;
 use burn::tensor::backend::AutodiffBackend;
 use burn::tensor::{backend::Backend, Tensor};
 
-use crate::core::semantic_lane_schema::{LANE_MI_VALUE, SemanticLaneBundleV1};
+use crate::core::semantic_lane_schema::{SemanticLaneBundleV1, LANE_MI_VALUE};
 
 /// W29 deepen cell — semantic evolution bridge honest fence bundle.
 pub const W29_SEMANTIC_EVOLUTION_BRIDGE_DEEPEN_CELL: &str = "W29-015-SEMANTIC_EVOLUTION_BRIDG";
@@ -403,7 +403,10 @@ mod tests {
         assert!(!SEMANTIC_EVOLUTION_PRODUCTION_WIRED);
         assert!(!SEMANTIC_EVOLUTION_PHYSICS_GREEN);
         assert!(!SEMANTIC_EVOLUTION_MASTER);
-        assert_eq!(semantic_evolution_fence_wired_count(), SEMANTIC_EVOLUTION_FENCE_WIRED_COUNT);
+        assert_eq!(
+            semantic_evolution_fence_wired_count(),
+            SEMANTIC_EVOLUTION_FENCE_WIRED_COUNT
+        );
     }
 
     #[test]
@@ -414,7 +417,10 @@ mod tests {
         assert!(!bundle.production_wired);
         assert!(!bundle.master);
         assert!(!bundle.physics_green);
-        assert_eq!(bundle.fence_facet_count, SEMANTIC_EVOLUTION_FENCE_FACET_COUNT);
+        assert_eq!(
+            bundle.fence_facet_count,
+            SEMANTIC_EVOLUTION_FENCE_FACET_COUNT
+        );
 
         let probe = semantic_evolution_probe();
         assert!(semantic_evolution_honest(&probe));
@@ -446,18 +452,15 @@ mod tests {
             Data::new(vec![CHAIR_I_REQUIRED_BITS as f32], Shape::new([1])),
             &device,
         );
-        let before =
-            Tensor::<B, 1>::from_data(Data::new(vec![1.0_f32], Shape::new([1])), &device);
-        let after =
-            Tensor::<B, 1>::from_data(Data::new(vec![4.0_f32], Shape::new([1])), &device);
+        let before = Tensor::<B, 1>::from_data(Data::new(vec![1.0_f32], Shape::new([1])), &device);
+        let after = Tensor::<B, 1>::from_data(Data::new(vec![4.0_f32], Shape::new([1])), &device);
         let reward = mi_reward_hook(i_required.clone(), before, after)
             .into_data()
             .value[0];
         // relu(6-1) - relu(6-4) = 5 - 2 = 3
         assert!((reward - 3.0_f32).abs() < 1e-6);
 
-        let flat =
-            Tensor::<B, 1>::from_data(Data::new(vec![6.0_f32], Shape::new([1])), &device);
+        let flat = Tensor::<B, 1>::from_data(Data::new(vec![6.0_f32], Shape::new([1])), &device);
         let zero_reward = mi_reward_hook(i_required, flat.clone(), flat)
             .into_data()
             .value[0];
@@ -479,11 +482,9 @@ mod tests {
             &device,
         )
         .require_grad();
-        let delta_radius = Tensor::<B, 1>::from_data(
-            Data::new(vec![0.02_f32], Shape::new([1])),
-            &device,
-        )
-        .require_grad();
+        let delta_radius =
+            Tensor::<B, 1>::from_data(Data::new(vec![0.02_f32], Shape::new([1])), &device)
+                .require_grad();
 
         let probes = Tensor::<B, 3>::from_data(
             Data::new(

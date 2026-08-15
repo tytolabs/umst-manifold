@@ -243,7 +243,10 @@ mod tests {
         let a = lift_atom_scalar(&device, 2.0);
         let b = lift_atom_scalar(&device, 3.5);
         let product = <BurnAtomAlgebra as TensorAlgebra>::mul(a, b);
-        let sum = <BurnAtomAlgebra as TensorAlgebra>::add(product, BurnAtomField::from_host_scalar(&device, 0.0));
+        let sum = <BurnAtomAlgebra as TensorAlgebra>::add(
+            product,
+            BurnAtomField::from_host_scalar(&device, 0.0),
+        );
         assert!((sum.to_host_scalar() - 7.0).abs() < 1e-5);
     }
 

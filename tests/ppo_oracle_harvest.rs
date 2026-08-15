@@ -14,7 +14,9 @@
 use burn::tensor::backend::Backend;
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
-use umst_manifold::ai::info_gain::{histogram_info_gain_tensor, nodal_scalar_means, MutualInfoEstimator};
+use umst_manifold::ai::info_gain::{
+    histogram_info_gain_tensor, nodal_scalar_means, MutualInfoEstimator,
+};
 use umst_manifold::ai::ppo::ManifoldGateway;
 use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};

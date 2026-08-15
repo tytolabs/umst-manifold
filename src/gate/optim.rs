@@ -115,7 +115,9 @@ mod tests {
         m2: Option<Tensor<B, 1>>,
         t: usize,
     ) -> (Tensor<B, 1>, Tensor<B, 1>, Tensor<B, 1>, usize) {
-        let tensor_updated = weights.clone().sub(weights.mul_scalar(lr * LPP_008_WEIGHT_DECAY));
+        let tensor_updated = weights
+            .clone()
+            .sub(weights.mul_scalar(lr * LPP_008_WEIGHT_DECAY));
 
         let (moment_1, moment_2, time) = match (m1, m2) {
             (Some(m1_prev), Some(m2_prev)) => {
@@ -131,14 +133,20 @@ mod tests {
             }
             _ => {
                 let m1_new = grad.clone().mul_scalar(1.0_f32 - LPP_008_BETA1);
-                let m2_new = grad.powf_scalar(2.0_f32).mul_scalar(1.0_f32 - LPP_008_BETA2);
+                let m2_new = grad
+                    .powf_scalar(2.0_f32)
+                    .mul_scalar(1.0_f32 - LPP_008_BETA2);
                 (m1_new, m2_new, 1)
             }
         };
 
         let time_i = time as i32;
-        let m1c = moment_1.clone().div_scalar(1.0_f32 - LPP_008_BETA1.powi(time_i));
-        let m2c = moment_2.clone().div_scalar(1.0_f32 - LPP_008_BETA2.powi(time_i));
+        let m1c = moment_1
+            .clone()
+            .div_scalar(1.0_f32 - LPP_008_BETA1.powi(time_i));
+        let m2c = moment_2
+            .clone()
+            .div_scalar(1.0_f32 - LPP_008_BETA2.powi(time_i));
         let raw_delta = m1c.div(m2c.sqrt().add_scalar(LPP_008_EPS));
         let new_w = tensor_updated.sub(raw_delta.mul_scalar(lr));
 
@@ -180,7 +188,10 @@ mod tests {
         assert_relative_eq!(m1, 0.05, epsilon = 1.0e-6);
         assert_relative_eq!(m2, 0.00025, epsilon = 1.0e-6);
         assert!(w_new.is_finite());
-        assert!(w_new < 1.0, "decoupled WD + grad step must move weight down from 1.0");
+        assert!(
+            w_new < 1.0,
+            "decoupled WD + grad step must move weight down from 1.0"
+        );
     }
 
     #[test]
@@ -228,8 +239,7 @@ mod tests {
         let lr = 0.01_f64;
         let w0 = 1.0_f64;
         let (_, m1_1, m2_1, t1) = lpp_008_scalar_adamw_step(w0, grad, lr, None, None, 0);
-        let (w2, _, _, t2) =
-            lpp_008_scalar_adamw_step(w0, grad, lr, Some(m1_1), Some(m2_1), t1);
+        let (w2, _, _, t2) = lpp_008_scalar_adamw_step(w0, grad, lr, Some(m1_1), Some(m2_1), t1);
         assert_eq!(t2, 2);
 
         let beta1 = f64::from(LPP_008_BETA1);
@@ -251,7 +261,8 @@ mod tests {
         let w = Tensor::<B, 1>::from_data(Data::new(vec![1.0_f32], Shape::new([1])), &dev);
         let g = Tensor::<B, 1>::from_data(Data::new(vec![0.5_f32], Shape::new([1])), &dev);
         let lr = 0.01_f32;
-        let (w_tensor, m1_t, m2_t, t_tensor) = adamw_step_policy_ref(w, g.clone(), lr, None, None, 0);
+        let (w_tensor, m1_t, m2_t, t_tensor) =
+            adamw_step_policy_ref(w, g.clone(), lr, None, None, 0);
         let (w_scalar, m1_s, m2_s, t_scalar) =
             lpp_008_scalar_adamw_step(1.0, 0.5, f64::from(lr), None, None, 0);
         assert_eq!(t_tensor, t_scalar);
@@ -288,14 +299,10 @@ mod tests {
     #[test]
     fn gate_optim_tensor_ref_two_step_chain_finite() {
         let dev = device();
-        let w0 = Tensor::<B, 1>::from_data(
-            Data::new(vec![0.5_f32, -0.5_f32], Shape::new([2])),
-            &dev,
-        );
-        let g = Tensor::<B, 1>::from_data(
-            Data::new(vec![0.2_f32, -0.1_f32], Shape::new([2])),
-            &dev,
-        );
+        let w0 =
+            Tensor::<B, 1>::from_data(Data::new(vec![0.5_f32, -0.5_f32], Shape::new([2])), &dev);
+        let g =
+            Tensor::<B, 1>::from_data(Data::new(vec![0.2_f32, -0.1_f32], Shape::new([2])), &dev);
         let lr = 0.001_f32;
         let (w1, m1, m2, t1) = adamw_step_policy_ref(w0, g.clone(), lr, None, None, 0);
         let (w2, _, _, t2) = adamw_step_policy_ref(w1, g, lr, Some(m1), Some(m2), t1);

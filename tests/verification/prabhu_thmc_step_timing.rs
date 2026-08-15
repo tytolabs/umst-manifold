@@ -126,7 +126,9 @@ fn prabhu_thmc_step_timing() {
     // Warm-up step
     let _ = solver
         .step(&StubCartridge, state.clone(), &mut umst)
-        .expect("ThmcSolver::step warm-up on minimal toy grid (PB-2 timing harness, FP §6 witness)");
+        .expect(
+            "ThmcSolver::step warm-up on minimal toy grid (PB-2 timing harness, FP §6 witness)",
+        );
 
     let state2 = equilibrated_state(n);
     let start = std::time::Instant::now();

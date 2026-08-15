@@ -50,8 +50,7 @@ pub const PRIOR_RECEIPT_PATH_Z08: &str = "outputs/.tmp/COMPOSER_Z08_0928.md";
 pub const PRIOR_RECEIPT_PATH_P1710_F1: &str = "outputs/.tmp/COMPOSER_P1710_F1.md";
 
 /// Gateway admit-audit stamp delegate SSOT (serial next-hop — not edited this wave).
-pub const GATEWAY_SSOT: &str =
-    "umst-gateway/crates/umst-gateway/src/lib_adopt_e_gateway_audit.rs";
+pub const GATEWAY_SSOT: &str = "umst-gateway/crates/umst-gateway/src/lib_adopt_e_gateway_audit.rs";
 
 /// Gateway audit swarm rotate delegate SSOT.
 pub const GATEWAY_SWARM_SSOT: &str =
@@ -296,8 +295,7 @@ pub fn gate_transition_evidence_probe() -> bool {
     let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
     let new = old;
     let evidence = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
-    evidence.admissibility == AdmissibilityToken::Admissible
-        && !evidence.catalog_id.is_empty()
+    evidence.admissibility == AdmissibilityToken::Admissible && !evidence.catalog_id.is_empty()
 }
 
 /// Whether live gateway admit-audit production flip is plumbed (honest `false`).
@@ -385,9 +383,7 @@ pub fn manifold_gw_audit_all_stamp_paths_probed() -> bool {
 #[must_use]
 pub fn manifold_gw_audit_stamp_legs_complete() -> bool {
     MANIFOLD_GW_AUDIT_STAMP_LEGS.len() == STAMP_LEG_COUNT
-        && MANIFOLD_GW_AUDIT_STAMP_LEGS
-            .iter()
-            .all(|l| l.census_hit)
+        && MANIFOLD_GW_AUDIT_STAMP_LEGS.iter().all(|l| l.census_hit)
 }
 
 /// Verify upstream SEC-GW-WRAP delegate ceremony at manifold boundary.
@@ -579,7 +575,9 @@ pub fn validate_sec_gw_audit_honesty() -> Result<(), &'static str> {
         return Err("W29-117 deepen step id drift");
     }
     if !fence.holds() {
-        return Err("sec_gw_audit honesty fence must hold (no invent GREEN/PRODUCTION/MASTER/OP-5)");
+        return Err(
+            "sec_gw_audit honesty fence must hold (no invent GREEN/PRODUCTION/MASTER/OP-5)",
+        );
     }
     if fence.physics_green || SEC_GW_AUDIT_PHYSICS_GREEN {
         return Err("SEC_GW_AUDIT_PHYSICS_GREEN must stay false — census ≠ fleet physics");
@@ -597,7 +595,9 @@ pub fn validate_sec_gw_audit_honesty() -> Result<(), &'static str> {
         return Err("jsonl_rotation_live must stay false until live JSONL ceremony");
     }
     if census.live_trust_chain_measured {
-        return Err("live_trust_chain_measured must stay false until UMST_GATEWAY_AUDIT_TRUST_CHAIN_ROOT");
+        return Err(
+            "live_trust_chain_measured must stay false until UMST_GATEWAY_AUDIT_TRUST_CHAIN_ROOT",
+        );
     }
     if !census.gw_audit_green_claim_blocked {
         return Err("gw_audit_green_claim_blocked must stay true in scaffold deepen");
@@ -752,7 +752,9 @@ mod sec_gw_audit_tests {
     fn sec_gw_audit_admit_stamp_paths_four_of_four() {
         assert!(manifold_gw_audit_all_stamp_paths_probed());
         assert_eq!(MANIFOLD_GW_AUDIT_ADMIT_STAMP_PATHS.len(), 4);
-        assert!(MANIFOLD_GW_AUDIT_ADMIT_STAMP_PATHS.iter().all(|p| p.census_hit));
+        assert!(MANIFOLD_GW_AUDIT_ADMIT_STAMP_PATHS
+            .iter()
+            .all(|p| p.census_hit));
         assert!(MANIFOLD_GW_AUDIT_ADMIT_STAMP_PATHS
             .iter()
             .any(|p| p.path_id == "informational_stdio_delegate"));

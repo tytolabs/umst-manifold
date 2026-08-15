@@ -36,8 +36,8 @@
     "lambda_landauer": 0.25,
     "mean_slack_at_commit": 205263157.89473686
   },
-  "regenerate": "cargo test -p umst-manifold --features kleisli-ppo-hot-bind,wgpu --test p4_rejection_witness_gpu",
-  "schema_version": "p4_rejection_baseline.v2",
+  "regenerate": "cargo test -p umst-manifold --features kleisli-ppo-hot-bind,wgpu --test rejection_witness_gpu",
+  "schema_version": "rejection_baseline.v2",
   "seed": 42,
   "single_run_disclaimer": "Single deterministic witness run per seed; not a multi-seed statistical study. Use scripts/run_p4_multiseed_witness.sh for a 3-seed aggregate stub."
 }

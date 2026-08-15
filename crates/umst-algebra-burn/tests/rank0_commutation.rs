@@ -55,8 +55,7 @@ fn rank0_contract_commutes_on_probe_grid() {
     for &lhs in PROBE_GRID {
         for &rhs in PROBE_GRID {
             let s = lhs * rhs;
-            let b =
-                BurnRank0Algebra::contract(BurnRank0Field(lhs), BurnRank0Field(rhs)).to_f64();
+            let b = BurnRank0Algebra::contract(BurnRank0Field(lhs), BurnRank0Field(rhs)).to_f64();
             assert_eq!(s, b, "contract mismatch at ({lhs}, {rhs})");
         }
     }
@@ -77,7 +76,10 @@ fn rank0_perturbation_lhs_diverges_under_add() {
     let perturbed = 1.0 + f64::EPSILON;
     let r_base = BurnRank0Algebra::add(BurnRank0Field(base), BurnRank0Field(0.0)).to_f64();
     let r_pert = BurnRank0Algebra::add(BurnRank0Field(perturbed), BurnRank0Field(0.0)).to_f64();
-    assert_ne!(r_base, r_pert, "perturbation test must diverge — tautology refused");
+    assert_ne!(
+        r_base, r_pert,
+        "perturbation test must diverge — tautology refused"
+    );
 }
 
 #[test]
@@ -87,7 +89,10 @@ fn rank0_perturbation_rhs_diverges_under_mul() {
     let rhs_pert = 3.5;
     let r_base = BurnRank0Algebra::mul(BurnRank0Field(lhs), BurnRank0Field(rhs_base)).to_f64();
     let r_pert = BurnRank0Algebra::mul(BurnRank0Field(lhs), BurnRank0Field(rhs_pert)).to_f64();
-    assert_ne!(r_base, r_pert, "perturbation test must diverge — tautology refused");
+    assert_ne!(
+        r_base, r_pert,
+        "perturbation test must diverge — tautology refused"
+    );
 }
 
 #[test]

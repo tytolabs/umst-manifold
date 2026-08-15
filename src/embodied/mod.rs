@@ -17,17 +17,17 @@ pub mod sense_gate_stub;
 pub use crate::manifest::{EmbodiedOrchestrator, EmbodiedReject, HostTransitionStep};
 pub use fragment_audit::{
     audit_report, fragment_status, phase_wired, scaffold_coverage_pct, unwired_gaps,
-    ALL_FRAGMENTS, EmbodiedFragment, FragmentWireStatus, LoopPhase,
+    EmbodiedFragment, FragmentWireStatus, LoopPhase, ALL_FRAGMENTS,
 };
 pub use fragment_slots::{
-    ActuateDesign, ActuateError, EmbodiedLoopSlots, FieldSenseError, FieldSenseClient,
+    ActuateDesign, ActuateError, EmbodiedLoopSlots, FieldSenseClient, FieldSenseError,
     LoopCloseError, NullFieldSenseClient, NullRobotExecutor, NullSenseLoopCloser, NullXrPresenter,
     PresentError, PresentScene, RobotExecutor, SenseLoopCloser, SenseObservation, XrPresenter,
 };
 pub use loop_doc::{
     crosswalk_for, doc_code_gaps, loop_closed_per_spec, loop_composition_pct, phase_posture,
-    phases_loop_composed, phases_with_code_anchor, DocCodePosture, LoopLegCrosswalk, LOOP_CROSSWALK,
-    FUNNEL_SPEC,
+    phases_loop_composed, phases_with_code_anchor, DocCodePosture, LoopLegCrosswalk, FUNNEL_SPEC,
+    LOOP_CROSSWALK,
 };
 pub use loop_stub::{
     embodied_loop_tick_stub, CommandLegDeferral, EmbodiedLoopStub, GateAdmissionStub,
@@ -41,6 +41,4 @@ pub use orch_loop_transcript::{
     OrchLoopTranscriptEmitter, OrchPhaseTranscriptDelta, ORCH_LOOP_HONEST_NULL_COLUMNS,
     ORCH_LOOP_WIRED_J7_COLUMNS, SCHEMA_VERSION as ORCH_LOOP_TRANSCRIPT_SCHEMA_VERSION,
 };
-pub use sense_gate_stub::{
-    sense_gate_tick_stub, SenseGateReject, SenseGateResult, SenseGateStub,
-};
+pub use sense_gate_stub::{sense_gate_tick_stub, SenseGateReject, SenseGateResult, SenseGateStub};

@@ -176,8 +176,8 @@ fn composed_digest_covers_non_preview_fibers() {
 #[test]
 fn catalog_pin_manifold_ceremony_closed_on_bundled_lock() {
     use super::sec_catalog_pin::{
-        catalog_pin_production_wired, manifold_catalog_pin_ceremony_closed,
-        resolve_catalog_digest, CatalogDigestAttachMode,
+        catalog_pin_production_wired, manifold_catalog_pin_ceremony_closed, resolve_catalog_digest,
+        CatalogDigestAttachMode,
     };
     assert!(manifold_catalog_pin_ceremony_closed());
     assert!(!catalog_pin_production_wired());

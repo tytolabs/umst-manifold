@@ -92,7 +92,7 @@ mod thmc_ok {
         let umst = umst_with_positions();
         let dev = dev();
         let n = umst.scalar_features.dims()[0];
-        let state =         ThmcState::from_tensors(
+        let state = ThmcState::from_tensors(
             Tensor::zeros([1, n, 1], &dev),
             Tensor::zeros([1, n, 1], &dev),
             Tensor::zeros([1, n, 3], &dev),

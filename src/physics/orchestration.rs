@@ -127,14 +127,18 @@ pub fn orchestration_posture_honest(probe: &OrchestrationPostureProbe) -> bool {
         && !probe.master
         && probe.plan_fold_landed
         && !probe.rheology_in_default_tick
-        && probe.honest_fence.contains("topology_plan_fold_landed=true")
+        && probe
+            .honest_fence
+            .contains("topology_plan_fold_landed=true")
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER claims on the orchestration surface.
 #[must_use]
-pub fn orchestration_refuse_overclaim(probe: &OrchestrationPostureProbe) -> Result<(), &'static str> {
+pub fn orchestration_refuse_overclaim(
+    probe: &OrchestrationPostureProbe,
+) -> Result<(), &'static str> {
     if probe.physics_green {
         return Err("ORCHESTRATION_PHYSICS_GREEN must stay false until fleet physics closes");
     }
@@ -156,8 +160,8 @@ pub fn orchestration_refuse_overclaim(probe: &OrchestrationPostureProbe) -> Resu
 use burn::tensor::backend::Backend;
 
 use crate::core::tensors::UnifiedMaterialStateTensor;
-use crate::physics::error::PhysicsError;
 use crate::core::traits::IScienceCartridge;
+use crate::physics::error::PhysicsError;
 use crate::physics::solvers::{ThmcSolver, ThmcState};
 
 /// Back-compat alias used in v0.4 planning notes (`PhysicsOrchestrator` ↔ topology plan driver).
@@ -455,7 +459,9 @@ mod tests {
         assert!(!probe.rheology_in_default_tick);
         assert!(probe.plan_fold_landed);
         assert_eq!(probe.deepen_cell, W29_ORCHESTRATION_DEEPEN_CELL);
-        assert!(probe.honest_fence.contains("rheology_in_default_tick=false"));
+        assert!(probe
+            .honest_fence
+            .contains("rheology_in_default_tick=false"));
     }
 
     #[test]

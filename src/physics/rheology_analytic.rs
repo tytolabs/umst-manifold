@@ -217,7 +217,8 @@ fn plane_regularized_bingham_poiseuille_u_sample_internal(
     let ay = y.abs();
     if ay > half + 1e-15 {
         return Err(PhysicsError::Domain {
-            detail: "plane_regularized_bingham_poiseuille_u: |y| exceeds half-channel width".to_string(),
+            detail: "plane_regularized_bingham_poiseuille_u: |y| exceeds half-channel width"
+                .to_string(),
         });
     }
     let g_pos = g.max(0.0);

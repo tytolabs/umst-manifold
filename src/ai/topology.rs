@@ -935,7 +935,11 @@ pub fn logit_offset_matching_from_slice(
     for _ in 0..max_iters.max(1) {
         let mid = 0.5 * (lo + hi);
         let vf = eval(mid);
-        if vf > target + tol { hi = mid; } else { lo = mid; }
+        if vf > target + tol {
+            hi = mid;
+        } else {
+            lo = mid;
+        }
     }
     Ok(0.5 * (lo + hi))
 }
@@ -959,7 +963,12 @@ impl VolumeLogitOffsetProjection {
     }
 
     /// Scalar \(b^\*\) from [`logit_offset_matching_from_slice`] on detached logits.
-    pub fn bisect_b_from_logits_slice(&self, logits: &[f32], beta: f32, target_vf: f32) -> Result<f32, PhysicsError> {
+    pub fn bisect_b_from_logits_slice(
+        &self,
+        logits: &[f32],
+        beta: f32,
+        target_vf: f32,
+    ) -> Result<f32, PhysicsError> {
         logit_offset_matching_from_slice(logits, beta, target_vf, self.tol, self.max_bisection)
     }
 
@@ -1452,7 +1461,10 @@ mod tests {
         let a = rho.into_data().value;
         let b = rho_from_z.into_data().value;
         for (x, y) in a.iter().zip(b.iter()) {
-            assert!((x - y).abs() < 1e-6, "forward vs sigmoid(logits) {x} vs {y}");
+            assert!(
+                (x - y).abs() < 1e-6,
+                "forward vs sigmoid(logits) {x} vs {y}"
+            );
         }
     }
 
@@ -1493,11 +1505,17 @@ mod tests {
             "greyness in [0,1], got {grey}"
         );
         let gap = opt.volume_fraction_gap(coords.clone()).into_scalar();
-        assert!(gap.is_finite() && gap >= 0.0, "VF gap non-negative, got {gap}");
+        assert!(
+            gap.is_finite() && gap >= 0.0,
+            "VF gap non-negative, got {gap}"
+        );
         let e_factor = opt.simp_penalized_modulus_factor(coords);
         assert_eq!(e_factor.dims(), [1, 6, 1]);
         e_factor.into_data().value.iter().copied().for_each(|v| {
-            assert!(v.is_finite() && v >= 0.0 && v <= 1.0, "rho^p in [0,1], got {v}");
+            assert!(
+                v.is_finite() && v >= 0.0 && v <= 1.0,
+                "rho^p in [0,1], got {v}"
+            );
         });
         // Descriptive helpers must not invent GREEN / production / closed-loop.
         assert!(!TOPOLOGY_PHYSICS_GREEN);

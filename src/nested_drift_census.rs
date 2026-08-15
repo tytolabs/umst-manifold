@@ -465,7 +465,9 @@ pub fn nested_drift_posture_honest(probe: &NestedDriftPostureProbe) -> bool {
         && probe.fence_wired_count == NESTED_DRIFT_FENCE_WIRED_COUNT
         && probe.honest_fence.contains("inventory_landed=true")
         && probe.honest_fence.contains("production_wired=false")
-        && probe.honest_fence.contains("master_composition_wired=false")
+        && probe
+            .honest_fence
+            .contains("master_composition_wired=false")
 }
 
 /// Validate nested drift posture honesty — fail closed on fake production/master/GREEN claims.
@@ -478,7 +480,9 @@ pub fn validate_nested_drift_posture_honesty() -> Result<(), &'static str> {
         return Err("nested_drift_production_wired must stay false until commit closure lands");
     }
     if probe.master_composition_wired {
-        return Err("nested_drift_master_composition_wired must stay false until fleet orch closes");
+        return Err(
+            "nested_drift_master_composition_wired must stay false until fleet orch closes",
+        );
     }
     if nested_drift_fence_wired_count() != NESTED_DRIFT_FENCE_WIRED_COUNT {
         return Err("nested_drift_fence_wired_count drift from NESTED_DRIFT_FENCE_WIRED_COUNT");
@@ -526,7 +530,9 @@ pub fn w29_nested_drift_deepen_probe() -> W29NestedDriftDeepenProbe {
 pub fn w29_nested_drift_deepen_honest(probe: &W29NestedDriftDeepenProbe) -> bool {
     probe.cell_id == W29_NESTED_DRIFT_DEEPEN_CELL
         && probe.g15_job_id == COMPOSER_G15_JOB_ID
-        && probe.g15_receipt_path.contains("COMPOSER_G15_MANIFOLD_2143")
+        && probe
+            .g15_receipt_path
+            .contains("COMPOSER_G15_MANIFOLD_2143")
         && probe.g15_drift_honest
         && probe.posture_honest
         && !probe.production_wired
@@ -636,13 +642,22 @@ mod tests {
     fn w29_nested_drift_metadata_pins() {
         assert_eq!(W29_NESTED_DRIFT_DEEPEN_CELL, "W29-044-NESTED_DRIFT_CENSUS");
         assert_eq!(POSTURE_TAG, "honest-drift-inventory-only");
-        assert_eq!(NESTED_DRIFT_FENCE_FACET_IDS.len(), NESTED_DRIFT_FENCE_FACET_COUNT);
+        assert_eq!(
+            NESTED_DRIFT_FENCE_FACET_IDS.len(),
+            NESTED_DRIFT_FENCE_FACET_COUNT
+        );
     }
 
     #[test]
     fn w29_nested_drift_fence_wired_count_matches() {
-        assert_eq!(nested_drift_fence_wired_count(), NESTED_DRIFT_FENCE_WIRED_COUNT);
-        assert_eq!(NESTED_DRIFT_PRODUCTION_FENCE_FACETS.len(), NESTED_DRIFT_FENCE_FACET_COUNT);
+        assert_eq!(
+            nested_drift_fence_wired_count(),
+            NESTED_DRIFT_FENCE_WIRED_COUNT
+        );
+        assert_eq!(
+            NESTED_DRIFT_PRODUCTION_FENCE_FACETS.len(),
+            NESTED_DRIFT_FENCE_FACET_COUNT
+        );
     }
 
     #[test]

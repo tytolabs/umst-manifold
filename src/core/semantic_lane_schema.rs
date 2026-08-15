@@ -232,14 +232,9 @@ pub struct SemanticLaneSchemaPostureProbe {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SemanticLaneSchemaError {
     /// Row width does not match the declared schema generation.
-    RowWidthMismatch {
-        expected: usize,
-        found: usize,
-    },
+    RowWidthMismatch { expected: usize, found: usize },
     /// Carrier index is outside the semantic v1 band.
-    NotSemanticLaneIndex {
-        index: usize,
-    },
+    NotSemanticLaneIndex { index: usize },
 }
 
 /// Carrier schema generation — physical-only vs semantic-extended.
@@ -429,10 +424,7 @@ impl SemanticLaneBundleV1 {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SemanticLaneMigrationError {
     /// Source width does not match the declared `from` schema generation.
-    SourceWidthMismatch {
-        expected: usize,
-        found: usize,
-    },
+    SourceWidthMismatch { expected: usize, found: usize },
 }
 
 /// Migrate one nodal carrier row from `from` → `to` (additive, non-destructive on physical lanes).
@@ -477,11 +469,7 @@ pub fn migrate_carrier_batch(
     let to_w = to.lane_count();
     let mut out = vec![0.0_f64; nodes * to_w];
     for node in 0..nodes {
-        let row = migrate_carrier_row(
-            from,
-            to,
-            &source[node * from_w..(node + 1) * from_w],
-        )?;
+        let row = migrate_carrier_row(from, to, &source[node * from_w..(node + 1) * from_w])?;
         out[node * to_w..(node + 1) * to_w].copy_from_slice(&row);
     }
     Ok(out)
@@ -546,9 +534,7 @@ pub fn consistency_defect_from_dec_stub(row: &[f64]) -> f64 {
 }
 
 /// Fallible consistency defect — refuses short carrier rows.
-pub fn try_consistency_defect_from_dec_stub(
-    row: &[f64],
-) -> Result<f64, SemanticLaneSchemaError> {
+pub fn try_consistency_defect_from_dec_stub(row: &[f64]) -> Result<f64, SemanticLaneSchemaError> {
     let report = try_stub_dec_graph_consistency(row)?;
     Ok(report.boundary_of_boundary_defect + report.relation_graph_drift)
 }
@@ -729,7 +715,9 @@ pub fn semantic_lane_schema_posture_honest(probe: &SemanticLaneSchemaPostureProb
 pub fn validate_semantic_lane_schema_honesty() -> Result<(), &'static str> {
     let probe = semantic_lane_schema_posture_probe();
     if probe.production_wired || semantic_lane_schema_production_wired() {
-        return Err("SEMANTIC_LANE_SCHEMA_PRODUCTION_WIRED must stay false until HCOM-008 measured");
+        return Err(
+            "SEMANTIC_LANE_SCHEMA_PRODUCTION_WIRED must stay false until HCOM-008 measured",
+        );
     }
     if probe.physics_green || semantic_lane_schema_physics_green() {
         return Err("SEMANTIC_LANE_SCHEMA_PHYSICS_GREEN must stay false — schema ≠ oracle");
@@ -841,9 +829,7 @@ mod tests {
         assert!(migrated[RESERVED_LANE_BASE..SEMANTIC_LANE_BASE]
             .iter()
             .all(|v| *v == 0.0));
-        assert!(migrated[SEMANTIC_LANE_BASE..]
-            .iter()
-            .all(|v| *v == 0.0));
+        assert!(migrated[SEMANTIC_LANE_BASE..].iter().all(|v| *v == 0.0));
     }
 
     #[test]
@@ -996,11 +982,14 @@ mod tests {
         for lane in SemanticLaneId::ALL_V1 {
             let idx = lane.carrier_index();
             assert_eq!(SemanticLaneId::try_from_carrier_index(idx), Some(lane));
-            assert_eq!(lane.lane_name(), semantic_lane_manifest_v1()
-                .iter()
-                .find(|row| row.carrier_index == idx)
-                .map(|row| row.lane_name)
-                .expect("manifest row"));
+            assert_eq!(
+                lane.lane_name(),
+                semantic_lane_manifest_v1()
+                    .iter()
+                    .find(|row| row.carrier_index == idx)
+                    .map(|row| row.lane_name)
+                    .expect("manifest row")
+            );
         }
     }
 
@@ -1055,9 +1044,7 @@ mod tests {
     fn migrate_carrier_batch_v0_to_v1_two_nodes() {
         let nodes = 2;
         let from_w = UMST_SCALAR_CHANNEL_COUNT;
-        let source: Vec<f64> = (0..nodes * from_w)
-            .map(|i| (i + 1) as f64)
-            .collect();
+        let source: Vec<f64> = (0..nodes * from_w).map(|i| (i + 1) as f64).collect();
         let migrated = migrate_carrier_batch(
             CarrierSchemaVersion::V0PhysicalOnly,
             CarrierSchemaVersion::V1SemanticExtended,
@@ -1067,7 +1054,8 @@ mod tests {
         .expect("batch v0→v1");
         assert_eq!(migrated.len(), nodes * UMST_CARRIER_LANE_COUNT);
         for node in 0..nodes {
-            let row = &migrated[node * UMST_CARRIER_LANE_COUNT..(node + 1) * UMST_CARRIER_LANE_COUNT];
+            let row =
+                &migrated[node * UMST_CARRIER_LANE_COUNT..(node + 1) * UMST_CARRIER_LANE_COUNT];
             assert_eq!(&row[..from_w], &source[node * from_w..(node + 1) * from_w]);
         }
     }
@@ -1096,7 +1084,10 @@ mod tests {
         let report = try_stub_dec_graph_consistency(&row).expect("v1 dec stub");
         assert_eq!(report.relation_graph_drift, 3.5);
         assert_eq!(report.hook_revision, DEC_GRAPH_CONSISTENCY_HOOK_V1_STUB);
-        assert_eq!(try_consistency_defect_from_dec_stub(&row).expect("defect"), 3.5);
+        assert_eq!(
+            try_consistency_defect_from_dec_stub(&row).expect("defect"),
+            3.5
+        );
         assert!(!semantic_band_is_zero(&row));
 
         row[LANE_TOPOLOGY_SIGNATURE] = 1.0;

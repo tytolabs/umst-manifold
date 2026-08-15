@@ -12,9 +12,9 @@
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::field::{Field, HumidityField, ReactionExtentField, TemperatureField};
-use umst_manifold::core::StepEntryDamageMask;
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
+use umst_manifold::core::StepEntryDamageMask;
 use umst_manifold::physics::laplacian::TopologicalLaplacian;
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::solvers::{
@@ -205,14 +205,8 @@ fn monolithic_thmc_newton_stacked_norm_monotone_decrease_on_five_node_chain() {
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics,
     };
-    let trial =     ThmcState::from_tensors(
-        trial_t,
-        trial_h,
-        u_predict,
-        trial_alpha,
-        damage_m,
-        0.0_f32,
-    );
+    let trial =
+        ThmcState::from_tensors(trial_t, trial_h, u_predict, trial_alpha, damage_m, 0.0_f32);
 
     let inner_iters = 4_usize;
     // Full damping (`1.0`) overshoots when the predictor is already close to the implicit root on

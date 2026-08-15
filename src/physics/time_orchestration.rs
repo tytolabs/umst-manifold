@@ -95,10 +95,14 @@ pub fn time_orchestration_refuse_overclaim(
         return Err("TIME_ORCHESTRATION_PHYSICS_GREEN must stay false until fleet physics closes");
     }
     if probe.production_wired {
-        return Err("TIME_ORCHESTRATION_PRODUCTION_WIRED must stay false until embodied loop closes");
+        return Err(
+            "TIME_ORCHESTRATION_PRODUCTION_WIRED must stay false until embodied loop closes",
+        );
     }
     if probe.master {
-        return Err("TIME_ORCHESTRATION_MASTER must stay false — not claimed by schedule SSOT alone");
+        return Err(
+            "TIME_ORCHESTRATION_MASTER must stay false — not claimed by schedule SSOT alone",
+        );
     }
     if probe.fast_physics_production_wired {
         return Err("fast_physics dt must not imply EM/acoustics production wiring");
@@ -254,7 +258,9 @@ mod tests {
         assert!(!probe.fast_physics_production_wired);
         assert!(probe.clocks_landed);
         assert_eq!(probe.deepen_cell, W29_TIME_ORCHESTRATION_DEEPEN_CELL);
-        assert!(probe.honest_fence.contains("mechanics_inner_loop_decoupled=true"));
+        assert!(probe
+            .honest_fence
+            .contains("mechanics_inner_loop_decoupled=true"));
         assert!(probe.honest_fence.contains("physics_green=false"));
     }
 
@@ -275,7 +281,10 @@ mod tests {
     fn time_orchestration_rejects_non_positive_dts() {
         let mut bad = SimulationClocks::default();
         bad.dt_chemistry = 0.0;
-        assert_eq!(bad.validate(), Err(ClockValidationError::NonPositiveChemistryDt));
+        assert_eq!(
+            bad.validate(),
+            Err(ClockValidationError::NonPositiveChemistryDt)
+        );
         assert!(bad.mech_substeps_per_chem().is_none());
 
         let mut bad_mech = SimulationClocks::default();
@@ -294,7 +303,10 @@ mod tests {
 
         let mut bad_cap = SimulationClocks::default();
         bad_cap.max_mech_substeps_per_chem = 0;
-        assert_eq!(bad_cap.validate(), Err(ClockValidationError::ZeroMaxMechSubsteps));
+        assert_eq!(
+            bad_cap.validate(),
+            Err(ClockValidationError::ZeroMaxMechSubsteps)
+        );
     }
 
     #[test]

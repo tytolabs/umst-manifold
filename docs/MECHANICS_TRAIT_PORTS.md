@@ -138,7 +138,7 @@ cargo test -p umst-manifold --features mechanics-adjoint bar_port_emits_converge
 
 - No `Q1HexMechanicsSolvePort` Rust impl (documented boundary only).
 - No edits to `thmc.rs`, `fracture_field.rs`, `adjoint.rs` call sites.
-- No changes to `q1_hex_elasticity.rs` or roof harness fixtures.
+- No changes to `hex_elasticity.rs` or roof harness fixtures.
 - No Lean proof linking port trait to discrete equilibrium — open ([`rfc/GATE_EVIDENCE.md`](rfc/GATE_EVIDENCE.md)).
 
 ---

@@ -132,7 +132,9 @@ pub fn validate_adjoint_q1_hex_posture_honesty() -> Result<(), &'static str> {
         return Err("ADJOINT_Q1_HEX_MASTER must stay false until master composition pin lands");
     }
     if probe.bar_limit_wired {
-        return Err("ADJOINT_Q1_HEX_BAR_LIMIT_WIRED must stay false until bar-limit harness un-ignored");
+        return Err(
+            "ADJOINT_Q1_HEX_BAR_LIMIT_WIRED must stay false until bar-limit harness un-ignored",
+        );
     }
     if !adjoint_q1_hex_posture_honest(&probe) {
         return Err("adjoint_q1_hex_posture_honest failed");
@@ -150,12 +152,12 @@ use super::adjoint::{
     HexPreconditionerKind, SimpElasticMaterial,
 };
 use super::error::PhysicsError;
-use super::linear::masked_dot;
-use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
 use super::hex_elasticity::{
     hex_cell_corner_indices_unchecked, hex_cell_strain_energy, hex_equilibrium_rel_residual,
     hex_pcg_use_f64_lane, hex_solve_pcg_masked, HexPcgPrecondKind, HexStructuredOperatorCache,
 };
+use super::linear::masked_dot;
+use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
 use super::time_orchestration::MechanicsInnerLoopConfig;
 use std::time::Instant;
 

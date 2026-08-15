@@ -100,8 +100,12 @@ pub fn epistemic_trace_posture_honest(probe: &EpistemicTracePostureProbe) -> boo
         && probe.well_formed_landed
         && probe.prototype_eps_landed
         && probe.deepen_cell == W29_EPISTEMIC_TRACE_DEEPEN_CELL
-        && probe.honest_fence.contains("emitted_trace_well_formed_landed=true")
-        && probe.honest_fence.contains("numeric_trace_approx_wired=false")
+        && probe
+            .honest_fence
+            .contains("emitted_trace_well_formed_landed=true")
+        && probe
+            .honest_fence
+            .contains("numeric_trace_approx_wired=false")
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")
         && probe.honest_fence.contains("op5=false")
@@ -110,7 +114,9 @@ pub fn epistemic_trace_posture_honest(probe: &EpistemicTracePostureProbe) -> boo
 /// Compile-time / runtime refuse path for invented GREEN / production pins.
 pub fn epistemic_trace_refuse_invented_pins() -> Result<(), &'static str> {
     if EPISTEMIC_TRACE_PHYSICS_GREEN {
-        return Err("EPISTEMIC_TRACE_PHYSICS_GREEN must stay false — witness envelope ≠ fleet physics");
+        return Err(
+            "EPISTEMIC_TRACE_PHYSICS_GREEN must stay false — witness envelope ≠ fleet physics",
+        );
     }
     if EPISTEMIC_TRACE_PRODUCTION_WIRED {
         return Err(

@@ -10,21 +10,6 @@
 //! `production_wired=false` across arcs; GREEN claims blocked. Does **not** claim
 //! full production wiring, master retick, or INV4 4/4 clearance.
 
-use umst_manifold::runtime::gate::{
-    sec_gw_audit_accel2_ac31_honest, sec_gw_wrap_accel2_ac32_honest,
-    sec_mcp_wrap_accel_ac34_honest, sec_s1_accel_ac28_honest, sec_s6_accel_ac33_honest,
-    sec_gw_audit_production_wired, sec_gw_wrap_production_wired,
-    sec_mcp_wrap_production_wired, sec_s1_production_wired, sec_s2_production_wired,
-    sec_s3_production_wired, sec_s4_production_wired, sec_s5_production_wired,
-    sec_s6_production_wired, sec_s7_production_wired,
-    validate_sec_gw_audit_honesty, validate_sec_gw_wrap_honesty,
-    validate_sec_mcp_wrap_gate_honesty, validate_sec_s1_gate_honesty,
-    validate_sec_s2_gate_honesty, validate_sec_s3_gate_honesty, validate_sec_s4_gate_honesty,
-    validate_sec_s5_gate_honesty, validate_sec_s6_gate_honesty, validate_sec_s7_gate_honesty,
-    GW_AUDIT_GREEN_CLAIM_BLOCKED, GW_WRAP_GREEN_CLAIM_BLOCKED, MCP_WRAP_GREEN_CLAIM_BLOCKED,
-    S1_GREEN_CLAIM_BLOCKED, S2_GREEN_CLAIM_BLOCKED, S5_GREEN_CLAIM_BLOCKED, S6_GREEN_CLAIM_BLOCKED,
-    S7_GREEN_CLAIM_BLOCKED,
-};
 use umst_manifold::runtime::gate::sec_bridge_arcs::{
     sec_bridge_arcs_accel_ac35_honest, sec_bridge_arcs_production_wired,
     validate_sec_bridge_arcs_gate_honesty, BRIDGE_ARCS_GREEN_CLAIM_BLOCKED,
@@ -34,6 +19,19 @@ use umst_manifold::runtime::gate::sec_s3::{sec_s3_accel_ac05_honest, S3_GREEN_CL
 use umst_manifold::runtime::gate::sec_s4::{sec_s4_accel_ac06_honest, L_S5_PROOF_WIRED_HONEST};
 use umst_manifold::runtime::gate::sec_s5::sec_s5_accel_ac07_honest;
 use umst_manifold::runtime::gate::sec_s7::sec_s7_accel_ac08_honest;
+use umst_manifold::runtime::gate::{
+    sec_gw_audit_accel2_ac31_honest, sec_gw_audit_production_wired, sec_gw_wrap_accel2_ac32_honest,
+    sec_gw_wrap_production_wired, sec_mcp_wrap_accel_ac34_honest, sec_mcp_wrap_production_wired,
+    sec_s1_accel_ac28_honest, sec_s1_production_wired, sec_s2_production_wired,
+    sec_s3_production_wired, sec_s4_production_wired, sec_s5_production_wired,
+    sec_s6_accel_ac33_honest, sec_s6_production_wired, sec_s7_production_wired,
+    validate_sec_gw_audit_honesty, validate_sec_gw_wrap_honesty,
+    validate_sec_mcp_wrap_gate_honesty, validate_sec_s1_gate_honesty, validate_sec_s2_gate_honesty,
+    validate_sec_s3_gate_honesty, validate_sec_s4_gate_honesty, validate_sec_s5_gate_honesty,
+    validate_sec_s6_gate_honesty, validate_sec_s7_gate_honesty, GW_AUDIT_GREEN_CLAIM_BLOCKED,
+    GW_WRAP_GREEN_CLAIM_BLOCKED, MCP_WRAP_GREEN_CLAIM_BLOCKED, S1_GREEN_CLAIM_BLOCKED,
+    S2_GREEN_CLAIM_BLOCKED, S5_GREEN_CLAIM_BLOCKED, S6_GREEN_CLAIM_BLOCKED, S7_GREEN_CLAIM_BLOCKED,
+};
 
 /// FLEET-COMPOSER ACCEL-G parent fleet id.
 pub const FLEET_PARENT: &str = "FLEET-COMPOSER-ACCEL-G";
@@ -137,7 +135,10 @@ pub fn gate_deepen_honest(probe: &GateDeepenHonestProbe) -> bool {
 #[test]
 fn ac157_metadata_wired() {
     assert_eq!(FLEET_PARENT, "FLEET-COMPOSER-ACCEL-G");
-    assert_eq!(FLEET_ACCEL2_AC157_JOB_ID, "FLEET-COMPOSER-ACCEL2-AC157-MANIFOLD-GATE");
+    assert_eq!(
+        FLEET_ACCEL2_AC157_JOB_ID,
+        "FLEET-COMPOSER-ACCEL2-AC157-MANIFOLD-GATE"
+    );
     assert!(COMPOSER_AC157_RECEIPT_PATH.contains("COMPOSER_ACCEL2_AC157"));
     assert!(AC157_VERIFY_COMMAND.contains("gate_deepen"));
     assert_eq!(GATE_DEEPEN_ARC_COUNT, 11);

@@ -1475,11 +1475,16 @@ mod acoustics_idempotency_tests {
         );
         let tol = 1e-6_f32;
         assert!(
-            max_abs_drift(&u, &u1) < tol && max_abs_drift(&v, &v1) < tol && max_abs_drift(&a, &a1) < tol,
+            max_abs_drift(&u, &u1) < tol
+                && max_abs_drift(&v, &v1) < tol
+                && max_abs_drift(&a, &a1) < tol,
             "re-step on equilibrated bar state must not drift (u/v/a)"
         );
         assert!(
-            u.iter().chain(v.iter()).chain(a.iter()).all(|x| x.abs() < tol),
+            u.iter()
+                .chain(v.iter())
+                .chain(a.iter())
+                .all(|x| x.abs() < tol),
             "zero equilibrium must remain at rest after first step"
         );
     }
@@ -1576,7 +1581,9 @@ mod acoustics_honest_fence_tests {
         let open: Vec<_> = ACOUSTICS_FENCE_FACETS.iter().filter(|f| !f.wired).collect();
         assert_eq!(wired.len(), 4);
         assert_eq!(open.len(), 5);
-        assert!(wired.iter().all(|f| f.owning_slice == W29_ACOUSTICS_DEEPEN_CELL));
+        assert!(wired
+            .iter()
+            .all(|f| f.owning_slice == W29_ACOUSTICS_DEEPEN_CELL));
         assert!(open.iter().any(|f| f.facet == "tensor_periodic_1d_ad"));
         assert!(open.iter().any(|f| f.facet == "production_wired"));
         assert!(open.iter().any(|f| f.facet == "physics_green"));

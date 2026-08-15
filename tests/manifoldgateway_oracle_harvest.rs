@@ -15,7 +15,7 @@ use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
-use umst_manifold::gate::{GateManifoldGateway, suggested_info_gain_from_batched_nodal_scalars};
+use umst_manifold::gate::{suggested_info_gain_from_batched_nodal_scalars, GateManifoldGateway};
 
 type B = NdArray<f32>;
 
@@ -148,5 +148,8 @@ fn manifoldgateway_oracle_harvest_pins_from_gateway_info_gain() {
 
     assert!(info_gain_bits.is_finite() && info_gain_bits > 0.0);
     assert!(reward_scalar.is_finite());
-    assert!(reward_scalar < 0.0, "Landauer erasure subtracts from zero physics reward");
+    assert!(
+        reward_scalar < 0.0,
+        "Landauer erasure subtracts from zero physics reward"
+    );
 }

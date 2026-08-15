@@ -18,8 +18,8 @@ mod tolerance_receipt;
 pub use tolerance_receipt::kernel_tolerance_rows;
 
 pub use scalar::{
-    classify_band_scalar, downsample_sparkline_u64_scalar, rho_mi_bits,
-    rho_mi_from_samples_scalar, sample_percentile_presorted, sample_percentile_scalar, BandLabel,
+    classify_band_scalar, downsample_sparkline_u64_scalar, rho_mi_bits, rho_mi_from_samples_scalar,
+    sample_percentile_presorted, sample_percentile_scalar, BandLabel,
 };
 
 /// Labels for cockpit telemetry (`KernelDispatchReport` in cockpit). Values are `"scalar"` or `"simd"`.

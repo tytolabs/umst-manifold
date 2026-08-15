@@ -36,12 +36,12 @@ pub mod thmc;
 pub mod thmc_envelope;
 #[cfg(feature = "thmc-coupled")]
 pub mod thmc_epilogue;
-#[cfg(feature = "thmc-coupled")]
-pub mod thmc_split_passes;
 #[cfg(feature = "solver-experimental")]
 pub mod thmc_jfnk;
 pub mod thmc_residual;
 pub mod thmc_residual_inventory;
+#[cfg(feature = "thmc-coupled")]
+pub mod thmc_split_passes;
 #[cfg(feature = "thmc-coupled")]
 pub mod thmc_step;
 pub mod topology_solver;
@@ -64,8 +64,8 @@ pub use fracture_field::{
     StaggeredPhase,
 };
 pub use photonics::{
-    DecPatchCsrInnerMode, PhotonicsDecFacesPatch, PhotonicsDecPatchConfig, PhotonicsHelmholtzSolver,
-    PhotonicsSolver,
+    DecPatchCsrInnerMode, PhotonicsDecFacesPatch, PhotonicsDecPatchConfig,
+    PhotonicsHelmholtzSolver, PhotonicsSolver,
 };
 pub use rheology_flow::BinghamFlowSolver;
 #[cfg(feature = "thmc-coupled")]
@@ -82,17 +82,17 @@ pub use thmc::{
 pub use thmc_residual::{
     ResidualThmc, ThmcMonolithicImplicitUnknownLayout, THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
 };
-pub use thmc_residual_inventory::{
-    leg_by_id as thmc_residual_leg_by_id, matph_wire_authorized, residual_leg_close_authorized,
-    thmc_residual_honesty_holds, wave3_impl_authorized as thmc_wave3_impl_authorized,
-    ThmcResidualLegGateStatus, ThmcResidualLegRow, DRIP_INTEGRATION_TESTS,
-    IDEM_INTEGRATION_TESTS, LEG_INVENTORY as THMC_RESIDUAL_INVENTORY, RESIDUAL_WITNESS_TEST_TOTAL,
-    THMC_RESIDUAL_RECEIPT, THMC_RESIDUAL_STRING_ERROR_SITES,
-};
 #[cfg(feature = "thmc-coupled")]
 pub use thmc_residual::{
     ThmcImplicitEulerThermalHumidityReactionExtentResidual,
     ThmcImplicitEulerThermalReactionExtentResidual,
+};
+pub use thmc_residual_inventory::{
+    leg_by_id as thmc_residual_leg_by_id, matph_wire_authorized, residual_leg_close_authorized,
+    thmc_residual_honesty_holds, wave3_impl_authorized as thmc_wave3_impl_authorized,
+    ThmcResidualLegGateStatus, ThmcResidualLegRow, DRIP_INTEGRATION_TESTS, IDEM_INTEGRATION_TESTS,
+    LEG_INVENTORY as THMC_RESIDUAL_INVENTORY, RESIDUAL_WITNESS_TEST_TOTAL, THMC_RESIDUAL_RECEIPT,
+    THMC_RESIDUAL_STRING_ERROR_SITES,
 };
 #[cfg(feature = "thmc-coupled")]
 pub use thmc_step::{wire_gate_evidence_post_step, ThmcSolverStep, ThmcStepGateEvidence};

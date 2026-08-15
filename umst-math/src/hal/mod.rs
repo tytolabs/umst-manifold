@@ -17,12 +17,12 @@ pub mod laws;
 pub mod mocks;
 pub mod permission_state;
 pub mod presence;
-/// Pure host probe snapshot — injected at runtime/CLI boundary (FP §4).
-#[cfg(target_os = "linux")]
-pub mod probe_snapshot;
 /// Host sysfs/proc probe IO (`linux-hal-sysfs` feature).
 #[cfg(all(target_os = "linux", feature = "linux-hal-sysfs"))]
 pub mod probe_host;
+/// Pure host probe snapshot — injected at runtime/CLI boundary (FP §4).
+#[cfg(target_os = "linux")]
+pub mod probe_snapshot;
 /// THEOREM-BOUND: B-2.5 [`ArchitectureProfile`], [`ArchClass`]
 pub mod profile;
 /// ZCI-EXEMPT: the seven-method [`HardwareUnit`]
@@ -36,10 +36,10 @@ pub use laws::{
 };
 pub use permission_state::{classify_read_probe, PermissionState};
 pub use presence::{AbsentReason, UnitPresence};
-#[cfg(target_os = "linux")]
-pub use probe_snapshot::HalProbeSnapshot;
 #[cfg(all(target_os = "linux", feature = "linux-hal-sysfs"))]
 pub use probe_host::probe_sysfs_snapshot;
+#[cfg(target_os = "linux")]
+pub use probe_snapshot::HalProbeSnapshot;
 pub use profile::{ArchClass, ArchitectureProfile, ParetoReferenceLabel};
 pub use traits::{
     AllocationId, AllocationSpec, ComputePrecision, HalError, HardwareUnit, InferenceBatch,

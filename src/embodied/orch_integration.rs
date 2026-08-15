@@ -228,9 +228,7 @@ mod tests {
 
     #[test]
     fn zero_witness_rejects_before_gate() {
-        let mut wire = OrchSenseGateWire::new(Some(Box::new(StubSense {
-            digest: [0u8; 32],
-        })));
+        let mut wire = OrchSenseGateWire::new(Some(Box::new(StubSense { digest: [0u8; 32] })));
         assert_eq!(
             wire.run_prefix().unwrap_err(),
             SenseGateReject::InvalidSenseWitness
@@ -239,9 +237,7 @@ mod tests {
 
     #[test]
     fn wired_prefix_mints_gate_admission() {
-        let mut wire = OrchSenseGateWire::new(Some(Box::new(StubSense {
-            digest: [0x55; 32],
-        })));
+        let mut wire = OrchSenseGateWire::new(Some(Box::new(StubSense { digest: [0x55; 32] })));
         let result = wire.run_prefix().expect("prefix");
         assert_eq!(result.sense_gate.sense_digest, [0x55; 32]);
         assert!(result.sense_gate.command_deferred);
@@ -254,13 +250,12 @@ mod tests {
 
     #[test]
     fn monotonic_sequence_across_prefix_runs() {
-        let mut wire = OrchSenseGateWire::new(Some(Box::new(StubSense {
-            digest: [0x11; 32],
-        })));
+        let mut wire = OrchSenseGateWire::new(Some(Box::new(StubSense { digest: [0x11; 32] })));
         let first = wire.run_prefix().expect("first");
         let second = wire.run_prefix().expect("second");
-        assert!(second.sense_gate.gate_admission.sequence
-            > first.sense_gate.gate_admission.sequence);
+        assert!(
+            second.sense_gate.gate_admission.sequence > first.sense_gate.gate_admission.sequence
+        );
     }
 
     #[test]

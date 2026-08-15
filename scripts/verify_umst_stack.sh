@@ -152,9 +152,9 @@ run_bidirectional_catalog_check_if_present() {
 run_bidirectional_catalog_check_if_present
 
 echo "==> cargo test -p umst-manifold (default unit + integration)"
-# w8_publish_readiness integration requires sibling umst-concrete-cartridge checkout.
+# publish_readiness integration requires sibling umst-concrete-cartridge checkout.
 cargo test -p umst-manifold --verbose \
-  -- --skip w8_publish_readiness_exits_zero_on_current_workspace
+  -- --skip publish_readiness_exits_zero_on_current_workspace
 
 echo "==> gate parity + Kleisli + dual-run integration tests"
 cargo test -p umst-manifold --verbose \
@@ -164,7 +164,7 @@ cargo test -p umst-manifold --verbose \
 echo "==> kleisli-ppo-hot-bind + landauer / p4 rejection witness (feature-gated)"
 cargo test -p umst-manifold --verbose \
   --features kleisli-ppo-hot-bind \
-  --test kleisli_ppo_hot_bind --test p4_rejection_witness landauer
+  --test kleisli_ppo_hot_bind --test rejection_witness landauer
 
 echo "==> formal witness + release manifest profile + ROS contract (feature-gated)"
 # Release lane (R5 v1): `manifest_strict_witness` exercises StrictCatalogMatch + digest reject.

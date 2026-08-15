@@ -277,10 +277,7 @@ pub fn catalog_pin_witness_probe() -> CatalogPinWitnessProbe {
         fiber_fingerprint_ok,
         sha3_catalog_adopt_ok,
         gateway_production_wired: catalog_pin_gateway_production_wired(),
-        wire_hop_wired_count: CATALOG_PIN_WIRE_HOPS
-            .iter()
-            .filter(|h| h.wired)
-            .count() as u8,
+        wire_hop_wired_count: CATALOG_PIN_WIRE_HOPS.iter().filter(|h| h.wired).count() as u8,
     }
 }
 
@@ -492,10 +489,7 @@ mod catalog_pin_tests {
     #[test]
     fn catalog_pin_wire_hops_four_of_five_wired() {
         assert_eq!(CATALOG_PIN_WIRE_HOPS.len(), 5);
-        assert_eq!(
-            CATALOG_PIN_WIRE_HOPS.iter().filter(|h| h.wired).count(),
-            4
-        );
+        assert_eq!(CATALOG_PIN_WIRE_HOPS.iter().filter(|h| h.wired).count(), 4);
         assert!(CATALOG_PIN_WIRE_HOPS
             .iter()
             .any(|h| h.surface.contains("pin_witness_ok") && h.wired));

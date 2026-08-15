@@ -94,7 +94,9 @@ pub fn operators_facade_posture_honest(probe: &OperatorsFacadePostureProbe) -> b
         && probe.facade_reexports_landed
         && probe.deepen_cell == W29_OPERATORS_DEEPEN_CELL
         && probe.posture_tag == OPERATORS_POSTURE_TAG
-        && probe.honest_fence.contains("operators_facade_reexports_landed=true")
+        && probe
+            .honest_fence
+            .contains("operators_facade_reexports_landed=true")
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")
         && probe.honest_fence.contains("master=false")
@@ -230,7 +232,9 @@ mod tests {
         assert!(dec_edge_operators_posture_honest(
             &dec_edge_operators_honest_posture_bundle()
         ));
-        assert!(dec_primal_posture_honest(&dec_primal_honest_posture_bundle()));
+        assert!(dec_primal_posture_honest(
+            &dec_primal_honest_posture_bundle()
+        ));
         assert!(laplacian_posture_honest(&laplacian_honest_posture_bundle()));
         assert!(validate_laplacian_honesty().is_ok());
     }

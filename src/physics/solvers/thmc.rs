@@ -161,16 +161,16 @@ pub fn thmc_posture_honest(probe: &ThmcPostureProbe) -> bool {
 use burn::tensor::Int;
 use burn::tensor::{backend::Backend, Tensor};
 
+#[cfg(feature = "thmc-coupled")]
+use crate::core::field::StepEntryDamageMask;
+#[cfg(feature = "thmc-coupled")]
+use crate::core::field::StiffnessField;
 use crate::core::field::{
     DamageField, DisplacementField, Field, HumidityField, ReactionExtentField, TemperatureField,
 };
 #[cfg(feature = "thmc-coupled")]
-use crate::core::field::StiffnessField;
-use crate::core::material_phase::ThmcEnvelope;
-#[cfg(feature = "thmc-coupled")]
 use crate::core::material_phase::MaterialPhaseKind;
-#[cfg(feature = "thmc-coupled")]
-use crate::core::field::StepEntryDamageMask;
+use crate::core::material_phase::ThmcEnvelope;
 use crate::core::material_transition::ReactionExtentKineticsSpec;
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use crate::core::traits::IScienceCartridge;
@@ -327,9 +327,14 @@ impl<B: Backend> ThermalPlan<B> {
     #[inline]
     #[must_use]
     pub fn from_temperature(tensor: Tensor<B, 3>) -> Self {
-        Self { temperature: Field::new(tensor) }
+        Self {
+            temperature: Field::new(tensor),
+        }
     }
-    #[deprecated(since = "0.2.0", note = "use .temperature.as_tensor() — FP P3.1 migration")]
+    #[deprecated(
+        since = "0.2.0",
+        note = "use .temperature.as_tensor() — FP P3.1 migration"
+    )]
     #[inline]
     pub fn temperature_tensor(&self) -> &Tensor<B, 3> {
         self.temperature.as_tensor()
@@ -340,9 +345,14 @@ impl<B: Backend> HydrologicPlan<B> {
     #[inline]
     #[must_use]
     pub fn from_humidity(tensor: Tensor<B, 3>) -> Self {
-        Self { humidity: Field::new(tensor) }
+        Self {
+            humidity: Field::new(tensor),
+        }
     }
-    #[deprecated(since = "0.2.0", note = "use .humidity.as_tensor() — FP P3.1 migration")]
+    #[deprecated(
+        since = "0.2.0",
+        note = "use .humidity.as_tensor() — FP P3.1 migration"
+    )]
     #[inline]
     pub fn humidity_tensor(&self) -> &Tensor<B, 3> {
         self.humidity.as_tensor()
@@ -353,9 +363,14 @@ impl<B: Backend> MechanicalPlan<B> {
     #[inline]
     #[must_use]
     pub fn from_displacement(tensor: Tensor<B, 3>) -> Self {
-        Self { displacement: Field::new(tensor) }
+        Self {
+            displacement: Field::new(tensor),
+        }
     }
-    #[deprecated(since = "0.2.0", note = "use .displacement.as_tensor() — FP P3.1 migration")]
+    #[deprecated(
+        since = "0.2.0",
+        note = "use .displacement.as_tensor() — FP P3.1 migration"
+    )]
     #[inline]
     pub fn displacement_tensor(&self) -> &Tensor<B, 3> {
         self.displacement.as_tensor()
@@ -366,9 +381,14 @@ impl<B: Backend> ChemicalPlan<B> {
     #[inline]
     #[must_use]
     pub fn from_reaction_extent(tensor: Tensor<B, 3>) -> Self {
-        Self { reaction_extent: Field::new(tensor) }
+        Self {
+            reaction_extent: Field::new(tensor),
+        }
     }
-    #[deprecated(since = "0.2.0", note = "use .reaction_extent.as_tensor() — FP P3.1 migration")]
+    #[deprecated(
+        since = "0.2.0",
+        note = "use .reaction_extent.as_tensor() — FP P3.1 migration"
+    )]
     #[inline]
     pub fn reaction_extent_tensor(&self) -> &Tensor<B, 3> {
         self.reaction_extent.as_tensor()
@@ -416,9 +436,7 @@ impl<B: Backend> ThmcState<B> {
     }
 
     #[must_use]
-    pub fn into_thmc_tensors(
-        self,
-    ) -> ThmcTensorBundle<B> {
+    pub fn into_thmc_tensors(self) -> ThmcTensorBundle<B> {
         (
             self.thermal.temperature.into_tensor(),
             self.hydro.humidity.into_tensor(),
@@ -628,7 +646,6 @@ impl ThmcSolver {
     }
 }
 
-
 impl ThmcSolver {
     /// One coupled THMC step using cartridge constitutive data.
     ///
@@ -816,7 +833,8 @@ impl ThmcSolver {
             if batch != 1 {
                 return Err(format!(
                     "ThmcSolver::step: monolithic_thmc_newton requires batch size 1, got {batch}"
-                ).into());
+                )
+                .into());
             }
             let coords_ok = manifold
                 .node_positions
@@ -866,15 +884,16 @@ impl ThmcSolver {
 
         // RW-FP-P53: Kleisli Newton iteration — short-circuits on first `PhysicsError` (P54 orchestrator
         // `try_fold` @ `2a9ad0a` is orthogonal; this is the interior THMC outer-Newton tail only).
-        let (state, _) = (0..self.max_newton).try_fold((state, false), |(state, converged), _| {
-            if converged {
-                return Ok::<_, PhysicsError>((state, true));
-            }
-            let scratch = ThmcNewtonScratch::from_state(&state, &step_ctx);
-            let state = newton_split_chain(state, &scratch, &step_ctx, self, route)?;
-            let converged = transport_residual_l2(&state, &scratch) <= self.tol;
-            Ok((state, converged))
-        })?;
+        let (state, _) =
+            (0..self.max_newton).try_fold((state, false), |(state, converged), _| {
+                if converged {
+                    return Ok::<_, PhysicsError>((state, true));
+                }
+                let scratch = ThmcNewtonScratch::from_state(&state, &step_ctx);
+                let state = newton_split_chain(state, &scratch, &step_ctx, self, route)?;
+                let converged = transport_residual_l2(&state, &scratch) <= self.tol;
+                Ok((state, converged))
+            })?;
 
         let epilogue_ctx = super::thmc_epilogue::ThmcPostStepCtx {
             batch,
@@ -1109,7 +1128,10 @@ pub fn reaction_extent_rate_field<B: Backend<FloatElem = f32>>(
     device: &B::Device,
 ) -> ReactionExtentField<B> {
     Field::new(reaction_extent_rate_tensor(
-        k, alpha.as_tensor().clone(), temperature_for_alpha.as_tensor().clone(), device,
+        k,
+        alpha.as_tensor().clone(),
+        temperature_for_alpha.as_tensor().clone(),
+        device,
     ))
 }
 
@@ -1233,7 +1255,10 @@ mod w29_081_thmc_deepen_tests {
     fn thmc_reaction_extent_kinetics_alpha_rate_vanishes_at_full_extent() {
         let k = ReactionExtentKinetics::default();
         let rate = k.alpha_rate_scalar(1.0_f32, 300.0_f32);
-        assert!(rate.abs() < 1e-12_f32, "full extent ⇒ Arrhenius (1-α)_+ = 0, got {rate}");
+        assert!(
+            rate.abs() < 1e-12_f32,
+            "full extent ⇒ Arrhenius (1-α)_+ = 0, got {rate}"
+        );
         let mid = k.alpha_rate_scalar(0.5_f32, 300.0_f32);
         assert!(mid > 0.0_f32, "mid extent at room T should be positive");
     }
@@ -1269,11 +1294,8 @@ mod xs3_step5_tests {
         let kinetics = ReactionExtentKinetics::default();
         let alpha = Tensor::<B, 3>::from_floats([[[0.5], [0.75]]], &device);
         let via_kinetics = kinetics.stiffness_field_from_alpha_bn1(alpha.clone(), &device);
-        let via_field = StiffnessField::from_alpha_kinetics(
-            alpha,
-            &kinetics.as_kinetics_spec(),
-            &device,
-        );
+        let via_field =
+            StiffnessField::from_alpha_kinetics(alpha, &kinetics.as_kinetics_spec(), &device);
         assert_eq!(
             via_kinetics.as_tensor().dims(),
             via_field.as_tensor().dims(),

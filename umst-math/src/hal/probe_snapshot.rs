@@ -103,9 +103,7 @@ pub struct NpuProbe {
 
 impl Default for NpuProbe {
     fn default() -> Self {
-        Self {
-            present: false,
-        }
+        Self { present: false }
     }
 }
 
@@ -141,9 +139,6 @@ pub struct PortProbe {
 
 impl Default for PortProbe {
     fn default() -> Self {
-        Self {
-            net: 0,
-            usb: 0,
-        }
+        Self { net: 0, usb: 0 }
     }
 }

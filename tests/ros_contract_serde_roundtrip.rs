@@ -22,8 +22,9 @@ fn gate_decision_payload_json_roundtrip() {
         admitted: true,
         residual_margin: 1.0e-6,
     };
-    let s = serde_json::to_string(&v)
-        .expect("serde_json::to_string GateDecisionPayload ROS contract round-trip harness (FP §6)");
+    let s = serde_json::to_string(&v).expect(
+        "serde_json::to_string GateDecisionPayload ROS contract round-trip harness (FP §6)",
+    );
     let back: GateDecisionPayload = serde_json::from_str(&s)
         .expect("serde_json::from_str GateDecisionPayload ROS contract round-trip harness (FP §6)");
     assert_eq!(back, v);
@@ -50,9 +51,11 @@ fn telemetry_frame_payload_json_roundtrip() {
         frame_seq: 128,
         wall_time_ns: 1_702_000_000_000_000_000_u128,
     };
-    let s = serde_json::to_string(&v)
-        .expect("serde_json::to_string TelemetryFramePayload ROS contract round-trip harness (FP §6)");
-    let back: TelemetryFramePayload = serde_json::from_str(&s)
-        .expect("serde_json::from_str TelemetryFramePayload ROS contract round-trip harness (FP §6)");
+    let s = serde_json::to_string(&v).expect(
+        "serde_json::to_string TelemetryFramePayload ROS contract round-trip harness (FP §6)",
+    );
+    let back: TelemetryFramePayload = serde_json::from_str(&s).expect(
+        "serde_json::from_str TelemetryFramePayload ROS contract round-trip harness (FP §6)",
+    );
     assert_eq!(back, v);
 }

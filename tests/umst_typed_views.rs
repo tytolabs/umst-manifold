@@ -138,7 +138,17 @@ fn typed_views_roundtrip_after_sync_thmc() {
         let t = views.temperature.as_tensor().clone().into_data().value[node];
         let h = views.humidity.as_tensor().clone().into_data().value[node];
         let d = views.damage.as_tensor().clone().into_data().value[node];
-        assert!((t - state.thermal.temperature.as_tensor().clone().into_data().value[node]).abs() < eps);
+        assert!(
+            (t - state
+                .thermal
+                .temperature
+                .as_tensor()
+                .clone()
+                .into_data()
+                .value[node])
+                .abs()
+                < eps
+        );
         assert!((h - state.hydro.humidity.as_tensor().clone().into_data().value[node]).abs() < eps);
         assert!((d - state.damage.as_tensor().clone().into_data().value[node]).abs() < eps);
     }
@@ -148,11 +158,7 @@ fn typed_views_roundtrip_after_sync_thmc() {
 #[allow(dead_code)]
 fn _typed_view_types_compile(
     umst: &UnifiedMaterialStateTensor<B>,
-) -> (
-    TemperatureField<B>,
-    HumidityField<B>,
-    DamageField<B>,
-) {
+) -> (TemperatureField<B>, HumidityField<B>, DamageField<B>) {
     (
         umst
             .temperature_scalar_channel()

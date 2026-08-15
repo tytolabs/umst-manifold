@@ -129,7 +129,10 @@ impl WebTransitionWitness {
     /// Whether monotone a11y/perf hooks respect non-regression when both sides declare them.
     #[must_use]
     pub fn monotone_respected(self) -> bool {
-        match (self.old.accessibility_coverage, self.new.accessibility_coverage) {
+        match (
+            self.old.accessibility_coverage,
+            self.new.accessibility_coverage,
+        ) {
             (Some(prev), Some(next)) if next < prev => return false,
             _ => {}
         }
@@ -228,10 +231,14 @@ impl WebConstitutiveModel {
 
     /// Extract absolute quantities from a 64D tensor snapshot.
     #[must_use]
-    pub fn quantities_from_tensor(&self, tensor: &[f64; slice_layout::DIM]) -> WebConstitutiveQuantities {
+    pub fn quantities_from_tensor(
+        &self,
+        tensor: &[f64; slice_layout::DIM],
+    ) -> WebConstitutiveQuantities {
         let intent_fidelity = slice_l2_norm(&tensor[slice_layout::INTENT.clone()]);
         let complexity_cost = complexity_entropy(tensor);
-        let landauer_rendering = self.landauer_from_presentation(&tensor[slice_layout::PRESENTATION.clone()]);
+        let landauer_rendering =
+            self.landauer_from_presentation(&tensor[slice_layout::PRESENTATION.clone()]);
         let (accessibility_coverage, perf_budget_consumed) = monotone_hooks_from_behavior(tensor);
 
         WebConstitutiveQuantities {
@@ -255,8 +262,10 @@ impl WebConstitutiveModel {
         let old_abs = self.quantities_from_tensor(old);
         let new_abs = self.quantities_from_tensor(new);
 
-        let intent_fidelity =
-            cosine_similarity(&old[slice_layout::INTENT.clone()], &new[slice_layout::INTENT.clone()]);
+        let intent_fidelity = cosine_similarity(
+            &old[slice_layout::INTENT.clone()],
+            &new[slice_layout::INTENT.clone()],
+        );
         let complexity_cost = (new_abs.complexity_cost - old_abs.complexity_cost).max(0.0);
         let landauer_rendering = new_abs.landauer_rendering;
 
@@ -336,7 +345,12 @@ pub fn web_transition_gate_outcome(
     model: &WebConstitutiveModel,
     witness: &WebTransitionWitness,
     tolerance: f64,
-) -> (WebConstitutiveResponse, CoreGateOutcome, WebGateOutcome, ConjunctVerdict) {
+) -> (
+    WebConstitutiveResponse,
+    CoreGateOutcome,
+    WebGateOutcome,
+    ConjunctVerdict,
+) {
     let response = model.evaluate_response(witness);
     let (core, web, composed) = web_gate(&response, witness, tolerance);
     (response, core, web, composed)
@@ -455,10 +469,7 @@ fn monotone_hooks_from_behavior(tensor: &[f64]) -> (Option<f64>, Option<f64>) {
     let perf = behavior[1];
     let a11y_ok = (0.0..=1.0).contains(&a11y);
     let perf_ok = (0.0..=1.0).contains(&perf);
-    (
-        a11y_ok.then_some(a11y),
-        perf_ok.then_some(perf),
-    )
+    (a11y_ok.then_some(a11y), perf_ok.then_some(perf))
 }
 
 #[cfg(test)]

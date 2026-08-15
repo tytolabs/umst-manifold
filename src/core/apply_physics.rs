@@ -236,7 +236,9 @@ pub fn apply_physics_posture_honest(probe: &ApplyPhysicsPostureProbe) -> bool {
         && !probe.physics_green
         && !probe.master
         && probe.honest_fence.contains("damage_writeback=true")
-        && probe.honest_fence.contains("temperature_delta_writeback=true")
+        && probe
+            .honest_fence
+            .contains("temperature_delta_writeback=true")
         && probe.honest_fence.contains("policy_mask=true")
         && probe.honest_fence.contains("free_energy_merge=false")
         && probe.honest_fence.contains("safety_margin_merge=false")
@@ -284,8 +286,7 @@ pub fn validate_apply_physics_posture_honesty() -> Result<(), &'static str> {
     {
         return Err("writeback channel pins must match SCALAR_DAMAGE / SCALAR_TEMPERATURE");
     }
-    if apply_physics_unmerged_physical_result_fields().len() != APPLY_PHYSICS_UNMERGED_FIELD_COUNT
-    {
+    if apply_physics_unmerged_physical_result_fields().len() != APPLY_PHYSICS_UNMERGED_FIELD_COUNT {
         return Err("APPLY_PHYSICS_UNMERGED_PHYSICAL_RESULT_FIELDS length drift");
     }
     if !apply_physics_posture_honest(&probe) {
@@ -327,10 +328,11 @@ pub fn apply_physics_to_umst<B: Backend<FloatElem = f32>>(
     result: &PhysicalResult<B>,
     umst: &mut UnifiedMaterialStateTensor<B>,
 ) -> Result<(), ApplyPhysicsError> {
-    umst.try_b1_incidence().map_err(|source| ApplyPhysicsError::DecTypestate {
-        context: "invalid B1 incidence on UMST",
-        source,
-    })?;
+    umst.try_b1_incidence()
+        .map_err(|source| ApplyPhysicsError::DecTypestate {
+            context: "invalid B1 incidence on UMST",
+            source,
+        })?;
 
     let n = umst.scalar_features.dims()[0];
     let nf = umst.scalar_features.dims()[1];
@@ -350,12 +352,13 @@ pub fn apply_physics_to_umst<B: Backend<FloatElem = f32>>(
     }
 
     let damage_col = nodal_batch_to_column(result.damage.clone(), n);
-    let damage_ch = ScalarChannelIdx::try_new(APPLY_PHYSICS_DAMAGE_CHANNEL_IDX).map_err(|source| {
-        ApplyPhysicsError::DecTypestate {
-            context: "invalid SCALAR_DAMAGE channel",
-            source,
-        }
-    })?;
+    let damage_ch =
+        ScalarChannelIdx::try_new(APPLY_PHYSICS_DAMAGE_CHANNEL_IDX).map_err(|source| {
+            ApplyPhysicsError::DecTypestate {
+                context: "invalid SCALAR_DAMAGE channel",
+                source,
+            }
+        })?;
     let merged_damage = umst.project_scalar_channel(damage_ch, damage_col);
     umst.write_scalar_channel(damage_ch, merged_damage);
 
@@ -431,8 +434,7 @@ mod apply_physics_posture_tests {
 
     #[test]
     fn apply_physics_validate_posture_honesty_ok() {
-        validate_apply_physics_posture_honesty()
-            .expect("posture must stay honest at W29-021");
+        validate_apply_physics_posture_honesty().expect("posture must stay honest at W29-021");
     }
 
     #[test]

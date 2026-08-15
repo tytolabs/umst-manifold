@@ -6,13 +6,12 @@
 //! and strength monotonicity under a cartridge-supplied closure model.
 
 use super::core_gate::{
-    core_gate, mass_conserved_between_densities, scalar_response_from_transition,
-    CoreGateOutcome,
+    core_gate, mass_conserved_between_densities, scalar_response_from_transition, CoreGateOutcome,
 };
 use super::material_gate::{MaterialGateOutcome, MaterialTransitionWitness};
-use umst_cartridge_concrete::evaluate_material_conjuncts;
 use super::verdict::{AdmissibilityVerdict, ConjunctVerdict, GateRejectReason};
 use crate::core::material_transition::{MaterialTransitionParams, SubstrateMaterialParams};
+use umst_cartridge_concrete::evaluate_material_conjuncts;
 
 /// Minimal JSON-shaped proposal for a bulk material patch (host gate IO).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -341,8 +340,7 @@ pub fn transition_outcome(
         };
     }
 
-    let mass_conserved =
-        mass_conserved_between_densities(old_state.density, new_state.density);
+    let mass_conserved = mass_conserved_between_densities(old_state.density, new_state.density);
 
     let response = scalar_response_from_transition(
         old_state.density,
@@ -567,9 +565,8 @@ mod transition_outcome_tests {
             (
                 ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0),
                 {
-                    let mut n = ThermodynamicStateSnapshot::from_mix_calibrated(
-                        0.45, 0.5, 293.15, 40.0,
-                    );
+                    let mut n =
+                        ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0);
                     n.reaction_extent = 0.1;
                     n
                 },
@@ -577,9 +574,8 @@ mod transition_outcome_tests {
             (
                 ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0),
                 {
-                    let mut n = ThermodynamicStateSnapshot::from_mix_calibrated(
-                        0.45, 0.35, 293.15, 42.0,
-                    );
+                    let mut n =
+                        ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
                     n.strength = 10.0;
                     n
                 },
@@ -778,8 +774,7 @@ mod transition_scalars_tests {
             s_intrinsic_mpa: Some(42.0),
         };
         let via_scalars = scalars.thermodynamic_snapshot();
-        let direct =
-            ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+        let direct = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
         assert_eq!(via_scalars.density, direct.density);
         assert_eq!(via_scalars.temperature, direct.temperature);
         assert_eq!(via_scalars.free_energy, direct.free_energy);
@@ -802,13 +797,8 @@ mod transition_scalars_tests {
             s_intrinsic_mpa: Some(42.0),
         };
         let params = SubstrateMaterialParams;
-        let pure = evaluate_transition_pure_with_params(
-            &old,
-            &new,
-            1.0,
-            &params,
-            TRANSITION_TOLERANCE,
-        );
+        let pure =
+            evaluate_transition_pure_with_params(&old, &new, 1.0, &params, TRANSITION_TOLERANCE);
         let old_s = old.thermodynamic_snapshot_with_params(&params);
         let new_s = new.thermodynamic_snapshot_with_params(&params);
         let direct = transition_outcome(&old_s, &new_s, 1.0, TRANSITION_TOLERANCE);
@@ -939,7 +929,8 @@ mod golden_fixture_transition_tests {
     use super::*;
     use crate::gate::verdict::AdmissibilityVerdict;
 
-    fn golden_identity_admissible() -> (ThermodynamicStateSnapshot, ThermodynamicStateSnapshot, f64) {
+    fn golden_identity_admissible() -> (ThermodynamicStateSnapshot, ThermodynamicStateSnapshot, f64)
+    {
         let s = ThermodynamicStateSnapshot {
             density: 2400.0,
             temperature: 293.15,
@@ -965,11 +956,8 @@ mod golden_fixture_transition_tests {
         (old, new, 3600.0)
     }
 
-    fn golden_negative_dissipation_reject() -> (
-        ThermodynamicStateSnapshot,
-        ThermodynamicStateSnapshot,
-        f64,
-    ) {
+    fn golden_negative_dissipation_reject(
+    ) -> (ThermodynamicStateSnapshot, ThermodynamicStateSnapshot, f64) {
         let old = ThermodynamicStateSnapshot {
             density: 2200.0,
             temperature: 300.0,

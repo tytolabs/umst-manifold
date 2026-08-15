@@ -8,9 +8,9 @@ use umst_algebra_burn::golden_harness::{
     GoldenVerdict,
 };
 use umst_algebra_burn::rank1::RANK1_PLUS_IMPL_LANDED;
-use umst_cartridge_api::{ScalarAlgebra, TensorAlgebra};
-use umst_algebra_burn::{BurnNdArrayAlgebra, BurnRank0Algebra, BurnTensorField};
 use umst_algebra_burn::tensor::DefaultBackend;
+use umst_algebra_burn::{BurnNdArrayAlgebra, BurnRank0Algebra, BurnTensorField};
+use umst_cartridge_api::{ScalarAlgebra, TensorAlgebra};
 
 const PROBES: &[(f64, f64)] = &[
     (0.0, 0.0),
@@ -25,10 +25,7 @@ fn rank1_harness_reports_verdict_on_probe_grid() {
     let eps = rank1_eps();
     for &(lhs, rhs) in PROBES {
         let v = rank1_mul_path_matches_scalar(lhs, rhs, eps);
-        assert!(
-            v.closes_deferred(),
-            "probe ({lhs},{rhs}) must close: {v:?}"
-        );
+        assert!(v.closes_deferred(), "probe ({lhs},{rhs}) must close: {v:?}");
     }
 }
 

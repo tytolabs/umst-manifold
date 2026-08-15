@@ -49,10 +49,8 @@ fn crosswalk_map_theorems_in_registry() {
 
 #[test]
 fn crosswalk_partial_covers_known_rows() {
-    let mapped: std::collections::HashSet<_> = THEOREM_DERIVES_CONSTANT
-        .iter()
-        .map(|(_, c)| *c)
-        .collect();
+    let mapped: std::collections::HashSet<_> =
+        THEOREM_DERIVES_CONSTANT.iter().map(|(_, c)| *c).collect();
     let derived = theorem_derived_constant_rows();
     assert!(
         !derived.is_empty(),

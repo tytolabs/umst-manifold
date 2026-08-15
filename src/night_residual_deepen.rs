@@ -11,15 +11,14 @@ use crate::core::semantic_lane_schema::{
 use crate::runtime::catalog::{
     catalog_pin_manifold_wired, catalog_pin_production_wired, manifold_catalog_pin_ceremony_closed,
 };
-use crate::web_constitutive::{
-    web_semantic_lane_overlap_valid, SEMANTIC_RESIDUAL_HOOK_V1,
-};
+use crate::web_constitutive::{web_semantic_lane_overlap_valid, SEMANTIC_RESIDUAL_HOOK_V1};
 
 /// AGAP-2350 night slot id.
 pub const JOB_ID: &str = "AGAP-2350-MANIFOLD";
 
 /// Completion receipt cross-ref (this wave).
-pub const RECEIPT_PATH: &str = "old/residuals/residuals/migration-2026-07-20/COMPLETION_AGAP_AGENT_MANIFOLD_2350.md";
+pub const RECEIPT_PATH: &str =
+    "old/residuals/residuals/migration-2026-07-20/COMPLETION_AGAP_AGENT_MANIFOLD_2350.md";
 
 /// Prior manifold semantic deepen receipt.
 pub const PRIOR_RECEIPT_PATH: &str =

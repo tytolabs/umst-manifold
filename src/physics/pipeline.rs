@@ -267,7 +267,9 @@ mod tests {
         assert!(probe.kleisli_helpers_landed);
         assert!(probe.epilogue_caller_wired);
         assert_eq!(probe.deepen_cell, W29_PIPELINE_DEEPEN_CELL);
-        assert!(probe.honest_fence.contains("inner_loop_functor_wrapped=false"));
+        assert!(probe
+            .honest_fence
+            .contains("inner_loop_functor_wrapped=false"));
         assert!(probe.honest_fence.contains("epilogue_caller_wired=true"));
     }
 

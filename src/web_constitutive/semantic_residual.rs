@@ -367,7 +367,9 @@ pub fn validate_semantic_residual_honesty() -> Result<(), &'static str> {
         return Err("SEMANTIC_RESIDUAL_FLIP_AUTHORIZED must stay false while DEC is stub");
     }
     if probe.op5_claimed {
-        return Err("SEMANTIC_RESIDUAL_OP5_CLAIMED must stay false — not claimed by residual alone");
+        return Err(
+            "SEMANTIC_RESIDUAL_OP5_CLAIMED must stay false — not claimed by residual alone",
+        );
     }
     if !semantic_residual_posture_honest(&probe) {
         return Err("semantic residual posture fence inconsistent");

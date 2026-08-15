@@ -12,7 +12,7 @@
 //!
 //! The extruded plate uses **full-face** `u_z=0` on `z=0` plus two in-plane pins (not classical
 //! Kirchhoff SSSS on all edges). **Q1 hex** thin slabs show severe **shear locking** without SRI;
-//! `q1_hex_elasticity` applies B-bar plus **transverse shear centroid strains**. Verification uses
+//! `hex_elasticity` applies B-bar plus **transverse shear centroid strains**. Verification uses
 //! equilibrium residual, linearity in `q`, bounded refinement spread, and mesh-to-mesh deltas — not
 //! a single thin-plate closed form with mismatched BCs. Uniform top pressure uses
 //! [`ExtrudedPlateMechanics::body_force_top_uniform_pressure`] so total transverse load matches
@@ -28,7 +28,7 @@
 //! formal_citation: Timoshenko & Woinowsky-Krieger 1959 (plate tables); Bathe 2006 (Q1 hex); Hughes 2000 (shear locking)
 //!
 //! Builds when **`topology-density-evolution`** or **`mechanics-voigt-cauchy`** is enabled (see
-//! `#[cfg(any(...))]` on this file and on `extruded_plate` / `q1_hex_elasticity` in `src/physics/mod.rs`).
+//! `#[cfg(any(...))]` on this file and on `extruded_plate` / `hex_elasticity` in `src/physics/mod.rs`).
 //! **`solver-stable`** enables the former; **`cargo test --release -p umst-manifold --features mechanics-voigt-cauchy`**
 //! exercises the same sources without pulling the topology optimizer feature.
 //!
@@ -67,8 +67,8 @@ use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 
 use umst_manifold::physics::extruded_plate::{ElasticMaterial, ExtrudedPlateMechanics};
-use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::hex_elasticity::hex_k_times_u_accumulate;
+use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
 const DAMAGE_REG: f32 = 1e-6;
@@ -98,7 +98,7 @@ fn masked_compliance_ftu(f: &[f32], u: &[f32], mask: &[f32]) -> f32 {
         .sum()
 }
 
-/// Q1-hex integration scheme recorded in compliance audit lines (see `q1_hex_elasticity` module docs).
+/// Q1-hex integration scheme recorded in compliance audit lines (see `hex_elasticity` module docs).
 const Q1_HEX_INTEGRATION_SCHEME: &str =
     "2x2x2 Gauss; B-bar volumetric (element-mean B_vol); gamma_yz/gamma_xz centroid SRI; gamma_xy full";
 

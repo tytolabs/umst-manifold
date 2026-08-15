@@ -73,15 +73,11 @@ pub enum SenseGateReject {
     /// Sense slot not populated.
     SenseUnwired,
     /// Sense leg returned an error.
-    SenseFailed {
-        detail: String,
-    },
+    SenseFailed { detail: String },
     /// Sense witness digest is zero — fail-closed.
     InvalidSenseWitness,
     /// Gate stub rejected admission (uncleared envelope).
-    GateInadmissible {
-        slug: &'static str,
-    },
+    GateInadmissible { slug: &'static str },
 }
 
 /// Fleet census line for sense→gate tombstone posture.
@@ -206,8 +202,7 @@ impl SenseGateStub {
         let _command = Self::command_leg_deferral();
 
         self.sequence = self.sequence.saturating_add(1);
-        let gate_admission =
-            mint_gate_admission(&observation.witness_digest, self.sequence)?;
+        let gate_admission = mint_gate_admission(&observation.witness_digest, self.sequence)?;
 
         self.last_admission = Some(gate_admission);
 
@@ -220,9 +215,9 @@ impl SenseGateStub {
 
     fn sense_leg(&mut self) -> Result<SenseObservation, SenseGateReject> {
         let client = self.sense.as_mut().ok_or(SenseGateReject::SenseUnwired)?;
-        client.sense().map_err(|e| SenseGateReject::SenseFailed {
-            detail: e.detail,
-        })
+        client
+            .sense()
+            .map_err(|e| SenseGateReject::SenseFailed { detail: e.detail })
     }
 }
 
@@ -256,7 +251,7 @@ fn mint_gate_admission(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::embodied::{FieldSenseError, FieldSenseClient};
+    use crate::embodied::{FieldSenseClient, FieldSenseError};
 
     struct StubSense {
         digest: [u8; 32],
@@ -294,9 +289,7 @@ mod tests {
 
     #[test]
     fn zero_witness_rejects_before_gate() {
-        let mut stub = SenseGateStub::new(Some(Box::new(StubSense {
-            digest: [0u8; 32],
-        })));
+        let mut stub = SenseGateStub::new(Some(Box::new(StubSense { digest: [0u8; 32] })));
         assert_eq!(
             stub.run().unwrap_err(),
             SenseGateReject::InvalidSenseWitness
@@ -305,9 +298,7 @@ mod tests {
 
     #[test]
     fn wired_sense_mints_gate_admission() {
-        let mut stub = SenseGateStub::new(Some(Box::new(StubSense {
-            digest: [0xAB; 32],
-        })));
+        let mut stub = SenseGateStub::new(Some(Box::new(StubSense { digest: [0xAB; 32] })));
         let result = stub.run().expect("admit");
         assert_eq!(result.sense_digest, [0xAB; 32]);
         assert!(result.command_deferred);
@@ -349,7 +340,10 @@ mod tests {
     #[test]
     fn scaffold_coverage_matches_fragment_audit() {
         assert_eq!(SenseGateStub::scaffold_coverage_pct(), 22);
-        assert_eq!(SenseGateStub::scaffold_coverage_pct(), scaffold_coverage_pct());
+        assert_eq!(
+            SenseGateStub::scaffold_coverage_pct(),
+            scaffold_coverage_pct()
+        );
     }
 
     #[test]

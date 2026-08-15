@@ -17,16 +17,17 @@ use burn::tensor::backend::Backend;
 use burn::tensor::{ElementConversion, Tensor};
 
 use crate::core::field::{
-    BodyForceField, BoundaryMaskField, Field, HumidityField, ReactionExtentField, StepEntryDamageMask,
-    TemperatureField,
+    BodyForceField, BoundaryMaskField, Field, HumidityField, ReactionExtentField,
+    StepEntryDamageMask, TemperatureField,
 };
 use crate::core::tensors::UnifiedMaterialStateTensor;
 use crate::physics::error::PhysicsError;
 use crate::physics::laplacian::TopologicalLaplacian;
 use crate::physics::mechanics::VectorMechanicsSolver;
 use crate::physics::solvers::thmc::{
-    reaction_extent_rate_field, ChemicalPlan, HydrologicPlan, MechanicalPlan, ReactionExtentKinetics,
-    ThermalPlan, ThmcImplicitTAlphaNewtonConfig, ThmcMonolithicNewtonConfig, ThmcSolver, ThmcState,
+    reaction_extent_rate_field, ChemicalPlan, HydrologicPlan, MechanicalPlan,
+    ReactionExtentKinetics, ThermalPlan, ThmcImplicitTAlphaNewtonConfig,
+    ThmcMonolithicNewtonConfig, ThmcSolver, ThmcState,
 };
 use crate::physics::solvers::thmc_residual::{
     ThmcImplicitEulerThermalHumidityReactionExtentResidual,
@@ -335,9 +336,7 @@ fn thermal_chemistry_pass<B: Backend<FloatElem = f32>>(
             .into());
         }
         if im_cfg.iterations < 2 {
-            return Err(
-                "ThmcSolver::step: implicit_t_alpha_newton.iterations must be >= 2".into(),
-            );
+            return Err("ThmcSolver::step: implicit_t_alpha_newton.iterations must be >= 2".into());
         }
         let f_t_dof = state.thermal.temperature.as_tensor().dims()[2];
         let stacked = n * f_t_dof + n * scratch.f_alpha_ch;
@@ -542,7 +541,9 @@ fn displacement_bc_mask_expand<B: Backend<FloatElem = f32>>(
             .into());
         }
     };
-    Ok(BoundaryMaskField::from_tensor(bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3])))
+    Ok(BoundaryMaskField::from_tensor(
+        bm_core.unsqueeze_dim::<3>(0).expand::<3, _>([batch, n, 3]),
+    ))
 }
 
 // ---------------------------------------------------------------------------

@@ -255,7 +255,8 @@ impl ThermodynamicGate {
         new_state: &ThermodynamicState,
         dt_s: f64,
     ) -> bool {
-        self.check_transition(old_state, new_state, dt_s).is_accepted()
+        self.check_transition(old_state, new_state, dt_s)
+            .is_accepted()
     }
 
     /// Full transition evaluation with accounting statistics (telemetry wrapper).
@@ -363,7 +364,10 @@ mod tests {
         assert!(outcome.is_accepted());
         assert!(outcome.is_admissible());
         assert_eq!(outcome.rest_verdict(), AdmissibilityVerdict::Accepted);
-        assert_eq!(outcome.rejection_reason_code(), AdmissibilityVerdict::ACCEPTED);
+        assert_eq!(
+            outcome.rejection_reason_code(),
+            AdmissibilityVerdict::ACCEPTED
+        );
         assert!(outcome.dissipation.is_finite());
     }
 
@@ -385,7 +389,10 @@ mod tests {
         let (old, new, dt) = golden_negative_dissipation_reject();
         let outcome = thermo_gate_transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
         assert!(!outcome.is_accepted());
-        assert_eq!(outcome.rest_verdict(), AdmissibilityVerdict::NegativeDissipation);
+        assert_eq!(
+            outcome.rest_verdict(),
+            AdmissibilityVerdict::NegativeDissipation
+        );
         assert_eq!(
             outcome.rejection_reason_code(),
             AdmissibilityVerdict::NEGATIVE_DISSIPATION
@@ -398,9 +405,7 @@ mod tests {
         let (mass_old, mass_new, mass_dt) = golden_mass_reject();
         let mut gate = ThermodynamicGate::with_tolerance(TRANSITION_TOLERANCE);
 
-        assert!(gate
-            .check_transition(&id_old, &id_new, id_dt)
-            .is_accepted());
+        assert!(gate.check_transition(&id_old, &id_new, id_dt).is_accepted());
         assert!(!gate
             .check_transition(&mass_old, &mass_new, mass_dt)
             .is_accepted());
@@ -419,10 +424,8 @@ mod tests {
 
     #[test]
     fn transition_proposal_admissible_matches_check_transition() {
-        let old =
-            ThermodynamicState::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
-        let new =
-            ThermodynamicState::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        let old = ThermodynamicState::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
+        let new = ThermodynamicState::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
         let dt = 28.0 * 24.0 * 3600.0;
         let mut gate = ThermodynamicGate::new();
         let admissible = gate.transition_proposal_admissible(&old, &new, dt);
@@ -433,10 +436,8 @@ mod tests {
 
     #[test]
     fn hydration_progression_from_mix_calibrated_accepted() {
-        let old =
-            ThermodynamicState::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
-        let new =
-            ThermodynamicState::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        let old = ThermodynamicState::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
+        let new = ThermodynamicState::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
         let dt = 28.0 * 24.0 * 3600.0;
         let outcome = thermo_gate_transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
         assert!(outcome.is_accepted());
@@ -480,8 +481,7 @@ mod tests {
         let alpha = 0.35;
         let temp = 293.15;
         let s_intrinsic = params.default_intrinsic_strength_mpa();
-        let via_mix =
-            ThermodynamicState::from_mix_with_params(w_c, alpha, temp, &params);
+        let via_mix = ThermodynamicState::from_mix_with_params(w_c, alpha, temp, &params);
         let via_calibrated = ThermodynamicState::from_mix_calibrated_with_params(
             w_c,
             alpha,
@@ -500,7 +500,10 @@ mod tests {
         let (old, new, dt) = golden_identity_admissible();
         let outcome = thermo_gate_transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
         assert_eq!(outcome.conjunct_verdict(), outcome.verdict);
-        assert_eq!(outcome.conjunct_verdict().is_accepted(), outcome.is_accepted());
+        assert_eq!(
+            outcome.conjunct_verdict().is_accepted(),
+            outcome.is_accepted()
+        );
     }
 
     #[test]

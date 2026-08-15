@@ -104,6 +104,9 @@ fn phase0f_fixture_digest_idempotent_on_rehash() {
     });
     let first = sha256_hex(&bytes);
     let second = sha256_hex(&bytes);
-    assert_eq!(first, second, "fixture digest must be idempotent under re-hash");
+    assert_eq!(
+        first, second,
+        "fixture digest must be idempotent under re-hash"
+    );
     assert_eq!(first, GATE_PARITY_V0_SHA256);
 }

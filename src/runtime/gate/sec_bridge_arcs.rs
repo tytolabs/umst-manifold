@@ -233,8 +233,7 @@ pub fn gate_transition_evidence_probe() -> bool {
     let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
     let new = old;
     let evidence = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
-    evidence.admissibility == AdmissibilityToken::Admissible
-        && !evidence.catalog_id.is_empty()
+    evidence.admissibility == AdmissibilityToken::Admissible && !evidence.catalog_id.is_empty()
 }
 
 /// Whether live egoff runtime bridge + gateway tick are plumbed (honest `false`).
@@ -606,7 +605,8 @@ pub fn validate_sec_bridge_arcs_gate_honesty() -> Result<(), &'static str> {
 #[must_use]
 pub fn sec_bridge_arcs_gate_wire_matrix() -> String {
     let census = gate_bridge_arcs_census();
-    let mut out = String::from("SEC-BRIDGE-ARCS manifold gate coordination wire map (AC35/W29-116):\n");
+    let mut out =
+        String::from("SEC-BRIDGE-ARCS manifold gate coordination wire map (AC35/W29-116):\n");
     for hop in MANIFOLD_SEC_BRIDGE_ARCS_GATE_WIRE_HOPS {
         out.push_str(&format!(
             "  {} wired={} {} [{}]\n",
@@ -655,7 +655,10 @@ mod sec_bridge_arcs_tests {
         assert_eq!(TRUST_WIRE_HOP_IDS.len(), 3);
         assert_eq!(ECOSYSTEM_TRUST_WIRE_HOP_COUNT, 4);
         assert_eq!(OPEN_RESIDUAL_HOP_COUNT, 2);
-        assert_eq!(SCHEMA_VERSION, "sec_bridge_arcs_gate_coordination_census_v2");
+        assert_eq!(
+            SCHEMA_VERSION,
+            "sec_bridge_arcs_gate_coordination_census_v2"
+        );
     }
 
     #[test]
@@ -685,7 +688,9 @@ mod sec_bridge_arcs_tests {
         assert_eq!(OPEN_RESIDUAL_FENCES.len(), 2);
         assert_eq!(OPEN_RESIDUAL_FENCES[0].residue_id, "R-egoff-runtime");
         assert_eq!(OPEN_RESIDUAL_FENCES[1].residue_id, "R-gateway-tick");
-        assert!(OPEN_RESIDUAL_FENCES.iter().all(|f| f.honest_open && f.green_credit_blocked));
+        assert!(OPEN_RESIDUAL_FENCES
+            .iter()
+            .all(|f| f.honest_open && f.green_credit_blocked));
         let table = sec_bridge_arcs_open_residual_fence_table();
         assert!(table.contains("R-egoff-runtime"));
         assert!(table.contains("R-gateway-tick"));
@@ -816,7 +821,8 @@ mod sec_bridge_arcs_tests {
 
     #[test]
     fn sec_bridge_arcs_validate_gate_honesty_residue_measured() {
-        validate_sec_bridge_arcs_gate_honesty().expect("honest SEC-BRIDGE-ARCS gate census residue");
+        validate_sec_bridge_arcs_gate_honesty()
+            .expect("honest SEC-BRIDGE-ARCS gate census residue");
         assert_eq!(
             sec_bridge_arcs_egoff_bridge_next_hop(),
             "egoff/egoff/src/arcs_bridge.rs:CoordinationRuntimeBridge"

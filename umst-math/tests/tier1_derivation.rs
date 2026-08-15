@@ -80,9 +80,7 @@ fn k2_rcc_floor_is_theorem_quarter() {
 fn k2_non_canonical_rows_remain_pending() {
     let pending_non_k2: usize = REGISTRY
         .iter()
-        .filter(|e| {
-            !K2_REGISTRY_ROW_NAMES.contains(&e.name) && e.derivation.is_pending()
-        })
+        .filter(|e| !K2_REGISTRY_ROW_NAMES.contains(&e.name) && e.derivation.is_pending())
         .count();
     assert_eq!(
         pending_non_k2,

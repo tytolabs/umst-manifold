@@ -14,10 +14,9 @@
 
 use umst_manifold::cargo_test_gap_census::{
     cargo_test_gap_honest, cargo_test_gap_probe, j11_manifold_battery_honest,
-    j11_manifold_battery_probe, CargoTestGapStatus, COMPOSER_H79_JOB_ID,
-    COMPOSER_H79_RECEIPT_PATH, COMPOSER_J11_JOB_ID, COMPOSER_J11_RECEIPT_PATH,
-    INTEGRATION_BLOCKER_TEST, LIB_UNIT_PASS_COUNT, META_6_FREEZE_AXIS, META_6_STATUS,
-    VERIFY_COMMAND,
+    j11_manifold_battery_probe, CargoTestGapStatus, COMPOSER_H79_JOB_ID, COMPOSER_H79_RECEIPT_PATH,
+    COMPOSER_J11_JOB_ID, COMPOSER_J11_RECEIPT_PATH, INTEGRATION_BLOCKER_TEST, LIB_UNIT_PASS_COUNT,
+    META_6_FREEZE_AXIS, META_6_STATUS, VERIFY_COMMAND,
 };
 
 /// OP-5 production edge status — honest FAIL @ AC102 (re-export blocked; cite SSOT).
@@ -123,7 +122,9 @@ pub fn ac102_manifold_battery_honest(probe: &Ac102ManifoldBatteryProbe) -> bool 
         && probe.lib_unit_measured_count == AC102_LIB_UNIT_MEASURED_COUNT
         && probe.j11_census_lib_count == AC102_J11_CENSUS_LIB_COUNT
         && probe.integration_pass_count < probe.integration_total_count
-        && probe.integration_blocker.contains("adjoint_four_node_chain")
+        && probe
+            .integration_blocker
+            .contains("adjoint_four_node_chain")
         && probe.j11_honest
         && probe.h79_honest
         && probe.op5_status == "FAIL"
@@ -137,7 +138,10 @@ pub fn ac102_manifold_battery_honest(probe: &Ac102ManifoldBatteryProbe) -> bool 
 #[test]
 fn ac102_metadata_wired() {
     assert_eq!(FLEET_PARENT, "FLEET-COMPOSER-ACCEL-D");
-    assert_eq!(FLEET_ACCEL2_AC102_JOB_ID, "FLEET-COMPOSER-ACCEL2-AC102-MANIFOLD");
+    assert_eq!(
+        FLEET_ACCEL2_AC102_JOB_ID,
+        "FLEET-COMPOSER-ACCEL2-AC102-MANIFOLD"
+    );
     assert!(COMPOSER_AC102_RECEIPT_PATH.contains("COMPOSER_ACCEL2_AC102"));
     assert!(ABSORBED_X80_RECEIPT.contains("COMPOSER_X80_0734"));
     assert!(ABSORBED_J11_RECEIPT.contains("COMPOSER_J11_2348"));
@@ -172,8 +176,12 @@ fn ac102_manifold_battery_receipt_honest_partial() {
 #[test]
 fn ac102_integration_blocker_pinned() {
     let probe = ac102_manifold_battery_probe(CargoTestGapStatus::Partial);
-    assert!(probe.integration_blocker.contains("adjoint_compliance_analytic"));
-    assert!(probe.integration_blocker.contains("adjoint_four_node_chain"));
+    assert!(probe
+        .integration_blocker
+        .contains("adjoint_compliance_analytic"));
+    assert!(probe
+        .integration_blocker
+        .contains("adjoint_four_node_chain"));
     assert_eq!(probe.integration_pass_count, 3);
     assert_eq!(probe.integration_total_count, 4);
 }

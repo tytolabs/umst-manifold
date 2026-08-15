@@ -159,13 +159,19 @@ pub fn q1_hex_elasticity_refuse_overclaim(
         return Err("Q1_HEX_ELASTICITY_PHYSICS_GREEN must stay false until Kirchhoff / fleet physics closes");
     }
     if probe.production_wired {
-        return Err("Q1_HEX_ELASTICITY_PRODUCTION_WIRED must stay false until embodied loop closes");
+        return Err(
+            "Q1_HEX_ELASTICITY_PRODUCTION_WIRED must stay false until embodied loop closes",
+        );
     }
     if probe.master {
-        return Err("Q1_HEX_ELASTICITY_MASTER must stay false — not claimed by continuum hex kernel alone");
+        return Err(
+            "Q1_HEX_ELASTICITY_MASTER must stay false — not claimed by continuum hex kernel alone",
+        );
     }
     if probe.kirchhoff_wired {
-        return Err("Q1_HEX_ELASTICITY_KIRCHHOFF_WIRED must stay false until SSSS ≤5% harness un-ignored");
+        return Err(
+            "Q1_HEX_ELASTICITY_KIRCHHOFF_WIRED must stay false until SSSS ≤5% harness un-ignored",
+        );
     }
     if !q1_hex_elasticity_posture_honest(probe) {
         return Err("q1_hex_elasticity posture fence inconsistent");
@@ -2347,7 +2353,8 @@ pub fn hex_solve_pcg_bisect(
     hex_diagonal(nx, ny, nz, dx, dy, dz, nu, &e_work, diag);
     let mut block_jacobi = vec![0.0_f32; n * 9];
     if precond == HexPcgPrecondKind::BlockJacobiNodal3x3 {
-        if hex_nodal_block_jacobi_3x3(nx, ny, nz, dx, dy, dz, nu, &e_work, &mut block_jacobi).is_err()
+        if hex_nodal_block_jacobi_3x3(nx, ny, nz, dx, dy, dz, nu, &e_work, &mut block_jacobi)
+            .is_err()
         {
             return HexPcgBisectReport {
                 iterations: 0,
@@ -2902,17 +2909,17 @@ pub fn hex_solve_pcg_masked(
 }
 
 #[cfg(test)]
-mod q1_hex_elasticity_honest_fence_tests {
+mod hex_elasticity_honest_fence_tests {
     use super::{
         hex_cell_corner_indices, hex_cell_strain_energy, hex_diagonal, hex_k_times_u_accumulate,
         hex_k_times_u_accumulate_cached, hex_pcg_use_f64_lane, hex_stiffness_scale,
         q1_hex_elasticity_honest_posture_bundle, q1_hex_elasticity_posture_honest,
         q1_hex_elasticity_refuse_overclaim, HexStructuredOperatorCache,
         Q1_HEX_ELASTICITY_BBAR_SRI_LANDED, Q1_HEX_ELASTICITY_HONEST_FENCE,
-        Q1_HEX_ELASTICITY_KIRCHHOFF_WIRED, Q1_HEX_ELASTICITY_MASTER, Q1_HEX_ELASTICITY_OP_CACHE_LANDED,
-        Q1_HEX_ELASTICITY_PCG_LANDED, Q1_HEX_ELASTICITY_PHYSICS_GREEN,
-        Q1_HEX_ELASTICITY_POSTURE_TAG, Q1_HEX_ELASTICITY_PRODUCTION_WIRED,
-        W29_Q1_HEX_ELASTICITY_DEEPEN_CELL,
+        Q1_HEX_ELASTICITY_KIRCHHOFF_WIRED, Q1_HEX_ELASTICITY_MASTER,
+        Q1_HEX_ELASTICITY_OP_CACHE_LANDED, Q1_HEX_ELASTICITY_PCG_LANDED,
+        Q1_HEX_ELASTICITY_PHYSICS_GREEN, Q1_HEX_ELASTICITY_POSTURE_TAG,
+        Q1_HEX_ELASTICITY_PRODUCTION_WIRED, W29_Q1_HEX_ELASTICITY_DEEPEN_CELL,
     };
 
     #[test]
@@ -2993,9 +3000,6 @@ mod q1_hex_elasticity_honest_fence_tests {
         for (a, b) in y_direct.iter().zip(&y_cached) {
             max_abs = max_abs.max((a - b).abs());
         }
-        assert!(
-            max_abs < 1e-4,
-            "cached vs direct Ku max abs diff {max_abs}"
-        );
+        assert!(max_abs < 1e-4, "cached vs direct Ku max abs diff {max_abs}");
     }
 }

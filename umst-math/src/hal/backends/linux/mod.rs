@@ -7,8 +7,8 @@ use std::vec::Vec;
 use super::super::inventory::HardwareInventory;
 use super::super::kinds::UnitKind;
 use super::super::presence::UnitPresence;
-use super::super::profile::{ArchClass, ArchitectureProfile, ParetoReferenceLabel};
 use super::super::probe_snapshot::HalProbeSnapshot;
+use super::super::profile::{ArchClass, ArchitectureProfile, ParetoReferenceLabel};
 use super::super::traits::HardwareUnit;
 use super::super::traits::WorkloadClass;
 

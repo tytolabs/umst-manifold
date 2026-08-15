@@ -26,6 +26,6 @@
     "lambda_landauer": 0.25,
     "mean_slack_at_commit": 205263157.89473686
   },
-  "regenerate": "cargo test -p umst-manifold --features kleisli-ppo-hot-bind --test p4_rejection_witness",
-  "schema_version": "p4_rejection_baseline.v1"
+  "regenerate": "cargo test -p umst-manifold --features kleisli-ppo-hot-bind --test rejection_witness",
+  "schema_version": "rejection_baseline.v1"
 }

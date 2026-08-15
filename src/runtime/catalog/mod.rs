@@ -10,9 +10,9 @@
 
 pub mod catalog_pin;
 pub mod sec_catalog_pin;
+pub mod semantic_witness;
 pub mod traceability;
 pub mod witness_priority;
-pub mod semantic_witness;
 
 pub use catalog_pin::{
     catalog_sha3_pin_witness_ok, composed_fiber_fingerprint_guard_holds,
@@ -24,8 +24,8 @@ pub use sec_catalog_pin::{
     catalog_pin_manifold_wired, catalog_pin_production_wired, manifold_catalog_pin_ceremony_closed,
     resolve_catalog_digest, sec_catalog_pin_p1542_a2_honest, sec_catalog_pin_p1542_a2_probe,
     verify_ssot_catalog_digest_hex, CatalogDigestAttachMode, CatalogPinManifoldError,
-    CatalogPinManifoldProbe, FLEET_P1542_A2_JOB_ID, FLEET_P1542_A2_RECEIPT_PATH, JOB_ID,
-    MANIFOLD_CATALOG_PIN_WIRE_HOPS, BOARD_SLICE_ID as CATALOG_PIN_BOARD_SLICE_ID,
+    CatalogPinManifoldProbe, BOARD_SLICE_ID as CATALOG_PIN_BOARD_SLICE_ID, FLEET_P1542_A2_JOB_ID,
+    FLEET_P1542_A2_RECEIPT_PATH, JOB_ID, MANIFOLD_CATALOG_PIN_WIRE_HOPS,
 };
 
 pub use semantic_witness::{

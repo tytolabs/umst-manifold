@@ -210,10 +210,8 @@ mod tests {
     fn topology_edge_list_n_edges_and_incidence_rows() {
         let device = Default::default();
         // Two edges: 0→1, 1→2 — row-major [src…, tgt…]
-        let edges = Tensor::<B, 2, Int>::from_data(
-            Data::new(vec![0i64, 1, 1, 2], [2, 2].into()),
-            &device,
-        );
+        let edges =
+            Tensor::<B, 2, Int>::from_data(Data::new(vec![0i64, 1, 1, 2], [2, 2].into()), &device);
         let topo = EdgeTopology::new(edges);
         assert_eq!(topo.n_incidence_rows(), 2);
         assert_eq!(topo.n_edges(), 2);
@@ -222,10 +220,8 @@ mod tests {
     #[test]
     fn topology_expand_src_tgt_gather_shapes_and_values() {
         let device = Default::default();
-        let edges = Tensor::<B, 2, Int>::from_data(
-            Data::new(vec![0i64, 1, 1, 2], [2, 2].into()),
-            &device,
-        );
+        let edges =
+            Tensor::<B, 2, Int>::from_data(Data::new(vec![0i64, 1, 1, 2], [2, 2].into()), &device);
         let topo = EdgeTopology::new(edges);
         let src_ix = topo.expand_src_gather_indices(1, 3);
         let tgt_ix = topo.expand_tgt_gather_indices(1, 3);
@@ -243,10 +239,8 @@ mod tests {
     #[test]
     fn topology_gather_endpoints_reads_nodal_at_edge_ends() {
         let device = Default::default();
-        let edges = Tensor::<B, 2, Int>::from_data(
-            Data::new(vec![0i64, 1, 1, 2], [2, 2].into()),
-            &device,
-        );
+        let edges =
+            Tensor::<B, 2, Int>::from_data(Data::new(vec![0i64, 1, 1, 2], [2, 2].into()), &device);
         let topo = EdgeTopology::new(edges);
         // Nodal scalar values [1, 4, 9] at nodes 0,1,2.
         let nodal = Tensor::<B, 3>::from_data(

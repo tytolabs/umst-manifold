@@ -57,8 +57,8 @@ pub mod schrodinger;
 pub mod smoothing;
 pub mod sparse;
 pub mod tensor;
-pub mod theorem_registry;
 pub mod theorem_blurbs;
+pub mod theorem_registry;
 pub mod vne;
 
 /// THEOREM-BOUND: `combine_density_between` (re-export: density diagonal / CGD struct)

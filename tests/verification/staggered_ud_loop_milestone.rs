@@ -47,7 +47,6 @@ fn damage_field(t: Tensor<B, 3>) -> DamageField<B> {
     Field::new(t)
 }
 
-
 const DAMAGE_REG: f32 = 1e-6;
 
 /// Voigt `[εxx,εyy,εzz,εxy,εyz,εxz]` → symmetric `[B,N,3,3]`.

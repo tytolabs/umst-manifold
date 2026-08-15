@@ -431,3 +431,5 @@ From multi-repo workspace root, also run the drift file parity:
 cargo test -p umst-manifold --manifest-path umst-manifold/Cargo.toml \
   --test gate_parity_fixture --test gate_kleisli --test gate_cbf_parity
 ```
+
+> **Rename note (2026-08-15):** `w8_publish_readiness.sh` was renamed to `publish_readiness.sh` in commit 33556a5. Historical transcript rows above keep the name used on the run date.

@@ -95,10 +95,7 @@ pub fn crosswalk_stats() -> CrosswalkStats {
     use crate::constants::registry::{ConstantTier, REGISTRY};
     use std::collections::HashSet;
 
-    let mapped: HashSet<&str> = THEOREM_DERIVES_CONSTANT
-        .iter()
-        .map(|(_, c)| *c)
-        .collect();
+    let mapped: HashSet<&str> = THEOREM_DERIVES_CONSTANT.iter().map(|(_, c)| *c).collect();
     let derived: Vec<&str> = REGISTRY
         .iter()
         .filter(|r| {

@@ -255,10 +255,7 @@ pub fn verify_hot_citation_against_proof(
             witness_id: citation.witness_id.clone(),
         });
     }
-    if proof
-        .digest_hex
-        .eq_ignore_ascii_case(&citation.digest_hex)
-    {
+    if proof.digest_hex.eq_ignore_ascii_case(&citation.digest_hex) {
         Ok(())
     } else {
         Err(SemanticWitnessReject::DigestMismatch {

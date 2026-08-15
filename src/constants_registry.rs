@@ -64,7 +64,8 @@ pub struct RegistryPostureProbe {
 pub const STRIATUS_HEX_PCG_MAX_ITER: GroundedConst<usize> = GroundedConst {
     name: "hex_pcg_max_iter_default_striatus",
     value: crate::physics::hex_elasticity::HEX_PCG_MAX_ITER_DEFAULT_STRIATUS,
-    evidence: "src/physics/hex_elasticity.rs — 2× headroom over 3960-iter sharp-field peak (2026-06-12)",
+    evidence:
+        "src/physics/hex_elasticity.rs — 2× headroom over 3960-iter sharp-field peak (2026-06-12)",
 };
 
 /// Q1-hex f32 PCG lane relative tolerance (SSOT: `hex_elasticity::HEX_PCG_REL_TOL_F32`).

@@ -42,7 +42,9 @@ fn mi_oracle_harvest_pins_from_existing_tests() {
     let v1 = harvest_correlated_2x2_300();
     let v2 = harvest_material_proxy_400();
     eprintln!("HARVEST correlated_2x2_300 mi_bits={v1:.17e}");
-    eprintln!("HARVEST material_proxy_400 mi_bits={v2:.17e} scalar_channels={UMST_SCALAR_CHANNEL_COUNT}");
+    eprintln!(
+        "HARVEST material_proxy_400 mi_bits={v2:.17e} scalar_channels={UMST_SCALAR_CHANNEL_COUNT}"
+    );
     assert!((v1 - 2.4689563066156435).abs() < 1e-12);
     assert!((v2 - 4.94547982979536).abs() < 1e-12);
     assert!(v1 >= 0.0);

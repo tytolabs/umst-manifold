@@ -12,12 +12,12 @@ use super::core_gate::{
     core_gate, mass_conserved_between_densities, scalar_response_from_transition, CoreGateOutcome,
 };
 use super::material_gate::{MaterialGateOutcome, MaterialTransitionWitness};
-use umst_cartridge_concrete::evaluate_material_conjuncts;
 use super::thermo_transition::{thermo_gate_transition_outcome, ThermodynamicState};
 use super::transition_proposal::{
     transition_outcome, ThermodynamicStateSnapshot, ThermodynamicTransitionOutcome,
     TRANSITION_TOLERANCE,
 };
+use umst_cartridge_concrete::evaluate_material_conjuncts;
 
 /// Canonical snapshot transition — composes Core + Material conjuncts (parity SSOT).
 #[must_use]
@@ -98,10 +98,10 @@ pub fn canonical_strength_upper_bound_admissible(strength_mpa: f64, max_strength
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::core_gate::core_gate;
     use super::super::material_gate::MaterialTransitionWitness;
     use super::super::verdict::{AdmissibilityVerdict, ConjunctVerdict, GateRejectReason};
+    use super::*;
     use crate::core::material_transition::SubstrateMaterialParams;
     use umst_cartridge_concrete::evaluate_material_conjuncts;
 
@@ -164,10 +164,8 @@ mod tests {
 
     #[test]
     fn canonical_thermo_transition_admissible_matches_snapshot_route() {
-        let old =
-            ThermodynamicState::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
-        let new =
-            ThermodynamicState::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        let old = ThermodynamicState::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
+        let new = ThermodynamicState::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
         let dt = 28.0 * 24.0 * 3600.0;
         let thermo = canonical_thermo_transition_admissible(&old, &new, dt);
         let snapshot_old = ThermodynamicStateSnapshot {
@@ -316,8 +314,14 @@ mod tests {
     #[test]
     fn canonical_strength_upper_bound_rejects_non_finite() {
         assert!(!canonical_strength_upper_bound_admissible(f64::NAN, 80.0));
-        assert!(!canonical_strength_upper_bound_admissible(30.0, f64::INFINITY));
-        assert!(!canonical_strength_upper_bound_admissible(f64::INFINITY, 80.0));
+        assert!(!canonical_strength_upper_bound_admissible(
+            30.0,
+            f64::INFINITY
+        ));
+        assert!(!canonical_strength_upper_bound_admissible(
+            f64::INFINITY,
+            80.0
+        ));
     }
 
     #[test]

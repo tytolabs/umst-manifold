@@ -11,9 +11,8 @@ use umst_manifold::runtime::gate::{
     gate_admit_audit_census, manifold_gate_sec_gw_audit_ceremony_closed,
     manifold_gw_audit_all_stamp_paths_probed, manifold_gw_audit_stamp_legs_complete,
     manifold_verify_upstream_gw_wrap_delegate, sec_gw_audit_accel2_ac31_honest,
-    sec_gw_audit_accel2_ac31_probe, sec_gw_audit_manifold_probe,
-    sec_gw_audit_production_wired, sec_gw_audit_trust_chain_next_hop,
-    sec_gw_audit_wire_matrix, validate_sec_gw_audit_honesty,
+    sec_gw_audit_accel2_ac31_probe, sec_gw_audit_manifold_probe, sec_gw_audit_production_wired,
+    sec_gw_audit_trust_chain_next_hop, sec_gw_audit_wire_matrix, validate_sec_gw_audit_honesty,
     ADMIT_STAMP_PATH_COUNT, FLEET_ACCEL2_AC31_JOB_ID, GW_AUDIT_GREEN_CLAIM_BLOCKED,
     MANIFOLD_GW_AUDIT_ADMIT_STAMP_PATHS, MANIFOLD_GW_AUDIT_STAMP_LEGS,
     MANIFOLD_SEC_GW_AUDIT_WIRE_HOPS, SEC_GW_AUDIT_BOARD_SLICE_ID,
@@ -57,8 +56,13 @@ fn sec_gw_audit_gate_wire_hops_six_of_eight_wired() {
 
 #[test]
 fn sec_gw_audit_admit_stamp_paths_four_of_four() {
-    assert_eq!(MANIFOLD_GW_AUDIT_ADMIT_STAMP_PATHS.len(), ADMIT_STAMP_PATH_COUNT);
-    assert!(MANIFOLD_GW_AUDIT_ADMIT_STAMP_PATHS.iter().all(|p| p.census_hit));
+    assert_eq!(
+        MANIFOLD_GW_AUDIT_ADMIT_STAMP_PATHS.len(),
+        ADMIT_STAMP_PATH_COUNT
+    );
+    assert!(MANIFOLD_GW_AUDIT_ADMIT_STAMP_PATHS
+        .iter()
+        .all(|p| p.census_hit));
     assert!(MANIFOLD_GW_AUDIT_ADMIT_STAMP_PATHS
         .iter()
         .any(|p| p.path_id == "material_mcp_delegate"));

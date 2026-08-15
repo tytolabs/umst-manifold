@@ -103,8 +103,7 @@ pub fn gate_cartridge_honesty_probe() -> GateCartridgeHonestyProbe {
     let host_cd_only = GATE_CARTRIDGE_HOST_CD_ONLY;
     let concrete_backed = GATE_CARTRIDGE_CONCRETE_BACKED;
     let deepen_honest = GATE_CARTRIDGE_CELL_ID == "W29-112-CARTRIDGE"
-        && GATE_CARTRIDGE_POSTURE_TAG
-            == "runtime-gate-cartridge-host-cd-witness-not-production"
+        && GATE_CARTRIDGE_POSTURE_TAG == "runtime-gate-cartridge-host-cd-witness-not-production"
         && !production_wired
         && green_claim_blocked
         && !master_retick_eligible
@@ -175,7 +174,10 @@ mod tests {
         let new = old;
         let dt = 1.0_f64;
         let host = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
-        assert!(host.is_energy_positive(), "sanity: identity transition admits");
+        assert!(
+            host.is_energy_positive(),
+            "sanity: identity transition admits"
+        );
 
         let evidence = CdTransitionCartridge.transition_evidence(&old, &new, dt);
         assert_eq!(evidence.catalog_id, CD_TRANSITION_CATALOG_ID);
@@ -202,7 +204,10 @@ mod tests {
         };
         let dt = 1.0_f64;
         let host = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
-        assert!(!host.is_energy_positive(), "sanity: ψ spike rejects on host");
+        assert!(
+            !host.is_energy_positive(),
+            "sanity: ψ spike rejects on host"
+        );
 
         let evidence = CdTransitionCartridge.transition_evidence(&old, &new, dt);
         assert_eq!(evidence.catalog_id, CD_TRANSITION_CATALOG_ID);

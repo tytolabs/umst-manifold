@@ -297,8 +297,7 @@ pub fn gate_transition_evidence_probe() -> bool {
     let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
     let new = old;
     let evidence = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
-    evidence.admissibility == AdmissibilityToken::Admissible
-        && !evidence.catalog_id.is_empty()
+    evidence.admissibility == AdmissibilityToken::Admissible && !evidence.catalog_id.is_empty()
 }
 
 /// Whether sled-backed session ledger persistence is wired (honest `false`).
@@ -1001,7 +1000,10 @@ mod sec_s1_tests {
     #[test]
     fn sec_s1_w29_120_honest_fence_no_green_production_master_op5() {
         assert_eq!(W29_120_CELL_ID, "W29-120-SEC_S1");
-        assert_eq!(W29_120_DEEPEN_SCHEMA_VERSION, "sec_s1_w29_120_honest_fence_v1");
+        assert_eq!(
+            W29_120_DEEPEN_SCHEMA_VERSION,
+            "sec_s1_w29_120_honest_fence_v1"
+        );
         assert_eq!(SCHEMA_VERSION, "sec_s1_gate_trust_census_v3");
         assert!(!sec_s1_production_wired());
         assert!(!session_ledger_wired());

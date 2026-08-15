@@ -137,9 +137,9 @@ use crate::physics::dec_primal::{
     primal_scalar_edge_increment,
 };
 use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
-use crate::physics::PhysicsError;
 #[cfg(feature = "photonics")]
 use crate::physics::topology::EdgeTopology;
+use crate::physics::PhysicsError;
 
 /// formal_anchor: Literature
 /// formal_citation: Rumpf 2022, Computational Electromagnetics in MATLAB, §3.4 (FDFD); Berenger 1994 (PML); Taflove & Hagness 2005 (FDFD context)
@@ -460,11 +460,7 @@ fn extract_uniform_x_chain<B: Backend<FloatElem = f32>>(
         }
     }
 
-    Some(UniformChain {
-        order,
-        len: n,
-        h,
-    })
+    Some(UniformChain { order, len: n, h })
 }
 
 /// TE operator on a uniform x-chain in **chain index order** \(k=0..L-1\): interior rows are
@@ -1055,7 +1051,8 @@ impl PhotonicsSolver {
                     Some(v) => v,
                     None => {
                         return Err(PhysicsError::UnsupportedLayout {
-                            context: "solve_maxwell_curl_curl: unsupported relative_permittivity layout",
+                            context:
+                                "solve_maxwell_curl_curl: unsupported relative_permittivity layout",
                         });
                     }
                 };
@@ -2226,7 +2223,8 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
     let n = e_field.dims()[1];
     if n > PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV {
         return Err(PhysicsError::UnsupportedLayout {
-            context: "solve_maxwell_dec_patch_direct: N exceeds PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV",
+            context:
+                "solve_maxwell_dec_patch_direct: N exceeds PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV",
         });
     }
 
@@ -2585,8 +2583,8 @@ mod photonics_matrix_six_honesty_tests {
     use super::{
         dec_patch_maxwell_natural_matvec_flat_constitutive, dec_patch_sym3_try_inverse,
         photonics_dec_patch_uses_metric_dual_edge_hodge, photonics_lane_fence_holds,
-        photonics_lane_honesty, DecPatchCurlConstitutive, PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY,
-        PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT,
+        photonics_lane_honesty, DecPatchCurlConstitutive,
+        PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY, PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT,
     };
 
     #[test]

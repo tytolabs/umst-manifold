@@ -122,8 +122,12 @@ pub fn extruded_plate_posture_honest(probe: &ExtrudedPlatePostureProbe) -> bool 
         && !probe.voigt_cauchy_recovery_wired
         && !probe.kirchhoff_thin_plate_gate_wired
         && !probe.batch_gt1_wired
-        && probe.honest_fence.contains("q1_hex_equilibrium_landed=true")
-        && probe.honest_fence.contains("voigt_cauchy_recovery_wired=false")
+        && probe
+            .honest_fence
+            .contains("q1_hex_equilibrium_landed=true")
+        && probe
+            .honest_fence
+            .contains("voigt_cauchy_recovery_wired=false")
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")
 }
@@ -132,19 +136,27 @@ pub fn extruded_plate_posture_honest(probe: &ExtrudedPlatePostureProbe) -> bool 
 pub fn validate_extruded_plate_posture_honesty() -> Result<(), &'static str> {
     let probe = extruded_plate_honest_posture_bundle();
     if probe.physics_green {
-        return Err("EXTRUDED_PLATE_PHYSICS_GREEN must stay false — linearity ≠ Kirchhoff/fleet TO");
+        return Err(
+            "EXTRUDED_PLATE_PHYSICS_GREEN must stay false — linearity ≠ Kirchhoff/fleet TO",
+        );
     }
     if probe.production_wired {
-        return Err("EXTRUDED_PLATE_PRODUCTION_WIRED must stay false until embodied TO loop closes");
+        return Err(
+            "EXTRUDED_PLATE_PRODUCTION_WIRED must stay false until embodied TO loop closes",
+        );
     }
     if probe.master {
         return Err("EXTRUDED_PLATE_MASTER must stay false until master composition pin lands");
     }
     if probe.voigt_cauchy_recovery_wired {
-        return Err("EXTRUDED_PLATE_VOIGT_CAUCHY_RECOVERY_WIRED must stay false while return is zeros");
+        return Err(
+            "EXTRUDED_PLATE_VOIGT_CAUCHY_RECOVERY_WIRED must stay false while return is zeros",
+        );
     }
     if probe.kirchhoff_thin_plate_gate_wired {
-        return Err("EXTRUDED_PLATE_KIRCHHOFF_THIN_PLATE_GATE_WIRED must stay false under shear locking");
+        return Err(
+            "EXTRUDED_PLATE_KIRCHHOFF_THIN_PLATE_GATE_WIRED must stay false under shear locking",
+        );
     }
     if probe.batch_gt1_wired {
         return Err("EXTRUDED_PLATE_BATCH_GT1_WIRED must stay false until batch>1 is implemented");
@@ -158,7 +170,7 @@ pub fn validate_extruded_plate_posture_honesty() -> Result<(), &'static str> {
 use burn::tensor::{backend::Backend, Data, Int, Shape, Tensor};
 
 use super::error::PhysicsError;
-use super::q1_hex_elasticity;
+use super::hex_elasticity;
 use super::time_orchestration::MechanicsInnerLoopConfig;
 
 /// Isotropic elastic parameters + SIMP modulus law.
@@ -296,10 +308,7 @@ impl ExtrudedPlateMechanics {
         let mut scratch = vec![0.0_f32; n * 3];
 
         let max_it = cg_config.max_cg_iterations.max(1);
-        let rel_tol = cg_config
-            .pcg_tolerance
-            .max(cg_config.cg_tolerance)
-            .max(0.0);
+        let rel_tol = cg_config.pcg_tolerance.max(cg_config.cg_tolerance).max(0.0);
 
         let pcg = hex_elasticity::hex_solve_pcg_masked(
             self.nx,
@@ -320,9 +329,7 @@ impl ExtrudedPlateMechanics {
             cg_config.cg_tolerance,
             None,
         );
-        if rel_tol > 0.0
-            && (!pcg.rel_residual.is_finite() || pcg.rel_residual > rel_tol)
-        {
+        if rel_tol > 0.0 && (!pcg.rel_residual.is_finite() || pcg.rel_residual > rel_tol) {
             return Err(PhysicsError::Diverged {
                 eq_rel: pcg.rel_residual,
                 pcg_iterations: pcg.iterations,
@@ -449,9 +456,8 @@ mod extruded_plate_honest_fence_tests {
         validate_extruded_plate_posture_honesty, ExtrudedPlateMechanics,
         EXTRUDED_PLATE_BATCH_GT1_WIRED, EXTRUDED_PLATE_HONEST_FENCE,
         EXTRUDED_PLATE_KIRCHHOFF_THIN_PLATE_GATE_WIRED, EXTRUDED_PLATE_MASTER,
-        EXTRUDED_PLATE_PHYSICS_GREEN, EXTRUDED_PLATE_POSTURE_TAG,
-        EXTRUDED_PLATE_PRODUCTION_WIRED, EXTRUDED_PLATE_VOIGT_CAUCHY_RECOVERY_WIRED,
-        W29_EXTRUDED_PLATE_DEEPEN_CELL,
+        EXTRUDED_PLATE_PHYSICS_GREEN, EXTRUDED_PLATE_POSTURE_TAG, EXTRUDED_PLATE_PRODUCTION_WIRED,
+        EXTRUDED_PLATE_VOIGT_CAUCHY_RECOVERY_WIRED, W29_EXTRUDED_PLATE_DEEPEN_CELL,
     };
 
     #[test]

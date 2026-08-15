@@ -81,7 +81,9 @@ pub fn host_bar_matvec_operator_posture_honest(probe: &HostBarMatvecOperatorPost
         && probe.host_adapter_landed
         && probe.deepen_cell == W29_OPERATOR_DEEPEN_CELL
         && probe.posture_tag == OPERATOR_POSTURE_TAG
-        && probe.honest_fence.contains("host_bar_matvec_adapter_landed=true")
+        && probe
+            .honest_fence
+            .contains("host_bar_matvec_adapter_landed=true")
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")
         && probe.honest_fence.contains("master=false")
@@ -207,8 +209,10 @@ mod tests {
         let src_indices = topo.expand_src_gather_indices(1, 3);
         let tgt_indices = topo.expand_tgt_gather_indices(1, 3);
         let k_axial = Tensor::from_data(Data::new(vec![2.0_f32], Shape::new([1, 1, 1])), &device);
-        let edge_unit =
-            Tensor::from_data(Data::new(vec![1.0_f32, 0.0, 0.0], Shape::new([1, 1, 3])), &device);
+        let edge_unit = Tensor::from_data(
+            Data::new(vec![1.0_f32, 0.0, 0.0], Shape::new([1, 1, 3])),
+            &device,
+        );
         let edge_len = Tensor::from_data(Data::new(vec![1.0_f32], Shape::new([1, 1, 1])), &device);
         BarMatvecOperator::new(
             template,

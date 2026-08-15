@@ -7,8 +7,8 @@
 use crate::ai::cbf::ThermodynamicCBF;
 use crate::core::error_boundary::CbfReject;
 use crate::runtime::catalog::{
-    lookup_semantic_cold_witness, CatalogLock, SemanticColdProof,
-    DEFAULT_SEMANTIC_COLD_WITNESS_ID, SEMANTIC_CBF_CATALOG_ID,
+    lookup_semantic_cold_witness, CatalogLock, SemanticColdProof, DEFAULT_SEMANTIC_COLD_WITNESS_ID,
+    SEMANTIC_CBF_CATALOG_ID,
 };
 
 pub use crate::runtime::catalog::semantic_witness::{
@@ -33,7 +33,10 @@ pub enum SemanticCbfReject {
     /// Thermodynamic envelope rejected after witness lookup succeeded.
     Thermodynamic(CbfReject),
     /// Semantic admissibility margin negative (net dissipation below tolerance).
-    SemanticInadmissible { net_dissipation: f64, tolerance: f64 },
+    SemanticInadmissible {
+        net_dissipation: f64,
+        tolerance: f64,
+    },
 }
 
 impl core::fmt::Display for SemanticCbfReject {
@@ -107,9 +110,11 @@ pub fn hot_gate_lookup_cold_witness<'a>(
     lock: &'a CatalogLock,
     witness_id: &str,
 ) -> Result<&'a SemanticColdProof, SemanticCbfReject> {
-    lookup_semantic_cold_witness(lock, witness_id).ok_or_else(|| SemanticCbfReject::MissingColdWitness {
-        witness_id: witness_id.to_string(),
-        catalog_id: SEMANTIC_CBF_CATALOG_ID,
+    lookup_semantic_cold_witness(lock, witness_id).ok_or_else(|| {
+        SemanticCbfReject::MissingColdWitness {
+            witness_id: witness_id.to_string(),
+            catalog_id: SEMANTIC_CBF_CATALOG_ID,
+        }
     })
 }
 
@@ -213,22 +218,29 @@ mod tests {
         let mut cbf = SemanticCBF::chair_fixture();
         let err = gate_semantic_hot_bundled(&mut cbf, -2.0, 0.0, TOLERANCE)
             .expect_err("negative net dissipation must reject");
-        assert!(matches!(err, SemanticCbfReject::SemanticInadmissible { .. }));
+        assert!(matches!(
+            err,
+            SemanticCbfReject::SemanticInadmissible { .. }
+        ));
     }
 
     #[test]
     fn digest_mismatch_rejects() {
         let lock = bundled_lock();
         let proof = default_proof(&lock);
-        let err = verify_cold_witness_digest(proof, "0".repeat(64).as_str())
-            .expect_err("wrong digest");
+        let err =
+            verify_cold_witness_digest(proof, "0".repeat(64).as_str()).expect_err("wrong digest");
         assert!(matches!(err, SemanticCbfReject::DigestMismatch { .. }));
     }
 
     #[test]
     fn semantic_cbf_new_and_chair_fixture_fields() {
         let custom = SemanticCBF::new(TEMP_K, CREDIT_J, DEFAULT_SEMANTIC_COLD_WITNESS_ID);
-        assert_relative_eq!(custom.thermodynamic.temperature_k, TEMP_K, epsilon = 1.0e-30);
+        assert_relative_eq!(
+            custom.thermodynamic.temperature_k,
+            TEMP_K,
+            epsilon = 1.0e-30
+        );
         assert_relative_eq!(
             custom.thermodynamic.available_credit_joules,
             CREDIT_J,
@@ -357,7 +369,9 @@ mod tests {
         let err = gate_semantic_hot(&mut cbf, &lock, 0.0, 1.0, TOLERANCE, None)
             .expect_err("zero credit must reject positive bit resolution");
         match err {
-            SemanticCbfReject::Thermodynamic(CbfReject::InsufficientGlobalEnergyCredit { .. }) => {}
+            SemanticCbfReject::Thermodynamic(CbfReject::InsufficientGlobalEnergyCredit {
+                ..
+            }) => {}
             other => panic!("expected thermodynamic insufficient credit, got {other:?}"),
         }
     }
@@ -405,7 +419,9 @@ mod tests {
             witness_id: "umst.formal.missing".to_string(),
             catalog_id: SEMANTIC_CBF_CATALOG_ID,
         };
-        assert!(missing.to_string().contains("missing cold semantic witness"));
+        assert!(missing
+            .to_string()
+            .contains("missing cold semantic witness"));
         assert!(missing.to_string().contains("umst.formal.missing"));
 
         let digest = SemanticCbfReject::DigestMismatch {
@@ -425,7 +441,9 @@ mod tests {
             net_dissipation: -1.0,
             tolerance: TOLERANCE,
         };
-        assert!(inadmissible.to_string().contains("semantic net dissipation"));
+        assert!(inadmissible
+            .to_string()
+            .contains("semantic net dissipation"));
     }
 
     #[test]
@@ -462,10 +480,7 @@ mod tests {
             .as_ref()
             .expect("semantic_witnesses section");
         assert!(semantic_witness_section_quickcheck(section));
-        assert_eq!(
-            section.policy_version,
-            SEMANTIC_COLD_HOT_POLICY_VERSION
-        );
+        assert_eq!(section.policy_version, SEMANTIC_COLD_HOT_POLICY_VERSION);
     }
 
     #[test]

@@ -244,29 +244,19 @@ mod tests {
             &device,
         );
         let c = Tensor::<B, 3>::from_data(
-            TensorData::new(
-                vec![1.0_f32, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-                [1, 4, 2],
-            ),
+            TensorData::new(vec![1.0_f32, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], [1, 4, 2]),
             &device,
         );
         let edges = Tensor::<B, 2, Int>::from_data(
             TensorData::new(vec![0_i32, 1, 2, 1, 2, 3], [2, 3]),
             &device,
         );
-        let eps = Tensor::<B, 3>::from_data(
-            TensorData::new(vec![1.0_f32; 4], [1, 4, 1]),
-            &device,
-        );
-        let d = Tensor::<B, 3>::from_data(
-            TensorData::new(vec![1.0_f32; 8], [1, 4, 2]),
-            &device,
-        );
+        let eps = Tensor::<B, 3>::from_data(TensorData::new(vec![1.0_f32; 4], [1, 4, 1]), &device);
+        let d = Tensor::<B, 3>::from_data(TensorData::new(vec![1.0_f32; 8], [1, 4, 2]), &device);
 
         let phi_in = phi.clone();
         let c_in = c.clone();
-        let (phi_out, c_out) =
-            pnp_surrogate_step(&solver, 1e-3_f32, phi, c, edges, eps, d);
+        let (phi_out, c_out) = pnp_surrogate_step(&solver, 1e-3_f32, phi, c, edges, eps, d);
 
         let phi_in_v = phi_in.into_data().to_vec::<f32>().unwrap();
         let phi_out_v = phi_out.into_data().to_vec::<f32>().unwrap();

@@ -97,11 +97,7 @@ pub const S5_CONSENSUS_PROBE_SCENARIOS: &[&str] = &[
 ];
 
 /// Tier-3 provider identifiers for synthetic consensus algebra (no network).
-pub const CONSENSUS_PROVIDER_TABLE: &[(&str, u8)] = &[
-    ("grok", 3),
-    ("gemini", 2),
-    ("minimax", 1),
-];
+pub const CONSENSUS_PROVIDER_TABLE: &[(&str, u8)] = &[("grok", 3), ("gemini", 2), ("minimax", 1)];
 
 /// L-N0 formal proof wired — honest false until Lean lands.
 pub const LN0_PROOF_WIRED_HONEST: bool = false;
@@ -318,8 +314,7 @@ pub fn gate_transition_evidence_probe() -> bool {
     let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
     let new = old;
     let evidence = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
-    evidence.admissibility == AdmissibilityToken::Admissible
-        && !evidence.catalog_id.is_empty()
+    evidence.admissibility == AdmissibilityToken::Admissible && !evidence.catalog_id.is_empty()
 }
 
 fn fnv1a_hex(seed: &[u8], data: &[u8]) -> String {
@@ -376,9 +371,7 @@ fn attestations_have_equivalence_split(attestations: &[ManifoldModelAttestation]
         return false;
     }
     let first = &attestations[0].response_shape_hash;
-    attestations
-        .iter()
-        .any(|a| a.response_shape_hash != *first)
+    attestations.iter().any(|a| a.response_shape_hash != *first)
 }
 
 fn resolve_disagreement_by_trust_attestation(
@@ -472,10 +465,7 @@ fn has_open_cross_model_disagreement() -> bool {
 pub fn manifold_session_consensus_summary() -> ManifoldConsensusSessionSummary {
     OPEN_SESSIONS.with(|sessions| {
         let sessions = sessions.borrow();
-        let disagreement_events = sessions
-            .iter()
-            .filter(|s| s.disagreement.is_some())
-            .count();
+        let disagreement_events = sessions.iter().filter(|s| s.disagreement.is_some()).count();
         let resolution_events = sessions
             .iter()
             .filter(|s| !s.status_open && s.disagreement.is_some())
@@ -555,12 +545,10 @@ fn probe_scenario_session_resolve_badge() -> bool {
     OPEN_SESSIONS.with(|sessions| sessions.borrow_mut().clear());
 
     let (session_id, opened) = open_consensus_session("probe-resolve-badge");
-    let hit = opened
-        && has_open_cross_model_disagreement()
-        && {
-            record_consensus_resolution(&session_id);
-            !has_open_cross_model_disagreement()
-        };
+    let hit = opened && has_open_cross_model_disagreement() && {
+        record_consensus_resolution(&session_id);
+        !has_open_cross_model_disagreement()
+    };
 
     OPEN_SESSIONS.with(|sessions| *sessions.borrow_mut() = saved);
     hit
@@ -584,7 +572,10 @@ fn probe_scenario(scenario_id: &'static str) -> ManifoldS5ConsensusProbe {
         }
         "unanimous-agreement" => {
             let attestations = synthetic_unanimous_attestations("probe-unanimous");
-            ("unanimous-shape", !attestations_have_equivalence_split(&attestations))
+            (
+                "unanimous-shape",
+                !attestations_have_equivalence_split(&attestations),
+            )
         }
         "disagreement-kind-shape" => {
             let disagreement = build_cross_model_disagreement(
@@ -678,10 +669,9 @@ pub fn manifold_verify_s5_consensus_algebra_roundtrip() -> bool {
         && OPEN_SESSIONS.with(|sessions| {
             sessions.borrow().iter().any(|s| {
                 s.session_id == session_id
-                    && s
-                        .disagreement
-                        .as_ref()
-                        .is_some_and(|d| d.disagreement_kind == DisagreementKind::EquivalenceClassSplit)
+                    && s.disagreement.as_ref().is_some_and(|d| {
+                        d.disagreement_kind == DisagreementKind::EquivalenceClassSplit
+                    })
             })
         });
     record_consensus_resolution(&session_id);
@@ -836,7 +826,8 @@ pub fn gate_synthetic_consensus_census() -> SecS5GateSyntheticConsensusCensus {
         gate_evidence_wired: gate_transition_evidence_probe(),
         s5_all_scenarios_probed: manifold_s5_all_scenarios_probed(),
         algebra_roundtrip_verified: manifold_verify_s5_consensus_algebra_roundtrip(),
-        extended_algebra_roundtrip_verified: manifold_verify_s5_consensus_algebra_roundtrip_extended(),
+        extended_algebra_roundtrip_verified:
+            manifold_verify_s5_consensus_algebra_roundtrip_extended(),
         ln0_crosswalk_rows: manifold_ln0_lean_crosswalk().len(),
         ln0_proof_wired: LN0_PROOF_WIRED_HONEST,
         live_fanout_wired: LIVE_FANOUT_WIRED_HONEST,
@@ -952,7 +943,10 @@ pub fn collect_sec_s5_gate_factor_rows() -> Vec<SecS5GateFactorRow> {
             factor_id: "ln0-crosswalk",
             probe_wired: census.ln0_crosswalk_rows == 8,
             acceptance_credit: census.ln0_crosswalk_rows == 8,
-            detail: format!("crosswalk_rows={}/8 statement-runtime", census.ln0_crosswalk_rows),
+            detail: format!(
+                "crosswalk_rows={}/8 statement-runtime",
+                census.ln0_crosswalk_rows
+            ),
         },
         SecS5GateFactorRow {
             factor_id: "wire-map",
@@ -975,7 +969,8 @@ pub fn collect_sec_s5_gate_factor_rows() -> Vec<SecS5GateFactorRow> {
             factor_id: "live-fanout-blocked",
             probe_wired: !census.live_fanout_wired,
             acceptance_credit: false,
-            detail: "live_fanout_wired=false scert_credit=BLOCKED expected_gate_exit=BLOCKED".into(),
+            detail: "live_fanout_wired=false scert_credit=BLOCKED expected_gate_exit=BLOCKED"
+                .into(),
         },
     ]
 }
@@ -1437,7 +1432,10 @@ mod sec_s5_tests {
     #[test]
     fn sec_s5_w29_124_honest_fence_no_green_production_master_op5() {
         assert_eq!(W29_124_CELL_ID, "W29-124-SEC_S5");
-        assert_eq!(W29_124_DEEPEN_SCHEMA_VERSION, "sec_s5_w29_124_honest_fence_v1");
+        assert_eq!(
+            W29_124_DEEPEN_SCHEMA_VERSION,
+            "sec_s5_w29_124_honest_fence_v1"
+        );
         assert_eq!(SCHEMA_VERSION, "sec_s5_gate_synthetic_consensus_census_v3");
         assert!(!sec_s5_production_wired());
         assert!(!LN0_PROOF_WIRED_HONEST);

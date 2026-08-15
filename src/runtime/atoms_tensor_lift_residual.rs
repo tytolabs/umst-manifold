@@ -362,7 +362,8 @@ pub struct AtomsTensorLiftResidualW29104DeepenProbe {
 
 /// Build W29-104 deepen probe from live residual depth summary + invent fences.
 #[must_use]
-pub fn atoms_tensor_lift_residual_w29104_deepen_probe() -> AtomsTensorLiftResidualW29104DeepenProbe {
+pub fn atoms_tensor_lift_residual_w29104_deepen_probe() -> AtomsTensorLiftResidualW29104DeepenProbe
+{
     let summary = atoms_tensor_lift_residual_depth_summary();
     AtomsTensorLiftResidualW29104DeepenProbe {
         cell_id: W29_104_CELL_ID,

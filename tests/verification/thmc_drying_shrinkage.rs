@@ -12,10 +12,10 @@
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::field::{Field, HumidityField, ReactionExtentField, TemperatureField};
-use umst_manifold::core::StepEntryDamageMask;
 use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
+use umst_manifold::core::StepEntryDamageMask;
 use umst_manifold::physics::laplacian::TopologicalLaplacian;
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
 use umst_manifold::physics::solvers::{
@@ -183,7 +183,7 @@ fn thmc_drying_shrinkage_within_mc2010_notional_band() {
         dmg[i] = if i == 0 { 1.0_f32 } else { 0.0_f32 };
     }
     let damage = Tensor::<B, 3>::from_data(Data::new(dmg, Shape::new([1, n, 1])), &d);
-    let state =     ThmcState::from_tensors(
+    let state = ThmcState::from_tensors(
         Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
         Tensor::<B, 3>::full([1, n, 1], h_init, &d),
         Tensor::<B, 3>::zeros([1, n, 3], &d),
@@ -393,14 +393,16 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
         "expected positive ψ⁺ from matrix stub; psi_sum={psi_sum}"
     );
 
-    let mk_state = |damage: Tensor<B, 3>|     ThmcState::from_tensors(
-        Tensor::<B, 3>::full([batch, n, 1], 293.15_f32, &d),
-        Tensor::<B, 3>::full([batch, n, 1], 0.9_f32, &d),
-        Tensor::<B, 3>::zeros([batch, n, 3], &d),
-        Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &d),
-        damage,
-        0.0_f32,
-    );
+    let mk_state = |damage: Tensor<B, 3>| {
+        ThmcState::from_tensors(
+            Tensor::<B, 3>::full([batch, n, 1], 293.15_f32, &d),
+            Tensor::<B, 3>::full([batch, n, 1], 0.9_f32, &d),
+            Tensor::<B, 3>::zeros([batch, n, 3], &d),
+            Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &d),
+            damage,
+            0.0_f32,
+        )
+    };
 
     let mut solver = ThmcSolver {
         dt: 0.01_f32,
@@ -421,7 +423,11 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
             &mut manifold,
         )
         .expect("ThmcSolver::step with tensile matrix_features stub on 3-node chain (FP §6 Track G P1 fracture feed)");
-    let max_d_tension = s_tension.damage.as_tensor().clone().into_data()
+    let max_d_tension = s_tension
+        .damage
+        .as_tensor()
+        .clone()
+        .into_data()
         .value
         .iter()
         .copied()
@@ -435,7 +441,11 @@ fn thmc_step_matrix_features_strain_feeds_fracture_without_si_embedding() {
             &mut manifold_flat,
         )
         .expect("ThmcSolver::step with zero-strain matrix_features control on 3-node chain (FP §6 Track G P1 fracture feed)");
-    let max_d_flat = s_flat.damage.as_tensor().clone().into_data()
+    let max_d_flat = s_flat
+        .damage
+        .as_tensor()
+        .clone()
+        .into_data()
         .value
         .iter()
         .copied()
@@ -459,14 +469,16 @@ fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
     let exx0 = 0.05_f32;
     let h = 1e-4_f32;
 
-    let mk_state = |damage: Tensor<B, 3>|     ThmcState::from_tensors(
-        Tensor::<B, 3>::full([batch, n, 1], 293.15_f32, &d),
-        Tensor::<B, 3>::full([batch, n, 1], 0.9_f32, &d),
-        Tensor::<B, 3>::zeros([batch, n, 3], &d),
-        Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &d),
-        damage,
-        0.0_f32,
-    );
+    let mk_state = |damage: Tensor<B, 3>| {
+        ThmcState::from_tensors(
+            Tensor::<B, 3>::full([batch, n, 1], 293.15_f32, &d),
+            Tensor::<B, 3>::full([batch, n, 1], 0.9_f32, &d),
+            Tensor::<B, 3>::zeros([batch, n, 3], &d),
+            Tensor::<B, 3>::full([batch, n, 1], 0.5_f32, &d),
+            damage,
+            0.0_f32,
+        )
+    };
 
     let max_damage_after_step = |exx: f32| -> f32 {
         let mut solver = ThmcSolver {
@@ -488,7 +500,10 @@ fn striatus_micro_thmc_matrix_stub_fracture_max_damage_central_fd_wrt_exx() {
                 &mut manifold,
             )
             .expect("ThmcSolver::step on 3-node chain for central FD of max post-step damage w.r.t. matrix_features tensile stub (FP §6 Track G striatus-scale fracture stub)");
-        s.damage.as_tensor().clone().into_data()
+        s.damage
+            .as_tensor()
+            .clone()
+            .into_data()
             .value
             .iter()
             .copied()
@@ -586,7 +601,7 @@ fn thmc_implicit_euler_t_alpha_residual_matches_brute_force_two_nodes() {
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics: kinetics.clone(),
     };
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         trial_t.clone(),
         Tensor::<B, 3>::zeros([1, n, 1], &d),
         Tensor::<B, 3>::zeros([1, n, 3], &d),
@@ -673,7 +688,7 @@ fn thmc_implicit_euler_t_h_alpha_residual_humidity_matches_brute_force_two_nodes
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics: kinetics.clone(),
     };
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         trial_t.clone(),
         trial_h.clone(),
         Tensor::<B, 3>::zeros([1, n, 3], &d),
@@ -804,13 +819,10 @@ fn thmc_implicit_euler_t_h_alpha_u_placeholder_r_u_and_flat_layout_two_nodes() {
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics,
     };
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         trial_t,
         trial_h,
-        Tensor::<B, 3>::from_data(
-                Data::new(u_vals.clone(), Shape::new([1, n, 3])),
-                &d,
-            ),
+        Tensor::<B, 3>::from_data(Data::new(u_vals.clone(), Shape::new([1, n, 3])), &d),
         trial_alpha,
         damage_m,
         0.0_f32,
@@ -926,7 +938,7 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
         damage_m: StepEntryDamageMask::from_tensor(damage.clone()),
         kinetics,
     };
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
         Tensor::<B, 3>::full([batch, n, 1], 0.55_f32, &d),
         u_star,
@@ -1067,7 +1079,7 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
         damage_m: StepEntryDamageMask::from_tensor(damage.clone()),
         kinetics,
     };
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
         Tensor::<B, 3>::full([batch, n, 1], h_shared, &d),
         u_star,
@@ -1187,7 +1199,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
 
     let l2_vec = |t: Tensor<B, 3>| -> f32 { t.clone().mul(t.clone()).sum().into_scalar().sqrt() };
 
-    let trial_flat =     ThmcState::from_tensors(
+    let trial_flat = ThmcState::from_tensors(
         Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
         Tensor::<B, 3>::full([batch, n, 1], 0.62_f32, &d),
         u_star.clone(),
@@ -1206,7 +1218,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
         .expect("ThmcImplicitEulerThermalHumidityReactionExtentResidual::evaluate_quasi_static_r_u on flat-humidity 2-node trial (FP §6 Track G shrink parity)");
     let n_flat = l2_vec(r_flat);
 
-    let trial_dry =     ThmcState::from_tensors(
+    let trial_dry = ThmcState::from_tensors(
         Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
         Tensor::<B, 3>::full([batch, n, 1], 0.22_f32, &d),
         u_star,
@@ -1274,7 +1286,7 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics,
     };
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         Tensor::<B, 3>::full([batch, n, 1], 301.0_f32, &d),
         Tensor::<B, 3>::full([batch, n, 1], 0.55_f32, &d),
         Tensor::<B, 3>::zeros([batch, n, 3], &d),
@@ -1403,7 +1415,7 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics,
     };
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         trial_t,
         trial_h,
         Tensor::<B, 3>::zeros([1, n, 3], &d),
@@ -1508,7 +1520,7 @@ fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() 
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics,
     };
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         trial_t,
         trial_h,
         Tensor::<B, 3>::zeros([1, n, 3], &d),
@@ -1603,7 +1615,7 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics,
     };
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         trial_t,
         trial_h,
         Tensor::<B, 3>::zeros([1, n, 3], &d),
@@ -1744,7 +1756,7 @@ fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() 
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics,
     };
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         trial_t,
         trial_h,
         Tensor::<B, 3>::zeros([1, n, 3], &d),
@@ -1813,7 +1825,9 @@ fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() 
         "expected head + two Newton steps before relative exit"
     );
     assert!(
-        *norms_rel.last().expect("norm trail non-empty after relative-tol monolithic Newton early exit (FP §6 Track G)") < k_rel * r0,
+        *norms_rel.last().expect(
+            "norm trail non-empty after relative-tol monolithic Newton early exit (FP §6 Track G)"
+        ) < k_rel * r0,
         "final ||R|| should sit below k_rel * ||R0||"
     );
     for k in 0..norms_rel.len().saturating_sub(1) {
@@ -1873,7 +1887,7 @@ fn thmc_implicit_euler_t_h_alpha_multi_newton_monotone_stacked_residual_norm() {
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics,
     };
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         trial_t,
         trial_h,
         Tensor::<B, 3>::zeros([1, n, 3], &d),
@@ -1930,7 +1944,7 @@ fn thmc_implicit_euler_t_alpha_one_newton_lowers_residual_norm() {
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics,
     };
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         trial_t,
         Tensor::<B, 3>::zeros([1, n, 1], &d),
         Tensor::<B, 3>::zeros([1, n, 3], &d),
@@ -1991,16 +2005,10 @@ fn thmc_t_alpha_newton_residual_preserves_hydro_mechanics_fields() {
     };
     let h_vals = vec![0.71_f32, 0.84_f32];
     let disp_vals: Vec<f32> = (0..n * 3).map(|k| 0.01_f32 * (1 + k) as f32).collect();
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         trial_t,
-        Tensor::<B, 3>::from_data(
-                Data::new(h_vals.clone(), Shape::new([1, n, 1])),
-                &d,
-            ),
-        Tensor::<B, 3>::from_data(
-                Data::new(disp_vals.clone(), Shape::new([1, n, 3])),
-                &d,
-            ),
+        Tensor::<B, 3>::from_data(Data::new(h_vals.clone(), Shape::new([1, n, 1])), &d),
+        Tensor::<B, 3>::from_data(Data::new(disp_vals.clone(), Shape::new([1, n, 3])), &d),
         trial_alpha,
         damage_m,
         0.42_f32,
@@ -2010,12 +2018,30 @@ fn thmc_t_alpha_newton_residual_preserves_hydro_mechanics_fields() {
         .expect("ThmcImplicitEulerThermalReactionExtentResidual::one_damped_newton_step preserving h/u fields on 2-node trial (FP §6 Track G)");
     assert_eq!(
         trial.hydro.humidity.as_tensor().clone().into_data().value,
-        new_trial.hydro.humidity.as_tensor().clone().into_data().value,
+        new_trial
+            .hydro
+            .humidity
+            .as_tensor()
+            .clone()
+            .into_data()
+            .value,
         "humidity must be untouched by (T,α) Newton (not in stacked residual)"
     );
     assert_eq!(
-        trial.mechanical.displacement.as_tensor().clone().into_data().value,
-        new_trial.mechanical.displacement.as_tensor().clone().into_data().value,
+        trial
+            .mechanical
+            .displacement
+            .as_tensor()
+            .clone()
+            .into_data()
+            .value,
+        new_trial
+            .mechanical
+            .displacement
+            .as_tensor()
+            .clone()
+            .into_data()
+            .value,
         "displacement must be untouched by (T,α) Newton (not in stacked residual)"
     );
     assert_eq!(trial.time, new_trial.time);
@@ -2059,7 +2085,7 @@ fn thmc_implicit_euler_t_alpha_multi_newton_monotone_residual_norm_decrease() {
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics,
     };
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         trial_t,
         Tensor::<B, 3>::zeros([1, n, 1], &d),
         Tensor::<B, 3>::zeros([1, n, 3], &d),
@@ -2126,17 +2152,17 @@ fn thmc_step_implicit_t_alpha_newton_differs_from_explicit_split() {
     let n = 2usize;
     let mut manifold = chain_manifold(n);
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let state0 =     ThmcState::from_tensors(
+    let state0 = ThmcState::from_tensors(
         Tensor::<B, 3>::from_data(
-                Data::new(vec![301.0_f32, 289.0_f32], Shape::new([1, n, 1])),
-                &d,
-            ),
+            Data::new(vec![301.0_f32, 289.0_f32], Shape::new([1, n, 1])),
+            &d,
+        ),
         Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
         Tensor::<B, 3>::zeros([1, n, 3], &d),
         Tensor::<B, 3>::from_data(
-                Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
-                &d,
-            ),
+            Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
+            &d,
+        ),
         damage.clone(),
         0.0_f32,
     );
@@ -2201,7 +2227,7 @@ fn thmc_step_monolithic_newton_errors_when_both_implicit_flags_set() {
     let n = 2usize;
     let mut manifold = chain_manifold(n);
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let state0 =     ThmcState::from_tensors(
+    let state0 = ThmcState::from_tensors(
         Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
         Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
         Tensor::<B, 3>::zeros([1, n, 3], &d),
@@ -2241,7 +2267,7 @@ fn thmc_step_monolithic_newton_errors_when_drying_sink_enabled() {
     let d = dev();
     let n = 2usize;
     let mut manifold = chain_manifold(n);
-    let state0 =     ThmcState::from_tensors(
+    let state0 = ThmcState::from_tensors(
         Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
         Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
         Tensor::<B, 3>::zeros([1, n, 3], &d),
@@ -2280,7 +2306,7 @@ fn thmc_step_monolithic_newton_errors_when_stacked_dof_count_exceeds_64() {
         "test expects N such that stacked DOFs exceed dense cap"
     );
     let mut manifold = chain_manifold(n);
-    let state0 =     ThmcState::from_tensors(
+    let state0 = ThmcState::from_tensors(
         Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
         Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
         Tensor::<B, 3>::zeros([1, n, 3], &d),
@@ -2298,7 +2324,10 @@ fn thmc_step_monolithic_newton_errors_when_stacked_dof_count_exceeds_64() {
         Ok(_) => panic!("expected stacked DOF cap error"),
         Err(e) => e,
     };
-    assert!(err.to_string().contains("stacked DOFs > 64"), "unexpected error: {err}");
+    assert!(
+        err.to_string().contains("stacked DOFs > 64"),
+        "unexpected error: {err}"
+    );
 }
 
 /// **Phase 5 integration:** [`ThmcSolver::step`] monolithic branch matches a standalone call to
@@ -2351,7 +2380,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
         &d,
     );
-    let state0 =     ThmcState::from_tensors(
+    let state0 = ThmcState::from_tensors(
         t_n.clone(),
         h_n.clone(),
         Tensor::<B, 3>::zeros([1, n, 3], &d),
@@ -2441,7 +2470,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
     )
     .expect("VectorMechanicsSolver::solve_equilibrium on 2-node chain for monolithic Newton parity predict (FP §6 Track G monolithic Newton witness)");
 
-    let trial =     ThmcState::from_tensors(
+    let trial = ThmcState::from_tensors(
         t_predict,
         h_predict,
         u_predict,
@@ -2478,11 +2507,21 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         .expect("damped_newton_iterations_with_quasi_static_r_u standalone run matching ThmcSolver monolithic step (FP §6 Track G)");
 
     let eps = 5e-5_f32;
-    for (a, b) in s_step.thermal.temperature.as_tensor().clone().into_data()
+    for (a, b) in s_step
+        .thermal
+        .temperature
+        .as_tensor()
+        .clone()
+        .into_data()
         .value
         .iter()
         .zip(
-            updated_standalone.thermal.temperature.as_tensor().clone().into_data()
+            updated_standalone
+                .thermal
+                .temperature
+                .as_tensor()
+                .clone()
+                .into_data()
                 .value
                 .iter(),
         )
@@ -2497,26 +2536,55 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         .into_data()
         .value
         .iter()
-        .zip(updated_standalone.hydro.humidity.as_tensor().clone().into_data().value.iter())
+        .zip(
+            updated_standalone
+                .hydro
+                .humidity
+                .as_tensor()
+                .clone()
+                .into_data()
+                .value
+                .iter(),
+        )
     {
         assert!((a - b).abs() < eps, "h mismatch: {a} vs {b}");
     }
-    for (a, b) in s_step.chemical.reaction_extent.as_tensor().clone().into_data()
+    for (a, b) in s_step
+        .chemical
+        .reaction_extent
+        .as_tensor()
+        .clone()
+        .into_data()
         .value
         .iter()
         .zip(
-            updated_standalone.chemical.reaction_extent.as_tensor().clone().into_data()
+            updated_standalone
+                .chemical
+                .reaction_extent
+                .as_tensor()
+                .clone()
+                .into_data()
                 .value
                 .iter(),
         )
     {
         assert!((a - b).abs() < eps, "alpha mismatch: {a} vs {b}");
     }
-    for (a, b) in s_step.mechanical.displacement.as_tensor().clone().into_data()
+    for (a, b) in s_step
+        .mechanical
+        .displacement
+        .as_tensor()
+        .clone()
+        .into_data()
         .value
         .iter()
         .zip(
-            updated_standalone.mechanical.displacement.as_tensor().clone().into_data()
+            updated_standalone
+                .mechanical
+                .displacement
+                .as_tensor()
+                .clone()
+                .into_data()
                 .value
                 .iter(),
         )
@@ -2578,10 +2646,24 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         )
         .expect("damped_newton_iterations_with_quasi_static_r_u with tol matching solver early-exit config (FP §6 Track G)");
 
-    for (a, b) in s_early.thermal.temperature.as_tensor().clone().into_data()
+    for (a, b) in s_early
+        .thermal
+        .temperature
+        .as_tensor()
+        .clone()
+        .into_data()
         .value
         .iter()
-        .zip(updated_early.thermal.temperature.as_tensor().clone().into_data().value.iter())
+        .zip(
+            updated_early
+                .thermal
+                .temperature
+                .as_tensor()
+                .clone()
+                .into_data()
+                .value
+                .iter(),
+        )
     {
         assert!((a - b).abs() < eps, "early-exit T mismatch: {a} vs {b}");
     }
@@ -2593,26 +2675,55 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
         .into_data()
         .value
         .iter()
-        .zip(updated_early.hydro.humidity.as_tensor().clone().into_data().value.iter())
+        .zip(
+            updated_early
+                .hydro
+                .humidity
+                .as_tensor()
+                .clone()
+                .into_data()
+                .value
+                .iter(),
+        )
     {
         assert!((a - b).abs() < eps, "early-exit h mismatch: {a} vs {b}");
     }
-    for (a, b) in s_early.chemical.reaction_extent.as_tensor().clone().into_data()
+    for (a, b) in s_early
+        .chemical
+        .reaction_extent
+        .as_tensor()
+        .clone()
+        .into_data()
         .value
         .iter()
         .zip(
-            updated_early.chemical.reaction_extent.as_tensor().clone().into_data()
+            updated_early
+                .chemical
+                .reaction_extent
+                .as_tensor()
+                .clone()
+                .into_data()
                 .value
                 .iter(),
         )
     {
         assert!((a - b).abs() < eps, "early-exit alpha mismatch: {a} vs {b}");
     }
-    for (a, b) in s_early.mechanical.displacement.as_tensor().clone().into_data()
+    for (a, b) in s_early
+        .mechanical
+        .displacement
+        .as_tensor()
+        .clone()
+        .into_data()
         .value
         .iter()
         .zip(
-            updated_early.mechanical.displacement.as_tensor().clone().into_data()
+            updated_early
+                .mechanical
+                .displacement
+                .as_tensor()
+                .clone()
+                .into_data()
                 .value
                 .iter(),
         )
@@ -2657,20 +2768,20 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
     };
 
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let state0 =     ThmcState::from_tensors(
+    let state0 = ThmcState::from_tensors(
         Tensor::<B, 3>::from_data(
-                Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
-                &d,
-            ),
+            Data::new(vec![298.0_f32, 306.0_f32], Shape::new([1, n, 1])),
+            &d,
+        ),
         Tensor::<B, 3>::from_data(
-                Data::new(vec![0.50_f32, 0.62_f32], Shape::new([1, n, 1])),
-                &d,
-            ),
+            Data::new(vec![0.50_f32, 0.62_f32], Shape::new([1, n, 1])),
+            &d,
+        ),
         Tensor::<B, 3>::zeros([1, n, 3], &d),
         Tensor::<B, 3>::from_data(
-                Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
-                &d,
-            ),
+            Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
+            &d,
+        ),
         damage.clone(),
         0.0_f32,
     );
@@ -2761,17 +2872,17 @@ fn thmc_step_implicit_t_alpha_newton_same_humidity_as_explicit_split() {
     let n = 2usize;
     let mut manifold = chain_manifold(n);
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let state0 =     ThmcState::from_tensors(
+    let state0 = ThmcState::from_tensors(
         Tensor::<B, 3>::from_data(
-                Data::new(vec![301.0_f32, 289.0_f32], Shape::new([1, n, 1])),
-                &d,
-            ),
+            Data::new(vec![301.0_f32, 289.0_f32], Shape::new([1, n, 1])),
+            &d,
+        ),
         Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
         Tensor::<B, 3>::zeros([1, n, 3], &d),
         Tensor::<B, 3>::from_data(
-                Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
-                &d,
-            ),
+            Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
+            &d,
+        ),
         damage.clone(),
         0.0_f32,
     );
@@ -2820,17 +2931,17 @@ fn thmc_step_implicit_t_alpha_newton_lowers_analytic_residual_vs_explicit_endpoi
     let n = 2usize;
     let mut manifold = chain_manifold(n);
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &d);
-    let state0 =     ThmcState::from_tensors(
+    let state0 = ThmcState::from_tensors(
         Tensor::<B, 3>::from_data(
-                Data::new(vec![301.0_f32, 289.0_f32], Shape::new([1, n, 1])),
-                &d,
-            ),
+            Data::new(vec![301.0_f32, 289.0_f32], Shape::new([1, n, 1])),
+            &d,
+        ),
         Tensor::<B, 3>::full([1, n, 1], 0.65_f32, &d),
         Tensor::<B, 3>::zeros([1, n, 3], &d),
         Tensor::<B, 3>::from_data(
-                Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
-                &d,
-            ),
+            Data::new(vec![0.31_f32, 0.55_f32], Shape::new([1, n, 1])),
+            &d,
+        ),
         damage.clone(),
         0.0_f32,
     );

@@ -161,7 +161,9 @@ pub fn axial_stiffness_char_scale(
 use burn::tensor::ElementConversion;
 use burn::tensor::{backend::Backend, Int, Tensor};
 
-use crate::core::field::{BodyForceField, BoundaryMaskField, DamageField, DisplacementField, Field, StiffnessField};
+use crate::core::field::{
+    BodyForceField, BoundaryMaskField, DamageField, DisplacementField, Field, StiffnessField,
+};
 
 use super::dec_operators::DecEdgeOperators;
 use super::error::PhysicsError;
@@ -198,7 +200,10 @@ impl BarNetworkPcgReport {
     /// Relative tolerance used by PCG exit and equilibrium checks.
     #[must_use]
     pub fn rel_tol_from_cfg(inner_cfg: &MechanicsInnerLoopConfig) -> f32 {
-        inner_cfg.pcg_tolerance.max(inner_cfg.cg_tolerance).max(0.0_f32)
+        inner_cfg
+            .pcg_tolerance
+            .max(inner_cfg.cg_tolerance)
+            .max(0.0_f32)
     }
 
     /// Converged predicate aligned with [`crate::solve_report::SolveReport::converged`].
@@ -1439,7 +1444,10 @@ mod tests {
         let dx = 0.1_f32;
         let k = axial_stiffness_char_scale(e, e, a, dx);
         let expected = (e * a / dx).max(1e-30_f32);
-        assert!((k - expected).abs() / expected < 1e-6_f32, "uniform k_char {k} vs {expected}");
+        assert!(
+            (k - expected).abs() / expected < 1e-6_f32,
+            "uniform k_char {k} vs {expected}"
+        );
     }
 
     #[test]
@@ -1450,7 +1458,10 @@ mod tests {
         let dx = 0.05_f32;
         let k = axial_stiffness_char_scale(e_lo, e_hi, a, dx);
         let expected = ((e_hi - e_lo) * a / dx).max(1e-30_f32);
-        assert!((k - expected).abs() / expected < 1e-6_f32, "SIMP-span k_char {k} vs {expected}");
+        assert!(
+            (k - expected).abs() / expected < 1e-6_f32,
+            "SIMP-span k_char {k} vs {expected}"
+        );
     }
 
     /// Tip displacement of a uniform axial chain with fixed left end — same tridiagonal stencil as a
@@ -2110,8 +2121,10 @@ mod tests {
             stiff.push(e);
             stiff.push(0.3);
         }
-        let stiffness =
-            StiffnessField::from_tensor(Tensor::from_data(Data::new(stiff, Shape::new([1, n, 2])), &dev));
+        let stiffness = StiffnessField::from_tensor(Tensor::from_data(
+            Data::new(stiff, Shape::new([1, n, 2])),
+            &dev,
+        ));
         let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
         let displacement = Tensor::<B, 3>::zeros([1, n, 3], &dev);
         let body_force = Tensor::<B, 3>::zeros([1, n, 3], &dev);

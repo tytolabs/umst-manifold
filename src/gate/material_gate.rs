@@ -157,7 +157,10 @@ mod tests {
             0.0,
         );
         let core = core_gate(&response, true, TRANSITION_TOLERANCE);
-        assert!(core.is_accepted(), "strength regression must not fail Core gate");
+        assert!(
+            core.is_accepted(),
+            "strength regression must not fail Core gate"
+        );
 
         let witness = MaterialTransitionWitness {
             old_strength: old.strength,
@@ -170,7 +173,10 @@ mod tests {
         assert!(!material.is_accepted());
 
         let composed = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
-        assert!(!composed.is_accepted(), "composed cluster rejects strength regression");
+        assert!(
+            !composed.is_accepted(),
+            "composed cluster rejects strength regression"
+        );
         assert!(core.is_accepted(), "Core alone still accepts");
     }
 
@@ -242,7 +248,10 @@ mod tests {
         };
         let first = evaluate_material_conjuncts(&witness, TRANSITION_TOLERANCE);
         let second = evaluate_material_conjuncts(&witness, TRANSITION_TOLERANCE);
-        assert_eq!(first, second, "evaluate_material_conjuncts must not drift on re-application");
+        assert_eq!(
+            first, second,
+            "evaluate_material_conjuncts must not drift on re-application"
+        );
         assert!(first.is_accepted());
     }
 

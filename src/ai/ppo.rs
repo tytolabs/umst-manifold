@@ -884,7 +884,9 @@ mod apply_physics_formal_reject_tests {
         };
         let rej = formal_reject_from_apply_physics(err.clone());
         assert_eq!(rej.catalog_id(), "umst.gate.dec_typestate");
-        assert!(rej.to_string().contains("temperature_delta width 2 != UMST nodes 4"));
+        assert!(rej
+            .to_string()
+            .contains("temperature_delta width 2 != UMST nodes 4"));
     }
 }
 
@@ -1019,7 +1021,10 @@ mod w29_ppo_deepen_tests {
     fn w29_ppo_fence_census_partial_not_production() {
         assert_eq!(PPO_PRODUCTION_FENCE_FACETS.len(), PPO_FENCE_FACET_COUNT);
         assert_eq!(ppo_fence_wired_count(), PPO_FENCE_WIRED_COUNT);
-        assert_eq!(ppo_fence_open_count(), PPO_FENCE_FACET_COUNT - PPO_FENCE_WIRED_COUNT);
+        assert_eq!(
+            ppo_fence_open_count(),
+            PPO_FENCE_FACET_COUNT - PPO_FENCE_WIRED_COUNT
+        );
         assert!(PPO_FENCE_WIRED_COUNT < PPO_FENCE_FACET_COUNT);
         for facet in PPO_PRODUCTION_FENCE_FACETS {
             match facet.facet {
@@ -1033,11 +1038,31 @@ mod w29_ppo_deepen_tests {
     #[test]
     fn w29_ppo_default_reward_weights_pinned() {
         let gw = gateway();
-        assert_relative_eq!(f64::from(gw.alpha), f64::from(PPO_DEFAULT_ALPHA), epsilon = 1.0e-6);
-        assert_relative_eq!(f64::from(gw.beta), f64::from(PPO_DEFAULT_BETA), epsilon = 1.0e-6);
-        assert_relative_eq!(f64::from(gw.gamma), f64::from(PPO_DEFAULT_GAMMA), epsilon = 1.0e-6);
-        assert_relative_eq!(f64::from(gw.zeta), f64::from(PPO_DEFAULT_ZETA), epsilon = 1.0e-6);
-        assert_relative_eq!(f64::from(gw.eta), f64::from(PPO_DEFAULT_ETA), epsilon = 1.0e-6);
+        assert_relative_eq!(
+            f64::from(gw.alpha),
+            f64::from(PPO_DEFAULT_ALPHA),
+            epsilon = 1.0e-6
+        );
+        assert_relative_eq!(
+            f64::from(gw.beta),
+            f64::from(PPO_DEFAULT_BETA),
+            epsilon = 1.0e-6
+        );
+        assert_relative_eq!(
+            f64::from(gw.gamma),
+            f64::from(PPO_DEFAULT_GAMMA),
+            epsilon = 1.0e-6
+        );
+        assert_relative_eq!(
+            f64::from(gw.zeta),
+            f64::from(PPO_DEFAULT_ZETA),
+            epsilon = 1.0e-6
+        );
+        assert_relative_eq!(
+            f64::from(gw.eta),
+            f64::from(PPO_DEFAULT_ETA),
+            epsilon = 1.0e-6
+        );
     }
 
     #[test]
@@ -1098,13 +1123,8 @@ mod w29_ppo_deepen_tests {
         let batch = 1usize;
         let zeros = Tensor::<B, 1>::zeros([batch], &dev);
         let dt = Tensor::<B, 1>::full([batch], 1.0_f32, &dev);
-        let penalty = gw.constraint_loss_penalty(
-            zeros.clone(),
-            zeros.clone(),
-            zeros.clone(),
-            zeros,
-            dt,
-        );
+        let penalty =
+            gw.constraint_loss_penalty(zeros.clone(), zeros.clone(), zeros.clone(), zeros, dt);
         let values: Vec<f32> = penalty.into_data().value;
         assert_eq!(values.len(), batch);
         assert_relative_eq!(f64::from(values[0]), 0.0, epsilon = 1.0e-30);
@@ -1206,11 +1226,7 @@ mod w29_ppo_deepen_tests {
         assert_eq!(v2.len(), 1);
         // Free-energy ones → spatial sum scales with α; erasure is identical scalar debit.
         // Δreward = (α2 − α1) * n_voxels = 1.0 * 2 = 2.0
-        assert_relative_eq!(
-            f64::from(v2[0] - v1[0]),
-            2.0,
-            epsilon = 1.0e-4
-        );
+        assert_relative_eq!(f64::from(v2[0] - v1[0]), 2.0, epsilon = 1.0e-4);
     }
 
     #[test]
@@ -1323,14 +1339,16 @@ mod w29_ppo_deepen_tests {
 
     #[test]
     fn w29_ppo_beta_scales_dissipation_penalty() {
-        let mut gw = ManifoldGateway::new(PpoDissipationCartridge, GATEWAY_TEMP_K, GATEWAY_CREDIT_J);
+        let mut gw =
+            ManifoldGateway::new(PpoDissipationCartridge, GATEWAY_TEMP_K, GATEWAY_CREDIT_J);
         gw.beta = 1.0_f32;
         let info = info_gain_tensor();
         let r_b1 = gw
             .evaluate_topology_step(tiny_umst(), info.clone())
             .expect("beta=1 step")
             .1;
-        let mut gw2 = ManifoldGateway::new(PpoDissipationCartridge, GATEWAY_TEMP_K, GATEWAY_CREDIT_J);
+        let mut gw2 =
+            ManifoldGateway::new(PpoDissipationCartridge, GATEWAY_TEMP_K, GATEWAY_CREDIT_J);
         gw2.beta = 2.0_f32;
         let r_b2 = gw2
             .evaluate_topology_step(tiny_umst(), info)

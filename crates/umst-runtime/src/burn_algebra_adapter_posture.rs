@@ -166,7 +166,10 @@ mod tests {
         assert!(DESIGN_DOC_PATH.contains("C2_TENSOR_ALGEBRA"));
         assert_eq!(RECEIPT_SLUG, "COMPLETION_AGAP_AGENT_PBM-010_2127");
         assert_eq!(PRIOR_RECEIPT_SLUG, "COMPLETION_AGAP_AGENT_PBM-010_2033");
-        assert_eq!(HONEST_FENCE, "adapter_scaffold_landed=true production_wired=false");
+        assert_eq!(
+            HONEST_FENCE,
+            "adapter_scaffold_landed=true production_wired=false"
+        );
     }
 
     #[test]

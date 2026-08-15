@@ -156,7 +156,11 @@ pub fn downsample_sparkline_u64_scalar(samples: &[f64], width: usize, max_scale:
     }
     let lo = finite.iter().copied().fold(f64::INFINITY, f64::min);
     let hi = finite.iter().copied().fold(f64::NEG_INFINITY, f64::max);
-    let span = if (hi - lo).abs() < 1e-12 { 1.0 } else { hi - lo };
+    let span = if (hi - lo).abs() < 1e-12 {
+        1.0
+    } else {
+        hi - lo
+    };
     let n = finite.len();
     let mut out = Vec::with_capacity(width);
     for bucket in 0..width {

@@ -197,10 +197,14 @@ pub fn compliance_functional_honest(probe: &ComplianceFunctionalProbe) -> bool {
 pub fn validate_compliance_functional_honesty() -> Result<(), &'static str> {
     let probe = compliance_functional_probe();
     if probe.production_wired {
-        return Err("COMPLIANCE_FUNCTIONAL_PRODUCTION_WIRED must stay false until embodied loop closes");
+        return Err(
+            "COMPLIANCE_FUNCTIONAL_PRODUCTION_WIRED must stay false until embodied loop closes",
+        );
     }
     if probe.master {
-        return Err("COMPLIANCE_FUNCTIONAL_MASTER must stay false until P4 master compliance pin lands");
+        return Err(
+            "COMPLIANCE_FUNCTIONAL_MASTER must stay false until P4 master compliance pin lands",
+        );
     }
     if probe.physics_green {
         return Err("COMPLIANCE_FUNCTIONAL_PHYSICS_GREEN must stay false — compliance is audit/training surrogate");
@@ -442,23 +446,24 @@ impl ComplianceFunctional for Q1HexComplianceFunctional {
         let mut material = ctx.material;
         material.p = penalization.resolve_p();
         let m = &ctx.mesh;
-        let (surrogate, c_raw, diagnostics) = AdjointComplianceQ1Hex::forward_loss_with_diagnostics(
-            rho_autodiff,
-            m.nx,
-            m.ny,
-            m.nz,
-            m.dx,
-            m.dy,
-            m.dz,
-            body_force,
-            boundary_mask,
-            material,
-            &ctx.cg,
-            ctx.self_weight,
-            &Q1HexSolveOptions::default(),
-            None,
-            None,
-        )?;
+        let (surrogate, c_raw, diagnostics) =
+            AdjointComplianceQ1Hex::forward_loss_with_diagnostics(
+                rho_autodiff,
+                m.nx,
+                m.ny,
+                m.nz,
+                m.dx,
+                m.dy,
+                m.dz,
+                body_force,
+                boundary_mask,
+                material,
+                &ctx.cg,
+                ctx.self_weight,
+                &Q1HexSolveOptions::default(),
+                None,
+                None,
+            )?;
         let value = ComplianceValue::from_forward_state(c_raw, material.p, diagnostics)?;
         Ok((surrogate, value))
     }

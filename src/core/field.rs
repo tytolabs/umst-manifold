@@ -327,7 +327,6 @@ impl FieldSpace for Stiffness {
     const TENSOR_RANK: usize = 3;
 }
 
-
 /// Phantom space marker: nodal pseudo-density ρ — shape `[B, N, 1]` (topology diffusion).
 #[derive(Clone, Copy, Debug)]
 pub struct NodalDensity;
@@ -577,7 +576,6 @@ pub type VelocityField<B> = Field<B, Velocity, 3>;
 pub type AccelerationField<B> = Field<B, Acceleration, 3>;
 pub type ScalarPressureField<B> = Field<B, ScalarPressure, 3>;
 
-
 /// Frozen damage mask at THMC step entry — distinct from live `state.damage` after fracture.
 #[derive(Clone, Debug)]
 pub struct StepEntryDamageMask<B: Backend>(DamageField<B>);
@@ -590,11 +588,7 @@ impl<B: Backend> StepEntryDamageMask<B> {
     }
 
     #[must_use]
-    pub fn from_step_entry_damage(
-        state_damage: &DamageField<B>,
-        batch: usize,
-        n: usize,
-    ) -> Self {
+    pub fn from_step_entry_damage(state_damage: &DamageField<B>, batch: usize, n: usize) -> Self {
         let damage_tensor = state_damage.as_tensor();
         let tensor = match damage_tensor.dims()[2] {
             1 => damage_tensor.clone(),
@@ -740,8 +734,8 @@ impl<B: Backend> CauchyStressField<B> {
 
 #[cfg(test)]
 mod tests {
-    use burn_ndarray::NdArray;
     use burn::tensor::Tensor;
+    use burn_ndarray::NdArray;
 
     use super::*;
 
@@ -886,10 +880,13 @@ mod tests {
         for row in FIELD_CENSUS_ROWS {
             let found = field_census_row(row.marker_name).expect("census lookup");
             assert_eq!(found.marker_name, row.marker_name);
-            assert_eq!(found.tensor_rank as usize, match row.marker_name {
-                "SmallStrain" | "CauchyStress" => 4,
-                _ => 3,
-            });
+            assert_eq!(
+                found.tensor_rank as usize,
+                match row.marker_name {
+                    "SmallStrain" | "CauchyStress" => 4,
+                    _ => 3,
+                }
+            );
         }
     }
 

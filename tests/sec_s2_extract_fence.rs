@@ -42,7 +42,10 @@ fn sec_s2_extract_fence_facet_inventory_seven_facets() {
         MANIFOLD_S2_EXTRACT_PRODUCTION_FENCE_FACETS.len(),
         S2_EXTRACT_FENCE_FACET_COUNT
     );
-    assert_eq!(S2_EXTRACT_FENCE_FACET_IDS.len(), S2_EXTRACT_FENCE_FACET_COUNT);
+    assert_eq!(
+        S2_EXTRACT_FENCE_FACET_IDS.len(),
+        S2_EXTRACT_FENCE_FACET_COUNT
+    );
     for facet_id in S2_EXTRACT_FENCE_FACET_IDS {
         assert!(MANIFOLD_S2_EXTRACT_PRODUCTION_FENCE_FACETS
             .iter()
@@ -57,7 +60,10 @@ fn sec_s2_extract_fence_facets_five_of_seven_wired() {
         .filter(|f| f.wired)
         .count();
     assert_eq!(wired, S2_EXTRACT_FENCE_WIRED_COUNT);
-    assert_eq!(sec_s2_extract_fence_wired_count(), S2_EXTRACT_FENCE_WIRED_COUNT);
+    assert_eq!(
+        sec_s2_extract_fence_wired_count(),
+        S2_EXTRACT_FENCE_WIRED_COUNT
+    );
     assert!(manifold_s2_extract_fence_facets_verified());
 }
 
@@ -116,7 +122,10 @@ fn sec_s2_accel_ac29_extract_fence_fleet_probe_honest() {
     assert!(probe.ceremony_closed);
     assert!(!probe.production_wired);
     assert!(probe.trust_extract_production_wired_honest_false);
-    assert_eq!(probe.extract_wired_facet_count, S2_EXTRACT_FENCE_WIRED_COUNT);
+    assert_eq!(
+        probe.extract_wired_facet_count,
+        S2_EXTRACT_FENCE_WIRED_COUNT
+    );
     assert!(sec_s2_accel_ac29_honest());
     assert!(!sec_s2_trust_extract_production_wired());
 }

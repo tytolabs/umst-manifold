@@ -157,8 +157,7 @@ mod tests {
             &device,
         );
         let edges = chain_graph_edges(3, &device);
-        let edge_vals =
-            DecEdgeOperators::arithmetic_mean_on_edges(nodal, edges);
+        let edge_vals = DecEdgeOperators::arithmetic_mean_on_edges(nodal, edges);
         let v = edge_vals.into_data().value;
         assert_eq!(v.len(), 2);
         assert!((v[0] - 3.0).abs() < 1e-5, "edge 0→1 mean = {}", v[0]);
@@ -168,29 +167,26 @@ mod tests {
     #[test]
     fn dec_operators_arithmetic_mean_constant_field() {
         let device = Default::default();
-        let nodal = Tensor::<B, 3>::from_data(
-            Data::new(vec![7.5_f32; 4], [1, 4, 1].into()),
-            &device,
-        );
+        let nodal =
+            Tensor::<B, 3>::from_data(Data::new(vec![7.5_f32; 4], [1, 4, 1].into()), &device);
         let edges = chain_graph_edges(4, &device);
-        let edge_vals =
-            DecEdgeOperators::arithmetic_mean_on_edges(nodal, edges);
+        let edge_vals = DecEdgeOperators::arithmetic_mean_on_edges(nodal, edges);
         for x in edge_vals.into_data().value {
-            assert!((x - 7.5).abs() < 1e-5, "constant nodal field → constant edge mean");
+            assert!(
+                (x - 7.5).abs() < 1e-5,
+                "constant nodal field → constant edge mean"
+            );
         }
     }
 
     #[test]
     fn dec_operators_harmonic_mean_matches_closed_form() {
         let device = Default::default();
-        let nodal = Tensor::<B, 3>::from_data(
-            Data::new(vec![2.0_f32, 6.0], [1, 2, 1].into()),
-            &device,
-        );
+        let nodal =
+            Tensor::<B, 3>::from_data(Data::new(vec![2.0_f32, 6.0], [1, 2, 1].into()), &device);
         let edges = chain_graph_edges(2, &device);
         let eps = 0.0_f32;
-        let edge_vals =
-            DecEdgeOperators::harmonic_mean_on_edges(nodal, edges, eps);
+        let edge_vals = DecEdgeOperators::harmonic_mean_on_edges(nodal, edges, eps);
         let h = edge_vals.into_data().value[0];
         let expected = 2.0 * 2.0 * 6.0 / (2.0 + 6.0);
         assert!(
@@ -202,45 +198,31 @@ mod tests {
     #[test]
     fn dec_operators_harmonic_mean_eps_floor_positive() {
         let device = Default::default();
-        let nodal = Tensor::<B, 3>::from_data(
-            Data::new(vec![0.0_f32, 0.0], [1, 2, 1].into()),
-            &device,
-        );
+        let nodal =
+            Tensor::<B, 3>::from_data(Data::new(vec![0.0_f32, 0.0], [1, 2, 1].into()), &device);
         let edges = chain_graph_edges(2, &device);
         let eps = 1.0_f32;
-        let edge_vals =
-            DecEdgeOperators::harmonic_mean_on_edges(nodal, edges, eps);
+        let edge_vals = DecEdgeOperators::harmonic_mean_on_edges(nodal, edges, eps);
         let h = edge_vals.into_data().value[0];
         // 2(eps)(eps) / (2*eps) = eps
-        assert!((h - eps).abs() < 1e-5, "zero nodal + eps floor → {h}, expected {eps}");
+        assert!(
+            (h - eps).abs() < 1e-5,
+            "zero nodal + eps floor → {h}, expected {eps}"
+        );
     }
 
     #[test]
     fn dec_operators_means_symmetric_under_endpoint_swap() {
         let device = Default::default();
-        let nodal = Tensor::<B, 3>::from_data(
-            Data::new(vec![3.0_f32, 9.0], [1, 2, 1].into()),
-            &device,
-        );
-        let fwd = Tensor::<B, 2, Int>::from_data(
-            Data::new(vec![0i64, 1], [2, 1].into()),
-            &device,
-        );
-        let rev = Tensor::<B, 2, Int>::from_data(
-            Data::new(vec![1i64, 0], [2, 1].into()),
-            &device,
-        );
-        let arith_fwd =
-            DecEdgeOperators::arithmetic_mean_on_edges(nodal.clone(), fwd.clone());
-        let arith_rev =
-            DecEdgeOperators::arithmetic_mean_on_edges(nodal.clone(), rev.clone());
+        let nodal =
+            Tensor::<B, 3>::from_data(Data::new(vec![3.0_f32, 9.0], [1, 2, 1].into()), &device);
+        let fwd = Tensor::<B, 2, Int>::from_data(Data::new(vec![0i64, 1], [2, 1].into()), &device);
+        let rev = Tensor::<B, 2, Int>::from_data(Data::new(vec![1i64, 0], [2, 1].into()), &device);
+        let arith_fwd = DecEdgeOperators::arithmetic_mean_on_edges(nodal.clone(), fwd.clone());
+        let arith_rev = DecEdgeOperators::arithmetic_mean_on_edges(nodal.clone(), rev.clone());
         let harm_fwd = DecEdgeOperators::harmonic_mean_on_edges(nodal.clone(), fwd, 0.0);
         let harm_rev = DecEdgeOperators::harmonic_mean_on_edges(nodal, rev, 0.0);
-        assert!(
-            (arith_fwd.into_data().value[0] - arith_rev.into_data().value[0]).abs() < 1e-5
-        );
-        assert!(
-            (harm_fwd.into_data().value[0] - harm_rev.into_data().value[0]).abs() < 1e-5
-        );
+        assert!((arith_fwd.into_data().value[0] - arith_rev.into_data().value[0]).abs() < 1e-5);
+        assert!((harm_fwd.into_data().value[0] - harm_rev.into_data().value[0]).abs() < 1e-5);
     }
 }

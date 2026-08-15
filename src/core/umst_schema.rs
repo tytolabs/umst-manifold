@@ -206,7 +206,10 @@ mod umst_schema_tests {
     fn umst_schema_layout_invariants_hold() {
         assert!(validate_layout_invariants());
         assert_eq!(UMST_SCALAR_CHANNEL_COUNT, 7);
-        assert_eq!(thmc_core_channels(), [SCALAR_HUMIDITY, SCALAR_TEMPERATURE, SCALAR_DAMAGE]);
+        assert_eq!(
+            thmc_core_channels(),
+            [SCALAR_HUMIDITY, SCALAR_TEMPERATURE, SCALAR_DAMAGE]
+        );
     }
 
     #[test]

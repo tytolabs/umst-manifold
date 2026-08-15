@@ -24,7 +24,6 @@ fn damage_field(t: Tensor<B, 3>) -> DamageField<B> {
     Field::new(t)
 }
 
-
 /// Voigt `[εxx,εyy,εzz,εxy,εyz,εxz]` (tensor shear) → symmetric `[B,N,3,3]`.
 fn voigt6_to_sym_tensor3<Bk: Backend<FloatElem = f32>>(v: Tensor<Bk, 3>) -> Tensor<Bk, 4> {
     let b = v.dims()[0];

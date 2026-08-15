@@ -7,6 +7,11 @@
 //! Receipt SSOT: `outputs/.tmp/COMPOSER_ACCEL2_AC384.md`.
 //! Absorbs AC30 (`FLEET_ACCEL2_AC30_RECEIPT_PATH`) · P1542 A2 · Z39 prior receipts.
 
+use umst_manifold::runtime::catalog::catalog_pin::{
+    catalog_pin_accel_ac30_honest, catalog_pin_accel_ac30_probe, FLEET_ACCEL2_AC30_JOB_ID,
+    FLEET_ACCEL2_AC30_RECEIPT_PATH,
+};
+use umst_manifold::runtime::catalog::sec_catalog_pin::FLEET_Z39_RECEIPT_PATH;
 use umst_manifold::runtime::catalog::{
     bundled_catalog_lock_json, catalog_lock_bundle_sha256_hex, catalog_pin_manifold_probe,
     catalog_pin_manifold_wired, catalog_pin_production_wired, lock_bundle_content_address_hex,
@@ -16,11 +21,6 @@ use umst_manifold::runtime::catalog::{
     EXPECTED_MODULE_COUNT, EXPECTED_UPSTREAM_CATALOG_DIGEST_HEX, FLEET_P1542_A2_JOB_ID,
     FLEET_P1542_A2_RECEIPT_PATH, JOB_ID, MANIFOLD_CATALOG_PIN_WIRE_HOPS,
 };
-use umst_manifold::runtime::catalog::catalog_pin::{
-    catalog_pin_accel_ac30_honest, catalog_pin_accel_ac30_probe, FLEET_ACCEL2_AC30_JOB_ID,
-    FLEET_ACCEL2_AC30_RECEIPT_PATH,
-};
-use umst_manifold::runtime::catalog::sec_catalog_pin::FLEET_Z39_RECEIPT_PATH;
 
 /// FLEET-COMPOSER ACCEL-L AC384 agent job id.
 pub const FLEET_ACCEL2_AC384_JOB_ID: &str = "FLEET-COMPOSER-ACCEL2-AC384";

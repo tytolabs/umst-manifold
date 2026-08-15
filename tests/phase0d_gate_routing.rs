@@ -4,9 +4,9 @@
 //! Phase 0d — single gate routing surface (blueprint §7 0d).
 
 use umst_manifold::gate::{
-    canonical_transition_admissible, canonical_transition_outcome, route,
-    KleisliUnitEvaluator, ThermodynamicStateSnapshot, TRANSITION_TOLERANCE,
-    GATE_PARITY_V0_SHA256, GATE_PARITY_V0_SHA256_PREFIX,
+    canonical_transition_admissible, canonical_transition_outcome, route, KleisliUnitEvaluator,
+    ThermodynamicStateSnapshot, GATE_PARITY_V0_SHA256, GATE_PARITY_V0_SHA256_PREFIX,
+    TRANSITION_TOLERANCE,
 };
 
 #[test]

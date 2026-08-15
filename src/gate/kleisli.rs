@@ -543,10 +543,7 @@ mod tests {
             Some("canonical_transition_reject")
         );
         let outcome = canonical_transition_outcome(&old, &new, dt);
-        assert_eq!(
-            out.result.admissibility_verdict(),
-            outcome.verdict()
-        );
+        assert_eq!(out.result.admissibility_verdict(), outcome.verdict());
         assert_ne!(outcome.verdict(), AdmissibilityVerdict::Accepted);
     }
 
@@ -598,7 +595,10 @@ mod tests {
         let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
         let dt = 28.0 * 24.0 * 3600.0;
         let verdict = eval.evaluate_canonical_transition(&old, &new, dt);
-        assert_eq!(verdict, canonical_transition_outcome(&old, &new, dt).verdict());
+        assert_eq!(
+            verdict,
+            canonical_transition_outcome(&old, &new, dt).verdict()
+        );
     }
 
     #[test]

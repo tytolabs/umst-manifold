@@ -13,7 +13,7 @@ ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$ROOT"
 
 cargo test -p umst-manifold --features kleisli-ppo-hot-bind,wgpu \
-  --test p4_rejection_witness_gpu \
+  --test rejection_witness_gpu \
   -- --nocapture
 
 echo "OK: p4 GPU witness baseline regenerated"

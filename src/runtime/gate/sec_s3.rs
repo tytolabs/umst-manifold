@@ -58,8 +58,7 @@ pub const PRIOR_RECEIPT_PATH_2127: &str =
     "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S3_2127.md";
 
 /// umst-trust SEC-S3 revoke posture delegate SSOT.
-pub const TRUST_SSOT: &str =
-    "umst-foundations/crates/umst-trust/src/sec_s3_revoke_posture.rs";
+pub const TRUST_SSOT: &str = "umst-foundations/crates/umst-trust/src/sec_s3_revoke_posture.rs";
 
 /// umst-trust SEC-S3 sled persistence census delegate SSOT.
 pub const TRUST_SLED_SSOT: &str = "umst-foundations/crates/umst-trust/src/sled.rs";
@@ -359,8 +358,7 @@ pub fn gate_transition_evidence_probe() -> bool {
     let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
     let new = old;
     let evidence = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
-    evidence.admissibility == AdmissibilityToken::Admissible
-        && !evidence.catalog_id.is_empty()
+    evidence.admissibility == AdmissibilityToken::Admissible && !evidence.catalog_id.is_empty()
 }
 
 /// Whether sled-backed session ledger persistence is wired (honest `false`).

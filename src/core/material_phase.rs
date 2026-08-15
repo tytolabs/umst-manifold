@@ -149,9 +149,7 @@ pub fn validate_material_phase_posture_honesty() -> Result<(), &'static str> {
 
 use burn::tensor::{backend::Backend, Tensor};
 
-use super::field::{
-    DamageField, Field, HumidityField, TemperatureField,
-};
+use super::field::{DamageField, Field, HumidityField, TemperatureField};
 
 /// Discrete macroscopic phase tag for `match`-dispatched routing (no bool soup).
 ///
@@ -317,7 +315,10 @@ impl<B: Backend> TransportState<B> {
     #[inline]
     #[must_use]
     pub fn new(humidity: HumidityField<B>, temperature: TemperatureField<B>) -> Self {
-        Self { humidity, temperature }
+        Self {
+            humidity,
+            temperature,
+        }
     }
 }
 
@@ -342,7 +343,11 @@ impl<B: Backend> ThmcEnvelope<B> {
     #[inline]
     #[must_use]
     pub fn new(phase: MaterialPhase<B>, damage: DamageField<B>, time: f32) -> Self {
-        Self { phase, damage, time }
+        Self {
+            phase,
+            damage,
+            time,
+        }
     }
 
     /// Construct an envelope from a phase variant, zero damage, and clock (test / scaffold helper).
@@ -818,7 +823,10 @@ mod tests {
         .map(lane)
         .collect();
         assert_eq!(lanes, ["rheology", "setting", "mechanics"]);
-        assert_eq!(lanes.len(), lanes.iter().collect::<std::collections::HashSet<_>>().len());
+        assert_eq!(
+            lanes.len(),
+            lanes.iter().collect::<std::collections::HashSet<_>>().len()
+        );
     }
 
     #[test]

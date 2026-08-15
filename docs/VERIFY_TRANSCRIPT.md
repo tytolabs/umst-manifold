@@ -58,3 +58,5 @@ Full log: `/tmp/verify_composer_t2.log`
 ## Research fence (prime-spectral)
 
 Branch `prime-spectral-research` remains **CLOSED / AMBER** ([`outputs/prime-spectral-research/FINAL_FINDING.md`](../../outputs/prime-spectral-research/FINAL_FINDING.md)). R2/R3/Track 4–5 killed; Track 1 NTT conservation lead parked. Not merged to `main`.
+
+> **Rename note (2026-08-15):** `w8_publish_readiness.sh` was renamed to `publish_readiness.sh` in commit 33556a5. Historical transcript rows above keep the name used on the run date.

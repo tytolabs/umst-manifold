@@ -66,7 +66,8 @@ pub const SOURCE_ANCHOR_PATH: &str = "umst-manifold/src/runtime/nalgebra_algebra
 pub const DESIGN_DOC_PATH: &str = "docs/C2_TENSOR_ALGEBRA_DESIGN.md";
 
 /// Research libs SSOT.
-pub const RESEARCH_DOC_PATH: &str = "old/residuals/residuals/misc-outputs-tmp/RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md";
+pub const RESEARCH_DOC_PATH: &str =
+    "old/residuals/residuals/misc-outputs-tmp/RESEARCH_LIBS_FORMAL_FIELD_CHEM_JUL2026.md";
 
 /// Absolute tolerance for symmetry / Voigt round-trip probes.
 pub const SYMMETRY_ABS_TOL: f64 = 1e-12;
@@ -113,16 +114,21 @@ impl NalgebraTensorField {
     #[must_use]
     pub fn from_voigt6_symmetric(voigt: [f64; 6]) -> Self {
         let [exx, eyy, ezz, exy, eyz, exz] = voigt;
-        Self::from_matrix(Matrix3::new(
-            exx, exy, exz, exy, eyy, eyz, exz, eyz, ezz,
-        ))
+        Self::from_matrix(Matrix3::new(exx, exy, exz, exy, eyy, eyz, exz, eyz, ezz))
     }
 
     /// Symmetric Voigt-6 projection (upper-triangle block, `i ≤ j`).
     #[must_use]
     pub fn to_voigt6_symmetric(&self) -> [f64; 6] {
         let m = &self.inner;
-        [m[(0, 0)], m[(1, 1)], m[(2, 2)], m[(0, 1)], m[(1, 2)], m[(0, 2)]]
+        [
+            m[(0, 0)],
+            m[(1, 1)],
+            m[(2, 2)],
+            m[(0, 1)],
+            m[(1, 2)],
+            m[(0, 2)],
+        ]
     }
 
     /// Frobenius norm — scalar probe for parity stubs.
@@ -212,7 +218,10 @@ pub fn lift_strain_voigt6(voigt: [f64; 6]) -> NalgebraTensorField {
 
 /// Matrix-product probe kept **outside** `TensorAlgebra::mul` (honest fence).
 #[must_use]
-pub fn matrix_product_probe(lhs: &NalgebraTensorField, rhs: &NalgebraTensorField) -> NalgebraTensorField {
+pub fn matrix_product_probe(
+    lhs: &NalgebraTensorField,
+    rhs: &NalgebraTensorField,
+) -> NalgebraTensorField {
     NalgebraTensorField::from_matrix(lhs.inner * rhs.inner)
 }
 
@@ -272,7 +281,6 @@ pub const fn honest_fences_hold() -> bool {
         && NUM_DUAL_SCALAR_AD_LANDED
         && !NUM_DUAL_DEFERRED
 }
-
 
 #[cfg(test)]
 mod tests {

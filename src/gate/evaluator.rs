@@ -252,7 +252,10 @@ mod tests {
         let tv = ev.check_transition_host(&old, &new, dt);
         assert!(!tv.is_accepted());
         assert_eq!(tv.rest_verdict(), AdmissibilityVerdict::MassViolation);
-        assert_eq!(tv.rest_verdict().as_str(), AdmissibilityVerdict::MASS_VIOLATION);
+        assert_eq!(
+            tv.rest_verdict().as_str(),
+            AdmissibilityVerdict::MASS_VIOLATION
+        );
         assert!(!tv.is_mass_conserved());
         assert_eq!(
             tv.conjunct_verdict(),
@@ -313,7 +316,12 @@ mod tests {
             (true, false, true, AdmissibilityVerdict::Accepted),
             (true, false, false, AdmissibilityVerdict::Accepted),
             (false, true, true, AdmissibilityVerdict::Unknown),
-            (false, true, false, AdmissibilityVerdict::NegativeDissipation),
+            (
+                false,
+                true,
+                false,
+                AdmissibilityVerdict::NegativeDissipation,
+            ),
             (false, false, true, AdmissibilityVerdict::MassViolation),
             (false, false, false, AdmissibilityVerdict::MassViolation),
         ];

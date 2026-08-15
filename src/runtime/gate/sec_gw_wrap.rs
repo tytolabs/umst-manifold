@@ -404,8 +404,7 @@ pub fn gate_transition_evidence_probe() -> bool {
     let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
     let new = old;
     let evidence = CdTransitionCartridge.transition_evidence(&old, &new, 1.0);
-    evidence.admissibility == AdmissibilityToken::Admissible
-        && !evidence.catalog_id.is_empty()
+    evidence.admissibility == AdmissibilityToken::Admissible && !evidence.catalog_id.is_empty()
 }
 
 /// Whether live gateway trust-wrap production flip is plumbed (honest `false`).
@@ -526,18 +525,14 @@ pub fn sec_gw_wrap_honesty_probe() -> SecGwWrapHonestyProbe {
 #[must_use]
 pub fn manifold_gw_wrap_all_admit_surfaces_probed() -> bool {
     MANIFOLD_GW_WRAP_ADMIT_SURFACES.len() == ADMIT_SURFACE_COUNT
-        && MANIFOLD_GW_WRAP_ADMIT_SURFACES
-            .iter()
-            .all(|s| s.census_hit)
+        && MANIFOLD_GW_WRAP_ADMIT_SURFACES.iter().all(|s| s.census_hit)
 }
 
 /// Whether H1 ledger-enforce prep map is complete at census tier (prep ≠ production).
 #[must_use]
 pub fn manifold_gw_wrap_ledger_prep_complete() -> bool {
     MANIFOLD_GW_WRAP_LEDGER_PREP_HOPS.len() == LEDGER_ENFORCE_PREP_HOP_COUNT
-        && MANIFOLD_GW_WRAP_LEDGER_PREP_HOPS
-            .iter()
-            .all(|h| h.prep_hit)
+        && MANIFOLD_GW_WRAP_LEDGER_PREP_HOPS.iter().all(|h| h.prep_hit)
 }
 
 /// Whether H54 S4 trust-wrap delegate hop inventory is complete at census tier (prep ≠ production).
@@ -1008,7 +1003,9 @@ mod sec_gw_wrap_tests {
     fn sec_gw_wrap_s4_delegate_hops_four_of_four() {
         assert!(manifold_gw_wrap_s4_delegate_complete());
         assert_eq!(MANIFOLD_GW_WRAP_S4_DELEGATE_HOPS.len(), 4);
-        assert!(MANIFOLD_GW_WRAP_S4_DELEGATE_HOPS.iter().all(|h| h.census_hit));
+        assert!(MANIFOLD_GW_WRAP_S4_DELEGATE_HOPS
+            .iter()
+            .all(|h| h.census_hit));
         assert!(manifold_gw_wrap_trust_wrap_helpers_wired());
         assert!(GATEWAY_TRUST_WRAP_HELPERS_WIRED_HONEST);
     }

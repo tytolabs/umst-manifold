@@ -130,44 +130,25 @@ pub enum PhysicsError {
         got: usize,
     },
     /// Equilibrium / Newton / PCG did not meet relative tolerance.
-    Diverged {
-        eq_rel: f32,
-        pcg_iterations: usize,
-    },
+    Diverged { eq_rel: f32, pcg_iterations: usize },
     /// Compliance scalar non-finite after forward solve.
     NonFiniteCompliance,
     /// Non-finite field or residual detected.
-    NonFinite {
-        context: &'static str,
-    },
+    NonFinite { context: &'static str },
     /// Host GMRES / Krylov breakdown or residual blow-up.
-    KrylovDiverged {
-        context: &'static str,
-    },
+    KrylovDiverged { context: &'static str },
     /// Linear system indefinite or singular on the masked subspace.
-    IndefiniteSystem {
-        context: &'static str,
-    },
+    IndefiniteSystem { context: &'static str },
     /// Reusable scratch / workspace exhausted.
-    BufferExhausted {
-        context: &'static str,
-    },
+    BufferExhausted { context: &'static str },
     /// Internal invariant violated (precondition not met).
-    InvariantViolation {
-        context: &'static str,
-    },
+    InvariantViolation { context: &'static str },
     /// Discretization layout not supported by this solver entry point.
-    UnsupportedLayout {
-        context: &'static str,
-    },
+    UnsupportedLayout { context: &'static str },
     /// Gate evidence wiring rejected the post-step state.
-    GateEvidenceRejected {
-        context: &'static str,
-    },
+    GateEvidenceRejected { context: &'static str },
     /// Solver / sync domain error with human-readable detail (THMC `step` migration path).
-    Domain {
-        detail: String,
-    },
+    Domain { detail: String },
 }
 
 impl PhysicsError {
@@ -226,10 +207,9 @@ impl fmt::Display for PhysicsError {
             Self::NonFiniteCompliance => f.write_str(
                 "compliance functional is non-finite (NaN or Inf) after equilibrium forward solve",
             ),
-            Self::NonFinite { context } => write!(
-                f,
-                "{context}: field or residual contains NaN or Inf"
-            ),
+            Self::NonFinite { context } => {
+                write!(f, "{context}: field or residual contains NaN or Inf")
+            }
             Self::KrylovDiverged { context } => write!(
                 f,
                 "{context}: Krylov/GMRES sub-solve stalled or residual blew up"
@@ -318,39 +298,27 @@ mod tests {
                 "NaN or Inf",
             ),
             (
-                PhysicsError::KrylovDiverged {
-                    context: "gmres",
-                },
+                PhysicsError::KrylovDiverged { context: "gmres" },
                 "Krylov/GMRES",
             ),
             (
-                PhysicsError::IndefiniteSystem {
-                    context: "pcg",
-                },
+                PhysicsError::IndefiniteSystem { context: "pcg" },
                 "indefinite or singular",
             ),
             (
-                PhysicsError::BufferExhausted {
-                    context: "scratch",
-                },
+                PhysicsError::BufferExhausted { context: "scratch" },
                 "capacity exhausted",
             ),
             (
-                PhysicsError::InvariantViolation {
-                    context: "pre",
-                },
+                PhysicsError::InvariantViolation { context: "pre" },
                 "invariant violated",
             ),
             (
-                PhysicsError::UnsupportedLayout {
-                    context: "poisson",
-                },
+                PhysicsError::UnsupportedLayout { context: "poisson" },
                 "layout not supported",
             ),
             (
-                PhysicsError::GateEvidenceRejected {
-                    context: "cbf",
-                },
+                PhysicsError::GateEvidenceRejected { context: "cbf" },
                 "evidence check rejected",
             ),
             (
@@ -382,9 +350,7 @@ mod tests {
 
     #[test]
     fn physics_error_into_string_uses_display() {
-        let err = PhysicsError::NonFinite {
-            context: "field",
-        };
+        let err = PhysicsError::NonFinite { context: "field" };
         let s: String = err.into();
         assert!(s.contains("field"));
         assert!(s.contains("NaN or Inf"));
@@ -406,10 +372,7 @@ mod tests {
         );
         assert!(PhysicsError::NonFiniteCompliance.is_non_finite());
         assert!(PhysicsError::NonFinite { context: "x" }.is_non_finite());
-        assert!(!PhysicsError::Domain {
-            detail: "d".into()
-        }
-        .is_non_finite());
+        assert!(!PhysicsError::Domain { detail: "d".into() }.is_non_finite());
         assert!(PhysicsError::KrylovDiverged { context: "k" }.is_divergence());
         assert!(PhysicsError::Diverged {
             eq_rel: 1.0,
@@ -425,9 +388,8 @@ mod tests {
 
     #[test]
     fn std_error_trait_object_ok() {
-        let err: Box<dyn std::error::Error> = Box::new(PhysicsError::BufferExhausted {
-            context: "ws",
-        });
+        let err: Box<dyn std::error::Error> =
+            Box::new(PhysicsError::BufferExhausted { context: "ws" });
         assert!(err.to_string().contains("capacity exhausted"));
     }
 

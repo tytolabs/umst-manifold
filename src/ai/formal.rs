@@ -317,7 +317,9 @@ pub fn formal_posture_honest(probe: &FormalPostureProbe) -> bool {
         && probe.wire_hops_closed == formal_gate_wire_hops_closed()
         && probe.honest_fence.contains("reject_enum_landed=true")
         && probe.honest_fence.contains("production_wired=false")
-        && probe.honest_fence.contains("master_composition_wired=false")
+        && probe
+            .honest_fence
+            .contains("master_composition_wired=false")
 }
 
 /// Validate formal posture honesty — fail closed on fake production/master/GREEN claims.
@@ -465,7 +467,9 @@ mod tests {
         assert!(!probe.production_wired);
         assert!(!probe.master_composition_wired);
         assert!(probe.honest_fence.contains("production_wired=false"));
-        assert!(probe.honest_fence.contains("master_composition_wired=false"));
+        assert!(probe
+            .honest_fence
+            .contains("master_composition_wired=false"));
         validate_formal_posture_honesty().expect("validate_formal_posture_honesty");
     }
 
@@ -526,10 +530,7 @@ mod tests {
             detail: "invalid channel".into(),
         };
         assert_eq!(rej.catalog_id(), DEC_TYPESTATE_CATALOG_ID);
-        assert_eq!(
-            rej.reject_kind(),
-            FormalRejectKind::DecTypestateStaging
-        );
+        assert_eq!(rej.reject_kind(), FormalRejectKind::DecTypestateStaging);
         assert!(rej.to_string().contains(DEC_TYPESTATE_CATALOG_ID));
     }
 

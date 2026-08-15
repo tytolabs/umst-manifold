@@ -213,7 +213,9 @@ pub fn validate_design_query_honesty() -> Result<(), &'static str> {
         return Err("DESIGN_QUERY_MASTER must stay false until P4 master query pin lands");
     }
     if probe.physics_green {
-        return Err("DESIGN_QUERY_PHYSICS_GREEN must stay false — query is audit/training surrogate");
+        return Err(
+            "DESIGN_QUERY_PHYSICS_GREEN must stay false — query is audit/training surrogate",
+        );
     }
     if design_query_fence_wired_count() != DESIGN_QUERY_FENCE_WIRED_COUNT {
         return Err("design_query_fence_wired_count drifted from DESIGN_QUERY_FENCE_WIRED_COUNT");
@@ -290,12 +292,10 @@ impl<B: Backend> DesignQueryResult<B> {
     /// v1 today shares one combined `∂L/∂z` for metric and margin channels.
     #[must_use]
     pub fn gradients_share_combined_channel(&self) -> bool {
-        matches!(
-            (&self.d_metric_dz, &self.d_margin_dz),
-            (Some(_), Some(_))
-        ) && !DESIGN_QUERY_PRODUCTION_FENCE_FACETS
-            .iter()
-            .any(|f| f.facet == "v1_separate_metric_margin_grad" && f.wired)
+        matches!((&self.d_metric_dz, &self.d_margin_dz), (Some(_), Some(_)))
+            && !DESIGN_QUERY_PRODUCTION_FENCE_FACETS
+                .iter()
+                .any(|f| f.facet == "v1_separate_metric_margin_grad" && f.wired)
     }
 }
 
@@ -469,12 +469,18 @@ mod tests {
 
     #[test]
     fn design_query_fence_census_matches_constants() {
-        assert_eq!(DESIGN_QUERY_FENCE_FACET_IDS.len(), DESIGN_QUERY_FENCE_FACET_COUNT);
+        assert_eq!(
+            DESIGN_QUERY_FENCE_FACET_IDS.len(),
+            DESIGN_QUERY_FENCE_FACET_COUNT
+        );
         assert_eq!(
             DESIGN_QUERY_PRODUCTION_FENCE_FACETS.len(),
             DESIGN_QUERY_FENCE_FACET_COUNT
         );
-        assert_eq!(design_query_fence_wired_count(), DESIGN_QUERY_FENCE_WIRED_COUNT);
+        assert_eq!(
+            design_query_fence_wired_count(),
+            DESIGN_QUERY_FENCE_WIRED_COUNT
+        );
         assert_eq!(DESIGN_QUERY_FENCE_WIRED_COUNT, 6);
     }
 

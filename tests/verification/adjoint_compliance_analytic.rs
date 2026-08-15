@@ -209,11 +209,9 @@ fn adjoint_four_node_chain_gradient_matches_finite_difference() {
     );
 
     let grads = surrogate.backward();
-    let g_rho = rho_ad
-        .grad(&grads)
-        .expect(
-            "AdjointCompliance backward gradient w.r.t. nodal density on bar FD witness (FP §6 G4)",
-        );
+    let g_rho = rho_ad.grad(&grads).expect(
+        "AdjointCompliance backward gradient w.r.t. nodal density on bar FD witness (FP §6 G4)",
+    );
     let g_mid = g_rho.into_data().value[2];
 
     let eps = 5e-4_f32;
@@ -322,11 +320,9 @@ fn adjoint_four_node_chain_gradient_matches_bendsoe_sigmund_formula() {
     );
 
     let grads = surrogate.backward();
-    let g_rho = rho_ad
-        .grad(&grads)
-        .expect(
-            "AdjointCompliance backward gradient w.r.t. nodal density on bar FD witness (FP §6 G4)",
-        );
+    let g_rho = rho_ad.grad(&grads).expect(
+        "AdjointCompliance backward gradient w.r.t. nodal density on bar FD witness (FP §6 G4)",
+    );
     let g_node = g_rho.into_data().value;
 
     // Analytic edge sensitivity (uniform chain — every edge identical):

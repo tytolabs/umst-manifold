@@ -306,7 +306,9 @@ pub fn validate_dec_typestate_posture_honesty() -> Result<(), &'static str> {
         return Err("dec_typestate_fence_open_count drifted from DEC_TYPESTATE_FENCE_OPEN_COUNT");
     }
     if DEC_TYPESTATE_FENCE_FACETS.len() != DEC_TYPESTATE_FENCE_FACET_COUNT {
-        return Err("DEC_TYPESTATE_FENCE_FACETS length drifted from DEC_TYPESTATE_FENCE_FACET_COUNT");
+        return Err(
+            "DEC_TYPESTATE_FENCE_FACETS length drifted from DEC_TYPESTATE_FENCE_FACET_COUNT",
+        );
     }
     if !dec_typestate_posture_honest(&probe) {
         return Err("dec_typestate_posture_honest failed");
@@ -637,9 +639,18 @@ mod tests {
         assert_eq!(DEC_TYPESTATE_FENCE_FACET_COUNT, 9);
         assert_eq!(DEC_TYPESTATE_FENCE_WIRED_COUNT, 3);
         assert_eq!(DEC_TYPESTATE_FENCE_OPEN_COUNT, 6);
-        assert_eq!(DEC_TYPESTATE_FENCE_FACETS.len(), DEC_TYPESTATE_FENCE_FACET_COUNT);
-        assert_eq!(dec_typestate_fence_wired_count(), DEC_TYPESTATE_FENCE_WIRED_COUNT);
-        assert_eq!(dec_typestate_fence_open_count(), DEC_TYPESTATE_FENCE_OPEN_COUNT);
+        assert_eq!(
+            DEC_TYPESTATE_FENCE_FACETS.len(),
+            DEC_TYPESTATE_FENCE_FACET_COUNT
+        );
+        assert_eq!(
+            dec_typestate_fence_wired_count(),
+            DEC_TYPESTATE_FENCE_WIRED_COUNT
+        );
+        assert_eq!(
+            dec_typestate_fence_open_count(),
+            DEC_TYPESTATE_FENCE_OPEN_COUNT
+        );
     }
 
     #[test]
@@ -787,7 +798,8 @@ mod tests {
         let edges: Tensor<B, 2, Int> = Tensor::zeros([2, 2], &device);
 
         let too_narrow =
-            VerifiedUMST::try_assemble(edges.clone(), UMST_SCALAR_CHANNEL_COUNT - 1, 0).unwrap_err();
+            VerifiedUMST::try_assemble(edges.clone(), UMST_SCALAR_CHANNEL_COUNT - 1, 0)
+                .unwrap_err();
         assert_eq!(
             too_narrow,
             DecTypestateError::ScalarWidthMismatch {
