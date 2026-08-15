@@ -13,7 +13,7 @@
 
 The relative residual is \(\|P(f-Ku)\|_2 / \|Pf\|_2\) (or lane-equivalent) at solver exit — same scale as
 [`VectorMechanicsSolver::packed_bar_network_equilibrium`](../../src/physics/mechanics.rs) PCG exit and
-[`HexPcgReport::rel_residual`](../../src/physics/q1_hex_elasticity.rs) (binding true residual on the Q1 path).
+[`HexPcgReport::rel_residual`](../../src/physics/hex_elasticity.rs) (binding true residual on the Q1 path).
 
 ## Objects and morphisms
 

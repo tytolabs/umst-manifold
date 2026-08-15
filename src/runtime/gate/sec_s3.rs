@@ -62,7 +62,7 @@ pub const TRUST_SSOT: &str =
     "umst-foundations/crates/umst-trust/src/sec_s3_revoke_posture.rs";
 
 /// umst-trust SEC-S3 sled persistence census delegate SSOT.
-pub const TRUST_SLED_SSOT: &str = "umst-foundations/crates/umst-trust/src/s3_sled.rs";
+pub const TRUST_SLED_SSOT: &str = "umst-foundations/crates/umst-trust/src/sled.rs";
 
 /// egoff session ledger SSOT (in-memory deepen; sled lands S-3 GREEN).
 pub const EGOFF_LEDGER_SSOT: &str = "egoff/egoff/src/security/ledger.rs";

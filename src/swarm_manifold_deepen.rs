@@ -34,7 +34,7 @@ pub const KLEISLI_UNIT_CATALOG_ID: &str = KleisliUnitEvaluator::CATALOG_ID;
 pub const W29_131_CELL_ID: &str = "W29-131-SWARM_MANIFOLD_DEEPEN";
 
 /// Model pin for this deepen lane (hard pin; not fast).
-pub const DEEPEN_MODEL_SLUG: &str = "cursor-grok-4.5-high";
+pub const DEEPEN_MODEL_SLUG: &str = "cursor-grok-4.6-high";
 
 /// Admit coding lane for this deepen.
 pub const DEEPEN_LANE: &str = "umst-admit-grok";
@@ -254,7 +254,7 @@ mod tests {
     #[test]
     fn w29131_metadata_and_lane_pins() {
         assert_eq!(W29_131_CELL_ID, "W29-131-SWARM_MANIFOLD_DEEPEN");
-        assert_eq!(DEEPEN_MODEL_SLUG, "cursor-grok-4.5-high");
+        assert_eq!(DEEPEN_MODEL_SLUG, "cursor-grok-4.6-high");
         assert_eq!(DEEPEN_LANE, "umst-admit-grok");
         assert_eq!(HONEST_DEEPEN_POSTURE, "SWARM_MANIFOLD_DEEPEN_HONEST_PROD_OPEN");
         assert_eq!(FENCE_HOP_COUNT, PROBE_HOPS_WIRED);

@@ -65,7 +65,7 @@ pub const PRIOR_RECEIPT_PATH_2033: &str =
     "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S6_2033.md";
 
 /// umst-trust S-6 inspect delegate SSOT (Z126 owner — absorb, do not redo).
-pub const TRUST_SSOT: &str = "umst-foundations/crates/umst-trust/src/s6_inspect.rs";
+pub const TRUST_SSOT: &str = "umst-foundations/crates/umst-trust/src/inspect.rs";
 
 /// umst-semantics SEC-HCOM-PROV authority SSOT.
 pub const SEMANTICS_SSOT: &str =
@@ -140,12 +140,12 @@ pub const HCOM_PROV_GW_FENCE_HOPS: &[ManifoldHcomProvGwFenceHop] = &[
     },
     ManifoldHcomProvGwFenceHop {
         ordinal: 4,
-        surface: "umst-gateway/src/j2_semantic_compose.rs::compose_j2_semantic_production_trust_stamped",
+        surface: "umst-gateway/src/semantic_compose.rs::compose_j2_semantic_production_trust_stamped",
         role: "Production compose + trust stamp on semantic admit (JOINT-GATE)",
     },
     ManifoldHcomProvGwFenceHop {
         ordinal: 5,
-        surface: "umst-gateway/src/j2_semantic_compose.rs::semantic_conjunct_witness_id_with_trust_stamp",
+        surface: "umst-gateway/src/semantic_compose.rs::semantic_conjunct_witness_id_with_trust_stamp",
         role: "Bind attestation chain root prefix into conjunct witness id on admit",
     },
 ];
@@ -226,7 +226,7 @@ pub const MANIFOLD_SEC_S6_GATE_WIRE_HOPS: &[SecS6GateWireHop] = &[
     },
     SecS6GateWireHop {
         ordinal: 4,
-        surface: "umst-trust::s6_inspect::validate_s6_inspect_honesty",
+        surface: "umst-trust::inspect::validate_s6_inspect_honesty",
         role: "S-6 `:trust inspect` delegate (Z126 owner)",
         wired: true,
     },

@@ -294,6 +294,6 @@ fi
 echo "OK: epistemic+trace steps recorded in verify log"
 
 echo "==> W8 publish prep (machine-only; no git push)"
-UMST_W8_SKIP_FULL_STACK=1 bash "${ROOT}/scripts/w8_publish_readiness.sh"
+UMST_W8_SKIP_FULL_STACK=1 bash "${ROOT}/scripts/publish_readiness.sh"
 
 echo "verify_umst_stack: OK"

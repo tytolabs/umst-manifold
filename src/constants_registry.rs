@@ -56,37 +56,37 @@ pub struct RegistryPostureProbe {
     pub honest_fence: &'static str,
 }
 
-/// Striatus Q1-hex PCG iteration cap (SSOT: `q1_hex_elasticity::HEX_PCG_MAX_ITER_DEFAULT_STRIATUS`).
+/// Striatus Q1-hex PCG iteration cap (SSOT: `hex_elasticity::HEX_PCG_MAX_ITER_DEFAULT_STRIATUS`).
 #[cfg(any(
     feature = "topology-density-evolution",
     feature = "mechanics-voigt-cauchy"
 ))]
 pub const STRIATUS_HEX_PCG_MAX_ITER: GroundedConst<usize> = GroundedConst {
     name: "hex_pcg_max_iter_default_striatus",
-    value: crate::physics::q1_hex_elasticity::HEX_PCG_MAX_ITER_DEFAULT_STRIATUS,
-    evidence: "src/physics/q1_hex_elasticity.rs — 2× headroom over 3960-iter sharp-field peak (2026-06-12)",
+    value: crate::physics::hex_elasticity::HEX_PCG_MAX_ITER_DEFAULT_STRIATUS,
+    evidence: "src/physics/hex_elasticity.rs — 2× headroom over 3960-iter sharp-field peak (2026-06-12)",
 };
 
-/// Q1-hex f32 PCG lane relative tolerance (SSOT: `q1_hex_elasticity::HEX_PCG_REL_TOL_F32`).
+/// Q1-hex f32 PCG lane relative tolerance (SSOT: `hex_elasticity::HEX_PCG_REL_TOL_F32`).
 #[cfg(any(
     feature = "topology-density-evolution",
     feature = "mechanics-voigt-cauchy"
 ))]
 pub const HEX_PCG_REL_TOL_F32_GROUNDED: GroundedConst<f32> = GroundedConst {
     name: "hex_pcg_rel_tol_f32",
-    value: crate::physics::q1_hex_elasticity::HEX_PCG_REL_TOL_F32,
-    evidence: "src/physics/q1_hex_elasticity.rs — attainable κ·ε floor (arm-A 9×8×2, 2026-06-10)",
+    value: crate::physics::hex_elasticity::HEX_PCG_REL_TOL_F32,
+    evidence: "src/physics/hex_elasticity.rs — attainable κ·ε floor (arm-A 9×8×2, 2026-06-10)",
 };
 
-/// Q1-hex f64 Striatus lane relative tolerance (SSOT: `q1_hex_elasticity::HEX_PCG_REL_TOL_F64`).
+/// Q1-hex f64 Striatus lane relative tolerance (SSOT: `hex_elasticity::HEX_PCG_REL_TOL_F64`).
 #[cfg(any(
     feature = "topology-density-evolution",
     feature = "mechanics-voigt-cauchy"
 ))]
 pub const HEX_PCG_REL_TOL_F64_GROUNDED: GroundedConst<f32> = GroundedConst {
     name: "hex_pcg_rel_tol_f64",
-    value: crate::physics::q1_hex_elasticity::HEX_PCG_REL_TOL_F64,
-    evidence: "src/physics/q1_hex_elasticity.rs — re-grounded Striatus lane (2026-06-10)",
+    value: crate::physics::hex_elasticity::HEX_PCG_REL_TOL_F64,
+    evidence: "src/physics/hex_elasticity.rs — re-grounded Striatus lane (2026-06-10)",
 };
 
 /// Default bar-network PCG relative tolerance (`MechanicsInnerLoopConfig` default).
@@ -341,15 +341,15 @@ mod tests {
     fn hex_lane_tols_match_q1_hex() {
         assert_eq!(
             HEX_PCG_REL_TOL_F32_GROUNDED.value,
-            crate::physics::q1_hex_elasticity::HEX_PCG_REL_TOL_F32
+            crate::physics::hex_elasticity::HEX_PCG_REL_TOL_F32
         );
         assert_eq!(
             HEX_PCG_REL_TOL_F64_GROUNDED.value,
-            crate::physics::q1_hex_elasticity::HEX_PCG_REL_TOL_F64
+            crate::physics::hex_elasticity::HEX_PCG_REL_TOL_F64
         );
         assert_eq!(
             STRIATUS_HEX_PCG_MAX_ITER.value,
-            crate::physics::q1_hex_elasticity::HEX_PCG_MAX_ITER_DEFAULT_STRIATUS
+            crate::physics::hex_elasticity::HEX_PCG_MAX_ITER_DEFAULT_STRIATUS
         );
     }
 

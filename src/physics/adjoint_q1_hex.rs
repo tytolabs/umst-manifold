@@ -4,7 +4,7 @@
 //! Discrete-adjoint **compliance** surrogate for SIMP-modulated **Q1 hex** continuum elasticity on a
 //! Cartesian brick (`nx × ny × nz` cells).
 //!
-//! Forward equilibrium uses [`crate::physics::q1_hex_elasticity::hex_solve_pcg_masked`] on the **inner**
+//! Forward equilibrium uses [`crate::physics::hex_elasticity::hex_solve_pcg_masked`] on the **inner**
 //! backend (no autodiff through PCG). Sensitivities reuse the same surrogate linearisation pattern as
 //! [`crate::physics::adjoint::AdjointCompliance`]: element-wise factors `g_e ≈ ∂c/∂ρ_e` paired with
 //! the differentiable relation between nodal `ρ` and element-averaged design density
@@ -152,7 +152,7 @@ use super::adjoint::{
 use super::error::PhysicsError;
 use super::linear::masked_dot;
 use super::mechanics::{BarNetworkPcgReport, SelfWeightConfig};
-use super::q1_hex_elasticity::{
+use super::hex_elasticity::{
     hex_cell_corner_indices_unchecked, hex_cell_strain_energy, hex_equilibrium_rel_residual,
     hex_pcg_use_f64_lane, hex_solve_pcg_masked, HexPcgPrecondKind, HexStructuredOperatorCache,
 };

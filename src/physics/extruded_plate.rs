@@ -301,7 +301,7 @@ impl ExtrudedPlateMechanics {
             .max(cg_config.cg_tolerance)
             .max(0.0);
 
-        let pcg = q1_hex_elasticity::hex_solve_pcg_masked(
+        let pcg = hex_elasticity::hex_solve_pcg_masked(
             self.nx,
             self.ny,
             self.nz,
@@ -316,7 +316,7 @@ impl ExtrudedPlateMechanics {
             &mut diag,
             &mut scratch,
             max_it,
-            q1_hex_elasticity::hex_precond_from_use_preconditioner(cg_config.use_preconditioner),
+            hex_elasticity::hex_precond_from_use_preconditioner(cg_config.use_preconditioner),
             cg_config.cg_tolerance,
             None,
         );

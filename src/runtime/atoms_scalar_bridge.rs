@@ -58,7 +58,7 @@ pub const COLD_BOUNDARY_F32_EPS: f64 = 1e-3;
 pub const W29_099_CELL_ID: &str = "W29-099-ATOMS_SCALAR_BRIDGE";
 
 /// Model pin for this deepen lane.
-pub const DEEPEN_MODEL_SLUG: &str = "cursor-grok-4.5-high";
+pub const DEEPEN_MODEL_SLUG: &str = "cursor-grok-4.6-high";
 
 /// Admit coding lane pin.
 pub const DEEPEN_LANE: &str = "umst-admit-grok";
@@ -307,7 +307,7 @@ mod tests {
         assert!(!atoms_scalar_bridge_green_invented());
         assert!(!atoms_scalar_bridge_flip_authorized());
         assert_eq!(MASTER_RETICK, "no");
-        assert_eq!(DEEPEN_MODEL_SLUG, "cursor-grok-4.5-high");
+        assert_eq!(DEEPEN_MODEL_SLUG, "cursor-grok-4.6-high");
         assert_eq!(DEEPEN_LANE, "umst-admit-grok");
         assert_eq!(W29_099_CELL_ID, "W29-099-ATOMS_SCALAR_BRIDGE");
         assert!(NON_CLAIM.contains("not GREEN"));

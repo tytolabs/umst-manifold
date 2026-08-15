@@ -12,7 +12,7 @@
 //! Scope note: this covers the gate/constraint computation, which is backend-generic.
 //! The full Q1-hex compliance *design* solve is NOT exercised on Wgpu here — the custom
 //! matrix-free PCG path hits a documented wgpu/Metal minimum-buffer-alignment limitation
-//! (see `tests/p4_rejection_witness_gpu.rs::kleisli_ppo_gpu_autodiff_smoke`), so
+//! (see `tests/rejection_witness_gpu.rs::kleisli_ppo_gpu_autodiff_smoke`), so
 //! cross-hardware parity for the *full design* remains UNVERIFIED and is not claimed.
 
 #![cfg(feature = "wgpu")]

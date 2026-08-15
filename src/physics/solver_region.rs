@@ -14,7 +14,7 @@
 
 use super::adjoint::AdjointForwardPhaseTiming;
 use super::adjoint_q1_hex::Q1HexSolveOptions;
-use super::q1_hex_elasticity::HexStructuredOperatorCache;
+use super::hex_elasticity::HexStructuredOperatorCache;
 
 /// W29 deepen cell — SolverRegion honest fence bundle.
 pub const W29_SOLVER_REGION_DEEPEN_CELL: &str = "W29-071-SOLVER_REGION";

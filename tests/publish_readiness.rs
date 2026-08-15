@@ -12,9 +12,9 @@ fn manifest_dir() -> PathBuf {
 
 #[test]
 fn w8_publish_readiness_script_is_present_and_documents_prep_vs_publish() {
-    let script = manifest_dir().join("scripts/w8_publish_readiness.sh");
+    let script = manifest_dir().join("scripts/publish_readiness.sh");
     let body = std::fs::read_to_string(&script).expect(
-        "scripts/w8_publish_readiness.sh readable for module_count/digest pin + prep-vs-publish contract scan (FP §6 W8 publish readiness)",
+        "scripts/publish_readiness.sh readable for module_count/digest pin + prep-vs-publish contract scan (FP §6 W8 publish readiness)",
     );
     assert!(
         body.contains("module_count=129") || body.contains("module_count=122"),
@@ -67,7 +67,7 @@ fn w8_publish_readiness_script_is_present_and_documents_prep_vs_publish() {
 #[test]
 fn w8_publish_readiness_exits_zero_on_current_workspace() {
     let manifest = manifest_dir();
-    let script = manifest.join("scripts/w8_publish_readiness.sh");
+    let script = manifest.join("scripts/publish_readiness.sh");
     let workspace = manifest
         .parent()
         .expect(
@@ -87,7 +87,7 @@ fn w8_publish_readiness_exits_zero_on_current_workspace() {
         .current_dir(&manifest)
         .output()
         .expect(
-            "bash scripts/w8_publish_readiness.sh exits 0 on current workspace when umst-concrete-cartridge present (FP §6 W8 publish readiness)",
+            "bash scripts/publish_readiness.sh exits 0 on current workspace when umst-concrete-cartridge present (FP §6 W8 publish readiness)",
         );
 
     if !out.status.success() {

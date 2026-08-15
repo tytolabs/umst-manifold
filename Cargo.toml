@@ -114,7 +114,7 @@ serde_json = "1.0"
 tracing = "0.1"
 bincode = "=2.0.0-rc.3"
 # I-0 cockpit coupling: align with zeroclaw/matrix-sdk `time ^0.3.44` (was `=0.3.40`).
-time = "0.3.47"
+time = "0.3.40"  # pinned for rustc 1.86 (0.3.47 needs 1.88)
 rand = "0.8"
 num-traits = "0.2"
 sha2 = "0.10"
@@ -220,27 +220,27 @@ required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
 name = "q1_hex_harness_roof_spike"
-path = "tests/verification/q1_hex_harness_roof_spike.rs"
+path = "tests/verification/hex_harness_roof_spike.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
 name = "q1_hex_pcg_residual_probe"
-path = "tests/verification/q1_hex_pcg_residual_probe.rs"
+path = "tests/verification/hex_pcg_residual_probe.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
 name = "q1_hex_perf_levers_ab"
-path = "tests/verification/q1_hex_perf_levers_ab.rs"
+path = "tests/verification/hex_perf_levers_ab.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
 name = "q1_hex_pcg_warm_start_ab"
-path = "tests/verification/q1_hex_pcg_warm_start_ab.rs"
+path = "tests/verification/hex_pcg_warm_start_ab.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
 name = "q1_hex_forward_perf_instrument"
-path = "tests/verification/q1_hex_forward_perf_instrument.rs"
+path = "tests/verification/hex_forward_perf_instrument.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
@@ -260,7 +260,7 @@ required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
 name = "q1_hex_adjoint_grad_probe"
-path = "tests/verification/q1_hex_adjoint_grad_probe.rs"
+path = "tests/verification/hex_adjoint_grad_probe.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
@@ -270,17 +270,17 @@ required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
 name = "q1_hex_pcg_bisect_probe"
-path = "tests/verification/q1_hex_pcg_bisect_probe.rs"
+path = "tests/verification/hex_pcg_bisect_probe.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
 name = "q1_hex_pcg_descent_probe"
-path = "tests/verification/q1_hex_pcg_descent_probe.rs"
+path = "tests/verification/hex_pcg_descent_probe.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
 name = "q1_hex_nondim_trajectory_identity"
-path = "tests/verification/q1_hex_nondim_trajectory_identity.rs"
+path = "tests/verification/hex_nondim_trajectory_identity.rs"
 required-features = ["mechanics-adjoint-q1-hex"]
 
 [[test]]
@@ -477,12 +477,12 @@ required-features = ["kleisli-ppo-hot-bind"]
 
 [[test]]
 name = "p4_rejection_witness"
-path = "tests/p4_rejection_witness.rs"
+path = "tests/rejection_witness.rs"
 required-features = ["kleisli-ppo-hot-bind"]
 
 [[test]]
 name = "p4_rejection_witness_gpu"
-path = "tests/p4_rejection_witness_gpu.rs"
+path = "tests/rejection_witness_gpu.rs"
 required-features = ["kleisli-ppo-hot-bind", "wgpu"]
 
 [[test]]

@@ -30,4 +30,4 @@ Replace Voigt-bar mechanics surrogates with Q1-hex adjoint compliance on product
 ## Related
 
 - [`BAR_TO_Q1_MIGRATION_SCOPE.md`](BAR_TO_Q1_MIGRATION_SCOPE.md) (this file)
-- MaOS B6 harness placeholders: `scripts/b6_harness_setup.sh` (`policy_editable_mask`)
+- MaOS B6 harness placeholders: `scripts/harness_setup.sh` (`policy_editable_mask`)

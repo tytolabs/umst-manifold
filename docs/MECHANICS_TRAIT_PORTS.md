@@ -24,7 +24,7 @@ This document fixes the **port trait boundary** between the bar-network DEC skel
 | Port | ZST / impl | `PrecisionLane` | Cargo feature | SSOT today |
 | --- | --- | --- | --- | --- |
 | **Bar** | [`BarNetworkMechanicsSolvePort`](../src/physics/mechanics_solve_port.rs) | `F64AdjointBarPcg` | `mechanics-adjoint` | [`VectorMechanicsSolver::solve_equilibrium_with_pcg_report`](../src/physics/mechanics.rs) |
-| **Q1 hex** | `Q1HexMechanicsSolvePort` *(planned)* | `HexQ1Pcg` | `mechanics-adjoint-q1-hex` | [`hex_solve_pcg_masked`](../src/physics/q1_hex_elasticity.rs), [`ExtrudedPlateMechanics`](../src/physics/extruded_plate.rs) |
+| **Q1 hex** | `Q1HexMechanicsSolvePort` *(planned)* | `HexQ1Pcg` | `mechanics-adjoint-q1-hex` | [`hex_solve_pcg_masked`](../src/physics/hex_elasticity.rs), [`ExtrudedPlateMechanics`](../src/physics/extruded_plate.rs) |
 
 ```mermaid
 flowchart LR

@@ -10,7 +10,7 @@
 #![cfg(feature = "mechanics-adjoint-q1-hex")]
 
 use umst_manifold::physics::extruded_plate::ExtrudedPlateMechanics;
-use umst_manifold::physics::q1_hex_elasticity::{
+use umst_manifold::physics::hex_elasticity::{
     hex_solve_pcg_f64_descent_probe, HEX_PCG_REL_TOL_F64,
 };
 

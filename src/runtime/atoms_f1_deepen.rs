@@ -284,7 +284,7 @@ pub fn atoms_f1_p1800_h4_deepen_honest(probe: &AtomsF1P1800H4DeepenProbe) -> boo
 pub const W29_098_CELL_ID: &str = "W29-098-ATOMS_F1_DEEPEN";
 
 /// Model pin for this deepen lane.
-pub const DEEPEN_MODEL_SLUG: &str = "cursor-grok-4.5-high";
+pub const DEEPEN_MODEL_SLUG: &str = "cursor-grok-4.6-high";
 
 /// Admit coding lane pin.
 pub const DEEPEN_LANE: &str = "umst-admit-grok";
@@ -558,7 +558,7 @@ mod tests {
         assert!(!atoms_f1_deepen_green_invented());
         assert!(!atoms_f1_deepen_flip_authorized());
         assert_eq!(MASTER_RETICK, "no");
-        assert_eq!(DEEPEN_MODEL_SLUG, "cursor-grok-4.5-high");
+        assert_eq!(DEEPEN_MODEL_SLUG, "cursor-grok-4.6-high");
         assert_eq!(DEEPEN_LANE, "umst-admit-grok");
         assert_eq!(W29_098_CELL_ID, "W29-098-ATOMS_F1_DEEPEN");
         assert!(NON_CLAIM.contains("not GREEN"));

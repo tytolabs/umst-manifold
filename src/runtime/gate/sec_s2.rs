@@ -82,13 +82,13 @@ pub const TRUST_ADT_SSOT: &str = "umst-foundations/crates/umst-algebra/src/crypt
 
 /// UCRS consumer bridge parity test SSOT (pinned from `sec_ecosystem_extract`).
 pub const UCRS_WIRE_PARITY_TEST: &str =
-    "umst-foundations/crates/umst-algebra/tests/s1_trust_ucrs_wire_parity.rs";
+    "umst-foundations/crates/umst-algebra/tests/trust_ucrs_wire_parity.rs";
 
 /// umst-trust `TrustGatePolicy` + `require_trust_gate_at` delegate SSOT.
 pub const TRUST_SSOT: &str = "umst-foundations/crates/umst-trust/src/permission.rs";
 
 /// umst-trust S-2 refuse-path factor matrix delegate SSOT.
-pub const S2_FACTOR_SSOT: &str = "umst-foundations/crates/umst-trust/src/s2_factor.rs";
+pub const S2_FACTOR_SSOT: &str = "umst-foundations/crates/umst-trust/src/src_factor.rs";
 
 /// egoff permission thin re-export SSOT.
 pub const EGOFF_PERMISSION_SSOT: &str = "egoff/egoff/src/security/permission.rs";
@@ -258,7 +258,7 @@ pub const MANIFOLD_SEC_S2_GATE_WIRE_HOPS: &[SecS2GateWireHop] = &[
     },
     SecS2GateWireHop {
         ordinal: 5,
-        surface: "umst-trust::s2_factor::collect_s2_factor_ledger",
+        surface: "umst-trust::src_factor::collect_s2_factor_ledger",
         role: "S-2 six-row refuse-path factor matrix",
         wired: true,
     },

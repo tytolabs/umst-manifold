@@ -54,7 +54,7 @@ pub const LOOP_STUB_DEEPEN_POSTURE: &str = "honest-loop-stub-learner-optional-de
 pub const LOOP_STUB_ADMIT_LANE: &str = "umst-admit-grok";
 
 /// Pinned model id for this deepen pass.
-pub const LOOP_STUB_ADMIT_MODEL: &str = "cursor-grok-4.5-high";
+pub const LOOP_STUB_ADMIT_MODEL: &str = "cursor-grok-4.6-high";
 
 /// Compile-time honesty fence string for meta / fleet probes.
 pub const LOOP_STUB_HONEST_FENCE: &str =
@@ -1163,7 +1163,7 @@ mod tests {
         assert_eq!(probe.posture_tag, "LEARNER_OPTIONAL");
         assert_eq!(probe.deepen_posture, LOOP_STUB_DEEPEN_POSTURE);
         assert_eq!(probe.admit_lane, "umst-admit-grok");
-        assert_eq!(probe.admit_model, "cursor-grok-4.5-high");
+        assert_eq!(probe.admit_model, "cursor-grok-4.6-high");
         assert!(probe.tick_scaffold_landed);
         assert_eq!(probe.funnel_phase_count, 6);
         assert_eq!(probe.audit_wired_phase_count, 1);
@@ -1235,7 +1235,7 @@ mod tests {
         assert!(LOOP_STUB_HONEST_FENCE.contains("op5=false"));
         assert_eq!(LOOP_STUB_CELL_ID, "W29-037-LOOP_STUB");
         assert_eq!(LOOP_STUB_ADMIT_LANE, "umst-admit-grok");
-        assert_eq!(LOOP_STUB_ADMIT_MODEL, "cursor-grok-4.5-high");
+        assert_eq!(LOOP_STUB_ADMIT_MODEL, "cursor-grok-4.6-high");
     }
 
     #[test]

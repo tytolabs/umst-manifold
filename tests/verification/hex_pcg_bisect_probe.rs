@@ -6,7 +6,7 @@
 #![cfg(feature = "mechanics-adjoint-q1-hex")]
 
 use umst_manifold::physics::extruded_plate::ExtrudedPlateMechanics;
-use umst_manifold::physics::q1_hex_elasticity::{
+use umst_manifold::physics::hex_elasticity::{
     hex_equilibrium_residual_parts, hex_precond_from_use_preconditioner, hex_solve_pcg_bisect,
     HexPcgBisectConfig, HexPcgLoopKind, HEX_PCG_REL_TOL_F32,
 };
@@ -57,7 +57,7 @@ fn run_arm(
     max_cg: usize,
     tol: f32,
     cfg: HexPcgBisectConfig,
-) -> umst_manifold::physics::q1_hex_elasticity::HexPcgBisectReport {
+) -> umst_manifold::physics::hex_elasticity::HexPcgBisectReport {
     let plate = ExtrudedPlateMechanics {
         nx,
         ny,

@@ -219,7 +219,7 @@ cargo test -p umst-concrete-cartridge --features manifest-bridge --test manifest
 
 **Monorepo dev (optional):** add workspace `[patch]` in `umst-concrete-cartridge/Cargo.toml` to sibling `../umst-manifold` when testing unpublished manifold changes before bumping the cartridge `rev`.
 
-Prep gate (no push): `bash scripts/w8_publish_readiness.sh` — accepts git pin **or** workspace patch.
+Prep gate (no push): `bash scripts/publish_readiness.sh` — accepts git pin **or** workspace patch.
 
 ### 3.3 Release grounding (`StrictCatalogMatch` + `formal-witness`)
 

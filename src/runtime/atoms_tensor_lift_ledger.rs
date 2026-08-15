@@ -78,7 +78,7 @@ pub const SUCCESSOR_OPS_RECEIPT_SLUG: &str = "COMPLETION_SWARM_SWARM-C25-0831-89
 pub const W29_102_CELL_ID: &str = "W29-102-ATOMS_TENSOR_LIFT_LEDGER";
 
 /// Model pin for this deepen lane.
-pub const DEEPEN_MODEL_SLUG: &str = "cursor-grok-4.5-high";
+pub const DEEPEN_MODEL_SLUG: &str = "cursor-grok-4.6-high";
 
 /// Admit coding lane pin.
 pub const DEEPEN_LANE: &str = "umst-admit-grok";
@@ -500,7 +500,7 @@ mod tests {
         assert!(!atoms_tensor_lift_ledger_green_invented());
         assert!(!atoms_tensor_lift_ledger_flip_authorized());
         assert_eq!(MASTER_RETICK, "no");
-        assert_eq!(DEEPEN_MODEL_SLUG, "cursor-grok-4.5-high");
+        assert_eq!(DEEPEN_MODEL_SLUG, "cursor-grok-4.6-high");
         assert_eq!(DEEPEN_LANE, "umst-admit-grok");
         assert_eq!(W29_102_CELL_ID, "W29-102-ATOMS_TENSOR_LIFT_LEDGER");
         assert!(NON_CLAIM.contains("not GREEN"));

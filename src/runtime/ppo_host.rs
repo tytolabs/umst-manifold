@@ -14,7 +14,7 @@
 //! **not** `PRODUCTION_WIRED` (no live operator / CLI production flip), **not**
 //! `MASTER`, **not** OP-5. Default λ = 0 is fail-closed soft-slack-off.
 
-// W29-129-PPO_HOST — deepen + honest fences (umst-admit-grok / cursor-grok-4.5-high).
+// W29-129-PPO_HOST — deepen + honest fences (umst-admit-grok / cursor-grok-4.6-high).
 // **Invent fence:** not GREEN / not PRODUCTION_WIRED / not MASTER / not OP-5.
 
 /// W29 deepen cell — PPO host IO boundary honesty attribution.

@@ -115,7 +115,7 @@ Targets are **engineering budgets** for the policy gateway + scalar gates, not W
 | Concrete cartridge git-pinned `manifest-bridge` (**G-02**) | ✅ **Done** | Git `rev = fe22437`; GHA without workspace `[patch]`; cartridge **6742fa3** / **a779610**; remote CI green (not patch-green local-only) |
 | Supercap remote `manifest-bridge` (**G-03**) | ⏳ **Optional** | Local `formal_anchors` **6/6**; remote GHA — operator when scheduled |
 
-**Local prep (still machine-verified):** `bash scripts/w8_publish_readiness.sh` — lock **119** + digest `0697014f…`, **16/16** markers, secrets hygiene. Wired in `verify_umst_stack.sh` tail.
+**Local prep (still machine-verified):** `bash scripts/publish_readiness.sh` — lock **119** + digest `0697014f…`, **16/16** markers, secrets hygiene. Wired in `verify_umst_stack.sh` tail.
 
 **W8 / G-02 are excluded** from the 16-row automation denominator. **Do not** equate patch-green local tests with org Done — remote consumers use git **fe22437** + cartridge **6742fa3**.
 

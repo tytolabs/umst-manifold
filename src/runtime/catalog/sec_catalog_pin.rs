@@ -292,7 +292,7 @@ pub fn sec_catalog_pin_p1542_a2_honest() -> bool {
 pub const W29_106_CELL_ID: &str = "W29-106-SEC_CATALOG_PIN";
 
 /// Model pin for this deepen lane.
-pub const DEEPEN_MODEL_SLUG: &str = "cursor-grok-4.5-high";
+pub const DEEPEN_MODEL_SLUG: &str = "cursor-grok-4.6-high";
 
 /// Admit coding lane pin.
 pub const DEEPEN_LANE: &str = "umst-admit-grok";
@@ -530,7 +530,7 @@ mod tests {
         assert!(!sec_catalog_pin_green_invented());
         assert!(!sec_catalog_pin_flip_authorized());
         assert_eq!(MASTER_RETICK, "no");
-        assert_eq!(DEEPEN_MODEL_SLUG, "cursor-grok-4.5-high");
+        assert_eq!(DEEPEN_MODEL_SLUG, "cursor-grok-4.6-high");
         assert_eq!(DEEPEN_LANE, "umst-admit-grok");
         assert_eq!(W29_106_CELL_ID, "W29-106-SEC_CATALOG_PIN");
         assert!(NON_CLAIM.contains("not GREEN"));
@@ -557,7 +557,7 @@ mod tests {
         assert!(!probe.flip_authorized);
         assert_eq!(probe.master_retick, "no");
         assert_eq!(probe.honest_posture, HONEST_DEEPEN_POSTURE);
-        assert_eq!(probe.model_slug, "cursor-grok-4.5-high");
+        assert_eq!(probe.model_slug, "cursor-grok-4.6-high");
         assert_eq!(probe.lane, "umst-admit-grok");
     }
 }

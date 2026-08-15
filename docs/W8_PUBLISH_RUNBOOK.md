@@ -39,7 +39,7 @@ Run from `workspace root/umst-manifold`:
 - [x] `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` (when formal sibling present)
 - [x] `bash scripts/bidirectional_catalog_check.sh` (when formal sibling present)
 - [x] `rg '^axiom ' ../umst-formal-double-slit/Lean/LandauerLaw.lean` → single `physicalSecondLaw`
-- [x] `bash scripts/w8_publish_readiness.sh` — prep gate; accepts git-pinned cartridge **or** workspace `[patch]`
+- [x] `bash scripts/publish_readiness.sh` — prep gate; accepts git-pinned cartridge **or** workspace `[patch]`
 
 Published commit SHA: **`fe2243716112f2504b063e55eb1e15e97ced4bdc`** (`fe22437`).
 
@@ -114,7 +114,7 @@ File: `umst-concrete-cartridge/.github/workflows/rust.yml`.
 - [x] [`AGENT_STATUS.md`](AGENT_STATUS.md): W8 / S1 / S9 → **DONE**
 - [x] [`TODO_COMPLETION.md`](TODO_COMPLETION.md): remote **G-02** ✅
 - [ ] [`FORMAL_BIDIRECTIONAL_ALIGNMENT.md`](FORMAL_BIDIRECTIONAL_ALIGNMENT.md) — remove stale “W8 pending” diagram labels if any remain
-- [x] `bash scripts/w8_publish_readiness.sh` accepts git pin (not patch-only)
+- [x] `bash scripts/publish_readiness.sh` accepts git pin (not patch-only)
 - [x] [`PENDING_GAPS_PLAIN.txt`](PENDING_GAPS_PLAIN.txt) — remote publish + G-02 closed
 
 ---

@@ -245,7 +245,7 @@ pub const MANIFOLD_GW_WRAP_ADMIT_SURFACES: &[ManifoldGwWrapAdmitSurface] = &[
     },
     ManifoldGwWrapAdmitSurface {
         ordinal: 7,
-        surface_id: "umst-gateway::j2_semantic_compose::production",
+        surface_id: "umst-gateway::semantic_compose::production",
         gate_label: "DeviceWrite",
         census_hit: true,
     },
@@ -304,7 +304,7 @@ pub const MANIFOLD_GW_WRAP_LEDGER_PREP_HOPS: &[ManifoldGwWrapLedgerPrepHop] = &[
     },
     ManifoldGwWrapLedgerPrepHop {
         ordinal: 7,
-        admit_surface_id: "umst-gateway::j2_semantic_compose::production",
+        admit_surface_id: "umst-gateway::semantic_compose::production",
         enforce_hook: "enforce_j2_semantic_production_admit",
         prep_hit: true,
     },

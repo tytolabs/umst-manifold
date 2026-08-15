@@ -42,7 +42,7 @@ pub mod protocols;
     feature = "topology-density-evolution",
     feature = "mechanics-voigt-cauchy"
 ))]
-pub mod q1_hex_elasticity;
+pub mod hex_elasticity;
 pub mod rheology_analytic;
 #[cfg(feature = "mechanics-adjoint-q1-hex")]
 pub mod solve_budget;

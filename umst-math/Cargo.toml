@@ -41,39 +41,39 @@ required-features = ["simd"]
 
 [[test]]
 name = "s0_crypto_kem_kat"
-path = "tests/s0_crypto_kem_kat.rs"
+path = "tests/crypto_kem_kat.rs"
 
 [[test]]
 name = "s0_crypto_sig_kat"
-path = "tests/s0_crypto_sig_kat.rs"
+path = "tests/crypto_sig_kat.rs"
 
 [[test]]
 name = "s0_crypto_hash_kat"
-path = "tests/s0_crypto_hash_kat.rs"
+path = "tests/crypto_hash_kat.rs"
 
 [[test]]
 name = "s0_crypto_kem_roundtrip"
-path = "tests/s0_crypto_kem_roundtrip.rs"
+path = "tests/crypto_kem_roundtrip.rs"
 
 [[test]]
 name = "s0_crypto_sig_roundtrip"
-path = "tests/s0_crypto_sig_roundtrip.rs"
+path = "tests/crypto_sig_roundtrip.rs"
 
 [[test]]
 name = "s0_crypto_kem_constant_time"
-path = "tests/s0_crypto_kem_constant_time.rs"
+path = "tests/crypto_kem_constant_time.rs"
 
 [[test]]
 name = "s0_crypto_sig_constant_time"
-path = "tests/s0_crypto_sig_constant_time.rs"
+path = "tests/crypto_sig_constant_time.rs"
 
 [[test]]
 name = "s0_crypto_malformed_input"
-path = "tests/s0_crypto_malformed_input.rs"
+path = "tests/crypto_malformed_input.rs"
 
 [[test]]
 name = "s0_crypto_registry_constants"
-path = "tests/s0_crypto_registry_constants.rs"
+path = "tests/crypto_registry_constants.rs"
 
 [[test]]
 name = "catalog_functor_witness"

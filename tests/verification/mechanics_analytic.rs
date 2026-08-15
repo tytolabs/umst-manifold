@@ -68,7 +68,7 @@ use burn_ndarray::{NdArray, NdArrayDevice};
 
 use umst_manifold::physics::extruded_plate::{ElasticMaterial, ExtrudedPlateMechanics};
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
-use umst_manifold::physics::q1_hex_elasticity::hex_k_times_u_accumulate;
+use umst_manifold::physics::hex_elasticity::hex_k_times_u_accumulate;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
 const DAMAGE_REG: f32 = 1e-6;
@@ -952,7 +952,7 @@ fn plate_centre_deflection_kirchhoff_ssss_q1_hex_within_five_percent() {
 /// **Matrix #2 / §R2.1 (planned):** centre top \(w\) vs **thin Kirchhoff square plate SSSS**
 /// [`kirchhoff_centre_w_ssss`] with **\(|w - w_K| / w_K \le 5\%\)** on the **same** brick path
 /// (`ExtrudedPlateMechanics` + Q1 hex + B-bar / transverse-shear centroid treatment as
-/// [`umst_manifold::physics::q1_hex_elasticity::hex_k_times_u_accumulate`]).
+/// [`umst_manifold::physics::hex_elasticity::hex_k_times_u_accumulate`]).
 ///
 /// **Ignored** so default CI stays honest: opt-in **`UMST_MECHANICS_R21_GATE=1`** runs the assertion;
 /// expects **within 5\%** with [`plate_bottom_uz_mask_ssss_edges_only`] (**vertical lateral faces** **`u_z=0`**).

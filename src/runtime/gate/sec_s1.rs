@@ -68,7 +68,7 @@ pub const PRIOR_RECEIPT_PATH_Z48: &str = "outputs/.tmp/COMPOSER_Z48_1015.md";
 
 /// umst-trust `:trust inspect` close predicate delegate SSOT (Z48 measured).
 pub const S1_TRUST_INSPECT_CLOSE_SSOT: &str =
-    "umst-foundations/crates/umst-trust/src/s1_factor.rs:s1_trust_inspect_closed";
+    "umst-foundations/crates/umst-trust/src/factor.rs:s1_trust_inspect_closed";
 
 /// S-Arc honest posture pin (measured @ migration.rs — no GREEN invent).
 pub const S_ARC_HONEST_POSTURE: &str = "1/10";
@@ -83,7 +83,7 @@ pub const S_ARC_TOTAL_SLICES: u8 = 10;
 pub const S1_CAPSTONE_RESIDUE_FACTOR_ID: &str = "session-ledger";
 
 /// umst-trust S-1 factor ledger delegate SSOT.
-pub const TRUST_S1_FACTOR_SSOT: &str = "umst-foundations/crates/umst-trust/src/s1_factor.rs";
+pub const TRUST_S1_FACTOR_SSOT: &str = "umst-foundations/crates/umst-trust/src/factor.rs";
 
 /// umst-trust ecosystem trust-gate S-1 wire map delegate SSOT.
 pub const TRUST_GATE_SSOT: &str =
@@ -229,7 +229,7 @@ pub const MANIFOLD_SEC_S1_GATE_WIRE_HOPS: &[SecS1GateWireHop] = &[
     },
     SecS1GateWireHop {
         ordinal: 4,
-        surface: "umst-trust::s1_factor::collect_s1_factor_ledger",
+        surface: "umst-trust::factor::collect_s1_factor_ledger",
         role: "S-1 six-row acceptance factor ledger (Y79)",
         wired: true,
     },
