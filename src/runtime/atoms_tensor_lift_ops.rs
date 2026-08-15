@@ -6,7 +6,7 @@
 //
 // Ratchets slice-3c adapter contract rows from `DEFERRED` to `DESIGN_SPECIFIED` — one honest
 // `contract` / `grad` semantic per slice-3b THMC ledger field. Production rank-1+
-// `impl TensorAlgebra` over `burn::Tensor` remains **[open]** — `umst-algebra-burn` not created.
+// `impl TensorAlgebra` over `burn::Tensor` remains **[open]** — adapter crate landed; rank-1+ impl open.
 //
 // **Cross-ref:** slice-3c adapter in [`atoms_tensor_lift_adapter`](super::atoms_tensor_lift_adapter);
 // slice-3b ledger in [`atoms_tensor_lift_ledger`](super::atoms_tensor_lift_ledger);
@@ -360,7 +360,7 @@ pub fn atoms_tensor_lift_ops_w29103_deepen_honest(
         && probe.design_specified_row_count == DESIGN_SPECIFIED_ROW_COUNT_PIN
         && probe.impl_deferred_row_count == IMPL_DEFERRED_ROW_COUNT_PIN
         && !probe.rank1_plus_impl_landed
-        && !probe.adapter_crate_landed
+        && probe.adapter_crate_landed
         && !probe.production_wired
         && !probe.op5_pass_invented
         && !probe.master_invented
@@ -383,7 +383,7 @@ mod tests {
         assert_eq!(summary.posture_tag, POSTURE_TAG);
         assert!(OP_SPEC_LANDED);
         assert!(!RANK1_PLUS_IMPL_LANDED);
-        assert!(!ADAPTER_CRATE_LANDED);
+        assert!(ADAPTER_CRATE_LANDED);
         assert!(SLICE3C_ADAPTER_LANDED);
         assert!(SLICE3B_LEDGER_LANDED);
     }
@@ -465,7 +465,7 @@ mod tests {
         assert_eq!(probe.design_specified_row_count, 6);
         assert_eq!(probe.impl_deferred_row_count, 6);
         assert!(!probe.rank1_plus_impl_landed);
-        assert!(!probe.adapter_crate_landed);
+        assert!(probe.adapter_crate_landed);
         assert!(!probe.production_wired);
         assert!(!probe.op5_pass_invented);
         assert!(!probe.master_invented);

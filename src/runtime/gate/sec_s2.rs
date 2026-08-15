@@ -87,7 +87,7 @@ pub const UCRS_WIRE_PARITY_TEST: &str =
 pub const TRUST_SSOT: &str = "umst-foundations/crates/umst-trust/src/permission.rs";
 
 /// umst-trust S-2 refuse-path factor matrix delegate SSOT.
-pub const S2_FACTOR_SSOT: &str = "umst-foundations/crates/umst-trust/src/src_factor.rs";
+pub const S2_FACTOR_SSOT: &str = "umst-foundations/crates/umst-trust/src/trust_refuse_factor.rs";
 
 /// egoff permission thin re-export SSOT.
 pub const EGOFF_PERMISSION_SSOT: &str = "egoff/egoff/src/security/permission.rs";
@@ -474,7 +474,7 @@ pub fn manifold_verify_trust_gate_policy_pins() -> bool {
     TRUST_SSOT.contains("permission.rs")
         && TRUST_GATE_POLICY_STRICT.contains("STRICT")
         && TRUST_GATE_POLICY_WARN_ONLY.contains("WARN_ONLY_EXPIRY")
-        && S2_FACTOR_SSOT.contains("s2_factor.rs")
+        && S2_FACTOR_SSOT.contains("trust_refuse_factor")
 }
 
 /// Build operator exit expectations for `:trust gate-factors` at manifold boundary.
@@ -631,7 +631,7 @@ pub fn collect_sec_s2_gate_factor_rows() -> Vec<SecS2GateFactorRow> {
         SecS2GateFactorRow {
             factor_id: "cipher-suite",
             refuse_path: "TrustComposeError::SuiteMismatch",
-            probe_wired: S2_FACTOR_SSOT.contains("s2_factor.rs"),
+            probe_wired: S2_FACTOR_SSOT.contains("trust_refuse_factor"),
             acceptance_credit: false,
         },
         SecS2GateFactorRow {
@@ -845,7 +845,7 @@ pub fn manifold_s2_extract_fence_facets_verified() -> bool {
         && S2_EXTRACT_FENCE_FACET_IDS.len() == S2_EXTRACT_FENCE_FACET_COUNT
         && EXTRACT_SSOT.contains("sec_ecosystem_extract.rs")
         && TRUST_ADT_SSOT.contains("crypto/trust.rs")
-        && UCRS_WIRE_PARITY_TEST.contains("s1_trust_ucrs_wire_parity.rs")
+        && UCRS_WIRE_PARITY_TEST.contains("trust_ucrs_wire_parity.rs")
         && !sec_s2_trust_extract_production_wired()
         && MANIFOLD_S2_EXTRACT_PRODUCTION_FENCE_FACETS
             .iter()
@@ -1050,7 +1050,7 @@ mod sec_s2_tests {
     fn sec_s2_trust_gate_policy_pins_verified() {
         assert!(manifold_verify_trust_gate_policy_pins());
         assert!(TRUST_SSOT.contains("permission.rs"));
-        assert!(S2_FACTOR_SSOT.contains("s2_factor.rs"));
+        assert!(S2_FACTOR_SSOT.contains("trust_refuse_factor"));
     }
 
     #[test]

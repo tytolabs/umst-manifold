@@ -862,18 +862,19 @@ mod tests {
         let summary = field_depth_summary();
         assert_eq!(summary.migration_posture, "PHANTOM_TYPED_STAGING");
         assert!(summary.tensor_algebra_impl_landed);
-        assert!(summary.solver_unwrap_boundary_open);
+        // R15-C1 closed all unwrap sites; boundary is no longer open (matches inventory).
+        assert!(!summary.solver_unwrap_boundary_open);
         assert!(summary.plan_field_wrap_landed);
-        assert_eq!(summary.census_row_count, 11);
+        assert_eq!(summary.census_row_count, 15);
         assert_eq!(summary.ledger_aligned_row_count, 6);
         assert!(P3_TENSOR_ALGEBRA_IMPL_LANDED);
-        assert!(P3_SOLVER_UNWRAP_BOUNDARY_OPEN);
+        assert!(!P3_SOLVER_UNWRAP_BOUNDARY_OPEN);
         assert!(P3_PLAN_FIELD_WRAP_LANDED);
     }
 
     #[test]
     fn field_census_rows_align_with_field_space_trait() {
-        assert_eq!(FIELD_CENSUS_ROWS.len(), 11);
+        assert_eq!(FIELD_CENSUS_ROWS.len(), 15);
         assert_eq!(Temperature::MARKER_NAME, "Temperature");
         assert_eq!(Temperature::TENSOR_RANK, 3);
         assert_eq!(SmallStrain::TENSOR_RANK, 4);

@@ -68,7 +68,7 @@ pub const PRIOR_RECEIPT_PATH_Z48: &str = "outputs/.tmp/COMPOSER_Z48_1015.md";
 
 /// umst-trust `:trust inspect` close predicate delegate SSOT (Z48 measured).
 pub const S1_TRUST_INSPECT_CLOSE_SSOT: &str =
-    "umst-foundations/crates/umst-trust/src/factor.rs:s1_trust_inspect_closed";
+    "umst-foundations/crates/umst-trust/src/trust_coordination_factor.rs:s1_trust_inspect_closed";
 
 /// S-Arc honest posture pin (measured @ migration.rs — no GREEN invent).
 pub const S_ARC_HONEST_POSTURE: &str = "1/10";
@@ -83,7 +83,7 @@ pub const S_ARC_TOTAL_SLICES: u8 = 10;
 pub const S1_CAPSTONE_RESIDUE_FACTOR_ID: &str = "session-ledger";
 
 /// umst-trust S-1 factor ledger delegate SSOT.
-pub const TRUST_S1_FACTOR_SSOT: &str = "umst-foundations/crates/umst-trust/src/factor.rs";
+pub const TRUST_S1_FACTOR_SSOT: &str = "umst-foundations/crates/umst-trust/src/trust_coordination_factor.rs";
 
 /// umst-trust ecosystem trust-gate S-1 wire map delegate SSOT.
 pub const TRUST_GATE_SSOT: &str =
@@ -440,7 +440,7 @@ pub fn manifold_s1_all_factors_probed() -> bool {
 /// Verify S-1 trust-gate SSOT pins at manifold boundary.
 #[must_use]
 pub fn manifold_verify_trust_gate_s1_pins() -> bool {
-    TRUST_S1_FACTOR_SSOT.contains("s1_factor.rs")
+    TRUST_S1_FACTOR_SSOT.contains("trust_coordination_factor")
         && TRUST_GATE_SSOT.contains("sec_ecosystem_trust_gate.rs")
         && TRUST_CONSUMER_SSOT.contains("consumers.rs")
         && S1_TRUST_INSPECT_CLOSE_SSOT.contains("s1_trust_inspect_closed")
@@ -916,7 +916,7 @@ mod sec_s1_tests {
     #[test]
     fn sec_s1_trust_gate_pins_verified() {
         assert!(manifold_verify_trust_gate_s1_pins());
-        assert!(TRUST_S1_FACTOR_SSOT.contains("s1_factor.rs"));
+        assert!(TRUST_S1_FACTOR_SSOT.contains("trust_coordination_factor"));
         assert!(TRUST_GATE_SSOT.contains("sec_ecosystem_trust_gate.rs"));
     }
 

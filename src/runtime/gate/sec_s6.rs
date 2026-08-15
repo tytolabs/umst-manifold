@@ -65,7 +65,7 @@ pub const PRIOR_RECEIPT_PATH_2033: &str =
     "old/residuals/residuals/misc-outputs-tmp/COMPLETION_AGAP_AGENT_SEC-S6_2033.md";
 
 /// umst-trust S-6 inspect delegate SSOT (Z126 owner — absorb, do not redo).
-pub const TRUST_SSOT: &str = "umst-foundations/crates/umst-trust/src/inspect.rs";
+pub const TRUST_SSOT: &str = "umst-foundations/crates/umst-trust/src/trust_inspect_posture.rs";
 
 /// umst-semantics SEC-HCOM-PROV authority SSOT.
 pub const SEMANTICS_SSOT: &str =
@@ -524,7 +524,7 @@ pub fn manifold_scert_upstream_slots_verified() -> bool {
 /// Whether S-6 inspect delegate pins match Z126 honest scaffold (6 wired / 0 credit).
 #[must_use]
 pub fn manifold_s6_inspect_delegate_verified() -> bool {
-    TRUST_SSOT.contains("s6_inspect")
+    TRUST_SSOT.contains("trust_inspect_posture")
         && PRIOR_Z126_RECEIPT_PATH.contains("COMPOSER_Z126_1232")
         && S6_INSPECT_FACTOR_COUNT == 6
         && SCERT_EXIT_NOT_WIRED == 2
@@ -900,7 +900,7 @@ mod sec_s6_tests {
     fn sec_s6_prior_receipt_paths_pinned() {
         assert!(PRIOR_RECEIPT_PATH_2033.contains("SEC-S6_2033"));
         assert!(PRIOR_Z126_RECEIPT_PATH.contains("COMPOSER_Z126_1232"));
-        assert!(TRUST_SSOT.contains("s6_inspect"));
+        assert!(TRUST_SSOT.contains("trust_inspect_posture"));
         assert!(GATEWAY_SSOT.contains("sec_hcom_prov_gw"));
     }
 
