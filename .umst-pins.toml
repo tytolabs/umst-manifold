@@ -13,3 +13,15 @@ repo = "https://github.com/tytolabs/umst-formal-double-slit"
 sha = "0aec25337758f254058ad253942e47e73d277339"
 pinned_at = "2026-07-01T20:28:00Z"
 repo = "https://github.com/tytolabs/umst-formal"
+
+[umst-foundations]
+sha = "85bda074c1a34788f60210d09c15e22ac76b0e74"
+repo = "https://github.com/tytolabs/umst-foundations"
+
+[umst-cartridge-api]
+sha = "cfb27d2efad3f458dc5ac3d55581ef81f86a6705"
+repo = "https://github.com/tytolabs/umst-cartridge-api"
+
+[umst-cartridges]
+sha = "cdf3eeb43dfced32746e74020cc926a0a1a2d2ab"
+repo = "https://github.com/tytolabs/umst-cartridges"

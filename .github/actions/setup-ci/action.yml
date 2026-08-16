@@ -11,6 +11,15 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Checkout private UMST siblings (foundations + cartridges)
+      shell: bash
+      run: |
+        set -euo pipefail
+        F=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-foundations']['sha'])")
+        A=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-cartridge-api']['sha'])")
+        C=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-cartridges']['sha'])")
+        bash .github/scripts/checkout-umst-siblings.sh           "umst-foundations@${F}"           "umst-cartridge-api@${A}"           "umst-cartridges@${C}"
+
     - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
       with:
         toolchain: "1.88"

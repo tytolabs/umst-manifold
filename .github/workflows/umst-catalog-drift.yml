@@ -36,6 +36,7 @@ on:
     - cron: "0 6 * * 1"
 
 env:
+  UMST_PRIVATE_CHECKOUT: ${{ secrets.UMST_PRIVATE_CHECKOUT }}
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
   UMST_FORMAL_ROOT: ${{ github.workspace }}/umst-formal-double-slit
