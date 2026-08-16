@@ -772,7 +772,7 @@ Released under the [MIT License](LICENSE). © 2026 .
 <!-- AUTO-LATTICE:BEGIN -->
 ## Lattice position
 
-**What it is:** `tytolabs/umst-manifold` — Future rename target: umst-runtime (A3).
+**Role.** `tytolabs/umst-manifold` — matter runtime / DEC carrier (GitHub remote unchanged; A3 rename **not** done).
 
 **One-line role:** `runtime` on layer `runtime` (status `wip`, stability `evolving`, semver `0.1.0`).
 
