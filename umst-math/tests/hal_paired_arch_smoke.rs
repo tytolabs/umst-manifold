@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! M4: paired-mock laws + (Linux) real `build_linux_inventory` with `ArchClass` population.
 // mock path always runs; Linux path exercises real backends; macOS stays on mocks (H-9-mac).
 

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Constant provenance taxonomy (foundation Phase 3).
 
 /// How a load-bearing numeric constant is grounded.

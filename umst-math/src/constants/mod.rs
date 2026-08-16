@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Constants grounding registry (Phase N-CGD-scaffold).
 //!
 //! The [`registry`] submodule holds the compile-time `REGISTRY` table and helpers; the human-readable

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Stateless deterministic `query(z) → {geometry, metrics, margin, ∂/∂z}` (R3).
 //!
 //! **Honest status:** v0 read-only compliance + margin witness is **live (partial)** — not physics

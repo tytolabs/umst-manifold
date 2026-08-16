@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! **P4B — volumetric 3D brick (tetrahedron boundary):** [`photonics_uniform_brick_tetrahedron_boundary_tensors`]
 //! wires the canonical **3-simplex** boundary COO into [`PhotonicsSolver::solve_maxwell_curl_curl`].
 

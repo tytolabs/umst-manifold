@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Kleisli gate pipeline end-to-end (`math-kleisli-e2e-test`, Wave 7 slot 4).
 //!
 //! **propose** ([`evaluate_transition_pure_with_params`]) → **penalize**

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Density evolution on the primal 1-skeleton (“sheaf-carried” scalar field).
 //!
 //! [`TopologySolver`] holds nodal pseudo-density \(\rho\) (`[B, N, 1]`) and advances it with an

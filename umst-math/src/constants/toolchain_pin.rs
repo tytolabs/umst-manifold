@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Parse `umst-math/TOOLCHAIN_PIN.txt` (§14bis.j ZCI) — `key: value` per non-`#` line.
 //!
 //! Future §14bis.k: lift Tier-4 rows to `Derivation::Pin { repo, ref_name }`.

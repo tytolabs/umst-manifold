@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # VERIFY_TRANSCRIPT — machine run record
 
 **Date:** 2026-06-19 (Composer backlog T2 — catalog bundle pin bump)  

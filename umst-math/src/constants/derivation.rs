@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Constant-Derivation Discipline (CDD) — §0.11 shapes for `REGISTRY` rows.
 //!
 //! Every [`super::registry::ConstantEntry`] carries a [`Derivation`] describing how egoff

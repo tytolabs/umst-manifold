@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Thermodynamic gates, Kleisli admissibility, and CBF bridging.
 //!
 //! Source lineage: **`umst-prototype` / `umst-prototype-2a`** `science/thermodynamic_filter.rs`,

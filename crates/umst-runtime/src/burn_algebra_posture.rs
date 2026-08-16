@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! `BurnAlgebra` production posture — slice-3 defer anchor for `umst-runtime`.
 //!
 //! **Honest boundary:** `umst-runtime` is the designated `burn::Tensor` home per

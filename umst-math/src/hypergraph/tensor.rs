@@ -1,7 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 //! Vendored from tytolabs/umst-prototype-2a@9c0434d
 //! `prototype/src/rust/core/src/tensors/hyper_graph_tensor.rs`
 //! SPDX-License-Identifier: MIT
-//! Copyright (c) 2025–2026 Tyto Labs, Inc. and upstream authors
 //!
 //! Adaptation: unweighted, single-threaded [`petgraph::graph::UnGraph`] with
 //! external `usize` ids; **not** the full `TensorNode` / `Material` / `petgraph` directed

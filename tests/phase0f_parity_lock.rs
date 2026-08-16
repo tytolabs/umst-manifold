@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Phase 0f — parity lock under live digest (blueprint §7 0f · `NEW_REPOS_BUILD_SPEC` §E.4).
 //!
 //! Declares **M0 — Foundation reconciled** when this suite is green alongside:

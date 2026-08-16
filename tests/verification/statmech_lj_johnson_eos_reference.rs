@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! **Johnson–Zollweg–Gubbins (1993)** Lennard-Jones EOS — `f64` reference lane (teqp-aligned).
 //!
 //! Implements analytic reduced `P*(ρ*, T*)` and isothermal `K* = ρ* ∂P*/∂ρ*` via numerical

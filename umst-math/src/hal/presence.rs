@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! `UnitPresence<U>` — Q5 *tagged sum* (FORWARD-PLAN §0.1) with four *honest* absence reasons (NED §0.5).
 //!
 //! - [`UnitPresence::Present`]: a witness `U` (in H-8, a [`super::traits::HardwareUnit`] impl)

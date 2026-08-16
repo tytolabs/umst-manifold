@@ -1,6 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 //! Vendored from tytolabs/umst-prototype-2a@9c0434d
 //! SPDX-License-Identifier: MIT
-//! Copyright (c) 2025–2026 Tyto Labs, Inc. and authors named in upstream
 //! `prototype/src/rust/core/src/tensors/sparse.rs`
 //!
 //! Adaptation: `SparseTensor<T>`, 2D COO in sorted unique (row‑major) flat

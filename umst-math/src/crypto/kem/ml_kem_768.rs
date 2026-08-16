@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! ML-KEM-768 — PQClean `kyber768` (`pqcrypto-kyber`).
 //!
 //! THEOREM-BOUND hooks cite `Crypto/KEM.lean` upstream (`umst-formal` L-S0 stubs).

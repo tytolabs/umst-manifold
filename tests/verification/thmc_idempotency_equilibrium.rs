@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! FP Manifesto §6 — THMC idempotency at composite equilibrium and hydrate/sync roundtrip.
 
 #![cfg(feature = "thmc-coupled")]

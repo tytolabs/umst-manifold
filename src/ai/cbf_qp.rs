@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! CBF-QP steering filter (F2): project agent proposals onto the admissible half-space.
 //!
 //! Warm/agent layer only — no serde, clock, or tape through PCG.

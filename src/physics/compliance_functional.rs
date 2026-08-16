@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Typed compliance functional port (R1b): one kernel for optimizer, readout, and gate audit.
 //!
 //! Hot-path only — no serde, HTTP, or filesystem I/O.

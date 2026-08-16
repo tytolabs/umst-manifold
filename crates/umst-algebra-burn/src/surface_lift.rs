@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Atom-surface burn scalar lift measurement — R13 burn backend closure.
 
 use crate::golden_harness::{compare_burn_lift_to_golden, rank1_eps, GoldenVerdict};

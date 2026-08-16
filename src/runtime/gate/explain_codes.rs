@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Gate explain vocabulary SSOT — reject codes, remediation, and field hints.
 //!
 //! Cold-edge only. Cartridge MCP (`build_gate_explain`) and manifold

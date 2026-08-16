@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Milestone **2.4** — `statistical_mechanics` virial bridge → **mechanics** / **fracture** hooks and
 //! autodiff parity on **physical pressure** w.r.t. \(\rho^*\) (Burn reverse mode vs finite differences),
 //! matching \(K_T=\rho(\partial P/\partial\rho)_T\) with \(\partial P/\partial\rho\) from the same \(P(\rho^*)\) graph.

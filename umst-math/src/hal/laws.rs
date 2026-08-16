@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Pure **category-𝓗** *routing* laws on [`super::kinds::UnitKind`] (FORWARD-PLAN §0.2).
 //! Routes are Kleisli arrows `α → Option<UnitKind>`; composition is the `Option` monad `and_then` chain.
 //!

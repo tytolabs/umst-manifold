@@ -1,5 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 //
 // AGAP-1920-B4-076 @ 19:20 IST — runtime T4 seam bridge for R-atoms-scalar / Burn deepen.
 // W29-099-ATOMS_SCALAR_BRIDGE — Composer RL honesty deepen (umst-admit-grok).

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Fixed-layout arena header (ABI v1).
 
 /// Little-endian magic: ASCII `UMST` (`0x54_53_4D_55`).

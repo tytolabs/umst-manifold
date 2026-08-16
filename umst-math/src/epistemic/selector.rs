@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! MI-weighted ranking of candidate epistemic proxies (TytoLabs prototype selector port, Phase K1).
 //!
 //! Structural analogue: utility-ranked provider keys (`ranked_zeroclaw_completion_keys` in cockpit) —

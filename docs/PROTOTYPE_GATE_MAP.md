@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Prototype audit — paths → manifold module
 
 Audit of UMST prototypes and embodied bridge code vs **canonical Rust SSOT** in `umst-manifold`. ROS2 CLI usage elsewhere (e.g. `zeroclaw/crates/robot-kit`) is **not** a UMST theorem pipeline; manifold carries only serde **contracts** for cross-language alignment.

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Thermodynamic control barrier function (CBF) for PPO / [`ManifoldGateway`] admissibility.
 //!
 //! **Honest status:** scalar + tensor barrier bookkeeping is measured — not physics GREEN,

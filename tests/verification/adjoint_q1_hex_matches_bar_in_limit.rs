@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Slender **z-column** (`nx = ny = 1`, many **`nz`** cells, tiny **`dx`,`dy`**) pulled along **`z`**:
 //! compare continuum **Q1 hex** compliance to the packed-bar surrogate on **z-aligned skeleton edges**
 //! only (**four parallel axial chains**, one through each lateral corner profile). **`ν = 0`** trims

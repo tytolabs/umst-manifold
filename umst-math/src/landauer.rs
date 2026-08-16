@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Landauer cost scaling for diagonal erasure / extraction (session accounting).
 
 use ordered_float::NotNan;

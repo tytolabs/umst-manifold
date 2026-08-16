@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 #
 # Local / CI parity for UMST catalog drift: cargo check, Lean export digest vs lock,
 # gate + formal witness integration tests, and optional prototype adversarial gate (E6).

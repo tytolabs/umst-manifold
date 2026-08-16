@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Bridges **volumetric** Clausius–Duhem surrogates into scalar joule proxies for [`crate::ai::cbf::ThermodynamicCBF`].
 
 /// PHY-002 morphism id @ PORT_GRAIN_BAND `gate:cbf_bridge`.

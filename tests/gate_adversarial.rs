@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Adversarial gate golden (Phase E): FNR must stay 0 on pinned `adversarial_gate_test.json`.
 //! Vendored from `umst-prototype_2/results/` — regression witness for R1/R3 boundary (no new axioms).
 

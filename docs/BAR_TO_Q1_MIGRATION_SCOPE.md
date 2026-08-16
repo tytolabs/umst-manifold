@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Bar → Q1 hex migration scope (Track C S4)
 
 **Status:** Partial — adjoint Q1-hex shipped; bar-limit parity test remains `#[ignore]`.

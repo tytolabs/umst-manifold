@@ -1,6 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! AABB octree — directed tree, **no self-ancestor** (I4).
 
-// SPDX-License-Identifier: MIT
 use super::error::ManifoldError;
 
 /// One octree node (8-way branching; M-0 uses linear chains for tests).

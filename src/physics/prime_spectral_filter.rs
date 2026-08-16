@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Elementwise spectral guidance filter on auxiliary density channels (Layer A).
 //!
 //! formal_anchor: Lean `UMST.PrimeSpectralGuidance.spectralFilter`

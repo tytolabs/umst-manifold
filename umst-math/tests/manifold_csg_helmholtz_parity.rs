@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! 1D Helmholtz SDF gradient parity with `qHydration` (SDFGate.hs, UMST.hs).
 #![cfg(test)]
 

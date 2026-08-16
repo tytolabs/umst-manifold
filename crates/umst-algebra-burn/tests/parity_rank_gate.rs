@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! R14-0 — rank-indexed parity gate integration tests.
 
 use umst_algebra_burn::parity_rank::{close, Evidence, ParityClaim, ParityRank};

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Host / CLI IO boundary for PPO constraint slack weights.
 //!
 //! [`crate::ai::ppo::ManifoldGateway`] keeps **no `std::env`** reads in `src/ai/**`.

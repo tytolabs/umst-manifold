@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! GREEN §14bis.f-S-0 — SHA3-256 KAT (R-3.3.x).
 
 use umst_math::crypto::error::CryptoError;

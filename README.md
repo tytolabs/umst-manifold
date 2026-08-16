@@ -1,6 +1,6 @@
-<!--
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 SPDX-License-Identifier: MIT
-Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
+<!--
 -->
 
 # UMST Manifold
@@ -732,9 +732,9 @@ Prefer **library/arena calls over Docker MCP** for performance-sensitive proposa
 
 ## Authors
 
-**Santhosh Shyamsundar** — Studio TYTO · [santhoshshyamsundar@tyto.studio](mailto:santhoshshyamsundar@tyto.studio)
+**Santhosh Shyamsundar** —  · [santhoshshyamsundar@tyto.studio](mailto:santhoshshyamsundar@tyto.studio)
 
-**Santosh Prabhu Shenbagamoorthy** — Studio TYTO · [santosh@tyto.studio](mailto:santosh@tyto.studio)
+**Santosh Prabhu Shenbagamoorthy** —  · [santosh@tyto.studio](mailto:santosh@tyto.studio)
 
 ---
 
@@ -766,7 +766,7 @@ Bibliographic metadata is maintained in [`CITATION.cff`](CITATION.cff).
 
 ## License
 
-Released under the [MIT License](LICENSE). © 2026 Studio TYTO.
+Released under the [MIT License](LICENSE). © 2026 .
 
 <!-- AUTO-LATTICE:BEGIN -->
 ## Lattice position

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! FP §5 — operator-split THMC sub-passes as owned-state `ThmcState → Result<ThmcState>` morphisms.
 //!
 //! Composed by the outer Newton loop in [`super::thmc::ThmcSolver::step_experimental`] (RW-FP-P52).

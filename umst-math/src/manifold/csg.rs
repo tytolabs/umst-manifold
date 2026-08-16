@@ -1,6 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Combinatorics: hard CSG and smooth min (Haskell `SDFGate` discipline).
 
-// SPDX-License-Identifier: MIT
 // Algebra reference: umst-formal/Haskell/SDFGate.hs (intersectSDF, rUnionSDF, smoothUnionSDF)
 
 const CSG_SMOOTH_K: f64 = 0.05; // see `manifold_csg_smooth_k_default` in REGISTRY (Tier-3 policy)

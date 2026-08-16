@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Verified UMST DEC typestate staging
 
 **Status:** Witness spike (`math-verified-umst-typestate`, Wave 5 slot 4).  

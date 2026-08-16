@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # UMST manifold documentation index
 
 **Audience:** New contributors joining the Lean→Rust proof-extraction program (`lean-to-rust_proof_extraction_fd8f70b5`).  
@@ -129,3 +131,6 @@ flowchart TB
 - **Cartridges:** `umst-concrete-cartridge`, `umst-supercap-cartridge` — manifest bridge and `FORMAL_SCALING.md`
 
 Root crate overview: [`../README.md`](../README.md).
+## 🔒 Confidentiality Notice
+
+This repository contains proprietary information. Copyright (c) 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar. All rights reserved. Unauthorized copying, distribution, or use of these files, via any medium, is prohibited.

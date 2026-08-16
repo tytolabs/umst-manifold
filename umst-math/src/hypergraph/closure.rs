@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Hypergraph (undirected) **clique** closure: within each connected component, add
 //! the missing simple edges; idempotent. Specialises **RED §0.8** to an algebraic
 //! idempotent (projective) operator on a finite unweighted `UnGraph`.

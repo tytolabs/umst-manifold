@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! H-9 IntelIgpu (Linux; i915 / DRM) — no hard-coded Present: respect host probes.
 #![cfg(target_os = "linux")]
 

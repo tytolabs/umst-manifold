@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Dual-pin catalog architecture
 
 **Status:** Implemented (schema v2 live in `artifacts/catalog.lock.json`).  

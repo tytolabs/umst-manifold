@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Tokenisation and lightweight text normalisation (ASCII/CJK fast path).
 //!
 //! Moved from legacy cockpit physics module `physics.rs` — see `docs/CGD_REGISTRY.md` Phase 2 §5.4.

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+# SPDX-License-Identifier: MIT
 # W9 S2 verifier: Tier-1 domain lexicon in kernel src must be ZERO (no baseline ratchet).
 #
 # Usage (from umst-manifold): bash scripts/check_domain_lexicon.sh
 #
-# SPDX-License-Identifier: MIT
 
 set -euo pipefail
 

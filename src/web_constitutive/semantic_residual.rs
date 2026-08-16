@@ -1,5 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 //
 // AGAP-2033-MANIFOLD-SEM — semantic lane residuals on WEB-005 constitutive cartridge.
 // W29-133 deepen — honest fences; fallible row extract; no invent GREEN / PRODUCTION_WIRED /

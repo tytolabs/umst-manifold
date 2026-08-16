@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Kleisli gate pipeline composition sketch (`math-kleisli-gate-pipeline`).
 //!
 //! **propose → penalize (constraint_loss host mirror) → witness (GateCartridge)**

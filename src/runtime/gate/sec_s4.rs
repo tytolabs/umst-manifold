@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! AGAP-2033/2127-SEC-S4 — manifold gate runtime side-channel scrub wire map.
 //!
 //! **Policy:** manifold gate runtime owns the **cold-edge census** bridging

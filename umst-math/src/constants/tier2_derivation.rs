@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! K-3 — Tier-2 measurement-derived constant derivations (§14bis.k · §0.11 CDD).
 //!
 //! H-9 HAL cluster batch: six `Tier1Measurement` registry rows with JSONL receipts.

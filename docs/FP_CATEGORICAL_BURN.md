@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # FP categorical burn — physics host-sync audit
 
 **Epic:** `fp-sort-io-monad-audit` · **Scope:** `src/physics/` tensor escape tiers and solver hotspots.

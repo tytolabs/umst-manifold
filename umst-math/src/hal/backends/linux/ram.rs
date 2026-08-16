@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! System RAM + best-effort DRAM RAPL (package used as package path)
 
 use std::sync::atomic::{AtomicU64, Ordering};

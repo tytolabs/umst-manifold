@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Unified cryptographic surface errors (`§14bis.f-S-0`).
 
 /// Crate-wide cryptographic failures surfaced to ε-bisim witnesses (§24 ε-bisim witnesses).

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Manifold shim — SSOT wire types in `umst-gate` (P2.0); predicate SSOT in
 //! `umst_cartridge_concrete::evaluate_material_conjuncts` (B4 @ Z20).
 pub use umst_gate::material_gate::{MaterialGateOutcome, MaterialTransitionWitness};

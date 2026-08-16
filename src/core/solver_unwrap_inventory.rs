@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 //! P3 solver unwrap boundary inventory — named open call sites (R14-4) + R15-C1 disposition.
 //!
 //! SPDX-License-Identifier: MIT

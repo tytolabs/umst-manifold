@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Mechanics trait ports — bar→Q1 boundary
 
 **Task:** `integration-mechanics-trait` · **Track:** Fracture 2 (solver witness + operator ports)  

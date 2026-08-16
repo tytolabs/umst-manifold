@@ -1,6 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Voxelized canonical SDF + deterministic FNV hash (GMD-2, I3).
 
-// SPDX-License-Identifier: MIT
 use super::error::ManifoldError;
 use super::sdf::Sdf;
 

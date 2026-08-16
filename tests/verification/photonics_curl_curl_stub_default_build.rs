@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Default-lane contract: without `--features photonics`, [`PhotonicsSolver::solve_maxwell_curl_curl`]
 //! is a documented no-op (returns `e_field` unchanged). See `docs/Solver-Status.md` (**OPEN ROADMAP ITEM — Photonics**)
 //! and module docs in `src/physics/solvers/photonics.rs`.

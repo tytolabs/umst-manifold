@@ -1,5 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 //
 // ACCEL-D AC102 — umst-manifold test battery sustain deepen witness.
 // Absorbs J11 (`COMPOSER_J11_2348.md`) · X80 (`COMPOSER_X80_0734.md`) · H79.

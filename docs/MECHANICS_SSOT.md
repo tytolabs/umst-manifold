@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Mechanics SSOT (integration-contracts D2)
 
 **Module:** `src/physics/mechanics_operator.rs`  

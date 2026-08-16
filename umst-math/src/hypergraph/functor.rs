@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Monoidal edge product + relabelling (functorial on vertex indices).
 //!
 //! **Scalar-only** — portable across ISAs (§0.3).

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! AGAP-2350-MANIFOLD — night residual deepen for semantic lane / WEB-005 conjuncts.
 //!
 //! Does **not** flip production gates or claim new GREEN beyond prior AGAP-2033 deepen.

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Phase 0b — canonical **Core** `gate<R>` predicate (blueprint §7 0b · §17.3 · `NEW_REPOS_BUILD_SPEC` §E.4).
 //!
 //! **Universal conjuncts only:** Mass Conservation + Clausius–Duhem in open-system form

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Structured rejection reasons at the manifold policy gateway.
 //!
 //! CBF rejections carry [`LANDAUER_CBF_CATALOG_ID`] for telemetry alignment with

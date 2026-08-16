@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! GREEN §14bis.f-S-0 — KEM constant-time verification hook (R-3.6.x).
 
 use subtle::ConstantTimeEq;

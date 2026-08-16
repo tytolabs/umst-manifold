@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 # SPDX-License-Identifier: MIT
 # After `actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1`: Rust 1.88 + cache (umst-math is workspace member at umst-math/).
 name: Setup UMST manifold CI

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Cold-edge serialization for gate verdicts (`ucrs-provenance` only).
 //!
 //! No clock reads here — caller supplies [`super::evidence::UcrsObservedAtWire`] at the boundary.

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Integration test: [`ManifoldGateway::evaluate_topology_step`] with a stub cartridge and a finite
 //! [`suggested_info_gain_from_batched_nodal_scalars`] tensor feeding the Landauer branch (same
 //! surrogate family as [`umst_manifold::ai::info_gain::suggested_info_gain_from_state_delta`]).

@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Solver status (v0.4)
 
 This page is the **authoritative** mapping from solver surfaces to **Cargo feature lanes**, **integration tests** cited in CI, and **honest** completion signals. A short parallel index lives in [`PROOF-STATUS.md`](PROOF-STATUS.md) (Track J3). Formal notation and validation context: [`Mathematical-Foundations.md`](Mathematical-Foundations.md), [`Validation.md`](Validation.md). Bibliography skeleton: [`References.bib`](References.bib).

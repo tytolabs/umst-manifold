@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! §0.8 — RED ε-bisim for Joseph scalar EKF (`1.0` ms per step; `update` = `update_with_step_ms(·, 1.0)`).
 //!
 //! ε: absolute **1e-9** (pinned in TUI-7 HANDBACK).

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Track 13 — implicit THMC residual assembly for Newton / JFNK.
 //!
 //! **Solver status / matrix:** authoritative lane notes live in **[`docs/Solver-Status.md`](../../../docs/Solver-Status.md)**

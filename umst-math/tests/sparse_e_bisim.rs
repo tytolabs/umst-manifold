@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! RED §0.8 e-bisim for `umst_math::sparse` (vendored 2a `tensors/sparse.rs` shape).
 
 use quickcheck::quickcheck;

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Minimal smoke target for `--features formal-witness` CI matrices.
 //! Adaptive module priority: `tests/witness_priority_queue.rs` + `WitnessPriorityQueue`.
 

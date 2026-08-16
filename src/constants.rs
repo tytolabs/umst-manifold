@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Shared physical constants. With feature `math-constants`, Landauer bit energy is SSOT from `umst-math`.
 //!
 //! W29-019 deepen — honest SSOT fences only; does **not** claim production wiring or MASTER retick.

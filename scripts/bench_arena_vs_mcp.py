@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+# SPDX-License-Identifier: MIT
 """Arena vs MCP round-trip benchmark — Phase 2 exit witness (≥5× in-process target).
 
 Compares stdio MCP `umst_gate_check` wall time vs in-process `load_arena` hot loop (N=100).

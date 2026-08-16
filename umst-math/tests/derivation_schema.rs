@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! K-1 — `Derivation` enum + REGISTRY schema extension (§14bis.k; EGOFF-004).
 
 use umst_math::constants::derivation::{Derivation, DERIVATION_SCHEMA_VERSION};

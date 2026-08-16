@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Host-side `f32` GMRES (no restart) for matrix-free solves on packed `f32` vectors.
 //!
 //! Shared by THMC JFNK (`thmc_jfnk` shim under `solver-experimental`) and acoustics Newmark linear

@@ -1,5 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 //
 // AGAP-2033-PBM-010 · AGAP-2127-PBM-010 — slice residual rows deepen for R-atoms-scalar / F1.
 // W29-104-ATOMS_TENSOR_LIFT_RESIDU — Composer RL honesty deepen (umst-admit-grok).

@@ -1,8 +1,9 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Hilbert **2D** curve: space-filling index (L-M0 empirical; `C` locality bound in tests).
 //!
 //! Algorithm: the classic recursive quadrant transform (public-domain Wikipedia shape).
 
-// SPDX-License-Identifier: MIT
 // 2D Hilbert d2xy/xy2d — `xy2d` is implemented by **linear scan** on `0..2^(2*bits)`; ok for
 // `bits ≤ 8` (B-Arc can replace with O(bits) if needed for hot paths).
 

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Deterministic 7×4 presence-variant grid (7 [`UnitKind`] × 4 `UnitPresence` *tags*)
 use umst_math::hal::UnitKind;
 

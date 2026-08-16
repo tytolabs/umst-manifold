@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! FP v0.4 pilot: **controlled iteration** helpers for solver loops (Picard, damped Newton on `Copy` state, etc.).
 //!
 //! **Canonical choice vs `core::iterate_until`:** see `docs/FP_FIXED_POINT_CANONICAL.md` — use this module for

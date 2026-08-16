@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! THMC residual witness inventory — code-SSOT @ [`THMC_RESIDUAL_RECEIPT`].
 //!
 //! FP §2 totality (`thmc_residual.rs` → `PhysicsError`) and FP §6 residual-path witnesses

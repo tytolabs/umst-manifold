@@ -1,4 +1,5 @@
-// SPDX-FileCopyrightText: 2018-2026 Studio TYTO
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 // SPDX-License-Identifier: LicenseRef-MIT
 
 //! §14bis.h L-6 — theorem ↔ constant crosswalk adversarial witnesses (honest partial).

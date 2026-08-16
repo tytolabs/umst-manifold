@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+# SPDX-License-Identifier: MIT
 # Verification manifest (integration-contracts D4)
 # Audit §4 — NEVER-RUN rows for #[ignore] envelopes (Wave 2 executes once).
 

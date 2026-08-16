@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 # SPDX-License-Identifier: MIT
 # Fail when RUNTIME_TOPOLOGY.md labels shipped arena/warm-path items as planned/skeleton.
 set -euo pipefail

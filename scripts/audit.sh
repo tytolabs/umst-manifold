@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+# SPDX-License-Identifier: MIT
 # W9 T2.1 — kernel catalog_id grep vs cartridge registry parity (Goal C).
 # Extended Track C: tyto-workspace verify_public_stack + rejection telemetry grep.
 set -euo pipefail

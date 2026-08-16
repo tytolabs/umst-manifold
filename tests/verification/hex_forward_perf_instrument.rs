@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
 // B6 Phase 2a: per-forward diagnostics fields (logging only; no numeric change).
 

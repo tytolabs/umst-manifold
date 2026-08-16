@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! ML-DSA-65 engineering lane — PQClean **Dilithium3** (`pqcrypto-dilithium`).
 //!
 //! NIST FIPS 204 parameter class maps to Dilithium3 in PQClean (`ML-DSA-65` slice naming).

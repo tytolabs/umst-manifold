@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Pure catalog → scalar-layout functor witness (Phase 1 §1B + dual-pin lock).
 //!
 //! Maps catalog **fiber ids** (repo slugs in `catalog.lock.json`) to expected nodal scalar

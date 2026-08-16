@@ -1,6 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! SDF surface — I3 `canonicalize_voxelize` (pure; no `&mut self` on the trait's witness site).
 
-// SPDX-License-Identifier: MIT
 // SDF type discipline from `umst-formal/Haskell/SDFGate.hs` (signed distance, outside>0 if positive convention).
 
 use super::csg;

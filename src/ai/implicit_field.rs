@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Neural implicit field decode scaffold (R4) — decode-only, no CutFEM.
 //!
 //! **Honesty:** MLP `(z, x) → φ` with sigmoid density mapping only. Not eikonal-regularized,

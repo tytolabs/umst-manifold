@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Hilbert 2D d=4: 16² = 256 indices, locality, C ≤ 6 witness.
 #![cfg(test)]
 

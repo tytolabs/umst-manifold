@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! PCG vs true masked residual probe at harness fixtures (9×8×2 and 40×40×4).
 
 #![cfg(feature = "mechanics-adjoint-q1-hex")]

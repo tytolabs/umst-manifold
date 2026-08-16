@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Solver never-run ledger (Wave 2 inventory)
 
 **Track C S3** — inventory of `#[ignore]` verification envelopes. **Do not** run `cargo test -- --ignored` without USER gate (B6 / Wave 2).

@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # God-grade progress — verified run
 
 **Verified (UTC):** 2026-05-29 (local `verify_umst_stack.sh` exit **0**; CI green @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437); prior 2026-05-21T22:13:30Z)  

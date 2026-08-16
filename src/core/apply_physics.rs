@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Merge sparse nodal [`crate::core::traits::PhysicalResult`] channels back into a live
 //! [`crate::core::tensors::UnifiedMaterialStateTensor`] for topology / gateway loops.
 //!

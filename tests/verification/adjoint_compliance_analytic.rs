@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Track A2 — discrete **AdjointCompliance** verification on a **4-node axial bar chain** (3 edges).
 //!
 //! Forward: compare raw compliance to series-spring mechanics with SIMP

@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # RFC: Gate evidence bundle (integration-contracts D5 — spec only)
 
 **Status:** Draft spec — **no Lean mechanization in this wave**  

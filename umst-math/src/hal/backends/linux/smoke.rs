@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! WorkloadKind::Smoke — 1 KiB copy round-trip; pure CPU-side, no I/O in the body.
 
 const SMOKE_BYTES: usize = 1024;

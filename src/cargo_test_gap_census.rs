@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! FLEET-COMPOSER-J J11 — `cargo test -p umst-manifold` full battery + OP-5 measure.
 //!
 //! Absorbs H79 (`COMPOSER_H79_2242.md`) and I81 queued re-run. Documents substrate

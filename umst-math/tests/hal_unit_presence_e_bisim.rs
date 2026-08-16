@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! §0.8 — `UnitPresence` four-way ε-bisim (stringify stability)
 use std::string::String;
 

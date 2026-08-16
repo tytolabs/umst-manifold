@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! `WebConstitutiveModel` — informational domain cartridge (build-spec §A8 · WEB-005).
 //!
 //! Parallel to concrete [`umst_cartridge_concrete::evaluate_material_conjuncts`]: extracts web

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Schrödinger (unitary) branch — reversible single-Kraus step.
 
 /// Identity unitary placeholder (entropy-preserving step).

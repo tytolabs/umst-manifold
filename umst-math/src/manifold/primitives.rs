@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Native **FRep SDF** primitives and small **metric** helpers for M-Arc.
 //!
 //! **SDF kernel:** `umst-prototype-2a/.../tensors/geometry.rs` is a **SAV/curvature consumer** of
@@ -6,7 +8,6 @@
 //! `max`**, **union = `min`** in the inside-negative convention, **zero level set = boundary**,
 //! **half-spaces** as 1D slab / offset SDFs (see `csg` module for the gate’s four half-spaces on
 //! state-pair space).
-// SPDX-License-Identifier: MIT
 //
 // Algebra ref (pinned for CDD / traceability; file path in `umst-formal` monorepo):
 // `Haskell/SDFGate.hs` @ a9096507df5c1d8053641f14b36b712c1ecefd7b

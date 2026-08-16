@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! `HardwareUnit` — the §14bis.f-H-8 *object* morphism interface (category **𝓗**; FORWARD-PLAN v1.2 §0.2).
 //! Every method is a typed *capability* on a physical unit; backends (H-9, H-9-mac) will implement.
 //!

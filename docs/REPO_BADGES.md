@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Repository badges
 
 **Canonical SSOT:** [`tyto-workspace/docs/repo-badges.v1.json`](../../docs/repo-badges.v1.json) (machine-readable catalog).

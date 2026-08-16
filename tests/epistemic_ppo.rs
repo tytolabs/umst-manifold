@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Epistemic PPO integration tests (`--features epistemic-ppo` only).
 //!
 //! Histogram MI feeds the Landauer CBF branch; epistemic bonus is applied post-R2 per

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! SEC-S7 gate runtime witness — manifold fed-trust migration census on cold-edge evidence.
 
 use umst_manifold::runtime::gate::sec_s7::{

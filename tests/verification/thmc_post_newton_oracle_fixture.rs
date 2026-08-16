@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! **Solver Wave S1 prep** — post-Newton stacked residual oracle fixture (skeleton).
 //!
 //! Wave 1 scope ([`outputs/.plans/archive/waves/solver-quality-wave-plan.md`](../../../outputs/.plans/archive/waves/solver-quality-wave-plan.md)):

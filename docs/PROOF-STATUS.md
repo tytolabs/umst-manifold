@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Proof / verification status (solver index)
 
 Authoritative solver–lane–verification mapping and long-form notes live in **[`Solver-Status.md`](Solver-Status.md)** (same directory). This table is a **short index** (Track J3): one row per solver in that document’s main table. **OPEN ROADMAP ITEM** sections and narrative limits are not duplicated here.

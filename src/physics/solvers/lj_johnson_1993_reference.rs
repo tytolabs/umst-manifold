@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Johnson–Zollweg–Gubbins (1993) Lennard-Jones equation of state — **f64 reference surface only**.
 //!
 //! This is a faithful port of the reduced-variable implementation in NIST **teqp**

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! GREEN §14bis.f-S-0 — KEM round-trip property (R-3.4.x).
 
 use umst_math::crypto::kem::ml_kem_768::{decapsulate, encapsulate};

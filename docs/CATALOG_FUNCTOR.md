@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Catalog functor witness
 
 **Status:** Witness spike (`math-catalog-functor`, Wave 3 slot 10).  

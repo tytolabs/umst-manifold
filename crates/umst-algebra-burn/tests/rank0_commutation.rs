@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! R12-2 rank-0 commutation law witness — `BurnRank0Algebra` ≡ `ScalarAlgebra` exactly.
 
 use umst_algebra_burn::{BurnRank0Algebra, BurnRank0Field};

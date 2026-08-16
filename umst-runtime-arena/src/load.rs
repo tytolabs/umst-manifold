@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Warm-boundary `load_arena` — parse once, borrow for hot loops.
 
 use crate::header::UmstArenaHeader;

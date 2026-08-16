@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Graph DEC adjoint witness on a toy 2-node / 1-edge mesh.
 //!
 //! Uses [`B1Incidence`] from [`umst_manifold::core::dec_typestate`] as the typed carrier for

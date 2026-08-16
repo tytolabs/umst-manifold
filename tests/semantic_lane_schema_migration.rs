@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
 // HCOM-006 + IDEA-003 @ 19:15 IST — additive 64-lane semantic schema v1 migration.
 // IDEA-003 @ 20:33 IST deepen — error paths, batch downgrade, reserved-band invariants.

@@ -1,5 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 //
 // AGAP-2001-PBM-010 — slice-3b rank-1+ ledger deepen for R-atoms-scalar / F1.
 // W29-102-ATOMS_TENSOR_LIFT_LEDGER — Composer RL honesty deepen (umst-admit-grok).

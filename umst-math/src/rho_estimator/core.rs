@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Gaussian bivariate MI from Pearson correlation.
 //!
 //! Proof: `UMST.Formal.RhoEstimator::rho_based_mi_formula`

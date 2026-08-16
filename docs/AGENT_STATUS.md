@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # UMST parallel agents W1–W10 — status (coordinator scan)
 
 **Scanned:** 2026-05-29 · **Verified:** 2026-05-29 — unified R0 pin `0697014fb5b90a3…`, **119** modules; `verify_umst_stack.sh` exit **0** · **Workspace:** `workspace root/umst-manifold` · **CI:** green @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) (`witness_priority.rs` `manual_contains` fix on stable)

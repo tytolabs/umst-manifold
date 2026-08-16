@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Track A4 mechanics verification: axial cantilever (bar network) and **Q1 hex + B-bar**
 //! extruded-plate benchmarks on [`ExtrudedPlateMechanics`](umst_manifold::physics::extruded_plate::ExtrudedPlateMechanics).
 //!

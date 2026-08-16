@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # THMC stacked-R S1 scaffold (feature-flagged)
 
 **Status:** Prep only — no production wire until USER B6 geometry sign-off.

@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # W8 publish runbook — `tytolabs/umst-manifold` + cartridge `manifest-bridge`
 
 **Scope:** Unblock remote git consumers of `umst-manifold::manifest` so `umst-concrete-cartridge` (and optionally `umst-supercap-cartridge`) can run **`manifest-bridge`** in GitHub Actions **without** workspace `[patch]`.

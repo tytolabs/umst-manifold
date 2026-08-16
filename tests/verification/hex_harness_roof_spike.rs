@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! H4 escalation (a) spike: Q1-hex forward solve on the **identical** 9×8×2 harness fixture.
 //!
 //! formal_anchor: Track B6 / b6-roof-mechanism-research

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Fused Krylov reductions for host Q1Hex PCG (H2) — f64 accumulators + chunked loops for LLVM SIMD.
 //!
 //! # Honest boundary (W29-064)

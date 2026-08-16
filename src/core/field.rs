@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! FP Manifesto §1 — phantom-typed Burn tensor carriers ([`Field`]).
 //!
 //! Staging vocabulary for THMC / fracture migration (P3): solvers still accept naked

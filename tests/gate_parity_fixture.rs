@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Golden vectors for the gate façade: stable [`GateEvaluator`] catalog identity plus host transition
 //! parity mapped to [`AdmissibilityVerdict`] tokens (same predicate split as [`ThermodynamicGate`]).
 //! [`ThermodynamicMixEvaluator`] repeats the scalar mix path via [`ThermodynamicStateSnapshot`].

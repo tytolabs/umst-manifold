@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Mutable hypergraph with sorted-unique hyperedges.
 //!
 //! Proof: `GraphProperties` — finite vertex set + set of hyperedges (incidence structure).

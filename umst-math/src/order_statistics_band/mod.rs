@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Order-statistics band classifier — mirror of `UMST.Formal.OrderStatisticsBand`.
 //!
 //! The analytic sample-size budget reuses the median-convergence closed form (envelope pattern);

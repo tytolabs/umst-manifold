@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! H-9 IntelNpu: Smoke → `NotYetImplemented` on present lane until B-2
 #![cfg(target_os = "linux")]
 

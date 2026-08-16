@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! 2×2 bisection at 9×8×2, tol [`HEX_PCG_REL_TOL_F32`]: loop × nondim.
 
 #![cfg(feature = "mechanics-adjoint-q1-hex")]

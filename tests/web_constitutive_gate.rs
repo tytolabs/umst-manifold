@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! WEB-005 — `WebConstitutiveModel` gate integration tests (build-spec §A8).
 
 use umst_gate::{AdmissibilityResponse, ConjunctVerdict, GateRejectReason};

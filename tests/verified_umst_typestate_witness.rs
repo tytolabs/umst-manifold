@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Witness spike: staging [`umst_manifold::core::dec_typestate::VerifiedUMST`] bundles
 //! validated B₁ incidence with pinned scalar-channel layout.
 

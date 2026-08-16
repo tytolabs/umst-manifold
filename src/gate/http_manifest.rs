@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! HTTP `POST /gate` bulk evaluation (prototype-style strength closure + Parrott kinetics).
 //!
 //! [`GateResponse::catalog_hash_hex`] mirrors [`crate::runtime::catalog::catalog_lock_bundle_sha256_hex`]

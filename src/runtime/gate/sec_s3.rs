@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! AGAP-2033/2127-SEC-S3 — manifold gate runtime trust palette / session ledger wire map.
 //!
 //! **Policy:** manifold gate runtime owns the **cold-edge census** bridging

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! SWARM-C25-0831-93 — MANIFOLD-DEEPEN: Kleisli gate + semantic lane bridge census.
 //! W29-131 deepen: honest invent fences; prep absorb; production flip stays blocked.
 //!

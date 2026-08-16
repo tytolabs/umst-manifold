@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! GREEN §14bis.f-S-0 — ML-DSA + SLH-DSA KAT parity (R-3.2.x).
 
 use umst_math::crypto::error::CryptoError;

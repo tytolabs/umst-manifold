@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! F25-M06 / ORCH-SENSE-STUB — orchestrator sense→gate partial chain (not W1-19 / M5-C07).
 
 use umst_manifold::embodied::{

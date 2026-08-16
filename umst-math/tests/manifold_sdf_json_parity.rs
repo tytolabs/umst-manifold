@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! M7.10: optional JSON cross-language SDFGate parity (Op-11 — fixture committed).
 #![cfg(test)]
 

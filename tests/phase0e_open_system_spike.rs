@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Phase 0e — open-system validation spike (blueprint §7 0e · `NEW_REPOS_BUILD_SPEC` §E.4).
 //!
 //! **0e-i** passive backward compatibility · **0e-ii** active-matter well-posedness ·

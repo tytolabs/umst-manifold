@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! F-10 `num-dual` AD σ = ∂ψ/∂ε runtime posture anchor.
 //!
 //! **Honest boundary:** scalar B1 σ landed in `umst-cartridge-continuum` behind feature `num-dual`;

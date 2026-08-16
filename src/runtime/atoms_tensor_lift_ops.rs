@@ -1,5 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 //
 // SWARM-C25-0831-89 / PBM-010 — slice-3d tensor op spec deepen for R-atoms-scalar / F1.
 // W29-103-ATOMS_TENSOR_LIFT_OPS — Composer RL honesty deepen (umst-admit-grok).

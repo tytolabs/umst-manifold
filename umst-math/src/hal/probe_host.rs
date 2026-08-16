@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Host IO boundary for Linux H-9 sysfs/proc probes (FP §4).
 //!
 //! Enabled with the `linux-hal-sysfs` feature. Runtime/CLI callers should probe once

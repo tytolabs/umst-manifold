@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Engineering mirror of `umst-formal/Lean/EtaCog.lean`.
 
 use crate::dignity::dignity_step;

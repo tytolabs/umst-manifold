@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Shannon / Petz classical limits, Kahan-summed where long runs matter.
 //!
 //! Proof anchors: `umst-formal/Lean/` and double-slit `QuantumMutualInfo` / `LandauerBound` families.

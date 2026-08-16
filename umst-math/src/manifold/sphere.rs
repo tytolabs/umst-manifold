@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Spherical manifolds — S² and S^{n} as marker carriers (I1).
 //!
 //! Embeddings: S² ↪ ℝ³ and S^{n} ↪ ℝ^{n+1} for fixed ambient `n`.

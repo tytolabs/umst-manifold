@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Read-only sysfs path constants and pure parsers; no `std::fs` (FP §4).
 
 use std::io;

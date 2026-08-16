@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Masked inner products for Krylov solves on constrained DOFs (Dirichlet via mask).
 //!
 //! Shared by mechanics today; future solvers (THMC implicit steps, fracture) should reuse

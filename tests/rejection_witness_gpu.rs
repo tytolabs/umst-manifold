@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Phase 4 GPU rejection baseline witness — WGPU autodiff path (`kleisli-ppo-hot-bind` + `wgpu`).
 
 #![cfg(all(feature = "kleisli-ppo-hot-bind", feature = "wgpu"))]

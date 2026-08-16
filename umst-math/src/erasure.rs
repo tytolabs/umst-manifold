@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Erasure channels — Landauer equality alignment.
 
 /// Ideal reset erasure cost in bits (1 bit) at reference.

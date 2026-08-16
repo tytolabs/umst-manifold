@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Orchestrator sense→gate integration stub wire — G75-M09.
 //!
 //! Composes the F25-M06 [`super::sense_gate_stub::SenseGateStub`] prefix with

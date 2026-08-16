@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! THMC ↔ UMST reverse writeback morphism (FP P3.5 / RW-FP-P35).
 //!
 //! Closes **W4**: after [`crate::physics::solvers::ThmcSolver::step`], nodal plan fields are

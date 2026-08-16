@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! PMIC — residual coherence capacity (RCC) from path / branch distributions.
 
 use ordered_float::NotNan;

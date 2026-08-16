@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! W9 Phase A deprecated aliases — excluded from agnostic-on-fork / tier-1 lexicon scans.
 //!
 //! [`MixTensor`] and [`StatePoint`] are type aliases for [`MaterialCompositionTensor`];

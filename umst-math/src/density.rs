@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Diagonal density matrices `ρ = diag(p)` with **PSD** + **trace = 1**.
 
 use ordered_float::NotNan;

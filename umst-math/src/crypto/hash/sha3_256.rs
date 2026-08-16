@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! SHA3-256 (NIST FIPS 202) — Keccak via `sha3` crate.
 
 use sha3::{Digest, Sha3_256};

@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Semantic Lane Schema v1 (HCOM-006)
 
 Additive semantic lanes on the 64-lane UMST carrier (blueprint §3.1).

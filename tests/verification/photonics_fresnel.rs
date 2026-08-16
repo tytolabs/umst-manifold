@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! FDFD Helmholtz verification (`photonics`): MMS on a Dirichlet line, two-media continuum Fresnel
 //! MMS without PML, plus interface/stack smokes with PML on. Curl–curl vs Helmholtz checks are
 //! **1-D uniform-chain** regressions (including a piecewise \(\varepsilon_r\) profile and

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Track H — **Vinet equation of state** scalar checks (same closed form as clinker calibration).
 //!
 //! formal_citation: Vinet et al., *J. Phys. C* **19** (1986) L467.

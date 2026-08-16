@@ -1,5 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 //! Histogram mutual information estimator (ported from umst-prototype-2a), behind `epistemic-ppo`.
 //!
 //! **Honest status:** slice-1 histogram MI + Landauer clamp landed — **not** physics GREEN,

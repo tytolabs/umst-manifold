@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! ACCEL-B-2050-SEC-GW-WRAP — manifold gate runtime trust-wrap delegate census.
 //!
 //! **Policy:** manifold gate runtime owns the **cold-edge census** bridging

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Optional slot traits for unwired embodied-loop legs.
 //!
 //! W1-19 (`M5-IMPL-INT-01`) composes `sense → command → gate → {present, actuate} → sense`

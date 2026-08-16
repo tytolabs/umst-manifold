@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! §14bis.l W-3 — ε-bisim: `umst_semantic_coverage_threshold_w2` vs `# ZCI-PARITY-DEFAULT` in
 //! `check_semantic_coverage.sh` (compile-time `include_str!` + static `REGISTRY`).
 

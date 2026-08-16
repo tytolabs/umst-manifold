@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 #
 # RW-FP-PRABHU PB-S3 + INV4-S4 — collect prabhu_benchmark_subset transcript.
 # Runs PB-1..PB-3 timing harnesses + parity guard; wires umst-bench energy probe.

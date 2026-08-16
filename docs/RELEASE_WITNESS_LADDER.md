@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Release witness profile ladder
 
 > **Public name:** *release witness profile* (strict catalog match + ordered gate witnesses).  

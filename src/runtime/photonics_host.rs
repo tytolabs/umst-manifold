@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Host / CLI IO boundary for photonics DEC patch policy.
 //!
 //! [`crate::physics::solvers::PhotonicsDecPatchConfig`] is pure config with **no `std::env`**

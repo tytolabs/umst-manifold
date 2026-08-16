@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Orchestrator fragment coverage audit per [`M5_ORCH_FRAGMENT_AUDIT_1052`](../../old/residuals/residuals/misc-outputs-tmp/m5_prep/M5_ORCH_FRAGMENT_AUDIT_1052.md).
 //!
 //! `EmbodiedOrchestrator` covers ~22% of the W4-JG scaffold; this module makes the remaining

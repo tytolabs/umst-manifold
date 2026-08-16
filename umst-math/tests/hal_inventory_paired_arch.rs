@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Paired-mock inventory (Q6 C-strict; *mocks* only — physical M3 Op-6 pending; FORWARD-PLAN G2)
 use umst_math::hal::laws::{
     check_associative, check_identity_law, f_cpu_igpu, g_igpu_ram, h_ram_port,

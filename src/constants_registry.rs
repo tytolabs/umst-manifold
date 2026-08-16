@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Immutable compile-time constants registry for manifold solvers (integration-contracts D3).
 //!
 //! **Law:** migrated rows point at a single Rust `const` or `umst-math` re-export; THMC reaction-extent

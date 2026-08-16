@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # UMST manifold — repository layout SSOT
 
 This document is the workspace-level **single source of truth** for where formal artifacts, gates, manifests, and prototype code map into `umst-manifold` after the UMST unification lane.

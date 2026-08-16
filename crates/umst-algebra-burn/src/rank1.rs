@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Rank-1+ comparison epsilon — provenanced from T4 cold-boundary cast policy.
 //!
 //! Source: `umst-manifold/src/runtime/atoms_scalar_bridge.rs::COLD_BOUNDARY_F32_EPS`

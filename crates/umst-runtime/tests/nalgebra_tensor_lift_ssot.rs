@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! AGAP-2037-LIB-NALGEBRA — `umst-runtime` alias surfaces slice-4 nalgebra tensor lift scaffold.
 
 use umst_cartridge_api::TensorAlgebra;

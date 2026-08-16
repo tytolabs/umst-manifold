@@ -1,5 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 #
 # A3 transitional alias: executor package name for `umst-manifold` implementation at workspace root.
 # After GitHub rename to `umst-runtime`, implementation moves here and root `umst-manifold` becomes facade.

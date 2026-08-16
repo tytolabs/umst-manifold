@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Finite hypergraphs + **monoidal** edge products (Phase K2).
 //!
 //! Distinct from [`crate::tensor`] (Kronecker / `DensityDiag` bridges) — this module is combinatorial

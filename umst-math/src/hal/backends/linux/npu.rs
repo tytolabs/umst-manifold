@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Intel AI Boost (accel class) — infer Smoke → NotYet until B-2 OpenVINO binding
 
 use std::sync::atomic::{AtomicU64, Ordering};

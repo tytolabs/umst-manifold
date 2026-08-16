@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! UMST runtime arena — Warm-boundary parse of versioned arena bytes.
 //!
 //! Cold agents hand off an owned byte buffer; [`load_arena`] validates the

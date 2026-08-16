@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! FP §5 — `Result` Kleisli helpers for [`ThmcState`](super::solvers::ThmcState) composition (no IO, no solver state).
 //!
 //! Outer THMC ticks should read as mathematical compositions:

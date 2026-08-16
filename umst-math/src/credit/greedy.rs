@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Filter-then-sum credit mass (Case A — matches `UMST.Formal.CreditGreedy.creditMass`).
 
 /// One weighted row with an admissibility flag (engineering mirror of Lean `CreditCandidate`).

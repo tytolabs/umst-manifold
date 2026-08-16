@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! UCRS commit stamp read/write (header bytes 12..20, little-endian u64).
 
 use crate::load::load_arena;

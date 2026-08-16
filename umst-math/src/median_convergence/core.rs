@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Core numeric mirror of `Lean/MedianConvergence.lean`.
 
 /// Theorem-derived warmup sample count `⌈ (2 / (ε² ρ_min²)) · ln(2/δ) ⌉` (natural logarithm).

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Median-convergence warmup budget — mirror of `UMST.Formal.MedianConvergence`.
 //!
 //! The theorem-derived count is `N_warmup = ⌈(2 / (ε² ρ_min²)) · ln(2/δ)⌉` (natural log).

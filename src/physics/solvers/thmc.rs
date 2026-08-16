@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Monolithic THMC coupling — operator-split **`ThmcSolver::step`** with optional implicit Newton blocks.
 //!
 //! **Solver status:** [`docs/Solver-Status.md`](../../../docs/Solver-Status.md) — open-index **THMC** bullet and

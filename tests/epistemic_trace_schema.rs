@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! `serde_json` round-trip (G.1) and per-step numeric bounds (G.2) for Lean
 //! `EmittedTraceSchema` / `EmittedStepRecord` (`EpistemicRuntimeSchemaContract`,
 //! `EmittedTraceWellFormed` from `EpistemicPerStepNumerics`).

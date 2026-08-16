@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! UMST mathematical kernel — pure Rust mirror of identities proved in
 //! `tytolabs/umst-formal` and `tytolabs/umst-formal-double-slit`.
 //!

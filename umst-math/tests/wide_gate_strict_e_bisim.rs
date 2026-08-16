@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! §14bis.l W-1 + W-2 — e-bisim: `umst_wide_gate_strict` and `umst_semantic_coverage_threshold_w2` rows; idempotent `REGISTRY` read.
 
 use umst_math::constants::registry::{ConstantTier, REGISTRY};

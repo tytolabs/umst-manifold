@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Catalog digest pin witness — MaOS parity with egoff `pin_witness_ok` (§14bis.f-I-0).
 //!
 //! Idempotent, no-I/O checks against the embedded `artifacts/catalog.lock.json` bundle:

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Serde DTOs for cross-language bridges (ROS 2, MCP) — **no runtime ROS dependency**.
 //!
 //! Enable **`serde`** for `Serialize`/`Deserialize` on gated types; enable **`ros2-contract`**

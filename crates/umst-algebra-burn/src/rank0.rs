@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Rank-0 `TensorAlgebra` — exact `f64` commutation with [`ScalarAlgebra`](umst_cartridge_api::ScalarAlgebra).
 
 use umst_cartridge_api::TensorAlgebra;

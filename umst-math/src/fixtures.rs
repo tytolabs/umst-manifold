@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Golden qubit examples aligned with `ExamplesQubit` in Lean.
 //!
 //! Proof anchors: see `theorem_registry::THEOREM_REGISTRY` (quantum bridge DOI **10.5281/zenodo.19159660**).

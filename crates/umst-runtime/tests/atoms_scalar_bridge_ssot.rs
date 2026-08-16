@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! AGAP-1920-B4-076 — `umst-runtime` alias surfaces R-ATOMS-SC-05 cast bridge unchanged.
 
 use umst_runtime::gate::transition_proposal::ThermodynamicStateSnapshot;

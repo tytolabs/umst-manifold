@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Root re-export witness — delegates to `umst-math::catalog_functor` + fixture locks.
 
 use serde_json::Value;

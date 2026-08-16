@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! H-9 `PermissionState` ADT totality (Linux sysfs probes)
 #![cfg(target_os = "linux")]
 

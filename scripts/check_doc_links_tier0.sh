@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+# SPDX-License-Identifier: MIT
 # Tier 0 doc link SSOT (M0-4) — manifold-local paths only.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

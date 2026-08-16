@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! In-memory `HardwareUnit` fixtures and paired-arch **inventory** patterns (H-8 §0.8 RED/GRN; Q6 C-strict mocks).
 //! No RAPL, NVML, IOKit — pure Rust. Used by `tests/hal_*.rs` and law verification.
 

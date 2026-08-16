@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+# SPDX-License-Identifier: MIT
 # Fail CI if `into_data` / `into_scalar` appear under src/physics outside the audited allowlist.
 # Tests may use these in #[cfg(test)] modules in the same files — allowlist is per-file for simplicity.
 #
@@ -7,7 +9,6 @@
 #
 # Requires bash 3.2+ (macOS / Ubuntu); avoids mapfile for portability.
 #
-# SPDX-License-Identifier: MIT
 
 set -euo pipefail
 

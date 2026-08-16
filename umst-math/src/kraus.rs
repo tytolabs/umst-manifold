@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Lüders / which-path Kraus updates (diagonal classical layer).
 
 use crate::density::DensityDiag;

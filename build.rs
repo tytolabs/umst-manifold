@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Two build-time payloads:
 //!
 //! 1. **Lean / lock bundle** — `artifacts/catalog.lock.json` (or `UMST_CATALOG`). Emits the

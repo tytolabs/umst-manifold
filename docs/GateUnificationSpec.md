@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Gate unification — catalog_id and evaluator strategy
 
 This spec defines how **multiple gate implementations** (prototype thermodynamic transition filter, differentiable `ManifoldGateway` + `ThermodynamicCBF`, future Lean-exported obligations) unify under stable Rust types in `umst-manifold`.

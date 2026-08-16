@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+# SPDX-License-Identifier: MIT
 # Allow known crate features for `unexpected_cfgs` / check-cfg (nightly and future stable).
 # Feature names match `[features]` in Cargo.toml.
 [build]

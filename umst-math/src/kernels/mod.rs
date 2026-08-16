@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Host-dispatchable numerical kernels (scalar always built; optional `simd` feature for `std::simd`).
 //!
 //! **Scope (Phase M-simd):** compile-time dispatch via `cfg(feature = "simd")` only.

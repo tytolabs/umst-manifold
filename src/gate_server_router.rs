@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Minimal HTTP/1.1 handler for [`crate::gate::http_manifest`] (stdlib only; one request per connection).
 //!
 //! **Policy:** stdlib `TcpStream` shim only — routes `GET /health` and `POST /gate` into

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 #
 # Bidirectional UMST catalog drift guard (see docs/VERIFY.md §5.1):
 #   (1) Regenerate Lean export from UMST_FORMAL_ROOT (export_catalog.py).

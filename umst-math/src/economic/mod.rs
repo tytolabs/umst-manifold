@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Economic surrogate layer (Hallucination / LowEntropy / NPV …) — Lean `Economic/` mirror.
 //!
 //! Stubs until Phase 12 ports full surrogate predicates. Proof anchors follow

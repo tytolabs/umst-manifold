@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Permanent property: `k_char` nondim is an exact change of variables on the original PCG loop.
 //!
 //! Bisection arm B must be trajectory-identical to arm A (same iter count, `|Δu|∞` within f32 slack).

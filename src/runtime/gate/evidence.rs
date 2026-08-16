@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Structured transition evidence for cold-edge telemetry (catalog id + admissibility witness).
 //!
 //! **Honest status (W29-114 deepen):** host CD explain + optional UCRS stamp wire are measured.

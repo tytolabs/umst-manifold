@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! FP Manifesto §3 — macroscopic constitutive phase ADT (MP1 stubs).
 //!
 //! Staging vocabulary for cast lifecycle migration: invalid cross-phase ops are rejected

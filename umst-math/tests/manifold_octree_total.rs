@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Octree: DAG, depth cap, leaves.
 use umst_math::manifold::octree::{build_linear_octree_with_depth, no_ancestor_loop};
 

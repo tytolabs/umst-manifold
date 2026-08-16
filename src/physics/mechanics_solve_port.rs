@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Mechanics solve **port** trait — bar→Q1 adoption boundary (`integration-mechanics-trait`).
 //!
 //! Complements [`super::mechanics_operator::MechanicsOperator`] (tensor morphism without witness)

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Compile-time registry of (theorem hint, DOI) pairs for cross-checks and telemetry.
 //!
 //! Canonical Zenodo family for quantum bridge rows: **10.5281/zenodo.19159660** (`umst-formal-double-slit`).

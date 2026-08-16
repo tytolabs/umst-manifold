@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! RED §0.8 e-bisim for `umst_math::hypergraph::HyperGraphTensor`.
 
 use quickcheck::quickcheck;

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! **P4C — Johnson / virial bridge:** [`upscale_potentials`] on **`[B,4]`** (Burn **virial surrogate** **`K_T`**)
 //! vs host [`upscale_potentials_b4_johnson_reference_bulk_modulus_host`] (**Johnson 1993** **`f64`**).
 

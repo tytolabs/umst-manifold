@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Engine slices — feature lanes → physics modules
 
 **Status:** Framework map (`engine-slices-frameworks`, Wave 4 slot 10).  

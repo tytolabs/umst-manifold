@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! R15-B1 — per-surface rank-1 field comparison instrument.
 //!
 //! Lattice field evaluation (host projection) vs monolith field golden. B2+ surfaces call

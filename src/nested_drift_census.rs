@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! FLEET-COMPOSER-G G15 — nested-repo drift honest census for `umst-manifold/`.
 //!
 //! Frozen inventory of uncommitted paths in the nested manifold product root. Does **not**

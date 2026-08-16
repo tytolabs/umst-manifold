@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Thin gate-layer atom spine visibility for **LPP-008** `adamw_step_policy` (tensor-only AdamW; no duplicated physics).
 //!
 //! Composition:

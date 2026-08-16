@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Phase 1 §1C staging: DEC incidence and scalar-channel typestates.
 //!
 //! Makes invalid B₁ layout and out-of-range scalar channel indices unrepresentable or

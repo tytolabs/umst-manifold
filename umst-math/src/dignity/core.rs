@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Engineering mirror of `umst-formal/Lean/Dignity.lean`.
 
 use crate::landauer::K_B;

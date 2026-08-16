@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Compile-time registry of cockpit / core numerical constants (CGD).
 //!
 //! Human-readable mirror: `docs/CGD_REGISTRY.md` §24a (Constants Grounding Registry).

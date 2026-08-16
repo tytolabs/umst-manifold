@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Rank-1+ `TensorAlgebra` over `burn::Tensor` — ndarray backend default.
 
 use burn::tensor::{backend::Backend, Data, Shape, Tensor};

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! §0.8 — RED ε-bisim for 1D Kalman (`1.0` ms per `update` step).
 //!
 //! ε: absolute **1e-9** (same pin as `smoothing_ekf_e_bisim.rs`).

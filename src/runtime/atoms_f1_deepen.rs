@@ -1,5 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 //
 // PRABHU-WAVE-E-1700 · Slot E2 · PBM-010 F1 atoms-scalar lift deepen.
 // PRABHU-WAVE-H-1800 · Slot H4 · PBM-010 F1 atoms-scalar E2 next-hop deepen.

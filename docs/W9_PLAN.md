@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # W9 Phase 0 — Agnostic-on-Fork + Cartridge-Port Survey
 
 **Status:** **LANDED** on `main` @ `7431c1b` — **tags withdrawn** (2026-06-20; premature release, no Zenodo software DOI; re-tag after sign-off + trust-surface close). Tier-2c grep-zero, lexicon/agnostic verifiers, `verify_umst_stack` green.  

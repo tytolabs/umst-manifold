@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! K-2 — Tier-1 canonical constant derivations (§14bis.k · §0.11 CDD).
 //!
 //! Backfills the four SSOT anchors cited in `egoffplan §14bis.k` K-2:

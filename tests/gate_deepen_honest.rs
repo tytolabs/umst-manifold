@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! FLEET-COMPOSER ACCEL-G AC157 — MANIFOLD gate deepen honest witness.
 //!
 //! Consolidates all SEC gate runtime deepen probes on the manifold cold-edge census.

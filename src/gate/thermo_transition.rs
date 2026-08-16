@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Clausius–Duhem admissibility for bulk reaction-extent transitions (prototype thermodynamic gate).
 //!
 //! Ported from `umst-prototype/.../thermodynamic_filter.rs` — **wasm-free** manifold build.

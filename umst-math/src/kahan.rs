@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Kahan compensated summation for long-running f64 totals (1000+ turns).
 //!
 //! Proof anchor: numerical stability for Shannon / von Neumann diagonal sums (`DensityDiag::trace`, `shannon_diag_bits`).

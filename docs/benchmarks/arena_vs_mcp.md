@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Arena vs MCP round-trip benchmark
 
 **Exit witness (Phase 2):** in-process gate/arena ≥ **5×** vs one stdio MCP `tools/call` round-trip per gate check.

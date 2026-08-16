@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Closed enum of the **seven** hardware **object** kinds in category **𝓗** (FORWARD-PLAN §0.2; H-8).
 //! REGISTRY: `hal_unit_kind_count` = 7.
 //!

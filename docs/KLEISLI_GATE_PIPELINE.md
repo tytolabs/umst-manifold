@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Kleisli gate pipeline — propose → penalize → witness
 
 **Status:** Penalize hot-bind landed (`kleisli-ppo-hot-bind`, Wave 9 slot 4).  

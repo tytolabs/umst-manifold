@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! `ArchitectureProfile` — B-2.5 bridge field (FORWARD-PLAN §14.2); **schema only** in H-8.
 //!
 //! # I5 (NED)

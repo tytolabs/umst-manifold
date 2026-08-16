@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! K-4 — Tier-3 env-flag `Definition` derivations (§14bis.k · §0.11 CDD).
 //!
 //! Pilot batch: `EGOFF_ENERGY_BACKEND` + `EGOFF_TUI_BIDI` RFC scaffolds.

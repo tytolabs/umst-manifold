@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Data-processing inequality (DPI) — classical diagonal surrogate.
 
 use crate::density::DensityDiag;

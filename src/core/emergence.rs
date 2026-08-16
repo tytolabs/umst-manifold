@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Dissipation–geometry diagnostics: **structured grid** hotspots plus **sparse nodal** defect helpers.
 //!
 //! [`EmergenceMonitor`] builds \(m = D_{int} + \lambda|\nabla \mathrm{SDF}|^2\) on `[B,D,H,W]`.

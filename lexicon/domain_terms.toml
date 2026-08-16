@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+# SPDX-License-Identifier: MIT
 # W9 Phase A — domain lexicon (Tier 1 = fail on new hits in src/).
 # Verifier: scripts/check_domain_lexicon.sh (literal zero, no baseline ratchet).
 

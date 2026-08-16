@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Adaptive catalog module priority (tests only; feeds `docs/ADAPTIVE_WITNESS_COVERAGE.md`).
 //! TCB: `physicalSecondLaw` only.
 

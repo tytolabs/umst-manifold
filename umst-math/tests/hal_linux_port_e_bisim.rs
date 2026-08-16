@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! H-9 LinuxPort: net + USB rough enumeration
 #![cfg(target_os = "linux")]
 

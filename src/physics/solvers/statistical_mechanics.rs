@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Statistical-mechanics → continuum bridge (Phase 9).
 //!
 //! ## Shipped **`[B, 4]`** bridge (Burn `f32`, AD-safe)

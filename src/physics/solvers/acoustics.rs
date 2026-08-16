@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Acoustic / elastodynamic wave propagation (Phase 8).
 //!
 //! Newmark-β implicit integration for **M ü + C u̇ + K u = F** on nodal vectors `[B, N, 3]`.

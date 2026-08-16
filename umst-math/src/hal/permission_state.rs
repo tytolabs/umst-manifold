@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! H-9 permission state — typed sum (I1: not booleans only).
 
 /// Probe outcome for a sysfs/udev path.

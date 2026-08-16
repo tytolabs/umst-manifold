@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Post-step gate evidence wiring for coupled THMC (`p5-thmc-wire` spike).
 //!
 //! **Scope:** lifts pre/post [`super::thmc::ThmcState`] nodal means into

@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
 // Arbitrary sentinel witness for manifold injection-mechanism tests only.
 // Real cement closure (450/240) + byte-equiv parity live in umst-concrete-cartridge.

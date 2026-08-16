@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Trace-driven η calibration scan (Track G.3) — **host envelope, not a certificate**.
 //!
 //! Reads an [`EmittedStepRecord`] stream and compares per-step `stepMI` against the

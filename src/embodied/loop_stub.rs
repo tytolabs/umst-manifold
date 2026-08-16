@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Orchestrator embodied-loop tick stub — M5-C07 / W4-JG composition scaffold.
 //!
 //! **Tombstone / `LEARNER_OPTIONAL` posture (SK-08):** this module is an honest

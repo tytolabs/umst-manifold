@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! **Composable solver protocols** — thin traits and ZST namespaces so physics stays FP-pipelined
 //! (pure `fn` chains over `Tensor<B, _>`) instead of orchestrator god-objects.
 //!

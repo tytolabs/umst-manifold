@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! K-2 — Tier-1 canonical derivation backfill (§14bis.k; EGOFF-004).
 
 use umst_math::constants::derivation::Derivation;

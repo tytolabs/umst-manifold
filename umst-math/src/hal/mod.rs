@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! # Hardware Abstraction Layer — category **𝓗** (FORWARD-PLAN v1.2 §0.1–0.2; **§14bis.f-H-8**)
 //!
 //! Trait surface *only* — no RAPL, NVML, IOKit, or Core ML. Backends: H-9, H-9-mac.

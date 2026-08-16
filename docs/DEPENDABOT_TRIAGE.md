@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Dependabot triage — `sha2` 0.10 → 0.11
 
 **Status:** Closed with ignore rule — keep `sha2 = "0.10"` until build-script digest formatting is migrated.

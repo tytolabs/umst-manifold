@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Klein / Petz spectral relative entropy **D(ρ‖σ) ≥ 0** (diagonal classical limit).
 
 use crate::density::DensityDiag;

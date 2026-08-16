@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Bounded **iterate-until** / fixed-point style driver: run at most `max_iters` steps, stopping
 //! early when the step closure returns [`ControlFlow::Break`].
 //!

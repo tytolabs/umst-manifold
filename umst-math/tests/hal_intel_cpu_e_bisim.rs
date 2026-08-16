@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! H-9 IntelCpu ε-bisim (Linux/Intel; `aa_hal_` for `cargo test hal_` substring filter)
 #![cfg(target_os = "linux")]
 

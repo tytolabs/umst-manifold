@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Golden qubit fixtures — parity with `fixtures.rs`.
 
 use umst_math::density::DensityDiag;

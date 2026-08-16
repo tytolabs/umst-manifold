@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Integration tests for [`umst_manifold::core::apply_physics_to_umst`] (damage / masked temperature
 //! via [`UnifiedMaterialStateTensor::project_scalar_channel`] /
 //! [`UnifiedMaterialStateTensor::write_scalar_channel`]) and default-feature [`ThmcSolver::step`] errors.

@@ -1,8 +1,9 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! §14bis.f-M-0 — **Manifold** algebra (pure math; M-Arc foundation).
 //!
 //! Carrier S², SDF / CSG, Hilbert 2D, octree, canonical voxel hash (GMD). No I/O.
 
-// SPDX-License-Identifier: MIT
 // M-Arc: MEMORY-ARC-PLAN-v1.0 §0.14; parallel with H-9-mac (no `hal/` overlap).
 
 pub mod canonicalize;

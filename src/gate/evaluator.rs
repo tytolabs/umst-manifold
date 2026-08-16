@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 use super::thermo_transition::{ThermodynamicGate, ThermodynamicState};
 use super::verdict::ConjunctVerdict;
 use crate::runtime::catalog::traceability::CD_TRANSITION_CATALOG_ID;

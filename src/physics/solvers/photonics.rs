@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Frequency-domain **scalar Helmholtz** (FDFD-style) on a **1-D path graph** plus a **minimal primal DEC**
 //! curl–curl path on the same graph class.
 //!

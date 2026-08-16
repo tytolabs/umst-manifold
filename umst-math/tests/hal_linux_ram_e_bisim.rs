@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! H-9 LinuxRam: MemTotal + honest DRAM RAPL posture (no STREAM in this slice)
 #![cfg(target_os = "linux")]
 

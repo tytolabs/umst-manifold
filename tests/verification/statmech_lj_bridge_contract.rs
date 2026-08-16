@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Lennard-Jones → continuum **placeholder bridge** contract (`statistical_mechanics::upscale_potentials`).
 //!
 //! This is **not** a virial or coexistence-derived EOS; it locks the analytic \(\varepsilon/\sigma^n\)

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Helmholtz-type PDE density filter on the discrete primal graph ([Lazarov & Sigmund 2011]).
 //!
 //! Continuum **density filter**: \((I - r^2\nabla^2)\tilde\rho=\rho\) with \(-\nabla^2\) positive.

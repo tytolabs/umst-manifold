@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! SEC-GW-AUDIT gate runtime witness — manifold admit-audit census on cold-edge evidence.
 //!
 //! FLEET-COMPOSER ACCEL-K **AC354** · verify-only · 0 gateway writers.

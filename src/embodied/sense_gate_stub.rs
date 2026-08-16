@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Orchestrator sense→gate partial stub — F25-M06 / ORCH-SENSE-STUB.
 //!
 //! **Tombstone / `LEARNER_OPTIONAL` posture (SK-09):** partial constitutional prefix only —

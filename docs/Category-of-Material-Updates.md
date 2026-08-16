@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Category of material updates (manifold SSOT)
 
 **Epic:** `fp-categorical-v04` · **Task:** `fp-v04-traits-category`

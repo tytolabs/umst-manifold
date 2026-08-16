@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Reject-path telemetry: every hot gate carries a stable `catalog_id` slug.
 
 use umst_manifold::ai::formal::{FormalReject, LANDAUER_CBF_CATALOG_ID};

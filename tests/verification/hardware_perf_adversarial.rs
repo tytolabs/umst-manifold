@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
 // Hardware-perf H0–H6 adversarial verification (Layer 1 + Layer 5 subsets).
 #![cfg(feature = "mechanics-adjoint-q1-hex")]

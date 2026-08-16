@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+# SPDX-License-Identifier: MIT
 # Pinned SHAs for cross-repo catalog drift CI (external-runtime TOML format).
 # Bump only after umst-formal-double-slit export regen + manifold lock update.
 # Protocol: docs/CATALOG_UPDATE_PROTOCOL.md

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Witness spike: catalog fiber id → scalar channel count + composed digest guard.
 
 use quickcheck::quickcheck;

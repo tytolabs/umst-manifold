@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! UMST deployment manifest: catalog fingerprint, thermodynamic defaults, and grounding contract.
 //!
 //! ## Dev vs release grounding (R5 v1)

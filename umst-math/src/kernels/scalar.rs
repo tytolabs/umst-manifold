@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Scalar reference kernels — always built; SIMD paths must match these results (see `kernels::simd`).
 //!
 //! Proof anchors unchanged: `UMST.Formal.RhoEstimator`, `UMST.Formal.OrderStatisticsBand`.

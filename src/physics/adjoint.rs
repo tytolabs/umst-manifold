@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Discrete-adjoint **compliance** surrogate for SIMP-modulated axial bar networks.
 //!
 //! Forward equilibrium (`K(\rho)\,u=f`) runs on the **inner** (non-autodiff) backend so iterative

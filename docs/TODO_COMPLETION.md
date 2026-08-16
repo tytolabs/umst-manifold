@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # UMST plan todo completion audit
 
 **Plan:** `lean-to-rust_proof_extraction_fd8f70b5.plan.md`  

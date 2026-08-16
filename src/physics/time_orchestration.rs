@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Multi-scale simulation schedules (Refinement #1).
 //!
 //! Outer chemistry / agent steps use large `dt_chemistry`. Inner mechanical equilibrium uses

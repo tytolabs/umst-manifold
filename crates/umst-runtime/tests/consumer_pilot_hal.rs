@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! A3 consumer pilot (F25-R06 L3) — HAL-relevant surfaces via `umst_runtime::`.
 //!
 //! Proves the alias path exposes the ThermodynamicCBF + open-system gate bridge that

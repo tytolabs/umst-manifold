@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! AGAP-2350-SEC-CATALOG-PIN — manifold lock ceremony (`pin_witness_ok`) SSOT.
 //!
 //! **Policy:** embedded lock witness is **verified** via [`super::pin_witness_ok`]; gateway hot-path

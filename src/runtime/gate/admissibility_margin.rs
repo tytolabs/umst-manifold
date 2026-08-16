@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Signed thermodynamic admissibility margin (R2 SSOT).
 //!
 //! `margin = D_int = −ρ·ψ̇` (signed Clausius–Duhem dissipation surrogate).

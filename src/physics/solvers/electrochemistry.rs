@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 #![cfg_attr(
     feature = "electrochemistry-mvp",
     allow(dead_code, clippy::doc_lazy_continuation, clippy::needless_range_loop)

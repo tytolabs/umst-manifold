@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! THMC drying–shrinkage verification (`thmc-coupled`): capillary sink on an exposed facet, sealed end
 //! via damage-masked diffusion, and shrink-strain estimate vs MC2010-style notional reference.
 //!

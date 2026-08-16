@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+# SPDX-License-Identifier: MIT
 """Regenerate artifacts/training/p4_rejection_baseline.json from measured witness test."""
 
 from __future__ import annotations

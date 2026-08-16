@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! GREEN §14bis.f-S-0 — SIG round-trip property (R-3.5.x).
 
 use umst_math::crypto::sig::ml_dsa_65::{sign, verify};

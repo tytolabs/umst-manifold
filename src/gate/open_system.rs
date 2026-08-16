@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Phase 0e — open-system gate validation spike (blueprint §7 0e · `NEW_REPOS_BUILD_SPEC` §E.4).
 //!
 //! Wires [`crate::ai::cbf::ThermodynamicCBF`] Landauer debit into the frozen Core form

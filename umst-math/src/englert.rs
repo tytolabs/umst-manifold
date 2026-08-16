@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Englert complementarity **V² + I² ≤ 1** (fringe visibility vs which-way information).
 
 use ordered_float::NotNan;

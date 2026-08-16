@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Host-side `f32` Krylov helpers for THMC JFNK slices (`solver-experimental`).
 //!
 //! Implementation lives in [`super::krylov_host`] so other solver lanes (acoustics) can share

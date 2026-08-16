@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Optional adaptive catalog **module** priority scheduler (telemetry / CI scaffolding).
 //!
 //! **Not on the inference hot path.** Bumps Lean `module` ordering hints from

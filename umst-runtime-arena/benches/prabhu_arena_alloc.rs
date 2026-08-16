@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! RW-FP-PRABHU PB-3 — arena `load_arena` hot-loop timing stub.
 //!
 //! Prints `arena_100_loads_sec` for transcript collection (PB-S3).

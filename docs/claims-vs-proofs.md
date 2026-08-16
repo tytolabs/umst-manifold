@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Claims vs proofs mapping (UMSSSOT)
 
 **Foundational split** (normative): **proofs = versioned library** (pinned Lean export + digest lock), **gates = law** (mandatory witness rejects on transitions). The hot path never replays Lean tactics or runs per-step `lake build`; rows below map **hand-aligned** Rust witnesses to theorems in the pinned library revision, not a per-step proof runner. Witness evaluation order and failure priority: [`RELEASE_WITNESS_LADDER.md`](RELEASE_WITNESS_LADDER.md) — [§ Proof library · gate law · MI envelope · no Rust axioms](RELEASE_WITNESS_LADDER.md#proof-library--gate-law--mi-envelope--no-rust-axioms).

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Fixed-table SIMD vs scalar tolerance metrics for archived CI receipts (`Phase M-simd`).
 
 use serde::Serialize;

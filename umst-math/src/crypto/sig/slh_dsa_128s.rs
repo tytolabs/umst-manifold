@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! SLH-DSA-128s hook — PQClean **SPHINCS+-SHA2-128s-simple** (`pqcrypto-sphincsplus`).
 
 use pqcrypto_sphincsplus::sphincssha2128ssimple::{self};

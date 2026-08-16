@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Neural-SIMP topology optimization (Phase 4) — density network + optimizer shell.
 //!
 //! [`DensityNet`] maps normalized coordinates to pseudo-densities \(\rho \in (0,1)\) via a small MLP

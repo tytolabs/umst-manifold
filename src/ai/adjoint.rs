@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Adjoint-state method for Neural ODE policy gradients with \(O(1)\) memory (no full BPTT tape).
 //!
 //! ## F1.4 — Optimizer API (Liquid PPO stack)

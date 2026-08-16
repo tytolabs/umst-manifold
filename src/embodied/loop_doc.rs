@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Doc→code crosswalk for the constitutional embodied loop (build-spec §A9b).
 //!
 //! Funnel: `sense → command → gate → {present, actuate} → sense`

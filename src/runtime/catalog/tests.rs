@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 use super::{
     bundled_catalog_lock_json, bundled_semantic_witness_section_present,
     catalog_lock_bundle_sha256_bytes, catalog_lock_bundle_sha256_hex, catalog_lock_quickcheck,

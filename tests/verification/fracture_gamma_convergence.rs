@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Γ-convergence / phase-field fracture verification.
 //!
 //! Specification: `composer_prompts/v0.4_solver_completion_no_namesakes.md`. Repo table + full

@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Runtime topology — Hot / Warm / Cold layering
 
 > Backlog id: `p2-runtime-topology-doc` (Fracture 1). Source of truth for the

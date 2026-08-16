@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Compile-time Landauer / CODATA constant registry (P3 axiom slice).
 //!
 //! Pure: no `std::fs`, no env reads. Numeric SSOT delegates to [`crate::landauer`].

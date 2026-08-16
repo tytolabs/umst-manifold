@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! `ThmcSolver::step` smoke test when `thmc-coupled` is enabled: SI `node_positions` present
 //! so mechanics sub-solve runs and [`ThmcSolver::step`] returns `Ok`.
 

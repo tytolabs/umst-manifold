@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! **Track G / P4A:** monolithic stacked damped Newton on backward-Euler \((T,h,\alpha,\mathbf u)\) with
 //! quasi-static \(R_u\) — **\(c\equiv\alpha\)** in the THMC bundle — on a **1-D SI chain** with \(N>2\).
 //! Asserts strict **monotone** decrease of stacked \(\|R\|_2\) across inner Newton iterations.

@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Suspect 2 — design-dependent self-weight adjoint: central FD vs discrete adjoint.
 //!
 //! **Test A:** ~10 random elements, adjoint vs central FD within ~1e-3 relative (SELF_WEIGHT ON/OFF).

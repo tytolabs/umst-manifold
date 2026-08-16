@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! SIMD kernels (`portable_simd` / `std::simd`). **Compile-time** selection only — no runtime CPUID (follow-up slice).
 //!
 //! Sort-based kernels ([`sample_percentile_simd`], [`classify_band_simd`]) intentionally mirror the scalar path

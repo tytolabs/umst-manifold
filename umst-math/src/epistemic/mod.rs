@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Epistemic probes, policy hooks, and **proxy ranking** (Phase K1).
 //!
 //! Host-adaptive *policy* (cockpit / meta-loop) may tune [`selector::SelectorParams`] in Phase N3+;

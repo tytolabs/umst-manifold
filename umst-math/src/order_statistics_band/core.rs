@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Core numeric mirror of `Lean/OrderStatisticsBand.lean` — sample-size budget (`n_quantile`).
 //!
 //! Percentile / band classification live in [`crate::kernels`] (Phase M-simd dispatch).

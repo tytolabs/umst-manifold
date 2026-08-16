@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Discrete-adjoint **compliance** surrogate for SIMP-modulated **Q1 hex** continuum elasticity on a
 //! Cartesian brick (`nx × ny × nz` cells).
 //!

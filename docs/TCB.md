@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Trusted computing base (TCB) — UMST manifold layer
 
 **Normative policy:** The project axiom closure is **`physicalSecondLaw` only** in Lean (`LandauerLaw.lean`). Rust implements consequences of that axiom on the hot path; it does **not** introduce parallel axioms, undocumented `register_axiom` hooks, or cartridge tokens outside `{NONE, physicalSecondLaw}`.

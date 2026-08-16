@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! FLEET-COMPOSER-ACCEL-D AC102 — umst-manifold manifold test battery sustain.
 //!
 //! Absorbs X80 (`COMPOSER_X80_0734.md` · lib 271/271 · integration 3/4) ·

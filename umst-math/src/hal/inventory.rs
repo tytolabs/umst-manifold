@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! `HardwareInventory` — one [`super::presence::UnitPresence`] per [`super::kinds::UnitKind`], plus [`super::profile::ArchitectureProfile`] (B-2.5 §14.2).
 //!
 //! # I4 (H-Arc lane)

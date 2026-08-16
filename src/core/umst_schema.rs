@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Column indices for [`crate::core::tensors::UnifiedMaterialStateTensor::scalar_features`]
 //! (`[N_active_nodes, F_scalars]`).
 //!

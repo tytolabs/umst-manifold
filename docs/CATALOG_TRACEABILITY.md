@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Catalog traceability (Lean export ↔ manifold)
 
 Automation keeps the **119-module** unified Lean inventory (`umst-formal-double-slit/artifacts/catalog.json`, cross-repo merge) aligned with manifold gate/witness registration.

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Scalar credit aggregates (formal companion: `umst-formal/Lean/CreditGreedyOptimal.lean`).
 //!
 //! `G8` semantic script counts `pub fn|struct|…` in `**/*.rs`, not `pub mod`; W-3 theorem-bound rows live in

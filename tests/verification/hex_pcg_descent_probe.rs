@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! f64 PCG descent-curve discrimination at Striatus N (40×40×4).
 //!
 //! Records true `eq_rel` at 2k/4k/6k/8k/10k iterations. **Descending** true residual

@@ -1,5 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 //
 // HCOM-006 @ 17:11 IST — additive semantic lanes on the 64-lane UMST carrier (blueprint §3.1).
 // IDEA-003 @ 19:15 IST — migration test + version bump doc (`docs/SEMANTIC_LANE_SCHEMA_V1.md`).

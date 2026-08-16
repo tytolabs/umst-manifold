@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Provenance (I6 CDD) — Vendored / Native / Theorem-bound markers for SDF carriers.
 
 /// §0.5 NED: provenance of an analytic SDF or voxel witness (MEMORY-ARC-PLAN Q4).

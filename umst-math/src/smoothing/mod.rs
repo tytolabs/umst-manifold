@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
 // SPDX-FileSource: tytolabs/umst-prototype-2a@9c0434d3ebade8f697bbd402bb080ea00da76914 (vendor discipline — §0.6 ZCD)
 // Adapted: `MetricSmoother` + re-exports — §14bis.e-TUI-7

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
 #
 # RW-FP-PRABHU PB-S6 — CI probe for prabhu_benchmark_subset (PB-1..3).
 # SSOT: outputs/.tmp/fp_prabhu_benchmark_schedule.md (§ PB-S6)

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! §14bis.f-S-0 — REGISTRY mirrors byte-width anchors for ε-bisim + §24a.
 
 use pqcrypto_dilithium::dilithium3;

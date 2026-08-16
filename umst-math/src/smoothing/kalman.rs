@@ -1,5 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// SPDX-FileCopyrightText: 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy, and Studio Tyto (umst-prototype-2a)
 // SPDX-FileSource: tytolabs/umst-prototype-2a@9c0434d3ebade8f697bbd402bb080ea00da76914
 //   prototype/src/rust/core/src/math/kalman.rs
 // Adapted: scalar 1D Kalman filter; cockpit MetricSmoother wrapper — §14bis.e-TUI-7

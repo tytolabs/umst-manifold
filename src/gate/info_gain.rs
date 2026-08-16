@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! Thin gate-layer re-export of [`crate::ai::info_gain`] MSE surrogates (LP1 atom spine; no duplicated physics).
 //!
 //! Composition: **IG-002** · reward hook **M-RH-059** (`suggested_info_gain_from_batched_nodal_scalars`).

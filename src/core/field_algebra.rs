@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! FP P3 — `TensorAlgebra` over phantom-typed [`Field`] carriers (R14-3).
 //!
 //! Rank witness enforced at compile time via `Space`; ops delegate to Burn tensors at kernel edge.

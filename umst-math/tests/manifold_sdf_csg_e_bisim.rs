@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! CSG / SDFGate parity (Haskell `SDFGate.hs` discipline; no FFI).
 #![cfg(test)]
 

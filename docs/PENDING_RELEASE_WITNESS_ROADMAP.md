@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Pending god-grade roadmap
 
 **As of:** 2026-05-29 (W8 Phase 1 + **G-02** closed; **G-03** optional)  

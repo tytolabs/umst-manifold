@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+# SPDX-License-Identifier: MIT
 # MSRV for optional dependency paths pulled in by `cargo … --all-features` (e.g. transitive
 # `time`, `burn/wgpu`). Older rustc versions fail those builds; default features alone remain
 # compatible with `package.rust-version` in Cargo.toml.

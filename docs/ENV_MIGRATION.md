@@ -1,3 +1,5 @@
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+SPDX-License-Identifier: MIT
 # Environment variable migration (cockpit → UMST)
 
 **Status:** Complete (2026-06-19) — env overrides and registry `name` column `umst_*` identifiers migrated.  

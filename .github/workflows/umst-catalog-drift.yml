@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 # SPDX-License-Identifier: MIT
 #
 # Catalog drift + gate test suite when this directory is the Git repository root.

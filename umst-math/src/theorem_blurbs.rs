@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+// SPDX-License-Identifier: MIT
 //! Operator-readable one-line summaries for [`theorem_registry::THEOREM_REGISTRY`] rows.
 //!
 //! §14bis.h L-3 — `:explain` enrichment; NED §0.5 plain-English honesty (no invented proofs).

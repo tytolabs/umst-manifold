@@ -1,6 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 //! `impl TensorAlgebra` for Burn — rank-0 exact + rank-1+ tensor paths.
 //!
 //! **Fence:** this crate is the sole cartridge-lattice adapter naming `burn`.

@@ -1,6 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
-
 [workspace]
 members = [".", "crates/umst-runtime", "crates/umst-algebra-burn", "umst-math", "umst-runtime-arena"]
 # `crates/umst-manifold` facade template is NOT a member (duplicate package name until GitHub rename).
