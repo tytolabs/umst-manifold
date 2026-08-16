@@ -8,7 +8,7 @@ name: UMST catalog drift
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [main, master, develop, docs/reorganize-readme]
     paths:
       - "src/**"
       - "tests/**"
@@ -20,7 +20,7 @@ on:
       - ".umst-pins.toml"
       - ".github/workflows/umst-catalog-drift.yml"
   pull_request:
-    branches: [main, master, develop]
+    branches: [main, master, develop, docs/reorganize-readme]
     paths:
       - "src/**"
       - "tests/**"
