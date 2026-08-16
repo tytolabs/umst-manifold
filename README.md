@@ -669,7 +669,7 @@ Authoritative agent MCP surface = concrete `umst-mcp` — **not** this README’
 
 Proven vs aspirational accounting lives in **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)** (verified rollup: [`docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md`](docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md); redirect aliases [`docs/QUALITY_PROGRESS_VERIFIED.md`](docs/QUALITY_PROGRESS_VERIFIED.md), [`docs/QUALITY_WITNESS_LADDER.md`](docs/QUALITY_WITNESS_LADDER.md) → release witness docs). Checklist / roadmap redirects: [`docs/QUALITY_CHECKLIST.md`](docs/QUALITY_CHECKLIST.md), [`docs/PENDING_QUALITY_ROADMAP.md`](docs/PENDING_QUALITY_ROADMAP.md). Strengthen every disclaimer below; soften none.
 
-### What's proven, what isn't (the honest version)
+### Proven scope and limits (honest version)
 
 We don't pretend everything is proven. Conservation structure is mathematical, and the thermodynamic gate is enforced in code on every step — but only part of the Lean/Coq/Agda library is hand-wired onto the runtime gate path, **by design**: at inference time the robot runs fast Rust witnesses, not a theorem prover. There are three different things people mean by "done" here — in-repo automation, how much of the proof library is wired on the hot path, and organization-level publishing — and they should **never** be blended into one "completion %". The honest, current accounting of each lives in one place: **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)**.
 ## 11. Conclusion: Inferences & Forward Path
