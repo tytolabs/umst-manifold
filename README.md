@@ -1,13 +1,13 @@
-<!--
+SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 SPDX-License-Identifier: MIT
-Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Studio TYTO
+<!--
 -->
 
 # UMST Manifold
 
-**Repository:** [`tytolabs/umst-manifold`](https://github.com/tytolabs/umst-manifold) — pure physics **matter** substrate (DEC + thermodynamic admissibility gate + solver kernels + Lean-catalog witnesses).
+**Repository:** ``tytolabs/umst-manifold`` — pure physics **matter** substrate (DEC + thermodynamic admissibility gate + solver kernels + Lean-catalog witnesses).
 
-**Agents:** authoritative MCP contract = sibling [`umst-concrete-cartridge/docs/AGENT_MCP.md`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md). Local [`docs/AGENT_MCP.md`](docs/AGENT_MCP.md) is a redirect stub only.
+**Agents:** authoritative MCP contract = sibling ``umst-concrete-cartridge/docs/AGENT_MCP.md``. Local [`docs/AGENT_MCP.md`](docs/AGENT_MCP.md) is a redirect stub only.
 
 > _This ecosystem is dedicated to the thousands of unnamed contributors who wrote formal proofs, maintained open-source compilers, and built mathematical libraries for years — often without evidence that any of it would be used beyond pure theory. They chose to make their work free, because they understood that knowledge about physical reality cannot be owned. Whatever this system achieves is yours._
 
@@ -16,10 +16,11 @@ Copyright (c) 2026 Santhosh Shyamsundar, Santosh Prabhu Shenbagamoorthy — Stud
 [![CI — Catalog drift](https://github.com/tytolabs/umst-manifold/actions/workflows/umst-catalog-drift.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/umst-catalog-drift.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Cartridge: concrete](https://img.shields.io/badge/cartridge-concrete-C9A27A)](https://github.com/tytolabs/umst-concrete-cartridge)
+<!-- /readme:status -->
 
 > *Conservation laws are absolute in physics: every unit of energy and momentum is accounted for. Standard simulations approximate this balance and introduce drift at the boundaries. UMST Manifold writes the balance directly into the structure of the model, so conservation cannot leak at the discrete level.*
 
-### UMST in plain words
+### Manifold in plain words
 
 UMST — the **Unified Material-State Tensor** — is one structured mathematical object that can represent and evolve the state of *any* material: what it's made of, the processes acting on it, its surroundings, and how it changes through time. Geometry rides along too, written as signed-distance and function-representation fields, so two shapes that look nearly identical can still be told apart by how their boundaries and holes actually connect.
 
@@ -28,7 +29,7 @@ The point is what happens when the state changes. Every proposed change must pas
 The carrier lives on a smooth, differentiable manifold, implemented in **Rust on Burn tensors**. Domain-specific **cartridges** (concrete today) plug in through **`IScienceCartridge`** and compose under the shared gate; a digest-pinned Lean export inventory sits behind the witnesses ([§8](#8-formal-foundations-and-citation)).
 
 <!-- readme:quality-status -->
-**What it is.** A Rust library (Burn / `burn-ndarray`) that owns the **UMST carrier**, Discrete Exterior Calculus (DEC) cochain structure, continuous solver kernels, and the **thermodynamic admissibility gate**. Domain cartridges plug in through typed ports — they do not fork the substrate.
+**Role.** A Rust library (Burn / `burn-ndarray`) that owns the **UMST carrier**, Discrete Exterior Calculus (DEC) cochain structure, continuous solver kernels, and the **thermodynamic admissibility gate**. Domain cartridges plug in through typed ports — they do not fork the substrate.
 
 **The gate idea.** Every proposed state change is subject to the thermodynamic admissibility gate (reduced Clausius–Duhem + Landauer cost bounds): conserve mass, never produce negative dissipation, or be **rejected** — a structural accept/reject, not a soft penalty.
 
@@ -38,14 +39,14 @@ These public repos share **one** thermodynamic admissibility gate, applied acros
 
 | Domain | Public repo | Role |
 |:---|:---|:---|
-| **Matter** | **this repo** ([`umst-manifold`](https://github.com/tytolabs/umst-manifold)) **← you are here** + [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) | DEC carrier + cementitious constitutive law |
-| **Knowing** | [`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit) | Observation / measurement-cost formal fiber |
-| **Acting** | [`umst-formal`](https://github.com/tytolabs/umst-formal) | Economic-admissibility formal fiber |
-| **Time** | [`umst-ucrs`](https://github.com/tytolabs/umst-ucrs) | Temporal witness / stamp spine |
+| **Matter** | **this repo** (``umst-manifold``) **← you are here** + ``umst-concrete-cartridge`` | DEC carrier + cementitious constitutive law |
+| **Knowing** | ``umst-formal-double-slit`` | Observation / measurement-cost formal fiber |
+| **Acting** | ``umst-formal`` | Economic-admissibility formal fiber |
+| **Time** | ``umst-ucrs`` | Temporal witness / stamp spine |
 
 Sibling links only — no paper-series arc naming in this README. Already-public per-repo DOI badges stay where they exist; this repo does not invent new ones here.
 
-**Matter substrate** (ports + gate + catalog lock). Domain chemistry and cold-edge MCP live in [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge).
+**Matter substrate** (ports + gate + catalog lock). Domain chemistry and cold-edge MCP live in ``umst-concrete-cartridge``.
 
 ### Ports (categorical — this repo owns them)
 
@@ -97,7 +98,7 @@ test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 
 Full command matrix: [`docs/VERIFY.md`](docs/VERIFY.md). Latest machine transcript: [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md).
 
-If you want applied cementitious chemistry, Python, CLI, or MCP tools, see the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge).
+If you want applied cementitious chemistry, Python, CLI, or MCP tools, see the `**UMST Concrete Cartridge**`.
 
 ---
 <!-- readme:hero-figure -->
@@ -162,8 +163,8 @@ If you want applied cementitious chemistry, Python, CLI, or MCP tools, see the [
   - [9.5 Proposed (not yet built)](#95-proposed-not-yet-built)
   - [9.6 Principles](#96-principles)
 - [§11 Conclusion: Inferences & Forward Path](#11-conclusion-inferences--forward-path)
-  - [What this manifold demonstrates](#what-this-manifold-demonstrates)
-  - [What surprised us](#what-surprised-us)
+  - [This repository demonstrates](#this-repository-demonstrates)
+  - [Inferences from the work](#inferences-from-the-work)
 - [Related repositories](#related-repositories)
 - [Authors](#authors)
 - [Acknowledgments](#acknowledgments)
@@ -215,8 +216,8 @@ Each `##` / `###` heading on GitHub gets a stable **anchor**: the part after `#`
 #95-proposed-not-yet-built
 #96-principles
 #11-conclusion-inferences--forward-path
-#what-this-manifold-demonstrates
-#what-surprised-us
+#this-repository-demonstrates
+#inferences-from-the-work
 #related-repositories
 #authors
 #acknowledgments
@@ -240,34 +241,34 @@ UMST Manifold maps physical equations directly onto networks of nodes via **Disc
 ### 1.1 The Mathematical Topology of Conservation
 Think of mapping physics onto a network of connected nodes where energy and forces travel along closed mathematical loops (called **cochain complexes**). Mass and energy conservation are not estimated; they are guaranteed by the geometric structure of the network itself:
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_black%5Ccolor%7Bwhite%7D&space;\partial_p%20\circ%20\partial_{p+1}%20=%200%20\quad%20\Longleftrightarrow%20\quad%20d^{p+1}%20\circ%20d^p%20=%200"><img alt="\partial_p \circ \partial_{p+1} = 0 \quad \Longleftrightarrow \quad d^{p+1} \cir…" src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_white&space;\partial_p%20\circ%20\partial_{p+1}%20=%200%20\quad%20\Longleftrightarrow%20\quad%20d^{p+1}%20\circ%20d^p%20=%200" style="max-width:100%;height:auto"></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\partial_p \circ \partial_{p+1} = 0 \quad \Longleftrightarrow \quad d^{p+1} \cir…" src=" style="max-width:100%;height:auto"></picture></p>
 
-Where <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;d^p"><img alt="d^p" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;d^p" style="vertical-align:middle"></picture> is the exterior derivative mapping <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;p"><img alt="p" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;p" style="vertical-align:middle"></picture>-cochains to <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;(p+1)"><img alt="(p+1)" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;(p+1)" style="vertical-align:middle"></picture>-cochains. Because the boundary of a boundary is always empty (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\partial%20\circ%20\partial%20=%200"><img alt="\partial \circ \partial = 0" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\partial%20\circ%20\partial%20=%200" style="vertical-align:middle"></picture>), the physical flux across any closed loop is guaranteed to be zero.
+Where <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="d^p" src=" style="vertical-align:middle"></picture> is the exterior derivative mapping <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="p" src=" style="vertical-align:middle"></picture>-cochains to <picture><source media="(prefers-color-scheme: dark)" srcset=")"><img alt="(p+1)" src=")" style="vertical-align:middle"></picture>-cochains. Because the boundary of a boundary is always empty (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\partial \circ \partial = 0" src=" style="vertical-align:middle"></picture>), the physical flux across any closed loop is guaranteed to be zero.
 
 ### 1.2 The Thermodynamic Gate
 Before an AI agent or design system can propose a new shape or material mix, our built-in physical checkpoint—the **Thermodynamic Control Barrier Function (CBF)**—calculates the exact energy required to make that change. According to physics, erasing or changing information always costs a tiny, unavoidable amount of heat (known as **Landauer's erasure limit**):
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_black%5Ccolor%7Bwhite%7D&space;\Delta%20E%20\geq%20k_B%20T%20\ln%202"><img alt="\Delta E \geq k_B T \ln 2" src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_white&space;\Delta%20E%20\geq%20k_B%20T%20\ln%202" style="max-width:100%;height:auto"></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\Delta E \geq k_B T \ln 2" src=" style="max-width:100%;height:auto"></picture></p>
 
 Simultaneously, the state updates are evaluated against the local **Clausius-Duhem inequality** to enforce non-negative entropy generation:
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_black%5Ccolor%7Bwhite%7D&space;\theta%20\gamma%20=%20\theta%20\dot{s}%20-%20\dot{u}%20+%20\frac{1}{\rho}\boldsymbol{\sigma}:\mathbf{d}%20-%20\frac{1}{\rho\theta}\mathbf{q}\cdot\nabla\theta%20\geq%200"><img alt="\theta \gamma = \theta \dot{s} - \dot{u} + \frac{1}{\rho}\boldsymbol{\sigma}:\ma…" src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_white&space;\theta%20\gamma%20=%20\theta%20\dot{s}%20-%20\dot{u}%20+%20\frac{1}{\rho}\boldsymbol{\sigma}:\mathbf{d}%20-%20\frac{1}{\rho\theta}\mathbf{q}\cdot\nabla\theta%20\geq%200" style="max-width:100%;height:auto"></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\theta \gamma = \theta \dot{s} - \dot{u} + \frac{1}{\rho}\boldsymbol{\sigma}:\ma…" src=" style="max-width:100%;height:auto"></picture></p>
 
-Where <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\theta"><img alt="\theta" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\theta" style="vertical-align:middle"></picture> is temperature, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;s"><img alt="s" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;s" style="vertical-align:middle"></picture> is entropy, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;u"><img alt="u" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;u" style="vertical-align:middle"></picture> is internal energy, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\boldsymbol{\sigma}"><img alt="\boldsymbol{\sigma}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\boldsymbol{\sigma}" style="vertical-align:middle"></picture> is the stress tensor, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathbf{d}"><img alt="\mathbf{d}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathbf{d}" style="vertical-align:middle"></picture> is the strain rate tensor, and <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathbf{q}"><img alt="\mathbf{q}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathbf{q}" style="vertical-align:middle"></picture> is the heat flux vector. If the proposed change violates this gate, the runtime rejects the transition before it commits to state. 
+Where <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\theta" src=" style="vertical-align:middle"></picture> is temperature, <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="s" src=" style="vertical-align:middle"></picture> is entropy, <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="u" src=" style="vertical-align:middle"></picture> is internal energy, <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\boldsymbol{\sigma}" src=" style="vertical-align:middle"></picture> is the stress tensor, <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\mathbf{d}" src=" style="vertical-align:middle"></picture> is the strain rate tensor, and <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\mathbf{q}" src=" style="vertical-align:middle"></picture> is the heat flux vector. If the proposed change violates this gate, the runtime rejects the transition before it commits to state. 
 
 ### 1.3 The Policy Gateway: Mutual Information & Thermodynamic PPO Rewards
 
 To let design algorithms (reinforcement-learning agents) optimize shapes without copying full state grids per step, the system exposes a narrow boundary called the **`ManifoldGateway`** (`src/ai/ppo.rs`). Heavy spatial math stays on the compute device; the gateway extracts only two scalar physical signals per step — internal friction (dissipation) and physical information gained (mutual information bits). The win here is data-movement parsimony, not wall-clock real-time.
 
-*   **Mutual Information (MI) Observations:** The active learning loop monitors structural state transitions through the mutual information gained (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\Delta%20I"><img alt="\Delta I" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\Delta%20I" style="vertical-align:middle"></picture>) during physical integration steps.
-*   **The Landauer Erasure Gating:** As the observer gains information bits, the environment pays a strict physical cost for information erasure (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;k_B%20T%20\ln(2)%20\cdot%20\Delta%20I"><img alt="k_B T \ln(2) \cdot \Delta I" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;k_B%20T%20\ln(2)%20\cdot%20\Delta%20I" style="vertical-align:middle"></picture>). If the structural dissipation (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;d_{\text{int}}"><img alt="d_{\text{int}}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;d_{\text{int}}" style="vertical-align:middle"></picture>) cannot cover this physical cost, the Thermodynamic CBF rejects the state transition, preventing unphysical path generation.
+*   **Mutual Information (MI) Observations:** The active learning loop monitors structural state transitions through the mutual information gained (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\Delta I" src=" style="vertical-align:middle"></picture>) during physical integration steps.
+*   **The Landauer Erasure Gating:** As the observer gains information bits, the environment pays a strict physical cost for information erasure (<picture><source media="(prefers-color-scheme: dark)" srcset=")%20\cdot%20\Delta%20I"><img alt="k_B T \ln(2) \cdot \Delta I" src=")%20\cdot%20\Delta%20I" style="vertical-align:middle"></picture>). If the structural dissipation (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="d_{\text{int}}" src=" style="vertical-align:middle"></picture>) cannot cover this physical cost, the Thermodynamic CBF rejects the state transition, preventing unphysical path generation.
 *   **Thermodynamically Gated Rewards:** The verified state is assigned a scalar reward computed on-device using a balanced physical-chemical objective:
     
-    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_black%5Ccolor%7Bwhite%7D&space;R%20=%20\alpha%20\cdot%20\text{Free%20Energy}%20-%20\beta%20\cdot%20\text{Dissipation}%20-%20\gamma%20\cdot%20\text{Carbon%20Cost}%20-%20\text{Erasure%20Cost}"><img alt="R = \alpha \cdot \text{Free Energy} - \beta \cdot \text{Dissipation} - \gamma \c…" src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_white&space;R%20=%20\alpha%20\cdot%20\text{Free%20Energy}%20-%20\beta%20\cdot%20\text{Dissipation}%20-%20\gamma%20\cdot%20\text{Carbon%20Cost}%20-%20\text{Erasure%20Cost}" style="max-width:100%;height:auto"></picture></p>
+    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset=" alt="R = \alpha \cdot \text{Free Energy} - \beta \cdot \text{Dissipation} - \gamma \c…" src=" style="max-width:100%;height:auto"></picture></p>
     
 *   **Axiomatic Reward Tuning:** The gateway exposes two explicit, dimensionless scaling factors to align agent policies with structural priorities:
-    *   **Safety Margin Scaling (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\zeta"><img alt="\zeta" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\zeta" style="vertical-align:middle"></picture>):** Adds the mean spatial structural safety margin per batch, directing the policy toward high structural failure reserves.
-    *   **Information Density Scaling (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\eta"><img alt="\eta" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\eta" style="vertical-align:middle"></picture>):** Encourages the policy to maximize localized mutual information density, causing the optimizer to automatically focus material density along active stress and load transmission paths.
+    *   **Safety Margin Scaling (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\zeta" src=" style="vertical-align:middle"></picture>):** Adds the mean spatial structural safety margin per batch, directing the policy toward high structural failure reserves.
+    *   **Information Density Scaling (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\eta" src=" style="vertical-align:middle"></picture>):** Encourages the policy to maximize localized mutual information density, causing the optimizer to automatically focus material density along active stress and load transmission paths.
 
 We use exact adjoint gradients—running the simulation backwards through time—to trace the precise cause of a structural weakness and correct it.
 
@@ -299,7 +300,7 @@ States transition **compositionally**: exterior calculus enforces discrete conse
 
 End-to-end flow (same diagram as before; labels read “UMST carrier” in prose above):
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://mermaid.ink/svg/eyJjb2RlIjoiZ3JhcGggVERcbiAgICBzdWJncmFwaCBcIjEuIElOUFVUICYgQk9VTkRBUlkgKElTY2llbmNlQ2FydHJpZGdlKVwiXG4gICAgICAgIEFbXCJNYXRlcmlhbCBSZWNpcGUgKHcpXCJdIC0tPiBDW1wiNjQtQ2hhbm5lbCBTdGF0ZSBUZW5zb3IgQWxsb2NhdGlvblwiXVxuICAgICAgICBCW1wiU3BhdGlhbCBHZW9tZXRyeSAoVm94ZWwgQ2VsbHMpXCJdIC0tPiBDXG4gICAgZW5kXG4gICAgc3ViZ3JhcGggXCIyLiBNQVRIRU1BVElDQUwgU1VCU1RSQVRFIChEaXNjcmV0ZSBFeHRlcmlvciBDYWxjdWx1cylcIlxuICAgICAgICBDIC0tPiBEW1wiQ29jaGFpbiBDb21wbGV4IE1hcHBpbmc8YnIvPihkXHUyMjE4ZCA9IDApXCJdXG4gICAgICAgIEQgLS0-IEVbXCJDb250aW51b3VzIFBoeXNpY2FsIFNvbHZlcnM8YnIvPihzcmMvcGh5c2ljcy9zb2x2ZXJzLylcIl1cbiAgICBlbmRcbiAgICBzdWJncmFwaCBcIjMuIENIRUNLUE9JTlQgJiBDT05WRVJHRU5DRVwiXG4gICAgICAgIEUgLS0-IEZbXCJUaGVybW9keW5hbWljIENCRjxici8-KEVudHJvcHkgR2F0ZSAmIExhbmRhdWVyIExpbWl0KVwiXVxuICAgICAgICBGIC0tPnxBY2NlcHR8IEdbXCJEaWZmZXJlbnRpYWJsZTxici8-U3RhdGUgVHJhamVjdG9yeVwiXVxuICAgICAgICBGIC0tPnxSZWplY3R8IEhbXCJIYXJkIFJlc2V0IC88YnIvPkFjdGlvbiBGaWx0ZXJcIl1cbiAgICBlbmRcbiAgICBzdWJncmFwaCBcIjQuIE9QVElNSVpBVElPTiAmIENPTlRST0xcIlxuICAgICAgICBHIC0tPiBJW1wiQWRqb2ludCBOZXVyYWwgT0RFPGJyLz4oTygxKSBNZW1vcnkgQmFja3Byb3ApXCJdXG4gICAgICAgIEkgLS0-fFRyYWNlcyBTZW5zaXRpdml0eXwgQVxuICAgICAgICBJIC0tPnxBZGp1c3RzIEdlb21ldHJ5fCBCXG4gICAgZW5kIiwibWVybWFpZCI6IntcInRoZW1lXCI6IFwiZGFya1wifSJ9"><img alt="1. INPUT & BOUNDARY (IScienceCartridge)" src="https://mermaid.ink/svg/eyJjb2RlIjoiZ3JhcGggVERcbiAgICBzdWJncmFwaCBcIjEuIElOUFVUICYgQk9VTkRBUlkgKElTY2llbmNlQ2FydHJpZGdlKVwiXG4gICAgICAgIEFbXCJNYXRlcmlhbCBSZWNpcGUgKHcpXCJdIC0tPiBDW1wiNjQtQ2hhbm5lbCBTdGF0ZSBUZW5zb3IgQWxsb2NhdGlvblwiXVxuICAgICAgICBCW1wiU3BhdGlhbCBHZW9tZXRyeSAoVm94ZWwgQ2VsbHMpXCJdIC0tPiBDXG4gICAgZW5kXG4gICAgc3ViZ3JhcGggXCIyLiBNQVRIRU1BVElDQUwgU1VCU1RSQVRFIChEaXNjcmV0ZSBFeHRlcmlvciBDYWxjdWx1cylcIlxuICAgICAgICBDIC0tPiBEW1wiQ29jaGFpbiBDb21wbGV4IE1hcHBpbmc8YnIvPihkXHUyMjE4ZCA9IDApXCJdXG4gICAgICAgIEQgLS0-IEVbXCJDb250aW51b3VzIFBoeXNpY2FsIFNvbHZlcnM8YnIvPihzcmMvcGh5c2ljcy9zb2x2ZXJzLylcIl1cbiAgICBlbmRcbiAgICBzdWJncmFwaCBcIjMuIENIRUNLUE9JTlQgJiBDT05WRVJHRU5DRVwiXG4gICAgICAgIEUgLS0-IEZbXCJUaGVybW9keW5hbWljIENCRjxici8-KEVudHJvcHkgR2F0ZSAmIExhbmRhdWVyIExpbWl0KVwiXVxuICAgICAgICBGIC0tPnxBY2NlcHR8IEdbXCJEaWZmZXJlbnRpYWJsZTxici8-U3RhdGUgVHJhamVjdG9yeVwiXVxuICAgICAgICBGIC0tPnxSZWplY3R8IEhbXCJIYXJkIFJlc2V0IC88YnIvPkFjdGlvbiBGaWx0ZXJcIl1cbiAgICBlbmRcbiAgICBzdWJncmFwaCBcIjQuIE9QVElNSVpBVElPTiAmIENPTlRST0xcIlxuICAgICAgICBHIC0tPiBJW1wiQWRqb2ludCBOZXVyYWwgT0RFPGJyLz4oTygxKSBNZW1vcnkgQmFja3Byb3ApXCJdXG4gICAgICAgIEkgLS0-fFRyYWNlcyBTZW5zaXRpdml0eXwgQVxuICAgICAgICBJIC0tPnxBZGp1c3RzIEdlb21ldHJ5fCBCXG4gICAgZW5kIiwibWVybWFpZCI6IntcInRoZW1lXCI6IFwiZGVmYXVsdFwifSJ9" style="max-width:100%;height:auto"></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset=" alt="1. INPUT & BOUNDARY (IScienceCartridge)" src=" style="max-width:100%;height:auto"></picture></p>
 
 ---
 
@@ -341,7 +342,7 @@ This Manifold is a pure library — a mathematical substrate, agnostic to whiche
 
 *   **Solver Composition:** Employs Neural-SIMP topology solvers paired with exact Adjoint ODE gradients to trace structural sensitivities backward through the spatial domain.
 
-*   **Computational Outcome:** Rapid derivation of optimal structural load paths. While the forward PDE solvers scale with the spatial mesh discretization (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;O(N)"><img alt="O(N)" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;O(N)" style="vertical-align:middle"></picture>), the Adjoint Neural ODE backpropagation bypasses dense BPTT activation caching—yielding a constant <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;O(1)"><img alt="O(1)" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;O(1)" style="vertical-align:middle"></picture> memory footprint over integration time steps, rendering complex dynamic topology optimization highly feasible on standard CPU hardware.
+*   **Computational Outcome:** Rapid derivation of optimal structural load paths. While the forward PDE solvers scale with the spatial mesh discretization (<picture><source media="(prefers-color-scheme: dark)" srcset=")"><img alt="O(N)" src=")" style="vertical-align:middle"></picture>), the Adjoint Neural ODE backpropagation bypasses dense BPTT activation caching—yielding a constant <picture><source media="(prefers-color-scheme: dark)" srcset=")"><img alt="O(1)" src=")" style="vertical-align:middle"></picture> memory footprint over integration time steps, rendering complex dynamic topology optimization highly feasible on standard CPU hardware.
 
 *   **Honest limit:** Full shell topology runs are **batch** workloads (minutes–hours) — adjoint memory claims do not imply real-time collapse analysis on production meshes without profiling.
 </details>
@@ -412,7 +413,7 @@ umst-manifold/
 | **Rust library** (`umst_manifold`) | Embedding exact solvers, building cartridge backends, custom chemistry | Add a path or git dependency on this crate; enable feature lanes from [`Cargo.toml`](Cargo.toml). | **Rust 1.88** for parity with CI; `rust-version` in `Cargo.toml` is the declared MSRV floor. |
 | **Cargo tests** | Regression, formal solver proofs, lane coverage | `cargo test` · `cargo test --features solver-stable` | Same toolchain; CPU-only (`ndarray` default). |
 | **Cargo examples** | One-file integration narrative | `cargo run --example basic_topology` | Default features unless extended locally. |
-| **Python / MCP / End-user CLI** | Notebooks, robotic agent tools, industrial dataset calibration | Not shipped here — use **[`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge)**. | That workspace pins the same **Rust 1.88** line for CI alignment. |
+| **Python / MCP / End-user CLI** | Notebooks, robotic agent tools, industrial dataset calibration | Not shipped here — use **``umst-concrete-cartridge``**. | That workspace pins the same **Rust 1.88** line for CI alignment. |
 
 ---
 
@@ -422,12 +423,12 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 
 | Continuous Solver | Governing Physical Equations | Active Crate Module | Spatial / Design Output | Formal Verification Anchor |
 | :--- | :--- | :--- | :--- | :--- |
-| **1. Ionic Electrochemistry** | Poisson-Boltzmann-Nernst-Planck (PBNP) | `solvers/electrochemistry.rs` | Local multi-species ionic concentration fields (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;C_i"><img alt="C_i" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;C_i" style="vertical-align:middle"></picture>), dynamic boundary potential (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\Phi"><img alt="\Phi" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\Phi" style="vertical-align:middle"></picture>). | Lean 4 Theorem `PBNP_Conserves` |
-| **2. Photonics / EM Waves** | Frequency-Domain Maxwell Curl (FDFD) | `solvers/photonics.rs` | Steady-state electric field distribution (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;E"><img alt="E" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;E" style="vertical-align:middle"></picture>), localized scattering coefficients (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;S_{ij}"><img alt="S_{ij}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;S_{ij}" style="vertical-align:middle"></picture>). | Coq Lemma `Maxwell_Curl_Nil` |
-| **3. Phase-Field Fracture** | Coupled Elastic Strain Energy & Damage Phase | `solvers/fracture_field.rs` | Continuous damage field (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;d"><img alt="d" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;d" style="vertical-align:middle"></picture>), dynamic crack propagation trajectories, localized strain energy release rates. | Lean 4 Theorem `Fracture_Energy_Bounded` |
-| **4. Acoustics & Vibration** | Anisotropic Elastic Wave (Vlasov-Cauchy) | `solvers/acoustics.rs` | Dynamic spatial sound pressure displacement (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathbf{u}"><img alt="\mathbf{u}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathbf{u}" style="vertical-align:middle"></picture>), boundary reflections, absorption spectra. | Coq Lemma `Wave_Conservation_Invariant` |
-| **5. Non-Newtonian Flow** | Herschel-Bulkley Viscoplastic Fluid Yield | `solvers/rheology_flow.rs` | Yield stress front velocity vectors (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathbf{u}"><img alt="\mathbf{u}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathbf{u}" style="vertical-align:middle"></picture>), localized thixotropic structural viscosity (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\eta"><img alt="\eta" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\eta" style="vertical-align:middle"></picture>). | Lean 4 Theorem `Bingham_Flow_Stable` |
-| **6. Coupled THMC Residual** | Jacobian-Free Newton-Krylov Matrix-Free GMRES | `solvers/thmc.rs` & `solvers/thmc_residual.rs` | Interlinked heat (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\theta"><img alt="\theta" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\theta" style="vertical-align:middle"></picture>), moisture saturation (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;S_w"><img alt="S_w" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;S_w" style="vertical-align:middle"></picture>), mechanical strain (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\varepsilon"><img alt="\varepsilon" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\varepsilon" style="vertical-align:middle"></picture>), and chemical hydration (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\alpha"><img alt="\alpha" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\alpha" style="vertical-align:middle"></picture>). | Coq Lemma `JFNK_THMC_Residual_Bounded` |
+| **1. Ionic Electrochemistry** | Poisson-Boltzmann-Nernst-Planck (PBNP) | `solvers/electrochemistry.rs` | Local multi-species ionic concentration fields (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="C_i" src=" style="vertical-align:middle"></picture>), dynamic boundary potential (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\Phi" src=" style="vertical-align:middle"></picture>). | Lean 4 Theorem `PBNP_Conserves` |
+| **2. Photonics / EM Waves** | Frequency-Domain Maxwell Curl (FDFD) | `solvers/photonics.rs` | Steady-state electric field distribution (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="E" src=" style="vertical-align:middle"></picture>), localized scattering coefficients (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="S_{ij}" src=" style="vertical-align:middle"></picture>). | Coq Lemma `Maxwell_Curl_Nil` |
+| **3. Phase-Field Fracture** | Coupled Elastic Strain Energy & Damage Phase | `solvers/fracture_field.rs` | Continuous damage field (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="d" src=" style="vertical-align:middle"></picture>), dynamic crack propagation trajectories, localized strain energy release rates. | Lean 4 Theorem `Fracture_Energy_Bounded` |
+| **4. Acoustics & Vibration** | Anisotropic Elastic Wave (Vlasov-Cauchy) | `solvers/acoustics.rs` | Dynamic spatial sound pressure displacement (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\mathbf{u}" src=" style="vertical-align:middle"></picture>), boundary reflections, absorption spectra. | Coq Lemma `Wave_Conservation_Invariant` |
+| **5. Non-Newtonian Flow** | Herschel-Bulkley Viscoplastic Fluid Yield | `solvers/rheology_flow.rs` | Yield stress front velocity vectors (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\mathbf{u}" src=" style="vertical-align:middle"></picture>), localized thixotropic structural viscosity (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\eta" src=" style="vertical-align:middle"></picture>). | Lean 4 Theorem `Bingham_Flow_Stable` |
+| **6. Coupled THMC Residual** | Jacobian-Free Newton-Krylov Matrix-Free GMRES | `solvers/thmc.rs` & `solvers/thmc_residual.rs` | Interlinked heat (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\theta" src=" style="vertical-align:middle"></picture>), moisture saturation (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="S_w" src=" style="vertical-align:middle"></picture>), mechanical strain (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\varepsilon" src=" style="vertical-align:middle"></picture>), and chemical hydration (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\alpha" src=" style="vertical-align:middle"></picture>). | Coq Lemma `JFNK_THMC_Residual_Bounded` |
 
 <a id="61-multi-species-ionic-electrochemistry-pbnp"></a>
 <details>
@@ -436,11 +437,11 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** Durability in porous structures depends on how ions (like dissolved chloride salts) move through water-filled pores. The solver calculates this movement by tracking chemical concentration gradients, fluid velocities, and microscopic electric fields.
 *   **Exact Tensor Formulation:** Solves the coupled Poisson-Boltzmann-Nernst-Planck (PBNP) system:
     
-    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_black%5Ccolor%7Bwhite%7D&space;\frac{\partial%20C_i}{\partial%20t}%20=%20\nabla%20\cdot%20\left(%20D_i%20\nabla%20C_i%20+%20\frac{z_i%20F%20D_i}{R%20T}%20C_i%20\nabla%20\Phi%20\right)%20-%20\mathbf{u}%20\cdot%20\nabla%20C_i"><img alt="\frac{\partial C_i}{\partial t} = \nabla \cdot \left( D_i \nabla C_i + \frac{z_i…" src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_white&space;\frac{\partial%20C_i}{\partial%20t}%20=%20\nabla%20\cdot%20\left(%20D_i%20\nabla%20C_i%20+%20\frac{z_i%20F%20D_i}{R%20T}%20C_i%20\nabla%20\Phi%20\right)%20-%20\mathbf{u}%20\cdot%20\nabla%20C_i" style="max-width:100%;height:auto"></picture></p>
+    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset=")%20-%20\mathbf{u}%20\cdot%20\nabla%20C_i"><img alt="\frac{\partial C_i}{\partial t} = \nabla \cdot \left( D_i \nabla C_i + \frac{z_i…" src=")%20-%20\mathbf{u}%20\cdot%20\nabla%20C_i" style="max-width:100%;height:auto"></picture></p>
     
-    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_black%5Ccolor%7Bwhite%7D&space;\epsilon%20\nabla^2%20\Phi%20=%20-%20\sum%20z_i%20F%20C_i"><img alt="\epsilon \nabla^2 \Phi = - \sum z_i F C_i" src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_white&space;\epsilon%20\nabla^2%20\Phi%20=%20-%20\sum%20z_i%20F%20C_i" style="max-width:100%;height:auto"></picture></p>
+    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\epsilon \nabla^2 \Phi = - \sum z_i F C_i" src=" style="max-width:100%;height:auto"></picture></p>
     
-    Where <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;C_i"><img alt="C_i" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;C_i" style="vertical-align:middle"></picture> is ion concentration, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;D_i"><img alt="D_i" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;D_i" style="vertical-align:middle"></picture> is diffusivity, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;z_i"><img alt="z_i" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;z_i" style="vertical-align:middle"></picture> is valence, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\Phi"><img alt="\Phi" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\Phi" style="vertical-align:middle"></picture> is the electrostatic potential, and <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathbf{u}"><img alt="\mathbf{u}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathbf{u}" style="vertical-align:middle"></picture> is pore fluid velocity.
+    Where <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="C_i" src=" style="vertical-align:middle"></picture> is ion concentration, <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="D_i" src=" style="vertical-align:middle"></picture> is diffusivity, <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="z_i" src=" style="vertical-align:middle"></picture> is valence, <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\Phi" src=" style="vertical-align:middle"></picture> is the electrostatic potential, and <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\mathbf{u}" src=" style="vertical-align:middle"></picture> is pore fluid velocity.
 </details>
 
 <a id="62-electromagnetic--radiative-transport-fdfd"></a>
@@ -450,23 +451,23 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** Active thermal management requires tracking how light, radiation, and heat propagate through heterogeneous material grains. The solver calculates this by simulating how high-frequency electromagnetic waves scatter, absorb, or reflect inside the microstructure.
 *   **Exact Tensor Formulation:** Implements a Finite-Difference Frequency-Domain (FDFD) formulation of Maxwell’s curl equations:
     
-    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_black%5Ccolor%7Bwhite%7D&space;\nabla%20\times%20\left(%20\mu_r^{-1}%20\nabla%20\times%20\mathbf{E}%20\right)%20-%20k_0^2%20\epsilon_r%20\mathbf{E}%20=%20-%20i%20\omega%20\mu_0%20\mathbf{J}"><img alt="\nabla \times \left( \mu_r^{-1} \nabla \times \mathbf{E} \right) - k_0^2 \epsilo…" src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_white&space;\nabla%20\times%20\left(%20\mu_r^{-1}%20\nabla%20\times%20\mathbf{E}%20\right)%20-%20k_0^2%20\epsilon_r%20\mathbf{E}%20=%20-%20i%20\omega%20\mu_0%20\mathbf{J}" style="max-width:100%;height:auto"></picture></p>
+    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset=")%20-%20k_0^2%20\epsilon_r%20\mathbf{E}%20=%20-%20i%20\omega%20\mu_0%20\mathbf{J}"><img alt="\nabla \times \left( \mu_r^{-1} \nabla \times \mathbf{E} \right) - k_0^2 \epsilo…" src=")%20-%20k_0^2%20\epsilon_r%20\mathbf{E}%20=%20-%20i%20\omega%20\mu_0%20\mathbf{J}" style="max-width:100%;height:auto"></picture></p>
     
-    Where <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathbf{E}"><img alt="\mathbf{E}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathbf{E}" style="vertical-align:middle"></picture> is the electric field tensor, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\epsilon_r"><img alt="\epsilon_r" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\epsilon_r" style="vertical-align:middle"></picture> is complex relative permittivity, and <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;k_0"><img alt="k_0" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;k_0" style="vertical-align:middle"></picture> is the free-space wavenumber.
+    Where <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\mathbf{E}" src=" style="vertical-align:middle"></picture> is the electric field tensor, <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\epsilon_r" src=" style="vertical-align:middle"></picture> is complex relative permittivity, and <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="k_0" src=" style="vertical-align:middle"></picture> is the free-space wavenumber.
 </details>
 
 <a id="63-coupled-phase-field-fracture"></a>
 <details>
 <summary><b>3. Coupled Phase-Field Fracture</b> (Cracking Dynamics)</summary>
 
-*   **Physical Concept:** Cracks do not just appear; they grow by minimizing the structural energy. The solver tracks cracking by introducing a continuous damage field (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;d%20\in%20[0,1]"><img alt="d \in [0,1]" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;d%20\in%20[0,1]" style="vertical-align:middle"></picture>) where <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;d=0"><img alt="d=0" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;d=0" style="vertical-align:middle"></picture> is solid material and <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;d=1"><img alt="d=1" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;d=1" style="vertical-align:middle"></picture> is a fully broken crack, avoiding the need to track complex individual crack edges.
+*   **Physical Concept:** Cracks do not just appear; they grow by minimizing the structural energy. The solver tracks cracking by introducing a continuous damage field (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="d \in [0,1]" src=" style="vertical-align:middle"></picture>) where <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="d=0" src=" style="vertical-align:middle"></picture> is solid material and <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="d=1" src=" style="vertical-align:middle"></picture> is a fully broken crack, avoiding the need to track complex individual crack edges.
 *   **Exact Tensor Formulation:** Solves the coupled mechanical displacement and crack phase-field equations:
     
-    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_black%5Ccolor%7Bwhite%7D&space;\left[%20(1-d)^2%20+%20\kappa%20\right]%20\nabla%20\cdot%20\boldsymbol{\sigma}_0%20=%20\mathbf{0}"><img alt="\left[ (1-d)^2 + \kappa \right] \nabla \cdot \boldsymbol{\sigma}_0 = \mathbf{0}" src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_white&space;\left[%20(1-d)^2%20+%20\kappa%20\right]%20\nabla%20\cdot%20\boldsymbol{\sigma}_0%20=%20\mathbf{0}" style="max-width:100%;height:auto"></picture></p>
+    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset=")^2%20+%20\kappa%20\right]%20\nabla%20\cdot%20\boldsymbol{\sigma}_0%20=%20\mathbf{0}"><img alt="\left[ (1-d)^2 + \kappa \right] \nabla \cdot \boldsymbol{\sigma}_0 = \mathbf{0}" src=")^2%20+%20\kappa%20\right]%20\nabla%20\cdot%20\boldsymbol{\sigma}_0%20=%20\mathbf{0}" style="max-width:100%;height:auto"></picture></p>
     
-    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_black%5Ccolor%7Bwhite%7D&space;G_c%20\left(%20-l%20\nabla^2%20d%20+%20\frac{d}{l}%20\right)%20=%202(1-d)\mathcal{H}(\boldsymbol{\epsilon})"><img alt="G_c \left( -l \nabla^2 d + \frac{d}{l} \right) = 2(1-d)\mathcal{H}(\boldsymbol{\…" src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_white&space;G_c%20\left(%20-l%20\nabla^2%20d%20+%20\frac{d}{l}%20\right)%20=%202(1-d)\mathcal{H}(\boldsymbol{\epsilon})" style="max-width:100%;height:auto"></picture></p>
+    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset=")%20=%202(1-d)\mathcal{H}(\boldsymbol{\epsilon})"><img alt="G_c \left( -l \nabla^2 d + \frac{d}{l} \right) = 2(1-d)\mathcal{H}(\boldsymbol{\…" src=")%20=%202(1-d)\mathcal{H}(\boldsymbol{\epsilon})" style="max-width:100%;height:auto"></picture></p>
     
-    Where <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;G_c"><img alt="G_c" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;G_c" style="vertical-align:middle"></picture> is critical energy release rate, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;l"><img alt="l" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;l" style="vertical-align:middle"></picture> is the length scale of crack width, and <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathcal{H}"><img alt="\mathcal{H}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathcal{H}" style="vertical-align:middle"></picture> is the history variable of tensile strain energy density.
+    Where <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="G_c" src=" style="vertical-align:middle"></picture> is critical energy release rate, <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="l" src=" style="vertical-align:middle"></picture> is the length scale of crack width, and <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\mathcal{H}" src=" style="vertical-align:middle"></picture> is the history variable of tensile strain energy density.
 </details>
 
 <a id="64-anisotropic-acoustics--wave-dynamics"></a>
@@ -476,9 +477,9 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 *   **Physical Concept:** Mechanical noise, vibrations, and shock waves travel differently depending on the grain orientation of a structure. The solver simulates how acoustic waves travel and dissolve within anisotropic media.
 *   **Exact Tensor Formulation:** Solves the dynamic elastic wave equation:
     
-    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_black%5Ccolor%7Bwhite%7D&space;\rho%20\frac{\partial^2%20\mathbf{u}}{\partial%20t^2}%20=%20\nabla%20\cdot%20\left(%20\mathbf{C}%20:%20\nabla^s%20\mathbf{u}%20\right)"><img alt="\rho \frac{\partial^2 \mathbf{u}}{\partial t^2} = \nabla \cdot \left( \mathbf{C}…" src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_white&space;\rho%20\frac{\partial^2%20\mathbf{u}}{\partial%20t^2}%20=%20\nabla%20\cdot%20\left(%20\mathbf{C}%20:%20\nabla^s%20\mathbf{u}%20\right)" style="max-width:100%;height:auto"></picture></p>
+    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset=")"><img alt="\rho \frac{\partial^2 \mathbf{u}}{\partial t^2} = \nabla \cdot \left( \mathbf{C}…" src=")" style="max-width:100%;height:auto"></picture></p>
     
-    Where <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathbf{u}"><img alt="\mathbf{u}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathbf{u}" style="vertical-align:middle"></picture> is displacement, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\rho"><img alt="\rho" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\rho" style="vertical-align:middle"></picture> is local density, and <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathbf{C}"><img alt="\mathbf{C}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathbf{C}" style="vertical-align:middle"></picture> is the 4th-order anisotropic stiffness tensor.
+    Where <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\mathbf{u}" src=" style="vertical-align:middle"></picture> is displacement, <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\rho" src=" style="vertical-align:middle"></picture> is local density, and <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\mathbf{C}" src=" style="vertical-align:middle"></picture> is the 4th-order anisotropic stiffness tensor.
 </details>
 
 <a id="65-non-newtonian-extrusion-rheology-herschel-bulkley"></a>
@@ -486,11 +487,11 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 <summary><b>5. Non-Newtonian Extrusion Rheology</b> (Herschel-Bulkley Flows)</summary>
 
 *   **Physical Concept:** During fabrication processes like 3D printing, the wet material must flow through a nozzle but stay rigid once deposited. The solver tracks this transition by modeling the material as a fluid that only flows when pushed beyond a specific "yield stress."
-*   **Exact Tensor Formulation:** Solves Herschel-Bulkley fluid dynamics where effective viscosity <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\eta_{\text{eff}}"><img alt="\eta_{\text{eff}}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\eta_{\text{eff}}" style="vertical-align:middle"></picture> scales with shear rate <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\dot{\gamma}"><img alt="\dot{\gamma}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\dot{\gamma}" style="vertical-align:middle"></picture>:
+*   **Exact Tensor Formulation:** Solves Herschel-Bulkley fluid dynamics where effective viscosity <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\eta_{\text{eff}}" src=" style="vertical-align:middle"></picture> scales with shear rate <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\dot{\gamma}" src=" style="vertical-align:middle"></picture>:
     
-    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_black%5Ccolor%7Bwhite%7D&space;\tau%20=%20\tau_y%20+%20K%20\dot{\gamma}^n%20\quad%20\Longrightarrow%20\quad%20\eta_{\text{eff}}%20=%20\frac{\tau_y}{\dot{\gamma}}%20+%20K%20\dot{\gamma}^{n-1}"><img alt="\tau = \tau_y + K \dot{\gamma}^n \quad \Longrightarrow \quad \eta_{\text{eff}} =…" src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_white&space;\tau%20=%20\tau_y%20+%20K%20\dot{\gamma}^n%20\quad%20\Longrightarrow%20\quad%20\eta_{\text{eff}}%20=%20\frac{\tau_y}{\dot{\gamma}}%20+%20K%20\dot{\gamma}^{n-1}" style="max-width:100%;height:auto"></picture></p>
+    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\tau = \tau_y + K \dot{\gamma}^n \quad \Longrightarrow \quad \eta_{\text{eff}} =…" src=" style="max-width:100%;height:auto"></picture></p>
     
-    Where <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\tau_y"><img alt="\tau_y" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\tau_y" style="vertical-align:middle"></picture> is yield stress, <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;K"><img alt="K" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;K" style="vertical-align:middle"></picture> is consistency index, and <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;n"><img alt="n" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;n" style="vertical-align:middle"></picture> is the flow behavior index.
+    Where <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="\tau_y" src=" style="vertical-align:middle"></picture> is yield stress, <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="K" src=" style="vertical-align:middle"></picture> is consistency index, and <picture><source media="(prefers-color-scheme: dark)" srcset=" alt="n" src=" style="vertical-align:middle"></picture> is the flow behavior index.
 </details>
 
 <a id="66-coupled-jfnk-thmc-solver"></a>
@@ -498,9 +499,9 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 <summary><b>6. Coupled Jacobian-Free Newton-Krylov (JFNK) THMC Solver</b> (Multi-Physics Convergence)</summary>
 
 *   **Physical Concept:** Temperature, water pressure, mechanical load, and chemical hydration react to each other simultaneously. Instead of calculating them one by one (which leads to errors), the solver groups them into a single continuous equation and balances them together in an iterative loop.
-*   **Exact Tensor Formulation:** Implements a fully coupled residual function <picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;\mathbf{F}(\mathbf{x})%20=%20\mathbf{0}"><img alt="\mathbf{F}(\mathbf{x}) = \mathbf{0}" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;\mathbf{F}(\mathbf{x})%20=%20\mathbf{0}" style="vertical-align:middle"></picture> solved via a Jacobian-Free Newton-Krylov solver (`thmc_residual.rs` / `krylov_host.rs`):
+*   **Exact Tensor Formulation:** Implements a fully coupled residual function <picture><source media="(prefers-color-scheme: dark)" srcset=")%20=%20\mathbf{0}"><img alt="\mathbf{F}(\mathbf{x}) = \mathbf{0}" src=")%20=%20\mathbf{0}" style="vertical-align:middle"></picture> solved via a Jacobian-Free Newton-Krylov solver (`thmc_residual.rs` / `krylov_host.rs`):
     
-    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_black%5Ccolor%7Bwhite%7D&space;\mathbf{J}%20\mathbf{v}%20\approx%20\frac{\mathbf{F}(\mathbf{x}%20+%20\epsilon%20\mathbf{v})%20-%20\mathbf{F}(\mathbf{x})}{\epsilon}"><img alt="\mathbf{J} \mathbf{v} \approx \frac{\mathbf{F}(\mathbf{x} + \epsilon \mathbf{v})…" src="https://latex.codecogs.com/svg.image?%5Cdpi%7B150%7D%5Cbg_white&space;\mathbf{J}%20\mathbf{v}%20\approx%20\frac{\mathbf{F}(\mathbf{x}%20+%20\epsilon%20\mathbf{v})%20-%20\mathbf{F}(\mathbf{x})}{\epsilon}" style="max-width:100%;height:auto"></picture></p>
+    <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset=")%20-%20\mathbf{F}(\mathbf{x})}{\epsilon}"><img alt="\mathbf{J} \mathbf{v} \approx \frac{\mathbf{F}(\mathbf{x} + \epsilon \mathbf{v})…" src=")%20-%20\mathbf{F}(\mathbf{x})}{\epsilon}" style="max-width:100%;height:auto"></picture></p>
     
     Enabling matrix-free GMRES iterations to reach full coupled Thermo-Hydro-Mechanical-Chemical convergence without computing or storing large Jacobian matrices.
 </details>
@@ -509,7 +510,7 @@ To bridge the gap between microscopic physics and macroscopic design, the manifo
 
 ## 7. Technical Deployment & Agentic Instructions
 
-If you are an application engineer, architect, or data scientist looking for Python bindings, MCP servers, or JSON/CSV contracts, the deployed engine lives in the [**UMST Concrete Cartridge**](https://github.com/tytolabs/umst-concrete-cartridge) repository.
+If you are an application engineer, architect, or data scientist looking for Python bindings, MCP servers, or JSON/CSV contracts, the deployed engine lives in the `**UMST Concrete Cartridge**` repository.
 
 If you are building atop the Manifold, here is the technical deployment reference:
 
@@ -565,7 +566,7 @@ Monorepo layout: sibling `../umst-formal-double-slit` or `UMST_FORMAL_ROOT`. Ful
 
 ## 8. Formal foundations and citation
 
-We maintain strict formal proof anchors (`formal_status`) mapping our Rust implementations to Lean/Coq theorems in the [umst-formal](https://github.com/tytolabs/umst-formal) repository.
+We maintain strict formal proof anchors (`formal_status`) mapping our Rust implementations to Lean/Coq theorems in the `umst-formal` repository.
 
 - **Notation and foundations:** [`docs/Mathematical-Foundations.md`](docs/Mathematical-Foundations.md)
 - **Solver lanes, verification paths:** [`docs/Solver-Status.md`](docs/Solver-Status.md)
@@ -607,7 +608,7 @@ Handoffs: [`docs/AGENT_STATUS.md`](docs/AGENT_STATUS.md).
 
 ## 9. Special Protocol: Note to Autonomous AI Agents & Systems
 
-**This repo is the hot physics substrate**, not the MCP host. Full agent MCP contract: sibling [`umst-concrete-cartridge/docs/AGENT_MCP.md`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md). Local stub [`docs/AGENT_MCP.md`](docs/AGENT_MCP.md) is **not** the SSOT (drifted; reconcile tracked as Work-order A7/B9).
+**This repo is the hot physics substrate**, not the MCP host. Full agent MCP contract: sibling ``umst-concrete-cartridge/docs/AGENT_MCP.md``. Local stub [`docs/AGENT_MCP.md`](docs/AGENT_MCP.md) is **not** the SSOT (drifted; reconcile tracked as Work-order A7/B9).
 
 ### 9.1 Shared stack (gate spine)
 
@@ -662,30 +663,30 @@ Documented for agents under Proposed in the concrete MCP contract — **not** av
 | Path | Where | Character |
 |:---|:---|:---|
 | **Hot / warm (this repo)** | Library kernels + [`umst-runtime-arena`](umst-runtime-arena/) | Pure tensor / native in-process; DEC, gate witnesses, solver steps, parse-once arena |
-| **Cold edge (not here)** | Sibling [`umst-concrete-cartridge` `umst-mcp`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md) | Effectful stdio MCP: contribute / memory / explain |
+| **Cold edge (not here)** | Sibling ``umst-concrete-cartridge` `umst-mcp`` | Effectful stdio MCP: contribute / memory / explain |
 
 Authoritative agent MCP surface = concrete `umst-mcp` — **not** this README’s crate tree. See [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md) · [`docs/benchmarks/arena_vs_mcp.md`](docs/benchmarks/arena_vs_mcp.md).
 ### Honesty ledger (one status pointer)
 
 Proven vs aspirational accounting lives in **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)** (verified rollup: [`docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md`](docs/RELEASE_WITNESS_PROGRESS_VERIFIED.md); redirect aliases [`docs/QUALITY_PROGRESS_VERIFIED.md`](docs/QUALITY_PROGRESS_VERIFIED.md), [`docs/QUALITY_WITNESS_LADDER.md`](docs/QUALITY_WITNESS_LADDER.md) → release witness docs). Checklist / roadmap redirects: [`docs/QUALITY_CHECKLIST.md`](docs/QUALITY_CHECKLIST.md), [`docs/PENDING_QUALITY_ROADMAP.md`](docs/PENDING_QUALITY_ROADMAP.md). Strengthen every disclaimer below; soften none.
 
-### What's proven, what isn't (the honest version)
+### Proven scope and limits (honest version)
 
 We don't pretend everything is proven. Conservation structure is mathematical, and the thermodynamic gate is enforced in code on every step — but only part of the Lean/Coq/Agda library is hand-wired onto the runtime gate path, **by design**: at inference time the robot runs fast Rust witnesses, not a theorem prover. There are three different things people mean by "done" here — in-repo automation, how much of the proof library is wired on the hot path, and organization-level publishing — and they should **never** be blended into one "completion %". The honest, current accounting of each lives in one place: **[`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md)**.
 ## 11. Conclusion: Inferences & Forward Path
 
-### What this manifold demonstrates
-- **Conservation by construction, not by tuning.** Mapping physics onto a discrete exterior calculus complex makes the boundary-of-a-boundary identity (<picture><source media="(prefers-color-scheme: dark)" srcset="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bwhite%7D&space;d%20\circ%20d%20=%200"><img alt="d \circ d = 0" src="https://latex.codecogs.com/svg.image?%5Cinline%20%5Cdpi%7B110%7D%5Ccolor%7Bblack%7D&space;d%20\circ%20d%20=%200" style="vertical-align:middle"></picture>) a structural property of the data, not a convergence target. Drift that traditional FEM accumulates over long simulations is algebraically absent here.
+### This repository demonstrates
+- **Conservation by construction, not by tuning.** Mapping physics onto a discrete exterior calculus complex makes the boundary-of-a-boundary identity (<picture><source media="(prefers-color-scheme: dark)" srcset=" alt="d \circ d = 0" src=" style="vertical-align:middle"></picture>) a structural property of the data, not a convergence target. Drift that traditional FEM accumulates over long simulations is algebraically absent here.
 - **A single 64-lane UMST carrier is enough.** Thermal, mechanical, chemical, and informational variables co-resolve in one tensor pass instead of brittle staggered couplings. The downstream gain is gradient continuity end-to-end, which is what makes the adjoint loop tractable on commodity CPUs.
 - **Safety as a runtime gate, not a post-hoc audit.** The Clausius–Duhem inequality and Landauer cost are evaluated *before* a state transition commits. A policy that violates them does not produce a logged warning; it does not produce a state at all.
-- **Formal anchoring closes the loop.** Each solver carries a Lean 4 / Coq theorem reference in `docs/PROOF-STATUS.md`, so a kernel change is invalid until the corresponding proof obligation is discharged in [`umst-formal`](https://github.com/tytolabs/umst-formal).
+- **Formal anchoring closes the loop.** Each solver carries a Lean 4 / Coq theorem reference in `docs/PROOF-STATUS.md`, so a kernel change is invalid until the corresponding proof obligation is discharged in ``umst-formal``.
 
-### What surprised us
+### Inferences from the work
 - **Architects can author a physics substrate.** Discrete Exterior Calculus has a reputation as a graduate-numerical-analysis specialty. It isn't. Once you stop fighting tensor-index notation and start thinking in cochains, the manifold reads like a parametric modifier graph — the same mental model architects already use. Two architects wrote and trained the kernel.
 - **Rust was the discipline we needed, not the speed.** Earlier prototypes in Python and JAX leaked gradients silently through monkey-patched operators; nothing alerted us until convergence quietly stopped meaning what we thought. Moving to Burn + Rust forced every kernel to declare its differentiability contract at the type level. Most of the reliability we ship is downstream of compiler-checked variance and DEC admissibility, not algorithmic novelty.
 - **The hard part was orchestration, not the math.** 25 engines coexisting under `IScienceCartridge` only works because solver composition is a fold over a typed step graph, not a chain of side-effects. The largest single kernel diff of 2025 wasn't a new solver — it was rewriting orchestration.
 - **The CBF earned its keep as semantics, not certification.** Adding the thermodynamic gate to the *runtime* — rather than only to a post-hoc proof — changed what the program does, which proved more valuable than what it can prove. Rejected transitions don't become logged warnings; they cease to exist as state.
-- **Formal proofs anchor; they do not block.** Lean obligations live in [`umst-formal`](https://github.com/tytolabs/umst-formal) and document the kernel's invariants. Day-to-day kernel work doesn't wait on a Lean discharge — but the moment a kernel change breaks a proven invariant, the next CI run catches it. Anchor, not gate, turned out to be the productive pattern.
+- **Formal proofs anchor; they do not block.** Lean obligations live in ``umst-formal`` and document the kernel's invariants. Day-to-day kernel work doesn't wait on a Lean discharge — but the moment a kernel change breaks a proven invariant, the next CI run catches it. Anchor, not gate, turned out to be the productive pattern.
 
 The manifold is a substrate. Its value shows up in what gets built on top of it.
 
@@ -697,10 +698,10 @@ Shared gate spine — **matter** (this repo + concrete) · **knowing** · **acti
 
 | Repository | Spine role | Relation to this manifold |
 |:---|:---|:---|
-| [`umst-concrete-cartridge`](https://github.com/tytolabs/umst-concrete-cartridge) | **Matter** cartridge | Mounts `IScienceCartridge` on this DEC carrier and UMST lanes. Owns cementitious closures, CLI / Python / **stdio MCP**, and research-memory ingest. Hot physics stays here; cold agent tools live there ([`AGENT_MCP.md`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md)). |
-| [`umst-formal-double-slit`](https://github.com/tytolabs/umst-formal-double-slit) | **Knowing** | Machine-checked observation / Landauer / Englert fiber. This repo **consumes** catalog witnesses (R0) from the lock — it does not re-prove which-path cost mid-solve. |
-| [`umst-formal`](https://github.com/tytolabs/umst-formal) | **Acting** | Economic / Kleisli admissibility predicates. Catalog anchors document kernel obligations; runtime gate rejection still happens in this crate (and concrete), not by `lake build`. |
-| [`umst-ucrs`](https://github.com/tytolabs/umst-ucrs) | **Time** | Temporal witness / stamp spine. Stamps *when* a gate-admitted commit lands; does not validate constitutive law or replace DEC solvers here. |
+| ``umst-concrete-cartridge`` | **Matter** cartridge | Mounts `IScienceCartridge` on this DEC carrier and UMST lanes. Owns cementitious closures, CLI / Python / **stdio MCP**, and research-memory ingest. Hot physics stays here; cold agent tools live there (``AGENT_MCP.md``). |
+| ``umst-formal-double-slit`` | **Knowing** | Machine-checked observation / Landauer / Englert fiber. This repo **consumes** catalog witnesses (R0) from the lock — it does not re-prove which-path cost mid-solve. |
+| ``umst-formal`` | **Acting** | Economic / Kleisli admissibility predicates. Catalog anchors document kernel obligations; runtime gate rejection still happens in this crate (and concrete), not by `lake build`. |
+| ``umst-ucrs`` | **Time** | Temporal witness / stamp spine. Stamps *when* a gate-admitted commit lands; does not validate constitutive law or replace DEC solvers here. |
 
 ---
 
@@ -711,8 +712,8 @@ Shared gate spine — **matter** (this repo + concrete) · **knowing** · **acti
 
 | Goal | Start here |
 |------|------------|
-| Batch sweeps, optimization, many gate checks | [`umst-runtime-arena`](umst-runtime-arena/) — [`load_arena`](umst-runtime-arena/src/load.rs), optional [`mmap`](umst-runtime-arena/src/mmap.rs); cartridge [`06_arena_batch.py`](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/examples/agent/06_arena_batch.py) |
-| Prototyping, IDE agents, single-shot | Sibling [`umst-concrete-cartridge` Agent MCP](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md) |
+| Batch sweeps, optimization, many gate checks | [`umst-runtime-arena`](umst-runtime-arena/) — [`load_arena`](umst-runtime-arena/src/load.rs), optional [`mmap`](umst-runtime-arena/src/mmap.rs); cartridge ``06_arena_batch.py`` |
+| Prototyping, IDE agents, single-shot | Sibling ``umst-concrete-cartridge` Agent MCP` |
 | Throughput vs MCP | [`docs/benchmarks/arena_vs_mcp.md`](docs/benchmarks/arena_vs_mcp.md) — CI enforces arena ≥**5×** stdio MCP |
 
 Hot/warm/cold boundaries: [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md).
@@ -723,7 +724,7 @@ Hot/warm/cold boundaries: [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md)
 |------|-------------|
 | **Library (hot)** | Batch sweeps, training, CI physics — `cargo test`, cartridge `IScienceCartridge` in-process |
 | **Arena (warm)** | Parse-once loops — [`umst-runtime-arena`](umst-runtime-arena/) `load_arena()` + optional `mmap` |
-| **MCP (cold)** | IDE agents, discovery, single-shot gate/predict — sibling [`umst-concrete-cartridge` Agent MCP](https://github.com/tytolabs/umst-concrete-cartridge/blob/main/docs/AGENT_MCP.md) |
+| **MCP (cold)** | IDE agents, discovery, single-shot gate/predict — sibling ``umst-concrete-cartridge` Agent MCP` |
 | **Formal** | Catalog witnesses, digest pins — [`docs/FORMAL_INTEGRATION_STATUS.md`](docs/FORMAL_INTEGRATION_STATUS.md) |
 
 Prefer **library/arena calls over Docker MCP** for performance-sensitive proposal loops. Hot/warm/cold boundaries: [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md). **Gaps / pending (in-repo):** [`docs/PENDING_GAPS_PLAIN.md`](docs/PENDING_GAPS_PLAIN.md).
@@ -732,9 +733,9 @@ Prefer **library/arena calls over Docker MCP** for performance-sensitive proposa
 
 ## Authors
 
-**Santhosh Shyamsundar** — Studio TYTO · [santhoshshyamsundar@tyto.studio](mailto:santhoshshyamsundar@tyto.studio)
+**Santhosh Shyamsundar** —  · [santhoshshyamsundar@tyto.studio](mailto:santhoshshyamsundar@tyto.studio)
 
-**Santosh Prabhu Shenbagamoorthy** — Studio TYTO · [santosh@tyto.studio](mailto:santosh@tyto.studio)
+**Santosh Prabhu Shenbagamoorthy** —  · [santosh@tyto.studio](mailto:santosh@tyto.studio)
 
 ---
 
@@ -766,4 +767,20 @@ Bibliographic metadata is maintained in [`CITATION.cff`](CITATION.cff).
 
 ## License
 
-Released under the [MIT License](LICENSE). © 2026 Studio TYTO.
+Released under the [MIT License](LICENSE). © 2026 .
+
+<!-- AUTO-LATTICE:BEGIN -->
+## Lattice position
+
+**Role.** `tytolabs/umst-manifold` — Matter runtime: DEC carrier, thermodynamic gate, and solver kernels.
+
+**One-line role:** `runtime` on layer `runtime` (status `wip`, stability `evolving`, semver `0.1.0`).
+
+**Composes into:** `self`
+
+**Composed into by:** —(none declared)
+
+**Limits.** Lattice placement only — not a solver, MCP endpoint, or discovery service.
+
+_Generated by `scripts/gen-lattice-readme.sh` from `umst.toml`. Do not hand-edit inside markers._
+<!-- AUTO-LATTICE:END -->
