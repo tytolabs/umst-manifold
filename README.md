@@ -12,10 +12,10 @@ SPDX-License-Identifier: MIT
 > _This ecosystem is dedicated to the thousands of unnamed contributors who wrote formal proofs, maintained open-source compilers, and built mathematical libraries for years — often without evidence that any of it would be used beyond pure theory. They chose to make their work free, because they understood that knowledge about physical reality cannot be owned. Whatever this system achieves is yours._
 
 <!-- readme:status -->
-[![CI — Rust](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
-[![CI — Catalog drift](https://github.com/tytolabs/umst-manifold/actions/workflows/umst-catalog-drift.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/umst-catalog-drift.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
-[![Cartridge: concrete](https://img.shields.io/badge/cartridge-concrete-C9A27A)](https://github.com/tytolabs/umst-concrete-cartridge)
+[![Figure 1: CI Rust](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/rust.yml)
+[![Figure 2: CI Catalog drift](https://github.com/tytolabs/umst-manifold/actions/workflows/umst-catalog-drift.yml/badge.svg)](https://github.com/tytolabs/umst-manifold/actions/workflows/umst-catalog-drift.yml)
+[![Figure 3: License MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
+[![Figure 4: Cartridge concrete](https://img.shields.io/badge/cartridge-concrete-C9A27A)](https://github.com/tytolabs/umst-concrete-cartridge)
 <!-- /readme:status -->
 
 > *Conservation laws are absolute in physics: every unit of energy and momentum is accounted for. Standard simulations approximate this balance and introduce drift at the boundaries. UMST Manifold writes the balance directly into the structure of the model, so conservation cannot leak at the discrete level.*
@@ -102,8 +102,8 @@ If you want applied cementitious chemistry, Python, CLI, or MCP tools, see the `
 
 ---
 <!-- readme:hero-figure -->
-![UMST unified state pipeline — UMST carrier (light)](docs/assets/fig1_teaser.png#gh-light-mode-only)
-![UMST unified state pipeline — UMST carrier (dark)](docs/assets/fig1_teaser_dark.png#gh-dark-mode-only)
+![Figure 5: UMST unified state pipeline — UMST carrier (light)](docs/assets/fig1_teaser.png#gh-light-mode-only)
+![Figure 6: UMST unified state pipeline — UMST carrier (dark)](docs/assets/fig1_teaser_dark.png#gh-dark-mode-only)
 
 *Diagram of the unified material-state pipeline (teaser) — schematic, not a laboratory measurement or physical print.*
 
@@ -163,8 +163,8 @@ If you want applied cementitious chemistry, Python, CLI, or MCP tools, see the `
   - [9.5 Proposed (not yet built)](#95-proposed-not-yet-built)
   - [9.6 Principles](#96-principles)
 - [§11 Conclusion: Inferences & Forward Path](#11-conclusion-inferences--forward-path)
-  - [What this manifold demonstrates](#what-this-manifold-demonstrates)
-  - [What surprised us](#what-surprised-us)
+  - [This repository demonstrates](#this-repository-demonstrates)
+  - [Inferences from the work](#inferences-from-the-work)
 - [Related repositories](#related-repositories)
 - [Authors](#authors)
 - [Acknowledgments](#acknowledgments)
@@ -216,8 +216,8 @@ Each `##` / `###` heading on GitHub gets a stable **anchor**: the part after `#`
 #95-proposed-not-yet-built
 #96-principles
 #11-conclusion-inferences--forward-path
-#what-this-manifold-demonstrates
-#what-surprised-us
+#this-repository-demonstrates
+#inferences-from-the-work
 #related-repositories
 #authors
 #acknowledgments
@@ -616,7 +616,7 @@ Same block as the front door: **matter** (this repo + concrete) · **knowing** (
 
 ### 9.2 Hot arena vs cold edge
 
-| Path | Use | Where |
+| Path | Use | Location |
 |:---|:---|:---|
 | **Hot library** | In-process DEC / gate / solvers | this crate |
 | **Warm arena** | Parse-once batch gate loops | [`umst-runtime-arena`](umst-runtime-arena/) |
@@ -660,7 +660,7 @@ Documented for agents under Proposed in the concrete MCP contract — **not** av
 
 ### Hot arena vs cold edge (performance honesty)
 
-| Path | Where | Character |
+| Path | Location | Character |
 |:---|:---|:---|
 | **Hot / warm (this repo)** | Library kernels + [`umst-runtime-arena`](umst-runtime-arena/) | Pure tensor / native in-process; DEC, gate witnesses, solver steps, parse-once arena |
 | **Cold edge (not here)** | Sibling ``umst-concrete-cartridge` `umst-mcp`` | Effectful stdio MCP: contribute / memory / explain |
@@ -720,7 +720,7 @@ Hot/warm/cold boundaries: [`docs/RUNTIME_TOPOLOGY.md`](docs/RUNTIME_TOPOLOGY.md)
 
 ### For Agents & Researchers
 
-| Path | When to use |
+| Path | Use case |
 |------|-------------|
 | **Library (hot)** | Batch sweeps, training, CI physics — `cargo test`, cartridge `IScienceCartridge` in-process |
 | **Arena (warm)** | Parse-once loops — [`umst-runtime-arena`](umst-runtime-arena/) `load_arena()` + optional `mmap` |
@@ -772,7 +772,7 @@ Released under the [MIT License](LICENSE). © 2026 .
 <!-- AUTO-LATTICE:BEGIN -->
 ## Lattice position
 
-**Role.** `tytolabs/umst-manifold` — Future rename target: umst-runtime (A3).
+**Role.** `tytolabs/umst-manifold` — Matter runtime: DEC carrier, thermodynamic gate, and solver kernels.
 
 **One-line role:** `runtime` on layer `runtime` (status `wip`, stability `evolving`, semver `0.1.0`).
 
