@@ -1,9 +1,8 @@
 # SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 # SPDX-License-Identifier: MIT
 #
-# A3 facade template — NOT a workspace member until GitHub rename (duplicate package name with root).
-# Operator step: after `umst-manifold` → `umst-runtime` GitHub rename, move root facade here and
-# remove `[package]` from workspace root (virtual manifest) OR swap root package roles per A3 plan.
+# A3 facade template — NOT a workspace member until operator reveal (duplicate package name with root).
+# GitHub 301 `umst-manifold` → `umst-runtime` is operator reveal (§12.1), not live; remote stays `tytolabs/umst-manifold`.
 
 [package]
 name = "umst-manifold"
@@ -17,8 +16,8 @@ authors = [
 ]
 description = "Deprecated compatibility facade — re-exports umst-runtime (activate after A3 GitHub rename)."
 documentation = "https://docs.rs/umst-manifold"
-homepage = "https://github.com/tytolabs/umst-runtime"
-repository = "https://github.com/tytolabs/umst-runtime"
+homepage = "https://github.com/tytolabs/umst-manifold"
+repository = "https://github.com/tytolabs/umst-manifold"
 license = "MIT"
 publish = false
 

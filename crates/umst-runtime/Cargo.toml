@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 #
 # A3 transitional alias: executor package name for `umst-manifold` implementation at workspace root.
-# After GitHub rename to `umst-runtime`, implementation moves here and root `umst-manifold` becomes facade.
+# GitHub rename to `umst-runtime` is operator reveal (§12.1), not live — product remote stays `tytolabs/umst-manifold`.
 
 [package]
 name = "umst-runtime"
@@ -16,8 +16,8 @@ authors = [
 ]
 description = "UMST executor runtime — burn home, solvers, arena, embodied/ROS hosts (A3 rename of umst-manifold)."
 documentation = "https://docs.rs/umst-runtime"
-homepage = "https://github.com/tytolabs/umst-runtime"
-repository = "https://github.com/tytolabs/umst-runtime"
+homepage = "https://github.com/tytolabs/umst-manifold"
+repository = "https://github.com/tytolabs/umst-manifold"
 license = "MIT"
 readme = "../../README.md"
 keywords = ["physics", "differentiable", "thermodynamics", "topology", "burn"]
