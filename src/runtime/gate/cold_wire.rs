@@ -45,6 +45,40 @@ pub const AGENT_LOOP_07_NON_CLAIM: &str =
 /// AGENT-LOOP-07 deepen schema version.
 pub const AGENT_LOOP_07_DEEPEN_SCHEMA_VERSION: &str = "cold_wire_agent_loop_07_v1";
 
+/// AGENT-LOOP-07 remainder gap — git/PR/author wrap still unmeasured on host.
+pub const AGENT_LOOP_07_REMAINDER_GAP: &str =
+    "git/PR/author wrap unwrapped; principal-side appropriation arm absent";
+
+/// Remainder-row honesty pin — cold-wire telemetry deepen only; does not close Padma row 07.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AgentLoop07RemainderPin {
+    pub physics_green: bool,
+    pub remainder_row_closed: bool,
+    pub git_author_wrap_wired: bool,
+}
+
+/// AGENT-LOOP-07 remainder pin @ HEAD — physics GREEN and row close stay refused.
+#[must_use]
+pub const fn agent_loop_07_remainder_pin() -> AgentLoop07RemainderPin {
+    AgentLoop07RemainderPin {
+        physics_green: false,
+        remainder_row_closed: false,
+        git_author_wrap_wired: false,
+    }
+}
+
+/// Whether AGENT-LOOP-07 remainder row is closed (must stay false until host wrap lands).
+#[must_use]
+pub const fn agent_loop_07_remainder_row_closed() -> bool {
+    false
+}
+
+/// Fleet physics GREEN for AGENT-LOOP-07 (cold-wire deepen never claims it).
+#[must_use]
+pub const fn agent_loop_07_physics_green() -> bool {
+    false
+}
+
 /// Party credited for commissioning durable identity writes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -302,22 +336,31 @@ pub struct AgentLoop07PrincipalCreditProbe {
     pub cell_id: &'static str,
     pub honest_posture: &'static str,
     pub non_claim: &'static str,
+    pub remainder_gap: &'static str,
+    pub remainder_pin: AgentLoop07RemainderPin,
     pub production_wired_claimed: bool,
     pub green_claimed: bool,
+    pub physics_green: bool,
     pub op5_pass_claimed: bool,
     pub master_retick_claimed: bool,
     pub consciousness_claimed: bool,
+    pub remainder_row_closed: bool,
+    pub git_author_wrap_wired: bool,
     pub deepen_honest: bool,
 }
 
 /// Build the AGENT-LOOP-07 principal credit cold-wire deepen honesty probe.
 #[must_use]
 pub fn agent_loop_07_principal_credit_probe() -> AgentLoop07PrincipalCreditProbe {
+    let remainder_pin = agent_loop_07_remainder_pin();
     let production_wired_claimed = false;
     let green_claimed = false;
+    let physics_green = remainder_pin.physics_green;
     let op5_pass_claimed = false;
     let master_retick_claimed = false;
     let consciousness_claimed = false;
+    let remainder_row_closed = remainder_pin.remainder_row_closed;
+    let git_author_wrap_wired = remainder_pin.git_author_wrap_wired;
     let sample_credit = DurableIdentityCreditStamp {
         commissioned_by: CreditCommissionParty::Human,
         executed_by: CreditExecutorParty::Agent,
@@ -339,11 +382,18 @@ pub fn agent_loop_07_principal_credit_probe() -> AgentLoop07PrincipalCreditProbe
         && AGENT_LOOP_07_HONEST_POSTURE == "COLD_WIRE_PRINCIPAL_CREDIT_DEEPEN_ONLY"
         && !production_wired_claimed
         && !green_claimed
+        && !physics_green
         && !op5_pass_claimed
         && !master_retick_claimed
         && !consciousness_claimed
+        && !remainder_row_closed
+        && !git_author_wrap_wired
         && AGENT_LOOP_07_NON_CLAIM.contains("principal stamp ≠ consciousness")
         && AGENT_LOOP_07_NON_CLAIM.contains("git author ≠ executed_by")
+        && AGENT_LOOP_07_REMAINDER_GAP.contains("git/PR/author wrap unwrapped")
+        && !agent_loop_07_remainder_row_closed()
+        && !agent_loop_07_physics_green()
+        && remainder_pin == agent_loop_07_remainder_pin()
         && is_durable_identity_transition(CD_TRANSITION_CATALOG_ID)
         && sample_credit.principal_differs_from_executor()
         && sample_wire.commissioned_by == Some(CreditCommissionParty::Human)
@@ -354,13 +404,37 @@ pub fn agent_loop_07_principal_credit_probe() -> AgentLoop07PrincipalCreditProbe
         cell_id: AGENT_LOOP_07_CELL_ID,
         honest_posture: AGENT_LOOP_07_HONEST_POSTURE,
         non_claim: AGENT_LOOP_07_NON_CLAIM,
+        remainder_gap: AGENT_LOOP_07_REMAINDER_GAP,
+        remainder_pin,
         production_wired_claimed,
         green_claimed,
+        physics_green,
         op5_pass_claimed,
         master_retick_claimed,
         consciousness_claimed,
+        remainder_row_closed,
+        git_author_wrap_wired,
         deepen_honest,
     }
+}
+
+/// Refuse bool-flip remainder close / invented physics GREEN on AGENT-LOOP-07 deepen.
+pub fn agent_loop_07_refuse_remainder_overclaim(
+    p: &AgentLoop07PrincipalCreditProbe,
+) -> Result<(), String> {
+    if p.physics_green || agent_loop_07_physics_green() {
+        return Err("overclaim: agent-loop-07 cold-wire is not physics GREEN".into());
+    }
+    if p.remainder_row_closed || agent_loop_07_remainder_row_closed() {
+        return Err("overclaim: agent-loop-07 remainder row closed invented".into());
+    }
+    if p.git_author_wrap_wired {
+        return Err("overclaim: git/PR/author wrap not wired on host".into());
+    }
+    if !p.deepen_honest {
+        return Err("agent-loop-07 principal credit deepen probe failed".into());
+    }
+    Ok(())
 }
 
 /// Whether the AGENT-LOOP-07 principal credit cold-wire deepen honesty probe passes.
@@ -583,5 +657,25 @@ mod tests {
     fn agent_loop_07_non_claim_covers_principal_executor_collision() {
         assert!(AGENT_LOOP_07_NON_CLAIM.contains("principal stamp ≠ consciousness"));
         assert!(AGENT_LOOP_07_NON_CLAIM.contains("git author ≠ executed_by"));
+    }
+
+    #[test]
+    fn agent_loop_07_remainder_pin_physics_green_and_row_open() {
+        let pin = agent_loop_07_remainder_pin();
+        assert!(!pin.physics_green);
+        assert!(!pin.remainder_row_closed);
+        assert!(!pin.git_author_wrap_wired);
+        assert!(!agent_loop_07_physics_green());
+        assert!(!agent_loop_07_remainder_row_closed());
+        assert!(AGENT_LOOP_07_REMAINDER_GAP.contains("git/PR/author wrap unwrapped"));
+    }
+
+    #[test]
+    fn agent_loop_07_refuse_remainder_overclaim_holds() {
+        let probe = agent_loop_07_principal_credit_probe();
+        assert!(!probe.physics_green);
+        assert!(!probe.remainder_row_closed);
+        assert!(!probe.git_author_wrap_wired);
+        agent_loop_07_refuse_remainder_overclaim(&probe).expect("honest probe");
     }
 }
