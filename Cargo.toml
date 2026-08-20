@@ -108,7 +108,7 @@ burn-ndarray = "0.13.0"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = "1.0"
 tracing = "0.1"
-bincode = "=2.0.0-rc.3"
+bincode = "=2.0.1"
 # I-0 cockpit coupling: align with zeroclaw/matrix-sdk `time ^0.3.44` (was `=0.3.40`).
 time = "0.3.47"
 rand = "0.8"
