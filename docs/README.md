@@ -31,7 +31,7 @@ Read top-to-bottom once for context; use **Quick verify** before any code change
 
 | # | Doc | Role |
 |---|-----|------|
-| 0 | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | **What is / is not 100%** — plan 15/15, 119 pin, dual-pin, tests green, W8 human boundary, morphism layers |
+| 0 | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | **Completeness vs residue** — plan 15/15, 119 pin, dual-pin, tests green, W8 human boundary, morphism layers |
 | 0a | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | **Plain-language open gaps** — W8, G.2/G.3, FFI, 26% vs U_op; gap table by R0–R6; honest blocked % |
 | 0a′ | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | **Session % deltas** — category/layer before→after tables, three ceilings, verify timestamps |
 | 0b | [`PENDING_GAPS_PLAIN.md`](PENDING_GAPS_PLAIN.md) | Stale-doc corrections (69 / preview / ~76% → current SSOT) |
