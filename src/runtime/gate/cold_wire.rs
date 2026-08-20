@@ -14,6 +14,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::runtime::catalog::traceability::CD_TRANSITION_CATALOG_ID;
+
 use super::admissibility_margin::AdmissibilityMargin;
 use super::evidence::{AdmissibilityToken, TransitionEvidence, UcrsObservedAtWire};
 
@@ -29,6 +31,79 @@ pub const W29_113_NON_CLAIM: &str =
 
 /// W29-113 deepen schema version.
 pub const W29_113_DEEPEN_SCHEMA_VERSION: &str = "cold_wire_w29_113_deepen_v1";
+
+/// AGENT-LOOP-07 swarm cell id (principal credit cold-wire deepen).
+pub const AGENT_LOOP_07_CELL_ID: &str = "AGENT-LOOP-07-PRINCIPAL-CREDIT";
+
+/// AGENT-LOOP-07 honest posture — principal/commission/executor stamp deepen only.
+pub const AGENT_LOOP_07_HONEST_POSTURE: &str = "COLD_WIRE_PRINCIPAL_CREDIT_DEEPEN_ONLY";
+
+/// AGENT-LOOP-07 explicit non-claims (gate text).
+pub const AGENT_LOOP_07_NON_CLAIM: &str =
+    "principal stamp ≠ consciousness; not GREEN; not OP-5 PASS; not production_wired; not MASTER_RETICK; git author ≠ executed_by";
+
+/// AGENT-LOOP-07 deepen schema version.
+pub const AGENT_LOOP_07_DEEPEN_SCHEMA_VERSION: &str = "cold_wire_agent_loop_07_v1";
+
+/// Party credited for commissioning durable identity writes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CreditCommissionParty {
+    Human,
+    Agent,
+    Joint,
+    Unknown,
+}
+
+/// Party credited for executing durable identity writes (`unknown` not allowed).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CreditExecutorParty {
+    Human,
+    Agent,
+    Joint,
+}
+
+/// Principal-side public stamp — who is named on git/PR/commit (≠ executor).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PrincipalNamedParty {
+    Human,
+    Agent,
+    Joint,
+    Unknown,
+}
+
+/// ActionCredit fragment for durable identity-class transitions (cold-wire telemetry only).
+///
+/// Principal ≠ consciousness; not legal authorship. `principal_named` is the
+/// public git/PR name and may differ from `executed_by` (appropriation arm).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DurableIdentityCreditStamp {
+    pub commissioned_by: CreditCommissionParty,
+    pub executed_by: CreditExecutorParty,
+    pub principal_named: PrincipalNamedParty,
+}
+
+impl DurableIdentityCreditStamp {
+    /// Whether the principal public stamp names a different party than the executor.
+    #[must_use]
+    pub fn principal_differs_from_executor(self) -> bool {
+        match (self.principal_named, self.executed_by) {
+            (PrincipalNamedParty::Human, CreditExecutorParty::Human) => false,
+            (PrincipalNamedParty::Agent, CreditExecutorParty::Agent) => false,
+            (PrincipalNamedParty::Joint, CreditExecutorParty::Joint) => false,
+            (PrincipalNamedParty::Unknown, _) => true,
+            _ => true,
+        }
+    }
+}
+
+/// Whether `catalog_id` is a durable identity-class gate transition (host CD identity admits).
+#[must_use]
+pub fn is_durable_identity_transition(catalog_id: &str) -> bool {
+    catalog_id == CD_TRANSITION_CATALOG_ID
+}
 
 /// Dual energy ledger per spine event — compute (Landauer) and material (d_int), distinct.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -73,6 +148,12 @@ pub struct TransitionEvidenceWire {
     pub material_dissipation_j: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub axiom_anchor: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub commissioned_by: Option<CreditCommissionParty>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub executed_by: Option<CreditExecutorParty>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub principal_named: Option<PrincipalNamedParty>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -115,15 +196,20 @@ impl From<UcrsObservedAtWireSerde> for UcrsObservedAtWire {
     }
 }
 
-/// Attach optional stamp and dual ledger at cold boundary (no hot-path clock).
+/// Attach optional stamp, dual ledger, and identity credit at cold boundary (no hot-path clock).
 ///
 /// Boundary `stamp` wins over `evidence.observed_at` when both are present.
+/// `credit` is serialized only on durable identity-class transitions
+/// ([`is_durable_identity_transition`]).
 #[must_use]
 pub fn transition_evidence_to_wire(
     evidence: TransitionEvidence,
     stamp: Option<UcrsObservedAtWire>,
     cost: Option<SpineEventCost>,
+    credit: Option<DurableIdentityCreditStamp>,
 ) -> TransitionEvidenceWire {
+    let identity_durable = is_durable_identity_transition(evidence.catalog_id);
+    let credit_wire = if identity_durable { credit } else { None };
     TransitionEvidenceWire {
         catalog_id: evidence.catalog_id.to_string(),
         admissibility: evidence.admissibility.into(),
@@ -133,6 +219,9 @@ pub fn transition_evidence_to_wire(
         compute_cost_j: cost.map(|c| c.compute_j),
         material_dissipation_j: cost.map(|c| c.material_j),
         axiom_anchor: cost.map(|c| c.axiom_anchor.to_string()),
+        commissioned_by: credit_wire.map(|c| c.commissioned_by),
+        executed_by: credit_wire.map(|c| c.executed_by),
+        principal_named: credit_wire.map(|c| c.principal_named),
     }
 }
 
@@ -203,6 +292,81 @@ pub fn cold_wire_honest_fence_holds() -> bool {
         && !p.production_wired_claimed
         && !p.op5_pass_claimed
         && !p.master_retick_claimed
+        && agent_loop_07_principal_credit_honest()
+}
+
+/// Honesty probe for AGENT-LOOP-07 principal credit deepen.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AgentLoop07PrincipalCreditProbe {
+    pub schema_version: &'static str,
+    pub cell_id: &'static str,
+    pub honest_posture: &'static str,
+    pub non_claim: &'static str,
+    pub production_wired_claimed: bool,
+    pub green_claimed: bool,
+    pub op5_pass_claimed: bool,
+    pub master_retick_claimed: bool,
+    pub consciousness_claimed: bool,
+    pub deepen_honest: bool,
+}
+
+/// Build the AGENT-LOOP-07 principal credit cold-wire deepen honesty probe.
+#[must_use]
+pub fn agent_loop_07_principal_credit_probe() -> AgentLoop07PrincipalCreditProbe {
+    let production_wired_claimed = false;
+    let green_claimed = false;
+    let op5_pass_claimed = false;
+    let master_retick_claimed = false;
+    let consciousness_claimed = false;
+    let sample_credit = DurableIdentityCreditStamp {
+        commissioned_by: CreditCommissionParty::Human,
+        executed_by: CreditExecutorParty::Agent,
+        principal_named: PrincipalNamedParty::Human,
+    };
+    let sample_wire = transition_evidence_to_wire(
+        TransitionEvidence {
+            catalog_id: CD_TRANSITION_CATALOG_ID,
+            admissibility: AdmissibilityToken::Admissible,
+            margin: AdmissibilityMargin(0.5),
+            observed_at: None,
+        },
+        None,
+        None,
+        Some(sample_credit),
+    );
+    let deepen_honest = AGENT_LOOP_07_CELL_ID == "AGENT-LOOP-07-PRINCIPAL-CREDIT"
+        && AGENT_LOOP_07_DEEPEN_SCHEMA_VERSION == "cold_wire_agent_loop_07_v1"
+        && AGENT_LOOP_07_HONEST_POSTURE == "COLD_WIRE_PRINCIPAL_CREDIT_DEEPEN_ONLY"
+        && !production_wired_claimed
+        && !green_claimed
+        && !op5_pass_claimed
+        && !master_retick_claimed
+        && !consciousness_claimed
+        && AGENT_LOOP_07_NON_CLAIM.contains("principal stamp ≠ consciousness")
+        && AGENT_LOOP_07_NON_CLAIM.contains("git author ≠ executed_by")
+        && is_durable_identity_transition(CD_TRANSITION_CATALOG_ID)
+        && sample_credit.principal_differs_from_executor()
+        && sample_wire.commissioned_by == Some(CreditCommissionParty::Human)
+        && sample_wire.executed_by == Some(CreditExecutorParty::Agent)
+        && sample_wire.principal_named == Some(PrincipalNamedParty::Human);
+    AgentLoop07PrincipalCreditProbe {
+        schema_version: AGENT_LOOP_07_DEEPEN_SCHEMA_VERSION,
+        cell_id: AGENT_LOOP_07_CELL_ID,
+        honest_posture: AGENT_LOOP_07_HONEST_POSTURE,
+        non_claim: AGENT_LOOP_07_NON_CLAIM,
+        production_wired_claimed,
+        green_claimed,
+        op5_pass_claimed,
+        master_retick_claimed,
+        consciousness_claimed,
+        deepen_honest,
+    }
+}
+
+/// Whether the AGENT-LOOP-07 principal credit cold-wire deepen honesty probe passes.
+#[must_use]
+pub fn agent_loop_07_principal_credit_honest() -> bool {
+    agent_loop_07_principal_credit_probe().deepen_honest
 }
 
 #[cfg(test)]
@@ -228,6 +392,7 @@ mod tests {
                 ucrs_seq: 42,
             }),
             None,
+            None,
         );
         let json = serde_json::to_string(&wire).expect("serialize");
         assert!(json.contains("observed_at"));
@@ -236,7 +401,7 @@ mod tests {
 
     #[test]
     fn default_build_omits_observed_at_without_stamp() {
-        let wire = transition_evidence_to_wire(sample_evidence(), None, None);
+        let wire = transition_evidence_to_wire(sample_evidence(), None, None, None);
         assert!(wire.observed_at.is_none());
         let json = serde_json::to_string(&wire).expect("serialize");
         assert!(!json.contains("observed_at"));
@@ -247,7 +412,7 @@ mod tests {
         let cost = SpineEventCost::new(2.87e-21, 150.0);
         assert!(cost.rails_nonnegative());
         assert_eq!(cost.axiom_anchor, SpineEventCost::PHYSICAL_SECOND_LAW);
-        let wire = transition_evidence_to_wire(sample_evidence(), None, Some(cost));
+        let wire = transition_evidence_to_wire(sample_evidence(), None, Some(cost), None);
         assert_eq!(wire.axiom_anchor.as_deref(), Some("physicalSecondLaw"));
         assert!(wire.compute_cost_j.unwrap() >= 0.0);
         assert!(wire.material_dissipation_j.unwrap() >= 0.0);
@@ -267,6 +432,7 @@ mod tests {
                 ucrs_seq: 7,
             }),
             None,
+            None,
         );
         let stamp = wire.observed_at.expect("boundary stamp");
         assert_eq!(stamp.wall_ms, 99);
@@ -280,7 +446,7 @@ mod tests {
             wall_ms: 55,
             ucrs_seq: 3,
         });
-        let wire = transition_evidence_to_wire(evidence, None, None);
+        let wire = transition_evidence_to_wire(evidence, None, None, None);
         let stamp = wire.observed_at.expect("evidence stamp");
         assert_eq!(stamp.wall_ms, 55);
         assert_eq!(stamp.ucrs_seq, 3);
@@ -295,6 +461,7 @@ mod tests {
                 margin: AdmissibilityMargin(-0.1),
                 observed_at: None,
             },
+            None,
             None,
             None,
         );
@@ -346,5 +513,75 @@ mod tests {
                 "missing non-claim fragment: {needle}"
             );
         }
+    }
+
+    #[test]
+    fn agent_loop_07_identity_credit_stamp_serializes_on_durable_transition() {
+        let credit = DurableIdentityCreditStamp {
+            commissioned_by: CreditCommissionParty::Human,
+            executed_by: CreditExecutorParty::Agent,
+            principal_named: PrincipalNamedParty::Human,
+        };
+        assert!(credit.principal_differs_from_executor());
+        let wire = transition_evidence_to_wire(
+            sample_evidence(),
+            None,
+            None,
+            Some(credit),
+        );
+        assert_eq!(wire.commissioned_by, Some(CreditCommissionParty::Human));
+        assert_eq!(wire.executed_by, Some(CreditExecutorParty::Agent));
+        assert_eq!(wire.principal_named, Some(PrincipalNamedParty::Human));
+        let json = serde_json::to_string(&wire).expect("serialize");
+        assert!(json.contains("commissioned_by"));
+        assert!(json.contains("executed_by"));
+        assert!(json.contains("principal_named"));
+        let back: TransitionEvidenceWire = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(back.commissioned_by, wire.commissioned_by);
+        assert_eq!(back.executed_by, wire.executed_by);
+        assert_eq!(back.principal_named, wire.principal_named);
+    }
+
+    #[test]
+    fn agent_loop_07_credit_omitted_on_non_identity_catalog() {
+        let credit = DurableIdentityCreditStamp {
+            commissioned_by: CreditCommissionParty::Agent,
+            executed_by: CreditExecutorParty::Agent,
+            principal_named: PrincipalNamedParty::Agent,
+        };
+        let wire = transition_evidence_to_wire(
+            TransitionEvidence {
+                catalog_id: "thermodynamic_mix",
+                admissibility: AdmissibilityToken::Admissible,
+                margin: AdmissibilityMargin(0.5),
+                observed_at: None,
+            },
+            None,
+            None,
+            Some(credit),
+        );
+        assert!(wire.commissioned_by.is_none());
+        assert!(wire.executed_by.is_none());
+        assert!(wire.principal_named.is_none());
+        let json = serde_json::to_string(&wire).expect("serialize");
+        assert!(!json.contains("commissioned_by"));
+    }
+
+    #[test]
+    fn agent_loop_07_principal_credit_deepen_honest_probe() {
+        let probe = agent_loop_07_principal_credit_probe();
+        assert_eq!(probe.cell_id, AGENT_LOOP_07_CELL_ID);
+        assert_eq!(probe.schema_version, AGENT_LOOP_07_DEEPEN_SCHEMA_VERSION);
+        assert!(!probe.consciousness_claimed);
+        assert!(!probe.production_wired_claimed);
+        assert!(!probe.green_claimed);
+        assert!(agent_loop_07_principal_credit_honest());
+        assert!(cold_wire_honest_fence_holds());
+    }
+
+    #[test]
+    fn agent_loop_07_non_claim_covers_principal_executor_collision() {
+        assert!(AGENT_LOOP_07_NON_CLAIM.contains("principal stamp ≠ consciousness"));
+        assert!(AGENT_LOOP_07_NON_CLAIM.contains("git author ≠ executed_by"));
     }
 }
