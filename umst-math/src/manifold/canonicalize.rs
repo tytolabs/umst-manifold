@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: MIT
 //! Voxelized canonical SDF + deterministic FNV hash (GMD-2, I3).
 //!
-//! [`canonicalize_voxelize`] is the dense oracle. [`canonicalize_tes_sample`] is a
-//! TE-SDF-pattern **compact sample codec** on the same `[-1,1]³` lattice: keep all
-//! near-surface samples, cap deep-interior / far-exterior at [`TES_CANON_EMAX`]. Not
-//! Gmsh tets, not TES-sdk, not physics GREEN.
+//! [`canonicalize_voxelize`] is the dense oracle. [`canonicalize_emax_sample`] is an
+//! Emax-style far-band truncation on the same `[-1,1]³` lattice: keep all near-surface
+//! samples, cap far samples at [`CANON_SAMPLE_EMAX`]. Not Gmsh tets, not tetra-encoded SDF,
+//! not paper TE-SDF geometry, not a third-party encoder crate, not physics GREEN.
 
 use super::error::ManifoldError;
 use super::sdf::Sdf;
 
-/// Emax-style truncation cap for [`canonicalize_tes_sample`] far-band samples.
-pub const TES_CANON_EMAX: usize = 32;
+/// Emax-style truncation cap for [`canonicalize_emax_sample`] far-band samples.
+pub const CANON_SAMPLE_EMAX: usize = 32;
 
 /// Honesty fence — lattice sample codec only.
-pub const TES_CANON_PHYSICS_GREEN: bool = false;
+pub const CANON_SAMPLE_PHYSICS_GREEN: bool = false;
 
 /// 8-byte FNV-1a-64 of `data` (deterministic across runs).
 pub fn fnv1a_64(data: &[u8]) -> [u8; 8] {
@@ -56,14 +56,15 @@ pub fn canonicalize_voxelize(
     Ok((h, v))
 }
 
-/// TE-SDF-pattern canonical sample on the same `2^bits` cell-center lattice as
+/// Emax-style canonical sample on the same `2^bits` cell-center lattice as
 /// [`canonicalize_voxelize`].
 ///
 /// Near-surface band: keep **all** samples with `|d| ≤ 2·cell_diag`. Far band: keep at
-/// most [`TES_CANON_EMAX`] samples with smallest `|d|` (farthest-truncated — drop deep
+/// most [`CANON_SAMPLE_EMAX`] samples with smallest `|d|` (farthest-truncated — drop deep
 /// interior / far exterior beyond the cap). Payload is kept f64 LE distances in grid
-/// walk order; hash is FNV-1a-64. Compact codec analogue — not Gmsh tets / not TES-sdk.
-pub fn canonicalize_tes_sample(
+/// walk order; hash is FNV-1a-64. Compact sample codec analogue — not Gmsh tets, not
+/// tetra-encoded SDF, not paper TE-SDF geometry.
+pub fn canonicalize_emax_sample(
     sdf: &impl Sdf,
     bits: u8,
 ) -> Result<([u8; 8], Vec<u8>), ManifoldError> {
@@ -102,7 +103,7 @@ pub fn canonicalize_tes_sample(
         }
     }
 
-    // Farthest-truncated: keep the `TES_CANON_EMAX` far samples closest to the surface.
+    // Farthest-truncated: keep the `CANON_SAMPLE_EMAX` far samples closest to the surface.
     far.sort_by(|a, b| {
         a.dist
             .abs()
@@ -112,7 +113,7 @@ pub fn canonicalize_tes_sample(
             .then_with(|| a.iy.cmp(&b.iy))
             .then_with(|| a.ix.cmp(&b.ix))
     });
-    far.truncate(TES_CANON_EMAX);
+    far.truncate(CANON_SAMPLE_EMAX);
 
     let mut kept = near;
     kept.extend(far);
@@ -141,44 +142,47 @@ pub fn stack_refinement_h8(h_r: [u8; 8], tail8: [u8; 8]) -> [u8; 16] {
 }
 #[cfg(test)]
 mod tests {
-    use super::{canonicalize_tes_sample, canonicalize_voxelize, fnv1a_64, TES_CANON_EMAX, TES_CANON_PHYSICS_GREEN};
+    use super::{
+        canonicalize_emax_sample, canonicalize_voxelize, fnv1a_64, CANON_SAMPLE_EMAX,
+        CANON_SAMPLE_PHYSICS_GREEN,
+    };
     use crate::manifold::sdf::SphereSdf;
 
-    const _: () = assert!(!TES_CANON_PHYSICS_GREEN);
+    const _: () = assert!(!CANON_SAMPLE_PHYSICS_GREEN);
 
     #[test]
-    fn tes_sample_hash_deterministic() {
+    fn emax_sample_hash_deterministic() {
         let s = SphereSdf {
             c: [0.0, 0.0, 0.0],
             r: 0.5,
         };
-        let (h1, p1) = canonicalize_tes_sample(&s, 4).expect("tes");
-        let (h2, p2) = canonicalize_tes_sample(&s, 4).expect("tes");
+        let (h1, p1) = canonicalize_emax_sample(&s, 4).expect("emax");
+        let (h2, p2) = canonicalize_emax_sample(&s, 4).expect("emax");
         assert_eq!(h1, h2);
         assert_eq!(p1, p2);
         assert_ne!(h1, [0u8; 8]);
     }
 
     #[test]
-    fn tes_payload_shorter_than_voxel_at_bits6() {
+    fn emax_payload_shorter_than_voxel_at_bits6() {
         let s = SphereSdf {
             c: [0.0, 0.0, 0.0],
             r: 0.5,
         };
         let (_, vox) = canonicalize_voxelize(&s, 6).expect("vox");
-        let (_, tes) = canonicalize_tes_sample(&s, 6).expect("tes");
+        let (_, emax) = canonicalize_emax_sample(&s, 6).expect("emax");
         assert!(
-            tes.len() < vox.len(),
-            "tes {} bytes should be < voxel {} bytes",
-            tes.len(),
+            emax.len() < vox.len(),
+            "emax {} bytes should be < voxel {} bytes",
+            emax.len(),
             vox.len()
         );
-        assert!(tes.len() <= vox.len());
-        assert_eq!(TES_CANON_EMAX, 32);
+        assert!(emax.len() <= vox.len());
+        assert_eq!(CANON_SAMPLE_EMAX, 32);
     }
 
     #[test]
-    fn voxelize_still_works_beside_tes() {
+    fn voxelize_still_works_beside_emax() {
         let s = SphereSdf {
             c: [0.0, 0.0, 0.0],
             r: 0.5,
@@ -189,12 +193,12 @@ mod tests {
         assert_eq!(h1, fnv1a_64(&v1));
         assert_eq!(h1, h2);
         assert_eq!(v1, v2);
-        canonicalize_tes_sample(&s, 3).expect("tes coexists");
+        canonicalize_emax_sample(&s, 3).expect("emax coexists");
     }
 
     #[test]
-    fn tes_canon_not_physics_green() {
-        assert!(!TES_CANON_PHYSICS_GREEN);
+    fn emax_canon_not_physics_green() {
+        assert!(!CANON_SAMPLE_PHYSICS_GREEN);
     }
 }
 
