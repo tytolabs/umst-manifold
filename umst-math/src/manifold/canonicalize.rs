@@ -3,9 +3,8 @@
 //! Voxelized canonical SDF + deterministic FNV hash (GMD-2, I3).
 //!
 //! [`canonicalize_voxelize`] is the dense oracle. [`canonicalize_emax_sample`] is an
-//! Emax-style far-band truncation on the same `[-1,1]³` lattice: keep all near-surface
-//! samples, cap far samples at [`CANON_SAMPLE_EMAX`]. Not Gmsh tets, not tetra-encoded SDF,
-//! not paper TE-SDF geometry, not a third-party encoder crate, not physics GREEN.
+//! Emax far-band truncation on the same `[-1,1]³` lattice beside dense voxelize: keep all
+//! near-surface samples, cap far samples at [`CANON_SAMPLE_EMAX`].
 
 use super::error::ManifoldError;
 use super::sdf::Sdf;
@@ -62,8 +61,8 @@ pub fn canonicalize_voxelize(
 /// Near-surface band: keep **all** samples with `|d| ≤ 2·cell_diag`. Far band: keep at
 /// most [`CANON_SAMPLE_EMAX`] samples with smallest `|d|` (farthest-truncated — drop deep
 /// interior / far exterior beyond the cap). Payload is kept f64 LE distances in grid
-/// walk order; hash is FNV-1a-64. Compact sample codec analogue — not Gmsh tets, not
-/// tetra-encoded SDF, not paper TE-SDF geometry.
+/// walk order; hash is FNV-1a-64. Emax far-band truncation on the `[-1,1]³` lattice beside
+/// dense [`canonicalize_voxelize`].
 pub fn canonicalize_emax_sample(
     sdf: &impl Sdf,
     bits: u8,
