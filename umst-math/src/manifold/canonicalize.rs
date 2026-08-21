@@ -12,7 +12,7 @@ use super::sdf::Sdf;
 /// Emax-style truncation cap for [`canonicalize_emax_sample`] far-band samples.
 pub const CANON_SAMPLE_EMAX: usize = 32;
 
-/// Honesty fence — lattice sample codec only.
+/// Lattice sample-codec posture field.
 pub const CANON_SAMPLE_PHYSICS_GREEN: bool = false;
 
 /// 8-byte FNV-1a-64 of `data` (deterministic across runs).
