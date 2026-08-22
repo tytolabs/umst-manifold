@@ -49,6 +49,17 @@ pub const AGENT_LOOP_07_DEEPEN_SCHEMA_VERSION: &str = "cold_wire_agent_loop_07_v
 pub const AGENT_LOOP_07_REMAINDER_GAP: &str =
     "git/PR/author wrap unwrapped; principal-side appropriation arm absent";
 
+/// Principal git/PR wrap posture — host wrap not wired (≠ cold-wire telemetry deepen).
+pub const AGENT_LOOP_07_PRINCIPAL_WRAP_POSTURE: &str = "PRINCIPAL_WRAP_UNWIRED";
+
+/// Cold-wire telemetry deepen posture ≠ principal wrap on host (must stay true).
+#[must_use]
+pub fn agent_loop_07_cold_wire_posture_not_principal_wrap() -> bool {
+    AGENT_LOOP_07_HONEST_POSTURE == "COLD_WIRE_PRINCIPAL_CREDIT_DEEPEN_ONLY"
+        && AGENT_LOOP_07_PRINCIPAL_WRAP_POSTURE == "PRINCIPAL_WRAP_UNWIRED"
+        && !agent_loop_07_remainder_row_closed()
+}
+
 /// Remainder-row honesty pin — cold-wire telemetry deepen only; does not close Padma row 07.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AgentLoop07RemainderPin {
@@ -77,6 +88,12 @@ pub const fn agent_loop_07_remainder_row_closed() -> bool {
 #[must_use]
 pub const fn agent_loop_07_physics_green() -> bool {
     false
+}
+
+/// Principal-side credit arm absent on host (must stay true until git/PR wrap).
+#[must_use]
+pub const fn agent_loop_07_principal_credit_arm_absent() -> bool {
+    true
 }
 
 /// Party credited for commissioning durable identity writes.
@@ -108,6 +125,79 @@ pub enum PrincipalNamedParty {
     Unknown,
 }
 
+#[must_use]
+const fn party_differs_from_executor(
+    named: PrincipalNamedParty,
+    executed_by: CreditExecutorParty,
+) -> bool {
+    match (named, executed_by) {
+        (PrincipalNamedParty::Human, CreditExecutorParty::Human) => false,
+        (PrincipalNamedParty::Agent, CreditExecutorParty::Agent) => false,
+        (PrincipalNamedParty::Joint, CreditExecutorParty::Joint) => false,
+        (PrincipalNamedParty::Unknown, _) => true,
+        _ => true,
+    }
+}
+
+/// Git/PR/commit public stamp facets — telemetry only; not legal authorship.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GitPrCommitPublicStamp {
+    pub git_author: PrincipalNamedParty,
+    pub pr_principal: PrincipalNamedParty,
+    pub commit_stamp: PrincipalNamedParty,
+}
+
+impl GitPrCommitPublicStamp {
+    /// Git author names a different party than the executor (appropriation collision).
+    #[must_use]
+    pub fn git_author_differs_from_executor(
+        self,
+        executed_by: CreditExecutorParty,
+    ) -> bool {
+        party_differs_from_executor(self.git_author, executed_by)
+    }
+
+    /// Any public stamp facet collides with executor while arm stays unmeasured.
+    #[must_use]
+    pub fn appropriation_collision_unmeasured(
+        self,
+        executed_by: CreditExecutorParty,
+    ) -> bool {
+        (self.git_author_differs_from_executor(executed_by)
+            || party_differs_from_executor(self.pr_principal, executed_by)
+            || party_differs_from_executor(self.commit_stamp, executed_by))
+            && agent_loop_07_principal_credit_arm_absent()
+    }
+}
+
+/// Fourth arm — principal-side appropriation on git/PR/commit (cold-wire deepen only).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PrincipalAppropriationArm {
+    pub public_stamp: GitPrCommitPublicStamp,
+    pub executed_by: CreditExecutorParty,
+}
+
+impl PrincipalAppropriationArm {
+    /// Arm unmeasured on host; posture ≠ credit wrap GREEN.
+    #[must_use]
+    pub fn arm_absent(self) -> bool {
+        agent_loop_07_principal_credit_arm_absent()
+    }
+
+    /// Git author ≠ executed_by with appropriation arm still absent.
+    #[must_use]
+    pub fn git_author_executor_collision(self) -> bool {
+        self.public_stamp
+            .git_author_differs_from_executor(self.executed_by)
+    }
+
+    /// Collision present but fourth arm not wired — remainder row stays open.
+    #[must_use]
+    pub fn collision_unmeasured(self) -> bool {
+        self.git_author_executor_collision() && self.arm_absent()
+    }
+}
+
 /// ActionCredit fragment for durable identity-class transitions (cold-wire telemetry only).
 ///
 /// Principal ≠ consciousness; not legal authorship. `principal_named` is the
@@ -123,13 +213,32 @@ impl DurableIdentityCreditStamp {
     /// Whether the principal public stamp names a different party than the executor.
     #[must_use]
     pub fn principal_differs_from_executor(self) -> bool {
-        match (self.principal_named, self.executed_by) {
-            (PrincipalNamedParty::Human, CreditExecutorParty::Human) => false,
-            (PrincipalNamedParty::Agent, CreditExecutorParty::Agent) => false,
-            (PrincipalNamedParty::Joint, CreditExecutorParty::Joint) => false,
-            (PrincipalNamedParty::Unknown, _) => true,
-            _ => true,
+        party_differs_from_executor(self.principal_named, self.executed_by)
+    }
+
+    /// Build git/PR/commit public stamp from principal name (host wrap still absent).
+    #[must_use]
+    pub fn public_stamp(self) -> GitPrCommitPublicStamp {
+        GitPrCommitPublicStamp {
+            git_author: self.principal_named,
+            pr_principal: self.principal_named,
+            commit_stamp: self.principal_named,
         }
+    }
+
+    /// Fourth appropriation arm sample — collision unmeasured until host wrap lands.
+    #[must_use]
+    pub fn appropriation_arm(self) -> PrincipalAppropriationArm {
+        PrincipalAppropriationArm {
+            public_stamp: self.public_stamp(),
+            executed_by: self.executed_by,
+        }
+    }
+
+    /// Principal/executor collision present but credit arm still unmeasured on host.
+    #[must_use]
+    pub fn principal_credit_gap_unmeasured(self) -> bool {
+        self.principal_differs_from_executor() && agent_loop_07_principal_credit_arm_absent()
     }
 }
 
@@ -188,6 +297,12 @@ pub struct TransitionEvidenceWire {
     pub executed_by: Option<CreditExecutorParty>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub principal_named: Option<PrincipalNamedParty>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub git_author: Option<PrincipalNamedParty>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pr_principal: Option<PrincipalNamedParty>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub commit_stamp: Option<PrincipalNamedParty>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -256,6 +371,9 @@ pub fn transition_evidence_to_wire(
         commissioned_by: credit_wire.map(|c| c.commissioned_by),
         executed_by: credit_wire.map(|c| c.executed_by),
         principal_named: credit_wire.map(|c| c.principal_named),
+        git_author: credit_wire.map(|c| c.public_stamp().git_author),
+        pr_principal: credit_wire.map(|c| c.public_stamp().pr_principal),
+        commit_stamp: credit_wire.map(|c| c.public_stamp().commit_stamp),
     }
 }
 
@@ -346,6 +464,7 @@ pub struct AgentLoop07PrincipalCreditProbe {
     pub consciousness_claimed: bool,
     pub remainder_row_closed: bool,
     pub git_author_wrap_wired: bool,
+    pub principal_credit_arm_absent: bool,
     pub deepen_honest: bool,
 }
 
@@ -361,6 +480,7 @@ pub fn agent_loop_07_principal_credit_probe() -> AgentLoop07PrincipalCreditProbe
     let consciousness_claimed = false;
     let remainder_row_closed = remainder_pin.remainder_row_closed;
     let git_author_wrap_wired = remainder_pin.git_author_wrap_wired;
+    let principal_credit_arm_absent = agent_loop_07_principal_credit_arm_absent();
     let sample_credit = DurableIdentityCreditStamp {
         commissioned_by: CreditCommissionParty::Human,
         executed_by: CreditExecutorParty::Agent,
@@ -388,17 +508,28 @@ pub fn agent_loop_07_principal_credit_probe() -> AgentLoop07PrincipalCreditProbe
         && !consciousness_claimed
         && !remainder_row_closed
         && !git_author_wrap_wired
+        && principal_credit_arm_absent
+        && AGENT_LOOP_07_REMAINDER_GAP.contains("appropriation arm absent")
         && AGENT_LOOP_07_NON_CLAIM.contains("principal stamp ≠ consciousness")
         && AGENT_LOOP_07_NON_CLAIM.contains("git author ≠ executed_by")
         && AGENT_LOOP_07_REMAINDER_GAP.contains("git/PR/author wrap unwrapped")
         && !agent_loop_07_remainder_row_closed()
         && !agent_loop_07_physics_green()
+        && agent_loop_07_cold_wire_posture_not_principal_wrap()
         && remainder_pin == agent_loop_07_remainder_pin()
         && is_durable_identity_transition(CD_TRANSITION_CATALOG_ID)
         && sample_credit.principal_differs_from_executor()
+        && sample_credit.principal_credit_gap_unmeasured()
+        && {
+            let arm = sample_credit.appropriation_arm();
+            arm.git_author_executor_collision() && arm.collision_unmeasured() && arm.arm_absent()
+        }
         && sample_wire.commissioned_by == Some(CreditCommissionParty::Human)
         && sample_wire.executed_by == Some(CreditExecutorParty::Agent)
-        && sample_wire.principal_named == Some(PrincipalNamedParty::Human);
+        && sample_wire.principal_named == Some(PrincipalNamedParty::Human)
+        && sample_wire.git_author == Some(PrincipalNamedParty::Human)
+        && sample_wire.pr_principal == Some(PrincipalNamedParty::Human)
+        && sample_wire.commit_stamp == Some(PrincipalNamedParty::Human);
     AgentLoop07PrincipalCreditProbe {
         schema_version: AGENT_LOOP_07_DEEPEN_SCHEMA_VERSION,
         cell_id: AGENT_LOOP_07_CELL_ID,
@@ -414,6 +545,7 @@ pub fn agent_loop_07_principal_credit_probe() -> AgentLoop07PrincipalCreditProbe
         consciousness_claimed,
         remainder_row_closed,
         git_author_wrap_wired,
+        principal_credit_arm_absent,
         deepen_honest,
     }
 }
@@ -430,6 +562,9 @@ pub fn agent_loop_07_refuse_remainder_overclaim(
     }
     if p.git_author_wrap_wired {
         return Err("overclaim: git/PR/author wrap not wired on host".into());
+    }
+    if !p.principal_credit_arm_absent || !agent_loop_07_principal_credit_arm_absent() {
+        return Err("overclaim: principal-side credit arm wired invented".into());
     }
     if !p.deepen_honest {
         return Err("agent-loop-07 principal credit deepen probe failed".into());
@@ -676,6 +811,84 @@ mod tests {
         assert!(!probe.physics_green);
         assert!(!probe.remainder_row_closed);
         assert!(!probe.git_author_wrap_wired);
+        assert!(probe.principal_credit_arm_absent);
         agent_loop_07_refuse_remainder_overclaim(&probe).expect("honest probe");
+    }
+
+    #[test]
+    fn agent_loop_07_refuse_remainder_overclaim_rejects_bool_flip() {
+        let mut remainder_closed = agent_loop_07_principal_credit_probe();
+        remainder_closed.remainder_row_closed = true;
+        assert!(agent_loop_07_refuse_remainder_overclaim(&remainder_closed)
+            .unwrap_err()
+            .contains("remainder row closed"));
+
+        let mut physics_green = agent_loop_07_principal_credit_probe();
+        physics_green.physics_green = true;
+        assert!(agent_loop_07_refuse_remainder_overclaim(&physics_green)
+            .unwrap_err()
+            .contains("physics GREEN"));
+
+        let mut wrap_wired = agent_loop_07_principal_credit_probe();
+        wrap_wired.git_author_wrap_wired = true;
+        assert!(agent_loop_07_refuse_remainder_overclaim(&wrap_wired)
+            .unwrap_err()
+            .contains("git/PR/author wrap"));
+
+        let mut arm_wired = agent_loop_07_principal_credit_probe();
+        arm_wired.principal_credit_arm_absent = false;
+        assert!(agent_loop_07_refuse_remainder_overclaim(&arm_wired)
+            .unwrap_err()
+            .contains("credit arm wired"));
+    }
+
+    #[test]
+    fn agent_loop_07_cold_wire_posture_not_principal_wrap_holds() {
+        assert!(super::agent_loop_07_cold_wire_posture_not_principal_wrap());
+        assert_eq!(AGENT_LOOP_07_HONEST_POSTURE, "COLD_WIRE_PRINCIPAL_CREDIT_DEEPEN_ONLY");
+        assert_eq!(AGENT_LOOP_07_PRINCIPAL_WRAP_POSTURE, "PRINCIPAL_WRAP_UNWIRED");
+        assert!(!agent_loop_07_remainder_row_closed());
+    }
+
+    #[test]
+    fn agent_loop_07_git_pr_commit_stamp_appropriation_arm() {
+        let credit = DurableIdentityCreditStamp {
+            commissioned_by: CreditCommissionParty::Human,
+            executed_by: CreditExecutorParty::Agent,
+            principal_named: PrincipalNamedParty::Human,
+        };
+        let stamp = credit.public_stamp();
+        assert_eq!(stamp.git_author, PrincipalNamedParty::Human);
+        let arm = credit.appropriation_arm();
+        assert!(arm.git_author_executor_collision());
+        assert!(arm.collision_unmeasured());
+        assert!(arm.arm_absent());
+        let wire = transition_evidence_to_wire(sample_evidence(), None, None, Some(credit));
+        assert_eq!(wire.git_author, Some(PrincipalNamedParty::Human));
+        assert_eq!(wire.pr_principal, Some(PrincipalNamedParty::Human));
+        assert_eq!(wire.commit_stamp, Some(PrincipalNamedParty::Human));
+        let json = serde_json::to_string(&wire).expect("serialize");
+        assert!(json.contains("git_author"));
+        assert!(json.contains("pr_principal"));
+        assert!(json.contains("commit_stamp"));
+    }
+
+    #[test]
+    fn agent_loop_07_principal_credit_gap_unmeasured_on_collision() {
+        assert!(agent_loop_07_principal_credit_arm_absent());
+        let credit = DurableIdentityCreditStamp {
+            commissioned_by: CreditCommissionParty::Human,
+            executed_by: CreditExecutorParty::Agent,
+            principal_named: PrincipalNamedParty::Human,
+        };
+        assert!(credit.principal_differs_from_executor());
+        assert!(credit.principal_credit_gap_unmeasured());
+        let aligned = DurableIdentityCreditStamp {
+            commissioned_by: CreditCommissionParty::Agent,
+            executed_by: CreditExecutorParty::Agent,
+            principal_named: PrincipalNamedParty::Agent,
+        };
+        assert!(!aligned.principal_differs_from_executor());
+        assert!(!aligned.principal_credit_gap_unmeasured());
     }
 }
