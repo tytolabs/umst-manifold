@@ -95,22 +95,22 @@ const _: () = assert!(!ORCHESTRATION_RHEOLOGY_IN_DEFAULT_TICK);
 // -----------------------------------------------------------------------------
 
 /// Swarm cell id — chem L0 lifts arcs/ucrs only; liquid_ppo inspiration not chem wire.
-pub const CHEM_L0_ECO_02_CELL_ID: &str = "CHEM-L0-ECO-02";
+pub(crate) const CHEM_L0_ECO_02_CELL_ID: &str = "CHEM-L0-ECO-02";
 
 /// Chem infra lifts only `umst-arcs` + `umst-ucrs` surfaces — no parallel Landauer kernel.
-pub const CHEM_ECO_LIFT_ARCS_UCRS_ONLY: bool = true;
+pub(crate) const CHEM_ECO_LIFT_ARCS_UCRS_ONLY: bool = true;
 
 /// Manifold `liquid_ppo` is inspiration reference only for chem L0 (not production wire).
-pub const CHEM_ECO_LIQUID_PPO_INSPIRATION_ONLY: bool = true;
+pub(crate) const CHEM_ECO_LIQUID_PPO_INSPIRATION_ONLY: bool = true;
 
 /// Whether `liquid_ppo` is wired on chem — must stay false (manifold spine only).
-pub const CHEM_ECO_LIQUID_PPO_ON_CHEM_WIRED: bool = false;
+pub(crate) const CHEM_ECO_LIQUID_PPO_ON_CHEM_WIRED: bool = false;
 
 /// Chem ecosystem lift physics GREEN — not claimed by orchestration cross-lane pins.
-pub const CHEM_ECO_PHYSICS_GREEN: bool = false;
+pub(crate) const CHEM_ECO_PHYSICS_GREEN: bool = false;
 
 /// Honest fence string for chem ecosystem lift crosswalk.
-pub const CHEM_ECO_HONEST_FENCE: &str =
+pub(crate) const CHEM_ECO_HONEST_FENCE: &str =
     "lift_arcs_ucrs_only=true arena_gateway_named=true liquid_ppo_inspiration_only=true liquid_ppo_on_chem_wired=false physics_green=false";
 
 const _: () = assert!(CHEM_ECO_LIFT_ARCS_UCRS_ONLY);
