@@ -13,6 +13,9 @@ pub mod gate;
 pub mod gate_server_router;
 pub mod manifest;
 pub mod physics;
+pub use physics::orchestration::{
+    OrchestrationPostureProbe, TopologyPlanIntent, TopologyPhysicsOrchestrator,
+};
 pub mod pnp_bridge;
 #[cfg(feature = "ros2-contract")]
 pub mod ros;
