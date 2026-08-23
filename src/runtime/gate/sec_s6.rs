@@ -74,7 +74,7 @@ pub const SEMANTICS_SSOT: &str =
 pub const GATEWAY_SSOT: &str = "umst-gateway/crates/umst-gateway/src/sec_hcom_prov_gw.rs";
 
 /// egoff `:scert` capstone upstream probe owner.
-pub const EGOFF_SCERT_SSOT: &str = "egoff/egoff/src/slices/14bis_f_S_6_scert_capstone.rs";
+pub const EGOFF_SCERT_SSOT: &str = "egoff/egoff/src/slices/scert_capstone.rs";
 
 /// Honest adoption tier.
 pub const POSTURE_TAG: &str = "manifold-gate-census-wired-not-production";
