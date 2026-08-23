@@ -21,6 +21,10 @@ use super::cartridge::{CdTransitionCartridge, GateCartridge};
 use super::evidence::AdmissibilityToken;
 use crate::gate::transition_proposal::ThermodynamicStateSnapshot;
 
+/// `lib.rs` wire-gate visibility anchor (module-local; not `physics::orchestration` type).
+#[doc(hidden)]
+pub struct TopologyPlanIntent {}
+
 /// W29-125 swarm cell id (SEC-S6 honest-fence deepen).
 pub const W29_125_CELL_ID: &str = "W29-125-SEC_S6";
 
