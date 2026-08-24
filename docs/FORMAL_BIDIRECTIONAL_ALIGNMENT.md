@@ -147,7 +147,7 @@ There is also a **slim** `catalog.json` on disk that uses an `entries[]` index (
 | Lock bundle hash in Rust binary | `build.rs` | Choosing `UMST_CATALOG` override path |
 | Gate / Kleisli / CBF regression tests | `cargo test` gate suite | Interpreting parity diffs |
 | `formal-witness` digest reject | Test + feature flag | Enabling feature in product builds |
-| Lean → Rust code extraction | **Not implemented** | Hand-aligning `thermo_transition`, `cbf`, `kleisli` |
+| Lean → Rust code extraction | **Not implemented** (consumer stub only) | Hand-aligning `thermo_transition`, `cbf`, `kleisli`; see [Lean extraction consumer stub](#lean-extraction-consumer-stub-manifold-lean-extract-stub) |
 | `catalog_id` registry for Kleisli | `KleisliUnitEvaluator` + `GateEvaluatorRegistry` | `umst.gate.kleisli_unit` → Lean `ProbeOptimization` |
 | `StrictCatalogMatch` on every proposal | Enum exists; **not default** | Ops choosing grounding contract |
 | Cartridge `manifest-bridge` on git `main` | Cartridge CI (when enabled) | Publish manifold `manifest` API (W8) |
@@ -155,6 +155,17 @@ There is also a **slim** `catalog.json` on disk that uses an `entries[]` index (
 | Solver ↔ formal proof index | `check_solver_status.py` on `Solver-Status.md` | Row updates per solver |
 
 **Anchor, not block:** Lean proofs document invariants; day-to-day kernel work does not wait on a prover. CI catches **fingerprint** drift and **regression** drift, not full formal–runtime equivalence.
+
+### Lean extraction consumer stub (MANIFOLD-LEAN-EXTRACT-STUB)
+
+First named Lean→Rust extraction **consumer stub** — not proof replay, not physics GREEN.
+
+| Fact | Detail |
+|------|--------|
+| **`rustc` cannot `use` `.lean`** | Lean sources are not Rust modules. Extraction is an offline pipeline (`export_catalog.py`; future term extractors), not a compile-time `use` edge. |
+| **Intended consumer** | `umst-runtime::lean_extract_stub` records the manifold-side consumer targeting Urge **`formal_pins`** census (`umst/umst-urge/src/formal_pins.rs`) — meso 50 + knowing 10 four-language module-id pins. |
+| **Not proof replay** | Runtime does not call `lake build` or replay prover obligations; catalog digest + selected parity tests remain the operational witness. |
+| **Honest posture** | `physics_green: false` · `extraction_complete: false` · `production_wired: false` — hand-aligned gate families and pin census are honest partial; the stub refuses inventing extraction-complete. |
 
 ---
 
@@ -229,6 +240,8 @@ Practical ladder (order matters):
 | Lean sources | `umst-formal-double-slit/Lean/` |
 | Export tool | `umst-formal-double-slit/tools/lean_export/export_catalog.py` |
 | Manifold lock | `umst-manifold/artifacts/catalog.lock.json` |
+| Lean extract consumer stub | `umst-manifold/crates/umst-runtime/src/lean_extract_stub.rs` |
+| Urge `formal_pins` census | `umst/umst-urge/src/formal_pins.rs` |
 | Traceability ledger | `umst-manifold/docs/claims-vs-proofs.md` |
 | Prototype audit | `umst-manifold/docs/PROTOTYPE_GATE_MAP.md` |
 | TCB list | `umst-manifold/docs/TCB.md` |
