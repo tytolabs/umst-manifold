@@ -305,6 +305,19 @@ pub struct TransitionEvidenceWire {
     pub commit_stamp: Option<PrincipalNamedParty>,
 }
 
+impl TransitionEvidenceWire {
+    /// Stamp-shape refuse: a public principal/git name with executor omitted.
+    /// Host git wrap remains unwired — this is shape refuse, not wrap.
+    #[must_use]
+    pub fn refuses_executor_erasure(&self) -> bool {
+        let named = self.principal_named.is_some()
+            || self.git_author.is_some()
+            || self.pr_principal.is_some()
+            || self.commit_stamp.is_some();
+        named && self.executed_by.is_none()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AdmissibilityWire {
@@ -527,6 +540,12 @@ pub fn agent_loop_07_principal_credit_probe() -> AgentLoop07PrincipalCreditProbe
         && sample_wire.commissioned_by == Some(CreditCommissionParty::Human)
         && sample_wire.executed_by == Some(CreditExecutorParty::Agent)
         && sample_wire.principal_named == Some(PrincipalNamedParty::Human)
+        && !sample_wire.refuses_executor_erasure()
+        && {
+            let mut erased = sample_wire.clone();
+            erased.executed_by = None;
+            erased.refuses_executor_erasure()
+        }
         && sample_wire.git_author == Some(PrincipalNamedParty::Human)
         && sample_wire.pr_principal == Some(PrincipalNamedParty::Human)
         && sample_wire.commit_stamp == Some(PrincipalNamedParty::Human);
@@ -792,6 +811,31 @@ mod tests {
     fn agent_loop_07_non_claim_covers_principal_executor_collision() {
         assert!(AGENT_LOOP_07_NON_CLAIM.contains("principal stamp ≠ consciousness"));
         assert!(AGENT_LOOP_07_NON_CLAIM.contains("git author ≠ executed_by"));
+    }
+
+    #[test]
+    fn principal_stamp_refuses_executor_erasure_shape() {
+        let credit = DurableIdentityCreditStamp {
+            commissioned_by: CreditCommissionParty::Human,
+            executed_by: CreditExecutorParty::Agent,
+            principal_named: PrincipalNamedParty::Human,
+        };
+        let mut wire = transition_evidence_to_wire(
+            TransitionEvidence {
+                catalog_id: CD_TRANSITION_CATALOG_ID,
+                admissibility: AdmissibilityToken::Admissible,
+                margin: AdmissibilityMargin(0.5),
+                observed_at: None,
+            },
+            None,
+            None,
+            Some(credit),
+        );
+        assert!(!wire.refuses_executor_erasure());
+        wire.executed_by = None;
+        assert!(wire.refuses_executor_erasure());
+        assert!(agent_loop_07_principal_credit_arm_absent());
+        assert!(!agent_loop_07_remainder_pin().git_author_wrap_wired);
     }
 
     #[test]
