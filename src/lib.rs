@@ -29,5 +29,8 @@ pub mod solve_report;
 pub mod swarm_manifold_deepen;
 pub mod web_constitutive;
 
+#[cfg(feature = "ucrs-provenance")]
+pub use runtime::gate::TransitionEvidenceWire;
+
 #[allow(deprecated)]
 pub use cartridge_migration_stub::*;

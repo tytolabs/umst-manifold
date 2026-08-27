@@ -316,6 +316,12 @@ impl TransitionEvidenceWire {
             || self.commit_stamp.is_some();
         named && self.executed_by.is_none()
     }
+
+    /// Crate-root `pub use` is the scan-c surface; git-author wrap stays unwired.
+    #[must_use]
+    pub fn crate_root_export_is_not_git_wrap(&self) -> bool {
+        self.refuses_executor_erasure() && !agent_loop_07_remainder_pin().git_author_wrap_wired
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -834,6 +840,7 @@ mod tests {
         assert!(!wire.refuses_executor_erasure());
         wire.executed_by = None;
         assert!(wire.refuses_executor_erasure());
+        assert!(wire.crate_root_export_is_not_git_wrap());
         assert!(agent_loop_07_principal_credit_arm_absent());
         assert!(!agent_loop_07_remainder_pin().git_author_wrap_wired);
     }
