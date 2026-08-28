@@ -324,6 +324,25 @@ impl TransitionEvidenceWire {
     }
 }
 
+/// Live COMPLETE-path consume — refuse principal/git stamp shape without executor.
+///
+/// Telemetry deepen ≠ host git/PR wrap; remainder row 07 stays open.
+pub fn complete_stamp_shape_live_consume(wire: &TransitionEvidenceWire) -> Result<(), String> {
+    if wire.refuses_executor_erasure() {
+        return Err(
+            "COMPLETE stamp-shape live consume refused executor erasure (git/PR wrap stays unwired)"
+                .into(),
+        );
+    }
+    if agent_loop_07_remainder_row_closed() {
+        return Err("overclaim: AGENT-LOOP-07 remainder row closed invented".into());
+    }
+    if !agent_loop_07_principal_credit_arm_absent() {
+        return Err("overclaim: principal-side credit arm wired invented".into());
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AdmissibilityWire {
@@ -838,11 +857,13 @@ mod tests {
             Some(credit),
         );
         assert!(!wire.refuses_executor_erasure());
+        assert!(complete_stamp_shape_live_consume(&wire).is_ok());
         wire.executed_by = None;
         assert!(wire.refuses_executor_erasure());
         assert!(wire.crate_root_export_is_not_git_wrap());
         assert!(agent_loop_07_principal_credit_arm_absent());
         assert!(!agent_loop_07_remainder_pin().git_author_wrap_wired);
+        assert!(complete_stamp_shape_live_consume(&wire).is_err());
     }
 
     #[test]
