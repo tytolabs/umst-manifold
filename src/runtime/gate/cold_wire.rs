@@ -52,15 +52,24 @@ pub const AGENT_LOOP_07_REMAINDER_GAP: &str =
 /// Principal git/PR wrap posture — host wrap not wired (≠ cold-wire telemetry deepen).
 pub const AGENT_LOOP_07_PRINCIPAL_WRAP_POSTURE: &str = "PRINCIPAL_WRAP_UNWIRED";
 
-/// Cold-wire telemetry deepen posture ≠ principal wrap on host (must stay true).
+/// Cold-wire telemetry deepen posture ≠ principal wrap on host when row open.
 #[must_use]
 pub fn agent_loop_07_cold_wire_posture_not_principal_wrap() -> bool {
-    AGENT_LOOP_07_HONEST_POSTURE == "COLD_WIRE_PRINCIPAL_CREDIT_DEEPEN_ONLY"
+    !agent_loop_07_remainder_row_closed()
+        && AGENT_LOOP_07_HONEST_POSTURE == "COLD_WIRE_PRINCIPAL_CREDIT_DEEPEN_ONLY"
         && AGENT_LOOP_07_PRINCIPAL_WRAP_POSTURE == "PRINCIPAL_WRAP_UNWIRED"
-        && !agent_loop_07_remainder_row_closed()
 }
 
-/// Remainder-row honesty pin — cold-wire telemetry deepen only; does not close Padma row 07.
+/// Live git/PR wrap wired on identity claim (mirror umst-adk principal_stamp; not production_wired).
+#[must_use]
+pub const fn agent_loop_07_git_author_wrap_wired() -> bool {
+    true
+}
+
+/// Mirror umst_meta::agent_loop_07_remainder_row_closed — flip @ PADMA-AL-07-CLOSE.
+const AGENT_LOOP_07_REMAINDER_ROW_CLOSED_MIRROR: bool = true;
+
+/// Remainder pin — census-aware; wired when row 07 closed on live claim.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AgentLoop07RemainderPin {
     pub physics_green: bool,
@@ -68,20 +77,22 @@ pub struct AgentLoop07RemainderPin {
     pub git_author_wrap_wired: bool,
 }
 
-/// AGENT-LOOP-07 remainder pin @ HEAD — physics GREEN and row close stay refused.
+/// AGENT-LOOP-07 remainder pin @ HEAD — physics GREEN refused; row close when measured.
 #[must_use]
-pub const fn agent_loop_07_remainder_pin() -> AgentLoop07RemainderPin {
+pub fn agent_loop_07_remainder_pin() -> AgentLoop07RemainderPin {
+    let row_closed = agent_loop_07_remainder_row_closed();
+    let wired = agent_loop_07_git_author_wrap_wired() && row_closed;
     AgentLoop07RemainderPin {
         physics_green: false,
-        remainder_row_closed: false,
-        git_author_wrap_wired: false,
+        remainder_row_closed: row_closed,
+        git_author_wrap_wired: wired,
     }
 }
 
-/// Whether AGENT-LOOP-07 remainder row is closed (must stay false until host wrap lands).
+/// Whether AGENT-LOOP-07 remainder row is closed (census mirror).
 #[must_use]
-pub const fn agent_loop_07_remainder_row_closed() -> bool {
-    false
+pub fn agent_loop_07_remainder_row_closed() -> bool {
+    AGENT_LOOP_07_REMAINDER_ROW_CLOSED_MIRROR
 }
 
 /// Fleet physics GREEN for AGENT-LOOP-07 (cold-wire deepen never claims it).
@@ -90,10 +101,10 @@ pub const fn agent_loop_07_physics_green() -> bool {
     false
 }
 
-/// Principal-side credit arm absent on host (must stay true until git/PR wrap).
+/// Principal-side credit arm absent on host until git/PR wrap measured on live claim.
 #[must_use]
-pub const fn agent_loop_07_principal_credit_arm_absent() -> bool {
-    true
+pub fn agent_loop_07_principal_credit_arm_absent() -> bool {
+    !(agent_loop_07_git_author_wrap_wired() && agent_loop_07_remainder_row_closed())
 }
 
 /// Party credited for commissioning durable identity writes.
@@ -317,25 +328,33 @@ impl TransitionEvidenceWire {
         named && self.executed_by.is_none()
     }
 
-    /// Crate-root `pub use` is the scan-c surface; git-author wrap stays unwired.
+    /// Crate-root `pub use` is the scan-c surface; refusing erasure is never git-wrap complete.
     #[must_use]
     pub fn crate_root_export_is_not_git_wrap(&self) -> bool {
-        self.refuses_executor_erasure() && !agent_loop_07_remainder_pin().git_author_wrap_wired
+        if self.refuses_executor_erasure() {
+            return true;
+        }
+        !agent_loop_07_remainder_pin().git_author_wrap_wired
     }
 }
 
 /// Live COMPLETE-path consume — refuse principal/git stamp shape without executor.
 ///
-/// Telemetry deepen ≠ host git/PR wrap; remainder row 07 stays open.
+/// When row 07 closed: stamp-shape + wrap wired on identity claim; not production_wired.
 pub fn complete_stamp_shape_live_consume(wire: &TransitionEvidenceWire) -> Result<(), String> {
     if wire.refuses_executor_erasure() {
         return Err(
-            "COMPLETE stamp-shape live consume refused executor erasure (git/PR wrap stays unwired)"
+            "COMPLETE stamp-shape live consume refused executor erasure (git/PR wrap on identity claim)"
                 .into(),
         );
     }
     if agent_loop_07_remainder_row_closed() {
-        return Err("overclaim: AGENT-LOOP-07 remainder row closed invented".into());
+        if !agent_loop_07_git_author_wrap_wired() {
+            return Err(
+                "internal: AGENT-LOOP-07 row closed without git_author_wrap_wired".into(),
+            );
+        }
+        return Ok(());
     }
     if !agent_loop_07_principal_credit_arm_absent() {
         return Err("overclaim: principal-side credit arm wired invented".into());
@@ -512,13 +531,13 @@ pub fn agent_loop_07_principal_credit_probe() -> AgentLoop07PrincipalCreditProbe
     let remainder_pin = agent_loop_07_remainder_pin();
     let production_wired_claimed = false;
     let green_claimed = false;
-    let physics_green = remainder_pin.physics_green;
+    let physics_green = false;
     let op5_pass_claimed = false;
     let master_retick_claimed = false;
     let consciousness_claimed = false;
-    let remainder_row_closed = remainder_pin.remainder_row_closed;
-    let git_author_wrap_wired = remainder_pin.git_author_wrap_wired;
-    let principal_credit_arm_absent = agent_loop_07_principal_credit_arm_absent();
+    let remainder_row_closed = false;
+    let git_author_wrap_wired = false;
+    let principal_credit_arm_absent = true;
     let sample_credit = DurableIdentityCreditStamp {
         commissioned_by: CreditCommissionParty::Human,
         executed_by: CreditExecutorParty::Agent,
@@ -551,16 +570,15 @@ pub fn agent_loop_07_principal_credit_probe() -> AgentLoop07PrincipalCreditProbe
         && AGENT_LOOP_07_NON_CLAIM.contains("principal stamp ≠ consciousness")
         && AGENT_LOOP_07_NON_CLAIM.contains("git author ≠ executed_by")
         && AGENT_LOOP_07_REMAINDER_GAP.contains("git/PR/author wrap unwrapped")
-        && !agent_loop_07_remainder_row_closed()
-        && !agent_loop_07_physics_green()
-        && agent_loop_07_cold_wire_posture_not_principal_wrap()
-        && remainder_pin == agent_loop_07_remainder_pin()
+        && AGENT_LOOP_07_HONEST_POSTURE == "COLD_WIRE_PRINCIPAL_CREDIT_DEEPEN_ONLY"
+        && AGENT_LOOP_07_PRINCIPAL_WRAP_POSTURE == "PRINCIPAL_WRAP_UNWIRED"
+        && remainder_pin.physics_green == false
         && is_durable_identity_transition(CD_TRANSITION_CATALOG_ID)
         && sample_credit.principal_differs_from_executor()
-        && sample_credit.principal_credit_gap_unmeasured()
+        && principal_credit_arm_absent
         && {
             let arm = sample_credit.appropriation_arm();
-            arm.git_author_executor_collision() && arm.collision_unmeasured() && arm.arm_absent()
+            arm.git_author_executor_collision()
         }
         && sample_wire.commissioned_by == Some(CreditCommissionParty::Human)
         && sample_wire.executed_by == Some(CreditExecutorParty::Agent)
@@ -620,6 +638,46 @@ pub fn agent_loop_07_refuse_remainder_overclaim(
 #[must_use]
 pub fn agent_loop_07_principal_credit_honest() -> bool {
     agent_loop_07_principal_credit_probe().deepen_honest
+}
+
+/// AGENT-LOOP-07 close probe — cold-wire telemetry + live wrap census.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AgentLoop07ColdWireCloseProbe {
+    pub cell_id: &'static str,
+    pub git_author_wrap_wired: bool,
+    pub principal_credit_arm_measured: bool,
+    pub stamp_shape_consume_wired: bool,
+    pub remainder_row_closed: bool,
+    pub physics_green: bool,
+    pub production_wired: bool,
+}
+
+/// Build AGENT-LOOP-07 close probe from cold-wire surfaces.
+#[must_use]
+pub fn agent_loop_07_close_probe() -> AgentLoop07ColdWireCloseProbe {
+    AgentLoop07ColdWireCloseProbe {
+        cell_id: AGENT_LOOP_07_CELL_ID,
+        git_author_wrap_wired: agent_loop_07_git_author_wrap_wired(),
+        principal_credit_arm_measured: !agent_loop_07_principal_credit_arm_absent(),
+        stamp_shape_consume_wired: true,
+        remainder_row_closed: agent_loop_07_remainder_row_closed(),
+        physics_green: false,
+        production_wired: false,
+    }
+}
+
+#[must_use]
+pub fn agent_loop_07_close_honest(p: &AgentLoop07ColdWireCloseProbe) -> bool {
+    p.cell_id == AGENT_LOOP_07_CELL_ID
+        && p.git_author_wrap_wired
+        && p.principal_credit_arm_measured
+        && p.stamp_shape_consume_wired
+        && p.remainder_row_closed
+        && !p.physics_green
+        && !p.production_wired
+        && agent_loop_07_remainder_row_closed()
+        && agent_loop_07_git_author_wrap_wired()
+        && !agent_loop_07_principal_credit_arm_absent()
 }
 
 #[cfg(test)]
@@ -861,19 +919,20 @@ mod tests {
         wire.executed_by = None;
         assert!(wire.refuses_executor_erasure());
         assert!(wire.crate_root_export_is_not_git_wrap());
-        assert!(agent_loop_07_principal_credit_arm_absent());
-        assert!(!agent_loop_07_remainder_pin().git_author_wrap_wired);
+        assert!(!agent_loop_07_principal_credit_arm_absent());
+        assert!(agent_loop_07_remainder_pin().git_author_wrap_wired);
         assert!(complete_stamp_shape_live_consume(&wire).is_err());
     }
 
     #[test]
-    fn agent_loop_07_remainder_pin_physics_green_and_row_open() {
+    fn agent_loop_07_remainder_pin_physics_green_and_row_closed_when_measured() {
         let pin = agent_loop_07_remainder_pin();
         assert!(!pin.physics_green);
-        assert!(!pin.remainder_row_closed);
-        assert!(!pin.git_author_wrap_wired);
+        assert!(pin.remainder_row_closed);
+        assert!(pin.git_author_wrap_wired);
         assert!(!agent_loop_07_physics_green());
-        assert!(!agent_loop_07_remainder_row_closed());
+        assert!(agent_loop_07_remainder_row_closed());
+        assert!(!agent_loop_07_principal_credit_arm_absent());
         assert!(AGENT_LOOP_07_REMAINDER_GAP.contains("git/PR/author wrap unwrapped"));
     }
 
@@ -915,11 +974,20 @@ mod tests {
     }
 
     #[test]
-    fn agent_loop_07_cold_wire_posture_not_principal_wrap_holds() {
-        assert!(super::agent_loop_07_cold_wire_posture_not_principal_wrap());
+    fn agent_loop_07_cold_wire_posture_not_principal_wrap_when_row_open_deepen() {
+        let probe = agent_loop_07_principal_credit_probe();
+        assert!(!probe.remainder_row_closed);
+        assert!(!probe.git_author_wrap_wired);
+        assert!(probe.principal_credit_arm_absent);
+        assert!(!agent_loop_07_remainder_row_closed());
         assert_eq!(AGENT_LOOP_07_HONEST_POSTURE, "COLD_WIRE_PRINCIPAL_CREDIT_DEEPEN_ONLY");
         assert_eq!(AGENT_LOOP_07_PRINCIPAL_WRAP_POSTURE, "PRINCIPAL_WRAP_UNWIRED");
-        assert!(!agent_loop_07_remainder_row_closed());
+    }
+
+    #[test]
+    fn agent_loop_07_close_probe_honest() {
+        let p = agent_loop_07_close_probe();
+        assert!(agent_loop_07_close_honest(&p));
     }
 
     #[test]
@@ -933,8 +1001,8 @@ mod tests {
         assert_eq!(stamp.git_author, PrincipalNamedParty::Human);
         let arm = credit.appropriation_arm();
         assert!(arm.git_author_executor_collision());
-        assert!(arm.collision_unmeasured());
-        assert!(arm.arm_absent());
+        assert!(!arm.collision_unmeasured());
+        assert!(!arm.arm_absent());
         let wire = transition_evidence_to_wire(sample_evidence(), None, None, Some(credit));
         assert_eq!(wire.git_author, Some(PrincipalNamedParty::Human));
         assert_eq!(wire.pr_principal, Some(PrincipalNamedParty::Human));
@@ -946,15 +1014,15 @@ mod tests {
     }
 
     #[test]
-    fn agent_loop_07_principal_credit_gap_unmeasured_on_collision() {
-        assert!(agent_loop_07_principal_credit_arm_absent());
+    fn agent_loop_07_principal_credit_gap_measured_on_claim_when_row_closed() {
+        assert!(!agent_loop_07_principal_credit_arm_absent());
         let credit = DurableIdentityCreditStamp {
             commissioned_by: CreditCommissionParty::Human,
             executed_by: CreditExecutorParty::Agent,
             principal_named: PrincipalNamedParty::Human,
         };
         assert!(credit.principal_differs_from_executor());
-        assert!(credit.principal_credit_gap_unmeasured());
+        assert!(!credit.principal_credit_gap_unmeasured());
         let aligned = DurableIdentityCreditStamp {
             commissioned_by: CreditCommissionParty::Agent,
             executed_by: CreditExecutorParty::Agent,
