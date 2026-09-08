@@ -290,7 +290,7 @@ fn monolithic_pass<B: Backend<FloatElem = f32>>(
         temperature_n: scratch.t_old.clone(),
         humidity_n: scratch.h_old.clone(),
         alpha_n: scratch.alpha_n.clone(),
-        displacement_n: state.mechanical.displacement.as_tensor().clone(),
+        displacement_n: state.mechanical.displacement.clone(),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1: ctx.edges_b1.clone(),

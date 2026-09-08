@@ -160,6 +160,10 @@ name = "gate_server"
 path = "src/bin/gate_server.rs"
 required-features = ["gate-server-bin"]
 
+[[bin]]
+name = "umst-liquid-ppo-hop"
+path = "src/bin/umst_liquid_ppo_hop.rs"
+
 [[test]]
 name = "fracture_gamma_convergence"
 path = "tests/verification/fracture_gamma_convergence.rs"

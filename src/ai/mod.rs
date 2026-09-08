@@ -13,6 +13,7 @@ pub mod epistemic_mi;
 pub mod formal;
 #[cfg(feature = "design-implicit-field")]
 pub mod implicit_field;
+pub mod hop_graph_liquid_ppo;
 pub mod info_gain;
 pub mod liquid_ppo;
 pub mod ppo;
