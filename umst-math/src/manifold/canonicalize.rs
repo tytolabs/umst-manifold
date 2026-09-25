@@ -131,6 +131,17 @@ pub fn canonicalize_emax_sample(
     Ok((h, v))
 }
 
+/// Deterministic voxel hash + blake3 digest over `(fnv8 || voxel_bytes || bits)` preimage.
+pub fn sdf_shape_canonicalize(sdf: &impl Sdf, bits: u8) -> Result<[u8; 32], ManifoldError> {
+    let (h8, vox) = canonicalize_voxelize(sdf, bits)?;
+    let mut preimage = Vec::with_capacity(1 + 8 + vox.len() + 1);
+    preimage.push(1u8); // wire kind: full voxel preimage
+    preimage.extend_from_slice(&h8);
+    preimage.extend_from_slice(&vox);
+    preimage.push(bits);
+    Ok(*blake3::hash(&preimage).as_bytes())
+}
+
 /// Refinement as **byte-prefix**: H(r+1) = h_r (8) || t (8) — t carries fine-scale witness (B-Arc can formalise).
 #[inline]
 pub fn stack_refinement_h8(h_r: [u8; 8], tail8: [u8; 8]) -> [u8; 16] {

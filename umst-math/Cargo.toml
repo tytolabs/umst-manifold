@@ -17,6 +17,7 @@ linux-hal-sysfs = []
 simd = ["dep:serde"]
 
 [dependencies]
+blake3 = "1.8.2"
 ordered-float = { version = "5.1.0", default-features = false }
 petgraph = { version = "0.6", default-features = true }
 pqcrypto-dilithium = "0.5.0"
