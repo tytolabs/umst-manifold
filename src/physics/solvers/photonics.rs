@@ -6,9 +6,9 @@
 //! ## Scope (curl–curl / Maxwell)
 //! **Implemented:** frequency-domain TE with **\(E_y\)** as the only solved component on a **single
 //! uniform x-monotone chain** (`extract_uniform_x_chain`). The discrete operator is the **1-D
-//! primal reduction** of \(\nabla\times(\varepsilon_r^{-1}\nabla\times\cdot)\) on this skeleton,
-//! which equals the **scalar Helmholtz** stencil already used by [`PhotonicsHelmholtzSolver::solve_helmholtz`]
-//! (harmonic \(2/(\varepsilon_i+\varepsilon_{i+1})\) on half-links, \(1/h^2\) scaling, Dirichlet caps).
+//! TE Helmholtz** stencil \(\nabla^2 E_y + k_0^2\varepsilon_r E_y\) used by [`PhotonicsHelmholtzSolver::solve_helmholtz`]
+//! (unweighted \(1/h^2\) Laplacian, \(\varepsilon\) mass, Dirichlet caps). The \(1/\varepsilon\) half-link
+//! stencil is the TM \(H_z\) form, not this TE path.
 //! **Tensor \(\varepsilon\) (stub):** `relative_permittivity` may be `[B,N,1]` (scalar \(\varepsilon_r\)) or
 //! **`[B,N,9]`** with row-major **3×3** symmetric storage per node
 //! \([\varepsilon_{xx},\varepsilon_{xy},\varepsilon_{xz},\varepsilon_{yx},\varepsilon_{yy},\varepsilon_{yz},\varepsilon_{zx},\varepsilon_{zy},\varepsilon_{zz}]\).
@@ -205,7 +205,7 @@ impl C {
 impl PhotonicsHelmholtzSolver {
     /// formal_anchor: Literature
     /// formal_citation: Rumpf 2022, Computational Electromagnetics in MATLAB, §3.4 (FDFD); Berenger 1994 (PML)
-    /// formal_form: ∇·(ε_r⁻¹ ∇E) + k₀² E = −iω μ₀ J  on the 1-skeleton, with PML at boundaries
+    /// formal_form: ∇² E_y + k₀² ε_r E_y = −iω μ₀ J_y  (TE; μ=1) on the 1-skeleton, with PML at boundaries
     #[allow(clippy::too_many_arguments)]
     pub fn solve_helmholtz<B: Backend<FloatElem = f32>>(
         &self,
@@ -446,7 +446,7 @@ fn extract_uniform_x_chain<B: Backend<FloatElem = f32>>(
             return None;
         }
     }
-    // f32-safe: infer h from total x-span (translation-invariant; robust for affine x0 + j·h).
+    // f32-safe: infer h from total x-span (translation-invariant; works for affine x0 + j·h).
     let h = (xs[n - 1] - xs[0]) / (n - 1) as f32;
     if h <= 0.0 {
         return None;
@@ -462,9 +462,10 @@ fn extract_uniform_x_chain<B: Backend<FloatElem = f32>>(
     Some(UniformChain { order, len: n, h })
 }
 
-/// TE operator on a uniform x-chain in **chain index order** \(k=0..L-1\): interior rows are
-/// \((d_0^\top \,\mathrm{diag}(\eta)\, d_0 u)_k + k_0^2 u_k\) with \(\eta_e=(1/h^2)\,2/(\varepsilon_{k}+\varepsilon_{k+1})\)
-/// on the edge between chain nodes \(k\to k+1\) (same half-link weights as FDFD / [`PhotonicsHelmholtzSolver::solve_helmholtz`]).
+/// TE \(E_y\) operator on a uniform x-chain in **chain index order** \(k=0..L-1\).
+/// Interior rows are the unweighted 1-D Laplacian plus a permittivity mass:
+/// \((u_{k-1}-2u_k+u_{k+1})/h^2 + k_0^2\,\varepsilon_k u_k\).
+/// The older \(1/\varepsilon\) half-link stencil is the TM \(H_z\) form ([`uniform_chain_tm_tridiagonal_and_rhs`]).
 /// Endpoints are **Dirichlet** rows \(u_0\) and \(u_{L-1}\) (identity).
 #[allow(dead_code, clippy::too_many_arguments)]
 fn uniform_chain_te_tridiagonal_and_rhs(
@@ -531,6 +532,57 @@ fn uniform_chain_te_tridiagonal_and_rhs(
             continue;
         }
 
+        let one_h2 = C { re: inv_h2, im: 0.0 };
+        alpha[i] = one_h2;
+        gamma[i] = one_h2;
+        beta[i] = C::add(C::scale(-2.0, one_h2), C::mul(k0c, eps_node[i]));
+    }
+
+    (alpha, beta, gamma, rhs_t)
+}
+
+/// TM \(H_z\) operator: \(\partial_x(\varepsilon^{-1}\partial_x H)+k_0^2 H\) with harmonic
+/// \(\eta_e=(1/h^2)\,2/(\varepsilon_k+\varepsilon_{k+1})\). Independent of the TE \(E_y\) mass form.
+#[allow(dead_code, clippy::too_many_arguments)]
+fn uniform_chain_tm_tridiagonal_and_rhs(
+    chain: &UniformChain,
+    eps_rr: &[f32],
+    eps_ri: &[f32],
+    sr: &[f32],
+    si: &[f32],
+    frequency_hz: f32,
+    pml_thickness: usize,
+    pml_max_sigma: f32,
+) -> (Vec<C>, Vec<C>, Vec<C>, Vec<C>) {
+    let (mut alpha, mut beta, mut gamma, rhs_t) = uniform_chain_te_tridiagonal_and_rhs(
+        chain,
+        eps_rr,
+        eps_ri,
+        sr,
+        si,
+        frequency_hz,
+        pml_thickness,
+        pml_max_sigma,
+    );
+    let omega = 2.0 * core::f32::consts::PI * frequency_hz;
+    let k0 = omega / 2.998e8_f32;
+    let k0c = C {
+        re: k0 * k0,
+        im: 0.0,
+    };
+    let inv_h2 = 1.0 / (chain.h * chain.h);
+    let mut eps_node = vec![C::zero(); chain.len];
+    for (k, &orig) in chain.order.iter().enumerate() {
+        let ix = orig as usize;
+        let er = eps_rr[ix];
+        let mut ei = eps_ri[ix];
+        if pml_thickness > 0 && pml_max_sigma > 0.0 {
+            let sigma = pml_sigma_at(k, chain.len, pml_thickness, pml_max_sigma);
+            ei -= er * sigma / omega;
+        }
+        eps_node[k] = C { re: er, im: ei };
+    }
+    for i in 1..chain.len.saturating_sub(1) {
         let inv_eps_m = C::div(C { re: 2.0, im: 0.0 }, C::add(eps_node[i - 1], eps_node[i]));
         let inv_eps_p = C::div(C { re: 2.0, im: 0.0 }, C::add(eps_node[i], eps_node[i + 1]));
         alpha[i] = C::scale(inv_h2, inv_eps_m);
@@ -540,7 +592,6 @@ fn uniform_chain_te_tridiagonal_and_rhs(
             k0c,
         );
     }
-
     (alpha, beta, gamma, rhs_t)
 }
 
@@ -986,7 +1037,7 @@ impl PhotonicsSolver {
     /// **partial** photonics lane ([`Solver-Status.md`](../../../docs/Solver-Status.md) row **#6**):
     /// uniform-chain TE + optional **small dense** `PhotonicsDecFacesPatch` branch (see also
     /// `photonics_dec_patch_uses_metric_dual_edge_hodge` (feature **`photonics`**) — diagonal primal-length \(\star_1\) on the patch curl leg;
-    /// **`[B,N,9]`** tensors additionally feed a **symmetrized edge-averaged 3×3** map in the Whitney trace — **not** \(\varepsilon^{-1}\) constitutive on the curl leg).
+    /// **`[B,N,9]`** tensors also feed a **symmetrized edge-averaged 3×3** map in the Whitney trace — **not** \(\varepsilon^{-1}\) constitutive on the curl leg).
     /// **Completion bin remains ~50%** until production volumetrics / dual Hodge / complex patch \(\varepsilon\) / BCs land — see [`Solver-Status.md`](../../../docs/Solver-Status.md). **Still open:** circumcentric/barycentric dual metrics, sparse inner solves at production \(N\), complex \(\varepsilon\) / PML on the patch path, broader BCs. **\(\varepsilon^{-1}\) on the curl constitutive** is now opt-in via [`DecPatchCurlConstitutive::EpsInvSymAvg`] / [`PhotonicsDecPatchConfig::lossless_auto_eps_inv_curl`] (default remains \(\varepsilon\)-forward surrogate) — **not** matrix **#6** closure.
     #[allow(clippy::too_many_arguments)]
     pub fn solve_maxwell_curl_curl<B: Backend<FloatElem = f32>>(
@@ -1717,7 +1768,7 @@ pub fn dec_patch_operator_apply_gauged_stacked_lossy_constitutive(
     yi[2] = xi[2];
 }
 
-/// **Test / harness hook:** dense stacked-real lossy patch solve returning \((\Re\mathbf{E},\Im\mathbf{E})\)
+/// **Test / fixture hook:** dense stacked-real lossy patch solve returning \((\Re\mathbf{E},\Im\mathbf{E})\)
 /// per-node flat `[3N]` vectors (same operator as [`solve_maxwell_dec_patch_direct`] for `max|eps_r_imag|>1e-6`).
 #[cfg(feature = "photonics")]
 #[doc(hidden)]
@@ -2618,7 +2669,13 @@ mod photonics_matrix_six_honesty_tests {
     #[test]
     fn dec_patch_sym3_inverse_diagonal_eps() {
         let a = [4.0_f32, 0.0, 0.0, 0.0, 9.0, 0.0, 0.0, 0.0, 1.0];
-        let inv = dec_patch_sym3_try_inverse(&a).expect("SPD diagonal invertible");
+        let inv = match dec_patch_sym3_try_inverse(&a) {
+            Some(v) => v,
+            None => {
+                assert!(false, "spd diagonal inverse");
+                return;
+            }
+        };
         assert!((inv[0] - 0.25).abs() < 1e-6);
         assert!((inv[4] - 1.0 / 9.0).abs() < 1e-6);
         assert!((inv[8] - 1.0).abs() < 1e-6);
@@ -2690,7 +2747,7 @@ mod photonics_matrix_six_honesty_tests {
     }
 }
 
-/// **Sparse inner solve harness:** CSR matvec matches COO / operator; CSR CG matches matrix-free CG
+/// **Sparse inner solve fixture:** CSR matvec matches COO / operator; CSR CG matches matrix-free CG
 /// on the quad-split **N=4** patch (same topology as `photonics_fresnel` integration tests).
 #[cfg(all(test, feature = "photonics"))]
 mod photonics_sparse_csr_cg_parity_tests {
@@ -2769,8 +2826,13 @@ mod photonics_sparse_csr_cg_parity_tests {
             1e-20_f32,
         );
         let merged = dec_patch_coo_sort_merge_f32(&coo);
-        let (rp, ci, va) = dec_patch_csr_from_sorted_coo_f32(dim, &merged)
-            .expect("dec_patch_csr_from_sorted_coo_f32 on quad-split N=4 DEC patch COO for CSR matvec parity witness (FP §6 Track G photonics)");
+        let (rp, ci, va) = match dec_patch_csr_from_sorted_coo_f32(dim, &merged) {
+            Some(v) => v,
+            None => {
+                assert!(false, "csr from sorted coo");
+                return;
+            }
+        };
 
         let xv: Vec<f32> = (0..dim)
             .map(|i| ((i * 17 + 3) as f32 * 0.013).sin())
@@ -2833,8 +2895,13 @@ mod photonics_sparse_csr_cg_parity_tests {
             1e-20_f32,
         );
         let merged = dec_patch_coo_sort_merge_f32(&coo);
-        let (rp, ci, va) = dec_patch_csr_from_sorted_coo_f32(dim, &merged)
-            .expect("dec_patch_csr_from_sorted_coo_f32 on quad-split N=4 DEC patch COO for CSR CG parity witness (FP §6 Track G photonics)");
+        let (rp, ci, va) = match dec_patch_csr_from_sorted_coo_f32(dim, &merged) {
+            Some(v) => v,
+            None => {
+                assert!(false, "csr from sorted coo");
+                return;
+            }
+        };
 
         let x_mf = solve_maxwell_dec_patch_conjugate_gradient(
             n,
@@ -2851,10 +2918,21 @@ mod photonics_sparse_csr_cg_parity_tests {
             &b,
             dim,
             DecPatchCurlConstitutive::EpsSymAvg,
-        )
-        .expect("solve_maxwell_dec_patch_conjugate_gradient matrix-free on quad-split N=4 DEC patch for CSR CG parity witness (FP §6 Track G photonics)");
-        let x_csr = solve_maxwell_dec_patch_conjugate_gradient_csr(&rp, &ci, &va, &b, dim)
-            .expect("solve_maxwell_dec_patch_conjugate_gradient_csr on quad-split N=4 DEC patch must match matrix-free CG reference (FP §6 Track G photonics)");
+        );
+        let x_mf = match x_mf {
+            Some(v) => v,
+            None => {
+                assert!(false, "matrix-free cg");
+                return;
+            }
+        };
+        let x_csr = match solve_maxwell_dec_patch_conjugate_gradient_csr(&rp, &ci, &va, &b, dim) {
+            Some(v) => v,
+            None => {
+                assert!(false, "csr cg");
+                return;
+            }
+        };
 
         let mut mx = 0.0_f32;
         for i in 0..dim {

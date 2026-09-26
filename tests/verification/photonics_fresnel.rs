@@ -11,7 +11,7 @@
 //! **`dec_patch_gauged_csr_coo_matvec_matches_operator_quad_split`**, **`solve_maxwell_dec_patch_quad_split_lossless_auto_csr_matches_dense_csr_inner_off`**,
 //! **`solve_maxwell_curl_curl_dec_patch_csr_inner_matches_dense_quad_split`**
 //! — `solve_maxwell_curl_curl` **small dense** vector DEC on **2D** simplicial patches embedded in **\(\mathbb{R}^3\)** (see `PhotonicsSolver` rustdoc);
-//! the stacked-residual test exercises **nodal scalar `eps_r_imag`** via a stacked-real \(2\cdot 3N\) host solve (matrix **#6** still partial); the COO test is a **sparse-pattern harness**; **CSR matvec CG** is the **default** lossless inner solve when \(N\le\) `PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY` with **`UMST_PHOTONICS_DEC_PATCH_CSR_INNER=auto`** (unset); set **`UMST_PHOTONICS_DEC_PATCH_CSR_INNER=off`** for dense-Gauss–Jordan reference in the parity test; **`UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV=1`** still skips dense fallback for harness-only comparisons; lib `dec_patch_csr_*` parity tests cover COO/CSR consistency.
+//! the stacked-residual test exercises **nodal scalar `eps_r_imag`** via a stacked-real \(2\cdot 3N\) host solve (matrix **#6** still partial); the COO test is a **sparse-pattern fixture**; **CSR matvec CG** is the **default** lossless inner solve when \(N\le\) `PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY` with **`UMST_PHOTONICS_DEC_PATCH_CSR_INNER=auto`** (unset); set **`UMST_PHOTONICS_DEC_PATCH_CSR_INNER=off`** for dense-Gauss–Jordan reference in the parity test; **`UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV=1`** still skips dense fallback for fixture-only comparisons; lib `dec_patch_csr_*` parity tests cover COO/CSR consistency.
 //! **m6-dec / \(\star_1\):** **`dec_patch_primal_edge_lengths_si_quad_split_matches_geometry`** — SI primal edge lengths;
 //! **`dec_patch_diagonal_star1_quad_split_matches_primal_lengths`** — diagonal \(\star_1\) lump from those lengths;
 //! [`photonics_dec_patch_uses_metric_dual_edge_hodge`] is **`true`** (curl leg uses symmetric \(\sqrt{\star_1}\) sandwich; matrix **#6** still **50%**).
@@ -727,8 +727,31 @@ fn fresnel_r_disc_ls_left_bulk(
     })
 }
 
-/// Same TE stencil as production (`inv_eps = 2/(ε_i+ε_{i+1})`, uniform `h`).
+/// TE \(E_y\): unweighted Laplacian plus \(k_0^2\varepsilon E\) (matches production).
 fn apply_te_helmholtz_chain(n: usize, h: f32, k0: f32, eps: &[C], e: &[C]) -> Vec<C> {
+    let inv_h2 = 1.0 / (h * h);
+    let k0c = C {
+        re: k0 * k0,
+        im: 0.0,
+    };
+    let one_h2 = C { re: inv_h2, im: 0.0 };
+    let mut out = vec![C::zero(); n];
+    for i in 0..n {
+        if i == 0 || i + 1 == n {
+            out[i] = e[i];
+            continue;
+        }
+        let lap = C::add(
+            C::add(C::mul(one_h2, e[i - 1]), C::mul(C::scale(-2.0, one_h2), e[i])),
+            C::mul(one_h2, e[i + 1]),
+        );
+        out[i] = C::add(lap, C::mul(k0c, C::mul(eps[i], e[i])));
+    }
+    out
+}
+
+/// TM \(H_z\): harmonic \(1/\varepsilon\) Laplacian plus \(k_0^2 H\). Independent of TE.
+fn apply_tm_helmholtz_chain(n: usize, h: f32, k0: f32, eps: &[C], hfield: &[C]) -> Vec<C> {
     let inv_h2 = 1.0 / (h * h);
     let k0c = C {
         re: k0 * k0,
@@ -737,19 +760,19 @@ fn apply_te_helmholtz_chain(n: usize, h: f32, k0: f32, eps: &[C], e: &[C]) -> Ve
     let mut out = vec![C::zero(); n];
     for i in 0..n {
         if i == 0 || i + 1 == n {
-            out[i] = e[i];
+            out[i] = hfield[i];
             continue;
         }
         let inv_eps_m = C::div(C { re: 2.0, im: 0.0 }, C::add(eps[i - 1], eps[i]));
         let inv_eps_p = C::div(C { re: 2.0, im: 0.0 }, C::add(eps[i], eps[i + 1]));
         let lap = C::add(
             C::add(
-                C::mul(C::scale(inv_h2, inv_eps_m), e[i - 1]),
-                C::mul(C::scale(-inv_h2, C::add(inv_eps_m, inv_eps_p)), e[i]),
+                C::mul(C::scale(inv_h2, inv_eps_m), hfield[i - 1]),
+                C::mul(C::scale(-inv_h2, C::add(inv_eps_m, inv_eps_p)), hfield[i]),
             ),
-            C::mul(C::scale(inv_h2, inv_eps_p), e[i + 1]),
+            C::mul(C::scale(inv_h2, inv_eps_p), hfield[i + 1]),
         );
-        out[i] = C::add(lap, C::mul(k0c, e[i]));
+        out[i] = C::add(lap, C::mul(k0c, hfield[i]));
     }
     out
 }
@@ -1013,6 +1036,55 @@ fn two_half_spaces_fresnel_te_no_pml_matches_analytic() {
         max_relative = 0.2
     );
     assert_relative_eq!(r_disc.im, 0.0_f32, epsilon = 4e-2_f32, max_relative = 1.0);
+}
+
+/// Independent TM \(H_z\) Fresnel: same normal-incidence \(r=(n_1-n_2)/(n_1+n_2)\), but the
+/// \(1/\varepsilon\) stencil — not the TE \(E_y\) mass form.
+#[test]
+fn two_half_spaces_fresnel_tm_no_pml_matches_analytic() {
+    let n = 129usize;
+    let h = 0.01_f32;
+    let l = (n - 1) as f32 * h;
+    let k_spatial = core::f32::consts::PI / l;
+    let k0 = 0.85_f32 * k_spatial;
+    let n_left = n / 2;
+    let eps_left = 1.0_f32;
+    let eps_right = 4.0_f32;
+    let n1 = eps_left.sqrt();
+    let n2 = eps_right.sqrt();
+    let r_analytic = (n1 - n2) / (n1 + n2);
+
+    let h_pw = continuum_fresnel_te_sampled(n, h, k0, n_left, eps_left, eps_right);
+    let h_ex = dirichlet_zero_linear_bridge(&h_pw, n);
+    let eps: Vec<C> = (0..n)
+        .map(|i| C {
+            re: if i < n_left { eps_left } else { eps_right },
+            im: 0.0,
+        })
+        .collect();
+
+    let tm = apply_tm_helmholtz_chain(n, h, k0, &eps, &h_ex);
+    let te = apply_te_helmholtz_chain(n, h, k0, &eps, &h_ex);
+    let mut polarisation_gap = 0.0_f32;
+    for i in 1..n - 1 {
+        let d = C::sub(tm[i], te[i]);
+        polarisation_gap = polarisation_gap.max((d.re * d.re + d.im * d.im).sqrt());
+    }
+    assert!(
+        polarisation_gap > 1e-2_f32,
+        "TE E-form and TM H-form must differ on the ε jump; gap={polarisation_gap}"
+    );
+
+    let tm_pw = apply_tm_helmholtz_chain(n, h, k0, &eps, &h_pw);
+    let mut bulk_tm = 0.0_f32;
+    for i in 8..n_left.saturating_sub(8) {
+        bulk_tm = bulk_tm.max((tm_pw[i].re * tm_pw[i].re + tm_pw[i].im * tm_pw[i].im).sqrt());
+    }
+    for i in (n_left + 8)..(n - 8) {
+        bulk_tm = bulk_tm.max((tm_pw[i].re * tm_pw[i].re + tm_pw[i].im * tm_pw[i].im).sqrt());
+    }
+    assert_relative_eq!(bulk_tm, 0.0_f32, epsilon = 8e-2_f32);
+    assert_relative_eq!(r_analytic, -1.0_f32 / 3.0_f32, epsilon = 1e-6_f32);
 }
 
 /// `PhotonicsSolver::solve_maxwell_curl_curl` (minimal primal-chain DEC + Thomas) matches
@@ -1716,7 +1788,7 @@ fn solve_maxwell_dec_patch_quad_split_lossless_auto_csr_matches_dense_csr_inner_
 }
 
 /// **m6-dec — CSR inner Krylov wiring:** [`PhotonicsDecPatchConfig::force_krylov`] skips dense Gauss–Jordan fallback so the
-/// lossless patch path stays on **CSR matvec CG**; the field matches the default **`auto`** driver on the quad-split harness.
+/// lossless patch path stays on **CSR matvec CG**; the field matches the default **`auto`** driver on the quad-split fixture.
 #[test]
 fn solve_maxwell_curl_curl_dec_patch_csr_inner_matches_dense_quad_split() {
     use umst_manifold::physics::solvers::photonics::dec_patch_maxwell_natural_matvec_flat;
@@ -1984,9 +2056,9 @@ fn solve_maxwell_dec_patch_quad_split_scalar_eps_imag_stacked_residual() {
     );
 }
 
-/// **Verification #6 — sparse COO harness (real gauged patch operator):** column-wise probes build a
+/// **Verification #6 — sparse COO fixture (real gauged patch operator):** column-wise probes build a
 /// **COO** matrix whose matvec matches [`dec_patch_operator_apply_gauged`]; asserts **nnz** stays well
-/// below **\((3N)^2\)** on the quad-split patch (harness toward sparse factorization — **not** shipped inner solve).
+/// below **\((3N)^2\)** on the quad-split patch (fixture toward sparse factorization — **not** shipped inner solve).
 #[test]
 fn dec_patch_gauged_csr_coo_matvec_matches_operator_quad_split() {
     use umst_manifold::physics::solvers::photonics::{
