@@ -13,6 +13,7 @@
 
 use std::net::TcpListener;
 
+use umst_manifold::gate::GateEvaluator;
 use umst_manifold::gate::http_manifest::GateHttpRuntime;
 use umst_manifold::gate_server_router::handle_connection;
 use umst_manifold::manifest::UmstManifest;
