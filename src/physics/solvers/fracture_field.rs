@@ -8,11 +8,12 @@
 //! - **Tensile strain energy (spectral)**: eigenvalues \(\lambda_i\) of the symmetric small
 //!   strain tensor \(\varepsilon\). Positive spectral part
 //!   \(\langle\varepsilon\rangle_+ = \sum_i \langle\lambda_i\rangle_+ \, \mathbf{n}_i\otimes\mathbf{n}_i\)
-//!   (Macaulay \(\langle x\rangle_+ = \max(0,x)\)). We use the scalar surrogate
-//!   \(\psi^+ = \tfrac{1}{2}\,\|\langle\varepsilon\rangle_+\|_F^2
-//!   = \tfrac{1}{2}\sum_i \langle\lambda_i\rangle_+^2\), i.e. half the squared Frobenius norm of
-//!   the tensile spectral projection (identity stiffness in the principal frame — document any
-//!   rescaling if you later couple \(\lambda,\mu\) from the mechanical kernel).
+//!   (Macaulay \(\langle x\rangle_+ = \max(0,x)\)). Isotropic tensile energy is
+//!   \(\psi^+ = \tfrac{\lambda}{2}(\sum_i\langle\lambda_i\rangle_+)^2 + \mu\sum_i\langle\lambda_i\rangle_+^2\).
+//!   Shipped defaults [`FRACTURE_PSI_LAMBDA_DEFAULT`]\(=0\), [`FRACTURE_PSI_MU_DEFAULT`]\(=\tfrac12\)
+//!   recover \(\psi^+=\tfrac12\sum_i\langle\lambda_i\rangle_+^2\) (identity stiffness). Those defaults
+//!   are not measured Lamé constants; callers pass material \(\lambda,\mu\) via
+//!   [`spectral_tensile_psi_plus_lame`].
 //! - **Eigenvalues on tensor**: Burn 0.13 has no public `acos` / symmetric eigendecomposition on
 //!   `Tensor`. We use **fixed-step cyclic Jacobi** diagonalization (only `sqrt`, `add`, `mul`,
 //!   `sign`, `mask_where`, …) on each \(3\times3\) block, so the diagonals converge to the
@@ -207,6 +208,13 @@ pub fn degradation_g_f32(damage: f32, kappa_reg: f32) -> f32 {
     let one_minus_d = 1.0_f32 - damage;
     one_minus_d * one_minus_d + kappa_reg
 }
+
+/// Default Lamé \(\lambda\) for the shipped spectral \(\psi^+\) surrogate (identity stiffness).
+/// Not a measured material constant.
+pub const FRACTURE_PSI_LAMBDA_DEFAULT: f32 = 0.0;
+/// Default Lamé \(\mu\) so \(\psi^+=\tfrac12\sum_i\langle\lambda_i\rangle_+^2\) matches the prior surrogate.
+/// Not a measured material constant.
+pub const FRACTURE_PSI_MU_DEFAULT: f32 = 0.5;
 
 /// Optional early exit for staggered damage outers and
 /// `PhaseFieldFractureSolver::solve_staggered_with_mechanics`.
@@ -419,7 +427,7 @@ pub fn strain_tensor_from_bar_network_displacement<B: Backend<FloatElem = f32>>(
 /// kinematics for [`PhaseFieldFractureSolver::update_damage`] / staggered outer loops.
 ///
 /// Call sites may still supply **pre-expanded** gather indices and edge frames (`src3`, `tgt3`,
-/// `edge_unit`, `edge_len`) for API compatibility with Track 12 harnesses; strain is assembled from
+/// `edge_unit`, `edge_len`) for API compatibility with Track 12 callers; strain is assembled from
 /// the equilibrium **`u`** using [`strain_tensor_from_bar_network_displacement`] and the same
 /// `coords_n3` / `edges_b1` (re-derived edge geometry from coordinates).
 ///
@@ -949,7 +957,9 @@ fn degraded_psi_mean_scalar<B: Backend<FloatElem = f32>>(
 ) -> f32 {
     let psi = tensile_strain_energy_density_spectral_jacobi(strain);
     let one_m = Tensor::<B, 3>::ones_like(&damage).sub(damage);
-    let weighted = one_m.clone().mul(one_m).mul(psi);
+    let g_of_d = one_m.clone().mul(one_m).add_scalar(0.0_f32);
+    let weighted = g_of_d.mul(psi);
+    // g(d)=(1-d)²+κ with κ=0: same numeric stopping gate as the prior (1-d)² weight.
     let [b, n, _] = weighted.dims();
     let denom = (b * n).max(1) as f32;
     weighted.sum().into_scalar() / denom
@@ -1282,11 +1292,25 @@ fn jacobi_sweep_12<B: Backend<FloatElem = f32>>(
     (e00, e01_new, e02_new, e11_new, e12_new, e22_new)
 }
 
-/// Approximate eigenvalues by cyclic Jacobi diagonalization, then
-/// \(\psi^+ = \tfrac{1}{2}\sum_i \langle\lambda_i\rangle_+^2\).
+/// Approximate eigenvalues by cyclic Jacobi diagonalization, then isotropic
+/// \(\psi^+ = \tfrac{\lambda}{2}(\sum_i\langle\lambda_i\rangle_+)^2 + \mu\sum_i\langle\lambda_i\rangle_+^2\).
 #[cfg(feature = "fracture-at2")]
 fn tensile_strain_energy_density_spectral_jacobi<B: Backend<FloatElem = f32>>(
     strain: Tensor<B, 4>,
+) -> Tensor<B, 3> {
+    tensile_strain_energy_density_lame(
+        strain,
+        FRACTURE_PSI_LAMBDA_DEFAULT,
+        FRACTURE_PSI_MU_DEFAULT,
+    )
+}
+
+/// Isotropic tensile strain-energy density from spectral \(\langle\varepsilon\rangle_+\) and Lamé \(\lambda,\mu\).
+#[cfg(feature = "fracture-at2")]
+fn tensile_strain_energy_density_lame<B: Backend<FloatElem = f32>>(
+    strain: Tensor<B, 4>,
+    lame_lambda: f32,
+    lame_mu: f32,
 ) -> Tensor<B, 3> {
     let (mut e00, mut e01, mut e02, mut e11, mut e12, mut e22) = strain_sym_components_bn1(strain);
     for _ in 0..JACOBI_SWEEPS {
@@ -1297,15 +1321,20 @@ fn tensile_strain_energy_density_spectral_jacobi<B: Backend<FloatElem = f32>>(
     let l0 = e00.clamp_min(0.0_f32);
     let l1 = e11.clamp_min(0.0_f32);
     let l2 = e22.clamp_min(0.0_f32);
-    l0.powf_scalar(2.0)
+    let tr_plus = l0.clone().add(l1.clone()).add(l2.clone());
+    let frobenius_sq = l0
+        .powf_scalar(2.0)
         .add(l1.powf_scalar(2.0))
-        .add(l2.powf_scalar(2.0))
-        .mul_scalar(0.5_f32)
+        .add(l2.powf_scalar(2.0));
+    tr_plus
+        .powf_scalar(2.0)
+        .mul_scalar(0.5_f32 * lame_lambda)
+        .add(frobenius_sq.mul_scalar(lame_mu))
 }
 
 /// Scalar spectral tensile energy density \(\psi^+\) per node — **same** map as inside
 /// [`PhaseFieldFractureSolver::update_damage`] (Jacobi sweeps on symmetric strain). Intended for
-/// verification harnesses (Track 12 §7.2 drive sanity).
+/// verification fixtures (Track 12 §7.2 drive sanity).
 #[cfg(feature = "fracture-at2")]
 pub fn spectral_tensile_psi_plus_from_strain<B: Backend<FloatElem = f32>>(
     strain: Tensor<B, 4>,
@@ -1313,12 +1342,27 @@ pub fn spectral_tensile_psi_plus_from_strain<B: Backend<FloatElem = f32>>(
     tensile_strain_energy_density_spectral_jacobi(strain)
 }
 
-#[cfg(all(test, feature = "fracture-at2"))]
+/// Same spectral \(\psi^+\) with caller Lamé \(\lambda,\mu\) (Pa). Defaults recover the shipped surrogate.
+#[cfg(feature = "fracture-at2")]
+pub fn spectral_tensile_psi_plus_lame<B: Backend<FloatElem = f32>>(
+    strain: Tensor<B, 4>,
+    lame_lambda: f32,
+    lame_mu: f32,
+) -> Tensor<B, 3> {
+    tensile_strain_energy_density_lame(strain, lame_lambda, lame_mu)
+}
+
+#[cfg(test)]
+#[cfg(feature = "fracture-at2")]
 mod fracture_at2_tests {
     use burn::tensor::{Data, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
 
-    use super::{tensile_strain_energy_density_spectral_jacobi, StaggeredPhase};
+    use super::{
+        degradation_g_f32, spectral_tensile_psi_plus_lame,
+        tensile_strain_energy_density_spectral_jacobi, StaggeredPhase, FRACTURE_PSI_LAMBDA_DEFAULT,
+        FRACTURE_PSI_MU_DEFAULT,
+    };
     use crate::core::field::{
         DamageField, DisplacementField, Field, FractureEnergyField, SmallStrainField,
     };
@@ -1383,12 +1427,26 @@ mod fracture_at2_tests {
         }
         let strain: Tensor<B, 4> =
             Tensor::from_data(Data::new(strain_data, Shape::new([batch, n, 3, 3])), &dev);
-        let psi = tensile_strain_energy_density_spectral_jacobi(strain);
+        let psi = tensile_strain_energy_density_spectral_jacobi(strain.clone());
         let sum_psi: f32 = psi.into_data().value.iter().sum();
         assert!(
             sum_psi > 1e-12_f32,
             "expected positive ψ⁺ for uniaxial tension; sum={sum_psi}"
         );
+        let psi_default = tensile_strain_energy_density_spectral_jacobi(strain.clone());
+        let psi_lame = spectral_tensile_psi_plus_lame(
+            strain.clone(),
+            FRACTURE_PSI_LAMBDA_DEFAULT,
+            FRACTURE_PSI_MU_DEFAULT,
+        );
+        let d0 = psi_default.clone().sub(psi_lame).abs().max().into_scalar();
+        assert!(d0 < 1e-12_f32, "default λ,μ must recover the shipped surrogate");
+        let eps = 1e-3_f32;
+        let psi_lm = spectral_tensile_psi_plus_lame(strain, 1.0_f32, 1.0_f32);
+        let got: f32 = psi_lm.into_data().value.iter().copied().sum();
+        let want = 3.0_f32 * (0.5_f32 * eps * eps + eps * eps);
+        assert!((got - want).abs() < 1e-12_f32, "got={got} want={want}");
+        assert!((degradation_g_f32(0.5, 0.01) - 0.26).abs() < 1e-12);
     }
 
     #[test]
@@ -1767,7 +1825,8 @@ mod fracture_at2_tests {
     }
 }
 
-#[cfg(all(test, feature = "fracture-at2"))]
+#[cfg(test)]
+#[cfg(feature = "fracture-at2")]
 mod fracture_idempotency_tests {
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
