@@ -57,6 +57,8 @@ pub mod rho_estimator;
 pub mod schrodinger;
 /// THEOREM-BOUND: scalar Kalman + Joseph EKF smoothers (§14bis.e-TUI-7; vendor umst-prototype-2a)
 pub mod smoothing;
+/// Track C coalgebraic solve combinator — Thermo unfold, certified outcomes.
+pub mod solve_combinator;
 pub mod sparse;
 pub mod tensor;
 pub mod theorem_blurbs;
@@ -69,6 +71,11 @@ pub use density::DensityDiag;
 pub use englert::{englert_bound_holds, englert_lhs};
 /// CONSTANT-BOUND: `landauer_floor_j_per_bit` (re-export: Landauer bit cost)
 pub use landauer::landauer_cost_diagonal_bits;
+/// Track C: certified solve outcomes + UCRS Landauer budget types.
+pub use solve_combinator::{
+    landauer_step_joules, unfold, CombinatorRefuse, EnergyBudget, EnergySpent, ProblemTolerance,
+    ProgressCertificate, ResidualCertificate, SolveOutcome, StallEvidence, StrategyRung, Thermo,
+};
 /// THEOREM-BOUND: Clausius–Duhem admissibility (`Gate.lean` conjunct; SSOT for ucrs/formal drift)
 pub use manifold::csg::clausius_duhem_admissible;
 /// THEOREM-BOUND: `credit_greedy_optimal` (re-export: PMIC / residual coherence capacity)
