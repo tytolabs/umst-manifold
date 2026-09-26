@@ -319,7 +319,7 @@ required-features = ["thmc-coupled"]
 
 [[test]]
 name = "r14_thmc_coupled_lattice_parity"
-path = "tests/verification/r14_thmc_coupled_lattice_parity.rs"
+path = "tests/verification/thmc_coupled_lattice_parity.rs"
 required-features = ["thmc-coupled"]
 
 [[test]]
