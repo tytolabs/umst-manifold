@@ -13,6 +13,7 @@ pub mod gate;
 pub mod gate_server_router;
 pub mod manifest;
 pub mod physics;
+pub use physics::solvers::krylov_host::KrylovHostPostureProbe;
 pub use physics::orchestration::{
     OrchestrationPostureProbe, TopologyPlanIntent, TopologyPhysicsOrchestrator,
 };

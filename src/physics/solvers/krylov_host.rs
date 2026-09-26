@@ -354,6 +354,16 @@ mod tests {
                 b[i]
             );
         }
+        let ax = matvec(&x);
+        let residual = ax
+            .iter()
+            .zip(b.iter())
+            .map(|(a, bi)| (a - bi).abs())
+            .fold(0.0_f32, f32::max);
+        assert!(
+            residual < 1e-4_f32,
+            "identity residual max |Ax-b|={residual}"
+        );
     }
 
     #[test]
