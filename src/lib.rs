@@ -26,6 +26,8 @@ pub mod pnp_bridge;
 #[cfg(feature = "ros2-contract")]
 pub mod ros;
 
+pub mod ci_research_gate;
+pub use ci_research_gate::ResearchCiPosture;
 pub mod cargo_test_gap_census;
 pub mod cartridge_migration_stub;
 pub mod nested_drift_census;
