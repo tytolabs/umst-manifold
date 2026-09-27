@@ -196,7 +196,7 @@ fn max_abs_axial_edge_strain(h: &ChainHarness, damage: Tensor<B, 3>) -> Result<f
         h.cross_section_area,
         &h.cfg,
     )?;
-    let u_src = u.gather(1, h.src3.clone());
+    let u_src = u.clone().gather(1, h.src3.clone());
     let u_tgt = u.gather(1, h.tgt3.clone());
     let edge_disp = u_tgt.sub(u_src);
     let elong = edge_disp
