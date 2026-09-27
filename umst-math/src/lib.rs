@@ -65,6 +65,8 @@ pub mod smoothing;
 pub mod solver_refusal;
 /// Track C coalgebraic solve combinator — Thermo unfold, certified outcomes.
 pub mod solve_combinator;
+/// n_unknowns is escalation evidence for unfold, not a stop.
+pub mod problem_size_escalation;
 pub mod sparse;
 pub mod tensor;
 pub mod theorem_blurbs;
