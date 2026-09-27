@@ -87,7 +87,7 @@
 //!
 //! ## MAC + Poisson — integration points (R2.2, design note)
 //! Ring 2 **R2.2** calls for MAC or cell-centred pressure on the developed channel; this module ships **graph**
-//! **Jacobi-PCG** on \(-\mathcal{L}\) (`Tensor::all_close` residual gate, capped iterations) with the \#7 projection path below.
+//! **Jacobi-PCG** on \(-\mathcal{L}\) (`Tensor::all_close` residual gate, byte-budgeted iterations) with the \#7 projection path below.
 //! The following are **hook points** for a future staggered / incompressible-correct split — **not** an implemented MAC grid:
 //! - **After the predictor:** `step_experimental` forms `u_star` from explicit momentum (body, viscous,
 //!   pressure-gradient acceleration). A MAC predictor would typically commit **face-normal** provisional
@@ -281,14 +281,126 @@ use crate::physics::error::PhysicsError;
 type RheologyStepOut<B> = (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>);
 
 #[cfg(feature = "rheology-bingham")]
-/// Relative residual tolerance \(\|r\|_2/\|b\|_2\) for early exit in Jacobi-PCG (checked with `Tensor::all_close`).
+/// Shipped default \(\|r\|_2/\|b\|_2\) gate for Chorin Poisson Jacobi-PCG (`Tensor::all_close`).
 const POISSON_CG_REL_TOL: f32 = 2e-5;
 #[cfg(feature = "rheology-bingham")]
-/// Upper bound on PCG iterations per Chorin pressure step (graph Laplacian; Jacobi preconditioner).
-const POISSON_CG_MAX_IT_CAP: usize = 4096;
+/// `f32` nodal fields touched per Jacobi-PCG iteration (φ, r, z, p, Laplacian temps — budget accounting only).
+const JACOBI_PCG_F32_FIELDS_PER_ITER: usize = 6;
 #[cfg(feature = "rheology-bingham")]
 /// Floor for \(t_\mathrm{rest}\), \(\gamma_\mathrm{crit}\) in denominators (SI scales, avoids div-by-zero).
 const THIX_PARAM_EPS: f32 = 1e-12;
+
+#[cfg(feature = "rheology-bingham")]
+/// Typed refusal surface for Chorin Bingham migration (Poisson stop + yield domain).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RheologyFlowRefusal {
+    /// Relative residual tolerance must be finite and strictly positive.
+    NonPositivePoissonRelTol,
+    /// Caller [`ChorinPoissonCgStop::basis_budget_bytes`] must be positive once mesh scaling is applied.
+    NonPositiveBasisBudget,
+    /// Jacobi-PCG exhausted the basis byte budget before meeting `rel_tol`.
+    PoissonCgBudgetExhausted { rel_residual: f32, pcg_iterations: usize },
+    /// Nodal yield stress inadmissible for the regularized Bingham edge law.
+    YieldStressInadmissible,
+}
+
+#[cfg(feature = "rheology-bingham")]
+impl RheologyFlowRefusal {
+    #[must_use]
+    pub fn into_physics_error(self) -> PhysicsError {
+        match self {
+            Self::NonPositivePoissonRelTol => PhysicsError::Domain {
+                detail: "Chorin Poisson Jacobi-PCG: rel_tol must be finite and > 0".to_string(),
+            },
+            Self::NonPositiveBasisBudget => PhysicsError::Domain {
+                detail: "Chorin Poisson Jacobi-PCG: basis_budget_bytes must be > 0".to_string(),
+            },
+            Self::PoissonCgBudgetExhausted {
+                rel_residual,
+                pcg_iterations,
+            } => PhysicsError::Diverged {
+                eq_rel: rel_residual,
+                pcg_iterations,
+            },
+            Self::YieldStressInadmissible => PhysicsError::InvariantViolation {
+                context: "BinghamFlowSolver::step yield_stress",
+            },
+        }
+    }
+}
+
+#[cfg(feature = "rheology-bingham")]
+/// Stop policy for Chorin pressure Poisson Jacobi-PCG (tolerance + caller scratch budget, no literal iter cap).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ChorinPoissonCgStop {
+    /// Relative residual \(\|r\|_2/\|b\|_2\) early-exit tolerance (finite, \(> 0\)).
+    pub rel_tol: f32,
+    /// Scratch budget in bytes for one Poisson solve; `0` selects a mesh-scaled default at solve time.
+    pub basis_budget_bytes: usize,
+}
+
+#[cfg(feature = "rheology-bingham")]
+impl ChorinPoissonCgStop {
+    /// Shipped defaults: [`POISSON_CG_REL_TOL`] and mesh-scaled budget (`basis_budget_bytes = 0`).
+    #[must_use]
+    pub fn shipped_default() -> Self {
+        Self {
+            rel_tol: POISSON_CG_REL_TOL,
+            basis_budget_bytes: 0,
+        }
+    }
+
+    /// Validate tolerance (refuse non-positive / non-finite).
+    #[must_use]
+    pub fn validate_rel_tol(rel_tol: f32) -> Result<f32, RheologyFlowRefusal> {
+        if rel_tol.is_finite() && rel_tol > 0.0 {
+            Ok(rel_tol)
+        } else {
+            Err(RheologyFlowRefusal::NonPositivePoissonRelTol)
+        }
+    }
+
+    /// Resolve `basis_budget_bytes`, applying mesh scaling when the caller left `0`.
+    #[must_use]
+    pub fn resolved_basis_budget_bytes(
+        batch: usize,
+        n: usize,
+        basis_budget_bytes: usize,
+    ) -> Result<usize, RheologyFlowRefusal> {
+        let per_iter = chorin_poisson_cg_bytes_per_iter(batch, n);
+        if per_iter == 0 {
+            return Err(RheologyFlowRefusal::NonPositiveBasisBudget);
+        }
+        if basis_budget_bytes > 0 {
+            return Ok(basis_budget_bytes);
+        }
+        let mesh_iters = n.saturating_mul(10).max(256);
+        Ok(per_iter.saturating_mul(mesh_iters))
+    }
+}
+
+#[cfg(feature = "rheology-bingham")]
+#[must_use]
+fn chorin_poisson_cg_bytes_per_iter(batch: usize, n: usize) -> usize {
+    batch
+        .saturating_mul(n)
+        .saturating_mul(core::mem::size_of::<f32>())
+        .saturating_mul(JACOBI_PCG_F32_FIELDS_PER_ITER)
+}
+
+#[cfg(feature = "rheology-bingham")]
+fn chorin_poisson_max_iters_from_budget(
+    batch: usize,
+    n: usize,
+    basis_budget_bytes: usize,
+) -> Result<usize, RheologyFlowRefusal> {
+    let budget = ChorinPoissonCgStop::resolved_basis_budget_bytes(batch, n, basis_budget_bytes)?;
+    let per_iter = chorin_poisson_cg_bytes_per_iter(batch, n);
+    if per_iter == 0 || budget < per_iter {
+        return Err(RheologyFlowRefusal::NonPositiveBasisBudget);
+    }
+    Ok(budget / per_iter)
+}
 
 #[cfg(feature = "rheology-bingham")]
 struct RichardsonPressurePhiState<B: Backend<FloatElem = f32>> {
@@ -314,6 +426,9 @@ struct JacobiPressurePhiState<B: Backend<FloatElem = f32>> {
     diag_inv: Tensor<B, 3>,
     batch: usize,
     n: usize,
+    rel_tol: f32,
+    converged: bool,
+    last_rel_residual: f32,
 }
 
 /// Fresh-state rheology + Navier-Stokes–like step on the DEC 1-skeleton.
@@ -334,6 +449,10 @@ pub struct BinghamFlowSolver {
     ///
     /// Default [`BinghamFlowSolver::GAMMA_CRIT_NO_THIX`] zeros the breakdown term for legacy runs.
     pub gamma_crit_thix: f32,
+    /// Chorin Poisson Jacobi-PCG relative residual tolerance (finite, \(> 0\)).
+    pub poisson_cg_rel_tol: f32,
+    /// Caller-measured scratch budget for Chorin Poisson Jacobi-PCG \[bytes\]; `0` → mesh-scaled default.
+    pub poisson_basis_budget_bytes: usize,
 }
 
 impl BinghamFlowSolver {
@@ -350,6 +469,8 @@ impl BinghamFlowSolver {
             edge_length_scale: 1.0,
             t_rest_thix: Self::T_REST_NO_THIX,
             gamma_crit_thix: Self::GAMMA_CRIT_NO_THIX,
+            poisson_cg_rel_tol: 2e-5_f32,
+            poisson_basis_budget_bytes: 0,
         }
     }
 
@@ -434,8 +555,8 @@ impl Default for BinghamFlowSolver {
 ///
 /// With **`--features rheology_poisson_richardson_fallback`**, the pressure increment uses a damped
 /// **Richardson** sweep instead of Jacobi-PCG (compile-time lane). The default Jacobi-PCG path runs a
-/// **fixed iteration count** on a lazy tensor graph, with early exit when the \(\ell_2\) relative residual
-/// `Tensor::all_close` check against **`POISSON_CG_REL_TOL`** succeeds (no explicit host scalar reads in this module).
+/// **byte-budgeted** iterations on a lazy tensor graph, with early exit when the \(\ell_2\) relative residual
+/// `Tensor::all_close` check against caller `rel_tol` succeeds (host scalar read for refusal on budget exhaust).
 #[cfg(feature = "rheology-bingham")]
 #[cfg_attr(
     not(feature = "rheology_poisson_richardson_fallback"),
@@ -502,7 +623,10 @@ fn jacobi_pressure_phi_step<B: Backend<FloatElem = f32>>(
     let res_l2 = s.r.clone().powf_scalar(2.0).sum().sqrt();
     let rel = res_l2.div(s.rhs_norm.clone());
     let ztol = Tensor::<B, 1>::zeros_like(&rel);
-    if rel.all_close(ztol, None, Some(f64::from(POISSON_CG_REL_TOL))) {
+    let rel_host: f32 = rel.clone().into_scalar();
+    s.last_rel_residual = rel_host;
+    if rel.all_close(ztol, None, Some(f64::from(s.rel_tol))) {
+        s.converged = true;
         return ControlFlow::Break(());
     }
 
@@ -525,17 +649,21 @@ fn solve_pressure_phi_jacobi_cg<B: Backend<FloatElem = f32>>(
     damage: Tensor<B, 3>,
     batch: usize,
     n: usize,
-) -> Tensor<B, 3> {
+    stop: ChorinPoissonCgStop,
+) -> Result<Tensor<B, 3>, RheologyFlowRefusal> {
     #[cfg(feature = "rheology_poisson_richardson_fallback")]
     {
-        return solve_pressure_phi_richardson_fallback(
+        return Ok(solve_pressure_phi_richardson_fallback(
             rhs.clone(),
             edges_b1.clone(),
             damage.clone(),
             batch,
             n,
-        );
+        ));
     }
+
+    let rel_tol = ChorinPoissonCgStop::validate_rel_tol(stop.rel_tol)?;
+    let max_it = chorin_poisson_max_iters_from_budget(batch, n, stop.basis_budget_bytes)?;
 
     let rhs_norm = rhs
         .clone()
@@ -556,8 +684,6 @@ fn solve_pressure_phi_jacobi_cg<B: Backend<FloatElem = f32>>(
     let p = z.clone();
     let rz_old = r.clone().mul(z.clone()).sum().clamp_min(1e-40_f32);
 
-    let max_it = n.saturating_mul(10).clamp(256, POISSON_CG_MAX_IT_CAP);
-
     let mut st = JacobiPressurePhiState {
         phi,
         r,
@@ -570,8 +696,17 @@ fn solve_pressure_phi_jacobi_cg<B: Backend<FloatElem = f32>>(
         diag_inv,
         batch,
         n,
+        rel_tol,
+        converged: false,
+        last_rel_residual: f32::INFINITY,
     };
-    let _ = iterate_until(max_it, &mut st, jacobi_pressure_phi_step);
+    let completed = iterate_until(max_it, &mut st, jacobi_pressure_phi_step);
+    if !st.converged {
+        return Err(RheologyFlowRefusal::PoissonCgBudgetExhausted {
+            rel_residual: st.last_rel_residual,
+            pcg_iterations: completed,
+        });
+    }
 
     let phi = st.phi;
     let phi_mean = phi
@@ -579,7 +714,7 @@ fn solve_pressure_phi_jacobi_cg<B: Backend<FloatElem = f32>>(
         .sum_dim(1)
         .div_scalar(st.n as f32)
         .reshape([st.batch, 1, 1]);
-    phi.sub(phi_mean)
+    Ok(phi.sub(phi_mean))
 }
 
 /// Shipped Chorin pressure Poisson RHS (verification \#7): mean-free weak primal divergence of
@@ -755,7 +890,22 @@ fn bingham_step_validate_solver(solver: &BinghamFlowSolver) -> Result<(), Physic
             detail: "BinghamFlowSolver: gamma_crit_thix must be positive and finite".to_string(),
         });
     }
+    if let Err(refusal) = ChorinPoissonCgStop::validate_rel_tol(solver.poisson_cg_rel_tol) {
+        return Err(refusal.into_physics_error());
+    }
     Ok(())
+}
+
+#[cfg(feature = "rheology-bingham")]
+fn bingham_step_validate_yield_stress<B: Backend<FloatElem = f32>>(
+    yield_stress: &Tensor<B, 3>,
+) -> Result<(), PhysicsError> {
+    let min_tau: f32 = yield_stress.clone().min().into_scalar();
+    if min_tau.is_finite() && min_tau >= 0.0 {
+        Ok(())
+    } else {
+        Err(RheologyFlowRefusal::YieldStressInadmissible.into_physics_error())
+    }
 }
 
 #[cfg(feature = "rheology-bingham")]
@@ -848,6 +998,7 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
     gravity: Tensor<B, 1>,
 ) -> Result<RheologyStepOut<B>, PhysicsError> {
     bingham_step_validate_solver(solver)?;
+    bingham_step_validate_yield_stress(&yield_stress)?;
     bingham_step_validate_shapes(
         &velocity,
         &pressure,
@@ -967,7 +1118,19 @@ fn step_experimental<B: Backend<FloatElem = f32>>(
         n,
     );
 
-    let phi = solve_pressure_phi_jacobi_cg(rhs, edges_b1.clone(), damage.clone(), batch, n);
+    let poisson_stop = ChorinPoissonCgStop {
+        rel_tol: solver.poisson_cg_rel_tol,
+        basis_budget_bytes: solver.poisson_basis_budget_bytes,
+    };
+    let phi = solve_pressure_phi_jacobi_cg(
+        rhs,
+        edges_b1.clone(),
+        damage.clone(),
+        batch,
+        n,
+        poisson_stop,
+    )
+    .map_err(RheologyFlowRefusal::into_physics_error)?;
 
     // Projection: same weak-divergence routing as `edge_pressure`, with φ increment and an extra Δt factor.
     let dphi = primal_scalar_edge_increment(phi.clone(), &topo);
@@ -1108,6 +1271,33 @@ mod tests {
     }
 
     #[test]
+    fn chorin_poisson_rel_tol_precondition_refuses_non_positive() {
+        // Precondition: non-finite or non-positive tolerances must refuse before Poisson CG runs.
+        assert_eq!(
+            super::ChorinPoissonCgStop::validate_rel_tol(0.0),
+            Err(super::RheologyFlowRefusal::NonPositivePoissonRelTol)
+        );
+        assert_eq!(
+            super::ChorinPoissonCgStop::validate_rel_tol(-1e-3_f32),
+            Err(super::RheologyFlowRefusal::NonPositivePoissonRelTol)
+        );
+        assert_eq!(
+            super::ChorinPoissonCgStop::validate_rel_tol(f32::NAN),
+            Err(super::RheologyFlowRefusal::NonPositivePoissonRelTol)
+        );
+        assert!(
+            super::ChorinPoissonCgStop::validate_rel_tol(2e-5_f32).is_ok(),
+            "shipped rel_tol must admit"
+        );
+        let mut solver = BinghamFlowSolver::new(1e-3, 1.0);
+        solver.poisson_cg_rel_tol = 0.0;
+        assert!(
+            super::bingham_step_validate_solver(&solver).is_err(),
+            "solver with poisson_cg_rel_tol=0 must Domain-fail"
+        );
+    }
+
+    #[test]
     fn thix_param_domain_rejects_non_positive() {
         let mut solver = BinghamFlowSolver::new(1e-3, 1.0);
         solver.t_rest_thix = 0.0;
@@ -1241,6 +1431,10 @@ mod tests {
             damage.clone(),
             batch,
             n,
+            ChorinPoissonCgStop::shipped_default(),
+        )
+        .expect(
+            "Jacobi-PCG on mean-free synthetic RHS with shipped default stop (FP §6 Track E rheology flow)",
         );
         let lap_phi =
             TopologicalLaplacian::scalar_laplacian(phi.clone(), edges_b1.clone(), damage.clone());
@@ -1367,6 +1561,10 @@ mod tests {
             damage.clone(),
             batch,
             n,
+            ChorinPoissonCgStop::shipped_default(),
+        )
+        .expect(
+            "Jacobi-PCG on weak-divergence RHS with shipped default stop (FP §6 Track E rheology flow)",
         );
         let phi_sur = solve_pressure_phi_jacobi_cg(
             rhs_sur.clone(),
@@ -1374,6 +1572,10 @@ mod tests {
             damage.clone(),
             batch,
             n,
+            ChorinPoissonCgStop::shipped_default(),
+        )
+        .expect(
+            "Jacobi-PCG on surrogate RHS with shipped default stop (FP §6 Track E rheology flow)",
         );
 
         assert!(phi_div
@@ -1530,10 +1732,28 @@ mod tests {
         );
 
         let rhs_sum = rhs_base.clone().add(rhs_cap.clone());
-        let phi0 =
-            solve_pressure_phi_jacobi_cg(rhs_base, edges_b1.clone(), damage.clone(), batch, n);
-        let phi1 =
-            solve_pressure_phi_jacobi_cg(rhs_sum, edges_b1.clone(), damage.clone(), batch, n);
+        let phi0 = solve_pressure_phi_jacobi_cg(
+            rhs_base,
+            edges_b1.clone(),
+            damage.clone(),
+            batch,
+            n,
+            ChorinPoissonCgStop::shipped_default(),
+        )
+        .expect(
+            "Jacobi-PCG base RHS with shipped default stop (FP §6 Track E rheology flow M7)",
+        );
+        let phi1 = solve_pressure_phi_jacobi_cg(
+            rhs_sum,
+            edges_b1.clone(),
+            damage.clone(),
+            batch,
+            n,
+            ChorinPoissonCgStop::shipped_default(),
+        )
+        .expect(
+            "Jacobi-PCG summed RHS with shipped default stop (FP §6 Track E rheology flow M7)",
+        );
         let dphi = phi1.sub(phi0);
         let dphi_n = dphi.powf_scalar(2.0).sum().sqrt();
         let ztol = Tensor::<B, 1>::zeros([1], &dev);

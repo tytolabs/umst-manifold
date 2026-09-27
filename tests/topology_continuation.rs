@@ -19,7 +19,9 @@ fn continuation_and_volume_smoke_with_solver_experimental_feature() {
     let dev = Default::default();
     assert!((ContinuationSchedule::value(15, 100) - 2.0).abs() < 1e-5);
     let rho = Tensor::<B, 3>::ones(Shape::new([1, 3, 1]), &dev).mul_scalar(0.1);
-    let out = VolumeProjection::new(0.4_f32, 40).project(rho);
+    let out = VolumeProjection::new(0.4_f32, 1e-4)
+        .project(rho)
+        .expect("volume projection");
     let mean = out.sum().div_scalar(3.0_f32).into_scalar();
     assert!((mean - 0.4).abs() < 1e-4, "mean {mean}");
 }

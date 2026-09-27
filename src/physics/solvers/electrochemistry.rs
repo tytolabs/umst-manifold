@@ -1560,6 +1560,17 @@ fn pnp_be_full_sg_jacobian_matvec_nm_f64(
     pnp_residual_fm_to_nm(diff_fm, n, out_nm);
 }
 
+/// Precondition for full-SG GMRES Newton corrections: [`NewtonPnpContext::residual_tol_l2`] must be finite and positive.
+#[cfg(feature = "electrochemistry-mvp")]
+fn full_sg_gmres_newton_residual_tol_f32(residual_tol: f64) -> Result<f32, PhysicsError> {
+    if !residual_tol.is_finite() || residual_tol <= 0.0 {
+        return Err(PhysicsError::InvariantViolation {
+            context: "full_sg_newton_correction_gmres_nm_f64: residual_tol must be finite and positive",
+        });
+    }
+    Ok(residual_tol as f32)
+}
+
 /// Matrix-free Newton correction \(\delta_{\mathrm{nm}}\) for full-SG BE via GMRES on \(J_{\mathrm{nm}}\).
 #[cfg(feature = "electrochemistry-mvp")]
 #[cfg_attr(feature = "electrochemistry-mvp", allow(clippy::too_many_arguments))]
@@ -1592,8 +1603,7 @@ fn full_sg_newton_correction_gmres_nm_f64(
         return Ok(vec![0.0_f64; dim]);
     }
 
-    let max_iter = (dim + 96).min(512).max(dim);
-    const GMRES_REL_TOL: f32 = 5e-4_f32;
+    let gmres_rel_tol = full_sg_gmres_newton_residual_tol_f32(newton.residual_tol_l2)?;
 
     let u_fm = u_fm.to_vec();
     let r0_fm = r0_fm.to_vec();
@@ -1643,7 +1653,7 @@ fn full_sg_newton_correction_gmres_nm_f64(
         Ok(out_nm.iter().map(|x| *x as f32).collect())
     };
 
-    let x_g = gmres_f32_try(matvec, &b_f32, dim, max_iter, GMRES_REL_TOL)?;
+    let x_g = gmres_f32_try(matvec, &b_f32, dim, dim, gmres_rel_tol)?;
     Ok(x_g.into_iter().map(|x| x as f64).collect())
 }
 
@@ -2568,6 +2578,18 @@ pub fn pnp_backward_euler_residual_l2_chain_host_f64<B: Backend<FloatElem = f32>
 #[cfg(all(test, feature = "electrochemistry-mvp"))]
 mod newton_chain_tests {
     use super::*;
+
+    #[test]
+    fn full_sg_gmres_residual_tol_refuses_non_positive() {
+        assert!(full_sg_gmres_newton_residual_tol_f32(0.0).is_err());
+        assert!(full_sg_gmres_newton_residual_tol_f32(-1e-8).is_err());
+        assert!(full_sg_gmres_newton_residual_tol_f32(f64::NAN).is_err());
+        assert!(full_sg_gmres_newton_residual_tol_f32(f64::INFINITY).is_err());
+        match full_sg_gmres_newton_residual_tol_f32(1e-10) {
+            Ok(v) => assert!((v - 1e-10_f32).abs() < 1e-20_f32),
+            Err(_) => panic!("finite positive residual_tol must be accepted"),
+        }
+    }
 
     #[test]
     fn band_lu_identity_two_by_two_full_envelope_matches_dense() {

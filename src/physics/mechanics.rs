@@ -574,11 +574,11 @@ impl VectorMechanicsSolver {
         #[cfg(not(feature = "mechanics-adjoint"))]
         let pcg_report = {
             let mut report = BarNetworkPcgReport::default();
-            let max_it = inner_cfg
-                .max_cg_iterations
-                .max(1)
-                .min(n_v.saturating_mul(3).max(1));
-            let rel_tol = inner_cfg.pcg_tolerance.max(inner_cfg.cg_tolerance).max(0.0);
+            // f32 lane: honour caller `max_cg_iterations`; exit on configured relative residual
+            // (`pcg_tolerance` / `cg_tolerance` via [`BarNetworkPcgReport::rel_tol_from_cfg`]) — not
+            // the legacy `min(max_cg, 3N)` early cap (ill-conditioned nets can need >3N passes).
+            let max_it = inner_cfg.max_cg_iterations.max(1);
+            let rel_tol = BarNetworkPcgReport::rel_tol_from_cfg(inner_cfg);
             for b in 0..batch {
                 let p_mask = boundary_mask.clone().slice([b..b + 1, 0..n_v, 0..3]);
                 let f_b = body_force_solve.clone().slice([b..b + 1, 0..n_v, 0..3]);
@@ -1419,6 +1419,27 @@ mod tests {
     use burn_ndarray::{NdArray, NdArrayDevice};
 
     type B = NdArray<f32>;
+
+    #[test]
+    fn bar_network_pcg_report_refuses_converged_when_rel_tol_non_positive() {
+        let cfg = MechanicsInnerLoopConfig {
+            max_cg_iterations: 500,
+            cg_tolerance: 0.0,
+            pcg_tolerance: 0.0,
+            use_preconditioner: true,
+            max_equilibrium_substeps: 1,
+        };
+        assert_eq!(BarNetworkPcgReport::rel_tol_from_cfg(&cfg), 0.0);
+        let report = BarNetworkPcgReport {
+            iterations: 1,
+            rel_residual: 0.0,
+            stiffness_scale: 1.0,
+            e_ref: 1.0,
+            dx_char: 1.0,
+        };
+        assert!(!report.converged_with_cfg(&cfg));
+        assert!(report.ensure_converged(&cfg).is_err());
+    }
 
     #[test]
     fn mechanics_honest_posture_refuses_green_production_master_op5() {

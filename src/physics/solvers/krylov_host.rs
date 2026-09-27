@@ -87,15 +87,42 @@ pub fn krylov_host_posture_honest(probe: &KrylovHostPostureProbe) -> bool {
 }
 
 const GMRES_CTX: &str = "gmres_f32_try";
+const BASIS_EXCEEDS_SLOTS_CTX: &str = "gmres_f32_try: BasisExceedsSlots";
+
+/// Refuse when the Arnoldi basis would grow past `restart_m` stored columns (initial direction included).
+fn refuse_basis_exceeds_slots(restart_m: usize, basis_len: usize) -> PhysicsError {
+    PhysicsError::BufferLength {
+        context: BASIS_EXCEEDS_SLOTS_CTX,
+        expected: restart_m.saturating_add(1),
+        got: basis_len,
+    }
+}
 
 /// GMRES without restart: solve \(A x = b\) with matrix-free \(A\) via fallible `matvec`.
 ///
 /// Any `Err` from `matvec` aborts the solve and is returned — no panics on residual assembly failure.
+///
+/// External callers still pass `max_iter`; that value is read as the Krylov restart length `restart_m`
+/// until call sites migrate to an explicit parameter (see cell receipt follow-up).
 pub fn gmres_f32_try<F>(
-    mut matvec: F,
+    matvec: F,
     b: &[f32],
     n: usize,
     max_iter: usize,
+    rel_tol: f32,
+) -> Result<Vec<f32>, PhysicsError>
+where
+    F: FnMut(&[f32]) -> Result<Vec<f32>, PhysicsError>,
+{
+    gmres_f32_try_with_restart_m(matvec, b, n, max_iter, rel_tol)
+}
+
+/// Same as [`gmres_f32_try`] with an explicit Krylov restart / basis-width cap (`restart_m`).
+fn gmres_f32_try_with_restart_m<F>(
+    mut matvec: F,
+    b: &[f32],
+    n: usize,
+    restart_m: usize,
     rel_tol: f32,
 ) -> Result<Vec<f32>, PhysicsError>
 where
@@ -111,9 +138,9 @@ where
             got: b.len(),
         });
     }
-    if max_iter == 0 {
+    if restart_m == 0 {
         return Err(PhysicsError::InvariantViolation {
-            context: "gmres_f32_try: max_iter=0",
+            context: "gmres_f32_try: restart_m=0",
         });
     }
     if rel_tol <= 0.0_f32 {
@@ -127,7 +154,7 @@ where
         return Ok(vec![0.0_f32; n]);
     }
 
-    let m_max = max_iter.min(n);
+    let m_max = restart_m.min(n);
     let mut v: Vec<Vec<f32>> = Vec::with_capacity(m_max + 1);
     let mut v0 = vec![0.0_f32; n];
     let inv_beta = 1.0_f32 / beta;
@@ -176,6 +203,11 @@ where
             h_cols.push(h_col);
             let y = solve_upper_hessenberg_triangular(&h_cols, &g, j + 1)?;
             return reconstruct_solution_try(&v, &y, b, &mut matvec, beta, rel_tol);
+        }
+
+        let next_basis_len = v.len().saturating_add(1);
+        if next_basis_len > restart_m.saturating_add(1) {
+            return Err(refuse_basis_exceeds_slots(restart_m, next_basis_len));
         }
 
         let mut v_next = vec![0.0_f32; n];
@@ -230,7 +262,7 @@ where
     F: FnMut(&[f32]) -> Vec<f32>,
 {
     let mut matvec = matvec;
-    gmres_f32_try(|v| Ok(matvec(v)), b, n, max_iter, rel_tol)
+    gmres_f32_try_with_restart_m(|v| Ok(matvec(v)), b, n, max_iter, rel_tol)
 }
 
 fn solve_upper_hessenberg_triangular(
@@ -312,9 +344,11 @@ where
 #[cfg(test)]
 mod tests {
     use super::{
-        gmres_f32, gmres_f32_try, krylov_host_honest_posture_bundle, krylov_host_posture_honest,
+        gmres_f32, gmres_f32_try, gmres_f32_try_with_restart_m,
+        krylov_host_honest_posture_bundle, krylov_host_posture_honest,
         KRYLOV_HOST_GMRES_LANDED, KRYLOV_HOST_HONEST_FENCE, KRYLOV_HOST_MASTER, KRYLOV_HOST_OP5,
         KRYLOV_HOST_PHYSICS_GREEN, KRYLOV_HOST_PRODUCTION_WIRED, W29_KRYLOV_HOST_DEEPEN_CELL,
+        BASIS_EXCEEDS_SLOTS_CTX,
     };
     use crate::physics::PhysicsError;
 
@@ -408,11 +442,11 @@ mod tests {
         let n = 2usize;
         let b = vec![1.0_f32, 0.0_f32];
         let err_iter = gmres_f32(|v: &[f32]| v.to_vec(), &b, n, 0, 1e-5_f32)
-            .expect_err("max_iter=0 must InvariantViolation");
+            .expect_err("max_iter=0 maps to restart_m=0 and must InvariantViolation");
         assert!(
             matches!(
                 err_iter,
-                PhysicsError::InvariantViolation { context } if context.contains("max_iter=0")
+                PhysicsError::InvariantViolation { context } if context.contains("restart_m=0")
             ),
             "{err_iter:?}"
         );
@@ -425,6 +459,46 @@ mod tests {
             ),
             "{err_tol:?}"
         );
+    }
+
+    #[test]
+    fn gmres_rejects_restart_m_zero_precondition() {
+        // Precondition: restart_m = 0 on the explicit inner driver (public API still uses max_iter slot).
+        let n = 2usize;
+        let b = vec![1.0_f32, 0.0_f32];
+        let err = gmres_f32_try_with_restart_m(
+            |v: &[f32]| Ok(v.to_vec()),
+            &b,
+            n,
+            0,
+            1e-5_f32,
+        )
+        .expect_err("restart_m=0 must refuse before matvec");
+        assert!(
+            matches!(
+                err,
+                PhysicsError::InvariantViolation { context } if context.contains("restart_m=0")
+            ),
+            "{err:?}"
+        );
+    }
+
+    #[test]
+    fn gmres_basis_exceeds_slots_refusal_shape() {
+        // Precondition: basis would exceed restart_m + 1 stored directions (BasisExceedsSlots context).
+        let err = super::refuse_basis_exceeds_slots(4, 6);
+        match err {
+            PhysicsError::BufferLength {
+                context,
+                expected,
+                got,
+            } => {
+                assert_eq!(context, BASIS_EXCEEDS_SLOTS_CTX);
+                assert_eq!(expected, 5);
+                assert_eq!(got, 6);
+            }
+            other => panic!("expected BasisExceedsSlots BufferLength, got {other:?}"),
+        }
     }
 
     #[test]

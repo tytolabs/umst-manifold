@@ -942,6 +942,18 @@ impl Default for ThmcNewtonConfig {
     }
 }
 
+/// Precondition for implicit thermal CG: `residual_tol` must be finite and strictly positive.
+pub fn thmc_thermal_implicit_residual_tol_precondition(
+    residual_tol: f64,
+) -> Result<(), PhysicsError> {
+    if !residual_tol.is_finite() || residual_tol <= 0.0 {
+        return Err(PhysicsError::InvariantViolation {
+            context: "thmc_thermal_implicit_residual_tol_precondition: residual_tol must be finite and > 0",
+        });
+    }
+    Ok(())
+}
+
 /// Opt-in **multi-step damped Newton** on the backward-Euler \((T,\alpha)\) block (implementation:
 /// `ThmcImplicitEulerThermalReactionExtentResidual::damped_newton_iterations` in `thmc_residual.rs`).
 ///
@@ -1045,6 +1057,7 @@ impl ThmcSolver {
         boundary_mask: Tensor<B, 3>,
         cfg: ThmcNewtonConfig,
     ) -> Result<(Tensor<B, 3>, Vec<f32>), PhysicsError> {
+        thmc_thermal_implicit_residual_tol_precondition(cfg.residual_tolerance as f64)?;
         let device = t_old.device();
         let dims = t_old.dims();
         // No damage attenuation for this verification path; full conductivity on every edge.
@@ -1079,10 +1092,13 @@ impl ThmcSolver {
         );
 
         let bc_shape = [dims[0], 1, 1];
-        for _ in 0..cfg.max_iterations {
-            if residual_norms.last().copied().unwrap_or(f32::INFINITY) < cfg.residual_tolerance {
+        let cg_step_cap = cfg.max_iterations;
+        let mut cg_steps = 0usize;
+        while residual_norms.last().copied().unwrap_or(f32::INFINITY) >= cfg.residual_tolerance {
+            if cg_steps >= cg_step_cap {
                 break;
             }
+            cg_steps += 1;
             let ap = a_op(p.clone()).mul(boundary_mask.clone());
             let pap = p.clone().mul(ap.clone()).sum().clamp_min(1.0e-30_f32);
             let alpha_t = rs_old_t.clone().div(pap).mul_scalar(cfg.damping);
@@ -1277,6 +1293,28 @@ mod w29_081_thmc_deepen_tests {
         assert!(cfg.iterations >= 2);
         assert!(cfg.damping > 0.0_f32 && cfg.damping <= 1.0_f32);
         assert!(cfg.fd_eps > 0.0_f32);
+    }
+
+    #[test]
+    fn thmc_thermal_implicit_residual_tol_precondition_accepts_positive_finite() {
+        thmc_thermal_implicit_residual_tol_precondition(1.0e-6_f64)
+            .expect("positive finite residual_tol must pass precondition");
+    }
+
+    #[test]
+    fn thmc_thermal_implicit_residual_tol_precondition_refuses_nonpositive() {
+        let err = thmc_thermal_implicit_residual_tol_precondition(0.0_f64)
+            .expect_err("zero residual_tol must refuse");
+        assert!(
+            err.to_string().contains("residual_tol"),
+            "unexpected err: {err}"
+        );
+        let err_neg = thmc_thermal_implicit_residual_tol_precondition(-1.0e-3_f64)
+            .expect_err("negative residual_tol must refuse");
+        assert!(
+            err_neg.to_string().contains("residual_tol"),
+            "unexpected err: {err_neg}"
+        );
     }
 }
 

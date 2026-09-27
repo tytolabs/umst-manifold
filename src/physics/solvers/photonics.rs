@@ -47,7 +47,7 @@
 //!   including a cheap **\(d_1\!\circ\!d_0\approx 0\)** witness via [`dec_primal_max_abs_d1_of_scalar_gradient`].
 //!   **Solve:** **CSR matvec CG** first when \(N\le\) [`PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY`] and **`UMST_PHOTONICS_DEC_PATCH_CSR_INNER`** is not `off` (`auto` default); Gauss–Jordan on \(3N\) unknowns as fallback when \(N\le\) [`PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT`] (overridable to **0**
 //!   via `UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV=1` for tests), then **CSR** retry when **`auto`** and dense failed, else **capped
-//!   matrix-free CG** up to [`PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV`] with [`PHOTONICS_DEC_PATCH_KRYLOV_MAX_ITERS`]
+//!   matrix-free CG** up to [`PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV`] with caller [`MechanicsInnerLoopConfig::cg_tolerance`] / [`MechanicsInnerLoopConfig::max_cg_iterations`]
 //!   — not a sparse-factorized production volumetric path.
 //!
 //! **Shipped elsewhere (same repo, not called from this solver path):**
@@ -630,6 +630,30 @@ pub enum DecPatchCurlConstitutive {
     EpsInvSymAvg,
 }
 
+/// Attestation that the gauge-pinned patch operator is **SPD** enough to admit CG.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DecPatchInnerCgSpdFlag {
+    /// SPD witness succeeded for this lossless material + constitutive pairing.
+    SpdProven,
+    /// CG must refuse without iterating (operator SPD not proved).
+    NotSpdProven,
+}
+
+/// Typed outcome for DEC patch **inner CG** (matrix-free or CSR matvec).
+#[derive(Clone, Debug, PartialEq)]
+pub enum DecPatchInnerCgOutcome {
+    Converged(Vec<f32>),
+    Refused(DecPatchInnerCgRefusal),
+}
+
+/// Why inner CG refused or failed tolerance exit.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum DecPatchInnerCgRefusal {
+    NotSpdProven,
+    IndefiniteConjugateDirection,
+    ResidualAboveTolerance { rel_residual: f32 },
+}
+
 /// Injected knobs for the **small dense** [`PhotonicsDecFacesPatch`] solve branch.
 ///
 /// Pure config — **no `std::env` reads** in the physics core. Host / CLI layers may parse
@@ -858,7 +882,8 @@ pub const PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV: usize = 512;
 #[cfg(feature = "photonics")]
 pub const PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY: usize = 128;
 
-/// Maximum **inner** CG iterations on the patch system (early exit on relative residual).
+/// Historical inner CG iteration budget (superseded by [`MechanicsInnerLoopConfig::max_cg_iterations`]
+/// plus relative residual [`MechanicsInnerLoopConfig::cg_tolerance`] on the patch CG path).
 #[cfg(feature = "photonics")]
 pub const PHOTONICS_DEC_PATCH_KRYLOV_MAX_ITERS: usize = 512;
 
@@ -1067,7 +1092,6 @@ impl PhotonicsSolver {
 
         #[cfg(feature = "photonics")]
         {
-            let _ = cg;
             let d = e_field.dims();
             if d.len() != 3 || d[2] != 3 {
                 return Err(PhysicsError::ShapeMismatch {
@@ -1151,6 +1175,7 @@ impl PhotonicsSolver {
                         self.frequency_hz,
                         patch,
                         self.dec_patch_config,
+                        cg,
                     );
                 }
                 return Err(PhysicsError::UnsupportedLayout {
@@ -1292,7 +1317,90 @@ fn vec_l2_f32(a: &[f32]) -> f32 {
     vec_dot_f32(a, a).sqrt()
 }
 
-/// **Capped** conjugate-gradient solve for the gauge-pinned patch operator (matrix-free matvec only).
+#[cfg(feature = "photonics")]
+fn dec_patch_sym3_spd_witness(a9: &[f32; 9]) -> bool {
+    if (a9[1] - a9[3]).abs() > 1e-4_f32
+        || (a9[2] - a9[6]).abs() > 1e-4_f32
+        || (a9[5] - a9[7]).abs() > 1e-4_f32
+    {
+        return false;
+    }
+    let a00 = a9[0];
+    let a01 = a9[1];
+    let a02 = a9[2];
+    let a11 = a9[4];
+    let a12 = a9[5];
+    let a22 = a9[8];
+    if !(a00.is_finite() && a00 > 0.0_f32) {
+        return false;
+    }
+    let m2 = a00 * a11 - a01 * a01;
+    if !(m2.is_finite() && m2 > 0.0_f32) {
+        return false;
+    }
+    let det = a00 * (a11 * a22 - a12 * a12) - a01 * (a01 * a22 - a12 * a02) + a02 * (a01 * a12 - a11 * a02);
+    det.is_finite() && det > 0.0_f32
+}
+
+/// Lossless patch inner CG: witness nodal \(\varepsilon\) SPD before calling CG.
+#[cfg(feature = "photonics")]
+pub fn dec_patch_inner_cg_spd_flag(
+    lossy: bool,
+    eps_scalar: Option<&[f32]>,
+    eps_tensor9: Option<&[f32]>,
+    curl_constitutive: DecPatchCurlConstitutive,
+) -> DecPatchInnerCgSpdFlag {
+    if lossy {
+        return DecPatchInnerCgSpdFlag::NotSpdProven;
+    }
+    match curl_constitutive {
+        DecPatchCurlConstitutive::EpsInvSymAvg => {
+            if let Some(s) = eps_scalar {
+                if s.iter().all(|&v| v.is_finite() && v > 0.0_f32) {
+                    return DecPatchInnerCgSpdFlag::SpdProven;
+                }
+            }
+            DecPatchInnerCgSpdFlag::NotSpdProven
+        }
+        DecPatchCurlConstitutive::EpsSymAvg => {
+            if let Some(s) = eps_scalar {
+                if s.iter().all(|&v| v.is_finite() && v > 0.0_f32) {
+                    return DecPatchInnerCgSpdFlag::SpdProven;
+                }
+            }
+            if let Some(t9) = eps_tensor9 {
+                let n = t9.len() / 9;
+                if n > 0 && t9.len() == n * 9 {
+                    let mut ok = true;
+                    for i in 0..n {
+                        let b = i * 9;
+                        let block: [f32; 9] = [
+                            t9[b],
+                            t9[b + 1],
+                            t9[b + 2],
+                            t9[b + 3],
+                            t9[b + 4],
+                            t9[b + 5],
+                            t9[b + 6],
+                            t9[b + 7],
+                            t9[b + 8],
+                        ];
+                        if !dec_patch_sym3_spd_witness(&block) {
+                            ok = false;
+                            break;
+                        }
+                    }
+                    if ok {
+                        return DecPatchInnerCgSpdFlag::SpdProven;
+                    }
+                }
+            }
+            DecPatchInnerCgSpdFlag::NotSpdProven
+        }
+    }
+}
+
+/// Conjugate-gradient solve for the gauge-pinned patch operator (matrix-free matvec only).
 #[cfg(feature = "photonics")]
 #[allow(clippy::too_many_arguments)]
 fn solve_maxwell_dec_patch_conjugate_gradient(
@@ -1310,9 +1418,15 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
     b: &[f32],
     dim: usize,
     curl_constitutive: DecPatchCurlConstitutive,
-) -> Option<Vec<f32>> {
-    const REL_TOL: f32 = 1e-7_f32;
-    let max_iter = PHOTONICS_DEC_PATCH_KRYLOV_MAX_ITERS.min(dim.saturating_mul(8).max(64));
+    rel_tol: f32,
+    max_iter: usize,
+    spd: DecPatchInnerCgSpdFlag,
+) -> DecPatchInnerCgOutcome {
+    if spd == DecPatchInnerCgSpdFlag::NotSpdProven {
+        return DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::NotSpdProven);
+    }
+    let rel_tol = rel_tol.max(0.0_f32);
+    let max_iter = max_iter.max(1);
 
     let mut x = vec![0.0_f32; dim];
     let mut r = vec![0.0_f32; dim];
@@ -1341,8 +1455,9 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
     }
     let bn = vec_l2_f32(b).max(1e-30_f32);
     let mut rn = vec_l2_f32(&r);
-    if rn / bn < REL_TOL {
-        return Some(x);
+    let mut rel_res = rn / bn;
+    if rel_tol > 0.0_f32 && rel_res < rel_tol {
+        return DecPatchInnerCgOutcome::Converged(x);
     }
     p.copy_from_slice(&r);
     let mut r_dot = vec_dot_f32(&r, &r);
@@ -1371,7 +1486,9 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
                 target: "umst_manifold::photonics",
                 "solve_maxwell_dec_patch_conjugate_gradient: breakdown (p·Ap={p_ap:.3e})"
             );
-            return None;
+            return DecPatchInnerCgOutcome::Refused(
+                DecPatchInnerCgRefusal::IndefiniteConjugateDirection,
+            );
         }
         let alpha = r_dot / p_ap;
         for i in 0..dim {
@@ -1379,17 +1496,20 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
             r[i] -= alpha * ap[i];
         }
         rn = vec_l2_f32(&r);
-        if rn / bn < REL_TOL {
+        rel_res = rn / bn;
+        if rel_tol > 0.0_f32 && rel_res < rel_tol {
             tracing::debug!(
                 target: "umst_manifold::photonics",
                 "solve_maxwell_dec_patch_conjugate_gradient: converged (rel residual {:.3e})",
-                rn / bn
+                rel_res
             );
-            return Some(x);
+            return DecPatchInnerCgOutcome::Converged(x);
         }
         let r_dot_new = vec_dot_f32(&r, &r);
         if !r_dot_new.is_finite() || r_dot_new <= 0.0_f32 {
-            return None;
+            return DecPatchInnerCgOutcome::Refused(
+                DecPatchInnerCgRefusal::IndefiniteConjugateDirection,
+            );
         }
         let beta = r_dot_new / r_dot;
         for i in 0..dim {
@@ -1399,10 +1519,12 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
     }
     tracing::warn!(
         target: "umst_manifold::photonics",
-        "solve_maxwell_dec_patch_conjugate_gradient: exceeded max_iter={max_iter} (rel residual {:.3e})",
-        rn / bn
+        "solve_maxwell_dec_patch_conjugate_gradient: rel residual {:.3e} above tolerance {:.3e} after {} iterations",
+        rel_res,
+        rel_tol,
+        max_iter
     );
-    None
+    DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::ResidualAboveTolerance { rel_residual: rel_res })
 }
 
 /// **COO** triplets \((\texttt{row},\texttt{col},\texttt{val})\) for the **gauge-pinned** patch Maxwell
@@ -1578,7 +1700,7 @@ pub fn dec_patch_csr_matvec_f32(
     }
 }
 
-/// **Capped** conjugate-gradient solve using an explicit **CSR** matvec for the same gauge-pinned
+/// Conjugate-gradient solve using an explicit **CSR** matvec for the same gauge-pinned
 /// patch operator as [`dec_patch_operator_apply_gauged`] / [`solve_maxwell_dec_patch_conjugate_gradient`].
 #[cfg(feature = "photonics")]
 fn solve_maxwell_dec_patch_conjugate_gradient_csr(
@@ -1587,9 +1709,15 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
     vals: &[f32],
     b: &[f32],
     dim: usize,
-) -> Option<Vec<f32>> {
-    const REL_TOL: f32 = 1e-7_f32;
-    let max_iter = PHOTONICS_DEC_PATCH_KRYLOV_MAX_ITERS.min(dim.saturating_mul(8).max(64));
+    rel_tol: f32,
+    max_iter: usize,
+    spd: DecPatchInnerCgSpdFlag,
+) -> DecPatchInnerCgOutcome {
+    if spd == DecPatchInnerCgSpdFlag::NotSpdProven {
+        return DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::NotSpdProven);
+    }
+    let rel_tol = rel_tol.max(0.0_f32);
+    let max_iter = max_iter.max(1);
 
     let mut x = vec![0.0_f32; dim];
     let mut r = vec![0.0_f32; dim];
@@ -1602,8 +1730,9 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
     }
     let bn = vec_l2_f32(b).max(1e-30_f32);
     let mut rn = vec_l2_f32(&r);
-    if rn / bn < REL_TOL {
-        return Some(x);
+    let mut rel_res = rn / bn;
+    if rel_tol > 0.0_f32 && rel_res < rel_tol {
+        return DecPatchInnerCgOutcome::Converged(x);
     }
     p.copy_from_slice(&r);
     let mut r_dot = vec_dot_f32(&r, &r);
@@ -1617,7 +1746,9 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
                 target: "umst_manifold::photonics",
                 "solve_maxwell_dec_patch_conjugate_gradient_csr: breakdown (p·Ap={p_ap:.3e})"
             );
-            return None;
+            return DecPatchInnerCgOutcome::Refused(
+                DecPatchInnerCgRefusal::IndefiniteConjugateDirection,
+            );
         }
         let alpha = r_dot / p_ap;
         for i in 0..dim {
@@ -1625,17 +1756,20 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
             r[i] -= alpha * ap[i];
         }
         rn = vec_l2_f32(&r);
-        if rn / bn < REL_TOL {
+        rel_res = rn / bn;
+        if rel_tol > 0.0_f32 && rel_res < rel_tol {
             tracing::debug!(
                 target: "umst_manifold::photonics",
                 "solve_maxwell_dec_patch_conjugate_gradient_csr: converged (rel residual {:.3e})",
-                rn / bn
+                rel_res
             );
-            return Some(x);
+            return DecPatchInnerCgOutcome::Converged(x);
         }
         let r_dot_new = vec_dot_f32(&r, &r);
         if !r_dot_new.is_finite() || r_dot_new <= 0.0_f32 {
-            return None;
+            return DecPatchInnerCgOutcome::Refused(
+                DecPatchInnerCgRefusal::IndefiniteConjugateDirection,
+            );
         }
         let beta = r_dot_new / r_dot;
         for i in 0..dim {
@@ -1645,10 +1779,12 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
     }
     tracing::warn!(
         target: "umst_manifold::photonics",
-        "solve_maxwell_dec_patch_conjugate_gradient_csr: exceeded max_iter={max_iter} (rel residual {:.3e})",
-        rn / bn
+        "solve_maxwell_dec_patch_conjugate_gradient_csr: rel residual {:.3e} above tolerance {:.3e} after {} iterations",
+        rel_res,
+        rel_tol,
+        max_iter
     );
-    None
+    DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::ResidualAboveTolerance { rel_residual: rel_res })
 }
 
 /// Stacked real operator for \(\mathbf{E}=\mathbf{E}'+i\mathbf{E}''\) with nodal scalar \(\varepsilon''\)
@@ -1866,7 +2002,10 @@ fn dec_patch_try_csr_inner_lossless(
     prefer_csr_inner: bool,
     csr_inner: DecPatchCsrInnerMode,
     curl_constitutive: DecPatchCurlConstitutive,
-) -> Option<Vec<f32>> {
+    rel_tol: f32,
+    max_iter: usize,
+    spd: DecPatchInnerCgSpdFlag,
+) -> Option<DecPatchInnerCgOutcome> {
     if n > PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY {
         tracing::debug!(
             target: "umst_manifold::photonics",
@@ -1910,7 +2049,11 @@ fn dec_patch_try_csr_inner_lossless(
         "dec_patch_try_csr_inner_lossless: CSR matvec CG (N={n}, nnz={})",
         va.len()
     );
-    solve_maxwell_dec_patch_conjugate_gradient_csr(&rp, &ci, &va, b, dim)
+    Some(
+        solve_maxwell_dec_patch_conjugate_gradient_csr(
+            &rp, &ci, &va, b, dim, rel_tol, max_iter, spd,
+        ),
+    )
 }
 
 /// Primal **SI edge lengths** \(\ell_e=\lVert \mathbf{x}_j-\mathbf{x}_i\rVert\) for each oriented edge in `edges_b1`
@@ -2269,6 +2412,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
     frequency_hz: f32,
     patch: &PhotonicsDecFacesPatch<'_, B>,
     dec_patch_config: PhotonicsDecPatchConfig,
+    inner: &MechanicsInnerLoopConfig,
 ) -> Result<Tensor<B, 3>, PhysicsError> {
     let n = e_field.dims()[1];
     if n > PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV {
@@ -2371,8 +2515,28 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
     let dense_node_cap_eff = dec_patch_effective_dense_node_cap(dec_patch_config.force_krylov);
     let csr_inner = dec_patch_config.csr_inner;
     let curl_constitutive = dec_patch_config.curl_constitutive;
+    let rel_tol = inner.pcg_tolerance.max(inner.cg_tolerance);
+    let max_iter = inner.max_cg_iterations.max(1);
+    let spd = dec_patch_inner_cg_spd_flag(
+        lossy,
+        eps_scalar.as_deref(),
+        eps_tensor9.as_deref(),
+        curl_constitutive,
+    );
     let mut lossless_dense_tried_failed = false;
     let mut sol: Option<Vec<f32>> = None;
+    let mut cg_refusal: Option<DecPatchInnerCgRefusal> = None;
+
+    let mut absorb_cg_outcome = |outcome: DecPatchInnerCgOutcome| {
+        match outcome {
+            DecPatchInnerCgOutcome::Converged(v) => {
+                sol = Some(v);
+            }
+            DecPatchInnerCgOutcome::Refused(r) => {
+                cg_refusal = Some(r);
+            }
+        }
+    };
 
     if lossy {
         let dim2 = 2 * dim;
@@ -2421,7 +2585,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
     } else {
         let under_csr_cap = n <= PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY;
         if csr_inner != DecPatchCsrInnerMode::Off && under_csr_cap {
-            sol = dec_patch_try_csr_inner_lossless(
+            if let Some(outcome) = dec_patch_try_csr_inner_lossless(
                 n,
                 n_edges,
                 &src,
@@ -2440,7 +2604,12 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
                 true,
                 csr_inner,
                 curl_constitutive,
-            );
+                rel_tol,
+                max_iter,
+                spd,
+            ) {
+                absorb_cg_outcome(outcome);
+            }
         }
         if sol.is_none() && n <= dense_node_cap_eff {
             let mut a = vec![0.0_f32; dim * dim];
@@ -2495,56 +2664,71 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
         }
     }
 
-    let sol = sol
-        .or_else(|| {
-            if lossy {
-                return None;
-            }
-            dec_patch_try_csr_inner_lossless(
-                n,
-                n_edges,
-                &src,
-                &tgt,
-                &coords,
-                k0,
-                eps_scalar.as_deref(),
-                eps_tensor9.as_deref(),
-                &faces_edge,
-                &faces_sign,
-                patch.face_column_ranges,
-                &b,
-                dim,
-                dense_node_cap_eff,
-                lossless_dense_tried_failed,
-                false,
-                csr_inner,
-                curl_constitutive,
-            )
-        })
-        .or_else(|| {
-            if lossy {
-                return None;
-            }
-            solve_maxwell_dec_patch_conjugate_gradient(
-                n,
-                n_edges,
-                &src,
-                &tgt,
-                &coords,
-                k0,
-                eps_scalar.as_deref(),
-                eps_tensor9.as_deref(),
-                &faces_edge,
-                &faces_sign,
-                patch.face_column_ranges,
-                &b,
-                dim,
-                curl_constitutive,
-            )
-        })
-        .ok_or(PhysicsError::KrylovDiverged {
-            context: "solve_maxwell_dec_patch_direct: patch inner solve did not converge",
-        })?;
+    if sol.is_none() && !lossy {
+        if let Some(outcome) = dec_patch_try_csr_inner_lossless(
+            n,
+            n_edges,
+            &src,
+            &tgt,
+            &coords,
+            k0,
+            eps_scalar.as_deref(),
+            eps_tensor9.as_deref(),
+            &faces_edge,
+            &faces_sign,
+            patch.face_column_ranges,
+            &b,
+            dim,
+            dense_node_cap_eff,
+            lossless_dense_tried_failed,
+            false,
+            csr_inner,
+            curl_constitutive,
+            rel_tol,
+            max_iter,
+            spd,
+        ) {
+            absorb_cg_outcome(outcome);
+        }
+    }
+    if sol.is_none() && !lossy {
+        absorb_cg_outcome(solve_maxwell_dec_patch_conjugate_gradient(
+            n,
+            n_edges,
+            &src,
+            &tgt,
+            &coords,
+            k0,
+            eps_scalar.as_deref(),
+            eps_tensor9.as_deref(),
+            &faces_edge,
+            &faces_sign,
+            patch.face_column_ranges,
+            &b,
+            dim,
+            curl_constitutive,
+            rel_tol,
+            max_iter,
+            spd,
+        ));
+    }
+
+    let sol = match sol {
+        Some(v) => v,
+        None => {
+            return Err(match cg_refusal {
+                Some(DecPatchInnerCgRefusal::NotSpdProven)
+                | Some(DecPatchInnerCgRefusal::IndefiniteConjugateDirection) => {
+                    PhysicsError::IndefiniteSystem {
+                        context: "solve_maxwell_dec_patch_direct: patch CG refused (non-SPD or indefinite step)",
+                    }
+                }
+                _ => PhysicsError::KrylovDiverged {
+                    context: "solve_maxwell_dec_patch_direct: patch inner solve did not meet cg_tolerance",
+                },
+            });
+        }
+    };
 
     let device = e_field.device();
     let shape = Shape::new([1, n, 3]);
@@ -2756,8 +2940,10 @@ mod photonics_sparse_csr_cg_parity_tests {
         dec_patch_csr_from_sorted_coo_f32, dec_patch_csr_matvec_f32,
         dec_patch_maxwell_gauged_operator_csr_coo, dec_patch_operator_apply_gauged,
         solve_maxwell_dec_patch_conjugate_gradient, solve_maxwell_dec_patch_conjugate_gradient_csr,
-        DecPatchCurlConstitutive,
+        DecPatchCurlConstitutive, DecPatchInnerCgOutcome, DecPatchInnerCgRefusal,
+        DecPatchInnerCgSpdFlag,
     };
+    use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
 
     #[allow(clippy::type_complexity)]
     fn quad_split_host_layout() -> (
@@ -2903,6 +3089,9 @@ mod photonics_sparse_csr_cg_parity_tests {
             }
         };
 
+        let inner = MechanicsInnerLoopConfig::default();
+        let rel_tol = inner.pcg_tolerance.max(inner.cg_tolerance);
+        let max_iter = inner.max_cg_iterations.max(1);
         let x_mf = solve_maxwell_dec_patch_conjugate_gradient(
             n,
             n_e,
@@ -2918,17 +3107,29 @@ mod photonics_sparse_csr_cg_parity_tests {
             &b,
             dim,
             DecPatchCurlConstitutive::EpsSymAvg,
+            rel_tol,
+            max_iter,
+            DecPatchInnerCgSpdFlag::SpdProven,
         );
         let x_mf = match x_mf {
-            Some(v) => v,
-            None => {
+            DecPatchInnerCgOutcome::Converged(v) => v,
+            DecPatchInnerCgOutcome::Refused(_) => {
                 assert!(false, "matrix-free cg");
                 return;
             }
         };
-        let x_csr = match solve_maxwell_dec_patch_conjugate_gradient_csr(&rp, &ci, &va, &b, dim) {
-            Some(v) => v,
-            None => {
+        let x_csr = match solve_maxwell_dec_patch_conjugate_gradient_csr(
+            &rp,
+            &ci,
+            &va,
+            &b,
+            dim,
+            rel_tol,
+            max_iter,
+            DecPatchInnerCgSpdFlag::SpdProven,
+        ) {
+            DecPatchInnerCgOutcome::Converged(v) => v,
+            DecPatchInnerCgOutcome::Refused(_) => {
                 assert!(false, "csr cg");
                 return;
             }
@@ -2941,6 +3142,45 @@ mod photonics_sparse_csr_cg_parity_tests {
         assert!(
             mx < 5e-4_f32,
             "CSR CG vs matrix-free CG max abs diff {mx:.3e}"
+        );
+    }
+}
+
+/// Inner CG requires [`DecPatchInnerCgSpdFlag::SpdProven`]; otherwise refuse without iterating.
+#[cfg(all(test, feature = "photonics"))]
+mod dec_patch_inner_cg_spd_precondition_tests {
+    use super::{
+        solve_maxwell_dec_patch_conjugate_gradient, DecPatchCurlConstitutive,
+        DecPatchInnerCgOutcome, DecPatchInnerCgRefusal, DecPatchInnerCgSpdFlag,
+    };
+
+    #[test]
+    fn inner_cg_refuses_when_spd_not_proven() {
+        let n = 2usize;
+        let dim = 3 * n;
+        let b = vec![1.0_f32, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let outcome = solve_maxwell_dec_patch_conjugate_gradient(
+            n,
+            1,
+            &[0_i64],
+            &[1_i64],
+            &[0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+            1.0,
+            Some(&[1.0, 1.0]),
+            None,
+            &[0_i64],
+            &[1.0],
+            &[(0, 1)],
+            &b,
+            dim,
+            DecPatchCurlConstitutive::EpsSymAvg,
+            1e-6,
+            8,
+            DecPatchInnerCgSpdFlag::NotSpdProven,
+        );
+        assert_eq!(
+            outcome,
+            DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::NotSpdProven)
         );
     }
 }

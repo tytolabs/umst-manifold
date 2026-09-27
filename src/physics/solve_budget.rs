@@ -4,6 +4,11 @@
 //!
 //! Low η_cog tightens PCG iteration cap and enables warm-start / op-cache.
 //!
+//! **Track C migration:** [`map_cockpit_solve_budget`] maps explicit joule allowances to
+//! [`CockpitEnergyBudget`]. A bare dimensionless η_cog yields [`UnmeasuredBudget`] — joules are
+//! not invented from η. [`q1hex_opts_from_cockpit_budget_lane`] never emits a literal
+//! `pcg_max_iter` cap (termination is energy-bounded upstream).
+//!
 //! # Honest boundary (W29-070)
 //!
 //! Pure η_cog → PCG-cap / warm-start / op-cache mapping for Q1-hex. JSON is parsed only
@@ -186,6 +191,133 @@ pub fn cockpit_from_external_json(json: &str) -> Result<CockpitSnapshot, Cockpit
         .unwrap_or(0.0);
     let tokens_per_sec = raw.tokens_per_sec.filter(|v| v.is_finite()).unwrap_or(0.0);
     Ok(CockpitSnapshot::new(eta_cog, tokens_per_sec, dignity))
+}
+
+/// Cockpit budget input at the physics functor boundary (no JSON).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum CockpitBudgetInput {
+    /// Dimensionless η_cog only — remaining energy is not measured on this path.
+    DimensionlessEta {
+        eta_cog: f64,
+    },
+    /// Operator- or meter-supplied remaining solve energy (joules) at a known temperature.
+    RemainingJoules {
+        joules: f64,
+        temperature_k: f64,
+    },
+}
+
+/// Energy budget could not be measured from η alone (honest absence — not an error).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct UnmeasuredBudget {
+    /// The dimensionless η that was offered without a joule meter.
+    pub eta_cog: f64,
+}
+
+/// Remaining solve energy when the caller supplied joules explicitly.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CockpitEnergyBudget {
+    remaining_joules: f64,
+    temperature_k: f64,
+}
+
+impl CockpitEnergyBudget {
+    /// Build a budget from finite, strictly positive joules and temperature (kelvin).
+    pub fn try_new(joules: f64, temperature_k: f64) -> Result<Self, CockpitBudgetRefuse> {
+        if !joules.is_finite() || joules <= 0.0 {
+            return Err(CockpitBudgetRefuse::NonPositiveJoules);
+        }
+        if !temperature_k.is_finite() || temperature_k <= 0.0 {
+            return Err(CockpitBudgetRefuse::NonPositiveTemperature);
+        }
+        Ok(Self {
+            remaining_joules: joules,
+            temperature_k,
+        })
+    }
+
+    /// Joules still available for the solve combinator.
+    #[must_use]
+    pub fn remaining_joules(self) -> f64 {
+        self.remaining_joules
+    }
+
+    /// Absolute temperature used with the Landauer floor (kelvin).
+    #[must_use]
+    pub fn temperature_k(self) -> f64 {
+        self.temperature_k
+    }
+}
+
+/// Why an explicit joule budget was refused (η-only paths use [`UnmeasuredBudget`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CockpitBudgetRefuse {
+    NonPositiveJoules,
+    NonPositiveTemperature,
+    NonFiniteEta,
+}
+
+/// Result of mapping [`CockpitBudgetInput`] — measured joules, honest unmeasured η, or refuse.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum CockpitSolveBudgetOutcome {
+    Measured(CockpitEnergyBudget),
+    Unmeasured(UnmeasuredBudget),
+    Refused(CockpitBudgetRefuse),
+}
+
+/// Map cockpit budget input to a typed energy outcome (no η→joule surrogate).
+#[must_use]
+pub fn map_cockpit_solve_budget(input: CockpitBudgetInput) -> CockpitSolveBudgetOutcome {
+    match input {
+        CockpitBudgetInput::DimensionlessEta { eta_cog } => {
+            if !eta_cog.is_finite() {
+                return CockpitSolveBudgetOutcome::Refused(CockpitBudgetRefuse::NonFiniteEta);
+            }
+            CockpitSolveBudgetOutcome::Unmeasured(UnmeasuredBudget { eta_cog })
+        }
+        CockpitBudgetInput::RemainingJoules { joules, temperature_k } => {
+            match CockpitEnergyBudget::try_new(joules, temperature_k) {
+                Ok(budget) => CockpitSolveBudgetOutcome::Measured(budget),
+                Err(refuse) => CockpitSolveBudgetOutcome::Refused(refuse),
+            }
+        }
+    }
+}
+
+/// Dimensionless η from a cockpit snapshot — energy remains [`UnmeasuredBudget`].
+#[must_use]
+pub fn map_cockpit_solve_budget_from_snapshot(snap: &CockpitSnapshot) -> CockpitSolveBudgetOutcome {
+    map_cockpit_solve_budget(CockpitBudgetInput::DimensionlessEta {
+        eta_cog: snap.eta_cog,
+    })
+}
+
+/// Warm-start / op-cache knobs from η without emitting a compiled PCG iteration cap.
+#[must_use]
+pub fn q1hex_opts_from_cockpit_budget_lane(
+    _snap: &CockpitSnapshot,
+    _outcome: &CockpitSolveBudgetOutcome,
+) -> Q1HexSolveOptions {
+    Q1HexSolveOptions {
+        pcg_warm_start: true,
+        use_operator_cache: true,
+        pcg_max_iter: None,
+        ..Default::default()
+    }
+}
+
+/// Overlay migrated cockpit budget lane onto base options (no literal `pcg_max_iter`).
+#[must_use]
+pub fn apply_cockpit_budget_lane(
+    mut base: Q1HexSolveOptions,
+    snap: &CockpitSnapshot,
+    outcome: &CockpitSolveBudgetOutcome,
+) -> Q1HexSolveOptions {
+    let cockpit = q1hex_opts_from_cockpit_budget_lane(snap, outcome);
+    base.pcg_max_iter = cockpit.pcg_max_iter;
+    base.pcg_warm_start = cockpit.pcg_warm_start;
+    base.use_operator_cache = cockpit.use_operator_cache;
+    base
 }
 
 /// Map cockpit efficiency to Q1-hex solve knobs.
@@ -390,5 +522,64 @@ mod tests {
             cockpit_from_external_json(json_nan),
             Err(CockpitParseError::Json(_))
         ));
+    }
+
+    #[test]
+    fn bare_eta_refuses_invented_joules_and_emits_no_pcg_cap() {
+        let outcome = map_cockpit_solve_budget(CockpitBudgetInput::DimensionlessEta { eta_cog: 0.42 });
+        match outcome {
+            CockpitSolveBudgetOutcome::Unmeasured(u) => {
+                assert!((u.eta_cog - 0.42).abs() < 1e-12);
+            }
+            other => panic!("bare η must not invent joules: {other:?}"),
+        }
+
+        let snap = CockpitSnapshot::new(0.42, 120.0, 1.0);
+        assert!(matches!(
+            map_cockpit_solve_budget_from_snapshot(&snap),
+            CockpitSolveBudgetOutcome::Unmeasured(_)
+        ));
+
+        let opts = q1hex_opts_from_cockpit_budget_lane(&snap, &outcome);
+        assert!(opts.pcg_max_iter.is_none());
+        let overlaid = apply_cockpit_budget_lane(
+            Q1HexSolveOptions {
+                pcg_max_iter: Some(999),
+                ..Default::default()
+            },
+            &snap,
+            &outcome,
+        );
+        assert!(overlaid.pcg_max_iter.is_none());
+    }
+
+    #[test]
+    fn explicit_positive_joule_budget_is_measured() {
+        let outcome = map_cockpit_solve_budget(CockpitBudgetInput::RemainingJoules {
+            joules: 3.5e-9,
+            temperature_k: 293.15,
+        });
+        let budget = match outcome {
+            CockpitSolveBudgetOutcome::Measured(b) => b,
+            other => panic!("positive joules must map to Measured: {other:?}"),
+        };
+        assert!((budget.remaining_joules() - 3.5e-9).abs() < 1e-18);
+        assert!((budget.temperature_k() - 293.15).abs() < 1e-9);
+
+        let snap = CockpitSnapshot::new(0.9, 500.0, 2.0);
+        let opts = q1hex_opts_from_cockpit_budget_lane(&snap, &outcome);
+        assert!(opts.pcg_max_iter.is_none());
+    }
+
+    #[test]
+    fn non_positive_joules_refused_not_unmeasured() {
+        let outcome = map_cockpit_solve_budget(CockpitBudgetInput::RemainingJoules {
+            joules: 0.0,
+            temperature_k: 293.15,
+        });
+        assert_eq!(
+            outcome,
+            CockpitSolveBudgetOutcome::Refused(CockpitBudgetRefuse::NonPositiveJoules)
+        );
     }
 }

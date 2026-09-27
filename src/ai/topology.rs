@@ -189,6 +189,55 @@ pub fn penalization_admissible(p: f32) -> bool {
     p.is_finite() && p >= 1.0
 }
 
+/// Bisection iterations to shrink a bracket of `bracket_width` below `tol`:
+/// \(\lceil \log_2(\mathrm{width}/\mathrm{tol})\rceil\) via repeated halving (integer steps).
+#[must_use]
+pub fn bisection_step_bound_from_width_tol(
+    bracket_width: f32,
+    tol: f32,
+) -> Result<usize, &'static str> {
+    if !bracket_width.is_finite() || bracket_width <= 0.0 {
+        return Err("bisection: bracket width must be finite and positive");
+    }
+    if !tol.is_finite() || tol <= 0.0 {
+        return Err("bisection: tolerance must be finite and positive");
+    }
+    if bracket_width <= tol {
+        return Ok(0);
+    }
+    let mut steps = 0usize;
+    let mut span = bracket_width;
+    while span > tol {
+        if steps == usize::MAX {
+            return Err("bisection: step bound overflow");
+        }
+        steps += 1;
+        span *= 0.5;
+        if !span.is_finite() {
+            return Err("bisection: non-finite bracket during step bound");
+        }
+    }
+    Ok(steps)
+}
+
+/// Require a root bracket: finite endpoint residuals with a sign change (or exact zero).
+#[must_use]
+pub fn bisection_bracket_residual_ok(
+    residual_lo: f32,
+    residual_hi: f32,
+) -> Result<(), &'static str> {
+    if !residual_lo.is_finite() || !residual_hi.is_finite() {
+        return Err("bisection: endpoint residuals must be finite");
+    }
+    if residual_lo == 0.0 || residual_hi == 0.0 {
+        return Ok(());
+    }
+    if residual_lo.signum() != residual_hi.signum() {
+        return Ok(());
+    }
+    Err("bisection: no sign change across bracket endpoints")
+}
+
 /// Heaviside continuation \(\beta\) admissible: finite and \(\beta > 0\).
 #[must_use]
 pub fn heaviside_beta_admissible(beta: f32) -> bool {
@@ -805,17 +854,14 @@ impl AugmentedLagrangianVolume {
 #[derive(Clone, Debug)]
 pub struct VolumeProjection {
     pub target: f32,
-    pub max_bisection: usize,
+    pub tol: f32,
 }
 
 #[cfg(feature = "topology-density-evolution")]
 impl VolumeProjection {
     #[must_use]
-    pub fn new(target: f32, max_bisection: usize) -> Self {
-        Self {
-            target,
-            max_bisection,
-        }
+    pub fn new(target: f32, tol: f32) -> Self {
+        Self { target, tol }
     }
 
     /// Per-batch mean of `tensor` over axes \(1\) and \(2\) → shape `[B,1,1]`.
@@ -829,14 +875,20 @@ impl VolumeProjection {
             .reshape([batch, 1, 1])
     }
 
-    pub fn project<B: Backend<FloatElem = f32>>(&self, rho: Tensor<B, 3>) -> Tensor<B, 3> {
+    pub fn project<B: Backend<FloatElem = f32>>(
+        &self,
+        rho: Tensor<B, 3>,
+    ) -> Result<Tensor<B, 3>, &'static str> {
+        let lambda_lo = -1.0_f32;
+        let lambda_hi = 1.0_f32;
+        let bracket_width = lambda_hi - lambda_lo;
+        let steps = bisection_step_bound_from_width_tol(bracket_width, self.tol)?;
         let target = self.target.clamp(0.0, 1.0);
         let [batch, _n, _c] = rho.dims();
         let device = rho.device();
-        let iters = self.max_bisection.max(1);
-        let mut lo = Tensor::<B, 3>::full([batch, 1, 1], -1.0_f32, &device);
-        let mut hi = Tensor::<B, 3>::full([batch, 1, 1], 1.0_f32, &device);
-        for _ in 0..iters {
+        let mut lo = Tensor::<B, 3>::full([batch, 1, 1], lambda_lo, &device);
+        let mut hi = Tensor::<B, 3>::full([batch, 1, 1], lambda_hi, &device);
+        for _ in 0..steps {
             let mid = lo.clone().add(hi.clone()).mul_scalar(0.5_f32);
             let mean = Self::batch_mean(rho.clone().add(mid.clone()).clamp(0.0, 1.0));
             let gt = mean.greater_elem(target).float();
@@ -849,7 +901,7 @@ impl VolumeProjection {
             lo = gt.clone().mul(lo).add(one.sub(gt).mul(mid));
         }
         let lambda = lo.add(hi).mul_scalar(0.5_f32);
-        rho.add(lambda).clamp(0.0, 1.0)
+        Ok(rho.add(lambda).clamp(0.0, 1.0))
     }
 }
 
@@ -898,7 +950,6 @@ pub fn logit_offset_matching_from_slice(
     beta: f32,
     target_vf: f32,
     tol: f32,
-    max_iters: usize,
 ) -> Result<f32, PhysicsError> {
     if logits.is_empty() {
         return Err(PhysicsError::Domain {
@@ -910,6 +961,11 @@ pub fn logit_offset_matching_from_slice(
             detail: format!(
                 "logit_offset_matching_from_slice: beta must be finite and positive (got {beta})"
             ),
+        });
+    }
+    if !tol.is_finite() || tol <= 0.0 {
+        return Err(PhysicsError::Domain {
+            detail: "logit_offset_matching_from_slice: tol must be finite and positive".into(),
         });
     }
     const ETA: f32 = 0.5;
@@ -931,7 +987,25 @@ pub fn logit_offset_matching_from_slice(
         }
         width *= 2.0;
     };
-    for _ in 0..max_iters.max(1) {
+    let bracket_width = hi - lo;
+    if !bracket_width.is_finite() || bracket_width <= 0.0 {
+        return Err(PhysicsError::Domain {
+            detail: "logit_offset_matching_from_slice: non-finite bracket".into(),
+        });
+    }
+    let steps = bisection_step_bound_from_width_tol(bracket_width, tol).map_err(|reason| {
+        PhysicsError::Domain {
+            detail: reason.into(),
+        }
+    })?;
+    let r_lo = eval(lo) - target;
+    let r_hi = eval(hi) - target;
+    if let Err(reason) = bisection_bracket_residual_ok(r_lo, r_hi) {
+        return Err(PhysicsError::Domain {
+            detail: reason.into(),
+        });
+    }
+    for _ in 0..steps {
         let mid = 0.5 * (lo + hi);
         let vf = eval(mid);
         if vf > target + tol {
@@ -947,18 +1021,14 @@ pub fn logit_offset_matching_from_slice(
 /// Volume match via uniform logit shift \(b\) on detached logits (no post-hoc \(\lambda\) shift).
 #[derive(Clone, Copy, Debug)]
 pub struct VolumeLogitOffsetProjection {
-    pub max_bisection: usize,
     pub tol: f32,
 }
 
 #[cfg(feature = "topology-density-evolution")]
 impl VolumeLogitOffsetProjection {
     #[must_use]
-    pub fn new(max_bisection: usize, tol: f32) -> Self {
-        Self {
-            max_bisection,
-            tol: tol.max(1e-8),
-        }
+    pub fn new(tol: f32) -> Self {
+        Self { tol }
     }
 
     /// Scalar \(b^\*\) from [`logit_offset_matching_from_slice`] on detached logits.
@@ -968,7 +1038,7 @@ impl VolumeLogitOffsetProjection {
         beta: f32,
         target_vf: f32,
     ) -> Result<f32, PhysicsError> {
-        logit_offset_matching_from_slice(logits, beta, target_vf, self.tol, self.max_bisection)
+        logit_offset_matching_from_slice(logits, beta, target_vf, self.tol)
     }
 
     /// Taped apply: \(\rho = \sigma(z + b)\) with constant \(b\) (bisected on detached \(z\)).
@@ -991,19 +1061,28 @@ pub fn volume_matching_threshold_from_slice(
     beta: f32,
     target_vf: f32,
     tol: f32,
-    max_iters: usize,
-) -> f32 {
+) -> Result<f32, &'static str> {
+    let eta_lo = 0.0_f32;
+    let eta_hi = 1.0_f32;
+    let bracket_width = eta_hi - eta_lo;
+    let steps = bisection_step_bound_from_width_tol(bracket_width, tol)?;
     let target = target_vf.clamp(0.0, 1.0);
     let n = rho_tilde.len().max(1) as f32;
-    let mut lo = 0.0_f32;
-    let mut hi = 1.0_f32;
-    for _ in 0..max_iters.max(1) {
-        let mid = 0.5 * (lo + hi);
-        let vf = rho_tilde
+    let vf_at = |eta: f32| -> f32 {
+        rho_tilde
             .iter()
-            .map(|&r| heaviside_tanh_scalar(r, beta, mid))
+            .map(|&r| heaviside_tanh_scalar(r, beta, eta))
             .sum::<f32>()
-            / n;
+            / n
+    };
+    let r_lo = vf_at(eta_lo) - target;
+    let r_hi = vf_at(eta_hi) - target;
+    bisection_bracket_residual_ok(r_lo, r_hi)?;
+    let mut lo = eta_lo;
+    let mut hi = eta_hi;
+    for _ in 0..steps {
+        let mid = 0.5 * (lo + hi);
+        let vf = vf_at(mid);
         // VF decreases as \(\eta\) increases (Wang \(\tanh\) Heaviside on fixed \(\tilde\rho\)).
         if vf > target + tol {
             lo = mid;
@@ -1011,7 +1090,7 @@ pub fn volume_matching_threshold_from_slice(
             hi = mid;
         }
     }
-    0.5 * (lo + hi)
+    Ok(0.5 * (lo + hi))
 }
 
 #[cfg(feature = "topology-density-evolution")]
@@ -1024,10 +1103,9 @@ pub fn volume_matching_threshold_masked_from_slice(
     beta: f32,
     target_vf: f32,
     tol: f32,
-    max_iters: usize,
-) -> f32 {
+) -> Result<f32, &'static str> {
     if editable_mask.len() != rho_tilde.len() {
-        return volume_matching_threshold_from_slice(rho_tilde, beta, target_vf, tol, max_iters);
+        return volume_matching_threshold_from_slice(rho_tilde, beta, target_vf, tol);
     }
     let n = rho_tilde.len().max(1);
     let mut n_edit = 0usize;
@@ -1042,46 +1120,52 @@ pub fn volume_matching_threshold_masked_from_slice(
         }
     }
     if n_edit == 0 {
-        return volume_matching_threshold_from_slice(rho_tilde, beta, target_vf, tol, max_iters);
+        return volume_matching_threshold_from_slice(rho_tilde, beta, target_vf, tol);
     }
+    let eta_lo = 0.0_f32;
+    let eta_hi = 1.0_f32;
+    let bracket_width = eta_hi - eta_lo;
+    let steps = bisection_step_bound_from_width_tol(bracket_width, tol)?;
     let target = target_vf.clamp(0.0, 1.0);
     let n_f = n as f32;
-    let mut lo = 0.0_f32;
-    let mut hi = 1.0_f32;
-    for _ in 0..max_iters.max(1) {
-        let mid = 0.5 * (lo + hi);
+    let vf_at = |eta: f32| -> f32 {
         let mut vf_sum = vf_fixed;
         for (i, &r) in rho_tilde.iter().enumerate() {
             if editable_mask[i] > 0.5 {
-                vf_sum += heaviside_tanh_scalar(r, beta, mid);
+                vf_sum += heaviside_tanh_scalar(r, beta, eta);
             }
         }
-        let vf = vf_sum / n_f;
+        vf_sum / n_f
+    };
+    let r_lo = vf_at(eta_lo) - target;
+    let r_hi = vf_at(eta_hi) - target;
+    bisection_bracket_residual_ok(r_lo, r_hi)?;
+    let mut lo = eta_lo;
+    let mut hi = eta_hi;
+    for _ in 0..steps {
+        let mid = 0.5 * (lo + hi);
+        let vf = vf_at(mid);
         if vf > target + tol {
             lo = mid;
         } else {
             hi = mid;
         }
     }
-    0.5 * (lo + hi)
+    Ok(0.5 * (lo + hi))
 }
 
 #[cfg(feature = "topology-density-evolution")]
 /// Volume match via \(\eta\) on [`HeavisideProjection`] (no post-hoc \(\lambda\) shift).
 #[derive(Clone, Copy, Debug)]
 pub struct VolumeEtaProjection {
-    pub max_bisection: usize,
     pub tol: f32,
 }
 
 #[cfg(feature = "topology-density-evolution")]
 impl VolumeEtaProjection {
     #[must_use]
-    pub fn new(max_bisection: usize, tol: f32) -> Self {
-        Self {
-            max_bisection,
-            tol: tol.max(1e-8),
-        }
+    pub fn new(tol: f32) -> Self {
+        Self { tol }
     }
 
     /// \(\rho_\eta = H_\beta(\tilde\rho;\eta^\*)\) with \(\eta^\*\) from [`volume_matching_threshold_from_slice`].
@@ -1090,7 +1174,7 @@ impl VolumeEtaProjection {
         rho_tilde: Tensor<B, 3>,
         beta: f32,
         target_vf: f32,
-    ) -> Tensor<B, 3> {
+    ) -> Result<Tensor<B, 3>, &'static str> {
         self.project_with_mask(rho_tilde, beta, target_vf, None)
     }
 
@@ -1101,7 +1185,7 @@ impl VolumeEtaProjection {
         beta: f32,
         target_vf: f32,
         editable_mask: Option<&[f32]>,
-    ) -> Tensor<B, 3> {
+    ) -> Result<Tensor<B, 3>, &'static str> {
         let flat = rho_tilde.clone().detach().into_data().value;
         let eta = match editable_mask {
             Some(mask) => volume_matching_threshold_masked_from_slice(
@@ -1110,17 +1194,10 @@ impl VolumeEtaProjection {
                 beta,
                 target_vf,
                 self.tol,
-                self.max_bisection,
-            ),
-            None => volume_matching_threshold_from_slice(
-                &flat,
-                beta,
-                target_vf,
-                self.tol,
-                self.max_bisection,
-            ),
+            )?,
+            None => volume_matching_threshold_from_slice(&flat, beta, target_vf, self.tol)?,
         };
-        HeavisideProjection::new(beta, eta).project(rho_tilde)
+        Ok(HeavisideProjection::new(beta, eta).project(rho_tilde))
     }
 }
 
@@ -1484,6 +1561,18 @@ mod tests {
     }
 
     #[test]
+    fn bisection_step_bound_ceil_log2_width_over_tol() {
+        let steps = bisection_step_bound_from_width_tol(1.0, 0.125)
+            .expect("width/tol ratio 8 needs three halving steps");
+        assert_eq!(steps, 3);
+    }
+
+    #[test]
+    fn bisection_step_bound_refuses_zero_tolerance() {
+        assert!(bisection_step_bound_from_width_tol(1.0, 0.0).is_err());
+    }
+
+    #[test]
     fn w29_016_greyness_and_vf_gap_descriptive_witnesses() {
         // Host greyness: binary field → 0; mid-grey → 1.
         assert!((greyness_from_density_slice(&[0.0, 1.0, 0.0, 1.0]) - 0.0).abs() < 1e-6);
@@ -1727,7 +1816,7 @@ mod topology_density_evolution_tests {
         let logits: Vec<f32> = (0..64).map(|i| -2.0 + 4.0 * (i as f32 / 63.0)).collect();
         let beta = 16.0_f32;
         let target = 0.35_f32;
-        let b = logit_offset_matching_from_slice(&logits, beta, target, 1e-3, 48).expect(
+        let b = logit_offset_matching_from_slice(&logits, beta, target, 1e-3).expect(
             "logit_offset_matching_from_slice bisect b on 64-node logits field (FP §6 neural-SIMP volume verification witness)",
         );
         let vf = logit_offset_vf_from_slice(&logits, b, beta, 0.5);
@@ -1756,7 +1845,7 @@ mod topology_density_evolution_tests {
     #[test]
     fn volume_logit_offset_projection_apply_shift_bounded() {
         let dev = Default::default();
-        let proj = VolumeLogitOffsetProjection::new(48, 1e-3);
+        let proj = VolumeLogitOffsetProjection::new(1e-3);
         let z = Tensor::<B, 3>::from_data(
             Data::new(vec![0.0_f32, 1.0, -1.0], Shape::new([1, 3, 1])),
             &dev,
@@ -1782,7 +1871,8 @@ mod topology_density_evolution_tests {
         }
         let beta = 16.0_f32;
         let target = 0.35_f32;
-        let eta = volume_matching_threshold_masked_from_slice(&rho, &mask, beta, target, 1e-3, 48);
+        let eta = volume_matching_threshold_masked_from_slice(&rho, &mask, beta, target, 1e-3)
+            .expect("masked eta bisection");
         let mut vf_sum = 0.0_f32;
         for (i, &r) in rho.iter().enumerate() {
             let h = if mask[i] > 0.5 {
@@ -1804,7 +1894,8 @@ mod topology_density_evolution_tests {
         let rho: Vec<f32> = (0..64).map(|i| 0.2 + 0.6 * (i as f32 / 63.0)).collect();
         let beta = 16.0_f32;
         let target = 0.35_f32;
-        let eta = volume_matching_threshold_from_slice(&rho, beta, target, 1e-3, 48);
+        let eta = volume_matching_threshold_from_slice(&rho, beta, target, 1e-3)
+            .expect("eta bisection");
         let vf = rho
             .iter()
             .map(|&r| heaviside_tanh_scalar(r, beta, eta))
@@ -1824,10 +1915,14 @@ mod topology_density_evolution_tests {
             *x = 1.0;
         }
         let rho = Tensor::<B, 3>::from_data(Data::new(v, Shape::new([1, 32, 1])), &dev);
-        let proj = VolumeEtaProjection::new(48, 1e-3);
+        let proj = VolumeEtaProjection::new(1e-3);
         let target = 12.0 / 32.0;
-        let out = proj.project(rho.clone(), 32.0, target);
-        let out2 = proj.project(out.clone(), 32.0, target);
+        let out = proj
+            .project(rho.clone(), 32.0, target)
+            .expect("eta projection");
+        let out2 = proj
+            .project(out.clone(), 32.0, target)
+            .expect("eta projection idempotent");
         let a = out.into_data().value;
         let b = out2.into_data().value;
         for (x, y) in a.iter().zip(b.iter()) {
@@ -1879,8 +1974,8 @@ mod topology_density_evolution_tests {
     fn volume_projection_restores_batch_mean() {
         let dev = Default::default();
         let rho = Tensor::<B, 3>::full([2, 4, 1], 0.25_f32, &dev);
-        let proj = VolumeProjection::new(0.6_f32, 48);
-        let out = proj.project(rho);
+        let proj = VolumeProjection::new(0.6_f32, 1e-4);
+        let out = proj.project(rho).expect("lambda volume projection");
         let m0 = out
             .clone()
             .slice([0..1, 0..4, 0..1])

@@ -20,6 +20,41 @@
 
 pub use super::krylov_host::{gmres_f32, gmres_f32_try};
 
+use crate::physics::PhysicsError;
+
+/// Precondition for THMC JFNK host GMRES: `residual_tol` must be finite and strictly positive.
+pub fn thmc_jfnk_gmres_residual_tol_precondition(residual_tol: f64) -> Result<(), PhysicsError> {
+    if !residual_tol.is_finite() || residual_tol <= 0.0 {
+        return Err(PhysicsError::InvariantViolation {
+            context: "thmc_jfnk_gmres_residual_tol_precondition: residual_tol must be finite and > 0",
+        });
+    }
+    Ok(())
+}
+
+/// Host GMRES smoke/verification entry with **`residual_tol`** as the convergence gate.
+///
+/// Krylov depth is bounded by `b.len()` (problem dimension). Callers needing a larger restart
+/// depth must use [`gmres_f32`] directly — list that cap in the MIGRATE-THMC receipt.
+pub fn thmc_jfnk_gmres_f32_residual_gated<F>(
+    matvec: F,
+    b: &[f32],
+    residual_tol: f64,
+) -> Result<Vec<f32>, PhysicsError>
+where
+    F: FnMut(&[f32]) -> Vec<f32>,
+{
+    thmc_jfnk_gmres_residual_tol_precondition(residual_tol)?;
+    let n = b.len();
+    if n == 0 {
+        return Err(PhysicsError::InvariantViolation {
+            context: "thmc_jfnk_gmres_f32_residual_gated: empty rhs",
+        });
+    }
+    let rel_tol_f32 = residual_tol as f32;
+    gmres_f32(matvec, b, n, n, rel_tol_f32)
+}
+
 /// W29 deepen cell — THMC JFNK host Krylov honest fence bundle.
 pub const W29_THMC_JFNK_DEEPEN_CELL: &str = "W29-084-THMC_JFNK";
 
@@ -151,12 +186,30 @@ mod w29_084_thmc_jfnk_deepen_tests {
     }
 
     #[test]
+    fn thmc_jfnk_gmres_residual_tol_precondition_refuses_nonpositive() {
+        let err = thmc_jfnk_gmres_residual_tol_precondition(0.0_f64)
+            .expect_err("zero residual_tol must refuse");
+        assert!(
+            err.to_string().contains("residual_tol"),
+            "unexpected err: {err}"
+        );
+        let b = vec![1.0_f32];
+        let matvec = |v: &[f32]| v.to_vec();
+        let solve_err = thmc_jfnk_gmres_f32_residual_gated(matvec, &b, -1.0e-6_f64)
+            .expect_err("negative residual_tol must refuse before GMRES");
+        assert!(
+            solve_err.to_string().contains("residual_tol"),
+            "unexpected err: {solve_err}"
+        );
+    }
+
+    #[test]
     fn thmc_jfnk_gmres_identity_via_reexport() {
         let n = 4usize;
         let b = vec![1.0_f32, 2.0_f32, -0.5_f32, 0.25_f32];
         let matvec = |v: &[f32]| v.to_vec();
-        let x = gmres_f32(matvec, &b, n, n, 1e-5_f32).expect(
-            "thmc_jfnk::gmres_f32 identity matvec n=4 must converge (W29-084 host GMRES smoke)",
+        let x = thmc_jfnk_gmres_f32_residual_gated(matvec, &b, 1.0e-5_f64).expect(
+            "thmc_jfnk residual-gated GMRES identity matvec n=4 must converge (W29-084 host GMRES smoke)",
         );
         for i in 0..n {
             assert!(
@@ -206,8 +259,8 @@ mod w29_084_thmc_jfnk_deepen_tests {
             }
             out
         };
-        let x = gmres_f32(matvec, &b, n, n + 4, 1e-4_f32)
-            .expect("thmc_jfnk::gmres_f32 3×3 SPD tridiagonal must converge (W29-084)");
+        let x = thmc_jfnk_gmres_f32_residual_gated(matvec, &b, 1.0e-4_f64)
+            .expect("thmc_jfnk residual-gated GMRES 3×3 SPD tridiagonal must converge (W29-084)");
         let ax = matvec(&x);
         let res: f32 = b
             .iter()

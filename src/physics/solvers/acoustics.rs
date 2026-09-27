@@ -429,11 +429,15 @@ impl AcousticWaveSolver {
 
     /// Run **`num_steps`** Newmark steps using [`iterate_until`] (bounded driver; autodiff-friendly
     /// when each step stays on the tensor-only dense path).
+    ///
+    /// Stops early when relative mechanical-energy drift from the initial state satisfies
+    /// `|E − E₀| / max(|E₀|, 1e−30) ≤ energy_tol`. Non-finite or non-positive `energy_tol` is refused.
     #[cfg(feature = "acoustics-newmark")]
     #[allow(clippy::too_many_arguments)]
     pub fn step_wave_iterate<B: Backend<FloatElem = f32>>(
         &self,
         num_steps: usize,
+        energy_tol: f32,
         displacement: Tensor<B, 3>,
         velocity: Tensor<B, 3>,
         acceleration: Tensor<B, 3>,
@@ -445,6 +449,16 @@ impl AcousticWaveSolver {
         bar_network: Option<AcousticBarNetwork<B>>,
         gmres_cfg: Option<AcousticGmresConfig>,
     ) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>, usize), PhysicsError> {
+        refuse_non_positive_energy_tol(energy_tol, "step_wave_iterate: energy_tol")?;
+        let e0 = nodal_mechanical_energy_total_scalar(
+            displacement.clone(),
+            velocity.clone(),
+            nodal_density.clone(),
+            nodal_volume.clone(),
+            stiffness_local_bn44.clone(),
+            bar_network.as_ref(),
+        );
+        let e_denom = e0.abs().max(1e-30_f32);
         let mut st = (
             displacement,
             velocity,
@@ -456,6 +470,9 @@ impl AcousticWaveSolver {
             stiffness_local_bn44,
             bar_network,
             gmres_cfg,
+            e0,
+            e_denom,
+            energy_tol,
         );
         let mut step_err: Option<PhysicsError> = None;
         let k = iterate_until(num_steps, &mut st, |s| {
@@ -470,6 +487,9 @@ impl AcousticWaveSolver {
                 ref kloc,
                 ref bar,
                 ref gcfg,
+                e0,
+                e_denom,
+                energy_tol,
             ) = *s;
             match self.step_wave(
                 u.clone(),
@@ -487,7 +507,19 @@ impl AcousticWaveSolver {
                     *u = un;
                     *v = vn;
                     *a = an;
-                    core::ops::ControlFlow::Continue(())
+                    let en = nodal_mechanical_energy_total_scalar(
+                        u.clone(),
+                        v.clone(),
+                        rho.clone(),
+                        vol.clone(),
+                        kloc.clone(),
+                        bar.as_ref(),
+                    );
+                    if (en - *e0).abs() / *e_denom <= *energy_tol {
+                        core::ops::ControlFlow::Break(())
+                    } else {
+                        core::ops::ControlFlow::Continue(())
+                    }
                 }
                 Err(e) => {
                     step_err = Some(e);
@@ -544,6 +576,43 @@ pub fn nodal_mass_matrix_bn33<B: Backend<FloatElem = f32>>(
 }
 
 /// Kinetic energy **½ u̇ᵀ M u̇** as a rank-1 tensor `[B, 1]` (sum over nodes and spatial components).
+#[cfg(feature = "acoustics-newmark")]
+fn refuse_non_positive_energy_tol(
+    energy_tol: f32,
+    context: &'static str,
+) -> Result<(), PhysicsError> {
+    if energy_tol.is_finite() && energy_tol > 0.0 {
+        Ok(())
+    } else {
+        Err(PhysicsError::InvariantViolation { context })
+    }
+}
+
+/// Scalar total mechanical energy (kinetic + elastic) summed over batch and nodes.
+#[cfg(feature = "acoustics-newmark")]
+fn nodal_mechanical_energy_total_scalar<B: Backend<FloatElem = f32>>(
+    displacement_bn3: Tensor<B, 3>,
+    velocity_bn3: Tensor<B, 3>,
+    nodal_density_bn1: Tensor<B, 3>,
+    nodal_volume_bn1: Tensor<B, 3>,
+    stiffness_local_bn44: Tensor<B, 4>,
+    bar: Option<&AcousticBarNetwork<B>>,
+) -> f32 {
+    let mass = nodal_mass_matrix_bn33(nodal_density_bn1, nodal_volume_bn1);
+    let ke = nodal_kinetic_energy_bn1(velocity_bn3.clone(), mass).sum().into_scalar();
+    let ku = total_stiffness_displacement(
+        displacement_bn3.clone(),
+        &stiffness_local_bn44,
+        bar,
+    );
+    let pe = displacement_bn3
+        .mul(ku)
+        .sum()
+        .mul_scalar(0.5_f32)
+        .into_scalar();
+    ke + pe
+}
+
 #[cfg(feature = "acoustics-newmark")]
 pub fn nodal_kinetic_energy_bn1<B: Backend<FloatElem = f32>>(
     velocity_bn3: Tensor<B, 3>,
@@ -1044,6 +1113,39 @@ impl AcousticNewmarkBar1dPeriodic {
         Ok(())
     }
 
+    /// Run at most **`max_steps`** implicit Newmark steps at fixed `Δt`.
+    ///
+    /// Same early-exit rule as [`AcousticWaveSolver::step_wave_iterate`]: relative mechanical-energy
+    /// drift from the state at entry, `|E − E₀| / max(|E₀|, 1e−30) ≤ energy_tol`. Non-positive
+    /// `energy_tol` is refused.
+    pub fn step_iterate(
+        &self,
+        ws: &mut AcousticNewmarkBar1dWork,
+        dt: f32,
+        max_steps: usize,
+        energy_tol: f32,
+        u: &mut [f32],
+        v: &mut [f32],
+        a: &mut [f32],
+    ) -> Result<usize, PhysicsError> {
+        refuse_non_positive_energy_tol(energy_tol, "acoustic_newmark_bar_1d_periodic: energy_tol")?;
+        debug_assert_eq!(u.len(), self.n);
+        debug_assert_eq!(v.len(), self.n);
+        debug_assert_eq!(a.len(), self.n);
+        let e0 = self.mechanical_energy(u, v);
+        let e_denom = e0.abs().max(1e-30_f32);
+        let mut completed = 0usize;
+        for _ in 0..max_steps {
+            self.step(ws, dt, u, v, a)?;
+            completed += 1;
+            let en = self.mechanical_energy(u, v);
+            if (en - e0).abs() / e_denom <= energy_tol {
+                break;
+            }
+        }
+        Ok(completed)
+    }
+
     fn prepare(&self, ws: &mut AcousticNewmarkBar1dWork, dt: f32) -> bool {
         if (ws.last_dt - dt).abs() <= 1e-12_f32.max(dt * 1e-7_f32) && ws.last_dt >= 0.0_f32 {
             return true;
@@ -1321,7 +1423,20 @@ mod acoustics_ad_iterate_tests {
         let a0 = Tensor::<B, 3>::zeros([1, n, 3], &dev);
 
         let (u_end, _v, _a, _k) = solver
-            .step_wave_iterate(32, u0, v0, a0, rho.clone(), vol, f, damp, kloc, None, None)
+            .step_wave_iterate(
+                32,
+                f32::MAX,
+                u0,
+                v0,
+                a0,
+                rho.clone(),
+                vol,
+                f,
+                damp,
+                kloc,
+                None,
+                None,
+            )
             .expect("AcousticWaveSolver::step_wave_iterate dense nodal Newmark loop for AD backward (FP §6 Track G acoustics residual)");
 
         let loss = u_end.clone().sum();
@@ -1551,6 +1666,66 @@ mod acoustics_idempotency_tests {
                 .fold(0.0_f32, f32::max);
             assert!(max_d < tol, "{label} drift after re-step: {max_d}");
         }
+    }
+}
+
+#[cfg(all(test, feature = "acoustics-newmark"))]
+mod acoustics_energy_tol_tests {
+    use super::*;
+    use burn::tensor::Tensor;
+    use burn_ndarray::{NdArray, NdArrayDevice};
+
+    type B = NdArray<f32>;
+
+    /// Precondition: non-positive `energy_tol` is a typed refuse on the tensor iterate driver.
+    #[test]
+    fn step_wave_iterate_must_refuse_non_positive_energy_tol() {
+        let dev = NdArrayDevice::Cpu;
+        let n = 2usize;
+        let solver = AcousticWaveSolver {
+            dt: 0.01_f32,
+            newmark_beta: 0.25_f32,
+            newmark_gamma: 0.5_f32,
+        };
+        let u = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let vel = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let acc = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let rho = Tensor::<B, 3>::ones([1, n, 1], &dev);
+        let vol = Tensor::<B, 3>::ones([1, n, 1], &dev);
+        let f = Tensor::<B, 3>::zeros([1, n, 3], &dev);
+        let damp = Tensor::<B, 4>::zeros([1, n, 3, 3], &dev);
+        let kloc = Tensor::<B, 4>::zeros([1, n, 3, 3], &dev);
+        let err = solver
+            .step_wave_iterate(4, 0.0_f32, u, vel, acc, rho, vol, f, damp, kloc, None, None)
+            .expect_err("energy_tol=0 must refuse before stepping");
+        assert!(matches!(
+            err,
+            PhysicsError::InvariantViolation { context } if context == "step_wave_iterate: energy_tol"
+        ));
+    }
+
+    /// Precondition: non-positive `energy_tol` is a typed refuse on the 1-D periodic bar driver.
+    #[test]
+    fn bar_step_iterate_must_refuse_non_positive_energy_tol() {
+        let bar = AcousticNewmarkBar1dPeriodic {
+            n: 8,
+            length: 1.0_f32,
+            youngs_modulus: 1.0_f32,
+            density: 1.0_f32,
+            newmark_beta: 0.25_f32,
+            newmark_gamma: 0.5_f32,
+        };
+        let mut ws = bar.workspace();
+        let mut u = vec![0.0_f32; bar.n];
+        let mut v = vec![0.0_f32; bar.n];
+        let mut a = vec![0.0_f32; bar.n];
+        let err = bar
+            .step_iterate(&mut ws, 0.01_f32, 4, -1.0_f32, &mut u, &mut v, &mut a)
+            .expect_err("energy_tol<0 must refuse before stepping");
+        assert!(matches!(
+            err,
+            PhysicsError::InvariantViolation { context } if context == "acoustic_newmark_bar_1d_periodic: energy_tol"
+        ));
     }
 }
 

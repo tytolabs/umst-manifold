@@ -28,15 +28,17 @@
 //!   \(g(d) = (1-d)^2 + \eta\).
 //! - AT2-style nodal field: `Gc/l · d − Gc · l · Δ d ≈ 2(1-d) ψ⁺` with `Δ` from
 //!   [`crate::physics::laplacian::TopologicalLaplacian::scalar_laplacian`] on `edges_b1`.
-//! - Irreversibility `max(d_old, d_{trial})`, then clamp to `\[0, 1\]`.
+//! - Irreversibility: relaxation must not propose **healing** (`d_{trial} < d_{old}`); otherwise
+//!   [`IrreversibilityRefused`]. Otherwise `max(d_old, d_{trial})`, then clamp to `\[0, 1\]`.
 //!
 //! ## Inner damage relaxation (Jacobi + graph Laplacian)
 //!
 //! A plain Jacobi step on \((Gc/l - Gc\,l\,\Delta)\,d \approx 2(1-d)\psi^+\) can **checkerboard**
 //! on 1D chains (odd/even mode), which shows up as alternating **global sums** in `f32` smoke tests.
 //! We combine **smaller** \(\omega\), **node-parity red–black** half-steps, a **`\[0,1\]` clamp once
-//! per outer pair**, and an **odd** number of outer passes on short chains (see `DAMAGE_RELAXATION_ITERS`)
-//! so a terminal near-checkerboard state does not cancel the integrated damage to **0** in `f32`.
+//! per outer pair**, and **residual / stagnation stopping** on the AT2 damage equation (Farrell &
+//! Maurini 2017, doi:10.1002/nme.5300) so a terminal near-checkerboard state does not cancel the
+//! integrated damage to **0** in `f32`.
 //!
 //! Default builds (no `fracture-at2`): [`PhaseFieldFractureSolver::update_damage`] is a **documented
 //! no-op** — returns `Ok(damage)` unchanged so `cargo test` stays green.
@@ -329,7 +331,7 @@ pub struct StaggeredFractureConfig {
     /// Inner AT2 relaxation passes per outer iteration; reserved for callers that wrap
     /// [`PhaseFieldFractureSolver::update_damage`] in their own loop. The current implementation
     /// performs one [`PhaseFieldFractureSolver::update_damage`] call per outer pass (which itself
-    /// runs `DAMAGE_RELAXATION_ITERS` red–black sweeps); this field is preserved for API stability.
+    /// runs red–black sweeps until AT2 residual / stagnation criteria); this field is preserved for API stability.
     pub damage_relaxation_passes: usize,
     /// Critical fracture-energy release rate `Gc` (uniform).
     pub gc: f32,
@@ -495,16 +497,41 @@ pub fn strain_tensor_for_fracture_from_manifold<B: Backend<FloatElem = f32>>(
     }
 }
 
-/// Relaxation **outer** passes; each pass is one even-index half-step plus one odd-index half-step.
-/// Use an **odd** count on short path graphs: with red–black + per-pass clamp, an **even** total
-/// can align the terminal iterate with a near-checkerboard mode whose **global sum** underflows to
-/// 0 in `f32` while nodal values are not converged.
-#[cfg(feature = "fracture-at2")]
-const DAMAGE_RELAXATION_ITERS: usize = 17;
-
 /// Under-relaxation \(\omega\) on **each** parity half-step.
 #[cfg(feature = "fracture-at2")]
 const RELAXATION_OMEGA: f32 = 0.055;
+
+/// Stop damage red–black when the AT2 equation residual (L∞) falls below this scale.
+#[cfg(feature = "fracture-at2")]
+const DAMAGE_RELAX_RESIDUAL_TOL: f32 = 1e-6_f32;
+
+/// Stop when residual decrease per outer pass falls below this (avoids unbounded sweeps without an integer cap).
+#[cfg(feature = "fracture-at2")]
+const DAMAGE_RELAX_RESIDUAL_STAGNATION_TOL: f32 = 1e-9_f32;
+
+/// Nodal tolerance for detecting a proposed healing increment \(d_{trial} - d_{old} < -\text{tol}\).
+#[cfg(feature = "fracture-at2")]
+const DAMAGE_IRREVERSIBILITY_HEALING_TOL: f32 = 1e-12_f32;
+
+/// AT2 phase-field damage update refused a proposed **healing** step (`d_{trial} < d_{old}`).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct IrreversibilityRefused {
+    /// Minimum nodal increment `d_trial - d_old` (negative when healing was proposed).
+    pub min_nodal_increment: f32,
+}
+
+impl IrreversibilityRefused {
+    pub const CONTEXT: &'static str = "fracture AT2 irreversibility: damage healing refused";
+}
+
+impl From<IrreversibilityRefused> for PhysicsError {
+    fn from(r: IrreversibilityRefused) -> Self {
+        let _ = r.min_nodal_increment;
+        Self::InvariantViolation {
+            context: IrreversibilityRefused::CONTEXT,
+        }
+    }
+}
 
 /// Cyclic Jacobi sweeps \((0,1)\to(0,2)\to(1,2)\) per sweep; enough for `f32` diagonal drift \(\ll 10^{-4}\|\varepsilon\|\) in typical strain ranges.
 #[cfg(feature = "fracture-at2")]
@@ -1040,6 +1067,86 @@ fn node_parity_masks_b_n1<B: Backend<FloatElem = f32>>(
 
 /// One outer damage-relaxation pass: even parity half-step, odd half-step, then `[0,1]` clamp.
 #[cfg(feature = "fracture-at2")]
+fn damage_at2_equation_residual_linf<B: Backend<FloatElem = f32>>(
+    d: &Tensor<B, 3>,
+    l: f32,
+    gc: &Tensor<B, 3>,
+    edges_b1: &Tensor<B, 2, Int>,
+    psi_plus: &Tensor<B, 3>,
+) -> f32 {
+    let l = l.max(1e-12);
+    let lap_d = TopologicalLaplacian::scalar_laplacian(d.clone(), edges_b1.clone(), d.clone());
+    let one_minus_d = Tensor::<B, 3>::ones_like(d).sub(d.clone());
+    let drive = one_minus_d.mul(psi_plus.clone()).mul_scalar(2.0);
+    let lin = gc.clone().div_scalar(l).mul(d.clone());
+    let grad_term = gc.clone().mul_scalar(l).mul(lap_d);
+    let residual = lin.sub(drive).sub(grad_term);
+    residual.abs().max().into_scalar()
+}
+
+#[cfg(feature = "fracture-at2")]
+fn refuse_damage_healing_if_proposed<B: Backend<FloatElem = f32>>(
+    d_trial: &Tensor<B, 3>,
+    d_old: &Tensor<B, 3>,
+) -> Result<(), PhysicsError> {
+    let min_incr = d_trial.clone().sub(d_old.clone()).min().into_scalar();
+    if min_incr < -DAMAGE_IRREVERSIBILITY_HEALING_TOL {
+        return Err(IrreversibilityRefused {
+            min_nodal_increment: min_incr,
+        }
+        .into());
+    }
+    Ok(())
+}
+
+#[cfg(feature = "fracture-at2")]
+fn apply_at2_irreversibility<B: Backend<FloatElem = f32>>(
+    d_trial: Tensor<B, 3>,
+    d_old: Tensor<B, 3>,
+) -> Result<Tensor<B, 3>, PhysicsError> {
+    refuse_damage_healing_if_proposed(&d_trial, &d_old)?;
+    Ok(d_trial.max_pair(d_old).clamp(0.0_f32, 1.0_f32))
+}
+
+#[cfg(feature = "fracture-at2")]
+fn damage_relaxation_until_residual<B: Backend<FloatElem = f32>>(
+    mut d: Tensor<B, 3>,
+    l: f32,
+    gc: Tensor<B, 3>,
+    edges_b1: Tensor<B, 2, Int>,
+    mask_even: Tensor<B, 3>,
+    mask_odd: Tensor<B, 3>,
+    psi_plus: Tensor<B, 3>,
+) -> Result<Tensor<B, 3>, PhysicsError> {
+    let mut prev_res = damage_at2_equation_residual_linf(&d, l, &gc, &edges_b1, &psi_plus);
+    if prev_res < DAMAGE_RELAX_RESIDUAL_TOL {
+        return Ok(d);
+    }
+    loop {
+        d = damage_relaxation_one_iteration(
+            d,
+            l,
+            gc.clone(),
+            edges_b1.clone(),
+            mask_even.clone(),
+            mask_odd.clone(),
+            psi_plus.clone(),
+        );
+        let res = damage_at2_equation_residual_linf(&d, l, &gc, &edges_b1, &psi_plus);
+        if res < DAMAGE_RELAX_RESIDUAL_TOL {
+            break;
+        }
+        let decrease = prev_res - res;
+        if decrease < DAMAGE_RELAX_RESIDUAL_STAGNATION_TOL {
+            break;
+        }
+        prev_res = res;
+    }
+    damage_bn1_all_finite(&d, "fracture AT2 damage relaxation")?;
+    Ok(d)
+}
+
+#[cfg(feature = "fracture-at2")]
 fn damage_relaxation_one_iteration<B: Backend<FloatElem = f32>>(
     d: Tensor<B, 3>,
     l: f32,
@@ -1098,27 +1205,17 @@ fn update_damage_experimental<B: Backend<FloatElem = f32>>(
     let [batch, n, _one] = damage_old.dims();
     let (mask_even, mask_odd) = node_parity_masks_b_n1::<B>(batch, n, &damage_old.device());
 
-    let mut d = damage_old.clone();
-    for _ in 0..DAMAGE_RELAXATION_ITERS {
-        d = damage_relaxation_one_iteration(
-            d,
-            l,
-            gc.clone(),
-            edges_b1.clone(),
-            mask_even.clone(),
-            mask_odd.clone(),
-            psi_plus.clone(),
-        );
-    }
+    let d = damage_relaxation_until_residual(
+        damage_old.clone(),
+        l,
+        gc.clone(),
+        edges_b1.clone(),
+        mask_even,
+        mask_odd,
+        psi_plus,
+    )?;
 
-    let out = d.max_pair(damage_old.clone()).clamp(0.0_f32, 1.0_f32);
-    let elem_fin = out
-        .clone()
-        .equal(out.clone())
-        .float()
-        .mul(out.clone().abs().lower_elem(f32::INFINITY).float())
-        .greater_elem(0.5_f32);
-    let result = damage_old.mask_where(elem_fin, out);
+    let result = apply_at2_irreversibility(d, damage_old.clone())?;
     damage_bn1_all_finite(&result, "fracture AT2 update_damage")?;
     Ok(result)
 }
@@ -1360,14 +1457,62 @@ mod fracture_at2_tests {
 
     use super::{
         degradation_g_f32, spectral_tensile_psi_plus_lame,
-        tensile_strain_energy_density_spectral_jacobi, StaggeredPhase, FRACTURE_PSI_LAMBDA_DEFAULT,
-        FRACTURE_PSI_MU_DEFAULT,
+        tensile_strain_energy_density_spectral_jacobi, IrreversibilityRefused, StaggeredPhase,
+        FRACTURE_PSI_LAMBDA_DEFAULT, FRACTURE_PSI_MU_DEFAULT,
     };
+    use crate::physics::error::PhysicsError;
     use crate::core::field::{
         DamageField, DisplacementField, Field, FractureEnergyField, SmallStrainField,
     };
 
     type B = NdArray<f32>;
+
+    /// Precondition — typed [`IrreversibilityRefused`] maps to [`PhysicsError`] before live calls.
+    #[test]
+    fn at2_irreversibility_refused_precondition_one_point() {
+        let refused = IrreversibilityRefused {
+            min_nodal_increment: -0.01_f32,
+        };
+        let err: PhysicsError = refused.into();
+        assert!(matches!(
+            err,
+            PhysicsError::InvariantViolation { context }
+            if *context == IrreversibilityRefused::CONTEXT
+        ));
+    }
+
+    /// Fully damaged single node at zero tensile drive — relaxation must not heal; refuse typed error.
+    #[test]
+    fn update_damage_refuses_irreversibility_violation_one_point() {
+        use crate::physics::solvers::PhaseFieldFractureSolver;
+
+        let dev = NdArrayDevice::Cpu;
+        let batch = 1usize;
+        let n = 1usize;
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(Vec::<i64>::new(), Shape::new([2, 0])), &dev);
+        let strain = Tensor::<B, 4>::zeros([batch, n, 3, 3], &dev);
+        let damage = Tensor::from_data(
+            Data::new(vec![1.0_f32], Shape::new([batch, n, 1])),
+            &dev,
+        );
+        let fracture_energy_gc = Tensor::from_data(
+            Data::new(vec![150.0_f32], Shape::new([batch, n, 1])),
+            &dev,
+        );
+        let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
+        let out = solver.update_damage(
+            strain_field(strain),
+            damage_field(damage),
+            gc_field(fracture_energy_gc),
+            edges_b1,
+        );
+        match out {
+            Err(PhysicsError::InvariantViolation { context })
+                if context == IrreversibilityRefused::CONTEXT => {}
+            other => panic!("expected irreversibility refusal on 1-point saturated damage, got {other:?}"),
+        }
+    }
 
     fn strain_field(t: Tensor<B, 4>) -> SmallStrainField<B> {
         SmallStrainField::from_tensor(t)
