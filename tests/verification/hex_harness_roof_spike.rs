@@ -81,7 +81,7 @@ fn q1_hex_harness_roof_traction_forward_converges() {
     };
 
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 2000,
+        max_cg_iterations: n * 3,
         cg_tolerance: 1e-4,
         pcg_tolerance: 1e-4,
         use_preconditioner: true,
