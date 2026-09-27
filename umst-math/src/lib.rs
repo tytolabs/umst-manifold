@@ -69,6 +69,8 @@ pub mod solve_combinator;
 pub mod problem_size_escalation;
 /// CG stall window: median gap between strict residual improvements.
 pub mod cg_stall_window;
+/// CG stall window from the Lanczos spectrum of the coefficient trace.
+pub mod cg_spectral_window;
 /// Outer loop stops on a KKT certificate or the budget.
 pub mod kkt_outer_stop;
 pub mod sparse;
