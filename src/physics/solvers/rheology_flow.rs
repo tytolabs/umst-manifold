@@ -571,7 +571,7 @@ fn solve_pressure_phi_richardson_fallback<B: Backend<FloatElem = f32>>(
 ) -> Tensor<B, 3> {
     let lambda_upper = 12.0_f32;
     let omega = (1.35_f32 / lambda_upper).clamp(0.02_f32, 0.12_f32);
-    let max_it = n.saturating_mul(64).clamp(1024, 16000);
+    let max_it = n.max(1);
     let mut st = RichardsonPressurePhiState {
         phi: Tensor::<B, 3>::zeros_like(&rhs),
         rhs,
