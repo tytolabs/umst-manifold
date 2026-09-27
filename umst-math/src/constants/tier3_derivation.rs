@@ -39,8 +39,9 @@ pub const TUI_BIDI_DEFINITION: Derivation = Derivation::Definition {
     expected_sha256: TUI_BIDI_RFC_SHA256,
 };
 
-/// Prep alias retained for scaffold witness (same shape as GREEN).
+/// Prep alias retained for scaffold witness (same shape as the energy-backend definition).
 pub const ENERGY_BACKEND_DEFINITION_PREP: Derivation = ENERGY_BACKEND_DEFINITION;
+/// Prep alias retained for scaffold witness (same shape as the TUI bidi definition).
 pub const TUI_BIDI_DEFINITION_PREP: Derivation = TUI_BIDI_DEFINITION;
 
 /// K-4 pilot registry row names (2/2 for slice GREEN).
