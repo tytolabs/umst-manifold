@@ -515,7 +515,7 @@ impl AcousticWaveSolver {
                         kloc.clone(),
                         bar.as_ref(),
                     );
-                    if (en - *e0).abs() / *e_denom <= *energy_tol {
+                    if (en - e0).abs() / e_denom <= energy_tol {
                         core::ops::ControlFlow::Break(())
                     } else {
                         core::ops::ControlFlow::Continue(())

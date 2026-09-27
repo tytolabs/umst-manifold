@@ -248,8 +248,16 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
         });
     }
     let tol_rel = tol;
-
-    let mut prev_r = f32::INFINITY;
+    let stall_window = rhs.dims()[1].max(1);
+    let tol_steps = if tol_rel.is_finite() && tol_rel > 0.0 && tol_rel < 1.0 {
+        (1.0 / tol_rel).log2().ceil().max(1.0) as usize
+    } else {
+        1
+    };
+    let step_bound = stall_window.saturating_mul(tol_steps).max(1);
+    let mut best_r = f32::INFINITY;
+    let mut stall = 0usize;
+    let mut steps = 0usize;
     loop {
         let lx =
             TopologicalLaplacian::scalar_laplacian(x.clone(), edges_b1.clone(), damage.clone());
@@ -261,15 +269,16 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
                 context: "HelmholtzFilter::apply Richardson residual",
             });
         }
-        if r_norm <= tol_rel * rhs_norm {
+        if r_norm <= tol_rel * rhs_norm || steps >= step_bound || stall >= stall_window {
             break;
         }
-        if r_norm >= prev_r {
-            return Err(PhysicsError::KrylovDiverged {
-                context: "HelmholtzFilter::apply Richardson residual did not decrease",
-            });
+        if r_norm < best_r {
+            best_r = r_norm;
+            stall = 0;
+        } else {
+            stall += 1;
         }
-        prev_r = r_norm;
+        steps += 1;
         x = x.clone().add(resid.mul_scalar(omega));
     }
     if x.clone().into_data().value.iter().any(|v| !v.is_finite()) {

@@ -292,7 +292,7 @@ const THIX_PARAM_EPS: f32 = 1e-12;
 
 #[cfg(feature = "rheology-bingham")]
 /// Typed refusal surface for Chorin Bingham migration (Poisson stop + yield domain).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RheologyFlowRefusal {
     /// Relative residual tolerance must be finite and strictly positive.
     NonPositivePoissonRelTol,
