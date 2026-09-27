@@ -10,7 +10,9 @@
 
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
-use umst_manifold::core::field::{Field, HumidityField, ReactionExtentField, TemperatureField};
+use umst_manifold::core::field::{
+    DisplacementField, HumidityField, ReactionExtentField, TemperatureField,
+};
 use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
@@ -296,7 +298,7 @@ fn bar_network_strain_matches_strain_tensor_for_fracture_after_mechanics() {
     let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([batch, n, 3])), &d);
 
     let cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 300,
+        max_cg_iterations: n * 3,
         cg_tolerance: 1e-7,
         pcg_tolerance: 1e-7,
         use_preconditioner: true,
@@ -594,8 +596,8 @@ fn thmc_implicit_euler_t_alpha_residual_matches_brute_force_two_nodes() {
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
         dt,
-        temperature_n: Field::new(t_n.clone()),
-        alpha_n: Field::new(alpha_n.clone()),
+        temperature_n: TemperatureField::new(t_n.clone()),
+        alpha_n: ReactionExtentField::new(alpha_n.clone()),
         edges_b1: manifold.edges_b1.clone(),
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics: kinetics.clone(),
@@ -677,10 +679,10 @@ fn thmc_implicit_euler_t_h_alpha_residual_humidity_matches_brute_force_two_nodes
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: Field::new(t_n.clone()),
-        humidity_n: Field::new(h_n.clone()),
-        alpha_n: Field::new(alpha_n.clone()),
-        displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        temperature_n: TemperatureField::new(t_n.clone()),
+        humidity_n: HumidityField::new(h_n.clone()),
+        alpha_n: ReactionExtentField::new(alpha_n.clone()),
+        displacement_n: DisplacementField::new(Tensor::<B, 3>::zeros([1, n, 3], &d)),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1: manifold.edges_b1.clone(),
@@ -805,13 +807,13 @@ fn thmc_implicit_euler_t_h_alpha_u_placeholder_r_u_and_flat_layout_two_nodes() {
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: Field::new(t_n),
-        humidity_n: Field::new(h_n),
-        alpha_n: Field::new(alpha_n),
-        displacement_n: Tensor::<B, 3>::from_data(
+        temperature_n: TemperatureField::new(t_n),
+        humidity_n: HumidityField::new(h_n),
+        alpha_n: ReactionExtentField::new(alpha_n),
+        displacement_n: DisplacementField::new(Tensor::<B, 3>::from_data(
             Data::new(u_n_vals.clone(), Shape::new([1, n, 3])),
             &d,
-        ),
+        )),
         mechanics_placeholder_mass: mass,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1: manifold.edges_b1.clone(),
@@ -904,7 +906,7 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
     let damage = Tensor::<B, 3>::zeros([batch, n, 1], &d);
     let u0 = Tensor::<B, 3>::zeros([batch, n, 3], &d);
     let inner_cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 400,
+        max_cg_iterations: n * 3,
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,
@@ -927,10 +929,10 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
     let dt = 0.02_f32;
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: Field::new(Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d)),
-        humidity_n: Field::new(Tensor::<B, 3>::full([batch, n, 1], 0.6_f32, &d)),
-        alpha_n: Field::new(alpha_hydr.clone()),
-        displacement_n: Tensor::<B, 3>::zeros([batch, n, 3], &d),
+        temperature_n: TemperatureField::new(Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d)),
+        humidity_n: HumidityField::new(Tensor::<B, 3>::full([batch, n, 1], 0.6_f32, &d)),
+        alpha_n: ReactionExtentField::new(alpha_hydr.clone()),
+        displacement_n: DisplacementField::new(Tensor::<B, 3>::zeros([batch, n, 3], &d)),
         mechanics_placeholder_mass: 0.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
@@ -1044,7 +1046,7 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
     let damage = Tensor::<B, 3>::zeros([batch, n, 1], &d);
     let u0 = Tensor::<B, 3>::zeros([batch, n, 3], &d);
     let inner_cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 400,
+        max_cg_iterations: n * 3,
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,
@@ -1068,10 +1070,10 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
     let dt = 0.02_f32;
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: Field::new(Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d)),
-        humidity_n: Field::new(Tensor::<B, 3>::full([batch, n, 1], h_shared, &d)),
-        alpha_n: Field::new(alpha_hydr.clone()),
-        displacement_n: Tensor::<B, 3>::zeros([batch, n, 3], &d),
+        temperature_n: TemperatureField::new(Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d)),
+        humidity_n: HumidityField::new(Tensor::<B, 3>::full([batch, n, 1], h_shared, &d)),
+        alpha_n: ReactionExtentField::new(alpha_hydr.clone()),
+        displacement_n: DisplacementField::new(Tensor::<B, 3>::zeros([batch, n, 3], &d)),
         mechanics_placeholder_mass: 0.0_f32,
         ru_shrinkage_binder_liquid_ratio: Some(0.4_f32),
         edges_b1,
@@ -1162,7 +1164,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
     let damage = Tensor::<B, 3>::zeros([batch, n, 1], &d);
     let u0 = Tensor::<B, 3>::zeros([batch, n, 3], &d);
     let inner_cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 400,
+        max_cg_iterations: n * 3,
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,
@@ -1185,10 +1187,10 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
     let dt = 0.02_f32;
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: Field::new(Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d)),
-        humidity_n: Field::new(Tensor::<B, 3>::full([batch, n, 1], 0.62_f32, &d)),
-        alpha_n: Field::new(alpha_hydr.clone()),
-        displacement_n: Tensor::<B, 3>::zeros([batch, n, 3], &d),
+        temperature_n: TemperatureField::new(Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d)),
+        humidity_n: HumidityField::new(Tensor::<B, 3>::full([batch, n, 1], 0.62_f32, &d)),
+        alpha_n: ReactionExtentField::new(alpha_hydr.clone()),
+        displacement_n: DisplacementField::new(Tensor::<B, 3>::zeros([batch, n, 3], &d)),
         mechanics_placeholder_mass: 0.0_f32,
         ru_shrinkage_binder_liquid_ratio: Some(0.4_f32),
         edges_b1: edges_b1.clone(),
@@ -1275,10 +1277,10 @@ fn thmc_monolithic_residual_blocks_consistent_two_nodes() {
     let damage_m = Tensor::<B, 3>::zeros([batch, n, 1], &d);
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: Field::new(Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d)),
-        humidity_n: Field::new(Tensor::<B, 3>::full([batch, n, 1], 0.6_f32, &d)),
-        alpha_n: Field::new(alpha_hydr.clone()),
-        displacement_n: Tensor::<B, 3>::zeros([batch, n, 3], &d),
+        temperature_n: TemperatureField::new(Tensor::<B, 3>::full([batch, n, 1], 300.0_f32, &d)),
+        humidity_n: HumidityField::new(Tensor::<B, 3>::full([batch, n, 1], 0.6_f32, &d)),
+        alpha_n: ReactionExtentField::new(alpha_hydr.clone()),
+        displacement_n: DisplacementField::new(Tensor::<B, 3>::zeros([batch, n, 3], &d)),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
@@ -1404,10 +1406,10 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: Field::new(t_n),
-        humidity_n: Field::new(h_n),
-        alpha_n: Field::new(alpha_n),
-        displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        temperature_n: TemperatureField::new(t_n),
+        humidity_n: HumidityField::new(h_n),
+        alpha_n: ReactionExtentField::new(alpha_n),
+        displacement_n: DisplacementField::new(Tensor::<B, 3>::zeros([1, n, 3], &d)),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
@@ -1509,10 +1511,10 @@ fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() 
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: Field::new(t_n),
-        humidity_n: Field::new(h_n),
-        alpha_n: Field::new(alpha_n),
-        displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        temperature_n: TemperatureField::new(t_n),
+        humidity_n: HumidityField::new(h_n),
+        alpha_n: ReactionExtentField::new(alpha_n),
+        displacement_n: DisplacementField::new(Tensor::<B, 3>::zeros([1, n, 3], &d)),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
@@ -1604,10 +1606,10 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: Field::new(t_n),
-        humidity_n: Field::new(h_n),
-        alpha_n: Field::new(alpha_n),
-        displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        temperature_n: TemperatureField::new(t_n),
+        humidity_n: HumidityField::new(h_n),
+        alpha_n: ReactionExtentField::new(alpha_n),
+        displacement_n: DisplacementField::new(Tensor::<B, 3>::zeros([1, n, 3], &d)),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
@@ -1745,10 +1747,10 @@ fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() 
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: Field::new(t_n),
-        humidity_n: Field::new(h_n),
-        alpha_n: Field::new(alpha_n),
-        displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        temperature_n: TemperatureField::new(t_n),
+        humidity_n: HumidityField::new(h_n),
+        alpha_n: ReactionExtentField::new(alpha_n),
+        displacement_n: DisplacementField::new(Tensor::<B, 3>::zeros([1, n, 3], &d)),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1,
@@ -1876,10 +1878,10 @@ fn thmc_implicit_euler_t_h_alpha_multi_newton_monotone_stacked_residual_norm() {
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: Field::new(t_n),
-        humidity_n: Field::new(h_n),
-        alpha_n: Field::new(alpha_n),
-        displacement_n: Tensor::<B, 3>::zeros([1, n, 3], &d),
+        temperature_n: TemperatureField::new(t_n),
+        humidity_n: HumidityField::new(h_n),
+        alpha_n: ReactionExtentField::new(alpha_n),
+        displacement_n: DisplacementField::new(Tensor::<B, 3>::zeros([1, n, 3], &d)),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1: manifold.edges_b1.clone(),
@@ -1937,8 +1939,8 @@ fn thmc_implicit_euler_t_alpha_one_newton_lowers_residual_norm() {
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
         dt,
-        temperature_n: Field::new(t_n),
-        alpha_n: Field::new(alpha_n),
+        temperature_n: TemperatureField::new(t_n),
+        alpha_n: ReactionExtentField::new(alpha_n),
         edges_b1: manifold.edges_b1.clone(),
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics,
@@ -1996,8 +1998,8 @@ fn thmc_t_alpha_newton_residual_preserves_hydro_mechanics_fields() {
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
         dt,
-        temperature_n: Field::new(t_n),
-        alpha_n: Field::new(alpha_n),
+        temperature_n: TemperatureField::new(t_n),
+        alpha_n: ReactionExtentField::new(alpha_n),
         edges_b1: manifold.edges_b1.clone(),
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics,
@@ -2078,8 +2080,8 @@ fn thmc_implicit_euler_t_alpha_multi_newton_monotone_residual_norm_decrease() {
     let damage_m = Tensor::<B, 3>::zeros([1, n, 1], &d);
     let assembler = ThmcImplicitEulerThermalReactionExtentResidual {
         dt,
-        temperature_n: Field::new(t_n),
-        alpha_n: Field::new(alpha_n),
+        temperature_n: TemperatureField::new(t_n),
+        alpha_n: ReactionExtentField::new(alpha_n),
         edges_b1: manifold.edges_b1.clone(),
         damage_m: StepEntryDamageMask::from_tensor(damage_m.clone()),
         kinetics,
@@ -2480,10 +2482,10 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
 
     let assembler = ThmcImplicitEulerThermalHumidityReactionExtentResidual {
         dt,
-        temperature_n: Field::new(t_old.clone()),
-        humidity_n: Field::new(h_old.clone()),
-        alpha_n: Field::new(alpha_n.clone()),
-        displacement_n: state0.mechanical.displacement.as_tensor().clone(),
+        temperature_n: TemperatureField::new(t_old.clone()),
+        humidity_n: HumidityField::new(h_old.clone()),
+        alpha_n: ReactionExtentField::new(alpha_n.clone()),
+        displacement_n: state0.mechanical.displacement.clone(),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1: edges_b1.clone(),
@@ -2823,7 +2825,7 @@ fn thmc_step_monolithic_implicit_lowers_coupled_be_residual_norm_vs_split_two_no
         temperature_n: state0.thermal.temperature.clone(),
         humidity_n: state0.hydro.humidity.clone(),
         alpha_n: state0.chemical.reaction_extent.clone(),
-        displacement_n: state0.mechanical.displacement.as_tensor().clone(),
+        displacement_n: state0.mechanical.displacement.clone(),
         mechanics_placeholder_mass: 1.0_f32,
         ru_shrinkage_binder_liquid_ratio: None,
         edges_b1: manifold.edges_b1.clone(),
