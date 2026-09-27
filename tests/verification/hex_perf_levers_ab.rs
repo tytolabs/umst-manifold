@@ -84,7 +84,7 @@ fn run_config(
         e_min: 1.0,
     };
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 400,
+        max_cg_iterations: n * 3,
         cg_tolerance: EQ_REL_TOL,
         pcg_tolerance: EQ_REL_TOL,
         use_preconditioner: true,
