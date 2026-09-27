@@ -451,7 +451,9 @@ mod tests {
         assert_eq!(report.lane, PrecisionLane::F64AdjointBarPcg);
         assert!(report.converged());
         assert_eq!(
-            BarNetworkMechanicsSolvePort.precision_lane(),
+            <BarNetworkMechanicsSolvePort as MechanicsSolvePort<B>>::precision_lane(
+                &BarNetworkMechanicsSolvePort,
+            ),
             PrecisionLane::F64AdjointBarPcg
         );
     }
