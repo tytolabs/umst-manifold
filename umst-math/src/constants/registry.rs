@@ -1443,9 +1443,9 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "solve_combinator_macos_package_power_ceiling_watts",
-        expression: "unmeasured: operator supplies watts from `sudo powermetrics --samplers cpu_power -i 1000 -n 1` into BoundedPackageMeter::from_operator_ceiling_watts",
+        expression: "unmeasured ceiling; loaded sample Combined Power 18334 mW (18.334 W) is one second, not a package maximum",
         tier: ConstantTier::Tier1Measurement,
-        evidence: "pending: machine-specific powermetrics sample (no universal package-power citation; registry documents absence until operator measured)",
+        evidence: "Two operator samples, sudo powermetrics --samplers cpu_power -i 1000 -n 1, Mac15,9, OS 25G83. Low-load Sun Sep 27 12:31:28 2026 +0530, 1008.90 ms, CPU 3098 mW, GPU 7 mW, ANE 0, Combined 3105 mW. Loaded Sun Sep 27 12:32:58 2026 +0530, 1009.03 ms, all clusters online, CPU 16375 mW, GPU 1959 mW, ANE 0, Combined 18334 mW. Not installed as a ceiling: a later step can draw more, and a low ceiling makes the budget stop late.",
         env_override: None,
         derivation: Derivation::Pending,
     },

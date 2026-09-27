@@ -61,6 +61,8 @@ pub mod rho_estimator;
 pub mod schrodinger;
 /// THEOREM-BOUND: scalar Kalman + Joseph EKF smoothers (§14bis.e-TUI-7; vendor umst-prototype-2a)
 pub mod smoothing;
+/// L1a: typed structural refusals before iterative solve (SOLVER_COMPOSITION_DESIGN §2.2).
+pub mod solver_refusal;
 /// Track C coalgebraic solve combinator — Thermo unfold, certified outcomes.
 pub mod solve_combinator;
 pub mod sparse;
@@ -78,6 +80,11 @@ pub use linear_operator::{
 };
 /// L1a: preconditioner trait and diagonal / identity implementations.
 pub use preconditioner::{DiagonalPreconditioner, IdentityPreconditioner, Preconditioner};
+/// L1a: pre-iteration structural refusal witnesses (§2.2).
+pub use solver_refusal::{
+    Inconsistent, Mechanism, PrecisionInsufficient, SolverRefusal, SolverRefusalCertifyRefuse,
+    Underconstrained,
+};
 /// CONSTANT-BOUND: CGD registry row types (re-export for wire gate on registry edits).
 pub use constants::registry::{ConstantEntry, ConstantTier};
 /// THEOREM-BOUND: `combine_density_between` (re-export: density diagonal / CGD struct)
