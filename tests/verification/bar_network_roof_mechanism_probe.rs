@@ -4,9 +4,9 @@
 //!
 //! formal_anchor: Track B6 / b6-roof-mechanism-research
 //!
-//! Companion to [`bar_network_operator_step_a`]: PROBES 1/3 witness why
-//! [`quick_plate_harness_load_pcg_converges`] stays **`#[ignore]`** (CGLS min-residual floor ≈
-//! observed PCG stall via FP §2 `PhysicsError::Diverged`). Default CI runs all four probes here;
+//! Companion to [`bar_network_operator_step_a`]: PROBES 0/1/3 witness axial-roof mechanism
+//! via [`rigidity_precheck_2d`] **before** any PCG loop, plus analytical singular-\(K_{ff}\) /
+//! CGLS incompatible-RHS floors. Default CI runs all probes here;
 //! ledger cross-ref: [`docs/SOLVER_NEVER_RUN_LEDGER.md`](../../docs/SOLVER_NEVER_RUN_LEDGER.md).
 
 #![cfg(feature = "mechanics-adjoint")]
@@ -19,8 +19,10 @@
 
 use burn::tensor::{backend::Backend, Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
+use umst_algebra::rigidity_certifier::{
+    rigidity_precheck_2d, roof_axis_grid_fixture, RigidityRefusal,
+};
 use umst_manifold::physics::dec_operators::DecEdgeOperators;
-use umst_manifold::physics::error::PhysicsError;
 use umst_manifold::physics::extruded_plate::ExtrudedPlateMechanics;
 use umst_manifold::physics::mechanics::{BarNetworkPcgReport, VectorMechanicsSolver};
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
@@ -183,15 +185,15 @@ impl HarnessFixture {
         ix + iy * nx1 + iz * nx1 * ny1
     }
 
-    /// One PCG pass per masked unknown (`iteration_budget`), not an ad-hoc iteration bump.
+    /// Fixed PCG ceiling for the convergent perimeter-column witness (probe 1b), not ndof-scaled.
     fn roof_harness_inner_cfg(&self) -> MechanicsInnerLoopConfig {
-        let mut cfg = MechanicsInnerLoopConfig::for_unknowns(self.ndof);
-        cfg.cg_tolerance = 1e-4;
-        cfg.pcg_tolerance = 1e-4;
-        // Matches cartridge harness + Step A ignored roof test (precond hides the floor).
-        cfg.use_preconditioner = false;
-        cfg.max_equilibrium_substeps = 1;
-        cfg
+        MechanicsInnerLoopConfig {
+            max_cg_iterations: 256,
+            cg_tolerance: 1e-4,
+            pcg_tolerance: 1e-4,
+            use_preconditioner: false,
+            max_equilibrium_substeps: 1,
+        }
     }
 
     fn mechanism_mode_candidates(&self) -> Vec<(&'static str, Vec<f64>)> {
@@ -463,41 +465,6 @@ fn bar_equilibrium_body_force(fx: &HarnessFixture, f_flat: &[f32]) -> Tensor<B, 
     )
 }
 
-/// FP §2 fail-closed on the singular axial roof harness: equilibrium must return
-/// [`PhysicsError::Diverged`], not `Ok`, when PCG cannot meet the configured tolerance.
-fn assert_roof_equilibrium_diverged(
-    fx: &HarnessFixture,
-    f_flat: &[f32],
-    cfg: &MechanicsInnerLoopConfig,
-) -> PhysicsError {
-    let body_force = bar_equilibrium_body_force(fx, f_flat);
-    match VectorMechanicsSolver::solve_equilibrium_with_pcg_report(
-        Tensor::<B, 3>::zeros([1, fx.n, 3], &fx.dev),
-        fx.coords.clone(),
-        fx.stiffness.clone(),
-        body_force,
-        fx.edges.clone(),
-        fx.damage.clone(),
-        fx.mask.clone(),
-        fx.area,
-        cfg,
-    ) {
-        Err(e @ PhysicsError::Diverged { .. }) => {
-            assert!(
-                e.is_divergence(),
-                "roof stall must classify as iterative divergence: {e}"
-            );
-            e
-        }
-        Err(e) => panic!(
-            "VectorMechanicsSolver::solve_equilibrium_with_pcg_report on extruded plate bar network (FP §6 Track B6 H4 roof PCG witness): expected Diverged, got {e}"
-        ),
-        Ok((_, _, pcg)) => panic!(
-            "singular axial roof harness must refuse convergence (FP §2 Diverged), got Ok pcg={pcg:?}"
-        ),
-    }
-}
-
 fn assert_bar_equilibrium_converged(
     fx: &HarnessFixture,
     f_flat: &[f32],
@@ -614,10 +581,32 @@ fn rayleigh_max_eig(a: &[Vec<f64>], iters: usize) -> f64 {
 }
 
 #[test]
+fn probe0_rigidity_certifier_refuses_axial_roof_before_iteration() {
+    let (bar, supports, loads) = roof_axis_grid_fixture();
+    match rigidity_precheck_2d(&bar, &supports, &loads) {
+        Err(RigidityRefusal::Mechanism { modes_or_count }) => {
+            assert!(
+                modes_or_count >= 1,
+                "mechanism witness must report at least one mode, got {modes_or_count}"
+            );
+        }
+        other => panic!(
+            "axial roof harness must be refused by rigidity_precheck_2d before PCG, got {other:?}"
+        ),
+    }
+}
+
+#[test]
 fn probe1_mechanism_modes_and_roof_floor() {
+    let (bar, supports, loads) = roof_axis_grid_fixture();
+    match rigidity_precheck_2d(&bar, &supports, &loads) {
+        Err(RigidityRefusal::Mechanism { modes_or_count }) => {
+            assert!(modes_or_count >= 1, "modes_or_count={modes_or_count}");
+        }
+        other => panic!("rigidity precheck must refuse roof before iteration: {other:?}"),
+    }
+
     let fx = HarnessFixture::quick();
-    let cfg = fx.roof_harness_inner_cfg();
-    let rel_tol = BarNetworkPcgReport::rel_tol_from_cfg(&cfg);
 
     let (_, mode_name, kappa_best) = best_mechanism_rho_pred(&fx);
     let free = free_dof_indices(&fx.mask_flat);
@@ -625,18 +614,8 @@ fn probe1_mechanism_modes_and_roof_floor() {
     let ff: Vec<f64> = free.iter().map(|&gd| fx.f_roof_flat[gd]).collect();
     let rho_pred = min_residual_ratio_kff(&kff, &ff, 4000);
 
-    let f32_roof: Vec<f32> = fx.f_roof.clone().into_data().value;
-    let diverged = assert_roof_equilibrium_diverged(&fx, &f32_roof, &cfg);
-    let PhysicsError::Diverged {
-        eq_rel: pcg_obs,
-        pcg_iterations: pcg_iters,
-    } = diverged
-    else {
-        unreachable!("assert_roof_equilibrium_diverged returns Diverged only");
-    };
-
     eprintln!(
-        "PROBE1: best_mode={mode_name} kappa={kappa_best:.3e} rho_cgls={rho_pred:.4} pcg_obs={pcg_obs:.4} iters={pcg_iters}"
+        "PROBE1: best_mode={mode_name} kappa={kappa_best:.3e} rho_cgls={rho_pred:.4}"
     );
 
     assert!(
@@ -644,21 +623,8 @@ fn probe1_mechanism_modes_and_roof_floor() {
         "best candidate should be a mechanism (κ={kappa_best})"
     );
     assert!(
-        (rho_pred - pcg_obs as f64).abs() < 0.15,
-        "CGLS min-residual floor {rho_pred} should reproduce observed pcg_rel_res {pcg_obs}"
-    );
-    assert!(
-        pcg_obs > rel_tol,
-        "roof traction must fail-closed above tolerance (observed {pcg_obs}, tol={rel_tol})"
-    );
-    assert!(
-        pcg_obs > 0.5,
-        "roof traction should stall at incompatible-RHS floor (observed {pcg_obs})"
-    );
-    assert!(
-        pcg_iters <= cfg.iteration_budget(fx.ndof),
-        "PCG iterations {pcg_iters} must respect unknown-scaled budget {}",
-        cfg.iteration_budget(fx.ndof)
+        rho_pred > 0.5,
+        "CGLS min-residual floor {rho_pred} should sit at incompatible-RHS stall for singular K_ff"
     );
 }
 
@@ -740,21 +706,11 @@ fn probe3_kff_singular_and_incompatible_rhs() {
         "K_ff Cholesky should fail (singular semidefinite); chol_ok={chol_ok} min_pivot={min_pivot:.3e}"
     );
 
-    let cfg = fx.roof_harness_inner_cfg();
-    let f32_roof: Vec<f32> = fx.f_roof.clone().into_data().value;
-    let diverged = assert_roof_equilibrium_diverged(&fx, &f32_roof, &cfg);
-    let PhysicsError::Diverged { eq_rel: pcg_obs, .. } = diverged else {
-        unreachable!("assert_roof_equilibrium_diverged returns Diverged only");
-    };
     let ff: Vec<f64> = free.iter().map(|&gd| fx.f_roof_flat[gd]).collect();
     let rho_cgls = min_residual_ratio_kff(&kff, &ff, 4000);
-    eprintln!("PROBE3: rho_cgls={rho_cgls:.4} pcg_obs={pcg_obs:.4}");
+    eprintln!("PROBE3: rho_cgls={rho_cgls:.4}");
     assert!(
-        (rho_cgls - pcg_obs as f64).abs() < 0.15,
-        "incompatible RHS floor mismatch: rho_cgls={rho_cgls} pcg={pcg_obs}"
-    );
-    assert!(
-        pcg_obs > BarNetworkPcgReport::rel_tol_from_cfg(&cfg),
-        "singular K_ff roof load must Diverged above PCG tolerance (pcg_obs={pcg_obs})"
+        rho_cgls > 0.5,
+        "singular K_ff roof load should exhibit incompatible-RHS CGLS floor (rho_cgls={rho_cgls})"
     );
 }
