@@ -3,9 +3,10 @@
 //! Coalgebraic solve combinator: a budgeted unfold with typed outcomes.
 //!
 //! Termination is the second-law budget, never a compiled iteration cap.
-//! Each step posts at least `k_B · T · ln 2` joules per erased bit (UCRS Landauer
-//! ledger increment). The result is one of [`SolveOutcome`] — never a silent
-//! best-effort value.
+//! Each step debits **measured** energy (elapsed × package power from a
+//! UCRS/powermetrics reader). Landauer `k_B · T · ln 2 · bits` is a certified
+//! floor: measured must be ≥ floor. No reader ⇒ [`CombinatorRefuse::Unmeasured`].
+//! Stall is judged over a problem-derived window, not a single residual bump.
 //!
 //! Proof anchors: `LandauerBound` / `idealResetErasure`; Gate `clausiusDuhemFwd`.
 //! DOI: 10.5281/zenodo.19159660
@@ -26,6 +27,12 @@ pub enum CombinatorRefuse {
     NonPositiveTolerance,
     /// Bits erased per step was not strictly positive (would stall the measure).
     NonPositiveBits,
+    /// No UCRS/powermetrics package-power reader is available.
+    Unmeasured,
+    /// Measured step energy was below the certified Landauer floor.
+    MeasuredBelowFloor,
+    /// Progress window length was not strictly positive.
+    NonPositiveWindow,
 }
 
 /// Remaining energy, set by the operator or the problem. Never a compiled cap.
@@ -111,6 +118,10 @@ impl EnergySpent {
     pub fn plus(self, other: Self) -> Result<Self, CombinatorRefuse> {
         Self::from_finite_non_negative(self.joules + other.joules)
     }
+
+    fn is_below(self, floor: Self) -> bool {
+        self.joules < floor.joules
+    }
 }
 
 /// Residual tolerance derived from the problem (conditioning × data uncertainty).
@@ -167,10 +178,112 @@ impl ResidualCertificate {
 pub struct StallEvidence {
     /// Residual that failed to decrease.
     pub residual: NotNan<f64>,
-    /// Residual before the stalled step.
+    /// Residual before the stalled window.
     pub prior_residual: NotNan<f64>,
     /// Rung at which the lattice was exhausted.
     pub rung: StrategyRung,
+    /// Problem-derived progress window that was exhausted.
+    pub window: ProblemProgressWindow,
+}
+
+/// Consecutive non-improving steps allowed before stall/escalate (e.g. Krylov restart).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ProblemProgressWindow {
+    length: u32,
+}
+
+impl ProblemProgressWindow {
+    /// Window from a Krylov restart length (or any problem-derived count ≥ 1).
+    pub fn from_krylov_restart(restart_length: u32) -> Result<Self, CombinatorRefuse> {
+        if restart_length == 0 {
+            return Err(CombinatorRefuse::NonPositiveWindow);
+        }
+        Ok(Self {
+            length: restart_length,
+        })
+    }
+
+    /// Window length in steps.
+    pub fn length(self) -> u32 {
+        self.length
+    }
+}
+
+/// Instantaneous package power from the UCRS / powermetrics reader.
+pub trait PackagePowerReader {
+    /// Package power in watts, or [`CombinatorRefuse::Unmeasured`].
+    fn package_power_watts(&self) -> Result<NotNan<f64>, CombinatorRefuse>;
+}
+
+/// Measures the energy of one solver step. Never guesses.
+pub trait StepEnergyMeter {
+    /// Run `step` and return the value plus the measured spend.
+    fn measure<F, T>(&self, step: F) -> Result<(T, EnergySpent), CombinatorRefuse>
+    where
+        F: FnOnce() -> Result<T, CombinatorRefuse>;
+}
+
+/// Typed absence of a package-power reader.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct UnmeasuredMeter {}
+
+impl StepEnergyMeter for UnmeasuredMeter {
+    fn measure<F, T>(&self, _step: F) -> Result<(T, EnergySpent), CombinatorRefuse>
+    where
+        F: FnOnce() -> Result<T, CombinatorRefuse>,
+    {
+        Err(CombinatorRefuse::Unmeasured)
+    }
+}
+
+/// Test / injected meter that posts a known joule spend (not a live guess).
+#[derive(Clone, Copy, Debug)]
+pub struct FixedJouleMeter {
+    joules: f64,
+}
+
+impl FixedJouleMeter {
+    /// Finite non-negative joules posted for every measured step.
+    pub fn from_joules(joules: f64) -> Result<Self, CombinatorRefuse> {
+        let _ = finite_non_negative(joules)?;
+        Ok(Self { joules })
+    }
+}
+
+impl StepEnergyMeter for FixedJouleMeter {
+    fn measure<F, T>(&self, step: F) -> Result<(T, EnergySpent), CombinatorRefuse>
+    where
+        F: FnOnce() -> Result<T, CombinatorRefuse>,
+    {
+        let value = step()?;
+        Ok((value, EnergySpent::from_finite_non_negative(self.joules)?))
+    }
+}
+
+/// Live meter: elapsed seconds × package watts from [`PackagePowerReader`].
+#[derive(Clone, Copy, Debug)]
+pub struct MeasuredPackageMeter<R> {
+    reader: R,
+}
+
+impl<R: PackagePowerReader> MeasuredPackageMeter<R> {
+    /// Bind a reader. Absence is [`UnmeasuredMeter`], not this type.
+    pub fn from_reader(reader: R) -> Self {
+        Self { reader }
+    }
+}
+
+impl<R: PackagePowerReader> StepEnergyMeter for MeasuredPackageMeter<R> {
+    fn measure<F, T>(&self, step: F) -> Result<(T, EnergySpent), CombinatorRefuse>
+    where
+        F: FnOnce() -> Result<T, CombinatorRefuse>,
+    {
+        let watts = self.reader.package_power_watts()?;
+        let t0 = std::time::Instant::now();
+        let value = step()?;
+        let joules = watts.into_inner() * t0.elapsed().as_secs_f64();
+        Ok((value, EnergySpent::from_finite_non_negative(joules)?))
+    }
 }
 
 /// Progress recorded when the budget is exhausted.
@@ -288,19 +401,22 @@ pub fn landauer_step_joules(
 }
 
 /// Coalgebraic unfold. Stops only for Converged, Stalled (lattice exhausted),
-/// or BudgetSpent. No iteration ceiling.
-pub fn unfold<S, ResidualOf, Step>(
+/// or BudgetSpent. No iteration ceiling. Debits measured energy, not Landauer×bits.
+pub fn unfold<S, ResidualOf, Step, Meter>(
     initial: S,
     residual_of: ResidualOf,
     mut step: Step,
     tolerance: ProblemTolerance,
     budget: EnergyBudget,
+    meter: &Meter,
+    window: ProblemProgressWindow,
     bits_per_step: f64,
 ) -> Result<SolveOutcome<S>, CombinatorRefuse>
 where
     S: Clone,
     ResidualOf: Fn(&S) -> Result<NotNan<f64>, CombinatorRefuse>,
     Step: FnMut(&S, StrategyRung) -> Result<S, CombinatorRefuse>,
+    Meter: StepEnergyMeter,
 {
     let bits = finite_positive(bits_per_step, CombinatorRefuse::NonPositiveBits)?;
     let mut state = initial;
@@ -308,6 +424,7 @@ where
     let mut spent = EnergySpent::zero();
     let mut remaining = budget;
     let mut strategy = StrategyRung::Jacobi;
+    let mut stale = 0_u32;
     let initial_cert = ResidualCertificate::of(residual, tolerance);
     if initial_cert.meets {
         return Ok(SolveOutcome::Converged {
@@ -317,7 +434,22 @@ where
     }
 
     loop {
-        let cost = landauer_step_joules(remaining.temperature_k(), bits)?;
+        let floor = landauer_step_joules(remaining.temperature_k(), bits)?;
+        match remaining.try_debit(floor) {
+            Ok(_) => {}
+            Err(_) => {
+                return Ok(SolveOutcome::BudgetSpent {
+                    best: state,
+                    spent,
+                    progress_certificate: ProgressCertificate { residual, spent },
+                });
+            }
+        }
+
+        let (next, cost) = meter.measure(|| step(&state, strategy))?;
+        if cost.is_below(floor) {
+            return Err(CombinatorRefuse::MeasuredBelowFloor);
+        }
         match remaining.try_debit(cost) {
             Ok(next_budget) => {
                 remaining = next_budget;
@@ -332,7 +464,6 @@ where
             }
         }
 
-        let next = step(&state, strategy)?;
         let next_residual = residual_of(&next)?;
         let cert = ResidualCertificate::of(next_residual, tolerance);
         if cert.meets {
@@ -345,9 +476,15 @@ where
         if next_residual < residual {
             state = next;
             residual = next_residual;
+            stale = 0;
             continue;
         }
 
+        stale = stale.saturating_add(1);
+        if stale < window.length() {
+            continue;
+        }
+        stale = 0;
         match strategy.escalate() {
             Some(next_rung) => {
                 strategy = next_rung;
@@ -359,6 +496,7 @@ where
                         residual: next_residual,
                         prior_residual: residual,
                         rung: strategy,
+                        window,
                     },
                 });
             }
@@ -393,6 +531,14 @@ mod tests {
 
     fn abs_residual(x: &f64) -> Result<NotNan<f64>, CombinatorRefuse> {
         NotNan::new(x.abs()).map_err(|_| CombinatorRefuse::NonFiniteQuantity)
+    }
+
+    fn paid_meter() -> FixedJouleMeter {
+        FixedJouleMeter::from_joules(1e-18).expect("above floor")
+    }
+
+    fn one_step_window() -> ProblemProgressWindow {
+        ProblemProgressWindow::from_krylov_restart(1).expect("window")
     }
 
     #[test]
@@ -479,6 +625,8 @@ mod tests {
             |x, _rung| Ok(x * 0.5),
             tolerance,
             budget,
+            &paid_meter(),
+            one_step_window(),
             1.0,
         )
         .expect("unfold");
@@ -501,6 +649,8 @@ mod tests {
             |x, _rung| Ok(*x),
             tolerance,
             budget,
+            &paid_meter(),
+            one_step_window(),
             1.0,
         )
         .expect("unfold");
@@ -509,6 +659,7 @@ mod tests {
                 assert_eq!(best, 1.0);
                 assert_eq!(evidence.rung, StrategyRung::SparseDirect);
                 assert_eq!(evidence.residual, nn(1.0));
+                assert_eq!(evidence.window.length(), 1);
             }
             other => panic!("expected Stalled, got {other:?}"),
         }
@@ -524,6 +675,8 @@ mod tests {
             |x, _rung| Ok(x * 0.5),
             tolerance,
             budget,
+            &paid_meter(),
+            one_step_window(),
             1.0,
         )
         .expect("unfold");
@@ -545,8 +698,148 @@ mod tests {
     fn unfold_refuses_compiled_style_zero_bits() {
         let tolerance = ProblemTolerance::from_problem(2.0, 1e-3).expect("tol");
         let budget = EnergyBudget::from_joules_at(1e-12, 293.15).expect("B");
-        let err = unfold(1.0_f64, abs_residual, |x, _| Ok(*x), tolerance, budget, 0.0)
-            .expect_err("zero bits");
+        let err = unfold(
+            1.0_f64,
+            abs_residual,
+            |x, _| Ok(*x),
+            tolerance,
+            budget,
+            &paid_meter(),
+            one_step_window(),
+            0.0,
+        )
+        .expect_err("zero bits");
         assert_eq!(err, CombinatorRefuse::NonPositiveBits);
+    }
+
+    #[test]
+    fn unfold_refuses_unmeasured_when_no_reader() {
+        let tolerance = ProblemTolerance::from_problem(2.0, 1e-3).expect("tol");
+        let budget = EnergyBudget::from_joules_at(1e-12, 293.15).expect("B");
+        let err = unfold(
+            1.0_f64,
+            abs_residual,
+            |x, _| Ok(x * 0.5),
+            tolerance,
+            budget,
+            &UnmeasuredMeter {},
+            one_step_window(),
+            1.0,
+        )
+        .expect_err("unmeasured");
+        assert_eq!(err, CombinatorRefuse::Unmeasured);
+    }
+
+    #[test]
+    fn unfold_debits_measured_joules_not_landauer_times_bits() {
+        let tolerance = ProblemTolerance::from_problem(2.0, 1e-3).expect("tol");
+        let budget = EnergyBudget::from_joules_at(10.0, 293.15).expect("B");
+        let meter = FixedJouleMeter::from_joules(3.0).expect("3 J");
+        let out = unfold(
+            1.0_f64,
+            abs_residual,
+            |x, _| Ok(*x),
+            tolerance,
+            budget,
+            &meter,
+            one_step_window(),
+            1.0,
+        )
+        .expect("unfold");
+        match out {
+            SolveOutcome::Stalled { .. } => {}
+            other => panic!("expected Stalled, got {other:?}"),
+        }
+        let floor = landauer_step_joules(nn(293.15), nn(1.0)).expect("floor");
+        assert!(floor.joules < 1e-15);
+        let posts = std::cell::Cell::new(0_u32);
+        let counting = CountingMeter {
+            inner: meter,
+            posts: &posts,
+        };
+        let out = unfold(
+            1.0_f64,
+            abs_residual,
+            |x, _| Ok(*x),
+            tolerance,
+            budget,
+            &counting,
+            one_step_window(),
+            1.0,
+        )
+        .expect("count");
+        match out {
+            SolveOutcome::Stalled { .. } => {
+                assert_eq!(posts.get(), 5);
+                assert!(3.0 * f64::from(posts.get()) > floor.joules * 1e10);
+            }
+            other => panic!("expected Stalled, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn unfold_refuses_measured_below_landauer_floor() {
+        let tolerance = ProblemTolerance::from_problem(2.0, 1e-3).expect("tol");
+        let budget = EnergyBudget::from_joules_at(1e-12, 293.15).expect("B");
+        let err = unfold(
+            1.0_f64,
+            abs_residual,
+            |x, _| Ok(x * 0.5),
+            tolerance,
+            budget,
+            &FixedJouleMeter::from_joules(1e-40).expect("tiny"),
+            one_step_window(),
+            1.0,
+        )
+        .expect_err("below floor");
+        assert_eq!(err, CombinatorRefuse::MeasuredBelowFloor);
+    }
+
+    #[test]
+    fn unfold_stall_window_allows_non_monotone_residual() {
+        let tolerance = ProblemTolerance::from_problem(4.0, 1e-3).expect("tol");
+        let budget = EnergyBudget::from_joules_at(1e-12, 293.15).expect("B");
+        let window = ProblemProgressWindow::from_krylov_restart(3).expect("restart 3");
+        let mut n = 0_u32;
+        let out = unfold(
+            1.0_f64,
+            abs_residual,
+            |x, _rung| {
+                n = n.saturating_add(1);
+                if n < 3 {
+                    Ok(*x)
+                } else {
+                    Ok(x * 0.5)
+                }
+            },
+            tolerance,
+            budget,
+            &paid_meter(),
+            window,
+            1.0,
+        )
+        .expect("unfold");
+        match out {
+            SolveOutcome::Converged { certificate, .. } => {
+                assert!(certificate.meets);
+                assert!(n >= 3);
+            }
+            other => panic!("expected Converged after windowed stall, got {other:?}"),
+        }
+    }
+
+    struct CountingMeter<'a> {
+        inner: FixedJouleMeter,
+        posts: &'a std::cell::Cell<u32>,
+    }
+
+    impl StepEnergyMeter for CountingMeter<'_> {
+        fn measure<F, T>(&self, step: F) -> Result<(T, EnergySpent), CombinatorRefuse>
+        where
+            F: FnOnce() -> Result<T, CombinatorRefuse>,
+        {
+            self.posts.set(self.posts.get().saturating_add(1));
+            self.inner.measure(step)
+        }
     }
 }

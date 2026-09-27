@@ -73,8 +73,10 @@ pub use englert::{englert_bound_holds, englert_lhs};
 pub use landauer::landauer_cost_diagonal_bits;
 /// Track C: certified solve outcomes + UCRS Landauer budget types.
 pub use solve_combinator::{
-    landauer_step_joules, unfold, CombinatorRefuse, EnergyBudget, EnergySpent, ProblemTolerance,
-    ProgressCertificate, ResidualCertificate, SolveOutcome, StallEvidence, StrategyRung, Thermo,
+    landauer_step_joules, unfold, CombinatorRefuse, EnergyBudget, EnergySpent, FixedJouleMeter,
+    MeasuredPackageMeter, PackagePowerReader, ProblemProgressWindow, ProblemTolerance,
+    ProgressCertificate, ResidualCertificate, SolveOutcome, StallEvidence, StepEnergyMeter,
+    StrategyRung, Thermo, UnmeasuredMeter,
 };
 /// THEOREM-BOUND: Clausius–Duhem admissibility (`Gate.lean` conjunct; SSOT for ucrs/formal drift)
 pub use manifold::csg::clausius_duhem_admissible;
