@@ -17,8 +17,9 @@
 //! # Honest boundary (W29-093)
 //!
 //! [`HelmholtzFilter`] lands domain/shape fences, a Richardson stationary solve of the discrete
-//! Helmholtz resolvent, and optional straight-through AD reattach. Iteration field names say
-//! `max_cg_iterations` for historical API stability; the solver is **Richardson**, not CG.
+//! Helmholtz resolvent, and optional straight-through AD reattach. The stationary loop stops on
+//! relative \(\ell_2\) residual vs `cg_tolerance` (finite, \(>0\)); `max_cg_iterations` is
+//! historical API naming only — the solver is **Richardson**, not CG.
 //! Not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER`, not OP-5.
 
 /// W29 deepen cell — topology density-filter honest fence bundle.
@@ -43,7 +44,7 @@ pub const TOPOLOGY_FILTER_OP5: bool = false;
 /// Helmholtz apply + domain/shape validation landed in this module.
 pub const TOPOLOGY_FILTER_HELMHOLTZ_LANDED: bool = true;
 
-/// Stationary solve is Richardson (API field `max_cg_iterations` is historical naming).
+/// Stationary solve is Richardson; stops on `cg_tolerance` (`max_cg_iterations` is historical naming).
 pub const TOPOLOGY_FILTER_RICHARDSON_STATIONARY: bool = true;
 
 /// Honest deepen fence for meta / fleet probes.
@@ -165,6 +166,17 @@ fn validate_helmholtz_inputs<B: Backend>(
     Ok(())
 }
 
+/// Precondition for Richardson stationary solve: `cg_tolerance` must be finite and positive.
+fn helmholtz_richardson_residual_tol_precondition(tol: f32) -> Result<f32, PhysicsError> {
+    if tol.is_finite() && tol > 0.0 {
+        Ok(tol)
+    } else {
+        Err(PhysicsError::InvariantViolation {
+            context: "HelmholtzFilter::apply: cg_tolerance",
+        })
+    }
+}
+
 /// Helmholtz PDE filter: solves \((I - (r^2/\mathrm{d}x^2)L_{\mathrm{ours}})\tilde\rho=\rho\) on the graph.
 #[derive(Clone, Debug)]
 pub struct HelmholtzFilter {
@@ -179,8 +191,8 @@ impl HelmholtzFilter {
     pub fn new(radius: f32, max_cg_iterations: usize, cg_tolerance: f32) -> Self {
         Self {
             radius,
-            max_cg_iterations: max_cg_iterations.max(1),
-            cg_tolerance: cg_tolerance.max(1e-20),
+            max_cg_iterations,
+            cg_tolerance,
         }
     }
 
@@ -192,12 +204,11 @@ impl HelmholtzFilter {
         dx: f32,
     ) -> Result<Tensor<B, 3>, PhysicsError> {
         validate_helmholtz_inputs(&rho, &edges_b1, dx, self.radius)?;
+        let tol_use = helmholtz_richardson_residual_tol_precondition(self.cg_tolerance)?;
         let dx_safe = dx.max(1e-30);
         let scale = (self.radius / dx_safe).powi(2);
-        let max_it = self.max_cg_iterations.max(1);
-        let tol_use = self.cg_tolerance.max(1e-8);
         let damage = Tensor::<B, 3>::zeros_like(&rho);
-        helmholtz_stationary(rho, edges_b1, damage, scale, max_it, tol_use)
+        helmholtz_stationary(rho, edges_b1, damage, scale, tol_use)
     }
 
     /// Helmholtz on the **inner** backend, re-attached with straight-through gradients (B6 H2).
@@ -220,7 +231,6 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
     edges_b1: Tensor<B, 2, Int>,
     damage: Tensor<B, 3>,
     scale: f32,
-    max_iter: usize,
     tol: f32,
 ) -> Result<Tensor<B, 3>, PhysicsError> {
     let mut x = Tensor::<B, 3>::zeros_like(&rhs);
@@ -237,9 +247,10 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
             context: "HelmholtzFilter::apply rhs norm",
         });
     }
-    let tol_rel = tol.max(1e-8);
+    let tol_rel = tol;
 
-    for _ in 0..max_iter {
+    let mut prev_r = f32::INFINITY;
+    loop {
         let lx =
             TopologicalLaplacian::scalar_laplacian(x.clone(), edges_b1.clone(), damage.clone());
         let ax = x.clone().sub(lx.mul_scalar(scale));
@@ -253,6 +264,12 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
         if r_norm <= tol_rel * rhs_norm {
             break;
         }
+        if r_norm >= prev_r {
+            return Err(PhysicsError::KrylovDiverged {
+                context: "HelmholtzFilter::apply Richardson residual did not decrease",
+            });
+        }
+        prev_r = r_norm;
         x = x.clone().add(resid.mul_scalar(omega));
     }
     if x.clone().into_data().value.iter().any(|v| !v.is_finite()) {
@@ -301,11 +318,30 @@ mod honest_fence_tests {
     }
 
     #[test]
-    fn topology_filter_new_clamps_iteration_and_tolerance_floors() {
+    fn topology_filter_new_stores_constructor_fields() {
         let f = HelmholtzFilter::new(1.0, 0, 0.0);
-        assert_eq!(f.max_cg_iterations, 1);
-        assert!(f.cg_tolerance >= 1e-20);
+        assert_eq!(f.max_cg_iterations, 0);
+        assert_eq!(f.cg_tolerance, 0.0);
         assert_eq!(f.radius, 1.0);
+    }
+
+    /// Precondition: non-positive `cg_tolerance` is refused before the Richardson stationary loop.
+    #[test]
+    fn helmholtz_apply_must_refuse_non_positive_cg_tolerance() {
+        assert!(helmholtz_richardson_residual_tol_precondition(0.0).is_err());
+        assert!(helmholtz_richardson_residual_tol_precondition(-1e-8).is_err());
+        assert!(helmholtz_richardson_residual_tol_precondition(f32::NAN).is_err());
+        assert!(helmholtz_richardson_residual_tol_precondition(f32::INFINITY).is_err());
+        match helmholtz_richardson_residual_tol_precondition(1e-7) {
+            Ok(t) => assert_eq!(t, 1e-7),
+            Err(_) => panic!("finite positive cg_tolerance must be accepted"),
+        }
+        match helmholtz_richardson_residual_tol_precondition(0.0) {
+            Err(PhysicsError::InvariantViolation { context }) => {
+                assert_eq!(context, "HelmholtzFilter::apply: cg_tolerance");
+            }
+            _ => panic!("non-positive cg_tolerance must InvariantViolation"),
+        }
     }
 }
 
