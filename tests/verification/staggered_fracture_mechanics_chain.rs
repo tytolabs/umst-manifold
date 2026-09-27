@@ -3,13 +3,15 @@
 //! Track 12 smoke: `update_damage_staggered` with strain from [`VectorMechanicsSolver::solve_equilibrium`].
 //! See `docs/research/v0.4_track12_staggered_fracture_mechanics.md`.
 
-use burn::tensor::{backend::Backend, Data, Int, Shape, Tensor};
+use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 
 use umst_manifold::physics::mechanics::VectorMechanicsSolver;
+use umst_manifold::physics::solvers::fracture_field::strain_tensor_for_fracture_after_mechanics;
 use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 use umst_manifold::physics::topology::EdgeTopology;
+use umst_manifold::physics::PhysicsError;
 
 type B = NdArray<f32>;
 
@@ -23,20 +25,67 @@ fn damage_field(t: Tensor<B, 3>) -> DamageField<B> {
     Field::new(t)
 }
 
-/// Voigt `[εxx,εyy,εzz,εxy,εyz,εxz]` (tensor shear) → symmetric `[B,N,3,3]`.
-fn voigt6_to_sym_tensor3<Bk: Backend<FloatElem = f32>>(v: Tensor<Bk, 3>) -> Tensor<Bk, 4> {
-    let b = v.dims()[0];
-    let n = v.dims()[1];
-    let exx = v.clone().slice([0..b, 0..n, 0..1]);
-    let eyy = v.clone().slice([0..b, 0..n, 1..2]);
-    let ezz = v.clone().slice([0..b, 0..n, 2..3]);
-    let exy = v.clone().slice([0..b, 0..n, 3..4]);
-    let eyz = v.clone().slice([0..b, 0..n, 4..5]);
-    let exz = v.clone().slice([0..b, 0..n, 5..6]);
-    let row0 = Tensor::cat(vec![exx.clone(), exy.clone(), exz.clone()], 2).unsqueeze_dim::<4>(2);
-    let row1 = Tensor::cat(vec![exy.clone(), eyy.clone(), eyz.clone()], 2).unsqueeze_dim::<4>(2);
-    let row2 = Tensor::cat(vec![exz, eyz, ezz], 2).unsqueeze_dim::<4>(2);
-    Tensor::cat(vec![row0, row1, row2], 2)
+fn max_abs_axial_edge_strain(
+    u0: &Tensor<B, 3>,
+    coords: &Tensor<B, 2>,
+    stiffness: &Tensor<B, 3>,
+    body_force: &Tensor<B, 3>,
+    edges_b1: &Tensor<B, 2, Int>,
+    damage: Tensor<B, 3>,
+    boundary_mask: &Tensor<B, 3>,
+    cross_section_area: f32,
+    cfg: &MechanicsInnerLoopConfig,
+    src3: &Tensor<B, 3, Int>,
+    tgt3: &Tensor<B, 3, Int>,
+    edge_unit: &Tensor<B, 3>,
+    edge_len: &Tensor<B, 3>,
+    batch: usize,
+) -> Result<f32, PhysicsError> {
+    let (u, _) = VectorMechanicsSolver::solve_equilibrium(
+        u0.clone(),
+        coords.clone(),
+        stiffness.clone(),
+        body_force.clone(),
+        edges_b1.clone(),
+        damage,
+        boundary_mask.clone(),
+        cross_section_area,
+        cfg,
+    )?;
+    let u_src = u.gather(1, src3.clone());
+    let u_tgt = u.gather(1, tgt3.clone());
+    let edge_disp = u_tgt.sub(u_src);
+    let elong = edge_disp
+        .mul(edge_unit.clone())
+        .sum_dim(2)
+        .reshape([batch, edge_len.dims()[1], 1]);
+    let eps_ax = elong.div(edge_len.clone().clamp_min(1e-30_f32));
+    Ok(eps_ax.abs().max().into_scalar())
+}
+
+fn assert_mechanics_refusal_named(e: &PhysicsError, context: &str) {
+    assert!(
+        matches!(
+            e,
+            PhysicsError::Diverged { .. }
+                | PhysicsError::NonFinite { .. }
+                | PhysicsError::IndefiniteSystem { .. }
+                | PhysicsError::InvariantViolation { .. }
+        ),
+        "{context}: typed VectorMechanicsSolver refusal {e:?}"
+    );
+}
+
+fn assert_staggered_damage_refusal_named(e: &PhysicsError) {
+    assert!(
+        matches!(
+            e,
+            PhysicsError::Diverged { .. }
+                | PhysicsError::NonFinite { .. }
+                | PhysicsError::InvariantViolation { .. }
+        ),
+        "typed PhaseFieldFractureSolver::update_damage_staggered refusal: {e:?}"
+    );
 }
 
 #[test]
@@ -64,7 +113,8 @@ fn staggered_one_outer_mechanics_strain_drives_at2_damage() {
     let edges_b1: Tensor<B, 2, Int> =
         Tensor::from_data(Data::new(edges, Shape::new([2, e_ct])), &dev);
 
-    let e_young_pa = 2.0e8_f32;
+    // Softer axial bar + tip load so edge strain is O(10⁻²) before AT2 (matches Track 12 toy chains).
+    let e_young_pa = 2.0e7_f32;
     let nu = 0.3_f32;
     let mut stiff = Vec::with_capacity(n * 2);
     for _ in 0..n {
@@ -75,11 +125,13 @@ fn staggered_one_outer_mechanics_strain_drives_at2_damage() {
         Tensor::from_data(Data::new(stiff, Shape::new([batch, n, 2])), &dev);
 
     let mut bf_data = vec![0.0_f32; n * 3];
-    bf_data[(n - 1) * 3] = 2000.0_f32;
+    bf_data[(n - 1) * 3] = 5.0e4_f32;
     let body_force = Tensor::from_data(Data::new(bf_data, Shape::new([batch, n, 3])), &dev);
 
     let mut bm_data = vec![1.0_f32; n * 3];
     bm_data[0] = 0.0;
+    bm_data[1] = 0.0;
+    bm_data[2] = 0.0;
     for i in 0..n {
         bm_data[i * 3 + 1] = 0.0;
         bm_data[i * 3 + 2] = 0.0;
@@ -87,9 +139,9 @@ fn staggered_one_outer_mechanics_strain_drives_at2_damage() {
     let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([batch, n, 3])), &dev);
 
     let cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 300,
-        cg_tolerance: 1e-7,
-        pcg_tolerance: 1e-7,
+        max_cg_iterations: n * 3,
+        cg_tolerance: 1e-6,
+        pcg_tolerance: 1e-6,
         use_preconditioner: true,
         max_equilibrium_substeps: 1,
     };
@@ -112,16 +164,49 @@ fn staggered_one_outer_mechanics_strain_drives_at2_damage() {
     let edge_unit = delta.div(edge_len.clone());
 
     let u0 = Tensor::<B, 3>::zeros([batch, n, 3], &dev);
+    let d_zero = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
     let fracture_energy_gc = Tensor::from_data(
-        Data::new(vec![150.0_f32; batch * n], Shape::new([batch, n, 1])),
+        Data::new(vec![2.0_f32; batch * n], Shape::new([batch, n, 1])),
         &dev,
     );
-    let fracture = PhaseFieldFractureSolver { length_scale: 0.08 };
+    let fracture = PhaseFieldFractureSolver { length_scale: 0.05 };
+
+    let max_edge_eps = match max_abs_axial_edge_strain(
+        &u0,
+        &coords,
+        &stiffness,
+        &body_force,
+        &edges_b1,
+        d_zero.clone(),
+        &boundary_mask,
+        cross_section_area,
+        &cfg,
+        &src3,
+        &tgt3,
+        &edge_unit,
+        &edge_len,
+        batch,
+    ) {
+        Ok(v) => v,
+        Err(e) => {
+            assert_mechanics_refusal_named(
+                &e,
+                "fixture quasi-static equilibrium before staggered damage",
+            );
+            panic!(
+                "fixture must yield Ok mechanics equilibrium with nonzero strain; refusal {e:?}"
+            );
+        }
+    };
+    assert!(
+        max_edge_eps > 1e-5_f32,
+        "fixture tip load must produce nonzero axial edge strain before damage update; max_edge_eps={max_edge_eps}"
+    );
 
     let edges_for_damage = edges_b1.clone();
-    let d_out = fracture.update_damage_staggered(
+    let d_out = match fracture.update_damage_staggered(
         |damage: &DamageField<B>| {
-            let (u, _) = VectorMechanicsSolver::solve_equilibrium(
+            match strain_tensor_for_fracture_after_mechanics(
                 u0.clone(),
                 coords.clone(),
                 stiffness.clone(),
@@ -131,30 +216,43 @@ fn staggered_one_outer_mechanics_strain_drives_at2_damage() {
                 boundary_mask.clone(),
                 cross_section_area,
                 &cfg,
-            ).expect("VectorMechanicsSolver::solve_equilibrium on 3-node bar with damage field (FP §6 Track 12 stagger mechanics inner loop witness)");
-            let u_src = u.clone().gather(1, src3.clone());
-            let u_tgt = u.gather(1, tgt3.clone());
-            let edge_disp = u_tgt.sub(u_src);
-            let eps_v = VectorMechanicsSolver::voigt_strain_from_edge_displacement(
-                edge_disp,
+                src3.clone(),
+                tgt3.clone(),
                 edge_unit.clone(),
                 edge_len.clone(),
-                edges_b1.clone(),
                 n,
-            );
-            strain_field(voigt6_to_sym_tensor3(eps_v))
+            ) {
+                Ok(t) => strain_field(t),
+                Err(e) => {
+                    assert_mechanics_refusal_named(
+                        &e,
+                        "mechanics inner loop inside update_damage_staggered",
+                    );
+                    panic!(
+                        "mechanics strain provider must return Ok on loaded bar; refusal {e:?}"
+                    );
+                }
+            }
         },
-        damage_field(Tensor::<B, 3>::zeros([batch, n, 1], &dev)),
+        damage_field(d_zero),
         fracture_energy_gc,
         edges_for_damage,
         1,
-    ).expect("PhaseFieldFractureSolver::update_damage_staggered with mechanics-sourced strain on 3-node bar (FP §6 Track 12 smoke)");
+    ) {
+        Ok(d) => d,
+        Err(e) => {
+            assert_staggered_damage_refusal_named(&e);
+            panic!(
+                "fixture must reach Ok staggered damage after nonzero edge strain; refusal {e:?}"
+            );
+        }
+    };
 
     let vals = d_out.into_tensor().into_data().value;
     assert!(vals.iter().all(|x| x.is_finite()));
     let max_d = vals.iter().copied().fold(0.0_f32, f32::max);
     assert!(
-        max_d > 1e-10_f32,
-        "expected mechanics-sourced strain to drive damage; max_d={max_d}"
+        max_d > 1e-6_f32,
+        "expected mechanics-sourced strain to drive AT2 damage; max_d={max_d}"
     );
 }
