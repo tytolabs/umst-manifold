@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: MIT
 //! Cockpit η_cog → Q1-hex solve budget (pure functor; JSON parsed at vault/cartridge IO only).
 //!
-//! Low η_cog tightens PCG iteration cap and enables warm-start / op-cache.
+//! A bare dimensionless η does not set a PCG iteration count. Warm-start and the operator
+//! cache stay on. Joules come only from an explicit allowance.
 //!
 //! **Track C migration:** [`map_cockpit_solve_budget`] maps explicit joule allowances to
 //! [`CockpitEnergyBudget`]. A bare dimensionless η_cog yields [`UnmeasuredBudget`] — joules are
@@ -11,7 +12,7 @@
 //!
 //! # Honest boundary (W29-070)
 //!
-//! Pure η_cog → PCG-cap / warm-start / op-cache mapping for Q1-hex. JSON is parsed only
+//! Pure η_cog → warm-start / op-cache mapping for Q1-hex. JSON is parsed only
 //! at the vault/cartridge IO boundary — no `std::fs` in physics core. Does **not** certify
 //! Striatus wall-clock wins, fleet TO wiring, or embodied cockpit loop closure.
 //! Not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER` / OP-5.
@@ -121,21 +122,6 @@ pub fn solve_budget_refuse_invented_pins() -> Result<(), &'static str> {
     }
     Ok(())
 }
-
-/// Default PCG iteration cap from [`MechanicsInnerLoopConfig::default`].
-pub const DEFAULT_PCG_MAX_ITER: usize = 200;
-
-/// Reduced cap when cockpit efficiency is low.
-pub const LOW_ETA_PCG_MAX_ITER: usize = 80;
-
-/// Aggressive cap when η_cog is high (vault-scale budget).
-pub const HIGH_ETA_PCG_MAX_ITER: usize = 800;
-
-/// η_cog threshold below which the budget tightens.
-pub const ETA_COG_LOW_THRESHOLD: f64 = 0.25;
-
-/// η_cog threshold above which the budget is aggressive.
-pub const ETA_COG_HIGH_THRESHOLD: f64 = 0.75;
 
 /// Snapshot of cockpit telemetry at the IO boundary (precomputed η_cog).
 #[derive(Clone, Debug)]
@@ -321,34 +307,18 @@ pub fn apply_cockpit_budget_lane(
 }
 
 /// Map cockpit efficiency to Q1-hex solve knobs.
+///
+/// Dimensionless η does not choose an iteration count. [`pcg_max_iter`](Q1HexSolveOptions::pcg_max_iter)
+/// stays unset; energy is [`UnmeasuredBudget`] until the caller supplies joules.
 #[must_use]
 pub fn q1hex_opts_from_cockpit(snap: &CockpitSnapshot) -> Q1HexSolveOptions {
-    let mut opts = Q1HexSolveOptions {
-        pcg_warm_start: true,
-        use_operator_cache: true,
-        ..Default::default()
-    };
-
-    if snap.eta_cog < ETA_COG_LOW_THRESHOLD {
-        opts.pcg_max_iter = Some(LOW_ETA_PCG_MAX_ITER);
-    } else if snap.eta_cog >= ETA_COG_HIGH_THRESHOLD {
-        opts.pcg_max_iter = Some(HIGH_ETA_PCG_MAX_ITER);
-        opts.pcg_warm_start = true;
-        opts.use_operator_cache = true;
-    } else {
-        opts.pcg_max_iter = Some(DEFAULT_PCG_MAX_ITER);
-    }
-
-    // Secondary throttle: very low token throughput also tightens cap.
-    if snap.tokens_per_sec > 0.0 && snap.tokens_per_sec < 50.0 {
-        let cap = opts.pcg_max_iter.unwrap_or(DEFAULT_PCG_MAX_ITER);
-        opts.pcg_max_iter = Some(cap.min(LOW_ETA_PCG_MAX_ITER));
-    }
-
-    opts
+    let outcome = map_cockpit_solve_budget_from_snapshot(snap);
+    q1hex_opts_from_cockpit_budget_lane(snap, &outcome)
 }
 
 /// Overlay cockpit-derived PCG caps onto env/base options (precond_kind unchanged).
+///
+/// η-only snapshots carry no iteration cap, so an existing `base.pcg_max_iter` is left in place.
 #[must_use]
 pub fn apply_cockpit_budget(
     mut base: Q1HexSolveOptions,
@@ -363,7 +333,9 @@ pub fn apply_cockpit_budget(
     base
 }
 
-/// Mirror PCG cap into mechanics inner-loop config (vault / cartridge harness).
+/// Mirror cockpit knobs into mechanics inner-loop config.
+///
+/// An η-only snapshot does not replace `base.max_cg_iterations`.
 #[must_use]
 pub fn mechanics_config_from_cockpit(
     snap: &CockpitSnapshot,
@@ -409,49 +381,45 @@ mod tests {
     }
 
     #[test]
-    fn low_eta_cog_reduces_pcg_max_iter() {
+    fn low_eta_cog_does_not_invent_a_pcg_cap() {
         let snap = CockpitSnapshot::new(0.1, 100.0, 1.0);
         let opts = q1hex_opts_from_cockpit(&snap);
-        let cap = opts.pcg_max_iter.expect(
-            "q1hex_opts_from_cockpit on low η_cog snapshot must set pcg_max_iter cap (FP §6 Track G solve budget)",
-        );
-        assert_eq!(cap, LOW_ETA_PCG_MAX_ITER);
-        assert!(
-            cap <= DEFAULT_PCG_MAX_ITER,
-            "low η_cog cap {cap} should be ≤ default {DEFAULT_PCG_MAX_ITER}"
-        );
+        assert!(opts.pcg_max_iter.is_none());
+        assert!(matches!(
+            map_cockpit_solve_budget_from_snapshot(&snap),
+            CockpitSolveBudgetOutcome::Unmeasured(_)
+        ));
         assert!(opts.pcg_warm_start);
         assert!(opts.use_operator_cache);
     }
 
     #[test]
-    fn mid_eta_cog_uses_default_pcg_cap() {
+    fn mid_eta_cog_does_not_invent_a_pcg_cap() {
         let snap = CockpitSnapshot::new(0.5, 200.0, 1.0);
         let opts = q1hex_opts_from_cockpit(&snap);
-        assert_eq!(opts.pcg_max_iter, Some(DEFAULT_PCG_MAX_ITER));
+        assert!(opts.pcg_max_iter.is_none());
         assert!(opts.pcg_warm_start);
         assert!(opts.use_operator_cache);
     }
 
     #[test]
-    fn high_eta_cog_aggressive_budget() {
+    fn high_eta_cog_does_not_invent_a_pcg_cap() {
         let snap = CockpitSnapshot::new(0.9, 500.0, 2.0);
         let opts = q1hex_opts_from_cockpit(&snap);
-        assert_eq!(opts.pcg_max_iter, Some(HIGH_ETA_PCG_MAX_ITER));
+        assert!(opts.pcg_max_iter.is_none());
         assert!(opts.pcg_warm_start);
         assert!(opts.use_operator_cache);
     }
 
     #[test]
-    fn low_throughput_tightens_cap() {
-        // Mid η_cog would be DEFAULT, but tokens_per_sec < 50 clamps to LOW.
+    fn low_throughput_does_not_invent_a_pcg_cap() {
         let snap = CockpitSnapshot::new(0.5, 25.0, 1.0);
         let opts = q1hex_opts_from_cockpit(&snap);
-        assert_eq!(opts.pcg_max_iter, Some(LOW_ETA_PCG_MAX_ITER));
+        assert!(opts.pcg_max_iter.is_none());
     }
 
     #[test]
-    fn apply_cockpit_budget_overlays_cap_preserves_precond() {
+    fn apply_cockpit_budget_preserves_caller_cap() {
         let base = Q1HexSolveOptions {
             pcg_warm_start: false,
             use_operator_cache: false,
@@ -461,19 +429,18 @@ mod tests {
         };
         let snap = CockpitSnapshot::new(0.1, 100.0, 1.0);
         let out = apply_cockpit_budget(base, &snap);
-        assert_eq!(out.pcg_max_iter, Some(LOW_ETA_PCG_MAX_ITER));
+        assert_eq!(out.pcg_max_iter, Some(999));
         assert!(out.pcg_warm_start);
         assert!(out.use_operator_cache);
         assert!(out.precond_kind.is_none());
     }
 
     #[test]
-    fn mechanics_config_inherits_cap() {
+    fn mechanics_config_keeps_caller_iteration_bound() {
         let snap = CockpitSnapshot::new(0.05, 200.0, 1.0);
         let base = MechanicsInnerLoopConfig::default();
         let cg = mechanics_config_from_cockpit(&snap, &base);
-        assert_eq!(cg.max_cg_iterations, LOW_ETA_PCG_MAX_ITER);
-        assert!(cg.max_cg_iterations <= DEFAULT_PCG_MAX_ITER);
+        assert_eq!(cg.max_cg_iterations, base.max_cg_iterations);
     }
 
     #[test]

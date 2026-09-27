@@ -10,9 +10,7 @@ use umst_manifold::physics::adjoint::SimpElasticMaterial;
 use umst_manifold::physics::adjoint_q1_hex::{AdjointComplianceQ1Hex, Q1HexSolveOptions};
 use umst_manifold::physics::laplacian::TopologicalLaplacian;
 use umst_manifold::physics::pcg_reduction::{dot_f32, masked_dot_f32, masked_norm_sq_f32};
-use umst_manifold::physics::solve_budget::{
-    q1hex_opts_from_cockpit, CockpitSnapshot, DEFAULT_PCG_MAX_ITER,
-};
+use umst_manifold::physics::solve_budget::{q1hex_opts_from_cockpit, CockpitSnapshot};
 use umst_manifold::physics::solver_region::SolverRegion;
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 
@@ -174,8 +172,8 @@ fn l5_4_low_eta_cog_forward_finite() {
     let snap = CockpitSnapshot::new(0.05, 10.0, 0.5);
     let opts = q1hex_opts_from_cockpit(&snap);
     assert!(
-        opts.pcg_max_iter.unwrap_or(DEFAULT_PCG_MAX_ITER) <= DEFAULT_PCG_MAX_ITER,
-        "budget should tighten under low η_cog"
+        opts.pcg_max_iter.is_none(),
+        "dimensionless η must not set an iteration cap"
     );
 
     let device = Default::default();
