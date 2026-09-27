@@ -52,7 +52,7 @@ fn max_abs_axial_edge_strain(
         cross_section_area,
         cfg,
     )?;
-    let u_src = u.gather(1, src3.clone());
+    let u_src = u.clone().gather(1, src3.clone());
     let u_tgt = u.gather(1, tgt3.clone());
     let edge_disp = u_tgt.sub(u_src);
     let elong = edge_disp
