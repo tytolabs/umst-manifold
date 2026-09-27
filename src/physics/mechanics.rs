@@ -156,13 +156,14 @@ pub fn axial_stiffness_char_scale(
     }
 }
 
-#[cfg(feature = "mechanics-adjoint")]
 use burn::tensor::ElementConversion;
 use burn::tensor::{backend::Backend, Int, Tensor};
 
 use crate::core::field::{
     BodyForceField, BoundaryMaskField, DamageField, DisplacementField, Field, StiffnessField,
 };
+
+use umst_math::cg_spectral_window::{CgCoeff, SpectralWindowRefuse, stalled_a_norm};
 
 use super::dec_operators::DecEdgeOperators;
 use super::error::PhysicsError;
@@ -574,10 +575,10 @@ impl VectorMechanicsSolver {
         #[cfg(not(feature = "mechanics-adjoint"))]
         let pcg_report = {
             let mut report = BarNetworkPcgReport::default();
-            // f32 lane: `iteration_budget` is problem-size evidence, not the stop.
-            // Stop on the relative residual or on the median improvement-gap stall window.
-            let max_it = inner_cfg.iteration_budget(n_v * 3);
+            let n_unknowns = n_v * 3;
             let rel_tol = BarNetworkPcgReport::rel_tol_from_cfg(inner_cfg);
+            let rel_tol_f64 = f64::from(rel_tol);
+            let use_tol_exit = rel_tol > 0.0;
             for b in 0..batch {
                 let p_mask = boundary_mask.clone().slice([b..b + 1, 0..n_v, 0..3]);
                 let f_b = body_force_solve.clone().slice([b..b + 1, 0..n_v, 0..3]);
@@ -605,8 +606,6 @@ impl VectorMechanicsSolver {
                     .sqrt()
                     .into_scalar()
                     .max(1e-30_f32);
-                let abs_tol = rel_tol * rhs_norm;
-                let use_tol_exit = rel_tol > 0.0;
 
                 let k_b = k_solve.clone().slice([b..b + 1, 0..n_edges, 0..1]);
                 let eu_b = edge_unit.clone().slice([b..b + 1, 0..n_edges, 0..3]);
@@ -623,9 +622,10 @@ impl VectorMechanicsSolver {
                 let mut p = z.clone();
                 let mut pcg_iters = 0usize;
                 let mut pcg_rel_res = f32::INFINITY;
-                let mut rel_trace: Vec<f64> = Vec::new();
+                let mut cg_coeffs: Vec<CgCoeff> = Vec::new();
+                let mut loop_break = false;
 
-                loop {
+                while !loop_break {
                     pcg_iters += 1;
                     let p_emb = Self::embed_batch_row(&template, b, n_v, p.clone());
                     let ap_raw = Self::bar_matvec(
@@ -647,6 +647,7 @@ impl VectorMechanicsSolver {
                     }
                     let pap = (p.clone().mul(ap_b.clone())).sum().clamp_min(1e-30_f32);
                     let alpha = rz.clone().div(pap).reshape([1, 1, 1]);
+                    let alpha_scalar = alpha.clone().into_scalar();
                     u_c = u_c.add(p.clone().mul(alpha.clone()));
                     let u_emb2 = Self::embed_batch_row(&template, b, n_v, u_c.clone());
                     let ku_next = Self::bar_matvec(
@@ -674,7 +675,8 @@ impl VectorMechanicsSolver {
                     let beta = rz_next
                         .div(rz.clone().clamp_min(1e-30_f32))
                         .reshape([1, 1, 1]);
-                    if !beta.clone().into_scalar().is_finite() {
+                    let beta_scalar = beta.clone().into_scalar();
+                    if !beta_scalar.is_finite() {
                         break;
                     }
                     p = z_next.clone().add(p.mul(beta));
@@ -683,31 +685,79 @@ impl VectorMechanicsSolver {
 
                     let r_norm = r.clone().powf_scalar(2.0).sum().sqrt().into_scalar();
                     pcg_rel_res = r_norm / rhs_norm;
-                    rel_trace.push(f64::from(pcg_rel_res));
-                    if bar_residual_stop(
-                        &rel_trace,
-                        f64::from(pcg_rel_res),
-                        f64::from(rel_tol),
-                        use_tol_exit,
-                    ) {
+                    let r_norm_sq = f64::from(r_norm) * f64::from(r_norm);
+                    let step_index = cg_coeffs.len();
+                    cg_coeffs.push(CgCoeff {
+                        alpha: f64::from(alpha_scalar),
+                        beta: if step_index == 0 {
+                            0.0
+                        } else {
+                            f64::from(beta_scalar)
+                        },
+                        r_norm_sq,
+                    });
+
+                    if bar_pcg_certificate_stop(f64::from(pcg_rel_res), rel_tol_f64, use_tol_exit) {
                         break;
                     }
-                    if matches!(
-                        median_improvement_gap(&rel_trace),
-                        Err(MedianGapRefuse::NonPositiveWindow)
-                    ) && rel_trace.len() >= max_it.max(1)
-                    {
-                        break;
+                    match bar_pcg_spectral_stall(&cg_coeffs) {
+                        Ok(Some(true)) => break,
+                        Ok(Some(false)) | Ok(None) => {}
+                        Err(_) => break,
+                    }
+
+                    if pcg_iters >= n_unknowns {
+                        let u_emb_true =
+                            Self::embed_batch_row(&template, b, n_v, u_c.clone());
+                        let ku_true = Self::bar_matvec(
+                            u_emb_true,
+                            &k_solve,
+                            &edge_unit,
+                            &src_indices,
+                            &tgt_indices,
+                            n_v,
+                            None,
+                            &edge_len,
+                        )
+                        .slice([b..b + 1, 0..n_v, 0..3]);
+                        let r_true = p_mask.clone().mul(f_b.clone().sub(ku_true));
+                        let true_rel = r_true.powf_scalar(2.0).sum().sqrt().into_scalar() / rhs_norm;
+                        if bar_pcg_certificate_stop(
+                            f64::from(true_rel),
+                            rel_tol_f64,
+                            use_tol_exit,
+                        ) {
+                            pcg_rel_res = true_rel;
+                            break;
+                        }
+                        let f_phys = body_force.clone().slice([b..b + 1, 0..n_v, 0..3]);
+                        let k_phys = k_axial.clone().slice([b..b + 1, 0..n_edges, 0..1]);
+                        let eu_phys = edge_unit.clone().slice([b..b + 1, 0..n_edges, 0..3]);
+                        let mask_phys =
+                            boundary_mask.clone().slice([b..b + 1, 0..n_v, 0..3]);
+                        let (u_refined, f64_iters, f64_rel) =
+                            Self::bar_network_pcg_f64_single_batch(
+                                u_c,
+                                f_phys,
+                                mask_phys,
+                                k_phys,
+                                eu_phys,
+                                edges_b1.clone(),
+                                n_v,
+                                n_edges,
+                                inner_cfg,
+                                k_char,
+                            );
+                        u_c = u_refined;
+                        pcg_iters += f64_iters;
+                        pcg_rel_res = f64_rel;
+                        loop_break = true;
                     }
                 }
 
                 u = u.slice_assign([b..b + 1, 0..n_v, 0..3], u_c);
                 report = BarNetworkPcgReport {
-                    iterations: steps_after_escalation_check(
-                        pcg_iters,
-                        max_it,
-                        use_tol_exit && pcg_rel_res <= rel_tol,
-                    ),
+                    iterations: pcg_iters,
                     rel_residual: pcg_rel_res,
                     stiffness_scale: k_char,
                     e_ref: e_hi,
@@ -1109,7 +1159,6 @@ impl VectorMechanicsSolver {
             .scatter(1, tgt_ix, contrib)
     }
 
-    #[cfg(feature = "mechanics-adjoint")]
     fn bar_network_projected_matvec_f64(
         u: &[f64],
         ku: &mut [f64],
@@ -1145,7 +1194,6 @@ impl VectorMechanicsSolver {
         }
     }
 
-    #[cfg(feature = "mechanics-adjoint")]
     #[allow(clippy::too_many_arguments)]
     fn packed_bar_network_equilibrium_pcg_f64<B: Backend<FloatElem = f32>>(
         u: &mut Tensor<B, 3>,
@@ -1164,6 +1212,62 @@ impl VectorMechanicsSolver {
         dx_char: f32,
     ) -> BarNetworkPcgReport {
         let n_e = k_solve.dims()[1];
+        let _ = (src_indices, tgt_indices);
+        let mut report = BarNetworkPcgReport::default();
+
+        for b in 0..batch {
+            let u_batch = u.clone().slice([b..b + 1, 0..n_v, 0..3]);
+            let f_batch = body_force_solve
+                .clone()
+                .slice([b..b + 1, 0..n_v, 0..3]);
+            let mask_batch = boundary_mask
+                .clone()
+                .slice([b..b + 1, 0..n_v, 0..3]);
+            let k_batch = k_solve.clone().slice([b..b + 1, 0..n_e, 0..1]);
+            let eu_batch = edge_unit.clone().slice([b..b + 1, 0..n_e, 0..3]);
+            let (u_out, pcg_iters, pcg_rel_res) = Self::bar_network_pcg_f64_single_batch(
+                u_batch,
+                f_batch,
+                mask_batch,
+                k_batch,
+                eu_batch,
+                edges_b1.clone(),
+                n_v,
+                n_e,
+                inner_cfg,
+                k_char,
+            );
+            *u = u.clone().slice_assign([b..b + 1, 0..n_v, 0..3], u_out);
+            report = BarNetworkPcgReport {
+                iterations: pcg_iters,
+                rel_residual: pcg_rel_res,
+                stiffness_scale: k_char,
+                e_ref: e_hi,
+                dx_char,
+            };
+        }
+        report
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn bar_network_pcg_f64_single_batch<B: Backend<FloatElem = f32>>(
+        u_c: Tensor<B, 3>,
+        body_force: Tensor<B, 3>,
+        boundary_mask: Tensor<B, 3>,
+        k_axial: Tensor<B, 3>,
+        edge_unit: Tensor<B, 3>,
+        edges_b1: Tensor<B, 2, Int>,
+        n_v: usize,
+        n_e: usize,
+        inner_cfg: &MechanicsInnerLoopConfig,
+        k_char: f32,
+    ) -> (Tensor<B, 3>, usize, f32) {
+        let device = u_c.device();
+        let ndof = n_v * 3;
+        let n_unknowns = ndof;
+        let rel_tol = BarNetworkPcgReport::rel_tol_from_cfg(inner_cfg) as f64;
+        let use_tol_exit = rel_tol > 0.0;
+
         let edges_flat = edges_b1.clone().into_data().value;
         let src: Vec<usize> = (0..n_e)
             .map(|e| edges_flat[e].elem::<i32>() as usize)
@@ -1171,75 +1275,98 @@ impl VectorMechanicsSolver {
         let tgt: Vec<usize> = (0..n_e)
             .map(|e| edges_flat[n_e + e].elem::<i32>() as usize)
             .collect();
-        let _ = (src_indices, tgt_indices);
-        // `iteration_budget` is problem-size evidence, not the stop.
-        let ndof = n_v * 3;
-        let max_it = inner_cfg.iteration_budget(ndof);
-        let rel_tol = inner_cfg.pcg_tolerance.max(inner_cfg.cg_tolerance).max(0.0) as f64;
 
-        let mut report = BarNetworkPcgReport::default();
+        let f_flat = body_force.into_data().value;
+        let mask_flat = boundary_mask.into_data().value;
+        let k_flat = k_axial.into_data().value;
+        let eu_flat = edge_unit.into_data().value;
+        let e_scale = k_char.max(1e-30) as f64;
+
+        let mask64: Vec<f64> = mask_flat.iter().map(|&x| x as f64).collect();
+        let f_rhs: Vec<f64> = f_flat.iter().map(|&x| (x as f64) / e_scale).collect();
+        let mut u64: Vec<f64> = u_c.into_data().value.iter().map(|&x| x as f64).collect();
+        let k64: Vec<f64> = k_flat.iter().map(|&x| (x as f64) / e_scale).collect();
+        let eu64: Vec<f64> = eu_flat.iter().map(|&x| x as f64).collect();
+
+        for i in 0..ndof {
+            u64[i] *= mask64[i];
+        }
+
         let mut ku = vec![0.0_f64; ndof];
         let mut ap = vec![0.0_f64; ndof];
         let mut r = vec![0.0_f64; ndof];
         let mut z = vec![0.0_f64; ndof];
         let mut p = vec![0.0_f64; ndof];
 
-        for b in 0..batch {
-            let f_flat = body_force_solve
-                .clone()
-                .slice([b..b + 1, 0..n_v, 0..3])
-                .into_data()
-                .value;
-            let mask_flat = boundary_mask
-                .clone()
-                .slice([b..b + 1, 0..n_v, 0..3])
-                .into_data()
-                .value;
-            let mut u_flat = u.clone().slice([b..b + 1, 0..n_v, 0..3]).into_data().value;
-            let k_flat = k_solve
-                .clone()
-                .slice([b..b + 1, 0..n_e, 0..1])
-                .into_data()
-                .value;
-            let e_scale = k_char.max(1e-30) as f64;
-            let eu_flat = edge_unit
-                .clone()
-                .slice([b..b + 1, 0..n_e, 0..3])
-                .into_data()
-                .value;
+        Self::bar_network_projected_matvec_f64(&u64, &mut ku, &mask64, &k64, &eu64, &src, &tgt);
+        for i in 0..ndof {
+            r[i] = mask64[i] * (f_rhs[i] - ku[i]);
+        }
 
-            let mask64: Vec<f64> = mask_flat.iter().map(|&x| x as f64).collect();
-            let f_rhs: Vec<f64> = f_flat.iter().map(|&x| (x as f64) / e_scale).collect();
-            let mut u64: Vec<f64> = u_flat.iter().map(|&x| x as f64).collect();
-            let k64: Vec<f64> = k_flat.iter().map(|&x| (x as f64) / e_scale).collect();
-            let eu64: Vec<f64> = eu_flat.iter().map(|&x| x as f64).collect();
+        let rhs_norm = f_rhs
+            .iter()
+            .zip(&mask64)
+            .map(|(&fi, &m)| (fi * m).powi(2))
+            .sum::<f64>()
+            .sqrt()
+            .max(1e-30);
 
+        let diag_bn3 = Self::assemble_bar_network_diagonal_bn3(
+            Tensor::from_data(
+                burn::tensor::Data::new(k_flat, burn::tensor::Shape::new([1, n_e, 1])),
+                &device,
+            ),
+            Tensor::from_data(
+                burn::tensor::Data::new(eu_flat, burn::tensor::Shape::new([1, n_e, 3])),
+                &device,
+            ),
+            edges_b1,
+            n_v,
+        );
+        let diag_flat = diag_bn3.into_data().value;
+        let diag64: Vec<f64> = diag_flat.iter().map(|&x| (x as f64) / e_scale).collect();
+
+        if inner_cfg.use_preconditioner {
             for i in 0..ndof {
+                z[i] = mask64[i] * r[i] / diag64[i].max(1e-18);
+            }
+        } else {
+            z.copy_from_slice(&r);
+        }
+        p.copy_from_slice(&z);
+
+        let mut pcg_iters = 0usize;
+        let mut pcg_rel_res = f64::INFINITY;
+        let mut cg_coeffs: Vec<CgCoeff> = Vec::new();
+
+        loop {
+            pcg_iters += 1;
+            Self::bar_network_projected_matvec_f64(
+                &p, &mut ap, &mask64, &k64, &eu64, &src, &tgt,
+            );
+
+            let rz: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum();
+            if !rz.is_finite() {
+                break;
+            }
+            let pap: f64 = p
+                .iter()
+                .zip(&ap)
+                .map(|(a, b)| a * b)
+                .sum::<f64>()
+                .max(1e-30);
+            let alpha = rz / pap;
+            for i in 0..ndof {
+                u64[i] += alpha * p[i];
                 u64[i] *= mask64[i];
             }
 
-            Self::bar_network_projected_matvec_f64(&u64, &mut ku, &mask64, &k64, &eu64, &src, &tgt);
+            Self::bar_network_projected_matvec_f64(
+                &u64, &mut ku, &mask64, &k64, &eu64, &src, &tgt,
+            );
             for i in 0..ndof {
                 r[i] = mask64[i] * (f_rhs[i] - ku[i]);
             }
-
-            let rhs_norm = f_rhs
-                .iter()
-                .zip(&mask64)
-                .map(|(&fi, &m)| (fi * m).powi(2))
-                .sum::<f64>()
-                .sqrt()
-                .max(1e-30);
-            let abs_tol = rel_tol * rhs_norm;
-
-            let diag_bn3 = Self::assemble_bar_network_diagonal_bn3(
-                k_solve.clone().slice([b..b + 1, 0..n_e, 0..1]),
-                edge_unit.clone().slice([b..b + 1, 0..n_e, 0..3]),
-                edges_b1.clone(),
-                n_v,
-            );
-            let diag_flat = diag_bn3.into_data().value;
-            let diag64: Vec<f64> = diag_flat.iter().map(|&x| (x as f64) / e_scale).collect();
 
             if inner_cfg.use_preconditioner {
                 for i in 0..ndof {
@@ -1248,92 +1375,65 @@ impl VectorMechanicsSolver {
             } else {
                 z.copy_from_slice(&r);
             }
-            p.copy_from_slice(&z);
 
-            let mut pcg_iters = 0usize;
-            let mut pcg_rel_res = f64::INFINITY;
-            let mut rel_trace: Vec<f64> = Vec::new();
+            let rz_next: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum();
+            let beta = rz_next / rz.max(1e-30);
+            if !beta.is_finite() {
+                break;
+            }
+            for i in 0..ndof {
+                p[i] = (z[i] + beta * p[i]) * mask64[i];
+            }
 
-            loop {
-                pcg_iters += 1;
-                Self::bar_network_projected_matvec_f64(
-                    &p, &mut ap, &mask64, &k64, &eu64, &src, &tgt,
-                );
+            let r_norm: f64 = r.iter().map(|x| x * x).sum::<f64>().sqrt();
+            pcg_rel_res = r_norm / rhs_norm;
+            let step_index = cg_coeffs.len();
+            cg_coeffs.push(CgCoeff {
+                alpha,
+                beta: if step_index == 0 { 0.0 } else { beta },
+                r_norm_sq: r_norm * r_norm,
+            });
 
-                let rz: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum();
-                if !rz.is_finite() {
-                    break;
-                }
-                let pap: f64 = p
-                    .iter()
-                    .zip(&ap)
-                    .map(|(a, b)| a * b)
-                    .sum::<f64>()
-                    .max(1e-30);
-                let alpha = rz / pap;
-                for i in 0..ndof {
-                    u64[i] += alpha * p[i];
-                    u64[i] *= mask64[i];
-                }
+            if bar_pcg_certificate_stop(pcg_rel_res, rel_tol, use_tol_exit) {
+                break;
+            }
+            match bar_pcg_spectral_stall(&cg_coeffs) {
+                Ok(Some(true)) => break,
+                Ok(Some(false)) | Ok(None) => {}
+                Err(_) => break,
+            }
 
+            if pcg_iters >= n_unknowns {
                 Self::bar_network_projected_matvec_f64(
                     &u64, &mut ku, &mask64, &k64, &eu64, &src, &tgt,
                 );
+                let mut true_norm_sq = 0.0_f64;
                 for i in 0..ndof {
-                    r[i] = mask64[i] * (f_rhs[i] - ku[i]);
+                    let ri = mask64[i] * (f_rhs[i] - ku[i]);
+                    true_norm_sq += ri * ri;
                 }
-
-                if inner_cfg.use_preconditioner {
-                    for i in 0..ndof {
-                        z[i] = mask64[i] * r[i] / diag64[i].max(1e-18);
-                    }
-                } else {
-                    z.copy_from_slice(&r);
-                }
-
-                let rz_next: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum();
-                let beta = rz_next / rz.max(1e-30);
-                if !beta.is_finite() {
+                let true_rel = true_norm_sq.sqrt() / rhs_norm;
+                if bar_pcg_certificate_stop(true_rel, rel_tol, use_tol_exit) {
+                    pcg_rel_res = true_rel;
                     break;
                 }
-                for i in 0..ndof {
-                    p[i] = (z[i] + beta * p[i]) * mask64[i];
-                }
-
-                let r_norm: f64 = r.iter().map(|x| x * x).sum::<f64>().sqrt();
-                pcg_rel_res = r_norm / rhs_norm;
-                rel_trace.push(pcg_rel_res);
-                if bar_residual_stop(&rel_trace, pcg_rel_res, rel_tol, rel_tol > 0.0) {
-                    break;
-                }
-                if matches!(
-                    median_improvement_gap(&rel_trace),
-                    Err(MedianGapRefuse::NonPositiveWindow)
-                ) && rel_trace.len() >= max_it.max(1)
-                {
-                    break;
-                }
+                let _ = umst_math::problem_size_escalation::escalation_from_evidence(
+                    umst_math::problem_size_escalation::ProblemSizeEvidence {
+                        n_unknowns: n_unknowns as u64,
+                        steps_taken: pcg_iters as u64,
+                    },
+                );
+                pcg_rel_res = true_rel;
+                break;
             }
-
-            u_flat = u64.iter().map(|&x| x as f32).collect();
-            let u_slice = Tensor::from_data(
-                burn::tensor::Data::new(u_flat, burn::tensor::Shape::new([1, n_v, 3])),
-                &u.device(),
-            );
-            *u = u.clone().slice_assign([b..b + 1, 0..n_v, 0..3], u_slice);
-            report = BarNetworkPcgReport {
-                iterations: steps_after_escalation_check(
-                    pcg_iters,
-                    max_it,
-                    rel_tol > 0.0 && pcg_rel_res <= rel_tol,
-                ),
-                rel_residual: pcg_rel_res as f32,
-                stiffness_scale: k_char,
-                e_ref: e_hi,
-                dx_char,
-            };
         }
-        report
+
+        let u_flat: Vec<f32> = u64.iter().map(|&x| x as f32).collect();
+        let u_out = Tensor::from_data(
+            burn::tensor::Data::new(u_flat, burn::tensor::Shape::new([1, n_v, 3])),
+            &device,
+        );
+        (u_out, pcg_iters, pcg_rel_res as f32)
     }
 
     fn nodal_stress_from_bars<B: Backend<FloatElem = f32>>(
@@ -1438,75 +1538,18 @@ impl SelfWeightConfig {
     }
 }
 
-/// Why a residual trace does not yield a stall window.
-enum MedianGapRefuse {
-    NonFiniteResidual,
-    NonPositiveWindow,
+/// Certificate (relative residual) convergence — not a step-count cap.
+fn bar_pcg_certificate_stop(rel: f64, tol: f64, use_tol: bool) -> bool {
+    use_tol && rel.is_finite() && rel <= tol
 }
 
-/// Median gap between strict residual improvements. Same rule as
-/// [`umst_math::cg_stall_window`]. `n_unknowns` is not an argument.
-fn median_improvement_gap(residuals: &[f64]) -> Result<u64, MedianGapRefuse> {
-    for &r in residuals {
-        if !r.is_finite() {
-            return Err(MedianGapRefuse::NonFiniteResidual);
-        }
+/// Spectral \(A\)-norm stall from [`umst_math::cg_spectral_window::stalled_a_norm`].
+fn bar_pcg_spectral_stall(coeffs: &[CgCoeff]) -> Result<Option<bool>, SpectralWindowRefuse> {
+    match stalled_a_norm(coeffs) {
+        Ok(stalled) => Ok(Some(stalled)),
+        Err(SpectralWindowRefuse::EmptyRun | SpectralWindowRefuse::IndefiniteRitz) => Ok(None),
+        Err(e) => Err(e),
     }
-    let mut improvements = Vec::new();
-    for i in 1..residuals.len() {
-        if residuals[i] < residuals[i - 1] {
-            improvements.push(i);
-        }
-    }
-    if improvements.is_empty() {
-        return Err(MedianGapRefuse::NonPositiveWindow);
-    }
-    let mut gaps = Vec::with_capacity(improvements.len());
-    gaps.push(improvements[0] as u64);
-    for k in 1..improvements.len() {
-        gaps.push((improvements[k] - improvements[k - 1]) as u64);
-    }
-    gaps.sort_unstable();
-    let n = gaps.len();
-    let median = if n % 2 == 1 {
-        gaps[n / 2]
-    } else {
-        gaps[n / 2 - 1]
-    };
-    Ok(median)
-}
-
-fn stale_since_improvement(residuals: &[f64]) -> u64 {
-    let mut last = None;
-    for i in 1..residuals.len() {
-        if residuals[i] < residuals[i - 1] {
-            last = Some(i);
-        }
-    }
-    match last {
-        Some(i) => (residuals.len() - 1 - i) as u64,
-        None => residuals.len() as u64,
-    }
-}
-
-/// Stop on the residual tolerance, on a formed stall window, or when the trace
-/// cannot form a window after two samples. Problem size does not stop the loop.
-fn bar_residual_stop(residuals: &[f64], rel: f64, tol: f64, use_tol: bool) -> bool {
-    if use_tol && rel.is_finite() && rel <= tol {
-        return true;
-    }
-    match median_improvement_gap(residuals) {
-        Ok(window) => stale_since_improvement(residuals) >= window,
-        Err(MedianGapRefuse::NonFiniteResidual) => true,
-        // No strict improvement yet, so no window exists. Keep iterating.
-        Err(MedianGapRefuse::NonPositiveWindow) => false,
-    }
-}
-
-/// `n_unknowns` is recorded as escalation evidence. The returned step count is unchanged.
-fn steps_after_escalation_check(steps: usize, n_unknowns: usize, converged: bool) -> usize {
-    let _ = n_unknowns > 0 && steps >= n_unknowns && !converged;
-    steps
 }
 
 #[cfg(test)]
@@ -1519,22 +1562,6 @@ mod tests {
     use burn_ndarray::{NdArray, NdArrayDevice};
 
     type B = NdArray<f32>;
-
-    #[test]
-    fn median_gap_matches_umst_math_stall_window() {
-        let bumpy = [1.0, 0.8, 0.9, 0.4];
-        let single = [1.0, 0.5];
-        assert_eq!(
-            median_improvement_gap(&bumpy).ok(),
-            umst_math::cg_stall_window::cg_stall_window(&bumpy).ok()
-        );
-        assert_eq!(
-            median_improvement_gap(&single).ok(),
-            umst_math::cg_stall_window::cg_stall_window(&single).ok()
-        );
-        assert!(median_improvement_gap(&[1.0, 1.0, 1.0]).is_err());
-        assert!(median_improvement_gap(&[1.0, f64::NAN]).is_err());
-    }
 
     #[test]
     fn bar_network_pcg_report_refuses_converged_when_rel_tol_non_positive() {

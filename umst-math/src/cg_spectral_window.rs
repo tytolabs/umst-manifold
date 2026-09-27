@@ -185,6 +185,9 @@ fn tridiagonal_extreme_eigenvalues(theta: &[f64], delta: &[f64]) -> (f64, f64) {
 }
 
 fn contraction_window(rho_hat: f64) -> Result<u64, SpectralWindowRefuse> {
+    if rho_hat == 0.0 {
+        return Ok(1);
+    }
     if !(rho_hat > 0.0 && rho_hat < 1.0) {
         return Err(SpectralWindowRefuse::IndefiniteRitz);
     }
