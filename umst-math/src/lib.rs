@@ -67,6 +67,10 @@ pub mod solver_refusal;
 pub mod solve_combinator;
 /// n_unknowns is escalation evidence for unfold, not a stop.
 pub mod problem_size_escalation;
+/// CG stall window: median gap between strict residual improvements.
+pub mod cg_stall_window;
+/// Outer loop stops on a KKT certificate or the budget.
+pub mod kkt_outer_stop;
 pub mod sparse;
 pub mod tensor;
 pub mod theorem_blurbs;
