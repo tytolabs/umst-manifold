@@ -1596,7 +1596,7 @@ mod tests {
         let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([1, n, 3])), &dev);
 
         let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: 500,
+            max_cg_iterations: n * 3,
             // f32 bar-network PCG typically lands ~1e-7 rel residual; 1e-6 leaves headroom.
             cg_tolerance: 1e-6,
             pcg_tolerance: 1e-6,
@@ -1962,7 +1962,7 @@ mod tests {
         let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &dev);
 
         let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: 500,
+            max_cg_iterations: n * 3,
             cg_tolerance: 1e-8_f32,
             pcg_tolerance: 1e-8_f32,
             use_preconditioner: true,
@@ -2059,7 +2059,7 @@ mod tests {
         let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([1, n, 3])), &dev);
 
         let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: 500,
+            max_cg_iterations: n * 3,
             cg_tolerance: 1e-8,
             pcg_tolerance: 1e-8,
             use_preconditioner: true,
@@ -2157,7 +2157,7 @@ mod tests {
         let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([1, n, 3])), &dev);
 
         let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: 500,
+            max_cg_iterations: n * 3,
             cg_tolerance: 1e-8,
             pcg_tolerance: 1e-8,
             use_preconditioner: true,
