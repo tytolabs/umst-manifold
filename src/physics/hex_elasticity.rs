@@ -2094,12 +2094,22 @@ pub const HEX_PCG_REL_TOL_F64: f32 = 1e-4;
 /// Periodic true-residual verification cadence when [`HexPcgBisectConfig::stop_on_true_residual`].
 pub const HEX_PCG_TRUE_RESIDUAL_CHECK_PERIOD: usize = 25;
 
-/// Full-harness default PCG budget at Striatus N (40×40×4).
-///
-/// Derived (2026-06-12, sharp-field basis): worst observed **3960** iters @ outer 32 on logit-offset
-/// 60-outer (`greyness≈0.084`, κ at lifetime peak); **2×** headroom ⇒ **8000**. Supersedes the
-/// 2026-06-10 grey-field basis (~1213 @ outer 1 → 4000 cap).
-pub const HEX_PCG_MAX_ITER_DEFAULT_STRIATUS: usize = 8000;
+/// Iteration ceiling for hex PCG: one step per unknown (exact-arithmetic CG).
+#[must_use]
+pub fn hex_pcg_unknown_bound(n_unknowns: usize) -> usize {
+    n_unknowns.max(1)
+}
+
+#[cfg(test)]
+mod hex_pcg_unknown_bound_tests {
+    use super::hex_pcg_unknown_bound;
+
+    #[test]
+    fn bound_matches_unknown_count_and_refuses_zero() {
+        assert_eq!(hex_pcg_unknown_bound(12), 12);
+        assert_eq!(hex_pcg_unknown_bound(0), 1);
+    }
+}
 
 /// Which norm triggered PCG exit (diagnostic).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

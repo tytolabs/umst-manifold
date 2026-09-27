@@ -55,18 +55,6 @@ pub struct RegistryPostureProbe {
     pub honest_fence: &'static str,
 }
 
-/// Striatus Q1-hex PCG iteration cap (SSOT: `hex_elasticity::HEX_PCG_MAX_ITER_DEFAULT_STRIATUS`).
-#[cfg(any(
-    feature = "topology-density-evolution",
-    feature = "mechanics-voigt-cauchy"
-))]
-pub const STRIATUS_HEX_PCG_MAX_ITER: GroundedConst<usize> = GroundedConst {
-    name: "hex_pcg_max_iter_default_striatus",
-    value: crate::physics::hex_elasticity::HEX_PCG_MAX_ITER_DEFAULT_STRIATUS,
-    evidence:
-        "src/physics/hex_elasticity.rs — 2× headroom over 3960-iter sharp-field peak (2026-06-12)",
-};
-
 /// Q1-hex f32 PCG lane relative tolerance (SSOT: `hex_elasticity::HEX_PCG_REL_TOL_F32`).
 #[cfg(any(
     feature = "topology-density-evolution",
@@ -259,7 +247,6 @@ pub fn migrated_registry_names() -> Vec<&'static str> {
         feature = "mechanics-voigt-cauchy"
     ))]
     {
-        names.push(STRIATUS_HEX_PCG_MAX_ITER.name);
         names.push(HEX_PCG_REL_TOL_F32_GROUNDED.name);
         names.push(HEX_PCG_REL_TOL_F64_GROUNDED.name);
     }
@@ -346,10 +333,6 @@ mod tests {
         assert_eq!(
             HEX_PCG_REL_TOL_F64_GROUNDED.value,
             crate::physics::hex_elasticity::HEX_PCG_REL_TOL_F64
-        );
-        assert_eq!(
-            STRIATUS_HEX_PCG_MAX_ITER.value,
-            crate::physics::hex_elasticity::HEX_PCG_MAX_ITER_DEFAULT_STRIATUS
         );
     }
 
