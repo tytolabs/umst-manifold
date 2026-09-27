@@ -103,7 +103,7 @@ fn refuse_basis_exceeds_slots(restart_m: usize, basis_len: usize) -> PhysicsErro
 /// Any `Err` from `matvec` aborts the solve and is returned — no panics on residual assembly failure.
 ///
 /// External callers still pass `max_iter`; that value is read as the Krylov restart length `restart_m`
-/// until call sites migrate to an explicit parameter (see cell receipt follow-up).
+/// until call sites migrate to [`gmres_restart_from_basis_bytes`].
 pub fn gmres_f32_try<F>(
     matvec: F,
     b: &[f32],
@@ -115,6 +115,22 @@ where
     F: FnMut(&[f32]) -> Result<Vec<f32>, PhysicsError>,
 {
     gmres_f32_try_with_restart_m(matvec, b, n, max_iter, rel_tol)
+}
+
+/// Krylov restart length: how many `f32` basis vectors of width `n` fit in `basis_bytes`.
+///
+/// The result is at most `n` (one full GMRES cycle). It is not an iteration cap.
+pub fn gmres_restart_from_basis_bytes(n: usize, basis_bytes: usize) -> Result<usize, PhysicsError> {
+    if n == 0 {
+        return Err(PhysicsError::InvariantViolation { context: GMRES_CTX });
+    }
+    let row_bytes = std::mem::size_of::<f32>().saturating_mul(n);
+    if row_bytes == 0 || basis_bytes < row_bytes {
+        return Err(PhysicsError::InvariantViolation {
+            context: "gmres_f32_try: restart_m=0",
+        });
+    }
+    Ok((basis_bytes / row_bytes).min(n))
 }
 
 /// Same as [`gmres_f32_try`] with an explicit Krylov restart / basis-width cap (`restart_m`).
@@ -344,7 +360,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{
-        gmres_f32, gmres_f32_try, gmres_f32_try_with_restart_m,
+        gmres_f32, gmres_f32_try, gmres_f32_try_with_restart_m, gmres_restart_from_basis_bytes,
         krylov_host_honest_posture_bundle, krylov_host_posture_honest,
         KRYLOV_HOST_GMRES_LANDED, KRYLOV_HOST_HONEST_FENCE, KRYLOV_HOST_MASTER, KRYLOV_HOST_OP5,
         KRYLOV_HOST_PHYSICS_GREEN, KRYLOV_HOST_PRODUCTION_WIRED, W29_KRYLOV_HOST_DEEPEN_CELL,
@@ -576,5 +592,15 @@ mod tests {
             }
             other => panic!("expected BufferLength, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn gmres_restart_fits_basis_bytes_and_not_above_n() {
+        let n = 5usize;
+        let row = std::mem::size_of::<f32>() * n;
+        assert_eq!(gmres_restart_from_basis_bytes(n, row * 3).unwrap(), 3);
+        assert_eq!(gmres_restart_from_basis_bytes(n, row * 100).unwrap(), n);
+        assert!(gmres_restart_from_basis_bytes(n, row - 1).is_err());
+        assert!(gmres_restart_from_basis_bytes(0, row).is_err());
     }
 }
