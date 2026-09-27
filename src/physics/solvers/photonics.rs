@@ -882,11 +882,6 @@ pub const PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV: usize = 512;
 #[cfg(feature = "photonics")]
 pub const PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY: usize = 128;
 
-/// Historical inner CG iteration budget (superseded by [`MechanicsInnerLoopConfig::max_cg_iterations`]
-/// plus relative residual [`MechanicsInnerLoopConfig::cg_tolerance`] on the patch CG path).
-#[cfg(feature = "photonics")]
-pub const PHOTONICS_DEC_PATCH_KRYLOV_MAX_ITERS: usize = 512;
-
 /// Structural checks plus a cheap **\(d_1\!\circ\!d_0\approx 0\)** witness on scalar nodal data (excludes
 /// **N** solve caps, `eps_r_imag`, and matrix singularity).
 #[cfg(feature = "photonics")]
@@ -2527,13 +2522,15 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
     let mut sol: Option<Vec<f32>> = None;
     let mut cg_refusal: Option<DecPatchInnerCgRefusal> = None;
 
-    let mut absorb_cg_outcome = |outcome: DecPatchInnerCgOutcome| {
+    let absorb_cg_outcome = |outcome: DecPatchInnerCgOutcome,
+                             sol: &mut Option<Vec<f32>>,
+                             cg_refusal: &mut Option<DecPatchInnerCgRefusal>| {
         match outcome {
             DecPatchInnerCgOutcome::Converged(v) => {
-                sol = Some(v);
+                *sol = Some(v);
             }
             DecPatchInnerCgOutcome::Refused(r) => {
-                cg_refusal = Some(r);
+                *cg_refusal = Some(r);
             }
         }
     };
@@ -2608,7 +2605,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
                 max_iter,
                 spd,
             ) {
-                absorb_cg_outcome(outcome);
+                absorb_cg_outcome(outcome, &mut sol, &mut cg_refusal);
             }
         }
         if sol.is_none() && n <= dense_node_cap_eff {
@@ -2688,7 +2685,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
             max_iter,
             spd,
         ) {
-            absorb_cg_outcome(outcome);
+            absorb_cg_outcome(outcome, &mut sol, &mut cg_refusal);
         }
     }
     if sol.is_none() && !lossy {
@@ -2710,7 +2707,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
             rel_tol,
             max_iter,
             spd,
-        ));
+        ), &mut sol, &mut cg_refusal);
     }
 
     let sol = match sol {

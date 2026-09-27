@@ -595,12 +595,6 @@ impl ElectroChemicalSolver {
 
 #[cfg(feature = "electrochemistry-mvp")]
 const POISSON_GRAPH_PCG_REL_TOL: f32 = 5e-5_f32;
-#[cfg(feature = "electrochemistry-mvp")]
-const POISSON_GRAPH_PCG_MAX_IT: usize = 4096;
-#[cfg(feature = "electrochemistry-mvp")]
-/// Host read for relative-residual early exit inside [`poisson_graph_uniform_laplacian_jacobi_pcg`]
-/// (not after every inner matvec / Saxpy).
-const POISSON_GRAPH_PCG_INNER_HOST_CHECK_EVERY: usize = 10;
 
 /// Single-element rank-1 float tensor → host `f32` via [`Tensor::into_data`] (avoids the Burn one-element float extraction helper).
 #[cfg(feature = "electrochemistry-mvp")]
@@ -618,11 +612,11 @@ fn tensor1_bool<B: Backend<FloatElem = f32>>(t: Tensor<B, 1, Bool>) -> bool {
 
 /// Jacobi–PCG on the graph Laplacian for non-chain Poisson surrogates.
 ///
-/// Inner iterations keep \(lpha\), \(eta\), and Saxpy scaling on the Burn graph by reshaping
-/// rank‑1 reductions to \([1,1,1]\) for broadcasting (same pattern as masked bar CG in
-/// [`crate::physics::mechanics`]). Relative \(\|r\|_2\) early exit uses [`Tensor::lower_elem`] +
-/// [`Tensor::all`] with a host boolean read at most every [`POISSON_GRAPH_PCG_INNER_HOST_CHECK_EVERY`]
-/// iterations (and on the last inner iteration), avoiding [`tensor1_f32`] on every matvec step.
+/// Inner iterations keep alpha, beta, and Saxpy scaling on the Burn graph by reshaping
+/// rank-1 reductions to `[1,1,1]` for broadcasting (same pattern as masked bar CG in
+/// [`crate::physics::mechanics`]). The loop is bounded by the unknown count `n`
+/// (exact-arithmetic CG) and stops when the residual meets the relative tolerance or
+/// does not strictly decrease.
 #[cfg(feature = "electrochemistry-mvp")]
 pub(crate) fn poisson_graph_uniform_laplacian_jacobi_pcg<B: Backend<FloatElem = f32>>(
     phi_initial: Tensor<B, 3>,
@@ -660,9 +654,10 @@ pub(crate) fn poisson_graph_uniform_laplacian_jacobi_pcg<B: Backend<FloatElem = 
         .reshape([1, 1, 1])
         .clamp_min(1e-40_f32);
 
-    let max_it = n.saturating_mul(10).clamp(256, POISSON_GRAPH_PCG_MAX_IT);
+    let max_it = n.max(1);
+    let mut prev_r = f32::INFINITY;
 
-    for it in 0..max_it {
+    for _it in 0..max_it {
         let lp =
             TopologicalLaplacian::scalar_laplacian(p.clone(), edges_b1.clone(), damage.clone());
         let ap = lp.neg();
@@ -677,15 +672,12 @@ pub(crate) fn poisson_graph_uniform_laplacian_jacobi_pcg<B: Backend<FloatElem = 
         phi = phi.add(p.clone().mul(alpha_t.clone()));
         r = r.sub(ap.mul(alpha_t));
 
-        let should_sync = (it % POISSON_GRAPH_PCG_INNER_HOST_CHECK_EVERY
-            == POISSON_GRAPH_PCG_INNER_HOST_CHECK_EVERY - 1)
-            || it + 1 == max_it;
-        if should_sync {
-            let r_l2 = r.clone().powf_scalar(2.0).sum().sqrt();
-            if tensor1_bool(r_l2.lower_elem(rhs_tol).all()) {
-                break;
-            }
+        let r_l2 = r.clone().powf_scalar(2.0).sum().sqrt();
+        let r_now = tensor1_f32(r_l2.clone());
+        if !r_now.is_finite() || r_now <= rhs_tol || r_now >= prev_r {
+            break;
         }
+        prev_r = r_now;
 
         z = r.clone().mul(diag_inv.clone());
         let rz_new_t = r
