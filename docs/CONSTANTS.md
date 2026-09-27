@@ -15,7 +15,6 @@ or `umst-math` re-export. No runtime registry mutation.
 | `name` | Value SSOT | Feature gate |
 | --- | --- | --- |
 | `mechanics_default_pcg_rel_tol` | `MechanicsInnerLoopConfig::default().pcg_tolerance` | always |
-| `mechanics_default_max_cg_iterations` | `MechanicsInnerLoopConfig::default().max_cg_iterations` | always |
 | `landauer_bit_energy_300k_j` | `constants::landauer_bit_energy_joules(300.0)` | always |
 | `hex_pcg_unknown_bound(n)` | one PCG step per unknown; not a fixed Striatus cap | topology / voigt |
 | `hex_pcg_rel_tol_f32` | `hex_elasticity::HEX_PCG_REL_TOL_F32` | topology / voigt |

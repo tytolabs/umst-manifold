@@ -449,7 +449,10 @@ impl AdjointComplianceQ1Hex {
 
         let assemble_ms = t_assemble.elapsed().as_secs_f64() * 1000.0;
 
-        let max_it = opts.pcg_max_iter.unwrap_or(cg.max_cg_iterations).max(1);
+        let max_it = match opts.pcg_max_iter {
+            Some(k) => k.max(1),
+            None => cg.iteration_budget(n_dof),
+        };
         let rel_tol = cg.pcg_tolerance.max(cg.cg_tolerance);
         let precond_kind = opts.precond_kind.unwrap_or_else(|| {
             HexPreconditionerKind::from_use_preconditioner(cg.use_preconditioner)

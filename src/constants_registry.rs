@@ -84,13 +84,6 @@ pub const DEFAULT_BAR_PCG_REL_TOL: GroundedConst<f32> = GroundedConst {
     evidence: "src/physics/time_orchestration.rs MechanicsInnerLoopConfig::default",
 };
 
-/// Default bar-network PCG iteration budget.
-pub const DEFAULT_BAR_PCG_MAX_ITER: GroundedConst<usize> = GroundedConst {
-    name: "mechanics_default_max_cg_iterations",
-    value: 200,
-    evidence: "src/physics/time_orchestration.rs MechanicsInnerLoopConfig::default",
-};
-
 /// Dense monolithic THMC stacked-DOF cap (SSOT: `thmc_residual::THMC_DENSE_NEWTON_MAX_STACKED_DOFS`).
 #[cfg(feature = "thmc-coupled")]
 pub const THMC_DENSE_NEWTON_MAX_STACKED_DOFS_GROUNDED: GroundedConst<usize> = GroundedConst {
@@ -239,7 +232,6 @@ pub fn thmc_floats_todo_names() -> Vec<&'static str> {
 pub fn migrated_registry_names() -> Vec<&'static str> {
     let mut names = vec![
         DEFAULT_BAR_PCG_REL_TOL.name,
-        DEFAULT_BAR_PCG_MAX_ITER.name,
         LANDAUER_BIT_ENERGY_300K_J.name,
     ];
     #[cfg(any(
@@ -302,7 +294,6 @@ mod tests {
     fn migrated_registry_names_always_include_bar_and_landauer() {
         let names = migrated_registry_names();
         assert!(names.contains(&"mechanics_default_pcg_rel_tol"));
-        assert!(names.contains(&"mechanics_default_max_cg_iterations"));
         assert!(names.contains(&"landauer_bit_energy_300k_j"));
         assert!(names.len() >= 3);
     }
@@ -311,7 +302,6 @@ mod tests {
     fn default_bar_tols_match_orchestration() {
         let d = crate::physics::time_orchestration::MechanicsInnerLoopConfig::default();
         assert_eq!(DEFAULT_BAR_PCG_REL_TOL.value, d.pcg_tolerance);
-        assert_eq!(DEFAULT_BAR_PCG_MAX_ITER.value, d.max_cg_iterations);
     }
 
     #[test]

@@ -306,7 +306,7 @@ impl ExtrudedPlateMechanics {
         let mut diag = vec![0.0_f32; n * 3];
         let mut scratch = vec![0.0_f32; n * 3];
 
-        let max_it = cg_config.max_cg_iterations.max(1);
+        let max_it = cg_config.iteration_budget(n * 3);
         let rel_tol = cg_config.pcg_tolerance.max(cg_config.cg_tolerance).max(0.0);
 
         let pcg = hex_elasticity::hex_solve_pcg_masked(

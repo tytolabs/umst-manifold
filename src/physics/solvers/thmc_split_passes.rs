@@ -242,7 +242,7 @@ fn monolithic_pass<B: Backend<FloatElem = f32>>(
         })?;
     let bm = displacement_bc_mask_expand(ctx.manifold, batch, n)?;
     let bf = BodyForceField::zeros([batch, n, 3], device);
-    let inner_cfg = MechanicsInnerLoopConfig::default();
+    let inner_cfg = MechanicsInnerLoopConfig::for_unknowns(n * 3);
     let cross_section_area = 0.01_f32;
 
     let t_predict = scratch
@@ -475,7 +475,7 @@ fn mechanics_pass<B: Backend<FloatElem = f32>>(
         .reaction_extent_kinetics
         .stiffness_field_from_alpha_bn1(alpha_bn1, device);
     let bf = BodyForceField::zeros([batch, n, 3], device);
-    let inner_cfg = MechanicsInnerLoopConfig::default();
+    let inner_cfg = MechanicsInnerLoopConfig::for_unknowns(n * 3);
     let cross_section_area = 0.01_f32;
 
     #[cfg(feature = "mechanics-adjoint")]

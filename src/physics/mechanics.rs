@@ -577,7 +577,7 @@ impl VectorMechanicsSolver {
             // f32 lane: honour caller `max_cg_iterations`; exit on configured relative residual
             // (`pcg_tolerance` / `cg_tolerance` via [`BarNetworkPcgReport::rel_tol_from_cfg`]) — not
             // the legacy `min(max_cg, 3N)` early cap (ill-conditioned nets can need >3N passes).
-            let max_it = inner_cfg.max_cg_iterations.max(1);
+            let max_it = inner_cfg.iteration_budget(n_v * 3);
             let rel_tol = BarNetworkPcgReport::rel_tol_from_cfg(inner_cfg);
             for b in 0..batch {
                 let p_mask = boundary_mask.clone().slice([b..b + 1, 0..n_v, 0..3]);
@@ -1155,13 +1155,12 @@ impl VectorMechanicsSolver {
             .map(|e| edges_flat[n_e + e].elem::<i32>() as usize)
             .collect();
         let _ = (src_indices, tgt_indices);
-        // f64 lane: honour caller `max_cg_iterations` without the f32 `3N` early cap (ill-conditioned
-        // Striatus-scale bar nets can need more passes than subspace dimension in f32).
-        let max_it = inner_cfg.max_cg_iterations.max(1);
+        // Caller budget, or one step per unknown when the config is still the unset default.
+        let ndof = n_v * 3;
+        let max_it = inner_cfg.iteration_budget(ndof);
         let rel_tol = inner_cfg.pcg_tolerance.max(inner_cfg.cg_tolerance).max(0.0) as f64;
 
         let mut report = BarNetworkPcgReport::default();
-        let ndof = n_v * 3;
         let mut ku = vec![0.0_f64; ndof];
         let mut ap = vec![0.0_f64; ndof];
         let mut r = vec![0.0_f64; ndof];

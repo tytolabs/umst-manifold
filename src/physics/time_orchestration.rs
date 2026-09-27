@@ -212,17 +212,35 @@ pub struct MechanicsInnerLoopConfig {
 
 impl Default for MechanicsInnerLoopConfig {
     fn default() -> Self {
+        Self::for_unknowns(Self::UNSET_CG_ITERATIONS)
+    }
+}
+
+impl MechanicsInnerLoopConfig {
+    /// Stored when no mesh size was supplied. Solvers treat this as "use the unknown count".
+    pub const UNSET_CG_ITERATIONS: usize = 1;
+
+    /// Iteration ceiling of one step per unknown.
+    #[must_use]
+    pub fn for_unknowns(n_unknowns: usize) -> Self {
         Self {
-            max_cg_iterations: 200,
+            max_cg_iterations: n_unknowns.max(1),
             cg_tolerance: 1e-6,
             pcg_tolerance: 1e-6,
             use_preconditioner: true,
             max_equilibrium_substeps: 1,
         }
     }
-}
 
-impl MechanicsInnerLoopConfig {
+    /// Caller budget, or the unknown count when the config is still [`Self::default`].
+    #[must_use]
+    pub fn iteration_budget(&self, n_unknowns: usize) -> usize {
+        if self.max_cg_iterations == Self::UNSET_CG_ITERATIONS {
+            n_unknowns.max(1)
+        } else {
+            self.max_cg_iterations.max(1)
+        }
+    }
     /// Fail-closed positivity fence for CG / equilibrium knobs.
     #[must_use]
     pub fn validate(&self) -> Result<(), &'static str> {
@@ -325,7 +343,15 @@ mod tests {
     fn time_orchestration_mechanics_inner_loop_default_validates() {
         let cfg = MechanicsInnerLoopConfig::default();
         assert!(cfg.validate().is_ok());
-        assert_eq!(cfg.max_cg_iterations, 200);
+        assert_eq!(
+            cfg.max_cg_iterations,
+            MechanicsInnerLoopConfig::UNSET_CG_ITERATIONS
+        );
+        assert_eq!(cfg.iteration_budget(40), 40);
+        assert_eq!(
+            MechanicsInnerLoopConfig::for_unknowns(12).iteration_budget(99),
+            12
+        );
         assert!(cfg.use_preconditioner);
         assert_eq!(cfg.max_equilibrium_substeps, 1);
 

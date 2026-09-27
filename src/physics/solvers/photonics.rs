@@ -3086,7 +3086,7 @@ mod photonics_sparse_csr_cg_parity_tests {
             }
         };
 
-        let inner = MechanicsInnerLoopConfig::default();
+        let inner = MechanicsInnerLoopConfig::for_unknowns(dim);
         let rel_tol = inner.pcg_tolerance.max(inner.cg_tolerance);
         let max_iter = inner.max_cg_iterations.max(1);
         let x_mf = solve_maxwell_dec_patch_conjugate_gradient(
