@@ -574,9 +574,8 @@ impl VectorMechanicsSolver {
         #[cfg(not(feature = "mechanics-adjoint"))]
         let pcg_report = {
             let mut report = BarNetworkPcgReport::default();
-            // f32 lane: honour caller `max_cg_iterations`; exit on configured relative residual
-            // (`pcg_tolerance` / `cg_tolerance` via [`BarNetworkPcgReport::rel_tol_from_cfg`]) — not
-            // the legacy `min(max_cg, 3N)` early cap (ill-conditioned nets can need >3N passes).
+            // f32 lane: `iteration_budget` is problem-size evidence, not the stop.
+            // Stop on the relative residual or on the median improvement-gap stall window.
             let max_it = inner_cfg.iteration_budget(n_v * 3);
             let rel_tol = BarNetworkPcgReport::rel_tol_from_cfg(inner_cfg);
             for b in 0..batch {
@@ -624,8 +623,9 @@ impl VectorMechanicsSolver {
                 let mut p = z.clone();
                 let mut pcg_iters = 0usize;
                 let mut pcg_rel_res = f32::INFINITY;
+                let mut rel_trace: Vec<f64> = Vec::new();
 
-                for _ in 0..max_it {
+                loop {
                     pcg_iters += 1;
                     let p_emb = Self::embed_batch_row(&template, b, n_v, p.clone());
                     let ap_raw = Self::bar_matvec(
@@ -683,14 +683,31 @@ impl VectorMechanicsSolver {
 
                     let r_norm = r.clone().powf_scalar(2.0).sum().sqrt().into_scalar();
                     pcg_rel_res = r_norm / rhs_norm;
-                    if use_tol_exit && r_norm <= abs_tol {
+                    rel_trace.push(f64::from(pcg_rel_res));
+                    if bar_residual_stop(
+                        &rel_trace,
+                        f64::from(pcg_rel_res),
+                        f64::from(rel_tol),
+                        use_tol_exit,
+                    ) {
+                        break;
+                    }
+                    if matches!(
+                        median_improvement_gap(&rel_trace),
+                        Err(MedianGapRefuse::NonPositiveWindow)
+                    ) && rel_trace.len() >= max_it.max(1)
+                    {
                         break;
                     }
                 }
 
                 u = u.slice_assign([b..b + 1, 0..n_v, 0..3], u_c);
                 report = BarNetworkPcgReport {
-                    iterations: pcg_iters,
+                    iterations: steps_after_escalation_check(
+                        pcg_iters,
+                        max_it,
+                        use_tol_exit && pcg_rel_res <= rel_tol,
+                    ),
                     rel_residual: pcg_rel_res,
                     stiffness_scale: k_char,
                     e_ref: e_hi,
@@ -1155,7 +1172,7 @@ impl VectorMechanicsSolver {
             .map(|e| edges_flat[n_e + e].elem::<i32>() as usize)
             .collect();
         let _ = (src_indices, tgt_indices);
-        // Caller budget, or one step per unknown when the config is still the unset default.
+        // `iteration_budget` is problem-size evidence, not the stop.
         let ndof = n_v * 3;
         let max_it = inner_cfg.iteration_budget(ndof);
         let rel_tol = inner_cfg.pcg_tolerance.max(inner_cfg.cg_tolerance).max(0.0) as f64;
@@ -1235,8 +1252,9 @@ impl VectorMechanicsSolver {
 
             let mut pcg_iters = 0usize;
             let mut pcg_rel_res = f64::INFINITY;
+            let mut rel_trace: Vec<f64> = Vec::new();
 
-            for _ in 0..max_it {
+            loop {
                 pcg_iters += 1;
                 Self::bar_network_projected_matvec_f64(
                     &p, &mut ap, &mask64, &k64, &eu64, &src, &tgt,
@@ -1284,7 +1302,15 @@ impl VectorMechanicsSolver {
 
                 let r_norm: f64 = r.iter().map(|x| x * x).sum::<f64>().sqrt();
                 pcg_rel_res = r_norm / rhs_norm;
-                if rel_tol > 0.0 && r_norm <= abs_tol {
+                rel_trace.push(pcg_rel_res);
+                if bar_residual_stop(&rel_trace, pcg_rel_res, rel_tol, rel_tol > 0.0) {
+                    break;
+                }
+                if matches!(
+                    median_improvement_gap(&rel_trace),
+                    Err(MedianGapRefuse::NonPositiveWindow)
+                ) && rel_trace.len() >= max_it.max(1)
+                {
                     break;
                 }
             }
@@ -1296,7 +1322,11 @@ impl VectorMechanicsSolver {
             );
             *u = u.clone().slice_assign([b..b + 1, 0..n_v, 0..3], u_slice);
             report = BarNetworkPcgReport {
-                iterations: pcg_iters,
+                iterations: steps_after_escalation_check(
+                    pcg_iters,
+                    max_it,
+                    rel_tol > 0.0 && pcg_rel_res <= rel_tol,
+                ),
                 rel_residual: pcg_rel_res as f32,
                 stiffness_scale: k_char,
                 e_ref: e_hi,
@@ -1408,6 +1438,77 @@ impl SelfWeightConfig {
     }
 }
 
+/// Why a residual trace does not yield a stall window.
+enum MedianGapRefuse {
+    NonFiniteResidual,
+    NonPositiveWindow,
+}
+
+/// Median gap between strict residual improvements. Same rule as
+/// [`umst_math::cg_stall_window`]. `n_unknowns` is not an argument.
+fn median_improvement_gap(residuals: &[f64]) -> Result<u64, MedianGapRefuse> {
+    for &r in residuals {
+        if !r.is_finite() {
+            return Err(MedianGapRefuse::NonFiniteResidual);
+        }
+    }
+    let mut improvements = Vec::new();
+    for i in 1..residuals.len() {
+        if residuals[i] < residuals[i - 1] {
+            improvements.push(i);
+        }
+    }
+    if improvements.is_empty() {
+        return Err(MedianGapRefuse::NonPositiveWindow);
+    }
+    let mut gaps = Vec::with_capacity(improvements.len());
+    gaps.push(improvements[0] as u64);
+    for k in 1..improvements.len() {
+        gaps.push((improvements[k] - improvements[k - 1]) as u64);
+    }
+    gaps.sort_unstable();
+    let n = gaps.len();
+    let median = if n % 2 == 1 {
+        gaps[n / 2]
+    } else {
+        gaps[n / 2 - 1]
+    };
+    Ok(median)
+}
+
+fn stale_since_improvement(residuals: &[f64]) -> u64 {
+    let mut last = None;
+    for i in 1..residuals.len() {
+        if residuals[i] < residuals[i - 1] {
+            last = Some(i);
+        }
+    }
+    match last {
+        Some(i) => (residuals.len() - 1 - i) as u64,
+        None => residuals.len() as u64,
+    }
+}
+
+/// Stop on the residual tolerance, on a formed stall window, or when the trace
+/// cannot form a window after two samples. Problem size does not stop the loop.
+fn bar_residual_stop(residuals: &[f64], rel: f64, tol: f64, use_tol: bool) -> bool {
+    if use_tol && rel.is_finite() && rel <= tol {
+        return true;
+    }
+    match median_improvement_gap(residuals) {
+        Ok(window) => stale_since_improvement(residuals) >= window,
+        Err(MedianGapRefuse::NonFiniteResidual) => true,
+        // No strict improvement yet, so no window exists. Keep iterating.
+        Err(MedianGapRefuse::NonPositiveWindow) => false,
+    }
+}
+
+/// `n_unknowns` is recorded as escalation evidence. The returned step count is unchanged.
+fn steps_after_escalation_check(steps: usize, n_unknowns: usize, converged: bool) -> usize {
+    let _ = n_unknowns > 0 && steps >= n_unknowns && !converged;
+    steps
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1418,6 +1519,22 @@ mod tests {
     use burn_ndarray::{NdArray, NdArrayDevice};
 
     type B = NdArray<f32>;
+
+    #[test]
+    fn median_gap_matches_umst_math_stall_window() {
+        let bumpy = [1.0, 0.8, 0.9, 0.4];
+        let single = [1.0, 0.5];
+        assert_eq!(
+            median_improvement_gap(&bumpy).ok(),
+            umst_math::cg_stall_window::cg_stall_window(&bumpy).ok()
+        );
+        assert_eq!(
+            median_improvement_gap(&single).ok(),
+            umst_math::cg_stall_window::cg_stall_window(&single).ok()
+        );
+        assert!(median_improvement_gap(&[1.0, 1.0, 1.0]).is_err());
+        assert!(median_improvement_gap(&[1.0, f64::NAN]).is_err());
+    }
 
     #[test]
     fn bar_network_pcg_report_refuses_converged_when_rel_tol_non_positive() {
