@@ -80,12 +80,22 @@ impl EnergyBudget {
     }
 }
 
+/// Whether step energy was measured live or bounded above from elapsed × ceiling.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EnergySpendProvenance {
+    /// Elapsed × package power from a reader or injected meter.
+    Measured,
+    /// Elapsed × operator-supplied package power ceiling (conservative upper bound).
+    BoundedAbove,
+}
+
 /// Energy already spent. Commutative monoid under addition.
 ///
 /// `joules` is finite and ≥ 0 by construction (`Eq` is the constructor invariant).
 #[derive(Clone, Copy, Debug)]
 pub struct EnergySpent {
     joules: f64,
+    provenance: EnergySpendProvenance,
 }
 
 impl PartialEq for EnergySpent {
@@ -99,13 +109,30 @@ impl Eq for EnergySpent {}
 impl EnergySpent {
     /// Additive identity (Defined 0 J).
     pub fn zero() -> Self {
-        Self { joules: 0.0 }
+        Self {
+            joules: 0.0,
+            provenance: EnergySpendProvenance::Measured,
+        }
+    }
+
+    /// How this spend was obtained.
+    pub fn provenance(self) -> EnergySpendProvenance {
+        self.provenance
     }
 
     fn from_finite_non_negative(joules: f64) -> Result<Self, CombinatorRefuse> {
         let nn = finite_non_negative(joules)?;
         Ok(Self {
             joules: nn.into_inner(),
+            provenance: EnergySpendProvenance::Measured,
+        })
+    }
+
+    fn from_bounded_finite_non_negative(joules: f64) -> Result<Self, CombinatorRefuse> {
+        let nn = finite_non_negative(joules)?;
+        Ok(Self {
+            joules: nn.into_inner(),
+            provenance: EnergySpendProvenance::BoundedAbove,
         })
     }
 
@@ -116,7 +143,17 @@ impl EnergySpent {
 
     /// Monoid operation. Parallel composition adds spends.
     pub fn plus(self, other: Self) -> Result<Self, CombinatorRefuse> {
-        Self::from_finite_non_negative(self.joules + other.joules)
+        let provenance = match (self.provenance, other.provenance) {
+            (EnergySpendProvenance::Measured, EnergySpendProvenance::Measured) => {
+                EnergySpendProvenance::Measured
+            }
+            _ => EnergySpendProvenance::BoundedAbove,
+        };
+        let nn = finite_non_negative(self.joules + other.joules)?;
+        Ok(Self {
+            joules: nn.into_inner(),
+            provenance,
+        })
     }
 
     fn is_below(self, floor: Self) -> bool {
@@ -286,6 +323,36 @@ impl<R: PackagePowerReader> StepEnergyMeter for MeasuredPackageMeter<R> {
     }
 }
 
+/// Conservative meter: energy ≤ elapsed monotonic time × operator-supplied package ceiling.
+///
+/// Registry row [`solve_combinator_macos_package_power_ceiling_watts`] is unmeasured until
+/// the operator passes watts from a `sudo powermetrics` sample. Without a ceiling use
+/// [`UnmeasuredMeter`].
+#[derive(Clone, Copy, Debug)]
+pub struct BoundedPackageMeter {
+    ceiling_watts: NotNan<f64>,
+}
+
+impl BoundedPackageMeter {
+    /// Ceiling watts from an operator powermetrics sample (machine-specific; not invented here).
+    pub fn from_operator_ceiling_watts(watts: f64) -> Result<Self, CombinatorRefuse> {
+        let ceiling_watts = finite_positive(watts, CombinatorRefuse::NonFiniteQuantity)?;
+        Ok(Self { ceiling_watts })
+    }
+}
+
+impl StepEnergyMeter for BoundedPackageMeter {
+    fn measure<F, T>(&self, step: F) -> Result<(T, EnergySpent), CombinatorRefuse>
+    where
+        F: FnOnce() -> Result<T, CombinatorRefuse>,
+    {
+        let t0 = std::time::Instant::now();
+        let value = step()?;
+        let joules = self.ceiling_watts.into_inner() * t0.elapsed().as_secs_f64();
+        Ok((value, EnergySpent::from_bounded_finite_non_negative(joules)?))
+    }
+}
+
 /// Progress recorded when the budget is exhausted.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ProgressCertificate {
@@ -421,6 +488,8 @@ where
     let bits = finite_positive(bits_per_step, CombinatorRefuse::NonPositiveBits)?;
     let mut state = initial;
     let mut residual = residual_of(&state)?;
+    let mut best = state.clone();
+    let mut best_residual = residual;
     let mut spent = EnergySpent::zero();
     let mut remaining = budget;
     let mut strategy = StrategyRung::Jacobi;
@@ -435,16 +504,6 @@ where
 
     loop {
         let floor = landauer_step_joules(remaining.temperature_k(), bits)?;
-        match remaining.try_debit(floor) {
-            Ok(_) => {}
-            Err(_) => {
-                return Ok(SolveOutcome::BudgetSpent {
-                    best: state,
-                    spent,
-                    progress_certificate: ProgressCertificate { residual, spent },
-                });
-            }
-        }
 
         let (next, cost) = meter.measure(|| step(&state, strategy))?;
         if cost.is_below(floor) {
@@ -457,25 +516,29 @@ where
             }
             Err(_) => {
                 return Ok(SolveOutcome::BudgetSpent {
-                    best: state,
+                    best,
                     spent,
-                    progress_certificate: ProgressCertificate { residual, spent },
+                    progress_certificate: ProgressCertificate {
+                        residual: best_residual,
+                        spent,
+                    },
                 });
             }
         }
 
-        let next_residual = residual_of(&next)?;
-        let cert = ResidualCertificate::of(next_residual, tolerance);
+        state = next;
+        residual = residual_of(&state)?;
+        let cert = ResidualCertificate::of(residual, tolerance);
         if cert.meets {
             return Ok(SolveOutcome::Converged {
-                x: next,
+                x: state,
                 certificate: cert,
             });
         }
 
-        if next_residual < residual {
-            state = next;
-            residual = next_residual;
+        if residual < best_residual {
+            best = state.clone();
+            best_residual = residual;
             stale = 0;
             continue;
         }
@@ -491,10 +554,10 @@ where
             }
             None => {
                 return Ok(SolveOutcome::Stalled {
-                    best: state,
+                    best,
                     evidence: StallEvidence {
-                        residual: next_residual,
-                        prior_residual: residual,
+                        residual,
+                        prior_residual: best_residual,
                         rung: strategy,
                         window,
                     },
@@ -541,11 +604,15 @@ mod tests {
         ProblemProgressWindow::from_krylov_restart(1).expect("window")
     }
 
+    fn measured_joules(j: f64) -> EnergySpent {
+        EnergySpent::from_finite_non_negative(j).expect("test joules")
+    }
+
     #[test]
     fn energy_spent_is_commutative_monoid() {
-        let a = EnergySpent { joules: 1.5 };
-        let b = EnergySpent { joules: 2.5 };
-        let c = EnergySpent { joules: 3.5 };
+        let a = measured_joules(1.5);
+        let b = measured_joules(2.5);
+        let c = measured_joules(3.5);
         let z = EnergySpent::zero();
         assert_eq!(a.plus(z).expect("a+0"), a);
         assert_eq!(z.plus(a).expect("0+a"), a);
@@ -572,7 +639,7 @@ mod tests {
 
     #[test]
     fn thermo_bind_associative_and_adds_spend() {
-        let spend = |j: f64| EnergySpent { joules: j };
+        let spend = measured_joules;
         let f = |x: i32| {
             Ok(Thermo {
                 value: x + 1,
@@ -733,36 +800,45 @@ mod tests {
     #[test]
     fn unfold_debits_measured_joules_not_landauer_times_bits() {
         let tolerance = ProblemTolerance::from_problem(2.0, 1e-3).expect("tol");
-        let budget = EnergyBudget::from_joules_at(10.0, 293.15).expect("B");
         let meter = FixedJouleMeter::from_joules(3.0).expect("3 J");
+        let floor = landauer_step_joules(nn(293.15), nn(1.0)).expect("floor");
+        assert!(floor.ucrs_ledger_joules().expect("finite").into_inner() < 1e-15);
+        // One debit per measured step (Landauer is a floor check only). Identity stall needs
+        // 5 rungs × 3 J = 15 J; budget 10 J allows 3 full debits (9 J) then BudgetSpent on the 4th.
+        let budget_tight = EnergyBudget::from_joules_at(10.0, 293.15).expect("B");
         let out = unfold(
             1.0_f64,
             abs_residual,
             |x, _| Ok(*x),
             tolerance,
-            budget,
+            budget_tight,
             &meter,
             one_step_window(),
             1.0,
         )
         .expect("unfold");
         match out {
-            SolveOutcome::Stalled { .. } => {}
-            other => panic!("expected Stalled, got {other:?}"),
+            SolveOutcome::BudgetSpent { spent, .. } => {
+                assert_eq!(
+                    spent.ucrs_ledger_joules().expect("finite").into_inner(),
+                    9.0
+                );
+                assert_eq!(spent.provenance(), EnergySpendProvenance::Measured);
+            }
+            other => panic!("expected BudgetSpent for 10 J / 3 J per step, got {other:?}"),
         }
-        let floor = landauer_step_joules(nn(293.15), nn(1.0)).expect("floor");
-        assert!(floor.joules < 1e-15);
         let posts = std::cell::Cell::new(0_u32);
         let counting = CountingMeter {
             inner: meter,
             posts: &posts,
         };
+        let budget_stall = EnergyBudget::from_joules_at(16.0, 293.15).expect("B stall");
         let out = unfold(
             1.0_f64,
             abs_residual,
             |x, _| Ok(*x),
             tolerance,
-            budget,
+            budget_stall,
             &counting,
             one_step_window(),
             1.0,
@@ -771,9 +847,9 @@ mod tests {
         match out {
             SolveOutcome::Stalled { .. } => {
                 assert_eq!(posts.get(), 5);
-                assert!(3.0 * f64::from(posts.get()) > floor.joules * 1e10);
+                assert!(3.0 * f64::from(posts.get()) > floor.ucrs_ledger_joules().expect("f").into_inner() * 1e10);
             }
-            other => panic!("expected Stalled, got {other:?}"),
+            other => panic!("expected Stalled after 5×3 J with 16 J budget, got {other:?}"),
         }
     }
 
@@ -795,22 +871,65 @@ mod tests {
         assert_eq!(err, CombinatorRefuse::MeasuredBelowFloor);
     }
 
+    const NON_MONO_RESIDUALS: [f64; 4] = [1.0, 1.3, 0.8, 0.4];
+
+    fn residual_at_index(idx: &usize) -> Result<NotNan<f64>, CombinatorRefuse> {
+        let r = NON_MONO_RESIDUALS
+            .get(*idx)
+            .copied()
+            .ok_or(CombinatorRefuse::NonFiniteQuantity)?;
+        NotNan::new(r).map_err(|_| CombinatorRefuse::NonFiniteQuantity)
+    }
+
+    fn advance_index(idx: &usize, _rung: StrategyRung) -> Result<usize, CombinatorRefuse> {
+        if *idx + 1 >= NON_MONO_RESIDUALS.len() {
+            Ok(*idx)
+        } else {
+            Ok(idx.saturating_add(1))
+        }
+    }
+
     #[test]
-    fn unfold_stall_window_allows_non_monotone_residual() {
-        let tolerance = ProblemTolerance::from_problem(4.0, 1e-3).expect("tol");
+    fn unfold_non_monotone_sequence_converges_with_window_two() {
+        // Pre: residuals [1.0, 1.3, 0.8, 0.4]; tolerance 0.5 so 0.4 converges; window 2 tolerates one bump.
+        let tolerance = ProblemTolerance::from_problem(1.0, 0.5).expect("tol");
+        assert!(tolerance.residual().into_inner() >= 0.4);
         let budget = EnergyBudget::from_joules_at(1e-12, 293.15).expect("B");
-        let window = ProblemProgressWindow::from_krylov_restart(3).expect("restart 3");
-        let mut n = 0_u32;
+        let window = ProblemProgressWindow::from_krylov_restart(2).expect("restart 2");
         let out = unfold(
-            1.0_f64,
-            abs_residual,
-            |x, _rung| {
-                n = n.saturating_add(1);
-                if n < 3 {
-                    Ok(*x)
-                } else {
-                    Ok(x * 0.5)
-                }
+            0_usize,
+            residual_at_index,
+            advance_index,
+            tolerance,
+            budget,
+            &paid_meter(),
+            window,
+            1.0,
+        )
+        .expect("unfold");
+        match out {
+            SolveOutcome::Converged { x, certificate } => {
+                assert_eq!(x, 3);
+                assert!(certificate.meets);
+                assert_eq!(certificate.residual, nn(0.4));
+            }
+            other => panic!("expected Converged, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn unfold_non_monotone_sequence_escalates_with_window_one() {
+        // Pre: same sequence; window 1 escalates on the 1.3 bump (state still advances to index 1).
+        let tolerance = ProblemTolerance::from_problem(1.0, 0.5).expect("tol");
+        let budget = EnergyBudget::from_joules_at(1e-12, 293.15).expect("B");
+        let window = one_step_window();
+        let strategies = std::cell::Cell::new(StrategyRung::Jacobi);
+        let out = unfold(
+            0_usize,
+            residual_at_index,
+            |idx, rung| {
+                strategies.set(rung);
+                advance_index(idx, rung)
             },
             tolerance,
             budget,
@@ -820,12 +939,21 @@ mod tests {
         )
         .expect("unfold");
         match out {
-            SolveOutcome::Converged { certificate, .. } => {
-                assert!(certificate.meets);
-                assert!(n >= 3);
+            SolveOutcome::Converged { x, .. } => {
+                assert_eq!(x, 3);
+                assert_ne!(strategies.get(), StrategyRung::Jacobi);
             }
-            other => panic!("expected Converged after windowed stall, got {other:?}"),
+            other => panic!("expected Converged after escalation past bump, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn bounded_package_meter_labels_spend_bounded_above() {
+        let meter = BoundedPackageMeter::from_operator_ceiling_watts(42.0).expect("ceiling");
+        let (_v, spent) = meter
+            .measure(|| Ok(1_i32))
+            .expect("bounded measure");
+        assert_eq!(spent.provenance(), EnergySpendProvenance::BoundedAbove);
     }
 
     struct CountingMeter<'a> {

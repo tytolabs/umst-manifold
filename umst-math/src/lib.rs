@@ -65,6 +65,8 @@ pub mod theorem_blurbs;
 pub mod theorem_registry;
 pub mod vne;
 
+/// CONSTANT-BOUND: CGD registry row types (re-export for wire gate on registry edits).
+pub use constants::registry::{ConstantEntry, ConstantTier};
 /// THEOREM-BOUND: `combine_density_between` (re-export: density diagonal / CGD struct)
 pub use density::DensityDiag;
 /// THEOREM-BOUND: `clausiusDuhemFwd` (re-export: Englert duality / thermo bridge)
@@ -73,10 +75,10 @@ pub use englert::{englert_bound_holds, englert_lhs};
 pub use landauer::landauer_cost_diagonal_bits;
 /// Track C: certified solve outcomes + UCRS Landauer budget types.
 pub use solve_combinator::{
-    landauer_step_joules, unfold, CombinatorRefuse, EnergyBudget, EnergySpent, FixedJouleMeter,
-    MeasuredPackageMeter, PackagePowerReader, ProblemProgressWindow, ProblemTolerance,
-    ProgressCertificate, ResidualCertificate, SolveOutcome, StallEvidence, StepEnergyMeter,
-    StrategyRung, Thermo, UnmeasuredMeter,
+    landauer_step_joules, unfold, BoundedPackageMeter, CombinatorRefuse, EnergyBudget,
+    EnergySpendProvenance, EnergySpent, FixedJouleMeter, MeasuredPackageMeter, PackagePowerReader,
+    ProblemProgressWindow, ProblemTolerance, ProgressCertificate, ResidualCertificate,
+    SolveOutcome, StallEvidence, StepEnergyMeter, StrategyRung, Thermo, UnmeasuredMeter,
 };
 /// THEOREM-BOUND: Clausius–Duhem admissibility (`Gate.lean` conjunct; SSOT for ucrs/formal drift)
 pub use manifold::csg::clausius_duhem_admissible;

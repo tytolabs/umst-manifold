@@ -47,7 +47,7 @@ pub enum ConstantTier {
 }
 
 /// Authoritative registry (keep in lock-step with `docs/CGD_REGISTRY.md` §24a).
-/// CONSTANT-BOUND: … + §14bis.f-M-6 (+2) + §14bis.f-M-7 (+1 mcert) + foundation Phase 3 (+4) + K-2 (+2) + K-4 (+1) = **171**
+/// CONSTANT-BOUND: … + §14bis.f-M-6 (+2) + §14bis.f-M-7 (+1 mcert) + foundation Phase 3 (+4) + K-2 (+2) + K-4 (+1) + solve-combinator meter (+1) = **172**
 pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "landauer_floor_j_per_bit",
@@ -1441,6 +1441,14 @@ pub static REGISTRY: &[ConstantEntry] = &[
         env_override: None,
         derivation: Derivation::Pending,
     },
+    ConstantEntry {
+        name: "solve_combinator_macos_package_power_ceiling_watts",
+        expression: "unmeasured: operator supplies watts from `sudo powermetrics --samplers cpu_power -i 1000 -n 1` into BoundedPackageMeter::from_operator_ceiling_watts",
+        tier: ConstantTier::Tier1Measurement,
+        evidence: "pending: machine-specific powermetrics sample (no universal package-power citation; registry documents absence until operator measured)",
+        env_override: None,
+        derivation: Derivation::Pending,
+    },
 ];
 
 /// THEOREM-BOUND: first `f64` token in `expression` (leading positive decimal); `None` if the row is non-numeric (e.g. `#RRGGBB` colors, string policies).
@@ -1588,7 +1596,7 @@ mod tests {
 
     #[test]
     fn registry_sorted_by_tier_is_sorted_and_complete() {
-        assert_eq!(REGISTRY.len(), 171);
+        assert_eq!(REGISTRY.len(), 172);
         let sorted = registry_sorted_by_tier();
         assert_eq!(sorted.len(), REGISTRY.len());
         for w in sorted.windows(2) {
