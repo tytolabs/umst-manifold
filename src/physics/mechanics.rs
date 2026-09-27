@@ -1544,7 +1544,7 @@ fn bar_pcg_certificate_stop(rel: f64, tol: f64, use_tol: bool) -> bool {
 }
 
 /// Spectral \(A\)-norm stall from [`umst_math::cg_spectral_window::stalled_a_norm`].
-fn bar_pcg_spectral_stall(coeffs: &[CgCoeff]) -> Result<Option<bool>, SpectralWindowRefuse> {
+pub(crate) fn bar_pcg_spectral_stall(coeffs: &[CgCoeff]) -> Result<Option<bool>, SpectralWindowRefuse> {
     match stalled_a_norm(coeffs) {
         Ok(stalled) => Ok(Some(stalled)),
         Err(SpectralWindowRefuse::EmptyRun | SpectralWindowRefuse::IndefiniteRitz) => Ok(None),

@@ -2094,7 +2094,7 @@ pub const HEX_PCG_REL_TOL_F64: f32 = 1e-4;
 /// Periodic true-residual verification cadence when [`HexPcgBisectConfig::stop_on_true_residual`].
 pub const HEX_PCG_TRUE_RESIDUAL_CHECK_PERIOD: usize = 25;
 
-/// Iteration ceiling for hex PCG: one step per unknown (exact-arithmetic CG).
+/// Problem-size marker for hex PCG. Not a stop; the loop uses the spectral window.
 #[must_use]
 pub fn hex_pcg_unknown_bound(n_unknowns: usize) -> usize {
     n_unknowns.max(1)
@@ -2340,7 +2340,7 @@ pub fn hex_solve_pcg_bisect(
     let ny1 = ny + 1;
     let n = nx1 * ny1 * (nz + 1);
     let ndof = n * 3;
-    let max_it = max_iter.max(1);
+    let _ = max_iter;
     let tol = relative_tol.max(1e-30_f32);
 
     let k_char = if cfg.nondim {
@@ -2412,8 +2412,10 @@ pub fn hex_solve_pcg_bisect(
 
     let mut pcg_iters = 0usize;
     let mut pcg_rel_recursive = f32::INFINITY;
+    let mut cg_coeffs: Vec<umst_math::cg_spectral_window::CgCoeff> = Vec::new();
+    let mut beta_prev = 0.0_f64;
 
-    for _ in 0..max_it {
+    loop {
         pcg_iters += 1;
         scratch_ku.fill(0.0);
         if let Some(cache) = op_cache {
@@ -2484,6 +2486,17 @@ pub fn hex_solve_pcg_bisect(
         let rz_new = dot_f32(&r, &z);
         let beta = (rz_new / rz_old.max(1e-30_f32)).max(0.0);
         rz_old = rz_new;
+        cg_coeffs.push(umst_math::cg_spectral_window::CgCoeff {
+            alpha: f64::from(alpha),
+            beta: beta_prev,
+            r_norm_sq: f64::from(r_norm * r_norm),
+        });
+        beta_prev = f64::from(beta);
+        match crate::physics::mechanics::bar_pcg_spectral_stall(&cg_coeffs) {
+            Ok(Some(true)) => break,
+            Ok(Some(false)) | Ok(None) => {}
+            Err(_) => break,
+        }
 
         match cfg.loop_kind {
             HexPcgLoopKind::Original => {
