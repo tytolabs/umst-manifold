@@ -2102,12 +2102,61 @@ pub fn hex_pcg_unknown_bound(n_unknowns: usize) -> usize {
 
 #[cfg(test)]
 mod hex_pcg_unknown_bound_tests {
-    use super::hex_pcg_unknown_bound;
+    use super::{hex_pcg_unknown_bound, hex_solve_pcg_masked_f64, HexPcgPrecondKind};
 
     #[test]
     fn bound_matches_unknown_count_and_refuses_zero() {
         assert_eq!(hex_pcg_unknown_bound(12), 12);
         assert_eq!(hex_pcg_unknown_bound(0), 1);
+    }
+
+    #[test]
+    fn f64_lane_stops_without_using_the_iteration_argument() {
+        let nx = 1usize;
+        let ny = 1usize;
+        let nz = 1usize;
+        let n = (nx + 1) * (ny + 1) * (nz + 1);
+        let ndof = n * 3;
+        let mut mask = vec![1.0_f32; ndof];
+        for iy in 0..2 {
+            for ix in 0..2 {
+                let nid = ix + iy * 2;
+                mask[nid * 3] = 0.0;
+                mask[nid * 3 + 1] = 0.0;
+                mask[nid * 3 + 2] = 0.0;
+            }
+        }
+        let mut f = vec![0.0_f32; ndof];
+        f[4 * 3 + 2] = -1.0;
+        let e = vec![1.0e6_f32];
+        let mut u = vec![0.0_f32; ndof];
+        let mut diag = vec![0.0_f32; ndof];
+        let report = hex_solve_pcg_masked_f64(
+            nx,
+            ny,
+            nz,
+            1.0,
+            1.0,
+            1.0,
+            0.2,
+            &e,
+            &f,
+            &mask,
+            &mut u,
+            &mut diag,
+            1_000_000,
+            HexPcgPrecondKind::JacobiDiagonal,
+            1e-4,
+            None,
+            None,
+            None,
+        );
+        assert!(
+            report.iterations < 10_000,
+            "f64 hex lane ran {} steps",
+            report.iterations
+        );
+        assert!(report.rel_residual.is_finite());
     }
 }
 
@@ -2558,8 +2607,9 @@ fn hex_solve_pcg_masked_f64(
     op_cache: Option<&HexStructuredOperatorCache>,
 ) -> HexPcgReport {
     let ndof = u.len();
-    let max_it = max_iter.max(1);
+    let _ = max_iter;
     let tol = (relative_tol.max(HEX_PCG_REL_TOL_F64).max(1e-30_f32)) as f64;
+    let diagnostic_horizon = milestone_iters.and_then(|targets| targets.iter().copied().max());
 
     let k_char = hex_stiffness_scale(e_cell, dx, dy, dz) as f64;
     let e_solve: Vec<f64> = e_cell.iter().map(|&e| e as f64 / k_char).collect();
@@ -2677,8 +2727,10 @@ fn hex_solve_pcg_masked_f64(
     let mut pcg_iters = 0usize;
     let mut pcg_rel_recursive = f32::INFINITY;
     let mut rz_old: f64 = dot_f64(&r, &z);
+    let mut cg_coeffs: Vec<umst_math::cg_spectral_window::CgCoeff> = Vec::new();
+    let mut beta_prev = 0.0_f64;
 
-    for _ in 0..max_it {
+    loop {
         pcg_iters += 1;
         projected_ku(&p, &mut ku);
         let pap: f64 = dot_f64(&p, &ku).max(1e-30_f64);
@@ -2789,6 +2841,23 @@ fn hex_solve_pcg_masked_f64(
                 hex_equilibrium_rel_residual_f64(nx, ny, nz, dx, dy, dz, nu, e_cell, f, mask, &u64);
             if r_true <= tol {
                 break;
+            }
+        }
+        cg_coeffs.push(umst_math::cg_spectral_window::CgCoeff {
+            alpha,
+            beta: beta_prev,
+            r_norm_sq: r_norm * r_norm,
+        });
+        beta_prev = beta;
+        if probe_descent {
+            if diagnostic_horizon.is_some_and(|horizon| pcg_iters >= horizon) {
+                break;
+            }
+        } else {
+            match crate::physics::mechanics::bar_pcg_spectral_stall(&cg_coeffs) {
+                Ok(Some(true)) => break,
+                Ok(Some(false)) | Ok(None) => {}
+                Err(_) => break,
             }
         }
     }
