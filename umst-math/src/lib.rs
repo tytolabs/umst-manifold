@@ -46,6 +46,8 @@ pub mod landauer;
 #[cfg(feature = "math-constants")]
 pub mod landauer_registry;
 pub mod lindblad;
+/// L1a: matrix-free linear operators with certified structure witnesses (design §2.1).
+pub mod linear_operator;
 /// §14bis.f-M-0: M-Arc **manifold** pure math (S², SDF/CSG, Hilbert, octree; GMD) — no I/O
 #[allow(missing_docs)]
 pub mod manifold;
@@ -53,6 +55,8 @@ pub mod median_convergence;
 pub mod mi;
 pub mod order_statistics_band;
 pub mod pmic;
+/// L1a: matrix-free preconditioners paired with [`linear_operator`].
+pub mod preconditioner;
 pub mod rho_estimator;
 pub mod schrodinger;
 /// THEOREM-BOUND: scalar Kalman + Joseph EKF smoothers (§14bis.e-TUI-7; vendor umst-prototype-2a)
@@ -65,6 +69,15 @@ pub mod theorem_blurbs;
 pub mod theorem_registry;
 pub mod vne;
 
+/// L1a: linear operator witnesses and matvec trait.
+pub use linear_operator::{
+    semidefinite_from_nullspace, semidefinite_nullspace, semidefinite_operator,
+    spd_from_diagonal_positive, spd_operator, symmetric_from_bilinear_test, symmetric_from_spd,
+    symmetric_operator, DiagonalOperator, IdentityOperator, LinearOperator, NullspaceWitness,
+    OpError, Semidefinite, Spd, Symmetric,
+};
+/// L1a: preconditioner trait and diagonal / identity implementations.
+pub use preconditioner::{DiagonalPreconditioner, IdentityPreconditioner, Preconditioner};
 /// CONSTANT-BOUND: CGD registry row types (re-export for wire gate on registry edits).
 pub use constants::registry::{ConstantEntry, ConstantTier};
 /// THEOREM-BOUND: `combine_density_between` (re-export: density diagonal / CGD struct)
