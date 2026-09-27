@@ -137,8 +137,12 @@ use crate::physics::dec_primal::{
 };
 use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
 #[cfg(feature = "photonics")]
+use crate::physics::mechanics::bar_pcg_spectral_stall;
+#[cfg(feature = "photonics")]
 use crate::physics::topology::EdgeTopology;
 use crate::physics::PhysicsError;
+#[cfg(feature = "photonics")]
+use umst_math::cg_spectral_window::CgCoeff;
 
 /// formal_anchor: Literature
 /// formal_citation: Rumpf 2022, Computational Electromagnetics in MATLAB, §3.4 (FDFD); Berenger 1994 (PML); Taflove & Hagness 2005 (FDFD context)
@@ -652,6 +656,8 @@ pub enum DecPatchInnerCgRefusal {
     NotSpdProven,
     IndefiniteConjugateDirection,
     ResidualAboveTolerance { rel_residual: f32 },
+    /// A-norm estimate failed to halve over the Lanczos window. Not a residual certificate.
+    SpectralANormStall { rel_residual: f32 },
 }
 
 /// Injected knobs for the **small dense** [`PhotonicsDecFacesPatch`] solve branch.
@@ -1457,7 +1463,14 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
     p.copy_from_slice(&r);
     let mut r_dot = vec_dot_f32(&r, &r);
 
-    for _ in 0..max_iter {
+    let mut cg_coeffs: Vec<CgCoeff> = Vec::new();
+    let mut beta_prev = 0.0_f64;
+    let mut iter = 0usize;
+    loop {
+        if iter >= max_iter {
+            break;
+        }
+        iter += 1;
         dec_patch_operator_apply_gauged_constitutive(
             &p,
             &mut ap,
@@ -1507,6 +1520,26 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
             );
         }
         let beta = r_dot_new / r_dot;
+        cg_coeffs.push(CgCoeff {
+            alpha: f64::from(alpha),
+            beta: beta_prev,
+            r_norm_sq: f64::from(rn) * f64::from(rn),
+        });
+        beta_prev = f64::from(beta);
+        match bar_pcg_spectral_stall(&cg_coeffs) {
+            Ok(Some(true)) => {
+                tracing::debug!(
+                    target: "umst_manifold::photonics",
+                    "solve_maxwell_dec_patch_conjugate_gradient: spectral A-norm stall (rel residual {:.3e})",
+                    rel_res
+                );
+                return DecPatchInnerCgOutcome::Refused(
+                    DecPatchInnerCgRefusal::SpectralANormStall { rel_residual: rel_res },
+                );
+            }
+            Ok(Some(false)) | Ok(None) => {}
+            Err(_) => break,
+        }
         for i in 0..dim {
             p[i] = r[i] + beta * p[i];
         }
@@ -1514,9 +1547,10 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
     }
     tracing::warn!(
         target: "umst_manifold::photonics",
-        "solve_maxwell_dec_patch_conjugate_gradient: rel residual {:.3e} above tolerance {:.3e} after {} iterations",
+        "solve_maxwell_dec_patch_conjugate_gradient: rel residual {:.3e} above tolerance {:.3e} after {} iterations (safety cap {})",
         rel_res,
         rel_tol,
+        iter,
         max_iter
     );
     DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::ResidualAboveTolerance { rel_residual: rel_res })
@@ -1732,7 +1766,14 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
     p.copy_from_slice(&r);
     let mut r_dot = vec_dot_f32(&r, &r);
 
-    for _ in 0..max_iter {
+    let mut cg_coeffs: Vec<CgCoeff> = Vec::new();
+    let mut beta_prev = 0.0_f64;
+    let mut iter = 0usize;
+    loop {
+        if iter >= max_iter {
+            break;
+        }
+        iter += 1;
         dec_patch_csr_matvec_f32(row_ptr, col_ind, vals, &p, &mut ap);
         let p_ap = vec_dot_f32(&p, &ap);
         let pn = vec_l2_f32(&p);
@@ -1767,6 +1808,26 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
             );
         }
         let beta = r_dot_new / r_dot;
+        cg_coeffs.push(CgCoeff {
+            alpha: f64::from(alpha),
+            beta: beta_prev,
+            r_norm_sq: f64::from(rn) * f64::from(rn),
+        });
+        beta_prev = f64::from(beta);
+        match bar_pcg_spectral_stall(&cg_coeffs) {
+            Ok(Some(true)) => {
+                tracing::debug!(
+                    target: "umst_manifold::photonics",
+                    "solve_maxwell_dec_patch_conjugate_gradient_csr: spectral A-norm stall (rel residual {:.3e})",
+                    rel_res
+                );
+                return DecPatchInnerCgOutcome::Refused(
+                    DecPatchInnerCgRefusal::SpectralANormStall { rel_residual: rel_res },
+                );
+            }
+            Ok(Some(false)) | Ok(None) => {}
+            Err(_) => break,
+        }
         for i in 0..dim {
             p[i] = r[i] + beta * p[i];
         }
@@ -1774,9 +1835,10 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
     }
     tracing::warn!(
         target: "umst_manifold::photonics",
-        "solve_maxwell_dec_patch_conjugate_gradient_csr: rel residual {:.3e} above tolerance {:.3e} after {} iterations",
+        "solve_maxwell_dec_patch_conjugate_gradient_csr: rel residual {:.3e} above tolerance {:.3e} after {} iterations (safety cap {})",
         rel_res,
         rel_tol,
+        iter,
         max_iter
     );
     DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::ResidualAboveTolerance { rel_residual: rel_res })
@@ -3178,6 +3240,30 @@ mod dec_patch_inner_cg_spd_precondition_tests {
         assert_eq!(
             outcome,
             DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::NotSpdProven)
+        );
+        assert!(!matches!(outcome, DecPatchInnerCgOutcome::Converged(_)));
+    }
+
+    #[test]
+    fn spectral_a_norm_stall_outcome_is_distinct_from_converged() {
+        let stall = DecPatchInnerCgOutcome::Refused(
+            DecPatchInnerCgRefusal::SpectralANormStall { rel_residual: 0.25 },
+        );
+        let converged = DecPatchInnerCgOutcome::Converged(vec![1.0, 2.0, 3.0]);
+        assert_ne!(stall, converged);
+    }
+
+    #[test]
+    fn max_iter_fuse_is_residual_above_tolerance_not_converged() {
+        let fuse = DecPatchInnerCgOutcome::Refused(
+            DecPatchInnerCgRefusal::ResidualAboveTolerance { rel_residual: 0.99 },
+        );
+        assert_ne!(fuse, DecPatchInnerCgOutcome::Converged(vec![0.0]));
+        assert_ne!(
+            fuse,
+            DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::SpectralANormStall {
+                rel_residual: 0.99
+            })
         );
     }
 }
