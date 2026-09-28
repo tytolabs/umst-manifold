@@ -1693,8 +1693,8 @@ mod simp_step_tests {
 
         let cfg = MechanicsInnerLoopConfig {
             max_cg_iterations: n * 3,
-            cg_tolerance: 1e-7,
-            pcg_tolerance: 1e-7,
+            cg_tolerance: umst_math::numeric_tolerance::mechanics_mid_cg_tol_f32(),
+            pcg_tolerance: umst_math::numeric_tolerance::mechanics_mid_cg_tol_f32(),
             use_preconditioner: true,
             max_equilibrium_substeps: 1,
         };
@@ -1762,8 +1762,8 @@ mod simp_step_tests {
 
         let cfg = MechanicsInnerLoopConfig {
             max_cg_iterations: n * 3,
-            cg_tolerance: 1e-7,
-            pcg_tolerance: 1e-7,
+            cg_tolerance: umst_math::numeric_tolerance::mechanics_mid_cg_tol_f32(),
+            pcg_tolerance: umst_math::numeric_tolerance::mechanics_mid_cg_tol_f32(),
             use_preconditioner: true,
             max_equilibrium_substeps: 1,
         };

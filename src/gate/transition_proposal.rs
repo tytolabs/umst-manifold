@@ -223,7 +223,7 @@ impl Default for TransitionFilter {
 impl TransitionFilter {
     pub fn new() -> Self {
         TransitionFilter {
-            tolerance: 1e-6,
+            tolerance: umst_math::numeric_tolerance::transition_tolerance_f64(),
             rejections: 0,
             acceptances: 0,
         }

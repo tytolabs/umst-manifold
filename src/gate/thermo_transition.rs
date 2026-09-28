@@ -231,7 +231,7 @@ impl ThermodynamicGate {
     #[must_use]
     pub fn new() -> Self {
         ThermodynamicGate {
-            tolerance: 1e-6,
+            tolerance: umst_math::numeric_tolerance::transition_tolerance_f64(),
             rejections: 0,
             acceptances: 0,
         }

@@ -455,7 +455,7 @@ fn extract_uniform_x_chain<B: Backend<FloatElem = f32>>(
     if h <= 0.0 {
         return None;
     }
-    let rtol = 1e-2_f32;
+    let rtol = umst_math::numeric_tolerance::uniform_grid_spacing_rtol_f32();
     for k in 1..n {
         let hk = xs[k] - xs[k - 1];
         if (hk - h).abs() > rtol * h.abs().max(1e-12) {

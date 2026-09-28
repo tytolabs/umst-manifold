@@ -112,7 +112,7 @@ mod rank1_field_harness {
     fn rank1_field_harness_b2_strength_surface_call_pattern() {
         let golden_fc_mpa = 35.689_57;
         let lattice_host = golden_fc_mpa;
-        let rtol = 1e-4;
+        let rtol = umst_math::numeric_tolerance::field_algebra_rtol_f64();
         let claim = rank1_field_parity_claim(lattice_host, golden_fc_mpa, rtol, "strength_fc_mpa");
         assert!(rank1_field_gate_closes(&claim).is_ok());
         assert!(!rank1_field_parity_closes(

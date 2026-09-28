@@ -2032,7 +2032,7 @@ mod fracture_idempotency_tests {
         let d2 = solver.update_damage(strain_field(strain), d1, gc_field(fracture_energy_gc), edges_b1).expect("PhaseFieldFractureSolver::update_damage re-apply on equilibrated zero-strain damage (FP §6 AT2 idempotency re-apply witness)");
         let d2_vals = d2.into_tensor().into_data().value;
 
-        let tol = 1e-6_f32;
+        let tol = umst_math::numeric_tolerance::bar_network_cg_tol_f32();
         assert!(
             max_abs_drift(&d1_vals, &d2_vals) < tol,
             "re-application on equilibrated zero-strain damage must not drift"
@@ -2089,7 +2089,7 @@ mod fracture_idempotency_tests {
         .expect("PhaseFieldFractureSolver::update_damage_staggered_with_stop re-apply on equilibrated zero-strain damage (FP §6 AT2 staggered idempotency re-apply witness)");
         let d_again_vals = d_again.into_tensor().into_data().value;
 
-        let tol = 1e-6_f32;
+        let tol = umst_math::numeric_tolerance::bar_network_cg_tol_f32();
         assert!(
             max_abs_drift(&d_eq_vals, &d_again_vals) < tol,
             "re-application of converged staggered outer loop must not drift"

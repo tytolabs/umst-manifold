@@ -132,8 +132,8 @@ mod tests {
     #[test]
     fn landauer_bit_energy_300k_matches_codata_fallback() {
         let e = landauer_bit_energy_joules(AMBIENT_REFERENCE_TEMPERATURE_K);
-        assert_relative_eq!(e, EXPECTED_LANDAUER_300K_J, epsilon = 1.0e-30);
-        assert_relative_eq!(landauer_bit_energy_ambient_joules(), e, epsilon = 1.0e-30);
+        assert_relative_eq!(e, EXPECTED_LANDAUER_300K_J, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
+        assert_relative_eq!(landauer_bit_energy_ambient_joules(), e, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
     }
 
     #[test]
@@ -143,13 +143,13 @@ mod tests {
         assert_relative_eq!(
             e,
             landauer_bit_energy_joules(300.0) / 2.0,
-            epsilon = 1.0e-30
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
     }
 
     #[test]
     fn landauer_bit_energy_zero_at_zero_kelvin() {
-        assert_relative_eq!(landauer_bit_energy_joules(0.0), 0.0, epsilon = 1.0e-30);
+        assert_relative_eq!(landauer_bit_energy_joules(0.0), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
     }
 
     #[test]
@@ -164,7 +164,7 @@ mod tests {
         assert_relative_eq!(
             K_BOLTZMANN_FALLBACK_J_PER_K,
             1.380_649e-23,
-            epsilon = 1.0e-30
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
     }
 
@@ -176,11 +176,11 @@ mod tests {
         let ssot =
             umst_math::landauer::landauer_bit_energy_joules(ordered_float::NotNan::new(t).unwrap())
                 .into_inner();
-        assert_relative_eq!(runtime, ssot, epsilon = 1.0e-30);
+        assert_relative_eq!(runtime, ssot, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
         assert_relative_eq!(
             K_BOLTZMANN_FALLBACK_J_PER_K,
             umst_math::landauer::K_B,
-            epsilon = 1.0e-30
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
     }
 

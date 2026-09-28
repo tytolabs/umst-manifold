@@ -569,10 +569,10 @@ mod tests {
 
         let c_k = ANALYTIC_BULK_MODULUS_SCALE;
         let c_g = ANALYTIC_SURFACE_ENERGY_SCALE;
-        assert_abs_diff_eq!(k_v[0], c_k * 0.1_f32 / 0.2_f32.powi(3), epsilon = 1.0e-5);
-        assert_abs_diff_eq!(k_v[1], c_k * 0.3_f32 / 0.4_f32.powi(3), epsilon = 1.0e-5);
-        assert_abs_diff_eq!(g_v[0], c_g * 0.1_f32 / 0.2_f32.powi(2), epsilon = 1.0e-5);
-        assert_abs_diff_eq!(g_v[1], c_g * 0.3_f32 / 0.4_f32.powi(2), epsilon = 1.0e-5);
+        assert_abs_diff_eq!(k_v[0], c_k * 0.1_f32 / 0.2_f32.powi(3), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+        assert_abs_diff_eq!(k_v[1], c_k * 0.3_f32 / 0.4_f32.powi(3), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+        assert_abs_diff_eq!(g_v[0], c_g * 0.1_f32 / 0.2_f32.powi(2), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+        assert_abs_diff_eq!(g_v[1], c_g * 0.3_f32 / 0.4_f32.powi(2), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
 
         assert!(k_v.iter().all(|x| x.is_finite() && *x > 0.0));
         assert!(g_v.iter().all(|x| x.is_finite() && *x > 0.0));
@@ -591,7 +591,7 @@ mod tests {
         assert_abs_diff_eq!(
             super::physical_bulk_modulus_johnson1993(rho, t, e, s),
             via_reduced,
-            epsilon = 1.0e-15
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
     }
 
@@ -609,7 +609,7 @@ mod tests {
                 rho_star, t_star, epsilon, sigma,
             ),
             manual,
-            epsilon = 1.0e-15
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
     }
 
@@ -621,7 +621,7 @@ mod tests {
         assert_abs_diff_eq!(
             bulk_modulus_from_lj_state_johnson1993(rho, t),
             super::super::lj_johnson_1993_reference::bulk_modulus_from_lj_state_johnson1993(rho, t),
-            epsilon = 1.0e-12
+            epsilon = umst_math::numeric_tolerance::adjoint_reference_tol_f64()
         );
     }
 
@@ -732,7 +732,7 @@ mod tests {
         let (k, _) = upscale_potentials(lj).expect(
             "statistical_mechanics::upscale_potentials VIADU reference LJ row bulk modulus vs VIADU_K_REF_F32 (FP §6 Track G statmech residual)",
         );
-        assert_abs_diff_eq!(k.into_scalar(), VIADU_K_REF_F32, epsilon = 1.0e-4_f32);
+        assert_abs_diff_eq!(k.into_scalar(), VIADU_K_REF_F32, epsilon = umst_math::numeric_tolerance::field_algebra_rtol_f64() as f32);
     }
 
     #[test]
@@ -746,7 +746,7 @@ mod tests {
         assert_abs_diff_eq!(
             g.into_scalar(),
             GAMMA_GC_REF_VIADU_F32,
-            epsilon = 1.0e-4_f32
+            epsilon = umst_math::numeric_tolerance::field_algebra_rtol_f64() as f32
         );
     }
 

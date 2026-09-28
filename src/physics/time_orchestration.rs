@@ -223,10 +223,15 @@ impl MechanicsInnerLoopConfig {
     /// Iteration ceiling of one step per unknown.
     #[must_use]
     pub fn for_unknowns(n_unknowns: usize) -> Self {
+        use umst_math::numeric_tolerance::{LinearSolveRelativeTier, ProblemScale};
+        let tol = umst_math::numeric_tolerance::linear_solve_relative_tol_f32(
+            ProblemScale::unit(),
+            LinearSolveRelativeTier::BarNetworkF32Default,
+        );
         Self {
             max_cg_iterations: n_unknowns.max(1),
-            cg_tolerance: 1e-6,
-            pcg_tolerance: 1e-6,
+            cg_tolerance: tol,
+            pcg_tolerance: tol,
             use_preconditioner: true,
             max_equilibrium_substeps: 1,
         }

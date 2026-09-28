@@ -64,7 +64,7 @@ mod tests {
             assert_relative_eq!(
                 gate.calculate_landauer_cost(bits),
                 inner.calculate_landauer_cost(bits),
-                epsilon = 1.0e-30,
+                epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
                 max_relative = 1.0e-12
             );
         }
@@ -79,10 +79,10 @@ mod tests {
         assert_relative_eq!(
             inner.available_credit_joules,
             CREDIT_J - 1.0e-12,
-            epsilon = 1.0e-30,
-            max_relative = 1.0e-9
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+            max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
         );
-        assert_relative_eq!(inner.k_phys_dint_to_joules, 2.5, epsilon = 1.0e-30);
+        assert_relative_eq!(inner.k_phys_dint_to_joules, 2.5, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
     }
 
     #[test]
@@ -93,12 +93,12 @@ mod tests {
         let cost = gate
             .verify_and_deduct_update(erasure, bits)
             .expect("admissible scalar step must debit credit");
-        assert_relative_eq!(cost, erasure, epsilon = 1.0e-30, max_relative = 1.0e-9);
+        assert_relative_eq!(cost, erasure, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64, max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT);
         assert_relative_eq!(
             gate.available_credit_joules,
             CREDIT_J - erasure,
-            epsilon = 1.0e-30,
-            max_relative = 1.0e-9
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+            max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
         );
     }
 
@@ -166,11 +166,11 @@ mod tests {
         let cost_b = gate_b
             .verify_tensor_update(d_big, bits)
             .expect("finite info gain with large d_int");
-        assert_relative_eq!(cost_a, cost_b, epsilon = 1e-30, max_relative = 1e-9);
+        assert_relative_eq!(cost_a, cost_b, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64, max_relative = 1e-9);
         assert_relative_eq!(
             credit_after_a,
             gate_b.available_credit_joules,
-            epsilon = 1e-30,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
             max_relative = 1e-9
         );
     }
@@ -185,21 +185,21 @@ mod tests {
         assert_relative_eq!(
             gate.available_credit_joules,
             CREDIT_J - 5.0e-13,
-            epsilon = 1.0e-30,
-            max_relative = 1.0e-9
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+            max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
         );
     }
 
     #[test]
     fn gate_cbf_new_defaults_k_phys_unity_bridge() {
         let gate = GateThermodynamicCBF::new(TEMP_K, CREDIT_J);
-        assert_relative_eq!(gate.k_phys_dint_to_joules, 1.0, epsilon = 1.0e-30);
+        assert_relative_eq!(gate.k_phys_dint_to_joules, 1.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
     }
 
     #[test]
     fn gate_cbf_landauer_cost_zero_bits_is_zero() {
         let gate = GateThermodynamicCBF::new(TEMP_K, CREDIT_J);
-        assert_relative_eq!(gate.calculate_landauer_cost(0.0), 0.0, epsilon = 1.0e-30);
+        assert_relative_eq!(gate.calculate_landauer_cost(0.0), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
     }
 
     #[test]
@@ -210,12 +210,12 @@ mod tests {
         let cost = gate
             .verify_and_deduct_update(erasure, bits)
             .expect("entropy == erasure must sit on CD boundary");
-        assert_relative_eq!(cost, erasure, epsilon = 1.0e-30, max_relative = 1.0e-9);
+        assert_relative_eq!(cost, erasure, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64, max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT);
         assert_relative_eq!(
             gate.available_credit_joules,
             CREDIT_J - erasure,
-            epsilon = 1.0e-30,
-            max_relative = 1.0e-9
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+            max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
         );
     }
 
@@ -231,8 +231,8 @@ mod tests {
         assert_relative_eq!(
             gate.available_credit_joules,
             CREDIT_J - 2.0 * erasure_each,
-            epsilon = 1.0e-30,
-            max_relative = 1.0e-9
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+            max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
         );
     }
 
@@ -240,17 +240,17 @@ mod tests {
     fn gate_cbf_deref_readonly_forwards_temperature_k() {
         let gate = GateThermodynamicCBF::new(TEMP_K, CREDIT_J);
         let via_deref: &ThermodynamicCBFInner = &gate;
-        assert_relative_eq!(via_deref.temperature_k, TEMP_K, epsilon = 1.0e-30);
-        assert_relative_eq!(gate.temperature_k, TEMP_K, epsilon = 1.0e-30);
+        assert_relative_eq!(via_deref.temperature_k, TEMP_K, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
+        assert_relative_eq!(gate.temperature_k, TEMP_K, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
     }
 
     #[test]
     fn gate_cbf_into_inner_preserves_unmutated_fields() {
         let gate = GateThermodynamicCBF::new(TEMP_K, CREDIT_J);
         let inner = gate.into_inner();
-        assert_relative_eq!(inner.temperature_k, TEMP_K, epsilon = 1.0e-30);
-        assert_relative_eq!(inner.available_credit_joules, CREDIT_J, epsilon = 1.0e-30);
-        assert_relative_eq!(inner.k_phys_dint_to_joules, 1.0, epsilon = 1.0e-30);
+        assert_relative_eq!(inner.temperature_k, TEMP_K, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
+        assert_relative_eq!(inner.available_credit_joules, CREDIT_J, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
+        assert_relative_eq!(inner.k_phys_dint_to_joules, 1.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
     }
 
     #[test]
@@ -267,14 +267,14 @@ mod tests {
         assert_relative_eq!(
             cost,
             expected_debit,
-            epsilon = 1.0e-30,
-            max_relative = 1.0e-9
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+            max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
         );
         assert_relative_eq!(
             gate.available_credit_joules,
             CREDIT_J - expected_debit,
-            epsilon = 1.0e-30,
-            max_relative = 1.0e-9
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+            max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
         );
     }
 
@@ -308,14 +308,14 @@ mod tests {
         assert_relative_eq!(
             cost,
             expected_debit,
-            epsilon = 1.0e-30,
-            max_relative = 1.0e-9
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+            max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
         );
         assert_relative_eq!(
             gate.available_credit_joules,
             credit - expected_debit,
-            epsilon = 1.0e-30,
-            max_relative = 1.0e-9
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+            max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
         );
     }
 
@@ -347,14 +347,14 @@ mod tests {
                 assert_relative_eq!(
                     required_j,
                     required,
-                    epsilon = 1.0e-30,
-                    max_relative = 1.0e-9
+                    epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+                    max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
                 );
                 assert_relative_eq!(
                     available_j,
                     1.0e-20_f64,
-                    epsilon = 1.0e-30,
-                    max_relative = 1.0e-9
+                    epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+                    max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
                 );
             }
             other => panic!("expected InsufficientGlobalEnergyCredit, got {other:?}"),
@@ -368,7 +368,7 @@ mod tests {
         assert_relative_eq!(
             gate.available_credit_joules,
             CREDIT_J * 0.5,
-            epsilon = 1.0e-30
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
     }
 }

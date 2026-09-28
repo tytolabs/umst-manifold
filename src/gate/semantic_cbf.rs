@@ -239,21 +239,21 @@ mod tests {
         assert_relative_eq!(
             custom.thermodynamic.temperature_k,
             TEMP_K,
-            epsilon = 1.0e-30
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
         assert_relative_eq!(
             custom.thermodynamic.available_credit_joules,
             CREDIT_J,
-            epsilon = 1.0e-30
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
         assert_eq!(custom.cold_witness_id, DEFAULT_SEMANTIC_COLD_WITNESS_ID);
 
         let chair = SemanticCBF::chair_fixture();
-        assert_relative_eq!(chair.thermodynamic.temperature_k, TEMP_K, epsilon = 1.0e-30);
+        assert_relative_eq!(chair.thermodynamic.temperature_k, TEMP_K, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
         assert_relative_eq!(
             chair.thermodynamic.available_credit_joules,
             1.0e-6,
-            epsilon = 1.0e-30
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
         assert_eq!(chair.cold_witness_id, DEFAULT_SEMANTIC_COLD_WITNESS_ID);
     }
@@ -339,12 +339,12 @@ mod tests {
         let erasure = cbf.thermodynamic.calculate_landauer_cost(bits);
         let cost = gate_semantic_hot_bundled(&mut cbf, dissipation, bits, TOLERANCE)
             .expect("positive semantic margin with zero bits must admit");
-        assert_relative_eq!(cost, erasure, epsilon = 1.0e-30, max_relative = 1.0e-9);
+        assert_relative_eq!(cost, erasure, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64, max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT);
         assert_relative_eq!(
             cbf.thermodynamic.available_credit_joules,
             CREDIT_J - erasure,
-            epsilon = 1.0e-30,
-            max_relative = 1.0e-9
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+            max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
         );
     }
 
@@ -358,7 +358,7 @@ mod tests {
         assert_relative_eq!(
             cbf.thermodynamic.available_credit_joules,
             credit_before,
-            epsilon = 1.0e-30
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
     }
 
@@ -402,14 +402,14 @@ mod tests {
         assert_relative_eq!(
             credit_after_first,
             1.0e-6 - erasure,
-            epsilon = 1.0e-30,
-            max_relative = 1.0e-9
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+            max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
         );
         assert_relative_eq!(
             cbf.thermodynamic.available_credit_joules,
             1.0e-6 - 2.0 * erasure,
-            epsilon = 1.0e-30,
-            max_relative = 1.0e-9
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+            max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
         );
     }
 

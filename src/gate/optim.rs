@@ -174,18 +174,18 @@ mod tests {
 
     #[test]
     fn gate_optim_hyperparameters_match_burn_adamw_defaults() {
-        assert_relative_eq!(f64::from(LPP_008_BETA1), 0.9, epsilon = 1.0e-6);
-        assert_relative_eq!(f64::from(LPP_008_BETA2), 0.999, epsilon = 1.0e-6);
-        assert_relative_eq!(f64::from(LPP_008_EPS), 1.0e-5, epsilon = 1.0e-8);
-        assert_relative_eq!(f64::from(LPP_008_WEIGHT_DECAY), 1.0e-4, epsilon = 1.0e-8);
+        assert_relative_eq!(f64::from(LPP_008_BETA1), 0.9, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_relative_eq!(f64::from(LPP_008_BETA2), 0.999, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_relative_eq!(f64::from(LPP_008_EPS), 1.0e-5, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
+        assert_relative_eq!(f64::from(LPP_008_WEIGHT_DECAY), 1.0e-4, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
     }
 
     #[test]
     fn gate_optim_scalar_first_step_initializes_moments_at_t_one() {
         let (w_new, m1, m2, t) = lpp_008_scalar_adamw_step(1.0, 0.5, 0.01, None, None, 0);
         assert_eq!(t, 1);
-        assert_relative_eq!(m1, 0.05, epsilon = 1.0e-6);
-        assert_relative_eq!(m2, 0.00025, epsilon = 1.0e-6);
+        assert_relative_eq!(m1, 0.05, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_relative_eq!(m2, 0.00025, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
         assert!(w_new.is_finite());
         assert!(
             w_new < 1.0,
@@ -206,9 +206,9 @@ mod tests {
         let w0 = 2.0_f64;
         let (w_new, m1, m2, t) = lpp_008_scalar_adamw_step(w0, 0.0, lr, None, None, 0);
         let expected_decayed = w0 - w0 * lr * f64::from(LPP_008_WEIGHT_DECAY);
-        assert_relative_eq!(w_new, expected_decayed, epsilon = 1.0e-9);
-        assert_relative_eq!(m1, 0.0, epsilon = 1.0e-30);
-        assert_relative_eq!(m2, 0.0, epsilon = 1.0e-30);
+        assert_relative_eq!(w_new, expected_decayed, epsilon = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT);
+        assert_relative_eq!(m1, 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
+        assert_relative_eq!(m2, 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
         assert_eq!(t, 1);
     }
 
@@ -251,7 +251,7 @@ mod tests {
         let m2c = m2_new / (1.0 - beta2.powi(2));
         let decayed = w0 - w0 * lr * wd;
         let expected = decayed - (m1c / (m2c.sqrt() + eps)) * lr;
-        assert_relative_eq!(w2, expected, epsilon = 1.0e-9);
+        assert_relative_eq!(w2, expected, epsilon = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT);
     }
 
     #[test]
@@ -268,10 +268,10 @@ mod tests {
         assert_relative_eq!(
             w_tensor.into_data().value[0],
             w_scalar as f32,
-            epsilon = 1.0e-5
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
         );
-        assert_relative_eq!(m1_t.into_data().value[0], m1_s as f32, epsilon = 1.0e-5);
-        assert_relative_eq!(m2_t.into_data().value[0], m2_s as f32, epsilon = 1.0e-5);
+        assert_relative_eq!(m1_t.into_data().value[0], m1_s as f32, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+        assert_relative_eq!(m2_t.into_data().value[0], m2_s as f32, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
     }
 
     #[test]

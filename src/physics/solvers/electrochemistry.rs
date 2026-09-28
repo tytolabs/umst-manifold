@@ -5097,7 +5097,7 @@ mod physics_idempotency_tests {
                 "solve_pnp_step re-application on equilibrated PNP state (FP §6 idempotency witness)",
             );
 
-        let tol = 1e-6_f32;
+        let tol = umst_math::numeric_tolerance::bar_network_cg_tol_f32();
         assert!(
             tensor1_bool(phi1.clone().sub(phi2).abs().lower_elem(tol).all())
                 && tensor1_bool(c1.clone().sub(c2).abs().lower_elem(tol).all()),

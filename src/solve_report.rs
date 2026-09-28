@@ -400,7 +400,7 @@ mod tests {
             stiffness_scale: 1.5e6,
             e_ref: 30e9,
             dx_char: 0.1,
-            rel_tol: 1e-6,
+            rel_tol: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             lane: PrecisionLane::F32BurnBarPcg,
         };
         assert!(ok.converged());
@@ -410,7 +410,7 @@ mod tests {
 
         let stall = SolveReport {
             rel_residual: 0.94,
-            rel_tol: 1e-4,
+            rel_tol: umst_math::numeric_tolerance::field_algebra_rtol_f64() as f32,
             ..ok
         };
         assert!(!stall.converged());
@@ -434,7 +434,7 @@ mod tests {
             stiffness_scale: 1.0,
             e_ref: 1.0,
             dx_char: 1.0,
-            rel_tol: 1e-6,
+            rel_tol: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             lane: PrecisionLane::HostKrylov,
         };
         assert!(!base.converged());
@@ -467,7 +467,7 @@ mod tests {
             stiffness_scale: 1.0,
             e_ref: 210e9,
             dx_char: 0.05,
-            rel_tol: 1e-6,
+            rel_tol: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             lane: PrecisionLane::F64AdjointBarPcg,
         };
         let json = serde_json::to_string(&report).expect("serialize");

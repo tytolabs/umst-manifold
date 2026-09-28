@@ -346,8 +346,8 @@ mod tests {
         let damage = Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev));
         let cfg = MechanicsInnerLoopConfig {
             max_cg_iterations: 500,
-            cg_tolerance: 1e-6,
-            pcg_tolerance: 1e-6,
+            cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
+            pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             use_preconditioner: true,
             max_equilibrium_substeps: 1,
         };
@@ -369,7 +369,7 @@ mod tests {
         let (coords, edges, stiff, bf, mask, damage, area, cfg) = chain_fixture(2);
         let dev = NdArrayDevice::Cpu;
         let u0 = Field::new(Tensor::<B, 3>::zeros([1, 2, 3], &dev));
-        let rel_tol = 1e-6_f32;
+        let rel_tol = umst_math::numeric_tolerance::bar_network_cg_tol_f32();
 
         let (_u, _stress, report) = BarNetworkMechanicsSolvePort
             .solve_equilibrium_reported(
@@ -432,7 +432,7 @@ mod tests {
         let (coords, edges, stiff, bf, mask, damage, area, cfg) = chain_fixture(2);
         let dev = NdArrayDevice::Cpu;
         let u0 = Field::new(Tensor::<B, 3>::zeros([1, 2, 3], &dev));
-        let rel_tol = 1e-6_f32;
+        let rel_tol = umst_math::numeric_tolerance::bar_network_cg_tol_f32();
 
         let (_u, _stress, report) = bar_network_equilibrium_reported(
             u0,
@@ -464,7 +464,7 @@ mod tests {
         let dev = NdArrayDevice::Cpu;
         let u0 = Field::new(Tensor::<B, 3>::zeros([1, 2, 3], &dev));
         // Positive but unreachable relative tolerance → Diverged (not a silent Ok).
-        let rel_tol = 1e-30_f32;
+        let rel_tol = f32::EPSILON;
 
         let err = BarNetworkMechanicsSolvePort
             .solve_equilibrium_reported(

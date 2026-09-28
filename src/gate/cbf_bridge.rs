@@ -52,14 +52,14 @@ mod tests {
     #[test]
     fn cbf_bridge_positive_inputs_multiply_to_joules() {
         let joules = cd_dissipation_proxy_to_entropy_joules(D_INT_W_M3, VOLUME_M3, DT_S);
-        assert_relative_eq!(joules, 0.1, epsilon = 1.0e-30);
+        assert_relative_eq!(joules, 0.1, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
     }
 
     #[test]
     fn cbf_bridge_dimensional_consistency_w_per_m3_times_m3_times_s() {
         // 50 W/m³ × 2 m³ × 0.5 s = 50 J
         let joules = cd_dissipation_proxy_to_entropy_joules(50.0, 2.0, 0.5);
-        assert_relative_eq!(joules, 50.0, epsilon = 1.0e-30);
+        assert_relative_eq!(joules, 50.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
     }
 
     #[test]
@@ -71,7 +71,7 @@ mod tests {
         assert_relative_eq!(
             cd_dissipation_proxy_to_entropy_joules(-0.5, 2.0, 1.0),
             0.0,
-            epsilon = 1.0e-30
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
     }
 
@@ -84,7 +84,7 @@ mod tests {
         assert_relative_eq!(
             cd_dissipation_proxy_to_entropy_joules(10.0, -0.25, 2.0),
             0.0,
-            epsilon = 1.0e-30
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
     }
 
@@ -97,7 +97,7 @@ mod tests {
         assert_relative_eq!(
             cd_dissipation_proxy_to_entropy_joules(5.0, 1.0, -1.0e-9),
             0.0,
-            epsilon = 1.0e-30
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
     }
 
@@ -135,17 +135,17 @@ mod tests {
         assert_relative_eq!(
             cd_dissipation_proxy_to_entropy_joules(a, b, c),
             expected,
-            epsilon = 1.0e-30
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
         assert_relative_eq!(
             cd_dissipation_proxy_to_entropy_joules(c, a, b),
             expected,
-            epsilon = 1.0e-30
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
         assert_relative_eq!(
             cd_dissipation_proxy_to_entropy_joules(b, c, a),
             expected,
-            epsilon = 1.0e-30
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
     }
 
@@ -185,7 +185,7 @@ mod tests {
         let out = cbf
             .verify_and_deduct_update(joules, 0.0)
             .expect("nonnegative proxy must admit at zero bits");
-        assert_relative_eq!(out, 0.0, epsilon = 1.0e-30);
+        assert_relative_eq!(out, 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
     }
 
     #[test]
@@ -193,26 +193,26 @@ mod tests {
         let mut cbf = ThermodynamicCBF::new(300.0, 1.0);
         cbf.k_phys_dint_to_joules = 2.5;
         let raw = cd_dissipation_proxy_to_entropy_joules(4.0, 0.5, 2.0);
-        assert_relative_eq!(raw, 4.0, epsilon = 1.0e-30);
+        assert_relative_eq!(raw, 4.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
         let scaled = raw * cbf.k_phys_dint_to_joules;
         let out = cbf
             .verify_and_deduct_update(scaled, 0.0)
             .expect("scaled nonnegative entropy must admit");
-        assert_relative_eq!(out, 0.0, epsilon = 1.0e-30);
+        assert_relative_eq!(out, 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
     }
 
     #[test]
     fn cbf_bridge_hydration_scale_volume_typical() {
         // 1 m³ control volume, 86400 s day, 0.01 W/m³ mild dissipation → 864 J
         let joules = cd_dissipation_proxy_to_entropy_joules(0.01, 1.0, 86_400.0);
-        assert_relative_eq!(joules, 864.0, epsilon = 1.0e-9);
+        assert_relative_eq!(joules, 864.0, epsilon = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT);
     }
 
     #[test]
     fn cbf_bridge_sub_voxel_scale_micro_volume() {
         // 1 mm³ = 1e-9 m³, 1 s, 1e3 W/m³ → 1e-6 J
         let joules = cd_dissipation_proxy_to_entropy_joules(1.0e3, 1.0e-9, 1.0);
-        assert_relative_eq!(joules, 1.0e-6, epsilon = 1.0e-30);
+        assert_relative_eq!(joules, 1.0e-6, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
     }
 
     #[test]

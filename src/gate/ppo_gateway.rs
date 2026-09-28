@@ -181,11 +181,11 @@ mod tests {
     #[test]
     fn gate_ppo_gateway_new_pins_temperature_and_credit_via_cbf() {
         let gate = gateway();
-        assert_relative_eq!(gate.cbf.temperature_k, GATEWAY_TEMP_K, epsilon = 1.0e-9);
+        assert_relative_eq!(gate.cbf.temperature_k, GATEWAY_TEMP_K, epsilon = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT);
         assert_relative_eq!(
             gate.cbf.available_credit_joules,
             GATEWAY_CREDIT_J,
-            epsilon = 1.0e-18
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE
         );
     }
 
@@ -196,44 +196,44 @@ mod tests {
         assert_relative_eq!(
             gate.cbf.temperature_k,
             inner.cbf.temperature_k,
-            epsilon = 1.0e-9
+            epsilon = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
         );
         assert_relative_eq!(
             gate.cbf.available_credit_joules,
             inner.cbf.available_credit_joules,
-            epsilon = 1.0e-18
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE
         );
         assert_relative_eq!(
             f64::from(gate.alpha),
             f64::from(inner.alpha),
-            epsilon = 1.0e-6
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
         );
         assert_relative_eq!(
             f64::from(gate.beta),
             f64::from(inner.beta),
-            epsilon = 1.0e-6
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
         );
         assert_relative_eq!(
             f64::from(gate.gamma),
             f64::from(inner.gamma),
-            epsilon = 1.0e-6
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
         );
         assert_relative_eq!(
             f64::from(gate.zeta),
             f64::from(inner.zeta),
-            epsilon = 1.0e-6
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
         );
-        assert_relative_eq!(f64::from(gate.eta), f64::from(inner.eta), epsilon = 1.0e-6);
+        assert_relative_eq!(f64::from(gate.eta), f64::from(inner.eta), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
     }
 
     #[test]
     fn gate_ppo_gateway_default_reward_weights_pinned() {
         let gate = gateway();
-        assert_relative_eq!(f64::from(gate.alpha), 1.0, epsilon = 1.0e-6);
-        assert_relative_eq!(f64::from(gate.beta), 0.5, epsilon = 1.0e-6);
-        assert_relative_eq!(f64::from(gate.gamma), 2.0, epsilon = 1.0e-6);
-        assert_relative_eq!(f64::from(gate.zeta), 0.0, epsilon = 1.0e-6);
-        assert_relative_eq!(f64::from(gate.eta), 0.0, epsilon = 1.0e-6);
+        assert_relative_eq!(f64::from(gate.alpha), 1.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_relative_eq!(f64::from(gate.beta), 0.5, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_relative_eq!(f64::from(gate.gamma), 2.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_relative_eq!(f64::from(gate.zeta), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_relative_eq!(f64::from(gate.eta), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
     }
 
     #[test]
@@ -242,16 +242,16 @@ mod tests {
         let temp = gate.cbf.temperature_k;
         let credit = gate.cbf.available_credit_joules;
         let inner = gate.into_inner();
-        assert_relative_eq!(inner.cbf.temperature_k, temp, epsilon = 1.0e-9);
-        assert_relative_eq!(inner.cbf.available_credit_joules, credit, epsilon = 1.0e-18);
+        assert_relative_eq!(inner.cbf.temperature_k, temp, epsilon = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT);
+        assert_relative_eq!(inner.cbf.available_credit_joules, credit, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
     }
 
     #[test]
     fn gate_ppo_gateway_deref_exposes_cartridge_and_telemetry() {
         let gate = gateway();
         let _ = &gate.cartridge;
-        assert_relative_eq!(gate.telemetry().acceptance_rate(), 0.0, epsilon = 1.0e-30);
-        assert_relative_eq!(gate.telemetry().rejection_rate(), 0.0, epsilon = 1.0e-30);
+        assert_relative_eq!(gate.telemetry().acceptance_rate(), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
+        assert_relative_eq!(gate.telemetry().rejection_rate(), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
     }
 
     #[test]
@@ -259,8 +259,8 @@ mod tests {
         let mut gate = gateway();
         gate.zeta = 0.25_f32;
         gate.alpha = 1.5_f32;
-        assert_relative_eq!(f64::from(gate.zeta), 0.25, epsilon = 1.0e-6);
-        assert_relative_eq!(f64::from(gate.alpha), 1.5, epsilon = 1.0e-6);
+        assert_relative_eq!(f64::from(gate.zeta), 0.25, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_relative_eq!(f64::from(gate.alpha), 1.5, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
     }
 
     #[test]
@@ -294,7 +294,7 @@ mod tests {
         let inner_reward: Vec<f32> = inner_out.1.into_data().value;
         assert_eq!(gate_reward.len(), inner_reward.len());
         for (g, i) in gate_reward.iter().zip(inner_reward.iter()) {
-            assert_relative_eq!(f64::from(*g), f64::from(*i), epsilon = 1.0e-5);
+            assert_relative_eq!(f64::from(*g), f64::from(*i), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
         }
     }
 
@@ -316,11 +316,11 @@ mod tests {
     #[test]
     fn gate_ppo_gateway_wrapper_is_transparent_newtype() {
         let gate = gateway();
-        assert_relative_eq!(gate.0.cbf.temperature_k, GATEWAY_TEMP_K, epsilon = 1.0e-9);
+        assert_relative_eq!(gate.0.cbf.temperature_k, GATEWAY_TEMP_K, epsilon = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT);
         assert_relative_eq!(
             gate.0.cbf.available_credit_joules,
             GATEWAY_CREDIT_J,
-            epsilon = 1.0e-18
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE
         );
     }
 

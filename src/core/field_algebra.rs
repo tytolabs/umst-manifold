@@ -201,7 +201,7 @@ mod field_rank3 {
             Data::new(vec![golden_host as f32], Shape::new([1, 1, 1])),
             &device,
         ));
-        let rtol = 1e-4;
+        let rtol = umst_math::numeric_tolerance::field_algebra_rtol_f64();
         assert!(rank1_field_lattice_field_vs_golden_closes(
             &lattice_field,
             golden_host,

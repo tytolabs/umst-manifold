@@ -87,7 +87,7 @@ mod tests {
             Ok(Some(OuterStop::Optimal {
                 certificate: KktCertificate {
                     residual: 1e-8,
-                    tolerance: 1e-6,
+                    tolerance: umst_math::numeric_tolerance::transition_tolerance_f64(),
                 },
             }))
         );

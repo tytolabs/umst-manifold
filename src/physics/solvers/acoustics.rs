@@ -1587,7 +1587,7 @@ mod acoustics_idempotency_tests {
         bar.step(&mut ws, dt, &mut u, &mut v, &mut a).expect(
             "AcousticNewmarkBar1dPeriodic::step idempotent re-apply on equilibrated periodic bar state (FP §6 Track G acoustics idempotency)",
         );
-        let tol = 1e-6_f32;
+        let tol = umst_math::numeric_tolerance::bar_network_cg_tol_f32();
         assert!(
             max_abs_drift(&u, &u1) < tol
                 && max_abs_drift(&v, &v1) < tol
@@ -1654,7 +1654,7 @@ mod acoustics_idempotency_tests {
             )
             .expect("AcousticWaveSolver::step_wave idempotent re-apply on equilibrated dense nodal state (FP §6 Track G acoustics idempotency)");
 
-        let tol = 1e-6_f32;
+        let tol = umst_math::numeric_tolerance::bar_network_cg_tol_f32();
         for (label, t0, t1) in [("u", u2, u1), ("v", v2, v1), ("a", a2, a1)] {
             let max_d = t0
                 .sub(t1)

@@ -1742,8 +1742,8 @@ mod tests {
         let cfg = MechanicsInnerLoopConfig {
             max_cg_iterations: n * 3,
             // f32 bar-network PCG typically lands ~1e-7 rel residual; 1e-6 leaves headroom.
-            cg_tolerance: 1e-6,
-            pcg_tolerance: 1e-6,
+            cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
+            pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             use_preconditioner: true,
             max_equilibrium_substeps: 1,
         };
@@ -1824,7 +1824,8 @@ mod tests {
         // A backward-error style margin `10⁻⁶ + m·ε` (`m` = count of free axial DOFs = `n−1`) matches
         // IEEE-754 f32 for this scale without hiding a broken assembly.
         let m_free_axial = (n - 1) as f32;
-        let res_rel_tol = 1e-6_f32 + m_free_axial * f32::EPSILON;
+        let res_rel_tol =
+            umst_math::numeric_tolerance::bar_network_cg_tol_f32() + m_free_axial * f32::EPSILON;
         assert!(
             res_rel_l2 < res_rel_tol,
             "free-DOF equilibrium relative L2 residual {res_rel_l2} (tol {res_rel_tol}, rhs scale {f})"
@@ -2107,8 +2108,8 @@ mod tests {
 
         let cfg = MechanicsInnerLoopConfig {
             max_cg_iterations: n * 3,
-            cg_tolerance: 1e-8_f32,
-            pcg_tolerance: 1e-8_f32,
+            cg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
+            pcg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             use_preconditioner: true,
             max_equilibrium_substeps: 1,
         };
@@ -2204,8 +2205,8 @@ mod tests {
 
         let cfg = MechanicsInnerLoopConfig {
             max_cg_iterations: n * 3,
-            cg_tolerance: 1e-8,
-            pcg_tolerance: 1e-8,
+            cg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
+            pcg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             use_preconditioner: true,
             max_equilibrium_substeps: 1,
         };
@@ -2238,7 +2239,7 @@ mod tests {
         .expect("solve_equilibrium");
         let u2_flat = u2.into_data().value;
 
-        let tol = 1e-6_f32;
+        let tol = umst_math::numeric_tolerance::bar_network_cg_tol_f32();
         assert!(
             max_abs_drift(&u1_flat, &u2_flat) < tol,
             "re-solve on equilibrated zero-load bar state must not drift"
@@ -2302,8 +2303,8 @@ mod tests {
 
         let cfg = MechanicsInnerLoopConfig {
             max_cg_iterations: n * 3,
-            cg_tolerance: 1e-8,
-            pcg_tolerance: 1e-8,
+            cg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
+            pcg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             use_preconditioner: true,
             max_equilibrium_substeps: 1,
         };
@@ -2336,7 +2337,7 @@ mod tests {
         pcg2.ensure_converged(&cfg).expect("second PCG converged");
         let u2_flat = u2.into_data().value;
 
-        let tol = 1e-6_f32;
+        let tol = umst_math::numeric_tolerance::bar_network_cg_tol_f32();
         assert!(
             max_abs_drift(&u1_flat, &u2_flat) < tol,
             "re-apply packed_bar_network_equilibrium on equilibrated state must not drift"

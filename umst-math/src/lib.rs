@@ -74,6 +74,8 @@ pub mod cg_stall_window;
 pub mod cg_spectral_window;
 /// Outer loop stops on a KKT certificate or the budget.
 pub mod kkt_outer_stop;
+/// Solver / regression numeric tolerance SSOT (derive from [`numeric_tolerance::ProblemScale`]).
+pub mod numeric_tolerance;
 pub mod sparse;
 pub mod tensor;
 pub mod theorem_blurbs;
