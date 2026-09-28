@@ -5,13 +5,13 @@
 //! Specification: `composer_prompts/v0.4_solver_completion_no_namesakes.md`. Repo table + full
 //! status: `docs/Solver-Status.md` → **Phase-field fracture: implemented vs open**.
 //!
-//! **Implemented (this harness + `fracture_field.rs`):** inner AT2 damage relaxation uses **red–black**
+//! **Implemented (this fixture + `fracture_field.rs`):** inner AT2 damage relaxation uses **red–black**
 //! half-steps on the graph Laplacian (see solver module docs). With `--features fracture-at2`:
 //! `update_damage_smoke_tiny_chain` (finite \(d\); `outer_iterations == 1` with a fixed-strain
 //! provider matches [`PhaseFieldFractureSolver::update_damage`]); `at2_surface_energy_scale_matches_gc_order_of_magnitude` (order-of-magnitude
 //! \(G_c/l\cdot\bar d\) on the tiny chain); `at2_gc_linear_scaling_smoke` (doubling \(G_c\) at fixed \((l,\varepsilon)\): \(\bar d\) stays same order and \(G_c/l\cdot\bar d\) tracks \(\Delta G_c\) loosely — explicit sweep, **not** the Γ-limit scaling of \(G_c\) in the sharp-interface sense); **`at2_gamma_convergence_three_length_scales`** — three \((l_0,h)\) pairs with fixed \(h/l_0=\tfrac14\), \(\psi^+\equiv 0\), exponential damage seed at mid-span; discrete AT2 surface functional \(D_h\) has **relative error &lt; 2%** vs **`Gc`** on each mesh and **does not worsen** across refinement (successive errors within **`10^{-3}`**, fixed-strain relaxation with 32 outer passes — not a coupled mechanics \(\psi^+\) benchmark); **`at2_gamma_convergence_psi_plus_nonzero_three_length_scales`** (Track 12 §7.2) — same triple with uniform tensile \(\varepsilon_{xx}\), **`spectral_tensile_psi_plus_from_strain`** drive sanity, widened \(\tau_\Gamma\), non-worsening errors, and \(D_h > G_c\) vs the pure-surface optimum.
 //!
-//! **Harness:** shared **`discrete_at2_bar_surface_energy_1d`** + **`at2_discrete_surface_functional_toy_chain_matches_hand_total`** (guards the \(D_h\) sum used by **`at2_gamma_convergence_three_length_scales`**). **`at2_gamma_convergence_multi_ratio_schedule_smoke`** (Track 12 §7.3): fixed \(\ell_0\), \(\rho=h/\ell_0\in\{1/8,1/4,1/2\}\), same \(\psi^+\equiv 0\) exponential seed and 32-pass relaxation as [`at2_gamma_convergence_three_length_scales`]. **`at2_gamma_convergence_multi_ratio_psi_plus_schedule_smoke`** (Track 12 §7.3.1): same \(\rho\) rows as §7.3 with **uniform tensile** \(\varepsilon_{xx}\), **`spectral_tensile_psi_plus_from_strain`** drive sanity, widened \(\tau_\Gamma\) per row, and \(D_h>G_c\) vs the pure-surface optimum. **`at2_gamma_convergence_multi_ratio_psi_plus_outer_strain_ramp_smoke`** (Track 12 §7.3.2): identical multi-\(\rho\) meshing as §7.3.1 but **`PhaseFieldFractureSolver::update_damage_staggered`** with a **linear outer ramp** of \(\varepsilon_{xx}\) (nonzero schedule across 32 outers); final-drive \(\psi^+\) sanity, \(\tau_{\Gamma,j}\) on \(D_h\), and \(D_h>G_c\) vs the surface-only optimum. **Track 12 §7.4** — outer stopping (`update_damage_staggered_with_outer_cfg`, `StaggeredFractureConfig::outer_stopping`): **`at2_staggered_outer_cfg_fixed_iters_matches_legacy`**, **`at2_staggered_outer_loose_damage_linf_one_pass`**, **`at2_staggered_outer_rel_psi_loose_two_passes`**, **`at2_solve_staggered_mechanics_outer_loose_stopping_one_pass`**, **`staggered_mechanics_outer_damage_stop_matches_long_budget`**. **Research backlog** (stagger dissipation, THMC within-step stagger): [`docs/research/v0.4_track12_staggered_fracture_mechanics.md`](../../docs/research/v0.4_track12_staggered_fracture_mechanics.md) §7.
+//! **Fixture:** shared **`discrete_at2_bar_surface_energy_1d`** + **`at2_discrete_surface_functional_toy_chain_matches_hand_total`** (guards the \(D_h\) sum used by **`at2_gamma_convergence_three_length_scales`**). **`at2_gamma_convergence_multi_ratio_schedule_smoke`** (Track 12 §7.3): fixed \(\ell_0\), \(\rho=h/\ell_0\in\{1/8,1/4,1/2\}\), same \(\psi^+\equiv 0\) exponential seed and 32-pass relaxation as [`at2_gamma_convergence_three_length_scales`]. **`at2_gamma_convergence_multi_ratio_psi_plus_schedule_smoke`** (Track 12 §7.3.1): same \(\rho\) rows as §7.3 with **uniform tensile** \(\varepsilon_{xx}\), **`spectral_tensile_psi_plus_from_strain`** drive sanity, widened \(\tau_\Gamma\) per row, and \(D_h>G_c\) vs the pure-surface optimum. **`at2_gamma_convergence_multi_ratio_psi_plus_outer_strain_ramp_smoke`** (Track 12 §7.3.2): identical multi-\(\rho\) meshing as §7.3.1 but **`PhaseFieldFractureSolver::update_damage_staggered`** with a **linear outer ramp** of \(\varepsilon_{xx}\) (nonzero schedule across 32 outers); final-drive \(\psi^+\) sanity, \(\tau_{\Gamma,j}\) on \(D_h\), and \(D_h>G_c\) vs the surface-only optimum. **Track 12 §7.4** — outer stopping (`update_damage_staggered_with_outer_cfg`, `StaggeredFractureConfig::outer_stopping`): **`at2_staggered_outer_cfg_fixed_iters_matches_legacy`**, **`at2_staggered_outer_loose_damage_linf_one_pass`**, **`at2_staggered_outer_rel_psi_loose_two_passes`**, **`at2_solve_staggered_mechanics_outer_loose_stopping_one_pass`**, **`staggered_mechanics_outer_damage_stop_matches_long_budget`**. **Research backlog** (stagger dissipation, THMC within-step stagger): [`docs/research/v0.4_track12_staggered_fracture_mechanics.md`](../../docs/research/v0.4_track12_staggered_fracture_mechanics.md) §7.
 
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
@@ -343,7 +343,7 @@ fn at2_gc_linear_scaling_smoke() {
 /// First outer pass uses **negligible** tensile strain `A`, second pass uses strong strain `B`.
 /// Total damage after two passes must exceed a **single** `update_damage` call with only `A`
 /// (irreversibility can make “`A` then stronger `B`” match “`B` only” when the first pass already
-/// saturates damage — this harness uses a tiny first drive so the second pass is observable).
+/// saturates damage — this fixture uses a tiny first drive so the second pass is observable).
 #[cfg(feature = "fracture-at2")]
 #[test]
 fn staggered_two_outer_strains_exceeds_single_pass_weak_strain_only() {
@@ -409,7 +409,7 @@ fn staggered_two_outer_strains_exceeds_single_pass_weak_strain_only() {
     );
 }
 
-/// Γ-convergence harness (Phase 2.4): single 1-D pre-notched bar; refine `(l₀, h)` pairs together
+/// Γ-convergence fixture (Phase 2.4): single 1-D pre-notched bar; refine `(l₀, h)` pairs together
 /// keeping `h/l₀ = 1/4` and check that the discrete dissipation
 /// `D_h = Σ_i [ d_i² · h / (2 l₀) + (l₀/2) (d_{i+1}-d_i)²/h ] · Gc`
 /// approaches the analytic `Gc` limit: **relative error &lt; 2%** vs `Gc` at each scale and **non-worsening**
@@ -613,7 +613,7 @@ fn at2_gamma_convergence_multi_ratio_schedule_smoke() {
     }
 }
 
-/// Track 12 §7.3.1 — same \(\rho=h/\ell_0\) schedule and discrete \(D_h\) harness as
+/// Track 12 §7.3.1 — same \(\rho=h/\ell_0\) schedule and discrete \(D_h\) fixture as
 /// [`at2_gamma_convergence_multi_ratio_schedule_smoke`], but with **nonzero** uniform \(\varepsilon_{xx}\)
 /// (spectral tensile \(\psi^+\) drive). Per-\(\rho\) **\(\tau_{\Gamma,j}\)** are documented in-test (same order
 /// of magnitude as §7.2’s widened band, not the 2% \(\psi^+\!\equiv 0\) multi-\(\rho\) caps). Asserts
@@ -723,12 +723,12 @@ fn at2_gamma_convergence_multi_ratio_psi_plus_schedule_smoke() {
     }
 }
 
-/// Track 12 §7.3.2 — same \(\rho=h/\ell_0\) rows, exponential seed, and \(D_h\) harness as
+/// Track 12 §7.3.2 — same \(\rho=h/\ell_0\) rows, exponential seed, and \(D_h\) fixture as
 /// [`at2_gamma_convergence_multi_ratio_psi_plus_schedule_smoke`], but the tensile drive is a **linear
 /// outer strain schedule**: each of 32 staggered passes uses \(\varepsilon_{xx}\) ramping from a small
 /// positive value to the same terminal \(\varepsilon_{xx}\) as §7.3.1 (memo §7.2 “load ramp / outer strain
 /// schedule`). Per-\(\rho\) \(\tau_{\Gamma,j}\) on \(|D_h-G_c|/G_c\) are **\(\{2\%,\,2\%,\,5\%\}\)** in-test
-/// (margin over the observed ramp baseline \(\sim(2\times10^{-3},\,8\times10^{-3},\,3\times10^{-2})\) on this harness).
+/// (margin over the observed ramp baseline \(\sim(2\times10^{-3},\,8\times10^{-3},\,3\times10^{-2})\) on this fixture).
 #[cfg(feature = "fracture-at2")]
 #[test]
 fn at2_gamma_convergence_multi_ratio_psi_plus_outer_strain_ramp_smoke() {
@@ -741,7 +741,7 @@ fn at2_gamma_convergence_multi_ratio_psi_plus_outer_strain_ramp_smoke() {
     let psi_floor: f32 = 0.5_f32 * exx_end * exx_end * 0.99_f32;
     let l0: f32 = 0.04;
     let schedule: [(f32, f32); 3] = [(1.0 / 8.0, 0.005), (1.0 / 4.0, 0.01), (1.0 / 2.0, 0.02)];
-    // τ_{Γ,j}: ramped outer schedule (baseline rel_err ≈ {2e-3, 8e-3, 3.1e-2} on this harness).
+    // τ_{Γ,j}: ramped outer schedule (baseline rel_err ≈ {2e-3, 8e-3, 3.1e-2} on this fixture).
     let tau_gamma_by_rho: [f32; 3] = [0.02_f32, 0.02_f32, 0.05_f32];
 
     fn uniaxial_strain(dev: &NdArrayDevice, batch: usize, n: usize, exx: f32) -> Tensor<B, 4> {
@@ -848,7 +848,7 @@ fn at2_gamma_convergence_multi_ratio_psi_plus_outer_strain_ramp_smoke() {
 /// Track 12 §7.2 — same three \((l_0,h)\) pairs and \(D_h\) functional as
 /// [`at2_gamma_convergence_three_length_scales`], but with **nonzero** spectral tensile drive from a
 /// uniform uniaxial \(\varepsilon_{xx}\) so `update_damage` perturbs the exponential seed (fixed-strain
-/// relaxation, 32 passes). **\(\tau_\Gamma\)** is widened vs the \(\psi^+\!=0\) harness (2%): coupled
+/// relaxation, 32 passes). **\(\tau_\Gamma\)** is widened vs the \(\psi^+\!=0\) fixture (2%): coupled
 /// tensile drive raises \(D_h\) above the sharp \(G_c\) surface-only optimum; we still gate **non-worsening**
 /// successive relative errors and assert \(\max_i \psi^+_i\) from the same Jacobi map as the solver.
 #[cfg(feature = "fracture-at2")]
