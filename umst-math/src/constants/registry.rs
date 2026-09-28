@@ -12,6 +12,7 @@ use super::tier1_derivation::{
 use super::tier2_derivation::{
     HAL_IGPU_PRESENT_DERIVATION, HAL_L3_CACHE_DERIVATION, HAL_LINUX_PORT_COUNT_DERIVATION,
     HAL_LINUX_RAM_TOTAL_DERIVATION, HAL_LOGICAL_CORES_DERIVATION, HAL_NPU_PRESENT_DERIVATION,
+    ADMISSIBILITY_MARGIN_EPS_DERIVATION, TRANSITION_TOLERANCE_DERIVATION,
 };
 use super::tier3_derivation::{ENERGY_BACKEND_DEFINITION, TUI_BIDI_DEFINITION};
 
@@ -103,7 +104,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.Formal.Gate.transitionTolerance",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TRANSITION_TOLERANCE_DERIVATION,
     },
     ConstantEntry {
         name: "admissibility_margin_eps",
@@ -111,7 +112,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.Formal.Gate.gateCheckSound (runtime AdmissibilityMargin witness floor ε)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: ADMISSIBILITY_MARGIN_EPS_DERIVATION,
     },
     ConstantEntry {
         name: "min_promotion_credit_bits",
@@ -1571,12 +1572,15 @@ mod tests {
     #[test]
     fn registry_rows_default_derivation_pending_except_k_arc_backfilled() {
         use crate::constants::tier1_derivation::K2_REGISTRY_ROW_NAMES;
-        use crate::constants::tier2_derivation::K3_REGISTRY_ROW_NAMES;
+        use crate::constants::tier2_derivation::{
+            K3_REGISTRY_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
+        };
         use crate::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 
         for e in REGISTRY {
             if K2_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K3_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K3_TIER2_GATE_ROW_NAMES.contains(&e.name)
                 || K4_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(

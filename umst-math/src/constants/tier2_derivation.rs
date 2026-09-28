@@ -7,6 +7,7 @@
 
 use super::derivation::Derivation;
 use super::registry::REGISTRY;
+use crate::numeric_tolerance::{admissibility_margin_eps_f64, transition_tolerance_f64};
 
 /// Measurement receipt directory (relative to egoff repo root).
 pub const MEASUREMENT_RECEIPTS_DIR: &str = ".umst-ci/measurement-receipts";
@@ -50,6 +51,21 @@ pub const HAL_LINUX_RAM_TOTAL_DERIVATION: Derivation = Derivation::Measurement {
     methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#hal-linux-ram-total",
 };
 
+/// `transition_tolerance` — formal Gate.transitionTolerance (SSOT [`transition_tolerance_f64`]).
+pub const TRANSITION_TOLERANCE_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Gate.transitionTolerance",
+    expected_value: transition_tolerance_f64(),
+};
+
+/// `admissibility_margin_eps` — Gate.gateCheckSound witness floor (SSOT [`admissibility_margin_eps_f64`]).
+pub const ADMISSIBILITY_MARGIN_EPS_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Gate.gateCheckSound",
+    expected_value: admissibility_margin_eps_f64(),
+};
+
+/// K-3 deepen: Tier-2 gate constants (non-HAL measurement batch).
+pub const K3_TIER2_GATE_ROW_NAMES: &[&str] = &["transition_tolerance", "admissibility_margin_eps"];
+
 /// K-3 H-9 HAL batch registry row names (6/6 for slice GREEN).
 pub const K3_REGISTRY_ROW_NAMES: &[&str] = &[
     "hal_intel_cpu_logical_cores",
@@ -70,8 +86,24 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "hal_intel_npu_present_on_dev_host" => Some(HAL_NPU_PRESENT_DERIVATION),
         "hal_linux_port_count_on_dev_host" => Some(HAL_LINUX_PORT_COUNT_DERIVATION),
         "hal_linux_ram_total_kb" => Some(HAL_LINUX_RAM_TOTAL_DERIVATION),
+        "transition_tolerance" => Some(TRANSITION_TOLERANCE_DERIVATION),
+        "admissibility_margin_eps" => Some(ADMISSIBILITY_MARGIN_EPS_DERIVATION),
         _ => None,
     }
+}
+
+/// Count K-3 gate-deepen rows with non-`Pending` derivation.
+#[must_use]
+pub fn k3_tier2_gate_backfilled_count() -> usize {
+    K3_TIER2_GATE_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
 }
 
 /// Count K-3 batch rows with non-`Pending` derivation.
@@ -127,5 +159,41 @@ mod tests {
                 derivation_for_registry_row(name).expect("lookup")
             );
         }
+    }
+
+    #[test]
+    fn k3_tier2_gate_derivation_matches_registry_and_ssot() {
+        assert_eq!(k3_tier2_gate_backfilled_count(), K3_TIER2_GATE_ROW_NAMES.len());
+        for (name, expected) in [
+            (
+                "transition_tolerance",
+                TRANSITION_TOLERANCE_DERIVATION,
+            ),
+            (
+                "admissibility_margin_eps",
+                ADMISSIBILITY_MARGIN_EPS_DERIVATION,
+            ),
+        ] {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == name)
+                .expect("registry row");
+            assert_eq!(entry.derivation, expected);
+            assert!(!entry.derivation.is_pending());
+        }
+        assert_eq!(
+            TRANSITION_TOLERANCE_DERIVATION,
+            Derivation::Theorem {
+                theorem_id: "UMST.Formal.Gate.transitionTolerance",
+                expected_value: transition_tolerance_f64(),
+            }
+        );
+        assert_eq!(
+            ADMISSIBILITY_MARGIN_EPS_DERIVATION,
+            Derivation::Theorem {
+                theorem_id: "UMST.Formal.Gate.gateCheckSound",
+                expected_value: admissibility_margin_eps_f64(),
+            }
+        );
     }
 }
