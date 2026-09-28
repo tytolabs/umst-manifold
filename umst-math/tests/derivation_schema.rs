@@ -12,18 +12,21 @@ fn derivation_schema_version_is_one() {
 
 #[test]
 fn registry_len_matches_k1_baseline() {
-    assert_eq!(REGISTRY.len(), 171);
+    assert_eq!(REGISTRY.len(), 172);
 }
 
 #[test]
 fn k2_canonical_rows_backfilled_rest_pending() {
     use umst_math::constants::tier1_derivation::K2_REGISTRY_ROW_NAMES;
-    use umst_math::constants::tier2_derivation::K3_REGISTRY_ROW_NAMES;
+    use umst_math::constants::tier2_derivation::{
+        K3_REGISTRY_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
+    };
     use umst_math::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 
     for e in REGISTRY {
         if K2_REGISTRY_ROW_NAMES.contains(&e.name)
             || K3_REGISTRY_ROW_NAMES.contains(&e.name)
+            || K3_TIER2_GATE_ROW_NAMES.contains(&e.name)
             || K4_REGISTRY_ROW_NAMES.contains(&e.name)
         {
             assert!(

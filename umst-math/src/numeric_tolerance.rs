@@ -17,6 +17,12 @@ pub const fn admissibility_margin_eps_f64() -> f64 {
     1e-4
 }
 
+/// Registry row `gate_mass_tolerance_kg_m3` — bulk density jump band (Concrete.Gate.δMass_val).
+#[must_use]
+pub const fn gate_mass_tolerance_kg_m3_f64() -> f64 {
+    100.0
+}
+
 /// Characteristic positive scale (mesh length, modulus, residual norm, etc.).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ProblemScale {

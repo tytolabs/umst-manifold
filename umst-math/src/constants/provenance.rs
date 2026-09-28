@@ -27,9 +27,7 @@ impl ConstantProvenance {
 pub const GATE_PATH_CONSTANTS: &[(&str, ConstantProvenance)] = &[
     (
         "gate_mass_tolerance_kg_m3",
-        ConstantProvenance::Measured(
-            "bulk mix calibration band; mirrors umst-math GATE_MASS_TOLERANCE_KG_M3",
-        ),
+        ConstantProvenance::Derived("UMST.Formal.Concrete.Gate.δMass_val"),
     ),
     (
         "transition_tolerance",

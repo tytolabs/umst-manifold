@@ -7,7 +7,9 @@
 
 use super::derivation::Derivation;
 use super::registry::REGISTRY;
-use crate::numeric_tolerance::{admissibility_margin_eps_f64, transition_tolerance_f64};
+use crate::numeric_tolerance::{
+    admissibility_margin_eps_f64, gate_mass_tolerance_kg_m3_f64, transition_tolerance_f64,
+};
 
 /// Measurement receipt directory (relative to egoff repo root).
 pub const MEASUREMENT_RECEIPTS_DIR: &str = ".umst-ci/measurement-receipts";
@@ -63,8 +65,18 @@ pub const ADMISSIBILITY_MARGIN_EPS_DERIVATION: Derivation = Derivation::Theorem 
     expected_value: admissibility_margin_eps_f64(),
 };
 
+/// `gate_mass_tolerance_kg_m3` — Concrete.Gate.δMass_val (SSOT [`gate_mass_tolerance_kg_m3_f64`]).
+pub const GATE_MASS_TOLERANCE_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Concrete.Gate.δMass_val",
+    expected_value: gate_mass_tolerance_kg_m3_f64(),
+};
+
 /// K-3 deepen: Tier-2 gate constants (non-HAL measurement batch).
-pub const K3_TIER2_GATE_ROW_NAMES: &[&str] = &["transition_tolerance", "admissibility_margin_eps"];
+pub const K3_TIER2_GATE_ROW_NAMES: &[&str] = &[
+    "transition_tolerance",
+    "admissibility_margin_eps",
+    "gate_mass_tolerance_kg_m3",
+];
 
 /// K-3 H-9 HAL batch registry row names (6/6 for slice GREEN).
 pub const K3_REGISTRY_ROW_NAMES: &[&str] = &[
@@ -88,6 +100,7 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "hal_linux_ram_total_kb" => Some(HAL_LINUX_RAM_TOTAL_DERIVATION),
         "transition_tolerance" => Some(TRANSITION_TOLERANCE_DERIVATION),
         "admissibility_margin_eps" => Some(ADMISSIBILITY_MARGIN_EPS_DERIVATION),
+        "gate_mass_tolerance_kg_m3" => Some(GATE_MASS_TOLERANCE_DERIVATION),
         _ => None,
     }
 }
@@ -173,6 +186,10 @@ mod tests {
                 "admissibility_margin_eps",
                 ADMISSIBILITY_MARGIN_EPS_DERIVATION,
             ),
+            (
+                "gate_mass_tolerance_kg_m3",
+                GATE_MASS_TOLERANCE_DERIVATION,
+            ),
         ] {
             let entry = REGISTRY
                 .iter()
@@ -193,6 +210,13 @@ mod tests {
             Derivation::Theorem {
                 theorem_id: "UMST.Formal.Gate.gateCheckSound",
                 expected_value: admissibility_margin_eps_f64(),
+            }
+        );
+        assert_eq!(
+            GATE_MASS_TOLERANCE_DERIVATION,
+            Derivation::Theorem {
+                theorem_id: "UMST.Formal.Concrete.Gate.δMass_val",
+                expected_value: gate_mass_tolerance_kg_m3_f64(),
             }
         );
     }

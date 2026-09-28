@@ -12,7 +12,8 @@ use super::tier1_derivation::{
 use super::tier2_derivation::{
     HAL_IGPU_PRESENT_DERIVATION, HAL_L3_CACHE_DERIVATION, HAL_LINUX_PORT_COUNT_DERIVATION,
     HAL_LINUX_RAM_TOTAL_DERIVATION, HAL_LOGICAL_CORES_DERIVATION, HAL_NPU_PRESENT_DERIVATION,
-    ADMISSIBILITY_MARGIN_EPS_DERIVATION, TRANSITION_TOLERANCE_DERIVATION,
+    ADMISSIBILITY_MARGIN_EPS_DERIVATION, GATE_MASS_TOLERANCE_DERIVATION,
+    TRANSITION_TOLERANCE_DERIVATION,
 };
 use super::tier3_derivation::{ENERGY_BACKEND_DEFINITION, TUI_BIDI_DEFINITION};
 
@@ -94,9 +95,9 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "gate_mass_tolerance_kg_m3",
         expression: "100.0 kg/m³ bulk density jump band (GATE_MASS_TOLERANCE_KG_M3)",
         tier: ConstantTier::Tier1Measurement,
-        evidence: "Measured calibration band; umst-math manifold::csg + Gate.lean mass conjunct",
+        evidence: "UMST.Formal.Concrete.Gate.δMass_val (mirrors umst-math manifold::csg GATE_MASS_TOLERANCE_KG_M3)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: GATE_MASS_TOLERANCE_DERIVATION,
     },
     ConstantEntry {
         name: "transition_tolerance",
