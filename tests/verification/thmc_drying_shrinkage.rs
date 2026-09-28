@@ -179,10 +179,8 @@ fn thmc_drying_shrinkage_within_mc2010_notional_band() {
     let n = 28usize;
     let mut manifold = chain_manifold(n);
     let h_init = 0.92_f32;
-    let mut dmg = vec![0.0_f32; n];
-    for i in 0..n {
-        dmg[i] = if i == 0 { 1.0_f32 } else { 0.0_f32 };
-    }
+    // Step-entry damage must stay below saturation: fracture epilogue AT2 refuses healing when d=1.
+    let dmg = vec![0.0_f32; n];
     let damage = Tensor::<B, 3>::from_data(Data::new(dmg, Shape::new([1, n, 1])), &d);
     let state = ThmcState::from_tensors(
         Tensor::<B, 3>::full([1, n, 1], 293.15_f32, &d),
@@ -1455,7 +1453,7 @@ fn thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes() {
 /// One damped Newton step on the monolithic \((T,h,\alpha,\mathbf u)\) quasi-static path; with
 /// **`solver-experimental`**, the inner linear solve uses JFNK + host **GMRES** (see
 /// [`ThmcImplicitEulerThermalHumidityReactionExtentResidual::one_damped_newton_step_with_quasi_static_r_u`]).
-/// Same 2-node harness as [`thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes`].
+/// Same 2-node fixture as [`thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes`].
 #[cfg(feature = "solver-experimental")]
 #[test]
 fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() {
@@ -1550,7 +1548,7 @@ fn thmc_monolithic_quasi_static_one_newton_jfnk_lowers_stacked_norm_two_nodes() 
 }
 
 /// Stacked \(\|R\|_2\) **`tol`** on [`ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations_with_quasi_static_r_u`]
-/// shortens the recorded norm trail once \(\|R\|_2\) drops below **`tol`** (same 2-node harness as
+/// shortens the recorded norm trail once \(\|R\|_2\) drops below **`tol`** (same 2-node fixture as
 /// [`thmc_monolithic_t_h_alpha_u_newton_lowers_stacked_norm_two_nodes`]).
 #[test]
 fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
@@ -1692,7 +1690,7 @@ fn thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail() {
 
 /// Relative stacked \(\|R\|_2\) gate \(\|R\|_2 < k\|R_0\|_2\) with absolute tolerance disabled on
 /// [`ThmcImplicitEulerThermalHumidityReactionExtentResidual::damped_newton_iterations_with_quasi_static_r_u`]
-/// (same 2-node harness as [`thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail`]).
+/// (same 2-node fixture as [`thmc_monolithic_newton_residual_tol_early_exit_truncates_norm_trail`]).
 #[test]
 fn thmc_monolithic_newton_relative_to_initial_early_exit_truncates_norm_trail() {
     let d = dev();
@@ -2733,7 +2731,7 @@ fn thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes() {
     }
 }
 
-/// **Phase 5–6 integration:** on the same 2-node SI harness as
+/// **Phase 5–6 integration:** on the same 2-node SI fixture as
 /// [`thmc_step_monolithic_newton_matches_standalone_dense_newton_two_nodes`], the monolithic
 /// [`ThmcSolver::step`] path (via [`ThmcSolver::step_monolithic_implicit`]) drives the coupled backward-Euler
 /// residual \(\|R\|_2\) — including quasi-static \(R_u\) — **below** the norm evaluated at the **split**
