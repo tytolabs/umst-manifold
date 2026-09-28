@@ -599,14 +599,14 @@ mod tests {
     fn relative_placeholder_gap_matches_manual_supercritical_state() {
         let rho_star = 0.2_f64;
         let t_star = 2.0_f64;
-        let epsilon = 1.0_f64;
+        let well_depth = 1.0_f64;
         let sigma = 0.8_f64;
-        let k_j = super::physical_bulk_modulus_johnson1993(rho_star, t_star, epsilon, sigma);
-        let k_ph = f64::from(ANALYTIC_BULK_MODULUS_SCALE) * epsilon / sigma.powi(3);
+        let k_j = super::physical_bulk_modulus_johnson1993(rho_star, t_star, well_depth, sigma);
+        let k_ph = f64::from(ANALYTIC_BULK_MODULUS_SCALE) * well_depth / sigma.powi(3);
         let manual = ((k_ph - k_j) / k_j).abs();
         assert_abs_diff_eq!(
             super::relative_placeholder_bulk_modulus_gap_vs_johnson1993(
-                rho_star, t_star, epsilon, sigma,
+                rho_star, t_star, well_depth, sigma,
             ),
             manual,
             epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
@@ -651,7 +651,11 @@ mod tests {
             let t_t: Tensor<B, 2> = Tensor::from_data(Data::new(vec![t], Shape::new([1, 1])), &dev);
             let k_star = reduced_isothermal_kt_star_virial_closed_form(rho_t, t_t).into_scalar();
             let want = k_star * eps / sig.powi(3);
-            assert_abs_diff_eq!(kval, want, epsilon = 2.0e-5_f32);
+            assert_abs_diff_eq!(
+                kval,
+                want,
+                epsilon = umst_math::numeric_tolerance::virial_closed_form_abs_tol_f32()
+            );
         }
     }
 
@@ -755,30 +759,35 @@ mod tests {
     fn upscale_placeholder_bulk_modulus_documented_gap_vs_johnson_scalar_path() {
         let t_star = 2.0_f64;
         let rho_star = 0.2_f64;
-        let epsilon = 1.0_f64;
+        let well_depth = 1.0_f64;
         let sigma = 0.8_f64;
 
         let rel = super::relative_placeholder_bulk_modulus_gap_vs_johnson1993(
-            rho_star, t_star, epsilon, sigma,
+            rho_star, t_star, well_depth, sigma,
         );
 
         let dev = NdArrayDevice::Cpu;
         let lj: Tensor<B, 2> = Tensor::from_data(
-            Data::new(vec![epsilon as f32, sigma as f32], Shape::new([1, 2])),
+            Data::new(vec![well_depth as f32, sigma as f32], Shape::new([1, 2])),
             &dev,
         );
         let (k_tensor, _) = upscale_potentials(lj).expect(
             "statistical_mechanics::upscale_potentials on [B,2] placeholder bulk modulus row vs Johnson1993 scalar path (FP §6 Track G statmech residual)",
         );
         let k_placeholder = f64::from(k_tensor.into_scalar());
-        let k_johnson = super::physical_bulk_modulus_johnson1993(rho_star, t_star, epsilon, sigma);
+        let k_johnson =
+            super::physical_bulk_modulus_johnson1993(rho_star, t_star, well_depth, sigma);
         let rel_tensor = ((k_placeholder - k_johnson) / k_johnson).abs();
 
         assert!(
             rel > 0.2,
             "expected placeholder K to disagree strongly with JZG-derived K_T at this state (rel_err={rel})"
         );
-        assert_abs_diff_eq!(rel, rel_tensor, epsilon = 5.0e-4_f64);
+        assert_abs_diff_eq!(
+            rel,
+            rel_tensor,
+            epsilon = umst_math::numeric_tolerance::statmech_bulk_modulus_rel_tol_f64()
+        );
     }
 
     #[test]
@@ -856,7 +865,11 @@ mod tests {
         )
         .into_scalar();
         let k_fd = rho * (p_hi - p_lo) / (2.0 * h);
-        assert_abs_diff_eq!(k_closed, k_fd, epsilon = 2.0e-3_f32);
+        assert_abs_diff_eq!(
+            k_closed,
+            k_fd,
+            epsilon = umst_math::numeric_tolerance::statmech_fd_bulk_modulus_abs_tol_f32()
+        );
         // Compile-time fence stays open on GREEN/PRODUCTION regardless of FD parity.
         let _probe = statistical_mechanics_honest_posture_bundle();
         assert!(statistical_mechanics_refuse_overclaim(&_probe).is_ok());

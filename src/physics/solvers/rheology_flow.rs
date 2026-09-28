@@ -469,7 +469,7 @@ impl BinghamFlowSolver {
             edge_length_scale: 1.0,
             t_rest_thix: Self::T_REST_NO_THIX,
             gamma_crit_thix: Self::GAMMA_CRIT_NO_THIX,
-            poisson_cg_rel_tol: 2e-5_f32,
+            poisson_cg_rel_tol: umst_math::numeric_tolerance::rheology_poisson_cg_rel_tol_f32(),
             poisson_basis_budget_bytes: 0,
         }
     }

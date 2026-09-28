@@ -79,6 +79,7 @@ pub fn outer_stop(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::numeric_tolerance::transition_tolerance_f64;
 
     #[test]
     fn residual_within_tolerance_is_optimal() {
@@ -87,7 +88,7 @@ mod tests {
             Ok(Some(OuterStop::Optimal {
                 certificate: KktCertificate {
                     residual: 1e-8,
-                    tolerance: umst_math::numeric_tolerance::transition_tolerance_f64(),
+                    tolerance: transition_tolerance_f64(),
                 },
             }))
         );

@@ -49,16 +49,16 @@ mod tests {
 
     #[test]
     fn n_quantile_matches_n_warmup_for_interior_q() {
-        let eps = 0.2;
+        let rel_band = 0.2;
         let del = 0.1;
         let rho = 0.5;
         assert_eq!(
-            n_quantile(eps, del, rho, 0.25).unwrap(),
-            median_convergence::n_warmup(eps, del, rho)
+            n_quantile(rel_band, del, rho, 0.25).unwrap(),
+            median_convergence::n_warmup(rel_band, del, rho)
         );
         assert_eq!(
-            n_quantile(eps, del, rho, 0.75).unwrap(),
-            median_convergence::n_warmup(eps, del, rho)
+            n_quantile(rel_band, del, rho, 0.75).unwrap(),
+            median_convergence::n_warmup(rel_band, del, rho)
         );
     }
 

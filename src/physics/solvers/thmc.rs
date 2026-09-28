@@ -587,7 +587,7 @@ impl Default for ThmcSolver {
         Self {
             dt: 0.01_f32,
             max_newton: 2_usize,
-            tol: 1e-3_f32,
+            tol: umst_math::numeric_tolerance::thmc_outer_newton_tol_f32(),
             reaction_extent_kinetics: ReactionExtentKinetics::default(),
             drying_last_node_evaporation_k: 0.0_f32,
             drying_ambient_h: 0.5_f32,
@@ -935,8 +935,8 @@ impl Default for ThmcNewtonConfig {
     fn default() -> Self {
         Self {
             max_iterations: 50,
-            residual_tolerance: 1.0e-6_f32,
-            finite_diff_eps: 1.0e-6_f32,
+            residual_tolerance: umst_math::numeric_tolerance::thmc_newton_residual_tol_f32(),
+            finite_diff_eps: umst_math::numeric_tolerance::thmc_newton_fd_eps_f32(),
             damping: 1.0_f32,
         }
     }
@@ -976,7 +976,7 @@ impl Default for ThmcImplicitTAlphaNewtonConfig {
         Self {
             iterations: 3_usize,
             damping: 1.0_f32,
-            fd_eps: 1.0e-5_f32,
+            fd_eps: umst_math::numeric_tolerance::thmc_damped_newton_fd_eps_f32(),
         }
     }
 }
@@ -1016,7 +1016,7 @@ impl Default for ThmcMonolithicNewtonConfig {
         Self {
             iterations: 4_usize,
             damping: 1.0_f32,
-            fd_eps: 1.0e-5_f32,
+            fd_eps: umst_math::numeric_tolerance::thmc_damped_newton_fd_eps_f32(),
             stacked_residual_l2_tolerance: 0.0_f32,
             stacked_residual_relative_to_initial: None,
         }

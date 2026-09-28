@@ -184,8 +184,8 @@ mod tests {
         let nodal =
             Tensor::<B, 3>::from_data(Data::new(vec![2.0_f32, 6.0], [1, 2, 1].into()), &device);
         let edges = chain_graph_edges(2, &device);
-        let eps = 0.0_f32;
-        let edge_vals = DecEdgeOperators::harmonic_mean_on_edges(nodal, edges, eps);
+        let harm_floor = 0.0_f32;
+        let edge_vals = DecEdgeOperators::harmonic_mean_on_edges(nodal, edges, harm_floor);
         let h = edge_vals.into_data().value[0];
         let expected = 2.0 * 2.0 * 6.0 / (2.0 + 6.0);
         assert!(
@@ -200,13 +200,13 @@ mod tests {
         let nodal =
             Tensor::<B, 3>::from_data(Data::new(vec![0.0_f32, 0.0], [1, 2, 1].into()), &device);
         let edges = chain_graph_edges(2, &device);
-        let eps = 1.0_f32;
-        let edge_vals = DecEdgeOperators::harmonic_mean_on_edges(nodal, edges, eps);
+        let harm_floor = 1.0_f32;
+        let edge_vals = DecEdgeOperators::harmonic_mean_on_edges(nodal, edges, harm_floor);
         let h = edge_vals.into_data().value[0];
         // 2(eps)(eps) / (2*eps) = eps
         assert!(
-            (h - eps).abs() < 1e-5,
-            "zero nodal + eps floor → {h}, expected {eps}"
+            (h - harm_floor).abs() < 1e-5,
+            "zero nodal + eps floor → {h}, expected {harm_floor}"
         );
     }
 

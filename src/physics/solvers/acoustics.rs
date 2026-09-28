@@ -244,7 +244,7 @@ impl Default for AcousticGmresConfig {
     fn default() -> Self {
         Self {
             max_iter: 256,
-            rel_tol: 1e-4_f32,
+            rel_tol: umst_math::numeric_tolerance::acoustic_gmres_rel_tol_f32(),
         }
     }
 }
@@ -1371,7 +1371,7 @@ mod acoustics_graph_gmres_tests {
             Some(bar),
             Some(AcousticGmresConfig {
                 max_iter: 48,
-                rel_tol: 1e-7_f32,
+                rel_tol: umst_math::numeric_tolerance::acoustic_gmres_rel_tol_tight_f32(),
             }),
         )
         .expect("AcousticWaveSolver::step_wave with axial bar graph + GMRES acceleration on 2-node chain (FP §6 Track G acoustics residual)");

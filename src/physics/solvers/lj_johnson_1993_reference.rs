@@ -344,10 +344,10 @@ mod tests {
     #[test]
     fn bulk_modulus_from_reduced_scales_as_epsilon_over_sigma_cubed() {
         let k_star = 1.25_f64;
-        let epsilon = 2.0_f64;
+        let well_depth = 2.0_f64;
         let sigma = 0.5_f64;
-        let k_t = bulk_modulus_from_reduced(k_star, epsilon, sigma);
-        assert!((k_t - (epsilon / sigma.powi(3)) * k_star).abs() < 1.0e-15);
+        let k_t = bulk_modulus_from_reduced(k_star, well_depth, sigma);
+        assert!((k_t - (well_depth / sigma.powi(3)) * k_star).abs() < 1.0e-15);
     }
 
     #[test]

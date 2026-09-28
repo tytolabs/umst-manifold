@@ -547,7 +547,11 @@ mod tests {
         let got: Vec<f32> = out.into_data().convert::<f32>().value;
         let want = [1.0_f32, 2.0, 0.5, 0.0];
         for i in 0..n {
-            assert_abs_diff_eq!(got[i], want[i], epsilon = 1e-5);
+            assert_abs_diff_eq!(
+                got[i],
+                want[i],
+                epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+            );
         }
     }
 
@@ -567,7 +571,11 @@ mod tests {
         let got: Vec<f32> = out.into_data().convert::<f32>().value;
         let want = [0.5_f32, 1.5, 0.5];
         for i in 0..n {
-            assert_abs_diff_eq!(got[i], want[i], epsilon = 1e-4);
+            assert_abs_diff_eq!(
+                got[i],
+                want[i],
+                epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
+            );
         }
     }
 
@@ -582,7 +590,11 @@ mod tests {
         let m = monitor.compute_dissipation_hotspots(d_int, sdf);
         let v: Vec<f32> = m.into_data().convert::<f32>().value;
         for x in v {
-            assert_abs_diff_eq!(x, 2.0_f32, epsilon = 1e-5);
+            assert_abs_diff_eq!(
+                x,
+                2.0_f32,
+                epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+            );
         }
     }
 

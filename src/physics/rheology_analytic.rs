@@ -268,7 +268,7 @@ mod tests {
         let h = 0.04_f64;
         let mu = 30.0_f64;
         let tau0 = 10.0_f64;
-        let eps = 1e-4_f64;
+        let eps = umst_math::numeric_tolerance::rheology_analytic_fd_strain_eps_f64();
         let n = 1024_usize;
         let y = 0.012_f64;
         let delta = 1e-7_f64;

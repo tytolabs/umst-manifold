@@ -1586,10 +1586,11 @@ mod fracture_at2_tests {
         );
         let d0 = psi_default.clone().sub(psi_lame).abs().max().into_scalar();
         assert!(d0 < 1e-12_f32, "default λ,μ must recover the shipped surrogate");
-        let eps = 1e-3_f32;
+        let probe_strain = umst_math::numeric_tolerance::fracture_psi_probe_strain_f32();
         let psi_lm = spectral_tensile_psi_plus_lame(strain, 1.0_f32, 1.0_f32);
         let got: f32 = psi_lm.into_data().value.iter().copied().sum();
-        let want = 3.0_f32 * (0.5_f32 * eps * eps + eps * eps);
+        let want = 3.0_f32
+            * (0.5_f32 * probe_strain * probe_strain + probe_strain * probe_strain);
         assert!((got - want).abs() < 1e-12_f32, "got={got} want={want}");
         assert!((degradation_g_f32(0.5, 0.01) - 0.26).abs() < 1e-12);
     }

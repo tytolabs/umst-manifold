@@ -533,7 +533,7 @@ mod tests {
         let o = TopologyPhysicsOrchestrator::new(ThmcSolver {
             dt: 0.01,
             max_newton: 4,
-            tol: 1e-4,
+            tol: umst_math::numeric_tolerance::thmc_orchestrator_smoke_tol_f32(),
             ..Default::default()
         });
         assert!((o.thmc_solver().dt - 0.01).abs() < f32::EPSILON);

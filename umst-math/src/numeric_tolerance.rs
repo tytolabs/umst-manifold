@@ -177,6 +177,96 @@ pub const fn field_algebra_rtol_f64() -> f64 {
     1e-4
 }
 
+/// Default outer Newton tolerance for coupled THMC stepping (dimensionless).
+#[must_use]
+pub const fn thmc_outer_newton_tol_f32() -> f32 {
+    1e-3
+}
+
+/// Orchestrator smoke-test THMC tolerance (tighter than production default).
+#[must_use]
+pub const fn thmc_orchestrator_smoke_tol_f32() -> f32 {
+    1e-4
+}
+
+/// Residual floor for implicit THMC Newton / CG inner solves.
+#[must_use]
+pub const fn thmc_newton_residual_tol_f32() -> f32 {
+    1e-6
+}
+
+/// Finite-difference step for THMC Newton Jacobian probes (thermal block).
+#[must_use]
+pub const fn thmc_newton_fd_eps_f32() -> f32 {
+    1e-6
+}
+
+/// FD step for damped Newton on stacked THMC implicit blocks.
+#[must_use]
+pub const fn thmc_damped_newton_fd_eps_f32() -> f32 {
+    1e-5
+}
+
+/// Default GMRES relative tolerance for acoustic implicit Newmark solves.
+#[must_use]
+pub const fn acoustic_gmres_rel_tol_f32() -> f32 {
+    1e-4
+}
+
+/// Tight GMRES relative tolerance (short-chain regression).
+#[must_use]
+pub const fn acoustic_gmres_rel_tol_tight_f32() -> f32 {
+    1e-7
+}
+
+/// Default Poisson CG relative tolerance for Bingham flow pressure solve.
+#[must_use]
+pub const fn rheology_poisson_cg_rel_tol_f32() -> f32 {
+    2e-5
+}
+
+/// Absolute term in mixed DEC matvec operator parity checks.
+#[must_use]
+pub const fn dec_matvec_abs_tol_f32() -> f32 {
+    1e-4
+}
+
+/// Relative coefficient in mixed DEC matvec operator parity checks.
+#[must_use]
+pub const fn dec_matvec_rel_coeff_f32() -> f32 {
+    1e-3
+}
+
+/// Virial closed-form regression (f32).
+#[must_use]
+pub const fn virial_closed_form_abs_tol_f32() -> f32 {
+    2e-5
+}
+
+/// Analytic bulk-modulus tensor parity vs Johnson reference (f64).
+#[must_use]
+pub const fn statmech_bulk_modulus_rel_tol_f64() -> f64 {
+    5e-4
+}
+
+/// FD bulk-modulus parity for LJ virial path (f32).
+#[must_use]
+pub const fn statmech_fd_bulk_modulus_abs_tol_f32() -> f32 {
+    2e-3
+}
+
+/// Regularized Bingham FD regression strain scale (f64).
+#[must_use]
+pub const fn rheology_analytic_fd_strain_eps_f64() -> f64 {
+    1e-4
+}
+
+/// Spectral tensile ψ surrogate probe strain (f32).
+#[must_use]
+pub const fn fracture_psi_probe_strain_f32() -> f32 {
+    1e-3
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

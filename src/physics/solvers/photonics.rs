@@ -3109,7 +3109,9 @@ mod photonics_sparse_csr_cg_parity_tests {
                 y_csr[i],
                 y_coo[i]
             );
-            let tol = 1e-4_f32 + 1e-3_f32 * y_op[i].abs().max(1.0_f32);
+            let tol = umst_math::numeric_tolerance::dec_matvec_abs_tol_f32()
+                + umst_math::numeric_tolerance::dec_matvec_rel_coeff_f32()
+                    * y_op[i].abs().max(1.0_f32);
             assert!(
                 (y_coo[i] - y_op[i]).abs() <= tol,
                 "COO vs operator i={i} coo={} op={}",
