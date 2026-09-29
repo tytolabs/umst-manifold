@@ -25,6 +25,9 @@ umst-cartridge-api = { path = "../../../umst-cartridge-api" }
 default = []
 ndarray = ["burn/ndarray"]
 
+[dev-dependencies]
+umst-math = { path = "../../umst-math" }
+
 [lints.rust]
 unsafe_code = "forbid"
 
