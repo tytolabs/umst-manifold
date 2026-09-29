@@ -1040,27 +1040,27 @@ mod w29_ppo_deepen_tests {
         assert_relative_eq!(
             f64::from(gw.alpha),
             f64::from(PPO_DEFAULT_ALPHA),
-            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE
         );
         assert_relative_eq!(
             f64::from(gw.beta),
             f64::from(PPO_DEFAULT_BETA),
-            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE
         );
         assert_relative_eq!(
             f64::from(gw.gamma),
             f64::from(PPO_DEFAULT_GAMMA),
-            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE
         );
         assert_relative_eq!(
             f64::from(gw.zeta),
             f64::from(PPO_DEFAULT_ZETA),
-            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE
         );
         assert_relative_eq!(
             f64::from(gw.eta),
             f64::from(PPO_DEFAULT_ETA),
-            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE
         );
     }
 
@@ -1143,7 +1143,7 @@ mod w29_ppo_deepen_tests {
             let v_string: Vec<f32> = r_string.into_data().value;
             assert_eq!(v_formal.len(), v_string.len());
             for (a, b) in v_formal.iter().zip(v_string.iter()) {
-                assert_relative_eq!(f64::from(*a), f64::from(*b), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+                assert_relative_eq!(f64::from(*a), f64::from(*b), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID as f64);
             }
         }
     }
@@ -1151,7 +1151,7 @@ mod w29_ppo_deepen_tests {
     #[test]
     fn w29_ppo_zeta_zero_preserves_zero_margin_contribution() {
         let mut gw = gateway();
-        assert_relative_eq!(f64::from(gw.zeta), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_relative_eq!(f64::from(gw.zeta), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
         let state = tiny_umst();
         let info = info_gain_tensor();
         let reward_zeta0 = gw
@@ -1168,7 +1168,7 @@ mod w29_ppo_deepen_tests {
         let v1: Vec<f32> = reward_zeta_half.into_data().value;
         assert_eq!(v0.len(), 1);
         assert_eq!(v1.len(), 1);
-        assert_relative_eq!(f64::from(v0[0]), f64::from(v1[0]), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+        assert_relative_eq!(f64::from(v0[0]), f64::from(v1[0]), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID as f64);
     }
 
     /// Stub with unit free-energy so α scaling is measurable on the reward path.

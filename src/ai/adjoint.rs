@@ -355,7 +355,11 @@ mod tests {
         let dt = Tensor::<B, 1>::from_data(Data::new(vec![1.0_f32], Shape::new([1])), &dev);
         let grad = ode.backward_adjoint(test_umst(2, 4), dL_dz, 0.0, 1.0, dt);
         let max_abs: f32 = grad.abs().max().into_scalar();
-        assert_relative_eq!(max_abs, 0.0, epsilon = umst_math::numeric_tolerance::adjoint_reference_tol_f64());
+        assert_relative_eq!(
+            max_abs,
+            0.0,
+            epsilon = umst_math::numeric_tolerance::adjoint_reference_tol_f64() as f32
+        );
     }
 
     #[test]
@@ -381,7 +385,11 @@ mod tests {
         );
         let s1: f32 = g1.sum().into_scalar();
         let s2: f32 = g2.sum().into_scalar();
-        assert_relative_eq!(s2, 2.0 * s1, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+        assert_relative_eq!(
+            s2,
+            2.0 * s1,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+        );
     }
 
     #[test]

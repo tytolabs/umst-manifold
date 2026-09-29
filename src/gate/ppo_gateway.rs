@@ -206,34 +206,34 @@ mod tests {
         assert_relative_eq!(
             f64::from(gate.alpha),
             f64::from(inner.alpha),
-            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE
         );
         assert_relative_eq!(
             f64::from(gate.beta),
             f64::from(inner.beta),
-            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE
         );
         assert_relative_eq!(
             f64::from(gate.gamma),
             f64::from(inner.gamma),
-            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE
         );
         assert_relative_eq!(
             f64::from(gate.zeta),
             f64::from(inner.zeta),
-            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE
         );
-        assert_relative_eq!(f64::from(gate.eta), f64::from(inner.eta), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_relative_eq!(f64::from(gate.eta), f64::from(inner.eta), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
     }
 
     #[test]
     fn gate_ppo_gateway_default_reward_weights_pinned() {
         let gate = gateway();
-        assert_relative_eq!(f64::from(gate.alpha), 1.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
-        assert_relative_eq!(f64::from(gate.beta), 0.5, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
-        assert_relative_eq!(f64::from(gate.gamma), 2.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
-        assert_relative_eq!(f64::from(gate.zeta), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
-        assert_relative_eq!(f64::from(gate.eta), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_relative_eq!(f64::from(gate.alpha), 1.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
+        assert_relative_eq!(f64::from(gate.beta), 0.5, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
+        assert_relative_eq!(f64::from(gate.gamma), 2.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
+        assert_relative_eq!(f64::from(gate.zeta), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
+        assert_relative_eq!(f64::from(gate.eta), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
     }
 
     #[test]
@@ -259,8 +259,8 @@ mod tests {
         let mut gate = gateway();
         gate.zeta = 0.25_f32;
         gate.alpha = 1.5_f32;
-        assert_relative_eq!(f64::from(gate.zeta), 0.25, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
-        assert_relative_eq!(f64::from(gate.alpha), 1.5, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_relative_eq!(f64::from(gate.zeta), 0.25, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
+        assert_relative_eq!(f64::from(gate.alpha), 1.5, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
     }
 
     #[test]
@@ -294,7 +294,7 @@ mod tests {
         let inner_reward: Vec<f32> = inner_out.1.into_data().value;
         assert_eq!(gate_reward.len(), inner_reward.len());
         for (g, i) in gate_reward.iter().zip(inner_reward.iter()) {
-            assert_relative_eq!(f64::from(*g), f64::from(*i), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+            assert_relative_eq!(f64::from(*g), f64::from(*i), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID as f64);
         }
     }
 
