@@ -11,12 +11,15 @@ use super::tier1_derivation::{
     T_ROOM_DERIVATION,
 };
 use super::tier2_derivation::{
-    ADMISSIBILITY_MARGIN_EPS_DERIVATION, CLOSED_LOOP_MI_STEP_DERIVATION,
-    DIGNITY_SCALAR_RANGE_DERIVATION, GATE_MASS_TOLERANCE_DERIVATION,
-    HAL_IGPU_PRESENT_DERIVATION, HAL_L3_CACHE_DERIVATION, HAL_LINUX_PORT_COUNT_DERIVATION,
-    HAL_LINUX_RAM_TOTAL_DERIVATION, HAL_LOGICAL_CORES_DERIVATION, HAL_NPU_PRESENT_DERIVATION,
-    MIN_PROMOTION_CREDIT_DERIVATION, Q_HYD_J_PER_KG_DERIVATION, STALENESS_CYCLE_COUNT_DERIVATION,
-    TRANSITION_TOLERANCE_DERIVATION, WARMUP_SAMPLE_THRESHOLD_DERIVATION,
+    ADMISSIBILITY_MARGIN_EPS_DERIVATION, AUDIT_ROTATION_KEEP_COUNT_DERIVATION,
+    CLOSED_LOOP_MI_STEP_DERIVATION, COCKPIT_AUDIT_SCHEMA_VERSION_DERIVATION,
+    COCKPIT_SNAPSHOT_SCHEMA_VERSION_DERIVATION, DELTA_MI_SINGLE_TURN_CAP_DERIVATION,
+    DIGNITY_SCALAR_RANGE_DERIVATION, ETA_ROLLING_WINDOW_CAPACITY_DERIVATION,
+    GATE_MASS_TOLERANCE_DERIVATION, HAL_IGPU_PRESENT_DERIVATION, HAL_L3_CACHE_DERIVATION,
+    HAL_LINUX_PORT_COUNT_DERIVATION, HAL_LINUX_RAM_TOTAL_DERIVATION, HAL_LOGICAL_CORES_DERIVATION,
+    HAL_NPU_PRESENT_DERIVATION, MIN_PROMOTION_CREDIT_DERIVATION, Q_HYD_J_PER_KG_DERIVATION,
+    STALENESS_CYCLE_COUNT_DERIVATION, TRANSITION_TOLERANCE_DERIVATION,
+    WARMUP_SAMPLE_THRESHOLD_DERIVATION,
 };
 use super::tier3_derivation::{ENERGY_BACKEND_DEFINITION, TUI_BIDI_DEFINITION};
 
@@ -277,7 +280,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "COCKPIT_DESIGN_BRIEF.md ΔMI governance; deception guard",
         env_override: Some("UMST_COCKPIT_MAX_DELTA_MI_BITS"),
-        derivation: Derivation::Pending,
+        derivation: DELTA_MI_SINGLE_TURN_CAP_DERIVATION,
     },
     ConstantEntry {
         name: "ranker_weight_bounds",
@@ -301,7 +304,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "COCKPIT_DESIGN_BRIEF.md §12 retention policy",
         env_override: Some("UMST_COCKPIT_AUDIT_ROTATIONS"),
-        derivation: Derivation::Pending,
+        derivation: AUDIT_ROTATION_KEEP_COUNT_DERIVATION,
     },
     ConstantEntry {
         name: "cockpit_audit_schema_version",
@@ -309,7 +312,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Forward-compat audit event schema; audit_persist.rs",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: COCKPIT_AUDIT_SCHEMA_VERSION_DERIVATION,
     },
     ConstantEntry {
         name: "cockpit_snapshot_schema_version",
@@ -317,7 +320,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Phase M-simd — `kernel_dispatch` field; COCKPIT_DESIGN_BRIEF",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: COCKPIT_SNAPSHOT_SCHEMA_VERSION_DERIVATION,
     },
     ConstantEntry {
         name: "umst_ffi_abi_version",
@@ -373,7 +376,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "Ring-buffer sizing for cockpit η history (no env in code path 2026-04-21)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: ETA_ROLLING_WINDOW_CAPACITY_DERIVATION,
     },
     ConstantEntry {
         name: "embedding_http_timeout_seconds",
@@ -1588,7 +1591,7 @@ mod tests {
         };
         use crate::constants::tier2_derivation::{
             K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
-            K5_REGISTRY_ROW_NAMES,
+            K5_REGISTRY_ROW_NAMES, K5B_REGISTRY_ROW_NAMES,
         };
         use crate::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 
@@ -1600,6 +1603,7 @@ mod tests {
                 || K3_TIER2_GATE_ROW_NAMES.contains(&e.name)
                 || K4_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5B_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),

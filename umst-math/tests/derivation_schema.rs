@@ -22,7 +22,7 @@ fn k2_canonical_rows_backfilled_rest_pending() {
     };
     use umst_math::constants::tier2_derivation::{
         K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
-        K5_REGISTRY_ROW_NAMES,
+        K5_REGISTRY_ROW_NAMES, K5B_REGISTRY_ROW_NAMES,
     };
     use umst_math::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 
@@ -34,6 +34,7 @@ fn k2_canonical_rows_backfilled_rest_pending() {
             || K3_TIER2_GATE_ROW_NAMES.contains(&e.name)
             || K4_REGISTRY_ROW_NAMES.contains(&e.name)
             || K5_REGISTRY_ROW_NAMES.contains(&e.name)
+            || K5B_REGISTRY_ROW_NAMES.contains(&e.name)
         {
             assert!(
                 !e.derivation.is_pending(),

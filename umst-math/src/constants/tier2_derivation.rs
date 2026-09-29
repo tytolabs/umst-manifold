@@ -133,6 +133,59 @@ pub const K5_REGISTRY_ROW_NAMES: &[&str] = &[
     "staleness_cycle_count",
 ];
 
+// --- K-5b cockpit schema / ΔMI policy batch (§14bis.k deepen wave 2) ---
+
+/// SSOT mirror: `egoff/src/cockpit/frugality.rs` `DEFAULT_MAX_DELTA_MI_BITS`.
+pub const DEFAULT_MAX_DELTA_MI_BITS: f64 = 10.0;
+
+/// SSOT mirror: `egoff/src/cockpit/audit_persist.rs` `DEFAULT_ROTATION_SLOTS`.
+pub const DEFAULT_AUDIT_ROTATION_SLOTS: f64 = 3.0;
+
+/// SSOT mirror: `egoff/src/cockpit/audit_persist.rs` `AUDIT_SCHEMA_VERSION`.
+pub const COCKPIT_AUDIT_SCHEMA_VERSION_DEFAULT: f64 = 1.0;
+
+/// SSOT mirror: `egoff/src/cockpit/hub.rs` snapshot `schema_version` (Phase M-simd).
+pub const COCKPIT_SNAPSHOT_SCHEMA_VERSION_DEFAULT: f64 = 4.0;
+
+/// `delta_mi_single_turn_cap_bits` — per-turn ΔMI ceiling (deception guard).
+pub const DELTA_MI_SINGLE_TURN_CAP_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Dignity::dignity_monotone_under_mi_gain",
+    expected_value: DEFAULT_MAX_DELTA_MI_BITS,
+};
+
+/// `audit_rotation_keep_count` — JSONL rotation generations (`path` … `path.N`).
+pub const AUDIT_ROTATION_KEEP_COUNT_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.EtaCog::eta_cog_nonneg",
+    expected_value: DEFAULT_AUDIT_ROTATION_SLOTS,
+};
+
+/// `cockpit_audit_schema_version` — JSONL envelope version (`egoff::cockpit::audit_persist`).
+pub const COCKPIT_AUDIT_SCHEMA_VERSION_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Gate.gateCheckSound",
+    expected_value: COCKPIT_AUDIT_SCHEMA_VERSION_DEFAULT,
+};
+
+/// `cockpit_snapshot_schema_version` — hub snapshot wire version (kernel_dispatch field).
+pub const COCKPIT_SNAPSHOT_SCHEMA_VERSION_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible",
+    expected_value: COCKPIT_SNAPSHOT_SCHEMA_VERSION_DEFAULT,
+};
+
+/// `eta_rolling_window_capacity` — rolling η deque capacity (`frugality::MEDIAN_WINDOW`).
+pub const ETA_ROLLING_WINDOW_CAPACITY_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.OrderStatisticsBand::p25_p75_admissibility",
+    expected_value: WARMUP_REFERENCE_WINDOW_CAPACITY as f64,
+};
+
+/// K-5b cockpit policy batch registry row names.
+pub const K5B_REGISTRY_ROW_NAMES: &[&str] = &[
+    "delta_mi_single_turn_cap_bits",
+    "audit_rotation_keep_count",
+    "cockpit_audit_schema_version",
+    "cockpit_snapshot_schema_version",
+    "eta_rolling_window_capacity",
+];
+
 /// Count K-5 rows with non-`Pending` derivation.
 #[must_use]
 pub fn k5_backfilled_count() -> usize {
@@ -198,8 +251,33 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "min_promotion_credit_bits" => Some(MIN_PROMOTION_CREDIT_DERIVATION),
         "dignity_scalar_range" => Some(DIGNITY_SCALAR_RANGE_DERIVATION),
         "staleness_cycle_count" => Some(STALENESS_CYCLE_COUNT_DERIVATION),
+        "delta_mi_single_turn_cap_bits" => Some(DELTA_MI_SINGLE_TURN_CAP_DERIVATION),
+        "audit_rotation_keep_count" => Some(AUDIT_ROTATION_KEEP_COUNT_DERIVATION),
+        "cockpit_audit_schema_version" => Some(COCKPIT_AUDIT_SCHEMA_VERSION_DERIVATION),
+        "cockpit_snapshot_schema_version" => Some(COCKPIT_SNAPSHOT_SCHEMA_VERSION_DERIVATION),
+        "eta_rolling_window_capacity" => Some(ETA_ROLLING_WINDOW_CAPACITY_DERIVATION),
         _ => None,
     }
+}
+
+/// Count K-5b rows with non-`Pending` derivation.
+#[must_use]
+pub fn k5b_backfilled_count() -> usize {
+    K5B_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5b REGISTRY backfill landed.
+#[must_use]
+pub fn k5b_backfill_landed() -> bool {
+    k5b_backfilled_count() == K5B_REGISTRY_ROW_NAMES.len()
 }
 
 /// Count K-3 gate-deepen rows with non-`Pending` derivation.
@@ -357,6 +435,25 @@ mod tests {
             assert!(
                 !entry.derivation.is_pending(),
                 "K-5: {name} must be backfilled"
+            );
+            assert_eq!(
+                entry.derivation,
+                derivation_for_registry_row(name).expect("lookup")
+            );
+        }
+    }
+
+    #[test]
+    fn k5b_registry_rows_backfilled() {
+        assert!(k5b_backfill_landed());
+        for name in K5B_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5b: {name} must be backfilled"
             );
             assert_eq!(
                 entry.derivation,
