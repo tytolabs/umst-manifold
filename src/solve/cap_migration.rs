@@ -50,6 +50,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "implicit Newmark bar-network GMRES needs device workspace meter before unfold debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/solvers/thmc.rs",
+        legacy_token: "ThmcNewtonConfig.max_iterations (default 50)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "coupled THMC monolithic Newton needs operator-split energy meter before unfold debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -63,7 +70,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 3);
+        assert_eq!(cap_migration_site_count(), 4);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -73,6 +80,12 @@ mod tests {
         let gmres = &CAP_MIGRATION_SITES[1];
         assert!(matches!(
             gmres.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let thmc = &CAP_MIGRATION_SITES[3];
+        assert_eq!(thmc.legacy_module, "physics/solvers/thmc.rs");
+        assert!(matches!(
+            thmc.disposition,
             CapMigrationDisposition::HonestTypedAbsence { .. }
         ));
     }

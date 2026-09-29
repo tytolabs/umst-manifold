@@ -34,6 +34,7 @@ pub mod nested_drift_census;
 pub mod night_residual_deepen;
 pub mod runtime;
 pub mod solve;
+pub use solve::{CapMigrationDisposition, CapMigrationSite, CAP_MIGRATION_SITES};
 pub mod solve_report;
 pub mod swarm_manifold_deepen;
 pub mod web_constitutive;
