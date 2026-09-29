@@ -7,6 +7,7 @@
 
 use super::derivation::Derivation;
 use super::registry::REGISTRY;
+use crate::info_entropy::MIN_NEGENTROPY_FLOOR_BITS;
 use crate::manifold::csg::Q_HYDRATION_J_PER_KG;
 use crate::dignity::D_MAX;
 use crate::median_convergence;
@@ -186,6 +187,69 @@ pub const K5B_REGISTRY_ROW_NAMES: &[&str] = &[
     "eta_rolling_window_capacity",
 ];
 
+// --- K-5c order-stats / hub / manifold PPO defaults (§14bis.k deepen wave 3) ---
+
+/// SSOT mirror: `egoff::cockpit::hub::DEFAULT_COCKPIT_SAMPLE_PERIOD_MS`.
+pub const DEFAULT_COCKPIT_SAMPLE_PERIOD_MS: f64 = 500.0;
+
+/// SSOT mirror: `umst_manifold::core::emergence::DEFAULT_EMERGENCE_LAMBDA`.
+pub const DEFAULT_EMERGENCE_LAMBDA: f64 = 0.1;
+
+/// SSOT mirror: `umst_manifold::core::emergence::DEFAULT_MAX_EMERGENCE_VOXELS`.
+pub const DEFAULT_MAX_EMERGENCE_VOXELS: f64 = 512.0;
+
+/// NIST quantile level for rolling η P25 band (registry metadata).
+pub const FRUGALITY_BAND_P25_QUANTILE: f64 = 0.25;
+
+/// NIST quantile level for rolling η P75 band (registry metadata).
+pub const FRUGALITY_BAND_P75_QUANTILE: f64 = 0.75;
+
+/// `frugality_band_p25_percentile` — tracked quantile **q = 0.25** for order-stat band.
+pub const FRUGALITY_BAND_P25_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.OrderStatisticsBand::p25_p75_admissibility",
+    expected_value: FRUGALITY_BAND_P25_QUANTILE,
+};
+
+/// `frugality_band_p75_percentile` — tracked quantile **q = 0.75** for order-stat band.
+pub const FRUGALITY_BAND_P75_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.OrderStatisticsBand::p25_p75_admissibility",
+    expected_value: FRUGALITY_BAND_P75_QUANTILE,
+};
+
+/// `hub_inter_sample_period_ms` — cockpit hub fallback poll hold (ms).
+pub const HUB_INTER_SAMPLE_PERIOD_MS_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible",
+    expected_value: DEFAULT_COCKPIT_SAMPLE_PERIOD_MS,
+};
+
+/// `umst_manifold_ppo_info_gain_default_bits` — PMIC / negentropy floor scale (§14bis.f-I-4).
+pub const PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.InfoTheory::product_joint_mass",
+    expected_value: MIN_NEGENTROPY_FLOOR_BITS,
+};
+
+/// `umst_manifold_emergence_lambda` — EmergenceMonitor λ default.
+pub const EMERGENCE_LAMBDA_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Dignity::dignity_monotone_under_mi_gain",
+    expected_value: DEFAULT_EMERGENCE_LAMBDA,
+};
+
+/// `umst_msdf_emergence_max_voxels` — default 3³ lattice cap for emergence SDF grid.
+pub const MSDF_EMERGENCE_MAX_VOXELS_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.OrderStatisticsBand::order_statistic_concentration",
+    expected_value: DEFAULT_MAX_EMERGENCE_VOXELS,
+};
+
+/// K-5c registry row names (6/6 for slice GREEN).
+pub const K5C_REGISTRY_ROW_NAMES: &[&str] = &[
+    "frugality_band_p25_percentile",
+    "frugality_band_p75_percentile",
+    "hub_inter_sample_period_ms",
+    "umst_manifold_ppo_info_gain_default_bits",
+    "umst_manifold_emergence_lambda",
+    "umst_msdf_emergence_max_voxels",
+];
+
 /// Count K-5 rows with non-`Pending` derivation.
 #[must_use]
 pub fn k5_backfilled_count() -> usize {
@@ -256,8 +320,34 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "cockpit_audit_schema_version" => Some(COCKPIT_AUDIT_SCHEMA_VERSION_DERIVATION),
         "cockpit_snapshot_schema_version" => Some(COCKPIT_SNAPSHOT_SCHEMA_VERSION_DERIVATION),
         "eta_rolling_window_capacity" => Some(ETA_ROLLING_WINDOW_CAPACITY_DERIVATION),
+        "frugality_band_p25_percentile" => Some(FRUGALITY_BAND_P25_DERIVATION),
+        "frugality_band_p75_percentile" => Some(FRUGALITY_BAND_P75_DERIVATION),
+        "hub_inter_sample_period_ms" => Some(HUB_INTER_SAMPLE_PERIOD_MS_DERIVATION),
+        "umst_manifold_ppo_info_gain_default_bits" => Some(PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION),
+        "umst_manifold_emergence_lambda" => Some(EMERGENCE_LAMBDA_DERIVATION),
+        "umst_msdf_emergence_max_voxels" => Some(MSDF_EMERGENCE_MAX_VOXELS_DERIVATION),
         _ => None,
     }
+}
+
+/// Count K-5c rows with non-`Pending` derivation.
+#[must_use]
+pub fn k5c_backfilled_count() -> usize {
+    K5C_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5c REGISTRY backfill landed.
+#[must_use]
+pub fn k5c_backfill_landed() -> bool {
+    k5c_backfilled_count() == K5C_REGISTRY_ROW_NAMES.len()
 }
 
 /// Count K-5b rows with non-`Pending` derivation.
@@ -459,6 +549,26 @@ mod tests {
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
             );
+        }
+    }
+
+    #[test]
+    fn k5c_registry_rows_backfilled() {
+        assert!(k5c_backfill_landed());
+        for name in K5C_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5c: {name} must be backfilled"
+            );
+            assert_eq!(
+                entry.derivation,
+                derivation_for_registry_row(name).expect("lookup")
+            );
+            assert_eq!(entry.derivation.label(), "Theorem");
         }
     }
 }

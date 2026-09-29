@@ -14,10 +14,13 @@ use super::tier2_derivation::{
     ADMISSIBILITY_MARGIN_EPS_DERIVATION, AUDIT_ROTATION_KEEP_COUNT_DERIVATION,
     CLOSED_LOOP_MI_STEP_DERIVATION, COCKPIT_AUDIT_SCHEMA_VERSION_DERIVATION,
     COCKPIT_SNAPSHOT_SCHEMA_VERSION_DERIVATION, DELTA_MI_SINGLE_TURN_CAP_DERIVATION,
-    DIGNITY_SCALAR_RANGE_DERIVATION, ETA_ROLLING_WINDOW_CAPACITY_DERIVATION,
-    GATE_MASS_TOLERANCE_DERIVATION, HAL_IGPU_PRESENT_DERIVATION, HAL_L3_CACHE_DERIVATION,
-    HAL_LINUX_PORT_COUNT_DERIVATION, HAL_LINUX_RAM_TOTAL_DERIVATION, HAL_LOGICAL_CORES_DERIVATION,
-    HAL_NPU_PRESENT_DERIVATION, MIN_PROMOTION_CREDIT_DERIVATION, Q_HYD_J_PER_KG_DERIVATION,
+    DIGNITY_SCALAR_RANGE_DERIVATION, EMERGENCE_LAMBDA_DERIVATION,
+    ETA_ROLLING_WINDOW_CAPACITY_DERIVATION, FRUGALITY_BAND_P25_DERIVATION,
+    FRUGALITY_BAND_P75_DERIVATION, GATE_MASS_TOLERANCE_DERIVATION, HAL_IGPU_PRESENT_DERIVATION,
+    HAL_L3_CACHE_DERIVATION, HAL_LINUX_PORT_COUNT_DERIVATION, HAL_LINUX_RAM_TOTAL_DERIVATION,
+    HAL_LOGICAL_CORES_DERIVATION, HAL_NPU_PRESENT_DERIVATION, HUB_INTER_SAMPLE_PERIOD_MS_DERIVATION,
+    MIN_PROMOTION_CREDIT_DERIVATION, MSDF_EMERGENCE_MAX_VOXELS_DERIVATION,
+    PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION, Q_HYD_J_PER_KG_DERIVATION,
     STALENESS_CYCLE_COUNT_DERIVATION, TRANSITION_TOLERANCE_DERIVATION,
     WARMUP_SAMPLE_THRESHOLD_DERIVATION,
 };
@@ -167,7 +170,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "COCKPIT_DESIGN_BRIEF.md §5 polling hold; hub.rs last_inter_sample_period_ms",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: HUB_INTER_SAMPLE_PERIOD_MS_DERIVATION,
     },
     // §14bis.f-H-9 — Linux/Intel HAL Tier-1 runtime anchors (provenance strings; NED: unmeasured if permission_denied)
     ConstantEntry {
@@ -232,7 +235,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.Formal.OrderStatisticsBand::p25_p75_admissibility",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: FRUGALITY_BAND_P25_DERIVATION,
     },
     ConstantEntry {
         name: "frugality_band_p75_percentile",
@@ -240,7 +243,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.Formal.OrderStatisticsBand::p25_p75_admissibility",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: FRUGALITY_BAND_P75_DERIVATION,
     },
     ConstantEntry {
         name: "landauer_proximity_multiplier",
@@ -1278,7 +1281,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-I-4; `ppo_info_gain_bits`; proposal-length fallback when unset)",
         env_override: Some("UMST_MANIFOLD_GATEWAY_INFO_GAIN_BITS"),
-        derivation: Derivation::Pending,
+        derivation: PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION,
     },
     ConstantEntry {
         name: "umst_manifold_emergence_lambda",
@@ -1286,7 +1289,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-I-5 / §14bis.f-M-SDF-emergence; `emergence_lambda`)",
         env_override: Some("UMST_MANIFOLD_EMERGENCE_LAMBDA"),
-        derivation: Derivation::Pending,
+        derivation: EMERGENCE_LAMBDA_DERIVATION,
     },
     ConstantEntry {
         name: "umst_msdf_emergence_max_voxels",
@@ -1294,7 +1297,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-SDF-emergence; `max_emergence_voxels`)",
         env_override: Some("UMST_MSDF_EMERGENCE_MAX_VOXELS"),
-        derivation: Derivation::Pending,
+        derivation: MSDF_EMERGENCE_MAX_VOXELS_DERIVATION,
     },
     ConstantEntry {
         name: "umst_ucrs_memory_phase_bind_enabled",
@@ -1591,7 +1594,7 @@ mod tests {
         };
         use crate::constants::tier2_derivation::{
             K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
-            K5_REGISTRY_ROW_NAMES, K5B_REGISTRY_ROW_NAMES,
+            K5_REGISTRY_ROW_NAMES, K5B_REGISTRY_ROW_NAMES, K5C_REGISTRY_ROW_NAMES,
         };
         use crate::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 
@@ -1604,6 +1607,7 @@ mod tests {
                 || K4_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5B_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5C_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),
