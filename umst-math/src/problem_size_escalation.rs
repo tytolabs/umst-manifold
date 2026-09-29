@@ -20,12 +20,12 @@ pub struct ProblemSizeEvidence {
     /// Degrees of freedom (or analogous problem size) used as the orthogonality threshold.
     pub n_unknowns: u64,
     /// Unfold or outer-loop steps already taken when the witness was recorded.
-    pub steps_taken: u64,
+    pub unfold_iter_count: u64,
 }
 
 /// True when at least one unknown is declared and steps have reached or passed that count.
 pub fn steps_past_unknowns(evidence: &ProblemSizeEvidence) -> bool {
-    evidence.n_unknowns > 0 && evidence.steps_taken >= evidence.n_unknowns
+    evidence.n_unknowns > 0 && evidence.unfold_iter_count >= evidence.n_unknowns
 }
 
 /// Escalation kinds derived from problem-size witnesses (not unfold terminal outcomes).
@@ -55,7 +55,7 @@ mod tests {
     fn steps_below_unknown_count_is_not_escalation() {
         let evidence = ProblemSizeEvidence {
             n_unknowns: 4,
-            steps_taken: 3,
+            unfold_iter_count: 3,
         };
         assert!(!steps_past_unknowns(&evidence));
         assert_eq!(escalation_from_evidence(evidence), None);
@@ -65,7 +65,7 @@ mod tests {
     fn steps_at_unknown_count_is_orthogonality_loss() {
         let evidence = ProblemSizeEvidence {
             n_unknowns: 4,
-            steps_taken: 4,
+            unfold_iter_count: 4,
         };
         assert!(steps_past_unknowns(&evidence));
         assert_eq!(
@@ -78,7 +78,7 @@ mod tests {
     fn zero_unknowns_never_escalates() {
         let evidence = ProblemSizeEvidence {
             n_unknowns: 0,
-            steps_taken: 100,
+            unfold_iter_count: 100,
         };
         assert!(!steps_past_unknowns(&evidence));
         assert_eq!(escalation_from_evidence(evidence), None);

@@ -417,7 +417,10 @@ mod tests {
         assert!(stall.ensure_converged().is_err());
         assert!(stall.stall_ratio().expect("stall") > 1.0);
 
-        let no_tol = SolveReport { rel_tol: 0.0, ..ok };
+        let no_tol = SolveReport {
+            rel_tol: umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
+            ..ok
+        };
         assert!(!no_tol.converged());
         assert!(no_tol.stall_ratio().is_none());
         assert_eq!(

@@ -89,7 +89,7 @@ fn self_weight_beam_non_trivial_topology_smoke() {
         cg_tolerance: 1e-7,
         pcg_tolerance: 1e-7,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
     let coords_n3 = coords_bn3.clone().reshape([n, 3]);
     let (u, _) = VectorMechanicsSolver::solve_equilibrium(

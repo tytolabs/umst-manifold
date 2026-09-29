@@ -137,7 +137,7 @@ fn chain_harness() -> ChainHarness {
         cg_tolerance: 1e-6,
         pcg_tolerance: 1e-6,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
     let cross_section_area = 0.01_f32;
 

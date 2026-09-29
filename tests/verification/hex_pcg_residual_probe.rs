@@ -63,7 +63,7 @@ fn run_probe_line(nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32, ma
         cg_tolerance: lane_tol,
         pcg_tolerance: lane_tol,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
     let mut u = vec![0.0_f32; n * 3];
     let mut diag = vec![0.0_f32; n * 3];

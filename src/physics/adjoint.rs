@@ -507,7 +507,7 @@ mod tests {
             cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             use_preconditioner: true,
-            max_equilibrium_substeps: 1,
+            max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
         };
         assert!(ensure_bar_equilibrium(1e-7, &pcg, &cg).is_ok());
     }
@@ -526,7 +526,7 @@ mod tests {
             cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             use_preconditioner: true,
-            max_equilibrium_substeps: 1,
+            max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
         };
         let err = ensure_bar_equilibrium(0.1, &pcg, &cg).unwrap_err();
         assert!(matches!(err, PhysicsError::Diverged { .. }));

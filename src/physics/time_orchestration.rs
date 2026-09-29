@@ -121,7 +121,7 @@ pub struct SimulationClocks {
     /// Quasi-static mechanics inner step when marching toward equilibrium.
     pub dt_mechanics_substep: f32,
     /// Hard cap on mechanics substeps per outer chemistry step.
-    pub max_mech_substeps_per_chem: u32,
+    pub max_mech_sub_iters_per_chem: u32,
     /// Optional step for electromagnetics / acoustics (nanoseconds).
     pub dt_fast_physics: Option<f32>,
 }
@@ -131,7 +131,7 @@ impl Default for SimulationClocks {
         Self {
             dt_chemistry: 3600.0,
             dt_mechanics_substep: 0.1,
-            max_mech_substeps_per_chem: 10_000,
+            max_mech_sub_iters_per_chem: umst_math::numeric_tolerance::DEFAULT_MECH_SUB_ITERS_PER_CHEM_CAP,
             dt_fast_physics: Some(1e-9),
         }
     }
@@ -156,7 +156,7 @@ impl SimulationClocks {
         if !(self.dt_mechanics_substep.is_finite() && self.dt_mechanics_substep > 0.0) {
             return Err(ClockValidationError::NonPositiveMechanicsSubstep);
         }
-        if self.max_mech_substeps_per_chem == 0 {
+        if self.max_mech_sub_iters_per_chem == 0 {
             return Err(ClockValidationError::ZeroMaxMechSubsteps);
         }
         if let Some(dt_fast) = self.dt_fast_physics {
@@ -186,14 +186,14 @@ impl SimulationClocks {
     #[must_use]
     pub fn mech_substeps_per_chem(&self) -> Option<u32> {
         let ideal = self.ideal_mech_substeps_per_chem()?;
-        Some(ideal.min(self.max_mech_substeps_per_chem).max(1))
+        Some(ideal.min(self.max_mech_sub_iters_per_chem).max(1))
     }
 
     /// Whether the hard cap truncates the ideal chemistry→mechanics ratio.
     #[must_use]
     pub fn mech_substep_cap_binds(&self) -> Option<bool> {
         let ideal = self.ideal_mech_substeps_per_chem()?;
-        Some(ideal > self.max_mech_substeps_per_chem)
+        Some(ideal > self.max_mech_sub_iters_per_chem)
     }
 }
 
@@ -207,7 +207,7 @@ pub struct MechanicsInnerLoopConfig {
     /// Apply diagonal (Jacobi) preconditioning in the projected CG loop (`z = M⁻¹ r`).
     pub use_preconditioner: bool,
     /// Reserved when multiple mechanic passes are needed per chem step.
-    pub max_equilibrium_substeps: u32,
+    pub max_equilibrium_sub_iters: u32,
 }
 
 impl Default for MechanicsInnerLoopConfig {
@@ -233,7 +233,7 @@ impl MechanicsInnerLoopConfig {
             cg_tolerance: tol,
             pcg_tolerance: tol,
             use_preconditioner: true,
-            max_equilibrium_substeps: 1,
+            max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
         }
     }
 
@@ -258,8 +258,8 @@ impl MechanicsInnerLoopConfig {
         if !(self.pcg_tolerance.is_finite() && self.pcg_tolerance > 0.0) {
             return Err("pcg_tolerance must be finite and > 0");
         }
-        if self.max_equilibrium_substeps == 0 {
-            return Err("max_equilibrium_substeps must be ≥ 1");
+        if self.max_equilibrium_sub_iters == 0 {
+            return Err("max_equilibrium_sub_iters must be ≥ 1");
         }
         Ok(())
     }
@@ -324,7 +324,7 @@ mod tests {
         );
 
         let mut bad_cap = SimulationClocks::default();
-        bad_cap.max_mech_substeps_per_chem = 0;
+        bad_cap.max_mech_sub_iters_per_chem = 0;
         assert_eq!(
             bad_cap.validate(),
             Err(ClockValidationError::ZeroMaxMechSubsteps)
@@ -336,7 +336,7 @@ mod tests {
         let clocks = SimulationClocks {
             dt_chemistry: 1.0,
             dt_mechanics_substep: 0.25,
-            max_mech_substeps_per_chem: 10_000,
+            max_mech_sub_iters_per_chem: umst_math::numeric_tolerance::DEFAULT_MECH_SUB_ITERS_PER_CHEM_CAP,
             dt_fast_physics: None,
         };
         assert_eq!(clocks.ideal_mech_substeps_per_chem(), Some(4));
@@ -358,7 +358,7 @@ mod tests {
             12
         );
         assert!(cfg.use_preconditioner);
-        assert_eq!(cfg.max_equilibrium_substeps, 1);
+        assert_eq!(cfg.max_equilibrium_sub_iters, 1);
 
         let mut bad = MechanicsInnerLoopConfig::default();
         bad.max_cg_iterations = 0;

@@ -337,7 +337,7 @@ fn cantilever_axial_chain_tip_displacement_n64() {
         cg_tolerance: 3e-5,
         pcg_tolerance: 3e-5,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let displacement = Tensor::<B, 3>::zeros([1, n, 3], &dev);
@@ -423,7 +423,7 @@ fn packed_bar_network_equilibrium_uniform_axial_strain_tip_load_distinct_from_ac
         cg_tolerance: 3e-5,
         pcg_tolerance: 3e-5,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let displacement = Tensor::<B, 3>::zeros([1, n, 3], &dev);
@@ -486,7 +486,7 @@ fn default_plate_cg_cfg(cg_tolerance: f32) -> MechanicsInnerLoopConfig {
         cg_tolerance,
         pcg_tolerance: cg_tolerance,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     }
 }
 
@@ -600,7 +600,7 @@ fn kirchhoff_plate_stiff_cg_cfg() -> MechanicsInnerLoopConfig {
         cg_tolerance: 1e-4,
         pcg_tolerance: 1e-4,
         use_preconditioner: false,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     }
 }
 

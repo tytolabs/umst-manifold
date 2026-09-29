@@ -72,7 +72,7 @@ fn extruded_plate_response_is_linear_in_pressure() {
         cg_tolerance: 1e-6,
         pcg_tolerance: 1e-6,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let b1 = plate.body_force_top_uniform_pressure(500.0);

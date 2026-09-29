@@ -270,18 +270,20 @@ impl VectorMechanicsSolver {
             .mul(edge_unit.clone())
             .sum_dim(2)
             .reshape([batch, n_e, 1]);
-        let eps_ax = elong.div(edge_len.clamp_min(1e-30));
+        let axial_strain = elong.div(
+            edge_len.clamp_min(umst_math::numeric_tolerance::EDGE_LENGTH_DIVISOR_FLOOR_F32),
+        );
 
         let tx = edge_unit.clone().slice([0..batch, 0..n_e, 0..1]);
         let ty = edge_unit.clone().slice([0..batch, 0..n_e, 1..2]);
         let tz = edge_unit.slice([0..batch, 0..n_e, 2..3]);
 
-        let v0 = eps_ax.clone().mul(tx.clone().mul(tx.clone()));
-        let v1 = eps_ax.clone().mul(ty.clone().mul(ty.clone()));
-        let v2 = eps_ax.clone().mul(tz.clone().mul(tz.clone()));
-        let v3 = eps_ax.clone().mul(tx.clone().mul(ty.clone()));
-        let v4 = eps_ax.clone().mul(ty.clone().mul(tz.clone()));
-        let v5 = eps_ax.clone().mul(tx.clone().mul(tz.clone()));
+        let v0 = axial_strain.clone().mul(tx.clone().mul(tx.clone()));
+        let v1 = axial_strain.clone().mul(ty.clone().mul(ty.clone()));
+        let v2 = axial_strain.clone().mul(tz.clone().mul(tz.clone()));
+        let v3 = axial_strain.clone().mul(tx.clone().mul(ty.clone()));
+        let v4 = axial_strain.clone().mul(ty.clone().mul(tz.clone()));
+        let v5 = axial_strain.clone().mul(tx.clone().mul(tz.clone()));
 
         let voigt_edge = Tensor::cat(vec![v0, v1, v2, v3, v4, v5], 2);
 
@@ -1420,7 +1422,7 @@ impl VectorMechanicsSolver {
                 let _ = umst_math::problem_size_escalation::escalation_from_evidence(
                     umst_math::problem_size_escalation::ProblemSizeEvidence {
                         n_unknowns: n_unknowns as u64,
-                        steps_taken: pcg_iters as u64,
+                        unfold_iter_count: pcg_iters as u64,
                     },
                 );
                 pcg_rel_res = true_rel;
@@ -1567,10 +1569,10 @@ mod tests {
     fn bar_network_pcg_report_refuses_converged_when_rel_tol_non_positive() {
         let cfg = MechanicsInnerLoopConfig {
             max_cg_iterations: 500,
-            cg_tolerance: 0.0,
-            pcg_tolerance: 0.0,
+            cg_tolerance: umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
+            pcg_tolerance: umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
             use_preconditioner: true,
-            max_equilibrium_substeps: 1,
+            max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
         };
         assert_eq!(BarNetworkPcgReport::rel_tol_from_cfg(&cfg), 0.0);
         let report = BarNetworkPcgReport {
@@ -1745,7 +1747,7 @@ mod tests {
             cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             use_preconditioner: true,
-            max_equilibrium_substeps: 1,
+            max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
         };
 
         let (u, _) = VectorMechanicsSolver::solve_equilibrium(
@@ -1992,22 +1994,22 @@ mod tests {
         let edges_b1: Tensor<B, 2, Int> =
             Tensor::from_data(Data::new(vec![0_i64, 1_i64], Shape::new([2, n_e])), &dev);
 
-        let eps_v = VectorMechanicsSolver::voigt_strain_from_edge_displacement(
+        let voigt_strain = VectorMechanicsSolver::voigt_strain_from_edge_displacement(
             edge_displacement,
             edge_unit,
             edge_len,
             edges_b1,
             n_v,
         );
-        let eps_flat = eps_v.clone().into_data().value;
+        let voigt_host = voigt_strain.clone().into_data().value;
         for node in 0..2 {
             assert!(
-                (eps_flat[node * 6] - eps0).abs() < 1e-5_f32,
+                (voigt_host[node * 6] - eps0).abs() < 1e-5_f32,
                 "node {node} eps_xx"
             );
             for k in 1..6 {
                 assert!(
-                    eps_flat[node * 6 + k].abs() < 1e-6_f32,
+                    voigt_host[node * 6 + k].abs() < 1e-6_f32,
                     "node {node} comp {k}"
                 );
             }
@@ -2039,7 +2041,7 @@ mod tests {
             &dev,
         );
 
-        let sigma = VectorMechanicsSolver::isotropic_hooke_sigma(eps_v, e_young, nu_t, rotation);
+        let sigma = VectorMechanicsSolver::isotropic_hooke_sigma(voigt_strain, e_young, nu_t, rotation);
         let sig = sigma.into_data().value;
 
         let sig_xx_exp = (lam + 2.0 * mu) * eps0;
@@ -2111,7 +2113,7 @@ mod tests {
             cg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             use_preconditioner: true,
-            max_equilibrium_substeps: 1,
+            max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
         };
 
         let (u, sigma) = VectorMechanicsSolver::solve_equilibrium_with_voigt_cauchy(
@@ -2208,7 +2210,7 @@ mod tests {
             cg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             use_preconditioner: true,
-            max_equilibrium_substeps: 1,
+            max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
         };
 
         let (u1, _) = VectorMechanicsSolver::solve_equilibrium(
@@ -2306,7 +2308,7 @@ mod tests {
             cg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             use_preconditioner: true,
-            max_equilibrium_substeps: 1,
+            max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
         };
 
         let (u1, _, _, _, _, _, _, pcg1) = VectorMechanicsSolver::packed_bar_network_equilibrium(

@@ -396,7 +396,7 @@ fn thmc_mechanics_bar_idempotent_at_zero_load_equilibrium() {
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
     let mut bm = vec![1.0_f32; n * 3];
     bm[0] = 0.0_f32;

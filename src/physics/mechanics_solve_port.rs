@@ -349,7 +349,7 @@ mod tests {
             cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             use_preconditioner: true,
-            max_equilibrium_substeps: 1,
+            max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
         };
 
         (

@@ -97,7 +97,7 @@ pub fn plane_bingham_plug_half_width(tau0: f32, g: f32) -> f32 {
 
 /// Solve \(\mu x + \tau_0 x/(x+\varepsilon) = \tau_\mathrm{target}\) for shear-rate magnitude \(x=|\dot\gamma|\ge 0\) when \(\tau_\mathrm{target}\ge 0\).
 ///
-/// For \(\varepsilon=0\) and \(\tau_0>0\), uses the ideal limit \(x=\max(0,(\tau_\mathrm{target}-\tau_0)/\mu)\).
+/// For zero strain and \(\tau_0>0\), uses the ideal limit \(x=\max(0,(\tau_\mathrm{target}-\tau_0)/\mu)\).
 fn shear_rate_mag_from_stress_balance(tau_target: f64, mu: f64, tau0: f64, eps: f64) -> f64 {
     if !tau_target.is_finite() || !mu.is_finite() || !tau0.is_finite() || !eps.is_finite() {
         return f64::NAN;
@@ -375,7 +375,7 @@ mod tests {
         );
         let reg = plane_regularized_bingham_poiseuille_u_centreline(g, h, mu, tau0, 1e-8, 512)
             .expect(
-                "regularized Bingham centreline eps=1e-8 for eps→0 approach lib unit witness (FP §6 Track E rheology analytic)",
+                "regularized Bingham centreline strain floor for strain→0 approach lib unit witness (FP §6 Track E rheology analytic)",
             );
         // Regularized η keeps a small residual shear in the plug; expect relative proximity, not identity.
         assert!(

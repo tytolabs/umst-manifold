@@ -108,7 +108,7 @@ fn adjoint_q1_hex_gradient_matches_finite_difference_plate_8x8x2() {
         cg_tolerance: 1e-6_f32,
         pcg_tolerance: 1e-6_f32,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
     // Perturbed-ρ FD re-solves need a looser lane than the autograd anchor (f32 PCG @ 8×8×2).
     let cg_fd = MechanicsInnerLoopConfig {
@@ -116,7 +116,7 @@ fn adjoint_q1_hex_gradient_matches_finite_difference_plate_8x8x2() {
         cg_tolerance: 1e-5_f32,
         pcg_tolerance: 1e-5_f32,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let nx1 = nx + 1;

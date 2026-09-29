@@ -257,7 +257,7 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
     let step_bound = stall_window.saturating_mul(tol_steps).max(1);
     let mut best_r = f32::INFINITY;
     let mut stall = 0usize;
-    let mut steps = 0usize;
+    let mut richardson_iter = 0usize;
     loop {
         let lx =
             TopologicalLaplacian::scalar_laplacian(x.clone(), edges_b1.clone(), damage.clone());
@@ -269,7 +269,7 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
                 context: "HelmholtzFilter::apply Richardson residual",
             });
         }
-        if r_norm <= tol_rel * rhs_norm || steps >= step_bound || stall >= stall_window {
+        if r_norm <= tol_rel * rhs_norm || richardson_iter >= step_bound || stall >= stall_window {
             break;
         }
         if r_norm < best_r {
@@ -278,7 +278,7 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
         } else {
             stall += 1;
         }
-        steps += 1;
+        richardson_iter += 1;
         x = x.clone().add(resid.mul_scalar(omega));
     }
     if x.clone().into_data().value.iter().any(|v| !v.is_finite()) {

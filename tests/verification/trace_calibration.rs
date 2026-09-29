@@ -54,7 +54,7 @@ fn sample_fixture_all_steps_within_catalog_mi_band() {
     let report = calibrate_eta_bound_from_trace(&trace);
     assert!(report.all_within_catalog);
     assert_eq!(report.eta_bound_suggested, 0.0);
-    assert_eq!(report.steps_checked, 2);
+    assert_eq!(report.samples_checked, 2);
 }
 
 #[test]

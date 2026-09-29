@@ -5,7 +5,7 @@
 //! formal_anchor: Lean `UMST.PrimeSpectralGuidance.spectralFilter`
 //! formal_status: Literature
 //! formal_citation: "Engineering mirror of von Mangoldt-weighted multiplicative channel filter; gate scalars unchanged."
-//! formal_form: "`values' i = weights i * values i` with identity weights at `epsilon = 0`."
+//! formal_form: "`values' i = weights i * values i` with identity weights at mixing scale 0."
 //! formal_anchor_rationale: Guidance only — not a fifth thermodynamic gate conjunct.
 //!
 //! Enabled with **`topology-density-evolution`**.
@@ -120,7 +120,7 @@ use crate::physics::error::PhysicsError;
 #[derive(Clone, Debug, PartialEq)]
 pub struct PrimeSpectralFilter {
     /// Soft modulation scale (0 ⇒ identity filter). Not a hard L¹ ball radius.
-    pub epsilon: f32,
+    pub mixing_scale: f32,
     /// When true, apply coprime-stride modulation on prime-indexed slots.
     pub coprime_stride: bool,
     /// Optional coprime prime period for stride mode (defaults to 3).
@@ -135,14 +135,14 @@ impl Default for PrimeSpectralFilter {
 
 impl PrimeSpectralFilter {
     #[must_use]
-    pub fn new(epsilon: f32, coprime_stride: bool, coprime_prime: Option<u32>) -> Self {
-        let eps = if epsilon.is_finite() {
-            epsilon.max(0.0)
+    pub fn new(mixing_param: f32, coprime_stride: bool, coprime_prime: Option<u32>) -> Self {
+        let clamped_mix = if mixing_param.is_finite() {
+            mixing_param.max(0.0)
         } else {
             0.0
         };
         Self {
-            epsilon: eps,
+            mixing_scale: clamped_mix,
             coprime_stride,
             coprime_prime,
         }
@@ -157,16 +157,16 @@ impl PrimeSpectralFilter {
         if n == 0 {
             return Vec::new();
         }
-        if self.epsilon <= 0.0 {
+        if self.mixing_scale <= 0.0 {
             return vec![1.0; n];
         }
         let mut raw = Vec::with_capacity(n);
         let mut sum = 0.0_f32;
         for i in 0..n {
             let w = if self.coprime_stride {
-                coprime_stride_weight(i, n, self.coprime_prime.unwrap_or(3), self.epsilon)
+                coprime_stride_weight(i, n, self.coprime_prime.unwrap_or(3), self.mixing_scale)
             } else {
-                mangoldt_modulated_weight(i, self.epsilon)
+                mangoldt_modulated_weight(i, self.mixing_scale)
             };
             raw.push(w);
             sum += w;
@@ -233,7 +233,7 @@ impl PrimeSpectralFilter {
                 return Err(PhysicsError::Domain {
                     detail: format!(
                         "PrimeSpectralFilter: non-positive weight at index {i} (ε={}, w={w})",
-                        self.epsilon
+                        self.mixing_scale
                     ),
                 });
             }
@@ -349,7 +349,7 @@ mod tests {
     #[test]
     fn non_finite_epsilon_collapses_to_identity() {
         let ps = PrimeSpectralFilter::new(f32::NAN, false, None);
-        assert_eq!(ps.epsilon, 0.0);
+        assert_eq!(ps.mixing_scale, 0.0);
         let w = ps.weight_table(4);
         assert!(w.iter().all(|x| (*x - 1.0).abs() < 1e-6));
     }
@@ -412,7 +412,7 @@ mod tests {
         let rho = Tensor::<B, 3>::full(Shape::new([1, n, 1]), 0.5, &dev);
         let out = ps
             .apply(rho, n)
-            .expect("PrimeSpectralFilter::apply on uniform rho at epsilon=0.05 (FP §6 topology spectral filter verification)");
+            .expect("PrimeSpectralFilter::apply on uniform rho at mixing_scale=0.05 (FP §6 topology spectral filter verification)");
         let expected_w = ps.weight_table(n);
         for (i, &v) in out.into_data().value.iter().enumerate() {
             assert!((v - 0.5 * expected_w[i]).abs() < 1e-5);
@@ -460,7 +460,7 @@ mod tests {
     #[test]
     fn default_is_soft_mangoldt_guidance() {
         let d = PrimeSpectralFilter::default();
-        assert!((d.epsilon - 0.05).abs() < 1e-6);
+        assert!((d.mixing_scale - 0.05).abs() < 1e-6);
         assert!(!d.coprime_stride);
         assert!(d.coprime_prime.is_none());
         assert!((d.weight_mean(16) - 1.0).abs() < 1e-5);

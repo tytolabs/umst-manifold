@@ -85,7 +85,7 @@ fn q1_hex_harness_roof_traction_forward_converges() {
         cg_tolerance: 1e-4,
         pcg_tolerance: 1e-4,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let rho_ad =

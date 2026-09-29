@@ -1117,7 +1117,7 @@ fn staggered_fracture_compliance_monotone_increasing() {
         cg_tolerance: 1e-5,
         pcg_tolerance: 1e-5,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let cross_section_area = 0.01_f32;
@@ -1454,7 +1454,7 @@ fn at2_solve_staggered_mechanics_outer_loose_stopping_one_pass() {
         cg_tolerance: 1e-5,
         pcg_tolerance: 1e-5,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let cross_section_area = 0.01_f32;
@@ -1532,7 +1532,7 @@ fn staggered_mechanics_outer_damage_stop_matches_long_budget() {
         cg_tolerance: 1e-5,
         pcg_tolerance: 1e-5,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let cross_section_area = 0.01_f32;

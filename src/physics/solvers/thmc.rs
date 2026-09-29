@@ -1017,7 +1017,7 @@ impl Default for ThmcMonolithicNewtonConfig {
             iterations: 4_usize,
             damping: 1.0_f32,
             fd_eps: umst_math::numeric_tolerance::thmc_damped_newton_fd_eps_f32(),
-            stacked_residual_l2_tolerance: 0.0_f32,
+            stacked_residual_l2_tolerance: umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
             stacked_residual_relative_to_initial: None,
         }
     }
@@ -1093,12 +1093,12 @@ impl ThmcSolver {
 
         let bc_shape = [dims[0], 1, 1];
         let cg_step_cap = cfg.max_iterations;
-        let mut cg_steps = 0usize;
+        let mut cg_iter_count = 0usize;
         while residual_norms.last().copied().unwrap_or(f32::INFINITY) >= cfg.residual_tolerance {
-            if cg_steps >= cg_step_cap {
+            if cg_iter_count >= cg_step_cap {
                 break;
             }
-            cg_steps += 1;
+            cg_iter_count += 1;
             let ap = a_op(p.clone()).mul(boundary_mask.clone());
             let pap = p.clone().mul(ap.clone()).sum().clamp_min(1.0e-30_f32);
             let alpha_t = rs_old_t.clone().div(pap).mul_scalar(cfg.damping);

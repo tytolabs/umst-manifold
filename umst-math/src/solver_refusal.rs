@@ -92,7 +92,7 @@ pub struct PrecisionInsufficient {
     /// Upper conditioning bound used in the precision need inequality.
     pub kappa_hi: f64,
     /// Working precision ε_work.
-    pub eps_work: f64,
+    pub work_precision: f64,
     /// Target tolerance that cannot be certified at this precision.
     pub tol: f64,
 }
@@ -103,11 +103,11 @@ impl PrecisionInsufficient {
     /// Returns [`SolverRefusalCertifyRefuse::PrecisionAdequate`] when `κ_hi · ε_work < tol`.
     pub fn certified(
         kappa_hi: f64,
-        eps_work: f64,
+        work_precision: f64,
         tol: f64,
     ) -> Result<Self, SolverRefusalCertifyRefuse> {
         let k = certify_positive_finite(kappa_hi)?;
-        let e = certify_positive_finite(eps_work)?;
+        let e = certify_positive_finite(work_precision)?;
         let t = certify_positive_finite(tol)?;
         let product = k * e;
         if !product.is_finite() {
@@ -118,7 +118,7 @@ impl PrecisionInsufficient {
         }
         Ok(Self {
             kappa_hi: k,
-            eps_work: e,
+            work_precision: e,
             tol: t,
         })
     }

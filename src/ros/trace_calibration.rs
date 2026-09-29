@@ -34,9 +34,9 @@ pub const TRACE_CALIBRATION_MASTER_AUTHORIZED: bool = false;
 /// Report from scanning emitted steps — witness envelope, not a calibration certificate.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TraceCalibrationReport {
-    pub steps_checked: usize,
+    pub samples_checked: usize,
     /// Steps with `step_mi` outside `0 ≤ stepMI ≤ ln 2`, or non-finite.
-    pub steps_outside_catalog: usize,
+    pub samples_outside_catalog: usize,
     /// Non-finite `step_mi` observations (NaN / ±∞); subset of outside-catalog.
     pub nonfinite_step_mi_count: usize,
     pub max_step_mi: f64,
@@ -54,8 +54,8 @@ impl TraceCalibrationReport {
     #[must_use]
     pub fn empty() -> Self {
         TraceCalibrationReport {
-            steps_checked: 0,
-            steps_outside_catalog: 0,
+            samples_checked: 0,
+            samples_outside_catalog: 0,
             nonfinite_step_mi_count: 0,
             max_step_mi: 0.0,
             min_step_mi: f64::INFINITY,
@@ -112,11 +112,11 @@ where
 
     let mut report = TraceCalibrationReport::empty();
     for step in steps {
-        report.steps_checked += 1;
+        report.samples_checked += 1;
         let mi = step.step_mi;
         if !mi.is_finite() {
             report.nonfinite_step_mi_count += 1;
-            report.steps_outside_catalog += 1;
+            report.samples_outside_catalog += 1;
             report.all_within_catalog = false;
             report.max_excess_over_catalog = f64::INFINITY;
             continue;
@@ -130,11 +130,11 @@ where
             report.max_excess_over_catalog = f64::INFINITY;
         }
         if !step_mi_within_catalog(mi) {
-            report.steps_outside_catalog += 1;
+            report.samples_outside_catalog += 1;
             report.all_within_catalog = false;
         }
     }
-    if report.steps_checked == 0 {
+    if report.samples_checked == 0 {
         report.min_step_mi = 0.0;
         return report;
     }
@@ -174,7 +174,7 @@ mod tests {
     #[test]
     fn empty_scan_is_vacuously_in_band() {
         let report = calibrate_eta_bound_from_steps(std::iter::empty());
-        assert_eq!(report.steps_checked, 0);
+        assert_eq!(report.samples_checked, 0);
         assert!(report.all_within_catalog);
         assert_eq!(report.eta_bound_suggested, 0.0);
         assert_eq!(report.min_step_mi, 0.0);
@@ -188,7 +188,7 @@ mod tests {
         ];
         let report = calibrate_eta_bound_from_steps(steps.iter());
         assert!(report.all_within_catalog);
-        assert_eq!(report.steps_outside_catalog, 0);
+        assert_eq!(report.samples_outside_catalog, 0);
         assert_eq!(report.eta_bound_suggested, 0.0);
         assert_eq!(report.eta_bound_for_gateway(), 0.0);
         assert!((report.max_step_mi - 0.31).abs() < 1e-15);
@@ -200,7 +200,7 @@ mod tests {
         let over = EmittedStepRecord::new(CATALOG_STEP_MI_UPPER_NAT + 0.01, 1.0e-21);
         let report = calibrate_eta_bound_from_steps(std::slice::from_ref(&over).iter());
         assert!(!report.all_within_catalog);
-        assert_eq!(report.steps_outside_catalog, 1);
+        assert_eq!(report.samples_outside_catalog, 1);
         let raw = 0.01 / CATALOG_STEP_MI_UPPER_NAT;
         assert!((report.eta_bound_suggested - raw).abs() < 1e-12);
         assert_eq!(report.eta_bound_for_gateway(), report.eta_bound_suggested);
@@ -229,7 +229,7 @@ mod tests {
         let neg = EmittedStepRecord::new(-0.1, 1.0e-21);
         let report = calibrate_eta_bound_from_steps(std::slice::from_ref(&neg).iter());
         assert!(!report.all_within_catalog);
-        assert_eq!(report.steps_outside_catalog, 1);
+        assert_eq!(report.samples_outside_catalog, 1);
         assert_eq!(report.max_excess_over_catalog, 0.0);
         assert_eq!(report.eta_bound_suggested, 0.0);
     }

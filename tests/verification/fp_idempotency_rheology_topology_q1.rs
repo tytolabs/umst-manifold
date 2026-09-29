@@ -176,7 +176,7 @@ fn q1_hex_solve_equilibrium_idempotent_on_zero_load_fixed_bc() {
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
     let (u1, _) = plate
         .solve_equilibrium(rho.clone(), body_force.clone(), boundary_mask.clone(), mat, &cfg)

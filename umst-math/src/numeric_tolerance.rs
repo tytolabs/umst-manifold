@@ -267,6 +267,18 @@ pub const fn fracture_psi_probe_strain_f32() -> f32 {
     1e-3
 }
 
+/// Edge-length divisor floor for axial strain (`elong / edge_len`) in bar networks.
+pub const EDGE_LENGTH_DIVISOR_FLOOR_F32: f32 = 1e-30;
+
+/// Sentinel non-positive rel-tol for refusal / precondition tests (must stay ≤ 0).
+pub const REFUSAL_NONPOSITIVE_REL_TOL_F32: f32 = 0.0_f32;
+
+/// Default equilibrium inner iterations per mechanics pass (single pass today).
+pub const DEFAULT_EQUILIBRIUM_SUB_ITERS: u32 = 1;
+
+/// Hard cap on mechanics inner iterations per outer chemistry step (orchestration clocks).
+pub const DEFAULT_MECH_SUB_ITERS_PER_CHEM_CAP: u32 = 10_000;
+
 #[cfg(test)]
 mod tests {
     use super::*;

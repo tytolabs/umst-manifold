@@ -3370,6 +3370,7 @@ dependencies = [
  "burn",
  "burn-ndarray",
  "umst-cartridge-api",
+ "umst-math",
 ]
 
 [[package]]

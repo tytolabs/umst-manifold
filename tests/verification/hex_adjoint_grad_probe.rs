@@ -72,7 +72,7 @@ fn q1_hex_adjoint_grad_nonzero_on_quick_grid() {
         cg_tolerance: 1e-4,
         pcg_tolerance: 1e-4,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
     let (loss, _c, diag) = AdjointComplianceQ1Hex::forward_loss_with_diagnostics(
         rho_ad.clone(),
@@ -152,7 +152,7 @@ fn q1_hex_nodal_dot_matches_gather_surrogate_grad() {
         cg_tolerance: 1e-4,
         pcg_tolerance: 1e-4,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let rho_nodal =

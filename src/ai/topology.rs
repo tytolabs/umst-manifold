@@ -205,19 +205,19 @@ pub fn bisection_step_bound_from_width_tol(
     if bracket_width <= tol {
         return Ok(0);
     }
-    let mut steps = 0usize;
+    let mut bound_iters = 0usize;
     let mut span = bracket_width;
     while span > tol {
-        if steps == usize::MAX {
+        if bound_iters == usize::MAX {
             return Err("bisection: step bound overflow");
         }
-        steps += 1;
+        bound_iters += 1;
         span *= 0.5;
         if !span.is_finite() {
             return Err("bisection: non-finite bracket during step bound");
         }
     }
-    Ok(steps)
+    Ok(bound_iters)
 }
 
 /// Require a root bracket: finite endpoint residuals with a sign change (or exact zero).
@@ -1696,7 +1696,7 @@ mod simp_step_tests {
             cg_tolerance: umst_math::numeric_tolerance::mechanics_mid_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::mechanics_mid_cg_tol_f32(),
             use_preconditioner: true,
-            max_equilibrium_substeps: 1,
+            max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
         };
 
         let out = opt.optimize_step_simplite(
@@ -1765,7 +1765,7 @@ mod simp_step_tests {
             cg_tolerance: umst_math::numeric_tolerance::mechanics_mid_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::mechanics_mid_cg_tol_f32(),
             use_preconditioner: true,
-            max_equilibrium_substeps: 1,
+            max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
         };
 
         let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);

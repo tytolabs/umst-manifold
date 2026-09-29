@@ -300,7 +300,7 @@ fn bar_network_strain_matches_strain_tensor_for_fracture_after_mechanics() {
         cg_tolerance: 1e-7,
         pcg_tolerance: 1e-7,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
     let cross_section_area = 0.01_f32;
 
@@ -908,7 +908,7 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
     let cross_section_area = 0.01_f32;
     let (u_star, _) = VectorMechanicsSolver::solve_equilibrium(
@@ -1048,7 +1048,7 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
     let cross_section_area = 0.01_f32;
     let (u_star, _) = VectorMechanicsSolver::solve_equilibrium(
@@ -1166,7 +1166,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
     let cross_section_area = 0.01_f32;
     let (u_star, _) = VectorMechanicsSolver::solve_equilibrium(

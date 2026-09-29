@@ -233,15 +233,15 @@ impl PhotonicsHelmholtzSolver {
             }
         };
 
-        let eps_rr = eps_r_real.clone().into_data().value;
-        let eps_ri = eps_r_imag.into_data().value;
+        let perm_real_host = eps_r_real.clone().into_data().value;
+        let perm_imag_host = eps_r_imag.into_data().value;
         let sr = source_re.into_data().value;
         let si = source_im.into_data().value;
 
         let (alpha, beta, gamma, rhs_t) = uniform_chain_te_tridiagonal_and_rhs(
             &chain,
-            &eps_rr,
-            &eps_ri,
+            &perm_real_host,
+            &perm_imag_host,
             &sr,
             &si,
             self.frequency_hz,
@@ -327,7 +327,7 @@ fn scalar_eps_channel_for_dec<B: Backend<FloatElem = f32>>(
     let d = relative_permittivity.dims();
     if d.len() != 3 || d[0] != 1 {
         return Err(PhysicsError::UnsupportedLayout {
-            context: "scalar_eps_channel_for_dec: expected batch=1 [1,N,C]",
+            context: "scalar_perm_channel_for_dec: expected batch=1 [1,N,C]",
         });
     }
     match d[2] {
@@ -1122,7 +1122,7 @@ impl PhotonicsSolver {
             }
 
             if let Some(chain) = extract_uniform_x_chain::<B>(n, &edges_b1, &coords_n3) {
-                let eps_rr = match nodal_eps_r_real_for_te_chain(&relative_permittivity, d[0], n) {
+                let perm_real_host = match nodal_eps_r_real_for_te_chain(&relative_permittivity, d[0], n) {
                     Some(v) => v,
                     None => {
                         return Err(PhysicsError::UnsupportedLayout {
@@ -1131,7 +1131,7 @@ impl PhotonicsSolver {
                         });
                     }
                 };
-                let eps_ri = eps_r_imag.clone().into_data().value;
+                let perm_imag_host = eps_r_imag.clone().into_data().value;
                 let j_flat = impressed_current.clone().into_data().value;
                 let mut sr = vec![0.0_f32; n];
                 let si = vec![0.0_f32; n];
@@ -1141,8 +1141,8 @@ impl PhotonicsSolver {
 
                 let (alpha, beta, gamma, rhs_t) = uniform_chain_te_tridiagonal_and_rhs(
                     &chain,
-                    &eps_rr,
-                    &eps_ri,
+                    &perm_real_host,
+                    &perm_imag_host,
                     &sr,
                     &si,
                     self.frequency_hz,
@@ -2539,8 +2539,8 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
         None
     };
 
-    let eps_imag = eps_r_imag.clone().into_data().value;
-    if eps_imag.len() != n {
+    let perm_imag_host = eps_r_imag.clone().into_data().value;
+    if perm_imag_host.len() != n {
         return Err(PhysicsError::ShapeMismatch {
             context: "solve_maxwell_dec_patch_direct",
             detail: "eps_r_imag nodal length mismatch",
@@ -2620,7 +2620,7 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
                 k0,
                 eps_scalar.as_deref(),
                 eps_tensor9.as_deref(),
-                &eps_imag,
+                &perm_imag_host,
                 &faces_edge,
                 &faces_sign,
                 patch.face_column_ranges,

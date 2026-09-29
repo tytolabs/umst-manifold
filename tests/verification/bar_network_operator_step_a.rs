@@ -277,7 +277,7 @@ fn two_node_rel_residual_metric_sane_and_converged() {
         cg_tolerance: 1e-10,
         pcg_tolerance: 1e-10,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let (dev2, coords, edges_b1, stiffness, damage, mask, body_force, area) =
@@ -416,7 +416,7 @@ fn nine_node_chain_manufactured_solution() {
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let (_u, _, pcg) = VectorMechanicsSolver::solve_equilibrium_with_pcg_report(
@@ -464,7 +464,7 @@ fn quick_plate_harness_load_pcg_converges() {
         cg_tolerance: 1e-4,
         pcg_tolerance: 1e-4,
         use_preconditioner: false,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let (u, _, pcg) = VectorMechanicsSolver::solve_equilibrium_with_pcg_report(

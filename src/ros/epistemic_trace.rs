@@ -38,7 +38,7 @@ pub const EPISTEMIC_TRACE_OP5: bool = false;
 pub const EPISTEMIC_TRACE_WELL_FORMED_LANDED: bool = true;
 
 /// Whether prototypeCalibration rolled-up ε utility gates are landed.
-pub const EPISTEMIC_TRACE_PROTOTYPE_EPS_LANDED: bool = true;
+pub const EPISTEMIC_TRACE_PROTOTYPE_CALIBRATION_LANDED: bool = true;
 
 /// Whether Lean `NumericTraceApproxConsistent` (rollout `(π, ρ₀)` ground truth) is wired.
 /// Honestly open — host sum-vs-`n·ε` is a utility stub until rollout witnesses land.
@@ -54,7 +54,7 @@ const _: () = assert!(!EPISTEMIC_TRACE_MASTER);
 const _: () = assert!(!EPISTEMIC_TRACE_OP5);
 const _: () = assert!(!EPISTEMIC_TRACE_NUMERIC_APPROX_WIRED);
 const _: () = assert!(EPISTEMIC_TRACE_WELL_FORMED_LANDED);
-const _: () = assert!(EPISTEMIC_TRACE_PROTOTYPE_EPS_LANDED);
+const _: () = assert!(EPISTEMIC_TRACE_PROTOTYPE_CALIBRATION_LANDED);
 
 /// Typed probe for epistemic emitted-trace posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -64,7 +64,7 @@ pub struct EpistemicTracePostureProbe {
     pub master: bool,
     pub op5: bool,
     pub well_formed_landed: bool,
-    pub prototype_eps_landed: bool,
+    pub prototype_calibration_landed: bool,
     pub numeric_approx_wired: bool,
     pub honest_fence: &'static str,
     pub posture_tag: &'static str,
@@ -80,7 +80,7 @@ pub fn epistemic_trace_honest_posture_bundle() -> EpistemicTracePostureProbe {
         master: EPISTEMIC_TRACE_MASTER,
         op5: EPISTEMIC_TRACE_OP5,
         well_formed_landed: EPISTEMIC_TRACE_WELL_FORMED_LANDED,
-        prototype_eps_landed: EPISTEMIC_TRACE_PROTOTYPE_EPS_LANDED,
+        prototype_calibration_landed: EPISTEMIC_TRACE_PROTOTYPE_CALIBRATION_LANDED,
         numeric_approx_wired: EPISTEMIC_TRACE_NUMERIC_APPROX_WIRED,
         honest_fence: EPISTEMIC_TRACE_HONEST_FENCE,
         posture_tag: EPISTEMIC_TRACE_POSTURE_TAG,
@@ -97,7 +97,7 @@ pub fn epistemic_trace_posture_honest(probe: &EpistemicTracePostureProbe) -> boo
         && !probe.op5
         && !probe.numeric_approx_wired
         && probe.well_formed_landed
-        && probe.prototype_eps_landed
+        && probe.prototype_calibration_landed
         && probe.deepen_cell == W29_EPISTEMIC_TRACE_DEEPEN_CELL
         && probe
             .honest_fence
@@ -472,7 +472,7 @@ mod tests {
         assert!(!probe.op5);
         assert!(!probe.numeric_approx_wired);
         assert!(probe.well_formed_landed);
-        assert!(probe.prototype_eps_landed);
+        assert!(probe.prototype_calibration_landed);
         assert_eq!(probe.honest_fence, EPISTEMIC_TRACE_HONEST_FENCE);
     }
 

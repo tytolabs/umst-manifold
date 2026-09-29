@@ -141,7 +141,7 @@ fn adjoint_four_node_chain_compliance_matches_series_spring() {
         cg_tolerance: 1e-10,
         pcg_tolerance: 1e-10,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let rho_flat = vec![rho_uniform; 4];
@@ -186,7 +186,7 @@ fn adjoint_four_node_chain_gradient_matches_finite_difference() {
         cg_tolerance: 1e-10,
         pcg_tolerance: 1e-10,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let rho0 = 0.5_f32;
@@ -296,7 +296,7 @@ fn adjoint_four_node_chain_gradient_matches_bendsoe_sigmund_formula() {
         cg_tolerance: 1e-12,
         pcg_tolerance: 1e-12,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let rho0 = 0.5_f32;
@@ -369,7 +369,7 @@ fn adjoint_gradient_sign_is_negative_along_load_path() {
         cg_tolerance: 1e-10,
         pcg_tolerance: 1e-10,
         use_preconditioner: true,
-        max_equilibrium_substeps: 1,
+        max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
 
     let rho_ad = Tensor::<AD, 3>::full([1, 4, 1], 0.5_f32, &dev).require_grad();

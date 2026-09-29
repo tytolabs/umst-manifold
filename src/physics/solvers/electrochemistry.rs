@@ -163,8 +163,8 @@ impl Default for ElectroChemicalSolver {
             faraday_const: 1.0_f32,
             gas_const: 1.0_f32,
             coupling_picard_iters: 1_usize,
-            coupling_picard_tol_linf: 0.0_f32,
-            coupling_picard_tol_delta_phi_linf: 0.0_f32,
+            coupling_picard_tol_linf: umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
+            coupling_picard_tol_delta_phi_linf: umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
             coupling_picard_tol_delta_phi_l2: 0.0_f32,
             mesh_spacing: 1.0_f32,
             pnp_implicit_newton_chain: None,
@@ -1601,7 +1601,7 @@ fn full_sg_newton_correction_gmres_nm_f64(
     let r0_fm = r0_fm.to_vec();
     let c_plus_n = c_plus_n.to_vec();
     let c_minus_n = c_minus_n.to_vec();
-    let eps = eps.to_vec();
+    let permittivity_nm = eps.to_vec();
     let d_plus = d_plus.to_vec();
     let d_minus = d_minus.to_vec();
     let solver_a = std::sync::Arc::new(ElectroChemicalSolver {
@@ -1631,7 +1631,7 @@ fn full_sg_newton_correction_gmres_nm_f64(
             &u_fm,
             &c_plus_n,
             &c_minus_n,
-            &eps,
+            &permittivity_nm,
             &d_plus,
             &d_minus,
             g0,
@@ -3952,7 +3952,7 @@ mod newton_chain_tests {
         let u_fm = u.clone();
         let cpn = c_plus_n.clone();
         let cmn = c_minus_n.clone();
-        let eps_c = eps.clone();
+        let perm_c = eps.clone();
         let dp = d_plus.clone();
         let dm = d_minus.clone();
         let r0c = r0_fm.clone();
@@ -3975,7 +3975,7 @@ mod newton_chain_tests {
                     &u_fm,
                     &cpn,
                     &cmn,
-                    &eps_c,
+                    &perm_c,
                     &dp,
                     &dm,
                     g0,
@@ -4151,7 +4151,7 @@ mod newton_chain_tests {
         let u_fm = u.clone();
         let cpn = c_plus_n.clone();
         let cmn = c_minus_n.clone();
-        let eps_c = eps.clone();
+        let perm_c = eps.clone();
         let dp = d_plus.clone();
         let dm = d_minus.clone();
         let r0c = r0_fm.clone();
@@ -4174,7 +4174,7 @@ mod newton_chain_tests {
                     &u_fm,
                     &cpn,
                     &cmn,
-                    &eps_c,
+                    &perm_c,
                     &dp,
                     &dm,
                     g0,
@@ -4636,7 +4636,7 @@ mod newton_chain_tests {
         let dt64 = dt as f64;
         let phi_h = phi_n.into_data().value;
         let c_h = c_n.into_data().value;
-        let eps_h = eps_t.into_data().value;
+        let perm_h = eps_t.into_data().value;
         let d_h = d_t.into_data().value;
         let g0 = phi_h[0] as f64;
         let g1 = phi_h[n - 1] as f64;
@@ -4648,7 +4648,7 @@ mod newton_chain_tests {
         for i in 0..n {
             c_plus_n[i] = c_h[i * 2] as f64;
             c_minus_n[i] = c_h[i * 2 + 1] as f64;
-            eps[i] = eps_h[i] as f64;
+            eps[i] = perm_h[i] as f64;
             d_plus[i] = d_h[i * 2] as f64;
             d_minus[i] = d_h[i * 2 + 1] as f64;
         }

@@ -613,8 +613,11 @@ mod tests {
 
     #[test]
     fn kleisli_canonical_route_honors_transition_tolerance_constant() {
-        // SSOT: transition_proposal::TRANSITION_TOLERANCE = 1e-6
-        assert_eq!(TRANSITION_TOLERANCE, 1e-6);
+        // SSOT: transition_proposal::TRANSITION_TOLERANCE ↔ numeric_tolerance::transition_tolerance_f64()
+        assert_eq!(
+            TRANSITION_TOLERANCE,
+            umst_math::numeric_tolerance::transition_tolerance_f64()
+        );
         let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
         let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
         let outcome = canonical_transition_outcome(&old, &new, 1.0);

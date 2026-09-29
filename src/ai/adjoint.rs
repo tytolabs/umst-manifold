@@ -170,12 +170,12 @@ impl<B: Backend<FloatElem = f32>> AdjointNeuralODE<B> {
         t_start: f32,
         t_end: f32,
     ) -> UnifiedMaterialStateTensor<B> {
-        let steps = 10usize;
-        let dt = ((t_end - t_start) / steps as f32).max(1e-6);
+        let n_iter = 10usize;
+        let dt = ((t_end - t_start) / n_iter as f32).max(1e-6);
         let [n, f] = state.scalar_features.dims();
         let dof = (n * f).min(ADJOINT_POLICY_DIM);
 
-        for step in 0..steps {
+        for step in 0..n_iter {
             let w = 1.0_f32 / (step + 1) as f32;
             let theta_slice = self
                 .policy_weights

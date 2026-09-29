@@ -1697,7 +1697,7 @@ mod acoustics_energy_tol_tests {
         let kloc = Tensor::<B, 4>::zeros([1, n, 3, 3], &dev);
         let err = solver
             .step_wave_iterate(4, 0.0_f32, u, vel, acc, rho, vol, f, damp, kloc, None, None)
-            .expect_err("energy_tol=0 must refuse before stepping");
+            .expect_err("non-positive energy tolerance must refuse before stepping");
         assert!(matches!(
             err,
             PhysicsError::InvariantViolation { context } if context == "step_wave_iterate: energy_tol"

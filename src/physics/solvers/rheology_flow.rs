@@ -1290,10 +1290,10 @@ mod tests {
             "shipped rel_tol must admit"
         );
         let mut solver = BinghamFlowSolver::new(1e-3, 1.0);
-        solver.poisson_cg_rel_tol = 0.0;
+        solver.poisson_cg_rel_tol = umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32;
         assert!(
             super::bingham_step_validate_solver(&solver).is_err(),
-            "solver with poisson_cg_rel_tol=0 must Domain-fail"
+            "solver with non-positive Poisson CG rel tolerance must Domain-fail"
         );
     }
 
