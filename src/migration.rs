@@ -119,7 +119,7 @@ pub const W9_PHASE_A_SURFACES: [W9PhaseASurfaceRow; W9_PHASE_A_SURFACE_COUNT] = 
     },
     W9PhaseASurfaceRow {
         legacy_name: "full_iE_alpha_rate_tensor",
-        target_or_note: "R-api-w9-cartridge-inject (unimplemented)",
+        target_or_note: "R-api-w9-cartridge-inject (HonestTypedAbsence)",
         kind: W9PhaseASurfaceKind::CartridgeStub,
         alias_landed: false,
         cartridge_injected: false,
@@ -309,13 +309,45 @@ pub fn iE_degree(age_days: f64, temp_c: f64, supplementary_ratio: f64) -> f64 {
     0.0
 }
 
+/// Typed absence for tier-2c domain cartridge injection (R-api-w9-cartridge-inject).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum W9CartridgeInjectAbsence {
+    /// Kernel refuses silent tensor fiction until a domain cartridge owns the closure.
+    Tier2cDomainInjectionOpen {
+        /// Open API / receipt target.
+        inject_target: &'static str,
+        /// W29 deepen cell owning the inject slice.
+        deepen_cell: &'static str,
+    },
+}
+
+impl core::fmt::Display for W9CartridgeInjectAbsence {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Tier2cDomainInjectionOpen {
+                inject_target,
+                deepen_cell,
+            } => write!(
+                f,
+                "W9CartridgeInjectAbsence::Tier2cDomainInjectionOpen({inject_target}, {deepen_cell})"
+            ),
+        }
+    }
+}
+
+impl core::error::Error for W9CartridgeInjectAbsence {}
+
 #[deprecated(note = "cartridge-supplied tensor closure")]
 pub fn full_iE_alpha_rate_tensor<B: Backend<FloatElem = f32>>(
-    _age_days: Tensor<B, 1>,
-    _temp_c: Tensor<B, 1>,
-    _supplementary_ratio: Tensor<B, 1>,
-) -> Tensor<B, 1> {
-    unimplemented!("R-api-w9-cartridge-inject: W9 tier-2c domain cartridge injection")
+    age_days: Tensor<B, 1>,
+    temp_c: Tensor<B, 1>,
+    supplementary_ratio: Tensor<B, 1>,
+) -> Result<Tensor<B, 1>, W9CartridgeInjectAbsence> {
+    let _ = (age_days, temp_c, supplementary_ratio);
+    Err(W9CartridgeInjectAbsence::Tier2cDomainInjectionOpen {
+        inject_target: "R-api-w9-cartridge-inject",
+        deepen_cell: W29_W9_MIGRATION_DEEPEN_CELL,
+    })
 }
 
 #[deprecated(note = "cartridge-supplied gate wiring")]
@@ -415,14 +447,19 @@ mod tests {
     }
 
     #[test]
-    fn full_ie_alpha_rate_tensor_panics_until_cartridge_inject() {
+    fn full_ie_alpha_rate_tensor_returns_typed_absence_until_cartridge_inject() {
         type B = NdArray;
         let age = Tensor::<B, 1>::from_floats([1.0_f32], &Default::default());
         let temp = Tensor::<B, 1>::from_floats([20.0_f32], &Default::default());
         let supp = Tensor::<B, 1>::from_floats([0.2_f32], &Default::default());
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let _ = full_iE_alpha_rate_tensor::<B>(age, temp, supp);
-        }));
-        assert!(result.is_err(), "cartridge inject must remain unimplemented");
+        let err = full_iE_alpha_rate_tensor::<B>(age, temp, supp)
+            .expect_err("cartridge inject must be HonestTypedAbsence");
+        assert_eq!(
+            err,
+            W9CartridgeInjectAbsence::Tier2cDomainInjectionOpen {
+                inject_target: "R-api-w9-cartridge-inject",
+                deepen_cell: W29_W9_MIGRATION_DEEPEN_CELL,
+            }
+        );
     }
 }

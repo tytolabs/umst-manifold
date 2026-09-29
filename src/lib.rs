@@ -30,6 +30,7 @@ pub mod ci_research_gate;
 pub use ci_research_gate::ResearchCiPosture;
 pub mod cargo_test_gap_census;
 pub mod cartridge_migration_stub;
+pub mod migration;
 pub mod nested_drift_census;
 pub mod night_residual_deepen;
 pub mod runtime;
@@ -44,3 +45,6 @@ pub use runtime::gate::TransitionEvidenceWire;
 
 #[allow(deprecated)]
 pub use cartridge_migration_stub::*;
+pub use migration::{
+    W9CartridgeInjectAbsence, W9MigrationPostureProbe, W9PhaseASurfaceKind, W9PhaseASurfaceRow,
+};
