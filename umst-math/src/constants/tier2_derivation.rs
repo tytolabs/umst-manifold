@@ -621,6 +621,61 @@ pub const K5H_REGISTRY_ROW_NAMES: &[&str] = &[
     "umst_memory_hilbert_bits",
 ];
 
+// --- K-5i Tier-1 energy probes + ZCI toolchain pins (§14bis.k deepen wave 9) ---
+
+/// `rapl_package_dram_joules` — Linux RAPL package counter (NED if unreadable).
+pub const RAPL_PACKAGE_DRAM_JOULES_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/rapl_package_dram_joules.jsonl",
+    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#hal-rapl-package-energy",
+};
+
+/// `cpu_utilization_percent` — sysinfo global CPU util (portable).
+pub const CPU_UTILIZATION_PERCENT_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/cpu_utilization_percent.jsonl",
+    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#hal-cpu-utilization",
+};
+
+/// `process_joules_estimate` — EnergyService port estimate (watts × Δt × util).
+pub const PROCESS_JOULES_ESTIMATE_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/process_joules_estimate.jsonl",
+    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#energy-service-estimate",
+};
+
+/// `lean_toolchain_pin` — `TOOLCHAIN_PIN.txt` lean line.
+pub const LEAN_TOOLCHAIN_PIN_DERIVATION: Derivation = Derivation::Pin {
+    repo: "leanprover/lean4",
+    ref_name: "v4.13.0",
+};
+
+/// `coq_version_pin` — `TOOLCHAIN_PIN.txt` coq line.
+pub const COQ_VERSION_PIN_DERIVATION: Derivation = Derivation::Pin {
+    repo: "coq",
+    ref_name: "8.20.0",
+};
+
+/// `agda_version_pin` — `TOOLCHAIN_PIN.txt` agda line.
+pub const AGDA_VERSION_PIN_DERIVATION: Derivation = Derivation::Pin {
+    repo: "agda",
+    ref_name: "2.7.0",
+};
+
+/// `ghc_version_pin` — `TOOLCHAIN_PIN.txt` ghc line.
+pub const GHC_VERSION_PIN_DERIVATION: Derivation = Derivation::Pin {
+    repo: "ghc",
+    ref_name: "9.10.1",
+};
+
+/// K-5i energy + ZCI toolchain registry row names (7/7 for slice GREEN).
+pub const K5I_REGISTRY_ROW_NAMES: &[&str] = &[
+    "rapl_package_dram_joules",
+    "cpu_utilization_percent",
+    "process_joules_estimate",
+    "lean_toolchain_pin",
+    "coq_version_pin",
+    "agda_version_pin",
+    "ghc_version_pin",
+];
+
 /// K-5d registry row names (6/6 for slice GREEN).
 pub const K5D_REGISTRY_ROW_NAMES: &[&str] = &[
     "landauer_proximity_multiplier",
@@ -753,8 +808,35 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "umst_ucrs_memory_phase_bind_enabled" => Some(UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT_DERIVATION),
         "umst_msdf_layer_stack_max_depth" => Some(MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT_DERIVATION),
         "umst_memory_hilbert_bits" => Some(MEMORY_HILBERT_BITS_DEFAULT_DERIVATION),
+        "rapl_package_dram_joules" => Some(RAPL_PACKAGE_DRAM_JOULES_DERIVATION),
+        "cpu_utilization_percent" => Some(CPU_UTILIZATION_PERCENT_DERIVATION),
+        "process_joules_estimate" => Some(PROCESS_JOULES_ESTIMATE_DERIVATION),
+        "lean_toolchain_pin" => Some(LEAN_TOOLCHAIN_PIN_DERIVATION),
+        "coq_version_pin" => Some(COQ_VERSION_PIN_DERIVATION),
+        "agda_version_pin" => Some(AGDA_VERSION_PIN_DERIVATION),
+        "ghc_version_pin" => Some(GHC_VERSION_PIN_DERIVATION),
         _ => None,
     }
+}
+
+/// Count K-5i rows with non-`Pending` derivation.
+#[must_use]
+pub fn k5i_backfilled_count() -> usize {
+    K5I_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5i REGISTRY backfill landed.
+#[must_use]
+pub fn k5i_backfill_landed() -> bool {
+    k5i_backfilled_count() == K5I_REGISTRY_ROW_NAMES.len()
 }
 
 /// Count K-5h rows with non-`Pending` derivation.
@@ -1102,6 +1184,25 @@ mod tests {
     #[test]
     fn k5d_staleness_threshold_matches_cycle_product() {
         assert!((default_staleness_threshold_ms() - 3_000.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn k5i_registry_rows_backfilled() {
+        assert!(k5i_backfill_landed());
+        for name in K5I_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5i: {name} must be backfilled"
+            );
+            assert_eq!(
+                entry.derivation,
+                derivation_for_registry_row(name).expect("lookup")
+            );
+        }
     }
 
     #[test]

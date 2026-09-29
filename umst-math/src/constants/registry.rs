@@ -41,6 +41,9 @@ use super::tier2_derivation::{
     STALENESS_THRESHOLD_MS_DERIVATION, TOOL_TIMEOUT_SECS_DERIVATION, TRANSITION_TOLERANCE_DERIVATION,
     TUI_RENDER_DEBOUNCE_MS_DERIVATION, UMST_FFI_ABI_VERSION_DERIVATION,
     UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DERIVATION, WARMUP_SAMPLE_THRESHOLD_DERIVATION,
+    RAPL_PACKAGE_DRAM_JOULES_DERIVATION, CPU_UTILIZATION_PERCENT_DERIVATION,
+    PROCESS_JOULES_ESTIMATE_DERIVATION, LEAN_TOOLCHAIN_PIN_DERIVATION, COQ_VERSION_PIN_DERIVATION,
+    AGDA_VERSION_PIN_DERIVATION, GHC_VERSION_PIN_DERIVATION,
 };
 use super::tier3_derivation::{ENERGY_BACKEND_DEFINITION, TUI_BIDI_DEFINITION};
 
@@ -164,7 +167,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "umst-ucrs::rapl sysfs surface (Linux-gated)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: RAPL_PACKAGE_DRAM_JOULES_DERIVATION,
     },
     ConstantEntry {
         name: "cpu_utilization_percent",
@@ -172,7 +175,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "sysinfo::System::global_cpu_info() portable f64",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: CPU_UTILIZATION_PERCENT_DERIVATION,
     },
     ConstantEntry {
         name: "process_joules_estimate",
@@ -180,7 +183,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "maos-core EnergyService.ts formulas + cockpit energy unit tests",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: PROCESS_JOULES_ESTIMATE_DERIVATION,
     },
     ConstantEntry {
         name: "hub_inter_sample_period_ms",
@@ -462,7 +465,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "§14bis.j; `umst-math/TOOLCHAIN_PIN.txt`",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: LEAN_TOOLCHAIN_PIN_DERIVATION,
     },
     ConstantEntry {
         name: "coq_version_pin",
@@ -470,7 +473,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "§14bis.j; `umst-math/TOOLCHAIN_PIN.txt`",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: COQ_VERSION_PIN_DERIVATION,
     },
     ConstantEntry {
         name: "agda_version_pin",
@@ -478,7 +481,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "§14bis.j; `umst-math/TOOLCHAIN_PIN.txt`",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: AGDA_VERSION_PIN_DERIVATION,
     },
     ConstantEntry {
         name: "ghc_version_pin",
@@ -486,7 +489,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "§14bis.j; `umst-math/TOOLCHAIN_PIN.txt`",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: GHC_VERSION_PIN_DERIVATION,
     },
     ConstantEntry {
         name: "rustc_toolchain_pin",
@@ -1614,7 +1617,7 @@ mod tests {
             K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
             K5_REGISTRY_ROW_NAMES, K5B_REGISTRY_ROW_NAMES, K5C_REGISTRY_ROW_NAMES,
             K5D_REGISTRY_ROW_NAMES, K5E_REGISTRY_ROW_NAMES, K5F_REGISTRY_ROW_NAMES,
-            K5G_REGISTRY_ROW_NAMES, K5H_REGISTRY_ROW_NAMES,
+            K5G_REGISTRY_ROW_NAMES, K5H_REGISTRY_ROW_NAMES, K5I_REGISTRY_ROW_NAMES,
         };
         use crate::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 
@@ -1633,6 +1636,7 @@ mod tests {
                 || K5F_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5G_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5H_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5I_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),

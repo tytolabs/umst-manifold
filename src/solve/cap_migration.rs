@@ -85,6 +85,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "AT2 spectral Jacobi sweeps need fracture energy unfold meter before debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/solvers/thmc_jfnk.rs",
+        legacy_token: "gmres_f32_try (restart bounded by problem dim for JFNK inner)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "matrix-free THMC JFNK inner GMRES needs coupled residual energy meter before unfold debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -98,7 +105,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 8);
+        assert_eq!(cap_migration_site_count(), 9);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -124,5 +131,7 @@ mod tests {
         assert_eq!(rheology.legacy_module, "physics/solvers/rheology_flow.rs");
         let fracture = &CAP_MIGRATION_SITES[7];
         assert_eq!(fracture.legacy_module, "physics/solvers/fracture_field.rs");
+        let jfnk = &CAP_MIGRATION_SITES[8];
+        assert_eq!(jfnk.legacy_module, "physics/solvers/thmc_jfnk.rs");
     }
 }
