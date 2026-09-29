@@ -22,8 +22,12 @@ use super::tier2_derivation::{
     H3B_REWARD_BETA_DERIVATION, H3B_REWARD_GAMMA_DERIVATION, HAL_IGPU_PRESENT_DERIVATION,
     HAL_L3_CACHE_DERIVATION, HAL_LINUX_PORT_COUNT_DERIVATION, HAL_LINUX_RAM_TOTAL_DERIVATION,
     HAL_LOGICAL_CORES_DERIVATION, HAL_NPU_PRESENT_DERIVATION, HUB_INTER_SAMPLE_PERIOD_MS_DERIVATION,
-    LANDAUER_PROXIMITY_MULTIPLIER_DERIVATION, MIN_PROMOTION_CREDIT_DERIVATION,
-    MSDF_EMERGENCE_MAX_VOXELS_DERIVATION, PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION,
+    LANDAUER_PROXIMITY_MULTIPLIER_DERIVATION, MEMORY_DEFAULT_RESOLUTION_BITS_DERIVATION,
+    MEMORY_EPHEMERAL_TTL_HOURS_DERIVATION, MEMORY_M2_PROMOTE_CEREMONY_ATOMIC_DERIVATION,
+    MEMORY_M2_PROMOTION_REQUIRES_THEOREM_DERIVATION, MEMORY_M2_SANITIZE_SERIAL_KINDS_DERIVATION,
+    EMBEDDING_HTTP_TIMEOUT_SECONDS_DERIVATION, MEMORY_SCHEMA_VERSION_DERIVATION,
+    MIN_PROMOTION_CREDIT_DERIVATION, MSDF_EMERGENCE_MAX_VOXELS_DERIVATION,
+    PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION,
     Q_HYD_J_PER_KG_DERIVATION, STALENESS_CYCLE_COUNT_DERIVATION,
     STALENESS_THRESHOLD_MS_DERIVATION, TOOL_TIMEOUT_SECS_DERIVATION, TRANSITION_TOLERANCE_DERIVATION,
     TUI_RENDER_DEBOUNCE_MS_DERIVATION, UMST_FFI_ABI_VERSION_DERIVATION,
@@ -392,7 +396,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "Design default per COCKPIT brief; UMST_EMBEDDING_TIMEOUT_SECONDS not yet wired in adapters (2026-04-21)",
         env_override: Some("UMST_EMBEDDING_TIMEOUT_SECONDS"),
-        derivation: Derivation::Pending,
+        derivation: EMBEDDING_HTTP_TIMEOUT_SECONDS_DERIVATION,
     },
     ConstantEntry {
         name: "umst_math_simd_feature",
@@ -1094,7 +1098,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (M-1 MEMORY-ARC; GMD-3; `umst-math::manifold` resolution ceiling 12 policy vs 10-bit voxels M-0)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: MEMORY_DEFAULT_RESOLUTION_BITS_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_inspect_runtime_us_p99",
@@ -1126,7 +1130,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (M-1 sled `MemoryV1` wire; migration path: bump + multi-decode in M-2+)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: MEMORY_SCHEMA_VERSION_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_store_runtime_us_p99",
@@ -1143,7 +1147,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-2; THEOREM-BOUND ceremony; `cockpit memory module promote`)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: MEMORY_M2_PROMOTE_CEREMONY_ATOMIC_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_m2_sanitize_serial_kinds_count",
@@ -1151,7 +1155,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-2 GMD-6; `cockpit memory module sanitize::SerialKind`)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: MEMORY_M2_SANITIZE_SERIAL_KINDS_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_m2_promotion_requires_theorem_default",
@@ -1159,13 +1163,13 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-2; CONSTANT-BOUND default; `cockpit memory module promotion_require_theorem_enabled`)",
         env_override: Some("UMST_MEMORY_PROMOTION_REQUIRE_THEOREM"),
-        derivation: Derivation::Pending,
+        derivation: MEMORY_M2_PROMOTION_REQUIRES_THEOREM_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_m2_serial_scrub_placeholder_len",
-        expression: "17 (`<UMST-SCRUBBED>` byte length; preview scrub only)",
+        expression: "16 (`<EGOFF-SCRUBBED>` byte length; preview scrub only)",
         tier: ConstantTier::Tier3Policy,
-        evidence: "Definition (§14bis.f-M-2; `cockpit memory module sanitize::SCRUB_PLACEHOLDER`)",
+        evidence: "Definition (§14bis.f-M-2; `egoff::memory::sanitize` redaction token)",
         env_override: None,
         derivation: Derivation::Pending,
     },
@@ -1175,7 +1179,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3 ephemeral retention witness; MEMORY-ARC)",
         env_override: Some("UMST_MEMORY_EPHEMERAL_TTL_HOURS"),
-        derivation: Derivation::Pending,
+        derivation: MEMORY_EPHEMERAL_TTL_HOURS_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_m3_palette_federated_inspect_min_rows",
@@ -1600,7 +1604,7 @@ mod tests {
         use crate::constants::tier2_derivation::{
             K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
             K5_REGISTRY_ROW_NAMES, K5B_REGISTRY_ROW_NAMES, K5C_REGISTRY_ROW_NAMES,
-            K5D_REGISTRY_ROW_NAMES, K5E_REGISTRY_ROW_NAMES,
+            K5D_REGISTRY_ROW_NAMES, K5E_REGISTRY_ROW_NAMES, K5F_REGISTRY_ROW_NAMES,
         };
         use crate::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 
@@ -1616,6 +1620,7 @@ mod tests {
                 || K5C_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5D_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5E_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5F_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),

@@ -389,6 +389,82 @@ pub const K5E_REGISTRY_ROW_NAMES: &[&str] = &[
     "umst_closed_loop_rcc_accept_tick",
 ];
 
+// --- K-5f MEMORY-ARC M-1/M-2 policy batch (§14bis.k deepen wave 6) ---
+
+/// SSOT mirror: M-1 `ResolutionLevel.bits` policy ceiling (`umst-math::manifold`; GMD-3).
+pub const MEMORY_DEFAULT_RESOLUTION_BITS: f64 = 12.0;
+
+/// SSOT mirror: `egoff::memory::schema::SCHEMA_V1`.
+pub const MEMORY_SCHEMA_V1_DEFAULT: f64 = 1.0;
+
+/// SSOT mirror: M-2 atomic 8-step Local→Shared promotion ceremony (enabled).
+pub const MEMORY_M2_PROMOTE_CEREMONY_ATOMIC: f64 = 1.0;
+
+/// SSOT mirror: five [`SerialKind`] variants in `egoff::memory::sanitize::build_serial_regexes`.
+pub const MEMORY_M2_SANITIZE_SERIAL_KINDS_COUNT: f64 = 5.0;
+
+/// SSOT mirror: default `EGOFF_MEMORY_PROMOTION_REQUIRE_THEOREM=1`.
+pub const MEMORY_M2_PROMOTION_REQUIRES_THEOREM_DEFAULT: f64 = 1.0;
+
+/// SSOT mirror: `egoff::memory::ephemeral` default TTL hours when env unset.
+pub const MEMORY_EPHEMERAL_TTL_HOURS_TYPICAL: f64 = 168.0;
+
+/// SSOT mirror: COCKPIT design default embedding HTTP timeout (s); matches `umst_tool_timeout_secs`.
+pub const EMBEDDING_HTTP_TIMEOUT_SECONDS_DEFAULT: f64 = 30.0;
+
+/// `umst_memory_default_resolution_bits` — B-Arc default recorded resolution (clamped at voxelise).
+pub const MEMORY_DEFAULT_RESOLUTION_BITS_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.OrderStatisticsBand::order_statistic_concentration",
+    expected_value: MEMORY_DEFAULT_RESOLUTION_BITS,
+};
+
+/// `umst_memory_schema_version` — sled `MemoryV1` bincode wire discriminator.
+pub const MEMORY_SCHEMA_VERSION_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Gate.gateCheckSound",
+    expected_value: MEMORY_SCHEMA_V1_DEFAULT,
+};
+
+/// `umst_memory_m2_promote_ceremony_atomic` — fail-fast promotion ceremony flag.
+pub const MEMORY_M2_PROMOTE_CEREMONY_ATOMIC_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Convergence::rcc_lower_bound",
+    expected_value: MEMORY_M2_PROMOTE_CEREMONY_ATOMIC,
+};
+
+/// `umst_memory_m2_sanitize_serial_kinds_count` — GMD-6 serial artefact taxonomy size.
+pub const MEMORY_M2_SANITIZE_SERIAL_KINDS_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.InfoTheory::product_joint_mass",
+    expected_value: MEMORY_M2_SANITIZE_SERIAL_KINDS_COUNT,
+};
+
+/// `umst_memory_m2_promotion_requires_theorem_default` — theorem binding required on promote.
+pub const MEMORY_M2_PROMOTION_REQUIRES_THEOREM_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Dignity::dignity_monotone_under_mi_gain",
+    expected_value: MEMORY_M2_PROMOTION_REQUIRES_THEOREM_DEFAULT,
+};
+
+/// `umst_memory_ephemeral_ttl_hours_typical` — default ephemeral retention window (hours).
+pub const MEMORY_EPHEMERAL_TTL_HOURS_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period",
+    expected_value: MEMORY_EPHEMERAL_TTL_HOURS_TYPICAL,
+};
+
+/// `embedding_http_timeout_seconds` — embedding adapter wall-clock budget (design default).
+pub const EMBEDDING_HTTP_TIMEOUT_SECONDS_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Gate.gateCheckSound",
+    expected_value: EMBEDDING_HTTP_TIMEOUT_SECONDS_DEFAULT,
+};
+
+/// K-5f MEMORY-ARC registry row names (7/7 for slice GREEN).
+pub const K5F_REGISTRY_ROW_NAMES: &[&str] = &[
+    "umst_memory_default_resolution_bits",
+    "umst_memory_schema_version",
+    "umst_memory_m2_promote_ceremony_atomic",
+    "umst_memory_m2_sanitize_serial_kinds_count",
+    "umst_memory_m2_promotion_requires_theorem_default",
+    "umst_memory_ephemeral_ttl_hours_typical",
+    "embedding_http_timeout_seconds",
+];
+
 /// K-5d registry row names (6/6 for slice GREEN).
 pub const K5D_REGISTRY_ROW_NAMES: &[&str] = &[
     "landauer_proximity_multiplier",
@@ -488,8 +564,39 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "umst_tool_timeout_secs" => Some(TOOL_TIMEOUT_SECS_DERIVATION),
         "audit_max_bytes_cap" => Some(AUDIT_MAX_BYTES_CAP_DERIVATION),
         "umst_closed_loop_rcc_accept_tick" => Some(CLOSED_LOOP_RCC_ACCEPT_TICK_DERIVATION),
+        "umst_memory_default_resolution_bits" => Some(MEMORY_DEFAULT_RESOLUTION_BITS_DERIVATION),
+        "umst_memory_schema_version" => Some(MEMORY_SCHEMA_VERSION_DERIVATION),
+        "umst_memory_m2_promote_ceremony_atomic" => Some(MEMORY_M2_PROMOTE_CEREMONY_ATOMIC_DERIVATION),
+        "umst_memory_m2_sanitize_serial_kinds_count" => {
+            Some(MEMORY_M2_SANITIZE_SERIAL_KINDS_DERIVATION)
+        }
+        "umst_memory_m2_promotion_requires_theorem_default" => {
+            Some(MEMORY_M2_PROMOTION_REQUIRES_THEOREM_DERIVATION)
+        }
+        "umst_memory_ephemeral_ttl_hours_typical" => Some(MEMORY_EPHEMERAL_TTL_HOURS_DERIVATION),
+        "embedding_http_timeout_seconds" => Some(EMBEDDING_HTTP_TIMEOUT_SECONDS_DERIVATION),
         _ => None,
     }
+}
+
+/// Count K-5f rows with non-`Pending` derivation.
+#[must_use]
+pub fn k5f_backfilled_count() -> usize {
+    K5F_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5f REGISTRY backfill landed.
+#[must_use]
+pub fn k5f_backfill_landed() -> bool {
+    k5f_backfilled_count() == K5F_REGISTRY_ROW_NAMES.len()
 }
 
 /// Count K-5e rows with non-`Pending` derivation.
@@ -777,6 +884,26 @@ mod tests {
     #[test]
     fn k5d_staleness_threshold_matches_cycle_product() {
         assert!((default_staleness_threshold_ms() - 3_000.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn k5f_registry_rows_backfilled() {
+        assert!(k5f_backfill_landed());
+        for name in K5F_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5f: {name} must be backfilled"
+            );
+            assert_eq!(
+                entry.derivation,
+                derivation_for_registry_row(name).expect("lookup")
+            );
+            assert_eq!(entry.derivation.label(), "Theorem");
+        }
     }
 
     #[test]
