@@ -11,10 +11,12 @@ use super::tier1_derivation::{
     T_ROOM_DERIVATION,
 };
 use super::tier2_derivation::{
+    ADMISSIBILITY_MARGIN_EPS_DERIVATION, CLOSED_LOOP_MI_STEP_DERIVATION,
+    DIGNITY_SCALAR_RANGE_DERIVATION, GATE_MASS_TOLERANCE_DERIVATION,
     HAL_IGPU_PRESENT_DERIVATION, HAL_L3_CACHE_DERIVATION, HAL_LINUX_PORT_COUNT_DERIVATION,
     HAL_LINUX_RAM_TOTAL_DERIVATION, HAL_LOGICAL_CORES_DERIVATION, HAL_NPU_PRESENT_DERIVATION,
-    ADMISSIBILITY_MARGIN_EPS_DERIVATION, GATE_MASS_TOLERANCE_DERIVATION,
-    Q_HYD_J_PER_KG_DERIVATION, TRANSITION_TOLERANCE_DERIVATION,
+    MIN_PROMOTION_CREDIT_DERIVATION, Q_HYD_J_PER_KG_DERIVATION, STALENESS_CYCLE_COUNT_DERIVATION,
+    TRANSITION_TOLERANCE_DERIVATION, WARMUP_SAMPLE_THRESHOLD_DERIVATION,
 };
 use super::tier3_derivation::{ENERGY_BACKEND_DEFINITION, TUI_BIDI_DEFINITION};
 
@@ -130,7 +132,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "UCRS observation credit quarantine; umst-ucrs MIN_PROMOTION_CREDIT_BITS",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: MIN_PROMOTION_CREDIT_DERIVATION,
     },
     ConstantEntry {
         name: "rapl_package_dram_joules",
@@ -219,7 +221,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: WARMUP_SAMPLE_THRESHOLD_DERIVATION,
     },
     ConstantEntry {
         name: "frugality_band_p25_percentile",
@@ -251,7 +253,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "COCKPIT_DESIGN_BRIEF.md §12 staleness rationale; provider_frugality.rs",
         env_override: Some("UMST_COCKPIT_STALENESS_CYCLES"),
-        derivation: Derivation::Pending,
+        derivation: STALENESS_CYCLE_COUNT_DERIVATION,
     },
     ConstantEntry {
         name: "staleness_threshold_ms",
@@ -267,7 +269,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.Formal.RhoEstimator::rho_based_mi_formula",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: CLOSED_LOOP_MI_STEP_DERIVATION,
     },
     ConstantEntry {
         name: "delta_mi_single_turn_cap_bits",
@@ -291,7 +293,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "UMST.Formal.Dignity structural bound + design brief",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: DIGNITY_SCALAR_RANGE_DERIVATION,
     },
     ConstantEntry {
         name: "audit_rotation_keep_count",
@@ -1586,6 +1588,7 @@ mod tests {
         };
         use crate::constants::tier2_derivation::{
             K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
+            K5_REGISTRY_ROW_NAMES,
         };
         use crate::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 
@@ -1596,6 +1599,7 @@ mod tests {
                 || K3_TIER1_MEASUREMENT_ROW_NAMES.contains(&e.name)
                 || K3_TIER2_GATE_ROW_NAMES.contains(&e.name)
                 || K4_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),

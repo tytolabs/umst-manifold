@@ -8,6 +8,8 @@
 use super::derivation::Derivation;
 use super::registry::REGISTRY;
 use crate::manifold::csg::Q_HYDRATION_J_PER_KG;
+use crate::dignity::D_MAX;
+use crate::median_convergence;
 use crate::numeric_tolerance::{
     admissibility_margin_eps_f64, gate_mass_tolerance_kg_m3_f64, transition_tolerance_f64,
 };
@@ -78,6 +80,85 @@ pub const Q_HYD_J_PER_KG_DERIVATION: Derivation = Derivation::Theorem {
     expected_value: Q_HYDRATION_J_PER_KG,
 };
 
+// --- K-5 frugality / UCRS policy batch (§14bis.k deepen) ---
+
+/// Cockpit rolling-η window capacity for warmup reference (W = 32 → threshold 6).
+pub const WARMUP_REFERENCE_WINDOW_CAPACITY: usize = 32;
+
+/// SSOT mirror: `egoff/src/closed_loop.rs` `CLOSED_LOOP_MI_WARMING_STEP_BITS`.
+pub const CLOSED_LOOP_MI_WARMING_STEP_BITS: f64 = 0.005;
+
+/// SSOT mirror: `umst-ucrs/Rust/src/observation.rs` `MIN_PROMOTION_CREDIT_BITS`.
+pub const MIN_PROMOTION_CREDIT_BITS: f64 = 1.0;
+
+/// SSOT mirror: `egoff/src/provider_frugality.rs` staleness default (COCKPIT_DESIGN_BRIEF §12).
+pub const DEFAULT_STALENESS_CYCLE_COUNT: f64 = 6.0;
+
+/// `warmup_sample_threshold` — `max(3, ⌈√W⌉)` at reference **W = 32**.
+pub const WARMUP_SAMPLE_THRESHOLD_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible",
+    expected_value: 6.0,
+};
+
+/// `closed_loop_mi_step_per_accept` — ρ̂ MI warming debit when ring buffer is cold.
+pub const CLOSED_LOOP_MI_STEP_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.RhoEstimator::rho_based_mi_formula",
+    expected_value: CLOSED_LOOP_MI_WARMING_STEP_BITS,
+};
+
+/// `min_promotion_credit_bits` — UCRS inbox promotion quarantine floor.
+pub const MIN_PROMOTION_CREDIT_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.CreditGreedy::credit_greedy_optimal",
+    expected_value: MIN_PROMOTION_CREDIT_BITS,
+};
+
+/// `dignity_scalar_range` — operator UX upper bound (`D_MAX`).
+pub const DIGNITY_SCALAR_RANGE_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Dignity::dignity_monotone_under_mi_gain",
+    expected_value: D_MAX,
+};
+
+/// `staleness_cycle_count` — default ranker staleness cycles (Tier-3 policy).
+pub const STALENESS_CYCLE_COUNT_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.EtaCog::eta_cog_nonneg",
+    expected_value: DEFAULT_STALENESS_CYCLE_COUNT,
+};
+
+/// K-5 batch registry row names.
+pub const K5_REGISTRY_ROW_NAMES: &[&str] = &[
+    "warmup_sample_threshold",
+    "closed_loop_mi_step_per_accept",
+    "min_promotion_credit_bits",
+    "dignity_scalar_range",
+    "staleness_cycle_count",
+];
+
+/// Count K-5 rows with non-`Pending` derivation.
+#[must_use]
+pub fn k5_backfilled_count() -> usize {
+    K5_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5 REGISTRY backfill landed.
+#[must_use]
+pub fn k5_backfill_landed() -> bool {
+    k5_backfilled_count() == K5_REGISTRY_ROW_NAMES.len()
+}
+
+/// Reference-window warmup threshold (numeric SSOT for registry `expected_value`).
+#[must_use]
+pub fn warmup_threshold_at_reference_window() -> f64 {
+    median_convergence::sqrt_window_threshold(WARMUP_REFERENCE_WINDOW_CAPACITY) as f64
+}
+
 /// K-3 deepen: Tier-1 measurement row (concrete hydration enthalpy scale).
 pub const K3_TIER1_MEASUREMENT_ROW_NAMES: &[&str] = &["q_hyd_j_per_kg"];
 
@@ -112,6 +193,11 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "admissibility_margin_eps" => Some(ADMISSIBILITY_MARGIN_EPS_DERIVATION),
         "gate_mass_tolerance_kg_m3" => Some(GATE_MASS_TOLERANCE_DERIVATION),
         "q_hyd_j_per_kg" => Some(Q_HYD_J_PER_KG_DERIVATION),
+        "warmup_sample_threshold" => Some(WARMUP_SAMPLE_THRESHOLD_DERIVATION),
+        "closed_loop_mi_step_per_accept" => Some(CLOSED_LOOP_MI_STEP_DERIVATION),
+        "min_promotion_credit_bits" => Some(MIN_PROMOTION_CREDIT_DERIVATION),
+        "dignity_scalar_range" => Some(DIGNITY_SCALAR_RANGE_DERIVATION),
+        "staleness_cycle_count" => Some(STALENESS_CYCLE_COUNT_DERIVATION),
         _ => None,
     }
 }
@@ -247,5 +333,35 @@ mod tests {
             }
         );
         assert!((Q_HYDRATION_J_PER_KG - 450.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn k5_warmup_reference_matches_median_convergence() {
+        assert_eq!(
+            WARMUP_SAMPLE_THRESHOLD_DERIVATION,
+            Derivation::Theorem {
+                theorem_id: "UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible",
+                expected_value: warmup_threshold_at_reference_window(),
+            }
+        );
+    }
+
+    #[test]
+    fn k5_registry_rows_backfilled() {
+        assert!(k5_backfill_landed());
+        for name in K5_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5: {name} must be backfilled"
+            );
+            assert_eq!(
+                entry.derivation,
+                derivation_for_registry_row(name).expect("lookup")
+            );
+        }
     }
 }

@@ -12,6 +12,7 @@ use umst_math::constants::tier1_derivation::{
 };
 use umst_math::constants::tier2_derivation::{
     K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
+    K5_REGISTRY_ROW_NAMES,
 };
 use umst_math::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 use umst_math::landauer::landauer_bit_energy_joules;
@@ -92,6 +93,7 @@ fn registry_row_backfilled(name: &str) -> bool {
         || K3_TIER1_MEASUREMENT_ROW_NAMES.contains(&name)
         || K3_TIER2_GATE_ROW_NAMES.contains(&name)
         || K4_REGISTRY_ROW_NAMES.contains(&name)
+        || K5_REGISTRY_ROW_NAMES.contains(&name)
 }
 
 #[test]
