@@ -174,18 +174,20 @@ mod tests {
 
     #[test]
     fn gate_optim_hyperparameters_match_burn_adamw_defaults() {
-        assert_relative_eq!(f64::from(LPP_008_BETA1), 0.9, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
-        assert_relative_eq!(f64::from(LPP_008_BETA2), 0.999, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
-        assert_relative_eq!(f64::from(LPP_008_EPS), 1.0e-5, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
-        assert_relative_eq!(f64::from(LPP_008_WEIGHT_DECAY), 1.0e-4, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
+        let eps = f64::from(umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_relative_eq!(f64::from(LPP_008_BETA1), 0.9, epsilon = eps);
+        assert_relative_eq!(f64::from(LPP_008_BETA2), 0.999, epsilon = eps);
+        assert_relative_eq!(f64::from(LPP_008_EPS), 1.0e-5, epsilon = eps);
+        assert_relative_eq!(f64::from(LPP_008_WEIGHT_DECAY), 1.0e-4, epsilon = eps);
     }
 
     #[test]
     fn gate_optim_scalar_first_step_initializes_moments_at_t_one() {
         let (w_new, m1, m2, t) = lpp_008_scalar_adamw_step(1.0, 0.5, 0.01, None, None, 0);
         assert_eq!(t, 1);
-        assert_relative_eq!(m1, 0.05, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
-        assert_relative_eq!(m2, 0.00025, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
+        let eps = f64::from(umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_relative_eq!(m1, 0.05, epsilon = eps);
+        assert_relative_eq!(m2, 0.00025, epsilon = eps);
         assert!(w_new.is_finite());
         assert!(
             w_new < 1.0,

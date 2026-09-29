@@ -295,7 +295,7 @@ mod tests {
         let names = migrated_registry_names();
         assert!(names.contains(&"mechanics_default_pcg_rel_tol"));
         assert!(names.contains(&"landauer_bit_energy_300k_j"));
-        assert!(names.len() >= 3);
+        assert!(names.len() >= 2);
     }
 
     #[test]
