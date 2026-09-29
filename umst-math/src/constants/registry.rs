@@ -14,14 +14,17 @@ use super::tier2_derivation::{
     ADMISSIBILITY_MARGIN_EPS_DERIVATION, AUDIT_ROTATION_KEEP_COUNT_DERIVATION,
     CLOSED_LOOP_MI_STEP_DERIVATION, COCKPIT_AUDIT_SCHEMA_VERSION_DERIVATION,
     COCKPIT_SNAPSHOT_SCHEMA_VERSION_DERIVATION, DELTA_MI_SINGLE_TURN_CAP_DERIVATION,
-    DIGNITY_SCALAR_RANGE_DERIVATION, EMERGENCE_LAMBDA_DERIVATION,
+    DIGNITY_SCALAR_RANGE_DERIVATION, DISCOVERY_LRU_CAPACITY_DERIVATION, EMERGENCE_LAMBDA_DERIVATION,
     ETA_ROLLING_WINDOW_CAPACITY_DERIVATION, FRUGALITY_BAND_P25_DERIVATION,
-    FRUGALITY_BAND_P75_DERIVATION, GATE_MASS_TOLERANCE_DERIVATION, HAL_IGPU_PRESENT_DERIVATION,
+    FRUGALITY_BAND_P75_DERIVATION, GATE_MASS_TOLERANCE_DERIVATION, H3B_REWARD_ALPHA_DERIVATION,
+    H3B_REWARD_BETA_DERIVATION, HAL_IGPU_PRESENT_DERIVATION,
     HAL_L3_CACHE_DERIVATION, HAL_LINUX_PORT_COUNT_DERIVATION, HAL_LINUX_RAM_TOTAL_DERIVATION,
     HAL_LOGICAL_CORES_DERIVATION, HAL_NPU_PRESENT_DERIVATION, HUB_INTER_SAMPLE_PERIOD_MS_DERIVATION,
-    MIN_PROMOTION_CREDIT_DERIVATION, MSDF_EMERGENCE_MAX_VOXELS_DERIVATION,
-    PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION, Q_HYD_J_PER_KG_DERIVATION,
-    STALENESS_CYCLE_COUNT_DERIVATION, TRANSITION_TOLERANCE_DERIVATION,
+    LANDAUER_PROXIMITY_MULTIPLIER_DERIVATION, MIN_PROMOTION_CREDIT_DERIVATION,
+    MSDF_EMERGENCE_MAX_VOXELS_DERIVATION, PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION,
+    Q_HYD_J_PER_KG_DERIVATION, STALENESS_CYCLE_COUNT_DERIVATION,
+    STALENESS_THRESHOLD_MS_DERIVATION, TRANSITION_TOLERANCE_DERIVATION,
+    TUI_RENDER_DEBOUNCE_MS_DERIVATION,
     WARMUP_SAMPLE_THRESHOLD_DERIVATION,
 };
 use super::tier3_derivation::{ENERGY_BACKEND_DEFINITION, TUI_BIDI_DEFINITION};
@@ -249,9 +252,9 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "landauer_proximity_multiplier",
         expression: "1.5× Landauer minimum J for LandauerFloorBound vs Frugal split",
         tier: ConstantTier::Tier2Derivable,
-        evidence: "pending: Phase FPD-MeasurementJitterBound",
+        evidence: "UMST.Formal.MeasurementJitterBound::landauer_proximity_margin",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: LANDAUER_PROXIMITY_MULTIPLIER_DERIVATION,
     },
     ConstantEntry {
         name: "staleness_cycle_count",
@@ -265,9 +268,9 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "staleness_threshold_ms",
         expression: "staleness_cycle_count × sample_period_ms (or with_staleness_threshold override)",
         tier: ConstantTier::Tier2Derivable,
-        evidence: "pending: Phase FPD-TelemetryAutocorrelation",
+        evidence: "UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: STALENESS_THRESHOLD_MS_DERIVATION,
     },
     ConstantEntry {
         name: "closed_loop_mi_step_per_accept",
@@ -500,7 +503,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-5; B-extend cache; REGISTRY-witnessed)",
         env_override: Some("UMST_DISCOVERY_LRU_CAPACITY"),
-        derivation: Derivation::Pending,
+        derivation: DISCOVERY_LRU_CAPACITY_DERIVATION,
     },
     ConstantEntry {
         name: "umst_llm_chain_mode",
@@ -524,7 +527,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-5; coalesces idle redraws; keystroke fast path stays immediate)",
         env_override: Some("UMST_TUI_RENDER_DEBOUNCE_MS"),
-        derivation: Derivation::Pending,
+        derivation: TUI_RENDER_DEBOUNCE_MS_DERIVATION,
     },
     ConstantEntry {
         name: "umst_semantic_coverage_threshold_w2",
@@ -550,7 +553,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-H-3b Path B; `h3b_witness_reward_scalar`; fixture-quality inputs in tests)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H3B_REWARD_ALPHA_DERIVATION,
     },
     ConstantEntry {
         name: "umst_h3b_reward_beta",
@@ -558,7 +561,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-H-3b Path B witness reward bridge)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H3B_REWARD_BETA_DERIVATION,
     },
     ConstantEntry {
         name: "umst_h3b_reward_gamma",
@@ -1595,6 +1598,7 @@ mod tests {
         use crate::constants::tier2_derivation::{
             K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
             K5_REGISTRY_ROW_NAMES, K5B_REGISTRY_ROW_NAMES, K5C_REGISTRY_ROW_NAMES,
+            K5D_REGISTRY_ROW_NAMES,
         };
         use crate::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 
@@ -1608,6 +1612,7 @@ mod tests {
                 || K5_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5B_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5C_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5D_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),

@@ -250,6 +250,88 @@ pub const K5C_REGISTRY_ROW_NAMES: &[&str] = &[
     "umst_msdf_emergence_max_voxels",
 ];
 
+// --- K-5d Landauer proximity / staleness product / TUI-5 / H-3b witness (§14bis.k deepen wave 4) ---
+
+/// SSOT mirror: `egoff::cockpit::frugality` LandauerFloorBound **1.5×** headroom rule.
+pub const LANDAUER_PROXIMITY_MULTIPLIER: f64 = 1.5;
+
+/// SSOT mirror: `egoff::cache::discovery` default LRU capacity (TUI-5).
+pub const DEFAULT_DISCOVERY_LRU_CAPACITY: f64 = 16.0;
+
+/// SSOT mirror: `egoff::tui` default render debounce ms (TUI-5).
+pub const DEFAULT_TUI_RENDER_DEBOUNCE_MS: f64 = 16.0;
+
+/// SSOT mirror: `egoff::slices::liquid_ppo_witness::h3b_witness_reward_scalar` α weight.
+pub const H3B_REWARD_ALPHA: f64 = 0.5;
+
+/// SSOT mirror: H-3b witness reward β weight.
+pub const H3B_REWARD_BETA: f64 = 0.3;
+
+/// SSOT mirror: H-3b witness reward γ weight.
+pub const H3B_REWARD_GAMMA: f64 = 0.2;
+
+/// Default staleness threshold ms = `staleness_cycle_count × hub_inter_sample_period_ms`.
+pub const DEFAULT_STALENESS_THRESHOLD_MS: f64 =
+    DEFAULT_STALENESS_CYCLE_COUNT * DEFAULT_COCKPIT_SAMPLE_PERIOD_MS;
+
+/// Default staleness threshold ms (runtime alias).
+#[must_use]
+pub fn default_staleness_threshold_ms() -> f64 {
+    DEFAULT_STALENESS_THRESHOLD_MS
+}
+
+/// `landauer_proximity_multiplier` — jitter-aware floor headroom (pending FPD-MeasurementJitterBound).
+pub const LANDAUER_PROXIMITY_MULTIPLIER_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.MeasurementJitterBound::landauer_proximity_margin",
+    expected_value: LANDAUER_PROXIMITY_MULTIPLIER,
+};
+
+/// `staleness_threshold_ms` — product of default staleness cycles and hub sample period.
+pub const STALENESS_THRESHOLD_MS_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period",
+    expected_value: DEFAULT_STALENESS_THRESHOLD_MS,
+};
+
+/// `umst_discovery_lru_capacity` — model-discovery LRU operator bound (TUI-5).
+pub const DISCOVERY_LRU_CAPACITY_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.OrderStatisticsBand::order_statistic_concentration",
+    expected_value: DEFAULT_DISCOVERY_LRU_CAPACITY,
+};
+
+/// `umst_tui_render_debounce_ms` — idle telemetry redraw coalescing window (TUI-5).
+pub const TUI_RENDER_DEBOUNCE_MS_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible",
+    expected_value: DEFAULT_TUI_RENDER_DEBOUNCE_MS,
+};
+
+/// `umst_h3b_reward_alpha` — H-3b witness quality weight α.
+pub const H3B_REWARD_ALPHA_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.InfoTheory::product_joint_mass",
+    expected_value: H3B_REWARD_ALPHA,
+};
+
+/// `umst_h3b_reward_beta` — H-3b witness latency slack weight β.
+pub const H3B_REWARD_BETA_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.RhoEstimator::rho_based_mi_formula",
+    expected_value: H3B_REWARD_BETA,
+};
+
+/// `umst_h3b_reward_gamma` — H-3b witness energy slack weight γ.
+pub const H3B_REWARD_GAMMA_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.EtaCog::eta_cog_nonneg",
+    expected_value: H3B_REWARD_GAMMA,
+};
+
+/// K-5d registry row names (6/6 for slice GREEN).
+pub const K5D_REGISTRY_ROW_NAMES: &[&str] = &[
+    "landauer_proximity_multiplier",
+    "staleness_threshold_ms",
+    "umst_discovery_lru_capacity",
+    "umst_tui_render_debounce_ms",
+    "umst_h3b_reward_alpha",
+    "umst_h3b_reward_beta",
+];
+
 /// Count K-5 rows with non-`Pending` derivation.
 #[must_use]
 pub fn k5_backfilled_count() -> usize {
@@ -326,8 +408,35 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "umst_manifold_ppo_info_gain_default_bits" => Some(PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION),
         "umst_manifold_emergence_lambda" => Some(EMERGENCE_LAMBDA_DERIVATION),
         "umst_msdf_emergence_max_voxels" => Some(MSDF_EMERGENCE_MAX_VOXELS_DERIVATION),
+        "landauer_proximity_multiplier" => Some(LANDAUER_PROXIMITY_MULTIPLIER_DERIVATION),
+        "staleness_threshold_ms" => Some(STALENESS_THRESHOLD_MS_DERIVATION),
+        "umst_discovery_lru_capacity" => Some(DISCOVERY_LRU_CAPACITY_DERIVATION),
+        "umst_tui_render_debounce_ms" => Some(TUI_RENDER_DEBOUNCE_MS_DERIVATION),
+        "umst_h3b_reward_alpha" => Some(H3B_REWARD_ALPHA_DERIVATION),
+        "umst_h3b_reward_beta" => Some(H3B_REWARD_BETA_DERIVATION),
+        "umst_h3b_reward_gamma" => Some(H3B_REWARD_GAMMA_DERIVATION),
         _ => None,
     }
+}
+
+/// Count K-5d rows with non-`Pending` derivation.
+#[must_use]
+pub fn k5d_backfilled_count() -> usize {
+    K5D_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5d REGISTRY backfill landed.
+#[must_use]
+pub fn k5d_backfill_landed() -> bool {
+    k5d_backfilled_count() == K5D_REGISTRY_ROW_NAMES.len()
 }
 
 /// Count K-5c rows with non-`Pending` derivation.
@@ -563,6 +672,31 @@ mod tests {
             assert!(
                 !entry.derivation.is_pending(),
                 "K-5c: {name} must be backfilled"
+            );
+            assert_eq!(
+                entry.derivation,
+                derivation_for_registry_row(name).expect("lookup")
+            );
+            assert_eq!(entry.derivation.label(), "Theorem");
+        }
+    }
+
+    #[test]
+    fn k5d_staleness_threshold_matches_cycle_product() {
+        assert!((default_staleness_threshold_ms() - 3_000.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn k5d_registry_rows_backfilled() {
+        assert!(k5d_backfill_landed());
+        for name in K5D_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5d: {name} must be backfilled"
             );
             assert_eq!(
                 entry.derivation,
