@@ -78,6 +78,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "Chorin Poisson PCG iteration cap is byte-budgeted on lazy tensor graph; needs basis_budget meter before unfold debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/solvers/fracture_field.rs",
+        legacy_token: "JACOBI_SWEEPS (spectral eigenvalue clamp on strain tensor)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "AT2 spectral Jacobi sweeps need fracture energy unfold meter before debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -91,7 +98,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 7);
+        assert_eq!(cap_migration_site_count(), 8);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -115,5 +122,7 @@ mod tests {
         assert_eq!(photonics.legacy_module, "physics/solvers/photonics.rs");
         let rheology = &CAP_MIGRATION_SITES[6];
         assert_eq!(rheology.legacy_module, "physics/solvers/rheology_flow.rs");
+        let fracture = &CAP_MIGRATION_SITES[7];
+        assert_eq!(fracture.legacy_module, "physics/solvers/fracture_field.rs");
     }
 }
