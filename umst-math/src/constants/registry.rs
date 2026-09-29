@@ -30,7 +30,11 @@ use super::tier2_derivation::{
     MEMORY_MERGE_SAFE_ATTESTATION_WIRE_VERSION_DERIVATION, MEMORY_SCHEMA_VERSION_V2_DERIVATION,
     MEMORY_TIER_REPR_BYTE_DEVICE_DERIVATION, MEMORY_TIER_REPR_BYTE_EPHEMERAL_DERIVATION,
     MEMORY_TIER_REPR_BYTE_FEDERATED_DERIVATION, EMBEDDING_HTTP_TIMEOUT_SECONDS_DERIVATION,
-    MEMORY_SCHEMA_VERSION_DERIVATION,
+    MEMORY_SCHEMA_VERSION_DERIVATION, MEMORY_RETENTION_ALPHA_DEFAULT_DERIVATION,
+    MEMORY_RETENTION_DEGRADE_FIRST_DEFAULT_DERIVATION, MEMORY_RETENTION_EVICT_DEFAULT_DERIVATION,
+    MEMORY_HILBERT_BITS_DEFAULT_DERIVATION, MANIFOLD_LIQUID_PPO_WITNESS_DEFAULT_DERIVATION,
+    MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT_DERIVATION,
+    UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT_DERIVATION,
     MIN_PROMOTION_CREDIT_DERIVATION, MSDF_EMERGENCE_MAX_VOXELS_DERIVATION,
     PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION,
     Q_HYD_J_PER_KG_DERIVATION, STALENESS_CYCLE_COUNT_DERIVATION,
@@ -1247,7 +1251,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3-retention; `memory::env::retention_alpha_or_default`)",
         env_override: Some("UMST_MEMORY_RETENTION_ALPHA"),
-        derivation: Derivation::Pending,
+        derivation: MEMORY_RETENTION_ALPHA_DEFAULT_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_retention_evict_default",
@@ -1255,7 +1259,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3-retention; `UMST_MEMORY_RETENTION_EVICT`)",
         env_override: Some("UMST_MEMORY_RETENTION_EVICT"),
-        derivation: Derivation::Pending,
+        derivation: MEMORY_RETENTION_EVICT_DEFAULT_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_retention_degrade_first_default",
@@ -1263,7 +1267,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3-retention; `UMST_MEMORY_RETENTION_DEGRADE_FIRST`)",
         env_override: Some("UMST_MEMORY_RETENTION_DEGRADE_FIRST"),
-        derivation: Derivation::Pending,
+        derivation: MEMORY_RETENTION_DEGRADE_FIRST_DEFAULT_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_retention_mi_estimate_p99_us",
@@ -1287,7 +1291,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (MANIFOLD-INTEGRATION-ADR; §14bis.f-H-3b; `ppo_witness_enabled` truthy_env only)",
         env_override: Some("UMST_MANIFOLD_LIQUID_PPO_WITNESS"),
-        derivation: Derivation::Pending,
+        derivation: MANIFOLD_LIQUID_PPO_WITNESS_DEFAULT_DERIVATION,
     },
     ConstantEntry {
         name: "umst_manifold_ppo_info_gain_default_bits",
@@ -1319,7 +1323,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.x-M-UCRS-SDF-TIME; `ucrs_memory_bind_enabled`; umst_ucrs `phase_entropy_bits`)",
         env_override: Some("UMST_UCRS_MEMORY_PHASE_BIND"),
-        derivation: Derivation::Pending,
+        derivation: UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT_DERIVATION,
     },
     ConstantEntry {
         name: "umst_msdf_layer_stack_max_depth",
@@ -1327,7 +1331,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.x-M-UCRS-SDF-TIME; `msdf_layer_stack_max_depth`)",
         env_override: Some("UMST_MSDF_LAYER_STACK_MAX_DEPTH"),
-        derivation: Derivation::Pending,
+        derivation: MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_observed_wall_ms_source",
@@ -1343,7 +1347,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-5; `memory_hilbert_bits`; umst_math::manifold::hilbert)",
         env_override: Some("UMST_MEMORY_HILBERT_BITS"),
-        derivation: Derivation::Pending,
+        derivation: MEMORY_HILBERT_BITS_DEFAULT_DERIVATION,
     },
     ConstantEntry {
         name: "umst_msdf_hilbert_persist_enabled",
@@ -1610,7 +1614,7 @@ mod tests {
             K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
             K5_REGISTRY_ROW_NAMES, K5B_REGISTRY_ROW_NAMES, K5C_REGISTRY_ROW_NAMES,
             K5D_REGISTRY_ROW_NAMES, K5E_REGISTRY_ROW_NAMES, K5F_REGISTRY_ROW_NAMES,
-            K5G_REGISTRY_ROW_NAMES,
+            K5G_REGISTRY_ROW_NAMES, K5H_REGISTRY_ROW_NAMES,
         };
         use crate::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 
@@ -1628,6 +1632,7 @@ mod tests {
                 || K5E_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5F_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5G_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5H_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),

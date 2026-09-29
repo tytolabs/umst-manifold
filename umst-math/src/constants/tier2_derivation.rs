@@ -545,6 +545,82 @@ pub const K5G_REGISTRY_ROW_NAMES: &[&str] = &[
     "umst_memory_tier_repr_byte_federated",
 ];
 
+// --- K-5h MEMORY-ARC M-3-retention + UCRS/MSDF defaults (§14bis.k deepen wave 8) ---
+
+/// SSOT mirror: `egoff::memory::env::retention_alpha_or_default` (β = 1 − α).
+pub const MEMORY_RETENTION_ALPHA_DEFAULT: f64 = 0.60;
+
+/// SSOT mirror: retention eviction opt-in (`EGOFF_MEMORY_RETENTION_EVICT` unset → off).
+pub const MEMORY_RETENTION_EVICT_DEFAULT: f64 = 0.0;
+
+/// SSOT mirror: `egoff::memory::env::retention_degrade_first_default` (enabled unless env `0`).
+pub const MEMORY_RETENTION_DEGRADE_FIRST_DEFAULT: f64 = 1.0;
+
+/// SSOT mirror: `egoff::manifold_integration_i4::ppo_witness_enabled` default off.
+pub const MANIFOLD_LIQUID_PPO_WITNESS_DEFAULT: f64 = 0.0;
+
+/// SSOT mirror: `egoff::ucrs_observed::ucrs_memory_bind_enabled` default off.
+pub const UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT: f64 = 0.0;
+
+/// SSOT mirror: `egoff::msdf_layer_stack::msdf_layer_stack_max_depth` registry default.
+pub const MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT: f64 = 4.0;
+
+/// SSOT mirror: `egoff::memory::hilbert_layout::memory_hilbert_bits` registry default (M-0 cap 8).
+pub const MEMORY_HILBERT_BITS_DEFAULT: f64 = 8.0;
+
+/// `umst_memory_retention_alpha_default` — MI blend weight in retain = α·MI + β·pareto.
+pub const MEMORY_RETENTION_ALPHA_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.InfoTheory::product_joint_mass",
+    expected_value: MEMORY_RETENTION_ALPHA_DEFAULT,
+};
+
+/// `umst_memory_retention_evict_default` — post-store eviction toggle default.
+pub const MEMORY_RETENTION_EVICT_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Gate.gateCheckSound",
+    expected_value: MEMORY_RETENTION_EVICT_DEFAULT,
+};
+
+/// `umst_memory_retention_degrade_first_default` — degrade-before-drop policy default.
+pub const MEMORY_RETENTION_DEGRADE_FIRST_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Dignity::dignity_monotone_under_mi_gain",
+    expected_value: MEMORY_RETENTION_DEGRADE_FIRST_DEFAULT,
+};
+
+/// `umst_manifold_liquid_ppo_witness_default` — Path B `step_and_learn` witness gate.
+pub const MANIFOLD_LIQUID_PPO_WITNESS_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Convergence::rcc_lower_bound",
+    expected_value: MANIFOLD_LIQUID_PPO_WITNESS_DEFAULT,
+};
+
+/// `umst_ucrs_memory_phase_bind_enabled` — accept-path UCRS phase bind toggle.
+pub const UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period",
+    expected_value: UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT,
+};
+
+/// `umst_msdf_layer_stack_max_depth` — progressive MSDF ring cap when layer stack on.
+pub const MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.OrderStatisticsBand::order_statistic_concentration",
+    expected_value: MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT,
+};
+
+/// `umst_memory_hilbert_bits` — Hilbert curve order for sled key layout (M-5 policy).
+pub const MEMORY_HILBERT_BITS_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Gate.gateCheckSound",
+    expected_value: MEMORY_HILBERT_BITS_DEFAULT,
+};
+
+/// K-5h MEMORY-ARC retention + integration registry row names (7/7 for slice GREEN).
+pub const K5H_REGISTRY_ROW_NAMES: &[&str] = &[
+    "umst_memory_retention_alpha_default",
+    "umst_memory_retention_evict_default",
+    "umst_memory_retention_degrade_first_default",
+    "umst_manifold_liquid_ppo_witness_default",
+    "umst_ucrs_memory_phase_bind_enabled",
+    "umst_msdf_layer_stack_max_depth",
+    "umst_memory_hilbert_bits",
+];
+
 /// K-5d registry row names (6/6 for slice GREEN).
 pub const K5D_REGISTRY_ROW_NAMES: &[&str] = &[
     "landauer_proximity_multiplier",
@@ -666,8 +742,39 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "umst_memory_tier_repr_byte_device" => Some(MEMORY_TIER_REPR_BYTE_DEVICE_DERIVATION),
         "umst_memory_tier_repr_byte_ephemeral" => Some(MEMORY_TIER_REPR_BYTE_EPHEMERAL_DERIVATION),
         "umst_memory_tier_repr_byte_federated" => Some(MEMORY_TIER_REPR_BYTE_FEDERATED_DERIVATION),
+        "umst_memory_retention_alpha_default" => Some(MEMORY_RETENTION_ALPHA_DEFAULT_DERIVATION),
+        "umst_memory_retention_evict_default" => Some(MEMORY_RETENTION_EVICT_DEFAULT_DERIVATION),
+        "umst_memory_retention_degrade_first_default" => {
+            Some(MEMORY_RETENTION_DEGRADE_FIRST_DEFAULT_DERIVATION)
+        }
+        "umst_manifold_liquid_ppo_witness_default" => {
+            Some(MANIFOLD_LIQUID_PPO_WITNESS_DEFAULT_DERIVATION)
+        }
+        "umst_ucrs_memory_phase_bind_enabled" => Some(UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT_DERIVATION),
+        "umst_msdf_layer_stack_max_depth" => Some(MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT_DERIVATION),
+        "umst_memory_hilbert_bits" => Some(MEMORY_HILBERT_BITS_DEFAULT_DERIVATION),
         _ => None,
     }
+}
+
+/// Count K-5h rows with non-`Pending` derivation.
+#[must_use]
+pub fn k5h_backfilled_count() -> usize {
+    K5H_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5h REGISTRY backfill landed.
+#[must_use]
+pub fn k5h_backfill_landed() -> bool {
+    k5h_backfilled_count() == K5H_REGISTRY_ROW_NAMES.len()
 }
 
 /// Count K-5g rows with non-`Pending` derivation.
@@ -995,6 +1102,26 @@ mod tests {
     #[test]
     fn k5d_staleness_threshold_matches_cycle_product() {
         assert!((default_staleness_threshold_ms() - 3_000.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn k5h_registry_rows_backfilled() {
+        assert!(k5h_backfill_landed());
+        for name in K5H_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5h: {name} must be backfilled"
+            );
+            assert_eq!(
+                entry.derivation,
+                derivation_for_registry_row(name).expect("lookup")
+            );
+            assert_eq!(entry.derivation.label(), "Theorem");
+        }
     }
 
     #[test]
