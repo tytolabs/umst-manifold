@@ -49,7 +49,7 @@ pub enum ConstantTier {
 }
 
 /// Authoritative registry (keep in lock-step with `docs/CGD_REGISTRY.md` §24a).
-/// CONSTANT-BOUND: … + §14bis.f-M-6 (+2) + §14bis.f-M-7 (+1 mcert) + foundation Phase 3 (+4) + K-2 (+2) + K-4 (+1) + solve-combinator meter (+1) = **172**
+/// CONSTANT-BOUND: … + §14bis.f-M-6 (+2) + §14bis.f-M-7 (+1 mcert) + foundation Phase 3 (+4) + K-2 (+2) + K-4 (+1) + solve-combinator meter (+1) + q_hyd_j_per_kg (+1) = **173**
 pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "landauer_floor_j_per_bit",
@@ -98,6 +98,14 @@ pub static REGISTRY: &[ConstantEntry] = &[
         evidence: "UMST.Formal.Concrete.Gate.δMass_val (mirrors umst-math manifold::csg GATE_MASS_TOLERANCE_KG_M3)",
         env_override: None,
         derivation: GATE_MASS_TOLERANCE_DERIVATION,
+    },
+    ConstantEntry {
+        name: "q_hyd_j_per_kg",
+        expression: "450.0 J/kg (UMST.Concrete.Q_hyd; Haskell qHydration; formal Helmholtz ψ = −Q_hyd·α)",
+        tier: ConstantTier::Tier1Measurement,
+        evidence: "UMST.Concrete.Q_hyd_val; UMST.Formal.Concrete.Gate.helmholtz; ffi-bridge formal_swarm_deepen witness",
+        env_override: None,
+        derivation: Derivation::Pending,
     },
     ConstantEntry {
         name: "transition_tolerance",
@@ -1601,7 +1609,7 @@ mod tests {
 
     #[test]
     fn registry_sorted_by_tier_is_sorted_and_complete() {
-        assert_eq!(REGISTRY.len(), 172);
+        assert_eq!(REGISTRY.len(), 173);
         let sorted = registry_sorted_by_tier();
         assert_eq!(sorted.len(), REGISTRY.len());
         for w in sorted.windows(2) {

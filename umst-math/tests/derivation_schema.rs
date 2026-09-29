@@ -12,7 +12,7 @@ fn derivation_schema_version_is_one() {
 
 #[test]
 fn registry_len_matches_k1_baseline() {
-    assert_eq!(REGISTRY.len(), 172);
+    assert_eq!(REGISTRY.len(), 173);
 }
 
 #[test]
