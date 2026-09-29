@@ -246,6 +246,15 @@ def _resolve_fixture_path(root: Path, row: dict) -> Path | None:
         root / "tests" / f"{binary}.rs",
         root / "src" / "physics" / "solvers" / f"{binary}.rs",
     ]
+    # Integration tests often use `q1_hex_*` binary names with `hex_*.rs` sources (see Cargo.toml [[test]]).
+    if binary.startswith("q1_"):
+        q1_stem = binary.removeprefix("q1_")
+        candidates.extend(
+            [
+                root / "tests" / "verification" / f"{q1_stem}.rs",
+                root / "tests" / f"{q1_stem}.rs",
+            ]
+        )
     for path in candidates:
         if path.is_file():
             return path
