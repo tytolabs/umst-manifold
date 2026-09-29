@@ -43,6 +43,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "host GMRES needs tensor workspace + live package-power meter before unfold debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/solvers/acoustics.rs",
+        legacy_token: "AcousticGmresConfig.max_iter (default 256)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "implicit Newmark bar-network GMRES needs device workspace meter before unfold debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -56,7 +63,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 2);
+        assert_eq!(cap_migration_site_count(), 3);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
