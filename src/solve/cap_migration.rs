@@ -64,6 +64,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "electrochemistry GMRES cap is coupled to sparse dim; needs basis_budget meter before unfold debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/solvers/photonics.rs",
+        legacy_token: "inner.max_cg_iterations (Helmholtz / CG loops)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "photonics CG caps need SPD operator energy meter before unfold debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -77,7 +84,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 5);
+        assert_eq!(cap_migration_site_count(), 6);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -97,5 +104,7 @@ mod tests {
         ));
         let echem = &CAP_MIGRATION_SITES[4];
         assert_eq!(echem.legacy_module, "physics/solvers/electrochemistry.rs");
+        let photonics = &CAP_MIGRATION_SITES[5];
+        assert_eq!(photonics.legacy_module, "physics/solvers/photonics.rs");
     }
 }
