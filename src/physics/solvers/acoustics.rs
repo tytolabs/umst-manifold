@@ -243,7 +243,7 @@ pub struct AcousticGmresConfig {
 impl Default for AcousticGmresConfig {
     fn default() -> Self {
         Self {
-            max_iter: 256,
+            max_iter: umst_math::numeric_tolerance::acoustic_gmres_default_iteration_budget(),
             rel_tol: umst_math::numeric_tolerance::acoustic_gmres_rel_tol_f32(),
         }
     }
@@ -1370,7 +1370,7 @@ mod acoustics_graph_gmres_tests {
             k_zero,
             Some(bar),
             Some(AcousticGmresConfig {
-                max_iter: 48,
+                max_iter: bar.n_v * 24,
                 rel_tol: umst_math::numeric_tolerance::acoustic_gmres_rel_tol_tight_f32(),
             }),
         )

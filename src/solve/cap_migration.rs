@@ -45,16 +45,23 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
     },
     CapMigrationSite {
         legacy_module: "physics/solvers/acoustics.rs",
-        legacy_token: "AcousticGmresConfig.max_iter (default 256)",
+        legacy_token: "AcousticGmresConfig.max_iter (registry budget)",
         disposition: CapMigrationDisposition::HonestTypedAbsence {
             reason: "implicit Newmark bar-network GMRES needs device workspace meter before unfold debit",
         },
     },
     CapMigrationSite {
         legacy_module: "physics/solvers/thmc.rs",
-        legacy_token: "ThmcNewtonConfig.max_iterations (default 50)",
+        legacy_token: "ThmcNewtonConfig.max_iterations (registry budget)",
         disposition: CapMigrationDisposition::HonestTypedAbsence {
             reason: "coupled THMC monolithic Newton needs operator-split energy meter before unfold debit",
+        },
+    },
+    CapMigrationSite {
+        legacy_module: "physics/solvers/electrochemistry.rs",
+        legacy_token: "gmres_f32_try(dim + 120).min(512)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "electrochemistry GMRES cap is coupled to sparse dim; needs basis_budget meter before unfold debit",
         },
     },
 ];
@@ -70,7 +77,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 4);
+        assert_eq!(cap_migration_site_count(), 5);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -88,5 +95,7 @@ mod tests {
             thmc.disposition,
             CapMigrationDisposition::HonestTypedAbsence { .. }
         ));
+        let echem = &CAP_MIGRATION_SITES[4];
+        assert_eq!(echem.legacy_module, "physics/solvers/electrochemistry.rs");
     }
 }

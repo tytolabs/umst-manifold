@@ -934,7 +934,7 @@ pub struct ThmcNewtonConfig {
 impl Default for ThmcNewtonConfig {
     fn default() -> Self {
         Self {
-            max_iterations: 50,
+            max_iterations: umst_math::numeric_tolerance::thmc_newton_default_iteration_budget(),
             residual_tolerance: umst_math::numeric_tolerance::thmc_newton_residual_tol_f32(),
             finite_diff_eps: umst_math::numeric_tolerance::thmc_newton_fd_eps_f32(),
             damping: 1.0_f32,

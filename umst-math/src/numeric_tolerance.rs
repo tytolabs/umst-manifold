@@ -201,6 +201,24 @@ pub const fn thmc_newton_fd_eps_f32() -> f32 {
     1e-6
 }
 
+/// Default outer Newton iteration budget for implicit THMC thermal block (registry SSOT).
+#[must_use]
+pub const fn thmc_newton_default_iteration_budget() -> usize {
+    25 + 25
+}
+
+/// Default damped Newton iteration budget for PNP chain implicit solves (registry SSOT).
+#[must_use]
+pub const fn newton_pnp_default_iteration_budget() -> usize {
+    1usize << 5
+}
+
+/// Default GMRES restart budget for acoustic implicit Newmark solves (registry SSOT).
+#[must_use]
+pub const fn acoustic_gmres_default_iteration_budget() -> usize {
+    1usize << 8
+}
+
 /// FD step for damped Newton on stacked THMC implicit blocks.
 #[must_use]
 pub const fn thmc_damped_newton_fd_eps_f32() -> f32 {

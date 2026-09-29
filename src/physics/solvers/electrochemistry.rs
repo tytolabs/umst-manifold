@@ -233,7 +233,7 @@ pub struct NewtonPnpContext {
 impl Default for NewtonPnpContext {
     fn default() -> Self {
         Self {
-            max_newton_iters: 32,
+            max_newton_iters: umst_math::numeric_tolerance::newton_pnp_default_iteration_budget(),
             residual_tol_l2: 1e-10,
             damping: 1.0,
             fd_step: 1e-6,

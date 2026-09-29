@@ -298,13 +298,7 @@ mod tests {
         bm[0] = 0.0; // fix left x
         let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &device);
 
-        let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: 80,
-            cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
-            pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
-            use_preconditioner: true,
-            max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
-        };
+        let cfg = MechanicsInnerLoopConfig::for_unknowns(n * 3);
 
         let (u_ns, s_ns) = MechanicsEquilibrium::solve(
             displacement.clone(),
