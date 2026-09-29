@@ -6,9 +6,16 @@ use umst_math::constants::derivation::Derivation;
 use umst_math::constants::registry::REGISTRY;
 use umst_math::constants::tier1_derivation::{
     derivation_for_registry_row, k2_backfilled_count, k2_tier1_landed, CANONICAL_SYMBOLS,
-    K2_REGISTRY_ROW_NAMES, K_B_AUTHORITY_SHA256, LN_2_DERIVATION, RCC_FLOOR_DERIVATION,
+    K2_REGISTRY_ROW_NAMES, K2_TIER0_LANDAUER_ROW_NAMES, K_B_AUTHORITY_SHA256,
+    LANDAUER_FLOOR_J_PER_BIT_DERIVATION, LN_2_DERIVATION, RCC_FLOOR_DERIVATION,
     T_ROOM_AUTHORITY_SHA256,
 };
+use umst_math::constants::tier2_derivation::{
+    K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
+};
+use umst_math::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
+use umst_math::landauer::landauer_bit_energy_joules;
+use ordered_float::NotNan;
 
 #[test]
 fn k2_canonical_symbol_count_is_four() {
@@ -78,15 +85,48 @@ fn k2_rcc_floor_is_theorem_quarter() {
     }
 }
 
+fn registry_row_backfilled(name: &str) -> bool {
+    K2_REGISTRY_ROW_NAMES.contains(&name)
+        || K2_TIER0_LANDAUER_ROW_NAMES.contains(&name)
+        || K3_REGISTRY_ROW_NAMES.contains(&name)
+        || K3_TIER1_MEASUREMENT_ROW_NAMES.contains(&name)
+        || K3_TIER2_GATE_ROW_NAMES.contains(&name)
+        || K4_REGISTRY_ROW_NAMES.contains(&name)
+}
+
+#[test]
+fn k2_landauer_floor_matches_300k_ssot() {
+    match LANDAUER_FLOOR_J_PER_BIT_DERIVATION {
+        Derivation::Theorem {
+            theorem_id,
+            expected_value,
+        } => {
+            assert!(theorem_id.contains("LandauerBound"));
+            let at_300 = landauer_bit_energy_joules(NotNan::new(300.0).unwrap()).into_inner();
+            assert!((expected_value - at_300).abs() < 1e-30);
+        }
+        _ => panic!("landauer floor must be Theorem"),
+    }
+    let entry = REGISTRY
+        .iter()
+        .find(|e| e.name == "landauer_floor_j_per_bit")
+        .expect("row");
+    assert_eq!(entry.derivation, LANDAUER_FLOOR_J_PER_BIT_DERIVATION);
+}
+
 #[test]
 fn k2_non_canonical_rows_remain_pending() {
-    let pending_non_k2: usize = REGISTRY
+    let backfilled = REGISTRY
         .iter()
-        .filter(|e| !K2_REGISTRY_ROW_NAMES.contains(&e.name) && e.derivation.is_pending())
+        .filter(|e| registry_row_backfilled(e.name))
+        .count();
+    let pending_non_backfill: usize = REGISTRY
+        .iter()
+        .filter(|e| !registry_row_backfilled(e.name) && e.derivation.is_pending())
         .count();
     assert_eq!(
-        pending_non_k2,
-        REGISTRY.len() - K2_REGISTRY_ROW_NAMES.len(),
-        "only K-2 canonical rows may be non-Pending"
+        pending_non_backfill,
+        REGISTRY.len() - backfilled,
+        "only K-Arc backfilled rows may be non-Pending"
     );
 }

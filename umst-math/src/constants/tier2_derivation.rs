@@ -7,6 +7,7 @@
 
 use super::derivation::Derivation;
 use super::registry::REGISTRY;
+use crate::manifold::csg::Q_HYDRATION_J_PER_KG;
 use crate::numeric_tolerance::{
     admissibility_margin_eps_f64, gate_mass_tolerance_kg_m3_f64, transition_tolerance_f64,
 };
@@ -71,6 +72,15 @@ pub const GATE_MASS_TOLERANCE_DERIVATION: Derivation = Derivation::Theorem {
     expected_value: gate_mass_tolerance_kg_m3_f64(),
 };
 
+/// `q_hyd_j_per_kg` — Haskell `qHydration` / formal `Q_hyd` (Helmholtz SDF gate).
+pub const Q_HYD_J_PER_KG_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Concrete.Q_hyd_val",
+    expected_value: Q_HYDRATION_J_PER_KG,
+};
+
+/// K-3 deepen: Tier-1 measurement row (concrete hydration enthalpy scale).
+pub const K3_TIER1_MEASUREMENT_ROW_NAMES: &[&str] = &["q_hyd_j_per_kg"];
+
 /// K-3 deepen: Tier-2 gate constants (non-HAL measurement batch).
 pub const K3_TIER2_GATE_ROW_NAMES: &[&str] = &[
     "transition_tolerance",
@@ -101,6 +111,7 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "transition_tolerance" => Some(TRANSITION_TOLERANCE_DERIVATION),
         "admissibility_margin_eps" => Some(ADMISSIBILITY_MARGIN_EPS_DERIVATION),
         "gate_mass_tolerance_kg_m3" => Some(GATE_MASS_TOLERANCE_DERIVATION),
+        "q_hyd_j_per_kg" => Some(Q_HYD_J_PER_KG_DERIVATION),
         _ => None,
     }
 }
@@ -219,5 +230,22 @@ mod tests {
                 expected_value: gate_mass_tolerance_kg_m3_f64(),
             }
         );
+    }
+
+    #[test]
+    fn k3_tier1_q_hyd_derivation_matches_registry_and_ssot() {
+        let entry = REGISTRY
+            .iter()
+            .find(|e| e.name == "q_hyd_j_per_kg")
+            .expect("registry row");
+        assert_eq!(entry.derivation, Q_HYD_J_PER_KG_DERIVATION);
+        assert_eq!(
+            Q_HYD_J_PER_KG_DERIVATION,
+            Derivation::Theorem {
+                theorem_id: "UMST.Concrete.Q_hyd_val",
+                expected_value: Q_HYDRATION_J_PER_KG,
+            }
+        );
+        assert!((Q_HYDRATION_J_PER_KG - 450.0).abs() < f64::EPSILON);
     }
 }

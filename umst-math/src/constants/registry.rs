@@ -7,13 +7,14 @@
 
 use super::derivation::Derivation;
 use super::tier1_derivation::{
-    K_B_DERIVATION, LN_2_DERIVATION, RCC_FLOOR_DERIVATION, T_ROOM_DERIVATION,
+    K_B_DERIVATION, LANDAUER_FLOOR_J_PER_BIT_DERIVATION, LN_2_DERIVATION, RCC_FLOOR_DERIVATION,
+    T_ROOM_DERIVATION,
 };
 use super::tier2_derivation::{
     HAL_IGPU_PRESENT_DERIVATION, HAL_L3_CACHE_DERIVATION, HAL_LINUX_PORT_COUNT_DERIVATION,
     HAL_LINUX_RAM_TOTAL_DERIVATION, HAL_LOGICAL_CORES_DERIVATION, HAL_NPU_PRESENT_DERIVATION,
     ADMISSIBILITY_MARGIN_EPS_DERIVATION, GATE_MASS_TOLERANCE_DERIVATION,
-    TRANSITION_TOLERANCE_DERIVATION,
+    Q_HYD_J_PER_KG_DERIVATION, TRANSITION_TOLERANCE_DERIVATION,
 };
 use super::tier3_derivation::{ENERGY_BACKEND_DEFINITION, TUI_BIDI_DEFINITION};
 
@@ -57,7 +58,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier0Physical,
         evidence: "UMST.FormalDoubleSlit.LandauerBound + UMST.Formal.EtaCog::etaDenom_pos",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: LANDAUER_FLOOR_J_PER_BIT_DERIVATION,
     },
     ConstantEntry {
         name: "ln_two_eta_cog_denominator",
@@ -71,7 +72,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         name: "k_boltzmann_j_per_k",
         expression: "1.380649e-23 J/K (CODATA 2018; umst_math::landauer::K_B)",
         tier: ConstantTier::Tier0Physical,
-        evidence: "CODATA 2018; umst-math::landauer::K_B",
+        evidence: "UMST.Formal.Real (CODATA 2018 k_B); NIST CUU https://physics.nist.gov/cgi-bin/cuu/Value?k; umst-math::landauer::K_B",
         env_override: None,
         derivation: K_B_DERIVATION,
     },
@@ -105,7 +106,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "UMST.Concrete.Q_hyd_val; UMST.Formal.Concrete.Gate.helmholtz; ffi-bridge formal_swarm_deepen witness",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: Q_HYD_J_PER_KG_DERIVATION,
     },
     ConstantEntry {
         name: "transition_tolerance",
@@ -1580,15 +1581,19 @@ mod tests {
 
     #[test]
     fn registry_rows_default_derivation_pending_except_k_arc_backfilled() {
-        use crate::constants::tier1_derivation::K2_REGISTRY_ROW_NAMES;
+        use crate::constants::tier1_derivation::{
+            K2_REGISTRY_ROW_NAMES, K2_TIER0_LANDAUER_ROW_NAMES,
+        };
         use crate::constants::tier2_derivation::{
-            K3_REGISTRY_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
+            K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
         };
         use crate::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 
         for e in REGISTRY {
             if K2_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K2_TIER0_LANDAUER_ROW_NAMES.contains(&e.name)
                 || K3_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K3_TIER1_MEASUREMENT_ROW_NAMES.contains(&e.name)
                 || K3_TIER2_GATE_ROW_NAMES.contains(&e.name)
                 || K4_REGISTRY_ROW_NAMES.contains(&e.name)
             {

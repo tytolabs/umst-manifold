@@ -7,6 +7,10 @@
 
 use super::derivation::Derivation;
 use super::registry::REGISTRY;
+use crate::landauer::K_B;
+
+/// Reference ambient anchor (matches `authority-pins/ambient_reference_300k.txt`; same value as `landauer_registry` when `math-constants` is on).
+const HOST_TEMPERATURE_REFERENCE_K: f64 = 300.0;
 
 /// CODATA 2018 k page mirror (pinned snapshot under `authority-pins/`).
 pub const K_B_AUTHORITY_URL: &str = "https://physics.nist.gov/cgi-bin/cuu/Value?k";
@@ -46,6 +50,15 @@ pub const RCC_FLOOR_DERIVATION: Derivation = Derivation::Theorem {
     expected_value: 0.25,
 };
 
+/// `landauer_floor_j_per_bit` — **k_B T ln 2** at reference 300 K (cockpit Landauer floor).
+pub const LANDAUER_FLOOR_J_PER_BIT_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.FormalDoubleSlit.LandauerBound",
+    expected_value: K_B * HOST_TEMPERATURE_REFERENCE_K * std::f64::consts::LN_2,
+};
+
+/// K-2 deepen: Tier-0 Landauer floor row (reference-T bit energy).
+pub const K2_TIER0_LANDAUER_ROW_NAMES: &[&str] = &["landauer_floor_j_per_bit"];
+
 /// Canonical K-2 symbolic ids (operator / egoffplan vocabulary).
 pub const CANONICAL_SYMBOLS: &[&str] = &["LN_2", "K_B", "T_ROOM", "RCC_FLOOR"];
 
@@ -65,6 +78,7 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "k_boltzmann_j_per_k" => Some(K_B_DERIVATION),
         "host_temperature_fallback_k" => Some(T_ROOM_DERIVATION),
         "rcc_floor_residual_coherence" => Some(RCC_FLOOR_DERIVATION),
+        "landauer_floor_j_per_bit" => Some(LANDAUER_FLOOR_J_PER_BIT_DERIVATION),
         _ => None,
     }
 }
