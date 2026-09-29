@@ -113,7 +113,7 @@ serde_json = "1.0"
 tracing = "0.1"
 bincode = "=2.0.0-rc.3"
 # I-0 cockpit coupling: align with zeroclaw/matrix-sdk `time ^0.3.44` (was `=0.3.40`).
-time = "0.3.40"  # pinned for rustc 1.86 (0.3.47 needs 1.88)
+time = "0.3.55"  # CVE-2026-25727 / GHSA-r6v5-fh4h-64xc; requires rustc 1.88 (time-core 0.1.9)
 rand = "0.8"
 num-traits = "0.2"
 sha2 = "0.10"
