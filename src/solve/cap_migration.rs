@@ -71,6 +71,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "photonics CG caps need SPD operator energy meter before unfold debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/solvers/rheology_flow.rs",
+        legacy_token: "chorin_poisson_max_iters_from_budget (Jacobi-PCG byte budget)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "Chorin Poisson PCG iteration cap is byte-budgeted on lazy tensor graph; needs basis_budget meter before unfold debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -84,7 +91,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 6);
+        assert_eq!(cap_migration_site_count(), 7);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -106,5 +113,7 @@ mod tests {
         assert_eq!(echem.legacy_module, "physics/solvers/electrochemistry.rs");
         let photonics = &CAP_MIGRATION_SITES[5];
         assert_eq!(photonics.legacy_module, "physics/solvers/photonics.rs");
+        let rheology = &CAP_MIGRATION_SITES[6];
+        assert_eq!(rheology.legacy_module, "physics/solvers/rheology_flow.rs");
     }
 }
