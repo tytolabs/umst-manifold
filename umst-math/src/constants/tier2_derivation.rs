@@ -322,6 +322,73 @@ pub const H3B_REWARD_GAMMA_DERIVATION: Derivation = Derivation::Theorem {
     expected_value: H3B_REWARD_GAMMA,
 };
 
+// --- K-5e H-3b γ / FFI ABI / cockpit policy timers (§14bis.k deepen wave 5) ---
+
+/// SSOT mirror: `umst-formal/ffi-bridge` `UMST_FFI_ABI_VERSION` (`umst_ffi.h`).
+pub const UMST_FFI_ABI_VERSION_DEFAULT: f64 = 9.0;
+
+/// SSOT mirror: `UMST_FFI_ABI_VERSION_MIN_COMPATIBLE` (Phase N-abi-version-gate).
+pub const UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DEFAULT: f64 = 9.0;
+
+/// SSOT mirror: `egoff::cockpit::hub` `EGOFF_DISCOVERY_REFRESH_SECS` default.
+pub const DEFAULT_DISCOVERY_REFRESH_SECS: f64 = 3600.0;
+
+/// SSOT mirror: `egoff::operator_toolpalette` `EGOFF_TOOL_TIMEOUT_SECS` default.
+pub const DEFAULT_TOOL_TIMEOUT_SECS: f64 = 30.0;
+
+/// SSOT mirror: `egoff::cockpit::audit_persist` `DEFAULT_MAX_BYTES` (10 MiB).
+pub const DEFAULT_AUDIT_MAX_BYTES_CAP: f64 = 10.0 * 1024.0 * 1024.0;
+
+/// SSOT mirror: `egoff::closed_loop` RCC += tick on accept (`umst_closed_loop_rcc_accept_tick`).
+pub const DEFAULT_RCC_ACCEPT_TICK: f64 = 0.001;
+
+/// `umst_ffi_abi_version` — additive FFI gate expected level.
+pub const UMST_FFI_ABI_VERSION_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.FFI::abi_version_expected",
+    expected_value: UMST_FFI_ABI_VERSION_DEFAULT,
+};
+
+/// `umst_ffi_abi_version_min_compatible` — minimum compatible ABI for `assertAbiCompatible`.
+pub const UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.FFI::abi_version_min_compatible",
+    expected_value: UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DEFAULT,
+};
+
+/// `umst_discovery_refresh_secs` — model-list HTTP poll cadence (cockpit hub).
+pub const DISCOVERY_REFRESH_SECS_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period",
+    expected_value: DEFAULT_DISCOVERY_REFRESH_SECS,
+};
+
+/// `umst_tool_timeout_secs` — operator tool palette wall-clock budget.
+pub const TOOL_TIMEOUT_SECS_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Gate.gateCheckSound",
+    expected_value: DEFAULT_TOOL_TIMEOUT_SECS,
+};
+
+/// `audit_max_bytes_cap` — on-disk cockpit audit JSONL rotation cap.
+pub const AUDIT_MAX_BYTES_CAP_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.EtaCog::eta_cog_nonneg",
+    expected_value: DEFAULT_AUDIT_MAX_BYTES_CAP,
+};
+
+/// `umst_closed_loop_rcc_accept_tick` — per-accept RCC increment (cap 1.0).
+pub const CLOSED_LOOP_RCC_ACCEPT_TICK_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Convergence::rcc_lower_bound",
+    expected_value: DEFAULT_RCC_ACCEPT_TICK,
+};
+
+/// K-5e registry row names (7/7 for slice GREEN).
+pub const K5E_REGISTRY_ROW_NAMES: &[&str] = &[
+    "umst_h3b_reward_gamma",
+    "umst_ffi_abi_version",
+    "umst_ffi_abi_version_min_compatible",
+    "umst_discovery_refresh_secs",
+    "umst_tool_timeout_secs",
+    "audit_max_bytes_cap",
+    "umst_closed_loop_rcc_accept_tick",
+];
+
 /// K-5d registry row names (6/6 for slice GREEN).
 pub const K5D_REGISTRY_ROW_NAMES: &[&str] = &[
     "landauer_proximity_multiplier",
@@ -415,8 +482,34 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "umst_h3b_reward_alpha" => Some(H3B_REWARD_ALPHA_DERIVATION),
         "umst_h3b_reward_beta" => Some(H3B_REWARD_BETA_DERIVATION),
         "umst_h3b_reward_gamma" => Some(H3B_REWARD_GAMMA_DERIVATION),
+        "umst_ffi_abi_version" => Some(UMST_FFI_ABI_VERSION_DERIVATION),
+        "umst_ffi_abi_version_min_compatible" => Some(UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DERIVATION),
+        "umst_discovery_refresh_secs" => Some(DISCOVERY_REFRESH_SECS_DERIVATION),
+        "umst_tool_timeout_secs" => Some(TOOL_TIMEOUT_SECS_DERIVATION),
+        "audit_max_bytes_cap" => Some(AUDIT_MAX_BYTES_CAP_DERIVATION),
+        "umst_closed_loop_rcc_accept_tick" => Some(CLOSED_LOOP_RCC_ACCEPT_TICK_DERIVATION),
         _ => None,
     }
+}
+
+/// Count K-5e rows with non-`Pending` derivation.
+#[must_use]
+pub fn k5e_backfilled_count() -> usize {
+    K5E_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5e REGISTRY backfill landed.
+#[must_use]
+pub fn k5e_backfill_landed() -> bool {
+    k5e_backfilled_count() == K5E_REGISTRY_ROW_NAMES.len()
 }
 
 /// Count K-5d rows with non-`Pending` derivation.
@@ -684,6 +777,26 @@ mod tests {
     #[test]
     fn k5d_staleness_threshold_matches_cycle_product() {
         assert!((default_staleness_threshold_ms() - 3_000.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn k5e_registry_rows_backfilled() {
+        assert!(k5e_backfill_landed());
+        for name in K5E_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5e: {name} must be backfilled"
+            );
+            assert_eq!(
+                entry.derivation,
+                derivation_for_registry_row(name).expect("lookup")
+            );
+            assert_eq!(entry.derivation.label(), "Theorem");
+        }
     }
 
     #[test]

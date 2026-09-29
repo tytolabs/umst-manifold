@@ -11,21 +11,23 @@ use super::tier1_derivation::{
     T_ROOM_DERIVATION,
 };
 use super::tier2_derivation::{
-    ADMISSIBILITY_MARGIN_EPS_DERIVATION, AUDIT_ROTATION_KEEP_COUNT_DERIVATION,
-    CLOSED_LOOP_MI_STEP_DERIVATION, COCKPIT_AUDIT_SCHEMA_VERSION_DERIVATION,
+    ADMISSIBILITY_MARGIN_EPS_DERIVATION, AUDIT_MAX_BYTES_CAP_DERIVATION,
+    AUDIT_ROTATION_KEEP_COUNT_DERIVATION, CLOSED_LOOP_MI_STEP_DERIVATION,
+    CLOSED_LOOP_RCC_ACCEPT_TICK_DERIVATION, COCKPIT_AUDIT_SCHEMA_VERSION_DERIVATION,
     COCKPIT_SNAPSHOT_SCHEMA_VERSION_DERIVATION, DELTA_MI_SINGLE_TURN_CAP_DERIVATION,
-    DIGNITY_SCALAR_RANGE_DERIVATION, DISCOVERY_LRU_CAPACITY_DERIVATION, EMERGENCE_LAMBDA_DERIVATION,
+    DIGNITY_SCALAR_RANGE_DERIVATION, DISCOVERY_LRU_CAPACITY_DERIVATION,
+    DISCOVERY_REFRESH_SECS_DERIVATION, EMERGENCE_LAMBDA_DERIVATION,
     ETA_ROLLING_WINDOW_CAPACITY_DERIVATION, FRUGALITY_BAND_P25_DERIVATION,
     FRUGALITY_BAND_P75_DERIVATION, GATE_MASS_TOLERANCE_DERIVATION, H3B_REWARD_ALPHA_DERIVATION,
-    H3B_REWARD_BETA_DERIVATION, HAL_IGPU_PRESENT_DERIVATION,
+    H3B_REWARD_BETA_DERIVATION, H3B_REWARD_GAMMA_DERIVATION, HAL_IGPU_PRESENT_DERIVATION,
     HAL_L3_CACHE_DERIVATION, HAL_LINUX_PORT_COUNT_DERIVATION, HAL_LINUX_RAM_TOTAL_DERIVATION,
     HAL_LOGICAL_CORES_DERIVATION, HAL_NPU_PRESENT_DERIVATION, HUB_INTER_SAMPLE_PERIOD_MS_DERIVATION,
     LANDAUER_PROXIMITY_MULTIPLIER_DERIVATION, MIN_PROMOTION_CREDIT_DERIVATION,
     MSDF_EMERGENCE_MAX_VOXELS_DERIVATION, PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION,
     Q_HYD_J_PER_KG_DERIVATION, STALENESS_CYCLE_COUNT_DERIVATION,
-    STALENESS_THRESHOLD_MS_DERIVATION, TRANSITION_TOLERANCE_DERIVATION,
-    TUI_RENDER_DEBOUNCE_MS_DERIVATION,
-    WARMUP_SAMPLE_THRESHOLD_DERIVATION,
+    STALENESS_THRESHOLD_MS_DERIVATION, TOOL_TIMEOUT_SECS_DERIVATION, TRANSITION_TOLERANCE_DERIVATION,
+    TUI_RENDER_DEBOUNCE_MS_DERIVATION, UMST_FFI_ABI_VERSION_DERIVATION,
+    UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DERIVATION, WARMUP_SAMPLE_THRESHOLD_DERIVATION,
 };
 use super::tier3_derivation::{ENERGY_BACKEND_DEFINITION, TUI_BIDI_DEFINITION};
 
@@ -330,19 +332,19 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "umst_ffi_abi_version",
-        expression: "8",
+        expression: "9",
         tier: ConstantTier::Tier3Policy,
         evidence: "UMST_FFI_ABI_VERSION in umst-ffi / ffi-bridge; Phase N-abi-version-gate (additive `umst_ffi_abi_version_expected`)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: UMST_FFI_ABI_VERSION_DERIVATION,
     },
     ConstantEntry {
         name: "umst_ffi_abi_version_min_compatible",
-        expression: "7",
+        expression: "9",
         tier: ConstantTier::Tier3Policy,
         evidence: "Phase N-abi-version-gate — docs/CGD_REGISTRY.md §24; `UMST_FFI_ABI_VERSION_MIN_COMPATIBLE` / `assertAbiCompatible`",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DERIVATION,
     },
     ConstantEntry {
         name: "cockpit_http_cors_open",
@@ -358,7 +360,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Phase B-extend — model_discovery + cockpit hub; docs/CGD_REGISTRY.md §24a; COCKPIT_DESIGN_BRIEF",
         env_override: Some("UMST_DISCOVERY_REFRESH_SECS"),
-        derivation: Derivation::Pending,
+        derivation: DISCOVERY_REFRESH_SECS_DERIVATION,
     },
     ConstantEntry {
         name: "umst_tool_timeout_secs",
@@ -366,7 +368,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Phase C — zeroclaw tool palette; docs/CGD_REGISTRY.md §24a; COCKPIT_DESIGN_BRIEF.md",
         env_override: Some("UMST_TOOL_TIMEOUT_SECS"),
-        derivation: Derivation::Pending,
+        derivation: TOOL_TIMEOUT_SECS_DERIVATION,
     },
     ConstantEntry {
         name: "audit_max_bytes_cap",
@@ -374,7 +376,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "Typical rotation sizing; COCKPIT_DESIGN_BRIEF §12",
         env_override: Some("UMST_COCKPIT_AUDIT_MAX_BYTES"),
-        derivation: Derivation::Pending,
+        derivation: AUDIT_MAX_BYTES_CAP_DERIVATION,
     },
     ConstantEntry {
         name: "eta_rolling_window_capacity",
@@ -569,7 +571,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-H-3b Path B witness reward bridge)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H3B_REWARD_GAMMA_DERIVATION,
     },
     // CONSTANT-BOUND: `umst_npu_backend_default` (Tier-3 honest disclosure; expression names default n/a)
     ConstantEntry {
@@ -587,7 +589,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD plan §0.4 CGD; `closed_loop::record_proposal_with_prompt` accept path)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: CLOSED_LOOP_RCC_ACCEPT_TICK_DERIVATION,
     },
     // CONSTANT-BOUND: `umst_cockpit_smoothing_default` (TUI-7 EKF / Kalman / none; REGISTRY string policy)
     ConstantEntry {
@@ -1598,7 +1600,7 @@ mod tests {
         use crate::constants::tier2_derivation::{
             K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
             K5_REGISTRY_ROW_NAMES, K5B_REGISTRY_ROW_NAMES, K5C_REGISTRY_ROW_NAMES,
-            K5D_REGISTRY_ROW_NAMES,
+            K5D_REGISTRY_ROW_NAMES, K5E_REGISTRY_ROW_NAMES,
         };
         use crate::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 
@@ -1613,6 +1615,7 @@ mod tests {
                 || K5B_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5C_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5D_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5E_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),
