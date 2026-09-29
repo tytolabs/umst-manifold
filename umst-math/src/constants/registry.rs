@@ -25,7 +25,12 @@ use super::tier2_derivation::{
     LANDAUER_PROXIMITY_MULTIPLIER_DERIVATION, MEMORY_DEFAULT_RESOLUTION_BITS_DERIVATION,
     MEMORY_EPHEMERAL_TTL_HOURS_DERIVATION, MEMORY_M2_PROMOTE_CEREMONY_ATOMIC_DERIVATION,
     MEMORY_M2_PROMOTION_REQUIRES_THEOREM_DERIVATION, MEMORY_M2_SANITIZE_SERIAL_KINDS_DERIVATION,
-    EMBEDDING_HTTP_TIMEOUT_SECONDS_DERIVATION, MEMORY_SCHEMA_VERSION_DERIVATION,
+    MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN_DERIVATION,
+    MEMORY_M3_PALETTE_FEDERATED_INSPECT_MIN_ROWS_DERIVATION,
+    MEMORY_MERGE_SAFE_ATTESTATION_WIRE_VERSION_DERIVATION, MEMORY_SCHEMA_VERSION_V2_DERIVATION,
+    MEMORY_TIER_REPR_BYTE_DEVICE_DERIVATION, MEMORY_TIER_REPR_BYTE_EPHEMERAL_DERIVATION,
+    MEMORY_TIER_REPR_BYTE_FEDERATED_DERIVATION, EMBEDDING_HTTP_TIMEOUT_SECONDS_DERIVATION,
+    MEMORY_SCHEMA_VERSION_DERIVATION,
     MIN_PROMOTION_CREDIT_DERIVATION, MSDF_EMERGENCE_MAX_VOXELS_DERIVATION,
     PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION,
     Q_HYD_J_PER_KG_DERIVATION, STALENESS_CYCLE_COUNT_DERIVATION,
@@ -1171,7 +1176,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-2; `egoff::memory::sanitize` redaction token)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_ephemeral_ttl_hours_typical",
@@ -1188,7 +1193,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3 federation inspector dispatch; no libp2p peers in this slice)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: MEMORY_M3_PALETTE_FEDERATED_INSPECT_MIN_ROWS_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_merge_safe_attestation_wire_version",
@@ -1196,7 +1201,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3 GMD-8; `MergeSafeAttestation` bincode shim)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: MEMORY_MERGE_SAFE_ATTESTATION_WIRE_VERSION_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_schema_version_v2",
@@ -1205,7 +1210,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3 rename-fed; MEMORY-ARC schema migration posture)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: MEMORY_SCHEMA_VERSION_V2_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_tier_repr_byte_device",
@@ -1215,7 +1220,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         evidence:
             "Definition (§14bis.f-M-3 MemoryTier ABI; MEMORY-ARC local→device rename-fed witness)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: MEMORY_TIER_REPR_BYTE_DEVICE_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_tier_repr_byte_ephemeral",
@@ -1223,7 +1228,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-3 MemoryTier ABI; MEMORY-ARC §10(h) graduation)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: MEMORY_TIER_REPR_BYTE_EPHEMERAL_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_tier_repr_byte_federated",
@@ -1233,7 +1238,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         evidence:
             "Definition (§14bis.f-M-3 MemoryTier ABI; MEMORY-ARC promotion federation merge witnesses)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: MEMORY_TIER_REPR_BYTE_FEDERATED_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_retention_alpha_default",
@@ -1605,6 +1610,7 @@ mod tests {
             K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
             K5_REGISTRY_ROW_NAMES, K5B_REGISTRY_ROW_NAMES, K5C_REGISTRY_ROW_NAMES,
             K5D_REGISTRY_ROW_NAMES, K5E_REGISTRY_ROW_NAMES, K5F_REGISTRY_ROW_NAMES,
+            K5G_REGISTRY_ROW_NAMES,
         };
         use crate::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 
@@ -1621,6 +1627,7 @@ mod tests {
                 || K5D_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5E_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5F_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5G_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),

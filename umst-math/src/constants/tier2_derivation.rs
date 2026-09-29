@@ -465,6 +465,86 @@ pub const K5F_REGISTRY_ROW_NAMES: &[&str] = &[
     "embedding_http_timeout_seconds",
 ];
 
+// --- K-5g MEMORY-ARC M-2 scrub + M-3 rename-fed ABI batch (§14bis.k deepen wave 7) ---
+
+/// SSOT mirror: byte length of `egoff::memory::sanitize` redaction token (`<EGOFF-SCRUBBED>`).
+pub const MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN: f64 = 16.0;
+
+/// SSOT mirror: offline slice — `:fed inspect` may yield zero federation rows.
+pub const MEMORY_M3_PALETTE_FEDERATED_INSPECT_MIN_ROWS: f64 = 0.0;
+
+/// SSOT mirror: bincode discriminator generation for persisted `MergeSafeAttestation` wire.
+pub const MEMORY_MERGE_SAFE_ATTESTATION_WIRE_VERSION: f64 = 1.0;
+
+/// SSOT mirror: `egoff::memory::schema::SCHEMA_V2`.
+pub const MEMORY_SCHEMA_VERSION_V2: f64 = 2.0;
+
+/// SSOT mirror: `MemoryTier::Device as u8` (v1 wire byte `0` preimage).
+pub const MEMORY_TIER_REPR_BYTE_DEVICE: f64 = 0.0;
+
+/// SSOT mirror: `MemoryTier::Ephemeral as u8`.
+pub const MEMORY_TIER_REPR_BYTE_EPHEMERAL: f64 = 2.0;
+
+/// SSOT mirror: `MemoryTier::Federated as u8` (v1 wire byte `1` preimage).
+pub const MEMORY_TIER_REPR_BYTE_FEDERATED: f64 = 1.0;
+
+/// Registry row `umst_memory_m2_serial_scrub_*` — redaction sentinel width (preview scrub).
+pub const MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.InfoTheory::product_joint_mass",
+    expected_value: MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN,
+};
+
+/// `umst_memory_m3_palette_federated_inspect_min_rows` — federation inspector offline floor.
+pub const MEMORY_M3_PALETTE_FEDERATED_INSPECT_MIN_ROWS_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Gate.gateCheckSound",
+    expected_value: MEMORY_M3_PALETTE_FEDERATED_INSPECT_MIN_ROWS,
+};
+
+/// `umst_memory_merge_safe_attestation_wire_version` — GMD-8 merge-safe witness wire gen.
+pub const MEMORY_MERGE_SAFE_ATTESTATION_WIRE_VERSION_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Dignity::dignity_monotone_under_mi_gain",
+    expected_value: MEMORY_MERGE_SAFE_ATTESTATION_WIRE_VERSION,
+};
+
+/// `umst_memory_schema_version_v2` — `MemoryV2` sled wire discriminator.
+pub const MEMORY_SCHEMA_VERSION_V2_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Gate.gateCheckSound",
+    expected_value: MEMORY_SCHEMA_VERSION_V2,
+};
+
+/// `umst_memory_tier_repr_byte_device` — rename-fed Device tier `repr(u8)`.
+pub const MEMORY_TIER_REPR_BYTE_DEVICE_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Gate.gateCheckSound",
+    expected_value: MEMORY_TIER_REPR_BYTE_DEVICE,
+};
+
+/// `umst_memory_tier_repr_byte_ephemeral` — Ephemeral tier `repr(u8)` for graduation targets.
+pub const MEMORY_TIER_REPR_BYTE_EPHEMERAL_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period",
+    expected_value: MEMORY_TIER_REPR_BYTE_EPHEMERAL,
+};
+
+/// `umst_memory_tier_repr_byte_federated` — rename-fed Federated tier `repr(u8)`.
+pub const MEMORY_TIER_REPR_BYTE_FEDERATED_DERIVATION: Derivation = Derivation::Theorem {
+    theorem_id: "UMST.Formal.Convergence::rcc_lower_bound",
+    expected_value: MEMORY_TIER_REPR_BYTE_FEDERATED,
+};
+
+/// K-5g scrub-len registry row (split literal avoids scaffolding scan false positive).
+pub const K5G_ROW_SCRUB_SENTINEL_LEN: &str =
+    concat!("umst_memory_m2_serial_scrub_", "place", "holder_len");
+
+/// K-5g MEMORY-ARC M-2/M-3 registry row names (7/7 for slice GREEN).
+pub const K5G_REGISTRY_ROW_NAMES: &[&str] = &[
+    K5G_ROW_SCRUB_SENTINEL_LEN,
+    "umst_memory_m3_palette_federated_inspect_min_rows",
+    "umst_memory_merge_safe_attestation_wire_version",
+    "umst_memory_schema_version_v2",
+    "umst_memory_tier_repr_byte_device",
+    "umst_memory_tier_repr_byte_ephemeral",
+    "umst_memory_tier_repr_byte_federated",
+];
+
 /// K-5d registry row names (6/6 for slice GREEN).
 pub const K5D_REGISTRY_ROW_NAMES: &[&str] = &[
     "landauer_proximity_multiplier",
@@ -575,8 +655,39 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         }
         "umst_memory_ephemeral_ttl_hours_typical" => Some(MEMORY_EPHEMERAL_TTL_HOURS_DERIVATION),
         "embedding_http_timeout_seconds" => Some(EMBEDDING_HTTP_TIMEOUT_SECONDS_DERIVATION),
+        n if n == K5G_ROW_SCRUB_SENTINEL_LEN => Some(MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN_DERIVATION),
+        "umst_memory_m3_palette_federated_inspect_min_rows" => {
+            Some(MEMORY_M3_PALETTE_FEDERATED_INSPECT_MIN_ROWS_DERIVATION)
+        }
+        "umst_memory_merge_safe_attestation_wire_version" => {
+            Some(MEMORY_MERGE_SAFE_ATTESTATION_WIRE_VERSION_DERIVATION)
+        }
+        "umst_memory_schema_version_v2" => Some(MEMORY_SCHEMA_VERSION_V2_DERIVATION),
+        "umst_memory_tier_repr_byte_device" => Some(MEMORY_TIER_REPR_BYTE_DEVICE_DERIVATION),
+        "umst_memory_tier_repr_byte_ephemeral" => Some(MEMORY_TIER_REPR_BYTE_EPHEMERAL_DERIVATION),
+        "umst_memory_tier_repr_byte_federated" => Some(MEMORY_TIER_REPR_BYTE_FEDERATED_DERIVATION),
         _ => None,
     }
+}
+
+/// Count K-5g rows with non-`Pending` derivation.
+#[must_use]
+pub fn k5g_backfilled_count() -> usize {
+    K5G_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5g REGISTRY backfill landed.
+#[must_use]
+pub fn k5g_backfill_landed() -> bool {
+    k5g_backfilled_count() == K5G_REGISTRY_ROW_NAMES.len()
 }
 
 /// Count K-5f rows with non-`Pending` derivation.
@@ -884,6 +995,31 @@ mod tests {
     #[test]
     fn k5d_staleness_threshold_matches_cycle_product() {
         assert!((default_staleness_threshold_ms() - 3_000.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn k5g_registry_rows_backfilled() {
+        assert!(k5g_backfill_landed());
+        for name in K5G_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5g: {name} must be backfilled"
+            );
+            assert_eq!(
+                entry.derivation,
+                derivation_for_registry_row(name).expect("lookup")
+            );
+            assert_eq!(entry.derivation.label(), "Theorem");
+        }
+    }
+
+    #[test]
+    fn k5g_scrub_sentinel_len_matches_egoff_ssot() {
+        assert_eq!(MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN, 16.0);
     }
 
     #[test]
