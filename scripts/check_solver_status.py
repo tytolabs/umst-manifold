@@ -37,9 +37,12 @@ With a custom doc path::
 from __future__ import annotations
 
 import argparse
+import json
 import re
+import subprocess
 import sys
 import tomllib
+from functools import lru_cache
 from pathlib import Path
 
 # Paths inside backticks or bare `tests/....rs` in the Verification column.
@@ -191,6 +194,37 @@ def _check_statmech_verification_set(rows: list[tuple[str, str, str, str]]) -> i
     return errors
 
 
+@lru_cache(maxsize=4)
+def _cargo_integration_test_paths(root: Path) -> dict[str, Path]:
+    """Map Cargo ``[[test]]`` binary names to source paths via ``cargo metadata``."""
+    try:
+        proc = subprocess.run(
+            ["cargo", "metadata", "--format-version", "1", "--no-deps"],
+            cwd=root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return {}
+    try:
+        meta = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return {}
+    out: dict[str, Path] = {}
+    for pkg in meta.get("packages", []):
+        if pkg.get("name") != "umst-manifold":
+            continue
+        for target in pkg.get("targets", []):
+            if target.get("kind") != ["test"]:
+                continue
+            name = target.get("name")
+            src = target.get("src_path")
+            if isinstance(name, str) and isinstance(src, str) and src:
+                out[name] = Path(src)
+    return out
+
+
 def _resolve_fixture_path(root: Path, row: dict) -> Path | None:
     """Map a MANIFEST [[fixture]] row to a source file under ``root``."""
     crate = row.get("crate")
@@ -215,6 +249,9 @@ def _resolve_fixture_path(root: Path, row: dict) -> Path | None:
     for path in candidates:
         if path.is_file():
             return path
+    cargo_path = _cargo_integration_test_paths(root.resolve()).get(binary)
+    if cargo_path is not None and cargo_path.is_file():
+        return cargo_path
     return None
 
 
