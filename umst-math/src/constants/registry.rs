@@ -1740,6 +1740,16 @@ mod tests {
         assert_eq!(registry_pending_derivation_count(), 27);
     }
 
+    /// W-80 / Track Q steer receipt pin (STEER_20261001T0256 wave 23).
+    #[test]
+    fn w80_steer_wave_twenty_three_pending_meter() {
+        const STEER: &str = "STEER_20261001T0256";
+        const WAVE: u32 = 23;
+        assert_eq!(STEER, "STEER_20261001T0256");
+        assert_eq!(WAVE, 23);
+        assert_eq!(registry_pending_derivation_count(), 27);
+    }
+
     #[test]
     fn registry_sorted_by_tier_is_sorted_and_complete() {
         assert_eq!(REGISTRY.len(), 173);

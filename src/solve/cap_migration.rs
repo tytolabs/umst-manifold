@@ -197,6 +197,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "Bingham Chorin pressure Poisson Jacobi-CG caps at byte-budgeted max_it before rheology strain-energy meter ties to unfold debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/mechanics_operator.rs",
+        legacy_token: "MechanicsInnerLoopConfig.max_cg_iterations: 500 (operator-level masked PCG)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "operator-level masked PCG hard-stops at max_cg_iterations before mechanics operator energy meter ties to unfold debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -210,7 +217,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 24);
+        assert_eq!(cap_migration_site_count(), 25);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -326,6 +333,12 @@ mod tests {
         assert_eq!(rheology_jacobi_cg.legacy_module, "physics/solvers/rheology_flow.rs");
         assert!(matches!(
             rheology_jacobi_cg.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let mechanics_operator = &CAP_MIGRATION_SITES[24];
+        assert_eq!(mechanics_operator.legacy_module, "physics/mechanics_operator.rs");
+        assert!(matches!(
+            mechanics_operator.disposition,
             CapMigrationDisposition::HonestTypedAbsence { .. }
         ));
     }
