@@ -162,6 +162,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "mechanics solve port bar-network fixture hard-codes max_cg_iterations before port-level energy meter; needs unfold debit witness before cap removal",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/adjoint.rs",
+        legacy_token: "MechanicsInnerLoopConfig.max_cg_iterations: 500 (topology adjoint PCG lane)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "topology adjoint masked PCG hard-stops at max_cg_iterations before adjoint energy meter; needs unfold debit witness before cap removal",
+        },
+    },
 ];
 
 #[must_use]
@@ -175,7 +182,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 19);
+        assert_eq!(cap_migration_site_count(), 20);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -261,6 +268,12 @@ mod tests {
         assert_eq!(mechanics_port.legacy_module, "physics/mechanics_solve_port.rs");
         assert!(matches!(
             mechanics_port.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let adjoint = &CAP_MIGRATION_SITES[19];
+        assert_eq!(adjoint.legacy_module, "physics/adjoint.rs");
+        assert!(matches!(
+            adjoint.disposition,
             CapMigrationDisposition::HonestTypedAbsence { .. }
         ));
     }
