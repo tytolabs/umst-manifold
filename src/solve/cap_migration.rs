@@ -183,6 +183,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "AT2 phase-field outer stagger caps at max_outer_iterations before fracture release-energy meter ties to unfold debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/solvers/fracture_field.rs",
+        legacy_token: "iterate_until(config.outer_iters, …) staggered phase-field coupled mechanics",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "staggered phase-field coupled mechanics outer loop caps at outer_iters before coupled fracture–mechanics energy meter ties to unfold debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -196,7 +203,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 22);
+        assert_eq!(cap_migration_site_count(), 23);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -300,6 +307,12 @@ mod tests {
         assert_eq!(fracture_outer.legacy_module, "physics/solvers/fracture_field.rs");
         assert!(matches!(
             fracture_outer.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let fracture_coupled = &CAP_MIGRATION_SITES[22];
+        assert_eq!(fracture_coupled.legacy_module, "physics/solvers/fracture_field.rs");
+        assert!(matches!(
+            fracture_coupled.disposition,
             CapMigrationDisposition::HonestTypedAbsence { .. }
         ));
     }
