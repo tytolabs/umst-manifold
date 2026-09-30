@@ -92,6 +92,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "matrix-free THMC JFNK inner GMRES needs coupled residual energy meter before unfold debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/mechanics.rs",
+        legacy_token: "bar_network_pcg_f64_single_batch (pcg_iters vs n_unknowns=3*n_v)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "bar-network projected PCG hard-stops at n_unknowns sweep budget; needs mechanics strain-energy meter before unfold debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -105,7 +112,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 9);
+        assert_eq!(cap_migration_site_count(), 10);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -133,5 +140,11 @@ mod tests {
         assert_eq!(fracture.legacy_module, "physics/solvers/fracture_field.rs");
         let jfnk = &CAP_MIGRATION_SITES[8];
         assert_eq!(jfnk.legacy_module, "physics/solvers/thmc_jfnk.rs");
+        let mechanics = &CAP_MIGRATION_SITES[9];
+        assert_eq!(mechanics.legacy_module, "physics/mechanics.rs");
+        assert!(matches!(
+            mechanics.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
     }
 }
