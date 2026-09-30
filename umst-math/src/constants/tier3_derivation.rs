@@ -180,6 +180,14 @@ pub const K5S_HAL_REGISTRY_ROW_NAMES: &[&str] = &[
     "hal_permission_probe_timeout_ms",
 ];
 
+/// K-5t wave-16 batch: HAL precision surface + smoke byte mirror (4/8 H-9 Definition rows).
+pub const K5T_HAL_REGISTRY_ROW_NAMES: &[&str] = &[
+    "hal_supported_precisions_intel_cpu_count",
+    "hal_supported_precisions_intel_igpu_count",
+    "hal_supported_precisions_intel_npu_count",
+    "hal_workload_smoke_byte_size",
+];
+
 /// Count K-5s HAL rows with non-`Pending` derivation in REGISTRY.
 #[must_use]
 pub fn k5s_hal_backfilled_count() -> usize {
@@ -198,6 +206,26 @@ pub fn k5s_hal_backfilled_count() -> usize {
 #[must_use]
 pub fn k5s_hal_backfill_landed() -> bool {
     k5s_hal_backfilled_count() == K5S_HAL_REGISTRY_ROW_NAMES.len()
+}
+
+/// Count K-5t HAL rows with non-`Pending` derivation in REGISTRY.
+#[must_use]
+pub fn k5t_hal_backfilled_count() -> usize {
+    K5T_HAL_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5t HAL REGISTRY backfill landed for the current wave batch.
+#[must_use]
+pub fn k5t_hal_backfill_landed() -> bool {
+    k5t_hal_backfilled_count() == K5T_HAL_REGISTRY_ROW_NAMES.len()
 }
 
 // --- K-5r wave-15 batch: cockpit §12 / HTTP / epistemic / semantic policy (C-4 deepen) ---
@@ -550,6 +578,23 @@ mod tests {
             assert!(
                 !entry.derivation.is_pending(),
                 "K-5s HAL: {name} must be backfilled"
+            );
+            assert_eq!(entry.derivation, H_9_HAL_DEFINITION);
+            assert_eq!(entry.derivation.label(), "Definition");
+        }
+    }
+
+    #[test]
+    fn k5t_hal_registry_rows_backfilled() {
+        assert!(k5t_hal_backfill_landed());
+        for name in K5T_HAL_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5t HAL: {name} must be backfilled"
             );
             assert_eq!(entry.derivation, H_9_HAL_DEFINITION);
             assert_eq!(entry.derivation.label(), "Definition");

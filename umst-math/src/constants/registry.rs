@@ -937,7 +937,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (H-9; `IntelCpu::supported_precisions`)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H_9_HAL_DEFINITION,
     },
     ConstantEntry {
         name: "hal_supported_precisions_intel_igpu_count",
@@ -945,7 +945,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (H-9; `IntelIgpu`)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H_9_HAL_DEFINITION,
     },
     ConstantEntry {
         name: "hal_supported_precisions_intel_npu_count",
@@ -953,7 +953,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (H-9; `IntelNpu`)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H_9_HAL_DEFINITION,
     },
     ConstantEntry {
         name: "hal_workload_smoke_byte_size",
@@ -961,7 +961,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (H-9; B-2 extends WorkloadKind)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H_9_HAL_DEFINITION,
     },
     // §14bis.f H-8 — HAL trait surface (Tier-3 **Definitions**; CDD §0.11; FORWARD-PLAN v1.2 §3.1)
     ConstantEntry {
@@ -1650,6 +1650,7 @@ mod tests {
             K4_REGISTRY_ROW_NAMES, K5L_REGISTRY_ROW_NAMES, K5M_REGISTRY_ROW_NAMES,
             K5N_REGISTRY_ROW_NAMES, K5O_REGISTRY_ROW_NAMES, K5P_REGISTRY_ROW_NAMES,
             K5Q_REGISTRY_ROW_NAMES, K5R_REGISTRY_ROW_NAMES, K5S_HAL_REGISTRY_ROW_NAMES,
+            K5T_HAL_REGISTRY_ROW_NAMES,
         };
 
         for e in REGISTRY {
@@ -1678,6 +1679,7 @@ mod tests {
                 || K5Q_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5R_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5S_HAL_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5T_HAL_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),
@@ -1697,10 +1699,10 @@ mod tests {
     #[test]
     fn registry_pending_meter_honest_after_k5r() {
         assert_eq!(REGISTRY.len(), 173);
-        assert_eq!(registry_pending_derivation_count(), 56);
+        assert_eq!(registry_pending_derivation_count(), 53);
         assert!(
-            registry_pending_derivation_count() < 64,
-            "K-5r + K-5s HAL batches must reduce pending below wave-14 witness (64)"
+            registry_pending_derivation_count() < 57,
+            "K-5t HAL batch must reduce pending below wave-15 witness (57)"
         );
         assert!(registry_lean_formal_evidence_count() >= 3);
     }
