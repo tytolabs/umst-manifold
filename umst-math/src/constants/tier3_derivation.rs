@@ -188,6 +188,23 @@ pub const K5T_HAL_REGISTRY_ROW_NAMES: &[&str] = &[
     "hal_workload_smoke_byte_size",
 ];
 
+/// Authority anchor for §14bis.f-H-8 trait / inventory Definition rows.
+pub const H_8_HAL_AUTHORITY: &str = "umst-math/src/hal/traits.rs#HardwareUnit";
+
+/// Shared `Derivation::Definition` for §14bis.f-H-8 HAL category **𝓗** policy constants.
+pub const H_8_HAL_DEFINITION: Derivation = Derivation::Definition {
+    authority_url: H_8_HAL_AUTHORITY,
+    expected_sha256: H_9_HAL_TRAITS_SHA256,
+};
+
+/// K-5u wave-17 batch: H-8 trait surface + inventory schema (4/4 H-8 Definition rows).
+pub const K5U_HAL_REGISTRY_ROW_NAMES: &[&str] = &[
+    "hal_trait_method_count",
+    "hal_unit_presence_variant_count",
+    "hal_unit_kind_count",
+    "hal_canonical_fallback_chain_max_len",
+];
+
 /// Count K-5s HAL rows with non-`Pending` derivation in REGISTRY.
 #[must_use]
 pub fn k5s_hal_backfilled_count() -> usize {
@@ -226,6 +243,26 @@ pub fn k5t_hal_backfilled_count() -> usize {
 #[must_use]
 pub fn k5t_hal_backfill_landed() -> bool {
     k5t_hal_backfilled_count() == K5T_HAL_REGISTRY_ROW_NAMES.len()
+}
+
+/// Count K-5u H-8 HAL rows with non-`Pending` derivation in REGISTRY.
+#[must_use]
+pub fn k5u_hal_backfilled_count() -> usize {
+    K5U_HAL_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5u H-8 HAL REGISTRY backfill landed for the current wave batch.
+#[must_use]
+pub fn k5u_hal_backfill_landed() -> bool {
+    k5u_hal_backfilled_count() == K5U_HAL_REGISTRY_ROW_NAMES.len()
 }
 
 // --- K-5r wave-15 batch: cockpit §12 / HTTP / epistemic / semantic policy (C-4 deepen) ---
@@ -597,6 +634,23 @@ mod tests {
                 "K-5t HAL: {name} must be backfilled"
             );
             assert_eq!(entry.derivation, H_9_HAL_DEFINITION);
+            assert_eq!(entry.derivation.label(), "Definition");
+        }
+    }
+
+    #[test]
+    fn k5u_hal_registry_rows_backfilled() {
+        assert!(k5u_hal_backfill_landed());
+        for name in K5U_HAL_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5u H-8 HAL: {name} must be backfilled"
+            );
+            assert_eq!(entry.derivation, H_8_HAL_DEFINITION);
             assert_eq!(entry.derivation.label(), "Definition");
         }
     }

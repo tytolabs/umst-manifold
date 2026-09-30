@@ -51,7 +51,8 @@ use super::tier2_derivation::{
 };
 use super::tier3_derivation::{
     COCKPIT_HTTP_CORS_DEFINITION, COCKPIT_RANKER_WEIGHT_DEFINITION,
-    EPISTEMIC_PROXY_ESTIMATOR_DEFINITION, ENERGY_BACKEND_DEFINITION, H_9_HAL_DEFINITION,
+    EPISTEMIC_PROXY_ESTIMATOR_DEFINITION, ENERGY_BACKEND_DEFINITION, H_8_HAL_DEFINITION,
+    H_9_HAL_DEFINITION,
     SEMANTIC_COVERAGE_W5_DEFINITION, TUI_6B_COLOR_DEFINITION, TUI_BIDI_DEFINITION,
 };
 
@@ -970,7 +971,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; FORWARD-PLAN v1.2 Q5/G5; H-8 trait surface; docs/CGD_REGISTRY.md §24a; umst-math::hal::traits::HardwareUnit)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H_8_HAL_DEFINITION,
     },
     ConstantEntry {
         name: "hal_unit_presence_variant_count",
@@ -978,7 +979,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; NED §0.5; umst-math::hal::presence::UnitPresence)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H_8_HAL_DEFINITION,
     },
     ConstantEntry {
         name: "hal_unit_kind_count",
@@ -986,7 +987,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; umst-math::hal::kinds::UnitKind)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H_8_HAL_DEFINITION,
     },
     ConstantEntry {
         name: "hal_canonical_fallback_chain_max_len",
@@ -994,7 +995,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; FORWARD-PLAN v1.2 §14.2 B-2.5; H-8 profile.rs)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H_8_HAL_DEFINITION,
     },
     // §14bis.f-M-0 — M-Arc `umst-math::manifold` (Tier-3 Definition, MEMORY-ARC-PLAN v1.0; FORWARD-PLAN §0.4)
     ConstantEntry {
@@ -1650,7 +1651,7 @@ mod tests {
             K4_REGISTRY_ROW_NAMES, K5L_REGISTRY_ROW_NAMES, K5M_REGISTRY_ROW_NAMES,
             K5N_REGISTRY_ROW_NAMES, K5O_REGISTRY_ROW_NAMES, K5P_REGISTRY_ROW_NAMES,
             K5Q_REGISTRY_ROW_NAMES, K5R_REGISTRY_ROW_NAMES, K5S_HAL_REGISTRY_ROW_NAMES,
-            K5T_HAL_REGISTRY_ROW_NAMES,
+            K5T_HAL_REGISTRY_ROW_NAMES, K5U_HAL_REGISTRY_ROW_NAMES,
         };
 
         for e in REGISTRY {
@@ -1680,6 +1681,7 @@ mod tests {
                 || K5R_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5S_HAL_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5T_HAL_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5U_HAL_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),
@@ -1699,10 +1701,10 @@ mod tests {
     #[test]
     fn registry_pending_meter_honest_after_k5r() {
         assert_eq!(REGISTRY.len(), 173);
-        assert_eq!(registry_pending_derivation_count(), 52);
+        assert_eq!(registry_pending_derivation_count(), 48);
         assert!(
-            registry_pending_derivation_count() < 57,
-            "K-5t HAL batch must reduce pending below wave-15 witness (57)"
+            registry_pending_derivation_count() < 53,
+            "K-5u H-8 HAL batch must reduce pending below STEER_20260930T2135 Q pool (53)"
         );
         assert!(registry_lean_formal_evidence_count() >= 3);
     }
