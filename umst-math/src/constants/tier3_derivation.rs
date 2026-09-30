@@ -259,6 +259,14 @@ pub const K5W_CRYPTO_REGISTRY_ROW_NAMES: &[&str] = &[
     "crypto_slh_dsa_128s_public_key_bytes",
 ];
 
+/// K-5y wave-21 batch: L-0 formal pin + Haskell toolchain + PERF-MEASURE-1 ceilings (4 rows).
+pub const K5Y_REGISTRY_ROW_NAMES: &[&str] = &[
+    "umst_formal_pin_sha",
+    "umst_haskell_toolchain_reference",
+    "egoff_candle_embed_batch_1000x_ceiling_us",
+    "egoff_manifold_action_canonicalize_p99_us",
+];
+
 /// K-5x wave-20 batch: M-0 manifold policy + §14bis.j rustc/python toolchain pins (6 rows).
 pub const K5X_REGISTRY_ROW_NAMES: &[&str] = &[
     "manifold_octree_max_depth",
@@ -428,6 +436,26 @@ pub fn k5x_backfilled_count() -> usize {
 #[must_use]
 pub fn k5x_backfill_landed() -> bool {
     k5x_backfilled_count() == K5X_REGISTRY_ROW_NAMES.len()
+}
+
+/// Count K-5y wave-21 rows with non-`Pending` derivation in REGISTRY.
+#[must_use]
+pub fn k5y_backfilled_count() -> usize {
+    K5Y_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5y REGISTRY backfill landed for STEER_20260930T2349 wave 21.
+#[must_use]
+pub fn k5y_backfill_landed() -> bool {
+    k5y_backfilled_count() == K5Y_REGISTRY_ROW_NAMES.len()
 }
 
 // --- K-5r wave-15 batch: cockpit §12 / HTTP / epistemic / semantic policy (C-4 deepen) ---
@@ -865,6 +893,21 @@ mod tests {
             assert!(
                 !entry.derivation.is_pending(),
                 "K-5x wave-20: {name} must be backfilled"
+            );
+        }
+    }
+
+    #[test]
+    fn k5y_registry_rows_backfilled_wave21() {
+        assert!(k5y_backfill_landed());
+        for name in K5Y_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5y wave-21: {name} must be backfilled"
             );
         }
     }

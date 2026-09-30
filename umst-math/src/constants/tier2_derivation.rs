@@ -677,6 +677,37 @@ pub const PYTHON_VERSION_PIN_DERIVATION: Derivation = Derivation::Pin {
     ref_name: "3.13.1",
 };
 
+/// Authority anchor for L-0 `umst_formal_pin_sha` (FORMAL_PIN.txt file digest).
+pub const L0_FORMAL_PIN_AUTHORITY: &str = "umst-math/FORMAL_PIN.txt";
+
+/// Pinned SHA-256 of `umst-math/FORMAL_PIN.txt` (measured STEER_20260930T2349 wave 21).
+pub const L0_FORMAL_PIN_FILE_SHA256: &str =
+    "f064139f82e259cddc8c648a388206b8396c42c39e99d85287fa9427f9a2daff";
+
+/// `umst_formal_pin_sha` — L-0 formal grounding synchrony file witness.
+pub const UMST_FORMAL_PIN_SHA_DERIVATION: Derivation = Derivation::Definition {
+    authority_url: L0_FORMAL_PIN_AUTHORITY,
+    expected_sha256: L0_FORMAL_PIN_FILE_SHA256,
+};
+
+/// `umst_haskell_toolchain_reference` — native Haskell gate pin (`egoff-haskell-toolchain.txt`).
+pub const UMST_HASKELL_TOOLCHAIN_DERIVATION: Derivation = Derivation::Pin {
+    repo: "ghc",
+    ref_name: "9.10.3",
+};
+
+/// `egoff_candle_embed_batch_1000x_ceiling_us` — PERF-MEASURE-1 embed batch ceiling.
+pub const EGOFF_CANDLE_EMBED_BATCH_CEILING_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: "umst/umst-meta/crates/umst-bench/fixtures/perf_measure_1_posture.json",
+    methodology_anchor: "PERF-MEASURE-1; egoff/.benchmarks_baseline.json embed_ceiling_us",
+};
+
+/// `egoff_manifold_action_canonicalize_p99_us` — PERF-MEASURE-1 canonicalize p99 ceiling.
+pub const EGOFF_MANIFOLD_CANONICALIZE_P99_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: "umst/umst-meta/crates/umst-bench/fixtures/perf_measure_1_posture.json",
+    methodology_anchor: "PERF-MEASURE-1; canonicalize_runtime_p99_under_500us",
+};
+
 /// K-5i energy + ZCI toolchain registry row names (7/7 for slice GREEN).
 pub const K5I_REGISTRY_ROW_NAMES: &[&str] = &[
     "rapl_package_dram_joules",
