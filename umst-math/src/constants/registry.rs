@@ -49,7 +49,9 @@ use super::tier2_derivation::{
     SMOOTHER_R_ETA_COG_DERIVATION, SMOOTHER_Q_DIGNITY_DERIVATION, SMOOTHER_R_DIGNITY_DERIVATION,
     SMOOTHER_Q_LANDAUER_SLACK_DERIVATION, SMOOTHER_R_LANDAUER_SLACK_DERIVATION,
 };
-use super::tier3_derivation::{ENERGY_BACKEND_DEFINITION, TUI_BIDI_DEFINITION};
+use super::tier3_derivation::{
+    ENERGY_BACKEND_DEFINITION, TUI_6B_COLOR_DEFINITION, TUI_BIDI_DEFINITION,
+};
 
 /// One documented numerical parameter (value, tier, evidence, optional env).
 /// CONSTANT-BOUND: `landauer_floor_j_per_bit` (schema; each row is a `ConstantEntry`).
@@ -708,7 +710,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_accent_light",
@@ -716,7 +718,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_body_dark",
@@ -724,7 +726,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_body_light",
@@ -732,7 +734,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_gauge_dark",
@@ -1624,7 +1626,7 @@ mod tests {
             K5G_REGISTRY_ROW_NAMES, K5H_REGISTRY_ROW_NAMES, K5I_REGISTRY_ROW_NAMES,
             K5J_REGISTRY_ROW_NAMES, K5K_REGISTRY_ROW_NAMES,
         };
-        use crate::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
+        use crate::constants::tier3_derivation::{K4_REGISTRY_ROW_NAMES, K5L_REGISTRY_ROW_NAMES};
 
         for e in REGISTRY {
             if K2_REGISTRY_ROW_NAMES.contains(&e.name)
@@ -1644,6 +1646,7 @@ mod tests {
                 || K5I_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5J_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5K_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5L_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),

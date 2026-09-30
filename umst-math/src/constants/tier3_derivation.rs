@@ -95,6 +95,50 @@ pub fn k4_backfill_landed() -> bool {
     k4_backfilled_count() == K4_REGISTRY_ROW_NAMES.len()
 }
 
+// --- K-5l TUI-6b sRGB theme palette (§14bis.e) — batched Definition backfill ---
+
+/// Authority anchor for TUI-6b paired `#RRGGBB` slots (`COCKPIT_DESIGN_BRIEF` Theme + keybindings).
+pub const TUI_6B_THEME_AUTHORITY: &str =
+    "COCKPIT_DESIGN_BRIEF.md#theme--keybindings-tui-6b-06-zcd-08-red-010-zci";
+
+/// Pinned SHA-256 of `egoff/COCKPIT_DESIGN_BRIEF.md` (measured STEER_20260930T1107 wave 10).
+pub const TUI_6B_THEME_BRIEF_SHA256: &str =
+    "462517a130617e3a95a7a389cd15924135bb267508cc8b4064741cccc981a18c";
+
+/// Shared `Derivation::Definition` for TUI-6b sRGB registry rows (one brief pin per slot).
+pub const TUI_6B_COLOR_DEFINITION: Derivation = Derivation::Definition {
+    authority_url: TUI_6B_THEME_AUTHORITY,
+    expected_sha256: TUI_6B_THEME_BRIEF_SHA256,
+};
+
+/// K-5l wave-10 batch: accent + body dark/light pairs (4/24 TUI-6b rows).
+pub const K5L_REGISTRY_ROW_NAMES: &[&str] = &[
+    "umst_tui_color_accent_dark",
+    "umst_tui_color_accent_light",
+    "umst_tui_color_body_dark",
+    "umst_tui_color_body_light",
+];
+
+/// Count K-5l rows with non-`Pending` derivation in REGISTRY.
+#[must_use]
+pub fn k5l_backfilled_count() -> usize {
+    K5L_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5l REGISTRY backfill landed for the current wave batch.
+#[must_use]
+pub fn k5l_backfill_landed() -> bool {
+    k5l_backfilled_count() == K5L_REGISTRY_ROW_NAMES.len()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -122,6 +166,23 @@ mod tests {
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
             );
+        }
+    }
+
+    #[test]
+    fn k5l_registry_rows_backfilled() {
+        assert!(k5l_backfill_landed());
+        for name in K5L_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5l: {name} must be backfilled"
+            );
+            assert_eq!(entry.derivation, TUI_6B_COLOR_DEFINITION);
+            assert_eq!(entry.derivation.label(), "Definition");
         }
     }
 }
