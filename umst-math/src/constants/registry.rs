@@ -838,7 +838,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_level_unknown_light",
@@ -846,7 +846,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_level_yellow_dark",
@@ -854,7 +854,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_level_yellow_light",
@@ -862,7 +862,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_muted_dim_dark",
@@ -870,7 +870,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_muted_dim_light",
@@ -878,7 +878,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_status_muted_dark",
@@ -886,7 +886,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_status_muted_light",
@@ -894,7 +894,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     // §14bis.f H-9 — HAL WorkloadKind::Smoke + badge (Tier-3 **Definitions**; CDD §0.11)
     ConstantEntry {
@@ -1521,6 +1521,21 @@ pub fn registry_sorted_by_tier() -> std::vec::Vec<&'static ConstantEntry> {
     v
 }
 
+/// Count REGISTRY rows still on [`Derivation::Pending`] (CDD backfill meter).
+#[must_use]
+pub fn registry_pending_derivation_count() -> usize {
+    REGISTRY.iter().filter(|e| e.derivation.is_pending()).count()
+}
+
+/// Rows whose `evidence` cites `UMST.Formal` — input set for Lean catalog / constant generation (`tools/lean_export`).
+#[must_use]
+pub fn registry_lean_formal_evidence_count() -> usize {
+    REGISTRY
+        .iter()
+        .filter(|e| e.evidence.trim().starts_with("UMST.Formal"))
+        .count()
+}
+
 /// Parse the markdown table in `docs/CGD_REGISTRY.md` §24a: first column of each data row (after the header row).
 #[cfg(test)]
 fn parse_24a_first_column_names(text: &str) -> Option<std::collections::HashSet<String>> {
@@ -1568,7 +1583,10 @@ fn parse_24a_first_column_names(text: &str) -> Option<std::collections::HashSet<
 
 #[cfg(test)]
 mod tests {
-    use super::{registry_sorted_by_tier, ConstantTier, REGISTRY};
+    use super::{
+        registry_lean_formal_evidence_count, registry_pending_derivation_count,
+        registry_sorted_by_tier, ConstantTier, REGISTRY,
+    };
 
     #[test]
     fn registry_rows_have_nonempty_core_fields() {
@@ -1628,7 +1646,8 @@ mod tests {
         };
         use crate::constants::tier3_derivation::{
             K4_REGISTRY_ROW_NAMES, K5L_REGISTRY_ROW_NAMES, K5M_REGISTRY_ROW_NAMES,
-            K5N_REGISTRY_ROW_NAMES, K5O_REGISTRY_ROW_NAMES,
+            K5N_REGISTRY_ROW_NAMES, K5O_REGISTRY_ROW_NAMES, K5P_REGISTRY_ROW_NAMES,
+            K5Q_REGISTRY_ROW_NAMES,
         };
 
         for e in REGISTRY {
@@ -1653,6 +1672,8 @@ mod tests {
                 || K5M_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5N_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5O_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5P_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5Q_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),
@@ -1667,6 +1688,16 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn registry_pending_meter_honest_after_k5q() {
+        assert_eq!(REGISTRY.len(), 173);
+        assert!(
+            registry_pending_derivation_count() < 72,
+            "K-5q must reduce pending below wave-13 pool baseline (72)"
+        );
+        assert!(registry_lean_formal_evidence_count() >= 3);
     }
 
     #[test]
