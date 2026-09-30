@@ -947,7 +947,8 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "umst_smoother_r_landauer_slack" => Some(SMOOTHER_R_LANDAUER_SLACK_DERIVATION),
         n if super::tier3_derivation::K5L_REGISTRY_ROW_NAMES.contains(&n)
             || super::tier3_derivation::K5M_REGISTRY_ROW_NAMES.contains(&n)
-            || super::tier3_derivation::K5N_REGISTRY_ROW_NAMES.contains(&n) =>
+            || super::tier3_derivation::K5N_REGISTRY_ROW_NAMES.contains(&n)
+            || super::tier3_derivation::K5O_REGISTRY_ROW_NAMES.contains(&n) =>
         {
             Some(super::tier3_derivation::TUI_6B_COLOR_DEFINITION)
         }

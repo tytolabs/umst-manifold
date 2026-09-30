@@ -135,6 +135,14 @@ pub const K5N_REGISTRY_ROW_NAMES: &[&str] = &[
     "umst_tui_color_level_orange_light",
 ];
 
+/// K-5o wave-13 batch: level red + teal dark/light pairs (4/24 TUI-6b rows).
+pub const K5O_REGISTRY_ROW_NAMES: &[&str] = &[
+    "umst_tui_color_level_red_dark",
+    "umst_tui_color_level_red_light",
+    "umst_tui_color_level_teal_dark",
+    "umst_tui_color_level_teal_light",
+];
+
 /// Count K-5l rows with non-`Pending` derivation in REGISTRY.
 #[must_use]
 pub fn k5l_backfilled_count() -> usize {
@@ -193,6 +201,26 @@ pub fn k5n_backfilled_count() -> usize {
 #[must_use]
 pub fn k5n_backfill_landed() -> bool {
     k5n_backfilled_count() == K5N_REGISTRY_ROW_NAMES.len()
+}
+
+/// Count K-5o rows with non-`Pending` derivation in REGISTRY.
+#[must_use]
+pub fn k5o_backfilled_count() -> usize {
+    K5O_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5o REGISTRY backfill landed for the current wave batch.
+#[must_use]
+pub fn k5o_backfill_landed() -> bool {
+    k5o_backfilled_count() == K5O_REGISTRY_ROW_NAMES.len()
 }
 
 #[cfg(test)]
@@ -270,6 +298,23 @@ mod tests {
             assert!(
                 !entry.derivation.is_pending(),
                 "K-5n: {name} must be backfilled"
+            );
+            assert_eq!(entry.derivation, TUI_6B_COLOR_DEFINITION);
+            assert_eq!(entry.derivation.label(), "Definition");
+        }
+    }
+
+    #[test]
+    fn k5o_registry_rows_backfilled() {
+        assert!(k5o_backfill_landed());
+        for name in K5O_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5o: {name} must be backfilled"
             );
             assert_eq!(entry.derivation, TUI_6B_COLOR_DEFINITION);
             assert_eq!(entry.derivation.label(), "Definition");

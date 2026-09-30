@@ -806,7 +806,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_level_red_light",
@@ -814,7 +814,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_level_teal_dark",
@@ -822,7 +822,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_level_teal_light",
@@ -830,7 +830,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_level_unknown_dark",
@@ -1628,7 +1628,7 @@ mod tests {
         };
         use crate::constants::tier3_derivation::{
             K4_REGISTRY_ROW_NAMES, K5L_REGISTRY_ROW_NAMES, K5M_REGISTRY_ROW_NAMES,
-            K5N_REGISTRY_ROW_NAMES,
+            K5N_REGISTRY_ROW_NAMES, K5O_REGISTRY_ROW_NAMES,
         };
 
         for e in REGISTRY {
@@ -1652,6 +1652,7 @@ mod tests {
                 || K5L_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5M_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5N_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5O_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),
