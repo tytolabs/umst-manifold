@@ -46,7 +46,8 @@ use super::tier2_derivation::{
     AGDA_VERSION_PIN_DERIVATION, GHC_VERSION_PIN_DERIVATION,
     COCKPIT_SMOOTHING_DEFAULT_DERIVATION, SMOOTHER_Q_RCC_DERIVATION, SMOOTHER_R_RCC_DERIVATION,
     SMOOTHER_Q_MI_DERIVATION, SMOOTHER_R_MI_DERIVATION, SMOOTHER_Q_ETA_COG_DERIVATION,
-    SMOOTHER_R_ETA_COG_DERIVATION,
+    SMOOTHER_R_ETA_COG_DERIVATION, SMOOTHER_Q_DIGNITY_DERIVATION, SMOOTHER_R_DIGNITY_DERIVATION,
+    SMOOTHER_Q_LANDAUER_SLACK_DERIVATION, SMOOTHER_R_LANDAUER_SLACK_DERIVATION,
 };
 use super::tier3_derivation::{ENERGY_BACKEND_DEFINITION, TUI_BIDI_DEFINITION};
 
@@ -674,7 +675,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `SEQ3` (dignity ramp); 9c0434d3; (b) ranks + clamp",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: SMOOTHER_Q_DIGNITY_DERIVATION,
     },
     ConstantEntry {
         name: "umst_smoother_r_dignity",
@@ -682,7 +683,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `SEQ3`; 9c0434d3; (b) as above",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: SMOOTHER_R_DIGNITY_DERIVATION,
     },
     ConstantEntry {
         name: "umst_smoother_q_landauer_slack",
@@ -690,7 +691,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `SEQ4` (wide dynamic range); 9c0434d3; (b) S_Δz rank uses max(D,1e-2) floor; landauer in D4̄ (cockpit mean)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: SMOOTHER_Q_LANDAUER_SLACK_DERIVATION,
     },
     ConstantEntry {
         name: "umst_smoother_r_landauer_slack",
@@ -698,7 +699,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `SEQ4`; 9c0434d3; (b) R from S_z / V4̄ clamp; excludes landauer from V4̄ to avoid scale blow-up",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: SMOOTHER_R_LANDAUER_SLACK_DERIVATION,
     },
     // CONSTANT-BOUND: TUI-6b sRGB (dark theme) + light pair — one stem per M0.4 color slot; leading `#RRGGBB` parse in `cockpit theme module`
     ConstantEntry {

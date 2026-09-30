@@ -749,6 +749,52 @@ pub const K5J_REGISTRY_ROW_NAMES: &[&str] = &[
     "umst_smoother_r_eta_cog",
 ];
 
+// --- K-5k TUI-7 SEQ3/4 dignity + Landauer slack (Q, R) batch (§14bis.k deepen wave 11) ---
+
+/// SSOT: `umst_smoother_q_dignity` (SEQ3 dignity ramp).
+pub const SMOOTHER_Q_DIGNITY: f64 = 1.2;
+
+/// SSOT: `umst_smoother_r_dignity` (SEQ3).
+pub const SMOOTHER_R_DIGNITY: f64 = 3_060.0;
+
+/// SSOT: `umst_smoother_q_landauer_slack` (SEQ4 wide dynamic range).
+pub const SMOOTHER_Q_LANDAUER_SLACK: f64 = 2.0;
+
+/// SSOT: `umst_smoother_r_landauer_slack` (SEQ4).
+pub const SMOOTHER_R_LANDAUER_SLACK: f64 = 3_300.0;
+
+/// `umst_smoother_q_dignity` — TUI-7b method (b) on SEQ3 dignity ramp.
+pub const SMOOTHER_Q_DIGNITY_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_q_dignity.jsonl",
+    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq3",
+};
+
+/// `umst_smoother_r_dignity` — companion R for SEQ3.
+pub const SMOOTHER_R_DIGNITY_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_r_dignity.jsonl",
+    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq3",
+};
+
+/// `umst_smoother_q_landauer_slack` — SEQ4 Landauer slack process noise.
+pub const SMOOTHER_Q_LANDAUER_SLACK_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_q_landauer_slack.jsonl",
+    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq4",
+};
+
+/// `umst_smoother_r_landauer_slack` — SEQ4 measurement noise.
+pub const SMOOTHER_R_LANDAUER_SLACK_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_r_landauer_slack.jsonl",
+    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq4",
+};
+
+/// K-5k TUI-7 SEQ3/4 smoother registry row names (4/4 for slice GREEN).
+pub const K5K_REGISTRY_ROW_NAMES: &[&str] = &[
+    "umst_smoother_q_dignity",
+    "umst_smoother_r_dignity",
+    "umst_smoother_q_landauer_slack",
+    "umst_smoother_r_landauer_slack",
+];
+
 /// K-5d registry row names (6/6 for slice GREEN).
 pub const K5D_REGISTRY_ROW_NAMES: &[&str] = &[
     "landauer_proximity_multiplier",
@@ -895,8 +941,32 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "umst_smoother_r_mi" => Some(SMOOTHER_R_MI_DERIVATION),
         "umst_smoother_q_eta_cog" => Some(SMOOTHER_Q_ETA_COG_DERIVATION),
         "umst_smoother_r_eta_cog" => Some(SMOOTHER_R_ETA_COG_DERIVATION),
+        "umst_smoother_q_dignity" => Some(SMOOTHER_Q_DIGNITY_DERIVATION),
+        "umst_smoother_r_dignity" => Some(SMOOTHER_R_DIGNITY_DERIVATION),
+        "umst_smoother_q_landauer_slack" => Some(SMOOTHER_Q_LANDAUER_SLACK_DERIVATION),
+        "umst_smoother_r_landauer_slack" => Some(SMOOTHER_R_LANDAUER_SLACK_DERIVATION),
         _ => None,
     }
+}
+
+/// Count K-5k rows with non-`Pending` derivation.
+#[must_use]
+pub fn k5k_backfilled_count() -> usize {
+    K5K_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5k REGISTRY backfill landed.
+#[must_use]
+pub fn k5k_backfill_landed() -> bool {
+    k5k_backfilled_count() == K5K_REGISTRY_ROW_NAMES.len()
 }
 
 /// Count K-5j rows with non-`Pending` derivation.
@@ -1311,6 +1381,33 @@ mod tests {
         assert_eq!(
             registry_f64_by_name("umst_smoother_r_eta_cog").expect("r"),
             SMOOTHER_R_ETA_COG
+        );
+    }
+
+    #[test]
+    fn k5k_registry_rows_backfilled() {
+        assert!(k5k_backfill_landed());
+        for name in K5K_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5k: {name} must be backfilled"
+            );
+            assert_eq!(
+                entry.derivation,
+                derivation_for_registry_row(name).expect("lookup")
+            );
+        }
+        assert_eq!(
+            registry_f64_by_name("umst_smoother_q_dignity").expect("q"),
+            SMOOTHER_Q_DIGNITY
+        );
+        assert_eq!(
+            registry_f64_by_name("umst_smoother_r_landauer_slack").expect("r"),
+            SMOOTHER_R_LANDAUER_SLACK
         );
     }
 
