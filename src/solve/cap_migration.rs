@@ -127,6 +127,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "hex masked structured PCG hard-stops at max_iter; needs hex elasticity strain-energy meter before unfold debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/time_orchestration.rs",
+        legacy_token: "SimulationClocks.max_mech_sub_iters_per_chem (chem→mech substep cap)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "coupled chem–mech clock substep cap binds before staggered energy meter; needs unfold debit witness before cap removal",
+        },
+    },
 ];
 
 #[must_use]
@@ -140,7 +147,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 14);
+        assert_eq!(cap_migration_site_count(), 15);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -196,6 +203,12 @@ mod tests {
         assert_eq!(hex_pcg.legacy_module, "physics/hex_elasticity.rs");
         assert!(matches!(
             hex_pcg.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let clocks = &CAP_MIGRATION_SITES[14];
+        assert_eq!(clocks.legacy_module, "physics/time_orchestration.rs");
+        assert!(matches!(
+            clocks.disposition,
             CapMigrationDisposition::HonestTypedAbsence { .. }
         ));
     }
