@@ -226,6 +226,39 @@ pub const K5V_CRYPTO_REGISTRY_ROW_NAMES: &[&str] = &[
     "crypto_sha3_256_digest_bytes",
 ];
 
+/// Authority anchor for §14bis.f-S-0 ML-DSA-65 byte-width Definition rows.
+pub const S_0_ML_DSA_AUTHORITY: &str = "umst-math/src/crypto/sig/ml_dsa_65.rs#ML-DSA-65";
+
+/// Pinned SHA-256 of `umst-math/src/crypto/sig/ml_dsa_65.rs` (measured STEER_20260930T2247 wave 19).
+pub const S_0_ML_DSA_SHA256: &str =
+    "040a3ec606f19b624b182d93f51c0ba78a2cdbec2799c60ae7646ffcf1c9ca47";
+
+/// Shared `Derivation::Definition` for §14bis.f-S-0 ML-DSA-65 wire byte widths.
+pub const S_0_ML_DSA_DEFINITION: Derivation = Derivation::Definition {
+    authority_url: S_0_ML_DSA_AUTHORITY,
+    expected_sha256: S_0_ML_DSA_SHA256,
+};
+
+/// Authority anchor for §14bis.f-S-0 SLH-DSA-128s byte-width Definition rows.
+pub const S_0_SLH_DSA_AUTHORITY: &str = "umst-math/src/crypto/sig/slh_dsa_128s.rs#SLH-DSA-128s";
+
+/// Pinned SHA-256 of `umst-math/src/crypto/sig/slh_dsa_128s.rs` (measured STEER_20260930T2247 wave 19).
+pub const S_0_SLH_DSA_SHA256: &str =
+    "3b7319c939b885e1046a7241a911260f54c453a9c48c987ce20a3da3acf5c86e";
+
+/// Shared `Derivation::Definition` for §14bis.f-S-0 SLH-DSA-128s wire byte widths.
+pub const S_0_SLH_DSA_DEFINITION: Derivation = Derivation::Definition {
+    authority_url: S_0_SLH_DSA_AUTHORITY,
+    expected_sha256: S_0_SLH_DSA_SHA256,
+};
+
+/// K-5w wave-19 batch: ML-DSA-65 + SLH-DSA-128s public key widths (3/8 S-0 Definition rows).
+pub const K5W_CRYPTO_REGISTRY_ROW_NAMES: &[&str] = &[
+    "crypto_ml_dsa_65_public_key_bytes",
+    "crypto_ml_dsa_65_secret_key_bytes",
+    "crypto_slh_dsa_128s_public_key_bytes",
+];
+
 /// Authority anchor for §14bis.f-M-0 manifold Definition rows.
 pub const M_0_MANIFOLD_AUTHORITY: &str = "umst-math/src/manifold/mod.rs#M-Arc";
 
@@ -345,6 +378,26 @@ pub fn k5v_m0_backfilled_count() -> usize {
 #[must_use]
 pub fn k5v_m0_backfill_landed() -> bool {
     k5v_m0_backfilled_count() == K5V_M0_REGISTRY_ROW_NAMES.len()
+}
+
+/// Count K-5w S-0 sig rows with non-`Pending` derivation in REGISTRY.
+#[must_use]
+pub fn k5w_crypto_backfilled_count() -> usize {
+    K5W_CRYPTO_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5w S-0 sig REGISTRY backfill landed for the current wave batch.
+#[must_use]
+pub fn k5w_crypto_backfill_landed() -> bool {
+    k5w_crypto_backfilled_count() == K5W_CRYPTO_REGISTRY_ROW_NAMES.len()
 }
 
 // --- K-5r wave-15 batch: cockpit §12 / HTTP / epistemic / semantic policy (C-4 deepen) ---
@@ -767,6 +820,28 @@ mod tests {
                 "K-5v S-0 crypto: {name} must be backfilled"
             );
             assert_eq!(entry.derivation, S_0_CRYPTO_DEFINITION);
+            assert_eq!(entry.derivation.label(), "Definition");
+        }
+    }
+
+    #[test]
+    fn k5w_crypto_registry_rows_backfilled() {
+        assert!(k5w_crypto_backfill_landed());
+        for name in K5W_CRYPTO_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5w S-0 sig: {name} must be backfilled"
+            );
+            let expected = if name.contains("slh") {
+                S_0_SLH_DSA_DEFINITION
+            } else {
+                S_0_ML_DSA_DEFINITION
+            };
+            assert_eq!(entry.derivation, expected);
             assert_eq!(entry.derivation.label(), "Definition");
         }
     }

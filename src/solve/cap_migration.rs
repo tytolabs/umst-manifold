@@ -169,6 +169,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "topology adjoint masked PCG hard-stops at max_cg_iterations before adjoint energy meter; needs unfold debit witness before cap removal",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/solvers/acoustics.rs",
+        legacy_token: "AcousticNewmarkBar1dPeriodic.run_to_energy_tol(max_steps, energy_tol, …)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "Newmark energy-relaxation loop caps at max_steps before acoustic mechanical-energy meter ties to unfold debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -182,7 +189,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 20);
+        assert_eq!(cap_migration_site_count(), 21);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -274,6 +281,12 @@ mod tests {
         assert_eq!(adjoint.legacy_module, "physics/adjoint.rs");
         assert!(matches!(
             adjoint.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let acoustics = &CAP_MIGRATION_SITES[20];
+        assert_eq!(acoustics.legacy_module, "physics/solvers/acoustics.rs");
+        assert!(matches!(
+            acoustics.disposition,
             CapMigrationDisposition::HonestTypedAbsence { .. }
         ));
     }

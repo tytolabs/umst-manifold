@@ -53,6 +53,7 @@ use super::tier3_derivation::{
     COCKPIT_HTTP_CORS_DEFINITION, COCKPIT_RANKER_WEIGHT_DEFINITION,
     EPISTEMIC_PROXY_ESTIMATOR_DEFINITION, ENERGY_BACKEND_DEFINITION, H_8_HAL_DEFINITION,
     H_9_HAL_DEFINITION, M_0_MANIFOLD_DEFINITION, S_0_CRYPTO_DEFINITION,
+    S_0_ML_DSA_DEFINITION, S_0_SLH_DSA_DEFINITION,
     SEMANTIC_COVERAGE_W5_DEFINITION, TUI_6B_COLOR_DEFINITION, TUI_BIDI_DEFINITION,
 };
 
@@ -1448,7 +1449,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; FIPS 204 class mapping; `Crypto/Sig.lean` L-S1 stub)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: S_0_ML_DSA_DEFINITION,
     },
     ConstantEntry {
         name: "crypto_ml_dsa_65_secret_key_bytes",
@@ -1456,7 +1457,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; ML-DSA-65 SK wire)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: S_0_ML_DSA_DEFINITION,
     },
     ConstantEntry {
         name: "crypto_slh_dsa_128s_public_key_bytes",
@@ -1464,7 +1465,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; SPHINCS+ SHA2-128s-simple PK seed size)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: S_0_SLH_DSA_DEFINITION,
     },
     ConstantEntry {
         name: "crypto_sha3_256_digest_bytes",
@@ -1653,6 +1654,7 @@ mod tests {
             K5Q_REGISTRY_ROW_NAMES, K5R_REGISTRY_ROW_NAMES, K5S_HAL_REGISTRY_ROW_NAMES,
             K5T_HAL_REGISTRY_ROW_NAMES, K5U_HAL_REGISTRY_ROW_NAMES,
             K5V_CRYPTO_REGISTRY_ROW_NAMES, K5V_M0_REGISTRY_ROW_NAMES,
+            K5W_CRYPTO_REGISTRY_ROW_NAMES,
         };
 
         for e in REGISTRY {
@@ -1685,6 +1687,7 @@ mod tests {
                 || K5U_HAL_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5V_CRYPTO_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5V_M0_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5W_CRYPTO_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),
@@ -1704,10 +1707,10 @@ mod tests {
     #[test]
     fn registry_pending_meter_honest_after_k5r() {
         assert_eq!(REGISTRY.len(), 173);
-        assert_eq!(registry_pending_derivation_count(), 40);
+        assert_eq!(registry_pending_derivation_count(), 37);
         assert!(
-            registry_pending_derivation_count() < 48,
-            "K-5v M-0 batch must reduce pending below STEER_20260930T2135 wave 17 (48)"
+            registry_pending_derivation_count() < 40,
+            "K-5w S-0 sig batch must reduce pending below STEER_20260930T2226 wave 18 (40)"
         );
         assert!(registry_lean_formal_evidence_count() >= 3);
     }
