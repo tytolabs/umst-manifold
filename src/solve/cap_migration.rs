@@ -148,6 +148,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "shared bounded driver backs acoustics Newmark, rheology Jacobi, fracture outer loops; needs per-physics unfold debit meter before cap removal",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/solve_budget.rs",
+        legacy_token: "pcg_max_iter / max_cg_iterations overlay (cockpit budget lane)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "cockpit PCG cap overlays registry max_cg_iterations before hex/adjoint solves; needs unified energy-budget witness before unfold debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -161,7 +168,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 17);
+        assert_eq!(cap_migration_site_count(), 18);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -235,6 +242,12 @@ mod tests {
         assert_eq!(iterate_until.legacy_module, "core/iterate_until.rs");
         assert!(matches!(
             iterate_until.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let solve_budget = &CAP_MIGRATION_SITES[17];
+        assert_eq!(solve_budget.legacy_module, "physics/solve_budget.rs");
+        assert!(matches!(
+            solve_budget.disposition,
             CapMigrationDisposition::HonestTypedAbsence { .. }
         ));
     }
