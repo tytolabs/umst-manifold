@@ -155,6 +155,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "cockpit PCG cap overlays registry max_cg_iterations before hex/adjoint solves; needs unified energy-budget witness before unfold debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/mechanics_solve_port.rs",
+        legacy_token: "MechanicsInnerLoopConfig.max_cg_iterations (bar port integration fixture)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "mechanics solve port bar-network fixture hard-codes max_cg_iterations before port-level energy meter; needs unfold debit witness before cap removal",
+        },
+    },
 ];
 
 #[must_use]
@@ -168,7 +175,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 18);
+        assert_eq!(cap_migration_site_count(), 19);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -248,6 +255,12 @@ mod tests {
         assert_eq!(solve_budget.legacy_module, "physics/solve_budget.rs");
         assert!(matches!(
             solve_budget.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let mechanics_port = &CAP_MIGRATION_SITES[18];
+        assert_eq!(mechanics_port.legacy_module, "physics/mechanics_solve_port.rs");
+        assert!(matches!(
+            mechanics_port.disposition,
             CapMigrationDisposition::HonestTypedAbsence { .. }
         ));
     }
