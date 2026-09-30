@@ -1504,6 +1504,9 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
 ];
 
+/// SSOT ambient reference temperature (K); mirrors row `host_temperature_fallback_k`.
+pub const HOST_TEMPERATURE_FALLBACK_K: f64 = 300.0;
+
 /// THEOREM-BOUND: first `f64` token in `expression` (leading positive decimal); `None` if the row is non-numeric (e.g. `#RRGGBB` colors, string policies).
 /// Used for TUI-7b per-metric Joseph/Kalman covariances (`umst_smoother_{q,r}_*`).
 #[must_use]

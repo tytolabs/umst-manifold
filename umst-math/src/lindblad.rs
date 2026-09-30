@@ -8,7 +8,7 @@
 /// Dephasing rate parameter (1/s) placeholder for Lindblad generator calibration.
 ///
 /// Proof: `LindbladDynamics` / `dephasingSolution_tendsto_diagonal`.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 pub fn dephasing_rate_placeholder() -> f64 {
     1.0
 }

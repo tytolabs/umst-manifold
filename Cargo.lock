@@ -3388,6 +3388,7 @@ dependencies = [
 name = "umst-cartridge-concrete"
 version = "0.1.0"
 dependencies = [
+ "serde_json",
  "umst-cartridge-active",
  "umst-cartridge-api",
  "umst-cartridge-continuum",

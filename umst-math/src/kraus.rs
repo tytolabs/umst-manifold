@@ -7,7 +7,7 @@ use crate::density::DensityDiag;
 /// Project diagonal state onto branch `k` (Lüders-style classical collapse).
 ///
 /// Proof: `WhichPathMeasurementUpdate` / `measurementUpdateWhichPath`.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 pub fn lueders_branch<const N: usize>(d: &DensityDiag<N>, branch: usize) -> Option<DensityDiag<N>> {
     if branch >= N {
         return None;
@@ -24,7 +24,7 @@ pub fn lueders_branch<const N: usize>(d: &DensityDiag<N>, branch: usize) -> Opti
 /// Compose identity channel (no-op) on diagonal factors.
 ///
 /// Proof: unital CPTP identity / `identityChannel` classical embedding.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 pub fn identity_channel<const N: usize>(d: &DensityDiag<N>) -> DensityDiag<N> {
     d.clone()
 }

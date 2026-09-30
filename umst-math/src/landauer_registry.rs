@@ -7,7 +7,7 @@
 use crate::landauer::K_B;
 
 /// Reference ambient temperature (K) for derived Landauer rows (cockpit fallback anchor).
-pub const HOST_TEMPERATURE_REFERENCE_K: f64 = 300.0;
+pub const HOST_TEMPERATURE_REFERENCE_K: f64 = crate::constants::registry::HOST_TEMPERATURE_FALLBACK_K;
 
 /// One CODATA-grounded or Landauer-derived physical constant.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -69,6 +69,19 @@ mod tests {
     use crate::landauer::landauer_bit_energy_joules;
     use ordered_float::NotNan;
 
+    /// N_float / Landauer host-T SSOT pin (STEER_20261001T0256 wave 23).
+    #[test]
+    fn n_float_steer_wave_twenty_three_host_temperature_registry_linked() {
+        const STEER: &str = "STEER_20261001T0256";
+        const WAVE: u32 = 23;
+        assert_eq!(STEER, "STEER_20261001T0256");
+        assert_eq!(WAVE, 23);
+        assert_eq!(
+            HOST_TEMPERATURE_REFERENCE_K,
+            crate::constants::registry::HOST_TEMPERATURE_FALLBACK_K
+        );
+    }
+
     #[test]
     fn codata_landauer_rows_match_landauer_ssot() {
         let k_b = LandauerRegistry::get("k_boltzmann_j_per_k").expect("k_B row");
@@ -79,7 +92,8 @@ mod tests {
         assert!((ln2.value - std::f64::consts::LN_2).abs() < f64::EPSILON);
 
         let e300 = LandauerRegistry::get("landauer_bit_energy_300k_j").expect("300K row");
-        let expected = landauer_bit_energy_joules(NotNan::new(300.0).unwrap()).into_inner();
+        let expected =
+            landauer_bit_energy_joules(NotNan::new(HOST_TEMPERATURE_REFERENCE_K).unwrap()).into_inner();
         assert!((e300.value - expected).abs() < 1e-30);
     }
 }

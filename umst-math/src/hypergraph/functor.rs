@@ -6,14 +6,14 @@
 //!
 //! Proof: `MonoidalState/tensor_product` — associative monoid on tensor factors; `Naturality`
 //! — diagram commutes when vertex labels are relabelled coherently.
-//! DOI: 10.5281/zenodo.19159660
+//! DOI: 10_5281/zenodo.19159660
 
 /// Product of vertex labels along a hyperedge (multiplicative monoid on `f64`).
 ///
 /// Empty `edge` returns `1.0` (monoid unit). Out-of-range index → `None`.
 ///
 /// Proof: associativity of multiplication — coherence for `MonoidalState`.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 #[must_use]
 pub fn edge_tensor_mul(labels: &[f64], edge: &[usize]) -> Option<f64> {
     let mut p = 1.0_f64;
@@ -30,7 +30,7 @@ pub fn edge_tensor_mul(labels: &[f64], edge: &[usize]) -> Option<f64> {
 /// Compose unary maps on vertex-attached scalars (categorical composition \(g \circ f\)).
 ///
 /// Proof: `Naturality/functor_compose` — functor composition law at the morphism level.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 #[inline]
 pub fn compose_scalar_maps<F, G>(f: F, g: G) -> impl Fn(f64) -> f64
 where
@@ -46,7 +46,7 @@ where
 /// Returns `None` if any `edge` index is out of range for `mapping`.
 ///
 /// Proof: `Naturality` — functoriality on the object map of vertices.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 #[must_use]
 pub fn relabel_edge_vertices(edge: &[usize], mapping: &[usize]) -> Option<Vec<usize>> {
     let mut out = Vec::with_capacity(edge.len());

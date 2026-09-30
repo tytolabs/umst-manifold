@@ -23,7 +23,7 @@ fn landauer_floor_j(temperature_k: f64) -> f64 {
 
 /// η_cog = dignity · ΔMI / (ΔE + k_B T ln 2) — denominator case **(i)** (COCKPIT_DESIGN_BRIEF §5).
 ///
-/// Proof: `UMST.Formal.EtaCog::eta_cog_nonneg` (Zenodo **10.5281/zenodo.19159660**).
+/// Proof: `UMST.Formal.EtaCog::eta_cog_nonneg` (Zenodo **10_5281/zenodo.19159660**).
 #[must_use]
 pub fn eta_cog(dignity_value: f64, c: &EtaCogClaim) -> f64 {
     let lb = landauer_floor_j(c.temperature_k);

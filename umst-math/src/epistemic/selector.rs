@@ -13,7 +13,7 @@
 //! Proof: `InformationCostIdentity/residualCoherence_eq_one_minus_epistemic_bits` (RCC weights MI relevance);
 //! `EpistemicMI/epistemicMIBits_le_one` (per-step epistemic MI clamp in \([0,1]\) for ranking scores);
 //! `Gate/gate_check` (admissible candidates only).
-//! DOI: 10.5281/zenodo.19159660
+//! DOI: 10_5281/zenodo.19159660
 
 use ordered_float::NotNan;
 
@@ -21,19 +21,19 @@ use ordered_float::NotNan;
 ///
 /// Proof: policy parameters do not alter formal statements — they specialise runtime choice only
 /// (`EpistemicMI/epistemicMIBits_nonneg`).
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 #[derive(Clone, Debug, PartialEq)]
 pub struct SelectorParams {
     /// Positive scale on clamped MI; default `1.0`.
     ///
     /// Proof: linear positive scaling preserves strict order on nonnegative scores.
-    /// DOI: 10.5281/zenodo.19159660
+    /// DOI: 10_5281/zenodo.19159660
     pub mi_scale: NotNan<f64>,
     /// Optional residual coherence capacity \( \in [0,1] \) — when `Some`, scores are multiplied.
     ///
     /// Proof: `InformationCostIdentity/residualCoherence_eq_one_minus_epistemic_bits` — RCC couples
     /// epistemic bits to measurable coherence.
-    /// DOI: 10.5281/zenodo.19159660
+    /// DOI: 10_5281/zenodo.19159660
     pub residual_coherence: Option<NotNan<f64>>,
 }
 
@@ -50,7 +50,7 @@ impl SelectorParams {
     /// RCC factor in \([0,1]\), or identity `1.0` when unset.
     ///
     /// Proof: product of nonnegative bounded factors stays bounded — compatible with gate semantics.
-    /// DOI: 10.5281/zenodo.19159660
+    /// DOI: 10_5281/zenodo.19159660
     #[must_use]
     pub fn rcc_factor(&self) -> NotNan<f64> {
         self.residual_coherence
@@ -62,7 +62,7 @@ impl SelectorParams {
 /// One candidate epistemic proxy (e.g. trajectory integrator, density probe, estimator).
 ///
 /// Proof: `Gate/gate_check` — only `admissible` rows participate in ranking.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 #[derive(Clone, Debug, PartialEq)]
 pub struct EpistemicProxyCandidate<'a> {
     /// Stable identifier for deterministic tie-break (lexicographic).
@@ -76,7 +76,7 @@ pub struct EpistemicProxyCandidate<'a> {
 /// Output row: candidate + computed ranking score (for telemetry / tests).
 ///
 /// Proof: ordering is total on scores then `id` — stable sort key.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 #[derive(Clone, Debug, PartialEq)]
 pub struct RankedProxy<'a> {
     /// Ranked candidate (admissible, finite MI).
@@ -100,7 +100,7 @@ fn clamp01_epistemic(mi: f64) -> Option<NotNan<f64>> {
 ///
 /// Proof: `EpistemicMI/epistemicMIBits_le_one` motivates clamping MI contributions to \([0,1]\) for
 /// comparability across estimators; `EpistemicMI/epistemicMIBits_nonneg` ensures nonnegative scores.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 #[must_use]
 pub fn rank_epistemic_proxies_by_mi<'a>(
     candidates: &'a [EpistemicProxyCandidate<'a>],

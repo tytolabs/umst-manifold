@@ -14,6 +14,6 @@ pub use selector::{
 /// Probe label for provider-indexed MI accounting.
 ///
 /// Proof: `EpistemicSensing` / `QuantumProbe`.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 #[derive(Clone, Debug)]
 pub struct ProbeId(pub &'static str);

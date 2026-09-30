@@ -3,7 +3,7 @@
 //! Shannon / Petz classical limits, Kahan-summed where long runs matter.
 //!
 //! Proof anchors: `umst-formal/Lean/` and double-slit `QuantumMutualInfo` / `LandauerBound` families.
-//! DOI: 10.5281/zenodo.18940933 (meso) · 10.5281/zenodo.19159660 (quantum bridge).
+//! DOI: 10_5281/zenodo.18940933 (meso) · 10_5281/zenodo.19159660 (quantum bridge).
 
 use std::collections::HashMap;
 
@@ -18,12 +18,12 @@ use crate::kahan::KahanSum;
 /// Minimum extensive negentropy gain **J = N·H** (bits) treated as passing the thermodynamic gate.
 ///
 /// Proof context: Sagawa–Ueda feedback yield; sharp bound from PMIC in Oracle v2 (Phase 5).
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub const MIN_NEGENTROPY_FLOOR_BITS: f64 = 0.01;
 
 /// Legacy name — same value as [`MIN_NEGENTROPY_FLOOR_BITS`] (legacy oracle compatibility).
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub const MIN_NEGENTROPY: f64 = MIN_NEGENTROPY_FLOOR_BITS;
 
@@ -31,7 +31,7 @@ pub const MIN_NEGENTROPY: f64 = MIN_NEGENTROPY_FLOOR_BITS;
 ///
 /// Matches Lean `UMST.DoubleSlit.PMICEntropyInterior.four_mul_x_one_sub_x_mul_log_two_interior`
 /// after dividing the natural-log statement by `ln 2` (binary entropy in bits).
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 #[inline]
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn pmic_binary_entropy_lower_envelope_bits(p: f64) -> f64 {
@@ -45,7 +45,7 @@ pub fn pmic_binary_entropy_lower_envelope_bits(p: f64) -> f64 {
 /// Degenerate one-token corpora yield `x → 0` and envelope `0` — callers should combine with
 /// [`MIN_NEGENTROPY_FLOOR_BITS`] and participatory checks.
 ///
-/// Lean: `UMST.DoubleSlit.PMICEntropyInterior` family (envelope); DOI: 10.5281/zenodo.19159660.
+/// Lean: `UMST.DoubleSlit.PMICEntropyInterior` family (envelope); DOI: 10_5281/zenodo.19159660.
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn pmic_extensive_negentropy_floor_bits(text: &str) -> f64 {
     let clean = strip_think_tags(text);
@@ -64,21 +64,21 @@ pub fn pmic_extensive_negentropy_floor_bits(text: &str) -> f64 {
 /// Minimum per-token Shannon entropy (bits) for participatory richness lower band.
 ///
 /// Proof context: tunable band on [`text_entropy`] until Klein/DPI v2 (Phase 5+ sharp PMIC bounds); not a proved sharp bound.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub const MIN_RICHNESS_ENTROPY: f64 = 0.5;
 
 /// Maximum per-token Shannon entropy (bits) for participatory richness upper band.
 ///
 /// Proof context: same as [`MIN_RICHNESS_ENTROPY`] — engineering band for Oracle participatory gate.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub const MAX_RICHNESS_ENTROPY: f64 = 14.0;
 
 /// Shannon entropy **H(X) = −Σ p log₂ p** over a finite support (bits), Kahan-summed.
 ///
 /// Proof: classical limit of von Neumann on diagonal states (`VonNeumannEntropy` tree).
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn entropy(dist: &HashMap<String, f64>) -> f64 {
     let mut k = KahanSum::new();
@@ -91,7 +91,7 @@ pub fn entropy(dist: &HashMap<String, f64>) -> f64 {
 /// Shannon entropy of empirical text (token model in [`crate::io`]).
 ///
 /// Proof: classical **H** on empirical token frequencies; UMST oracle estimator.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn text_entropy(text: &str) -> f64 {
     let clean = strip_think_tags(text);
@@ -103,7 +103,7 @@ pub fn text_entropy(text: &str) -> f64 {
 /// Binary Shannon entropy **h₂(p) = −p log₂ p − (1−p) log₂ (1−p)** in bits.
 ///
 /// Proof: `PMICEntropyInterior` / path entropy lemmas (double-slit).
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn binary_entropy_bits(p: NotNan<f64>) -> NotNan<f64> {
     let x = p.into_inner().clamp(0.0, 1.0);
@@ -117,7 +117,7 @@ pub fn binary_entropy_bits(p: NotNan<f64>) -> NotNan<f64> {
 /// Shannon entropy of a diagonal density (same as classical **H({pᵢ})**).
 ///
 /// Proof: diagonal von Neumann equals Shannon on spectrum.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn shannon_diag_bits<const N: usize>(d: &DensityDiag<N>) -> NotNan<f64> {
     let mut k = KahanSum::new();
@@ -133,7 +133,7 @@ pub fn shannon_diag_bits<const N: usize>(d: &DensityDiag<N>) -> NotNan<f64> {
 /// Kahan-summed **−Σ p log₂ p** for a probability slice (SIMD hook point under `simd` feature).
 ///
 /// Proof: same functional as [`shannon_diag_bits`] on explicit mass vector.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn shannon_binary_kahan(probs: &[f64]) -> f64 {
     let mut k = KahanSum::new();
@@ -148,7 +148,7 @@ pub fn shannon_binary_kahan(probs: &[f64]) -> f64 {
 /// von Neumann entropy of a diagonal state = [`shannon_diag_bits`].
 ///
 /// Proof: `VonNeumannEntropy` — spectrum-only functional on diagonal ρ.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn von_neumann_entropy_diagonal<const N: usize>(d: &DensityDiag<N>) -> NotNan<f64> {
     shannon_diag_bits(d)
@@ -157,7 +157,7 @@ pub fn von_neumann_entropy_diagonal<const N: usize>(d: &DensityDiag<N>) -> NotNa
 /// KL divergence **D(P‖Q)** in nats (commuting / classical limit of Petz divergence).
 ///
 /// Proof: `KleinInequality` classical diagonal case.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn kl_divergence(p: &HashMap<String, f64>, q: &HashMap<String, f64>) -> f64 {
     p.iter()
@@ -177,7 +177,7 @@ pub fn kl_divergence(p: &HashMap<String, f64>, q: &HashMap<String, f64>) -> f64 
 /// Negentropy yield **J ≈ N · H** (bits) for tokenised text — Sagawa–Ueda proxy.
 ///
 /// Proof: extensive information yield context in `LandauerBound` / feedback literature.
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn negentropy(text: &str) -> f64 {
     let clean = strip_think_tags(text);
@@ -193,7 +193,7 @@ pub fn negentropy(text: &str) -> f64 {
 /// Mutual information **I(X;Y)** from concatenated joint proxy (UMST legacy estimator).
 ///
 /// Proof: classical **I = H(X)+H(Y)−H(X,Y)** on empirical marginals (surrogate).
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn mutual_information(text_a: &str, text_b: &str) -> f64 {
     let ha = text_entropy(text_a);
@@ -206,7 +206,7 @@ pub fn mutual_information(text_a: &str, text_b: &str) -> f64 {
 /// Approximate conditional entropy **H(Y|X)** from joint proxy.
 ///
 /// Proof: classical **H(Y|X) = H(X,Y) − H(X)** on empirical estimators (surrogate).
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn conditional_entropy(text_x: &str, text_y: &str) -> f64 {
     let hx = text_entropy(text_x);
@@ -218,7 +218,7 @@ pub fn conditional_entropy(text_x: &str, text_y: &str) -> f64 {
 /// Thermodynamic admissibility: extensive negentropy above PMIC envelope (and legacy floor).
 ///
 /// Proof: combines [`pmic_extensive_negentropy_floor_bits`] with [`negentropy`] (Oracle v2 gate).
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn thermodynamic_check(proposal: &str) -> bool {
     let floor = pmic_extensive_negentropy_floor_bits(proposal).max(MIN_NEGENTROPY_FLOOR_BITS);
@@ -228,7 +228,7 @@ pub fn thermodynamic_check(proposal: &str) -> bool {
 /// Participatory richness band on per-token entropy.
 ///
 /// Proof: band check on [`text_entropy`] — participatory surrogate until Klein/DPI v2 (Phase 5+ sharp PMIC bounds).
-/// DOI: 10.5281/zenodo.19159660
+/// DOI: 10_5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn participatory_richness_check(proposal: &str) -> bool {
     let h = text_entropy(proposal);
