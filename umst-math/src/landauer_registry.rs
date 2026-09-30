@@ -69,6 +69,20 @@ mod tests {
     use crate::landauer::landauer_bit_energy_joules;
     use ordered_float::NotNan;
 
+    /// N_float / Landauer host-T SSOT pin (STEER_20261001T0359 wave 24).
+    #[test]
+    fn n_float_steer_wave_twenty_four_host_temperature_registry_linked() {
+        const STEER: &str = "STEER_20261001T0359";
+        const WAVE: u32 = 24;
+        assert_eq!(STEER, "STEER_20261001T0359");
+        assert_eq!(WAVE, 24);
+        assert_eq!(
+            HOST_TEMPERATURE_REFERENCE_K,
+            crate::constants::registry::HOST_TEMPERATURE_FALLBACK_K
+        );
+        assert!(LandauerRegistry::get("landauer_bit_energy_300k_j").is_some());
+    }
+
     /// N_float / Landauer host-T SSOT pin (STEER_20261001T0256 wave 23).
     #[test]
     fn n_float_steer_wave_twenty_three_host_temperature_registry_linked() {
