@@ -676,6 +676,79 @@ pub const K5I_REGISTRY_ROW_NAMES: &[&str] = &[
     "ghc_version_pin",
 ];
 
+// --- K-5j TUI-7 cockpit smoother default + SEQ0..2 (Q, R) batch (§14bis.k deepen wave 10) ---
+
+/// Vendor pin for scalar Kalman/EKF smoothers (§14bis.e TUI-7; default **ekf** policy).
+pub const COCKPIT_SMOOTHING_DEFAULT_DERIVATION: Derivation = Derivation::Pin {
+    repo: "tytolabs/umst-prototype-2a",
+    ref_name: "9c0434d3ebade8f697bbd402bb080ea00da76914",
+};
+
+/// SSOT: `umst_smoother_q_rcc` (method (b); SEQ0 bisim amplitude).
+pub const SMOOTHER_Q_RCC: f64 = 1.8;
+
+/// SSOT: `umst_smoother_r_rcc` (SEQ0 measurement noise).
+pub const SMOOTHER_R_RCC: f64 = 3_180.0;
+
+/// SSOT: `umst_smoother_q_mi` (SEQ1 sparse toggles).
+pub const SMOOTHER_Q_MI: f64 = 1.6;
+
+/// SSOT: `umst_smoother_r_mi` (SEQ1).
+pub const SMOOTHER_R_MI: f64 = 3_120.0;
+
+/// SSOT: `umst_smoother_q_eta_cog` (SEQ2 ramp).
+pub const SMOOTHER_Q_ETA_COG: f64 = 1.4;
+
+/// SSOT: `umst_smoother_r_eta_cog` (SEQ2).
+pub const SMOOTHER_R_ETA_COG: f64 = 3_240.0;
+
+/// `umst_smoother_q_rcc` — TUI-7b method (b) rank+clamp on SEQ0 (`smoothing_ekf_e_bisim`).
+pub const SMOOTHER_Q_RCC_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_q_rcc.jsonl",
+    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq0",
+};
+
+/// `umst_smoother_r_rcc` — companion R for SEQ0.
+pub const SMOOTHER_R_RCC_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_r_rcc.jsonl",
+    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq0",
+};
+
+/// `umst_smoother_q_mi` — SEQ1 ε-bisim fixture tuning.
+pub const SMOOTHER_Q_MI_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_q_mi.jsonl",
+    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq1",
+};
+
+/// `umst_smoother_r_mi` — SEQ1 measurement noise.
+pub const SMOOTHER_R_MI_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_r_mi.jsonl",
+    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq1",
+};
+
+/// `umst_smoother_q_eta_cog` — SEQ2 ramp process noise.
+pub const SMOOTHER_Q_ETA_COG_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_q_eta_cog.jsonl",
+    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq2",
+};
+
+/// `umst_smoother_r_eta_cog` — SEQ2 measurement noise.
+pub const SMOOTHER_R_ETA_COG_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_r_eta_cog.jsonl",
+    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq2",
+};
+
+/// K-5j TUI-7 smoother registry row names (7/7 for slice GREEN).
+pub const K5J_REGISTRY_ROW_NAMES: &[&str] = &[
+    "umst_cockpit_smoothing_default",
+    "umst_smoother_q_rcc",
+    "umst_smoother_r_rcc",
+    "umst_smoother_q_mi",
+    "umst_smoother_r_mi",
+    "umst_smoother_q_eta_cog",
+    "umst_smoother_r_eta_cog",
+];
+
 /// K-5d registry row names (6/6 for slice GREEN).
 pub const K5D_REGISTRY_ROW_NAMES: &[&str] = &[
     "landauer_proximity_multiplier",
@@ -815,8 +888,35 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "coq_version_pin" => Some(COQ_VERSION_PIN_DERIVATION),
         "agda_version_pin" => Some(AGDA_VERSION_PIN_DERIVATION),
         "ghc_version_pin" => Some(GHC_VERSION_PIN_DERIVATION),
+        "umst_cockpit_smoothing_default" => Some(COCKPIT_SMOOTHING_DEFAULT_DERIVATION),
+        "umst_smoother_q_rcc" => Some(SMOOTHER_Q_RCC_DERIVATION),
+        "umst_smoother_r_rcc" => Some(SMOOTHER_R_RCC_DERIVATION),
+        "umst_smoother_q_mi" => Some(SMOOTHER_Q_MI_DERIVATION),
+        "umst_smoother_r_mi" => Some(SMOOTHER_R_MI_DERIVATION),
+        "umst_smoother_q_eta_cog" => Some(SMOOTHER_Q_ETA_COG_DERIVATION),
+        "umst_smoother_r_eta_cog" => Some(SMOOTHER_R_ETA_COG_DERIVATION),
         _ => None,
     }
+}
+
+/// Count K-5j rows with non-`Pending` derivation.
+#[must_use]
+pub fn k5j_backfilled_count() -> usize {
+    K5J_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5j REGISTRY backfill landed.
+#[must_use]
+pub fn k5j_backfill_landed() -> bool {
+    k5j_backfilled_count() == K5J_REGISTRY_ROW_NAMES.len()
 }
 
 /// Count K-5i rows with non-`Pending` derivation.
@@ -1022,6 +1122,7 @@ pub fn k3_batch_landed() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::constants::registry::registry_f64_by_name;
 
     #[test]
     fn k3_batch_derivations_are_measurement() {
@@ -1184,6 +1285,33 @@ mod tests {
     #[test]
     fn k5d_staleness_threshold_matches_cycle_product() {
         assert!((default_staleness_threshold_ms() - 3_000.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn k5j_registry_rows_backfilled() {
+        assert!(k5j_backfill_landed());
+        for name in K5J_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5j: {name} must be backfilled"
+            );
+            assert_eq!(
+                entry.derivation,
+                derivation_for_registry_row(name).expect("lookup")
+            );
+        }
+        assert_eq!(
+            registry_f64_by_name("umst_smoother_q_rcc").expect("q"),
+            SMOOTHER_Q_RCC
+        );
+        assert_eq!(
+            registry_f64_by_name("umst_smoother_r_eta_cog").expect("r"),
+            SMOOTHER_R_ETA_COG
+        );
     }
 
     #[test]

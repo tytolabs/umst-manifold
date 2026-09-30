@@ -44,6 +44,9 @@ use super::tier2_derivation::{
     RAPL_PACKAGE_DRAM_JOULES_DERIVATION, CPU_UTILIZATION_PERCENT_DERIVATION,
     PROCESS_JOULES_ESTIMATE_DERIVATION, LEAN_TOOLCHAIN_PIN_DERIVATION, COQ_VERSION_PIN_DERIVATION,
     AGDA_VERSION_PIN_DERIVATION, GHC_VERSION_PIN_DERIVATION,
+    COCKPIT_SMOOTHING_DEFAULT_DERIVATION, SMOOTHER_Q_RCC_DERIVATION, SMOOTHER_R_RCC_DERIVATION,
+    SMOOTHER_Q_MI_DERIVATION, SMOOTHER_R_MI_DERIVATION, SMOOTHER_Q_ETA_COG_DERIVATION,
+    SMOOTHER_R_ETA_COG_DERIVATION,
 };
 use super::tier3_derivation::{ENERGY_BACKEND_DEFINITION, TUI_BIDI_DEFINITION};
 
@@ -614,7 +617,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-7; `umst-math::smoothing` vendor umst-prototype-2a; :explain raw+smoothed+variance)",
         env_override: Some("UMST_COCKPIT_SMOOTHING"),
-        derivation: Derivation::Pending,
+        derivation: COCKPIT_SMOOTHING_DEFAULT_DERIVATION,
     },
     // TUI-7b: per-metric (Q, R) — Tier-1 Measurement; first token in `expression` is a plain `f64` for runtime parse (see `registry_tuning_f64_value`)
     ConstantEntry {
@@ -623,7 +626,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `smoothing_{ekf,kalman}_e_bisim` SEQ0..4 @ umst-prototype-2a@9c0434d3ebade8f697bbd402bb080ea00da76914; (b) S_z, S_Δz on 8-pt, V4̄, D4̄, rmul∈[0.2,6]×500, qmul∈[0.2,6]×Q_ref",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: SMOOTHER_Q_RCC_DERIVATION,
     },
     ConstantEntry {
         name: "umst_smoother_r_rcc",
@@ -631,7 +634,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `smoothing_{ekf,kalman}_e_bisim` SEQ0; umst-prototype-2a@9c0434d3; method (b) as `umst_smoother_q_rcc`",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: SMOOTHER_R_RCC_DERIVATION,
     },
     ConstantEntry {
         name: "umst_smoother_q_mi",
@@ -639,7 +642,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 ε-bisim `SEQ1` (sparse toggles); umst-prototype-2a@9c0434d3; method (b) rank+clamp to V4̄, D4̄",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: SMOOTHER_Q_MI_DERIVATION,
     },
     ConstantEntry {
         name: "umst_smoother_r_mi",
@@ -647,7 +650,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `SEQ1` row; 9c0434d3; (b) same scheme as rcc",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: SMOOTHER_R_MI_DERIVATION,
     },
     ConstantEntry {
         name: "umst_smoother_q_eta_cog",
@@ -655,7 +658,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `SEQ2` (ramp); umst-prototype-2a@9c0434d3; (b) S_Δz floor=0.05 for near-linear D",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: SMOOTHER_Q_ETA_COG_DERIVATION,
     },
     ConstantEntry {
         name: "umst_smoother_r_eta_cog",
@@ -663,7 +666,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "TUI-7 `SEQ2`; 9c0434d3; (b) S_z / V4̄ clamped",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: SMOOTHER_R_ETA_COG_DERIVATION,
     },
     ConstantEntry {
         name: "umst_smoother_q_dignity",
@@ -1617,7 +1620,7 @@ mod tests {
             K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
             K5_REGISTRY_ROW_NAMES, K5B_REGISTRY_ROW_NAMES, K5C_REGISTRY_ROW_NAMES,
             K5D_REGISTRY_ROW_NAMES, K5E_REGISTRY_ROW_NAMES, K5F_REGISTRY_ROW_NAMES,
-            K5G_REGISTRY_ROW_NAMES, K5H_REGISTRY_ROW_NAMES, K5I_REGISTRY_ROW_NAMES,
+            K5G_REGISTRY_ROW_NAMES,             K5H_REGISTRY_ROW_NAMES, K5I_REGISTRY_ROW_NAMES, K5J_REGISTRY_ROW_NAMES,
         };
         use crate::constants::tier3_derivation::K4_REGISTRY_ROW_NAMES;
 
@@ -1637,6 +1640,7 @@ mod tests {
                 || K5G_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5H_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5I_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5J_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),
