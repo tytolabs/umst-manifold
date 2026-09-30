@@ -50,7 +50,9 @@ use super::tier2_derivation::{
     SMOOTHER_Q_LANDAUER_SLACK_DERIVATION, SMOOTHER_R_LANDAUER_SLACK_DERIVATION,
 };
 use super::tier3_derivation::{
-    ENERGY_BACKEND_DEFINITION, TUI_6B_COLOR_DEFINITION, TUI_BIDI_DEFINITION,
+    COCKPIT_HTTP_CORS_DEFINITION, COCKPIT_RANKER_WEIGHT_DEFINITION,
+    EPISTEMIC_PROXY_ESTIMATOR_DEFINITION, ENERGY_BACKEND_DEFINITION, H_9_HAL_DEFINITION,
+    SEMANTIC_COVERAGE_W5_DEFINITION, TUI_6B_COLOR_DEFINITION, TUI_BIDI_DEFINITION,
 };
 
 /// One documented numerical parameter (value, tier, evidence, optional env).
@@ -318,7 +320,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "COCKPIT_DESIGN_BRIEF.md §12 nudge-vs-override; provider_frugality unit tests",
         env_override: Some("UMST_COCKPIT_WEIGHT_* (six vars)"),
-        derivation: Derivation::Pending,
+        derivation: COCKPIT_RANKER_WEIGHT_DEFINITION,
     },
     ConstantEntry {
         name: "dignity_scalar_range",
@@ -374,7 +376,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Phase N6-TUI-cockpit-panels — docs/CGD_REGISTRY.md §24a; cockpit HTTP API",
         env_override: Some("UMST_COCKPIT_HTTP_CORS_OPEN"),
-        derivation: Derivation::Pending,
+        derivation: COCKPIT_HTTP_CORS_DEFINITION,
     },
     ConstantEntry {
         name: "umst_discovery_refresh_secs",
@@ -454,7 +456,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "H-2 epistemic proxy in cockpit runtime; shape from umst-prototype-2a epistemic_proxy_selector; COCKPIT_DESIGN_BRIEF + §24a",
         env_override: Some("UMST_EPISTEMIC_PROXY_ESTIMATOR"),
-        derivation: Derivation::Pending,
+        derivation: EPISTEMIC_PROXY_ESTIMATOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_formal_pin_sha",
@@ -559,7 +561,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12 candidate; §14bis.l W-2/W-3/W-4-H7-stop/W-4'/W-5); G8 binds `UMST_SEMANTIC_THRESHOLD` to this row’s policy intent",
         env_override: Some("UMST_SEMANTIC_THRESHOLD"),
-        derivation: Derivation::Pending,
+        derivation: SEMANTIC_COVERAGE_W5_DEFINITION,
     },
     // CONSTANT-BOUND: `umst_gpu_backend_default` (Tier-3 honest disclosure; expression names default n/a)
     ConstantEntry {
@@ -903,7 +905,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.f-H-9; cockpit HAL badge renderer)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H_9_HAL_DEFINITION,
     },
     ConstantEntry {
         name: "hal_intel_cpu_smoke_buf_size_bytes",
@@ -911,7 +913,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (H-9; `IntelCpu` allocate / smoke)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H_9_HAL_DEFINITION,
     },
     ConstantEntry {
         name: "hal_intel_cpu_smoke_iterations",
@@ -919,7 +921,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (H-9)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H_9_HAL_DEFINITION,
     },
     ConstantEntry {
         name: "hal_permission_probe_timeout_ms",
@@ -927,7 +929,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (H-9; future polkit/udev timing; placeholder)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: H_9_HAL_DEFINITION,
     },
     ConstantEntry {
         name: "hal_supported_precisions_intel_cpu_count",
@@ -1647,7 +1649,7 @@ mod tests {
         use crate::constants::tier3_derivation::{
             K4_REGISTRY_ROW_NAMES, K5L_REGISTRY_ROW_NAMES, K5M_REGISTRY_ROW_NAMES,
             K5N_REGISTRY_ROW_NAMES, K5O_REGISTRY_ROW_NAMES, K5P_REGISTRY_ROW_NAMES,
-            K5Q_REGISTRY_ROW_NAMES,
+            K5Q_REGISTRY_ROW_NAMES, K5R_REGISTRY_ROW_NAMES, K5S_HAL_REGISTRY_ROW_NAMES,
         };
 
         for e in REGISTRY {
@@ -1674,6 +1676,8 @@ mod tests {
                 || K5O_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5P_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5Q_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5R_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5S_HAL_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),
@@ -1691,11 +1695,12 @@ mod tests {
     }
 
     #[test]
-    fn registry_pending_meter_honest_after_k5q() {
+    fn registry_pending_meter_honest_after_k5r() {
         assert_eq!(REGISTRY.len(), 173);
+        assert_eq!(registry_pending_derivation_count(), 56);
         assert!(
-            registry_pending_derivation_count() < 72,
-            "K-5q must reduce pending below wave-13 pool baseline (72)"
+            registry_pending_derivation_count() < 64,
+            "K-5r + K-5s HAL batches must reduce pending below wave-14 witness (64)"
         );
         assert!(registry_lean_formal_evidence_count() >= 3);
     }

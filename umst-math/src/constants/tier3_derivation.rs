@@ -159,6 +159,96 @@ pub const K5Q_REGISTRY_ROW_NAMES: &[&str] = &[
     "umst_tui_color_status_muted_light",
 ];
 
+/// Authority anchor for §14bis.f-H-9 HAL smoke + badge Definition rows.
+pub const H_9_HAL_AUTHORITY: &str = "umst-math/src/hal/traits.rs#WorkloadKind::Smoke";
+
+/// Pinned SHA-256 of `umst-math/src/hal/traits.rs` (measured STEER_20260930T1939 wave 15).
+pub const H_9_HAL_TRAITS_SHA256: &str =
+    "37cffa4b08e5341ecedf82c327f79f2cda58aa4835223661ef8f8b389a9cde5d";
+
+/// Shared `Derivation::Definition` for §14bis.f-H-9 HAL policy constants (smoke + badge batch).
+pub const H_9_HAL_DEFINITION: Derivation = Derivation::Definition {
+    authority_url: H_9_HAL_AUTHORITY,
+    expected_sha256: H_9_HAL_TRAITS_SHA256,
+};
+
+/// K-5s wave-15 batch: HAL badge + smoke probe window (4/8 H-9 Definition rows).
+pub const K5S_HAL_REGISTRY_ROW_NAMES: &[&str] = &[
+    "hal_badge_segment_max_chars",
+    "hal_intel_cpu_smoke_buf_size_bytes",
+    "hal_intel_cpu_smoke_iterations",
+    "hal_permission_probe_timeout_ms",
+];
+
+/// Count K-5s HAL rows with non-`Pending` derivation in REGISTRY.
+#[must_use]
+pub fn k5s_hal_backfilled_count() -> usize {
+    K5S_HAL_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5s HAL REGISTRY backfill landed for the current wave batch.
+#[must_use]
+pub fn k5s_hal_backfill_landed() -> bool {
+    k5s_hal_backfilled_count() == K5S_HAL_REGISTRY_ROW_NAMES.len()
+}
+
+// --- K-5r wave-15 batch: cockpit §12 / HTTP / epistemic / semantic policy (C-4 deepen) ---
+
+/// Shared brief pin for cockpit policy Definition rows (same file as TUI-6b theme).
+pub const COCKPIT_POLICY_BRIEF_SHA256: &str = TUI_6B_THEME_BRIEF_SHA256;
+
+/// `ranker_weight_bounds` — §12 nudge-vs-override weight bands.
+pub const COCKPIT_RANKER_WEIGHT_DEFINITION: Derivation = Derivation::Definition {
+    authority_url: "COCKPIT_DESIGN_BRIEF.md#12-nudge-vs-override",
+    expected_sha256: COCKPIT_POLICY_BRIEF_SHA256,
+};
+
+/// `cockpit_http_cors_open` — Phase N6 HTTP snapshot CORS policy.
+pub const COCKPIT_HTTP_CORS_DEFINITION: Derivation = Derivation::Definition {
+    authority_url: "COCKPIT_DESIGN_BRIEF.md#phase-n6-tui-cockpit-panels",
+    expected_sha256: COCKPIT_POLICY_BRIEF_SHA256,
+};
+
+/// `umst_epistemic_proxy_estimator` — H-2 epistemic proxy selector default.
+pub const EPISTEMIC_PROXY_ESTIMATOR_DEFINITION: Derivation = Derivation::Definition {
+    authority_url: "COCKPIT_DESIGN_BRIEF.md#h-2-epistemic-proxy",
+    expected_sha256: COCKPIT_POLICY_BRIEF_SHA256,
+};
+
+/// `umst_semantic_coverage_threshold_w2` — G8 semantic coverage floor (W-5 40%).
+pub const SEMANTIC_COVERAGE_W5_DEFINITION: Derivation = Derivation::Definition {
+    authority_url: "COCKPIT_DESIGN_BRIEF.md#w-5-semantic-coverage-40",
+    expected_sha256: COCKPIT_POLICY_BRIEF_SHA256,
+};
+
+/// K-5r wave-15 batch: four cockpit policy registry rows (C-4 pending reduction).
+pub const K5R_REGISTRY_ROW_NAMES: &[&str] = &[
+    "ranker_weight_bounds",
+    "cockpit_http_cors_open",
+    "umst_epistemic_proxy_estimator",
+    "umst_semantic_coverage_threshold_w2",
+];
+
+/// Lookup K-5r batch `Derivation` by registry row `name`.
+#[must_use]
+pub fn derivation_for_k5r_registry_row(name: &str) -> Option<Derivation> {
+    match name {
+        "ranker_weight_bounds" => Some(COCKPIT_RANKER_WEIGHT_DEFINITION),
+        "cockpit_http_cors_open" => Some(COCKPIT_HTTP_CORS_DEFINITION),
+        "umst_epistemic_proxy_estimator" => Some(EPISTEMIC_PROXY_ESTIMATOR_DEFINITION),
+        "umst_semantic_coverage_threshold_w2" => Some(SEMANTIC_COVERAGE_W5_DEFINITION),
+        _ => None,
+    }
+}
+
 /// Count K-5l rows with non-`Pending` derivation in REGISTRY.
 #[must_use]
 pub fn k5l_backfilled_count() -> usize {
@@ -277,6 +367,26 @@ pub fn k5q_backfilled_count() -> usize {
 #[must_use]
 pub fn k5q_backfill_landed() -> bool {
     k5q_backfilled_count() == K5Q_REGISTRY_ROW_NAMES.len()
+}
+
+/// Count K-5r rows with non-`Pending` derivation in REGISTRY.
+#[must_use]
+pub fn k5r_backfilled_count() -> usize {
+    K5R_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5r REGISTRY backfill landed for the current wave batch.
+#[must_use]
+pub fn k5r_backfill_landed() -> bool {
+    k5r_backfilled_count() == K5R_REGISTRY_ROW_NAMES.len()
 }
 
 #[cfg(test)]
@@ -407,6 +517,41 @@ mod tests {
                 "K-5q: {name} must be backfilled"
             );
             assert_eq!(entry.derivation, TUI_6B_COLOR_DEFINITION);
+            assert_eq!(entry.derivation.label(), "Definition");
+        }
+    }
+
+    #[test]
+    fn k5r_registry_rows_backfilled() {
+        assert!(k5r_backfill_landed());
+        for name in K5R_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5r: {name} must be backfilled"
+            );
+            let expected = derivation_for_k5r_registry_row(name).expect("lookup");
+            assert_eq!(entry.derivation, expected);
+            assert_eq!(entry.derivation.label(), "Definition");
+        }
+    }
+
+    #[test]
+    fn k5s_hal_registry_rows_backfilled() {
+        assert!(k5s_hal_backfill_landed());
+        for name in K5S_HAL_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5s HAL: {name} must be backfilled"
+            );
+            assert_eq!(entry.derivation, H_9_HAL_DEFINITION);
             assert_eq!(entry.derivation.label(), "Definition");
         }
     }
