@@ -4,7 +4,9 @@
 
 // Algebra reference: umst-formal/Haskell/SDFGate.hs (intersectSDF, rUnionSDF, smoothUnionSDF)
 
-const CSG_SMOOTH_K: f64 = 0.05; // see `manifold_csg_smooth_k_default` in REGISTRY (Tier-3 policy)
+/// REGISTRY `manifold_csg_smooth_k_default` — Quilez smoothMin blend (SDFGate.hs).
+pub const MANIFOLD_CSG_SMOOTH_K_DEFAULT: f64 = 0.05;
+const CSG_SMOOTH_K: f64 = MANIFOLD_CSG_SMOOTH_K_DEFAULT;
 
 /// Hard / exact CSG **union** for SDFs (outside-positive convention): `max(f,g)`.
 #[inline]

@@ -259,12 +259,22 @@ pub const K5W_CRYPTO_REGISTRY_ROW_NAMES: &[&str] = &[
     "crypto_slh_dsa_128s_public_key_bytes",
 ];
 
+/// K-5x wave-20 batch: M-0 manifold policy + §14bis.j rustc/python toolchain pins (6 rows).
+pub const K5X_REGISTRY_ROW_NAMES: &[&str] = &[
+    "manifold_octree_max_depth",
+    "manifold_csg_smooth_k_default",
+    "manifold_canonicalize_eps",
+    "manifold_hilbert_locality_constant",
+    "rustc_toolchain_pin",
+    "python_version_pin",
+];
+
 /// Authority anchor for §14bis.f-M-0 manifold Definition rows.
 pub const M_0_MANIFOLD_AUTHORITY: &str = "umst-math/src/manifold/mod.rs#M-Arc";
 
 /// Pinned SHA-256 of `umst-math/src/manifold/mod.rs` (measured STEER_20260930T2226 wave 18).
 pub const M_0_MANIFOLD_MOD_SHA256: &str =
-    "b67b949b9dc00523422d4b2988986e039786525138875c9ab0049c80e76a26d3";
+    "49f0291cad390cae20fa63c516429c488b2733ae9f0908648dfb5cd23fe5628d";
 
 /// Shared `Derivation::Definition` for §14bis.f-M-0 manifold policy constants.
 pub const M_0_MANIFOLD_DEFINITION: Derivation = Derivation::Definition {
@@ -398,6 +408,26 @@ pub fn k5w_crypto_backfilled_count() -> usize {
 #[must_use]
 pub fn k5w_crypto_backfill_landed() -> bool {
     k5w_crypto_backfilled_count() == K5W_CRYPTO_REGISTRY_ROW_NAMES.len()
+}
+
+/// Count K-5x wave-20 rows with non-`Pending` derivation in REGISTRY.
+#[must_use]
+pub fn k5x_backfilled_count() -> usize {
+    K5X_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5x REGISTRY backfill landed for STEER_20260930T2321 wave 20.
+#[must_use]
+pub fn k5x_backfill_landed() -> bool {
+    k5x_backfilled_count() == K5X_REGISTRY_ROW_NAMES.len()
 }
 
 // --- K-5r wave-15 batch: cockpit §12 / HTTP / epistemic / semantic policy (C-4 deepen) ---
@@ -821,6 +851,21 @@ mod tests {
             );
             assert_eq!(entry.derivation, S_0_CRYPTO_DEFINITION);
             assert_eq!(entry.derivation.label(), "Definition");
+        }
+    }
+
+    #[test]
+    fn k5x_registry_rows_backfilled_wave20() {
+        assert!(k5x_backfill_landed());
+        for name in K5X_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5x wave-20: {name} must be backfilled"
+            );
         }
     }
 

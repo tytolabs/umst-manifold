@@ -43,7 +43,8 @@ use super::tier2_derivation::{
     UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DERIVATION, WARMUP_SAMPLE_THRESHOLD_DERIVATION,
     RAPL_PACKAGE_DRAM_JOULES_DERIVATION, CPU_UTILIZATION_PERCENT_DERIVATION,
     PROCESS_JOULES_ESTIMATE_DERIVATION, LEAN_TOOLCHAIN_PIN_DERIVATION, COQ_VERSION_PIN_DERIVATION,
-    AGDA_VERSION_PIN_DERIVATION, GHC_VERSION_PIN_DERIVATION,
+    AGDA_VERSION_PIN_DERIVATION, GHC_VERSION_PIN_DERIVATION, RUSTC_TOOLCHAIN_PIN_DERIVATION,
+    PYTHON_VERSION_PIN_DERIVATION,
     COCKPIT_SMOOTHING_DEFAULT_DERIVATION, SMOOTHER_Q_RCC_DERIVATION, SMOOTHER_R_RCC_DERIVATION,
     SMOOTHER_Q_MI_DERIVATION, SMOOTHER_R_MI_DERIVATION, SMOOTHER_Q_ETA_COG_DERIVATION,
     SMOOTHER_R_ETA_COG_DERIVATION, SMOOTHER_Q_DIGNITY_DERIVATION, SMOOTHER_R_DIGNITY_DERIVATION,
@@ -507,7 +508,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "§14bis.j; `umst-math/TOOLCHAIN_PIN.txt`",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: RUSTC_TOOLCHAIN_PIN_DERIVATION,
     },
     ConstantEntry {
         name: "python_version_pin",
@@ -515,7 +516,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "§14bis.j; `umst-math/TOOLCHAIN_PIN.txt`",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: PYTHON_VERSION_PIN_DERIVATION,
     },
     ConstantEntry {
         name: "umst_wide_gate_strict",
@@ -1037,7 +1038,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (M-0 octree.rs; CDD)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: M_0_MANIFOLD_DEFINITION,
     },
     ConstantEntry {
         name: "manifold_csg_smooth_k_default",
@@ -1045,7 +1046,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (Haskell SDFGate.smoothUnionSDF; M-0 csg)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: M_0_MANIFOLD_DEFINITION,
     },
     ConstantEntry {
         name: "manifold_canonicalize_eps",
@@ -1053,7 +1054,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (GMD-2; I3; umst-math::manifold::MANIFOLD_CANONICALIZE_EPS)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: M_0_MANIFOLD_DEFINITION,
     },
     ConstantEntry {
         name: "manifold_hilbert_locality_constant",
@@ -1061,7 +1062,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (MEMORY-ARC-PLAN §3.2 L-M0; empirical in `manifold` Hilbert-locality test module)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: M_0_MANIFOLD_DEFINITION,
     },
     // §14bis.p-PERF-MEASURE-1 — B-Arc precursor anchors (`.benchmarks_baseline.json`; witness tests)
     ConstantEntry {
@@ -1654,7 +1655,7 @@ mod tests {
             K5Q_REGISTRY_ROW_NAMES, K5R_REGISTRY_ROW_NAMES, K5S_HAL_REGISTRY_ROW_NAMES,
             K5T_HAL_REGISTRY_ROW_NAMES, K5U_HAL_REGISTRY_ROW_NAMES,
             K5V_CRYPTO_REGISTRY_ROW_NAMES, K5V_M0_REGISTRY_ROW_NAMES,
-            K5W_CRYPTO_REGISTRY_ROW_NAMES,
+            K5W_CRYPTO_REGISTRY_ROW_NAMES, K5X_REGISTRY_ROW_NAMES,
         };
 
         for e in REGISTRY {
@@ -1688,6 +1689,7 @@ mod tests {
                 || K5V_CRYPTO_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5V_M0_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5W_CRYPTO_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5X_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),
@@ -1707,12 +1709,22 @@ mod tests {
     #[test]
     fn registry_pending_meter_honest_after_k5r() {
         assert_eq!(REGISTRY.len(), 173);
-        assert_eq!(registry_pending_derivation_count(), 37);
+        assert_eq!(registry_pending_derivation_count(), 31);
         assert!(
-            registry_pending_derivation_count() < 40,
-            "K-5w S-0 sig batch must reduce pending below STEER_20260930T2226 wave 18 (40)"
+            registry_pending_derivation_count() < 38,
+            "K-5x wave-20 batch must reduce pending below STEER_20260930T2321 baseline (38)"
         );
         assert!(registry_lean_formal_evidence_count() >= 3);
+    }
+
+    /// W-80 / Track Q steer receipt pin (STEER_20260930T2321 wave 20).
+    #[test]
+    fn w80_steer_wave_twenty_pending_meter() {
+        const STEER: &str = "STEER_20260930T2321";
+        const WAVE: u32 = 20;
+        assert_eq!(STEER, "STEER_20260930T2321");
+        assert_eq!(WAVE, 20);
+        assert_eq!(registry_pending_derivation_count(), 31);
     }
 
     #[test]

@@ -665,6 +665,18 @@ pub const GHC_VERSION_PIN_DERIVATION: Derivation = Derivation::Pin {
     ref_name: "9.10.1",
 };
 
+/// `rustc_toolchain_pin` — `TOOLCHAIN_PIN.txt` rustc line (`rust-toolchain.toml` mirror).
+pub const RUSTC_TOOLCHAIN_PIN_DERIVATION: Derivation = Derivation::Pin {
+    repo: "rust-lang/rust",
+    ref_name: "nightly-2025-10-15",
+};
+
+/// `python_version_pin` — `TOOLCHAIN_PIN.txt` python line.
+pub const PYTHON_VERSION_PIN_DERIVATION: Derivation = Derivation::Pin {
+    repo: "python",
+    ref_name: "3.13.1",
+};
+
 /// K-5i energy + ZCI toolchain registry row names (7/7 for slice GREEN).
 pub const K5I_REGISTRY_ROW_NAMES: &[&str] = &[
     "rapl_package_dram_joules",

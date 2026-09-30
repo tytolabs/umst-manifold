@@ -37,6 +37,12 @@ pub struct ResolutionLevel {
 /// CDD: ε for affine residual (REGISTRY `manifold_canonicalize_eps`).
 pub const MANIFOLD_CANONICALIZE_EPS: f64 = 1e-9;
 
+/// REGISTRY `manifold_octree_max_depth` — `OctreeNode.depth` cap (I4).
+pub const MANIFOLD_OCTREE_MAX_DEPTH: u32 = 16;
+
+/// REGISTRY `manifold_hilbert_locality_constant` — L-M0 empirical C bound (2D Hilbert).
+pub const MANIFOLD_HILBERT_LOCALITY_CONSTANT: u32 = 6;
+
 // --- I8: `manifold!` witness (≥5 sites in this file for `rg 'manifold!'` in `umst-math/src/manifold/`) ---
 
 /// Manifold-typed **compile-time** witness (GMD-1, GMD-2 for ε).
