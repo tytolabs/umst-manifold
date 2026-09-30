@@ -63,7 +63,7 @@ pub fn agent_loop_07_cold_wire_posture_not_principal_wrap() -> bool {
 /// Live git/PR wrap wired on identity claim (mirror umst-adk principal_stamp; not production_wired).
 #[must_use]
 pub const fn agent_loop_07_git_author_wrap_wired() -> bool {
-    true
+    false
 }
 
 /// Mirror umst_meta::agent_loop_07_remainder_row_closed — flip @ PADMA-AL-07-CLOSE.
@@ -919,8 +919,8 @@ mod tests {
         wire.executed_by = None;
         assert!(wire.refuses_executor_erasure());
         assert!(wire.crate_root_export_is_not_git_wrap());
-        assert!(!agent_loop_07_principal_credit_arm_absent());
-        assert!(agent_loop_07_remainder_pin().git_author_wrap_wired);
+        assert!(agent_loop_07_principal_credit_arm_absent());
+        assert!(!agent_loop_07_remainder_pin().git_author_wrap_wired);
         assert!(complete_stamp_shape_live_consume(&wire).is_err());
     }
 
@@ -929,10 +929,10 @@ mod tests {
         let pin = agent_loop_07_remainder_pin();
         assert!(!pin.physics_green);
         assert!(pin.remainder_row_closed);
-        assert!(pin.git_author_wrap_wired);
+        assert!(!pin.git_author_wrap_wired);
         assert!(!agent_loop_07_physics_green());
         assert!(agent_loop_07_remainder_row_closed());
-        assert!(!agent_loop_07_principal_credit_arm_absent());
+        assert!(agent_loop_07_principal_credit_arm_absent());
         assert!(AGENT_LOOP_07_REMAINDER_GAP.contains("git/PR/author wrap unwrapped"));
     }
 
