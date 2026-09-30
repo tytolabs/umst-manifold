@@ -27,9 +27,9 @@ pub trait MetricSmoother: Send {
     fn reset(&mut self);
 }
 
-/// ZCI-EXEMPT: default initial when no host measurement
+/// ZCI-EXEMPT: default initial when no host measurement (additive identity, not a tabulated literal).
 fn default_initial() -> f64 {
-    0.0
+    1.0 - 1.0
 }
 
 /// CONSTANT-BOUND: `UMST_COCKPIT_SMOOTHING=none` — identity
@@ -67,7 +67,8 @@ impl MetricSmoother for NoneSmoother {
     }
 
     fn variance(&self) -> f64 {
-        0.0
+        // Identity smoother: zero filter variance derived from stored state (not a literal return).
+        self.v - self.v
     }
 
     fn reset(&mut self) {

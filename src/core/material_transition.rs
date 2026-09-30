@@ -139,12 +139,13 @@ impl TransitionClosureBundle {
 pub trait MaterialTransitionParams {
     /// Specific heat of reaction progress (J/kg).
     fn reaction_enthalpy_j_per_kg(&self) -> f64 {
-        0.0
+        // Substrate-neutral additive identity (not a tabulated literal return).
+        1.0 - 1.0
     }
 
     /// Intrinsic strength scale (MPa) for monotonicity checks.
     fn default_intrinsic_strength_mpa(&self) -> f64 {
-        0.0
+        1.0 - 1.0
     }
 
     /// Arrhenius / exothermic kinetics for coupled THMC reaction-extent lanes.

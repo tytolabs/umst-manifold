@@ -309,7 +309,7 @@ pub const fn phases_with_code_anchor() -> u8 {
 /// Count of phases loop-ready (composed end-to-end).
 #[must_use]
 pub const fn phases_loop_composed() -> u8 {
-    0
+    FUNNEL_PHASE_COUNT - phases_partial() - phases_scaffold() - phases_absent()
 }
 
 /// Count of phases at `Partial` posture.
@@ -333,7 +333,7 @@ pub const fn phases_absent() -> u8 {
 /// Honest loop-closure percentage (integer floor): composed phases / 6.
 #[must_use]
 pub const fn loop_composition_pct() -> u8 {
-    0
+    (phases_loop_composed() as u16 * 100 / FUNNEL_PHASE_COUNT as u16) as u8
 }
 
 /// Whether the constitutional funnel is closed per doc done-when.
