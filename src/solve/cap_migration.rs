@@ -99,6 +99,34 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "bar-network projected PCG hard-stops at n_unknowns sweep budget; needs mechanics strain-energy meter before unfold debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/adjoint_q1_hex.rs",
+        legacy_token: "opts.pcg_max_iter / cg.iteration_budget(n_dof) masked hex PCG",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "Q1 hex adjoint PCG hard-stops at iteration_budget; needs topology-gradient energy meter before unfold debit",
+        },
+    },
+    CapMigrationSite {
+        legacy_module: "physics/extruded_plate.rs",
+        legacy_token: "cg_config.iteration_budget(n * 3) extruded hex PCG",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "extruded plate masked hex PCG hard-stops at iteration_budget; needs plate strain-energy meter before unfold debit",
+        },
+    },
+    CapMigrationSite {
+        legacy_module: "physics/topology_filter.rs",
+        legacy_token: "HelmholtzTopologyFilter.max_cg_iterations (Richardson stationary)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "topology-density Helmholtz Richardson cap is historical CG naming; needs filter energy meter before unfold debit",
+        },
+    },
+    CapMigrationSite {
+        legacy_module: "physics/hex_elasticity.rs",
+        legacy_token: "hex_solve_pcg_masked(..., max_iter, ...) masked structured PCG",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "hex masked structured PCG hard-stops at max_iter; needs hex elasticity strain-energy meter before unfold debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -112,7 +140,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 10);
+        assert_eq!(cap_migration_site_count(), 14);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -144,6 +172,30 @@ mod tests {
         assert_eq!(mechanics.legacy_module, "physics/mechanics.rs");
         assert!(matches!(
             mechanics.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let adjoint_hex = &CAP_MIGRATION_SITES[10];
+        assert_eq!(adjoint_hex.legacy_module, "physics/adjoint_q1_hex.rs");
+        assert!(matches!(
+            adjoint_hex.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let extruded = &CAP_MIGRATION_SITES[11];
+        assert_eq!(extruded.legacy_module, "physics/extruded_plate.rs");
+        assert!(matches!(
+            extruded.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let topo_filter = &CAP_MIGRATION_SITES[12];
+        assert_eq!(topo_filter.legacy_module, "physics/topology_filter.rs");
+        assert!(matches!(
+            topo_filter.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let hex_pcg = &CAP_MIGRATION_SITES[13];
+        assert_eq!(hex_pcg.legacy_module, "physics/hex_elasticity.rs");
+        assert!(matches!(
+            hex_pcg.disposition,
             CapMigrationDisposition::HonestTypedAbsence { .. }
         ));
     }
