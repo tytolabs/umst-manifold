@@ -176,6 +176,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "Newmark energy-relaxation loop caps at max_steps before acoustic mechanical-energy meter ties to unfold debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/solvers/fracture_field.rs",
+        legacy_token: "iterate_until(outer.max_outer_iterations, …) AT2 staggered outer loop",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "AT2 phase-field outer stagger caps at max_outer_iterations before fracture release-energy meter ties to unfold debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -189,7 +196,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 21);
+        assert_eq!(cap_migration_site_count(), 22);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -287,6 +294,12 @@ mod tests {
         assert_eq!(acoustics.legacy_module, "physics/solvers/acoustics.rs");
         assert!(matches!(
             acoustics.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let fracture_outer = &CAP_MIGRATION_SITES[21];
+        assert_eq!(fracture_outer.legacy_module, "physics/solvers/fracture_field.rs");
+        assert!(matches!(
+            fracture_outer.disposition,
             CapMigrationDisposition::HonestTypedAbsence { .. }
         ));
     }
