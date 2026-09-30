@@ -205,6 +205,48 @@ pub const K5U_HAL_REGISTRY_ROW_NAMES: &[&str] = &[
     "hal_canonical_fallback_chain_max_len",
 ];
 
+/// Authority anchor for §14bis.f-S-0 PQC byte-width Definition rows.
+pub const S_0_CRYPTO_AUTHORITY: &str = "umst-math/src/crypto/kem/ml_kem_768.rs#ML-KEM-768";
+
+/// Pinned SHA-256 of `umst-math/src/crypto/kem/ml_kem_768.rs` (measured STEER_20260930T2226 wave 18).
+pub const S_0_CRYPTO_ML_KEM_SHA256: &str =
+    "90444a4d396673ba802be6a7b745109db3f5e744510a2a42a6bc1b91780b4d5e";
+
+/// Shared `Derivation::Definition` for §14bis.f-S-0 ML-KEM-768 wire byte widths.
+pub const S_0_CRYPTO_DEFINITION: Derivation = Derivation::Definition {
+    authority_url: S_0_CRYPTO_AUTHORITY,
+    expected_sha256: S_0_CRYPTO_ML_KEM_SHA256,
+};
+
+/// K-5v wave-18 batch: ML-KEM-768 byte widths (4/8 S-0 Definition rows).
+pub const K5V_CRYPTO_REGISTRY_ROW_NAMES: &[&str] = &[
+    "crypto_ml_kem_768_public_key_bytes",
+    "crypto_ml_kem_768_secret_key_bytes",
+    "crypto_ml_kem_768_ciphertext_bytes",
+    "crypto_sha3_256_digest_bytes",
+];
+
+/// Authority anchor for §14bis.f-M-0 manifold Definition rows.
+pub const M_0_MANIFOLD_AUTHORITY: &str = "umst-math/src/manifold/mod.rs#M-Arc";
+
+/// Pinned SHA-256 of `umst-math/src/manifold/mod.rs` (measured STEER_20260930T2226 wave 18).
+pub const M_0_MANIFOLD_MOD_SHA256: &str =
+    "b67b949b9dc00523422d4b2988986e039786525138875c9ab0049c80e76a26d3";
+
+/// Shared `Derivation::Definition` for §14bis.f-M-0 manifold policy constants.
+pub const M_0_MANIFOLD_DEFINITION: Derivation = Derivation::Definition {
+    authority_url: M_0_MANIFOLD_AUTHORITY,
+    expected_sha256: M_0_MANIFOLD_MOD_SHA256,
+};
+
+/// K-5v wave-18 batch: M-0 sphere / resolution policy surface (4 rows).
+pub const K5V_M0_REGISTRY_ROW_NAMES: &[&str] = &[
+    "manifold_sphere_dim_default",
+    "manifold_hilbert_bits_default",
+    "manifold_resolution_floor",
+    "manifold_resolution_ceiling",
+];
+
 /// Count K-5s HAL rows with non-`Pending` derivation in REGISTRY.
 #[must_use]
 pub fn k5s_hal_backfilled_count() -> usize {
@@ -263,6 +305,46 @@ pub fn k5u_hal_backfilled_count() -> usize {
 #[must_use]
 pub fn k5u_hal_backfill_landed() -> bool {
     k5u_hal_backfilled_count() == K5U_HAL_REGISTRY_ROW_NAMES.len()
+}
+
+/// Count K-5v S-0 crypto rows with non-`Pending` derivation in REGISTRY.
+#[must_use]
+pub fn k5v_crypto_backfilled_count() -> usize {
+    K5V_CRYPTO_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5v S-0 crypto REGISTRY backfill landed for the current wave batch.
+#[must_use]
+pub fn k5v_crypto_backfill_landed() -> bool {
+    k5v_crypto_backfilled_count() == K5V_CRYPTO_REGISTRY_ROW_NAMES.len()
+}
+
+/// Count K-5v M-0 rows with non-`Pending` derivation in REGISTRY.
+#[must_use]
+pub fn k5v_m0_backfilled_count() -> usize {
+    K5V_M0_REGISTRY_ROW_NAMES
+        .iter()
+        .filter(|name| {
+            REGISTRY
+                .iter()
+                .find(|e| e.name == **name)
+                .is_some_and(|e| !e.derivation.is_pending())
+        })
+        .count()
+}
+
+/// K-5v M-0 REGISTRY backfill landed for the current wave batch.
+#[must_use]
+pub fn k5v_m0_backfill_landed() -> bool {
+    k5v_m0_backfilled_count() == K5V_M0_REGISTRY_ROW_NAMES.len()
 }
 
 // --- K-5r wave-15 batch: cockpit §12 / HTTP / epistemic / semantic policy (C-4 deepen) ---
@@ -651,6 +733,40 @@ mod tests {
                 "K-5u H-8 HAL: {name} must be backfilled"
             );
             assert_eq!(entry.derivation, H_8_HAL_DEFINITION);
+            assert_eq!(entry.derivation.label(), "Definition");
+        }
+    }
+
+    #[test]
+    fn k5v_m0_registry_rows_backfilled() {
+        assert!(k5v_m0_backfill_landed());
+        for name in K5V_M0_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5v M-0: {name} must be backfilled"
+            );
+            assert_eq!(entry.derivation, M_0_MANIFOLD_DEFINITION);
+            assert_eq!(entry.derivation.label(), "Definition");
+        }
+    }
+
+    #[test]
+    fn k5v_crypto_registry_rows_backfilled() {
+        assert!(k5v_crypto_backfill_landed());
+        for name in K5V_CRYPTO_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert!(
+                !entry.derivation.is_pending(),
+                "K-5v S-0 crypto: {name} must be backfilled"
+            );
+            assert_eq!(entry.derivation, S_0_CRYPTO_DEFINITION);
             assert_eq!(entry.derivation.label(), "Definition");
         }
     }

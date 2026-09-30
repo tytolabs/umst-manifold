@@ -52,7 +52,7 @@ use super::tier2_derivation::{
 use super::tier3_derivation::{
     COCKPIT_HTTP_CORS_DEFINITION, COCKPIT_RANKER_WEIGHT_DEFINITION,
     EPISTEMIC_PROXY_ESTIMATOR_DEFINITION, ENERGY_BACKEND_DEFINITION, H_8_HAL_DEFINITION,
-    H_9_HAL_DEFINITION,
+    H_9_HAL_DEFINITION, M_0_MANIFOLD_DEFINITION, S_0_CRYPTO_DEFINITION,
     SEMANTIC_COVERAGE_W5_DEFINITION, TUI_6B_COLOR_DEFINITION, TUI_BIDI_DEFINITION,
 };
 
@@ -1004,7 +1004,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (MEMORY-ARC-PLAN §0; M-0 sphere.rs; CDD)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: M_0_MANIFOLD_DEFINITION,
     },
     ConstantEntry {
         name: "manifold_hilbert_bits_default",
@@ -1012,7 +1012,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (MEMORY-ARC-PLAN §6; umst-math::manifold::hilbert)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: M_0_MANIFOLD_DEFINITION,
     },
     ConstantEntry {
         name: "manifold_resolution_floor",
@@ -1020,7 +1020,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (M-Arc; umst-math::manifold::ResolutionLevel; REGISTRY M-0)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: M_0_MANIFOLD_DEFINITION,
     },
     ConstantEntry {
         name: "manifold_resolution_ceiling",
@@ -1028,7 +1028,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (MEMORY-ARC-PLAN §6; CDD M-0)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: M_0_MANIFOLD_DEFINITION,
     },
     ConstantEntry {
         name: "manifold_octree_max_depth",
@@ -1424,7 +1424,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; FIPS 203 ML-KEM-768; `Crypto/KEM.lean` L-S0 stub)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: S_0_CRYPTO_DEFINITION,
     },
     ConstantEntry {
         name: "crypto_ml_kem_768_secret_key_bytes",
@@ -1432,7 +1432,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; ML-KEM-768 SK wire)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: S_0_CRYPTO_DEFINITION,
     },
     ConstantEntry {
         name: "crypto_ml_kem_768_ciphertext_bytes",
@@ -1440,7 +1440,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; ML-KEM-768 ciphertext)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: S_0_CRYPTO_DEFINITION,
     },
     ConstantEntry {
         name: "crypto_ml_dsa_65_public_key_bytes",
@@ -1472,7 +1472,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; FIPS 202 Keccak via `sha3` crate; `Crypto/Hash.lean` L-S2 stub)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: S_0_CRYPTO_DEFINITION,
     },
     ConstantEntry {
         name: "umst_llm_tier_fallback_default_chain_gemini",
@@ -1652,6 +1652,7 @@ mod tests {
             K5N_REGISTRY_ROW_NAMES, K5O_REGISTRY_ROW_NAMES, K5P_REGISTRY_ROW_NAMES,
             K5Q_REGISTRY_ROW_NAMES, K5R_REGISTRY_ROW_NAMES, K5S_HAL_REGISTRY_ROW_NAMES,
             K5T_HAL_REGISTRY_ROW_NAMES, K5U_HAL_REGISTRY_ROW_NAMES,
+            K5V_CRYPTO_REGISTRY_ROW_NAMES, K5V_M0_REGISTRY_ROW_NAMES,
         };
 
         for e in REGISTRY {
@@ -1682,6 +1683,8 @@ mod tests {
                 || K5S_HAL_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5T_HAL_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5U_HAL_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5V_CRYPTO_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5V_M0_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),
@@ -1701,10 +1704,10 @@ mod tests {
     #[test]
     fn registry_pending_meter_honest_after_k5r() {
         assert_eq!(REGISTRY.len(), 173);
-        assert_eq!(registry_pending_derivation_count(), 48);
+        assert_eq!(registry_pending_derivation_count(), 44);
         assert!(
-            registry_pending_derivation_count() < 53,
-            "K-5u H-8 HAL batch must reduce pending below STEER_20260930T2135 Q pool (53)"
+            registry_pending_derivation_count() < 48,
+            "K-5v M-0 batch must reduce pending below STEER_20260930T2135 wave 17 (48)"
         );
         assert!(registry_lean_formal_evidence_count() >= 3);
     }
