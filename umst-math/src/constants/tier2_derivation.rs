@@ -965,6 +965,9 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         n if super::tier3_derivation::K5U_HAL_REGISTRY_ROW_NAMES.contains(&n) => {
             Some(super::tier3_derivation::H_8_HAL_DEFINITION)
         }
+        n if super::tier3_derivation::K5V_M0_REGISTRY_ROW_NAMES.contains(&n) => {
+            Some(super::tier3_derivation::M_0_MANIFOLD_DEFINITION)
+        }
         _ => None,
     }
 }

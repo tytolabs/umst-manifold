@@ -1704,7 +1704,7 @@ mod tests {
     #[test]
     fn registry_pending_meter_honest_after_k5r() {
         assert_eq!(REGISTRY.len(), 173);
-        assert_eq!(registry_pending_derivation_count(), 44);
+        assert_eq!(registry_pending_derivation_count(), 40);
         assert!(
             registry_pending_derivation_count() < 48,
             "K-5v M-0 batch must reduce pending below STEER_20260930T2135 wave 17 (48)"
