@@ -134,6 +134,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "coupled chem–mech clock substep cap binds before staggered energy meter; needs unfold debit witness before cap removal",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/solvers/thmc_residual.rs",
+        legacy_token: "gmres_f32_try(m_a.saturating_add(12)) quasi-static stacked residual inner",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "THMC reduced quasi-static inner GMRES cap is matrix-free FD sized; needs coupled stack residual energy meter before unfold debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -147,7 +154,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 15);
+        assert_eq!(cap_migration_site_count(), 16);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -209,6 +216,12 @@ mod tests {
         assert_eq!(clocks.legacy_module, "physics/time_orchestration.rs");
         assert!(matches!(
             clocks.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let thmc_res = &CAP_MIGRATION_SITES[15];
+        assert_eq!(thmc_res.legacy_module, "physics/solvers/thmc_residual.rs");
+        assert!(matches!(
+            thmc_res.disposition,
             CapMigrationDisposition::HonestTypedAbsence { .. }
         ));
     }
