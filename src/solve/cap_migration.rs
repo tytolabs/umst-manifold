@@ -141,6 +141,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "THMC reduced quasi-static inner GMRES cap is matrix-free FD sized; needs coupled stack residual energy meter before unfold debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "core/iterate_until.rs",
+        legacy_token: "iterate_until(max_iters, &mut state, step_closure)",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "shared bounded driver backs acoustics Newmark, rheology Jacobi, fracture outer loops; needs per-physics unfold debit meter before cap removal",
+        },
+    },
 ];
 
 #[must_use]
@@ -154,7 +161,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 16);
+        assert_eq!(cap_migration_site_count(), 17);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -222,6 +229,12 @@ mod tests {
         assert_eq!(thmc_res.legacy_module, "physics/solvers/thmc_residual.rs");
         assert!(matches!(
             thmc_res.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let iterate_until = &CAP_MIGRATION_SITES[16];
+        assert_eq!(iterate_until.legacy_module, "core/iterate_until.rs");
+        assert!(matches!(
+            iterate_until.disposition,
             CapMigrationDisposition::HonestTypedAbsence { .. }
         ));
     }
