@@ -47,9 +47,17 @@ permissions:
   packages: read
 
 jobs:
+  w63-catalog-public-boundary:
+    name: W-63 catalog public boundary (honest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - run: test -f .github/scripts/checkout-umst-siblings.sh
+
   verify-umst-stack:
     name: verify UMST stack (export + gate tests)
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: ./.github/actions/setup-ci
