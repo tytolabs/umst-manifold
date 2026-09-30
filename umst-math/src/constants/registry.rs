@@ -1699,7 +1699,7 @@ mod tests {
     #[test]
     fn registry_pending_meter_honest_after_k5r() {
         assert_eq!(REGISTRY.len(), 173);
-        assert_eq!(registry_pending_derivation_count(), 53);
+        assert_eq!(registry_pending_derivation_count(), 52);
         assert!(
             registry_pending_derivation_count() < 57,
             "K-5t HAL batch must reduce pending below wave-15 witness (57)"
