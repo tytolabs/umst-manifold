@@ -190,6 +190,13 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
             reason: "staggered phase-field coupled mechanics outer loop caps at outer_iters before coupled fracture–mechanics energy meter ties to unfold debit",
         },
     },
+    CapMigrationSite {
+        legacy_module: "physics/solvers/rheology_flow.rs",
+        legacy_token: "iterate_until(max_it, &mut st, jacobi_pressure_phi_step) Chorin Jacobi-preconditioned CG",
+        disposition: CapMigrationDisposition::HonestTypedAbsence {
+            reason: "Bingham Chorin pressure Poisson Jacobi-CG caps at byte-budgeted max_it before rheology strain-energy meter ties to unfold debit",
+        },
+    },
 ];
 
 #[must_use]
@@ -203,7 +210,7 @@ mod tests {
 
     #[test]
     fn cap_migration_inventory_honest() {
-        assert_eq!(cap_migration_site_count(), 23);
+        assert_eq!(cap_migration_site_count(), 24);
         let fixed = &CAP_MIGRATION_SITES[0];
         assert_eq!(fixed.legacy_module, "physics/solvers/fixed_point.rs");
         assert!(matches!(
@@ -313,6 +320,12 @@ mod tests {
         assert_eq!(fracture_coupled.legacy_module, "physics/solvers/fracture_field.rs");
         assert!(matches!(
             fracture_coupled.disposition,
+            CapMigrationDisposition::HonestTypedAbsence { .. }
+        ));
+        let rheology_jacobi_cg = &CAP_MIGRATION_SITES[23];
+        assert_eq!(rheology_jacobi_cg.legacy_module, "physics/solvers/rheology_flow.rs");
+        assert!(matches!(
+            rheology_jacobi_cg.disposition,
             CapMigrationDisposition::HonestTypedAbsence { .. }
         ));
     }
