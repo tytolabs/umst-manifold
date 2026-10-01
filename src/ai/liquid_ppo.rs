@@ -926,7 +926,7 @@ mod epistemic_adapt_tests {
     #[test]
     fn burn_liquid_ppo_epistemic_step_finite_backward_chain_smoke() {
         let dev = device();
-        let mut gateway = ManifoldGateway::new(GateAwareCartridge, 300.0_f64, 1.0e-4_f64);
+        let mut gateway = ManifoldGateway::new(GateAwareCartridge, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-4_f64);
         gateway.beta = 0.1;
         let mut agent = BurnLiquidPPOAgent::new(gateway);
         let n = 2usize;
@@ -949,7 +949,7 @@ mod epistemic_adapt_tests {
     #[test]
     fn burn_liquid_ppo_epistemic_tracker_updates_after_step() {
         let dev = device();
-        let gateway = ManifoldGateway::new(GateAwareCartridge, 300.0_f64, 1.0e-4_f64);
+        let gateway = ManifoldGateway::new(GateAwareCartridge, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-4_f64);
         let mut agent = BurnLiquidPPOAgent::new(gateway);
         let n = 2usize;
         let f = UMST_SCALAR_CHANNEL_COUNT;

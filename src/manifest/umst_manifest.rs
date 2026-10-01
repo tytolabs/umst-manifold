@@ -434,7 +434,7 @@ impl Default for UmstManifestBuilder {
     fn default() -> Self {
         Self {
             catalog_hash: catalog_lock_bundle_sha256_bytes(),
-            thermodynamic_cbf: ThermodynamicCBF::new(300.0_f64, 1.0e-12_f64),
+            thermodynamic_cbf: ThermodynamicCBF::new(crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-12_f64),
             gate_registry: Box::new(GateRegistry::default()),
             grounding_contract: default_grounding_contract(),
             dual_run: false,

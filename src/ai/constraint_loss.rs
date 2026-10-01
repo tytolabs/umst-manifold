@@ -869,7 +869,7 @@ mod tests {
         let dev = NdArrayDevice::default();
         let old = ThermodynamicStateSnapshot {
             density: 2200.0,
-            temperature: 300.0,
+            temperature: crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
             free_energy: -2.0e5,
             entropy: 0.2,
             reaction_extent: 0.5,
@@ -942,7 +942,7 @@ mod tests {
         let dev = NdArrayDevice::default();
         let old = ThermodynamicStateSnapshot {
             density: 2200.0,
-            temperature: 300.0,
+            temperature: crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
             free_energy: -2.0e5,
             entropy: 0.2,
             reaction_extent: 0.5,
@@ -975,7 +975,7 @@ mod tests {
         let dev = NdArrayDevice::default();
         let old = ThermodynamicStateSnapshot {
             density: 2200.0,
-            temperature: 300.0,
+            temperature: crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
             free_energy: -2.0e5,
             entropy: 0.2,
             reaction_extent: 0.5,
@@ -1004,7 +1004,7 @@ mod tests {
         let dev = NdArrayDevice::default();
         let old = ThermodynamicStateSnapshot {
             density: 2200.0,
-            temperature: 300.0,
+            temperature: crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
             free_energy: -2.0e5,
             entropy: 0.2,
             reaction_extent: 0.5,
@@ -1050,7 +1050,7 @@ mod tests {
     fn landauer_slack_violation_zero_when_credit_sufficient() {
         let dev = NdArrayDevice::default();
         let bits = scalar_tensor(&dev, &[0.01_f32]);
-        let slack = landauer_slack_violation(bits, 300.0_f32, 1.0e6_f32);
+        let slack = landauer_slack_violation(bits, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32, 1.0e6_f32);
         let v: Vec<f32> = slack.into_data().value;
         assert!(
             v[0].abs() < 1e-12,
@@ -1063,10 +1063,10 @@ mod tests {
     fn landauer_slack_violation_positive_when_credit_exhausted() {
         let dev = NdArrayDevice::default();
         let bits = scalar_tensor(&dev, &[1.0_f32]);
-        let slack = landauer_slack_violation(bits, 300.0_f32, 0.0_f32);
+        let slack = landauer_slack_violation(bits, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32, 0.0_f32);
         let v: Vec<f32> = slack.into_data().value;
         assert!(v[0] > 0.0, "zero credit → positive Landauer slack");
-        let expected = 300.0_f32 * LN2_F32 * K_BOLTZMANN_F32;
+        let expected = crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32 * LN2_F32 * K_BOLTZMANN_F32;
         assert!(
             (v[0] - expected).abs() < 1e-20,
             "slack {v0} should track k_B T ln2 bits ≈ {expected}",
@@ -1078,7 +1078,7 @@ mod tests {
     fn scaled_landauer_slack_violation_zero_when_lambda_disabled() {
         let dev = NdArrayDevice::default();
         let bits = scalar_tensor(&dev, &[1.0_f32]);
-        let penalty = scaled_landauer_slack_violation(0.0_f32, bits, 300.0_f32, 0.0_f32);
+        let penalty = scaled_landauer_slack_violation(0.0_f32, bits, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32, 0.0_f32);
         let v: Vec<f32> = penalty.into_data().value;
         assert_eq!(v[0], 0.0_f32);
     }
@@ -1088,8 +1088,8 @@ mod tests {
         let dev = NdArrayDevice::default();
         let bits = scalar_tensor(&dev, &[1.0_f32]);
         let lambda = 4.0_f32;
-        let slack = landauer_slack_violation(scalar_tensor(&dev, &[1.0_f32]), 300.0_f32, 0.0_f32);
-        let penalty = scaled_landauer_slack_violation(lambda, bits, 300.0_f32, 0.0_f32);
+        let slack = landauer_slack_violation(scalar_tensor(&dev, &[1.0_f32]), crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32, 0.0_f32);
+        let penalty = scaled_landauer_slack_violation(lambda, bits, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32, 0.0_f32);
         let s: Vec<f32> = slack.into_data().value;
         let p: Vec<f32> = penalty.into_data().value;
         assert!(s[0] > 0.0);
@@ -1210,7 +1210,7 @@ mod tests {
     fn canonical_core_net_dissipation_host_matches_transition_outcome() {
         let old = ThermodynamicStateSnapshot {
             density: 2200.0,
-            temperature: 300.0,
+            temperature: crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
             free_energy: -2.0e5,
             entropy: 0.2,
             reaction_extent: 0.5,
@@ -1243,7 +1243,7 @@ mod tests {
         let dev = NdArrayDevice::default();
         let old = ThermodynamicStateSnapshot {
             density: 2200.0,
-            temperature: 300.0,
+            temperature: crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
             free_energy: -2.0e5,
             entropy: 0.2,
             reaction_extent: 0.5,
@@ -1276,7 +1276,7 @@ mod tests {
         let dev = NdArrayDevice::default();
         let explanation = explain_landauer_slack_violation(
             scalar_tensor(&dev, &[0.01_f32]),
-            300.0_f32,
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32,
             1.0e6_f32,
         );
         assert!(explanation.violation.abs() < 1e-12);
@@ -1291,11 +1291,11 @@ mod tests {
         // Single-bit Landauer (~1e-21 J) is below the host eps floor and stays Admissible.
         let bits = 1.0e20_f32;
         let explanation =
-            explain_landauer_slack_violation(scalar_tensor(&dev, &[bits]), 300.0_f32, 0.0_f32);
+            explain_landauer_slack_violation(scalar_tensor(&dev, &[bits]), crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32, 0.0_f32);
         assert!(explanation.violation > ADMISSIBILITY_MARGIN_EPS);
         assert_eq!(explanation.admissibility, AdmissibilityToken::Inadmissible);
         assert_eq!(explanation.channel_id, LANDAUER_CBF_CATALOG_ID);
-        let expected = bits * 300.0_f32 * LN2_F32 * K_BOLTZMANN_F32;
+        let expected = bits * crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32 * LN2_F32 * K_BOLTZMANN_F32;
         assert!(
             (explanation.violation - expected).abs() < 1e-6 * expected,
             "violation {} should track erasure cost {}",
@@ -1342,7 +1342,7 @@ mod tests {
         let dev = NdArrayDevice::default();
         let old = ThermodynamicStateSnapshot {
             density: 2200.0,
-            temperature: 300.0,
+            temperature: crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
             free_energy: -2.0e5,
             entropy: 0.2,
             reaction_extent: 0.5,
@@ -1366,7 +1366,7 @@ mod tests {
         let land = scaled_landauer_slack_violation(
             lambda_l,
             scalar_tensor(&dev, &[1.0_f32]),
-            300.0_f32,
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32,
             0.0_f32,
         );
         let composed = soft_compose_cd_landauer_penalty(
@@ -1378,7 +1378,7 @@ mod tests {
             scalar_tensor(&dev, &[new.free_energy as f32]),
             scalar_tensor(&dev, &[dt as f32]),
             scalar_tensor(&dev, &[1.0_f32]),
-            300.0_f32,
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32,
             0.0_f32,
         );
         let c: Vec<f32> = cd.into_data().value;

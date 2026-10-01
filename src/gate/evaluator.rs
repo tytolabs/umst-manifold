@@ -146,6 +146,7 @@ impl TransitionGateEvaluator for ThermodynamicTransitionEvaluator {
 #[allow(deprecated)]
 mod tests {
     use super::*;
+    use crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
     use crate::core::material_transition::SubstrateMaterialParams;
     use crate::gate::verdict::{AdmissibilityVerdict, ConjunctVerdict, GateRejectReason};
     use crate::runtime::catalog::traceability::CD_TRANSITION_CATALOG_ID;
@@ -182,7 +183,7 @@ mod tests {
     fn golden_negative_dissipation_reject() -> (ThermodynamicState, ThermodynamicState, f64) {
         let old = ThermodynamicState {
             density: 2200.0,
-            temperature: 300.0,
+            temperature: AMBIENT_REFERENCE_TEMPERATURE_K,
             free_energy: -2.0e5,
             entropy: 0.2,
             reaction_extent: 0.5,

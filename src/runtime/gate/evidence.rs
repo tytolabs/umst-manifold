@@ -245,7 +245,7 @@ mod tests {
     fn explain_cd_transition_host_psi_spike_inadmissible() {
         let old = ThermodynamicStateSnapshot {
             density: 2200.0,
-            temperature: 300.0,
+            temperature: crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
             free_energy: -2.0e5,
             entropy: 0.2,
             reaction_extent: 0.5,

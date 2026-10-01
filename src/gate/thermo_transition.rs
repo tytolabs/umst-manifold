@@ -294,6 +294,7 @@ mod tests {
     use super::super::transition_proposal::TRANSITION_TOLERANCE;
     use super::super::verdict::AdmissibilityVerdict;
     use super::*;
+    use crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
     use crate::core::material_transition::SubstrateMaterialParams;
 
     /// Golden vectors from `docs/GOLDEN_FIXTURES.md` / `tests/gate_parity_fixture.rs`.
@@ -328,7 +329,7 @@ mod tests {
     fn golden_negative_dissipation_reject() -> (ThermodynamicState, ThermodynamicState, f64) {
         let old = ThermodynamicState {
             density: 2200.0,
-            temperature: 300.0,
+            temperature: AMBIENT_REFERENCE_TEMPERATURE_K,
             free_energy: -2.0e5,
             entropy: 0.2,
             reaction_extent: 0.5,

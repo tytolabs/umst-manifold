@@ -931,6 +931,7 @@ mod transition_admissible_tests {
 #[allow(deprecated)]
 mod golden_fixture_transition_tests {
     use super::*;
+    use crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
     use crate::gate::verdict::AdmissibilityVerdict;
 
     fn golden_identity_admissible() -> (ThermodynamicStateSnapshot, ThermodynamicStateSnapshot, f64)
@@ -964,7 +965,7 @@ mod golden_fixture_transition_tests {
     ) -> (ThermodynamicStateSnapshot, ThermodynamicStateSnapshot, f64) {
         let old = ThermodynamicStateSnapshot {
             density: 2200.0,
-            temperature: 300.0,
+            temperature: AMBIENT_REFERENCE_TEMPERATURE_K,
             free_energy: -2.0e5,
             entropy: 0.2,
             reaction_extent: 0.5,
@@ -1002,6 +1003,12 @@ mod golden_fixture_transition_tests {
             outcome.rest_verdict(),
             AdmissibilityVerdict::NegativeDissipation
         );
+    }
+
+    #[test]
+    fn golden_negative_dissipation_fixture_uses_ambient_reference() {
+        let (old, _, _) = golden_negative_dissipation_reject();
+        assert_eq!(old.temperature, AMBIENT_REFERENCE_TEMPERATURE_K);
     }
 }
 

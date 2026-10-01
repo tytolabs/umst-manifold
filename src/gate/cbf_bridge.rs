@@ -179,7 +179,7 @@ mod tests {
 
     #[test]
     fn cbf_bridge_feeds_cbf_verify_with_identity_k_phys() {
-        let mut cbf = ThermodynamicCBF::new(300.0, 1.0e-3);
+        let mut cbf = ThermodynamicCBF::new(crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-3);
         cbf.k_phys_dint_to_joules = 1.0;
         let joules = cd_dissipation_proxy_to_entropy_joules(1.0, 1.0, 1.0);
         let out = cbf
@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn cbf_bridge_scaled_proxy_respects_k_phys_calibration() {
-        let mut cbf = ThermodynamicCBF::new(300.0, 1.0);
+        let mut cbf = ThermodynamicCBF::new(crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, 1.0);
         cbf.k_phys_dint_to_joules = 2.5;
         let raw = cd_dissipation_proxy_to_entropy_joules(4.0, 0.5, 2.0);
         assert_relative_eq!(raw, 4.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);

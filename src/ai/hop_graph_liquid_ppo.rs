@@ -26,8 +26,8 @@ pub const HOP_GRAPH_LIQUID_PPO_SOURCE: &str = "umst/umst-manifold/src/ai/liquid_
 /// Schema for the hop-graph consume receipt.
 pub const HOP_GRAPH_LIQUID_PPO_SCHEMA: &str = "egoff_hop_graph_liquid_ppo_v1";
 
-/// NamedSurrogate T — cite umst_adk::DEFAULT_TEMPERATURE_K (300.0 K). Do not mint k_B.
-pub const HOP_GATEWAY_TEMPERATURE_K: f64 = 300.0;
+/// NamedSurrogate T — SSOT [`crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K`]. Do not mint k_B.
+pub const HOP_GATEWAY_TEMPERATURE_K: f64 = crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
 
 /// Floor credit so CBF bookkeeping can run when hop joules are sub-Landauer.
 pub const HOP_GATEWAY_CREDIT_FLOOR_J: f64 = 1.0e-12;
@@ -534,5 +534,11 @@ mod tests {
         let bytes = std::fs::read(&path).expect("read");
         assert_eq!(bytes.len(), 12);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn hop_gateway_temperature_matches_ambient_reference() {
+        use crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
+        assert_eq!(HOP_GATEWAY_TEMPERATURE_K, AMBIENT_REFERENCE_TEMPERATURE_K);
     }
 }

@@ -377,7 +377,7 @@ impl EmittedTraceSchema {
             EmittedStepRecord::new(PROTOTYPE_EPS_MI_STEP * 0.5, PROTOTYPE_EPS_COST_STEP * 0.5),
             EmittedStepRecord::new(PROTOTYPE_EPS_MI_STEP * 0.5, PROTOTYPE_EPS_COST_STEP * 0.5),
         ];
-        Self::new(2, 300.0, steps)
+        Self::new(2, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, steps)
     }
 
     /// Fixture exceeding prototype rolled-up ε (Track G.2 negative case).
@@ -387,7 +387,7 @@ impl EmittedTraceSchema {
             prototype_eps_mi_agg(1) * 2.0,
             prototype_eps_cost_agg(1) * 2.0,
         )];
-        Self::new(1, 300.0, steps)
+        Self::new(1, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, steps)
     }
 
     #[must_use]
@@ -407,7 +407,7 @@ impl EmittedTraceSchema {
             EmittedStepRecord::new(0.25, 1.0e-21),
             EmittedStepRecord::new(0.31, 1.2e-21),
         ];
-        Self::new(2, 300.0, steps)
+        Self::new(2, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, steps)
     }
 
     /// Well-formedness for the full trace: `0 ≤ T`, `steps.len() == n`, each step satisfies
@@ -508,7 +508,7 @@ mod tests {
 
     #[test]
     fn landauer_bit_energy_positive_at_room_temp() {
-        let e = landauer_bit_energy_joules(300.0);
+        let e = landauer_bit_energy_joules(crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K);
         assert!(e.is_finite() && e > 0.0);
     }
 
@@ -543,7 +543,7 @@ mod tests {
     fn step_rejects_mi_above_ln2() {
         let bad = EmittedStepRecord::new(LN_2 + 1e-9, 1.0e-21);
         assert_eq!(
-            bad.check_emitted_trace_well_formed(300.0),
+            bad.check_emitted_trace_well_formed(crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K),
             Err(EmittedStepWellFormedError::StepMiExceedsLog2)
         );
     }
