@@ -70,7 +70,7 @@ impl ReactionExtentKineticsSpec {
             activation_energy_j_per_mol: 1.0,
             gas_constant_j_per_mol_k: 8.314_463,
             t_min_k: 1.0,
-            t_boost_ref_k: 273.15,
+            t_boost_ref_k: crate::constants::CELSIUS_TO_KELVIN_OFFSET_K as f32,
             t_boost_per_k: 0.0,
             exothermic_k_per_alpha_rate: 0.0,
             stiffness_e_scale_pa: 1.0,

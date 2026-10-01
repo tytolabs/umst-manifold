@@ -12,8 +12,7 @@ use super::verdict::{AdmissibilityVerdict, ConjunctVerdict, GateRejectReason};
 use crate::core::material_transition::{MaterialTransitionParams, SubstrateMaterialParams};
 use umst_cartridge_concrete::evaluate_material_conjuncts;
 
-/// Celsius → Kelvin offset (K) for gate / hydration fixtures.
-pub const CELSIUS_TO_KELVIN_OFFSET_K: f64 = 273.15;
+pub use crate::constants::CELSIUS_TO_KELVIN_OFFSET_K;
 
 /// Reference bath for mix-calibrated thermodynamic snapshots (K).
 pub const MIX_CALIBRATION_REFERENCE_TEMPERATURE_K: f64 = 293.15;
@@ -1083,6 +1082,13 @@ mod mix_calibration_temperature_ssot_tests {
             (CELSIUS_TO_KELVIN_OFFSET_K + 20.0 - MIX_CALIBRATION_REFERENCE_TEMPERATURE_K).abs()
                 < 1e-9
         );
+    }
+
+    #[test]
+    fn celsius_offset_pins_substrate_neutral_boost_ref() {
+        use crate::core::material_transition::ReactionExtentKineticsSpec;
+        let boost = ReactionExtentKineticsSpec::substrate_neutral().t_boost_ref_k;
+        assert!((boost - CELSIUS_TO_KELVIN_OFFSET_K as f32).abs() < 1e-4);
     }
 
     #[test]

@@ -44,7 +44,7 @@ mod tests {
 
     type B = NdArray<f32>;
 
-    const TEMP_K: f64 = 300.0_f64;
+    use crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as TEMP_K;
     const CREDIT_J: f64 = 1.0e-9_f64;
 
     #[test]

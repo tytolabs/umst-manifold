@@ -80,8 +80,8 @@ use umst_manifold::gate::http_manifest::{
     evaluate, reaction_extent_from_age, GateManifest, MixProposal,
 };
 use umst_manifold::gate::transition_proposal::{
-    thermodynamic_transition_admissible_tol, transition_outcome, ThermodynamicStateSnapshot,
-    TRANSITION_TOLERANCE,
+    thermodynamic_transition_admissible_tol, transition_outcome, CELSIUS_TO_KELVIN_OFFSET_K,
+    ThermodynamicStateSnapshot, TRANSITION_TOLERANCE,
 };
 use umst_manifold::manifest::UmstManifest;
 
@@ -353,13 +353,13 @@ fn phase0a_http_shim_aligns_with_canonical_transition() {
     let old = ThermodynamicStateSnapshot::from_mix_calibrated(
         w_c,
         0.0,
-        proposal.temperature_c + 273.15,
+        proposal.temperature_c + CELSIUS_TO_KELVIN_OFFSET_K,
         80.0,
     );
     let new = ThermodynamicStateSnapshot::from_mix_calibrated(
         w_c,
         alpha,
-        proposal.temperature_c + 273.15,
+        proposal.temperature_c + CELSIUS_TO_KELVIN_OFFSET_K,
         80.0,
     );
     let outcome = transition_outcome(

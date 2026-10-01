@@ -76,7 +76,8 @@ mod tests {
 
     type B = NdArray<f32>;
 
-    const GATEWAY_TEMP_K: f64 = 300.0;
+    use crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as GATEWAY_TEMP_K;
+
     const GATEWAY_CREDIT_J: f64 = 1.0e-12;
     const SCALAR_DELTA: f32 = 0.1_f32;
 

@@ -17,6 +17,9 @@ pub const K_BOLTZMANN_FALLBACK_J_PER_K: f64 = 1.380_649e-23;
 /// Operator ambient reference temperature (K) — aligns with `umst-math::landauer_registry::HOST_TEMPERATURE_REFERENCE_K`.
 pub const AMBIENT_REFERENCE_TEMPERATURE_K: f64 = 300.0;
 
+/// Celsius → Kelvin offset (K) for hydration / mix-calibrated gate fixtures.
+pub const CELSIUS_TO_KELVIN_OFFSET_K: f64 = 273.15;
+
 /// Landauer bit energy `k_B T ln 2` (joules).
 ///
 /// With `math-constants`, delegates to [`umst_math::landauer::landauer_bit_energy_joules`].
@@ -171,7 +174,7 @@ mod tests {
     #[cfg(feature = "math-constants")]
     #[test]
     fn landauer_bit_energy_math_constants_path_matches_umst_math() {
-        let t = 273.15;
+        let t = CELSIUS_TO_KELVIN_OFFSET_K;
         let runtime = landauer_bit_energy_joules(t);
         let ssot =
             umst_math::landauer::landauer_bit_energy_joules(ordered_float::NotNan::new(t).unwrap())

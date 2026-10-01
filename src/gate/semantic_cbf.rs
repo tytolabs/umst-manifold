@@ -187,7 +187,7 @@ mod tests {
     use approx::assert_relative_eq;
 
     const TOLERANCE: f64 = 1e-6;
-    const TEMP_K: f64 = 300.0;
+    use crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as TEMP_K;
     const CREDIT_J: f64 = 1.0e-6;
 
     fn bundled_lock() -> CatalogLock {

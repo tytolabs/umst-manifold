@@ -175,6 +175,7 @@ impl ActiveMatterFixture {
 mod tests {
     use super::*;
     use crate::ai::cbf::ThermodynamicCBF;
+    use crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
     use crate::gate::transition_proposal::{
         transition_outcome, ThermodynamicStateSnapshot, TRANSITION_TOLERANCE,
     };
@@ -182,9 +183,9 @@ mod tests {
 
     #[test]
     fn landauer_power_input_nonnegative() {
-        let p = landauer_power_input_joules(300.0, 10.0);
+        let p = landauer_power_input_joules(AMBIENT_REFERENCE_TEMPERATURE_K, 10.0);
         assert!(p > 0.0);
-        assert_eq!(landauer_power_input_joules(300.0, 0.0), 0.0);
+        assert_eq!(landauer_power_input_joules(AMBIENT_REFERENCE_TEMPERATURE_K, 0.0), 0.0);
     }
 
     #[test]
@@ -247,7 +248,7 @@ mod tests {
 
     #[test]
     fn cbf_cd_matches_open_system_gate_on_positive_entropy() {
-        let temp = 300.0;
+        let temp = AMBIENT_REFERENCE_TEMPERATURE_K;
         let bits = 1.0;
         let erasure = landauer_power_input_joules(temp, bits);
         assert!(cbf_cd_matches_open_system_gate(
@@ -260,7 +261,7 @@ mod tests {
 
     #[test]
     fn cbf_cd_rejects_when_entropy_below_landauer_debit() {
-        let temp = 300.0;
+        let temp = AMBIENT_REFERENCE_TEMPERATURE_K;
         let bits = 2.0;
         let erasure = landauer_power_input_joules(temp, bits);
         assert!(!cbf_cd_matches_open_system_gate(
@@ -273,7 +274,7 @@ mod tests {
 
     #[test]
     fn cbf_open_system_admissible_rejects_insufficient_credit() {
-        let temp = 300.0;
+        let temp = AMBIENT_REFERENCE_TEMPERATURE_K;
         let bits = 4.0;
         let erasure = landauer_power_input_joules(temp, bits);
         assert!(!cbf_open_system_admissible(
@@ -287,7 +288,7 @@ mod tests {
 
     #[test]
     fn cbf_landauer_as_power_input_matches_formula() {
-        let temp = 300.0;
+        let temp = AMBIENT_REFERENCE_TEMPERATURE_K;
         let bits = 2.0;
         let cbf = ThermodynamicCBF::new(temp, 1.0e12);
         assert_eq!(
@@ -367,7 +368,7 @@ mod tests {
             μ_atp_j_per_rate: 100.0,
             reaction_rate: 0.2,
             dissipation: 30.0,
-            temperature_k: 300.0,
+            temperature_k: AMBIENT_REFERENCE_TEMPERATURE_K,
         };
         let net = fixture.dissipation - fixture.power_input();
         assert!(net < fixture.dissipation);
