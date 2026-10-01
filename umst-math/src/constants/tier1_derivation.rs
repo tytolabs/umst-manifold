@@ -10,7 +10,7 @@ use super::registry::REGISTRY;
 use crate::landauer::K_B;
 
 /// Reference ambient anchor (matches `authority-pins/ambient_reference_300k.txt`; same value as `landauer_registry` when `math-constants` is on).
-const HOST_TEMPERATURE_REFERENCE_K: f64 = 300.0;
+const HOST_TEMPERATURE_REFERENCE_K: f64 = super::registry::HOST_TEMPERATURE_FALLBACK_K;
 
 /// CODATA 2018 k page mirror (pinned snapshot under `authority-pins/`).
 pub const K_B_AUTHORITY_URL: &str = "https://physics.nist.gov/cgi-bin/cuu/Value?k";

@@ -69,6 +69,30 @@ mod tests {
     use crate::landauer::landauer_bit_energy_joules;
     use ordered_float::NotNan;
 
+    /// N_float / tier1 host-T SSOT pin (STEER_20261001T0509 wave 25).
+    #[test]
+    fn n_float_steer_wave_twenty_five_tier1_host_temperature_registry_linked() {
+        const STEER: &str = "STEER_20261001T0509";
+        const WAVE: u32 = 25;
+        assert_eq!(STEER, "STEER_20261001T0509");
+        assert_eq!(WAVE, 25);
+        assert_eq!(
+            crate::constants::registry::HOST_TEMPERATURE_FALLBACK_K,
+            HOST_TEMPERATURE_REFERENCE_K
+        );
+        use crate::constants::derivation::Derivation;
+        match crate::constants::tier1_derivation::LANDAUER_FLOOR_J_PER_BIT_DERIVATION {
+            Derivation::Theorem { expected_value, .. } => {
+                assert_eq!(
+                    expected_value,
+                    K_B * HOST_TEMPERATURE_REFERENCE_K * std::f64::consts::LN_2
+                );
+            }
+            _ => panic!("landauer floor must be theorem-derived"),
+        }
+        assert!(LandauerRegistry::get("host_temperature_reference_k").is_some());
+    }
+
     /// N_float / Landauer host-T SSOT pin (STEER_20261001T0359 wave 24).
     #[test]
     fn n_float_steer_wave_twenty_four_host_temperature_registry_linked() {
