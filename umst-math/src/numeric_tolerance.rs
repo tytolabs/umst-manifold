@@ -291,12 +291,6 @@ pub const EDGE_LENGTH_DIVISOR_FLOOR_F32: f32 = 1e-30;
 /// Sentinel non-positive rel-tol for refusal / precondition tests (must stay ≤ 0).
 pub const REFUSAL_NONPOSITIVE_REL_TOL_F32: f32 = 0.0_f32;
 
-/// Invalid iteration budget for inner-loop validation refusal (must stay 0 — not a usable budget).
-pub const REFUSAL_ZERO_ITERATION_BUDGET_USIZE: usize = 0;
-
-/// Invalid mechanics substep cap for orchestration validation refusal (must stay 0).
-pub const REFUSAL_ZERO_MECH_SUB_ITERS_PER_CHEM: u32 = 0;
-
 /// Default equilibrium inner iterations per mechanics pass (single pass today).
 pub const DEFAULT_EQUILIBRIUM_SUB_ITERS: u32 = 1;
 
@@ -327,16 +321,16 @@ pub const fn fracture_at2_outer_regression_iteration_budget() -> usize {
     40
 }
 
-/// Invalid iteration budget wired into inner-loop validation refusal tests.
+/// Sentinel zero iteration budget for clock / inner-loop validation refusal tests.
 #[must_use]
 pub const fn refusal_zero_iteration_budget_usize() -> usize {
-    REFUSAL_ZERO_ITERATION_BUDGET_USIZE
+    0
 }
 
-/// Invalid mechanics substep cap wired into orchestration validation refusal tests.
+/// Sentinel zero substep cap for orchestration validation refusal tests.
 #[must_use]
 pub const fn refusal_zero_mech_sub_iters_per_chem() -> u32 {
-    REFUSAL_ZERO_MECH_SUB_ITERS_PER_CHEM
+    0
 }
 
 #[cfg(test)]
@@ -357,21 +351,5 @@ mod tests {
         let s = ProblemScale::new(10.0);
         let tol = linear_solve_relative_tol_f32(s, LinearSolveRelativeTier::BarNetworkF32Default);
         assert!((tol - 1e-5_f32).abs() < 1e-7_f32);
-    }
-
-    #[test]
-    fn refusal_iteration_budget_sentinels_differ_from_defaults() {
-        assert_eq!(
-            refusal_zero_iteration_budget_usize(),
-            REFUSAL_ZERO_ITERATION_BUDGET_USIZE
-        );
-        assert_eq!(
-            refusal_zero_mech_sub_iters_per_chem(),
-            REFUSAL_ZERO_MECH_SUB_ITERS_PER_CHEM
-        );
-        assert_ne!(
-            refusal_zero_mech_sub_iters_per_chem(),
-            DEFAULT_MECH_SUB_ITERS_PER_CHEM_CAP
-        );
     }
 }
