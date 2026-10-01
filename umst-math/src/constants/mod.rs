@@ -6,6 +6,7 @@
 //! mirror lives in `docs/CGD_REGISTRY.md` §24a (`docs/HSAD_PLAN.md` §0.4 taxonomy).
 
 pub mod derivation;
+pub mod pool_q_constants_manifold;
 pub mod provenance;
 pub mod registry;
 pub mod tier1_derivation;

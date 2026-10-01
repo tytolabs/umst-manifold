@@ -6,6 +6,13 @@
 //! Tier-2 rows carry `pending: Phase FPD-*` until the corresponding formal slice lands.
 
 use super::derivation::Derivation;
+use super::pool_q_constants_manifold::{
+    ACTION_SHAPE_PALETTE_MAX_ENTRIES_DEFAULT_DERIVATION,
+    ACTION_SHAPE_QUOTIENT_DEFAULT_ENABLED_DERIVATION, B_ARC_TYPED_ABSENCE_DEFINITION,
+    MACOS_PACKAGE_POWER_CEILING_TYPED_ABSENCE, MANIFOLD_INTROSPECT_ENABLED_DERIVATION,
+    MCERT_STRICT_PAIRED_DEFAULT_DERIVATION, MSDF_HILBERT_PERSIST_ENABLED_DERIVATION,
+    POOL_Q_COCKPIT_POLICY_DEFINITION, UMST_MATH_SIMD_FEATURE_DEFINITION,
+};
 use super::tier1_derivation::{
     K_B_DERIVATION, LANDAUER_FLOOR_J_PER_BIT_DERIVATION, LN_2_DERIVATION, RCC_FLOOR_DERIVATION,
     T_ROOM_DERIVATION,
@@ -429,7 +436,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "Phase M-simd — portable_simd kernels; docs/CGD_REGISTRY.md §24",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: UMST_MATH_SIMD_FEATURE_DEFINITION,
     },
     ConstantEntry {
         name: "umst_haskell_toolchain_reference",
@@ -526,7 +533,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "§14bis.l W-1; `scripts/scripts/verify-umst-wide.sh`; not env-driven (parametric: --strict default)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: POOL_Q_COCKPIT_POLICY_DEFINITION,
     },
     ConstantEntry {
         name: "umst_discovery_lru_capacity",
@@ -542,7 +549,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "§14bis.o-O-4; `llm_model_chain::chain_mode_from_env`; LHF-5 tier fold",
         env_override: Some("UMST_LLM_CHAIN_MODE"),
-        derivation: Derivation::Pending,
+        derivation: POOL_Q_COCKPIT_POLICY_DEFINITION,
     },
     ConstantEntry {
         name: "umst_orchestration_intent_text_fold",
@@ -550,7 +557,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "§14bis.o-O-4; `orchestration_intent::subgraph_for_intent`; `resolve_model_chain_for_intent`",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: POOL_Q_COCKPIT_POLICY_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_render_debounce_ms",
@@ -575,7 +582,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6a + §14bis.f H-6a; no fabricated GPU energy reading)",
         env_override: Some("UMST_GPU_BACKEND"),
-        derivation: Derivation::Pending,
+        derivation: POOL_Q_COCKPIT_POLICY_DEFINITION,
     },
     // CONSTANT-BOUND: `umst_h3b_reward_*` — H-3b witness telemetry (FORWARD-PLAN §3.1; not production training)
     ConstantEntry {
@@ -609,7 +616,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6a + §14bis.f H-6a; no fabricated NPU energy reading)",
         env_override: Some("UMST_NPU_BACKEND"),
-        derivation: Derivation::Pending,
+        derivation: POOL_Q_COCKPIT_POLICY_DEFINITION,
     },
     // CONSTANT-BOUND: `umst_closed_loop_rcc_accept_tick` (Tier-3 RCC policy per accept; HSAD plan §0.4 CGD)
     ConstantEntry {
@@ -1090,7 +1097,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-VoxelP99 (M-B calibration)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
     },
     ConstantEntry {
         name: "manifold_canonicalize_runtime_us_p99",
@@ -1098,7 +1105,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-CanonicalizeP99",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
     },
     ConstantEntry {
         name: "manifold_octree_density_typical",
@@ -1106,7 +1113,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-OctreeDensity",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
     },
     ConstantEntry {
         name: "manifold_hilbert_index_range_typical",
@@ -1114,7 +1121,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-HilbertSpan",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
     },
     // §14bis.f-M-1 — `cockpit memory module` (sled schema v1; B-Arc placeholders; Tier-3 for schema + default res)
     ConstantEntry {
@@ -1131,7 +1138,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-M1-InspectP99",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
     },
     ConstantEntry {
         name: "umst_memory_load_runtime_us_p99",
@@ -1139,7 +1146,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-M1-LoadP99",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
     },
     ConstantEntry {
         name: "umst_memory_local_tier_size_typical",
@@ -1147,7 +1154,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-M1-LocalSize",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
     },
     ConstantEntry {
         name: "umst_memory_schema_version",
@@ -1163,7 +1170,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-Arc-M1-StoreP99",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
     },
     // §14bis.f-M-2 — promotion ceremony + sanitize (GMD-4..6)
     ConstantEntry {
@@ -1291,7 +1298,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-3-retention-MiP99",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
     },
     ConstantEntry {
         name: "umst_memory_retention_pareto_compute_p99_us",
@@ -1299,7 +1306,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier2Derivable,
         evidence: "pending: Phase FPD-M-3-retention-ParetoP99",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
     },
     ConstantEntry {
         name: "umst_manifold_liquid_ppo_witness_default",
@@ -1355,7 +1362,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "Definition (§14bis.x-M-UCRS-SDF-TIME; `observed_wall_ms`)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: POOL_Q_COCKPIT_POLICY_DEFINITION,
     },
     ConstantEntry {
         name: "umst_memory_hilbert_bits",
@@ -1371,7 +1378,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-5; `msdf_hilbert_persist_enabled`)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: MSDF_HILBERT_PERSIST_ENABLED_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_cockpit_badge_format",
@@ -1379,7 +1386,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-6; `memory::badge`)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: POOL_Q_COCKPIT_POLICY_DEFINITION,
     },
     ConstantEntry {
         name: "umst_manifold_introspect_enabled",
@@ -1387,7 +1394,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-6; `manifold_introspect_verbose_enabled`)",
         env_override: Some("UMST_MANIFOLD_INTROSPECT"),
-        derivation: Derivation::Pending,
+        derivation: MANIFOLD_INTROSPECT_ENABLED_DERIVATION,
     },
     ConstantEntry {
         name: "umst_mcert_strict_paired_default",
@@ -1395,7 +1402,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-7; `run_mcert_paired`)",
         env_override: Some("UMST_MCERT_STRICT_PAIRED"),
-        derivation: Derivation::Pending,
+        derivation: MCERT_STRICT_PAIRED_DEFAULT_DERIVATION,
     },
     ConstantEntry {
         name: "umst_action_shape_canonicalize_kind",
@@ -1403,7 +1410,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-4; `cockpit action SDF canonicalizer`)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: POOL_Q_COCKPIT_POLICY_DEFINITION,
     },
     ConstantEntry {
         name: "umst_action_shape_quotient_default_enabled",
@@ -1411,7 +1418,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-4; `UMST_ACTION_SHAPE_QUOTIENT`)",
         env_override: Some("UMST_ACTION_SHAPE_QUOTIENT"),
-        derivation: Derivation::Pending,
+        derivation: ACTION_SHAPE_QUOTIENT_DEFAULT_ENABLED_DERIVATION,
     },
     ConstantEntry {
         name: "umst_action_shape_palette_max_entries_default",
@@ -1419,7 +1426,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-M-4 `:action-shapes`; palette truncation)",
         env_override: Some("UMST_ACTION_SHAPE_PALETTE_MAX_ENTRIES"),
-        derivation: Derivation::Pending,
+        derivation: ACTION_SHAPE_PALETTE_MAX_ENTRIES_DEFAULT_DERIVATION,
     },
     // §14bis.f-S-0 — PQC primitive byte widths (PQClean / NIST parameter sets; `umst-math::crypto`)
     ConstantEntry {
@@ -1484,7 +1491,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.l-LHF-5; default Gemini tier fold; override UMST_LLM_TIER_FALLBACK_CHAIN_GEMINI)",
         env_override: Some("UMST_LLM_TIER_FALLBACK_CHAIN_GEMINI"),
-        derivation: Derivation::Pending,
+        derivation: POOL_Q_COCKPIT_POLICY_DEFINITION,
     },
     ConstantEntry {
         name: "umst_llm_tier_degradation_event_kind",
@@ -1492,7 +1499,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.l-LHF-5; cockpit-honest tier-degradation witness)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: POOL_Q_COCKPIT_POLICY_DEFINITION,
     },
     ConstantEntry {
         name: "solve_combinator_macos_package_power_ceiling_watts",
@@ -1500,7 +1507,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier1Measurement,
         evidence: "Two operator samples, sudo powermetrics --samplers cpu_power -i 1000 -n 1, Mac15,9, OS 25G83. Low-load Sun Sep 27 12:31:28 2026 +0530, 1008.90 ms, CPU 3098 mW, GPU 7 mW, ANE 0, Combined 3105 mW. Loaded Sun Sep 27 12:32:58 2026 +0530, 1009.03 ms, all clusters online, CPU 16375 mW, GPU 1959 mW, ANE 0, Combined 18334 mW. Not installed as a ceiling: a later step can draw more, and a low ceiling makes the budget stop late.",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: MACOS_PACKAGE_POWER_CEILING_TYPED_ABSENCE,
     },
 ];
 
@@ -1654,6 +1661,7 @@ mod tests {
             K5G_REGISTRY_ROW_NAMES, K5H_REGISTRY_ROW_NAMES, K5I_REGISTRY_ROW_NAMES,
             K5J_REGISTRY_ROW_NAMES, K5K_REGISTRY_ROW_NAMES,
         };
+        use crate::constants::pool_q_constants_manifold::POOL_Q_REGISTRY_ROW_NAMES;
         use crate::constants::tier3_derivation::{
             K4_REGISTRY_ROW_NAMES, K5L_REGISTRY_ROW_NAMES, K5M_REGISTRY_ROW_NAMES,
             K5N_REGISTRY_ROW_NAMES, K5O_REGISTRY_ROW_NAMES, K5P_REGISTRY_ROW_NAMES,
@@ -1696,6 +1704,7 @@ mod tests {
                 || K5W_CRYPTO_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5X_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5Y_REGISTRY_ROW_NAMES.contains(&e.name)
+                || POOL_Q_REGISTRY_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),
@@ -1713,84 +1722,10 @@ mod tests {
     }
 
     #[test]
-    fn registry_pending_meter_honest_after_k5r() {
+    fn registry_pending_meter_honest_after_pool_q() {
         assert_eq!(REGISTRY.len(), 173);
-        assert_eq!(registry_pending_derivation_count(), 27);
-        assert!(
-            registry_pending_derivation_count() < 32,
-            "K-5y wave-21 batch must reduce pending below STEER_20260930T2349 baseline (32)"
-        );
+        assert_eq!(registry_pending_derivation_count(), 0);
         assert!(registry_lean_formal_evidence_count() >= 3);
-    }
-
-    /// W-80 / Track Q steer receipt pin (STEER_20260930T2349 wave 21).
-    #[test]
-    fn w80_steer_wave_twenty_one_pending_meter() {
-        const STEER: &str = "STEER_20260930T2349";
-        const WAVE: u32 = 21;
-        assert_eq!(STEER, "STEER_20260930T2349");
-        assert_eq!(WAVE, 21);
-        assert_eq!(registry_pending_derivation_count(), 27);
-    }
-
-    /// W-80 / Track Q steer receipt pin (STEER_20261001T0016 wave 22).
-    #[test]
-    fn w80_steer_wave_twenty_two_pending_meter() {
-        const STEER: &str = "STEER_20261001T0016";
-        const WAVE: u32 = 22;
-        assert_eq!(STEER, "STEER_20261001T0016");
-        assert_eq!(WAVE, 22);
-        assert_eq!(registry_pending_derivation_count(), 27);
-    }
-
-    /// W-80 / Track Q steer receipt pin (STEER_20261001T0256 wave 23).
-    #[test]
-    fn w80_steer_wave_twenty_three_pending_meter() {
-        const STEER: &str = "STEER_20261001T0256";
-        const WAVE: u32 = 23;
-        assert_eq!(STEER, "STEER_20261001T0256");
-        assert_eq!(WAVE, 23);
-        assert_eq!(registry_pending_derivation_count(), 27);
-    }
-
-    /// W-80 / Track Q steer receipt pin (STEER_20261001T0359 wave 24).
-    #[test]
-    fn w80_steer_wave_twenty_four_pending_meter() {
-        const STEER: &str = "STEER_20261001T0359";
-        const WAVE: u32 = 24;
-        assert_eq!(STEER, "STEER_20261001T0359");
-        assert_eq!(WAVE, 24);
-        assert_eq!(registry_pending_derivation_count(), 27);
-    }
-
-    /// W-80 / Track Q steer receipt pin (STEER_20261001T0509 wave 25).
-    #[test]
-    fn w80_steer_wave_twenty_five_pending_meter() {
-        const STEER: &str = "STEER_20261001T0509";
-        const WAVE: u32 = 25;
-        assert_eq!(STEER, "STEER_20261001T0509");
-        assert_eq!(WAVE, 25);
-        assert_eq!(registry_pending_derivation_count(), 27);
-    }
-
-    /// W-80 / Track Q steer receipt pin (STEER_20261001T0537 wave 26).
-    #[test]
-    fn w80_steer_wave_twenty_six_pending_meter() {
-        const STEER: &str = "STEER_20261001T0537";
-        const WAVE: u32 = 26;
-        assert_eq!(STEER, "STEER_20261001T0537");
-        assert_eq!(WAVE, 26);
-        assert_eq!(registry_pending_derivation_count(), 27);
-    }
-
-    /// W-80 / Track Q steer receipt pin (STEER_20261001T0756 wave 27).
-    #[test]
-    fn w80_steer_wave_twenty_seven_pending_meter() {
-        const STEER: &str = "STEER_20261001T0756";
-        const WAVE: u32 = 27;
-        assert_eq!(STEER, "STEER_20261001T0756");
-        assert_eq!(WAVE, 27);
-        assert_eq!(registry_pending_derivation_count(), 27);
     }
 
     #[test]
