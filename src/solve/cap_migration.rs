@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: MIT
 //! Caps → unfold migration ledger (manifold Track C). One site per cell until census hits zero.
 
+pub const TRACK_C_GO4_CELL_ID: &str = "LANE-TRACK-C-G-O-4";
+
+pub const TRACK_C_GO4_STEER: &str = "STEER_20261001T0537";
+
+/// Monotone G-O-4 steer-wave counter (audit only).
+pub const TRACK_C_GO4_WAVE_SEQ: u32 = 26;
+
 /// How a legacy compiled iteration cap is dispositioned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CapMigrationDisposition {
@@ -214,6 +221,14 @@ pub const fn cap_migration_site_count() -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn track_c_go4_steer_receipt_pinned() {
+        assert_eq!(TRACK_C_GO4_STEER, "STEER_20261001T0537");
+        assert_eq!(TRACK_C_GO4_WAVE_SEQ, 26);
+        assert_eq!(TRACK_C_GO4_CELL_ID, "LANE-TRACK-C-G-O-4");
+        assert_eq!(cap_migration_site_count(), 25);
+    }
 
     #[test]
     fn cap_migration_inventory_honest() {
