@@ -12,7 +12,7 @@ use umst_manifold::gate::{suggested_info_gain_from_batched_nodal_scalars, GateMa
 
 type B = NdArray<f32>;
 
-const GATEWAY_TEMPERATURE_K: f64 = 300.0;
+const GATEWAY_TEMPERATURE_K: f64 = umst_manifold::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
 const GATEWAY_INITIAL_CREDIT_J: f64 = 1.0e-12;
 const SCALAR_DELTA: f32 = 0.1_f32;
 

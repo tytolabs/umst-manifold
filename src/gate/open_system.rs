@@ -177,7 +177,8 @@ mod tests {
     use crate::ai::cbf::ThermodynamicCBF;
     use crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
     use crate::gate::transition_proposal::{
-        transition_outcome, ThermodynamicStateSnapshot, TRANSITION_TOLERANCE,
+        transition_outcome, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, ThermodynamicStateSnapshot,
+        TRANSITION_TOLERANCE,
     };
     use crate::gate::verdict::{ConjunctVerdict, GateRejectReason};
 
@@ -190,7 +191,7 @@ mod tests {
 
     #[test]
     fn landauer_power_input_clamps_negative_bits() {
-        let temp = 293.15;
+        let temp = MIX_CALIBRATION_REFERENCE_TEMPERATURE_K;
         assert_eq!(landauer_power_input_joules(temp, -5.0), 0.0);
         assert_eq!(
             landauer_power_input_joules(temp, 1.0),
@@ -299,8 +300,8 @@ mod tests {
 
     #[test]
     fn transition_outcome_with_power_input_matches_passive_at_zero() {
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
-        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.0, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
         let dt = 28.0 * 24.0 * 3600.0;
 
         let passive = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
@@ -313,8 +314,8 @@ mod tests {
 
     #[test]
     fn transition_outcome_with_power_input_idempotent_at_passive_limit() {
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.2, 293.15, 80.0);
-        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.45, 293.15, 80.0);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.2, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.45, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
         let dt = 7.0 * 24.0 * 3600.0;
         let first = transition_outcome_with_power_input(&old, &new, dt, 0.0, TRANSITION_TOLERANCE);
         let second = transition_outcome_with_power_input(&old, &new, dt, 0.0, TRANSITION_TOLERANCE);
@@ -330,7 +331,7 @@ mod tests {
             μ_atp_j_per_rate: 120.0,
             reaction_rate: 0.25,
             dissipation: 50.0,
-            temperature_k: 310.0,
+            temperature_k: AMBIENT_REFERENCE_TEMPERATURE_K + 10_f64,
         };
         assert!(fixture.power_input() > 0.0);
         assert!(fixture.is_admissible(TRANSITION_TOLERANCE));
@@ -343,7 +344,7 @@ mod tests {
             μ_atp_j_per_rate: 80.0,
             reaction_rate: 0.15,
             dissipation: 40.0,
-            temperature_k: 293.15,
+            temperature_k: MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
         };
         let passive = fixture.passive_limit();
         assert_eq!(passive.reaction_rate, 0.0);
@@ -357,7 +358,7 @@ mod tests {
             μ_atp_j_per_rate: 120.0,
             reaction_rate: 0.0,
             dissipation: 50.0,
-            temperature_k: 310.0,
+            temperature_k: AMBIENT_REFERENCE_TEMPERATURE_K + 10_f64,
         };
         assert!(!fixture.is_admissible(TRANSITION_TOLERANCE));
     }

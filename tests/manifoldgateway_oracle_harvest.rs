@@ -14,11 +14,12 @@ use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
+use umst_manifold::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
 use umst_manifold::gate::{suggested_info_gain_from_batched_nodal_scalars, GateManifoldGateway};
 
 type B = NdArray<f32>;
 
-const GATEWAY_TEMPERATURE_K: f64 = 300.0;
+const GATEWAY_TEMPERATURE_K: f64 = AMBIENT_REFERENCE_TEMPERATURE_K;
 const GATEWAY_INITIAL_CREDIT_J: f64 = 1.0e-12;
 const SCALAR_DELTA: f32 = 0.1_f32;
 

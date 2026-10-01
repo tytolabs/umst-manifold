@@ -575,9 +575,9 @@ mod tests {
         }
     }
 
-    struct PpoChainStubCartridge;
+    struct PpoChainFixtureCartridge;
 
-    impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoChainStubCartridge {
+    impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoChainFixtureCartridge {
         fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
             let d = mix.fractions.device();
             PhysicalResult {
@@ -664,7 +664,7 @@ mod tests {
     #[test]
     fn burn_liquid_ppo_step_finite_backward_chain_smoke() {
         let dev = device();
-        let gateway = ManifoldGateway::new(PpoChainStubCartridge, 300.0_f64, 1.0e-12_f64);
+        let gateway = ManifoldGateway::new(PpoChainFixtureCartridge, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-12_f64);
         let mut agent = BurnLiquidPPOAgent::new(gateway);
         let state = tiny_umst();
 
@@ -730,9 +730,9 @@ mod kleisli_adapt_tests {
         }
     }
 
-    struct PpoChainStubCartridge;
+    struct PpoChainFixtureCartridge;
 
-    impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoChainStubCartridge {
+    impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoChainFixtureCartridge {
         fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
             let d = mix.fractions.device();
             PhysicalResult {
@@ -771,7 +771,7 @@ mod kleisli_adapt_tests {
     #[test]
     fn burn_liquid_ppo_kleisli_penalize_finite_backward_chain_smoke() {
         let dev = device();
-        let mut gateway = ManifoldGateway::new(PpoChainStubCartridge, 300.0_f64, 1.0e-12_f64);
+        let mut gateway = ManifoldGateway::new(PpoChainFixtureCartridge, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-12_f64);
         gateway.lambda_cd = 0.5_f32;
         let mut agent = BurnLiquidPPOAgent::new(gateway);
         let state = tiny_umst();
@@ -793,8 +793,8 @@ mod kleisli_adapt_tests {
     fn burn_liquid_ppo_kleisli_subtract_cd_penalty_noop_when_lambdas_zero() {
         let dev = device();
         let mut agent = BurnLiquidPPOAgent::new(ManifoldGateway::new(
-            PpoChainStubCartridge,
-            300.0_f64,
+            PpoChainFixtureCartridge,
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
             1.0e-12_f64,
         ));
         let baseline = tiny_umst();

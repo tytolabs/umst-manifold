@@ -13,6 +13,7 @@ use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::ai::constraint_loss::clausius_duhem_violation;
 use umst_manifold::ai::liquid_ppo::BurnLiquidPPOAgent;
 use umst_manifold::ai::ppo::ManifoldGateway;
+use umst_manifold::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
 use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
@@ -54,9 +55,9 @@ fn tiny_umst() -> UnifiedMaterialStateTensor<B> {
     }
 }
 
-struct PpoChainStubCartridge;
+struct PpoChainFixtureCartridge;
 
-impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoChainStubCartridge {
+impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoChainFixtureCartridge {
     fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
         let d = mix.fractions.device();
         PhysicalResult {
@@ -90,7 +91,7 @@ impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for PpoChainStubCartrid
 #[test]
 fn kleisli_ppo_hot_bind_step_and_learn_uses_constraint_loss_path() {
     let dev = device();
-    let mut gateway = ManifoldGateway::new(PpoChainStubCartridge, 300.0_f64, 1.0e-12_f64);
+    let mut gateway = ManifoldGateway::new(PpoChainFixtureCartridge, AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-12_f64);
     gateway.lambda_cd = 0.5_f32;
     let mut agent = BurnLiquidPPOAgent::new(gateway);
     let state = tiny_umst();
@@ -111,7 +112,7 @@ fn kleisli_ppo_hot_bind_step_and_learn_uses_constraint_loss_path() {
 #[test]
 fn kleisli_ppo_hot_bind_constraint_loss_penalty_nonzero_when_lambda_set() {
     let dev = device();
-    let mut gateway = ManifoldGateway::new(PpoChainStubCartridge, 300.0_f64, 1.0e-12_f64);
+    let mut gateway = ManifoldGateway::new(PpoChainFixtureCartridge, AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-12_f64);
     gateway.lambda_cd = 1.0_f32;
     let rho = Tensor::<B, 1>::full([1], 2400.0_f32, &dev);
     let old_fe = Tensor::<B, 1>::full([1], -1.0e5_f32, &dev);
@@ -139,7 +140,7 @@ fn kleisli_ppo_hot_bind_constraint_loss_penalty_nonzero_when_lambda_set() {
 fn kleisli_ppo_hot_bind_landauer_penalty_nonzero_when_lambda_set() {
     let dev = device();
     // Zero credit guarantees slack > 0 for any positive bit count (platform-stable).
-    let mut gateway = ManifoldGateway::new(PpoChainStubCartridge, 300.0_f64, 0.0_f64);
+    let mut gateway = ManifoldGateway::new(PpoChainFixtureCartridge, AMBIENT_REFERENCE_TEMPERATURE_K, 0.0_f64);
     gateway.lambda_landauer = 1.0_f32;
     let info_bits = Tensor::<B, 1>::full([1], 64.0_f32, &dev);
     let penalty = gateway.landauer_constraint_loss_penalty(info_bits.clone());

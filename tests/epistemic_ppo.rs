@@ -15,6 +15,7 @@ use umst_manifold::ai::info_gain::{
     histogram_info_gain_tensor, nodal_scalar_means, MutualInfoEstimator,
 };
 use umst_manifold::ai::liquid_ppo::BurnLiquidPPOAgent;
+use umst_manifold::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
 use umst_manifold::ai::ppo::ManifoldGateway;
 use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
@@ -157,7 +158,7 @@ fn manifold_gateway_alpha_beta_gamma_weights() {
     let umst = umst_with_hydration(0.4, 2, UMST_SCALAR_CHANNEL_COUNT);
     let info = Tensor::<B, 1>::full([1], 0.001_f32, &dev);
 
-    let mut g_base = ManifoldGateway::new(GateAwareCartridge, 300.0_f64, 1.0e-6_f64);
+    let mut g_base = ManifoldGateway::new(GateAwareCartridge, AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-6_f64);
     g_base.alpha = 1.0;
     g_base.beta = 0.0;
     g_base.gamma = 0.0;
@@ -170,7 +171,7 @@ fn manifold_gateway_alpha_beta_gamma_weights() {
         .into_data()
         .value[0];
 
-    let mut g_pen = ManifoldGateway::new(GateAwareCartridge, 300.0_f64, 1.0e-6_f64);
+    let mut g_pen = ManifoldGateway::new(GateAwareCartridge, AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-6_f64);
     g_pen.alpha = 1.0;
     g_pen.beta = 10.0;
     g_pen.gamma = 0.0;
@@ -191,7 +192,7 @@ fn epistemic_training_improves_gate_pass_rate() {
     let dev = device();
     let n = 2usize;
     let f = 7usize;
-    let mut gateway = ManifoldGateway::new(GateAwareCartridge, 300.0_f64, 1.0e-4_f64);
+    let mut gateway = ManifoldGateway::new(GateAwareCartridge, AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-4_f64);
     gateway.beta = 0.1;
     let mut agent = BurnLiquidPPOAgent::new(gateway);
 

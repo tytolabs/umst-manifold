@@ -128,7 +128,11 @@ pub fn harvest_manifold_gateway_rewards() -> (f64, f64) {
     let umst = umst_with_hydration(0.4, 2, UMST_SCALAR_CHANNEL_COUNT);
     let info = Tensor::<B, 1>::full([1], 0.001_f32, &dev);
 
-    let mut g_base = ManifoldGateway::new(GateAwareCartridge, 300.0_f64, 1.0e-6_f64);
+    let mut g_base = ManifoldGateway::new(
+        GateAwareCartridge,
+        umst_manifold::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
+        1.0e-6_f64,
+    );
     g_base.alpha = 1.0;
     g_base.beta = 0.0;
     g_base.gamma = 0.0;
@@ -139,7 +143,11 @@ pub fn harvest_manifold_gateway_rewards() -> (f64, f64) {
         .into_data()
         .value[0] as f64;
 
-    let mut g_pen = ManifoldGateway::new(GateAwareCartridge, 300.0_f64, 1.0e-6_f64);
+    let mut g_pen = ManifoldGateway::new(
+        GateAwareCartridge,
+        umst_manifold::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
+        1.0e-6_f64,
+    );
     g_pen.alpha = 1.0;
     g_pen.beta = 10.0;
     g_pen.gamma = 0.0;

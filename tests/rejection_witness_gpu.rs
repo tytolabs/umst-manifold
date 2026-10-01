@@ -141,9 +141,9 @@ fn baseline_gpu_path() -> PathBuf {
         .join("artifacts/training/rejection_baseline_gpu.json")
 }
 
-struct GpuPpoStub;
+struct GpuPpoFixture;
 
-impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for GpuPpoStub {
+impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for GpuPpoFixture {
     fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
         let d = mix.fractions.device();
         PhysicalResult {
@@ -273,7 +273,11 @@ fn rejection_baseline_gpu_measured_witness() {
 #[ignore = "wgpu Metal min buffer alignment on tiny ODE graph; GPU constraint_loss witness is rejection_baseline_gpu_measured_witness"]
 fn kleisli_ppo_gpu_autodiff_smoke() {
     let dev = device();
-    let mut gateway = ManifoldGateway::new(GpuPpoStub, 300.0_f64, 1.0e-12_f64);
+    let mut gateway = ManifoldGateway::new(
+        GpuPpoFixture,
+        umst_manifold::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
+        1.0e-12_f64,
+    );
     gateway.lambda_cd = 1.0_f32;
     gateway.lambda_landauer = 0.25_f32;
     let mut agent = BurnLiquidPPOAgent::new(gateway);

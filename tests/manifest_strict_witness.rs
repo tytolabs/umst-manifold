@@ -46,9 +46,9 @@ fn tiny_umst(digest: Option<[u8; 32]>) -> UnifiedMaterialStateTensor<B> {
     }
 }
 
-struct GatewayStubCartridge;
+struct GatewayFixtureCartridge;
 
-impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for GatewayStubCartridge {
+impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for GatewayFixtureCartridge {
     fn compute_all(
         &self,
         mix: &umst_manifold::core::tensors::MaterialCompositionTensor<Bk>,
@@ -98,8 +98,12 @@ fn release_manifest_strict_pins_lock_digest() {
 
 #[test]
 fn gateway_new_auto_pins_lock_digest_without_manual_wiring() {
-    let gateway: ManifoldGateway<B, GatewayStubCartridge> =
-        ManifoldGateway::new(GatewayStubCartridge, 300.0_f64, 1.0e-12_f64);
+    let gateway: ManifoldGateway<B, GatewayFixtureCartridge> =
+        ManifoldGateway::new(
+        GatewayFixtureCartridge,
+        umst_manifold::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
+        1.0e-12_f64,
+    );
     assert_eq!(
         gateway.expected_catalog_schema_digest,
         Some(lock_upstream_catalog_digest_bytes())
@@ -116,7 +120,11 @@ fn strict_manifest_matching_digest_accepts_topology_step() {
     );
 
     let lock = lock_upstream_catalog_digest_bytes();
-    let mut gateway = ManifoldGateway::new(GatewayStubCartridge, 300.0_f64, 1.0e-12_f64);
+    let mut gateway = ManifoldGateway::new(
+        GatewayFixtureCartridge,
+        umst_manifold::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
+        1.0e-12_f64,
+    );
 
     let umst = tiny_umst(Some(lock)).with_lock_catalog_schema_digest();
     let info_gain = Tensor::<B, 1>::zeros([1], &device());
@@ -134,7 +142,11 @@ fn strict_manifest_digest_mismatch_rejects() {
     let mut wrong = lock_upstream_catalog_digest_bytes();
     wrong[0] ^= 0xff;
 
-    let mut gateway = ManifoldGateway::new(GatewayStubCartridge, 300.0_f64, 1.0e-12_f64);
+    let mut gateway = ManifoldGateway::new(
+        GatewayFixtureCartridge,
+        umst_manifold::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
+        1.0e-12_f64,
+    );
     release.apply_witness_to_gateway(&mut gateway);
 
     let umst = tiny_umst(Some(wrong));

@@ -9,6 +9,7 @@ use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::ai::info_gain::suggested_info_gain_from_batched_nodal_scalars;
 use umst_manifold::ai::ppo::ManifoldGateway;
+use umst_manifold::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
 use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
@@ -51,9 +52,9 @@ fn tiny_umst() -> UnifiedMaterialStateTensor<B> {
 }
 
 /// Minimal cartridge: finite nodal [`PhysicalResult`] (zeros).
-struct GatewayStubCartridge;
+struct GatewayFixtureCartridge;
 
-impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for GatewayStubCartridge {
+impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for GatewayFixtureCartridge {
     fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
         let d = mix.fractions.device();
         PhysicalResult {
@@ -97,7 +98,7 @@ fn manifold_gateway_accepts_step_with_suggested_info_gain() {
     assert_eq!(info_gain.dims(), [1]);
 
     // Enough Landauer budget for the summed surrogate bits (same scale as `tests/cbf.rs`).
-    let mut gateway = ManifoldGateway::new(GatewayStubCartridge, 300.0_f64, 1.0e-12_f64);
+    let mut gateway = ManifoldGateway::new(GatewayFixtureCartridge, AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-12_f64);
     let result = gateway.evaluate_topology_step(proposed, info_gain);
     assert!(result.is_ok(), "expected Ok, got {:?}", result.err());
 
@@ -116,9 +117,9 @@ mod information_density_reward {
 
     const INFO_FILL: f32 = 3.0_f32;
 
-    struct StubConstInfo;
+    struct ConstInfoFixture;
 
-    impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for StubConstInfo {
+    impl<Bk: Backend<FloatElem = f32>> IScienceCartridge<Bk> for ConstInfoFixture {
         fn compute_all(&self, mix: &MaterialCompositionTensor<Bk>) -> PhysicalResult<Bk> {
             let d = mix.fractions.device();
             PhysicalResult {
@@ -156,24 +157,24 @@ mod information_density_reward {
         let info_gain =
             suggested_info_gain_from_batched_nodal_scalars(baseline_batched, proposed_batched);
 
-        let mut g0 = ManifoldGateway::new(StubConstInfo, 300.0_f64, 1.0e-12_f64);
+        let mut g0 = ManifoldGateway::new(ConstInfoFixture, AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-12_f64);
         g0.eta = 0.0_f32;
         let r0 = g0
             .evaluate_topology_step(proposed.clone(), info_gain.clone())
             .expect(
-                "ManifoldGateway topology step with eta=0 on StubConstInfo cartridge for information_density reward baseline (FP §6 Track G epistemic sensor harness)",
+                "ManifoldGateway topology step with eta=0 on ConstInfoFixture cartridge for information_density reward baseline (FP §6 Track G epistemic sensor harness)",
             )
             .1
             .into_data()
             .value[0];
 
-        let mut g1 = ManifoldGateway::new(StubConstInfo, 300.0_f64, 1.0e-12_f64);
+        let mut g1 = ManifoldGateway::new(ConstInfoFixture, AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-12_f64);
         let eta = 2.0_f32;
         g1.eta = eta;
         let r1 = g1
             .evaluate_topology_step(proposed, info_gain)
             .expect(
-                "ManifoldGateway topology step with eta=2 on StubConstInfo cartridge for information_density reward scaling witness (FP §6 Track G epistemic sensor harness)",
+                "ManifoldGateway topology step with eta=2 on ConstInfoFixture cartridge for information_density reward scaling witness (FP §6 Track G epistemic sensor harness)",
             )
             .1
             .into_data()

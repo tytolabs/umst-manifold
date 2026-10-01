@@ -12,11 +12,12 @@ use umst_manifold::ai::liquid_ppo::BurnLiquidPPOAgent;
 use umst_manifold::ai::ppo::ManifoldGateway;
 use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
 use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
+use umst_manifold::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 
 type B = NdArray<f32>;
 
-const GATEWAY_TEMPERATURE_K: f64 = 300.0;
+const GATEWAY_TEMPERATURE_K: f64 = AMBIENT_REFERENCE_TEMPERATURE_K;
 const GATEWAY_INITIAL_CREDIT_J: f64 = 1.0e-12;
 const INFO_GAIN_BITS: f32 = 0.01_f32;
 const DT_RATIO: f32 = 1.0_f32;
