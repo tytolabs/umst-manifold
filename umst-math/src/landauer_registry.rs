@@ -69,6 +69,17 @@ mod tests {
     use crate::landauer::landauer_bit_energy_joules;
     use ordered_float::NotNan;
 
+    /// Host-T row stays registry-linked (ambient SSOT batch).
+    #[test]
+    fn host_temperature_reference_k_links_registry_fallback() {
+        assert_eq!(
+            HOST_TEMPERATURE_REFERENCE_K,
+            crate::constants::registry::HOST_TEMPERATURE_FALLBACK_K
+        );
+        let row = LandauerRegistry::get("host_temperature_reference_k").expect("host T row");
+        assert_eq!(row.value, HOST_TEMPERATURE_REFERENCE_K);
+    }
+
     /// N_float / dignity host-T SSOT pin (STEER_20261001T0756 wave 27).
     #[test]
     fn n_float_steer_wave_twenty_seven_dignity_no_bare_host_t_literals() {

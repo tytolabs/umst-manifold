@@ -446,7 +446,7 @@ mod tests {
 
     fn toy_thmc_state(dev: &<TestBackend as Backend>::Device, n: usize) -> ThmcState<TestBackend> {
         ThmcState::from_tensors(
-            Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(300.0_f32),
+            Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32),
             Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(0.5_f32),
             Tensor::<TestBackend, 3>::zeros([1, n, 3], dev),
             Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(0.1_f32),

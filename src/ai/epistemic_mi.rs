@@ -823,12 +823,13 @@ mod tests {
     #[test]
     fn correlated_samples_yield_positive_mi() {
         let mut est = MutualInfoEstimator::new(2, 2);
-        for i in 0..300 {
-            let x = i as f64 / 300.0;
+        const SAMPLE_N: u64 = 300;
+        for i in 0..SAMPLE_N {
+            let x = i as f64 / f64::from(SAMPLE_N);
             est.update(&[x, x], &[x, x]);
         }
         assert!(est.is_warm());
-        assert_eq!(est.total_samples(), 300);
+        assert_eq!(est.total_samples(), SAMPLE_N);
         assert!(est.estimate() >= 0.0);
         assert!(est.estimate_clamped_for_landauer() <= LANDAUER_MI_CAP_NATS + 1e-15);
         assert_eq!(est.state_dim(), 2);

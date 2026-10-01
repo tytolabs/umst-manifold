@@ -749,7 +749,7 @@ mod tensors_tests {
         let f = UMST_SCALAR_CHANNEL_COUNT;
         let mut flat = vec![0.0_f32; n * f];
         for (i, row) in flat.chunks_mut(f).enumerate() {
-            row[SCALAR_TEMPERATURE] = 300.0 + i as f32;
+            row[SCALAR_TEMPERATURE] = crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32 + i as f32;
             row[SCALAR_HUMIDITY] = 0.5 + 0.1 * i as f32;
             row[SCALAR_DAMAGE] = 0.01 * i as f32;
         }
@@ -767,7 +767,7 @@ mod tensors_tests {
             .slice([0..1, 0..1, 0..1])
             .into_data()
             .value;
-        assert!((t0[0] - 300.0).abs() < 1e-5);
+        assert!((t0[0] - crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32).abs() < 1e-5);
     }
 
     #[test]

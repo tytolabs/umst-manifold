@@ -113,7 +113,7 @@ mod tests {
     use super::*;
     use approx::assert_relative_eq;
 
-    const EXPECTED_LANDAUER_300K_J: f64 = 1.380_649e-23 * 300.0 * std::f64::consts::LN_2;
+    const EXPECTED_LANDAUER_300K_J: f64 = K_BOLTZMANN_FALLBACK_J_PER_K * AMBIENT_REFERENCE_TEMPERATURE_K * std::f64::consts::LN_2;
 
     #[test]
     fn constants_cell_metadata_pinned() {
@@ -145,7 +145,7 @@ mod tests {
         let e = landauer_bit_energy_joules(t);
         assert_relative_eq!(
             e,
-            landauer_bit_energy_joules(300.0) / 2.0,
+            landauer_bit_energy_joules(AMBIENT_REFERENCE_TEMPERATURE_K) / 2.0,
             epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
     }
@@ -185,6 +185,16 @@ mod tests {
             umst_math::landauer::K_B,
             epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
         );
+    }
+
+    #[test]
+    fn gateway_and_thmc_fixtures_use_ambient_reference_temperature() {
+        let lppo = include_str!("ai/liquid_ppo.rs");
+        assert!(lppo.contains("AMBIENT_REFERENCE_TEMPERATURE_K"));
+        assert!(!lppo.contains("300.0_f64, 1.0e-12_f64"));
+        let sync = include_str!("physics/thmc_umst_sync.rs");
+        assert!(sync.contains("AMBIENT_REFERENCE_TEMPERATURE_K as f32"));
+        assert!(!sync.contains("plan_fields(1, n, 300.0"));
     }
 
     #[test]

@@ -270,6 +270,7 @@ pub fn sync_thmc_to_umst<B: Backend<FloatElem = f32>>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
     use crate::core::field::Field;
     use crate::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
     use crate::physics::error::PhysicsError;
@@ -378,7 +379,7 @@ mod tests {
     fn thmc_umst_sync_rejects_delta_additive_mode() {
         let n = 2usize;
         let mut umst = toy_umst(n, UMST_SCALAR_CHANNEL_COUNT);
-        let (t, h, d) = plan_fields(1, n, 300.0, 0.5, 0.1);
+        let (t, h, d) = plan_fields(1, n, AMBIENT_REFERENCE_TEMPERATURE_K as f32, 0.5, 0.1);
         let err =
             sync_thmc_fields_to_umst(&t, &h, &d, &mut umst, TemperatureSyncMode::DeltaAdditive)
                 .unwrap_err();
@@ -398,7 +399,7 @@ mod tests {
     #[test]
     fn thmc_umst_sync_rejects_node_count_mismatch() {
         let mut umst = toy_umst(2, UMST_SCALAR_CHANNEL_COUNT);
-        let (t, h, d) = plan_fields(1, 3, 300.0, 0.5, 0.1);
+        let (t, h, d) = plan_fields(1, 3, AMBIENT_REFERENCE_TEMPERATURE_K as f32, 0.5, 0.1);
         let err = sync_thmc_fields_to_umst(&t, &h, &d, &mut umst, TemperatureSyncMode::Absolute)
             .unwrap_err();
         assert!(matches!(err, PhysicsError::ShapeMismatch { .. }));
@@ -409,7 +410,7 @@ mod tests {
         // Width must exceed SCALAR_DAMAGE; truncate to fail the fence honestly.
         let narrow = SCALAR_DAMAGE; // nf <= SCALAR_DAMAGE → Domain
         let mut umst = toy_umst(2, narrow);
-        let (t, h, d) = plan_fields(1, 2, 300.0, 0.5, 0.1);
+        let (t, h, d) = plan_fields(1, 2, AMBIENT_REFERENCE_TEMPERATURE_K as f32, 0.5, 0.1);
         let err = sync_thmc_fields_to_umst(&t, &h, &d, &mut umst, TemperatureSyncMode::Absolute)
             .unwrap_err();
         assert!(matches!(err, PhysicsError::Domain { .. }));

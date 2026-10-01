@@ -1269,12 +1269,13 @@ mod w29_081_thmc_deepen_tests {
     #[test]
     fn thmc_reaction_extent_kinetics_alpha_rate_vanishes_at_full_extent() {
         let k = ReactionExtentKinetics::default();
-        let rate = k.alpha_rate_scalar(1.0_f32, 300.0_f32);
+        let ambient_k = crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32;
+        let rate = k.alpha_rate_scalar(1.0_f32, ambient_k);
         assert!(
             rate.abs() < 1e-12_f32,
             "full extent ⇒ Arrhenius (1-α)_+ = 0, got {rate}"
         );
-        let mid = k.alpha_rate_scalar(0.5_f32, 300.0_f32);
+        let mid = k.alpha_rate_scalar(0.5_f32, ambient_k);
         assert!(mid > 0.0_f32, "mid extent at room T should be positive");
     }
 
