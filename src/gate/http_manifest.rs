@@ -416,19 +416,39 @@ pub type HttpMixGateEvaluator = HttpTransitionEvaluator;
 
 #[cfg(test)]
 mod tests {
+use crate::gate::transition_proposal::{
+    CENSUS_BINDER_LIQUID_RATIO, CENSUS_DT_ONE_HOUR_S, CENSUS_FREE_ENERGY_DROP_J,
+    CENSUS_GOLDEN_IDENTITY_ENTROPY, CENSUS_GOLDEN_IDENTITY_FREE_ENERGY_J,
+    CENSUS_GOLDEN_IDENTITY_REACTION_EXTENT, CENSUS_GOLDEN_IDENTITY_STRENGTH_MPA,
+    CENSUS_GOLDEN_MASS_REJECT_ENTROPY, CENSUS_GOLDEN_MASS_REJECT_STRENGTH_MPA,
+    CENSUS_GOLDEN_NEGATIVE_DISSIPATION_ENTROPY, CENSUS_GOLDEN_NEGATIVE_DISSIPATION_FREE_ENERGY_J,
+    CENSUS_GOLDEN_NEGATIVE_DISSIPATION_FREE_ENERGY_SPIKE_J,
+    CENSUS_GOLDEN_NEGATIVE_DISSIPATION_STRENGTH_MPA, CENSUS_HTTP_ADMISSIBILITY_REL_MARGIN,
+    CENSUS_HTTP_AGE_DAYS, CENSUS_HTTP_AIR_VOID_FRACTION, CENSUS_HTTP_CONSTITUENT_PRIMARY_KG,
+    CENSUS_HTTP_PREDICTED_STRENGTH_MPA, CENSUS_HTTP_TEMPERATURE_C, CENSUS_HTTP_WATER_KG,
+    CENSUS_INTRINSIC_STRENGTH_MPA, CENSUS_MASS_REJECT_DENSITY_KG_M3,
+    CENSUS_MASS_VIOLATION_DELTA_KG_M3, CENSUS_MIX_CALIBRATED_DENSITY_KG_M3,
+    CENSUS_NEGATIVE_DISSIPATION_DENSITY_KG_M3, CENSUS_OPEN_SYSTEM_POWER_W,
+    CENSUS_REACTION_EXTENT_HIGH, CENSUS_REACTION_EXTENT_INCREMENT, CENSUS_REACTION_EXTENT_LOW,
+    CENSUS_REACTION_EXTENT_MID, CENSUS_REACTION_EXTENT_NEAR_COMPLETE, CENSUS_REACTION_EXTENT_OVER,
+    CENSUS_REACTION_EXTENT_REGRESSION, CENSUS_STRENGTH_INTRINSIC_MPA, CENSUS_STRENGTH_MPA_MID,
+    CENSUS_STRENGTH_OPEN_SYSTEM_MPA, CENSUS_STRENGTH_REGRESSION_MPA,
+    MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+};
+
     use super::*;
 
     #[test]
     fn admitting_vs_reject_example() {
         let m = GateManifest::from(&UmstManifest::default());
         let admit = MixProposal {
-            constituent_primary_kg: 400.0,
+            constituent_primary_kg: CENSUS_HTTP_CONSTITUENT_PRIMARY_KG.value,
             constituent_secondary_kg: 0.0,
             constituent_tertiary_kg: 0.0,
-            water: 200.0,
-            age_days: 28.0,
-            predicted_strength_mpa: 25.0,
-            temperature_c: 20.0,
+            water: CENSUS_HTTP_WATER_KG.value,
+            age_days: CENSUS_HTTP_AGE_DAYS.value,
+            predicted_strength_mpa: CENSUS_HTTP_PREDICTED_STRENGTH_MPA.value,
+            temperature_c: CENSUS_HTTP_TEMPERATURE_C.value,
         };
         let r = evaluate(&admit, &m);
         assert!(r.is_admissible());
@@ -462,8 +482,8 @@ mod tests {
     fn w8e14_gate_manifest_default_literals_match_prototype() {
         let m = GateManifest::default();
         assert_eq!(m.catalog_version, 1);
-        assert_eq!(m.strength_intrinsic_mpa, 80.0);
-        assert_eq!(m.air_void_fraction, 0.02);
-        assert_eq!(m.admissibility_rel_margin, 0.15);
+        assert_eq!(m.strength_intrinsic_mpa, CENSUS_STRENGTH_INTRINSIC_MPA.value);
+        assert_eq!(m.air_void_fraction, CENSUS_HTTP_AIR_VOID_FRACTION.value);
+        assert_eq!(m.admissibility_rel_margin, CENSUS_HTTP_ADMISSIBILITY_REL_MARGIN.value);
     }
 }

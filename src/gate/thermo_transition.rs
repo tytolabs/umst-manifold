@@ -296,6 +296,17 @@ impl ThermodynamicGate {
 #[allow(deprecated)]
 mod tests {
     use super::super::transition_proposal::TRANSITION_TOLERANCE;
+    use super::super::transition_proposal::{
+        CENSUS_DT_ONE_HOUR_S, CENSUS_GOLDEN_IDENTITY_ENTROPY,
+        CENSUS_GOLDEN_IDENTITY_FREE_ENERGY_J, CENSUS_GOLDEN_IDENTITY_REACTION_EXTENT,
+        CENSUS_GOLDEN_IDENTITY_STRENGTH_MPA, CENSUS_GOLDEN_MASS_REJECT_ENTROPY,
+        CENSUS_GOLDEN_MASS_REJECT_STRENGTH_MPA, CENSUS_GOLDEN_NEGATIVE_DISSIPATION_ENTROPY,
+        CENSUS_GOLDEN_NEGATIVE_DISSIPATION_FREE_ENERGY_J,
+        CENSUS_GOLDEN_NEGATIVE_DISSIPATION_FREE_ENERGY_SPIKE_J,
+        CENSUS_GOLDEN_NEGATIVE_DISSIPATION_STRENGTH_MPA, CENSUS_MASS_REJECT_DENSITY_KG_M3,
+        CENSUS_NEGATIVE_DISSIPATION_DENSITY_KG_M3, CENSUS_REACTION_EXTENT_LOW,
+        CENSUS_REACTION_EXTENT_REGRESSION,
+    };
     use super::super::verdict::AdmissibilityVerdict;
     use super::*;
     use crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
@@ -306,10 +317,10 @@ mod tests {
         let s = ThermodynamicState {
             density: super::super::transition_proposal::SUBSTRATE_REFERENCE_DENSITY_KG_M3.value,
             temperature: super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
-            free_energy: -1.35e5,
-            entropy: 0.05,
-            reaction_extent: 0.42,
-            strength: 12.7,
+            free_energy: CENSUS_GOLDEN_IDENTITY_FREE_ENERGY_J.value,
+            entropy: CENSUS_GOLDEN_IDENTITY_ENTROPY.value,
+            reaction_extent: CENSUS_GOLDEN_IDENTITY_REACTION_EXTENT.value,
+            strength: CENSUS_GOLDEN_IDENTITY_STRENGTH_MPA.value,
         };
         (s.clone(), s, 1.0)
     }
@@ -320,27 +331,27 @@ mod tests {
             density: super::super::transition_proposal::SUBSTRATE_REFERENCE_DENSITY_KG_M3.value,
             temperature: super::super::transition_proposal::MIX_IDLE_SURFACE_TEMPERATURE_K.value,
             free_energy: 0.0,
-            entropy: 0.1,
-            reaction_extent: 0.3,
-            strength: 10.0,
+            entropy: CENSUS_GOLDEN_MASS_REJECT_ENTROPY.value,
+            reaction_extent: CENSUS_REACTION_EXTENT_LOW.value,
+            strength: CENSUS_GOLDEN_MASS_REJECT_STRENGTH_MPA.value,
         };
         let mut new = old.clone();
-        new.density = 2280.0;
-        (old, new, 3600.0)
+        new.density = CENSUS_MASS_REJECT_DENSITY_KG_M3.value;
+        (old, new, CENSUS_DT_ONE_HOUR_S.value)
     }
 
     /// Clausius–Duhem reject: free-energy spike breaks `D_int ≥ −tolerance`.
     fn golden_negative_dissipation_reject() -> (ThermodynamicState, ThermodynamicState, f64) {
         let old = ThermodynamicState {
-            density: 2200.0,
+            density: CENSUS_NEGATIVE_DISSIPATION_DENSITY_KG_M3.value,
             temperature: AMBIENT_REFERENCE_TEMPERATURE_K,
-            free_energy: -2.0e5,
-            entropy: 0.2,
+            free_energy: CENSUS_GOLDEN_NEGATIVE_DISSIPATION_FREE_ENERGY_J.value,
+            entropy: CENSUS_GOLDEN_NEGATIVE_DISSIPATION_ENTROPY.value,
             reaction_extent: 0.5,
-            strength: 20.0,
+            strength: CENSUS_GOLDEN_NEGATIVE_DISSIPATION_STRENGTH_MPA.value,
         };
         let mut new = old.clone();
-        new.free_energy = -1.0e4;
+        new.free_energy = CENSUS_GOLDEN_NEGATIVE_DISSIPATION_FREE_ENERGY_SPIKE_J.value;
         (old, new, 1.0)
     }
 
@@ -453,7 +464,7 @@ mod tests {
     fn reaction_extent_regression_rejected() {
         let old = ThermodynamicState::from_mix_calibrated(0.45, 0.5, super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0);
         let mut new = old.clone();
-        new.reaction_extent = 0.1;
+        new.reaction_extent = CENSUS_REACTION_EXTENT_REGRESSION.value;
         let outcome = thermo_gate_transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
         assert!(!outcome.is_accepted());
         assert_ne!(outcome.rest_verdict(), AdmissibilityVerdict::Accepted);
