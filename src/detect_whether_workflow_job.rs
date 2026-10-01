@@ -50,7 +50,10 @@ pub fn catalog_drift_workflow_law_holds() -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{catalog_drift_workflow_law_holds, rust_push_workflow_law_holds};
+    use super::{
+        catalog_drift_workflow_law_holds, push_and_catalog_workflow_setup_ci_laws_hold,
+        rust_push_workflow_law_holds,
+    };
 
     #[test]
     fn rust_push_workflow_setup_ci_jobs_non_blocking() {
