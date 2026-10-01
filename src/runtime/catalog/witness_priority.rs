@@ -122,7 +122,8 @@ pub fn witness_priority_posture_honest(probe: &WitnessPriorityPostureProbe) -> b
         && probe.honest_fence.contains("production_wired=false")
         && probe.honest_fence.contains("physics_green=false")
         && probe.honest_fence.contains("master=false")
-        && probe.honest_fence.contains("op5=false")
+        && probe.honest_fence.contains("op5=false")&& probe.honest_fence.contains("op5=false") probe.honest_fence.contains("op5=false")
+        && crate::detect_whether_workflow_job::rust_push_workflow_law_holds()
 }
 
 /// TCB axiom closure for adaptive witness scheduling — **one** variant only.
