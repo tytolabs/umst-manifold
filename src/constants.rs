@@ -188,13 +188,12 @@ mod tests {
     }
 
     #[test]
-    fn gateway_and_thmc_fixtures_use_ambient_reference_temperature() {
-        let lppo = include_str!("ai/liquid_ppo.rs");
-        assert!(lppo.contains("AMBIENT_REFERENCE_TEMPERATURE_K"));
-        assert!(!lppo.contains("300.0_f64, 1.0e-12_f64"));
+    fn thmc_and_tensor_fixtures_use_ambient_reference_temperature() {
         let sync = include_str!("physics/thmc_umst_sync.rs");
         assert!(sync.contains("AMBIENT_REFERENCE_TEMPERATURE_K as f32"));
         assert!(!sync.contains("plan_fields(1, n, 300.0"));
+        let tensors = include_str!("core/tensors.rs");
+        assert!(tensors.contains("AMBIENT_REFERENCE_TEMPERATURE_K as f32"));
     }
 
     #[test]
