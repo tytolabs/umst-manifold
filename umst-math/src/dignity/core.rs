@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn honest_step_non_decreasing() {
-        let t = 300.0;
+        let t = crate::constants::registry::HOST_TEMPERATURE_FALLBACK_K;
         let d = 2.0;
         let mi = 0.5;
         let e = landauer_joules_per_bit(t) * mi + 1.0;
@@ -103,7 +103,7 @@ mod tests {
 
     #[test]
     fn sub_landauer_does_not_increase() {
-        let t = 300.0;
+        let t = crate::constants::registry::HOST_TEMPERATURE_FALLBACK_K;
         let d = 4.0;
         let mi = 2.0;
         let e = landauer_joules_per_bit(t) * mi * 0.5;

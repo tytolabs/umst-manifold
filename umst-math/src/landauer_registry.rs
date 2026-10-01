@@ -69,6 +69,18 @@ mod tests {
     use crate::landauer::landauer_bit_energy_joules;
     use ordered_float::NotNan;
 
+    /// N_float / dignity host-T SSOT pin (STEER_20261001T0537 wave 26).
+    #[test]
+    fn n_float_steer_wave_twenty_six_dignity_host_temperature_registry_linked() {
+        const STEER: &str = "STEER_20261001T0537";
+        const WAVE: u32 = 26;
+        assert_eq!(STEER, "STEER_20261001T0537");
+        assert_eq!(WAVE, 26);
+        let src = include_str!("dignity/core.rs");
+        assert!(src.contains("HOST_TEMPERATURE_FALLBACK_K"));
+        assert!(!src.contains("let t = 300.0;"));
+    }
+
     /// N_float / tier1 host-T SSOT pin (STEER_20261001T0509 wave 25).
     #[test]
     fn n_float_steer_wave_twenty_five_tier1_host_temperature_registry_linked() {
