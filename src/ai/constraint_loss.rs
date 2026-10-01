@@ -834,8 +834,8 @@ mod tests {
     fn clausius_duhem_violation_zero_when_host_admits() {
         let dev = NdArrayDevice::default();
         let old = ThermodynamicStateSnapshot {
-            density: 2400.0,
-            temperature: 293.15,
+            density: crate::gate::transition_proposal::SUBSTRATE_REFERENCE_DENSITY_KG_M3.value,
+            temperature: crate::gate::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
             free_energy: -1.35e5,
             entropy: 0.05,
             reaction_extent: 0.42,
@@ -911,8 +911,8 @@ mod tests {
     fn explain_clausius_duhem_violation_admissible_token() {
         let dev = NdArrayDevice::default();
         let old = ThermodynamicStateSnapshot {
-            density: 2400.0,
-            temperature: 293.15,
+            density: crate::gate::transition_proposal::SUBSTRATE_REFERENCE_DENSITY_KG_M3.value,
+            temperature: crate::gate::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
             free_energy: -1.35e5,
             entropy: 0.05,
             reaction_extent: 0.42,

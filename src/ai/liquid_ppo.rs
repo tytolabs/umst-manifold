@@ -23,6 +23,14 @@
 //! swarm allocate policy. BIND / `liquid_ppo_allocate_ready` attestation is **harness-only** via
 //! `umst-adk::liquid_ppo_bind` and bench witness artifacts — the source file never flips those bits.
 
+#[path = "constants_registry_adamw_step.rs"]
+mod constants_registry_adamw_step;
+
+use self::constants_registry_adamw_step::{
+    ADAMW_BETA1_COEFF, ADAMW_BETA2_COEFF, ADAMW_EPSILON, ADAMW_WEIGHT_DECAY,
+    LIQUID_PPO_SUBSTRATE_REFERENCE_DENSITY_KG_M3,
+};
+
 /// W29 wave cell id — Burn learner spine deepen.
 pub const LIQUID_PPO_CELL_ID: &str = "W29-012-LIQUID_PPO";
 
@@ -460,7 +468,11 @@ impl<B: Backend<FloatElem = f32>, C: IScienceCartridge<B>> BurnLiquidPPOAgent<B,
             .cartridge
             .compute_topology(&verified_state.state);
         let batch = spatial_reward.dims()[0];
-        let rho = Tensor::<B, 1>::full([batch], 2400.0_f32, &device);
+        let rho = Tensor::<B, 1>::full(
+            [batch],
+            LIQUID_PPO_SUBSTRATE_REFERENCE_DENSITY_KG_M3.value,
+            &device,
+        );
         let old_fe = baseline_pr.free_energy.mean_dim(1).squeeze(1);
         let new_fe = proposed_pr.free_energy.mean_dim(1).squeeze(1);
         let penalty = self.gateway.total_constraint_loss_penalty(
@@ -484,10 +496,10 @@ fn adamw_step_policy<B: Backend<FloatElem = f32>>(
     m2: Option<Tensor<B, 1>>,
     t: usize,
 ) -> (Tensor<B, 1>, Tensor<B, 1>, Tensor<B, 1>, usize) {
-    const BETA1: f32 = 0.9;
-    const BETA2: f32 = 0.999;
-    const EPS_ADAM: f32 = 1e-5;
-    const WD: f32 = 1e-4;
+    const BETA1: f32 = ADAMW_BETA1_COEFF.value;
+    const BETA2: f32 = ADAMW_BETA2_COEFF.value;
+    const EPS_ADAM: f32 = ADAMW_EPSILON.value;
+    const WD: f32 = ADAMW_WEIGHT_DECAY.value;
 
     let tensor_updated = weights.clone().sub(weights.mul_scalar(lr * WD));
 

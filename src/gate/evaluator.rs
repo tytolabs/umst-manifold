@@ -154,8 +154,8 @@ mod tests {
     /// Golden vectors from [`tests/gate_parity_fixture.rs`] / `docs/GOLDEN_FIXTURES.md`.
     fn golden_identity_admissible() -> (ThermodynamicState, ThermodynamicState, f64) {
         let s = ThermodynamicState {
-            density: 2400.0,
-            temperature: 293.15,
+            density: crate::gate::transition_proposal::SUBSTRATE_REFERENCE_DENSITY_KG_M3.value,
+            temperature: crate::gate::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
             free_energy: -1.35e5,
             entropy: 0.05,
             reaction_extent: 0.42,
@@ -167,8 +167,8 @@ mod tests {
     /// Mass bound violation: `|Δρ| = 120` kg/m³ (registry band is `< 100`).
     fn golden_mass_reject() -> (ThermodynamicState, ThermodynamicState, f64) {
         let old = ThermodynamicState {
-            density: 2400.0,
-            temperature: 293.0,
+            density: crate::gate::transition_proposal::SUBSTRATE_REFERENCE_DENSITY_KG_M3.value,
+            temperature: crate::gate::transition_proposal::MIX_IDLE_SURFACE_TEMPERATURE_K.value,
             free_energy: 0.0,
             entropy: 0.1,
             reaction_extent: 0.3,

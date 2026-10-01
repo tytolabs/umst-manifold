@@ -4,7 +4,11 @@
 //!
 //! Ported from `umst-prototype/.../thermodynamic_filter.rs` — **wasm-free** manifold build.
 
-use super::transition_proposal::{transition_outcome, ThermodynamicStateSnapshot};
+use super::transition_proposal::{
+    mix_calibrated_density_kg_m3, mix_strength_closure_x, transition_outcome,
+    MIX_ENTROPY_ALPHA_COEFF, MIX_IDLE_SURFACE_TEMPERATURE_K, SUBSTRATE_REFERENCE_DENSITY_KG_M3,
+    ThermodynamicStateSnapshot,
+};
 use super::verdict::{AdmissibilityVerdict, ConjunctVerdict};
 use crate::core::material_transition::{MaterialTransitionParams, SubstrateMaterialParams};
 
@@ -102,8 +106,8 @@ impl ThermodynamicState {
     #[must_use]
     pub fn new() -> Self {
         ThermodynamicState {
-            density: 2400.0,
-            temperature: 293.0,
+            density: SUBSTRATE_REFERENCE_DENSITY_KG_M3.value,
+            temperature: MIX_IDLE_SURFACE_TEMPERATURE_K.value,
             free_energy: 0.0,
             entropy: 0.0,
             reaction_extent: 0.0,
@@ -154,15 +158,15 @@ impl ThermodynamicState {
         params: &impl MaterialTransitionParams,
     ) -> Self {
         let q_reaction = params.reaction_enthalpy_j_per_kg();
-        let x = 0.68 * alpha / (0.32 * alpha + w_c + 1e-6);
+        let x = mix_strength_closure_x(w_c, alpha);
         let fc = s_intrinsic * x.powi(3);
         let psi = -q_reaction * alpha;
 
         ThermodynamicState {
-            density: 2400.0 - 400.0 * w_c,
+            density: mix_calibrated_density_kg_m3(w_c),
             temperature: temp,
             free_energy: psi,
-            entropy: alpha * 0.1,
+            entropy: alpha * MIX_ENTROPY_ALPHA_COEFF.value,
             reaction_extent: alpha,
             strength: fc,
         }
@@ -300,8 +304,8 @@ mod tests {
     /// Golden vectors from `docs/GOLDEN_FIXTURES.md` / `tests/gate_parity_fixture.rs`.
     fn golden_identity_admissible() -> (ThermodynamicState, ThermodynamicState, f64) {
         let s = ThermodynamicState {
-            density: 2400.0,
-            temperature: 293.15,
+            density: super::super::transition_proposal::SUBSTRATE_REFERENCE_DENSITY_KG_M3.value,
+            temperature: super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
             free_energy: -1.35e5,
             entropy: 0.05,
             reaction_extent: 0.42,
@@ -313,8 +317,8 @@ mod tests {
     /// Mass bound violation: `|Δρ| = 120` kg/m³ (registry band is `< 100`).
     fn golden_mass_reject() -> (ThermodynamicState, ThermodynamicState, f64) {
         let old = ThermodynamicState {
-            density: 2400.0,
-            temperature: 293.0,
+            density: super::super::transition_proposal::SUBSTRATE_REFERENCE_DENSITY_KG_M3.value,
+            temperature: super::super::transition_proposal::MIX_IDLE_SURFACE_TEMPERATURE_K.value,
             free_energy: 0.0,
             entropy: 0.1,
             reaction_extent: 0.3,
@@ -424,8 +428,8 @@ mod tests {
 
     #[test]
     fn transition_proposal_admissible_matches_check_transition() {
-        let old = ThermodynamicState::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
-        let new = ThermodynamicState::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        let old = ThermodynamicState::from_mix_calibrated(0.45, 0.0, super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
+        let new = ThermodynamicState::from_mix_calibrated(0.45, 0.5, super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
         let dt = 28.0 * 24.0 * 3600.0;
         let mut gate = ThermodynamicGate::new();
         let admissible = gate.transition_proposal_admissible(&old, &new, dt);
@@ -436,8 +440,8 @@ mod tests {
 
     #[test]
     fn hydration_progression_from_mix_calibrated_accepted() {
-        let old = ThermodynamicState::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
-        let new = ThermodynamicState::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        let old = ThermodynamicState::from_mix_calibrated(0.45, 0.0, super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
+        let new = ThermodynamicState::from_mix_calibrated(0.45, 0.5, super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
         let dt = 28.0 * 24.0 * 3600.0;
         let outcome = thermo_gate_transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
         assert!(outcome.is_accepted());
@@ -447,7 +451,7 @@ mod tests {
 
     #[test]
     fn reaction_extent_regression_rejected() {
-        let old = ThermodynamicState::from_mix_calibrated(0.45, 0.5, 293.15, 40.0);
+        let old = ThermodynamicState::from_mix_calibrated(0.45, 0.5, super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0);
         let mut new = old.clone();
         new.reaction_extent = 0.1;
         let outcome = thermo_gate_transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
@@ -479,7 +483,7 @@ mod tests {
         let params = SubstrateMaterialParams;
         let w_c = 0.45;
         let alpha = 0.35;
-        let temp = 293.15;
+        let temp = super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K;
         let s_intrinsic = params.default_intrinsic_strength_mpa();
         let via_mix = ThermodynamicState::from_mix_with_params(w_c, alpha, temp, &params);
         let via_calibrated = ThermodynamicState::from_mix_calibrated_with_params(

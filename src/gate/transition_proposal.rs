@@ -4,6 +4,9 @@
 //! `umst-prototype` `science/thermodynamic_filter.rs` — mass bound, Clausius–Duhem scalar gate,
 //! and strength monotonicity under a cartridge-supplied closure model.
 
+#[path = "constants_registry_mix_calibrated.rs"]
+pub mod constants_registry_mix_calibrated;
+
 use super::core_gate::{
     core_gate, mass_conserved_between_densities, scalar_response_from_transition, CoreGateOutcome,
 };
@@ -13,9 +16,15 @@ use crate::core::material_transition::{MaterialTransitionParams, SubstrateMateri
 use umst_cartridge_concrete::evaluate_material_conjuncts;
 
 pub use crate::constants::CELSIUS_TO_KELVIN_OFFSET_K;
+pub use self::constants_registry_mix_calibrated::{
+    mix_calibrated_density_kg_m3, mix_strength_closure_x, MIX_ENTROPY_ALPHA_COEFF,
+    MIX_IDLE_SURFACE_TEMPERATURE_K, SUBSTRATE_REFERENCE_DENSITY_KG_M3,
+    MIX_CALIBRATION_REFERENCE_TEMPERATURE_K as MIX_CALIBRATION_REFERENCE_TEMPERATURE_GROUNDED,
+};
 
 /// Reference bath for mix-calibrated thermodynamic snapshots (K).
-pub const MIX_CALIBRATION_REFERENCE_TEMPERATURE_K: f64 = 293.15;
+pub const MIX_CALIBRATION_REFERENCE_TEMPERATURE_K: f64 =
+    MIX_CALIBRATION_REFERENCE_TEMPERATURE_GROUNDED.value;
 
 /// Minimal JSON-shaped proposal for a bulk material patch (host gate IO).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -63,8 +72,8 @@ pub struct ThermodynamicStateSnapshot {
 impl ThermodynamicStateSnapshot {
     pub fn new_idle() -> Self {
         ThermodynamicStateSnapshot {
-            density: 2400.0,
-            temperature: 293.0,
+            density: SUBSTRATE_REFERENCE_DENSITY_KG_M3.value,
+            temperature: MIX_IDLE_SURFACE_TEMPERATURE_K.value,
             free_energy: 0.0,
             entropy: 0.0,
             reaction_extent: 0.0,
@@ -109,15 +118,15 @@ impl ThermodynamicStateSnapshot {
         params: &impl MaterialTransitionParams,
     ) -> Self {
         let q_reaction = params.reaction_enthalpy_j_per_kg();
-        let x = 0.68 * alpha / (0.32 * alpha + w_c + 1e-6);
+        let x = mix_strength_closure_x(w_c, alpha);
         let fc = s_intrinsic * x.powi(3);
         let psi = -q_reaction * alpha;
 
         ThermodynamicStateSnapshot {
-            density: 2400.0 - 400.0 * w_c,
+            density: mix_calibrated_density_kg_m3(w_c),
             temperature: temp,
             free_energy: psi,
-            entropy: alpha * 0.1,
+            entropy: alpha * MIX_ENTROPY_ALPHA_COEFF.value,
             reaction_extent: alpha,
             strength: fc,
         }
@@ -518,7 +527,7 @@ mod transition_outcome_tests {
 
     #[test]
     fn transition_outcome_matches_thermodynamic_admissible_tol() {
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0);
         let mut new = old;
         new.reaction_extent = 0.35;
         new.free_energy = old.free_energy - 100.0;
@@ -544,7 +553,7 @@ mod transition_outcome_tests {
 
     #[test]
     fn transition_outcome_rejects_reaction_extent_regression() {
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0);
         let mut new = old;
         new.reaction_extent = 0.1;
         let outcome = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
@@ -563,23 +572,23 @@ mod transition_outcome_tests {
 
         let scenarios = [
             (
-                ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0),
-                ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0),
+                ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0),
+                ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 42.0),
             ),
             (
-                ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0),
+                ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0),
                 {
                     let mut n =
-                        ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0);
+                        ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0);
                     n.reaction_extent = 0.1;
                     n
                 },
             ),
             (
-                ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0),
+                ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0),
                 {
                     let mut n =
-                        ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+                        ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 42.0);
                     n.strength = 10.0;
                     n
                 },
@@ -637,8 +646,8 @@ mod transition_outcome_tests {
 
     #[test]
     fn transition_outcome_aligns_with_gate_sdf_sign() {
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
-        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 42.0);
         let outcome = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
         let g = gate_sdf(&snapshot_to_gate(&old, 80.0), &snapshot_to_gate(&new, 80.0));
         if outcome.is_accepted() {
@@ -648,7 +657,7 @@ mod transition_outcome_tests {
 
     #[test]
     fn transition_outcome_rejects_strength_regression() {
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.9, 293.15, 80.0);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.9, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
         let mut new = old;
         new.strength = 10.0;
         new.reaction_extent = old.reaction_extent + 0.05;
@@ -710,8 +719,8 @@ mod transition_filter_tests {
 
     #[test]
     fn transition_filter_counters_and_reset() {
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
-        let good = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0);
+        let good = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 42.0);
         let mut bad = old;
         bad.reaction_extent = 0.1;
         let mut filter = TransitionFilter::new();
@@ -732,7 +741,7 @@ mod transition_filter_tests {
     fn transition_filter_with_tolerance_accepts_boundary() {
         let tol = TRANSITION_TOLERANCE;
         let mut filter = TransitionFilter::with_tolerance(tol);
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 40.0);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0);
         let mut new = old;
         new.reaction_extent = old.reaction_extent - tol;
         new.strength = old.strength - tol;
@@ -746,13 +755,13 @@ mod transition_filter_tests {
         let old = TransitionScalars {
             binder_liquid_ratio: 0.45,
             reaction_extent: 0.3,
-            temperature_k: 293.15,
+            temperature_k: MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
             s_intrinsic_mpa: Some(40.0),
         };
         let new = TransitionScalars {
             binder_liquid_ratio: 0.45,
             reaction_extent: 0.35,
-            temperature_k: 293.15,
+            temperature_k: MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
             s_intrinsic_mpa: Some(42.0),
         };
         let mut filter = TransitionFilter::new();
@@ -774,11 +783,11 @@ mod transition_scalars_tests {
         let scalars = TransitionScalars {
             binder_liquid_ratio: 0.45,
             reaction_extent: 0.35,
-            temperature_k: 293.15,
+            temperature_k: MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
             s_intrinsic_mpa: Some(42.0),
         };
         let via_scalars = scalars.thermodynamic_snapshot();
-        let direct = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+        let direct = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 42.0);
         assert_eq!(via_scalars.density, direct.density);
         assert_eq!(via_scalars.temperature, direct.temperature);
         assert_eq!(via_scalars.free_energy, direct.free_energy);
@@ -791,13 +800,13 @@ mod transition_scalars_tests {
         let old = TransitionScalars {
             binder_liquid_ratio: 0.45,
             reaction_extent: 0.3,
-            temperature_k: 293.15,
+            temperature_k: MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
             s_intrinsic_mpa: Some(40.0),
         };
         let new = TransitionScalars {
             binder_liquid_ratio: 0.45,
             reaction_extent: 0.35,
-            temperature_k: 293.15,
+            temperature_k: MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
             s_intrinsic_mpa: Some(42.0),
         };
         let params = SubstrateMaterialParams;
@@ -812,8 +821,8 @@ mod transition_scalars_tests {
 
     #[test]
     fn hydration_progression_from_mix_calibrated_accepted() {
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
-        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.0, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
         let dt = 28.0 * 24.0 * 3600.0;
         let outcome = transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
         assert!(outcome.is_accepted());
@@ -829,8 +838,8 @@ mod transition_admissible_tests {
 
     #[test]
     fn thermodynamic_admissible_delegates_to_tol() {
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
-        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 42.0);
         let dt = 1.0;
         let adm = thermodynamic_transition_admissible(
             old.density,
@@ -863,7 +872,7 @@ mod transition_admissible_tests {
 
     #[test]
     fn thermodynamic_admissible_tol_rejects_strength_cap() {
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0);
         let mut new = old;
         new.strength = 90.0;
         assert!(transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE).is_accepted());
@@ -884,7 +893,7 @@ mod transition_admissible_tests {
 
     #[test]
     fn thermodynamic_admissible_tol_rejects_malformed_dt() {
-        let s = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
+        let s = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0);
         assert!(!thermodynamic_transition_admissible_tol(
             s.density,
             s.free_energy,
@@ -902,7 +911,7 @@ mod transition_admissible_tests {
 
     #[test]
     fn c01_c02_agree_when_strength_cap_inactive() {
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.30, 293.15, 40.0);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.30, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0);
         let mut new = old;
         new.reaction_extent = 0.35;
         new.free_energy = old.free_energy - 100.0;
@@ -937,8 +946,8 @@ mod golden_fixture_transition_tests {
     fn golden_identity_admissible() -> (ThermodynamicStateSnapshot, ThermodynamicStateSnapshot, f64)
     {
         let s = ThermodynamicStateSnapshot {
-            density: 2400.0,
-            temperature: 293.15,
+            density: SUBSTRATE_REFERENCE_DENSITY_KG_M3.value,
+            temperature: MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
             free_energy: -1.35e5,
             entropy: 0.05,
             reaction_extent: 0.42,
@@ -949,8 +958,8 @@ mod golden_fixture_transition_tests {
 
     fn golden_mass_reject() -> (ThermodynamicStateSnapshot, ThermodynamicStateSnapshot, f64) {
         let old = ThermodynamicStateSnapshot {
-            density: 2400.0,
-            temperature: 293.0,
+            density: SUBSTRATE_REFERENCE_DENSITY_KG_M3.value,
+            temperature: MIX_IDLE_SURFACE_TEMPERATURE_K.value,
             free_energy: 0.0,
             entropy: 0.1,
             reaction_extent: 0.3,
@@ -1023,8 +1032,8 @@ mod transition_witness_tests {
 
     #[test]
     fn transition_outcome_from_gate_witnesses_composes_core_and_material() {
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, 293.15, 40.0);
-        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, 293.15, 42.0);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.3, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0);
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.35, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 42.0);
         let response = scalar_response_from_transition(
             old.density,
             new.density,
