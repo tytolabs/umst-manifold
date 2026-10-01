@@ -151,8 +151,8 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
     CapMigrationSite {
         legacy_module: "core/iterate_until.rs",
         legacy_token: "iterate_until(max_iters, &mut state, step_closure)",
-        disposition: CapMigrationDisposition::HonestTypedAbsence {
-            reason: "shared bounded driver backs acoustics Newmark, rheology Jacobi, fracture outer loops; needs per-physics unfold debit meter before cap removal",
+        disposition: CapMigrationDisposition::UnfoldCallerLanded {
+            symbol: "control_flow_iterate_budget",
         },
     },
     CapMigrationSite {
@@ -171,7 +171,7 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
     },
     CapMigrationSite {
         legacy_module: "physics/adjoint.rs",
-        legacy_token: "MechanicsInnerLoopConfig.max_cg_iterations: 500 (topology adjoint PCG lane)",
+        legacy_token: "MechanicsInnerLoopConfig bar-network regression fixture (registry budget)",
         disposition: CapMigrationDisposition::HonestTypedAbsence {
             reason: "topology adjoint masked PCG hard-stops at max_cg_iterations before adjoint energy meter; needs unfold debit witness before cap removal",
         },
@@ -199,14 +199,14 @@ pub const CAP_MIGRATION_SITES: &[CapMigrationSite] = &[
     },
     CapMigrationSite {
         legacy_module: "physics/solvers/rheology_flow.rs",
-        legacy_token: "iterate_until(max_it, &mut st, jacobi_pressure_phi_step) Chorin Jacobi-preconditioned CG",
-        disposition: CapMigrationDisposition::HonestTypedAbsence {
-            reason: "Bingham Chorin pressure Poisson Jacobi-CG caps at byte-budgeted max_it before rheology strain-energy meter ties to unfold debit",
+        legacy_token: "control_flow_iterate_budget(max_it, jacobi_pressure_phi_step) Chorin Jacobi-preconditioned CG",
+        disposition: CapMigrationDisposition::UnfoldCallerLanded {
+            symbol: "control_flow_iterate_budget",
         },
     },
     CapMigrationSite {
         legacy_module: "physics/mechanics_operator.rs",
-        legacy_token: "MechanicsInnerLoopConfig.max_cg_iterations: 500 (operator-level masked PCG)",
+        legacy_token: "MechanicsInnerLoopConfig operator-level masked PCG (registry budget)",
         disposition: CapMigrationDisposition::HonestTypedAbsence {
             reason: "operator-level masked PCG hard-stops at max_cg_iterations before mechanics operator energy meter ties to unfold debit",
         },
@@ -306,7 +306,7 @@ mod tests {
         assert_eq!(iterate_until.legacy_module, "core/iterate_until.rs");
         assert!(matches!(
             iterate_until.disposition,
-            CapMigrationDisposition::HonestTypedAbsence { .. }
+            CapMigrationDisposition::UnfoldCallerLanded { .. }
         ));
         let solve_budget = &CAP_MIGRATION_SITES[17];
         assert_eq!(solve_budget.legacy_module, "physics/solve_budget.rs");
@@ -348,7 +348,7 @@ mod tests {
         assert_eq!(rheology_jacobi_cg.legacy_module, "physics/solvers/rheology_flow.rs");
         assert!(matches!(
             rheology_jacobi_cg.disposition,
-            CapMigrationDisposition::HonestTypedAbsence { .. }
+            CapMigrationDisposition::UnfoldCallerLanded { .. }
         ));
         let mechanics_operator = &CAP_MIGRATION_SITES[24];
         assert_eq!(mechanics_operator.legacy_module, "physics/mechanics_operator.rs");

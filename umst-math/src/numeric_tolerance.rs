@@ -297,6 +297,42 @@ pub const DEFAULT_EQUILIBRIUM_SUB_ITERS: u32 = 1;
 /// Hard cap on mechanics inner iterations per outer chemistry step (orchestration clocks).
 pub const DEFAULT_MECH_SUB_ITERS_PER_CHEM_CAP: u32 = 10_000;
 
+/// Bar-network / adjoint regression PCG iteration budget (fixture SSOT — not a solver-src literal cap).
+#[must_use]
+pub const fn bar_network_regression_cg_iteration_budget() -> usize {
+    500
+}
+
+/// Single-Newton electrochemistry verification fixture (linearized Jacobian smoke).
+#[must_use]
+pub const fn newton_pnp_single_iter_fixture_budget() -> usize {
+    1
+}
+
+/// Extended Newton budget for stiff PNP verification grids (above default fifty).
+#[must_use]
+pub const fn newton_pnp_verification_extended_iteration_budget() -> usize {
+    60
+}
+
+/// AT2 staggered outer-loop regression budget (phase-field damage outer witness).
+#[must_use]
+pub const fn fracture_at2_outer_regression_iteration_budget() -> usize {
+    40
+}
+
+/// Sentinel zero iteration budget for clock / inner-loop validation refusal tests.
+#[must_use]
+pub const fn refusal_zero_iteration_budget_usize() -> usize {
+    0
+}
+
+/// Sentinel zero substep cap for orchestration validation refusal tests.
+#[must_use]
+pub const fn refusal_zero_mech_sub_iters_per_chem() -> u32 {
+    0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

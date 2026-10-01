@@ -1568,7 +1568,7 @@ mod tests {
     #[test]
     fn bar_network_pcg_report_refuses_converged_when_rel_tol_non_positive() {
         let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: 500,
+            max_cg_iterations: umst_math::numeric_tolerance::bar_network_regression_cg_iteration_budget(),
             cg_tolerance: umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
             pcg_tolerance: umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
             use_preconditioner: true,

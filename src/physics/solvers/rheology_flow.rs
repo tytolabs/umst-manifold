@@ -268,6 +268,9 @@ use crate::physics::topology::EdgeTopology;
 
 #[cfg(feature = "rheology-bingham")]
 use crate::core::iterate_until::iterate_until;
+use crate::solve::{
+    control_flow_iterate_budget, ControlFlowIterateBudget, ControlFlowIterateCertificate,
+};
 #[cfg(feature = "rheology-bingham")]
 use core::ops::ControlFlow;
 
@@ -700,8 +703,15 @@ fn solve_pressure_phi_jacobi_cg<B: Backend<FloatElem = f32>>(
         converged: false,
         last_rel_residual: f32::INFINITY,
     };
-    let completed = iterate_until(max_it, &mut st, jacobi_pressure_phi_step);
-    if !st.converged {
+    let cert = control_flow_iterate_budget(
+        ControlFlowIterateBudget::new(max_it),
+        &mut st,
+        jacobi_pressure_phi_step,
+        |s| f64::from(s.last_rel_residual),
+        |s| s.converged,
+    );
+    let completed = cert.completed();
+    if !matches!(cert, ControlFlowIterateCertificate::Converged { .. }) {
         return Err(RheologyFlowRefusal::PoissonCgBudgetExhausted {
             rel_residual: st.last_rel_residual,
             pcg_iterations: completed,

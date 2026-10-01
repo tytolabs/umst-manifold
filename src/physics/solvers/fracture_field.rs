@@ -1944,7 +1944,7 @@ mod fracture_at2_tests {
             ..Default::default()
         };
         let outer = StaggeredDamageOuterLoopConfig {
-            max_outer_iterations: 40,
+            max_outer_iterations: umst_math::numeric_tolerance::fracture_at2_outer_regression_iteration_budget(),
             stopping: stop,
         };
         let strain_a = strain.clone();

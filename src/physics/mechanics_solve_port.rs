@@ -345,7 +345,7 @@ mod tests {
 
         let damage = Field::new(Tensor::<B, 3>::zeros([1, n, 1], &dev));
         let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: 500,
+            max_cg_iterations: umst_math::numeric_tolerance::bar_network_regression_cg_iteration_budget(),
             cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             use_preconditioner: true,

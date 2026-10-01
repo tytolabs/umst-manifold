@@ -3388,7 +3388,10 @@ dependencies = [
 name = "umst-cartridge-concrete"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "serde_json",
+ "sha2",
+ "thiserror 2.0.18",
  "umst-cartridge-active",
  "umst-cartridge-api",
  "umst-cartridge-continuum",
@@ -3400,6 +3403,7 @@ dependencies = [
  "umst-cartridge-solid-inelastic",
  "umst-chem",
  "umst-gate",
+ "umst-jennings-legacy",
 ]
 
 [[package]]
@@ -3479,6 +3483,10 @@ dependencies = [
  "umst-cartridge-api",
  "umst-dec",
 ]
+
+[[package]]
+name = "umst-jennings-legacy"
+version = "0.2.1"
 
 [[package]]
 name = "umst-layout-codegen"

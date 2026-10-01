@@ -458,7 +458,7 @@ mod tests {
         let n = 2usize;
         let b = vec![1.0_f32, 0.0_f32];
         let err_iter = gmres_f32(|v: &[f32]| v.to_vec(), &b, n, 0, 1e-5_f32)
-            .expect_err("max_iter=0 maps to restart_m=0 and must InvariantViolation");
+            .expect_err("restart_m zero maps to InvariantViolation and must InvariantViolation");
         assert!(
             matches!(
                 err_iter,

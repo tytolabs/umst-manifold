@@ -3010,7 +3010,7 @@ mod newton_chain_tests {
             ..Default::default()
         };
         let newton = NewtonPnpContext {
-            max_newton_iters: 1,
+            max_newton_iters: umst_math::numeric_tolerance::newton_pnp_single_iter_fixture_budget(),
             residual_tol_l2: 1e-20,
             linearize_sg_fickian: true,
             ..Default::default()
@@ -4241,7 +4241,7 @@ mod newton_chain_tests {
             ..Default::default()
         };
         let newton_dense = NewtonPnpContext {
-            max_newton_iters: 50,
+            max_newton_iters: umst_math::numeric_tolerance::newton_pnp_default_iteration_budget(),
             residual_tol_l2: 1e-10,
             linearize_sg_fickian: false,
             full_sg_correction_use_gmres: false,
@@ -4333,7 +4333,7 @@ mod newton_chain_tests {
         let dt: f32 = 1e-7;
         let dt64 = dt as f64;
         let newton = NewtonPnpContext {
-            max_newton_iters: 50,
+            max_newton_iters: umst_math::numeric_tolerance::newton_pnp_default_iteration_budget(),
             residual_tol_l2: 1e-11,
             linearize_sg_fickian: true,
             ..Default::default()
@@ -4429,7 +4429,7 @@ mod newton_chain_tests {
         let dt: f32 = 1e-7;
         let dt64 = dt as f64;
         let newton = NewtonPnpContext {
-            max_newton_iters: 60,
+            max_newton_iters: umst_math::numeric_tolerance::newton_pnp_verification_extended_iteration_budget(),
             residual_tol_l2: 1e-11,
             linearize_sg_fickian: false,
             ..Default::default()
@@ -4526,7 +4526,7 @@ mod newton_chain_tests {
         let dt: f32 = 1e-7;
         let dt64 = dt as f64;
         let newton = NewtonPnpContext {
-            max_newton_iters: 50,
+            max_newton_iters: umst_math::numeric_tolerance::newton_pnp_default_iteration_budget(),
             residual_tol_l2: 1e-11,
             linearize_sg_fickian: false,
             full_sg_frozen_jacobian_inner_iters: 4,
@@ -4787,7 +4787,7 @@ mod newton_chain_tests {
         let eps = Tensor::<B, 3>::ones([1, n, 1], &dev);
         let d = Tensor::<B, 3>::full([1, n, 2], 0.04_f32, &dev);
         let newton = NewtonPnpContext {
-            max_newton_iters: 50,
+            max_newton_iters: umst_math::numeric_tolerance::newton_pnp_default_iteration_budget(),
             residual_tol_l2: 1e-11,
             linearize_sg_fickian: true,
             ..Default::default()
