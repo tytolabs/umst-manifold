@@ -25,3 +25,11 @@ fn checkout_siblings_script_documents_private_fence() {
     assert!(script.contains("is private"));
     assert!(script.contains("W-63"));
 }
+
+#[test]
+fn push_and_catalog_workflow_setup_ci_laws_hold() {
+    assert!(detect_whether_workflow_job::push_and_catalog_workflow_setup_ci_laws_hold());
+    let guard = include_str!("../scripts/public_workflow_guard.py");
+    assert!(guard.contains("RUST_PRIVATE_JOBS"));
+    assert!(guard.contains("verify-umst-stack:"));
+}

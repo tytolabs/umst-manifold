@@ -35,6 +35,11 @@ pub fn rust_push_workflow_law_holds() -> bool {
         )
 }
 
+/// Both push workflows: every setup-ci lane that needs private siblings is non-blocking.
+pub fn push_and_catalog_workflow_setup_ci_laws_hold() -> bool {
+    rust_push_workflow_law_holds() && catalog_drift_workflow_law_holds()
+}
+
 /// Catalog drift workflow: honest W-63 boundary job + non-blocking verify lane.
 pub fn catalog_drift_workflow_law_holds() -> bool {
     let catalog_yml = include_str!("../.github/workflows/umst-catalog-drift.yml");
@@ -55,5 +60,10 @@ mod tests {
     #[test]
     fn catalog_drift_workflow_public_boundary_and_verify_lane() {
         assert!(catalog_drift_workflow_law_holds());
+    }
+
+    #[test]
+    fn push_and_catalog_workflow_setup_ci_laws() {
+        assert!(push_and_catalog_workflow_setup_ci_laws_hold());
     }
 }
