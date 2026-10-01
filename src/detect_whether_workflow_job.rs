@@ -31,6 +31,7 @@ pub fn rust_push_workflow_law_holds() -> bool {
                 "lint",
                 "arena-vs-mcp",
                 "research-stack",
+                "p4-gpu-witness",
             ],
         )
 }

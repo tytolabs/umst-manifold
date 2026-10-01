@@ -23,6 +23,7 @@ RUST_PRIVATE_JOBS = (
     "arena-vs-mcp:",
     "lint:",
     "research-stack:",
+    "p4-gpu-witness:",
 )
 
 
