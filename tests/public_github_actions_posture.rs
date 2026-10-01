@@ -14,12 +14,14 @@ fn job_uses_continue_on_error(yml: &str, job_key: &str) -> bool {
 #[test]
 fn push_workflow_jobs_using_setup_ci_are_non_blocking() {
     let rust_yml = include_str!("../.github/workflows/rust.yml");
+    assert!(rust_yml.contains("w63-public-sibling-boundary:"));
     for job_key in [
         "build-test",
         "verify-umst-stack",
         "kleisli-ppo-hot-bind",
         "lint",
         "arena-vs-mcp",
+        "research-stack",
     ] {
         assert!(
             job_uses_continue_on_error(rust_yml, job_key),
