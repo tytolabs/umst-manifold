@@ -28,6 +28,7 @@ pub mod ros;
 
 pub mod b_public_ci_wave25;
 pub mod b_public_ci_wave26;
+pub mod public_ci_red_pool_receipt_pins;
 pub mod ci_research_gate;
 pub use ci_research_gate::ResearchCiPosture;
 pub mod cargo_test_gap_census;

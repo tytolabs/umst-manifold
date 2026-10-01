@@ -121,8 +121,9 @@ mod tests {
 
     #[test]
     fn determinism() {
-        let x = dignity_step(280.0, 3.0, 0.25, 1e-18);
-        assert_eq!(x, dignity_step(280.0, 3.0, 0.25, 1e-18));
+        let t = crate::constants::registry::HOST_TEMPERATURE_FALLBACK_K;
+        let x = dignity_step(t, 3.0, 0.25, 1e-18);
+        assert_eq!(x, dignity_step(t, 3.0, 0.25, 1e-18));
     }
 
     #[test]
