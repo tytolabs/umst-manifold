@@ -27,6 +27,7 @@ pub mod pnp_bridge;
 pub mod ros;
 
 pub mod b_public_ci_wave25;
+pub mod b_public_ci_wave26;
 pub mod ci_research_gate;
 pub use ci_research_gate::ResearchCiPosture;
 pub mod cargo_test_gap_census;
