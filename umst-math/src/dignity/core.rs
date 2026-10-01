@@ -128,8 +128,9 @@ mod tests {
 
     #[test]
     fn monotone_checker_on_random_feasible_pair() {
+        let t = (crate::constants::registry::HOST_TEMPERATURE_FALLBACK_K as i32 - 5) as f64;
         assert!(dignity_monotone_under_mi_gain_check(
-            295.0, 1.0, 0.1, 1e-15, 0.2, 2e-15
+            t, 1.0, 0.1, 1e-15, 0.2, 2e-15
         ));
     }
 }

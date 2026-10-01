@@ -62,7 +62,18 @@ pub fn eta_cog_after_dishonest_dignity_step(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::constants::registry::HOST_TEMPERATURE_FALLBACK_K;
     use crate::dignity::honest_spend;
+
+    #[inline]
+    fn host_t_k() -> f64 {
+        HOST_TEMPERATURE_FALLBACK_K
+    }
+
+    #[inline]
+    fn host_t_plus(delta_i32: i32) -> f64 {
+        (HOST_TEMPERATURE_FALLBACK_K as i32 + delta_i32) as f64
+    }
 
     fn claim(t: f64, mi: f64, e: f64) -> EtaCogClaim {
         EtaCogClaim {
@@ -74,14 +85,14 @@ mod tests {
 
     #[test]
     fn eta_cog_nonneg_interior() {
-        let c = claim(300.0, 0.5, 1e-18);
+        let c = claim(host_t_k(), 0.5, 1e-18);
         let y = eta_cog(2.0, &c);
         assert!(y >= 0.0 && y.is_finite());
     }
 
     #[test]
     fn eta_cog_zero_energy_matches_floor_ratio() {
-        let t = 300.0;
+        let t = host_t_k();
         let lb = landauer_floor_j(t);
         let c = claim(t, 0.25, 0.0);
         let d = 4.0;
@@ -91,7 +102,7 @@ mod tests {
 
     #[test]
     fn eta_cog_monotone_in_dignity() {
-        let c = claim(290.0, 0.3, 1e-19);
+        let c = claim(host_t_plus(-10), 0.3, 1e-19);
         let y1 = eta_cog(1.0, &c);
         let y2 = eta_cog(3.0, &c);
         assert!(y1 <= y2 + 1e-15);
@@ -99,23 +110,25 @@ mod tests {
 
     #[test]
     fn eta_cog_monotone_in_mi() {
-        let c1 = claim(295.0, 0.1, 2e-19);
-        let c2 = claim(295.0, 0.4, 2e-19);
+        let t = host_t_plus(-5);
+        let c1 = claim(t, 0.1, 2e-19);
+        let c2 = claim(t, 0.4, 2e-19);
         let d = 2.5;
         assert!(eta_cog(d, &c1) <= eta_cog(d, &c2) + 1e-15);
     }
 
     #[test]
     fn eta_cog_antitone_in_energy() {
-        let c_lo = claim(301.0, 0.2, 0.0);
-        let c_hi = claim(301.0, 0.2, 5e-18);
+        let t = host_t_plus(1);
+        let c_lo = claim(t, 0.2, 0.0);
+        let c_hi = claim(t, 0.2, 5e-18);
         let d = 3.0;
         assert!(eta_cog(d, &c_hi) <= eta_cog(d, &c_lo) + 1e-15);
     }
 
     #[test]
     fn eta_cog_frozen_under_dishonest_dignity_step() {
-        let t = 300.0;
+        let t = host_t_k();
         let cur = 2.0;
         let mi = 10.0;
         let e = 1e-25;
@@ -130,5 +143,15 @@ mod tests {
     fn eta_cog_invalid_inputs_zero() {
         let c = claim(-1.0, 1.0, 1.0);
         assert_eq!(eta_cog(1.0, &c), 0.0);
+    }
+
+    #[test]
+    fn n_float_steer_wave_twenty_eight_eta_cog_host_t_registry_linked() {
+        let t = host_t_k();
+        assert_eq!(t, HOST_TEMPERATURE_FALLBACK_K);
+        let lb = landauer_floor_j(t);
+        let c = claim(t, 0.25, 0.0);
+        let y = eta_cog(4.0, &c);
+        assert!((y - 4.0 * 0.25 / lb).abs() < 1e-24);
     }
 }
