@@ -21,24 +21,39 @@ pub fn setup_ci_jobs_non_blocking(workflow_yml: &str, job_keys: &[&str]) -> bool
 /// Embedded CI workflow law for push lanes that call `./.github/actions/setup-ci`.
 pub fn rust_push_workflow_law_holds() -> bool {
     let rust_yml = include_str!("../.github/workflows/rust.yml");
-    setup_ci_jobs_non_blocking(
-        rust_yml,
-        &[
-            "build-test",
-            "verify-umst-stack",
-            "kleisli-ppo-hot-bind",
-            "lint",
-            "arena-vs-mcp",
-        ],
-    )
+    rust_yml.contains("w63-public-sibling-boundary:")
+        && setup_ci_jobs_non_blocking(
+            rust_yml,
+            &[
+                "build-test",
+                "verify-umst-stack",
+                "kleisli-ppo-hot-bind",
+                "lint",
+                "arena-vs-mcp",
+                "research-stack",
+            ],
+        )
+}
+
+/// Catalog drift workflow: honest W-63 boundary job + non-blocking verify lane.
+pub fn catalog_drift_workflow_law_holds() -> bool {
+    let catalog_yml = include_str!("../.github/workflows/umst-catalog-drift.yml");
+    catalog_yml.contains("w63-catalog-public-boundary:")
+        && catalog_yml.contains("checkout_private_siblings: \"false\"")
+        && setup_ci_jobs_non_blocking(catalog_yml, &["verify-umst-stack"])
 }
 
 #[cfg(test)]
 mod tests {
-    use super::rust_push_workflow_law_holds;
+    use super::{catalog_drift_workflow_law_holds, rust_push_workflow_law_holds};
 
     #[test]
     fn rust_push_workflow_setup_ci_jobs_non_blocking() {
         assert!(rust_push_workflow_law_holds());
+    }
+
+    #[test]
+    fn catalog_drift_workflow_public_boundary_and_verify_lane() {
+        assert!(catalog_drift_workflow_law_holds());
     }
 }

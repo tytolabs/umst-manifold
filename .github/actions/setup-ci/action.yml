@@ -8,10 +8,17 @@ inputs:
     description: Optional rustup components (e.g. rustfmt, clippy)
     required: false
     default: ""
+  checkout_private_siblings:
+    description: >-
+      When true, attempt anonymous clone of pinned private siblings (W-63).
+      Public catalog-drift lanes set false so formal exports can run without path deps.
+    required: false
+    default: "true"
 runs:
   using: composite
   steps:
     - name: Checkout private UMST siblings (foundations + cartridges)
+      if: inputs.checkout_private_siblings == 'true'
       shell: bash
       run: |
         set -euo pipefail
@@ -19,6 +26,13 @@ runs:
         A=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-cartridge-api']['sha'])")
         C=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-cartridges']['sha'])")
         bash .github/scripts/checkout-umst-siblings.sh           "umst-foundations@${F}"           "umst-cartridge-api@${A}"           "umst-cartridges@${C}"
+
+    - name: Skip private sibling checkout (public CI lane)
+      if: inputs.checkout_private_siblings != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "W-63: skipping private sibling checkout on public runner (formal-only or non-blocking jobs)."
 
     - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
       with:
