@@ -298,6 +298,8 @@ jobs:
   arena-vs-mcp:
     name: arena vs MCP benchmark (≥5×)
     runs-on: ubuntu-latest
+    # W-63: needs private siblings via setup-ci; non-blocking on public default branch.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Checkout umst-concrete-cartridge (sibling)
