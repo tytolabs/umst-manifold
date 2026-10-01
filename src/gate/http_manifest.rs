@@ -10,7 +10,10 @@ use serde::{Deserialize, Serialize};
 use super::evaluator::GateEvaluator;
 use super::route::{canonical_strength_upper_bound_admissible, canonical_transition_outcome};
 use super::transition_eval_registry::{ThermodynamicTransitionContext, TransitionEvaluator};
-use super::transition_proposal::{ThermodynamicStateSnapshot, TransitionFilter};
+use super::transition_proposal::{
+    CELSIUS_TO_KELVIN_OFFSET_K, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+    ThermodynamicStateSnapshot, TransitionFilter,
+};
 use super::verdict::AdmissibilityVerdict;
 use crate::manifest::UmstManifest;
 use crate::runtime::catalog::catalog_lock_bundle_sha256_hex;
@@ -170,13 +173,13 @@ impl HttpTransitionEvaluator {
         let old = ThermodynamicStateSnapshot::from_mix_calibrated(
             w_c,
             0.0,
-            proposal.temperature_c + 273.15,
+            proposal.temperature_c + CELSIUS_TO_KELVIN_OFFSET_K,
             self.manifest.strength_intrinsic_mpa,
         );
         let new = ThermodynamicStateSnapshot::from_mix_calibrated(
             w_c,
             alpha,
-            proposal.temperature_c + 273.15,
+            proposal.temperature_c + CELSIUS_TO_KELVIN_OFFSET_K,
             self.manifest.strength_intrinsic_mpa,
         );
         let ctx = ThermodynamicTransitionContext {
@@ -293,8 +296,8 @@ pub fn reaction_extent_from_age(age_days: f64, temp_c: f64, supplementary_ratio:
     let supplementary_ratio = supplementary_ratio.clamp(0.0, 1.0) as f32;
     let alpha_max = 0.95 - supplementary_ratio * 0.15;
     let k_ref = 0.55_f32;
-    let t_ref_k = 293.15_f32;
-    let t_k = (temp_c as f32) + 273.15;
+    let t_ref_k = MIX_CALIBRATION_REFERENCE_TEMPERATURE_K as f32;
+    let t_k = (temp_c as f32) + CELSIUS_TO_KELVIN_OFFSET_K as f32;
     let e_over_r = 5000.0_f32;
     let temp_factor = (e_over_r * (1.0 / t_ref_k - 1.0 / t_k)).exp();
     let supplementary_factor = 1.0 - supplementary_ratio * 0.4;
@@ -368,13 +371,13 @@ pub fn evaluate(proposal: &MixProposal, manifest: &GateManifest) -> GateResponse
     let old = ThermodynamicStateSnapshot::from_mix_calibrated(
         w_c,
         0.0,
-        proposal.temperature_c + 273.15,
+        proposal.temperature_c + CELSIUS_TO_KELVIN_OFFSET_K,
         manifest.strength_intrinsic_mpa,
     );
     let new = ThermodynamicStateSnapshot::from_mix_calibrated(
         w_c,
         alpha,
-        proposal.temperature_c + 273.15,
+        proposal.temperature_c + CELSIUS_TO_KELVIN_OFFSET_K,
         manifest.strength_intrinsic_mpa,
     );
     let dt_s = (proposal.age_days * 24.0 * 3600.0).max(1.0);

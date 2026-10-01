@@ -101,7 +101,11 @@ impl SemanticCBF {
     /// Default fixture: room-temperature bath with chair-scale credit budget.
     #[must_use]
     pub fn chair_fixture() -> Self {
-        Self::new(300.0, 1.0e-6, DEFAULT_SEMANTIC_COLD_WITNESS_ID)
+        Self::new(
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
+            1.0e-6,
+            DEFAULT_SEMANTIC_COLD_WITNESS_ID,
+        )
     }
 }
 

@@ -12,6 +12,12 @@ use super::verdict::{AdmissibilityVerdict, ConjunctVerdict, GateRejectReason};
 use crate::core::material_transition::{MaterialTransitionParams, SubstrateMaterialParams};
 use umst_cartridge_concrete::evaluate_material_conjuncts;
 
+/// Celsius → Kelvin offset (K) for gate / hydration fixtures.
+pub const CELSIUS_TO_KELVIN_OFFSET_K: f64 = 273.15;
+
+/// Reference bath for mix-calibrated thermodynamic snapshots (K).
+pub const MIX_CALIBRATION_REFERENCE_TEMPERATURE_K: f64 = 293.15;
+
 /// Minimal JSON-shaped proposal for a bulk material patch (host gate IO).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TransitionScalars {
@@ -1064,5 +1070,26 @@ mod transition_witness_tests {
         let verdict = ConjunctVerdict::compose(core.verdict, material.verdict);
         let composed = transition_outcome_from_gate_witnesses(verdict, core, material);
         assert_eq!(composed.is_accepted(), direct.is_accepted());
+    }
+}
+
+#[cfg(test)]
+mod mix_calibration_temperature_ssot_tests {
+    use super::*;
+
+    #[test]
+    fn celsius_offset_plus_twenty_k_is_mix_calibration_bath() {
+        assert!(
+            (CELSIUS_TO_KELVIN_OFFSET_K + 20.0 - MIX_CALIBRATION_REFERENCE_TEMPERATURE_K).abs()
+                < 1e-9
+        );
+    }
+
+    #[test]
+    fn http_manifest_sources_use_mix_calibration_constants() {
+        let manifest = include_str!("http_manifest.rs");
+        assert!(manifest.contains("CELSIUS_TO_KELVIN_OFFSET_K"));
+        assert!(manifest.contains("MIX_CALIBRATION_REFERENCE_TEMPERATURE_K"));
+        assert!(!manifest.contains("+ 273.15"));
     }
 }
