@@ -4,10 +4,10 @@
 
 pub const TRACK_C_GO4_CELL_ID: &str = "LANE-TRACK-C-G-O-4";
 
-pub const TRACK_C_GO4_STEER: &str = "STEER_20261001T0537";
+pub const TRACK_C_GO4_STEER: &str = "STEER_20261001T0756";
 
 /// Monotone G-O-4 steer-wave counter (audit only).
-pub const TRACK_C_GO4_WAVE_SEQ: u32 = 26;
+pub const TRACK_C_GO4_WAVE_SEQ: u32 = 27;
 
 /// How a legacy compiled iteration cap is dispositioned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -224,8 +224,8 @@ mod tests {
 
     #[test]
     fn track_c_go4_steer_receipt_pinned() {
-        assert_eq!(TRACK_C_GO4_STEER, "STEER_20261001T0537");
-        assert_eq!(TRACK_C_GO4_WAVE_SEQ, 26);
+        assert_eq!(TRACK_C_GO4_STEER, "STEER_20261001T0756");
+        assert_eq!(TRACK_C_GO4_WAVE_SEQ, 27);
         assert_eq!(TRACK_C_GO4_CELL_ID, "LANE-TRACK-C-G-O-4");
         assert_eq!(cap_migration_site_count(), 25);
     }

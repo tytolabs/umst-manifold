@@ -1773,6 +1773,26 @@ mod tests {
         assert_eq!(registry_pending_derivation_count(), 27);
     }
 
+    /// W-80 / Track Q steer receipt pin (STEER_20261001T0537 wave 26).
+    #[test]
+    fn w80_steer_wave_twenty_six_pending_meter() {
+        const STEER: &str = "STEER_20261001T0537";
+        const WAVE: u32 = 26;
+        assert_eq!(STEER, "STEER_20261001T0537");
+        assert_eq!(WAVE, 26);
+        assert_eq!(registry_pending_derivation_count(), 27);
+    }
+
+    /// W-80 / Track Q steer receipt pin (STEER_20261001T0756 wave 27).
+    #[test]
+    fn w80_steer_wave_twenty_seven_pending_meter() {
+        const STEER: &str = "STEER_20261001T0756";
+        const WAVE: u32 = 27;
+        assert_eq!(STEER, "STEER_20261001T0756");
+        assert_eq!(WAVE, 27);
+        assert_eq!(registry_pending_derivation_count(), 27);
+    }
+
     #[test]
     fn registry_sorted_by_tier_is_sorted_and_complete() {
         assert_eq!(REGISTRY.len(), 173);
