@@ -430,7 +430,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "umst-haskell-toolchain.txt; scripts/run-ffi-tests.sh native Haskell gate",
         env_override: Some("UMST_NATIVE_GHC"),
-        derivation: Derivation::Pending,
+        derivation: Derivation::Pin {
+            repo: "ghc",
+            ref_name: "9.10.3",
+        },
     },
     ConstantEntry {
         name: "umst_energy_backend",
@@ -462,7 +465,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "L-0 formal-grounding synchrony; `.github/workflows/formal-grounding.yml`",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: Derivation::Pin {
+            repo: "umst-formal",
+            ref_name: "7c85e0439bb7f2b67ff79327ad6289e4dd392b8f",
+        },
     },
     // Tier-4 toolchain ZCI (§14bis.j); future §14bis.k: lift evidence to `Derivation::Pin { repo, ref }`.
     ConstantEntry {
@@ -503,7 +509,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "§14bis.j; `umst-math/TOOLCHAIN_PIN.txt`",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: Derivation::Pin {
+            repo: "rust-lang/rust",
+            ref_name: "nightly-2025-10-15",
+        },
     },
     ConstantEntry {
         name: "python_version_pin",
@@ -511,7 +520,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier4Infra,
         evidence: "§14bis.j; `umst-math/TOOLCHAIN_PIN.txt`",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: Derivation::Pin {
+            repo: "python/cpython",
+            ref_name: "3.13.1",
+        },
     },
     ConstantEntry {
         name: "umst_wide_gate_strict",
@@ -838,7 +850,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_level_unknown_light",
@@ -846,7 +858,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_level_yellow_dark",
@@ -854,7 +866,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_level_yellow_light",
@@ -862,7 +874,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_muted_dim_dark",
@@ -870,7 +882,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_muted_dim_light",
@@ -878,7 +890,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_status_muted_dark",
@@ -886,7 +898,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     ConstantEntry {
         name: "umst_tui_color_status_muted_light",
@@ -894,7 +906,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-6b; UMST_TUI_THEME; COCKPIT_DESIGN_BRIEF Theme+keybindings)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: TUI_6B_COLOR_DEFINITION,
     },
     // §14bis.f H-9 — HAL WorkloadKind::Smoke + badge (Tier-3 **Definitions**; CDD §0.11)
     ConstantEntry {
@@ -1421,7 +1433,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; FIPS 203 ML-KEM-768; `Crypto/KEM.lean` L-S0 stub)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: Derivation::Theorem {
+            theorem_id: "UMST.Formal.Crypto.KEM::ml_kem_768_public_key_bytes",
+            expected_value: 1184.0,
+        },
     },
     ConstantEntry {
         name: "crypto_ml_kem_768_secret_key_bytes",
@@ -1429,7 +1444,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; ML-KEM-768 SK wire)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: Derivation::Theorem {
+            theorem_id: "UMST.Formal.Crypto.KEM::ml_kem_768_secret_key_bytes",
+            expected_value: 2400.0,
+        },
     },
     ConstantEntry {
         name: "crypto_ml_kem_768_ciphertext_bytes",
@@ -1437,7 +1455,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; ML-KEM-768 ciphertext)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: Derivation::Theorem {
+            theorem_id: "UMST.Formal.Crypto.KEM::ml_kem_768_ciphertext_bytes",
+            expected_value: 1088.0,
+        },
     },
     ConstantEntry {
         name: "crypto_ml_dsa_65_public_key_bytes",
@@ -1445,7 +1466,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; FIPS 204 class mapping; `Crypto/Sig.lean` L-S1 stub)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: Derivation::Theorem {
+            theorem_id: "UMST.Formal.Crypto.Sig::ml_dsa_65_public_key_bytes",
+            expected_value: 1952.0,
+        },
     },
     ConstantEntry {
         name: "crypto_ml_dsa_65_secret_key_bytes",
@@ -1453,7 +1477,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; ML-DSA-65 SK wire)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: Derivation::Theorem {
+            theorem_id: "UMST.Formal.Crypto.Sig::ml_dsa_65_secret_key_bytes",
+            expected_value: 4032.0,
+        },
     },
     ConstantEntry {
         name: "crypto_slh_dsa_128s_public_key_bytes",
@@ -1461,7 +1488,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; SPHINCS+ SHA2-128s-simple PK seed size)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: Derivation::Theorem {
+            theorem_id: "UMST.Formal.Crypto.Sig::slh_dsa_128s_public_key_bytes",
+            expected_value: 32.0,
+        },
     },
     ConstantEntry {
         name: "crypto_sha3_256_digest_bytes",
@@ -1469,7 +1499,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
         tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.f-S-0; FIPS 202 Keccak via `sha3` crate; `Crypto/Hash.lean` L-S2 stub)",
         env_override: None,
-        derivation: Derivation::Pending,
+        derivation: Derivation::Theorem {
+            theorem_id: "UMST.Formal.Crypto.Hash::sha3_256_digest_bytes",
+            expected_value: 32.0,
+        },
     },
     ConstantEntry {
         name: "umst_llm_tier_fallback_default_chain_gemini",
@@ -1631,6 +1664,32 @@ mod tests {
             K5N_REGISTRY_ROW_NAMES, K5O_REGISTRY_ROW_NAMES,
         };
 
+        const K5P_TUI_6B_ROW_NAMES: &[&str] = &[
+            "umst_tui_color_level_unknown_dark",
+            "umst_tui_color_level_unknown_light",
+            "umst_tui_color_level_yellow_dark",
+            "umst_tui_color_level_yellow_light",
+            "umst_tui_color_muted_dim_dark",
+            "umst_tui_color_muted_dim_light",
+            "umst_tui_color_status_muted_dark",
+            "umst_tui_color_status_muted_light",
+        ];
+        const K5Q_ZCI_FORMAL_PIN_ROW_NAMES: &[&str] = &[
+            "rustc_toolchain_pin",
+            "python_version_pin",
+            "umst_formal_pin_sha",
+            "umst_haskell_toolchain_reference",
+        ];
+        const K5R_PQC_BYTE_WIDTH_ROW_NAMES: &[&str] = &[
+            "crypto_ml_kem_768_public_key_bytes",
+            "crypto_ml_kem_768_secret_key_bytes",
+            "crypto_ml_kem_768_ciphertext_bytes",
+            "crypto_ml_dsa_65_public_key_bytes",
+            "crypto_ml_dsa_65_secret_key_bytes",
+            "crypto_slh_dsa_128s_public_key_bytes",
+            "crypto_sha3_256_digest_bytes",
+        ];
+
         for e in REGISTRY {
             if K2_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K2_TIER0_LANDAUER_ROW_NAMES.contains(&e.name)
@@ -1653,6 +1712,9 @@ mod tests {
                 || K5M_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5N_REGISTRY_ROW_NAMES.contains(&e.name)
                 || K5O_REGISTRY_ROW_NAMES.contains(&e.name)
+                || K5P_TUI_6B_ROW_NAMES.contains(&e.name)
+                || K5Q_ZCI_FORMAL_PIN_ROW_NAMES.contains(&e.name)
+                || K5R_PQC_BYTE_WIDTH_ROW_NAMES.contains(&e.name)
             {
                 assert!(
                     !e.derivation.is_pending(),
@@ -1667,6 +1729,15 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn constants_registry_pending_derivation_count() {
+        let pending = REGISTRY
+            .iter()
+            .filter(|e| e.derivation.is_pending())
+            .count();
+        assert_eq!(pending, 53, "Q_constants_pending pool meter");
     }
 
     #[test]
