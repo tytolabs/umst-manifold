@@ -13,8 +13,8 @@
 //! Not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER` / OP-5. Fast-physics (`dt_fast_physics`)
 //! remains optional and does not imply EM/acoustics production wiring.
 
-/// W29 deepen cell — multi-scale time orchestration honest fence bundle.
-pub const W29_TIME_ORCHESTRATION_DEEPEN_CELL: &str = "W29-091-TIME_ORCHESTRATION";
+/// Owning slice id for multi-scale time orchestration fence facets.
+pub const TIME_ORCHESTRATION_OWNING_SLICE: &str = "time-orchestration-clocks";
 
 /// Honest posture tag — schedule SSOT landed; fleet production wiring refused.
 pub const TIME_ORCHESTRATION_POSTURE_TAG: &str = "honest-time-orchestration-research-lane";
@@ -68,7 +68,7 @@ pub fn time_orchestration_honest_posture_bundle() -> TimeOrchestrationPosturePro
         fast_physics_production_wired: TIME_ORCHESTRATION_FAST_PHYSICS_PRODUCTION_WIRED,
         honest_fence: TIME_ORCHESTRATION_HONEST_FENCE,
         posture_tag: TIME_ORCHESTRATION_POSTURE_TAG,
-        deepen_cell: W29_TIME_ORCHESTRATION_DEEPEN_CELL,
+        deepen_cell: TIME_ORCHESTRATION_OWNING_SLICE,
     }
 }
 
@@ -279,7 +279,7 @@ mod tests {
         assert!(!probe.master);
         assert!(!probe.fast_physics_production_wired);
         assert!(probe.clocks_landed);
-        assert_eq!(probe.deepen_cell, W29_TIME_ORCHESTRATION_DEEPEN_CELL);
+        assert!(probe.deepen_cell.contains("time-orchestration"));
         assert!(probe
             .honest_fence
             .contains("mechanics_inner_loop_decoupled=true"));

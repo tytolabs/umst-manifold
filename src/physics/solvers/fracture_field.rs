@@ -122,9 +122,6 @@ use crate::core::tensors::UnifiedMaterialStateTensor;
 #[cfg(feature = "fracture-at2")]
 use burn::tensor::{Data, Shape};
 
-/// W29 deepen step — honest fence + degradation helper witnesses (no invent GREEN).
-pub const W29_075_FRACTURE_FIELD_DEEPEN_STEP: &str = "W29-075-FRACTURE_FIELD";
-
 /// Witness — AT2 damage path / staggered outer API are present (still NOT physics GREEN).
 pub const FRACTURE_FIELD_AT2_PATH_LANDED: bool = true;
 
@@ -186,17 +183,10 @@ impl FractureFieldHonestyFence {
     }
 }
 
-/// W29-075 honest posture bundle — fence holds; GREEN / PRODUCTION / MASTER / OP-5 refused.
+/// Honest posture bundle — fence holds; GREEN / PRODUCTION / MASTER / OP-5 refused.
 #[must_use]
-pub const fn fracture_field_w29_honest_posture_bundle() -> bool {
+pub const fn fracture_field_honest_posture_holds() -> bool {
     FractureFieldHonestyFence::slice1().holds()
-}
-
-/// Witness — W29 deepen step id is stable and non-empty.
-#[must_use]
-pub fn w29_075_fracture_field_deepen_step_witness() -> bool {
-    !W29_075_FRACTURE_FIELD_DEEPEN_STEP.is_empty()
-        && W29_075_FRACTURE_FIELD_DEEPEN_STEP == "W29-075-FRACTURE_FIELD"
 }
 
 /// Miehe-style stiffness degradation \(g(d) = (1-d)^2 + \kappa_{\mathrm{reg}}\).
@@ -252,6 +242,12 @@ impl StaggeredDamageOuterLoopConfig {
             max_outer_iterations: n,
             stopping: StaggeredOuterDamageStopCriteria::default(),
         }
+    }
+
+    /// Staggered outer budget from damage-node count (regression parity with early-stop witnesses).
+    #[must_use]
+    pub fn regression_budget_for_node_count(node_count: usize) -> usize {
+        node_count.saturating_mul(12).saturating_add(4)
     }
 }
 
@@ -1477,7 +1473,7 @@ mod fracture_at2_tests {
         assert!(matches!(
             err,
             PhysicsError::InvariantViolation { context }
-            if *context == IrreversibilityRefused::CONTEXT
+            if context == IrreversibilityRefused::CONTEXT
         ));
     }
 
@@ -1858,14 +1854,20 @@ mod fracture_at2_tests {
         );
 
         let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
+        let stop = StaggeredOuterDamageStopCriteria {
+            tol_damage_linf: Some(1e-6_f32),
+            tol_strain_linf: None,
+            tol_rel_degraded_psi_mean: None,
+        };
+        let outer_budget = StaggeredDamageOuterLoopConfig::regression_budget_for_node_count(n);
         let strain_c = strain.clone();
         let d_full = solver.update_damage_staggered(
             move |_d: &DamageField<B>| strain_field(strain_c.clone()),
             damage_field(damage0.clone()),
             fracture_energy_gc.clone(),
             edges_b1.clone(),
-            40,
-        ).expect("PhaseFieldFractureSolver::update_damage_staggered full 40-outer budget on constant strain (FP §6 AT2 early-exit reference witness)");
+            outer_budget,
+        ).expect("PhaseFieldFractureSolver::update_damage_staggered full outer budget on constant strain (FP §6 AT2 early-exit reference witness)");
 
         let calls = Arc::new(AtomicUsize::new(0));
         let calls_cl = Arc::clone(&calls);
@@ -1878,16 +1880,12 @@ mod fracture_at2_tests {
             damage_field(damage0),
             fracture_energy_gc,
             edges_b1,
-            40,
-            StaggeredOuterDamageStopCriteria {
-                tol_damage_linf: Some(1e-6_f32),
-                tol_strain_linf: None,
-                tol_rel_degraded_psi_mean: None,
-            },
-        ).expect("PhaseFieldFractureSolver::update_damage_staggered_with_stop early-exit on damage stagnation vs full 40-outer budget (FP §6 AT2 early-exit parity witness)");
+            outer_budget,
+            stop,
+        ).expect("PhaseFieldFractureSolver::update_damage_staggered_with_stop early-exit on damage stagnation vs full outer budget (FP §6 AT2 early-exit parity witness)");
 
         assert!(
-            calls.load(Ordering::Relaxed) < 40,
+            calls.load(Ordering::Relaxed) < outer_budget,
             "expected early exit on damage stagnation; calls={}",
             calls.load(Ordering::Relaxed)
         );
@@ -1943,8 +1941,9 @@ mod fracture_at2_tests {
             tol_damage_linf: Some(1e-6_f32),
             ..Default::default()
         };
+        let outer_budget = StaggeredDamageOuterLoopConfig::regression_budget_for_node_count(n);
         let outer = StaggeredDamageOuterLoopConfig {
-            max_outer_iterations: umst_math::numeric_tolerance::fracture_at2_outer_regression_iteration_budget(),
+            max_outer_iterations: outer_budget,
             stopping: stop,
         };
         let strain_a = strain.clone();
@@ -1961,7 +1960,7 @@ mod fracture_at2_tests {
             damage_field(damage0),
             fracture_energy_gc,
             edges_b1,
-            40,
+            outer_budget,
             stop,
         ).expect("PhaseFieldFractureSolver::update_damage_staggered_with_stop equivalent stop criteria path (FP §6 AT2 outer-stop parity witness)");
         assert_eq!(
@@ -2102,23 +2101,16 @@ mod fracture_idempotency_tests {
 #[cfg(test)]
 mod fracture_honesty_fence_tests {
     use super::{
-        degradation_g_f32, fracture_field_w29_honest_posture_bundle,
-        w29_075_fracture_field_deepen_step_witness, FractureFieldHonestyFence,
+        degradation_g_f32, fracture_field_honest_posture_holds,
+        FractureFieldHonestyFence,
         PhaseFieldFractureSolver, FRACTURE_FIELD_MASTER_RETICK_ELIGIBLE,
         FRACTURE_FIELD_OP5_CLAIMED, FRACTURE_FIELD_PHYSICS_GREEN, FRACTURE_FIELD_PRODUCTION_WIRED,
-        W29_075_FRACTURE_FIELD_DEEPEN_STEP,
     };
     use crate::core::field::{Field, FractureEnergyField, SmallStrainField};
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
 
     type B = NdArray<f32>;
-
-    #[test]
-    fn w29_075_fracture_field_deepen_step_witness_holds() {
-        assert!(w29_075_fracture_field_deepen_step_witness());
-        assert_eq!(W29_075_FRACTURE_FIELD_DEEPEN_STEP, "W29-075-FRACTURE_FIELD");
-    }
 
     #[test]
     fn fracture_field_honesty_fence_slice1_holds() {
@@ -2138,7 +2130,7 @@ mod fracture_honesty_fence_tests {
         assert!(!FRACTURE_FIELD_PRODUCTION_WIRED);
         assert!(!FRACTURE_FIELD_MASTER_RETICK_ELIGIBLE);
         assert!(!FRACTURE_FIELD_OP5_CLAIMED);
-        assert!(fracture_field_w29_honest_posture_bundle());
+        assert!(fracture_field_honest_posture_holds());
     }
 
     #[test]

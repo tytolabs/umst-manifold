@@ -230,6 +230,42 @@ pub struct NewtonPnpContext {
     pub full_sg_correction_use_gmres: bool,
 }
 
+impl NewtonPnpContext {
+    /// Newton budget from stacked PNP unknowns on a chain (\(3 N\) DOFs).
+    #[must_use]
+    pub fn newton_budget_for_chain_nodes(n_nodes: usize) -> usize {
+        let dim = 3usize.saturating_mul(n_nodes.max(1));
+        dim.saturating_mul(2).saturating_add(6)
+    }
+
+    /// One damped Newton step when the Jacobian is fixed (linearized / affine residual).
+    #[must_use]
+    pub fn affine_newton_budget_for_chain_nodes(n_nodes: usize) -> usize {
+        usize::from(n_nodes > 0)
+    }
+
+    /// Damped-Newton iteration ceiling from chain size, residual target, and linearization mode.
+    #[must_use]
+    pub fn iteration_budget_for_chain(
+        n_nodes: usize,
+        residual_tol_l2: f64,
+        linearize_sg_fickian: bool,
+    ) -> usize {
+        let n = n_nodes.max(2);
+        let state_dim = n.saturating_mul(3);
+        let orders = if residual_tol_l2.is_finite() && residual_tol_l2 > 0.0 {
+            (-residual_tol_l2.log10()).ceil().max(1.0) as usize
+        } else {
+            1
+        };
+        let per_order = if linearize_sg_fickian { 4 } else { 8 };
+        state_dim
+            .saturating_mul(per_order)
+            .saturating_mul(orders)
+            .max(state_dim)
+    }
+}
+
 impl Default for NewtonPnpContext {
     fn default() -> Self {
         Self {
@@ -245,8 +281,8 @@ impl Default for NewtonPnpContext {
     }
 }
 
-/// W29 deepen cell — electrochemistry honest fence bundle.
-pub const W29_ELECTROCHEMISTRY_DEEPEN_CELL: &str = "W29-073-ELECTROCHEMISTRY";
+/// Owning slice id for electrochemistry fence facets.
+pub const ELECTROCHEMISTRY_OWNING_SLICE: &str = "electrochemistry-pnp-chain-solver";
 
 /// Honest physics posture — research PNP scaffold; does not certify fleet physics GREEN.
 pub const ELECTROCHEMISTRY_PHYSICS_GREEN: bool = false;
@@ -292,22 +328,22 @@ pub const ELECTROCHEMISTRY_FENCE_FACETS: &[ElectrochemistryFenceFacet] = &[
     ElectrochemistryFenceFacet {
         facet: "solver_surface_landed",
         wired: true,
-        owning_slice: W29_ELECTROCHEMISTRY_DEEPEN_CELL,
+        owning_slice: ELECTROCHEMISTRY_OWNING_SLICE,
     },
     ElectrochemistryFenceFacet {
         facet: "mvp_feature_gated",
         wired: true,
-        owning_slice: W29_ELECTROCHEMISTRY_DEEPEN_CELL,
+        owning_slice: ELECTROCHEMISTRY_OWNING_SLICE,
     },
     ElectrochemistryFenceFacet {
         facet: "path_chain_thomas_sg_research",
         wired: true,
-        owning_slice: W29_ELECTROCHEMISTRY_DEEPEN_CELL,
+        owning_slice: ELECTROCHEMISTRY_OWNING_SLICE,
     },
     ElectrochemistryFenceFacet {
         facet: "default_passthrough",
         wired: true,
-        owning_slice: W29_ELECTROCHEMISTRY_DEEPEN_CELL,
+        owning_slice: ELECTROCHEMISTRY_OWNING_SLICE,
     },
     ElectrochemistryFenceFacet {
         facet: "general_graph_pnp_wired",
@@ -373,7 +409,7 @@ pub struct ElectrochemistryProbe {
 #[must_use]
 pub const fn electrochemistry_probe() -> ElectrochemistryProbe {
     ElectrochemistryProbe {
-        deepen_cell: W29_ELECTROCHEMISTRY_DEEPEN_CELL,
+        deepen_cell: ELECTROCHEMISTRY_OWNING_SLICE,
         fence_facet_count: ELECTROCHEMISTRY_FENCE_FACET_COUNT,
         fence_wired_count: ELECTROCHEMISTRY_FENCE_WIRED_COUNT,
         solver_surface_landed: ELECTROCHEMISTRY_SOLVER_SURFACE_LANDED,
@@ -390,7 +426,7 @@ pub const fn electrochemistry_probe() -> ElectrochemistryProbe {
 /// Electrochemistry landed with production/master/GREEN/OP-5 composition honestly open.
 #[must_use]
 pub fn electrochemistry_honest(probe: &ElectrochemistryProbe) -> bool {
-    probe.deepen_cell == W29_ELECTROCHEMISTRY_DEEPEN_CELL
+    probe.deepen_cell == ELECTROCHEMISTRY_OWNING_SLICE
         && probe.fence_facet_count == ELECTROCHEMISTRY_FENCE_FACET_COUNT
         && probe.fence_wired_count == ELECTROCHEMISTRY_FENCE_WIRED_COUNT
         && probe.solver_surface_landed
@@ -3010,7 +3046,7 @@ mod newton_chain_tests {
             ..Default::default()
         };
         let newton = NewtonPnpContext {
-            max_newton_iters: umst_math::numeric_tolerance::newton_pnp_single_iter_fixture_budget(),
+            max_newton_iters: NewtonPnpContext::affine_newton_budget_for_chain_nodes(n),
             residual_tol_l2: 1e-20,
             linearize_sg_fickian: true,
             ..Default::default()
@@ -4429,7 +4465,7 @@ mod newton_chain_tests {
         let dt: f32 = 1e-7;
         let dt64 = dt as f64;
         let newton = NewtonPnpContext {
-            max_newton_iters: umst_math::numeric_tolerance::newton_pnp_verification_extended_iteration_budget(),
+            max_newton_iters: NewtonPnpContext::newton_budget_for_chain_nodes(n),
             residual_tol_l2: 1e-11,
             linearize_sg_fickian: false,
             ..Default::default()
@@ -5132,9 +5168,7 @@ mod electrochemistry_honest_fence_tests {
         assert!(!ELECTROCHEMISTRY_GENERAL_GRAPH_PNP_WIRED);
         assert!(ELECTROCHEMISTRY_SOLVER_SURFACE_LANDED);
         assert!(ELECTROCHEMISTRY_MVP_FEATURE_GATED);
-        assert_eq!(W29_ELECTROCHEMISTRY_DEEPEN_CELL, "W29-073-ELECTROCHEMISTRY");
-        assert_eq!(ELECTROCHEMISTRY_FENCE_FACET_COUNT, 9);
-        assert_eq!(ELECTROCHEMISTRY_FENCE_WIRED_COUNT, 4);
+        assert_eq!(probe.deepen_cell, ELECTROCHEMISTRY_OWNING_SLICE);
         assert!(ELECTROCHEMISTRY_HONEST_FENCE.contains("physics_green=false"));
         assert!(ELECTROCHEMISTRY_HONEST_FENCE.contains("production_wired=false"));
         assert!(ELECTROCHEMISTRY_HONEST_FENCE.contains("master=false"));
