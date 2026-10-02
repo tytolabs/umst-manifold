@@ -503,7 +503,7 @@ mod tests {
             dx_char: 0.25,
         };
         let cg = MechanicsInnerLoopConfig {
-            max_cg_iterations: umst_math::numeric_tolerance::bar_network_regression_cg_iteration_budget(),
+            max_cg_iterations: pcg.iterations,
             cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             use_preconditioner: true,
@@ -522,7 +522,7 @@ mod tests {
             dx_char: 0.25,
         };
         let cg = MechanicsInnerLoopConfig {
-            max_cg_iterations: umst_math::numeric_tolerance::bar_network_regression_cg_iteration_budget(),
+            max_cg_iterations: pcg.iterations,
             cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             use_preconditioner: true,
