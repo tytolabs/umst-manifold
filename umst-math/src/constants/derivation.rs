@@ -3,8 +3,8 @@
 //! Constant-Derivation Discipline (CDD) — §0.11 shapes for `REGISTRY` rows.
 //!
 //! Every [`super::registry::ConstantEntry`] carries a [`Derivation`] describing how egoff
-//! re-verifies the constant at runtime (`:verify` palette; lands K-6). Legacy rows default
-//! to [`Derivation::Pending`] until K-2..K-7 backfill (forbidden after K-7 GREEN).
+//! re-verifies the constant at runtime (`:verify` palette; lands K-6). A row is classified when it is
+//! written: the type has no unclassified state.
 
 /// Schema version bumped when `Derivation` or `ConstantEntry` CDD fields change (K-1 = 1).
 pub const DERIVATION_SCHEMA_VERSION: u32 = 2;
@@ -63,8 +63,6 @@ pub enum Derivation {
         /// What is unmeasured and where the measurement is planned.
         reason: &'static str,
     },
-    /// Awaiting K-2..K-7 backfill — forbidden after K-7 GREEN.
-    Pending,
 }
 
 impl Derivation {
@@ -78,31 +76,24 @@ impl Derivation {
             Self::Pin { .. } => "Pin",
             Self::Policy { .. } => "Policy",
             Self::Absent { .. } => "Absent",
-            Self::Pending => "Pending",
         }
     }
 
-    /// The tier a derivation places its row in: the tier is this function of how the value is known, and a
-    /// pending row has none. A definition counts as physical when its authority is an external standard.
+    /// The tier a derivation places its row in: the tier is this function of how the value is known. A
+    /// definition counts as physical when its authority is an external standard.
     #[must_use]
-    pub fn tier(self) -> Option<ConstantTier> {
+    pub fn tier(self) -> ConstantTier {
         match self {
-            Self::Theorem { .. } => Some(ConstantTier::Tier2Derivable),
+            Self::Theorem { .. } => ConstantTier::Tier2Derivable,
             Self::Definition { authority_url, .. } if authority_url.starts_with("https://") => {
-                Some(ConstantTier::Tier0Physical)
+                ConstantTier::Tier0Physical
             }
-            Self::Definition { .. } | Self::Policy { .. } => Some(ConstantTier::Tier3Policy),
-            Self::Measurement { .. } | Self::Absent { .. } => Some(ConstantTier::Tier1Measurement),
-            Self::Pin { .. } => Some(ConstantTier::Tier4Infra),
-            Self::Pending => None,
+            Self::Definition { .. } | Self::Policy { .. } => ConstantTier::Tier3Policy,
+            Self::Measurement { .. } | Self::Absent { .. } => ConstantTier::Tier1Measurement,
+            Self::Pin { .. } => ConstantTier::Tier4Infra,
         }
     }
 
-    /// True when the row still awaits CDD backfill.
-    #[must_use]
-    pub const fn is_pending(self) -> bool {
-        matches!(self, Self::Pending)
-    }
 }
 
 /// K-1 landed witness — compile-time schema present on every `REGISTRY` row.
@@ -118,13 +109,12 @@ mod tests {
     #[test]
     fn derivation_schema_carries_policy() {
         assert_eq!(Derivation::Policy { rationale: "r" }.label(), "Policy");
-        assert!(!Derivation::Policy { rationale: "r" }.is_pending());
+        assert_eq!(Derivation::Policy { rationale: "r" }.tier(), ConstantTier::Tier3Policy);
         assert!(k1_schema_landed());
     }
 
     #[test]
     fn derivation_labels_match_cdd_taxonomy() {
-        assert_eq!(Derivation::Pending.label(), "Pending");
         assert_eq!(
             Derivation::Theorem {
                 decl: LeanDecl { module: "LandauerLaw", name: "uniformBinaryEntropy" },

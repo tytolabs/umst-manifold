@@ -3,7 +3,7 @@
 //! K-3 — Tier-2 measurement-derived constant derivations (§14bis.k · §0.11 CDD).
 //!
 //! H-9 HAL cluster batch: six `Tier1Measurement` registry rows with JSONL receipts.
-//! Remaining non-HAL Tier-2 rows stay `Pending` until a later K-3 deepen.
+//! Every row is classified when written.
 
 use super::derivation::{Derivation, LeanDecl};
 use super::registry::REGISTRY;
@@ -843,7 +843,7 @@ pub const K5D_REGISTRY_ROW_NAMES: &[&str] = &[
     "umst_h3b_reward_beta",
 ];
 
-/// Count K-5 rows with non-`Pending` derivation.
+/// Count K-5 rows present in REGISTRY (each row is classified by its type).
 #[must_use]
 pub fn k5_backfilled_count() -> usize {
     K5_REGISTRY_ROW_NAMES
@@ -851,8 +851,7 @@ pub fn k5_backfilled_count() -> usize {
         .filter(|name| {
             REGISTRY
                 .iter()
-                .find(|e| e.name == **name)
-                .is_some_and(|e| !e.derivation.is_pending())
+                .any(|e| e.name == **name)
         })
         .count()
 }
@@ -1010,7 +1009,7 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
     }
 }
 
-/// Count K-5k rows with non-`Pending` derivation.
+/// Count K-5k rows present in REGISTRY (each row is classified by its type).
 #[must_use]
 pub fn k5k_backfilled_count() -> usize {
     K5K_REGISTRY_ROW_NAMES
@@ -1018,8 +1017,7 @@ pub fn k5k_backfilled_count() -> usize {
         .filter(|name| {
             REGISTRY
                 .iter()
-                .find(|e| e.name == **name)
-                .is_some_and(|e| !e.derivation.is_pending())
+                .any(|e| e.name == **name)
         })
         .count()
 }
@@ -1030,7 +1028,7 @@ pub fn k5k_backfill_landed() -> bool {
     k5k_backfilled_count() == K5K_REGISTRY_ROW_NAMES.len()
 }
 
-/// Count K-5j rows with non-`Pending` derivation.
+/// Count K-5j rows present in REGISTRY (each row is classified by its type).
 #[must_use]
 pub fn k5j_backfilled_count() -> usize {
     K5J_REGISTRY_ROW_NAMES
@@ -1038,8 +1036,7 @@ pub fn k5j_backfilled_count() -> usize {
         .filter(|name| {
             REGISTRY
                 .iter()
-                .find(|e| e.name == **name)
-                .is_some_and(|e| !e.derivation.is_pending())
+                .any(|e| e.name == **name)
         })
         .count()
 }
@@ -1050,7 +1047,7 @@ pub fn k5j_backfill_landed() -> bool {
     k5j_backfilled_count() == K5J_REGISTRY_ROW_NAMES.len()
 }
 
-/// Count K-5i rows with non-`Pending` derivation.
+/// Count K-5i rows present in REGISTRY (each row is classified by its type).
 #[must_use]
 pub fn k5i_backfilled_count() -> usize {
     K5I_REGISTRY_ROW_NAMES
@@ -1058,8 +1055,7 @@ pub fn k5i_backfilled_count() -> usize {
         .filter(|name| {
             REGISTRY
                 .iter()
-                .find(|e| e.name == **name)
-                .is_some_and(|e| !e.derivation.is_pending())
+                .any(|e| e.name == **name)
         })
         .count()
 }
@@ -1070,7 +1066,7 @@ pub fn k5i_backfill_landed() -> bool {
     k5i_backfilled_count() == K5I_REGISTRY_ROW_NAMES.len()
 }
 
-/// Count K-5h rows with non-`Pending` derivation.
+/// Count K-5h rows present in REGISTRY (each row is classified by its type).
 #[must_use]
 pub fn k5h_backfilled_count() -> usize {
     K5H_REGISTRY_ROW_NAMES
@@ -1078,8 +1074,7 @@ pub fn k5h_backfilled_count() -> usize {
         .filter(|name| {
             REGISTRY
                 .iter()
-                .find(|e| e.name == **name)
-                .is_some_and(|e| !e.derivation.is_pending())
+                .any(|e| e.name == **name)
         })
         .count()
 }
@@ -1090,7 +1085,7 @@ pub fn k5h_backfill_landed() -> bool {
     k5h_backfilled_count() == K5H_REGISTRY_ROW_NAMES.len()
 }
 
-/// Count K-5g rows with non-`Pending` derivation.
+/// Count K-5g rows present in REGISTRY (each row is classified by its type).
 #[must_use]
 pub fn k5g_backfilled_count() -> usize {
     K5G_REGISTRY_ROW_NAMES
@@ -1098,8 +1093,7 @@ pub fn k5g_backfilled_count() -> usize {
         .filter(|name| {
             REGISTRY
                 .iter()
-                .find(|e| e.name == **name)
-                .is_some_and(|e| !e.derivation.is_pending())
+                .any(|e| e.name == **name)
         })
         .count()
 }
@@ -1110,7 +1104,7 @@ pub fn k5g_backfill_landed() -> bool {
     k5g_backfilled_count() == K5G_REGISTRY_ROW_NAMES.len()
 }
 
-/// Count K-5f rows with non-`Pending` derivation.
+/// Count K-5f rows present in REGISTRY (each row is classified by its type).
 #[must_use]
 pub fn k5f_backfilled_count() -> usize {
     K5F_REGISTRY_ROW_NAMES
@@ -1118,8 +1112,7 @@ pub fn k5f_backfilled_count() -> usize {
         .filter(|name| {
             REGISTRY
                 .iter()
-                .find(|e| e.name == **name)
-                .is_some_and(|e| !e.derivation.is_pending())
+                .any(|e| e.name == **name)
         })
         .count()
 }
@@ -1130,7 +1123,7 @@ pub fn k5f_backfill_landed() -> bool {
     k5f_backfilled_count() == K5F_REGISTRY_ROW_NAMES.len()
 }
 
-/// Count K-5e rows with non-`Pending` derivation.
+/// Count K-5e rows present in REGISTRY (each row is classified by its type).
 #[must_use]
 pub fn k5e_backfilled_count() -> usize {
     K5E_REGISTRY_ROW_NAMES
@@ -1138,8 +1131,7 @@ pub fn k5e_backfilled_count() -> usize {
         .filter(|name| {
             REGISTRY
                 .iter()
-                .find(|e| e.name == **name)
-                .is_some_and(|e| !e.derivation.is_pending())
+                .any(|e| e.name == **name)
         })
         .count()
 }
@@ -1150,7 +1142,7 @@ pub fn k5e_backfill_landed() -> bool {
     k5e_backfilled_count() == K5E_REGISTRY_ROW_NAMES.len()
 }
 
-/// Count K-5d rows with non-`Pending` derivation.
+/// Count K-5d rows present in REGISTRY (each row is classified by its type).
 #[must_use]
 pub fn k5d_backfilled_count() -> usize {
     K5D_REGISTRY_ROW_NAMES
@@ -1158,8 +1150,7 @@ pub fn k5d_backfilled_count() -> usize {
         .filter(|name| {
             REGISTRY
                 .iter()
-                .find(|e| e.name == **name)
-                .is_some_and(|e| !e.derivation.is_pending())
+                .any(|e| e.name == **name)
         })
         .count()
 }
@@ -1170,7 +1161,7 @@ pub fn k5d_backfill_landed() -> bool {
     k5d_backfilled_count() == K5D_REGISTRY_ROW_NAMES.len()
 }
 
-/// Count K-5c rows with non-`Pending` derivation.
+/// Count K-5c rows present in REGISTRY (each row is classified by its type).
 #[must_use]
 pub fn k5c_backfilled_count() -> usize {
     K5C_REGISTRY_ROW_NAMES
@@ -1178,8 +1169,7 @@ pub fn k5c_backfilled_count() -> usize {
         .filter(|name| {
             REGISTRY
                 .iter()
-                .find(|e| e.name == **name)
-                .is_some_and(|e| !e.derivation.is_pending())
+                .any(|e| e.name == **name)
         })
         .count()
 }
@@ -1190,7 +1180,7 @@ pub fn k5c_backfill_landed() -> bool {
     k5c_backfilled_count() == K5C_REGISTRY_ROW_NAMES.len()
 }
 
-/// Count K-5b rows with non-`Pending` derivation.
+/// Count K-5b rows present in REGISTRY (each row is classified by its type).
 #[must_use]
 pub fn k5b_backfilled_count() -> usize {
     K5B_REGISTRY_ROW_NAMES
@@ -1198,8 +1188,7 @@ pub fn k5b_backfilled_count() -> usize {
         .filter(|name| {
             REGISTRY
                 .iter()
-                .find(|e| e.name == **name)
-                .is_some_and(|e| !e.derivation.is_pending())
+                .any(|e| e.name == **name)
         })
         .count()
 }
@@ -1210,7 +1199,7 @@ pub fn k5b_backfill_landed() -> bool {
     k5b_backfilled_count() == K5B_REGISTRY_ROW_NAMES.len()
 }
 
-/// Count K-3 gate-deepen rows with non-`Pending` derivation.
+/// Count K-3 gate-deepen rows present in REGISTRY (each row is classified by its type).
 #[must_use]
 pub fn k3_tier2_gate_backfilled_count() -> usize {
     K3_TIER2_GATE_ROW_NAMES
@@ -1218,13 +1207,12 @@ pub fn k3_tier2_gate_backfilled_count() -> usize {
         .filter(|name| {
             REGISTRY
                 .iter()
-                .find(|e| e.name == **name)
-                .is_some_and(|e| !e.derivation.is_pending())
+                .any(|e| e.name == **name)
         })
         .count()
 }
 
-/// Count K-3 batch rows with non-`Pending` derivation.
+/// Count K-3 batch rows present in REGISTRY (each row is classified by its type).
 #[must_use]
 pub fn k3_backfilled_count() -> usize {
     K3_REGISTRY_ROW_NAMES
@@ -1232,8 +1220,7 @@ pub fn k3_backfilled_count() -> usize {
         .filter(|name| {
             REGISTRY
                 .iter()
-                .find(|e| e.name == **name)
-                .is_some_and(|e| !e.derivation.is_pending())
+                .any(|e| e.name == **name)
         })
         .count()
 }
@@ -1261,7 +1248,6 @@ mod tests {
         for name in K3_REGISTRY_ROW_NAMES {
             let d = derivation_for_registry_row(name).expect("lookup");
             assert_eq!(d.label(), "Measurement");
-            assert!(!d.is_pending());
         }
     }
 
@@ -1303,7 +1289,6 @@ mod tests {
                 .find(|e| e.name == name)
                 .expect("registry row");
             assert_eq!(entry.derivation, expected);
-            assert!(!entry.derivation.is_pending());
         }
         assert!(matches!(TRANSITION_TOLERANCE_DERIVATION, Derivation::Policy { .. }));
         assert!(matches!(ADMISSIBILITY_MARGIN_EPS_DERIVATION, Derivation::Policy { .. }));
@@ -1351,10 +1336,6 @@ mod tests {
                 .iter()
                 .find(|e| e.name == *name)
                 .expect("registry row");
-            assert!(
-                !entry.derivation.is_pending(),
-                "K-5: {name} must be backfilled"
-            );
             assert_eq!(
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
@@ -1370,10 +1351,6 @@ mod tests {
                 .iter()
                 .find(|e| e.name == *name)
                 .expect("registry row");
-            assert!(
-                !entry.derivation.is_pending(),
-                "K-5b: {name} must be backfilled"
-            );
             assert_eq!(
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
@@ -1389,10 +1366,6 @@ mod tests {
                 .iter()
                 .find(|e| e.name == *name)
                 .expect("registry row");
-            assert!(
-                !entry.derivation.is_pending(),
-                "K-5c: {name} must be backfilled"
-            );
             assert_eq!(
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
@@ -1413,10 +1386,6 @@ mod tests {
                 .iter()
                 .find(|e| e.name == *name)
                 .expect("registry row");
-            assert!(
-                !entry.derivation.is_pending(),
-                "K-5j: {name} must be backfilled"
-            );
             assert_eq!(
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
@@ -1440,10 +1409,6 @@ mod tests {
                 .iter()
                 .find(|e| e.name == *name)
                 .expect("registry row");
-            assert!(
-                !entry.derivation.is_pending(),
-                "K-5k: {name} must be backfilled"
-            );
             assert_eq!(
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
@@ -1467,10 +1432,6 @@ mod tests {
                 .iter()
                 .find(|e| e.name == *name)
                 .expect("registry row");
-            assert!(
-                !entry.derivation.is_pending(),
-                "K-5i: {name} must be backfilled"
-            );
             assert_eq!(
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
@@ -1486,10 +1447,6 @@ mod tests {
                 .iter()
                 .find(|e| e.name == *name)
                 .expect("registry row");
-            assert!(
-                !entry.derivation.is_pending(),
-                "K-5h: {name} must be backfilled"
-            );
             assert_eq!(
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
@@ -1505,10 +1462,6 @@ mod tests {
                 .iter()
                 .find(|e| e.name == *name)
                 .expect("registry row");
-            assert!(
-                !entry.derivation.is_pending(),
-                "K-5g: {name} must be backfilled"
-            );
             assert_eq!(
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
@@ -1529,10 +1482,6 @@ mod tests {
                 .iter()
                 .find(|e| e.name == *name)
                 .expect("registry row");
-            assert!(
-                !entry.derivation.is_pending(),
-                "K-5f: {name} must be backfilled"
-            );
             assert_eq!(
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
@@ -1548,10 +1497,6 @@ mod tests {
                 .iter()
                 .find(|e| e.name == *name)
                 .expect("registry row");
-            assert!(
-                !entry.derivation.is_pending(),
-                "K-5e: {name} must be backfilled"
-            );
             assert_eq!(
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
@@ -1567,10 +1512,6 @@ mod tests {
                 .iter()
                 .find(|e| e.name == *name)
                 .expect("registry row");
-            assert!(
-                !entry.derivation.is_pending(),
-                "K-5d: {name} must be backfilled"
-            );
             assert_eq!(
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")

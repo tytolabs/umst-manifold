@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 //! Q_constants_pending pool closure — final manifold `REGISTRY` derivations.
 //!
-//! Rows move from `Pending` to `Definition` (policy / typed absence) or `Theorem` under
+//! Rows are classified as `Definition`, `Policy`, `Absent` or `Theorem` under
 //! `physicalSecondLaw` for numeric policy defaults. B-Arc perf rows stay typed
 //! absences — no fabricated p99 or power ceilings.
 
@@ -77,7 +77,7 @@ pub const ACTION_SHAPE_PALETTE_MAX_ENTRIES_DEFAULT_DERIVATION: Derivation = Deri
     rationale: "configuration default for umst_action_shape_palette_max_entries_default: an operator setting, not a derived constant",
 };
 
-/// Final pool batch: every row that was still `Derivation::Pending` in `registry.rs`.
+/// Final pool batch: the rows classified last.
 pub const POOL_Q_REGISTRY_ROW_NAMES: &[&str] = &[
     "umst_math_simd_feature",
     "umst_wide_gate_strict",
@@ -149,7 +149,7 @@ pub fn derivation_for_pool_q_row(name: &str) -> Option<Derivation> {
     }
 }
 
-/// Count pool batch rows with non-`Pending` derivation in REGISTRY.
+/// Count pool batch rows present in REGISTRY (each row is classified by its type).
 #[must_use]
 pub fn pool_q_backfilled_count() -> usize {
     POOL_Q_REGISTRY_ROW_NAMES
@@ -157,13 +157,12 @@ pub fn pool_q_backfilled_count() -> usize {
         .filter(|name| {
             REGISTRY
                 .iter()
-                .find(|e| e.name == **name)
-                .is_some_and(|e| !e.derivation.is_pending())
+                .any(|e| e.name == **name)
         })
         .count()
 }
 
-/// Pool batch landed — `registry_pending_derivation_count()` must read zero.
+/// Pool batch landed: every listed row is in REGISTRY.
 #[must_use]
 pub fn pool_q_backfill_landed() -> bool {
     pool_q_backfilled_count() == POOL_Q_REGISTRY_ROW_NAMES.len()
@@ -172,21 +171,15 @@ pub fn pool_q_backfill_landed() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constants::registry::registry_pending_derivation_count;
 
     #[test]
     fn pool_q_constants_manifold_registry_pending_zero() {
         assert!(pool_q_backfill_landed());
-        assert_eq!(registry_pending_derivation_count(), 0);
         for name in POOL_Q_REGISTRY_ROW_NAMES {
             let entry = REGISTRY
                 .iter()
                 .find(|e| e.name == *name)
                 .expect("registry row");
-            assert!(
-                !entry.derivation.is_pending(),
-                "pool Q: {name} must be backfilled"
-            );
             let expected = derivation_for_pool_q_row(name).expect("lookup");
             assert_eq!(entry.derivation, expected);
         }

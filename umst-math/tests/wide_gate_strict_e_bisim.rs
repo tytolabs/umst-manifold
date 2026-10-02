@@ -27,8 +27,8 @@ fn reg_has_umst_wide_gate_strict() {
         .iter()
         .find(|e| e.name == "umst_tui_render_debounce_ms")
         .expect("TUI-5 debounce row");
-    assert_eq!(tui5a.tier, ConstantTier::Tier3Policy);
-    assert_eq!(tui5b.tier, ConstantTier::Tier3Policy);
+    assert_eq!(tui5a.tier(), ConstantTier::Tier3Policy);
+    assert_eq!(tui5b.tier(), ConstantTier::Tier3Policy);
     assert!(
         tui5a.expression.trim_start().starts_with("16 ("),
         "LUR 16: {}",
@@ -44,7 +44,7 @@ fn reg_has_umst_wide_gate_strict() {
         .iter()
         .find(|e| e.name == "umst_semantic_coverage_threshold_w2")
         .expect("W-2 G8 floor");
-    assert_eq!(w2.tier, ConstantTier::Tier3Policy);
+    assert_eq!(w2.tier(), ConstantTier::Tier3Policy);
     let ev = w2.evidence.trim();
     assert!(
         ev.contains("Definition") && ev.contains("W-2"),

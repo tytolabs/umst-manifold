@@ -13,12 +13,12 @@ fn derivation_labels_are_distinct() {
         Derivation::Definition { authority_url: "u", expected_sha256: "s" },
         Derivation::Pin { repo: "r", ref_name: "main" },
         Derivation::Policy { rationale: "r" },
-        Derivation::Pending,
+        Derivation::Absent { reason: "r" },
     ]
     .iter()
     .map(|d| d.label())
     .collect();
-    assert_eq!(labels.len(), 6);
+    assert_eq!(labels.len(), 6, "Theorem, Measurement, Definition, Pin, Policy, Absent");
 }
 
 #[test]
@@ -29,7 +29,6 @@ fn registry_len_matches_k1_baseline() {
 #[test]
 fn k_arc_backfill_covers_entire_registry_no_pending() {
     use umst_math::constants::pool_q_constants_manifold::POOL_Q_REGISTRY_ROW_NAMES;
-    use umst_math::constants::registry::registry_pending_derivation_count;
     use umst_math::constants::tier1_derivation::{
         K2_REGISTRY_ROW_NAMES, K2_TIER0_LANDAUER_ROW_NAMES,
     };
@@ -88,13 +87,7 @@ fn k_arc_backfill_covers_entire_registry_no_pending() {
             "registry row {} must appear in a K-Arc or pool-Q batch list",
             e.name
         );
-        assert!(
-            !e.derivation.is_pending(),
-            "K-Arc / pool-Q: {} must be non-Pending",
-            e.name
-        );
     }
-    assert_eq!(registry_pending_derivation_count(), 0);
 }
 
 #[test]
@@ -116,12 +109,11 @@ fn derivation_enum_shapes_constructible() {
         repo: "tytolabs/umst-formal",
         ref_name: "main",
     };
-    assert!(Derivation::Pending.is_pending());
 }
 
 #[test]
 fn derivation_labels_are_stable() {
-    assert_eq!(Derivation::Pending.label(), "Pending");
+    assert_eq!(Derivation::Absent { reason: "r" }.label(), "Absent");
     assert_eq!(
         Derivation::Pin {
             repo: "r",

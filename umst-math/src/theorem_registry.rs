@@ -76,15 +76,53 @@ pub fn theorem_for_constant(constant_name: &str) -> Option<crate::constants::der
         })
 }
 
+/// Theorem–constant crosswalk coverage, computed from REGISTRY: every row a theorem fixes names its declaration,
+/// so the crosswalk covers every derived row by construction.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CrosswalkStats {
+    /// Theorem–constant pairs (one per theorem row).
+    pub map_rows: usize,
+    /// Distinct constants a theorem fixes.
+    pub mapped_constants: usize,
+    /// Rows whose derivation is a theorem.
+    pub derived_constant_rows: usize,
+    /// Derived rows the crosswalk reaches.
+    pub covered_derived_rows: usize,
+}
+
+/// Coverage of the crosswalk over the registry's theorem rows.
+#[must_use]
+pub fn crosswalk_stats() -> CrosswalkStats {
+    use crate::constants::derivation::Derivation;
+    let derived = crate::constants::registry::REGISTRY
+        .iter()
+        .filter(|e| matches!(e.derivation, Derivation::Theorem { .. }))
+        .count();
+    let covered = crate::constants::registry::REGISTRY
+        .iter()
+        .filter(|e| theorem_for_constant(e.name).is_some_and(|d| constant_for_theorem(d) == Some(e.name)))
+        .count();
+    CrosswalkStats { map_rows: derived, mapped_constants: derived, derived_constant_rows: derived, covered_derived_rows: covered }
+}
+
+/// The Lean declarations that fix registry row `constant_name` (empty when no theorem fixes it).
+#[must_use]
+pub fn theorems_for_constant(constant_name: &str) -> Vec<crate::constants::derivation::LeanDecl> {
+    theorem_for_constant(constant_name).into_iter().collect()
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{constant_for_theorem, theorem_for_constant, THEOREM_REGISTRY};
+    use super::{constant_for_theorem, crosswalk_stats, theorem_for_constant, THEOREM_REGISTRY};
 
     #[test]
     fn theorem_and_constant_maps_are_inverse() {
         let decl = theorem_for_constant("gate_mass_tolerance_kg_m3").expect("a theorem fixes the gate tolerance");
         assert_eq!(constant_for_theorem(decl), Some("gate_mass_tolerance_kg_m3"));
         assert_eq!(theorem_for_constant("transition_tolerance"), None);
+        let s = crosswalk_stats();
+        assert!(s.derived_constant_rows > 0);
+        assert_eq!(s.covered_derived_rows, s.derived_constant_rows);
     }
 
     #[test]

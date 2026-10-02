@@ -59,12 +59,23 @@ fn theorem_rows_are_the_rows_a_statement_fixes() {
     }
 }
 
+/// A row's free-text evidence never contradicts its derivation: it names a Lean declaration only when a theorem
+/// fixes the row (and then that declaration), and it never calls a classified row pending.
 #[test]
-fn every_row_tier_is_its_derivations_tier() {
-    let disagreeing: Vec<String> = REGISTRY
+fn evidence_never_contradicts_the_derivation() {
+    let contradicting: Vec<String> = REGISTRY
         .iter()
-        .filter(|e| e.derivation.tier() != Some(e.tier))
-        .map(|e| format!("{}: stored {:?}, derivation {} gives {:?}", e.name, e.tier, e.derivation.label(), e.derivation.tier()))
+        .filter(|e| {
+            let ev = e.evidence;
+            let says_pending = ev.trim_start().to_ascii_lowercase().starts_with("pending");
+            let cites_lean = ev.contains("UMST.Formal");
+            let cites_its_theorem = match e.derivation {
+                Derivation::Theorem { decl, .. } => ev.contains(decl.name),
+                _ => false,
+            };
+            says_pending || (cites_lean && !cites_its_theorem)
+        })
+        .map(|e| format!("{} ({}): {}", e.name, e.derivation.label(), e.evidence))
         .collect();
-    assert!(disagreeing.is_empty(), "{} rows: {disagreeing:#?}", disagreeing.len());
+    assert!(contradicting.is_empty(), "{} rows: {contradicting:#?}", contradicting.len());
 }
