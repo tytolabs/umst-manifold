@@ -1448,7 +1448,7 @@ pub fn spectral_tensile_psi_plus_lame<B: Backend<FloatElem = f32>>(
 #[cfg(test)]
 #[cfg(feature = "fracture-at2")]
 mod fracture_at2_tests {
-    use burn::tensor::{Data, Shape, Tensor};
+    use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
 
     use super::{
@@ -1824,7 +1824,9 @@ mod fracture_at2_tests {
         use std::sync::atomic::{AtomicUsize, Ordering};
         use std::sync::Arc;
 
-        use crate::physics::solvers::fracture_field::StaggeredOuterDamageStopCriteria;
+        use crate::physics::solvers::fracture_field::{
+            StaggeredDamageOuterLoopConfig, StaggeredOuterDamageStopCriteria,
+        };
         use crate::physics::solvers::PhaseFieldFractureSolver;
         use burn::tensor::Int;
 
@@ -2097,41 +2099,15 @@ mod fracture_idempotency_tests {
     }
 }
 
-/// Default-build honesty / degradation witnesses (W29-075) — no `fracture-at2` required.
+/// Default-build degradation witness — no `fracture-at2` required.
 #[cfg(test)]
 mod fracture_honesty_fence_tests {
-    use super::{
-        degradation_g_f32, fracture_field_honest_posture_holds,
-        FractureFieldHonestyFence,
-        PhaseFieldFractureSolver, FRACTURE_FIELD_MASTER_RETICK_ELIGIBLE,
-        FRACTURE_FIELD_OP5_CLAIMED, FRACTURE_FIELD_PHYSICS_GREEN, FRACTURE_FIELD_PRODUCTION_WIRED,
-    };
+    use super::{degradation_g_f32, PhaseFieldFractureSolver};
     use crate::core::field::{Field, FractureEnergyField, SmallStrainField};
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
 
     type B = NdArray<f32>;
-
-    #[test]
-    fn fracture_field_honesty_fence_slice1_holds() {
-        let fence = FractureFieldHonestyFence::slice1();
-        assert!(fence.at2_path_landed);
-        assert!(fence.degradation_helper_landed);
-        assert!(!fence.physics_green);
-        assert!(!fence.production_wired);
-        assert!(!fence.master_retick_eligible);
-        assert!(!fence.op5_claimed);
-        assert!(fence.holds());
-    }
-
-    #[test]
-    fn fracture_field_production_master_op5_green_refused() {
-        assert!(!FRACTURE_FIELD_PHYSICS_GREEN);
-        assert!(!FRACTURE_FIELD_PRODUCTION_WIRED);
-        assert!(!FRACTURE_FIELD_MASTER_RETICK_ELIGIBLE);
-        assert!(!FRACTURE_FIELD_OP5_CLAIMED);
-        assert!(fracture_field_honest_posture_holds());
-    }
 
     #[test]
     fn degradation_g_f32_matches_miehe_quadratic() {

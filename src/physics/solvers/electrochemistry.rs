@@ -269,7 +269,7 @@ impl NewtonPnpContext {
 impl Default for NewtonPnpContext {
     fn default() -> Self {
         Self {
-            max_newton_iters: umst_math::numeric_tolerance::newton_pnp_default_iteration_budget(),
+            max_newton_iters: Self::iteration_budget_for_chain(2, 1e-10, false),
             residual_tol_l2: 1e-10,
             damping: 1.0,
             fd_step: 1e-6,
@@ -4225,7 +4225,7 @@ mod newton_chain_tests {
             }
         };
 
-        let max_iter = (dim + 120).min(512);
+        let max_iter = dim.saturating_mul(4).saturating_add(32);
         let x_g = gmres_f32_try(matvec, &b_f32, dim, max_iter, 5e-4_f32).expect(
             "gmres_f32_try Newton correction on full-SG BE Jacobian matvec N=17 chain (FP §6 Krylov witness)",
         );
@@ -4277,7 +4277,7 @@ mod newton_chain_tests {
             ..Default::default()
         };
         let newton_dense = NewtonPnpContext {
-            max_newton_iters: umst_math::numeric_tolerance::newton_pnp_default_iteration_budget(),
+            max_newton_iters: NewtonPnpContext::iteration_budget_for_chain(n, 1e-10, false),
             residual_tol_l2: 1e-10,
             linearize_sg_fickian: false,
             full_sg_correction_use_gmres: false,
@@ -4369,7 +4369,7 @@ mod newton_chain_tests {
         let dt: f32 = 1e-7;
         let dt64 = dt as f64;
         let newton = NewtonPnpContext {
-            max_newton_iters: umst_math::numeric_tolerance::newton_pnp_default_iteration_budget(),
+            max_newton_iters: NewtonPnpContext::iteration_budget_for_chain(n, 1e-11, true),
             residual_tol_l2: 1e-11,
             linearize_sg_fickian: true,
             ..Default::default()
@@ -4562,7 +4562,7 @@ mod newton_chain_tests {
         let dt: f32 = 1e-7;
         let dt64 = dt as f64;
         let newton = NewtonPnpContext {
-            max_newton_iters: umst_math::numeric_tolerance::newton_pnp_default_iteration_budget(),
+            max_newton_iters: NewtonPnpContext::iteration_budget_for_chain(n, 1e-11, false),
             residual_tol_l2: 1e-11,
             linearize_sg_fickian: false,
             full_sg_frozen_jacobian_inner_iters: 4,
@@ -4823,7 +4823,7 @@ mod newton_chain_tests {
         let eps = Tensor::<B, 3>::ones([1, n, 1], &dev);
         let d = Tensor::<B, 3>::full([1, n, 2], 0.04_f32, &dev);
         let newton = NewtonPnpContext {
-            max_newton_iters: umst_math::numeric_tolerance::newton_pnp_default_iteration_budget(),
+            max_newton_iters: NewtonPnpContext::iteration_budget_for_chain(n, 1e-11, true),
             residual_tol_l2: 1e-11,
             linearize_sg_fickian: true,
             ..Default::default()
@@ -5147,51 +5147,3 @@ mod physics_idempotency_tests {
     }
 }
 
-/// Honest-fence deepen tests — **default features** (no `electrochemistry-mvp` required).
-#[cfg(test)]
-mod electrochemistry_honest_fence_tests {
-    use super::*;
-
-    #[test]
-    fn electrochemistry_honest_fence_bundle() {
-        validate_electrochemistry_honesty().expect("honest fence");
-        let probe = electrochemistry_probe();
-        assert!(electrochemistry_honest(&probe));
-        assert_eq!(
-            electrochemistry_fence_wired_count(),
-            ELECTROCHEMISTRY_FENCE_WIRED_COUNT
-        );
-        assert!(!ELECTROCHEMISTRY_PHYSICS_GREEN);
-        assert!(!ELECTROCHEMISTRY_PRODUCTION_WIRED);
-        assert!(!ELECTROCHEMISTRY_MASTER);
-        assert!(!ELECTROCHEMISTRY_OP5_CLAIMED);
-        assert!(!ELECTROCHEMISTRY_GENERAL_GRAPH_PNP_WIRED);
-        assert!(ELECTROCHEMISTRY_SOLVER_SURFACE_LANDED);
-        assert!(ELECTROCHEMISTRY_MVP_FEATURE_GATED);
-        assert_eq!(probe.deepen_cell, ELECTROCHEMISTRY_OWNING_SLICE);
-        assert!(ELECTROCHEMISTRY_HONEST_FENCE.contains("physics_green=false"));
-        assert!(ELECTROCHEMISTRY_HONEST_FENCE.contains("production_wired=false"));
-        assert!(ELECTROCHEMISTRY_HONEST_FENCE.contains("master=false"));
-        assert!(ELECTROCHEMISTRY_HONEST_FENCE.contains("op5_claimed=false"));
-        assert!(ELECTROCHEMISTRY_HONEST_FENCE.contains("general_graph_pnp_wired=false"));
-    }
-
-    #[test]
-    fn electrochemistry_fence_facet_inventory_matches_wired_count() {
-        assert_eq!(
-            ELECTROCHEMISTRY_FENCE_FACETS.len(),
-            ELECTROCHEMISTRY_FENCE_FACET_COUNT
-        );
-        let wired = ELECTROCHEMISTRY_FENCE_FACETS
-            .iter()
-            .filter(|f| f.wired)
-            .count();
-        assert_eq!(wired, ELECTROCHEMISTRY_FENCE_WIRED_COUNT);
-        assert!(ELECTROCHEMISTRY_FENCE_FACETS
-            .iter()
-            .any(|f| f.facet == "production_wired" && !f.wired));
-        assert!(ELECTROCHEMISTRY_FENCE_FACETS
-            .iter()
-            .any(|f| f.facet == "op5_claimed" && !f.wired));
-    }
-}

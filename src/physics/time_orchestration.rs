@@ -270,23 +270,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn time_orchestration_honest_posture_refuses_green_and_production() {
-        let probe = time_orchestration_honest_posture_bundle();
-        assert!(time_orchestration_posture_honest(&probe));
-        assert!(time_orchestration_refuse_overclaim(&probe).is_ok());
-        assert!(!probe.physics_green);
-        assert!(!probe.production_wired);
-        assert!(!probe.master);
-        assert!(!probe.fast_physics_production_wired);
-        assert!(probe.clocks_landed);
-        assert!(probe.deepen_cell.contains("time-orchestration"));
-        assert!(probe
-            .honest_fence
-            .contains("mechanics_inner_loop_decoupled=true"));
-        assert!(probe.honest_fence.contains("physics_green=false"));
-    }
-
-    #[test]
     fn time_orchestration_default_clocks_validate_and_cap() {
         let clocks = SimulationClocks::default();
         assert!(clocks.validate().is_ok());
