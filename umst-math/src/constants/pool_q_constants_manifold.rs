@@ -20,15 +20,13 @@ pub const UMST_MATH_CARGO_TOML_SHA256: &str =
     "b284a2188d0ab68820d610db36e6ce49144e0edfcb2123e626a9f81efee9b904";
 
 /// Typed absence for Tier-2 B-Arc perf rows still awaiting calibration (no fabricated p99).
-pub const B_ARC_TYPED_ABSENCE_DEFINITION: Derivation = Derivation::Definition {
-    authority_url: "docs/PENDING_GAPS_PLAIN.md#b-arc-perf-typed-absence",
-    expected_sha256: PENDING_GAPS_PLAIN_SHA256,
+pub const B_ARC_TYPED_ABSENCE_DEFINITION: Derivation = Derivation::Absent {
+    reason: "B-arc runtime percentile not yet measured; docs/PENDING_GAPS_PLAIN.md#b-arc-perf-typed-absence",
 };
 
 /// Typed absence for macOS package power ceiling (samples recorded; no installed ceiling).
-pub const MACOS_PACKAGE_POWER_CEILING_TYPED_ABSENCE: Derivation = Derivation::Definition {
-    authority_url: "docs/PENDING_GAPS_PLAIN.md#unmeasured-power-ceiling",
-    expected_sha256: PENDING_GAPS_PLAIN_SHA256,
+pub const MACOS_PACKAGE_POWER_CEILING_TYPED_ABSENCE: Derivation = Derivation::Absent {
+    reason: "macOS package power ceiling: samples recorded, no installed ceiling; docs/PENDING_GAPS_PLAIN.md#unmeasured-power-ceiling",
 };
 
 /// `umst_math_simd_feature` — optional `portable_simd` kernels (`Cargo.toml` feature `simd`).

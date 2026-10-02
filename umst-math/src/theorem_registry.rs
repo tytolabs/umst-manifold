@@ -52,107 +52,39 @@ pub const THEOREM_REGISTRY: &[(&str, &str)] = &[
     ("UMST.Formal.OrderStatisticsBand::p25_p75_admissibility", "10_5281/zenodo.19159660"),
 ];
 
-/// Maps `THEOREM_REGISTRY` hints to `constants::registry::REGISTRY` `name`s (§14bis.h L-6).
-///
-/// Honest partial map — grows as Tier-1/2 rows gain explicit `::theorem` evidence.
-pub const THEOREM_DERIVES_CONSTANT: &[(&str, &str)] = &[
-    (
-        "UMST.Formal.RhoEstimator::rho_based_mi_formula",
-        "closed_loop_mi_step_per_accept",
-    ),
-    (
-        "UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible",
-        "warmup_sample_threshold",
-    ),
-    (
-        "UMST.Formal.OrderStatisticsBand::p25_p75_admissibility",
-        "frugality_band_p25_percentile",
-    ),
-    (
-        "UMST.Formal.OrderStatisticsBand::p25_p75_admissibility",
-        "frugality_band_p75_percentile",
-    ),
-    (
-        "UMST.Formal.Gate::transitionTolerance",
-        "transition_tolerance",
-    ),
-];
-
-/// Honest L-6 crosswalk coverage snapshot (operator / `:lcert` probe).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CrosswalkStats {
-    /// Rows in [`THEOREM_DERIVES_CONSTANT`].
-    pub map_rows: usize,
-    /// Distinct constant `name`s covered by the map.
-    pub mapped_constants: usize,
-    /// Tier-0..2 registry rows whose evidence cites `UMST.Formal…::theorem`.
-    pub derived_constant_rows: usize,
-    /// Derived rows with an explicit map entry.
-    pub covered_derived_rows: usize,
+/// The registry row a Lean declaration fixes: a function of `constants::registry::REGISTRY`, whose
+/// `Derivation::Theorem` rows name their declarations, so no second table of theorem–constant pairs exists.
+#[must_use]
+pub fn constant_for_theorem(decl: crate::constants::derivation::LeanDecl) -> Option<&'static str> {
+    use crate::constants::derivation::Derivation;
+    crate::constants::registry::REGISTRY
+        .iter()
+        .find(|e| matches!(e.derivation, Derivation::Theorem { decl: d, .. } if d == decl))
+        .map(|e| e.name)
 }
 
-/// Compute partial crosswalk coverage (never claims full GREEN).
+/// The Lean declaration that fixes registry row `constant_name`, when a theorem fixes it.
 #[must_use]
-pub fn crosswalk_stats() -> CrosswalkStats {
-    use crate::constants::registry::{ConstantTier, REGISTRY};
-    use std::collections::HashSet;
-
-    let mapped: HashSet<&str> = THEOREM_DERIVES_CONSTANT.iter().map(|(_, c)| *c).collect();
-    let derived: Vec<&str> = REGISTRY
+pub fn theorem_for_constant(constant_name: &str) -> Option<crate::constants::derivation::LeanDecl> {
+    use crate::constants::derivation::Derivation;
+    crate::constants::registry::REGISTRY
         .iter()
-        .filter(|r| {
-            matches!(
-                r.tier,
-                ConstantTier::Tier0Physical
-                    | ConstantTier::Tier1Measurement
-                    | ConstantTier::Tier2Derivable
-            ) && r.evidence.contains("UMST.Formal")
-                && r.evidence.contains("::")
+        .find(|e| e.name == constant_name)
+        .and_then(|e| match e.derivation {
+            Derivation::Theorem { decl, .. } => Some(decl),
+            _ => None,
         })
-        .map(|r| r.name)
-        .collect();
-    let covered = derived.iter().filter(|n| mapped.contains(**n)).count();
-    CrosswalkStats {
-        map_rows: THEOREM_DERIVES_CONSTANT.len(),
-        mapped_constants: mapped.len(),
-        derived_constant_rows: derived.len(),
-        covered_derived_rows: covered,
-    }
-}
-
-/// Lookup constant `name` derived by a theorem hint (L-6 crosswalk helper).
-#[must_use]
-pub fn constant_for_theorem(theorem_hint: &str) -> Option<&'static str> {
-    THEOREM_DERIVES_CONSTANT
-        .iter()
-        .find(|(t, _)| *t == theorem_hint)
-        .map(|(_, c)| *c)
-}
-
-/// All theorem hints that derive a given constant `name`.
-#[must_use]
-pub fn theorems_for_constant(constant_name: &str) -> Vec<&'static str> {
-    THEOREM_DERIVES_CONSTANT
-        .iter()
-        .filter(|(_, c)| *c == constant_name)
-        .map(|(t, _)| *t)
-        .collect()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{crosswalk_stats, THEOREM_DERIVES_CONSTANT, THEOREM_REGISTRY};
+    use super::{constant_for_theorem, theorem_for_constant, THEOREM_REGISTRY};
 
     #[test]
-    fn crosswalk_stats_honest_partial() {
-        let s = crosswalk_stats();
-        assert_eq!(s.map_rows, THEOREM_DERIVES_CONSTANT.len());
-        assert!(s.map_rows >= 5, "L-6 deepen expects ≥5 explicit map rows");
-        assert!(s.covered_derived_rows >= 4);
-        assert!(
-            s.covered_derived_rows < s.derived_constant_rows,
-            "L-6 stays partial until full :: derived census covered"
-        );
+    fn theorem_and_constant_maps_are_inverse() {
+        let decl = theorem_for_constant("gate_mass_tolerance_kg_m3").expect("a theorem fixes the gate tolerance");
+        assert_eq!(constant_for_theorem(decl), Some("gate_mass_tolerance_kg_m3"));
+        assert_eq!(theorem_for_constant("transition_tolerance"), None);
     }
 
     #[test]

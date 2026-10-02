@@ -58,3 +58,13 @@ fn theorem_rows_are_the_rows_a_statement_fixes() {
         }
     }
 }
+
+#[test]
+fn every_row_tier_is_its_derivations_tier() {
+    let disagreeing: Vec<String> = REGISTRY
+        .iter()
+        .filter(|e| e.derivation.tier() != Some(e.tier))
+        .map(|e| format!("{}: stored {:?}, derivation {} gives {:?}", e.name, e.tier, e.derivation.label(), e.derivation.tier()))
+        .collect();
+    assert!(disagreeing.is_empty(), "{} rows: {disagreeing:#?}", disagreeing.len());
+}

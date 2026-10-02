@@ -9,6 +9,8 @@
 /// Schema version bumped when `Derivation` or `ConstantEntry` CDD fields change (K-1 = 1).
 pub const DERIVATION_SCHEMA_VERSION: u32 = 2;
 
+use super::registry::ConstantTier;
+
 /// A declaration of the formal Lean catalog: its module (as `catalog.json` names it) and its name. A typed pair
 /// in place of a free string, so a reference names a module and a declaration that tests resolve.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -56,6 +58,11 @@ pub enum Derivation {
         /// The reason for the value and what bounds it; the value itself is the registry row's.
         rationale: &'static str,
     },
+    /// A runtime figure not yet measured: the registry carries no invented value until a measurement lands.
+    Absent {
+        /// What is unmeasured and where the measurement is planned.
+        reason: &'static str,
+    },
     /// Awaiting K-2..K-7 backfill — forbidden after K-7 GREEN.
     Pending,
 }
@@ -70,7 +77,24 @@ impl Derivation {
             Self::Definition { .. } => "Definition",
             Self::Pin { .. } => "Pin",
             Self::Policy { .. } => "Policy",
+            Self::Absent { .. } => "Absent",
             Self::Pending => "Pending",
+        }
+    }
+
+    /// The tier a derivation places its row in: the tier is this function of how the value is known, and a
+    /// pending row has none. A definition counts as physical when its authority is an external standard.
+    #[must_use]
+    pub fn tier(self) -> Option<ConstantTier> {
+        match self {
+            Self::Theorem { .. } => Some(ConstantTier::Tier2Derivable),
+            Self::Definition { authority_url, .. } if authority_url.starts_with("https://") => {
+                Some(ConstantTier::Tier0Physical)
+            }
+            Self::Definition { .. } | Self::Policy { .. } => Some(ConstantTier::Tier3Policy),
+            Self::Measurement { .. } | Self::Absent { .. } => Some(ConstantTier::Tier1Measurement),
+            Self::Pin { .. } => Some(ConstantTier::Tier4Infra),
+            Self::Pending => None,
         }
     }
 

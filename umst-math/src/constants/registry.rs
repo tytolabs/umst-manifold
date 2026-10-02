@@ -104,7 +104,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "landauer_floor_j_per_bit",
         expression: "k_B · T · ln(2) J/bit via umst_math::landauer::landauer_bit_energy_joules",
-        tier: ConstantTier::Tier0Physical,
+        tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.FormalDoubleSlit.LandauerBound + UMST.Formal.EtaCog::etaDenom_pos",
         env_override: None,
         derivation: LANDAUER_FLOOR_J_PER_BIT_DERIVATION,
@@ -112,7 +112,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "ln_two_eta_cog_denominator",
         expression: "ln(2) in η_cog Landauer denominator",
-        tier: ConstantTier::Tier0Physical,
+        tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.Formal.Real.log_two_pos (ln 2 positivity chain)",
         env_override: None,
         derivation: LN_2_DERIVATION,
@@ -128,7 +128,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "rcc_floor_residual_coherence",
         expression: "0.25 lower bound (RCC floor; residual coherence capacity)",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier3Policy,
         evidence: "UMST.Formal.Convergence::rcc_lower_bound",
         env_override: None,
         derivation: RCC_FLOOR_DERIVATION,
@@ -136,7 +136,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "host_temperature_fallback_k",
         expression: "300.0 K default when cockpit T is non-finite (overridable)",
-        tier: ConstantTier::Tier1Measurement,
+        tier: ConstantTier::Tier3Policy,
         evidence: "Operator-assumed ambient anchor until junction-temperature telemetry is wired",
         env_override: Some("UMST_COCKPIT_HOST_TEMPERATURE_K"),
         derivation: T_ROOM_DERIVATION,
@@ -144,7 +144,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "gate_mass_tolerance_kg_m3",
         expression: "100.0 kg/m³ bulk density jump band (GATE_MASS_TOLERANCE_KG_M3)",
-        tier: ConstantTier::Tier1Measurement,
+        tier: ConstantTier::Tier2Derivable,
         evidence: "UMST.Formal.Concrete.Gate.δMass_val (mirrors umst-math manifold::csg GATE_MASS_TOLERANCE_KG_M3)",
         env_override: None,
         derivation: GATE_MASS_TOLERANCE_DERIVATION,
@@ -152,7 +152,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "q_hyd_j_per_kg",
         expression: "450.0 J/kg (UMST.Concrete.Q_hyd; Haskell qHydration; formal Helmholtz ψ = −Q_hyd·α)",
-        tier: ConstantTier::Tier1Measurement,
+        tier: ConstantTier::Tier3Policy,
         evidence: "UMST.Concrete.Q_hyd_val; UMST.Formal.Concrete.Gate.helmholtz; ffi-bridge formal_swarm_deepen witness",
         env_override: None,
         derivation: Q_HYD_J_PER_KG_DERIVATION,
@@ -160,7 +160,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "transition_tolerance",
         expression: "1e-6 admissibility ε (TRANSITION_TOLERANCE)",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier3Policy,
         evidence: "UMST.Formal.Gate.transitionTolerance",
         env_override: None,
         derivation: TRANSITION_TOLERANCE_DERIVATION,
@@ -168,7 +168,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "admissibility_margin_eps",
         expression: "1e-4 hard token floor (ADMISSIBILITY_MARGIN_EPS)",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier3Policy,
         evidence: "UMST.Formal.Gate.gateCheckSound (runtime AdmissibilityMargin witness floor ε)",
         env_override: None,
         derivation: ADMISSIBILITY_MARGIN_EPS_DERIVATION,
@@ -176,7 +176,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "min_promotion_credit_bits",
         expression: "1.0 bits minimum for inbox promotion (U2)",
-        tier: ConstantTier::Tier1Measurement,
+        tier: ConstantTier::Tier3Policy,
         evidence: "UCRS observation credit quarantine; umst-ucrs MIN_PROMOTION_CREDIT_BITS",
         env_override: None,
         derivation: MIN_PROMOTION_CREDIT_DERIVATION,
@@ -208,7 +208,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "hub_inter_sample_period_ms",
         expression: "Wall-clock gap between consecutive cockpitHub::sample_now timestamps; fallback DEFAULT_COCKPIT_SAMPLE_PERIOD_MS=500",
-        tier: ConstantTier::Tier1Measurement,
+        tier: ConstantTier::Tier3Policy,
         evidence: "COCKPIT_DESIGN_BRIEF.md §5 polling hold; hub.rs last_inter_sample_period_ms",
         env_override: None,
         derivation: HUB_INTER_SAMPLE_PERIOD_MS_DERIVATION,
@@ -273,7 +273,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "frugality_band_p25_percentile",
         expression: "Rolling empirical P25 of finite η (NIST linear interpolation on sorted window)",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier3Policy,
         evidence: "UMST.Formal.OrderStatisticsBand::p25_p75_admissibility",
         env_override: None,
         derivation: FRUGALITY_BAND_P25_DERIVATION,
@@ -281,7 +281,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "frugality_band_p75_percentile",
         expression: "Rolling empirical P75 of finite η (NIST linear interpolation on sorted window)",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier3Policy,
         evidence: "UMST.Formal.OrderStatisticsBand::p25_p75_admissibility",
         env_override: None,
         derivation: FRUGALITY_BAND_P75_DERIVATION,
@@ -289,7 +289,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "landauer_proximity_multiplier",
         expression: "1.5× Landauer minimum J for LandauerFloorBound vs Frugal split",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier3Policy,
         evidence: "UMST.Formal.MeasurementJitterBound::landauer_proximity_margin",
         env_override: None,
         derivation: LANDAUER_PROXIMITY_MULTIPLIER_DERIVATION,
@@ -305,7 +305,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "staleness_threshold_ms",
         expression: "staleness_cycle_count × sample_period_ms (or with_staleness_threshold override)",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier3Policy,
         evidence: "UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period",
         env_override: None,
         derivation: STALENESS_THRESHOLD_MS_DERIVATION,
@@ -313,7 +313,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "closed_loop_mi_step_per_accept",
         expression: "ρ̂-based Gaussian MI bits per accept (ring buffer of accept-rate vs prompt length); 0.005 bits warming when <2 samples or degenerate ρ̂",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier3Policy,
         evidence: "UMST.Formal.RhoEstimator::rho_based_mi_formula",
         env_override: None,
         derivation: CLOSED_LOOP_MI_STEP_DERIVATION,
@@ -409,7 +409,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "audit_max_bytes_cap",
         expression: "10 MiB default on-disk JSONL cap",
-        tier: ConstantTier::Tier4Infra,
+        tier: ConstantTier::Tier3Policy,
         evidence: "Typical rotation sizing; COCKPIT_DESIGN_BRIEF §12",
         env_override: Some("UMST_COCKPIT_AUDIT_MAX_BYTES"),
         derivation: AUDIT_MAX_BYTES_CAP_DERIVATION,
@@ -417,7 +417,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "eta_rolling_window_capacity",
         expression: "MEDIAN_WINDOW = 32 compile-time in frugality.rs",
-        tier: ConstantTier::Tier4Infra,
+        tier: ConstantTier::Tier3Policy,
         evidence: "Ring-buffer sizing for cockpit η history (no env in code path 2026-04-21)",
         env_override: None,
         derivation: ETA_ROLLING_WINDOW_CAPACITY_DERIVATION,
@@ -425,7 +425,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "embedding_http_timeout_seconds",
         expression: "30 s design default for embedding HTTP adapters",
-        tier: ConstantTier::Tier4Infra,
+        tier: ConstantTier::Tier3Policy,
         evidence: "Design default per COCKPIT brief; UMST_EMBEDDING_TIMEOUT_SECONDS not yet wired in adapters (2026-04-21)",
         env_override: Some("UMST_EMBEDDING_TIMEOUT_SECONDS"),
         derivation: EMBEDDING_HTTP_TIMEOUT_SECONDS_DERIVATION,
@@ -433,7 +433,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "umst_math_simd_feature",
         expression: "default off (`cargo build -p umst-math --features simd`)",
-        tier: ConstantTier::Tier4Infra,
+        tier: ConstantTier::Tier3Policy,
         evidence: "Phase M-simd — portable_simd kernels; docs/CGD_REGISTRY.md §24",
         env_override: None,
         derivation: UMST_MATH_SIMD_FEATURE_DEFINITION,
@@ -631,7 +631,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "umst_cockpit_smoothing_default",
         expression: "ekf (string policy; UMST_COCKPIT_SMOOTHING ∈ {ekf, kalman, none}; per-metric [`MetricSmoother`] bundle on cockpitHub::sample_now)",
-        tier: ConstantTier::Tier3Policy,
+        tier: ConstantTier::Tier4Infra,
         evidence: "Definition (HSAD §0.12; §14bis.e TUI-7; `umst-math::smoothing` vendor umst-prototype-2a; :explain raw+smoothed+variance)",
         env_override: Some("UMST_COCKPIT_SMOOTHING"),
         derivation: COCKPIT_SMOOTHING_DEFAULT_DERIVATION,
@@ -1094,7 +1094,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "manifold_voxelize_runtime_us_p99",
         expression: "pending: B-Arc p99 of canonicalize_voxelize wall time (us)",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier1Measurement,
         evidence: "pending: Phase FPD-M-Arc-VoxelP99 (M-B calibration)",
         env_override: None,
         derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
@@ -1102,7 +1102,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "manifold_canonicalize_runtime_us_p99",
         expression: "pending: B-Arc p99 of canonicalize + FNV (us)",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier1Measurement,
         evidence: "pending: Phase FPD-M-Arc-CanonicalizeP99",
         env_override: None,
         derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
@@ -1110,7 +1110,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "manifold_octree_density_typical",
         expression: "pending: B-Arc typical non-empty leaf count / m³ for cockpit badge",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier1Measurement,
         evidence: "pending: Phase FPD-M-Arc-OctreeDensity",
         env_override: None,
         derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
@@ -1118,7 +1118,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "manifold_hilbert_index_range_typical",
         expression: "pending: B-Arc index span on reference traces for sled key layout (M-5)",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier1Measurement,
         evidence: "pending: Phase FPD-M-Arc-HilbertSpan",
         env_override: None,
         derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
@@ -1135,7 +1135,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "umst_memory_inspect_runtime_us_p99",
         expression: "pending: B-Arc p99 of `:memory inspect` wall time (us)",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier1Measurement,
         evidence: "pending: Phase FPD-M-Arc-M1-InspectP99",
         env_override: None,
         derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
@@ -1143,7 +1143,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "umst_memory_load_runtime_us_p99",
         expression: "pending: B-Arc p99 of memory `load` (us)",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier1Measurement,
         evidence: "pending: Phase FPD-M-Arc-M1-LoadP99",
         env_override: None,
         derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
@@ -1151,7 +1151,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "umst_memory_local_tier_size_typical",
         expression: "pending: B-Arc typical local-tier row count for cockpit (count)",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier1Measurement,
         evidence: "pending: Phase FPD-M-Arc-M1-LocalSize",
         env_override: None,
         derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
@@ -1167,7 +1167,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "umst_memory_store_runtime_us_p99",
         expression: "pending: B-Arc p99 of memory `store` (us)",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier1Measurement,
         evidence: "pending: Phase FPD-M-Arc-M1-StoreP99",
         env_override: None,
         derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
@@ -1295,7 +1295,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "umst_memory_retention_mi_estimate_p99_us",
         expression: "pending: B-Arc p99 wall for `mi_estimate` (µs); GREEN bound < 500",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier1Measurement,
         evidence: "pending: Phase FPD-M-3-retention-MiP99",
         env_override: None,
         derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
@@ -1303,7 +1303,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "umst_memory_retention_pareto_compute_p99_us",
         expression: "pending: B-Arc p99 wall for `pareto_dominance` / corpus scan (µs)",
-        tier: ConstantTier::Tier2Derivable,
+        tier: ConstantTier::Tier1Measurement,
         evidence: "pending: Phase FPD-M-3-retention-ParetoP99",
         env_override: None,
         derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
@@ -1359,7 +1359,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "umst_memory_observed_wall_ms_source",
         expression: "monotonic_clock (Tier-1 wall_ms on accept; `UcrsObservedAt::observed_wall_ms`)",
-        tier: ConstantTier::Tier1Measurement,
+        tier: ConstantTier::Tier3Policy,
         evidence: "Definition (§14bis.x-M-UCRS-SDF-TIME; `observed_wall_ms`)",
         env_override: None,
         derivation: POOL_Q_COCKPIT_POLICY_DEFINITION,

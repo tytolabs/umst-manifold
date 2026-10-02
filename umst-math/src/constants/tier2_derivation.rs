@@ -680,9 +680,9 @@ pub const L0_FORMAL_PIN_FILE_SHA256: &str =
     "f064139f82e259cddc8c648a388206b8396c42c39e99d85287fa9427f9a2daff";
 
 /// `umst_formal_pin_sha` — L-0 formal grounding synchrony file witness.
-pub const UMST_FORMAL_PIN_SHA_DERIVATION: Derivation = Derivation::Definition {
-    authority_url: L0_FORMAL_PIN_AUTHORITY,
-    expected_sha256: L0_FORMAL_PIN_FILE_SHA256,
+pub const UMST_FORMAL_PIN_SHA_DERIVATION: Derivation = Derivation::Pin {
+    repo: "tytolabs/umst-formal",
+    ref_name: L0_FORMAL_PIN_AUTHORITY,
 };
 
 /// `umst_haskell_toolchain_reference` — native Haskell gate pin (`egoff-haskell-toolchain.txt`).
