@@ -5,7 +5,7 @@
 //! Backfills the four SSOT anchors cited in `egoffplan §14bis.k` K-2:
 //! `LN_2`, `K_B`, `T_ROOM`, `RCC_FLOOR` → matching [`super::registry::REGISTRY`] rows.
 
-use super::derivation::Derivation;
+use super::derivation::{Derivation, LeanDecl};
 use super::registry::REGISTRY;
 use crate::landauer::K_B;
 
@@ -28,7 +28,7 @@ pub const T_ROOM_AUTHORITY_SHA256: &str =
 
 /// `LN_2` — theorem-derived via Mathlib / UMST ln(2) chain.
 pub const LN_2_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Real.log_two_pos",
+    decl: LeanDecl { module: "LandauerLaw", name: "uniformBinaryEntropy" },
     expected_value: std::f64::consts::LN_2,
 };
 
@@ -45,14 +45,14 @@ pub const T_ROOM_DERIVATION: Derivation = Derivation::Definition {
 };
 
 /// `RCC_FLOOR` — theorem-derived residual-coherence lower bound.
-pub const RCC_FLOOR_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Convergence::rcc_lower_bound",
-    expected_value: 0.25,
+/// Policy: `UMST.Formal.Convergence::rcc_lower_bound` was cited here, but its statement does not fix this value.
+pub const RCC_FLOOR_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`RCC_FLOOR` — theorem-derived residual-coherence lower bound.",
 };
 
 /// `landauer_floor_j_per_bit` — **k_B T ln 2** at reference 300 K (cockpit Landauer floor).
 pub const LANDAUER_FLOOR_J_PER_BIT_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.FormalDoubleSlit.LandauerBound",
+    decl: LeanDecl { module: "LandauerLaw", name: "landauerBound" },
     expected_value: K_B * HOST_TEMPERATURE_REFERENCE_K * std::f64::consts::LN_2,
 };
 

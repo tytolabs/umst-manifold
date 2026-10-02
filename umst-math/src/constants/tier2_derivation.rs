@@ -5,15 +5,10 @@
 //! H-9 HAL cluster batch: six `Tier1Measurement` registry rows with JSONL receipts.
 //! Remaining non-HAL Tier-2 rows stay `Pending` until a later K-3 deepen.
 
-use super::derivation::Derivation;
+use super::derivation::{Derivation, LeanDecl};
 use super::registry::REGISTRY;
-use crate::info_entropy::MIN_NEGENTROPY_FLOOR_BITS;
-use crate::manifold::csg::Q_HYDRATION_J_PER_KG;
-use crate::dignity::D_MAX;
 use crate::median_convergence;
-use crate::numeric_tolerance::{
-    admissibility_margin_eps_f64, gate_mass_tolerance_kg_m3_f64, transition_tolerance_f64,
-};
+use crate::numeric_tolerance::gate_mass_tolerance_kg_m3_f64;
 
 /// Measurement receipt directory (relative to egoff repo root).
 pub const MEASUREMENT_RECEIPTS_DIR: &str = ".umst-ci/measurement-receipts";
@@ -58,27 +53,27 @@ pub const HAL_LINUX_RAM_TOTAL_DERIVATION: Derivation = Derivation::Measurement {
 };
 
 /// `transition_tolerance` — formal Gate.transitionTolerance (SSOT [`transition_tolerance_f64`]).
-pub const TRANSITION_TOLERANCE_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Gate.transitionTolerance",
-    expected_value: transition_tolerance_f64(),
+/// Policy: `UMST.Formal.Gate.transitionTolerance` was cited here, but its statement does not fix this value.
+pub const TRANSITION_TOLERANCE_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`transition_tolerance` — formal Gate.transitionTolerance (SSOT [`transition_tolerance_f64`]).",
 };
 
 /// `admissibility_margin_eps` — Gate.gateCheckSound witness floor (SSOT [`admissibility_margin_eps_f64`]).
-pub const ADMISSIBILITY_MARGIN_EPS_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Gate.gateCheckSound",
-    expected_value: admissibility_margin_eps_f64(),
+/// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
+pub const ADMISSIBILITY_MARGIN_EPS_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`admissibility_margin_eps` — Gate.gateCheckSound witness floor (SSOT [`admissibility_margin_eps_f64`]).",
 };
 
 /// `gate_mass_tolerance_kg_m3` — Concrete.Gate.δMass_val (SSOT [`gate_mass_tolerance_kg_m3_f64`]).
 pub const GATE_MASS_TOLERANCE_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Concrete.Gate.δMass_val",
+    decl: LeanDecl { module: "Concrete.Gate", name: "δMass_val" },
     expected_value: gate_mass_tolerance_kg_m3_f64(),
 };
 
 /// `q_hyd_j_per_kg` — Haskell `qHydration` / formal `Q_hyd` (Helmholtz SDF gate).
-pub const Q_HYD_J_PER_KG_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Concrete.Q_hyd_val",
-    expected_value: Q_HYDRATION_J_PER_KG,
+/// Policy: `UMST.Concrete.Q_hyd_val` was cited here, but its statement does not fix this value.
+pub const Q_HYD_J_PER_KG_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "umst-formal constants.json policy row hydrationHeatDefault (450 J/g), proved to lie between the least and greatest cited clinker-phase heats (hydrationHeatDefault_in_range)",
 };
 
 // --- K-5 frugality / UCRS policy batch (§14bis.k deepen) ---
@@ -97,32 +92,32 @@ pub const DEFAULT_STALENESS_CYCLE_COUNT: f64 = 6.0;
 
 /// `warmup_sample_threshold` — `max(3, ⌈√W⌉)` at reference **W = 32**.
 pub const WARMUP_SAMPLE_THRESHOLD_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible",
+    decl: LeanDecl { module: "MedianConvergence", name: "sqrt_window_warmup_is_admissible" },
     expected_value: 6.0,
 };
 
 /// `closed_loop_mi_step_per_accept` — ρ̂ MI warming debit when ring buffer is cold.
-pub const CLOSED_LOOP_MI_STEP_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.RhoEstimator::rho_based_mi_formula",
-    expected_value: CLOSED_LOOP_MI_WARMING_STEP_BITS,
+/// Policy: `UMST.Formal.RhoEstimator::rho_based_mi_formula` was cited here, but its statement does not fix this value.
+pub const CLOSED_LOOP_MI_STEP_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`closed_loop_mi_step_per_accept` — ρ̂ MI warming debit when ring buffer is cold.",
 };
 
 /// `min_promotion_credit_bits` — UCRS inbox promotion quarantine floor.
-pub const MIN_PROMOTION_CREDIT_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.CreditGreedy::credit_greedy_optimal",
-    expected_value: MIN_PROMOTION_CREDIT_BITS,
+/// Policy: `UMST.Formal.CreditGreedy::credit_greedy_optimal` was cited here, but its statement does not fix this value.
+pub const MIN_PROMOTION_CREDIT_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`min_promotion_credit_bits` — UCRS inbox promotion quarantine floor.",
 };
 
 /// `dignity_scalar_range` — operator UX upper bound (`D_MAX`).
-pub const DIGNITY_SCALAR_RANGE_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Dignity::dignity_monotone_under_mi_gain",
-    expected_value: D_MAX,
+/// Policy: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` was cited here, but its statement does not fix this value.
+pub const DIGNITY_SCALAR_RANGE_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`dignity_scalar_range` — operator UX upper bound (`D_MAX`).",
 };
 
 /// `staleness_cycle_count` — default ranker staleness cycles (Tier-3 policy).
-pub const STALENESS_CYCLE_COUNT_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.EtaCog::eta_cog_nonneg",
-    expected_value: DEFAULT_STALENESS_CYCLE_COUNT,
+/// Policy: `UMST.Formal.EtaCog::eta_cog_nonneg` was cited here, but its statement does not fix this value.
+pub const STALENESS_CYCLE_COUNT_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`staleness_cycle_count` — default ranker staleness cycles (Tier-3 policy).",
 };
 
 /// K-5 batch registry row names.
@@ -149,33 +144,33 @@ pub const COCKPIT_AUDIT_SCHEMA_VERSION_DEFAULT: f64 = 1.0;
 pub const COCKPIT_SNAPSHOT_SCHEMA_VERSION_DEFAULT: f64 = 4.0;
 
 /// `delta_mi_single_turn_cap_bits` — per-turn ΔMI ceiling (deception guard).
-pub const DELTA_MI_SINGLE_TURN_CAP_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Dignity::dignity_monotone_under_mi_gain",
-    expected_value: DEFAULT_MAX_DELTA_MI_BITS,
+/// Policy: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` was cited here, but its statement does not fix this value.
+pub const DELTA_MI_SINGLE_TURN_CAP_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`delta_mi_single_turn_cap_bits` — per-turn ΔMI ceiling (deception guard).",
 };
 
 /// `audit_rotation_keep_count` — JSONL rotation generations (`path` … `path.N`).
-pub const AUDIT_ROTATION_KEEP_COUNT_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.EtaCog::eta_cog_nonneg",
-    expected_value: DEFAULT_AUDIT_ROTATION_SLOTS,
+/// Policy: `UMST.Formal.EtaCog::eta_cog_nonneg` was cited here, but its statement does not fix this value.
+pub const AUDIT_ROTATION_KEEP_COUNT_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`audit_rotation_keep_count` — JSONL rotation generations (`path` … `path.N`).",
 };
 
 /// `cockpit_audit_schema_version` — JSONL envelope version (`egoff::cockpit::audit_persist`).
-pub const COCKPIT_AUDIT_SCHEMA_VERSION_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Gate.gateCheckSound",
-    expected_value: COCKPIT_AUDIT_SCHEMA_VERSION_DEFAULT,
+/// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
+pub const COCKPIT_AUDIT_SCHEMA_VERSION_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`cockpit_audit_schema_version` — JSONL envelope version (`egoff::cockpit::audit_persist`).",
 };
 
 /// `cockpit_snapshot_schema_version` — hub snapshot wire version (kernel_dispatch field).
-pub const COCKPIT_SNAPSHOT_SCHEMA_VERSION_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible",
-    expected_value: COCKPIT_SNAPSHOT_SCHEMA_VERSION_DEFAULT,
+/// Policy: `UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible` was cited here, but its statement does not fix this value.
+pub const COCKPIT_SNAPSHOT_SCHEMA_VERSION_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`cockpit_snapshot_schema_version` — hub snapshot wire version (kernel_dispatch field).",
 };
 
 /// `eta_rolling_window_capacity` — rolling η deque capacity (`frugality::MEDIAN_WINDOW`).
-pub const ETA_ROLLING_WINDOW_CAPACITY_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.OrderStatisticsBand::p25_p75_admissibility",
-    expected_value: WARMUP_REFERENCE_WINDOW_CAPACITY as f64,
+/// Policy: `UMST.Formal.OrderStatisticsBand::p25_p75_admissibility` was cited here, but its statement does not fix this value.
+pub const ETA_ROLLING_WINDOW_CAPACITY_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`eta_rolling_window_capacity` — rolling η deque capacity (`frugality::MEDIAN_WINDOW`).",
 };
 
 /// K-5b cockpit policy batch registry row names.
@@ -205,39 +200,39 @@ pub const FRUGALITY_BAND_P25_QUANTILE: f64 = 0.25;
 pub const FRUGALITY_BAND_P75_QUANTILE: f64 = 0.75;
 
 /// `frugality_band_p25_percentile` — tracked quantile **q = 0.25** for order-stat band.
-pub const FRUGALITY_BAND_P25_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.OrderStatisticsBand::p25_p75_admissibility",
-    expected_value: FRUGALITY_BAND_P25_QUANTILE,
+/// Policy: `UMST.Formal.OrderStatisticsBand::p25_p75_admissibility` was cited here, but its statement does not fix this value.
+pub const FRUGALITY_BAND_P25_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`frugality_band_p25_percentile` — tracked quantile **q = 0.25** for order-stat band.",
 };
 
 /// `frugality_band_p75_percentile` — tracked quantile **q = 0.75** for order-stat band.
-pub const FRUGALITY_BAND_P75_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.OrderStatisticsBand::p25_p75_admissibility",
-    expected_value: FRUGALITY_BAND_P75_QUANTILE,
+/// Policy: `UMST.Formal.OrderStatisticsBand::p25_p75_admissibility` was cited here, but its statement does not fix this value.
+pub const FRUGALITY_BAND_P75_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`frugality_band_p75_percentile` — tracked quantile **q = 0.75** for order-stat band.",
 };
 
 /// `hub_inter_sample_period_ms` — cockpit hub fallback poll hold (ms).
-pub const HUB_INTER_SAMPLE_PERIOD_MS_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible",
-    expected_value: DEFAULT_COCKPIT_SAMPLE_PERIOD_MS,
+/// Policy: `UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible` was cited here, but its statement does not fix this value.
+pub const HUB_INTER_SAMPLE_PERIOD_MS_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`hub_inter_sample_period_ms` — cockpit hub fallback poll hold (ms).",
 };
 
 /// `umst_manifold_ppo_info_gain_default_bits` — PMIC / negentropy floor scale (§14bis.f-I-4).
-pub const PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.InfoTheory::product_joint_mass",
-    expected_value: MIN_NEGENTROPY_FLOOR_BITS,
+/// Policy: `UMST.Formal.InfoTheory::product_joint_mass` was cited here, but its statement does not fix this value.
+pub const PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_manifold_ppo_info_gain_default_bits` — PMIC / negentropy floor scale (§14bis.f-I-4).",
 };
 
 /// `umst_manifold_emergence_lambda` — EmergenceMonitor λ default.
-pub const EMERGENCE_LAMBDA_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Dignity::dignity_monotone_under_mi_gain",
-    expected_value: DEFAULT_EMERGENCE_LAMBDA,
+/// Policy: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` was cited here, but its statement does not fix this value.
+pub const EMERGENCE_LAMBDA_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_manifold_emergence_lambda` — EmergenceMonitor λ default.",
 };
 
 /// `umst_msdf_emergence_max_voxels` — default 3³ lattice cap for emergence SDF grid.
-pub const MSDF_EMERGENCE_MAX_VOXELS_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.OrderStatisticsBand::order_statistic_concentration",
-    expected_value: DEFAULT_MAX_EMERGENCE_VOXELS,
+/// Policy: `UMST.Formal.OrderStatisticsBand::order_statistic_concentration` was cited here, but its statement does not fix this value.
+pub const MSDF_EMERGENCE_MAX_VOXELS_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_msdf_emergence_max_voxels` — default 3³ lattice cap for emergence SDF grid.",
 };
 
 /// K-5c registry row names (6/6 for slice GREEN).
@@ -281,45 +276,45 @@ pub fn default_staleness_threshold_ms() -> f64 {
 }
 
 /// `landauer_proximity_multiplier` — jitter-aware floor headroom (pending FPD-MeasurementJitterBound).
-pub const LANDAUER_PROXIMITY_MULTIPLIER_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.MeasurementJitterBound::landauer_proximity_margin",
-    expected_value: LANDAUER_PROXIMITY_MULTIPLIER,
+/// Policy: `UMST.Formal.MeasurementJitterBound::landauer_proximity_margin` was cited here, but its statement does not fix this value.
+pub const LANDAUER_PROXIMITY_MULTIPLIER_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`landauer_proximity_multiplier` — jitter-aware floor headroom (pending FPD-MeasurementJitterBound).",
 };
 
 /// `staleness_threshold_ms` — product of default staleness cycles and hub sample period.
-pub const STALENESS_THRESHOLD_MS_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period",
-    expected_value: DEFAULT_STALENESS_THRESHOLD_MS,
+/// Policy: `UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period` was cited here, but its statement does not fix this value.
+pub const STALENESS_THRESHOLD_MS_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`staleness_threshold_ms` — product of default staleness cycles and hub sample period.",
 };
 
 /// `umst_discovery_lru_capacity` — model-discovery LRU operator bound (TUI-5).
-pub const DISCOVERY_LRU_CAPACITY_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.OrderStatisticsBand::order_statistic_concentration",
-    expected_value: DEFAULT_DISCOVERY_LRU_CAPACITY,
+/// Policy: `UMST.Formal.OrderStatisticsBand::order_statistic_concentration` was cited here, but its statement does not fix this value.
+pub const DISCOVERY_LRU_CAPACITY_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_discovery_lru_capacity` — model-discovery LRU operator bound (TUI-5).",
 };
 
 /// `umst_tui_render_debounce_ms` — idle telemetry redraw coalescing window (TUI-5).
-pub const TUI_RENDER_DEBOUNCE_MS_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible",
-    expected_value: DEFAULT_TUI_RENDER_DEBOUNCE_MS,
+/// Policy: `UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible` was cited here, but its statement does not fix this value.
+pub const TUI_RENDER_DEBOUNCE_MS_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_tui_render_debounce_ms` — idle telemetry redraw coalescing window (TUI-5).",
 };
 
 /// `umst_h3b_reward_alpha` — H-3b witness quality weight α.
-pub const H3B_REWARD_ALPHA_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.InfoTheory::product_joint_mass",
-    expected_value: H3B_REWARD_ALPHA,
+/// Policy: `UMST.Formal.InfoTheory::product_joint_mass` was cited here, but its statement does not fix this value.
+pub const H3B_REWARD_ALPHA_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_h3b_reward_alpha` — H-3b witness quality weight α.",
 };
 
 /// `umst_h3b_reward_beta` — H-3b witness latency slack weight β.
-pub const H3B_REWARD_BETA_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.RhoEstimator::rho_based_mi_formula",
-    expected_value: H3B_REWARD_BETA,
+/// Policy: `UMST.Formal.RhoEstimator::rho_based_mi_formula` was cited here, but its statement does not fix this value.
+pub const H3B_REWARD_BETA_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_h3b_reward_beta` — H-3b witness latency slack weight β.",
 };
 
 /// `umst_h3b_reward_gamma` — H-3b witness energy slack weight γ.
-pub const H3B_REWARD_GAMMA_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.EtaCog::eta_cog_nonneg",
-    expected_value: H3B_REWARD_GAMMA,
+/// Policy: `UMST.Formal.EtaCog::eta_cog_nonneg` was cited here, but its statement does not fix this value.
+pub const H3B_REWARD_GAMMA_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_h3b_reward_gamma` — H-3b witness energy slack weight γ.",
 };
 
 // --- K-5e H-3b γ / FFI ABI / cockpit policy timers (§14bis.k deepen wave 5) ---
@@ -343,39 +338,39 @@ pub const DEFAULT_AUDIT_MAX_BYTES_CAP: f64 = 10.0 * 1024.0 * 1024.0;
 pub const DEFAULT_RCC_ACCEPT_TICK: f64 = 0.001;
 
 /// `umst_ffi_abi_version` — additive FFI gate expected level.
-pub const UMST_FFI_ABI_VERSION_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.FFI::abi_version_expected",
-    expected_value: UMST_FFI_ABI_VERSION_DEFAULT,
+/// Policy: `UMST.Formal.FFI::abi_version_expected` was cited here, but its statement does not fix this value.
+pub const UMST_FFI_ABI_VERSION_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_ffi_abi_version` — additive FFI gate expected level.",
 };
 
 /// `umst_ffi_abi_version_min_compatible` — minimum compatible ABI for `assertAbiCompatible`.
-pub const UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.FFI::abi_version_min_compatible",
-    expected_value: UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DEFAULT,
+/// Policy: `UMST.Formal.FFI::abi_version_min_compatible` was cited here, but its statement does not fix this value.
+pub const UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_ffi_abi_version_min_compatible` — minimum compatible ABI for `assertAbiCompatible`.",
 };
 
 /// `umst_discovery_refresh_secs` — model-list HTTP poll cadence (cockpit hub).
-pub const DISCOVERY_REFRESH_SECS_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period",
-    expected_value: DEFAULT_DISCOVERY_REFRESH_SECS,
+/// Policy: `UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period` was cited here, but its statement does not fix this value.
+pub const DISCOVERY_REFRESH_SECS_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_discovery_refresh_secs` — model-list HTTP poll cadence (cockpit hub).",
 };
 
 /// `umst_tool_timeout_secs` — operator tool palette wall-clock budget.
-pub const TOOL_TIMEOUT_SECS_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Gate.gateCheckSound",
-    expected_value: DEFAULT_TOOL_TIMEOUT_SECS,
+/// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
+pub const TOOL_TIMEOUT_SECS_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_tool_timeout_secs` — operator tool palette wall-clock budget.",
 };
 
 /// `audit_max_bytes_cap` — on-disk cockpit audit JSONL rotation cap.
-pub const AUDIT_MAX_BYTES_CAP_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.EtaCog::eta_cog_nonneg",
-    expected_value: DEFAULT_AUDIT_MAX_BYTES_CAP,
+/// Policy: `UMST.Formal.EtaCog::eta_cog_nonneg` was cited here, but its statement does not fix this value.
+pub const AUDIT_MAX_BYTES_CAP_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`audit_max_bytes_cap` — on-disk cockpit audit JSONL rotation cap.",
 };
 
 /// `umst_closed_loop_rcc_accept_tick` — per-accept RCC increment (cap 1.0).
-pub const CLOSED_LOOP_RCC_ACCEPT_TICK_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Convergence::rcc_lower_bound",
-    expected_value: DEFAULT_RCC_ACCEPT_TICK,
+/// Policy: `UMST.Formal.Convergence::rcc_lower_bound` was cited here, but its statement does not fix this value.
+pub const CLOSED_LOOP_RCC_ACCEPT_TICK_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_closed_loop_rcc_accept_tick` — per-accept RCC increment (cap 1.0).",
 };
 
 /// K-5e registry row names (7/7 for slice GREEN).
@@ -413,45 +408,45 @@ pub const MEMORY_EPHEMERAL_TTL_HOURS_TYPICAL: f64 = 168.0;
 pub const EMBEDDING_HTTP_TIMEOUT_SECONDS_DEFAULT: f64 = 30.0;
 
 /// `umst_memory_default_resolution_bits` — B-Arc default recorded resolution (clamped at voxelise).
-pub const MEMORY_DEFAULT_RESOLUTION_BITS_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.OrderStatisticsBand::order_statistic_concentration",
-    expected_value: MEMORY_DEFAULT_RESOLUTION_BITS,
+/// Policy: `UMST.Formal.OrderStatisticsBand::order_statistic_concentration` was cited here, but its statement does not fix this value.
+pub const MEMORY_DEFAULT_RESOLUTION_BITS_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_default_resolution_bits` — B-Arc default recorded resolution (clamped at voxelise).",
 };
 
 /// `umst_memory_schema_version` — sled `MemoryV1` bincode wire discriminator.
-pub const MEMORY_SCHEMA_VERSION_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Gate.gateCheckSound",
-    expected_value: MEMORY_SCHEMA_V1_DEFAULT,
+/// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
+pub const MEMORY_SCHEMA_VERSION_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_schema_version` — sled `MemoryV1` bincode wire discriminator.",
 };
 
 /// `umst_memory_m2_promote_ceremony_atomic` — fail-fast promotion ceremony flag.
-pub const MEMORY_M2_PROMOTE_CEREMONY_ATOMIC_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Convergence::rcc_lower_bound",
-    expected_value: MEMORY_M2_PROMOTE_CEREMONY_ATOMIC,
+/// Policy: `UMST.Formal.Convergence::rcc_lower_bound` was cited here, but its statement does not fix this value.
+pub const MEMORY_M2_PROMOTE_CEREMONY_ATOMIC_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_m2_promote_ceremony_atomic` — fail-fast promotion ceremony flag.",
 };
 
 /// `umst_memory_m2_sanitize_serial_kinds_count` — GMD-6 serial artefact taxonomy size.
-pub const MEMORY_M2_SANITIZE_SERIAL_KINDS_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.InfoTheory::product_joint_mass",
-    expected_value: MEMORY_M2_SANITIZE_SERIAL_KINDS_COUNT,
+/// Policy: `UMST.Formal.InfoTheory::product_joint_mass` was cited here, but its statement does not fix this value.
+pub const MEMORY_M2_SANITIZE_SERIAL_KINDS_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_m2_sanitize_serial_kinds_count` — GMD-6 serial artefact taxonomy size.",
 };
 
 /// `umst_memory_m2_promotion_requires_theorem_default` — theorem binding required on promote.
-pub const MEMORY_M2_PROMOTION_REQUIRES_THEOREM_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Dignity::dignity_monotone_under_mi_gain",
-    expected_value: MEMORY_M2_PROMOTION_REQUIRES_THEOREM_DEFAULT,
+/// Policy: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` was cited here, but its statement does not fix this value.
+pub const MEMORY_M2_PROMOTION_REQUIRES_THEOREM_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_m2_promotion_requires_theorem_default` — theorem binding required on promote.",
 };
 
 /// `umst_memory_ephemeral_ttl_hours_typical` — default ephemeral retention window (hours).
-pub const MEMORY_EPHEMERAL_TTL_HOURS_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period",
-    expected_value: MEMORY_EPHEMERAL_TTL_HOURS_TYPICAL,
+/// Policy: `UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period` was cited here, but its statement does not fix this value.
+pub const MEMORY_EPHEMERAL_TTL_HOURS_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_ephemeral_ttl_hours_typical` — default ephemeral retention window (hours).",
 };
 
 /// `embedding_http_timeout_seconds` — embedding adapter wall-clock budget (design default).
-pub const EMBEDDING_HTTP_TIMEOUT_SECONDS_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Gate.gateCheckSound",
-    expected_value: EMBEDDING_HTTP_TIMEOUT_SECONDS_DEFAULT,
+/// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
+pub const EMBEDDING_HTTP_TIMEOUT_SECONDS_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`embedding_http_timeout_seconds` — embedding adapter wall-clock budget (design default).",
 };
 
 /// K-5f MEMORY-ARC registry row names (7/7 for slice GREEN).
@@ -489,45 +484,45 @@ pub const MEMORY_TIER_REPR_BYTE_EPHEMERAL: f64 = 2.0;
 pub const MEMORY_TIER_REPR_BYTE_FEDERATED: f64 = 1.0;
 
 /// Registry row `umst_memory_m2_serial_scrub_*` — redaction sentinel width (preview scrub).
-pub const MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.InfoTheory::product_joint_mass",
-    expected_value: MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN,
+/// Policy: `UMST.Formal.InfoTheory::product_joint_mass` was cited here, but its statement does not fix this value.
+pub const MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "Registry row `umst_memory_m2_serial_scrub_*` — redaction sentinel width (preview scrub).",
 };
 
 /// `umst_memory_m3_palette_federated_inspect_min_rows` — federation inspector offline floor.
-pub const MEMORY_M3_PALETTE_FEDERATED_INSPECT_MIN_ROWS_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Gate.gateCheckSound",
-    expected_value: MEMORY_M3_PALETTE_FEDERATED_INSPECT_MIN_ROWS,
+/// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
+pub const MEMORY_M3_PALETTE_FEDERATED_INSPECT_MIN_ROWS_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_m3_palette_federated_inspect_min_rows` — federation inspector offline floor.",
 };
 
 /// `umst_memory_merge_safe_attestation_wire_version` — GMD-8 merge-safe witness wire gen.
-pub const MEMORY_MERGE_SAFE_ATTESTATION_WIRE_VERSION_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Dignity::dignity_monotone_under_mi_gain",
-    expected_value: MEMORY_MERGE_SAFE_ATTESTATION_WIRE_VERSION,
+/// Policy: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` was cited here, but its statement does not fix this value.
+pub const MEMORY_MERGE_SAFE_ATTESTATION_WIRE_VERSION_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_merge_safe_attestation_wire_version` — GMD-8 merge-safe witness wire gen.",
 };
 
 /// `umst_memory_schema_version_v2` — `MemoryV2` sled wire discriminator.
-pub const MEMORY_SCHEMA_VERSION_V2_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Gate.gateCheckSound",
-    expected_value: MEMORY_SCHEMA_VERSION_V2,
+/// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
+pub const MEMORY_SCHEMA_VERSION_V2_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_schema_version_v2` — `MemoryV2` sled wire discriminator.",
 };
 
 /// `umst_memory_tier_repr_byte_device` — rename-fed Device tier `repr(u8)`.
-pub const MEMORY_TIER_REPR_BYTE_DEVICE_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Gate.gateCheckSound",
-    expected_value: MEMORY_TIER_REPR_BYTE_DEVICE,
+/// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
+pub const MEMORY_TIER_REPR_BYTE_DEVICE_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_tier_repr_byte_device` — rename-fed Device tier `repr(u8)`.",
 };
 
 /// `umst_memory_tier_repr_byte_ephemeral` — Ephemeral tier `repr(u8)` for graduation targets.
-pub const MEMORY_TIER_REPR_BYTE_EPHEMERAL_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period",
-    expected_value: MEMORY_TIER_REPR_BYTE_EPHEMERAL,
+/// Policy: `UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period` was cited here, but its statement does not fix this value.
+pub const MEMORY_TIER_REPR_BYTE_EPHEMERAL_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_tier_repr_byte_ephemeral` — Ephemeral tier `repr(u8)` for graduation targets.",
 };
 
 /// `umst_memory_tier_repr_byte_federated` — rename-fed Federated tier `repr(u8)`.
-pub const MEMORY_TIER_REPR_BYTE_FEDERATED_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Convergence::rcc_lower_bound",
-    expected_value: MEMORY_TIER_REPR_BYTE_FEDERATED,
+/// Policy: `UMST.Formal.Convergence::rcc_lower_bound` was cited here, but its statement does not fix this value.
+pub const MEMORY_TIER_REPR_BYTE_FEDERATED_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_tier_repr_byte_federated` — rename-fed Federated tier `repr(u8)`.",
 };
 
 /// K-5g scrub-len registry row (split literal avoids scaffolding scan false positive).
@@ -569,45 +564,45 @@ pub const MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT: f64 = 4.0;
 pub const MEMORY_HILBERT_BITS_DEFAULT: f64 = 8.0;
 
 /// `umst_memory_retention_alpha_default` — MI blend weight in retain = α·MI + β·pareto.
-pub const MEMORY_RETENTION_ALPHA_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.InfoTheory::product_joint_mass",
-    expected_value: MEMORY_RETENTION_ALPHA_DEFAULT,
+/// Policy: `UMST.Formal.InfoTheory::product_joint_mass` was cited here, but its statement does not fix this value.
+pub const MEMORY_RETENTION_ALPHA_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_retention_alpha_default` — MI blend weight in retain = α·MI + β·pareto.",
 };
 
 /// `umst_memory_retention_evict_default` — post-store eviction toggle default.
-pub const MEMORY_RETENTION_EVICT_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Gate.gateCheckSound",
-    expected_value: MEMORY_RETENTION_EVICT_DEFAULT,
+/// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
+pub const MEMORY_RETENTION_EVICT_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_retention_evict_default` — post-store eviction toggle default.",
 };
 
 /// `umst_memory_retention_degrade_first_default` — degrade-before-drop policy default.
-pub const MEMORY_RETENTION_DEGRADE_FIRST_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Dignity::dignity_monotone_under_mi_gain",
-    expected_value: MEMORY_RETENTION_DEGRADE_FIRST_DEFAULT,
+/// Policy: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` was cited here, but its statement does not fix this value.
+pub const MEMORY_RETENTION_DEGRADE_FIRST_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_retention_degrade_first_default` — degrade-before-drop policy default.",
 };
 
 /// `umst_manifold_liquid_ppo_witness_default` — Path B `step_and_learn` witness gate.
-pub const MANIFOLD_LIQUID_PPO_WITNESS_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Convergence::rcc_lower_bound",
-    expected_value: MANIFOLD_LIQUID_PPO_WITNESS_DEFAULT,
+/// Policy: `UMST.Formal.Convergence::rcc_lower_bound` was cited here, but its statement does not fix this value.
+pub const MANIFOLD_LIQUID_PPO_WITNESS_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_manifold_liquid_ppo_witness_default` — Path B `step_and_learn` witness gate.",
 };
 
 /// `umst_ucrs_memory_phase_bind_enabled` — accept-path UCRS phase bind toggle.
-pub const UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period",
-    expected_value: UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT,
+/// Policy: `UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period` was cited here, but its statement does not fix this value.
+pub const UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_ucrs_memory_phase_bind_enabled` — accept-path UCRS phase bind toggle.",
 };
 
 /// `umst_msdf_layer_stack_max_depth` — progressive MSDF ring cap when layer stack on.
-pub const MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.OrderStatisticsBand::order_statistic_concentration",
-    expected_value: MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT,
+/// Policy: `UMST.Formal.OrderStatisticsBand::order_statistic_concentration` was cited here, but its statement does not fix this value.
+pub const MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_msdf_layer_stack_max_depth` — progressive MSDF ring cap when layer stack on.",
 };
 
 /// `umst_memory_hilbert_bits` — Hilbert curve order for sled key layout (M-5 policy).
-pub const MEMORY_HILBERT_BITS_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: "UMST.Formal.Gate.gateCheckSound",
-    expected_value: MEMORY_HILBERT_BITS_DEFAULT,
+/// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
+pub const MEMORY_HILBERT_BITS_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "`umst_memory_hilbert_bits` — Hilbert curve order for sled key layout (M-5 policy).",
 };
 
 /// K-5h MEMORY-ARC retention + integration registry row names (7/7 for slice GREEN).
@@ -1259,6 +1254,7 @@ pub fn k3_batch_landed() -> bool {
 mod tests {
     use super::*;
     use crate::constants::registry::registry_f64_by_name;
+    use crate::manifold::csg::Q_HYDRATION_J_PER_KG;
 
     #[test]
     fn k3_batch_derivations_are_measurement() {
@@ -1309,27 +1305,17 @@ mod tests {
             assert_eq!(entry.derivation, expected);
             assert!(!entry.derivation.is_pending());
         }
-        assert_eq!(
-            TRANSITION_TOLERANCE_DERIVATION,
-            Derivation::Theorem {
-                theorem_id: "UMST.Formal.Gate.transitionTolerance",
-                expected_value: transition_tolerance_f64(),
-            }
-        );
-        assert_eq!(
-            ADMISSIBILITY_MARGIN_EPS_DERIVATION,
-            Derivation::Theorem {
-                theorem_id: "UMST.Formal.Gate.gateCheckSound",
-                expected_value: admissibility_margin_eps_f64(),
-            }
-        );
+        assert!(matches!(TRANSITION_TOLERANCE_DERIVATION, Derivation::Policy { .. }));
+        assert!(matches!(ADMISSIBILITY_MARGIN_EPS_DERIVATION, Derivation::Policy { .. }));
+        // `Concrete.Gate.δMass_val : δMass = 100`: the statement fixes the value.
         assert_eq!(
             GATE_MASS_TOLERANCE_DERIVATION,
             Derivation::Theorem {
-                theorem_id: "UMST.Formal.Concrete.Gate.δMass_val",
+                decl: LeanDecl { module: "Concrete.Gate", name: "δMass_val" },
                 expected_value: gate_mass_tolerance_kg_m3_f64(),
             }
         );
+        assert!((gate_mass_tolerance_kg_m3_f64() - 100.0).abs() < f64::EPSILON);
     }
 
     #[test]
@@ -1339,13 +1325,10 @@ mod tests {
             .find(|e| e.name == "q_hyd_j_per_kg")
             .expect("registry row");
         assert_eq!(entry.derivation, Q_HYD_J_PER_KG_DERIVATION);
-        assert_eq!(
-            Q_HYD_J_PER_KG_DERIVATION,
-            Derivation::Theorem {
-                theorem_id: "UMST.Concrete.Q_hyd_val",
-                expected_value: Q_HYDRATION_J_PER_KG,
-            }
-        );
+        match Q_HYD_J_PER_KG_DERIVATION {
+            Derivation::Policy { rationale } => assert!(rationale.contains("hydrationHeatDefault")),
+            other => panic!("Q_hyd is the formal policy row hydrationHeatDefault, got {other:?}"),
+        }
         assert!((Q_HYDRATION_J_PER_KG - 450.0).abs() < f64::EPSILON);
     }
 
@@ -1354,7 +1337,7 @@ mod tests {
         assert_eq!(
             WARMUP_SAMPLE_THRESHOLD_DERIVATION,
             Derivation::Theorem {
-                theorem_id: "UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible",
+                decl: LeanDecl { module: "MedianConvergence", name: "sqrt_window_warmup_is_admissible" },
                 expected_value: warmup_threshold_at_reference_window(),
             }
         );
@@ -1414,7 +1397,6 @@ mod tests {
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
             );
-            assert_eq!(entry.derivation.label(), "Theorem");
         }
     }
 
@@ -1512,7 +1494,6 @@ mod tests {
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
             );
-            assert_eq!(entry.derivation.label(), "Theorem");
         }
     }
 
@@ -1532,7 +1513,6 @@ mod tests {
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
             );
-            assert_eq!(entry.derivation.label(), "Theorem");
         }
     }
 
@@ -1557,7 +1537,6 @@ mod tests {
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
             );
-            assert_eq!(entry.derivation.label(), "Theorem");
         }
     }
 
@@ -1577,7 +1556,6 @@ mod tests {
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
             );
-            assert_eq!(entry.derivation.label(), "Theorem");
         }
     }
 
@@ -1597,7 +1575,6 @@ mod tests {
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
             );
-            assert_eq!(entry.derivation.label(), "Theorem");
         }
     }
 }

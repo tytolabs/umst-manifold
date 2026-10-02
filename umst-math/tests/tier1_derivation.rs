@@ -44,10 +44,11 @@ fn k2_all_canonical_rows_backfilled() {
 fn k2_ln_two_is_theorem_with_ln2_value() {
     match LN_2_DERIVATION {
         Derivation::Theorem {
-            theorem_id,
+            decl,
             expected_value,
         } => {
-            assert!(theorem_id.contains("log_two"));
+            // `LandauerLaw.uniformBinaryEntropy : shannonEntropy uniformBinary = log 2`.
+            assert_eq!((decl.module, decl.name), ("LandauerLaw", "uniformBinaryEntropy"));
             assert!((expected_value - std::f64::consts::LN_2).abs() < f64::EPSILON);
         }
         _ => panic!("LN_2 must be Theorem"),
@@ -83,17 +84,9 @@ fn k2_t_room_is_definition_with_local_pin() {
 }
 
 #[test]
-fn k2_rcc_floor_is_theorem_quarter() {
-    match RCC_FLOOR_DERIVATION {
-        Derivation::Theorem {
-            theorem_id,
-            expected_value,
-        } => {
-            assert!(theorem_id.contains("rcc_lower_bound"));
-            assert!((expected_value - 0.25).abs() < f64::EPSILON);
-        }
-        _ => panic!("RCC_FLOOR must be Theorem"),
-    }
+fn k2_rcc_floor_is_policy() {
+    // No formal statement fixes 0.25; the residual-coherence floor is a chosen value.
+    assert!(matches!(RCC_FLOOR_DERIVATION, Derivation::Policy { .. }));
 }
 
 fn registry_row_backfilled(name: &str) -> bool {
@@ -136,10 +129,10 @@ fn registry_row_backfilled(name: &str) -> bool {
 fn k2_landauer_floor_matches_300k_ssot() {
     match LANDAUER_FLOOR_J_PER_BIT_DERIVATION {
         Derivation::Theorem {
-            theorem_id,
+            decl,
             expected_value,
         } => {
-            assert!(theorem_id.contains("LandauerBound"));
+            assert_eq!((decl.module, decl.name), ("LandauerLaw", "landauerBound"));
             let at_300 = landauer_bit_energy_joules(NotNan::new(300.0).unwrap()).into_inner();
             assert!((expected_value - at_300).abs() < 1e-30);
         }

@@ -2,23 +2,23 @@
   "version": 2,
   "role": "manifold_runtime_lock",
   "upstream_repo": "umst-formal-double-slit",
-  "upstream_catalog_digest_hex": "4e64db67bdd70291d9c672fd76d7d6285c80120e7c595bddbf24e42f174efe9c",
+  "upstream_catalog_digest_hex": "17a367dba3181d6e7eb95e7adf633fa7ad713a856170341e4f4520652b65a4d8",
   "module_count": 224,
   "module_graph_edge_count": 665,
   "composition_rule": "cross_repo_merge_v1_primary_wins_basename",
-  "composed_catalog_digest_hex": "4e64db67bdd70291d9c672fd76d7d6285c80120e7c595bddbf24e42f174efe9c",
-  "composed_primary_fiber_fingerprint_hex": "f632063ad0f420a96b8356d45a6d1cbfbc4b936e96c5194ab95c3e7cae689d71",
+  "composed_catalog_digest_hex": "17a367dba3181d6e7eb95e7adf633fa7ad713a856170341e4f4520652b65a4d8",
+  "composed_primary_fiber_fingerprint_hex": "681e7fbe79a3194970d6d3a20bb83e65c6c12377f20a2e461aa74765e282650c",
   "fiber_pins": [
     {
       "repo": "umst-formal-double-slit",
-      "catalog_digest_hex": "bb19fd7ff91bb87935996cccb6a9b6831f8ca20249bcf4571f6463508cc346ce",
+      "catalog_digest_hex": "b753520af1255572bb4d56b202d6939a2076102081a280346416adfc661ddbd4",
       "module_count": 53,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"
     },
     {
       "repo": "umst-formal",
-      "catalog_digest_hex": "10ae9dc6e08bcf4eb74b6dde828ea6e12dfa6fcea2eabed19a734f93daf55865",
+      "catalog_digest_hex": "3e467aa9542265ee2d0dad7d2bcf9d06e106d030fdfd9dd3bc13afcdc7cc763a",
       "module_count": 172,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"
@@ -50,5 +50,5 @@
       }
     ]
   },
-  "notes": "Catalog bump 2026-10-02: formal 0204d84 + double-slit 0ccd6be (current exports; earlier pins predated the retirement of the vendored modules); merged 224 modules / 665 edges. UCRS fiber pin unchanged (preview)."
+  "notes": "Catalog bump: umst-formal 0204d84 + double-slit 6e55ff4 exports; merged 224 modules / 665 edges. UCRS fiber pin unchanged (preview). scripts/bump_catalog_lock.py"
 }

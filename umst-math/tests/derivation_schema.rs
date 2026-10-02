@@ -2,12 +2,23 @@
 // SPDX-License-Identifier: MIT
 //! K-1 — `Derivation` enum + REGISTRY schema extension (§14bis.k; EGOFF-004).
 
-use umst_math::constants::derivation::{Derivation, DERIVATION_SCHEMA_VERSION};
+use umst_math::constants::derivation::{Derivation, LeanDecl};
 use umst_math::constants::registry::REGISTRY;
 
 #[test]
-fn derivation_schema_version_is_one() {
-    assert_eq!(DERIVATION_SCHEMA_VERSION, 1);
+fn derivation_labels_are_distinct() {
+    let labels: std::collections::BTreeSet<&str> = [
+        Derivation::Theorem { decl: LeanDecl { module: "M", name: "n" }, expected_value: 0.0 },
+        Derivation::Measurement { receipt_path: "r", methodology_anchor: "a" },
+        Derivation::Definition { authority_url: "u", expected_sha256: "s" },
+        Derivation::Pin { repo: "r", ref_name: "main" },
+        Derivation::Policy { rationale: "r" },
+        Derivation::Pending,
+    ]
+    .iter()
+    .map(|d| d.label())
+    .collect();
+    assert_eq!(labels.len(), 6);
 }
 
 #[test]
@@ -89,9 +100,10 @@ fn k_arc_backfill_covers_entire_registry_no_pending() {
 #[test]
 fn derivation_enum_shapes_constructible() {
     let _theorem = Derivation::Theorem {
-        theorem_id: "UMST.Formal.Real.log_two_pos",
+        decl: LeanDecl { module: "LandauerLaw", name: "uniformBinaryEntropy" },
         expected_value: std::f64::consts::LN_2,
     };
+    let _policy = Derivation::Policy { rationale: "a chosen value" };
     let _measurement = Derivation::Measurement {
         receipt_path: ".umst-ci/measurement-receipts/example.jsonl",
         methodology_anchor: "egoff measure --constant example",

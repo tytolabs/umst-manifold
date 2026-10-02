@@ -7,15 +7,25 @@
 //! to [`Derivation::Pending`] until K-2..K-7 backfill (forbidden after K-7 GREEN).
 
 /// Schema version bumped when `Derivation` or `ConstantEntry` CDD fields change (K-1 = 1).
-pub const DERIVATION_SCHEMA_VERSION: u32 = 1;
+pub const DERIVATION_SCHEMA_VERSION: u32 = 2;
+
+/// A declaration of the formal Lean catalog: its module (as `catalog.json` names it) and its name. A typed pair
+/// in place of a free string, so a reference names a module and a declaration that tests resolve.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct LeanDecl {
+    /// Catalog module id, e.g. `Concrete.Gate`.
+    pub module: &'static str,
+    /// Declaration name in that module, e.g. `δMass_val`.
+    pub name: &'static str,
+}
 
 /// How a registry constant is re-derived at runtime (egoffplan §0.11).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Derivation {
-    /// Re-run the cited theorem via Z-2 LeanExecutor; compare to `expected_value`.
+    /// A Lean declaration whose statement fixes the value; Z-2 LeanExecutor re-runs it and compares.
     Theorem {
-        /// Lean theorem identifier (e.g. `UMST.Formal.Real.log_two_pos`).
-        theorem_id: &'static str,
+        /// The declaration, resolved against the pinned catalog (`artifacts/upstream_catalog.json`) by test.
+        decl: LeanDecl,
         /// Expected numeric value after proof extraction.
         expected_value: f64,
     },
@@ -40,6 +50,12 @@ pub enum Derivation {
         /// Ref name (`main`, tag, or pin file line).
         ref_name: &'static str,
     },
+    /// A documented model or configuration choice: no theorem fixes the value and nothing measures it (the formal
+    /// constants table's `policy` status). It may change by decision; it is never counted as derived.
+    Policy {
+        /// The reason for the value and what bounds it; the value itself is the registry row's.
+        rationale: &'static str,
+    },
     /// Awaiting K-2..K-7 backfill — forbidden after K-7 GREEN.
     Pending,
 }
@@ -53,6 +69,7 @@ impl Derivation {
             Self::Measurement { .. } => "Measurement",
             Self::Definition { .. } => "Definition",
             Self::Pin { .. } => "Pin",
+            Self::Policy { .. } => "Policy",
             Self::Pending => "Pending",
         }
     }
@@ -67,7 +84,7 @@ impl Derivation {
 /// K-1 landed witness — compile-time schema present on every `REGISTRY` row.
 #[must_use]
 pub const fn k1_schema_landed() -> bool {
-    DERIVATION_SCHEMA_VERSION == 1
+    DERIVATION_SCHEMA_VERSION >= 1
 }
 
 #[cfg(test)]
@@ -75,8 +92,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn derivation_schema_version_is_one() {
-        assert_eq!(DERIVATION_SCHEMA_VERSION, 1);
+    fn derivation_schema_carries_policy() {
+        assert_eq!(Derivation::Policy { rationale: "r" }.label(), "Policy");
+        assert!(!Derivation::Policy { rationale: "r" }.is_pending());
         assert!(k1_schema_landed());
     }
 
@@ -85,7 +103,7 @@ mod tests {
         assert_eq!(Derivation::Pending.label(), "Pending");
         assert_eq!(
             Derivation::Theorem {
-                theorem_id: "UMST.Formal.Real.log_two_pos",
+                decl: LeanDecl { module: "LandauerLaw", name: "uniformBinaryEntropy" },
                 expected_value: std::f64::consts::LN_2,
             }
             .label(),

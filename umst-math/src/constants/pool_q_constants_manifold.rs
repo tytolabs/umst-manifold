@@ -10,8 +10,6 @@ use super::derivation::Derivation;
 use super::registry::REGISTRY;
 use super::tier3_derivation::TUI_6B_THEME_BRIEF_SHA256;
 
-/// Lean anchor: sole project axiom closure for derived numeric policy rows.
-pub const PHYSICAL_SECOND_LAW_THEOREM: &str = "UMST.Formal.LandauerLaw.physicalSecondLaw";
 
 /// Pinned SHA-256 of `docs/PENDING_GAPS_PLAIN.md` (B-Arc / unmeasured ceiling typed absence).
 pub const PENDING_GAPS_PLAIN_SHA256: &str =
@@ -56,34 +54,29 @@ pub const ACTION_SHAPE_QUOTIENT_DEFAULT_ENABLED: f64 = 1.0;
 /// SSOT default: `:action-shapes` palette truncation cap.
 pub const ACTION_SHAPE_PALETTE_MAX_ENTRIES_DEFAULT: f64 = 100.0;
 
-/// `umst_msdf_hilbert_persist_enabled` under [`PHYSICAL_SECOND_LAW_THEOREM`].
-pub const MSDF_HILBERT_PERSIST_ENABLED_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: PHYSICAL_SECOND_LAW_THEOREM,
-    expected_value: MSDF_HILBERT_PERSIST_ENABLED_DEFAULT,
+/// `umst_msdf_hilbert_persist_enabled` — a configuration default (`MSDF_HILBERT_PERSIST_ENABLED_DEFAULT`); no theorem fixes it.
+pub const MSDF_HILBERT_PERSIST_ENABLED_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "configuration default for umst_msdf_hilbert_persist_enabled: an operator setting, not a derived constant",
 };
 
-/// `umst_manifold_introspect_enabled` under [`PHYSICAL_SECOND_LAW_THEOREM`].
-pub const MANIFOLD_INTROSPECT_ENABLED_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: PHYSICAL_SECOND_LAW_THEOREM,
-    expected_value: MANIFOLD_INTROSPECT_ENABLED_DEFAULT,
+/// `umst_manifold_introspect_enabled` — a configuration default (`MANIFOLD_INTROSPECT_ENABLED_DEFAULT`); no theorem fixes it.
+pub const MANIFOLD_INTROSPECT_ENABLED_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "configuration default for umst_manifold_introspect_enabled: an operator setting, not a derived constant",
 };
 
-/// `umst_mcert_strict_paired_default` under [`PHYSICAL_SECOND_LAW_THEOREM`].
-pub const MCERT_STRICT_PAIRED_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: PHYSICAL_SECOND_LAW_THEOREM,
-    expected_value: MCERT_STRICT_PAIRED_DEFAULT,
+/// `umst_mcert_strict_paired_default` — a configuration default (`MCERT_STRICT_PAIRED_DEFAULT`); no theorem fixes it.
+pub const MCERT_STRICT_PAIRED_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "configuration default for umst_mcert_strict_paired_default: an operator setting, not a derived constant",
 };
 
-/// `umst_action_shape_quotient_default_enabled` under [`PHYSICAL_SECOND_LAW_THEOREM`].
-pub const ACTION_SHAPE_QUOTIENT_DEFAULT_ENABLED_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: PHYSICAL_SECOND_LAW_THEOREM,
-    expected_value: ACTION_SHAPE_QUOTIENT_DEFAULT_ENABLED,
+/// `umst_action_shape_quotient_default_enabled` — a configuration default (`ACTION_SHAPE_QUOTIENT_DEFAULT_ENABLED`); no theorem fixes it.
+pub const ACTION_SHAPE_QUOTIENT_DEFAULT_ENABLED_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "configuration default for umst_action_shape_quotient_default_enabled: an operator setting, not a derived constant",
 };
 
-/// `umst_action_shape_palette_max_entries_default` under [`PHYSICAL_SECOND_LAW_THEOREM`].
-pub const ACTION_SHAPE_PALETTE_MAX_ENTRIES_DEFAULT_DERIVATION: Derivation = Derivation::Theorem {
-    theorem_id: PHYSICAL_SECOND_LAW_THEOREM,
-    expected_value: ACTION_SHAPE_PALETTE_MAX_ENTRIES_DEFAULT,
+/// `umst_action_shape_palette_max_entries_default` — a configuration default (`ACTION_SHAPE_PALETTE_MAX_ENTRIES_DEFAULT`); no theorem fixes it.
+pub const ACTION_SHAPE_PALETTE_MAX_ENTRIES_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "configuration default for umst_action_shape_palette_max_entries_default: an operator setting, not a derived constant",
 };
 
 /// Final pool batch: every row that was still `Derivation::Pending` in `registry.rs`.
