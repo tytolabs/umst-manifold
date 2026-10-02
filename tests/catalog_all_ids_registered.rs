@@ -142,34 +142,25 @@ fn witness_registry_ids() -> HashSet<String> {
     cat.witnesses.into_iter().map(|w| w.id).collect()
 }
 
-/// R0 pin: `artifacts/catalog.lock.json` `module_count` must match the Lean export row count.
-/// Fails when lock is bumped without re-export (or export grows without lock promotion).
-const CATALOG_LOCK_R0_MODULE_COUNT: usize = 129;
-
+/// `artifacts/catalog.lock.json` `module_count` equals the module rows of the pinned upstream catalog, so a lock
+/// bumped without re-export, or an export grown without a lock bump, fails.
 #[test]
-fn catalog_lock_module_count_matches_upstream_export_122() {
+fn catalog_lock_module_count_matches_upstream_export() {
     let lock_path = manifest_dir().join("artifacts/catalog.lock.json");
     let lock_raw = fs::read_to_string(&lock_path).unwrap_or_else(|e| {
         panic!("read catalog.lock.json at {}: {e}", lock_path.display());
     });
-    let lock: serde_json::Value = serde_json::from_str(&lock_raw)
-        .expect("catalog.lock.json must parse as valid JSON for R0 module_count pin (FP §6 Track G catalog registry)");
+    let lock: serde_json::Value =
+        serde_json::from_str(&lock_raw).expect("catalog.lock.json parses as JSON");
     let lock_count = lock
         .get("module_count")
         .and_then(|v| v.as_u64())
-        .expect("catalog.lock.json must declare module_count for upstream export parity (FP §6 Track G catalog registry)");
-    assert_eq!(
-        lock_count as usize, CATALOG_LOCK_R0_MODULE_COUNT,
-        "catalog.lock.json module_count drift (expected {CATALOG_LOCK_R0_MODULE_COUNT})"
-    );
-
+        .expect("catalog.lock.json declares module_count");
     let catalog_path = resolve_upstream_catalog_json();
     let export_count = load_catalog_module_ids(&catalog_path).len();
     assert_eq!(
-        export_count,
-        CATALOG_LOCK_R0_MODULE_COUNT,
-        "upstream Lean catalog module row count ({export_count}) must match lock \
-         module_count ({CATALOG_LOCK_R0_MODULE_COUNT}); path {}",
+        export_count, lock_count as usize,
+        "upstream Lean catalog module rows ({export_count}) must equal lock module_count ({lock_count}); path {}",
         catalog_path.display()
     );
 }
