@@ -2,12 +2,12 @@
   "version": 2,
   "role": "manifold_runtime_lock",
   "upstream_repo": "umst-formal-double-slit",
-  "upstream_catalog_digest_hex": "17a367dba3181d6e7eb95e7adf633fa7ad713a856170341e4f4520652b65a4d8",
+  "upstream_catalog_digest_hex": "99cef947094176e435e60c5ad36287d2d0d21f2f0b48d5838bf603c744e56183",
   "module_count": 224,
   "module_graph_edge_count": 665,
   "composition_rule": "cross_repo_merge_v1_primary_wins_basename",
-  "composed_catalog_digest_hex": "17a367dba3181d6e7eb95e7adf633fa7ad713a856170341e4f4520652b65a4d8",
-  "composed_primary_fiber_fingerprint_hex": "681e7fbe79a3194970d6d3a20bb83e65c6c12377f20a2e461aa74765e282650c",
+  "composed_catalog_digest_hex": "99cef947094176e435e60c5ad36287d2d0d21f2f0b48d5838bf603c744e56183",
+  "composed_primary_fiber_fingerprint_hex": "28e9255167bb830a74eee9338678a4cd029a500b328bfc2c599a73cfa12a2f7a",
   "fiber_pins": [
     {
       "repo": "umst-formal-double-slit",
@@ -18,7 +18,7 @@
     },
     {
       "repo": "umst-formal",
-      "catalog_digest_hex": "3e467aa9542265ee2d0dad7d2bcf9d06e106d030fdfd9dd3bc13afcdc7cc763a",
+      "catalog_digest_hex": "a852c8b27b79df49f31dcae1cd3a38614d226e8ad01fd26e2a55f106109a91e5",
       "module_count": 172,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"
@@ -50,5 +50,5 @@
       }
     ]
   },
-  "notes": "Catalog bump: umst-formal 0204d84 + double-slit 6e55ff4 exports; merged 224 modules / 665 edges. UCRS fiber pin unchanged (preview). scripts/bump_catalog_lock.py"
+  "notes": "Catalog bump: umst-formal 610f2c4 + double-slit 51615ce exports; merged 224 modules / 665 edges. UCRS fiber pin unchanged (preview). scripts/bump_catalog_lock.py"
 }

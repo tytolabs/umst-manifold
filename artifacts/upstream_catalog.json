@@ -1101,7 +1101,7 @@
     },
     {
       "path": "Concrete/Helmholtz.lean",
-      "content_sha256": "6b5fdf8fa3d631ac15aecbc2b4fcb0f6dcfe232bc345d44d3bdd12fe63bccc0a",
+      "content_sha256": "31835e8f21ab421c4229cc46dc08c849f11fa9541721ec99e6fc7977253bdd22",
       "declarations": {
         "def": [
           "HelmholtzState"
@@ -1474,7 +1474,7 @@
     },
     {
       "path": "Concrete/StiffnessTransition.lean",
-      "content_sha256": "050546eb54dddb8017ce730efabc822b2c60ed9399164aae48974a8d994bf918",
+      "content_sha256": "a712fb432cbbd91a0a38fb903fa6cbbe0b2807af83a034db15899ca642efb677",
       "declarations": {
         "def": [
           "stiffnessAlphaThreshold",
@@ -11834,5 +11834,5 @@
       "to_approx": "Lake"
     }
   ],
-  "digest": "17a367dba3181d6e7eb95e7adf633fa7ad713a856170341e4f4520652b65a4d8"
+  "digest": "99cef947094176e435e60c5ad36287d2d0d21f2f0b48d5838bf603c744e56183"
 }

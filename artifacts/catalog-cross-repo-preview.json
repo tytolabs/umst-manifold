@@ -14,8 +14,8 @@
   "secondary_module_count": 172,
   "merged_module_count": 224,
   "primary_digest_hex": "b753520af1255572bb4d56b202d6939a2076102081a280346416adfc661ddbd4",
-  "secondary_digest_hex": "3e467aa9542265ee2d0dad7d2bcf9d06e106d030fdfd9dd3bc13afcdc7cc763a",
-  "merged_digest_hex": "17a367dba3181d6e7eb95e7adf633fa7ad713a856170341e4f4520652b65a4d8",
+  "secondary_digest_hex": "a852c8b27b79df49f31dcae1cd3a38614d226e8ad01fd26e2a55f106109a91e5",
+  "merged_digest_hex": "99cef947094176e435e60c5ad36287d2d0d21f2f0b48d5838bf603c744e56183",
   "overlap_basename_count": 1,
   "only_in_primary_basename": [
     "CompressionCost",
@@ -1341,7 +1341,7 @@
     },
     {
       "path": "Concrete/Helmholtz.lean",
-      "content_sha256": "6b5fdf8fa3d631ac15aecbc2b4fcb0f6dcfe232bc345d44d3bdd12fe63bccc0a",
+      "content_sha256": "31835e8f21ab421c4229cc46dc08c849f11fa9541721ec99e6fc7977253bdd22",
       "declarations": {
         "def": [
           "HelmholtzState"
@@ -1714,7 +1714,7 @@
     },
     {
       "path": "Concrete/StiffnessTransition.lean",
-      "content_sha256": "050546eb54dddb8017ce730efabc822b2c60ed9399164aae48974a8d994bf918",
+      "content_sha256": "a712fb432cbbd91a0a38fb903fa6cbbe0b2807af83a034db15899ca642efb677",
       "declarations": {
         "def": [
           "stiffnessAlphaThreshold",
@@ -11527,7 +11527,7 @@
     },
     {
       "path": "Concrete/Helmholtz.lean",
-      "content_sha256": "6b5fdf8fa3d631ac15aecbc2b4fcb0f6dcfe232bc345d44d3bdd12fe63bccc0a",
+      "content_sha256": "31835e8f21ab421c4229cc46dc08c849f11fa9541721ec99e6fc7977253bdd22",
       "declarations": {
         "def": [
           "HelmholtzState"
@@ -11900,7 +11900,7 @@
     },
     {
       "path": "Concrete/StiffnessTransition.lean",
-      "content_sha256": "050546eb54dddb8017ce730efabc822b2c60ed9399164aae48974a8d994bf918",
+      "content_sha256": "a712fb432cbbd91a0a38fb903fa6cbbe0b2807af83a034db15899ca642efb677",
       "declarations": {
         "def": [
           "stiffnessAlphaThreshold",
