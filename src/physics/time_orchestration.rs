@@ -324,7 +324,7 @@ mod tests {
         );
 
         let mut bad_cap = SimulationClocks::default();
-        bad_cap.max_mech_sub_iters_per_chem = umst_math::numeric_tolerance::refusal_zero_mech_sub_iters_per_chem();
+        bad_cap.max_mech_sub_iters_per_chem = 0;
         assert_eq!(
             bad_cap.validate(),
             Err(ClockValidationError::ZeroMaxMechSubsteps)
@@ -361,7 +361,7 @@ mod tests {
         assert_eq!(cfg.max_equilibrium_sub_iters, 1);
 
         let mut bad = MechanicsInnerLoopConfig::default();
-        bad.max_cg_iterations = umst_math::numeric_tolerance::refusal_zero_iteration_budget_usize();
+        bad.max_cg_iterations = 0;
         assert!(bad.validate().is_err());
     }
 }

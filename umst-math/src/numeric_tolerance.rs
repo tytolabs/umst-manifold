@@ -321,18 +321,6 @@ pub const fn fracture_at2_outer_regression_iteration_budget() -> usize {
     40
 }
 
-/// Sentinel zero iteration budget for clock / inner-loop validation refusal tests.
-#[must_use]
-pub const fn refusal_zero_iteration_budget_usize() -> usize {
-    0
-}
-
-/// Sentinel zero substep cap for orchestration validation refusal tests.
-#[must_use]
-pub const fn refusal_zero_mech_sub_iters_per_chem() -> u32 {
-    0
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
