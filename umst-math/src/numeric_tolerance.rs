@@ -104,7 +104,10 @@ pub fn mechanics_tight_cg_tol_f32() -> f32 {
 /// Mid tier between default bar network and tight mechanics (~1e-7).
 #[must_use]
 pub fn mechanics_mid_cg_tol_f32() -> f32 {
-    linear_solve_relative_tol_f32(ProblemScale::new(0.1), LinearSolveRelativeTier::BarNetworkF32Default)
+    linear_solve_relative_tol_f32(
+        ProblemScale::new(crate::constants_registry::MECHANICS_MID_CG_SCALE_F64),
+        LinearSolveRelativeTier::BarNetworkF32Default,
+    )
 }
 
 /// Unit-scale adjoint / analytic reference relative tolerance (f64).
@@ -166,13 +169,13 @@ pub const APPROX_MAX_RELATIVE_DEFAULT: f64 =
     crate::constants_registry::APPROX_MAX_RELATIVE_DEFAULT_F64;
 
 /// Loose f32 component checks (tensor spot tests).
-pub const APPROX_EPSILON_F32_LOOSE: f32 = 1.0e-6;
+pub const APPROX_EPSILON_F32_LOOSE: f32 = crate::constants_registry::APPROX_EPSILON_F32_LOOSE_F32;
 
 /// Mid f32 component checks (DEC / bar-network spot tests).
-pub const APPROX_EPSILON_F32_MID: f32 = 1.0e-5;
+pub const APPROX_EPSILON_F32_MID: f32 = crate::constants_registry::APPROX_EPSILON_F32_MID_F32;
 
 /// Loose f64 checks where f32 noise is absent.
-pub const APPROX_EPSILON_F64_LOOSE: f64 = 1.0e-18;
+pub const APPROX_EPSILON_F64_LOOSE: f64 = crate::constants_registry::APPROX_EPSILON_F64_LOOSE_F64;
 
 /// Gate / optim comparison floor (dimensionless).
 #[must_use]
@@ -301,7 +304,8 @@ pub const fn fracture_psi_probe_strain_f32() -> f32 {
 }
 
 /// Edge-length divisor floor for axial strain (`elong / edge_len`) in bar networks.
-pub const EDGE_LENGTH_DIVISOR_FLOOR_F32: f32 = 1e-30;
+pub const EDGE_LENGTH_DIVISOR_FLOOR_F32: f32 =
+    crate::constants_registry::EDGE_LENGTH_DIVISOR_FLOOR_F32;
 
 /// Sentinel non-positive rel-tol for refusal / precondition tests (must stay ≤ 0).
 pub const REFUSAL_NONPOSITIVE_REL_TOL_F32: f32 = 0.0_f32;

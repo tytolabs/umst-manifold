@@ -216,6 +216,61 @@ pub const APPROX_MAX_RELATIVE_DEFAULT: GroundedConst<f64> = GroundedConst {
 };
 pub const APPROX_MAX_RELATIVE_DEFAULT_F64: f64 = APPROX_MAX_RELATIVE_DEFAULT.value;
 
+/// Loose f32 component checks (tensor spot tests).
+pub const APPROX_EPSILON_F32_LOOSE: GroundedConst<f32> = GroundedConst {
+    name: "approx_epsilon_f32_loose",
+    value: 1.0e-6,
+    units: "—",
+    derivation: Derivation::Theorem {
+        theorem_id: "UMST.Formal.NumericTolerance::approx_epsilon_f32_loose",
+    },
+};
+pub const APPROX_EPSILON_F32_LOOSE_F32: f32 = APPROX_EPSILON_F32_LOOSE.value;
+
+/// Mid f32 component checks (DEC / bar-network spot tests).
+pub const APPROX_EPSILON_F32_MID: GroundedConst<f32> = GroundedConst {
+    name: "approx_epsilon_f32_mid",
+    value: 1.0e-5,
+    units: "—",
+    derivation: Derivation::Theorem {
+        theorem_id: "UMST.Formal.NumericTolerance::approx_epsilon_f32_mid",
+    },
+};
+pub const APPROX_EPSILON_F32_MID_F32: f32 = APPROX_EPSILON_F32_MID.value;
+
+/// Loose f64 checks where f32 noise is absent.
+pub const APPROX_EPSILON_F64_LOOSE: GroundedConst<f64> = GroundedConst {
+    name: "approx_epsilon_f64_loose",
+    value: 1.0e-18,
+    units: "—",
+    derivation: Derivation::Theorem {
+        theorem_id: "UMST.Formal.NumericTolerance::approx_epsilon_f64_loose",
+    },
+};
+pub const APPROX_EPSILON_F64_LOOSE_F64: f64 = APPROX_EPSILON_F64_LOOSE.value;
+
+/// Bar-network mid-tier scale factor (0.1 × default relative → ~1e-7 @ unit).
+pub const MECHANICS_MID_CG_SCALE: GroundedConst<f64> = GroundedConst {
+    name: "mechanics_mid_cg_scale",
+    value: 0.1,
+    units: "—",
+    derivation: Derivation::Theorem {
+        theorem_id: "UMST.Formal.SolverComposition::mechanics_mid_cg_tol",
+    },
+};
+pub const MECHANICS_MID_CG_SCALE_F64: f64 = MECHANICS_MID_CG_SCALE.value;
+
+/// Edge-length divisor floor for axial strain in bar networks.
+pub const EDGE_LENGTH_DIVISOR_FLOOR: GroundedConst<f32> = GroundedConst {
+    name: "edge_length_divisor_floor_f32",
+    value: 1.0e-30,
+    units: "m",
+    derivation: Derivation::Theorem {
+        theorem_id: "UMST.Formal.NumericTolerance::edge_length_divisor_floor",
+    },
+};
+pub const EDGE_LENGTH_DIVISOR_FLOOR_F32: f32 = EDGE_LENGTH_DIVISOR_FLOOR.value;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -241,6 +296,14 @@ mod tests {
         assert_eq!(
             crate::numeric_tolerance::transition_tolerance_f64(),
             TRANSITION_TOLERANCE_F64
+        );
+        assert_eq!(
+            crate::numeric_tolerance::APPROX_EPSILON_F32_LOOSE,
+            APPROX_EPSILON_F32_LOOSE_F32
+        );
+        assert_eq!(
+            crate::numeric_tolerance::EDGE_LENGTH_DIVISOR_FLOOR_F32,
+            EDGE_LENGTH_DIVISOR_FLOOR_F32
         );
     }
 
