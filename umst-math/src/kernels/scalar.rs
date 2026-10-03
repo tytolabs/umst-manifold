@@ -16,7 +16,7 @@ pub enum BandLabel {
 }
 
 /// Clamp |ρ| away from 1 so `log₂(1−ρ²)` stays finite.
-const RHO_CLAMP_ABS: f64 = 0.9999;
+const RHO_CLAMP_ABS: f64 = crate::constants_registry::RHO_MI_CLAMP_ABS_F64;
 
 /// `MI(ρ) = −½ · log₂(1 − ρ²)` in bits for `|ρ| < 1`.
 ///

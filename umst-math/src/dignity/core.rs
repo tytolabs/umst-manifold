@@ -5,7 +5,7 @@
 use crate::landauer::K_B;
 
 /// Operator UX upper bound (cockpit `dignity_scalar` scale, `10 · RCC`).
-pub const D_MAX: f64 = 10.0;
+pub const D_MAX: f64 = crate::constants_registry::DIGNITY_D_MAX_F64;
 
 #[inline]
 fn landauer_joules_per_bit(temperature_k: f64) -> f64 {
@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn honest_step_non_decreasing() {
-        let t = 300.0;
+        let t = crate::constants_registry::HOST_TEMPERATURE_FALLBACK_K_F64;
         let d = 2.0;
         let mi = 0.5;
         let e = landauer_joules_per_bit(t) * mi + 1.0;
@@ -103,7 +103,7 @@ mod tests {
 
     #[test]
     fn sub_landauer_does_not_increase() {
-        let t = 300.0;
+        let t = crate::constants_registry::HOST_TEMPERATURE_FALLBACK_K_F64;
         let d = 4.0;
         let mi = 2.0;
         let e = landauer_joules_per_bit(t) * mi * 0.5;
@@ -121,8 +121,9 @@ mod tests {
 
     #[test]
     fn determinism() {
-        let x = dignity_step(280.0, 3.0, 0.25, 1e-18);
-        assert_eq!(x, dignity_step(280.0, 3.0, 0.25, 1e-18));
+        let t = crate::constants_registry::HOST_TEMPERATURE_FALLBACK_K_F64 - 20.0;
+        let x = dignity_step(t, 3.0, 0.25, 1e-18);
+        assert_eq!(x, dignity_step(t, 3.0, 0.25, 1e-18));
     }
 
     #[test]

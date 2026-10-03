@@ -19,6 +19,8 @@ mod kahan;
 /// Phase 1 catalog → scalar-layout functor witness (pure; no I/O).
 pub mod catalog_functor;
 pub mod constants;
+/// Fleet N_float SSOT — [`GroundedConst`] rows with typed [`constants_registry::Derivation`].
+pub mod constants_registry;
 pub mod content_address;
 pub mod credit;
 /// §14bis.f-S-0 — PQC primitives (ML-KEM / ML-DSA / SLH-DSA / SHA3-256).

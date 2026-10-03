@@ -7,7 +7,8 @@
 use crate::landauer::K_B;
 
 /// Reference ambient temperature (K) for derived Landauer rows (cockpit fallback anchor).
-pub const HOST_TEMPERATURE_REFERENCE_K: f64 = 300.0;
+pub const HOST_TEMPERATURE_REFERENCE_K: f64 =
+    crate::constants_registry::HOST_TEMPERATURE_FALLBACK_K_F64;
 
 /// One CODATA-grounded or Landauer-derived physical constant.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -79,7 +80,10 @@ mod tests {
         assert!((ln2.value - std::f64::consts::LN_2).abs() < f64::EPSILON);
 
         let e300 = LandauerRegistry::get("landauer_bit_energy_300k_j").expect("300K row");
-        let expected = landauer_bit_energy_joules(NotNan::new(300.0).unwrap()).into_inner();
+        let expected = landauer_bit_energy_joules(
+            NotNan::new(crate::constants_registry::HOST_TEMPERATURE_FALLBACK_K_F64).unwrap(),
+        )
+        .into_inner();
         assert!((e300.value - expected).abs() < 1e-30);
     }
 }
