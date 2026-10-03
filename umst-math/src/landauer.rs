@@ -6,7 +6,7 @@ use ordered_float::NotNan;
 
 /// Boltzmann constant (J / K), CODATA 2018.
 /// DOI: 10_5281/zenodo.19159660
-pub const K_B: f64 = 1.380_649e-23;
+pub const K_B: f64 = crate::constants::registry::K_BOLTZMANN_J_PER_K;
 
 /// Landauer bit energy **k_B T ln 2** [J] at temperature `T` [K].
 ///

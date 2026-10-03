@@ -95,6 +95,7 @@ fn registry_row_backfilled(name: &str) -> bool {
         || K3_REGISTRY_ROW_NAMES.contains(&name)
         || K3_TIER1_MEASUREMENT_ROW_NAMES.contains(&name)
         || K3_TIER2_GATE_ROW_NAMES.contains(&name)
+        || umst_math::constants::tier2_derivation::NUMERICS_REGISTRY_ROW_NAMES.contains(&name)
         || K4_REGISTRY_ROW_NAMES.contains(&name)
         || K5_REGISTRY_ROW_NAMES.contains(&name)
         || K5B_REGISTRY_ROW_NAMES.contains(&name)

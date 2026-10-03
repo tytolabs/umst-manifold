@@ -108,10 +108,10 @@ pub const MIN_PROMOTION_CREDIT_DERIVATION: Derivation = Derivation::Policy {
     rationale: "`min_promotion_credit_bits` — UCRS inbox promotion quarantine floor.",
 };
 
-/// `dignity_scalar_range` — operator UX upper bound (`D_MAX`).
-/// Policy: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` was cited here, but its statement does not fix this value.
-pub const DIGNITY_SCALAR_RANGE_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`dignity_scalar_range` — operator UX upper bound (`D_MAX`).",
+/// `dignity_scalar_range` — upper end `D_MAX` of the dignity range; Lean `Dignity.d_max : ℝ := 10` fixes it.
+pub const DIGNITY_SCALAR_RANGE_DERIVATION: Derivation = Derivation::Theorem {
+    decl: LeanDecl { module: "Dignity", name: "d_max" },
+    expected_value: 10.0,
 };
 
 /// `staleness_cycle_count` — default ranker staleness cycles (Tier-3 policy).
@@ -831,6 +831,25 @@ pub const K5K_REGISTRY_ROW_NAMES: &[&str] = &[
     "umst_smoother_r_dignity",
     "umst_smoother_q_landauer_slack",
     "umst_smoother_r_landauer_slack",
+];
+
+/// Numerics rows (solver tolerances, finite-difference steps, comparison floors) whose values
+/// `numeric_tolerance` and `kernels::scalar` read from the registry.
+pub const NUMERICS_REGISTRY_ROW_NAMES: &[&str] = &[
+    "rho_mi_clamp_abs",
+    "bar_network_cg_rel_tol",
+    "mechanics_tight_cg_rel_tol",
+    "adjoint_reference_rel_tol",
+    "mechanics_mid_cg_scale",
+    "finite_difference_step_scale",
+    "finite_difference_step_min",
+    "finite_difference_step_max",
+    "approx_epsilon_f64",
+    "approx_max_relative_default",
+    "approx_epsilon_f32_loose",
+    "approx_epsilon_f32_mid",
+    "approx_epsilon_f64_loose",
+    "edge_length_divisor_floor_f32",
 ];
 
 /// K-5d registry row names (6/6 for slice GREEN).

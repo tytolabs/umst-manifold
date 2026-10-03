@@ -5,7 +5,7 @@
 use crate::landauer::K_B;
 
 /// Operator UX upper bound (cockpit `dignity_scalar` scale, `10 · RCC`).
-pub const D_MAX: f64 = 10.0;
+pub const D_MAX: f64 = crate::constants::registry::DIGNITY_D_MAX;
 
 #[inline]
 fn landauer_joules_per_bit(temperature_k: f64) -> f64 {

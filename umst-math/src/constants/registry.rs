@@ -171,6 +171,132 @@ pub static REGISTRY: &[ConstantEntry] = &[
         derivation: ADMISSIBILITY_MARGIN_EPS_DERIVATION,
     },
     ConstantEntry {
+        name: "rho_mi_clamp_abs",
+        expression: "0.9999 |ρ| clamp in MI(ρ) = −½·log₂(1−ρ²) (RHO_MI_CLAMP_ABS)",
+        evidence: "policy: keeps log₂(1−ρ²) finite (umst_math::kernels::scalar)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "`rho_mi_clamp_abs` — numerical guard keeping log₂(1−ρ²) finite; it caps MI(ρ) at about 6.14 bits. No statement fixes it.",
+        },
+    },
+    ConstantEntry {
+        name: "bar_network_cg_rel_tol",
+        expression: "1e-6 relative CG residual, f32 bar networks (BAR_NETWORK_CG_REL_TOL)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "`bar_network_cg_rel_tol` — base relative residual for f32 bar-network CG, scaled by the problem scale and floored at f32::EPSILON.",
+        },
+    },
+    ConstantEntry {
+        name: "mechanics_tight_cg_rel_tol",
+        expression: "1e-8 relative CG residual, tight mechanics tier (MECHANICS_TIGHT_CG_REL_TOL)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "`mechanics_tight_cg_rel_tol` — base relative residual for the tight mechanics tier, scaled by the problem scale.",
+        },
+    },
+    ConstantEntry {
+        name: "adjoint_reference_rel_tol",
+        expression: "1e-10 relative residual, f64 adjoint and analytic references (ADJOINT_REFERENCE_REL_TOL)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "`adjoint_reference_rel_tol` — base relative residual for f64 adjoint and analytic reference solves, floored at f64::EPSILON.",
+        },
+    },
+    ConstantEntry {
+        name: "mechanics_mid_cg_scale",
+        expression: "0.1 problem-scale factor of the mid CG tier, about 1e-7 (MECHANICS_MID_CG_SCALE)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "`mechanics_mid_cg_scale` — scale factor placing the mid tier between the bar-network default and the tight tier.",
+        },
+    },
+    ConstantEntry {
+        name: "finite_difference_step_scale",
+        expression: "5e-4 central-difference step h = √scale · 5e-4 (FINITE_DIFFERENCE_STEP_SCALE)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "`finite_difference_step_scale` — central-difference step per √(problem scale) on f32 fields.",
+        },
+    },
+    ConstantEntry {
+        name: "finite_difference_step_min",
+        expression: "1e-6 lower clamp of the finite-difference step (FINITE_DIFFERENCE_STEP_MIN)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "`finite_difference_step_min` — lower clamp of the finite-difference step, above f32 round-off.",
+        },
+    },
+    ConstantEntry {
+        name: "finite_difference_step_max",
+        expression: "1e-2 upper clamp of the finite-difference step (FINITE_DIFFERENCE_STEP_MAX)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "`finite_difference_step_max` — upper clamp of the finite-difference step, below truncation error growth.",
+        },
+    },
+    ConstantEntry {
+        name: "approx_epsilon_f64",
+        expression: "1.0e-30 absolute ε, f64 Landauer and credit parity (APPROX_EPSILON_F64)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "`approx_epsilon_f64` — absolute comparison floor for Landauer energies, which are of order 1e-21 J.",
+        },
+    },
+    ConstantEntry {
+        name: "approx_max_relative_default",
+        expression: "1.0e-9 default max_relative, credit and Landauer debit parity (APPROX_MAX_RELATIVE_DEFAULT)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "`approx_max_relative_default` — relative comparison bound for credit and Landauer debit parity.",
+        },
+    },
+    ConstantEntry {
+        name: "approx_epsilon_f32_loose",
+        expression: "1.0e-6 absolute ε, loose f32 component checks (APPROX_EPSILON_F32_LOOSE)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "`approx_epsilon_f32_loose` — absolute floor for f32 tensor component checks.",
+        },
+    },
+    ConstantEntry {
+        name: "approx_epsilon_f32_mid",
+        expression: "1.0e-5 absolute ε, mid f32 component checks (APPROX_EPSILON_F32_MID)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "`approx_epsilon_f32_mid` — absolute floor for DEC and bar-network f32 component checks.",
+        },
+    },
+    ConstantEntry {
+        name: "approx_epsilon_f64_loose",
+        expression: "1.0e-18 absolute ε, loose f64 checks (APPROX_EPSILON_F64_LOOSE)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "`approx_epsilon_f64_loose` — absolute floor for f64 checks free of f32 noise.",
+        },
+    },
+    ConstantEntry {
+        name: "edge_length_divisor_floor_f32",
+        expression: "1e-30 m divisor floor for axial strain elong / edge_len (EDGE_LENGTH_DIVISOR_FLOOR_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "`edge_length_divisor_floor_f32` — divisor guard for axial strain in bar networks; degenerate edges only.",
+        },
+    },
+    ConstantEntry {
         name: "min_promotion_credit_bits",
         expression: "1.0 bits minimum for inbox promotion (U2)",
         evidence: "UCRS observation credit quarantine; umst-ucrs MIN_PROMOTION_CREDIT_BITS",
@@ -313,8 +439,8 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "dignity_scalar_range",
-        expression: "[0.0, 10.0] / D_MAX in umst-math::dignity",
-        evidence: "policy: dignity scalar upper bound D_MAX (design brief)",
+        expression: "10.0 = D_MAX, upper end of the dignity range [0, D_MAX] in umst-math::dignity",
+        evidence: "UMST.Formal Dignity.d_max (d_max : ℝ := 10)",
         env_override: None,
         derivation: DIGNITY_SCALAR_RANGE_DERIVATION,
     },
@@ -1347,6 +1473,45 @@ pub static REGISTRY: &[ConstantEntry] = &[
 /// SSOT ambient reference temperature (K); mirrors row `host_temperature_fallback_k`.
 pub const HOST_TEMPERATURE_FALLBACK_K: f64 = 300.0;
 
+/// Boltzmann constant (J/K), CODATA 2018; row `k_boltzmann_j_per_k`.
+pub const K_BOLTZMANN_J_PER_K: f64 = 1.380_649e-23;
+/// Row `transition_tolerance`.
+pub const TRANSITION_TOLERANCE: f64 = 1e-6;
+/// Row `admissibility_margin_eps`.
+pub const ADMISSIBILITY_MARGIN_EPS: f64 = 1e-4;
+/// Row `gate_mass_tolerance_kg_m3` (kg/m³).
+pub const GATE_MASS_TOLERANCE_KG_M3: f64 = 100.0;
+/// Row `dignity_scalar_range`: Lean `Dignity.d_max`.
+pub const DIGNITY_D_MAX: f64 = 10.0;
+/// Row `rho_mi_clamp_abs`.
+pub const RHO_MI_CLAMP_ABS: f64 = 0.9999;
+/// Row `bar_network_cg_rel_tol`.
+pub const BAR_NETWORK_CG_REL_TOL: f64 = 1e-6;
+/// Row `mechanics_tight_cg_rel_tol`.
+pub const MECHANICS_TIGHT_CG_REL_TOL: f64 = 1e-8;
+/// Row `adjoint_reference_rel_tol`.
+pub const ADJOINT_REFERENCE_REL_TOL: f64 = 1e-10;
+/// Row `mechanics_mid_cg_scale`.
+pub const MECHANICS_MID_CG_SCALE: f64 = 0.1;
+/// Row `finite_difference_step_scale`.
+pub const FINITE_DIFFERENCE_STEP_SCALE: f64 = 5e-4;
+/// Row `finite_difference_step_min`.
+pub const FINITE_DIFFERENCE_STEP_MIN: f64 = 1e-6;
+/// Row `finite_difference_step_max`.
+pub const FINITE_DIFFERENCE_STEP_MAX: f64 = 1e-2;
+/// Row `approx_epsilon_f64`.
+pub const APPROX_EPSILON_F64: f64 = 1.0e-30;
+/// Row `approx_max_relative_default`.
+pub const APPROX_MAX_RELATIVE_DEFAULT: f64 = 1.0e-9;
+/// Row `approx_epsilon_f32_loose`.
+pub const APPROX_EPSILON_F32_LOOSE: f32 = 1.0e-6;
+/// Row `approx_epsilon_f32_mid`.
+pub const APPROX_EPSILON_F32_MID: f32 = 1.0e-5;
+/// Row `approx_epsilon_f64_loose`.
+pub const APPROX_EPSILON_F64_LOOSE: f64 = 1.0e-18;
+/// Row `edge_length_divisor_floor_f32` (m).
+pub const EDGE_LENGTH_DIVISOR_FLOOR_F32: f32 = 1e-30;
+
 /// THEOREM-BOUND: first `f64` token in `expression` (leading positive decimal); `None` if the row is non-numeric (e.g. `#RRGGBB` colors, string policies).
 /// Used for TUI-7b per-metric Joseph/Kalman covariances (`umst_smoother_{q,r}_*`).
 #[must_use]
@@ -1437,7 +1602,7 @@ mod tests {
 
     #[test]
     fn registry_sorted_by_tier_is_sorted_and_complete() {
-        assert_eq!(REGISTRY.len(), 173);
+        assert_eq!(REGISTRY.len(), 187);
         let sorted = registry_sorted_by_tier();
         assert_eq!(sorted.len(), REGISTRY.len());
         for w in sorted.windows(2) {

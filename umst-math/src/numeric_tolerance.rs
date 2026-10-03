@@ -8,19 +8,19 @@
 /// Registry row `transition_tolerance` — admissibility ε (formal Gate.transitionTolerance).
 #[must_use]
 pub const fn transition_tolerance_f64() -> f64 {
-    1e-6
+    crate::constants::registry::TRANSITION_TOLERANCE
 }
 
 /// Registry row `admissibility_margin_eps` — hard token floor (Gate.gateCheckSound).
 #[must_use]
 pub const fn admissibility_margin_eps_f64() -> f64 {
-    1e-4
+    crate::constants::registry::ADMISSIBILITY_MARGIN_EPS
 }
 
 /// Registry row `gate_mass_tolerance_kg_m3` — bulk density jump band (Concrete.Gate.δMass_val).
 #[must_use]
 pub const fn gate_mass_tolerance_kg_m3_f64() -> f64 {
-    100.0
+    crate::constants::registry::GATE_MASS_TOLERANCE_KG_M3
 }
 
 /// Characteristic positive scale (mesh length, modulus, residual norm, etc.).
@@ -69,9 +69,15 @@ pub fn linear_solve_relative_tol_f32(
     tier: LinearSolveRelativeTier,
 ) -> f32 {
     let base = match tier {
-        LinearSolveRelativeTier::BarNetworkF32Default => 1e-6_f64,
-        LinearSolveRelativeTier::MechanicsTightF32 => 1e-8_f64,
-        LinearSolveRelativeTier::AdjointReferenceF64 => 1e-10_f64,
+        LinearSolveRelativeTier::BarNetworkF32Default => {
+            crate::constants::registry::BAR_NETWORK_CG_REL_TOL
+        }
+        LinearSolveRelativeTier::MechanicsTightF32 => {
+            crate::constants::registry::MECHANICS_TIGHT_CG_REL_TOL
+        }
+        LinearSolveRelativeTier::AdjointReferenceF64 => {
+            crate::constants::registry::ADJOINT_REFERENCE_REL_TOL
+        }
     };
     let rel = base * scale.effective();
     (rel.max(f64::from(f32::EPSILON))).min(1.0) as f32
@@ -98,7 +104,10 @@ pub fn mechanics_tight_cg_tol_f32() -> f32 {
 /// Mid tier between default bar network and tight mechanics (~1e-7).
 #[must_use]
 pub fn mechanics_mid_cg_tol_f32() -> f32 {
-    linear_solve_relative_tol_f32(ProblemScale::new(0.1), LinearSolveRelativeTier::BarNetworkF32Default)
+    linear_solve_relative_tol_f32(
+        ProblemScale::new(crate::constants::registry::MECHANICS_MID_CG_SCALE),
+        LinearSolveRelativeTier::BarNetworkF32Default,
+    )
 }
 
 /// Unit-scale adjoint / analytic reference relative tolerance (f64).
@@ -117,9 +126,15 @@ pub fn linear_solve_relative_tol_f64(
     tier: LinearSolveRelativeTier,
 ) -> f64 {
     let base = match tier {
-        LinearSolveRelativeTier::BarNetworkF32Default => 1e-6_f64,
-        LinearSolveRelativeTier::MechanicsTightF32 => 1e-8_f64,
-        LinearSolveRelativeTier::AdjointReferenceF64 => 1e-10_f64,
+        LinearSolveRelativeTier::BarNetworkF32Default => {
+            crate::constants::registry::BAR_NETWORK_CG_REL_TOL
+        }
+        LinearSolveRelativeTier::MechanicsTightF32 => {
+            crate::constants::registry::MECHANICS_TIGHT_CG_REL_TOL
+        }
+        LinearSolveRelativeTier::AdjointReferenceF64 => {
+            crate::constants::registry::ADJOINT_REFERENCE_REL_TOL
+        }
     };
     let rel = base * scale.effective();
     rel.max(f64::EPSILON).min(1.0)
@@ -128,8 +143,10 @@ pub fn linear_solve_relative_tol_f64(
 /// Symmetric finite-difference step from problem scale (central difference on f32 fields).
 #[must_use]
 pub fn finite_difference_step_f32(scale: ProblemScale) -> f32 {
-    let h = scale.effective().sqrt() * 5e-4_f64;
-    (h.max(1e-6_f64).min(1e-2_f64)) as f32
+    let h = scale.effective().sqrt()
+        * crate::constants::registry::FINITE_DIFFERENCE_STEP_SCALE;
+    (h.max(crate::constants::registry::FINITE_DIFFERENCE_STEP_MIN)
+        .min(crate::constants::registry::FINITE_DIFFERENCE_STEP_MAX)) as f32
 }
 
 /// Denominator guard for relative error ratios (avoids division by exact zero).
@@ -145,19 +162,20 @@ pub fn relative_error_denominator_f64(reference: f64) -> f64 {
 }
 
 /// `approx` / unit-test absolute epsilon for f64 Landauer and credit parity.
-pub const APPROX_EPSILON_F64: f64 = 1.0e-30;
+pub const APPROX_EPSILON_F64: f64 = crate::constants::registry::APPROX_EPSILON_F64;
 
 /// Default `max_relative` for credit / Landauer debit parity tests.
-pub const APPROX_MAX_RELATIVE_DEFAULT: f64 = 1.0e-9;
+pub const APPROX_MAX_RELATIVE_DEFAULT: f64 =
+    crate::constants::registry::APPROX_MAX_RELATIVE_DEFAULT;
 
 /// Loose f32 component checks (tensor spot tests).
-pub const APPROX_EPSILON_F32_LOOSE: f32 = 1.0e-6;
+pub const APPROX_EPSILON_F32_LOOSE: f32 = crate::constants::registry::APPROX_EPSILON_F32_LOOSE;
 
 /// Mid f32 component checks (DEC / bar-network spot tests).
-pub const APPROX_EPSILON_F32_MID: f32 = 1.0e-5;
+pub const APPROX_EPSILON_F32_MID: f32 = crate::constants::registry::APPROX_EPSILON_F32_MID;
 
 /// Loose f64 checks where f32 noise is absent.
-pub const APPROX_EPSILON_F64_LOOSE: f64 = 1.0e-18;
+pub const APPROX_EPSILON_F64_LOOSE: f64 = crate::constants::registry::APPROX_EPSILON_F64_LOOSE;
 
 /// Gate / optim comparison floor (dimensionless).
 #[must_use]
@@ -286,7 +304,8 @@ pub const fn fracture_psi_probe_strain_f32() -> f32 {
 }
 
 /// Edge-length divisor floor for axial strain (`elong / edge_len`) in bar networks.
-pub const EDGE_LENGTH_DIVISOR_FLOOR_F32: f32 = 1e-30;
+pub const EDGE_LENGTH_DIVISOR_FLOOR_F32: f32 =
+    crate::constants::registry::EDGE_LENGTH_DIVISOR_FLOOR_F32;
 
 /// Sentinel non-positive rel-tol for refusal / precondition tests (must stay ≤ 0).
 pub const REFUSAL_NONPOSITIVE_REL_TOL_F32: f32 = 0.0_f32;

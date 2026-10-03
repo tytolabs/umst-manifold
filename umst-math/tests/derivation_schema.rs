@@ -23,7 +23,7 @@ fn derivation_labels_are_distinct() {
 
 #[test]
 fn registry_len_matches_k1_baseline() {
-    assert_eq!(REGISTRY.len(), 173);
+    assert_eq!(REGISTRY.len(), 187);
 }
 
 #[test]
@@ -37,7 +37,7 @@ fn k_arc_backfill_covers_entire_registry_no_pending() {
         K5_REGISTRY_ROW_NAMES, K5B_REGISTRY_ROW_NAMES, K5C_REGISTRY_ROW_NAMES,
         K5D_REGISTRY_ROW_NAMES, K5E_REGISTRY_ROW_NAMES, K5F_REGISTRY_ROW_NAMES,
         K5G_REGISTRY_ROW_NAMES, K5H_REGISTRY_ROW_NAMES, K5I_REGISTRY_ROW_NAMES,
-        K5J_REGISTRY_ROW_NAMES, K5K_REGISTRY_ROW_NAMES,
+        K5J_REGISTRY_ROW_NAMES, K5K_REGISTRY_ROW_NAMES, NUMERICS_REGISTRY_ROW_NAMES,
     };
     use umst_math::constants::tier3_derivation::{
         K4_REGISTRY_ROW_NAMES, K5L_REGISTRY_ROW_NAMES, K5M_REGISTRY_ROW_NAMES,
@@ -66,6 +66,7 @@ fn k_arc_backfill_covers_entire_registry_no_pending() {
             || K5I_REGISTRY_ROW_NAMES.contains(&e.name)
             || K5J_REGISTRY_ROW_NAMES.contains(&e.name)
             || K5K_REGISTRY_ROW_NAMES.contains(&e.name)
+            || NUMERICS_REGISTRY_ROW_NAMES.contains(&e.name)
             || K5L_REGISTRY_ROW_NAMES.contains(&e.name)
             || K5M_REGISTRY_ROW_NAMES.contains(&e.name)
             || K5N_REGISTRY_ROW_NAMES.contains(&e.name)
