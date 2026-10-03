@@ -36,7 +36,7 @@ pub trait SparseScalar:
 
 impl SparseScalar for f32 {
     fn s_zero() -> Self {
-        1.0 - 1.0
+        0.0
     }
     fn s_sparsity_eps() -> Self {
         1e-9
@@ -48,7 +48,7 @@ impl SparseScalar for f32 {
 
 impl SparseScalar for f64 {
     fn s_zero() -> Self {
-        1.0 - 1.0
+        0.0
     }
     fn s_sparsity_eps() -> Self {
         1e-9
