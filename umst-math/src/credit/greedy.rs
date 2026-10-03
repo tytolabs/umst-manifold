@@ -12,7 +12,7 @@ pub struct CreditCandidate {
     pub admissible: bool,
 }
 
-/// Proof: `UMST.Formal.CreditGreedy::credit_greedy_optimal` (Zenodo **10_5281/zenodo.19159660**).
+/// Proof: `UMST.Formal.CreditGreedy::credit_greedy_optimal` (Zenodo **10.5281/zenodo.19159660**).
 /// Impl: `umst_math::credit::greedy::credit_greedy_sum`
 #[must_use]
 /// THEOREM-BOUND: `UMST.Formal.CreditGreedy::credit_greedy_optimal` (§14bis.l W-3 G8)

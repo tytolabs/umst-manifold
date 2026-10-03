@@ -10,7 +10,7 @@ use crate::info_entropy::shannon_diag_bits;
 /// **I(A:B) = S(A)+S(B)−S(AB)** for **product** diagonal states (independent marginals).
 ///
 /// Proof: `QuantumMutualInfo` definitions.
-/// DOI: 10_5281/zenodo.19159660
+/// DOI: 10.5281/zenodo.19159660
 pub fn quantum_mi_product_diagonal<const NA: usize, const NB: usize, const NAB: usize>(
     joint: &DensityDiag<NAB>,
     marginal_a: &DensityDiag<NA>,

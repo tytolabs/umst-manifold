@@ -30,7 +30,7 @@ pub fn try_dignity(value: f64) -> Option<f64> {
 
 /// One gated dignity update (Lean `dignity_step` honest branch shape).
 ///
-/// Proof: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` (Zenodo **10_5281/zenodo.19159660**).
+/// Proof: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` (Zenodo **10.5281/zenodo.19159660**).
 #[must_use]
 pub fn dignity_step(
     temperature_k: f64,

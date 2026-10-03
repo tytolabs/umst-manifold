@@ -9,7 +9,7 @@ use crate::density::DensityDiag;
 /// Tensor product of diagonal factors **ρ ⊗ σ** (Kronecker of probability vectors).
 ///
 /// Proof: `tensorDensity`, `TensorPartialTrace` lemmas.
-/// DOI: 10_5281/zenodo.19159660
+/// DOI: 10.5281/zenodo.19159660
 pub fn tensor_diagonal<const NA: usize, const NB: usize, const NAB: usize>(
     a: &DensityDiag<NA>,
     b: &DensityDiag<NB>,
@@ -39,7 +39,7 @@ pub fn tensor_diagonal<const NA: usize, const NB: usize, const NAB: usize>(
 /// Partial trace over **B** (second factor), **N = NA·NB**, traced dimension **NB**.
 ///
 /// Proof: `partial_trace` PSD / trace lemmas in `TensorPartialTrace`.
-/// DOI: 10_5281/zenodo.19159660
+/// DOI: 10.5281/zenodo.19159660
 pub fn partial_trace_second<const NA: usize, const NB: usize, const NAB: usize>(
     ab: &DensityDiag<NAB>,
 ) -> Option<DensityDiag<NA>> {
@@ -61,7 +61,7 @@ pub fn partial_trace_second<const NA: usize, const NB: usize, const NAB: usize>(
 /// PSD check for diagonal (nonnegative entries).
 ///
 /// Proof: spectrum nonnegative ⇔ diagonal PSD in the computational basis.
-/// DOI: 10_5281/zenodo.19159660
+/// DOI: 10.5281/zenodo.19159660
 pub fn is_psd_diagonal<const N: usize>(d: &DensityDiag<N>) -> bool {
     d.p.iter().all(|x| x.into_inner() >= 0.0)
 }
@@ -69,7 +69,7 @@ pub fn is_psd_diagonal<const N: usize>(d: &DensityDiag<N>) -> bool {
 /// Trace-normalised check via scalar tolerance.
 ///
 /// Proof: `DensityDiag::trace` equals classical probability mass (Lean `trace_one` witnesses).
-/// DOI: 10_5281/zenodo.19159660
+/// DOI: 10.5281/zenodo.19159660
 pub fn is_trace_one<const N: usize>(d: &DensityDiag<N>, eps: f64) -> bool {
     let t: NotNan<f64> = d.trace();
     (t.into_inner() - 1.0).abs() <= eps

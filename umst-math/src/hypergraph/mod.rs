@@ -12,7 +12,7 @@
 //!
 //! Proof: `GraphProperties` (finite hypergraph incidence); `Naturality` (relabeling commutes with
 //! edge maps); `MonoidalState` (associative tensor product monoid on diagonal factors).
-//! DOI: 10_5281/zenodo.19159660
+//! DOI: 10.5281/zenodo.19159660
 
 mod closure;
 mod functor;

@@ -5,7 +5,7 @@
 /// Witness for the cited identity unitary Kraus step (no tabulated `u8` channel index in Rust).
 ///
 /// Proof: `SchrodingerDynamics` — unitary single-Kraus factor.
-/// DOI: 10_5281/zenodo.19159660
+/// DOI: 10.5281/zenodo.19159660
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnitaryStepIdentity {
     /// Identity channel named in `theorem_registry` (`UMST.FormalDoubleSlit.SchrodingerDynamics::unitary_channel`).

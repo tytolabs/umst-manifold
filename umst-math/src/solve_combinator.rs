@@ -9,7 +9,7 @@
 //! Stall is judged over a problem-derived window, not a single residual bump.
 //!
 //! Proof anchors: `LandauerBound` / `idealResetErasure`; Gate `clausiusDuhemFwd`.
-//! DOI: 10_5281/zenodo.19159660
+//! DOI: 10.5281/zenodo.19159660
 
 use crate::landauer::K_B;
 use ordered_float::NotNan;

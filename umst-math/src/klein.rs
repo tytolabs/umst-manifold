@@ -7,7 +7,7 @@ use crate::density::DensityDiag;
 /// Spectral (diagonal) relative entropy **Σ pᵢ log(pᵢ/qᵢ)** in nats; `+∞` if support mismatch.
 ///
 /// Proof: `KleinInequality` / `spectralRelativeEntropynonneg`.
-/// DOI: 10_5281/zenodo.19159660
+/// DOI: 10.5281/zenodo.19159660
 pub fn spectral_relative_entropy_diag<const N: usize>(
     p: &DensityDiag<N>,
     q: &DensityDiag<N>,
@@ -28,7 +28,7 @@ pub fn spectral_relative_entropy_diag<const N: usize>(
 /// Classical non-negativity check on common support.
 ///
 /// Proof: same as [`spectral_relative_entropy_diag`] / Klein non-negativity.
-/// DOI: 10_5281/zenodo.19159660
+/// DOI: 10.5281/zenodo.19159660
 pub fn klein_spectral_relative_entropy_nonneg<const N: usize>(
     p: &DensityDiag<N>,
     q: &DensityDiag<N>,

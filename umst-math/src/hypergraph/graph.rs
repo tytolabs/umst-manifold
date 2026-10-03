@@ -3,13 +3,13 @@
 //! Mutable hypergraph with sorted-unique hyperedges.
 //!
 //! Proof: `GraphProperties` — finite vertex set + set of hyperedges (incidence structure).
-//! DOI: 10_5281/zenodo.19159660
+//! DOI: 10.5281/zenodo.19159660
 
 /// Hypergraph \(H=(V,E)\) with \(V=\{0,\dots,n-1\}\) and each edge a nonempty subset of \(V\)
 /// stored as a sorted duplicate-free `Vec<usize>`.
 ///
 /// Proof: edges are finite subsets; representation normalises set equality.
-/// DOI: 10_5281/zenodo.19159660
+/// DOI: 10.5281/zenodo.19159660
 /// ZCI-EXEMPT: finite-hypergraph carrier matching `GraphProperties` doc proof sketch; not a new Lean def name (G8)
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Hypergraph {
@@ -22,7 +22,7 @@ impl Hypergraph {
     /// Empty edge set on `n_vertices` nodes (may be `0`).
     ///
     /// Proof: empty hypergraph is a valid object in `GraphProperties`.
-    /// DOI: 10_5281/zenodo.19159660
+    /// DOI: 10.5281/zenodo.19159660
     #[must_use]
     pub fn new(n_vertices: usize) -> Self {
         Hypergraph {
@@ -50,7 +50,7 @@ impl Hypergraph {
     /// Duplicate edge sets are ignored (idempotent).
     ///
     /// Proof: `GraphProperties/union_closed` — closure under adding an edge from the edge space.
-    /// DOI: 10_5281/zenodo.19159660
+    /// DOI: 10.5281/zenodo.19159660
     pub fn add_hyperedge(&mut self, verts: &[usize]) -> Result<(), &'static str> {
         if verts.is_empty() {
             return Err("empty hyperedge");

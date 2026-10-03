@@ -10,7 +10,7 @@ use crate::info_entropy::shannon_diag_bits;
 /// **RCC = 1 − H(P)/log₂ N** for `N` balanced branches (uniform reference).
 ///
 /// Proof: `LandauerBound` / `PMICVisibility` — path entropy collapse lemmas.
-/// DOI: 10_5281/zenodo.19159660
+/// DOI: 10.5281/zenodo.19159660
 pub fn residual_coherence_capacity<const N: usize>(dist: &DensityDiag<N>) -> NotNan<f64> {
     assert!(N > 1, "RCC requires at least two branches");
     let h = shannon_diag_bits(dist).into_inner();

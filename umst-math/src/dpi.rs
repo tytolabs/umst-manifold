@@ -9,7 +9,7 @@ use crate::info_entropy::shannon_diag_bits;
 /// of the **pushforward** on the observed diagonal (equality only for reversible layers).
 ///
 /// Proof: `vonNeumannEntropy_nondecreasing_unital_CPTP_n` (quantum); classical embedding.
-/// DOI: 10_5281/zenodo.19159660
+/// DOI: 10.5281/zenodo.19159660
 /// THEOREM-BOUND: `UMST.Formal.MedianConvergence::median_convergence_sample_size` (§14bis.l W-3 G8)
 pub fn shannon_nondecreasing_under_marginalization<const N: usize, const M: usize>(
     before: &DensityDiag<N>,
