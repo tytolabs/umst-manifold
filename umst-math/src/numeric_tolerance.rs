@@ -31,11 +31,13 @@ pub struct ProblemScale {
 }
 
 impl ProblemScale {
+    /// A scale of the given characteristic magnitude.
     #[must_use]
     pub const fn new(characteristic: f64) -> Self {
         Self { characteristic }
     }
 
+    /// The unit scale (characteristic 1).
     #[must_use]
     pub const fn unit() -> Self {
         Self { characteristic: 1.0 }
