@@ -151,8 +151,8 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "q_hyd_j_per_kg",
-        expression: "450.0 J/kg (UMST.Concrete.Q_hyd; Haskell qHydration; formal Helmholtz ψ = −Q_hyd·α)",
-        evidence: "policy: umst-formal row hydrationHeatDefault (450 J/g), proved within the cited clinker-phase heats (hydrationHeatDefault_in_range)",
+        expression: "4.5e5 J/kg (450 J/g × 1000 g/kg; formal hydrationHeatDefault; ψ = −Q_hyd·α)",
+        evidence: "policy: umst-formal row hydrationHeatDefault is 450 J/g, proved inside the cited clinker-phase heats (hydrationHeatDefault_in_range); J/kg follows by the exact factor 1000 g/kg",
         env_override: None,
         derivation: Q_HYD_J_PER_KG_DERIVATION,
     },

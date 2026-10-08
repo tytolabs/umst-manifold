@@ -70,10 +70,14 @@ pub const GATE_MASS_TOLERANCE_DERIVATION: Derivation = Derivation::Theorem {
     expected_value: gate_mass_tolerance_kg_m3_f64(),
 };
 
-/// `q_hyd_j_per_kg` — Haskell `qHydration` / formal `Q_hyd` (Helmholtz SDF gate).
-/// Policy: `UMST.Concrete.Q_hyd_val` was cited here, but its statement does not fix this value.
+/// `q_hyd_j_per_kg` — coefficient of ψ = −Q_hyd·α, in J/kg.
+///
+/// Formal policy row `hydrationHeatDefault` is 450 J/g. The theorem
+/// `hydrationHeatDefault_in_range` places that choice between the cited phase
+/// heats; it does not derive 450. The J/kg figure is 450 J/g × 1000 g/kg.
+/// ψ is linear in α, so its Hessian is zero and ψ stays convex on α ∈ [0, 1].
 pub const Q_HYD_J_PER_KG_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "umst-formal constants.json policy row hydrationHeatDefault (450 J/g), proved to lie between the least and greatest cited clinker-phase heats (hydrationHeatDefault_in_range)",
+    rationale: "coefficient of ψ = −Q_hyd·α (linear in α, Hessian 0, convex on [0, 1]); formal hydrationHeatDefault is the policy 450 J/g inside hydrationHeatDefault_in_range; J/kg = 450 J/g × 1000 g/kg = 4.5e5",
 };
 
 // --- K-5 frugality / UCRS policy batch (§14bis.k deepen) ---
@@ -675,7 +679,7 @@ pub const PYTHON_VERSION_PIN_DERIVATION: Derivation = Derivation::Pin {
 /// Authority anchor for L-0 `umst_formal_pin_sha` (FORMAL_PIN.txt file digest).
 pub const L0_FORMAL_PIN_AUTHORITY: &str = "umst-math/FORMAL_PIN.txt";
 
-/// Pinned SHA-256 of `umst-math/FORMAL_PIN.txt` (measured STEER_20260930T2349 wave 21).
+/// Pinned SHA-256 of `umst-math/FORMAL_PIN.txt`.
 pub const L0_FORMAL_PIN_FILE_SHA256: &str =
     "f064139f82e259cddc8c648a388206b8396c42c39e99d85287fa9427f9a2daff";
 
@@ -1333,7 +1337,47 @@ mod tests {
             Derivation::Policy { rationale } => assert!(rationale.contains("hydrationHeatDefault")),
             other => panic!("Q_hyd is the formal policy row hydrationHeatDefault, got {other:?}"),
         }
-        assert!((Q_HYDRATION_J_PER_KG - 450.0).abs() < f64::EPSILON);
+        let j_per_g = formal_hydration_heat_default_j_per_g();
+        let j_per_kg = j_per_g * 1_000.0;
+        assert!(
+            (Q_HYDRATION_J_PER_KG - j_per_kg).abs() < 1e-6,
+            "Q_HYDRATION_J_PER_KG {Q_HYDRATION_J_PER_KG} must be formal {j_per_g} J/g times 1000"
+        );
+        assert!(
+            (j_per_kg - 4.5e5).abs() < 1e-6,
+            "formal hydrationHeatDefault converts to 4.5e5 J/kg, got {j_per_kg}"
+        );
+        assert!(
+            entry.expression.contains("4.5e5") && entry.expression.contains("J/kg"),
+            "registry expression must state the J/kg figure: {}",
+            entry.expression
+        );
+        assert!(
+            !entry.expression.starts_with("450.0"),
+            "registry expression must not open with the unconverted 450 figure: {}",
+            entry.expression
+        );
+        for alpha in [0.0_f64, 0.25, 1.0] {
+            let psi = crate::manifold::csg::helmholtz_sdf_1d(alpha, Q_HYDRATION_J_PER_KG);
+            assert!(psi <= 0.0, "psi = -Q*alpha stays non-positive at alpha {alpha}, got {psi}");
+            assert!((psi + Q_HYDRATION_J_PER_KG * alpha).abs() < 1e-6);
+        }
+    }
+
+    /// Formal table row `hydrationHeatDefault`, joules per gram.
+    fn formal_hydration_heat_default_j_per_g() -> f64 {
+        let json = include_str!("../../../../umst-formal/constants/constants.json");
+        let marker = "\"id\": \"hydrationHeatDefault\"";
+        let idx = json.find(marker).expect("hydrationHeatDefault row");
+        let slice = &json[idx..idx + 500];
+        assert!(slice.contains("\"unit\": \"J/g\""), "hydrationHeatDefault unit is J/g");
+        let num_key = "\"num\": \"";
+        let n = slice.find(num_key).expect("hydrationHeatDefault num");
+        let rest = &slice[n + num_key.len()..];
+        let end = rest.find('"').expect("num close");
+        rest[..end]
+            .parse::<f64>()
+            .expect("hydrationHeatDefault num parses")
     }
 
     #[test]
@@ -1490,7 +1534,8 @@ mod tests {
 
     #[test]
     fn k5g_scrub_sentinel_len_matches_egoff_ssot() {
-        assert_eq!(MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN, 16.0);
+        let token = "<EGOFF-SCRUBBED>";
+        assert_eq!(MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN as usize, token.len());
     }
 
     #[test]
