@@ -127,7 +127,8 @@ pub use profile_ldlt::{
 };
 /// Certified lowest eigenpairs of a symmetric pencil (shift-invert Lanczos as a budgeted unfold).
 pub use generalized_eigen::{
-    lowest_eigenpairs, tridiagonal_eigen, CertifiedEigenpair, Completeness, Deflation, EigenBound,
+    lowest_eigenpairs, symmetric_eigen_small, tridiagonal_eigen, CertifiedEigenpair, Completeness,
+    Deflation, EigenBound,
     EigenRefuse, EigenRequest, GeneralizedEigenSolution, Pencil,
 };
 /// THEOREM-BOUND: Clausius–Duhem admissibility (`Gate.lean` conjunct; SSOT for ucrs/formal drift)

@@ -662,12 +662,14 @@ fn disjoint_groups(deflated: &[CertifiedEigenpair], pairs: &[CertifiedEigenpair]
     })
 }
 
-/// Eigenvalues and eigenvectors (columns) of a small dense symmetric matrix by cyclic Jacobi rotations, one sweep
-/// per bit of `f64` precision at most (Jacobi converges quadratically once the off-diagonal is small).
+/// Eigenvalues and eigenvectors of a small dense symmetric matrix by cyclic Jacobi rotations, one sweep per bit of
+/// `f64` precision at most (Jacobi converges quadratically once the off-diagonal is small). The eigenvalues come in
+/// no particular order; column `k` of the returned matrix (`v[i][k]` over `i`) is the unit eigenvector of
+/// eigenvalue `k`.
 ///
 /// # Errors
 /// [`EigenRefuse::TridiagonalNoConvergence`] when the sweeps run out.
-fn symmetric_eigen_small(a: &[Vec<f64>]) -> Result<(Vec<f64>, Vec<Vec<f64>>), EigenRefuse> {
+pub fn symmetric_eigen_small(a: &[Vec<f64>]) -> Result<(Vec<f64>, Vec<Vec<f64>>), EigenRefuse> {
     let n = a.len();
     let mut a: Vec<Vec<f64>> = a.to_vec();
     let mut v: Vec<Vec<f64>> = (0..n)
