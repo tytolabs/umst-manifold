@@ -12,13 +12,20 @@
 //! **Certificates, per pair.** With `x` normalised in `M`, Rayleigh quotient `ρ`, and `δ = ‖K x − ρ M x‖_{M⁻¹}`:
 //!
 //! - *Weinstein*: some eigenvalue of the pencil lies in `[ρ − δ, ρ + δ]`;
+//! - *Kahan (clusters)*: overlapping Weinstein intervals may share one eigenvalue, so overlapping pairs are merged
+//!   into a cluster, replaced by the Rayleigh–Ritz pairs of their span, and bounded together: `k` eigenvalues lie
+//!   within `‖K X − M X H‖_F` of the `k` Ritz values (Parlett 1998, ch. 11);
 //! - *Kato–Temple*: if `(a, b)` holds exactly one eigenvalue `λ*` and `a < ρ < b`, then
-//!   `ρ − δ²/(b − ρ) ≤ λ* ≤ ρ + δ²/(ρ − a)`.
+//!   `ρ − δ²/(b − ρ) ≤ λ* ≤ ρ + δ²/(ρ − a)`, issued only for isolated pairs under a certified count, with `σ` as
+//!   the lower gap end of the first.
+//!
+//! Every interval is widened by `η`, an allowance for the rounding of the computed `ρ` (Higham 2002, §3.1). It is
+//! an allowance and not a floating-point proof: the rounding of the residual vector is not bounded separately.
 //!
 //! **Completeness.** By Sylvester's law of inertia the number of negative pivots of `K − τM` is the number of
-//! eigenvalues below `τ` ([`crate::profile_ldlt::LdltFactor::inertia`]). With `τ` above the last wanted interval
-//! and below the next Ritz value, the count proves no eigenvalue was missed. Only then do the Kato–Temple gaps hold,
-//! so Kato–Temple bounds are issued only under a certified count.
+//! eigenvalues below `τ` ([`crate::profile_ldlt::LdltFactor::inertia`]), for the factored matrix up to the
+//! perturbation of an unpivoted `L D Lᵀ`. With the clusters disjoint, `τ` above the last interval and below the
+//! next Ritz value, a count equal to the number of pairs proves no eigenvalue was missed.
 //!
 //! References: Parlett, *The Symmetric Eigenvalue Problem* (SIAM 1998), §3 (Weinstein), §10 (Kato–Temple), §13
 //! (Lanczos); Ericsson & Ruhe, *Math. Comp.* 35 (1980) 1251–1268 (spectral transformation Lanczos); Bathe,
@@ -90,7 +97,8 @@ pub struct EigenRequest {
     pub shift: f64,
     /// Known eigenpairs projected out of the iteration.
     pub deflation: Vec<Deflation>,
-    /// Relative Ritz residual target, from the problem.
+    /// Stopping rule: the relative Ritz residual of the shift-invert operator, from the problem. It does not fix
+    /// the width of the pencil intervals, which each pair reports from its own residual.
     pub tolerance: ProblemTolerance,
 }
 
@@ -101,6 +109,9 @@ pub enum EigenBound {
     Weinstein,
     /// Kato–Temple under a certified count, intersected with Weinstein.
     KatoTemple,
+    /// A cluster of overlapping intervals bounded together by Kahan's theorem: the interval holds as many
+    /// eigenvalues as the cluster has members.
+    Cluster,
 }
 
 /// An eigenpair with a certified interval for its eigenvalue.
@@ -108,15 +119,16 @@ pub enum EigenBound {
 pub struct CertifiedEigenpair {
     /// Rayleigh quotient `ρ = xᵀKx / xᵀMx`.
     pub lambda: f64,
-    /// Certified lower bound of the eigenvalue.
+    /// Lower bound of the eigenvalue: certified up to the floating-point allowance in `rounding`.
     pub lower: f64,
-    /// Certified upper bound of the eigenvalue.
+    /// Upper bound of the eigenvalue: certified up to the floating-point allowance in `rounding`.
     pub upper: f64,
     /// The bound used.
     pub bound: EigenBound,
     /// `δ = ‖K x − ρ M x‖_{M⁻¹}` for the `M`-normalised vector.
     pub residual: f64,
-    /// Floating-point allowance `η` on the computed `ρ` (see the module documentation).
+    /// Floating-point allowance `η` on the computed `ρ` (an allowance for the rounding of `ρ`, not a proof that
+    /// covers the rounding of the residual; see the module documentation).
     pub rounding: f64,
     /// The eigenvector, normalised so `xᵀ M x = 1`.
     pub vector: Rc<[f64]>,
@@ -156,6 +168,8 @@ pub struct GeneralizedEigenSolution {
     pub pairs: Vec<CertifiedEigenpair>,
     /// Sturm count certificate.
     pub completeness: Completeness,
+    /// Wanted pairs not delivered (an invariant subspace or the budget ended the iteration first).
+    pub shortfall: usize,
 }
 
 /// The pencil `(K, M)`.
@@ -457,6 +471,7 @@ fn finalise(
             deflated,
             pairs: Vec::new(),
             completeness: Completeness::Unchecked,
+            shortfall: request.wanted,
         });
     }
     let (theta, s) = tridiagonal_eigen(&k.alpha, &k.beta[..m - 1])?;
@@ -468,7 +483,7 @@ fn finalise(
         })
     };
     let take = request.wanted.min(order.len());
-    let raw = order[..take]
+    let mut pairs = order[..take]
         .iter()
         .map(|&i| {
             let x = ritz(i);
@@ -476,16 +491,23 @@ fn finalise(
             Ok(weinstein(rho, delta, eta, Rc::from(x)))
         })
         .collect::<Result<Vec<_>, EigenRefuse>>()?;
-    let mut pairs = raw;
     pairs.sort_by(|a, b| a.lambda.total_cmp(&b.lambda));
     let next_ritz = order.get(take).map(|&i| request.shift + theta[i].recip());
-    let completeness = sturm_certificate(pencil, &deflated, &pairs, next_ritz);
+    let deflated = isolate(pencil, mfac, deflated)?;
+    let pairs = isolate(pencil, mfac, pairs)?;
+    let disjoint = disjoint_groups(&deflated, &pairs);
+    let completeness = if disjoint {
+        sturm_certificate(pencil, &deflated, &pairs, next_ritz)
+    } else {
+        Completeness::Unchecked
+    };
     let pairs = match completeness {
-        Completeness::Certified { tau, .. } => kato_temple(&deflated, pairs, tau),
+        Completeness::Certified { tau, .. } => kato_temple(&deflated, pairs, tau, request.shift),
         _ => pairs,
     };
     Ok(GeneralizedEigenSolution {
         deflated,
+        shortfall: request.wanted - pairs.len(),
         pairs,
         completeness,
     })
@@ -503,8 +525,189 @@ fn weinstein(rho: f64, delta: f64, eta: f64, vector: Rc<[f64]>) -> CertifiedEige
     }
 }
 
-/// Count eigenvalues below a shift between the last wanted interval and the next Ritz value. Tries the midpoint
-/// and, on a near-zero pivot, the lower third of the gap.
+/// Merge pairs whose intervals overlap into clusters until the clusters are disjoint. A cluster of `k` pairs is
+/// replaced by the Rayleigh–Ritz pairs of its span, `M`-orthonormalised, and every member carries the cluster
+/// interval `[min μ − r, max μ + r]` with `r = ‖K X − M X H‖_F / (1 − e) + max η`, `e` the measured
+/// `M`-orthogonality defect of `X`. By Kahan's theorem (Parlett 1998, ch. 11) `k` eigenvalues of the pencil lie
+/// within `‖R‖₂ ≤ ‖R‖_F` of the `k` values `μ`, so the cluster interval holds `k` eigenvalues counted with
+/// multiplicity. Each merge removes a cluster boundary, so the merging ends after at most one pass per pair.
+fn isolate(
+    pencil: Pencil<'_>,
+    mfac: &SpdFactor,
+    pairs: Vec<CertifiedEigenpair>,
+) -> Result<Vec<CertifiedEigenpair>, EigenRefuse> {
+    let mut groups: Vec<Vec<CertifiedEigenpair>> = pairs.into_iter().map(|p| vec![p]).collect();
+    loop {
+        let before = groups.len();
+        groups = groups
+            .into_iter()
+            .fold(Vec::new(), |mut acc: Vec<Vec<CertifiedEigenpair>>, g| {
+                let overlaps = acc.last().is_some_and(|prev| {
+                    let prev_hi = prev
+                        .iter()
+                        .map(|p| p.upper)
+                        .fold(f64::NEG_INFINITY, f64::max);
+                    let lo = g.iter().map(|p| p.lower).fold(f64::INFINITY, f64::min);
+                    lo <= prev_hi
+                });
+                match acc.last_mut() {
+                    Some(prev) if overlaps => prev.extend(g),
+                    _ => acc.push(g),
+                }
+                acc
+            });
+        groups = groups
+            .into_iter()
+            .map(|g| {
+                if g.len() > 1 {
+                    cluster_bound(pencil, mfac, &g)
+                } else {
+                    Ok(g)
+                }
+            })
+            .collect::<Result<_, _>>()?;
+        if groups.len() == before {
+            return Ok(groups.into_iter().flatten().collect());
+        }
+    }
+}
+
+fn cluster_bound(
+    pencil: Pencil<'_>,
+    mfac: &SpdFactor,
+    group: &[CertifiedEigenpair],
+) -> Result<Vec<CertifiedEigenpair>, EigenRefuse> {
+    // M-orthonormalise the members (twice), then Rayleigh–Ritz on their span.
+    let (x, mx) = group.iter().try_fold(
+        (Vec::new(), Vec::new()),
+        |(mut x, mut mx): (Basis, Basis), p| {
+            let w = orthogonalise(orthogonalise(p.vector.to_vec(), &x, &mx), &x, &mx);
+            let mw = pencil.m.mul(&w)?;
+            let norm = dot(&w, &mw).max(0.0).sqrt();
+            if norm == 0.0 || !norm.is_finite() {
+                return Err(EigenRefuse::DeflationInvalid);
+            }
+            x.push(Rc::from(scale(&w, norm.recip())));
+            mx.push(Rc::from(scale(&mw, norm.recip())));
+            Ok((x, mx))
+        },
+    )?;
+    let k = x.len();
+    let kx: Vec<Vec<f64>> = x
+        .iter()
+        .map(|v| pencil.k.mul(v))
+        .collect::<Result<_, _>>()?;
+    let h: Vec<Vec<f64>> = (0..k)
+        .map(|i| (0..k).map(|j| dot(&x[i], &kx[j])).collect())
+        .collect();
+    let defect = (0..k)
+        .flat_map(|i| (0..k).map(move |j| (i, j)))
+        .map(|(i, j)| (dot(&x[i], &mx[j]) - if i == j { 1.0 } else { 0.0 }).powi(2))
+        .sum::<f64>()
+        .sqrt();
+    let (mu, v) = symmetric_eigen_small(&h)?;
+    // R = K X − M X H, column by column, in the M⁻¹ norm.
+    let r_f = (0..k)
+        .map(|j| {
+            let col: Vec<f64> = (0..kx[j].len())
+                .map(|row| kx[j][row] - (0..k).map(|i| mx[i][row] * h[i][j]).sum::<f64>())
+                .collect();
+            mfac.inverse_norm_sq(&col)
+        })
+        .sum::<Result<f64, _>>()?
+        .sqrt();
+    let eta = group.iter().map(|p| p.rounding).fold(0.0_f64, f64::max);
+    let radius = if defect < 1.0 {
+        r_f / (1.0 - defect) + eta
+    } else {
+        f64::INFINITY
+    };
+    let lo = mu.iter().copied().fold(f64::INFINITY, f64::min) - radius;
+    let hi = mu.iter().copied().fold(f64::NEG_INFINITY, f64::max) + radius;
+    Ok((0..k)
+        .map(|c| {
+            let y = (0..k).fold(vec![0.0_f64; x[0].len()], |acc, i| {
+                axpy(&acc, v[i][c], &x[i])
+            });
+            CertifiedEigenpair {
+                lambda: mu[c],
+                lower: lo,
+                upper: hi,
+                bound: EigenBound::Cluster,
+                residual: r_f,
+                rounding: eta,
+                vector: Rc::from(y),
+            }
+        })
+        .collect())
+}
+
+/// Whether the deflated and computed intervals, taken in order, never overlap except inside one cluster.
+fn disjoint_groups(deflated: &[CertifiedEigenpair], pairs: &[CertifiedEigenpair]) -> bool {
+    let all: Vec<&CertifiedEigenpair> = deflated.iter().chain(pairs).collect();
+    all.windows(2).all(|w| {
+        let same_cluster = w[0].bound == EigenBound::Cluster
+            && w[1].bound == EigenBound::Cluster
+            && w[0].lower == w[1].lower;
+        same_cluster || w[1].lower > w[0].upper
+    })
+}
+
+/// Eigenvalues and eigenvectors (columns) of a small dense symmetric matrix by cyclic Jacobi rotations, one sweep
+/// per bit of `f64` precision at most (Jacobi converges quadratically once the off-diagonal is small).
+///
+/// # Errors
+/// [`EigenRefuse::TridiagonalNoConvergence`] when the sweeps run out.
+fn symmetric_eigen_small(a: &[Vec<f64>]) -> Result<(Vec<f64>, Vec<Vec<f64>>), EigenRefuse> {
+    let n = a.len();
+    let mut a: Vec<Vec<f64>> = a.to_vec();
+    let mut v: Vec<Vec<f64>> = (0..n)
+        .map(|i| (0..n).map(|j| if i == j { 1.0 } else { 0.0 }).collect())
+        .collect();
+    let scale_of = |a: &[Vec<f64>]| a.iter().flatten().fold(0.0_f64, |m, x| m.max(x.abs()));
+    let floor = f64::EPSILON * scale_of(&a);
+    for _ in 0..f64::MANTISSA_DIGITS {
+        let off = (0..n)
+            .flat_map(|i| (0..n).filter(move |&j| j != i).map(move |j| (i, j)))
+            .map(|(i, j)| a[i][j].abs())
+            .fold(0.0, f64::max);
+        if off <= floor {
+            return Ok(((0..n).map(|i| a[i][i]).collect(), v));
+        }
+        for p in 0..n {
+            for q in p + 1..n {
+                if a[p][q].abs() <= floor {
+                    continue;
+                }
+                let tau = (a[q][q] - a[p][p]) / (a[p][q] + a[p][q]);
+                let t = tau.signum() / (tau.abs() + (1.0 + tau * tau).sqrt());
+                let t = if tau == 0.0 { 1.0 } else { t };
+                let c = (1.0 + t * t).sqrt().recip();
+                let s = t * c;
+                for k in 0..n {
+                    let (akp, akq) = (a[k][p], a[k][q]);
+                    a[k][p] = c * akp - s * akq;
+                    a[k][q] = s * akp + c * akq;
+                }
+                for k in 0..n {
+                    let (apk, aqk) = (a[p][k], a[q][k]);
+                    a[p][k] = c * apk - s * aqk;
+                    a[q][k] = s * apk + c * aqk;
+                }
+                for row in &mut v {
+                    let (vp, vq) = (row[p], row[q]);
+                    row[p] = c * vp - s * vq;
+                    row[q] = s * vp + c * vq;
+                }
+            }
+        }
+    }
+    Err(EigenRefuse::TridiagonalNoConvergence)
+}
+
+/// Count eigenvalues below a shift between the last interval and the next Ritz value. Tries the midpoint and, on
+/// a near-zero pivot, the lower third of the gap. Called only when the intervals are disjoint clusters, so each
+/// interval holds as many eigenvalues as it has members.
 fn sturm_certificate(
     pencil: Pencil<'_>,
     deflated: &[CertifiedEigenpair],
@@ -537,25 +740,27 @@ fn sturm_certificate(
         .unwrap_or(Completeness::Unchecked)
 }
 
-/// Tighten each Weinstein interval with Kato–Temple, using the neighbouring certified bounds as the gap ends.
-/// Valid only under a certified count, which isolates each eigenvalue between its neighbours' intervals. The
-/// theorem holds for the exact Rayleigh quotient, which lies within `η` of the computed one, so the bound is
-/// `[ρ − η − d²/(b − ρ − η), ρ + η + d²/(ρ − η − a)]` with `d = δ + η`.
+/// Tighten each isolated (non-cluster) interval with Kato–Temple, using the neighbouring intervals as the gap ends;
+/// below the first, the shift `σ`, under which the entry check certified no eigenvalue. Valid only under a
+/// certified count of disjoint clusters, which isolates each such eigenvalue. The theorem holds for the exact
+/// Rayleigh quotient, within `η` of the computed one: `[ρ − η − d²/(b − ρ − η), ρ + η + d²/(ρ − η − a)]`,
+/// `d = δ + η`.
 fn kato_temple(
     deflated: &[CertifiedEigenpair],
     pairs: Vec<CertifiedEigenpair>,
     tau: f64,
+    sigma: f64,
 ) -> Vec<CertifiedEigenpair> {
-    let floor = deflated
-        .iter()
-        .map(|d| d.upper)
-        .fold(f64::NEG_INFINITY, f64::max);
+    let floor = deflated.iter().map(|d| d.upper).fold(sigma, f64::max);
     let uppers: Vec<f64> = pairs.iter().map(|p| p.upper).collect();
     let lowers: Vec<f64> = pairs.iter().map(|p| p.lower).collect();
     pairs
         .into_iter()
         .enumerate()
         .map(|(i, p)| {
+            if p.bound == EigenBound::Cluster {
+                return p;
+            }
             let a = if i == 0 { floor } else { uppers[i - 1] };
             let b = lowers.get(i + 1).copied().unwrap_or(tau);
             let (lo_rho, hi_rho) = (p.lambda - p.rounding, p.lambda + p.rounding);
@@ -564,11 +769,7 @@ fn kato_temple(
                 return p;
             }
             let lower = (lo_rho - d * d / (b - hi_rho)).max(p.lower);
-            let upper = if a.is_finite() {
-                (hi_rho + d * d / (lo_rho - a)).min(p.upper)
-            } else {
-                p.upper
-            };
+            let upper = (hi_rho + d * d / (lo_rho - a)).min(p.upper);
             CertifiedEigenpair {
                 lower,
                 upper,

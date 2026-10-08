@@ -263,9 +263,14 @@ fn free_bar_deflates_the_rigid_mode_and_tightens_with_kato_temple() {
     for (j, p) in sol.pairs.iter().enumerate() {
         let exact = bar_exact(n_el, j + 1);
         assert!(p.lower <= exact && exact <= p.upper, "mode {j}");
+        assert_eq!(
+            p.bound,
+            EigenBound::KatoTemple,
+            "mode {j} must be tightened"
+        );
         assert!(
-            p.upper - p.lower <= 2.0 * (p.residual + p.rounding),
-            "Kato–Temple must not widen Weinstein"
+            p.upper - p.lower < 2.0 * (p.residual + p.rounding),
+            "mode {j}: Kato–Temple must narrow the Weinstein width"
         );
     }
 }
@@ -328,4 +333,101 @@ fn owned_and_borrowed_cliques_assemble_the_same_matrix() {
         .expect("A");
     let owned = pattern.assemble_owned(cliques).expect("A");
     assert_eq!(borrowed, owned);
+}
+
+/// Two uncoupled spring chains of `n` masses each; the second chain's springs scaled by `1 + split`.
+fn twin_chains(n: usize, split: f64) -> (SymmetricProfile, SymmetricProfile) {
+    let mut cliques: Vec<(Vec<usize>, Vec<f64>, Vec<f64>)> = Vec::new();
+    for (block, k) in [(0, 1.0), (1, 1.0 + split)] {
+        let base = block * n;
+        // Fixed–fixed chain: diagonal 2k, off-diagonal −k, as element pairs plus end springs.
+        for i in 0..n - 1 {
+            cliques.push((
+                vec![base + i, base + i + 1],
+                vec![k, -k, -k, k],
+                vec![0.5, 0.0, 0.0, 0.5],
+            ));
+        }
+        cliques.push((vec![base], vec![k], vec![0.5]));
+        cliques.push((vec![base + n - 1], vec![k], vec![0.5]));
+    }
+    let pattern = ProfilePattern::from_cliques(2 * n, cliques.iter().map(|c| c.0.as_slice()))
+        .expect("pattern");
+    let k = pattern
+        .assemble(cliques.iter().map(|c| Clique {
+            dofs: &c.0,
+            block: &c.1,
+        }))
+        .expect("K");
+    let m = pattern
+        .assemble(cliques.iter().map(|c| Clique {
+            dofs: &c.0,
+            block: &c.2,
+        }))
+        .expect("M");
+    (k, m)
+}
+
+#[test]
+fn near_double_eigenvalues_are_bounded_as_a_cluster() {
+    let n = 30;
+    let split = 1e-13;
+    let (k, m) = twin_chains(n, split);
+    let request = EigenRequest {
+        wanted: 4,
+        shift: -1.0,
+        deflation: Vec::new(),
+        tolerance: ProblemTolerance::from_problem(1.0, 1e-12).expect("tol"),
+    };
+    let sol = converged(
+        lowest_eigenpairs(Pencil { k: &k, m: &m }, &request, budget(), &meter()).expect("solve"),
+    );
+    let exact = |j: usize, s: f64| (1.0 + s) * (2.0 - 2.0 * (j as f64 * PI / (n + 1) as f64).cos());
+    assert!(
+        matches!(sol.completeness, Completeness::Certified { below: 4, .. }),
+        "{:?}",
+        sol.completeness
+    );
+    assert_eq!(sol.shortfall, 0);
+    for p in &sol.pairs {
+        let j = if p.lambda < 0.5 * (exact(1, 0.0) + exact(2, 0.0)) {
+            1
+        } else {
+            2
+        };
+        assert!(
+            p.lower <= exact(j, 0.0) && exact(j, split) <= p.upper,
+            "{p:?} misses chain {j}"
+        );
+    }
+    assert!(
+        sol.pairs.iter().any(|p| p.bound == EigenBound::Cluster),
+        "overlapping pairs must form a cluster"
+    );
+    eprintln!(
+        "near-double: {:?}, {} pairs, shortfall {}",
+        sol.completeness,
+        sol.pairs.len(),
+        sol.shortfall
+    );
+}
+
+#[test]
+fn a_missed_copy_of_a_double_eigenvalue_is_never_certified() {
+    let (k, m) = twin_chains(20, 0.0);
+    let request = EigenRequest {
+        wanted: 1,
+        shift: -1.0,
+        deflation: Vec::new(),
+        tolerance: ProblemTolerance::from_problem(1.0, 1e-10).expect("tol"),
+    };
+    let sol = converged(
+        lowest_eigenpairs(Pencil { k: &k, m: &m }, &request, budget(), &meter()).expect("solve"),
+    );
+    // λ₁ has multiplicity two and one pair was asked for: the count below any τ above λ₁ is at least two.
+    assert!(
+        !matches!(sol.completeness, Completeness::Certified { .. }),
+        "{:?}",
+        sol.completeness
+    );
 }
