@@ -473,7 +473,7 @@ pub const EPISTEMIC_PROXY_ESTIMATOR_DEFINITION: Derivation = Derivation::Definit
 };
 
 /// `umst_semantic_coverage_threshold_w2` — G8 semantic coverage floor (W-5 40%).
-pub const SEMANTIC_COVERAGE_W5_DEFINITION: Derivation = Derivation::Definition {
+pub const SEMANTIC_COVERAGE_THRESHOLD_DEFINITION: Derivation = Derivation::Definition {
     authority_url: "COCKPIT_DESIGN_BRIEF.md#w-5-semantic-coverage-40",
     expected_sha256: COCKPIT_POLICY_BRIEF_SHA256,
 };
@@ -493,7 +493,7 @@ pub fn derivation_for_k5r_registry_row(name: &str) -> Option<Derivation> {
         "ranker_weight_bounds" => Some(COCKPIT_RANKER_WEIGHT_DEFINITION),
         "cockpit_http_cors_open" => Some(COCKPIT_HTTP_CORS_DEFINITION),
         "umst_epistemic_proxy_estimator" => Some(EPISTEMIC_PROXY_ESTIMATOR_DEFINITION),
-        "umst_semantic_coverage_threshold_w2" => Some(SEMANTIC_COVERAGE_W5_DEFINITION),
+        "umst_semantic_coverage_threshold_w2" => Some(SEMANTIC_COVERAGE_THRESHOLD_DEFINITION),
         _ => None,
     }
 }
@@ -838,7 +838,7 @@ mod tests {
     }
 
     #[test]
-    fn k5x_registry_rows_backfilled_wave20() {
+    fn k5x_registry_rows_backfilled() {
         assert!(k5x_backfill_landed());
         for name in K5X_REGISTRY_ROW_NAMES {
             assert!(REGISTRY.iter().any(|e| e.name == *name), "{name} in REGISTRY");
@@ -846,7 +846,7 @@ mod tests {
     }
 
     #[test]
-    fn k5y_registry_rows_backfilled_wave21() {
+    fn k5y_registry_rows_backfilled() {
         assert!(k5y_backfill_landed());
         for name in K5Y_REGISTRY_ROW_NAMES {
             assert!(REGISTRY.iter().any(|e| e.name == *name), "{name} in REGISTRY");

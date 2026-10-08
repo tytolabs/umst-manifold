@@ -64,7 +64,7 @@ use super::tier3_derivation::{
     EPISTEMIC_PROXY_ESTIMATOR_DEFINITION, ENERGY_BACKEND_DEFINITION, H_8_HAL_DEFINITION,
     H_9_HAL_DEFINITION, M_0_MANIFOLD_DEFINITION, S_0_CRYPTO_DEFINITION,
     S_0_ML_DSA_DEFINITION, S_0_SLH_DSA_DEFINITION,
-    SEMANTIC_COVERAGE_W5_DEFINITION, TUI_6B_COLOR_DEFINITION, TUI_BIDI_DEFINITION,
+    SEMANTIC_COVERAGE_THRESHOLD_DEFINITION, TUI_6B_COLOR_DEFINITION, TUI_BIDI_DEFINITION,
 };
 
 /// One documented numerical parameter (value, tier, evidence, optional env).
@@ -646,7 +646,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         expression: "40% (first `check_semantic_coverage.sh` floor; wide gate G8; W-2 10% → W-3 20% → W-4' 30% → W-5 40%; W-6+)",
         evidence: "Definition (HSAD §0.12 candidate; §14bis.l W-2/W-3/W-4-H7-stop/W-4'/W-5); G8 binds `UMST_SEMANTIC_THRESHOLD` to this row’s policy intent",
         env_override: Some("UMST_SEMANTIC_THRESHOLD"),
-        derivation: SEMANTIC_COVERAGE_W5_DEFINITION,
+        derivation: SEMANTIC_COVERAGE_THRESHOLD_DEFINITION,
     },
     // CONSTANT-BOUND: `umst_gpu_backend_default` (Tier-3 honest disclosure; expression names default n/a)
     ConstantEntry {
