@@ -84,6 +84,7 @@ pub struct Discretisation {
     cell_of: HashMap<[usize; 3], usize>,
     roles: Vec<Role>,
     mass: MassProperties,
+    volumes: std::collections::BTreeMap<u16, f64>,
     diagnostics: Diagnostics,
     kind: ElementKind,
 }
@@ -98,6 +99,7 @@ struct Acc {
     ijks: Vec<[usize; 3]>,
     cache: HashMap<WholeKey, Rc<ElementMatrices>>,
     moments: [f64; 10],
+    volumes: std::collections::BTreeMap<u16, f64>,
     diagnostics: Diagnostics,
 }
 
@@ -130,6 +132,7 @@ pub fn discretise<F: OccupancyField + ?Sized>(
         ijks: Vec::new(),
         cache: HashMap::new(),
         moments: [0.0; 10],
+        volumes: std::collections::BTreeMap::new(),
         diagnostics: Diagnostics::default(),
     };
     let acc = grid.cells().try_fold(init, |mut acc, ijk| {
@@ -140,6 +143,9 @@ pub fn discretise<F: OccupancyField + ?Sized>(
         }
         let h: [f64; 3] = std::array::from_fn(|i| chi[i] - clo[i]);
         add_moments(&mut acc.moments, &quad, clo, chi, table)?;
+        quad.points
+            .iter()
+            .for_each(|q| *acc.volumes.entry(q.material).or_insert(0.0) += q.weight);
         let whole_material = (quad.exactness == Exactness::Whole).then(|| quad.points[0].material);
         let key = whole_material.map(|m| (h.map(f64::to_bits), m));
         let cached = key.and_then(|k| acc.cache.get(&k).cloned());
@@ -189,6 +195,7 @@ pub fn discretise<F: OccupancyField + ?Sized>(
         cell_of,
         roles,
         mass: mass_properties(&acc.moments),
+        volumes: acc.volumes,
         diagnostics,
         kind: spec.kind,
     })
@@ -391,6 +398,12 @@ impl Discretisation {
     #[must_use]
     pub fn mass_properties(&self) -> MassProperties {
         self.mass
+    }
+
+    /// Solid volume per material index (m³), from the quadrature.
+    #[must_use]
+    pub fn material_volumes(&self) -> &std::collections::BTreeMap<u16, f64> {
+        &self.volumes
     }
 
     /// Faithfulness counts.
