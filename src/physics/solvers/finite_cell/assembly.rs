@@ -259,7 +259,9 @@ fn mass_properties(m: &[f64; 10]) -> MassProperties {
 }
 
 /// Free nodes are those of well-posed cells; a node touched only by ill-posed cells takes the trilinear
-/// extrapolation of the nearest well-posed cell (centre distance, searched in growing Chebyshev rings).
+/// extrapolation of a well-posed cell reached from its cell through face-connected occupied cells: the first
+/// breadth-first level that holds a well-posed cell, nearest centre first (Badia, Verdugo & Martín 2018 grow
+/// aggregates the same way). Solid separated by a gap or a slot is never joined.
 fn aggregate(
     grid: &TensorGrid,
     cells: &[Cell],
@@ -274,10 +276,27 @@ fn aggregate(
         .filter(|(_, &w)| w)
         .for_each(|(c, _)| c.nodes.iter().for_each(|&n| roles[n] = Role::Free));
     let counts = grid.cell_counts();
-    let reach = counts.iter().copied().max().unwrap_or(0);
     let centre = |ijk: [usize; 3]| -> [f64; 3] {
         let (lo, hi) = grid.cell_box(ijk);
         std::array::from_fn(|i| (lo[i] + hi[i]) / real(2))
+    };
+    let neighbours = |c: [usize; 3]| -> Vec<[usize; 3]> {
+        (0..3)
+            .flat_map(|a| {
+                let down = (c[a] > 0).then(|| {
+                    let mut n = c;
+                    n[a] -= 1;
+                    n
+                });
+                let up = (c[a] + 1 < counts[a]).then(|| {
+                    let mut n = c;
+                    n[a] += 1;
+                    n
+                });
+                down.into_iter().chain(up)
+            })
+            .filter(|n| cell_of.contains_key(n))
+            .collect()
     };
     for (c, cell) in cells.iter().enumerate() {
         if well_posed[c] {
@@ -293,23 +312,35 @@ fn aggregate(
             continue;
         }
         let here = ijks[c];
-        let root = (1..=reach)
-            .find_map(|r| {
-                let ring = ring_cells(here, r, counts);
-                ring.into_iter()
-                    .filter_map(|ijk| {
-                        cell_of
-                            .get(&ijk)
-                            .copied()
-                            .filter(|&k| well_posed[k])
-                            .map(|k| (k, ijk))
-                    })
-                    .min_by(|a, b| {
-                        let (ca, cb, h) = (centre(a.1), centre(b.1), centre(here));
-                        dist2(ca, h).total_cmp(&dist2(cb, h))
-                    })
-            })
-            .ok_or(FiniteCellRefuse::AggregationUnresolved)?;
+        let mut seen: std::collections::HashSet<[usize; 3]> = std::iter::once(here).collect();
+        let mut level = vec![here];
+        let root = loop {
+            let next: Vec<[usize; 3]> = level
+                .iter()
+                .flat_map(|&q| neighbours(q))
+                .filter(|n| seen.insert(*n))
+                .collect();
+            if next.is_empty() {
+                break None;
+            }
+            let found = next
+                .iter()
+                .filter_map(|ijk| {
+                    cell_of
+                        .get(ijk)
+                        .copied()
+                        .filter(|&k| well_posed[k])
+                        .map(|k| (k, *ijk))
+                })
+                .min_by(|a, b| {
+                    dist2(centre(a.1), centre(here)).total_cmp(&dist2(centre(b.1), centre(here)))
+                });
+            if found.is_some() {
+                break found;
+            }
+            level = next;
+        }
+        .ok_or(FiniteCellRefuse::AggregationUnresolved)?;
         let (rlo, rhi) = grid.cell_box(root.1);
         let root_nodes = cells[root.0].nodes;
         for n in pending {
@@ -325,15 +356,6 @@ fn aggregate(
 
 fn dist2(a: [f64; 3], b: [f64; 3]) -> f64 {
     (0..3).map(|i| (a[i] - b[i]).powi(2)).sum()
-}
-
-/// Cells at Chebyshev distance exactly `r` from `c`, inside the grid.
-fn ring_cells(c: [usize; 3], r: usize, counts: [usize; 3]) -> Vec<[usize; 3]> {
-    let range = |i: usize| c[i].saturating_sub(r)..=(c[i] + r).min(counts[i] - 1);
-    range(0)
-        .flat_map(|i| range(1).flat_map(move |j| range(2).map(move |k| [i, j, k])))
-        .filter(|ijk| (0..3).map(|a| ijk[a].abs_diff(c[a])).max() == Some(r))
-        .collect()
 }
 
 /// Which displacement components are fixed at a node, from its coordinates.
@@ -381,9 +403,11 @@ impl System {
     }
 
     /// Row sums of the consistent mass: the lumped mass, which keeps total mass and first moments exactly.
-    #[must_use]
-    pub fn lumped_mass(&self) -> Vec<f64> {
-        self.m.mul(&vec![1.0; self.n]).unwrap_or_default()
+    ///
+    /// # Errors
+    /// A profile refusal of the product.
+    pub fn lumped_mass(&self) -> Result<Vec<f64>, FiniteCellRefuse> {
+        Ok(self.m.mul(&vec![1.0; self.n])?)
     }
 }
 

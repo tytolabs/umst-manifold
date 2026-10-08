@@ -31,11 +31,18 @@ impl TensorGrid {
         if !(tolerance.is_finite() && tolerance > 0.0) {
             return Err(FiniteCellRefuse::InvalidGeometry);
         }
+        // Before any allocation: the node count implied by the spacings, times three degrees of freedom, must be
+        // numbered by a usize (planes add at most their own count).
+        let estimate = (0..3).try_fold(real(3), |n, a| {
+            let (l, h, s) = (lo[a], hi[a], max_spacing[a]);
+            let ok = l.is_finite() && h.is_finite() && s.is_finite() && s > 0.0 && l < h;
+            ok.then(|| n * ((h - l) / s + real(planes[a].len()) + real(2)))
+        });
+        if !estimate.is_some_and(|n| n.is_finite() && n < real(usize::MAX)) {
+            return Err(FiniteCellRefuse::InvalidGeometry);
+        }
         let axis = |a: usize| -> Result<Vec<f64>, FiniteCellRefuse> {
             let (l, h, s) = (lo[a], hi[a], max_spacing[a]);
-            if !(l.is_finite() && h.is_finite() && s.is_finite() && s > 0.0 && l < h) {
-                return Err(FiniteCellRefuse::InvalidGeometry);
-            }
             let mut breaks: Vec<f64> = std::iter::once(l)
                 .chain(
                     planes[a]

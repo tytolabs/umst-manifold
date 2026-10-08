@@ -20,9 +20,10 @@ use umst_manifold::physics::solvers::finite_cell::assembly::{
 };
 use umst_manifold::physics::solvers::finite_cell::element::ElementKind;
 use umst_manifold::physics::solvers::finite_cell::{
-    isotropic_stiffness, MaterialTable, OccupancyField, Voigt6,
+    isotropic_stiffness, FiniteCellRefuse, MaterialTable, OccupancyField, Voigt6,
 };
 use umst_math::generalized_eigen::{Completeness, GeneralizedEigenSolution};
+use umst_math::profile_ldlt::{ldlt, spd_factor};
 use umst_math::solve_combinator::{EnergyBudget, FixedJouleMeter, ProblemTolerance, SolveOutcome};
 
 const E_AL: f64 = 70.0e9;
@@ -70,6 +71,17 @@ impl OccupancyField for Slab {
             Vec::new()
         }
     }
+    // Prismatic inside a cell when no layer top falls strictly inside its height.
+    fn prismatic(&self, lo: [f64; 3], hi: [f64; 3]) -> bool {
+        self.layers
+            .iter()
+            .all(|&(top, _)| top <= lo[2] + 1e-12 || top >= hi[2] - 1e-12)
+    }
+    fn section_distance(&self, p: [f64; 3]) -> f64 {
+        (0..2)
+            .map(|i| (self.lo[i] - p[i]).max(p[i] - self.hi[i]))
+            .fold(f64::NEG_INFINITY, f64::max)
+    }
 }
 
 /// A circular plate of radius `r` centred at `(cx, cy)`, thickness `[z0, z1]`, inside a square background box.
@@ -104,6 +116,12 @@ impl OccupancyField for Disc {
     }
     fn interface_planes(&self, _: usize) -> Vec<f64> {
         Vec::new()
+    }
+    fn prismatic(&self, _: [f64; 3], _: [f64; 3]) -> bool {
+        true
+    }
+    fn section_distance(&self, p: [f64; 3]) -> f64 {
+        ((p[0] - self.c[0]).powi(2) + (p[1] - self.c[1]).powi(2)).sqrt() - self.r
     }
 }
 
@@ -152,9 +170,9 @@ fn forces_of_linear_field(
         disc.free_nodes().map(|n| (n, disc.node_point(n))).collect();
     let mut u = vec![0.0; sys.n()];
     for &(n, p) in &nodes {
-        for c in 0..3 {
+        for (c, row) in a.iter().enumerate() {
             if let Some(d) = sys.dof(n, c) {
-                u[d] = (0..3).map(|j| a[c][j] * p[j]).sum();
+                u[d] = row.iter().zip(&p).map(|(r, x)| r * x).sum();
             }
         }
     }
@@ -189,7 +207,8 @@ fn patch_test_linear_field_balances_at_interior_nodes() {
                     .for_each(|d| assert!(f[d].abs() <= 1e-10 * scale, "{kind:?} {}", f[d]));
             }
         }
-        // Cut cells: a disc whose interior nodes see clipped cells around them.
+        // A cut body: its interior nodes, all of whose cells are whole (the cut cells are checked by
+        // incompatible_modes_leave_a_linear_field_untouched_on_cut_cells).
         let disc_field = Disc {
             c: [0.0, 0.0],
             r: 0.037,
@@ -239,6 +258,12 @@ fn rigid_body_modes_lie_in_the_stiffness_nullspace_on_a_cut_body() {
             &spec([0.01, 0.01, 0.004], theta, ElementKind::Q1E9),
         )
         .expect("disc");
+        if theta > 0.0 {
+            assert!(
+                disc.diagnostics().aggregated_nodes > 0,
+                "the cut disc must exercise aggregation"
+            );
+        }
         let sys = assemble(&disc, &free).expect("sys");
         let k_scale = sys
             .stiffness()
@@ -284,7 +309,7 @@ fn mass_properties_are_exact_on_a_box_and_converge_on_a_disc() {
     );
     // Lumped row sums keep the total mass: the z-components sum to m.
     let sys = assemble(&disc, &free).expect("sys");
-    let lumped = sys.lumped_mass();
+    let lumped = sys.lumped_mass().expect("lumped");
     let mz: f64 = disc
         .free_nodes()
         .filter_map(|n| sys.dof(n, 2))
@@ -340,14 +365,14 @@ fn narita_lambdas(kind: ElementKind, n_plane: usize) -> Vec<f64> {
 }
 
 #[test]
-fn free_square_plate_matches_narita_and_q1_bounds_from_above() {
+fn free_square_plate_matches_narita_and_q1_locks_above_q1e9() {
     let reference = [13.47, 19.60, 24.27, 34.80];
     let q1e9 = narita_lambdas(ElementKind::Q1E9, 20);
     let q1 = narita_lambdas(ElementKind::Q1, 20);
     eprintln!("Q1E9 {q1e9:?}\nQ1   {q1:?}");
     for (i, r) in reference.iter().enumerate() {
         assert!(
-            (q1e9[i] - r).abs() <= 0.02 * r,
+            (q1e9[i] - r).abs() <= 0.005 * r,
             "Q1E9 mode {i}: {} vs {r}",
             q1e9[i]
         );
@@ -463,6 +488,12 @@ impl OccupancyField for SliverBox {
     }
     fn interface_planes(&self, axis: usize) -> Vec<f64> {
         self.inner.interface_planes(axis)
+    }
+    fn prismatic(&self, lo: [f64; 3], hi: [f64; 3]) -> bool {
+        self.inner.prismatic(lo, hi)
+    }
+    fn section_distance(&self, p: [f64; 3]) -> f64 {
+        self.inner.section_distance(p)
     }
 }
 
@@ -609,9 +640,9 @@ fn orthotropic_shear_slots_follow_the_voigt_order() {
         let u: Vec<f64> = {
             let mut u = vec![0.0; sys.n()];
             for &(n, p) in &nodes {
-                for c in 0..3 {
+                for (c, row) in a.iter().enumerate() {
                     if let Some(dd) = sys.dof(n, c) {
-                        u[dd] = (0..3).map(|j| a[c][j] * p[j]).sum();
+                        u[dd] = row.iter().zip(&p).map(|(r, x)| r * x).sum();
                     }
                 }
             }
@@ -674,15 +705,17 @@ fn apparent_mass_tends_to_the_rigid_mass_at_the_centre() {
     );
 }
 
-/// Hard simple support on the lateral faces of a plate `[0, a]² × [0, h]`: `w = 0` there; `u, v` fixed at the
-/// origin corner and `v` at `(a, 0)` to remove the in-plane rigid motions.
+/// Hard simple support on the lateral faces of a plate `[0, a]² × [0, h]`: `w = 0` on every lateral face, and the
+/// displacement tangent to the edge fixed through the thickness (`v` on `x = 0, a`, `u` on `y = 0, a`), which holds
+/// the tangential rotation at zero as the Navier–Mindlin and Leissa references assume; it also removes the in-plane
+/// rigid motions. (Fixing only `w` is the soft support, whose solution converges about 0.3 to 0.6 % away from the
+/// hard references; review B4 of 9 Oct 2026.)
 fn ssss(a: f64) -> impl Fn([f64; 3]) -> [bool; 3] {
     move |p: [f64; 3]| {
         let on = |x: f64, t: f64| (x - t).abs() < 1e-12;
-        let lateral = on(p[0], 0.0) || on(p[0], a) || on(p[1], 0.0) || on(p[1], a);
-        let origin = on(p[0], 0.0) && on(p[1], 0.0) && on(p[2], 0.0);
-        let far = on(p[0], a) && on(p[1], 0.0) && on(p[2], 0.0);
-        [origin, origin || far, lateral]
+        let x_edge = on(p[0], 0.0) || on(p[0], a);
+        let y_edge = on(p[1], 0.0) || on(p[1], a);
+        [y_edge, x_edge, x_edge || y_edge]
     }
 }
 
@@ -775,7 +808,7 @@ fn kirchhoff_gate_simply_supported_plate_centre_deflection() {
     let (w_q1, _) = ssss_plate(20, ElementKind::Q1);
     eprintln!("SSSS a/h = 50: Q1E9 {w:.6e}, Q1 {w_q1:.6e}, Navier–Mindlin {w_ref:.6e}");
     assert!(
-        (w - w_ref).abs() <= 0.02 * w_ref,
+        (w - w_ref).abs() <= 0.01 * w_ref,
         "Q1E9 centre deflection {w} vs {w_ref}"
     );
     assert!(w_q1 < w, "Q1 locks: it must deflect less than Q1E9");
@@ -783,7 +816,7 @@ fn kirchhoff_gate_simply_supported_plate_centre_deflection() {
 
 #[test]
 fn simply_supported_plate_frequencies_match_leissa() {
-    // Two grids, h and h/2, against Leissa's Kirchhoff λ = π²(m² + n²) with the first-order Mindlin shear and rotary-inertia factor
+    // Grids of 30 and 60 cells, Richardson-extrapolated at second order, against Leissa's Kirchhoff λ = π²(m² + n²) with the first-order Mindlin shear and rotary-inertia factor
     // 1/√(1 + k²(D/(κGh) + h²/12)), k² = π²(m² + n²)/a², κ = 5/6.
     let (a, h): (f64, f64) = (0.5, 0.005);
     let d = E_AL * h.powi(3) / (12.0 * (1.0 - NU_AL * NU_AL));
@@ -815,7 +848,7 @@ fn simply_supported_plate_frequencies_match_leissa() {
             .map(|p| p.lambda.sqrt() * a * a * (RHO_AL * h / d).sqrt())
             .collect()
     };
-    let (coarse, fine) = (lambdas(20), lambdas(40));
+    let (coarse, fine) = (lambdas(30), lambdas(60));
     for (i, (m, n)) in [(1_u32, 1_u32), (1, 2), (2, 1), (2, 2)]
         .into_iter()
         .enumerate()
@@ -823,40 +856,383 @@ fn simply_supported_plate_frequencies_match_leissa() {
         let s = f64::from(m * m + n * n);
         let k2 = PI * PI * s / (a * a);
         let reference = PI * PI * s / (1.0 + k2 * (d / kgh + h * h / 12.0)).sqrt();
+        let extrapolated = fine[i] + (fine[i] - coarse[i]) / 3.0;
         eprintln!(
-            "SSSS ({m},{n}): h {:.4} h/2 {:.4} reference {reference:.4} (fine err {:+.3} %)",
+            "SSSS ({m},{n}): h {:.4} h/2 {:.4} extrapolated {extrapolated:.4} reference {reference:.4}",
             coarse[i],
-            fine[i],
-            100.0 * (fine[i] - reference) / reference
-        );
-        // The 20-to-40 step converges faster than second order here (8 Oct 2026: about order 3.5 on (2,2)), so a
-        // p = 2 extrapolation would overshoot; the gate is the fine-grid error and its fall from the coarse grid.
-        assert!(
-            (fine[i] - reference).abs() <= 0.005 * reference,
-            "mode ({m},{n}): {} vs {reference}",
             fine[i]
         );
+        // Hard support converges monotonically from above at second order (review B4): the extrapolation removes the
+        // leading term, leaving the reference's own first-order shear correction and higher terms.
         assert!(
-            (fine[i] - reference).abs() < (coarse[i] - reference).abs(),
-            "mode ({m},{n}) must converge"
+            (extrapolated - reference).abs() <= 0.002 * reference,
+            "mode ({m},{n}): extrapolated {extrapolated} vs {reference}"
+        );
+        assert!(
+            coarse[i] > fine[i] && fine[i] > reference * (1.0 - 0.002),
+            "mode ({m},{n}) must converge from above"
         );
     }
 }
 
 #[test]
 fn simply_supported_deflection_converges_at_second_order() {
-    let errors: Vec<f64> = [6, 12, 24]
+    // Signed errors: under hard support they share a sign and fall at second order (review B4 measured 2.07).
+    let errors: Vec<f64> = [12, 24, 48]
         .iter()
         .map(|&n| {
             let (w, w_ref) = ssss_plate(n, ElementKind::Q1E9);
-            ((w - w_ref) / w_ref).abs()
+            (w - w_ref) / w_ref
         })
         .collect();
-    eprintln!("SSSS errors {errors:?}");
-    let order = (errors[1] / errors[2]).log2();
+    eprintln!("SSSS signed errors {errors:?}");
     assert!(
-        errors[2] < errors[1] && errors[1] < errors[0],
+        errors.iter().all(|e| e.signum() == errors[0].signum()),
+        "errors must keep one sign: {errors:?}"
+    );
+    assert!(
+        errors[2].abs() < errors[1].abs() && errors[1].abs() < errors[0].abs(),
         "errors must fall: {errors:?}"
     );
-    assert!(order > 1.5, "observed order {order}");
+    let order = (errors[1] / errors[2]).log2();
+    assert!((1.5..=2.5).contains(&order), "observed order {order}");
+}
+
+/// A slab with a cylindrical hole of radius `r` at `c`, prismatic through its thickness.
+struct HoleSlab {
+    slab: Slab,
+    c: [f64; 2],
+    r: f64,
+}
+
+impl OccupancyField for HoleSlab {
+    fn bounds(&self) -> ([f64; 3], [f64; 3]) {
+        self.slab.bounds()
+    }
+    fn signed_distance(&self, p: [f64; 3]) -> f64 {
+        let hole = self.r - ((p[0] - self.c[0]).powi(2) + (p[1] - self.c[1]).powi(2)).sqrt();
+        self.slab.signed_distance(p).max(hole)
+    }
+    fn material_at(&self, p: [f64; 3]) -> Option<u16> {
+        (self.signed_distance(p) <= 0.0).then_some(0)
+    }
+    fn interface_planes(&self, _: usize) -> Vec<f64> {
+        Vec::new()
+    }
+    fn prismatic(&self, _: [f64; 3], _: [f64; 3]) -> bool {
+        true
+    }
+    fn section_distance(&self, p: [f64; 3]) -> f64 {
+        let hole = self.r - ((p[0] - self.c[0]).powi(2) + (p[1] - self.c[1]).powi(2)).sqrt();
+        self.slab.section_distance(p).max(hole)
+    }
+}
+
+#[test]
+fn a_hole_between_the_samples_is_integrated() {
+    // Review B1: a hole of radius 0.2 h at (0.25 h, 0.25 h) of one cell, invisible to a 27-point lattice.
+    let h = 0.01;
+    let t = 0.002;
+    let field = HoleSlab {
+        slab: Slab {
+            lo: [0.0; 3],
+            hi: [4.0 * h, 4.0 * h, t],
+            layers: vec![],
+            conforming: true,
+        },
+        c: [0.25 * h, 0.25 * h],
+        r: 0.2 * h,
+    };
+    let disc =
+        discretise(&field, &aluminium(), &spec([h, h, t], 0.0, ElementKind::Q1)).expect("disc");
+    let volume = disc.mass_properties().mass / RHO_AL;
+    let hole = PI * field.r * field.r * t;
+    let exact = 16.0 * h * h * t - hole;
+    eprintln!("hole: volume {volume:.6e} exact {exact:.6e} hole {hole:.6e}");
+    assert!(
+        (volume - exact).abs() <= 0.05 * hole,
+        "the hole must be integrated: {volume} vs {exact}"
+    );
+    assert!(disc.diagnostics().clipped >= 1, "{:?}", disc.diagnostics());
+}
+
+/// A slab with a bevelled edge `x + z ≤ c`, not prismatic.
+struct Bevel {
+    slab: Slab,
+    c: f64,
+}
+
+impl OccupancyField for Bevel {
+    fn bounds(&self) -> ([f64; 3], [f64; 3]) {
+        self.slab.bounds()
+    }
+    fn signed_distance(&self, p: [f64; 3]) -> f64 {
+        self.slab
+            .signed_distance(p)
+            .max((p[0] + p[2] - self.c) / 2.0_f64.sqrt())
+    }
+    fn material_at(&self, p: [f64; 3]) -> Option<u16> {
+        (self.signed_distance(p) <= 0.0).then_some(0)
+    }
+    fn interface_planes(&self, _: usize) -> Vec<f64> {
+        Vec::new()
+    }
+}
+
+#[test]
+fn a_bevelled_edge_through_the_thickness_is_integrated() {
+    let (a, t) = (0.04, 0.01);
+    let c = a; // the bevel removes the corner prism x + z > a over x ∈ [a − t, a]
+    let field = Bevel {
+        slab: Slab {
+            lo: [0.0; 3],
+            hi: [a, 0.02, t],
+            layers: vec![],
+            conforming: true,
+        },
+        c,
+    };
+    let disc = discretise(
+        &field,
+        &aluminium(),
+        &spec([0.01, 0.01, 0.005], 0.0, ElementKind::Q1),
+    )
+    .expect("disc");
+    let volume = disc.mass_properties().mass / RHO_AL;
+    let removed = 0.5 * t * t * 0.02;
+    let exact = a * 0.02 * t - removed;
+    eprintln!("bevel: volume {volume:.6e} exact {exact:.6e}");
+    assert!(
+        (volume - exact).abs() <= 0.05 * removed,
+        "{volume} vs {exact}"
+    );
+    assert!(
+        disc.diagnostics().approximate >= 1,
+        "{:?}",
+        disc.diagnostics()
+    );
+}
+
+/// A slab whose grid bounds extend below its bottom face.
+struct Padded {
+    slab: Slab,
+    z_lo: f64,
+}
+
+impl OccupancyField for Padded {
+    fn bounds(&self) -> ([f64; 3], [f64; 3]) {
+        let (mut lo, hi) = self.slab.bounds();
+        lo[2] = self.z_lo;
+        (lo, hi)
+    }
+    fn signed_distance(&self, p: [f64; 3]) -> f64 {
+        self.slab.signed_distance(p)
+    }
+    fn material_at(&self, p: [f64; 3]) -> Option<u16> {
+        self.slab.material_at(p)
+    }
+    fn interface_planes(&self, axis: usize) -> Vec<f64> {
+        if axis == 2 {
+            vec![self.slab.lo[2]]
+        } else {
+            Vec::new()
+        }
+    }
+    fn prismatic(&self, lo: [f64; 3], hi: [f64; 3]) -> bool {
+        self.slab.prismatic(lo, hi)
+    }
+    fn section_distance(&self, p: [f64; 3]) -> f64 {
+        self.slab.section_distance(p)
+    }
+}
+
+#[test]
+fn a_bottom_face_inside_padded_bounds_carries_its_load() {
+    // Review B2: the cell below the plane is empty; the face must be read from the cell above.
+    let field = Padded {
+        slab: Slab {
+            lo: [0.0, 0.0, 0.002],
+            hi: [0.2, 0.1, 0.012],
+            layers: vec![],
+            conforming: true,
+        },
+        z_lo: 0.0,
+    };
+    let disc = discretise(
+        &field,
+        &aluminium(),
+        &spec([0.01, 0.01, 0.005], 0.0, ElementKind::Q1),
+    )
+    .expect("disc");
+    let sys = assemble(&disc, &free).expect("sys");
+    let q = 1.0e3;
+    let f = surface_load(&disc, &sys, &field, 0.002, None, [0.0, 0.0, q], 1e-9).expect("load");
+    let loaded: Vec<(usize, [f64; 3], f64)> = disc
+        .free_nodes()
+        .filter_map(|n| sys.dof(n, 2).map(|d| (n, disc.node_point(n), f[d])))
+        .filter(|&(_, _, v)| v != 0.0)
+        .collect();
+    let total: f64 = loaded.iter().map(|l| l.2).sum();
+    assert!(
+        (total - q * 0.02).abs() <= 1e-12 * q * 0.02,
+        "total {total}"
+    );
+    assert!(
+        loaded.iter().all(|l| (l.1[2] - 0.002).abs() < 1e-12),
+        "load must sit on the plane's nodes"
+    );
+    let x_bar = loaded.iter().map(|l| l.1[0] * l.2).sum::<f64>() / total;
+    let y_bar = loaded.iter().map(|l| l.1[1] * l.2).sum::<f64>() / total;
+    assert!(
+        (x_bar - 0.1).abs() < 1e-12 && (y_bar - 0.05).abs() < 1e-12,
+        "first moments ({x_bar}, {y_bar})"
+    );
+    let outside = move |p: [f64; 2]| ((p[0] - 0.5).powi(2) + p[1] * p[1]).sqrt() - 0.01;
+    assert_eq!(
+        surface_load(
+            &disc,
+            &sys,
+            &field,
+            0.002,
+            Some(&outside),
+            [0.0, 0.0, q],
+            1e-9
+        ),
+        Err(FiniteCellRefuse::EmptyFace)
+    );
+}
+
+#[test]
+fn incompatible_modes_leave_a_linear_field_untouched_on_cut_cells() {
+    // Review B5: the re-centred incompatible modes must condense to nothing for a linear field, cut cells included.
+    let a = [
+        [1.0e-3, 2.0e-4, -3.0e-4],
+        [5.0e-4, -2.0e-3, 1.0e-4],
+        [-1.0e-4, 3.0e-4, 1.5e-3],
+    ];
+    let disc_field = Disc {
+        c: [0.0013, -0.0007],
+        r: 0.037,
+        z: [0.0, 0.01],
+        half_box: 0.04,
+    };
+    let ku = |kind: ElementKind| -> Vec<f64> {
+        let disc = discretise(
+            &disc_field,
+            &aluminium(),
+            &spec([0.01, 0.01, 0.005], 0.0, kind),
+        )
+        .expect("disc");
+        assert!(disc.diagnostics().clipped > 0, "the disc must cut cells");
+        let sys = assemble(&disc, &free).expect("sys");
+        forces_of_linear_field(&disc, &sys, a).0
+    };
+    let (q1, q1e9) = (ku(ElementKind::Q1), ku(ElementKind::Q1E9));
+    let scale = q1.iter().fold(0.0_f64, |m, v| m.max(v.abs()));
+    let worst = q1
+        .iter()
+        .zip(&q1e9)
+        .fold(0.0_f64, |m, (x, y)| m.max((x - y).abs()));
+    assert!(
+        worst <= 1e-12 * scale,
+        "max |K_Q1E9 u − K_Q1 u| / max |K_Q1 u| = {}",
+        worst / scale
+    );
+}
+
+#[test]
+fn apparent_mass_matches_a_direct_receptance_solve() {
+    // Review B5: the mode-acceleration form against n·(K − ω²M)⁻¹ f, below and near the first mode.
+    let slab = Slab {
+        lo: [0.0; 3],
+        hi: [0.2, 0.1, 0.006],
+        layers: vec![],
+        conforming: true,
+    };
+    let disc = discretise(
+        &slab,
+        &aluminium(),
+        &spec([0.01, 0.01, 0.003], 0.0, ElementKind::Q1E9),
+    )
+    .expect("disc");
+    let sys = assemble(&disc, &free).expect("sys");
+    let sol = solve_modes(&disc, &sys, 30);
+    let relief = InertiaRelief::new(&disc, &sys).expect("relief");
+    let p = [0.15, 0.07, 0.006];
+    let n = [0.0, 0.0, 1.0];
+    let w1 = sol.pairs[0].lambda.sqrt();
+    for (fraction, tol) in [(0.3, 1e-6), (0.9, 1e-4)] {
+        let omega = fraction * w1;
+        let am = relief
+            .apparent_mass(&sol, p, n, omega)
+            .expect("apparent mass");
+        let alpha_model = -1.0 / (omega * omega * am.apparent_mass);
+        let pencil = sys
+            .stiffness()
+            .combine(1.0, sys.mass(), -omega * omega)
+            .expect("pencil");
+        let f = point_load(&disc, &sys, p, n).expect("load");
+        let u = ldlt(&pencil).expect("factor").solve(&f).expect("solve");
+        let alpha_direct = disc.value_at(&sys, &u, p).expect("read")[2];
+        let rel = (alpha_model - alpha_direct).abs() / alpha_direct.abs();
+        eprintln!("apparent mass at {fraction} ω₁: model {alpha_model:.6e} direct {alpha_direct:.6e} rel {rel:.2e}");
+        assert!(rel <= tol, "{fraction} ω₁: {alpha_model} vs {alpha_direct}");
+    }
+    assert_eq!(
+        relief
+            .apparent_mass(&sol, p, n, sol.pairs[0].lambda.sqrt())
+            .map(|_| ()),
+        Err(FiniteCellRefuse::ResonantFrequency)
+    );
+}
+
+#[test]
+fn q1_eigenvalues_fall_under_nested_refinement() {
+    // Min-max on nested conforming spaces: every Q1 eigenvalue on 20 cells lies at or below its value on 10.
+    let (coarse, fine) = (
+        narita_lambdas(ElementKind::Q1, 10),
+        narita_lambdas(ElementKind::Q1, 20),
+    );
+    for (i, (c, f)) in coarse.iter().zip(&fine).enumerate() {
+        assert!(f <= c, "mode {i}: {f} on 20 cells above {c} on 10");
+    }
+}
+
+#[test]
+fn aggregation_removes_the_ill_conditioning_of_a_sliver() {
+    // The negative control of the sliver test (review should-fix 10): without aggregation (θ = 0) the sliver
+    // column carries nodes of almost no mass, and the mass pivots spread by the solid fraction.
+    let s = 0.01;
+    let field = SliverBox {
+        inner: Slab {
+            lo: [0.0; 3],
+            hi: [0.2 + s * 1e-4, 0.1, 0.004],
+            layers: vec![],
+            conforming: true,
+        },
+        grid_hi: 0.21,
+    };
+    let spread = |theta: f64| -> f64 {
+        let disc = discretise(
+            &field,
+            &aluminium(),
+            &spec([s, s, 0.002], theta, ElementKind::Q1E9),
+        )
+        .expect("disc");
+        let sys = assemble(&disc, &free).expect("sys");
+        let factor = spd_factor(sys.mass()).expect("mass factor");
+        let pivots = factor.factor().pivots();
+        let (lo, hi) = pivots
+            .iter()
+            .fold((f64::INFINITY, 0.0_f64), |(lo, hi), &p| {
+                (lo.min(p), hi.max(p))
+            });
+        lo / hi
+    };
+    let (raw, aggregated) = (spread(0.0), spread(0.1));
+    eprintln!("mass pivot ratio: θ = 0 {raw:.2e}, θ = 0.1 {aggregated:.2e}");
+    assert!(
+        raw < 1e-2 * aggregated,
+        "aggregation must lift the smallest mass pivot by two orders: {raw} vs {aggregated}"
+    );
 }

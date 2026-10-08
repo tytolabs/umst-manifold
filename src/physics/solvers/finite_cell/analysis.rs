@@ -12,7 +12,8 @@
 //! `ω → 0` (Cross 1999, *Am. J. Phys.* 67, 692).
 
 use umst_math::generalized_eigen::{
-    lowest_eigenpairs, Deflation, EigenRefuse, EigenRequest, GeneralizedEigenSolution, Pencil,
+    lowest_eigenpairs, Completeness, Deflation, EigenRefuse, EigenRequest,
+    GeneralizedEigenSolution, Pencil,
 };
 use umst_math::profile_ldlt::{spd_factor, Clique, ProfilePattern, ProfileRefuse, SpdFactor};
 use umst_math::solve_combinator::{EnergyBudget, ProblemTolerance, SolveOutcome, StepEnergyMeter};
@@ -184,8 +185,12 @@ impl<'a> InertiaRelief<'a> {
     /// node farthest from line `AB` (`C`), the component along which a rotation about `AB` moves it most.
     ///
     /// # Errors
+    /// [`FiniteCellRefuse::SupportedSystem`] for a supported system;
     /// [`FiniteCellRefuse::Mechanism`] when the support does not remove the rigid motions; profile refusals.
     pub fn new(disc: &'a Discretisation, free: &'a System) -> Result<Self, FiniteCellRefuse> {
+        if free.is_supported() {
+            return Err(FiniteCellRefuse::SupportedSystem);
+        }
         let nodes: Vec<(usize, [f64; 3])> =
             disc.free_nodes().map(|n| (n, disc.node_point(n))).collect();
         let counts = disc.grid().node_counts();
@@ -311,7 +316,10 @@ impl<'a> InertiaRelief<'a> {
     /// Apparent mass at `p` along `n` at circular frequency `omega > 0`, with the computed elastic modes.
     ///
     /// # Errors
-    /// As [`Self::compliance`]; [`FiniteCellRefuse::InvalidGeometry`] for a non-positive frequency.
+    /// As [`Self::compliance`]; [`FiniteCellRefuse::InvalidGeometry`] for a non-positive frequency or a zero direction
+    /// (a non-zero `n` is normalised); [`FiniteCellRefuse::ModesUncertified`] unless the modes carry a certified count,
+    /// since a missed mode would drop out of the modal sum; [`FiniteCellRefuse::ResonantFrequency`] when `ω²` lies in
+    /// a computed eigenvalue interval.
     pub fn apparent_mass(
         &self,
         modes: &GeneralizedEigenSolution,
@@ -322,8 +330,23 @@ impl<'a> InertiaRelief<'a> {
         if !(omega.is_finite() && omega > 0.0) {
             return Err(FiniteCellRefuse::InvalidGeometry);
         }
-        let (compliance, inv_mass) = self.compliance(p, n)?;
+        if !matches!(modes.completeness, Completeness::Certified { .. }) {
+            return Err(FiniteCellRefuse::ModesUncertified);
+        }
         let w2 = omega * omega;
+        if modes
+            .pairs
+            .iter()
+            .any(|pair| pair.lower <= w2 && w2 <= pair.upper)
+        {
+            return Err(FiniteCellRefuse::ResonantFrequency);
+        }
+        let length = n.iter().map(|x| x * x).sum::<f64>().sqrt();
+        if !(length.is_finite() && length > 0.0) {
+            return Err(FiniteCellRefuse::InvalidGeometry);
+        }
+        let n: [f64; 3] = std::array::from_fn(|i| n[i] / length);
+        let (compliance, inv_mass) = self.compliance(p, n)?;
         let modal: f64 = modes
             .pairs
             .iter()
@@ -370,15 +393,24 @@ impl<F: OccupancyField + ?Sized> OccupancyField for OnPatch<'_, F> {
     fn interface_planes(&self, axis: usize) -> Vec<f64> {
         self.body.interface_planes(axis)
     }
+    fn prismatic(&self, lo: [f64; 3], hi: [f64; 3]) -> bool {
+        self.body.prismatic(lo, hi)
+    }
+    fn section_distance(&self, p: [f64; 3]) -> f64 {
+        let body = self.body.section_distance(p);
+        self.patch
+            .map_or(body, |patch| body.max(patch([p[0], p[1]])))
+    }
 }
 
 /// Consistent nodal forces of a uniform traction (N/m²) on the node plane `z = plane` of the grid, over the body's
-/// solid there and, if given, inside a patch (a signed distance in the plane, negative inside). The face is read
-/// from the occupied cell below the plane, or above it on the grid's lowest plane; whether a face point is solid is
-/// decided at that cell's mid-height, as in the volume rule.
+/// solid there and, if given, inside a patch (a signed distance in the plane, negative inside). In each column the
+/// face is read from the occupied cell below the plane, else from the occupied cell above; whether a face point is
+/// solid is decided at that cell's mid-height, as in the volume rule.
 ///
 /// # Errors
-/// [`FiniteCellRefuse::InvalidGeometry`] when `plane` is not a node plane of the grid (within `tolerance`).
+/// [`FiniteCellRefuse::InvalidGeometry`] when `plane` is not a node plane of the grid (within `tolerance`), and
+/// [`FiniteCellRefuse::EmptyFace`] when no solid of an occupied cell meets the plane inside the patch.
 pub fn surface_load<F: OccupancyField + ?Sized>(
     disc: &Discretisation,
     system: &System,
@@ -394,8 +426,18 @@ pub fn surface_load<F: OccupancyField + ?Sized>(
         .iter()
         .position(|&z| (z - plane).abs() <= tolerance)
         .ok_or(FiniteCellRefuse::InvalidGeometry)?;
-    let (kc, xi_z) = if k > 0 { (k - 1, 1.0) } else { (0, -1.0) };
     let counts = grid.cell_counts();
+    // Per column, the occupied cell below the plane (ξ_z = +1), else the one above (ξ_z = −1).
+    let side = move |i: usize, j: usize| -> Option<([usize; 3], f64)> {
+        let below = (k > 0)
+            .then(|| ([i, j, k - 1], 1.0))
+            .filter(|(ijk, _)| disc.is_occupied(*ijk));
+        below.or_else(|| {
+            (k < counts[2])
+                .then(|| ([i, j, k], -1.0))
+                .filter(|(ijk, _)| disc.is_occupied(*ijk))
+        })
+    };
     let largest = (0..3)
         .map(|a| {
             grid.nodes(a)
@@ -405,26 +447,35 @@ pub fn surface_load<F: OccupancyField + ?Sized>(
         .fold(0.0, f64::max);
     let spec = QuadratureSpec::from_tolerance(largest, tolerance);
     let restricted = OnPatch { body: field, patch };
-    (0..counts[0])
-        .flat_map(|i| (0..counts[1]).map(move |j| [i, j, kc]))
-        .filter(|&ijk| disc.is_occupied(ijk))
-        .try_fold(vec![0.0; system.n()], |mut f, ijk| {
-            let (lo, hi) = grid.cell_box(ijk);
-            let zmid = (lo[2] + hi[2]) / real(2);
-            for (p, w, _) in face_rule(&restricted, [lo[0], lo[1]], [hi[0], hi[1]], zmid, &spec) {
-                let xi = [
-                    (p[0] - lo[0]) / (hi[0] - lo[0]) * real(2) - 1.0,
-                    (p[1] - lo[1]) / (hi[1] - lo[1]) * real(2) - 1.0,
-                    xi_z,
-                ];
-                for (node, n) in disc.interpolation_in(ijk, xi)? {
-                    (0..3).for_each(|c| {
-                        if let Some(d) = system.dof(node, c) {
-                            f[d] += w * n * traction[c];
-                        }
-                    });
+    let (f, area) = (0..counts[0])
+        .flat_map(|i| (0..counts[1]).filter_map(move |j| side(i, j)))
+        .try_fold(
+            (vec![0.0; system.n()], 0.0_f64),
+            |(mut f, mut area), (ijk, xi_z)| {
+                let (lo, hi) = grid.cell_box(ijk);
+                let zmid = (lo[2] + hi[2]) / real(2);
+                for (p, w, _) in face_rule(&restricted, [lo[0], lo[1]], [hi[0], hi[1]], zmid, &spec)
+                {
+                    area += w;
+                    let xi = [
+                        (p[0] - lo[0]) / (hi[0] - lo[0]) * real(2) - 1.0,
+                        (p[1] - lo[1]) / (hi[1] - lo[1]) * real(2) - 1.0,
+                        xi_z,
+                    ];
+                    for (node, n) in disc.interpolation_in(ijk, xi)? {
+                        (0..3).for_each(|c| {
+                            if let Some(d) = system.dof(node, c) {
+                                f[d] += w * n * traction[c];
+                            }
+                        });
+                    }
                 }
-            }
-            Ok(f)
-        })
+                Ok::<_, FiniteCellRefuse>((f, area))
+            },
+        )?;
+    if area > 0.0 {
+        Ok(f)
+    } else {
+        Err(FiniteCellRefuse::EmptyFace)
+    }
 }

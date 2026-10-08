@@ -54,12 +54,25 @@ pub type Voigt6 = [[f64; 6]; 6];
 pub trait OccupancyField {
     /// Axis-aligned bounds `(lo, hi)` enclosing the body.
     fn bounds(&self) -> ([f64; 3], [f64; 3]);
-    /// Signed distance, negative inside the solid. Only its sign and its zero set are used.
+    /// Signed distance, negative inside the solid. Contract: 1-Lipschitz, and never larger in magnitude than the
+    /// true distance to the boundary (an exact distance, or a min or max of such distances, qualifies). A box of
+    /// half-diagonal `r` whose centre reads `d ≥ r` is then wholly empty, and `d ≤ −r` wholly solid.
     fn signed_distance(&self, p: [f64; 3]) -> f64;
     /// Material index at a point, `None` outside the solid.
     fn material_at(&self, p: [f64; 3]) -> Option<u16>;
     /// Planar interfaces normal to `axis` (`0`, `1` or `2`), where material changes across a plane.
     fn interface_planes(&self, axis: usize) -> Vec<f64>;
+    /// Whether the solid and its material do not vary along `z` inside the box `[lo, hi]`. Default: no, which
+    /// sends the box to the octree.
+    fn prismatic(&self, _lo: [f64; 3], _hi: [f64; 3]) -> bool {
+        false
+    }
+    /// For a prismatic box: a signed distance in the plane to the boundary of the cross-section at height `p[2]`,
+    /// with the contract of [`Self::signed_distance`] in `(x, y)`. Default: the signed distance itself, which is
+    /// valid wherever the nearest boundary is a side wall.
+    fn section_distance(&self, p: [f64; 3]) -> f64 {
+        self.signed_distance(p)
+    }
 }
 
 /// Why a finite-cell model was refused.
@@ -79,7 +92,7 @@ pub enum FiniteCellRefuse {
     },
     /// No cell holds solid.
     EmptyBody,
-    /// An ill-posed cell found no well-posed cell to aggregate onto within its layer.
+    /// An ill-posed cell found no well-posed cell to aggregate onto through face-connected occupied cells.
     AggregationUnresolved,
     /// A support constrains an aggregated node whose masters are not all fixed alike (its value is theirs).
     SupportOnAggregatedNode,
@@ -91,6 +104,14 @@ pub enum FiniteCellRefuse {
     PointOutsideBody,
     /// A vector has the wrong length.
     DimMismatch,
+    /// No occupied cell meets the loaded plane inside the patch.
+    EmptyFace,
+    /// The modes carry no certified count, so a missed mode could drop out of a modal sum.
+    ModesUncertified,
+    /// The frequency lies inside a computed eigenvalue interval.
+    ResonantFrequency,
+    /// The operation needs a free body and the system is supported.
+    SupportedSystem,
 }
 
 impl From<ProfileRefuse> for FiniteCellRefuse {
@@ -183,19 +204,17 @@ pub(crate) fn real(n: usize) -> f64 {
     n as f64
 }
 
-/// Gauss–Legendre points and weights on `[−1, 1]`, from integer arithmetic only.
+/// Two-point Gauss–Legendre points and weights on `[−1, 1]` (exact to degree 3), from integer arithmetic only.
 #[must_use]
-pub(crate) fn gauss_legendre(order: usize) -> Vec<(f64, f64)> {
-    match order {
-        1 => vec![(0.0, real(2))],
-        2 => {
-            let a = (1.0 / real(3)).sqrt();
-            vec![(-a, 1.0), (a, 1.0)]
-        }
-        _ => {
-            let a = (real(3) / real(5)).sqrt();
-            let outer = real(5) / real(9);
-            vec![(-a, outer), (0.0, real(8) / real(9)), (a, outer)]
-        }
-    }
+pub(crate) fn gauss_legendre_2() -> [(f64, f64); 2] {
+    let a = (1.0 / real(3)).sqrt();
+    [(-a, 1.0), (a, 1.0)]
+}
+
+/// Three-point Gauss–Legendre points and weights on `[−1, 1]` (exact to degree 5), from integer arithmetic only.
+#[must_use]
+pub(crate) fn gauss_legendre_3() -> [(f64, f64); 3] {
+    let a = (real(3) / real(5)).sqrt();
+    let outer = real(5) / real(9);
+    [(-a, outer), (0.0, real(8) / real(9)), (a, outer)]
 }

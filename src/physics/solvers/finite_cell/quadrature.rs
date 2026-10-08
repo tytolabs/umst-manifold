@@ -5,7 +5,7 @@
 //! A positive weight keeps `K = Σ w Bᵀ D B` positive semidefinite and `M = Σ w ρ Nᵀ N` positive definite on the
 //! solid, which moment-fitted rules with negative weights can lose (Hansbo, Larson & Larsson 2017, fig. 4).
 
-use super::{gauss_legendre, real, OccupancyField};
+use super::{gauss_legendre_2, gauss_legendre_3, real, OccupancyField};
 
 /// One quadrature point: local coordinates in the parent cell (`[−1, 1]³`), a physical volume weight (m³), and
 /// the material there.
@@ -94,14 +94,14 @@ fn bisections(len: f64, tol: f64) -> u32 {
     }
 }
 
-/// The zero of the signed distance between an inside point `a` and an outside point `b`, by bisection.
-fn crossing<F: OccupancyField + ?Sized>(field: &F, a: [f64; 3], b: [f64; 3], tol: f64) -> [f64; 3] {
+/// The zero of a distance `dist` between an inside point `a` and an outside point `b`, by bisection.
+fn crossing<D: Fn([f64; 3]) -> f64>(dist: &D, a: [f64; 3], b: [f64; 3], tol: f64) -> [f64; 3] {
     let len = (0..3).map(|i| (b[i] - a[i]).powi(2)).sum::<f64>().sqrt();
     let steps = bisections(len, tol);
     let mid = |p: [f64; 3], q: [f64; 3]| std::array::from_fn(|i| (p[i] + q[i]) / real(2));
     let (inside, outside) = (0..steps).fold((a, b), |(inside, outside), _| {
         let m = mid(inside, outside);
-        if field.signed_distance(m) <= 0.0 {
+        if dist(m) <= 0.0 {
             (m, outside)
         } else {
             (inside, m)
@@ -112,7 +112,7 @@ fn crossing<F: OccupancyField + ?Sized>(field: &F, a: [f64; 3], b: [f64; 3], tol
 
 /// Points of the collapsed-square (Duffy) rule on a triangle in the plane, 3×3 Gauss: exact for total degree 4.
 fn triangle_rule(t: [[f64; 2]; 3]) -> Vec<([f64; 2], f64)> {
-    let g = gauss_legendre(3);
+    let g = gauss_legendre_3();
     let [a, b, c] = t;
     let twice_area = ((b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])).abs();
     g.iter()
@@ -127,18 +127,16 @@ fn triangle_rule(t: [[f64; 2]; 3]) -> Vec<([f64; 2], f64)> {
         .collect()
 }
 
-/// The part of a triangle where the signed distance is not positive, as a convex polygon.
-fn clip_triangle<F: OccupancyField + ?Sized>(
-    field: &F,
+/// The part of a triangle where `dist` is not positive, as a convex polygon (the zero contour taken as straight
+/// across the triangle).
+fn clip_triangle<D: Fn([f64; 3]) -> f64>(
+    dist: &D,
     t: [[f64; 2]; 3],
     z: f64,
     tol: f64,
 ) -> Vec<[f64; 2]> {
     let at = |p: [f64; 2]| [p[0], p[1], z];
-    let inside: Vec<bool> = t
-        .iter()
-        .map(|&p| field.signed_distance(at(p)) <= 0.0)
-        .collect();
+    let inside: Vec<bool> = t.iter().map(|&p| dist(at(p)) <= 0.0).collect();
     (0..3).fold(Vec::new(), |mut poly, i| {
         let j = (i + 1) % 3;
         if inside[i] {
@@ -150,14 +148,25 @@ fn clip_triangle<F: OccupancyField + ?Sized>(
             } else {
                 (t[j], t[i])
             };
-            let x = crossing(field, at(pin), at(pout), tol);
+            let x = crossing(dist, at(pin), at(pout), tol);
             poly.push([x[0], x[1]]);
         }
         poly
     })
 }
 
+/// The one material all samples share, if every sample is solid and they agree.
+fn uniform(samples: &[Option<u16>]) -> Option<u16> {
+    let first = samples.first().copied().flatten()?;
+    samples.iter().all(|&m| m == Some(first)).then_some(first)
+}
+
 /// Build the rule of the cell `[lo, hi]`.
+///
+/// Classification uses the Lipschitz contract of the field's distances: a box is empty when its centre reads at
+/// least its half-diagonal, wholly solid when it reads at most minus its half-diagonal (and its material samples
+/// agree), and is subdivided otherwise. A prismatic cell is classified in the plane by
+/// [`OccupancyField::section_distance`] at mid-height and integrated as its cross-section times its height.
 #[must_use]
 pub fn cell_quadrature<F: OccupancyField + ?Sized>(
     field: &F,
@@ -166,43 +175,38 @@ pub fn cell_quadrature<F: OccupancyField + ?Sized>(
     spec: &QuadratureSpec,
 ) -> CellQuadrature {
     let h: [f64; 3] = std::array::from_fn(|i| hi[i] - lo[i]);
+    let centre: [f64; 3] = std::array::from_fn(|i| (lo[i] + hi[i]) / real(2));
+    let r3 = (h.iter().map(|x| x * x).sum::<f64>()).sqrt() / real(2);
+    if field.signed_distance(centre) >= r3 {
+        return finish(Vec::new(), Exactness::Whole);
+    }
     let at = |t: [usize; 3]| -> [f64; 3] {
         std::array::from_fn(|i| lo[i] + h[i] * real(t[i]) / real(2))
     };
-    let lattice: Vec<[usize; 3]> = (0..27).map(|n| [n % 3, (n / 3) % 3, n / 9]).collect();
-    let samples: Vec<(f64, Option<u16>)> = lattice
-        .iter()
-        .map(|&t| (field.signed_distance(at(t)), field.material_at(at(t))))
+    let materials: Vec<Option<u16>> = (0..27)
+        .map(|n| field.material_at(at([n % 3, (n / 3) % 3, n / 9])))
         .collect();
-    let first = samples[0].1;
-    if first.is_some() && samples.iter().all(|&(d, m)| d <= 0.0 && m == first) {
-        let material = first.unwrap_or_default();
+    let prismatic = field.prismatic(lo, hi);
+    let r2 = (h[0] * h[0] + h[1] * h[1]).sqrt() / real(2);
+    let solid_whole = if prismatic {
+        field.section_distance(centre) <= -r2
+    } else {
+        field.signed_distance(centre) <= -r3
+    };
+    if let (true, Some(material)) = (solid_whole, uniform(&materials)) {
         return finish(box_points(lo, hi, lo, hi, material), Exactness::Whole);
     }
-    if samples.iter().all(|&(d, m)| d > 0.0 && m.is_none()) {
-        return finish(Vec::new(), Exactness::Whole);
-    }
-    // Prismatic: inside/outside and the material agree through the thickness at every in-plane sample. The value
-    // of the distance may still vary (a body whose faces coincide with the cell's faces reads zero there), but
-    // the solid part is then the clipped in-plane region times the cell height.
-    let prismatic = (0..9).all(|n| {
-        let (d0, m0) = samples[n];
-        (1..3).all(|layer| {
-            let (d, m) = samples[n + 9 * layer];
-            (d <= 0.0) == (d0 <= 0.0) && m == m0
-        })
-    });
     if prismatic {
-        let zmid = (lo[2] + hi[2]) / real(2);
-        let (pts2, exact) = plane_leaf(
+        let z = centre[2];
+        let (pts2, mixed) = plane_leaf(
             field,
             [lo[0], lo[1]],
             [hi[0], hi[1]],
-            zmid,
+            z,
             spec,
             spec.plane_depth,
         );
-        let gz = gauss_legendre(2);
+        let gz = gauss_legendre_2();
         let points = pts2
             .into_iter()
             .flat_map(|(p, w, material)| {
@@ -219,10 +223,10 @@ pub fn cell_quadrature<F: OccupancyField + ?Sized>(
             .collect();
         return finish(
             points,
-            if exact {
-                Exactness::Clipped
-            } else {
+            if mixed {
                 Exactness::Approximate
+            } else {
+                Exactness::Clipped
             },
         );
     }
@@ -249,7 +253,7 @@ fn box_points(
     bhi: [f64; 3],
     material: u16,
 ) -> Vec<QPoint> {
-    let g = gauss_legendre(2);
+    let g = gauss_legendre_2();
     let vol: f64 = (0..3).map(|i| bhi[i] - blo[i]).product();
     (0..8)
         .map(|n| {
@@ -265,7 +269,8 @@ fn box_points(
         .collect()
 }
 
-/// In-plane rule of the rectangle `[a, b]` at height `z`: `(point, area weight, material)` and whether it is exact.
+/// In-plane rule of the rectangle `[a, b]` at height `z`: `(point, area weight, material)`, and whether a leaf at the
+/// last level held more than one material among its samples.
 fn plane_leaf<F: OccupancyField + ?Sized>(
     field: &F,
     a: [f64; 2],
@@ -276,36 +281,29 @@ fn plane_leaf<F: OccupancyField + ?Sized>(
 ) -> (Vec<([f64; 2], f64, u16)>, bool) {
     let corners = [[a[0], a[1]], [b[0], a[1]], [b[0], b[1]], [a[0], b[1]]];
     let centre = [(a[0] + b[0]) / real(2), (a[1] + b[1]) / real(2)];
-    let probe = |p: [f64; 2]| {
-        (
-            field.signed_distance([p[0], p[1], z]),
-            field.material_at([p[0], p[1], z]),
-        )
-    };
-    let s: Vec<(f64, Option<u16>)> = corners
+    let r = ((b[0] - a[0]).powi(2) + (b[1] - a[1]).powi(2)).sqrt() / real(2);
+    let dist = |p: [f64; 3]| field.section_distance(p);
+    let d = dist([centre[0], centre[1], z]);
+    if d >= r {
+        return (Vec::new(), false);
+    }
+    let materials: Vec<Option<u16>> = corners
         .iter()
         .chain(std::iter::once(&centre))
-        .map(|&p| probe(p))
+        .map(|p| field.material_at([p[0], p[1], z]))
         .collect();
-    let m0 = s[0].1.or(s[4].1);
-    let uniform = s.iter().all(|&(_, m)| m.is_none() || m == m0);
-    if let Some(m) = m0 {
-        if s.iter().all(|&(d, mm)| d <= 0.0 && mm == Some(m)) {
-            let g = gauss_legendre(2);
-            let area = (b[0] - a[0]) * (b[1] - a[1]);
-            let pts = (0..4)
-                .map(|n| {
-                    let p = std::array::from_fn(|i| {
-                        a[i] + (g[(n >> i) & 1].0 + 1.0) / real(2) * (b[i] - a[i])
-                    });
-                    (p, area / real(4), m)
-                })
-                .collect();
-            return (pts, true);
-        }
-    }
-    if s.iter().all(|&(d, m)| d > 0.0 && m.is_none()) {
-        return (Vec::new(), true);
+    if let (true, Some(m)) = (d <= -r, uniform(&materials)) {
+        let g = gauss_legendre_2();
+        let area = (b[0] - a[0]) * (b[1] - a[1]);
+        let pts = (0..4)
+            .map(|n| {
+                let p = std::array::from_fn(|i| {
+                    a[i] + (g[(n >> i) & 1].0 + 1.0) / real(2) * (b[i] - a[i])
+                });
+                (p, area / real(4), m)
+            })
+            .collect();
+        return (pts, false);
     }
     if depth > 0 {
         let quads = [
@@ -316,16 +314,18 @@ fn plane_leaf<F: OccupancyField + ?Sized>(
         ];
         return quads
             .iter()
-            .fold((Vec::new(), true), |(mut pts, exact), &(qa, qb)| {
-                let (p, e) = plane_leaf(field, qa, qb, z, spec, depth - 1);
+            .fold((Vec::new(), false), |(mut pts, mixed), &(qa, qb)| {
+                let (p, m) = plane_leaf(field, qa, qb, z, spec, depth - 1);
                 pts.extend(p);
-                (pts, exact && e)
+                (pts, mixed || m)
             });
     }
+    let solid: Vec<u16> = materials.iter().flatten().copied().collect();
+    let mixed = solid.windows(2).any(|w| w[0] != w[1]);
     let pts = (0..4)
         .flat_map(|i| {
             let tri = [corners[i], corners[(i + 1) % 4], centre];
-            let poly = clip_triangle(field, tri, z, spec.tolerance);
+            let poly = clip_triangle(&dist, tri, z, spec.tolerance);
             let fan: Vec<[[f64; 2]; 3]> = (1..poly.len().saturating_sub(1))
                 .map(|k| [poly[0], poly[k], poly[k + 1]])
                 .collect();
@@ -337,7 +337,7 @@ fn plane_leaf<F: OccupancyField + ?Sized>(
             })
         })
         .collect();
-    (pts, uniform)
+    (pts, mixed)
 }
 
 fn poly_material<F: OccupancyField + ?Sized>(field: &F, poly: &[[f64; 2]], z: f64) -> Option<u16> {
@@ -353,8 +353,9 @@ fn poly_material<F: OccupancyField + ?Sized>(field: &F, poly: &[[f64; 2]], z: f6
         .or_else(|| poly.iter().find_map(|p| field.material_at([p[0], p[1], z])))
 }
 
-/// Octree rule of the box `[blo, bhi]` in the parent `[lo, hi]`: whole boxes take Gauss points; boxes at the
-/// last level keep the Gauss points that fall in the solid.
+/// Octree rule of the box `[blo, bhi]` in the parent `[lo, hi]`, classified by the Lipschitz bound: wholly solid
+/// boxes of one material take Gauss points, empty boxes none, and boxes at the last level keep the Gauss points
+/// that fall in the solid.
 fn solid_leaf<F: OccupancyField + ?Sized>(
     field: &F,
     lo: [f64; 3],
@@ -364,25 +365,25 @@ fn solid_leaf<F: OccupancyField + ?Sized>(
     depth: u32,
 ) -> Vec<QPoint> {
     let mid: [f64; 3] = std::array::from_fn(|i| (blo[i] + bhi[i]) / real(2));
-    let probes: Vec<[f64; 3]> = (0..8)
-        .map(|n| std::array::from_fn(|i| if (n >> i) & 1 == 0 { blo[i] } else { bhi[i] }))
-        .chain(std::iter::once(mid))
-        .collect();
-    let s: Vec<(f64, Option<u16>)> = probes
-        .iter()
-        .map(|&p| (field.signed_distance(p), field.material_at(p)))
-        .collect();
-    if let Some(m) = s[8].1 {
-        if s.iter().all(|&(d, mm)| d <= 0.0 && mm == Some(m)) {
-            return box_points(lo, hi, blo, bhi, m);
-        }
-    }
-    if s.iter().all(|&(d, m)| d > 0.0 && m.is_none()) {
+    let r = (0..3)
+        .map(|i| (bhi[i] - blo[i]).powi(2))
+        .sum::<f64>()
+        .sqrt()
+        / real(2);
+    let d = field.signed_distance(mid);
+    if d >= r {
         return Vec::new();
     }
+    let materials: Vec<Option<u16>> = (0..8)
+        .map(|n| std::array::from_fn(|i| if (n >> i) & 1 == 0 { blo[i] } else { bhi[i] }))
+        .chain(std::iter::once(mid))
+        .map(|p| field.material_at(p))
+        .collect();
+    if let (true, Some(m)) = (d <= -r, uniform(&materials)) {
+        return box_points(lo, hi, blo, bhi, m);
+    }
     if depth == 0 {
-        let parent: Vec<QPoint> = box_points(lo, hi, blo, bhi, 0);
-        return parent
+        return box_points(lo, hi, blo, bhi, 0)
             .into_iter()
             .filter_map(|q| {
                 let p: [f64; 3] =
@@ -407,7 +408,7 @@ fn solid_leaf<F: OccupancyField + ?Sized>(
 }
 
 /// Area rule of the rectangle `[a, b]` of a plane at height `z` over the solid of `field`: `(point, area weight,
-/// material)` with positive weights, exact on the region bounded by the piecewise-linear zero contour.
+/// material)` with positive weights, classified by the field's section distance as in a prismatic cell.
 #[must_use]
 pub fn face_rule<F: OccupancyField + ?Sized>(
     field: &F,
