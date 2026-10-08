@@ -43,10 +43,10 @@ pub const T_ROOM_DERIVATION: Derivation = Derivation::Definition {
     expected_sha256: T_ROOM_AUTHORITY_SHA256,
 };
 
-/// `RCC_FLOOR` — theorem-derived residual-coherence lower bound.
+/// `RCC_FLOOR` — residual-coherence capacity lower bound (policy; not fixed by `rcc_lower_bound`).
 /// Policy: `UMST.Formal.Convergence::rcc_lower_bound` was cited here, but its statement does not fix this value.
 pub const RCC_FLOOR_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`RCC_FLOOR` — theorem-derived residual-coherence lower bound.",
+    rationale: "cockpit residual-coherence capacity floor used before RCC telemetry saturates; Convergence::rcc_lower_bound does not pin the numeric default; admissible interval [0.0, 1.0] dimensionless RCC (SSOT registry 0.25).",
 };
 
 /// `landauer_floor_j_per_bit` — **k_B T ln 2** at reference 300 K (cockpit Landauer floor).
@@ -106,6 +106,22 @@ pub fn k2_tier1_landed() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn k2_rcc_floor_policy_rationale_admits_interval() {
+        use super::registry::policy_rationale_is_admissible;
+        let Derivation::Policy { rationale } = RCC_FLOOR_DERIVATION else {
+            panic!("RCC_FLOOR stays Policy until Convergence pins the default");
+        };
+        assert!(policy_rationale_is_admissible(
+            "rcc_floor_residual_coherence",
+            rationale
+        ));
+        assert!(
+            !rationale.contains("theorem-derived"),
+            "rationale must not claim theorem derivation: {rationale}"
+        );
+    }
 
     #[test]
     fn k2_canonical_derivations_non_pending() {}

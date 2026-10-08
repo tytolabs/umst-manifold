@@ -83,13 +83,13 @@ pub const HAL_LINUX_RAM_TOTAL_DERIVATION: Derivation = Derivation::Measurement {
 /// `transition_tolerance` — formal Gate.transitionTolerance (SSOT [`transition_tolerance_f64`]).
 /// Policy: `UMST.Formal.Gate.transitionTolerance` was cited here, but its statement does not fix this value.
 pub const TRANSITION_TOLERANCE_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`transition_tolerance` — formal Gate.transitionTolerance (SSOT [`transition_tolerance_f64`]).",
+    rationale: "gate admissibility ε for mass/state transitions; admissible interval [1e-9, 1e-3] dimensionless.",
 };
 
 /// `admissibility_margin_eps` — Gate.gateCheckSound witness floor (SSOT [`admissibility_margin_eps_f64`]).
 /// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
 pub const ADMISSIBILITY_MARGIN_EPS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`admissibility_margin_eps` — Gate.gateCheckSound witness floor (SSOT [`admissibility_margin_eps_f64`]).",
+    rationale: "hard token floor for Gate.gateCheckSound witnesses; admissible interval [1e-6, 1e-2] dimensionless.",
 };
 
 /// `gate_mass_tolerance_kg_m3` — Concrete.Gate.δMass_val (SSOT [`gate_mass_tolerance_kg_m3_f64`]).
@@ -131,13 +131,13 @@ pub const WARMUP_SAMPLE_THRESHOLD_DERIVATION: Derivation = Derivation::Theorem {
 /// `closed_loop_mi_step_per_accept` — ρ̂ MI warming debit when ring buffer is cold.
 /// Policy: `UMST.Formal.RhoEstimator::rho_based_mi_formula` was cited here, but its statement does not fix this value.
 pub const CLOSED_LOOP_MI_STEP_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`closed_loop_mi_step_per_accept` — ρ̂ MI warming debit when ring buffer is cold.",
+    rationale: "ρ̂ MI warming debit when the closed-loop ring buffer is cold; admissible interval [0.001, 0.05] bits per accept.",
 };
 
 /// `min_promotion_credit_bits` — UCRS inbox promotion quarantine floor.
 /// Policy: `UMST.Formal.CreditGreedy::credit_greedy_optimal` was cited here, but its statement does not fix this value.
 pub const MIN_PROMOTION_CREDIT_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`min_promotion_credit_bits` — UCRS inbox promotion quarantine floor.",
+    rationale: "UCRS inbox promotion quarantine floor so empty credit cannot promote; admissible interval [0.5, 4.0] bits.",
 };
 
 /// `dignity_scalar_range` — upper end `D_MAX` of the dignity range; Lean `Dignity.d_max : ℝ := 10` fixes it.
@@ -149,7 +149,7 @@ pub const DIGNITY_SCALAR_RANGE_DERIVATION: Derivation = Derivation::Theorem {
 /// `staleness_cycle_count` — default ranker staleness cycles (Tier-3 policy).
 /// Policy: `UMST.Formal.EtaCog::eta_cog_nonneg` was cited here, but its statement does not fix this value.
 pub const STALENESS_CYCLE_COUNT_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`staleness_cycle_count` — default ranker staleness cycles (Tier-3 policy).",
+    rationale: "default ranker staleness cycles before a provider is stale; admissible interval [2, 64] cycles (registry clamp).",
 };
 
 /// K-5 batch registry row names.
@@ -178,31 +178,31 @@ pub const COCKPIT_SNAPSHOT_SCHEMA_VERSION_DEFAULT: f64 = 4.0;
 /// `delta_mi_single_turn_cap_bits` — per-turn ΔMI ceiling (deception guard).
 /// Policy: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` was cited here, but its statement does not fix this value.
 pub const DELTA_MI_SINGLE_TURN_CAP_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`delta_mi_single_turn_cap_bits` — per-turn ΔMI ceiling (deception guard).",
+    rationale: "per-turn ΔMI ceiling for deception / cap-hit auditing; admissible interval [1.0, 32.0] bits.",
 };
 
 /// `audit_rotation_keep_count` — JSONL rotation generations (`path` … `path.N`).
 /// Policy: `UMST.Formal.EtaCog::eta_cog_nonneg` was cited here, but its statement does not fix this value.
 pub const AUDIT_ROTATION_KEEP_COUNT_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`audit_rotation_keep_count` — JSONL rotation generations (`path` … `path.N`).",
+    rationale: "JSONL audit rotation generations kept on disk; admissible interval [1, 8] files.",
 };
 
 /// `cockpit_audit_schema_version` — JSONL envelope version (`egoff::cockpit::audit_persist`).
 /// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
 pub const COCKPIT_AUDIT_SCHEMA_VERSION_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`cockpit_audit_schema_version` — JSONL envelope version (`egoff::cockpit::audit_persist`).",
+    rationale: "JSONL audit envelope schema generation; admissible interval [1, 4] version id.",
 };
 
 /// `cockpit_snapshot_schema_version` — hub snapshot wire version (kernel_dispatch field).
 /// Policy: `UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible` was cited here, but its statement does not fix this value.
 pub const COCKPIT_SNAPSHOT_SCHEMA_VERSION_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`cockpit_snapshot_schema_version` — hub snapshot wire version (kernel_dispatch field).",
+    rationale: "hub snapshot wire schema generation; admissible interval [1, 8] version id.",
 };
 
 /// `eta_rolling_window_capacity` — rolling η deque capacity (`frugality::MEDIAN_WINDOW`).
 /// Policy: `UMST.Formal.OrderStatisticsBand::p25_p75_admissibility` was cited here, but its statement does not fix this value.
 pub const ETA_ROLLING_WINDOW_CAPACITY_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`eta_rolling_window_capacity` — rolling η deque capacity (`frugality::MEDIAN_WINDOW`).",
+    rationale: "rolling η deque capacity for frugality warmup; admissible interval [8, 128] samples.",
 };
 
 /// K-5b cockpit policy batch registry row names.
@@ -234,37 +234,37 @@ pub const FRUGALITY_BAND_P75_QUANTILE: f64 = 0.75;
 /// `frugality_band_p25_percentile` — tracked quantile **q = 0.25** for order-stat band.
 /// Policy: `UMST.Formal.OrderStatisticsBand::p25_p75_admissibility` was cited here, but its statement does not fix this value.
 pub const FRUGALITY_BAND_P25_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`frugality_band_p25_percentile` — tracked quantile **q = 0.25** for order-stat band.",
+    rationale: "tracked lower quantile for order-stat banding; admissible interval [0.0, 0.5] quantile level.",
 };
 
 /// `frugality_band_p75_percentile` — tracked quantile **q = 0.75** for order-stat band.
 /// Policy: `UMST.Formal.OrderStatisticsBand::p25_p75_admissibility` was cited here, but its statement does not fix this value.
 pub const FRUGALITY_BAND_P75_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`frugality_band_p75_percentile` — tracked quantile **q = 0.75** for order-stat band.",
+    rationale: "tracked upper quantile for order-stat banding; admissible interval [0.5, 1.0] quantile level.",
 };
 
 /// `hub_inter_sample_period_ms` — cockpit hub fallback poll hold (ms).
 /// Policy: `UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible` was cited here, but its statement does not fix this value.
 pub const HUB_INTER_SAMPLE_PERIOD_MS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`hub_inter_sample_period_ms` — cockpit hub fallback poll hold (ms).",
+    rationale: "cockpit hub fallback poll hold between telemetry samples; admissible interval [100, 5000] ms.",
 };
 
 /// `umst_manifold_ppo_info_gain_default_bits` — PMIC / negentropy floor scale (§14bis.f-I-4).
 /// Policy: `UMST.Formal.InfoTheory::product_joint_mass` was cited here, but its statement does not fix this value.
 pub const PPO_INFO_GAIN_DEFAULT_BITS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_manifold_ppo_info_gain_default_bits` — PMIC / negentropy floor scale (§14bis.f-I-4).",
+    rationale: "PMIC / negentropy floor scale for manifold PPO witness; admissible interval [0.01, 4.0] bits.",
 };
 
 /// `umst_manifold_emergence_lambda` — EmergenceMonitor λ default.
 /// Policy: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` was cited here, but its statement does not fix this value.
 pub const EMERGENCE_LAMBDA_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_manifold_emergence_lambda` — EmergenceMonitor λ default.",
+    rationale: "EmergenceMonitor λ mixing emergent SDF signal; admissible interval [0.0, 1.0] dimensionless.",
 };
 
 /// `umst_msdf_emergence_max_voxels` — default 3³ lattice cap for emergence SDF grid.
 /// Policy: `UMST.Formal.OrderStatisticsBand::order_statistic_concentration` was cited here, but its statement does not fix this value.
 pub const MSDF_EMERGENCE_MAX_VOXELS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_msdf_emergence_max_voxels` — default 3³ lattice cap for emergence SDF grid.",
+    rationale: "default 3³ lattice cap for emergence SDF grid; admissible interval [64, 4096] voxels.",
 };
 
 /// K-5c registry row names (6/6 for slice GREEN).
@@ -310,43 +310,43 @@ pub fn default_staleness_threshold_ms() -> f64 {
 /// `landauer_proximity_multiplier` — jitter-aware floor headroom (pending FPD-MeasurementJitterBound).
 /// Policy: `UMST.Formal.MeasurementJitterBound::landauer_proximity_margin` was cited here, but its statement does not fix this value.
 pub const LANDAUER_PROXIMITY_MULTIPLIER_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`landauer_proximity_multiplier` — jitter-aware floor headroom (pending FPD-MeasurementJitterBound).",
+    rationale: "headroom above k_B T ln 2·ΔMI before LandauerFloorBound; FPD-MeasurementJitterBound still open; admissible interval [1.0, 2.0]× dimensionless (egoff frugality.rs documents 1.2–2.0 tradeoff; SSOT 1.5).",
 };
 
 /// `staleness_threshold_ms` — product of default staleness cycles and hub sample period.
 /// Policy: `UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period` was cited here, but its statement does not fix this value.
 pub const STALENESS_THRESHOLD_MS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`staleness_threshold_ms` — product of default staleness cycles and hub sample period.",
+    rationale: "product staleness_cycle_count × hub sample period for ranker staleness; admissible interval [1000, 300000] ms.",
 };
 
 /// `umst_discovery_lru_capacity` — model-discovery LRU operator bound (TUI-5).
 /// Policy: `UMST.Formal.OrderStatisticsBand::order_statistic_concentration` was cited here, but its statement does not fix this value.
 pub const DISCOVERY_LRU_CAPACITY_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_discovery_lru_capacity` — model-discovery LRU operator bound (TUI-5).",
+    rationale: "model-discovery LRU operator bound in cockpit cache; admissible interval [4, 64] entries.",
 };
 
 /// `umst_tui_render_debounce_ms` — idle telemetry redraw coalescing window (TUI-5).
 /// Policy: `UMST.Formal.MedianConvergence::sqrt_window_warmup_is_admissible` was cited here, but its statement does not fix this value.
 pub const TUI_RENDER_DEBOUNCE_MS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_tui_render_debounce_ms` — idle telemetry redraw coalescing window (TUI-5).",
+    rationale: "idle telemetry redraw coalescing window; admissible interval [4, 250] ms.",
 };
 
 /// `umst_h3b_reward_alpha` — H-3b witness quality weight α.
 /// Policy: `UMST.Formal.InfoTheory::product_joint_mass` was cited here, but its statement does not fix this value.
 pub const H3B_REWARD_ALPHA_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_h3b_reward_alpha` — H-3b witness quality weight α.",
+    rationale: "H-3b witness quality weight α in α+β+γ blend; admissible interval [0.0, 1.0] dimensionless.",
 };
 
 /// `umst_h3b_reward_beta` — H-3b witness latency slack weight β.
 /// Policy: `UMST.Formal.RhoEstimator::rho_based_mi_formula` was cited here, but its statement does not fix this value.
 pub const H3B_REWARD_BETA_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_h3b_reward_beta` — H-3b witness latency slack weight β.",
+    rationale: "H-3b witness latency slack weight β; admissible interval [0.0, 1.0] dimensionless.",
 };
 
 /// `umst_h3b_reward_gamma` — H-3b witness energy slack weight γ.
 /// Policy: `UMST.Formal.EtaCog::eta_cog_nonneg` was cited here, but its statement does not fix this value.
 pub const H3B_REWARD_GAMMA_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_h3b_reward_gamma` — H-3b witness energy slack weight γ.",
+    rationale: "H-3b witness energy slack weight γ; admissible interval [0.0, 1.0] dimensionless.",
 };
 
 // --- K-5e H-3b γ / FFI ABI / cockpit policy timers (§14bis.k deepen wave 5) ---
@@ -372,37 +372,37 @@ pub const DEFAULT_RCC_ACCEPT_TICK: f64 = 0.001;
 /// `umst_ffi_abi_version` — additive FFI gate expected level.
 /// Policy: `UMST.Formal.FFI::abi_version_expected` was cited here, but its statement does not fix this value.
 pub const UMST_FFI_ABI_VERSION_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_ffi_abi_version` — additive FFI gate expected level.",
+    rationale: "additive FFI gate expected ABI level; admissible interval [1, 16] version id.",
 };
 
 /// `umst_ffi_abi_version_min_compatible` — minimum compatible ABI for `assertAbiCompatible`.
 /// Policy: `UMST.Formal.FFI::abi_version_min_compatible` was cited here, but its statement does not fix this value.
 pub const UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_ffi_abi_version_min_compatible` — minimum compatible ABI for `assertAbiCompatible`.",
+    rationale: "minimum compatible ABI for assertAbiCompatible; admissible interval [1, 16] version id.",
 };
 
 /// `umst_discovery_refresh_secs` — model-list HTTP poll cadence (cockpit hub).
 /// Policy: `UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period` was cited here, but its statement does not fix this value.
 pub const DISCOVERY_REFRESH_SECS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_discovery_refresh_secs` — model-list HTTP poll cadence (cockpit hub).",
+    rationale: "model-list HTTP poll cadence in cockpit hub; admissible interval [60, 86400] s.",
 };
 
 /// `umst_tool_timeout_secs` — operator tool palette wall-clock budget.
 /// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
 pub const TOOL_TIMEOUT_SECS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_tool_timeout_secs` — operator tool palette wall-clock budget.",
+    rationale: "operator tool palette wall-clock budget; admissible interval [5, 300] s.",
 };
 
 /// `audit_max_bytes_cap` — on-disk cockpit audit JSONL rotation cap.
 /// Policy: `UMST.Formal.EtaCog::eta_cog_nonneg` was cited here, but its statement does not fix this value.
 pub const AUDIT_MAX_BYTES_CAP_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`audit_max_bytes_cap` — on-disk cockpit audit JSONL rotation cap.",
+    rationale: "on-disk cockpit audit JSONL rotation byte cap; admissible interval [1 MiB, 64 MiB] bytes.",
 };
 
 /// `umst_closed_loop_rcc_accept_tick` — per-accept RCC increment (cap 1.0).
 /// Policy: `UMST.Formal.Convergence::rcc_lower_bound` was cited here, but its statement does not fix this value.
 pub const CLOSED_LOOP_RCC_ACCEPT_TICK_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_closed_loop_rcc_accept_tick` — per-accept RCC increment (cap 1.0).",
+    rationale: "per-accept RCC increment toward capacity 1.0; admissible interval [1e-4, 0.01] RCC per accept.",
 };
 
 /// K-5e registry row names (7/7 for slice GREEN).
@@ -442,43 +442,43 @@ pub const EMBEDDING_HTTP_TIMEOUT_SECONDS_DEFAULT: f64 = 30.0;
 /// `umst_memory_default_resolution_bits` — B-Arc default recorded resolution (clamped at voxelise).
 /// Policy: `UMST.Formal.OrderStatisticsBand::order_statistic_concentration` was cited here, but its statement does not fix this value.
 pub const MEMORY_DEFAULT_RESOLUTION_BITS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_default_resolution_bits` — B-Arc default recorded resolution (clamped at voxelise).",
+    rationale: "B-Arc default recorded resolution clamped at voxelise; admissible interval [4, 16] bits.",
 };
 
 /// `umst_memory_schema_version` — sled `MemoryV1` bincode wire discriminator.
 /// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
 pub const MEMORY_SCHEMA_VERSION_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_schema_version` — sled `MemoryV1` bincode wire discriminator.",
+    rationale: "sled MemoryV1 bincode wire discriminator; admissible interval [1, 4] version id.",
 };
 
 /// `umst_memory_m2_promote_ceremony_atomic` — fail-fast promotion ceremony flag.
 /// Policy: `UMST.Formal.Convergence::rcc_lower_bound` was cited here, but its statement does not fix this value.
 pub const MEMORY_M2_PROMOTE_CEREMONY_ATOMIC_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_m2_promote_ceremony_atomic` — fail-fast promotion ceremony flag.",
+    rationale: "fail-fast Local→Shared promotion ceremony toggle; admissible interval [0, 1] boolean.",
 };
 
 /// `umst_memory_m2_sanitize_serial_kinds_count` — GMD-6 serial artefact taxonomy size.
 /// Policy: `UMST.Formal.InfoTheory::product_joint_mass` was cited here, but its statement does not fix this value.
 pub const MEMORY_M2_SANITIZE_SERIAL_KINDS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_m2_sanitize_serial_kinds_count` — GMD-6 serial artefact taxonomy size.",
+    rationale: "GMD-6 serial artefact taxonomy size; admissible interval [1, 16] kinds.",
 };
 
 /// `umst_memory_m2_promotion_requires_theorem_default` — theorem binding required on promote.
 /// Policy: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` was cited here, but its statement does not fix this value.
 pub const MEMORY_M2_PROMOTION_REQUIRES_THEOREM_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_m2_promotion_requires_theorem_default` — theorem binding required on promote.",
+    rationale: "theorem binding required on promote by default; admissible interval [0, 1] boolean.",
 };
 
 /// `umst_memory_ephemeral_ttl_hours_typical` — default ephemeral retention window (hours).
 /// Policy: `UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period` was cited here, but its statement does not fix this value.
 pub const MEMORY_EPHEMERAL_TTL_HOURS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_ephemeral_ttl_hours_typical` — default ephemeral retention window (hours).",
+    rationale: "default ephemeral retention window when env unset; admissible interval [1, 720] h.",
 };
 
 /// `embedding_http_timeout_seconds` — embedding adapter wall-clock budget (design default).
 /// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
 pub const EMBEDDING_HTTP_TIMEOUT_SECONDS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`embedding_http_timeout_seconds` — embedding adapter wall-clock budget (design default).",
+    rationale: "embedding adapter wall-clock budget; admissible interval [5, 300] s.",
 };
 
 /// K-5f MEMORY-ARC registry row names (7/7 for slice GREEN).
@@ -518,43 +518,43 @@ pub const MEMORY_TIER_REPR_BYTE_FEDERATED: f64 = 1.0;
 /// Registry row `umst_memory_m2_serial_scrub_*` — redaction sentinel width (preview scrub).
 /// Policy: `UMST.Formal.InfoTheory::product_joint_mass` was cited here, but its statement does not fix this value.
 pub const MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "Registry row `umst_memory_m2_serial_scrub_*` — redaction sentinel width (preview scrub).",
+    rationale: "redaction sentinel width for preview scrub of serial fields; admissible interval [8, 32] bytes (SSOT token `<EGOFF-SCRUBBED>` length 16).",
 };
 
 /// `umst_memory_m3_palette_federated_inspect_min_rows` — federation inspector offline floor.
 /// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
 pub const MEMORY_M3_PALETTE_FEDERATED_INSPECT_MIN_ROWS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_m3_palette_federated_inspect_min_rows` — federation inspector offline floor.",
+    rationale: "federation inspector offline floor row count; admissible interval [0, 32] rows.",
 };
 
 /// `umst_memory_merge_safe_attestation_wire_version` — GMD-8 merge-safe witness wire gen.
 /// Policy: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` was cited here, but its statement does not fix this value.
 pub const MEMORY_MERGE_SAFE_ATTESTATION_WIRE_VERSION_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_merge_safe_attestation_wire_version` — GMD-8 merge-safe witness wire gen.",
+    rationale: "GMD-8 merge-safe witness wire generation; admissible interval [1, 4] version id.",
 };
 
 /// `umst_memory_schema_version_v2` — `MemoryV2` sled wire discriminator.
 /// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
 pub const MEMORY_SCHEMA_VERSION_V2_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_schema_version_v2` — `MemoryV2` sled wire discriminator.",
+    rationale: "sled MemoryV2 bincode wire discriminator; admissible interval [1, 4] version id.",
 };
 
 /// `umst_memory_tier_repr_byte_device` — rename-fed Device tier `repr(u8)`.
 /// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
 pub const MEMORY_TIER_REPR_BYTE_DEVICE_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_tier_repr_byte_device` — rename-fed Device tier `repr(u8)`.",
+    rationale: "Device tier repr(u8) wire byte; admissible interval [0, 255] u8.",
 };
 
 /// `umst_memory_tier_repr_byte_ephemeral` — Ephemeral tier `repr(u8)` for graduation targets.
 /// Policy: `UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period` was cited here, but its statement does not fix this value.
 pub const MEMORY_TIER_REPR_BYTE_EPHEMERAL_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_tier_repr_byte_ephemeral` — Ephemeral tier `repr(u8)` for graduation targets.",
+    rationale: "Ephemeral tier repr(u8) for graduation targets; admissible interval [0, 255] u8.",
 };
 
 /// `umst_memory_tier_repr_byte_federated` — rename-fed Federated tier `repr(u8)`.
 /// Policy: `UMST.Formal.Convergence::rcc_lower_bound` was cited here, but its statement does not fix this value.
 pub const MEMORY_TIER_REPR_BYTE_FEDERATED_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_tier_repr_byte_federated` — rename-fed Federated tier `repr(u8)`.",
+    rationale: "Federated tier repr(u8) wire byte; admissible interval [0, 255] u8.",
 };
 
 /// K-5g scrub-len registry row (split literal avoids scaffolding scan false positive).
@@ -598,43 +598,43 @@ pub const MEMORY_HILBERT_BITS_DEFAULT: f64 = 8.0;
 /// `umst_memory_retention_alpha_default` — MI blend weight in retain = α·MI + β·pareto.
 /// Policy: `UMST.Formal.InfoTheory::product_joint_mass` was cited here, but its statement does not fix this value.
 pub const MEMORY_RETENTION_ALPHA_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_retention_alpha_default` — MI blend weight in retain = α·MI + β·pareto.",
+    rationale: "MI blend weight α in retain = α·MI + β·pareto; admissible interval [0.0, 1.0] dimensionless.",
 };
 
 /// `umst_memory_retention_evict_default` — post-store eviction toggle default.
 /// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
 pub const MEMORY_RETENTION_EVICT_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_retention_evict_default` — post-store eviction toggle default.",
+    rationale: "post-store eviction toggle default; admissible interval [0, 1] boolean.",
 };
 
 /// `umst_memory_retention_degrade_first_default` — degrade-before-drop policy default.
 /// Policy: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` was cited here, but its statement does not fix this value.
 pub const MEMORY_RETENTION_DEGRADE_FIRST_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_retention_degrade_first_default` — degrade-before-drop policy default.",
+    rationale: "degrade-before-drop policy default; admissible interval [0, 1] boolean.",
 };
 
 /// `umst_manifold_liquid_ppo_witness_default` — Path B `step_and_learn` witness gate.
 /// Policy: `UMST.Formal.Convergence::rcc_lower_bound` was cited here, but its statement does not fix this value.
 pub const MANIFOLD_LIQUID_PPO_WITNESS_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_manifold_liquid_ppo_witness_default` — Path B `step_and_learn` witness gate.",
+    rationale: "Path B step_and_learn witness gate default; admissible interval [0, 1] boolean.",
 };
 
 /// `umst_ucrs_memory_phase_bind_enabled` — accept-path UCRS phase bind toggle.
 /// Policy: `UMST.Formal.FrugalityRanker::staleness_threshold_from_hub_period` was cited here, but its statement does not fix this value.
 pub const UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_ucrs_memory_phase_bind_enabled` — accept-path UCRS phase bind toggle.",
+    rationale: "accept-path UCRS phase bind toggle default; admissible interval [0, 1] boolean.",
 };
 
 /// `umst_msdf_layer_stack_max_depth` — progressive MSDF ring cap when layer stack on.
 /// Policy: `UMST.Formal.OrderStatisticsBand::order_statistic_concentration` was cited here, but its statement does not fix this value.
 pub const MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_msdf_layer_stack_max_depth` — progressive MSDF ring cap when layer stack on.",
+    rationale: "progressive MSDF ring cap when layer stack enabled; admissible interval [1, 16] layers.",
 };
 
 /// `umst_memory_hilbert_bits` — Hilbert curve order for sled key layout (M-5 policy).
 /// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
 pub const MEMORY_HILBERT_BITS_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "`umst_memory_hilbert_bits` — Hilbert curve order for sled key layout (M-5 policy).",
+    rationale: "Hilbert curve order for sled key layout (M-0 cap 8); admissible interval [1, 8] bits order.",
 };
 
 /// K-5h MEMORY-ARC retention + integration registry row names (7/7 for slice GREEN).

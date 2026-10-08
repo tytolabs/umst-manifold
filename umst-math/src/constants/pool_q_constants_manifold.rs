@@ -54,27 +54,27 @@ pub const ACTION_SHAPE_PALETTE_MAX_ENTRIES_DEFAULT: f64 = 100.0;
 
 /// `umst_msdf_hilbert_persist_enabled` — a configuration default (`MSDF_HILBERT_PERSIST_ENABLED_DEFAULT`); no theorem fixes it.
 pub const MSDF_HILBERT_PERSIST_ENABLED_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "configuration default for umst_msdf_hilbert_persist_enabled: an operator setting, not a derived constant",
+    rationale: "MSDF Hilbert persist env gate defaults off until the UCRS+MSDF stack is explicitly enabled; admissible interval [0, 1] boolean (`UMST_MSDF_HILBERT_PERSIST`).",
 };
 
 /// `umst_manifold_introspect_enabled` — a configuration default (`MANIFOLD_INTROSPECT_ENABLED_DEFAULT`); no theorem fixes it.
 pub const MANIFOLD_INTROSPECT_ENABLED_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "configuration default for umst_manifold_introspect_enabled: an operator setting, not a derived constant",
+    rationale: "verbose `:manifold` introspect lines default off to keep cockpit noise low; admissible interval [0, 1] boolean (`UMST_MANIFOLD_INTROSPECT`).",
 };
 
 /// `umst_mcert_strict_paired_default` — a configuration default (`MCERT_STRICT_PAIRED_DEFAULT`); no theorem fixes it.
 pub const MCERT_STRICT_PAIRED_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "configuration default for umst_mcert_strict_paired_default: an operator setting, not a derived constant",
+    rationale: "heavy `:mcert --paired` scripts stay opt-in off by default; admissible interval [0, 1] boolean (`UMST_MCERT_STRICT_PAIRED`).",
 };
 
 /// `umst_action_shape_quotient_default_enabled` — a configuration default (`ACTION_SHAPE_QUOTIENT_DEFAULT_ENABLED`); no theorem fixes it.
 pub const ACTION_SHAPE_QUOTIENT_DEFAULT_ENABLED_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "configuration default for umst_action_shape_quotient_default_enabled: an operator setting, not a derived constant",
+    rationale: "action-shape quotient merge defaults on so palette keys collapse by quotient unless disabled; admissible interval [0, 1] boolean (`UMST_ACTION_SHAPE_QUOTIENT`).",
 };
 
 /// `umst_action_shape_palette_max_entries_default` — a configuration default (`ACTION_SHAPE_PALETTE_MAX_ENTRIES_DEFAULT`); no theorem fixes it.
 pub const ACTION_SHAPE_PALETTE_MAX_ENTRIES_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "configuration default for umst_action_shape_palette_max_entries_default: an operator setting, not a derived constant",
+    rationale: "`:action-shapes` palette truncation cap limits operator-facing listing size; admissible interval [8, 512] entries (SSOT default 100).",
 };
 
 /// Final pool batch: the rows classified last.

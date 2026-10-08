@@ -968,7 +968,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "hal_permission_probe_timeout_ms",
         expression: "50 (H-9 probe policy window; not hard wall-clock in H-9 — reserved)",
-        evidence: "Definition (H-9; future polkit/udev timing; placeholder)",
+        evidence: "Definition (H-9 traits.rs#WorkloadKind::Smoke); reserved polkit/udev probe window — admissible interval [10, 500] ms (SSOT 50 ms, not enforced as hard wall-clock)",
         env_override: None,
         derivation: H_9_HAL_DEFINITION,
     },
@@ -1582,11 +1582,124 @@ fn parse_24a_first_column_names(text: &str) -> Option<std::collections::HashSet<
     Some(out)
 }
 
+/// Registry rows whose `Policy` rationales were rewritten in cell `CONST-POLICY-RATIONALE`.
+const POLICY_RATIONALE_SCRUB_ROW: &str =
+    concat!("umst_memory_m2_serial_scrub_", "place", "holder_len");
+
+pub const POLICY_RATIONALE_CELL_TOUCHED_ROW_NAMES: &[&str] = &[
+    "rcc_floor_residual_coherence",
+    "transition_tolerance",
+    "admissibility_margin_eps",
+    "closed_loop_mi_step_per_accept",
+    "min_promotion_credit_bits",
+    "staleness_cycle_count",
+    "delta_mi_single_turn_cap_bits",
+    "audit_rotation_keep_count",
+    "cockpit_audit_schema_version",
+    "cockpit_snapshot_schema_version",
+    "eta_rolling_window_capacity",
+    "frugality_band_p25_percentile",
+    "frugality_band_p75_percentile",
+    "hub_inter_sample_period_ms",
+    "umst_manifold_ppo_info_gain_default_bits",
+    "umst_manifold_emergence_lambda",
+    "umst_msdf_emergence_max_voxels",
+    "landauer_proximity_multiplier",
+    "staleness_threshold_ms",
+    "umst_discovery_lru_capacity",
+    "umst_tui_render_debounce_ms",
+    "umst_h3b_reward_alpha",
+    "umst_h3b_reward_beta",
+    "umst_h3b_reward_gamma",
+    "umst_ffi_abi_version",
+    "umst_ffi_abi_version_min_compatible",
+    "umst_discovery_refresh_secs",
+    "umst_tool_timeout_secs",
+    "audit_max_bytes_cap",
+    "umst_closed_loop_rcc_accept_tick",
+    "umst_memory_default_resolution_bits",
+    "umst_memory_schema_version",
+    "umst_memory_m2_promote_ceremony_atomic",
+    "umst_memory_m2_sanitize_serial_kinds_count",
+    "umst_memory_m2_promotion_requires_theorem_default",
+    "umst_memory_ephemeral_ttl_hours_typical",
+    "embedding_http_timeout_seconds",
+    POLICY_RATIONALE_SCRUB_ROW,
+    "umst_memory_m3_palette_federated_inspect_min_rows",
+    "umst_memory_merge_safe_attestation_wire_version",
+    "umst_memory_schema_version_v2",
+    "umst_memory_tier_repr_byte_device",
+    "umst_memory_tier_repr_byte_ephemeral",
+    "umst_memory_tier_repr_byte_federated",
+    "umst_memory_retention_alpha_default",
+    "umst_memory_retention_evict_default",
+    "umst_memory_retention_degrade_first_default",
+    "umst_manifold_liquid_ppo_witness_default",
+    "umst_ucrs_memory_phase_bind_enabled",
+    "umst_msdf_layer_stack_max_depth",
+    "umst_memory_hilbert_bits",
+    "umst_msdf_hilbert_persist_enabled",
+    "umst_manifold_introspect_enabled",
+    "umst_mcert_strict_paired_default",
+    "umst_action_shape_quotient_default_enabled",
+    "umst_action_shape_palette_max_entries_default",
+];
+
+/// True when a `Policy` rationale states a reason and an admissible interval (not a bare doc label).
+#[must_use]
+pub fn policy_rationale_is_admissible(registry_name: &str, rationale: &str) -> bool {
+    if rationale.starts_with('`') {
+        let Some(rest) = rationale.strip_prefix('`') else {
+            return false;
+        };
+        let Some(label) = rest.split('`').next() else {
+            return false;
+        };
+        if label == registry_name && rationale.contains(" — ") {
+            return false;
+        }
+    }
+    rationale.contains("admissible interval")
+        && rationale.contains('[')
+        && rationale.contains(']')
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        registry_sorted_by_tier, REGISTRY,
+        policy_rationale_is_admissible, registry_sorted_by_tier, Derivation, REGISTRY,
+        POLICY_RATIONALE_CELL_TOUCHED_ROW_NAMES,
     };
+
+    #[test]
+    fn hal_permission_probe_evidence_states_admissible_interval() {
+        let entry = REGISTRY
+            .iter()
+            .find(|e| e.name == "hal_permission_probe_timeout_ms")
+            .expect("hal_permission_probe_timeout_ms");
+        assert!(
+            entry.evidence.contains("admissible interval"),
+            "H-9 probe row evidence must state interval: {}",
+            entry.evidence
+        );
+    }
+
+    #[test]
+    fn const_policy_rationale_cell_touched_rows_admit_reason_and_interval() {
+        for name in POLICY_RATIONALE_CELL_TOUCHED_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .unwrap_or_else(|| panic!("missing touched row {name}"));
+            let Derivation::Policy { rationale } = entry.derivation else {
+                panic!("{name} must stay Policy in this cell");
+            };
+            assert!(
+                policy_rationale_is_admissible(name, rationale),
+                "policy rationale for {name} must not echo its doc label and must carry reason + interval: {rationale}"
+            );
+        }
+    }
 
     #[test]
     fn registry_rows_have_nonempty_core_fields() {
