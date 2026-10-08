@@ -117,6 +117,8 @@ pub use solve_combinator::{
     ProblemProgressWindow, ProblemTolerance, ProgressCertificate, ResidualCertificate,
     SolveOutcome, StallEvidence, StepEnergyMeter, StrategyRung, Thermo, UnmeasuredMeter,
 };
+/// CG stall window from the Lanczos spectrum of a CG coefficient trace.
+pub use cg_spectral_window::{CgCoeff, SpectralWindow, SpectralWindowRefuse};
 /// Profile matrices, their `L D Lᵀ` factor, and the definiteness and inertia certificates it carries.
 pub use profile_ldlt::{
     ldlt, spd_factor, Clique, Inertia, LdltFactor, ProfilePattern, ProfileRefuse, SpdFactor,
