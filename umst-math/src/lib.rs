@@ -98,6 +98,8 @@ pub use solver_refusal::{
 };
 /// CONSTANT-BOUND: CGD registry row types (re-export for wire gate on registry edits).
 pub use constants::registry::{ConstantEntry, ConstantTier};
+/// CONSTANT-BOUND: compiler pin snapshot parsed from `TOOLCHAIN_PIN.txt`.
+pub use constants::toolchain_pin::ToolchainSnapshot;
 /// THEOREM-BOUND: `combine_density_between` (re-export: density diagonal / CGD struct)
 pub use density::DensityDiag;
 /// THEOREM-BOUND: `clausiusDuhemFwd` (re-export: Englert duality / thermo bridge)
