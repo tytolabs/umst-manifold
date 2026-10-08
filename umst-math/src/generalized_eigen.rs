@@ -494,7 +494,11 @@ fn finalise(
     pairs.sort_by(|a, b| a.lambda.total_cmp(&b.lambda));
     let next_ritz = order.get(take).map(|&i| request.shift + theta[i].recip());
     let deflated = isolate(pencil, mfac, deflated)?;
-    let pairs = isolate(pencil, mfac, pairs)?;
+    // Rayleigh–Ritz rotation can reorder a cluster's members; report every list lowest first.
+    let mut deflated = deflated;
+    deflated.sort_by(|a, b| a.lambda.total_cmp(&b.lambda));
+    let mut pairs = isolate(pencil, mfac, pairs)?;
+    pairs.sort_by(|a, b| a.lambda.total_cmp(&b.lambda));
     let disjoint = disjoint_groups(&deflated, &pairs);
     let completeness = if disjoint {
         sturm_certificate(pencil, &deflated, &pairs, next_ritz)

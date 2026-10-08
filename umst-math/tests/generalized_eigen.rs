@@ -424,9 +424,17 @@ fn a_missed_copy_of_a_double_eigenvalue_is_never_certified() {
     let sol = converged(
         lowest_eigenpairs(Pencil { k: &k, m: &m }, &request, budget(), &meter()).expect("solve"),
     );
-    // λ₁ has multiplicity two and one pair was asked for: the count below any τ above λ₁ is at least two.
+    // λ₁ has multiplicity two and one pair was asked for: the Sturm count must run and find two below τ (a
+    // count that never ran would read Unchecked or Certified).
     assert!(
-        !matches!(sol.completeness, Completeness::Certified { .. }),
+        matches!(
+            sol.completeness,
+            Completeness::Missed {
+                below: 2,
+                found: 1,
+                ..
+            }
+        ),
         "{:?}",
         sol.completeness
     );
