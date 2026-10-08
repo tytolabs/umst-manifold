@@ -312,3 +312,20 @@ fn malformed_requests_refuse() {
         Some(EigenRefuse::DeflationInvalid)
     );
 }
+
+#[test]
+fn owned_and_borrowed_cliques_assemble_the_same_matrix() {
+    let cliques: Vec<(Vec<usize>, Vec<f64>)> = (0..5)
+        .map(|i| (vec![i, i + 2], vec![3.0 + i as f64, -1.0, -1.0, 2.0]))
+        .collect();
+    let pattern =
+        ProfilePattern::from_cliques(7, cliques.iter().map(|c| c.0.clone())).expect("pattern");
+    let borrowed = pattern
+        .assemble(cliques.iter().map(|c| Clique {
+            dofs: &c.0,
+            block: &c.1,
+        }))
+        .expect("A");
+    let owned = pattern.assemble_owned(cliques.into_iter()).expect("A");
+    assert_eq!(borrowed, owned);
+}

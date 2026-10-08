@@ -78,9 +78,10 @@ impl ProfilePattern {
     ///
     /// # Errors
     /// [`ProfileRefuse::Empty`] for `n = 0`; [`ProfileRefuse::IndexOutOfRange`] for an index `≥ n`.
-    pub fn from_cliques<'a, I>(n: usize, cliques: I) -> Result<Self, ProfileRefuse>
+    pub fn from_cliques<I, D>(n: usize, cliques: I) -> Result<Self, ProfileRefuse>
     where
-        I: IntoIterator<Item = &'a [usize]>,
+        I: IntoIterator<Item = D>,
+        D: AsRef<[usize]>,
     {
         if n == 0 {
             return Err(ProfileRefuse::Empty);
@@ -89,6 +90,7 @@ impl ProfilePattern {
             cliques
                 .into_iter()
                 .try_fold((0..n).collect::<Vec<usize>>(), |mut first, dofs| {
+                    let dofs = dofs.as_ref();
                     if let Some(&index) = dofs.iter().find(|&&d| d >= n) {
                         return Err(ProfileRefuse::IndexOutOfRange { index });
                     }
@@ -132,30 +134,45 @@ impl ProfilePattern {
     where
         I: IntoIterator<Item = Clique<'a>>,
     {
-        let values =
-            cliques
-                .into_iter()
-                .try_fold(vec![0.0_f64; self.len], |mut values, clique| {
-                    let k = clique.dofs.len();
-                    if clique.block.len() != k * k {
-                        return Err(ProfileRefuse::DimMismatch);
-                    }
-                    for (a, &ra) in clique.dofs.iter().enumerate() {
-                        for (b, &rb) in clique.dofs.iter().enumerate().take(a + 1) {
-                            let v = clique.block[a * k + b];
-                            if !v.is_finite() {
-                                return Err(ProfileRefuse::NonFinite);
-                            }
-                            let (row, col) = if ra >= rb { (ra, rb) } else { (rb, ra) };
-                            let slot = self
-                                .slot(row, col)
-                                .ok_or(ProfileRefuse::IndexOutOfRange { index: row })?;
-                            // A diagonal pair (a, a) and an off-diagonal pair landing on the same global diagonal both add.
-                            values[slot] += if a != b && ra == rb { v + v } else { v };
+        self.assemble_owned(cliques.into_iter().map(|c| (c.dofs, c.block)))
+    }
+
+    /// As [`Self::assemble`], for cliques whose indices and blocks are produced on the fly (owned or borrowed),
+    /// so a caller need not store every element block at once.
+    ///
+    /// # Errors
+    /// As [`Self::assemble`].
+    pub fn assemble_owned<I, D, B>(&self, cliques: I) -> Result<SymmetricProfile, ProfileRefuse>
+    where
+        I: IntoIterator<Item = (D, B)>,
+        D: AsRef<[usize]>,
+        B: AsRef<[f64]>,
+    {
+        let values = cliques.into_iter().try_fold(
+            vec![0.0_f64; self.len],
+            |mut values, (dofs, block)| {
+                let (dofs, block) = (dofs.as_ref(), block.as_ref());
+                let k = dofs.len();
+                if block.len() != k * k {
+                    return Err(ProfileRefuse::DimMismatch);
+                }
+                for (a, &ra) in dofs.iter().enumerate() {
+                    for (b, &rb) in dofs.iter().enumerate().take(a + 1) {
+                        let v = block[a * k + b];
+                        if !v.is_finite() {
+                            return Err(ProfileRefuse::NonFinite);
                         }
+                        let (row, col) = if ra >= rb { (ra, rb) } else { (rb, ra) };
+                        let slot = self
+                            .slot(row, col)
+                            .ok_or(ProfileRefuse::IndexOutOfRange { index: row })?;
+                        // A diagonal pair (a, a) and an off-diagonal pair landing on the same global diagonal both add.
+                        values[slot] += if a != b && ra == rb { v + v } else { v };
                     }
-                    Ok(values)
-                })?;
+                }
+                Ok(values)
+            },
+        )?;
         Ok(SymmetricProfile {
             first: self.first.clone(),
             start: self.start.clone(),
