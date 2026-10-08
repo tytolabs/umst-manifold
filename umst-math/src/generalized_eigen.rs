@@ -684,10 +684,10 @@ fn symmetric_eigen_small(a: &[Vec<f64>]) -> Result<(Vec<f64>, Vec<Vec<f64>>), Ei
                 let t = if tau == 0.0 { 1.0 } else { t };
                 let c = (1.0 + t * t).sqrt().recip();
                 let s = t * c;
-                for k in 0..n {
-                    let (akp, akq) = (a[k][p], a[k][q]);
-                    a[k][p] = c * akp - s * akq;
-                    a[k][q] = s * akp + c * akq;
+                for row in &mut a {
+                    let (akp, akq) = (row[p], row[q]);
+                    row[p] = c * akp - s * akq;
+                    row[q] = s * akp + c * akq;
                 }
                 for k in 0..n {
                     let (apk, aqk) = (a[p][k], a[q][k]);
