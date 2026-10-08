@@ -16,6 +16,34 @@ pub const MEASUREMENT_RECEIPTS_DIR: &str = ".umst-ci/measurement-receipts";
 /// Methodology anchor prefix for H-9 HAL probes.
 pub const HAL_METHODOLOGY_PREFIX: &str = "COCKPIT_DESIGN_BRIEF.md#hal-";
 
+/// Plain-language gap doc cited by Tier-2 B-Arc runtime absences (registry rows; not a numeric value).
+pub const PENDING_GAPS_PLAIN_DOC: &str = "docs/PENDING_GAPS_PLAIN.md";
+
+/// Typed absence for Tier-2 B-Arc perf rows still awaiting calibration (no fabricated p99).
+pub const B_ARC_PERF_TYPED_ABSENCE_DERIVATION: Derivation = Derivation::Absent {
+    reason: "B-arc runtime percentile not yet measured; docs/PENDING_GAPS_PLAIN.md#b-arc-perf-typed-absence",
+};
+
+/// Typed absence for macOS package power ceiling (samples recorded; no installed ceiling).
+pub const MACOS_PACKAGE_POWER_CEILING_TYPED_ABSENCE_DERIVATION: Derivation = Derivation::Absent {
+    reason: "macOS package power ceiling: samples recorded, no installed ceiling; docs/PENDING_GAPS_PLAIN.md#unmeasured-power-ceiling",
+};
+
+/// Tier-2 B-Arc / macOS power runtime rows that stay `Absent` until a committed benchmark lands.
+pub const ABSENT_RUNTIME_REGISTRY_ROW_NAMES: &[&str] = &[
+    "manifold_voxelize_runtime_us_p99",
+    "manifold_canonicalize_runtime_us_p99",
+    "manifold_octree_density_typical",
+    "manifold_hilbert_index_range_typical",
+    "umst_memory_inspect_runtime_us_p99",
+    "umst_memory_load_runtime_us_p99",
+    "umst_memory_local_tier_size_typical",
+    "umst_memory_store_runtime_us_p99",
+    "umst_memory_retention_mi_estimate_p99_us",
+    "umst_memory_retention_pareto_compute_p99_us",
+    "solve_combinator_macos_package_power_ceiling_watts",
+];
+
 /// `hal_intel_cpu_logical_cores` — /proc/cpuinfo logical core count (H-9).
 pub const HAL_LOGICAL_CORES_DERIVATION: Derivation = Derivation::Measurement {
     receipt_path: ".umst-ci/measurement-receipts/hal_intel_cpu_logical_cores.jsonl",
@@ -1029,6 +1057,12 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         n if super::tier3_derivation::K5V_M0_REGISTRY_ROW_NAMES.contains(&n) => {
             Some(super::tier3_derivation::M_0_MANIFOLD_DEFINITION)
         }
+        "solve_combinator_macos_package_power_ceiling_watts" => {
+            Some(MACOS_PACKAGE_POWER_CEILING_TYPED_ABSENCE_DERIVATION)
+        }
+        n if ABSENT_RUNTIME_REGISTRY_ROW_NAMES.contains(&n) => {
+            Some(B_ARC_PERF_TYPED_ABSENCE_DERIVATION)
+        }
         _ => None,
     }
 }
@@ -1692,6 +1726,82 @@ mod tests {
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
             );
+        }
+    }
+
+    fn pending_gaps_plain_for_absent_witness() -> &'static str {
+        include_str!("../../../docs/PENDING_GAPS_PLAIN.md")
+    }
+
+    fn absent_reason_doc_anchor(reason: &str) -> &str {
+        reason
+            .rsplit('#')
+            .next()
+            .filter(|anchor| !anchor.is_empty())
+            .unwrap_or_else(|| panic!("Absent reason lacks docs anchor: {reason}"))
+    }
+
+    fn pending_gaps_plain_lists_anchor(anchor: &str, doc: &str) -> bool {
+        doc.contains(&format!("id=\"{anchor}\""))
+            || doc.contains(&format!("### {anchor}"))
+            || doc.contains(&format!("## {anchor}"))
+    }
+
+    fn measurement_receipt_exists(receipt_path: &str) -> bool {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let rel = receipt_path.trim_start_matches("egoff/");
+        manifest.join("../../egoff").join(rel).is_file()
+    }
+
+    #[test]
+    fn absent_runtime_registry_rows_backfilled() {
+        for name in ABSENT_RUNTIME_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            assert_eq!(
+                entry.derivation,
+                derivation_for_registry_row(name).expect("lookup")
+            );
+        }
+    }
+
+    #[test]
+    fn absent_runtime_rows_anchor_or_receipt_witness() {
+        let gaps = pending_gaps_plain_for_absent_witness();
+        for name in ABSENT_RUNTIME_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .expect("registry row");
+            match entry.derivation {
+                Derivation::Absent { reason } => {
+                    let anchor = absent_reason_doc_anchor(reason);
+                    assert!(
+                        pending_gaps_plain_lists_anchor(anchor, gaps),
+                        "PENDING_GAPS_PLAIN.md missing anchor #{anchor} cited by {name}"
+                    );
+                }
+                Derivation::Measurement { receipt_path, .. } => {
+                    assert!(
+                        measurement_receipt_exists(receipt_path),
+                        "Measurement row {name} missing receipt at {receipt_path}"
+                    );
+                    let bytes = std::fs::read(
+                        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                            .join("../../egoff")
+                            .join(receipt_path.trim_start_matches("egoff/")),
+                    )
+                    .expect("receipt bytes");
+                    let receipt: serde_json::Value =
+                        serde_json::from_slice(&bytes).expect("receipt json");
+                    assert!(receipt.get("sample_count").is_some());
+                    assert!(receipt.get("estimator").is_some());
+                    assert!(receipt.get("interval").is_some());
+                }
+                other => panic!("unexpected derivation for {name}: {other:?}"),
+            }
         }
     }
 }

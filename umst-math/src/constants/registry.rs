@@ -8,8 +8,7 @@
 use super::derivation::Derivation;
 use super::pool_q_constants_manifold::{
     ACTION_SHAPE_PALETTE_MAX_ENTRIES_DEFAULT_DERIVATION,
-    ACTION_SHAPE_QUOTIENT_DEFAULT_ENABLED_DERIVATION, B_ARC_TYPED_ABSENCE_DEFINITION,
-    MACOS_PACKAGE_POWER_CEILING_TYPED_ABSENCE, MANIFOLD_INTROSPECT_ENABLED_DERIVATION,
+    ACTION_SHAPE_QUOTIENT_DEFAULT_ENABLED_DERIVATION, MANIFOLD_INTROSPECT_ENABLED_DERIVATION,
     MCERT_STRICT_PAIRED_DEFAULT_DERIVATION, MSDF_HILBERT_PERSIST_ENABLED_DERIVATION,
     POOL_Q_COCKPIT_POLICY_DEFINITION, UMST_MATH_SIMD_FEATURE_DEFINITION,
 };
@@ -19,7 +18,8 @@ use super::tier1_derivation::{
 };
 use super::tier2_derivation::{
     ADMISSIBILITY_MARGIN_EPS_DERIVATION, AUDIT_MAX_BYTES_CAP_DERIVATION,
-    AUDIT_ROTATION_KEEP_COUNT_DERIVATION, CLOSED_LOOP_MI_STEP_DERIVATION,
+    AUDIT_ROTATION_KEEP_COUNT_DERIVATION, B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
+    CLOSED_LOOP_MI_STEP_DERIVATION,
     CLOSED_LOOP_RCC_ACCEPT_TICK_DERIVATION, COCKPIT_AUDIT_SCHEMA_VERSION_DERIVATION,
     COCKPIT_SNAPSHOT_SCHEMA_VERSION_DERIVATION, DELTA_MI_SINGLE_TURN_CAP_DERIVATION,
     DIGNITY_SCALAR_RANGE_DERIVATION, DISCOVERY_LRU_CAPACITY_DERIVATION,
@@ -39,7 +39,8 @@ use super::tier2_derivation::{
     MEMORY_TIER_REPR_BYTE_FEDERATED_DERIVATION, EMBEDDING_HTTP_TIMEOUT_SECONDS_DERIVATION,
     MEMORY_SCHEMA_VERSION_DERIVATION, MEMORY_RETENTION_ALPHA_DEFAULT_DERIVATION,
     MEMORY_RETENTION_DEGRADE_FIRST_DEFAULT_DERIVATION, MEMORY_RETENTION_EVICT_DEFAULT_DERIVATION,
-    MEMORY_HILBERT_BITS_DEFAULT_DERIVATION, MANIFOLD_LIQUID_PPO_WITNESS_DEFAULT_DERIVATION,
+    MEMORY_HILBERT_BITS_DEFAULT_DERIVATION, MACOS_PACKAGE_POWER_CEILING_TYPED_ABSENCE_DERIVATION,
+    MANIFOLD_LIQUID_PPO_WITNESS_DEFAULT_DERIVATION,
     MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT_DERIVATION,
     UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT_DERIVATION,
     MIN_PROMOTION_CREDIT_DERIVATION, MSDF_EMERGENCE_MAX_VOXELS_DERIVATION,
@@ -1106,28 +1107,28 @@ pub static REGISTRY: &[ConstantEntry] = &[
         expression: "pending: B-Arc p99 of canonicalize_voxelize wall time (us)",
         evidence: "unmeasured: phase FPD-M-Arc-VoxelP99 (M-B calibration); no value is recorded until the measurement lands",
         env_override: None,
-        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
+        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
     },
     ConstantEntry {
         name: "manifold_canonicalize_runtime_us_p99",
         expression: "pending: B-Arc p99 of canonicalize + FNV (us)",
         evidence: "unmeasured: phase FPD-M-Arc-CanonicalizeP99; no value is recorded until the measurement lands",
         env_override: None,
-        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
+        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
     },
     ConstantEntry {
         name: "manifold_octree_density_typical",
         expression: "pending: B-Arc typical non-empty leaf count / m³ for cockpit badge",
         evidence: "unmeasured: phase FPD-M-Arc-OctreeDensity; no value is recorded until the measurement lands",
         env_override: None,
-        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
+        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
     },
     ConstantEntry {
         name: "manifold_hilbert_index_range_typical",
         expression: "pending: B-Arc index span on reference traces for sled key layout (M-5)",
         evidence: "unmeasured: phase FPD-M-Arc-HilbertSpan; no value is recorded until the measurement lands",
         env_override: None,
-        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
+        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
     },
     // §14bis.f-M-1 — `cockpit memory module` (sled schema v1; B-Arc placeholders; Tier-3 for schema + default res)
     ConstantEntry {
@@ -1142,21 +1143,21 @@ pub static REGISTRY: &[ConstantEntry] = &[
         expression: "pending: B-Arc p99 of `:memory inspect` wall time (us)",
         evidence: "unmeasured: phase FPD-M-Arc-M1-InspectP99; no value is recorded until the measurement lands",
         env_override: None,
-        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
+        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_load_runtime_us_p99",
         expression: "pending: B-Arc p99 of memory `load` (us)",
         evidence: "unmeasured: phase FPD-M-Arc-M1-LoadP99; no value is recorded until the measurement lands",
         env_override: None,
-        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
+        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_local_tier_size_typical",
         expression: "pending: B-Arc typical local-tier row count for cockpit (count)",
         evidence: "unmeasured: phase FPD-M-Arc-M1-LocalSize; no value is recorded until the measurement lands",
         env_override: None,
-        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
+        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_schema_version",
@@ -1170,7 +1171,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         expression: "pending: B-Arc p99 of memory `store` (us)",
         evidence: "unmeasured: phase FPD-M-Arc-M1-StoreP99; no value is recorded until the measurement lands",
         env_override: None,
-        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
+        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
     },
     // §14bis.f-M-2 — promotion ceremony + sanitize (GMD-4..6)
     ConstantEntry {
@@ -1283,14 +1284,14 @@ pub static REGISTRY: &[ConstantEntry] = &[
         expression: "pending: B-Arc p99 wall for `mi_estimate` (µs); GREEN bound < 500",
         evidence: "unmeasured: phase FPD-M-3-retention-MiP99; no value is recorded until the measurement lands",
         env_override: None,
-        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
+        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_retention_pareto_compute_p99_us",
         expression: "pending: B-Arc p99 wall for `pareto_dominance` / corpus scan (µs)",
         evidence: "unmeasured: phase FPD-M-3-retention-ParetoP99; no value is recorded until the measurement lands",
         env_override: None,
-        derivation: B_ARC_TYPED_ABSENCE_DEFINITION,
+        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
     },
     ConstantEntry {
         name: "umst_manifold_liquid_ppo_witness_default",
@@ -1466,7 +1467,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
         expression: "unmeasured ceiling; loaded sample Combined Power 18334 mW (18.334 W) is one second, not a package maximum",
         evidence: "Two operator samples, sudo powermetrics --samplers cpu_power -i 1000 -n 1, Mac15,9, OS 25G83. Low-load Sun Sep 27 12:31:28 2026 +0530, 1008.90 ms, CPU 3098 mW, GPU 7 mW, ANE 0, Combined 3105 mW. Loaded Sun Sep 27 12:32:58 2026 +0530, 1009.03 ms, all clusters online, CPU 16375 mW, GPU 1959 mW, ANE 0, Combined 18334 mW. Not installed as a ceiling: a later step can draw more, and a low ceiling makes the budget stop late.",
         env_override: None,
-        derivation: MACOS_PACKAGE_POWER_CEILING_TYPED_ABSENCE,
+        derivation: MACOS_PACKAGE_POWER_CEILING_TYPED_ABSENCE_DERIVATION,
     },
 ];
 

@@ -309,6 +309,32 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 
 ---
 
+## Constants registry — typed runtime absences
+
+These anchors are cited by `umst-math` `REGISTRY` rows that carry no invented p99, density, or watt ceiling until a committed benchmark or powermetrics study installs one.
+
+### b-arc-perf-typed-absence
+
+**Status:** open (measurement debt)
+
+**Rows:** `manifold_voxelize_runtime_us_p99`, `manifold_canonicalize_runtime_us_p99`, `manifold_octree_density_typical`, `manifold_hilbert_index_range_typical`, `umst_memory_inspect_runtime_us_p99`, `umst_memory_load_runtime_us_p99`, `umst_memory_local_tier_size_typical`, `umst_memory_store_runtime_us_p99`, `umst_memory_retention_mi_estimate_p99_us`, `umst_memory_retention_pareto_compute_p99_us`.
+
+**Plain read:** B-Arc cockpit perf and memory telemetry placeholders stay typed `Absent` in the constants registry. A row moves to `Measurement` only after a committed JSONL receipt records p99 (or typical) wall time, sample count, estimator, and uncertainty interval on the reference host — not a bare float in source.
+
+**Close when:** FPD-M-Arc calibration phases land with `umst-bench` or egoff `.umst-ci` receipts per row.
+
+### unmeasured-power-ceiling
+
+**Status:** open (measurement debt)
+
+**Row:** `solve_combinator_macos_package_power_ceiling_watts`.
+
+**Plain read:** Operator powermetrics samples (low-load and loaded Combined Power) are recorded in the registry evidence string for audit, but no package power **ceiling** is installed as a constant value. A ceiling requires a methodology that bounds maximum draw for the budget gate; until then the row stays `Absent`.
+
+**Close when:** a committed receipt names the estimator, sample count, interval, and the policy that distinguishes a ceiling from a single-second Combined Power reading.
+
+---
+
 ## Suggested close order
 
 1. **G-03** (optional) — supercap remote `manifest-bridge` in GHA.
