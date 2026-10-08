@@ -23,6 +23,7 @@
 pub mod acoustics;
 pub mod electrochemistry;
 pub mod fixed_point;
+pub mod finite_cell;
 pub mod fracture_field;
 pub mod krylov_host;
 /// Johnson–Zollweg–Gubbins (1993) LJ EOS — `f64` reference (teqp-aligned); not the Burn bridge.

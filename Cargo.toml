@@ -198,6 +198,10 @@ name = "mechanics_analytic"
 path = "tests/verification/mechanics_analytic.rs"
 
 [[test]]
+name = "finite_cell"
+path = "tests/verification/finite_cell.rs"
+
+[[test]]
 name = "bar_network_operator_step_a"
 path = "tests/verification/bar_network_operator_step_a.rs"
 required-features = ["mechanics-adjoint"]
