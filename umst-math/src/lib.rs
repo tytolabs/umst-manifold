@@ -112,6 +112,6 @@ pub use solve_combinator::{
     SolveOutcome, StallEvidence, StepEnergyMeter, StrategyRung, Thermo, UnmeasuredMeter,
 };
 /// THEOREM-BOUND: Clausius–Duhem admissibility (`Gate.lean` conjunct; SSOT for ucrs/formal drift)
-pub use manifold::csg::clausius_duhem_admissible;
+pub use manifold::csg::{clausius_duhem_admissible, ThermoGateState};
 /// THEOREM-BOUND: `credit_greedy_optimal` (re-export: PMIC / residual coherence capacity)
 pub use pmic::residual_coherence_capacity;
