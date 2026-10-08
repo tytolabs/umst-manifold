@@ -105,22 +105,6 @@ pub const fn orchestrator_posture_is_honest() -> bool {
     !ORCHESTRATOR_PHYSICS_GREEN && !ORCHESTRATOR_PRODUCTION_WIRED
 }
 
-/// W29 honest posture bundle — routing evaluators landed, physics GREEN refused.
-#[must_use]
-pub const fn orchestrator_w29_honest_posture_bundle() -> bool {
-    orchestrator_posture_is_honest()
-        && !ORCHESTRATOR_PHYSICS_GREEN
-        && !ORCHESTRATOR_PRODUCTION_WIRED
-}
-
-/// Whether the embodied orchestrator morphism is pinned @ HEAD (host-before-gateway semantics).
-#[must_use]
-pub fn orchestrator_morphism_pinned() -> bool {
-    ORCHESTRATOR_MORPHISM_ID == "embodied_orchestrator_host_before_gateway"
-        && ORCHESTRATOR_POSTURE_TAG == "honest-embodied-orchestrator-spine-only"
-        && ORCHESTRATOR_CELL_ID == "W29-042-ORCHESTRATOR"
-}
-
 /// Compile-time honesty fence — no fake production or master claims.
 pub const ORCHESTRATOR_HONEST_FENCE: &str =
     "orchestrator_host_routing_landed=true production_wired=false master_composition_wired=false";
@@ -335,21 +319,6 @@ mod tests {
         assert!(orchestrator_posture_is_honest());
         assert!(!ORCHESTRATOR_PHYSICS_GREEN);
         assert!(!ORCHESTRATOR_PRODUCTION_WIRED);
-    }
-
-    #[test]
-    fn orchestrator_w29_honest_posture_bundle_holds() {
-        assert!(orchestrator_w29_honest_posture_bundle());
-    }
-
-    #[test]
-    fn orchestrator_morphism_pinned_at_head() {
-        assert!(orchestrator_morphism_pinned());
-        assert_eq!(ORCHESTRATOR_CELL_ID, "W29-042-ORCHESTRATOR");
-        assert_eq!(
-            ORCHESTRATOR_MORPHISM_ID,
-            "embodied_orchestrator_host_before_gateway"
-        );
     }
 
     #[test]
