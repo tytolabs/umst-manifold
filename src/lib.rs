@@ -15,6 +15,16 @@ pub mod manifest;
 pub mod physics;
 pub use physics::solvers::krylov_host::KrylovHostPostureProbe;
 pub use physics::solvers::fracture_field::PhaseFieldFractureSolver;
+/// Finite-cell hexahedral elasticity over an occupancy field (PB-B8): field, materials, grid, rule, elements, assembly
+/// and analysis types.
+pub use physics::solvers::finite_cell::analysis::{ApparentMass, InertiaRelief, ModeRequest};
+pub use physics::solvers::finite_cell::assembly::{
+    Diagnostics as FiniteCellDiagnostics, Discretisation, DiscretisationSpec, MassProperties, System as FiniteCellSystem,
+};
+pub use physics::solvers::finite_cell::element::{ElementKind, ElementMatrices};
+pub use physics::solvers::finite_cell::grid::TensorGrid;
+pub use physics::solvers::finite_cell::quadrature::{CellQuadrature, Exactness, QPoint, QuadratureSpec};
+pub use physics::solvers::finite_cell::{FiniteCellRefuse, MaterialTable, OccupancyField, Voigt6};
 pub use physics::solvers::photonics::{
     DecPatchCsrInnerMode, DecPatchCurlConstitutive, PhotonicsDecFacesPatch,
     PhotonicsDecPatchConfig, PhotonicsHelmholtzSolver, PhotonicsLaneHonesty, PhotonicsSolver,
