@@ -597,8 +597,13 @@ fn cluster_bound(
         .iter()
         .map(|v| pencil.k.mul(v))
         .collect::<Result<_, _>>()?;
+    // H = XᵀKX, symmetrised: the two triangles are rounded apart, and Jacobi needs an exactly symmetric matrix.
     let h: Vec<Vec<f64>> = (0..k)
-        .map(|i| (0..k).map(|j| dot(&x[i], &kx[j])).collect())
+        .map(|i| {
+            (0..k)
+                .map(|j| (dot(&x[i], &kx[j]) + dot(&x[j], &kx[i])) / usize_to_f64(2))
+                .collect()
+        })
         .collect();
     let defect = (0..k)
         .flat_map(|i| (0..k).map(move |j| (i, j)))
@@ -664,8 +669,9 @@ fn symmetric_eigen_small(a: &[Vec<f64>]) -> Result<(Vec<f64>, Vec<Vec<f64>>), Ei
     let mut v: Vec<Vec<f64>> = (0..n)
         .map(|i| (0..n).map(|j| if i == j { 1.0 } else { 0.0 }).collect())
         .collect();
-    let scale_of = |a: &[Vec<f64>]| a.iter().flatten().fold(0.0_f64, |m, x| m.max(x.abs()));
-    let floor = f64::EPSILON * scale_of(&a);
+    // Converged when every off-diagonal entry is below rounding of the whole matrix (its Frobenius norm).
+    let frobenius = a.iter().flatten().map(|x| x * x).sum::<f64>().sqrt();
+    let floor = f64::EPSILON * frobenius;
     for _ in 0..f64::MANTISSA_DIGITS {
         let off = (0..n)
             .flat_map(|i| (0..n).filter(move |&j| j != i).map(move |j| (i, j)))
@@ -694,6 +700,9 @@ fn symmetric_eigen_small(a: &[Vec<f64>]) -> Result<(Vec<f64>, Vec<Vec<f64>>), Ei
                     a[p][k] = c * apk - s * aqk;
                     a[q][k] = s * apk + c * aqk;
                 }
+                // The rotation annihilates a_pq; set it to zero so rounding cannot hold the sweep above its floor.
+                a[p][q] = 0.0;
+                a[q][p] = 0.0;
                 for row in &mut v {
                     let (vp, vq) = (row[p], row[q]);
                     row[p] = c * vp - s * vq;
