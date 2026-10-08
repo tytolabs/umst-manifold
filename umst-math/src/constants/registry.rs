@@ -13,8 +13,8 @@ use super::pool_q_constants_manifold::{
     POOL_Q_COCKPIT_POLICY_DEFINITION, UMST_MATH_SIMD_FEATURE_DEFINITION,
 };
 use super::tier1_derivation::{
-    K_B_DERIVATION, LANDAUER_FLOOR_J_PER_BIT_DERIVATION, LN_2_DERIVATION, RCC_FLOOR_DERIVATION,
-    T_ROOM_DERIVATION,
+    K_B_DERIVATION, LANDAUER_FLOOR_J_PER_BIT_DERIVATION, LN_2_DERIVATION,
+    REFERENCE_TEMPERATURE_293_15_K_DERIVATION, RCC_FLOOR_DERIVATION, T_ROOM_DERIVATION,
 };
 use super::tier2_derivation::{
     ADMISSIBILITY_MARGIN_EPS_DERIVATION, AUDIT_MAX_BYTES_CAP_DERIVATION,
@@ -106,7 +106,7 @@ impl ConstantEntry {
 }
 
 /// Authoritative registry (keep in lock-step with `docs/CGD_REGISTRY.md` §24a).
-/// CONSTANT-BOUND: … + §14bis.f-M-6 (+2) + §14bis.f-M-7 (+1 mcert) + foundation Phase 3 (+4) + K-2 (+2) + K-4 (+1) + solve-combinator meter (+1) + q_hyd_j_per_kg (+1) = **173**
+/// CONSTANT-BOUND: … + §14bis.f-M-6 (+2) + §14bis.f-M-7 (+1 mcert) + foundation Phase 3 (+4) + K-2 (+2) + K-4 (+1) + solve-combinator meter (+1) + q_hyd_j_per_kg (+1) + reference_temperature_293_15_k (+1) = **174**
 pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "landauer_floor_j_per_bit",
@@ -142,6 +142,13 @@ pub static REGISTRY: &[ConstantEntry] = &[
         evidence: "Operator-assumed ambient anchor until junction-temperature telemetry is wired",
         env_override: Some("UMST_COCKPIT_HOST_TEMPERATURE_K"),
         derivation: T_ROOM_DERIVATION,
+    },
+    ConstantEntry {
+        name: "reference_temperature_293_15_k",
+        expression: "20 °C + 273.15 K (ISO 554 reference atmosphere; SI exact offset)",
+        evidence: "ISO 554 standard atmospheres for conditioning/testing at 20 °C; kelvin value is T_C + 273.15 K",
+        env_override: None,
+        derivation: REFERENCE_TEMPERATURE_293_15_K_DERIVATION,
     },
     ConstantEntry {
         name: "gate_mass_tolerance_kg_m3",
@@ -1474,6 +1481,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
 /// SSOT ambient reference temperature (K); mirrors row `host_temperature_fallback_k`.
 pub const HOST_TEMPERATURE_FALLBACK_K: f64 = 300.0;
 
+/// ISO 554 / SI reference temperature (K); mirrors row `reference_temperature_293_15_k`.
+pub const REFERENCE_TEMPERATURE_293_15_K: f64 =
+    super::tier1_derivation::REFERENCE_TEMPERATURE_293_15_K;
+
 /// Boltzmann constant (J/K), CODATA 2018; row `k_boltzmann_j_per_k`.
 pub const K_BOLTZMANN_J_PER_K: f64 = 1.380_649e-23;
 /// Row `transition_tolerance`.
@@ -1715,8 +1726,37 @@ mod tests {
     }
 
     #[test]
+    fn reference_temperature_293_15_k_registry_row_is_definition_at_iso554_sum() {
+        use crate::constants::tier1_derivation::{
+            CELSIUS_TO_KELVIN_OFFSET_K, REFERENCE_CELSIUS_ISO554_C,
+            REFERENCE_TEMPERATURE_293_15_K_DERIVATION,
+        };
+        use super::Derivation;
+
+        let entry = REGISTRY
+            .iter()
+            .find(|e| e.name == "reference_temperature_293_15_k")
+            .expect("reference_temperature_293_15_k row");
+        let Derivation::Definition { .. } = entry.derivation else {
+            panic!("reference_temperature_293_15_k must be Definition");
+        };
+        assert_eq!(entry.derivation, REFERENCE_TEMPERATURE_293_15_K_DERIVATION);
+        assert_eq!(
+            super::REFERENCE_TEMPERATURE_293_15_K,
+            REFERENCE_CELSIUS_ISO554_C + CELSIUS_TO_KELVIN_OFFSET_K
+        );
+        assert!(
+            super::super::tier1_derivation::bare_reference_kelvin_literal_line(include_str!(
+                "registry.rs"
+            ))
+            .is_none(),
+            "registry write-set must not carry a bare 293.15 K literal"
+        );
+    }
+
+    #[test]
     fn registry_sorted_by_tier_is_sorted_and_complete() {
-        assert_eq!(REGISTRY.len(), 187);
+        assert_eq!(REGISTRY.len(), 188);
         let sorted = registry_sorted_by_tier();
         assert_eq!(sorted.len(), REGISTRY.len());
         for w in sorted.windows(2) {

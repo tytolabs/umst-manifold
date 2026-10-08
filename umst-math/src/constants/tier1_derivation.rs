@@ -8,6 +8,16 @@
 use super::derivation::{Derivation, LeanDecl};
 use super::registry::{self, REGISTRY};
 
+/// ISO 554 standard-atmosphere reference (°C).
+pub const REFERENCE_CELSIUS_ISO554_C: f64 = 20.0;
+
+/// SI exact Celsius-to-kelvin offset (K).
+pub const CELSIUS_TO_KELVIN_OFFSET_K: f64 = 273.15;
+
+/// `reference_temperature_293_15_k` — 20 °C + 273.15 K (ISO 554 / SI).
+pub const REFERENCE_TEMPERATURE_293_15_K: f64 =
+    REFERENCE_CELSIUS_ISO554_C + CELSIUS_TO_KELVIN_OFFSET_K;
+
 /// Reference ambient anchor (matches `authority-pins/ambient_reference_300k.txt`; same value as `landauer_registry` when `math-constants` is on).
 const HOST_TEMPERATURE_REFERENCE_K: f64 = super::registry::HOST_TEMPERATURE_FALLBACK_K;
 
@@ -24,6 +34,20 @@ pub const T_ROOM_AUTHORITY_URL: &str = "umst-math/authority-pins/ambient_referen
 /// Pinned SHA-256 of [`authority-pins/ambient_reference_300k.txt`](../../authority-pins/ambient_reference_300k.txt).
 pub const T_ROOM_AUTHORITY_SHA256: &str =
     "f310bf142186d5f4b34aa15bbc4d9556a90c9fc6144926451ada856b375402f7";
+
+/// ISO 554 / SI reference temperature pin (local authority doc).
+pub const REFERENCE_TEMPERATURE_293_15_K_AUTHORITY_URL: &str =
+    "umst-math/authority-pins/iso554_reference_20c_293_15k.txt";
+
+/// Pinned SHA-256 of [`authority-pins/iso554_reference_20c_293_15k.txt`](../../authority-pins/iso554_reference_20c_293_15k.txt).
+pub const REFERENCE_TEMPERATURE_293_15_K_AUTHORITY_SHA256: &str =
+    "97861deb17e826f717e8faa492812c794c3bfa5474a6846510be5d664ff56afa";
+
+/// `reference_temperature_293_15_k` — ISO 554 (20 °C) + SI offset 273.15 K.
+pub const REFERENCE_TEMPERATURE_293_15_K_DERIVATION: Derivation = Derivation::Definition {
+    authority_url: REFERENCE_TEMPERATURE_293_15_K_AUTHORITY_URL,
+    expected_sha256: REFERENCE_TEMPERATURE_293_15_K_AUTHORITY_SHA256,
+};
 
 /// `LN_2` — theorem-derived via Mathlib / UMST ln(2) chain.
 pub const LN_2_DERIVATION: Derivation = Derivation::Theorem {
@@ -78,6 +102,7 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "ln_two_eta_cog_denominator" => Some(LN_2_DERIVATION),
         "k_boltzmann_j_per_k" => Some(K_B_DERIVATION),
         "host_temperature_fallback_k" => Some(T_ROOM_DERIVATION),
+        "reference_temperature_293_15_k" => Some(REFERENCE_TEMPERATURE_293_15_K_DERIVATION),
         "rcc_floor_residual_coherence" => Some(RCC_FLOOR_DERIVATION),
         "landauer_floor_j_per_bit" => Some(LANDAUER_FLOOR_J_PER_BIT_DERIVATION),
         _ => None,
@@ -101,6 +126,26 @@ pub fn k2_backfilled_count() -> usize {
 #[must_use]
 pub fn k2_tier1_landed() -> bool {
     k2_backfilled_count() == K2_REGISTRY_ROW_NAMES.len()
+}
+
+/// True when `src` contains a bare 293.15 K float literal (not 273.15 SI offset, not `293_15` stems).
+#[cfg(test)]
+pub(crate) fn bare_reference_kelvin_literal_line<'a>(src: &'a str) -> Option<&'a str> {
+    let needle: String = ['2', '9', '3', '.', '1', '5'].into_iter().collect();
+    let production = src.split("#[cfg(test)]").next().unwrap_or(src);
+    for line in production.lines() {
+        if line.trim_start().starts_with("//") {
+            continue;
+        }
+        if line.contains("293_15") {
+            continue;
+        }
+        let without_si_offset = line.replace("273.15", "");
+        if without_si_offset.contains(&needle) {
+            return Some(line);
+        }
+    }
+    None
 }
 
 #[cfg(test)]
@@ -143,6 +188,35 @@ mod tests {
                 expected_value: k_row * HOST_TEMPERATURE_REFERENCE_K * std::f64::consts::LN_2,
             }
         );
+    }
+
+    #[test]
+    fn reference_temperature_293_15_k_definition_is_iso554_celsius_plus_si_offset() {
+        let Derivation::Definition {
+            authority_url,
+            expected_sha256,
+        } = REFERENCE_TEMPERATURE_293_15_K_DERIVATION
+        else {
+            panic!("reference_temperature_293_15_k must be a Definition");
+        };
+        assert!(
+            authority_url.contains("iso554"),
+            "authority must cite ISO 554 pin: {authority_url}"
+        );
+        assert_eq!(expected_sha256.len(), 64);
+        assert_eq!(
+            REFERENCE_TEMPERATURE_293_15_K,
+            REFERENCE_CELSIUS_ISO554_C + CELSIUS_TO_KELVIN_OFFSET_K
+        );
+        assert!(
+            bare_reference_kelvin_literal_line(include_str!("tier1_derivation.rs")).is_none(),
+            "tier1 must not carry a bare 293.15 K literal"
+        );
+        let entry = REGISTRY
+            .iter()
+            .find(|e| e.name == "reference_temperature_293_15_k")
+            .expect("registry row");
+        assert_eq!(entry.derivation, REFERENCE_TEMPERATURE_293_15_K_DERIVATION);
     }
 
     #[test]
