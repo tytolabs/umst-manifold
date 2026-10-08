@@ -326,6 +326,6 @@ fn owned_and_borrowed_cliques_assemble_the_same_matrix() {
             block: &c.1,
         }))
         .expect("A");
-    let owned = pattern.assemble_owned(cliques.into_iter()).expect("A");
+    let owned = pattern.assemble_owned(cliques).expect("A");
     assert_eq!(borrowed, owned);
 }
