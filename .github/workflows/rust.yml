@@ -168,13 +168,14 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: ./.github/actions/setup-ci
-      - name: cargo test --release (THMC / photonics DEC brick / statmech Johnson upscale)
+      - name: cargo test --release (THMC / photonics DEC brick / statmech Johnson upscale / finite cell)
         run: |
           set -euo pipefail
           cargo test --verbose --release --features solver-research --test thmc_monolithic_newton_chain
           cargo test --verbose --release --features solver-research,photonics-fdfd --test photonics_curl_curl_2d_patch
           cargo test --verbose --release --features solver-research,photonics-fdfd --test photonics_curl_curl_3d_brick
           cargo test --verbose --release --features solver-research --test statmech_lj_johnson_upscale_bridge
+          cargo test --verbose --release --features finite-cell-verification --test finite_cell
 
   # PR gate: Q1-hex hardware-perf instrumentation witnesses (H0–H6); fast, no wall-clock claim.
   hardware-perf-q1hex-pr:

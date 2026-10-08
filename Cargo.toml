@@ -61,6 +61,8 @@ rheology-bingham = []
 rheology_poisson_richardson_fallback = []
 statistical-mechanics-vinet = []
 statistical-mechanics-johnson-reference = []
+# Release-profile verification ladder of the finite-cell solver (B8); the solver itself needs no feature.
+finite-cell-verification = []
 solver-stable = ["topology-density-evolution", "statistical-mechanics-vinet"]
 solver-research = [
     "fracture-at2",
@@ -200,6 +202,7 @@ path = "tests/verification/mechanics_analytic.rs"
 [[test]]
 name = "finite_cell"
 path = "tests/verification/finite_cell.rs"
+required-features = ["finite-cell-verification"]
 
 [[test]]
 name = "bar_network_operator_step_a"

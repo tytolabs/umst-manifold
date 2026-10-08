@@ -18,7 +18,8 @@ use umst_math::profile_ldlt::{spd_factor, Clique, ProfilePattern, ProfileRefuse,
 use umst_math::solve_combinator::{EnergyBudget, ProblemTolerance, SolveOutcome, StepEnergyMeter};
 
 use super::assembly::{assemble, Discretisation, System};
-use super::{real, FiniteCellRefuse};
+use super::quadrature::{face_rule, QuadratureSpec};
+use super::{real, FiniteCellRefuse, OccupancyField};
 
 fn mechanism(e: ProfileRefuse) -> FiniteCellRefuse {
     match e {
@@ -344,4 +345,86 @@ impl<'a> InertiaRelief<'a> {
 
 fn dot(a: &[f64], b: &[f64]) -> f64 {
     a.iter().zip(b).map(|(x, y)| x * y).sum()
+}
+
+/// A body restricted to a patch of a plane normal to `z`: the solid where both the body and the patch are.
+struct OnPatch<'a, F: ?Sized> {
+    body: &'a F,
+    patch: Option<&'a dyn Fn([f64; 2]) -> f64>,
+}
+
+impl<F: OccupancyField + ?Sized> OccupancyField for OnPatch<'_, F> {
+    fn bounds(&self) -> ([f64; 3], [f64; 3]) {
+        self.body.bounds()
+    }
+    fn signed_distance(&self, p: [f64; 3]) -> f64 {
+        let body = self.body.signed_distance(p);
+        self.patch
+            .map_or(body, |patch| body.max(patch([p[0], p[1]])))
+    }
+    fn material_at(&self, p: [f64; 3]) -> Option<u16> {
+        (self.signed_distance(p) <= 0.0)
+            .then(|| self.body.material_at(p))
+            .flatten()
+    }
+    fn interface_planes(&self, axis: usize) -> Vec<f64> {
+        self.body.interface_planes(axis)
+    }
+}
+
+/// Consistent nodal forces of a uniform traction (N/m²) on the node plane `z = plane` of the grid, over the body's
+/// solid there and, if given, inside a patch (a signed distance in the plane, negative inside). The face is read
+/// from the occupied cell below the plane, or above it on the grid's lowest plane; whether a face point is solid is
+/// decided at that cell's mid-height, as in the volume rule.
+///
+/// # Errors
+/// [`FiniteCellRefuse::InvalidGeometry`] when `plane` is not a node plane of the grid (within `tolerance`).
+pub fn surface_load<F: OccupancyField + ?Sized>(
+    disc: &Discretisation,
+    system: &System,
+    field: &F,
+    plane: f64,
+    patch: Option<&dyn Fn([f64; 2]) -> f64>,
+    traction: [f64; 3],
+    tolerance: f64,
+) -> Result<Vec<f64>, FiniteCellRefuse> {
+    let grid = disc.grid();
+    let zs = grid.nodes(2);
+    let k = zs
+        .iter()
+        .position(|&z| (z - plane).abs() <= tolerance)
+        .ok_or(FiniteCellRefuse::InvalidGeometry)?;
+    let (kc, xi_z) = if k > 0 { (k - 1, 1.0) } else { (0, -1.0) };
+    let counts = grid.cell_counts();
+    let largest = (0..3)
+        .map(|a| {
+            grid.nodes(a)
+                .windows(2)
+                .fold(0.0_f64, |m, w| m.max(w[1] - w[0]))
+        })
+        .fold(0.0, f64::max);
+    let spec = QuadratureSpec::from_tolerance(largest, tolerance);
+    let restricted = OnPatch { body: field, patch };
+    (0..counts[0])
+        .flat_map(|i| (0..counts[1]).map(move |j| [i, j, kc]))
+        .filter(|&ijk| disc.is_occupied(ijk))
+        .try_fold(vec![0.0; system.n()], |mut f, ijk| {
+            let (lo, hi) = grid.cell_box(ijk);
+            let zmid = (lo[2] + hi[2]) / real(2);
+            for (p, w, _) in face_rule(&restricted, [lo[0], lo[1]], [hi[0], hi[1]], zmid, &spec) {
+                let xi = [
+                    (p[0] - lo[0]) / (hi[0] - lo[0]) * real(2) - 1.0,
+                    (p[1] - lo[1]) / (hi[1] - lo[1]) * real(2) - 1.0,
+                    xi_z,
+                ];
+                for (node, n) in disc.interpolation_in(ijk, xi)? {
+                    (0..3).for_each(|c| {
+                        if let Some(d) = system.dof(node, c) {
+                            f[d] += w * n * traction[c];
+                        }
+                    });
+                }
+            }
+            Ok(f)
+        })
 }

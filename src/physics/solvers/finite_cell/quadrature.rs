@@ -405,3 +405,16 @@ fn solid_leaf<F: OccupancyField + ?Sized>(
         })
         .collect()
 }
+
+/// Area rule of the rectangle `[a, b]` of a plane at height `z` over the solid of `field`: `(point, area weight,
+/// material)` with positive weights, exact on the region bounded by the piecewise-linear zero contour.
+#[must_use]
+pub fn face_rule<F: OccupancyField + ?Sized>(
+    field: &F,
+    a: [f64; 2],
+    b: [f64; 2],
+    z: f64,
+    spec: &QuadratureSpec,
+) -> Vec<([f64; 2], f64, u16)> {
+    plane_leaf(field, a, b, z, spec, spec.plane_depth).0
+}

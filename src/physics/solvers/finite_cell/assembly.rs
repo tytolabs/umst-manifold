@@ -464,6 +464,35 @@ impl Discretisation {
             .collect())
     }
 
+    /// `(free node, weight)` pairs of the trilinear value at local coordinates `xi` of cell `ijk` (a point on a
+    /// face shared with an empty cell is read from the occupied side this way).
+    ///
+    /// # Errors
+    /// [`FiniteCellRefuse::PointOutsideBody`] when the cell holds no solid.
+    pub fn interpolation_in(
+        &self,
+        ijk: [usize; 3],
+        xi: [f64; 3],
+    ) -> Result<Vec<(usize, f64)>, FiniteCellRefuse> {
+        let cell = *self
+            .cell_of
+            .get(&ijk)
+            .ok_or(FiniteCellRefuse::PointOutsideBody)?;
+        let w = shape_values(xi);
+        let exp = self.expansion(&self.cells[cell]);
+        Ok(exp
+            .iter()
+            .zip(&w)
+            .flat_map(|(terms, wa)| terms.iter().map(move |&(n, t)| (n, wa * t)))
+            .collect())
+    }
+
+    /// Whether cell `ijk` holds solid.
+    #[must_use]
+    pub fn is_occupied(&self, ijk: [usize; 3]) -> bool {
+        self.cell_of.contains_key(&ijk)
+    }
+
     fn weights_at(&self, p: [f64; 3]) -> Result<(usize, [f64; 8]), FiniteCellRefuse> {
         let ijk = self
             .grid

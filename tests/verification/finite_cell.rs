@@ -12,8 +12,8 @@
 use std::f64::consts::PI;
 
 use umst_manifold::physics::solvers::finite_cell::analysis::{
-    frequency_hz, modes, point_load, rigid_body_modes, static_displacement, InertiaRelief,
-    ModeRequest,
+    frequency_hz, modes, point_load, rigid_body_modes, static_displacement, surface_load,
+    InertiaRelief, ModeRequest,
 };
 use umst_manifold::physics::solvers::finite_cell::assembly::{
     assemble, discretise, Discretisation, DiscretisationSpec, System,
@@ -672,4 +672,191 @@ fn apparent_mass_tends_to_the_rigid_mass_at_the_centre() {
         "corner rigid mass {}",
         corner.rigid_mass
     );
+}
+
+/// Hard simple support on the lateral faces of a plate `[0, a]² × [0, h]`: `w = 0` there; `u, v` fixed at the
+/// origin corner and `v` at `(a, 0)` to remove the in-plane rigid motions.
+fn ssss(a: f64) -> impl Fn([f64; 3]) -> [bool; 3] {
+    move |p: [f64; 3]| {
+        let on = |x: f64, t: f64| (x - t).abs() < 1e-12;
+        let lateral = on(p[0], 0.0) || on(p[0], a) || on(p[1], 0.0) || on(p[1], a);
+        let origin = on(p[0], 0.0) && on(p[1], 0.0) && on(p[2], 0.0);
+        let far = on(p[0], a) && on(p[1], 0.0) && on(p[2], 0.0);
+        [origin, origin || far, lateral]
+    }
+}
+
+/// Centre deflection of a simply supported square Mindlin plate under uniform load: Navier (Kirchhoff) plus the
+/// Marcus moment over the transverse shear stiffness `κ G h`, `κ = 5/6` (Timoshenko & Woinowsky-Krieger 1959;
+/// Reddy, *Theory and Analysis of Elastic Plates*, 2007, §10.2).
+fn ssss_centre_mindlin(q: f64, a: f64, h: f64, e: f64, nu: f64) -> f64 {
+    let d = e * h.powi(3) / (12.0 * (1.0 - nu * nu));
+    let kgh = 5.0 / 6.0 * e / (2.0 * (1.0 + nu)) * h;
+    (0..100)
+        .flat_map(|i| (0..100).map(move |j| (2 * i + 1, 2 * j + 1)))
+        .map(|(m, n)| {
+            let (mf, nf) = (m as f64, n as f64);
+            let sign = if ((m - 1) / 2 + (n - 1) / 2) % 2 == 0 {
+                1.0
+            } else {
+                -1.0
+            };
+            let s = mf * mf + nf * nf;
+            let kirchhoff = 16.0 * q * a.powi(4) / (PI.powi(6) * d * mf * nf * s * s);
+            let shear = 16.0 * q * a * a / (PI.powi(4) * mf * nf * s) / kgh;
+            sign * (kirchhoff + shear)
+        })
+        .sum()
+}
+
+fn ssss_plate(n: usize, kind: ElementKind) -> (f64, f64) {
+    let (a, h, q) = (0.5, 0.01, 1.0e3);
+    let slab = Slab {
+        lo: [0.0; 3],
+        hi: [a, a, h],
+        layers: vec![],
+        conforming: true,
+    };
+    let s = a / n as f64;
+    let disc = discretise(&slab, &aluminium(), &spec([s, s, h / 2.0], 0.0, kind)).expect("disc");
+    let sup = ssss(a);
+    let sys = assemble(&disc, &sup).expect("sys");
+    let f = surface_load(&disc, &sys, &slab, h, None, [0.0, 0.0, -q], 1e-9).expect("load");
+    let u = static_displacement(&sys, &f).expect("u");
+    let w = -disc
+        .value_at(&sys, &u, [a / 2.0, a / 2.0, h / 2.0])
+        .expect("w")[2];
+    (w, ssss_centre_mindlin(q, a, h, E_AL, NU_AL))
+}
+
+#[test]
+fn surface_load_totals_the_traction_on_the_face_and_on_a_patch() {
+    let slab = Slab {
+        lo: [0.0; 3],
+        hi: [0.2, 0.1, 0.01],
+        layers: vec![],
+        conforming: true,
+    };
+    let disc = discretise(
+        &slab,
+        &aluminium(),
+        &spec([0.01, 0.01, 0.005], 0.0, ElementKind::Q1),
+    )
+    .expect("disc");
+    let sys = assemble(&disc, &free).expect("sys");
+    let fz = |f: &[f64]| -> f64 {
+        disc.free_nodes()
+            .filter_map(|n| sys.dof(n, 2))
+            .map(|d| f[d])
+            .sum()
+    };
+    let q = 2.5e3;
+    let whole = surface_load(&disc, &sys, &slab, 0.01, None, [0.0, 0.0, q], 1e-9).expect("load");
+    assert!(
+        (fz(&whole) - q * 0.2 * 0.1).abs() <= 1e-12 * q * 0.02,
+        "face total {}",
+        fz(&whole)
+    );
+    let r = 0.023;
+    let pad = move |p: [f64; 2]| ((p[0] - 0.0731).powi(2) + (p[1] - 0.0517).powi(2)).sqrt() - r;
+    let patch =
+        surface_load(&disc, &sys, &slab, 0.01, Some(&pad), [0.0, 0.0, q], 1e-4).expect("load");
+    let exact = q * PI * r * r;
+    assert!(
+        (fz(&patch) - exact).abs() <= 2e-3 * exact,
+        "patch total {} vs {exact}",
+        fz(&patch)
+    );
+}
+
+#[test]
+fn kirchhoff_gate_simply_supported_plate_centre_deflection() {
+    let (w, w_ref) = ssss_plate(20, ElementKind::Q1E9);
+    let (w_q1, _) = ssss_plate(20, ElementKind::Q1);
+    eprintln!("SSSS a/h = 50: Q1E9 {w:.6e}, Q1 {w_q1:.6e}, Navier–Mindlin {w_ref:.6e}");
+    assert!(
+        (w - w_ref).abs() <= 0.02 * w_ref,
+        "Q1E9 centre deflection {w} vs {w_ref}"
+    );
+    assert!(w_q1 < w, "Q1 locks: it must deflect less than Q1E9");
+}
+
+#[test]
+fn simply_supported_plate_frequencies_match_leissa() {
+    // Two grids, h and h/2, against Leissa's Kirchhoff λ = π²(m² + n²) with the first-order Mindlin shear and rotary-inertia factor
+    // 1/√(1 + k²(D/(κGh) + h²/12)), k² = π²(m² + n²)/a², κ = 5/6.
+    let (a, h): (f64, f64) = (0.5, 0.005);
+    let d = E_AL * h.powi(3) / (12.0 * (1.0 - NU_AL * NU_AL));
+    let kgh = 5.0 / 6.0 * E_AL / (2.0 * (1.0 + NU_AL)) * h;
+    let lambdas = |n: usize| -> Vec<f64> {
+        let slab = Slab {
+            lo: [0.0; 3],
+            hi: [a, a, h],
+            layers: vec![],
+            conforming: true,
+        };
+        let s = a / n as f64;
+        let disc = discretise(
+            &slab,
+            &aluminium(),
+            &spec([s, s, h / 2.0], 0.0, ElementKind::Q1E9),
+        )
+        .expect("disc");
+        let sup = ssss(a);
+        let sys = assemble(&disc, &sup).expect("sys");
+        let sol = solve_modes(&disc, &sys, 4);
+        assert!(
+            matches!(sol.completeness, Completeness::Certified { below: 4, .. }),
+            "{:?}",
+            sol.completeness
+        );
+        sol.pairs
+            .iter()
+            .map(|p| p.lambda.sqrt() * a * a * (RHO_AL * h / d).sqrt())
+            .collect()
+    };
+    let (coarse, fine) = (lambdas(20), lambdas(40));
+    for (i, (m, n)) in [(1_u32, 1_u32), (1, 2), (2, 1), (2, 2)]
+        .into_iter()
+        .enumerate()
+    {
+        let s = f64::from(m * m + n * n);
+        let k2 = PI * PI * s / (a * a);
+        let reference = PI * PI * s / (1.0 + k2 * (d / kgh + h * h / 12.0)).sqrt();
+        eprintln!(
+            "SSSS ({m},{n}): h {:.4} h/2 {:.4} reference {reference:.4} (fine err {:+.3} %)",
+            coarse[i],
+            fine[i],
+            100.0 * (fine[i] - reference) / reference
+        );
+        // The 20-to-40 step converges faster than second order here (8 Oct 2026: about order 3.5 on (2,2)), so a
+        // p = 2 extrapolation would overshoot; the gate is the fine-grid error and its fall from the coarse grid.
+        assert!(
+            (fine[i] - reference).abs() <= 0.005 * reference,
+            "mode ({m},{n}): {} vs {reference}",
+            fine[i]
+        );
+        assert!(
+            (fine[i] - reference).abs() < (coarse[i] - reference).abs(),
+            "mode ({m},{n}) must converge"
+        );
+    }
+}
+
+#[test]
+fn simply_supported_deflection_converges_at_second_order() {
+    let errors: Vec<f64> = [6, 12, 24]
+        .iter()
+        .map(|&n| {
+            let (w, w_ref) = ssss_plate(n, ElementKind::Q1E9);
+            ((w - w_ref) / w_ref).abs()
+        })
+        .collect();
+    eprintln!("SSSS errors {errors:?}");
+    let order = (errors[1] / errors[2]).log2();
+    assert!(
+        errors[2] < errors[1] && errors[1] < errors[0],
+        "errors must fall: {errors:?}"
+    );
+    assert!(order > 1.5, "observed order {order}");
 }
