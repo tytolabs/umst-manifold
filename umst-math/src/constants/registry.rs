@@ -1602,6 +1602,8 @@ fn parse_24a_first_column_names(text: &str) -> Option<std::collections::HashSet<
 const POLICY_RATIONALE_SCRUB_ROW: &str =
     concat!("umst_memory_m2_serial_scrub_", "place", "holder_len");
 
+/// Registry rows whose `Policy` rationale cell `CONST-POLICY-RATIONALE` rewrote; the admissibility test below
+/// checks each one.
 pub const POLICY_RATIONALE_CELL_TOUCHED_ROW_NAMES: &[&str] = &[
     "rcc_floor_residual_coherence",
     "transition_tolerance",

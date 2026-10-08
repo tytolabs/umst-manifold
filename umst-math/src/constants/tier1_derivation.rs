@@ -130,7 +130,7 @@ pub fn k2_tier1_landed() -> bool {
 
 /// True when `src` contains a bare 293.15 K float literal (not 273.15 SI offset, not `293_15` stems).
 #[cfg(test)]
-pub(crate) fn bare_reference_kelvin_literal_line<'a>(src: &'a str) -> Option<&'a str> {
+pub(crate) fn bare_reference_kelvin_literal_line(src: &str) -> Option<&str> {
     let needle: String = ['2', '9', '3', '.', '1', '5'].into_iter().collect();
     let production = src.split("#[cfg(test)]").next().unwrap_or(src);
     for line in production.lines() {

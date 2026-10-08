@@ -139,7 +139,7 @@ pub fn linear_solve_relative_tol_f64(
         }
     };
     let rel = base * scale.effective();
-    rel.max(f64::EPSILON).min(1.0)
+    rel.clamp(f64::EPSILON, 1.0)
 }
 
 /// Symmetric finite-difference step from problem scale (central difference on f32 fields).
@@ -147,8 +147,10 @@ pub fn linear_solve_relative_tol_f64(
 pub fn finite_difference_step_f32(scale: ProblemScale) -> f32 {
     let h = scale.effective().sqrt()
         * crate::constants::registry::FINITE_DIFFERENCE_STEP_SCALE;
-    (h.max(crate::constants::registry::FINITE_DIFFERENCE_STEP_MIN)
-        .min(crate::constants::registry::FINITE_DIFFERENCE_STEP_MAX)) as f32
+    h.clamp(
+        crate::constants::registry::FINITE_DIFFERENCE_STEP_MIN,
+        crate::constants::registry::FINITE_DIFFERENCE_STEP_MAX,
+    ) as f32
 }
 
 /// Denominator guard for relative error ratios (avoids division by exact zero).

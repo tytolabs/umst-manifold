@@ -257,8 +257,7 @@ pub fn a_norm_error_lower(
 
     let end = if k + delay < last { k + delay } else { last };
     let mut sum = 0.0;
-    for j in k..=end {
-        let c = &coeffs[j];
+    for c in &coeffs[k..=end] {
         if !c.alpha.is_finite() || !c.r_norm_sq.is_finite() {
             return Err(SpectralWindowRefuse::NonFiniteCoeff);
         }
@@ -335,7 +334,7 @@ mod tests {
         let spec = spectral_window(&coeffs);
         let spec = match spec {
             Ok(s) => s,
-            Err(e) => panic!("spectral_window refused: {:?}", e),
+            Err(e) => panic!("spectral_window refused: {e:?}"),
         };
 
         let kappa_expected: f64 = 4.0;

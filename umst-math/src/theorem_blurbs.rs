@@ -169,9 +169,8 @@ pub fn blurb_for(theorem_id: &str) -> Option<&'static str> {
 /// Fraction of [`THEOREM_REGISTRY`] rows with a non-empty blurb entry.
 #[must_use]
 pub fn coverage_fraction() -> f64 {
-    if THEOREM_REGISTRY.is_empty() {
-        return 0.0;
-    }
+    // The registry is a non-empty constant table, so the quotient below is always defined.
+    const _: () = assert!(!THEOREM_REGISTRY.is_empty());
     let covered = THEOREM_REGISTRY
         .iter()
         .filter(|(id, _)| blurb_for(id).is_some())

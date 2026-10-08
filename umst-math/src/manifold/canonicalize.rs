@@ -206,9 +206,7 @@ mod tests {
         canonicalize_emax_sample(&s, 3).expect("emax coexists");
     }
 
-    #[test]
-    fn emax_canon_not_physics_green() {
-        assert!(!CANON_SAMPLE_PHYSICS_GREEN);
-    }
+    // The sample canon is not physics-green; checked at compile time, where a constant assertion belongs.
+    const _: () = assert!(!CANON_SAMPLE_PHYSICS_GREEN);
 }
 

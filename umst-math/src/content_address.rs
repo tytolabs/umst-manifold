@@ -13,7 +13,7 @@ pub const fn is_ssot_digest_hex(s: &str) -> bool {
     let mut i = 0;
     while i < 64 {
         let b = bytes[i];
-        let ok = matches!(b, b'A'..=b'F' | b'a'..=b'f' | b'0'..=b'9');
+        let ok = b.is_ascii_hexdigit();
         if !ok {
             return false;
         }
