@@ -7,12 +7,12 @@
 #   agda-stdlib → agda
 #   cabal → ghc
 #   uv → python
-lean: leanprover/lean4:v4.13.0
+lean: leanprover/lean4:v4.14.0
 coq: 8.20.0
 agda: 2.7.0
 agda-stdlib: 2.1.1
-ghc: 9.10.1
+ghc: 9.10.3
 cabal: 3.12.1.0
-rustc: nightly-2025-10-15
+rustc: 1.88
 python: 3.13.1
 uv: 0.5.x

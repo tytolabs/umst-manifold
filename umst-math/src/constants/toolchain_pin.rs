@@ -44,11 +44,11 @@ pub struct ToolchainSnapshot {
 /// Authoritative string values (must stay equal to the six Tier-4 registry rows; see e-bisim test).
 /// CONSTANT-BOUND: `lean_toolchain_pin` (the six `name: …` values align with `coq_version_pin`…`python_version_pin`)
 pub const TOOLCHAIN: ToolchainSnapshot = ToolchainSnapshot {
-    lean: "leanprover/lean4:v4.13.0",
+    lean: "leanprover/lean4:v4.14.0",
     coq: "8.20.0",
     agda: "2.7.0",
-    ghc: "9.10.1",
-    rustc: "nightly-2025-10-15",
+    ghc: "9.10.3",
+    rustc: "1.88",
     python: "3.13.1",
 };
 
