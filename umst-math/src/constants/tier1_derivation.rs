@@ -41,7 +41,7 @@ pub const REFERENCE_TEMPERATURE_293_15_K_AUTHORITY_URL: &str =
 
 /// Pinned SHA-256 of [`authority-pins/iso554_reference_20c_293_15k.txt`](../../authority-pins/iso554_reference_20c_293_15k.txt).
 pub const REFERENCE_TEMPERATURE_293_15_K_AUTHORITY_SHA256: &str =
-    "97861deb17e826f717e8faa492812c794c3bfa5474a6846510be5d664ff56afa";
+    "a9fe5248f292152db0a5b4a2072cbf2b4f08dce054fd923a609b20ff93a5fb0c";
 
 /// `reference_temperature_293_15_k` — ISO 554 (20 °C) + SI offset 273.15 K.
 pub const REFERENCE_TEMPERATURE_293_15_K_DERIVATION: Derivation = Derivation::Definition {

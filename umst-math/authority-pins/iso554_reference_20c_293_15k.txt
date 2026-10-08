@@ -1,0 +1,11 @@
+# ISO 554 / SI reference temperature pin (20 °C + kelvin offset)
+# authority stem: iso554_reference_20c_293_15k
+# K-2 authority snapshot for reference_temperature_293_15_k
+# Aligns with umst-math::constants::tier1_derivation REFERENCE_CELSIUS_ISO554_C + CELSIUS_TO_KELVIN_OFFSET_K
+symbol: T_ref_iso554
+celsius_reference: 20.0
+si_kelvin_offset: 273.15
+value_SI: 293.15
+unit: K
+derivation: 20 °C + 273.15 K
+note: ISO 554 standard atmosphere cites 20 °C; kelvin value is Celsius plus the SI exact offset, not an unlabeled literal
