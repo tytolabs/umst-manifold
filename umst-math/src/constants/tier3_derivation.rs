@@ -19,13 +19,13 @@ pub const K4_ENERGY_BACKEND_RFC: &str = "docs/rfcs/EGOFF_ENERGY_BACKEND.md";
 /// RFC authority path for `EGOFF_TUI_BIDI`.
 pub const K4_TUI_BIDI_RFC: &str = "docs/rfcs/EGOFF_TUI_BIDI.md";
 
-/// Pinned SHA-256 of `docs/rfcs/EGOFF_ENERGY_BACKEND.md` (measured FLEET-COMPOSER-Z Z45).
+/// Pinned SHA-256 of `docs/rfcs/EGOFF_ENERGY_BACKEND.md`.
 pub const ENERGY_BACKEND_RFC_SHA256: &str =
-    "8044eaf2c1d684db90549ca0ff861f811934b9c0bf41eda856329ac9d12d4afe";
+    "2a9c465173455e28f837f04cf12ade4c6aa48b1b07edc371dc629a2a540e2c56";
 
-/// Pinned SHA-256 of `docs/rfcs/EGOFF_TUI_BIDI.md` (measured FLEET-COMPOSER-Z Z45).
+/// Pinned SHA-256 of `docs/rfcs/EGOFF_TUI_BIDI.md`.
 pub const TUI_BIDI_RFC_SHA256: &str =
-    "5dd6102b2781ede163674a9d8bed0975be65f21274b77819068b1a8793b5a75e";
+    "224e4bc9dd7fea8f886d00a169280aa821d4ddd56bfccf2c21280b0b5e688b01";
 
 /// `umst_energy_backend` — `Derivation::Definition` with pinned RFC SHA.
 pub const ENERGY_BACKEND_DEFINITION: Derivation = Derivation::Definition {
@@ -100,7 +100,7 @@ pub fn k4_backfill_landed() -> bool {
 pub const TUI_6B_THEME_AUTHORITY: &str =
     "COCKPIT_DESIGN_BRIEF.md#theme--keybindings-tui-6b-06-zcd-08-red-010-zci";
 
-/// Pinned SHA-256 of `egoff/COCKPIT_DESIGN_BRIEF.md` (measured STEER_20260930T1107 wave 10).
+/// Pinned SHA-256 of `egoff/COCKPIT_DESIGN_BRIEF.md`.
 pub const TUI_6B_THEME_BRIEF_SHA256: &str =
     "462517a130617e3a95a7a389cd15924135bb267508cc8b4064741cccc981a18c";
 
@@ -161,7 +161,7 @@ pub const K5Q_REGISTRY_ROW_NAMES: &[&str] = &[
 /// Authority anchor for §14bis.f-H-9 HAL smoke + badge Definition rows.
 pub const H_9_HAL_AUTHORITY: &str = "umst-math/src/hal/traits.rs#WorkloadKind::Smoke";
 
-/// Pinned SHA-256 of `umst-math/src/hal/traits.rs` (measured STEER_20260930T1939 wave 15).
+/// Pinned SHA-256 of `umst-math/src/hal/traits.rs`.
 pub const H_9_HAL_TRAITS_SHA256: &str =
     "37cffa4b08e5341ecedf82c327f79f2cda58aa4835223661ef8f8b389a9cde5d";
 
@@ -207,7 +207,7 @@ pub const K5U_HAL_REGISTRY_ROW_NAMES: &[&str] = &[
 /// Authority anchor for §14bis.f-S-0 PQC byte-width Definition rows.
 pub const S_0_CRYPTO_AUTHORITY: &str = "umst-math/src/crypto/kem/ml_kem_768.rs#ML-KEM-768";
 
-/// Pinned SHA-256 of `umst-math/src/crypto/kem/ml_kem_768.rs` (measured STEER_20260930T2226 wave 18).
+/// Pinned SHA-256 of `umst-math/src/crypto/kem/ml_kem_768.rs`.
 pub const S_0_CRYPTO_ML_KEM_SHA256: &str =
     "90444a4d396673ba802be6a7b745109db3f5e744510a2a42a6bc1b91780b4d5e";
 
@@ -228,7 +228,7 @@ pub const K5V_CRYPTO_REGISTRY_ROW_NAMES: &[&str] = &[
 /// Authority anchor for §14bis.f-S-0 ML-DSA-65 byte-width Definition rows.
 pub const S_0_ML_DSA_AUTHORITY: &str = "umst-math/src/crypto/sig/ml_dsa_65.rs#ML-DSA-65";
 
-/// Pinned SHA-256 of `umst-math/src/crypto/sig/ml_dsa_65.rs` (measured STEER_20260930T2247 wave 19).
+/// Pinned SHA-256 of `umst-math/src/crypto/sig/ml_dsa_65.rs`.
 pub const S_0_ML_DSA_SHA256: &str =
     "040a3ec606f19b624b182d93f51c0ba78a2cdbec2799c60ae7646ffcf1c9ca47";
 
@@ -241,7 +241,7 @@ pub const S_0_ML_DSA_DEFINITION: Derivation = Derivation::Definition {
 /// Authority anchor for §14bis.f-S-0 SLH-DSA-128s byte-width Definition rows.
 pub const S_0_SLH_DSA_AUTHORITY: &str = "umst-math/src/crypto/sig/slh_dsa_128s.rs#SLH-DSA-128s";
 
-/// Pinned SHA-256 of `umst-math/src/crypto/sig/slh_dsa_128s.rs` (measured STEER_20260930T2247 wave 19).
+/// Pinned SHA-256 of `umst-math/src/crypto/sig/slh_dsa_128s.rs`.
 pub const S_0_SLH_DSA_SHA256: &str =
     "3b7319c939b885e1046a7241a911260f54c453a9c48c987ce20a3da3acf5c86e";
 
@@ -279,7 +279,7 @@ pub const K5X_REGISTRY_ROW_NAMES: &[&str] = &[
 /// Authority anchor for §14bis.f-M-0 manifold Definition rows.
 pub const M_0_MANIFOLD_AUTHORITY: &str = "umst-math/src/manifold/mod.rs#M-Arc";
 
-/// Pinned SHA-256 of `umst-math/src/manifold/mod.rs` (measured STEER_20260930T2226 wave 18).
+/// Pinned SHA-256 of `umst-math/src/manifold/mod.rs`.
 pub const M_0_MANIFOLD_MOD_SHA256: &str =
     "49f0291cad390cae20fa63c516429c488b2733ae9f0908648dfb5cd23fe5628d";
 
@@ -424,7 +424,7 @@ pub fn k5x_backfilled_count() -> usize {
         .count()
 }
 
-/// K-5x REGISTRY backfill landed for STEER_20260930T2321 wave 20.
+/// K-5x REGISTRY backfill landed.
 #[must_use]
 pub fn k5x_backfill_landed() -> bool {
     k5x_backfilled_count() == K5X_REGISTRY_ROW_NAMES.len()
@@ -443,7 +443,7 @@ pub fn k5y_backfilled_count() -> usize {
         .count()
 }
 
-/// K-5y REGISTRY backfill landed for STEER_20260930T2349 wave 21.
+/// K-5y REGISTRY backfill landed.
 #[must_use]
 pub fn k5y_backfill_landed() -> bool {
     k5y_backfilled_count() == K5Y_REGISTRY_ROW_NAMES.len()
@@ -658,6 +658,26 @@ mod tests {
                 derivation_for_registry_row(name).expect("lookup")
             );
         }
+    }
+
+    #[test]
+    fn k4_rfc_sha256_matches_authority_files() {
+        fn hex(bytes: &[u8]) -> String {
+            use sha2::{Digest, Sha256};
+            Sha256::digest(bytes)
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect()
+        }
+        let energy = include_bytes!("../../../../egoff/docs/rfcs/EGOFF_ENERGY_BACKEND.md");
+        let bidi = include_bytes!("../../../../egoff/docs/rfcs/EGOFF_TUI_BIDI.md");
+        assert_eq!(hex(energy), ENERGY_BACKEND_RFC_SHA256);
+        assert_eq!(hex(bidi), TUI_BIDI_RFC_SHA256);
+        let energy_row = REGISTRY.iter().find(|e| e.name == "umst_energy_backend").expect("row");
+        let bidi_row = REGISTRY.iter().find(|e| e.name == "egoff_tui_bidi").expect("row");
+        assert!(energy_row.expression.contains("auto"));
+        assert!(energy_row.expression.contains("strict"));
+        assert!(bidi_row.expression.starts_with("0"));
     }
 
     #[test]
