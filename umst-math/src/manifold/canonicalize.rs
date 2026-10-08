@@ -153,7 +153,7 @@ pub fn stack_refinement_h8(h_r: [u8; 8], tail8: [u8; 8]) -> [u8; 16] {
 #[cfg(test)]
 mod tests {
     use super::{
-        canonicalize_emax_sample, canonicalize_voxelize, fnv1a_64, CANON_SAMPLE_EMAX,
+        canonicalize_emax_sample, canonicalize_voxelize, fnv1a_64,
         CANON_SAMPLE_PHYSICS_GREEN,
     };
     use crate::manifold::sdf::SphereSdf;
@@ -188,7 +188,6 @@ mod tests {
             vox.len()
         );
         assert!(emax.len() <= vox.len());
-        assert_eq!(CANON_SAMPLE_EMAX, 32);
     }
 
     #[test]

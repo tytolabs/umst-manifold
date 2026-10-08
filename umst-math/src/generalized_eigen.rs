@@ -28,9 +28,12 @@ use std::rc::Rc;
 
 use ordered_float::NotNan;
 
-use crate::profile_ldlt::{ldlt, spd_factor, usize_to_f64, ProfileRefuse, SpdFactor, SymmetricProfile};
+use crate::profile_ldlt::{
+    ldlt, spd_factor, usize_to_f64, ProfileRefuse, SpdFactor, SymmetricProfile,
+};
 use crate::solve_combinator::{
-    unfold, CombinatorRefuse, EnergyBudget, ProblemProgressWindow, ProblemTolerance, SolveOutcome, StepEnergyMeter,
+    unfold, CombinatorRefuse, EnergyBudget, ProblemProgressWindow, ProblemTolerance, SolveOutcome,
+    StepEnergyMeter,
 };
 
 /// Why the eigensolver refused to start or to finish its certificates.
@@ -221,7 +224,10 @@ impl Context<'_> {
         let j = k.alpha.len();
         let qj = &k.q[j];
         let mqj = &k.mq[j];
-        let w = self.shifted.solve(mqj).map_err(|_| CombinatorRefuse::NonFiniteQuantity)?;
+        let w = self
+            .shifted
+            .solve(mqj)
+            .map_err(|_| CombinatorRefuse::NonFiniteQuantity)?;
         let alpha = dot(&w, mqj);
         let w = axpy(&w, -alpha, qj);
         let w = match j {
@@ -229,9 +235,16 @@ impl Context<'_> {
             _ => axpy(&w, -k.beta[j - 1], &k.q[j - 1]),
         };
         let w = self.reorthogonalise(w, k);
-        let mw = self.m.mul(&w).map_err(|_| CombinatorRefuse::NonFiniteQuantity)?;
+        let mw = self
+            .m
+            .mul(&w)
+            .map_err(|_| CombinatorRefuse::NonFiniteQuantity)?;
         let beta = dot(&w, &mw).max(0.0).sqrt();
-        let scale_of_t = k.alpha.iter().chain(std::iter::once(&alpha)).fold(0.0_f64, |s, a| s.max(a.abs()));
+        let scale_of_t = k
+            .alpha
+            .iter()
+            .chain(std::iter::once(&alpha))
+            .fold(0.0_f64, |s, a| s.max(a.abs()));
         let breakdown = beta <= f64::EPSILON * usize_to_f64(w.len()) * scale_of_t;
         let mut next = k.clone();
         next.alpha.push(alpha);
@@ -251,10 +264,19 @@ impl Context<'_> {
         let not_yet = NotNan::new(f64::MAX).map_err(|_| CombinatorRefuse::NonFiniteQuantity)?;
         let m = k.alpha.len();
         if m < self.wanted {
-            return if k.exhausted { NotNan::new(0.0).map_err(|_| CombinatorRefuse::NonFiniteQuantity) } else { Ok(not_yet) };
+            return if k.exhausted {
+                NotNan::new(0.0).map_err(|_| CombinatorRefuse::NonFiniteQuantity)
+            } else {
+                Ok(not_yet)
+            };
         }
-        let (theta, s) = tridiagonal_eigen(&k.alpha, &k.beta[..m - 1]).map_err(|_| CombinatorRefuse::NonFiniteQuantity)?;
-        let tail = if k.exhausted || k.beta.len() < m { 0.0 } else { k.beta[m - 1] };
+        let (theta, s) = tridiagonal_eigen(&k.alpha, &k.beta[..m - 1])
+            .map_err(|_| CombinatorRefuse::NonFiniteQuantity)?;
+        let tail = if k.exhausted || k.beta.len() < m {
+            0.0
+        } else {
+            k.beta[m - 1]
+        };
         let worst = (0..self.wanted).fold(0.0_f64, |worst, r| {
             let i = m - 1 - r;
             let est = (tail * s[m - 1][i]).abs() / theta[i].abs().max(f64::MIN_POSITIVE);
@@ -298,20 +320,48 @@ pub fn lowest_eigenpairs<Meter: StepEnergyMeter>(
     if request.wanted == 0 || request.wanted > capacity {
         return Err(EigenRefuse::WantedOutOfRange);
     }
-    let ctx = Context { shifted, z, mz, m: pencil.m, wanted: request.wanted, capacity };
+    let ctx = Context {
+        shifted,
+        z,
+        mz,
+        m: pencil.m,
+        wanted: request.wanted,
+        capacity,
+    };
     let start = start_vector(&ctx, n)?;
     let window_len = u32::try_from(request.wanted.saturating_mul(2)).unwrap_or(u32::MAX);
     let window = ProblemProgressWindow::from_krylov_restart(window_len)?;
     // One Lanczos step erases the bits of one new basis vector.
     let bits = usize_to_f64(n) * f64::from(f64::MANTISSA_DIGITS);
-    let outcome = unfold(start, |k| ctx.residual(k), |k, _rung| ctx.step(k), request.tolerance, budget, meter, window, bits)?;
+    let outcome = unfold(
+        start,
+        |k| ctx.residual(k),
+        |k, _rung| ctx.step(k),
+        request.tolerance,
+        budget,
+        meter,
+        window,
+        bits,
+    )?;
     let finish = |k: Krylov| finalise(&ctx, pencil, &mfac, request, &k);
     Ok(match outcome {
-        SolveOutcome::Converged { x, certificate } => SolveOutcome::Converged { x: finish(x)?, certificate },
-        SolveOutcome::Stalled { best, evidence } => SolveOutcome::Stalled { best: finish(best)?, evidence },
-        SolveOutcome::BudgetSpent { best, spent, progress_certificate } => {
-            SolveOutcome::BudgetSpent { best: finish(best)?, spent, progress_certificate }
-        }
+        SolveOutcome::Converged { x, certificate } => SolveOutcome::Converged {
+            x: finish(x)?,
+            certificate,
+        },
+        SolveOutcome::Stalled { best, evidence } => SolveOutcome::Stalled {
+            best: finish(best)?,
+            evidence,
+        },
+        SolveOutcome::BudgetSpent {
+            best,
+            spent,
+            progress_certificate,
+        } => SolveOutcome::BudgetSpent {
+            best: finish(best)?,
+            spent,
+            progress_certificate,
+        },
     })
 }
 
@@ -321,22 +371,25 @@ fn deflation_basis(
     deflation: &[Deflation],
     n: usize,
 ) -> Result<(Basis, Basis), EigenRefuse> {
-    deflation.iter().try_fold((Vec::new(), Vec::new()), |(mut z, mut mz): (Basis, Basis), d| {
-        if d.vector.len() != n || d.vector.iter().any(|v| !v.is_finite()) {
-            return Err(EigenRefuse::DeflationInvalid);
-        }
-        let norm0 = dot(&d.vector, &m.mul(&d.vector)?).max(0.0).sqrt();
-        let w = orthogonalise(orthogonalise(d.vector.clone(), &z, &mz), &z, &mz);
-        let mw = m.mul(&w)?;
-        let norm = dot(&w, &mw).max(0.0).sqrt();
-        // A vector that loses all but rounding of its M-norm to the others is dependent on them.
-        if norm <= f64::EPSILON.sqrt() * norm0 || norm == 0.0 {
-            return Err(EigenRefuse::DeflationInvalid);
-        }
-        z.push(Rc::from(scale(&w, norm.recip())));
-        mz.push(Rc::from(scale(&mw, norm.recip())));
-        Ok((z, mz))
-    })
+    deflation.iter().try_fold(
+        (Vec::new(), Vec::new()),
+        |(mut z, mut mz): (Basis, Basis), d| {
+            if d.vector.len() != n || d.vector.iter().any(|v| !v.is_finite()) {
+                return Err(EigenRefuse::DeflationInvalid);
+            }
+            let norm0 = dot(&d.vector, &m.mul(&d.vector)?).max(0.0).sqrt();
+            let w = orthogonalise(orthogonalise(d.vector.clone(), &z, &mz), &z, &mz);
+            let mw = m.mul(&w)?;
+            let norm = dot(&w, &mw).max(0.0).sqrt();
+            // A vector that loses all but rounding of its M-norm to the others is dependent on them.
+            if norm <= f64::EPSILON.sqrt() * norm0 || norm == 0.0 {
+                return Err(EigenRefuse::DeflationInvalid);
+            }
+            z.push(Rc::from(scale(&w, norm.recip())));
+            mz.push(Rc::from(scale(&mw, norm.recip())));
+            Ok((z, mz))
+        },
+    )
 }
 
 /// A deterministic start: the low-discrepancy sequence `frac(i·φ)` with `φ` the golden ratio conjugate, pushed
@@ -344,7 +397,9 @@ fn deflation_basis(
 fn start_vector(ctx: &Context<'_>, n: usize) -> Result<Krylov, EigenRefuse> {
     let five = usize_to_f64(5);
     let phi = (five.sqrt() - 1.0) / usize_to_f64(2);
-    let raw: Vec<f64> = (0..n).map(|i| (usize_to_f64(i + 1) * phi).fract()).collect();
+    let raw: Vec<f64> = (0..n)
+        .map(|i| (usize_to_f64(i + 1) * phi).fract())
+        .collect();
     let v = ctx.shifted.solve(&ctx.m.mul(&raw)?)?;
     let v = orthogonalise(orthogonalise(v, &ctx.z, &ctx.mz), &ctx.z, &ctx.mz);
     let mv = ctx.m.mul(&v)?;
@@ -366,7 +421,11 @@ fn start_vector(ctx: &Context<'_>, n: usize) -> Result<Krylov, EigenRefuse> {
 /// `k = n + w` (dot length plus the widest row) and `u` the unit roundoff (Higham, *Accuracy and Stability of
 /// Numerical Algorithms*, 2nd ed., 2002, §3.1). The allowance covers the rounding of the computed `ρ`, so an
 /// exact eigenpair yields an interval that still contains its eigenvalue.
-fn rayleigh(pencil: Pencil<'_>, mfac: &SpdFactor, x: &[f64]) -> Result<(f64, f64, f64), EigenRefuse> {
+fn rayleigh(
+    pencil: Pencil<'_>,
+    mfac: &SpdFactor,
+    x: &[f64],
+) -> Result<(f64, f64, f64), EigenRefuse> {
     let kx = pencil.k.mul(x)?;
     let mx = pencil.m.mul(x)?;
     let xmx = dot(x, &mx);
@@ -397,13 +456,19 @@ fn finalise(
         .collect::<Result<Vec<_>, EigenRefuse>>()?;
     let m = k.alpha.len();
     if m == 0 {
-        return Ok(GeneralizedEigenSolution { deflated, pairs: Vec::new(), completeness: Completeness::Unchecked });
+        return Ok(GeneralizedEigenSolution {
+            deflated,
+            pairs: Vec::new(),
+            completeness: Completeness::Unchecked,
+        });
     }
     let (theta, s) = tridiagonal_eigen(&k.alpha, &k.beta[..m - 1])?;
     // Largest θ first is lowest λ = σ + 1/θ; keep positive θ only (λ > σ).
     let order: Vec<usize> = (0..m).rev().filter(|&i| theta[i] > 0.0).collect();
     let ritz = |i: usize| -> Vec<f64> {
-        (0..m).fold(vec![0.0_f64; pencil.k.n()], |x, row| axpy(&x, s[row][i], &k.q[row]))
+        (0..m).fold(vec![0.0_f64; pencil.k.n()], |x, row| {
+            axpy(&x, s[row][i], &k.q[row])
+        })
     };
     let take = request.wanted.min(order.len());
     let raw = order[..take]
@@ -422,7 +487,11 @@ fn finalise(
         Completeness::Certified { tau, .. } => kato_temple(&deflated, pairs, tau),
         _ => pairs,
     };
-    Ok(GeneralizedEigenSolution { deflated, pairs, completeness })
+    Ok(GeneralizedEigenSolution {
+        deflated,
+        pairs,
+        completeness,
+    })
 }
 
 fn weinstein(rho: f64, delta: f64, eta: f64, vector: Rc<[f64]>) -> CertifiedEigenpair {
@@ -445,7 +514,9 @@ fn sturm_certificate(
     pairs: &[CertifiedEigenpair],
     next_ritz: Option<f64>,
 ) -> Completeness {
-    let Some(last) = pairs.last() else { return Completeness::Unchecked };
+    let Some(last) = pairs.last() else {
+        return Completeness::Unchecked;
+    };
     let hi = last.upper;
     let next = next_ritz.unwrap_or(hi + (hi - last.lower).max(hi.abs() * f64::EPSILON.sqrt()));
     if next <= hi {
@@ -473,8 +544,15 @@ fn sturm_certificate(
 /// Valid only under a certified count, which isolates each eigenvalue between its neighbours' intervals. The
 /// theorem holds for the exact Rayleigh quotient, which lies within `η` of the computed one, so the bound is
 /// `[ρ − η − d²/(b − ρ − η), ρ + η + d²/(ρ − η − a)]` with `d = δ + η`.
-fn kato_temple(deflated: &[CertifiedEigenpair], pairs: Vec<CertifiedEigenpair>, tau: f64) -> Vec<CertifiedEigenpair> {
-    let floor = deflated.iter().map(|d| d.upper).fold(f64::NEG_INFINITY, f64::max);
+fn kato_temple(
+    deflated: &[CertifiedEigenpair],
+    pairs: Vec<CertifiedEigenpair>,
+    tau: f64,
+) -> Vec<CertifiedEigenpair> {
+    let floor = deflated
+        .iter()
+        .map(|d| d.upper)
+        .fold(f64::NEG_INFINITY, f64::max);
     let uppers: Vec<f64> = pairs.iter().map(|p| p.upper).collect();
     let lowers: Vec<f64> = pairs.iter().map(|p| p.lower).collect();
     pairs
@@ -489,8 +567,17 @@ fn kato_temple(deflated: &[CertifiedEigenpair], pairs: Vec<CertifiedEigenpair>, 
                 return p;
             }
             let lower = (lo_rho - d * d / (b - hi_rho)).max(p.lower);
-            let upper = if a.is_finite() { (hi_rho + d * d / (lo_rho - a)).min(p.upper) } else { p.upper };
-            CertifiedEigenpair { lower, upper, bound: EigenBound::KatoTemple, ..p }
+            let upper = if a.is_finite() {
+                (hi_rho + d * d / (lo_rho - a)).min(p.upper)
+            } else {
+                p.upper
+            };
+            CertifiedEigenpair {
+                lower,
+                upper,
+                bound: EigenBound::KatoTemple,
+                ..p
+            }
         })
         .collect()
 }
@@ -504,20 +591,27 @@ fn kato_temple(deflated: &[CertifiedEigenpair], pairs: Vec<CertifiedEigenpair>, 
 ///
 /// # Errors
 /// [`EigenRefuse::TridiagonalNoConvergence`] when an eigenvalue exceeds its sweeps, or a length mismatch.
-pub fn tridiagonal_eigen(alpha: &[f64], beta: &[f64]) -> Result<(Vec<f64>, Vec<Vec<f64>>), EigenRefuse> {
+pub fn tridiagonal_eigen(
+    alpha: &[f64],
+    beta: &[f64],
+) -> Result<(Vec<f64>, Vec<Vec<f64>>), EigenRefuse> {
     let n = alpha.len();
     if n == 0 || beta.len() + 1 != n {
         return Err(EigenRefuse::Profile(ProfileRefuse::DimMismatch));
     }
     let mut d = alpha.to_vec();
     let mut e: Vec<f64> = beta.iter().copied().chain(std::iter::once(0.0)).collect();
-    let mut v: Vec<Vec<f64>> = (0..n).map(|i| (0..n).map(|j| if i == j { 1.0 } else { 0.0 }).collect()).collect();
+    let mut v: Vec<Vec<f64>> = (0..n)
+        .map(|i| (0..n).map(|j| if i == j { 1.0 } else { 0.0 }).collect())
+        .collect();
     let sweeps = f64::MANTISSA_DIGITS;
     let mut f = 0.0_f64;
     let mut tst1 = 0.0_f64;
     for l in 0..n {
         tst1 = tst1.max(d[l].abs() + e[l].abs());
-        let m = (l..n).find(|&m| e[m].abs() <= f64::EPSILON * tst1).unwrap_or(n - 1);
+        let m = (l..n)
+            .find(|&m| e[m].abs() <= f64::EPSILON * tst1)
+            .unwrap_or(n - 1);
         if m > l {
             let mut iter = 0_u32;
             loop {
@@ -571,7 +665,10 @@ pub fn tridiagonal_eigen(alpha: &[f64], beta: &[f64]) -> Result<(Vec<f64>, Vec<V
     let mut idx: Vec<usize> = (0..n).collect();
     idx.sort_by(|&a, &b| d[a].total_cmp(&d[b]));
     let values: Vec<f64> = idx.iter().map(|&i| d[i]).collect();
-    let vectors: Vec<Vec<f64>> = v.iter().map(|row| idx.iter().map(|&i| row[i]).collect()).collect();
+    let vectors: Vec<Vec<f64>> = v
+        .iter()
+        .map(|row| idx.iter().map(|&i| row[i]).collect())
+        .collect();
     if values.iter().any(|x| !x.is_finite()) {
         return Err(EigenRefuse::TridiagonalNoConvergence);
     }

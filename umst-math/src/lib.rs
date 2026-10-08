@@ -117,6 +117,16 @@ pub use solve_combinator::{
     ProblemProgressWindow, ProblemTolerance, ProgressCertificate, ResidualCertificate,
     SolveOutcome, StallEvidence, StepEnergyMeter, StrategyRung, Thermo, UnmeasuredMeter,
 };
+/// Profile matrices, their `L D Lᵀ` factor, and the definiteness and inertia certificates it carries.
+pub use profile_ldlt::{
+    ldlt, spd_factor, Clique, Inertia, LdltFactor, ProfilePattern, ProfileRefuse, SpdFactor,
+    SymmetricProfile,
+};
+/// Certified lowest eigenpairs of a symmetric pencil (shift-invert Lanczos as a budgeted unfold).
+pub use generalized_eigen::{
+    lowest_eigenpairs, tridiagonal_eigen, CertifiedEigenpair, Completeness, Deflation, EigenBound,
+    EigenRefuse, EigenRequest, GeneralizedEigenSolution, Pencil,
+};
 /// THEOREM-BOUND: Clausius–Duhem admissibility (`Gate.lean` conjunct; SSOT for ucrs/formal drift)
 pub use manifold::csg::{clausius_duhem_admissible, ThermoGateState};
 /// THEOREM-BOUND: `credit_greedy_optimal` (re-export: PMIC / residual coherence capacity)

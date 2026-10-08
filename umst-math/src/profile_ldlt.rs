@@ -85,15 +85,18 @@ impl ProfilePattern {
         if n == 0 {
             return Err(ProfileRefuse::Empty);
         }
-        let first = cliques.into_iter().try_fold((0..n).collect::<Vec<usize>>(), |mut first, dofs| {
-            if let Some(&index) = dofs.iter().find(|&&d| d >= n) {
-                return Err(ProfileRefuse::IndexOutOfRange { index });
-            }
-            if let Some(lowest) = dofs.iter().copied().min() {
-                dofs.iter().for_each(|&d| first[d] = first[d].min(lowest));
-            }
-            Ok(first)
-        })?;
+        let first =
+            cliques
+                .into_iter()
+                .try_fold((0..n).collect::<Vec<usize>>(), |mut first, dofs| {
+                    if let Some(&index) = dofs.iter().find(|&&d| d >= n) {
+                        return Err(ProfileRefuse::IndexOutOfRange { index });
+                    }
+                    if let Some(lowest) = dofs.iter().copied().min() {
+                        dofs.iter().for_each(|&d| first[d] = first[d].min(lowest));
+                    }
+                    Ok(first)
+                })?;
         let start: Vec<usize> = first
             .iter()
             .enumerate()
@@ -129,26 +132,35 @@ impl ProfilePattern {
     where
         I: IntoIterator<Item = Clique<'a>>,
     {
-        let values = cliques.into_iter().try_fold(vec![0.0_f64; self.len], |mut values, clique| {
-            let k = clique.dofs.len();
-            if clique.block.len() != k * k {
-                return Err(ProfileRefuse::DimMismatch);
-            }
-            for (a, &ra) in clique.dofs.iter().enumerate() {
-                for (b, &rb) in clique.dofs.iter().enumerate().take(a + 1) {
-                    let v = clique.block[a * k + b];
-                    if !v.is_finite() {
-                        return Err(ProfileRefuse::NonFinite);
+        let values =
+            cliques
+                .into_iter()
+                .try_fold(vec![0.0_f64; self.len], |mut values, clique| {
+                    let k = clique.dofs.len();
+                    if clique.block.len() != k * k {
+                        return Err(ProfileRefuse::DimMismatch);
                     }
-                    let (row, col) = if ra >= rb { (ra, rb) } else { (rb, ra) };
-                    let slot = self.slot(row, col).ok_or(ProfileRefuse::IndexOutOfRange { index: row })?;
-                    // A diagonal pair (a, a) and an off-diagonal pair landing on the same global diagonal both add.
-                    values[slot] += if a != b && ra == rb { v + v } else { v };
-                }
-            }
-            Ok(values)
-        })?;
-        Ok(SymmetricProfile { first: self.first.clone(), start: self.start.clone(), values })
+                    for (a, &ra) in clique.dofs.iter().enumerate() {
+                        for (b, &rb) in clique.dofs.iter().enumerate().take(a + 1) {
+                            let v = clique.block[a * k + b];
+                            if !v.is_finite() {
+                                return Err(ProfileRefuse::NonFinite);
+                            }
+                            let (row, col) = if ra >= rb { (ra, rb) } else { (rb, ra) };
+                            let slot = self
+                                .slot(row, col)
+                                .ok_or(ProfileRefuse::IndexOutOfRange { index: row })?;
+                            // A diagonal pair (a, a) and an off-diagonal pair landing on the same global diagonal both add.
+                            values[slot] += if a != b && ra == rb { v + v } else { v };
+                        }
+                    }
+                    Ok(values)
+                })?;
+        Ok(SymmetricProfile {
+            first: self.first.clone(),
+            start: self.start.clone(),
+            values,
+        })
     }
 
     fn slot(&self, row: usize, col: usize) -> Option<usize> {
@@ -177,7 +189,9 @@ impl SymmetricProfile {
     /// The diagonal.
     #[must_use]
     pub fn diagonal(&self) -> Vec<f64> {
-        (0..self.n()).map(|i| self.values[self.start[i] + (i - self.first[i])]).collect()
+        (0..self.n())
+            .map(|i| self.values[self.start[i] + (i - self.first[i])])
+            .collect()
     }
 
     /// `a·self + b·other` on the shared profile (for example `K − σM` with `a = 1`, `b = −σ`).
@@ -192,11 +206,20 @@ impl SymmetricProfile {
         if !(a.is_finite() && b.is_finite()) {
             return Err(ProfileRefuse::NonFinite);
         }
-        let values: Vec<f64> = self.values.iter().zip(&other.values).map(|(x, y)| a * x + b * y).collect();
+        let values: Vec<f64> = self
+            .values
+            .iter()
+            .zip(&other.values)
+            .map(|(x, y)| a * x + b * y)
+            .collect();
         if values.iter().any(|v| !v.is_finite()) {
             return Err(ProfileRefuse::NonFinite);
         }
-        Ok(Self { first: self.first.clone(), start: self.start.clone(), values })
+        Ok(Self {
+            first: self.first.clone(),
+            start: self.start.clone(),
+            values,
+        })
     }
 
     /// `|x|ᵀ |A| |x|`, the magnitude that bounds the rounding error of a computed `xᵀ A x`.
@@ -206,7 +229,11 @@ impl SymmetricProfile {
             .map(|i| {
                 let f = self.first[i];
                 let row = &self.values[self.start[i]..=self.start[i] + (i - f)];
-                let off: f64 = row[..i - f].iter().zip(&x[f..i]).map(|(a, xj)| a.abs() * xj.abs()).sum();
+                let off: f64 = row[..i - f]
+                    .iter()
+                    .zip(&x[f..i])
+                    .map(|(a, xj)| a.abs() * xj.abs())
+                    .sum();
                 let diag = row[i - f].abs() * x[i].abs();
                 x[i].abs() * (diag + off + off)
             })
@@ -216,7 +243,12 @@ impl SymmetricProfile {
     /// The widest stored row (profile bandwidth plus one).
     #[must_use]
     pub fn max_row_width(&self) -> usize {
-        self.first.iter().enumerate().map(|(i, f)| i - f + 1).max().unwrap_or(0)
+        self.first
+            .iter()
+            .enumerate()
+            .map(|(i, f)| i - f + 1)
+            .max()
+            .unwrap_or(0)
     }
 
     /// `y = A x` as a new vector.
@@ -237,7 +269,10 @@ impl SymmetricProfile {
             let row = &self.values[self.start[i]..=self.start[i] + (i - f)];
             // Lower part of row i contributes to y[i]; its transpose contributes to y[j] for j < i.
             y[i] += row.iter().zip(&x[f..=i]).map(|(a, xj)| a * xj).sum::<f64>();
-            row[..i - f].iter().enumerate().for_each(|(k, a)| y[f + k] += a * x[i]);
+            row[..i - f]
+                .iter()
+                .enumerate()
+                .for_each(|(k, a)| y[f + k] += a * x[i]);
             y
         });
         if y.iter().any(|v| !v.is_finite()) {
@@ -303,7 +338,9 @@ pub fn ldlt(a: &SymmetricProfile) -> Result<LdltFactor, ProfileRefuse> {
     for i in 0..n {
         let fi = a.first[i];
         let si = a.start[i];
-        let row_max = a.values[si..=si + (i - fi)].iter().fold(0.0_f64, |m, v| m.max(v.abs()));
+        let row_max = a.values[si..=si + (i - fi)]
+            .iter()
+            .fold(0.0_f64, |m, v| m.max(v.abs()));
         // g_j = a_ij − Σ_k g_k L_jk over the shared profile, then L_ij = g_j / d_j; the g_k stay in lv.
         for j in fi..i {
             let fj = a.first[j];
@@ -327,7 +364,14 @@ pub fn ldlt(a: &SymmetricProfile) -> Result<LdltFactor, ProfileRefuse> {
         d[i] = pivot;
         lv[si + (i - fi)] = 1.0;
     }
-    Ok(LdltFactor { l: SymmetricProfile { first: a.first.clone(), start: a.start.clone(), values: lv }, d })
+    Ok(LdltFactor {
+        l: SymmetricProfile {
+            first: a.first.clone(),
+            start: a.start.clone(),
+            values: lv,
+        },
+        d,
+    })
 }
 
 /// Factor `a` and require every pivot positive.
@@ -353,7 +397,10 @@ impl LdltFactor {
     #[must_use]
     pub fn inertia(&self) -> Inertia {
         let negative = self.d.iter().filter(|&&p| p < 0.0).count();
-        Inertia { negative, positive: self.d.len() - negative }
+        Inertia {
+            negative,
+            positive: self.d.len() - negative,
+        }
     }
 
     /// The pivots `D`.

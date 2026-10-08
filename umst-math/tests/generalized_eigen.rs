@@ -10,9 +10,12 @@
 use std::f64::consts::PI;
 
 use umst_math::generalized_eigen::{
-    lowest_eigenpairs, tridiagonal_eigen, Completeness, Deflation, EigenBound, EigenRefuse, EigenRequest, Pencil,
+    lowest_eigenpairs, tridiagonal_eigen, Completeness, Deflation, EigenBound, EigenRefuse,
+    EigenRequest, Pencil,
 };
-use umst_math::profile_ldlt::{ldlt, spd_factor, Clique, ProfilePattern, ProfileRefuse, SymmetricProfile};
+use umst_math::profile_ldlt::{
+    ldlt, spd_factor, Clique, ProfilePattern, ProfileRefuse, SymmetricProfile,
+};
 use umst_math::solve_combinator::{EnergyBudget, FixedJouleMeter, ProblemTolerance, SolveOutcome};
 
 fn budget() -> EnergyBudget {
@@ -39,21 +42,34 @@ fn bar(n_el: usize, fixed_ends: bool) -> (SymmetricProfile, SymmetricProfile) {
     // Keep only the free rows and columns of each element block.
     let cliques: Vec<(Vec<usize>, Vec<f64>, Vec<f64>)> = (0..n_el)
         .map(|e| {
-            let local: Vec<(usize, usize)> =
-                [e, e + 1].iter().enumerate().filter_map(|(a, &node)| dof(node).map(|d| (a, d))).collect();
+            let local: Vec<(usize, usize)> = [e, e + 1]
+                .iter()
+                .enumerate()
+                .filter_map(|(a, &node)| dof(node).map(|d| (a, d)))
+                .collect();
             let dofs: Vec<usize> = local.iter().map(|&(_, d)| d).collect();
             let pick = |blk: &[f64; 4]| -> Vec<f64> {
-                local.iter().flat_map(|&(a, _)| local.iter().map(move |&(b, _)| blk[a * 2 + b])).collect()
+                local
+                    .iter()
+                    .flat_map(|&(a, _)| local.iter().map(move |&(b, _)| blk[a * 2 + b]))
+                    .collect()
             };
             (dofs, pick(&ke), pick(&me))
         })
         .collect();
-    let pattern = ProfilePattern::from_cliques(n, cliques.iter().map(|c| c.0.as_slice())).expect("pattern");
+    let pattern =
+        ProfilePattern::from_cliques(n, cliques.iter().map(|c| c.0.as_slice())).expect("pattern");
     let k = pattern
-        .assemble(cliques.iter().map(|c| Clique { dofs: &c.0, block: &c.1 }))
+        .assemble(cliques.iter().map(|c| Clique {
+            dofs: &c.0,
+            block: &c.1,
+        }))
         .expect("K");
     let m = pattern
-        .assemble(cliques.iter().map(|c| Clique { dofs: &c.0, block: &c.2 }))
+        .assemble(cliques.iter().map(|c| Clique {
+            dofs: &c.0,
+            block: &c.2,
+        }))
         .expect("M");
     (k, m)
 }
@@ -80,12 +96,28 @@ fn profile_matches_dense_and_ldlt_solves() {
         .map(|i| {
             let dofs = vec![i, i + 1, i + 2];
             let a = 1.0 + i as f64 * 0.37;
-            let block = vec![4.0 * a, -a, 0.5, -a, 4.0 * a, -0.3 * a, 0.5, -0.3 * a, 4.0 * a];
+            let block = vec![
+                4.0 * a,
+                -a,
+                0.5,
+                -a,
+                4.0 * a,
+                -0.3 * a,
+                0.5,
+                -0.3 * a,
+                4.0 * a,
+            ];
             (dofs, block)
         })
         .collect();
-    let pattern = ProfilePattern::from_cliques(n, cliques.iter().map(|c| c.0.as_slice())).expect("pattern");
-    let a = pattern.assemble(cliques.iter().map(|c| Clique { dofs: &c.0, block: &c.1 })).expect("A");
+    let pattern =
+        ProfilePattern::from_cliques(n, cliques.iter().map(|c| c.0.as_slice())).expect("pattern");
+    let a = pattern
+        .assemble(cliques.iter().map(|c| Clique {
+            dofs: &c.0,
+            block: &c.1,
+        }))
+        .expect("A");
     let dense = |i: usize, j: usize| -> f64 {
         cliques
             .iter()
@@ -100,7 +132,11 @@ fn profile_matches_dense_and_ldlt_solves() {
     let x_true: Vec<f64> = (0..n).map(|i| (i as f64 * 0.7).sin() + 0.2).collect();
     let b = a.mul(&x_true).expect("b");
     let x = spd_factor(&a).expect("spd").solve(&b).expect("solve");
-    let err = x.iter().zip(&x_true).map(|(p, q)| (p - q).abs()).fold(0.0, f64::max);
+    let err = x
+        .iter()
+        .zip(&x_true)
+        .map(|(p, q)| (p - q).abs())
+        .fold(0.0, f64::max);
     assert!(err < 1e-12, "solve error {err}");
 }
 
@@ -117,10 +153,26 @@ fn inertia_counts_eigenvalues_below_a_shift() {
 #[test]
 fn singular_and_indefinite_matrices_refuse() {
     let pattern = ProfilePattern::from_cliques(2, [&[0_usize, 1][..]]).expect("pattern");
-    let singular = pattern.assemble([Clique { dofs: &[0, 1], block: &[1.0, 1.0, 1.0, 1.0] }]).expect("A");
-    assert_eq!(ldlt(&singular), Err(ProfileRefuse::NearZeroPivot { row: 1 }));
-    let indefinite = pattern.assemble([Clique { dofs: &[0, 1], block: &[1.0, 2.0, 2.0, 1.0] }]).expect("A");
-    assert_eq!(spd_factor(&indefinite), Err(ProfileRefuse::NotPositiveDefinite { row: 1 }));
+    let singular = pattern
+        .assemble([Clique {
+            dofs: &[0, 1],
+            block: &[1.0, 1.0, 1.0, 1.0],
+        }])
+        .expect("A");
+    assert_eq!(
+        ldlt(&singular),
+        Err(ProfileRefuse::NearZeroPivot { row: 1 })
+    );
+    let indefinite = pattern
+        .assemble([Clique {
+            dofs: &[0, 1],
+            block: &[1.0, 2.0, 2.0, 1.0],
+        }])
+        .expect("A");
+    assert_eq!(
+        spd_factor(&indefinite),
+        Err(ProfileRefuse::NotPositiveDefinite { row: 1 })
+    );
     assert_eq!(ldlt(&indefinite).expect("ldlt").inertia().negative, 1);
     assert_eq!(
         ProfilePattern::from_cliques(2, [&[0_usize, 2][..]]),
@@ -155,13 +207,28 @@ fn fixed_bar_lowest_modes_are_certified_and_complete() {
         deflation: Vec::new(),
         tolerance: ProblemTolerance::from_problem(1.0, 1e-10).expect("tol"),
     };
-    let sol = converged(lowest_eigenpairs(Pencil { k: &k, m: &m }, &request, budget(), &meter()).expect("solve"));
+    let sol = converged(
+        lowest_eigenpairs(Pencil { k: &k, m: &m }, &request, budget(), &meter()).expect("solve"),
+    );
     assert_eq!(sol.pairs.len(), 5);
-    assert!(matches!(sol.completeness, Completeness::Certified { below: 5, .. }), "{:?}", sol.completeness);
+    assert!(
+        matches!(sol.completeness, Completeness::Certified { below: 5, .. }),
+        "{:?}",
+        sol.completeness
+    );
     for (j, p) in sol.pairs.iter().enumerate() {
         let exact = bar_exact(n_el, j + 1);
-        assert!(p.lower <= exact && exact <= p.upper, "mode {j}: [{}, {}] misses {exact}", p.lower, p.upper);
-        assert!((p.lambda - exact).abs() <= 1e-9 * exact, "mode {j}: {} vs {exact}", p.lambda);
+        assert!(
+            p.lower <= exact && exact <= p.upper,
+            "mode {j}: [{}, {}] misses {exact}",
+            p.lower,
+            p.upper
+        );
+        assert!(
+            (p.lambda - exact).abs() <= 1e-9 * exact,
+            "mode {j}: {} vs {exact}",
+            p.lambda
+        );
         assert_eq!(p.bound, EigenBound::KatoTemple);
     }
 }
@@ -170,21 +237,36 @@ fn fixed_bar_lowest_modes_are_certified_and_complete() {
 fn free_bar_deflates_the_rigid_mode_and_tightens_with_kato_temple() {
     let n_el = 40;
     let (k, m) = bar(n_el, false);
-    let rigid = Deflation { vector: vec![1.0; n_el + 1] };
+    let rigid = Deflation {
+        vector: vec![1.0; n_el + 1],
+    };
     let request = EigenRequest {
         wanted: 4,
         shift: -1.0,
         deflation: vec![rigid],
         tolerance: ProblemTolerance::from_problem(1.0, 1e-10).expect("tol"),
     };
-    let sol = converged(lowest_eigenpairs(Pencil { k: &k, m: &m }, &request, budget(), &meter()).expect("solve"));
+    let sol = converged(
+        lowest_eigenpairs(Pencil { k: &k, m: &m }, &request, budget(), &meter()).expect("solve"),
+    );
     assert_eq!(sol.deflated.len(), 1);
-    assert!(sol.deflated[0].lambda.abs() < 1e-10, "rigid mode Rayleigh quotient {}", sol.deflated[0].lambda);
-    assert!(matches!(sol.completeness, Completeness::Certified { below: 5, .. }), "{:?}", sol.completeness);
+    assert!(
+        sol.deflated[0].lambda.abs() < 1e-10,
+        "rigid mode Rayleigh quotient {}",
+        sol.deflated[0].lambda
+    );
+    assert!(
+        matches!(sol.completeness, Completeness::Certified { below: 5, .. }),
+        "{:?}",
+        sol.completeness
+    );
     for (j, p) in sol.pairs.iter().enumerate() {
         let exact = bar_exact(n_el, j + 1);
         assert!(p.lower <= exact && exact <= p.upper, "mode {j}");
-        assert!(p.upper - p.lower <= 2.0 * (p.residual + p.rounding), "Kato–Temple must not widen Weinstein");
+        assert!(
+            p.upper - p.lower <= 2.0 * (p.residual + p.rounding),
+            "Kato–Temple must not widen Weinstein"
+        );
     }
 }
 
@@ -207,12 +289,24 @@ fn shift_above_the_spectrum_refuses() {
 fn malformed_requests_refuse() {
     let (k, m) = bar(10, true);
     let tol = ProblemTolerance::from_problem(1.0, 1e-8).expect("tol");
-    let none = EigenRequest { wanted: 0, shift: -1.0, deflation: Vec::new(), tolerance: tol };
+    let none = EigenRequest {
+        wanted: 0,
+        shift: -1.0,
+        deflation: Vec::new(),
+        tolerance: tol,
+    };
     assert_eq!(
         lowest_eigenpairs(Pencil { k: &k, m: &m }, &none, budget(), &meter()).err(),
         Some(EigenRefuse::WantedOutOfRange)
     );
-    let bad = EigenRequest { wanted: 1, shift: -1.0, deflation: vec![Deflation { vector: vec![1.0; 3] }], tolerance: tol };
+    let bad = EigenRequest {
+        wanted: 1,
+        shift: -1.0,
+        deflation: vec![Deflation {
+            vector: vec![1.0; 3],
+        }],
+        tolerance: tol,
+    };
     assert_eq!(
         lowest_eigenpairs(Pencil { k: &k, m: &m }, &bad, budget(), &meter()).err(),
         Some(EigenRefuse::DeflationInvalid)
