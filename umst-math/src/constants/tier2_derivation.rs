@@ -622,7 +622,8 @@ pub const K5H_REGISTRY_ROW_NAMES: &[&str] = &[
 
 // --- K-5i Tier-1 energy probes + ZCI toolchain pins (§14bis.k deepen wave 9) ---
 
-/// `rapl_package_dram_joules` — Linux RAPL package counter (NED if unreadable).
+/// `rapl_package_dram_joules` — host system energy.
+/// This machine has no Linux powercap; the receipt integrates IORegistry `SystemPower`.
 pub const RAPL_PACKAGE_DRAM_JOULES_DERIVATION: Derivation = Derivation::Measurement {
     receipt_path: ".umst-ci/measurement-receipts/rapl_package_dram_joules.jsonl",
     methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#hal-rapl-package-energy",
@@ -634,7 +635,7 @@ pub const CPU_UTILIZATION_PERCENT_DERIVATION: Derivation = Derivation::Measureme
     methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#hal-cpu-utilization",
 };
 
-/// `process_joules_estimate` — EnergyService port estimate (watts × Δt × util).
+/// `process_joules_estimate` — system watts × Δt × busy fraction (upper bound).
 pub const PROCESS_JOULES_ESTIMATE_DERIVATION: Derivation = Derivation::Measurement {
     receipt_path: ".umst-ci/measurement-receipts/process_joules_estimate.jsonl",
     methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#energy-service-estimate",
@@ -1565,6 +1566,51 @@ mod tests {
                 entry.derivation,
                 derivation_for_registry_row(name).expect("lookup")
             );
+        }
+    }
+
+    #[test]
+    fn host_energy_receipts_clear_the_landauer_floor() {
+        fn load(bytes: &str) -> serde_json::Value {
+            serde_json::from_str(bytes).expect("receipt json")
+        }
+        let cpu_bytes = include_str!(
+            "../../../../egoff/.umst-ci/measurement-receipts/cpu_utilization_percent.jsonl"
+        );
+        let package_bytes = include_str!(
+            "../../../../egoff/.umst-ci/measurement-receipts/rapl_package_dram_joules.jsonl"
+        );
+        let process_bytes = include_str!(
+            "../../../../egoff/.umst-ci/measurement-receipts/process_joules_estimate.jsonl"
+        );
+        let cpu = load(cpu_bytes);
+        let package = load(package_bytes);
+        let process = load(process_bytes);
+        let busy = cpu["derived_value"].as_f64().expect("cpu");
+        let lo = cpu["interval"][0].as_f64().expect("lo");
+        let hi = cpu["interval"][1].as_f64().expect("hi");
+        assert!((0.0..=100.0).contains(&busy));
+        assert!(lo <= busy && busy <= hi);
+        assert!(cpu["sample_count"].as_u64().expect("n") >= 2);
+        let temp_k = package["temperature_k"].as_f64().expect("T");
+        let written = (cpu_bytes.len() + package_bytes.len() + process_bytes.len()) as f64;
+        let floor = crate::constants::registry::K_BOLTZMANN_J_PER_K
+            * temp_k
+            * 2.0_f64.ln()
+            * 8.0
+            * written;
+        for receipt in [&package, &process] {
+            let joules = receipt["derived_value"].as_f64().expect("J");
+            let rlo = receipt["interval"][0].as_f64().expect("lo");
+            let rhi = receipt["interval"][1].as_f64().expect("hi");
+            assert!(joules >= floor);
+            assert!(rlo <= joules && joules <= rhi);
+            assert!(receipt["estimator"]
+                .as_str()
+                .expect("estimator")
+                .contains("SystemPower"));
+            assert!(receipt["linux_powercap"].as_bool() == Some(false));
+            assert!(receipt["sample_count"].as_u64().expect("n") >= 2);
         }
     }
 
