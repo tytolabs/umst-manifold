@@ -536,8 +536,9 @@ pub fn assemble(disc: &Discretisation, supports: Supports<'_>) -> Result<System,
     let mut supported = false;
     let mut next = 0_usize;
     let mut dof = vec![[None; 3]; disc.roles.len()];
+    let fixed_at = |node: usize| supports(disc.node_point(node));
     for (node, role) in disc.roles.iter().enumerate() {
-        let fixed = supports(disc.node_point(node));
+        let fixed = fixed_at(node);
         match role {
             Role::Free => {
                 for (c, &is_fixed) in fixed.iter().enumerate() {
@@ -549,8 +550,17 @@ pub fn assemble(disc: &Discretisation, supports: Supports<'_>) -> Result<System,
                     }
                 }
             }
-            Role::Aggregated(_) if fixed.iter().any(|&f| f) => {
-                return Err(FiniteCellRefuse::SupportOnAggregatedNode)
+            // An aggregated node's value is its masters' extrapolation: a support on it is consistent (and already
+            // imposed) when every master carrying weight is fixed in the same components; otherwise it cannot be
+            // imposed and refuses.
+            Role::Aggregated(w) if fixed.iter().any(|&f| f) => {
+                let consistent = w.iter().filter(|&&(_, x)| x != 0.0).all(|&(m, _)| {
+                    let mf = fixed_at(m);
+                    (0..3).all(|c| !fixed[c] || mf[c])
+                });
+                if !consistent {
+                    return Err(FiniteCellRefuse::SupportOnAggregatedNode);
+                }
             }
             _ => {}
         }

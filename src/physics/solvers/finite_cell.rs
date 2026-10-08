@@ -81,7 +81,7 @@ pub enum FiniteCellRefuse {
     EmptyBody,
     /// An ill-posed cell found no well-posed cell to aggregate onto within its layer.
     AggregationUnresolved,
-    /// A support constrains an aggregated node, whose value is not its own.
+    /// A support constrains an aggregated node whose masters are not all fixed alike (its value is theirs).
     SupportOnAggregatedNode,
     /// The stiffness with the given supports is singular: the supports leave a mechanism.
     Mechanism,
