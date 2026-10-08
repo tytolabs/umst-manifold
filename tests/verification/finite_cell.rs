@@ -977,6 +977,10 @@ impl OccupancyField for Bevel {
     fn interface_planes(&self, _: usize) -> Vec<f64> {
         Vec::new()
     }
+    // The bevel varies through the thickness: not prismatic.
+    fn prismatic(&self, _: [f64; 3], _: [f64; 3]) -> bool {
+        false
+    }
 }
 
 #[test]
@@ -1161,8 +1165,10 @@ fn apparent_mass_matches_a_direct_receptance_solve() {
     let p = [0.15, 0.07, 0.006];
     let n = [0.0, 0.0, 1.0];
     let w1 = sol.pairs[0].lambda.sqrt();
-    for (fraction, tol) in [(0.3, 1e-6), (0.9, 1e-4)] {
-        let omega = fraction * w1;
+    // Below the first mode, near it, and between the first two (the modal term changes sign there).
+    let w2 = sol.pairs[1].lambda.sqrt();
+    for (omega, tol) in [(0.3 * w1, 1e-6), (0.9 * w1, 1e-4), (0.5 * (w1 + w2), 1e-3)] {
+        let fraction = omega / w1;
         let am = relief
             .apparent_mass(&sol, p, n, omega)
             .expect("apparent mass");
@@ -1175,8 +1181,11 @@ fn apparent_mass_matches_a_direct_receptance_solve() {
         let u = ldlt(&pencil).expect("factor").solve(&f).expect("solve");
         let alpha_direct = disc.value_at(&sys, &u, p).expect("read")[2];
         let rel = (alpha_model - alpha_direct).abs() / alpha_direct.abs();
-        eprintln!("apparent mass at {fraction} ω₁: model {alpha_model:.6e} direct {alpha_direct:.6e} rel {rel:.2e}");
-        assert!(rel <= tol, "{fraction} ω₁: {alpha_model} vs {alpha_direct}");
+        eprintln!("apparent mass at {fraction:.3} ω₁: model {alpha_model:.6e} direct {alpha_direct:.6e} rel {rel:.2e}");
+        assert!(
+            rel <= tol,
+            "{fraction:.3} ω₁: {alpha_model} vs {alpha_direct}"
+        );
     }
     assert_eq!(
         relief

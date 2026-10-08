@@ -62,11 +62,10 @@ pub trait OccupancyField {
     fn material_at(&self, p: [f64; 3]) -> Option<u16>;
     /// Planar interfaces normal to `axis` (`0`, `1` or `2`), where material changes across a plane.
     fn interface_planes(&self, axis: usize) -> Vec<f64>;
-    /// Whether the solid and its material do not vary along `z` inside the box `[lo, hi]`. Default: no, which
-    /// sends the box to the octree.
-    fn prismatic(&self, _lo: [f64; 3], _hi: [f64; 3]) -> bool {
-        false
-    }
+    /// Whether the solid and its material do not vary along `z` inside the box `[lo, hi]`. Required, because the
+    /// answer decides the integration path: a prismatic box is classified in the plane by [`Self::section_distance`],
+    /// any other takes the octree with point inclusion (accurate but approximate and many times slower).
+    fn prismatic(&self, lo: [f64; 3], hi: [f64; 3]) -> bool;
     /// For a prismatic box: a signed distance in the plane to the boundary of the cross-section at height `p[2]`,
     /// with the contract of [`Self::signed_distance`] in `(x, y)`. Default: the signed distance itself, which is
     /// valid wherever the nearest boundary is a side wall.
