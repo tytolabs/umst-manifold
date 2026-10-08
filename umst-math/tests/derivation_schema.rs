@@ -3,88 +3,55 @@
 //! K-1 — `Derivation` enum + REGISTRY schema extension (§14bis.k; EGOFF-004).
 
 use umst_math::constants::derivation::{Derivation, LeanDecl};
-use umst_math::constants::registry::REGISTRY;
+use umst_math::constants::registry::{
+    registry_batch_row_name_count, registry_row_in_batch_list, REGISTRY,
+};
 
 #[test]
 fn derivation_labels_are_distinct() {
     let labels: std::collections::BTreeSet<&str> = [
-        Derivation::Theorem { decl: LeanDecl { module: "M", name: "n" }, expected_value: 0.0 },
-        Derivation::Measurement { receipt_path: "r", methodology_anchor: "a" },
-        Derivation::Definition { authority_url: "u", expected_sha256: "s" },
-        Derivation::Pin { repo: "r", ref_name: "main" },
+        Derivation::Theorem {
+            decl: LeanDecl {
+                module: "M",
+                name: "n",
+            },
+            expected_value: 0.0,
+        },
+        Derivation::Measurement {
+            receipt_path: "r",
+            methodology_anchor: "a",
+        },
+        Derivation::Definition {
+            authority_url: "u",
+            expected_sha256: "s",
+        },
+        Derivation::Pin {
+            repo: "r",
+            ref_name: "main",
+        },
         Derivation::Policy { rationale: "r" },
         Derivation::Absent { reason: "r" },
     ]
     .iter()
     .map(|d| d.label())
     .collect();
-    assert_eq!(labels.len(), 6, "Theorem, Measurement, Definition, Pin, Policy, Absent");
+    assert_eq!(
+        labels.len(),
+        6,
+        "Theorem, Measurement, Definition, Pin, Policy, Absent"
+    );
 }
 
 #[test]
-fn registry_len_matches_k1_baseline() {
-    assert_eq!(REGISTRY.len(), 187);
+fn registry_len_matches_batch_list_union() {
+    assert_eq!(REGISTRY.len(), registry_batch_row_name_count());
 }
 
 #[test]
 fn k_arc_backfill_covers_entire_registry_no_pending() {
-    use umst_math::constants::pool_q_constants_manifold::POOL_Q_REGISTRY_ROW_NAMES;
-    use umst_math::constants::tier1_derivation::{
-        K2_REGISTRY_ROW_NAMES, K2_TIER0_LANDAUER_ROW_NAMES,
-    };
-    use umst_math::constants::tier2_derivation::{
-        K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
-        K5_REGISTRY_ROW_NAMES, K5B_REGISTRY_ROW_NAMES, K5C_REGISTRY_ROW_NAMES,
-        K5D_REGISTRY_ROW_NAMES, K5E_REGISTRY_ROW_NAMES, K5F_REGISTRY_ROW_NAMES,
-        K5G_REGISTRY_ROW_NAMES, K5H_REGISTRY_ROW_NAMES, K5I_REGISTRY_ROW_NAMES,
-        K5J_REGISTRY_ROW_NAMES, K5K_REGISTRY_ROW_NAMES, NUMERICS_REGISTRY_ROW_NAMES,
-    };
-    use umst_math::constants::tier3_derivation::{
-        K4_REGISTRY_ROW_NAMES, K5L_REGISTRY_ROW_NAMES, K5M_REGISTRY_ROW_NAMES,
-        K5N_REGISTRY_ROW_NAMES, K5O_REGISTRY_ROW_NAMES, K5P_REGISTRY_ROW_NAMES,
-        K5Q_REGISTRY_ROW_NAMES, K5R_REGISTRY_ROW_NAMES, K5S_HAL_REGISTRY_ROW_NAMES,
-        K5T_HAL_REGISTRY_ROW_NAMES, K5U_HAL_REGISTRY_ROW_NAMES,
-        K5V_CRYPTO_REGISTRY_ROW_NAMES, K5V_M0_REGISTRY_ROW_NAMES,
-        K5W_CRYPTO_REGISTRY_ROW_NAMES, K5X_REGISTRY_ROW_NAMES, K5Y_REGISTRY_ROW_NAMES,
-    };
-
     for e in REGISTRY {
-        let backfilled = K2_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K2_TIER0_LANDAUER_ROW_NAMES.contains(&e.name)
-            || K3_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K3_TIER1_MEASUREMENT_ROW_NAMES.contains(&e.name)
-            || K3_TIER2_GATE_ROW_NAMES.contains(&e.name)
-            || K4_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5B_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5C_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5D_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5E_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5F_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5G_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5H_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5I_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5J_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5K_REGISTRY_ROW_NAMES.contains(&e.name)
-            || NUMERICS_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5L_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5M_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5N_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5O_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5P_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5Q_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5R_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5S_HAL_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5T_HAL_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5U_HAL_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5V_CRYPTO_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5V_M0_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5W_CRYPTO_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5X_REGISTRY_ROW_NAMES.contains(&e.name)
-            || K5Y_REGISTRY_ROW_NAMES.contains(&e.name)
-            || POOL_Q_REGISTRY_ROW_NAMES.contains(&e.name);
         assert!(
-            backfilled,
+            registry_row_in_batch_list(e.name),
             "registry row {} must appear in a K-Arc or pool-Q batch list",
             e.name
         );
@@ -94,10 +61,15 @@ fn k_arc_backfill_covers_entire_registry_no_pending() {
 #[test]
 fn derivation_enum_shapes_constructible() {
     let _theorem = Derivation::Theorem {
-        decl: LeanDecl { module: "LandauerLaw", name: "uniformBinaryEntropy" },
+        decl: LeanDecl {
+            module: "LandauerLaw",
+            name: "uniformBinaryEntropy",
+        },
         expected_value: std::f64::consts::LN_2,
     };
-    let _policy = Derivation::Policy { rationale: "a chosen value" };
+    let _policy = Derivation::Policy {
+        rationale: "a chosen value",
+    };
     let _measurement = Derivation::Measurement {
         receipt_path: ".umst-ci/measurement-receipts/example.jsonl",
         methodology_anchor: "egoff measure --constant example",

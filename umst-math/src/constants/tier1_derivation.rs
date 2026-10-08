@@ -51,7 +51,10 @@ pub const REFERENCE_TEMPERATURE_293_15_K_DERIVATION: Derivation = Derivation::De
 
 /// `LN_2` — theorem-derived via Mathlib / UMST ln(2) chain.
 pub const LN_2_DERIVATION: Derivation = Derivation::Theorem {
-    decl: LeanDecl { module: "LandauerLaw", name: "uniformBinaryEntropy" },
+    decl: LeanDecl {
+        module: "LandauerLaw",
+        name: "uniformBinaryEntropy",
+    },
     expected_value: std::f64::consts::LN_2,
 };
 
@@ -75,7 +78,10 @@ pub const RCC_FLOOR_DERIVATION: Derivation = Derivation::Policy {
 
 /// `landauer_floor_j_per_bit` — **k_B T ln 2** at reference 300 K (cockpit Landauer floor).
 pub const LANDAUER_FLOOR_J_PER_BIT_DERIVATION: Derivation = Derivation::Theorem {
-    decl: LeanDecl { module: "LandauerLaw", name: "landauerBound" },
+    decl: LeanDecl {
+        module: "LandauerLaw",
+        name: "landauerBound",
+    },
     expected_value: registry::K_BOLTZMANN_J_PER_K
         * HOST_TEMPERATURE_REFERENCE_K
         * std::f64::consts::LN_2,
@@ -83,6 +89,9 @@ pub const LANDAUER_FLOOR_J_PER_BIT_DERIVATION: Derivation = Derivation::Theorem 
 
 /// K-2 deepen: Tier-0 Landauer floor row (reference-T bit energy).
 pub const K2_TIER0_LANDAUER_ROW_NAMES: &[&str] = &["landauer_floor_j_per_bit"];
+
+/// K-2 deepen: ISO 554 reference-temperature row (Tier-1 `Definition`, local authority pin).
+pub const K2_ISO554_REFERENCE_TEMPERATURE_ROW_NAMES: &[&str] = &["reference_temperature_293_15_k"];
 
 /// Canonical K-2 symbolic ids (operator / egoffplan vocabulary).
 pub const CANONICAL_SYMBOLS: &[&str] = &["LN_2", "K_B", "T_ROOM", "RCC_FLOOR"];
@@ -114,11 +123,7 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
 pub fn k2_backfilled_count() -> usize {
     K2_REGISTRY_ROW_NAMES
         .iter()
-        .filter(|name| {
-            REGISTRY
-                .iter()
-                .any(|e| e.name == **name)
-        })
+        .filter(|name| REGISTRY.iter().any(|e| e.name == **name))
         .count()
 }
 

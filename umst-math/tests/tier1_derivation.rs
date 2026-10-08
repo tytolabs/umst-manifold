@@ -2,31 +2,15 @@
 // SPDX-License-Identifier: MIT
 //! K-2 — Tier-1 canonical derivation backfill (§14bis.k; EGOFF-004).
 
+use ordered_float::NotNan;
 use umst_math::constants::derivation::Derivation;
-use umst_math::constants::registry::REGISTRY;
+use umst_math::constants::registry::{registry_row_in_batch_list, REGISTRY};
 use umst_math::constants::tier1_derivation::{
     derivation_for_registry_row, k2_backfilled_count, k2_tier1_landed, CANONICAL_SYMBOLS,
-    K2_REGISTRY_ROW_NAMES, K2_TIER0_LANDAUER_ROW_NAMES, K_B_AUTHORITY_SHA256,
-    LANDAUER_FLOOR_J_PER_BIT_DERIVATION, LN_2_DERIVATION, RCC_FLOOR_DERIVATION,
-    T_ROOM_AUTHORITY_SHA256,
-};
-use umst_math::constants::tier2_derivation::{
-    K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
-    K5_REGISTRY_ROW_NAMES, K5B_REGISTRY_ROW_NAMES, K5C_REGISTRY_ROW_NAMES, K5D_REGISTRY_ROW_NAMES,
-    K5E_REGISTRY_ROW_NAMES, K5F_REGISTRY_ROW_NAMES, K5G_REGISTRY_ROW_NAMES, K5H_REGISTRY_ROW_NAMES,
-    K5I_REGISTRY_ROW_NAMES, K5J_REGISTRY_ROW_NAMES, K5K_REGISTRY_ROW_NAMES,
-};
-use umst_math::constants::pool_q_constants_manifold::POOL_Q_REGISTRY_ROW_NAMES;
-use umst_math::constants::tier3_derivation::{
-    K4_REGISTRY_ROW_NAMES, K5L_REGISTRY_ROW_NAMES, K5M_REGISTRY_ROW_NAMES,
-    K5N_REGISTRY_ROW_NAMES, K5O_REGISTRY_ROW_NAMES, K5P_REGISTRY_ROW_NAMES,
-    K5Q_REGISTRY_ROW_NAMES, K5R_REGISTRY_ROW_NAMES, K5S_HAL_REGISTRY_ROW_NAMES,
-    K5T_HAL_REGISTRY_ROW_NAMES, K5U_HAL_REGISTRY_ROW_NAMES,
-    K5V_CRYPTO_REGISTRY_ROW_NAMES, K5V_M0_REGISTRY_ROW_NAMES,
-    K5W_CRYPTO_REGISTRY_ROW_NAMES, K5X_REGISTRY_ROW_NAMES, K5Y_REGISTRY_ROW_NAMES,
+    K2_REGISTRY_ROW_NAMES, K_B_AUTHORITY_SHA256, LANDAUER_FLOOR_J_PER_BIT_DERIVATION,
+    LN_2_DERIVATION, RCC_FLOOR_DERIVATION, T_ROOM_AUTHORITY_SHA256,
 };
 use umst_math::landauer::landauer_bit_energy_joules;
-use ordered_float::NotNan;
 
 #[test]
 fn k2_canonical_symbol_count_is_four() {
@@ -48,7 +32,10 @@ fn k2_ln_two_is_theorem_with_ln2_value() {
             expected_value,
         } => {
             // `LandauerLaw.uniformBinaryEntropy : shannonEntropy uniformBinary = log 2`.
-            assert_eq!((decl.module, decl.name), ("LandauerLaw", "uniformBinaryEntropy"));
+            assert_eq!(
+                (decl.module, decl.name),
+                ("LandauerLaw", "uniformBinaryEntropy")
+            );
             assert!((expected_value - std::f64::consts::LN_2).abs() < f64::EPSILON);
         }
         _ => panic!("LN_2 must be Theorem"),
@@ -89,43 +76,6 @@ fn k2_rcc_floor_is_policy() {
     assert!(matches!(RCC_FLOOR_DERIVATION, Derivation::Policy { .. }));
 }
 
-fn registry_row_backfilled(name: &str) -> bool {
-    K2_REGISTRY_ROW_NAMES.contains(&name)
-        || K2_TIER0_LANDAUER_ROW_NAMES.contains(&name)
-        || K3_REGISTRY_ROW_NAMES.contains(&name)
-        || K3_TIER1_MEASUREMENT_ROW_NAMES.contains(&name)
-        || K3_TIER2_GATE_ROW_NAMES.contains(&name)
-        || umst_math::constants::tier2_derivation::NUMERICS_REGISTRY_ROW_NAMES.contains(&name)
-        || K4_REGISTRY_ROW_NAMES.contains(&name)
-        || K5_REGISTRY_ROW_NAMES.contains(&name)
-        || K5B_REGISTRY_ROW_NAMES.contains(&name)
-        || K5C_REGISTRY_ROW_NAMES.contains(&name)
-        || K5D_REGISTRY_ROW_NAMES.contains(&name)
-        || K5E_REGISTRY_ROW_NAMES.contains(&name)
-        || K5F_REGISTRY_ROW_NAMES.contains(&name)
-        || K5G_REGISTRY_ROW_NAMES.contains(&name)
-        || K5H_REGISTRY_ROW_NAMES.contains(&name)
-        || K5I_REGISTRY_ROW_NAMES.contains(&name)
-        || K5J_REGISTRY_ROW_NAMES.contains(&name)
-        || K5K_REGISTRY_ROW_NAMES.contains(&name)
-        || K5L_REGISTRY_ROW_NAMES.contains(&name)
-        || K5M_REGISTRY_ROW_NAMES.contains(&name)
-        || K5N_REGISTRY_ROW_NAMES.contains(&name)
-        || K5O_REGISTRY_ROW_NAMES.contains(&name)
-        || K5P_REGISTRY_ROW_NAMES.contains(&name)
-        || K5Q_REGISTRY_ROW_NAMES.contains(&name)
-        || K5R_REGISTRY_ROW_NAMES.contains(&name)
-        || K5S_HAL_REGISTRY_ROW_NAMES.contains(&name)
-        || K5T_HAL_REGISTRY_ROW_NAMES.contains(&name)
-        || K5U_HAL_REGISTRY_ROW_NAMES.contains(&name)
-        || K5V_CRYPTO_REGISTRY_ROW_NAMES.contains(&name)
-        || K5V_M0_REGISTRY_ROW_NAMES.contains(&name)
-        || K5W_CRYPTO_REGISTRY_ROW_NAMES.contains(&name)
-        || K5X_REGISTRY_ROW_NAMES.contains(&name)
-        || K5Y_REGISTRY_ROW_NAMES.contains(&name)
-        || POOL_Q_REGISTRY_ROW_NAMES.contains(&name)
-}
-
 #[test]
 fn k2_landauer_floor_matches_300k_ssot() {
     match LANDAUER_FLOOR_J_PER_BIT_DERIVATION {
@@ -149,7 +99,10 @@ fn k2_landauer_floor_matches_300k_ssot() {
 #[test]
 fn k2_every_registry_row_is_backfilled() {
     assert_eq!(
-        REGISTRY.iter().filter(|e| registry_row_backfilled(e.name)).count(),
+        REGISTRY
+            .iter()
+            .filter(|e| registry_row_in_batch_list(e.name))
+            .count(),
         REGISTRY.len()
     );
 }

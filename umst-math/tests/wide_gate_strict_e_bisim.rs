@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: MIT
 //! §14bis.l W-1 + W-2 — e-bisim: `umst_wide_gate_strict` and `umst_semantic_coverage_threshold_w2` rows; idempotent `REGISTRY` read.
 
-use umst_math::constants::registry::{ConstantTier, REGISTRY};
+use umst_math::constants::registry::{registry_batch_row_name_count, ConstantTier, REGISTRY};
 
 #[test]
 fn reg_has_umst_wide_gate_strict() {
-    assert_eq!(REGISTRY.len(), 187);
+    assert_eq!(REGISTRY.len(), registry_batch_row_name_count());
     let names1: Vec<&'static str> = REGISTRY.iter().map(|e| e.name).collect();
     let names2: Vec<&'static str> = REGISTRY.iter().map(|e| e.name).collect();
     assert_eq!(names1, names2, "idempotent read of static REGISTRY");
