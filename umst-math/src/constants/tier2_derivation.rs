@@ -1614,6 +1614,72 @@ mod tests {
         }
     }
 
+    fn fixture_array(text: &str, name: &str) -> Vec<f64> {
+        let key = format!("const {name}: [f64;");
+        let at = text.find(&key).unwrap_or_else(|| panic!("missing {name}"));
+        let eq = text[at..].find('=').expect("eq") + at;
+        let start = text[eq..].find('[').expect("open") + eq + 1;
+        let end = text[start..].find(']').expect("close") + start;
+        text[start..end]
+            .split(',')
+            .filter(|piece| !piece.trim().is_empty())
+            .map(|piece| piece.trim().parse::<f64>().expect("number"))
+            .collect()
+    }
+
+    fn sample_variance(values: &[f64]) -> f64 {
+        let n = values.len() as f64;
+        let mean = values.iter().sum::<f64>() / n;
+        values.iter().map(|v| (v - mean) * (v - mean)).sum::<f64>() / (n - 1.0)
+    }
+
+    #[test]
+    fn smoother_variances_match_the_recorded_fixture_sequences() {
+        let fixture = include_str!("../../tests/smoothing_ekf_e_bisim.rs");
+        let lanes = [
+            ("rcc", "SEQ0", "EXP0"),
+            ("mi", "SEQ1", "EXP1"),
+            ("eta_cog", "SEQ2", "EXP2"),
+            ("dignity", "SEQ3", "EXP3"),
+            ("landauer_slack", "SEQ4", "EXP4"),
+        ];
+        for (lane, seq_name, exp_name) in lanes {
+            let measured = fixture_array(fixture, seq_name);
+            let filtered = fixture_array(fixture, exp_name);
+            let steps: Vec<f64> = filtered.windows(2).map(|w| w[1] - w[0]).collect();
+            let residuals: Vec<f64> = measured
+                .iter()
+                .zip(&filtered)
+                .map(|(z, x)| z - x)
+                .collect();
+            let q = sample_variance(&steps);
+            let r = sample_variance(&residuals);
+            assert!(q > 0.0 && r > 0.0);
+            for (kind, value, count) in [("q", q, steps.len()), ("r", r, residuals.len())] {
+                let bytes = match (lane, kind) {
+                    ("rcc", "q") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_q_rcc.jsonl"),
+                    ("rcc", "r") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_r_rcc.jsonl"),
+                    ("mi", "q") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_q_mi.jsonl"),
+                    ("mi", "r") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_r_mi.jsonl"),
+                    ("eta_cog", "q") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_q_eta_cog.jsonl"),
+                    ("eta_cog", "r") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_r_eta_cog.jsonl"),
+                    ("dignity", "q") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_q_dignity.jsonl"),
+                    ("dignity", "r") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_r_dignity.jsonl"),
+                    ("landauer_slack", "q") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_q_landauer_slack.jsonl"),
+                    ("landauer_slack", "r") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_r_landauer_slack.jsonl"),
+                    _ => panic!("lane"),
+                };
+                let receipt: serde_json::Value = serde_json::from_str(bytes).expect("receipt");
+                let got = receipt["derived_value"].as_f64().expect("value");
+                let lo = receipt["interval"][0].as_f64().expect("lo");
+                let hi = receipt["interval"][1].as_f64().expect("hi");
+                assert!((got - value).abs() <= 1e-9 * value.max(1.0));
+                assert!(got > 0.0 && lo <= got && got <= hi);
+                assert_eq!(receipt["sample_count"].as_u64().expect("n"), count as u64);
+            }
+        }
+    }
+
     #[test]
     fn k5d_registry_rows_backfilled() {
         assert!(k5d_backfill_landed());
