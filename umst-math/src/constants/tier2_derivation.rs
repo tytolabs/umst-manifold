@@ -29,20 +29,69 @@ pub const MACOS_PACKAGE_POWER_CEILING_TYPED_ABSENCE_DERIVATION: Derivation = Der
     reason: "macOS package power ceiling: samples recorded, no installed ceiling; docs/PENDING_GAPS_PLAIN.md#unmeasured-power-ceiling",
 };
 
+/// Methodology anchor for B-Arc perf measurement receipts (plain-language gap doc).
+pub const B_ARC_PERF_MEASUREMENT_METHODOLOGY: &str =
+    "docs/PENDING_GAPS_PLAIN.md#b-arc-perf-typed-absence";
+
 /// Tier-2 B-Arc / macOS power runtime rows that stay `Absent` until a committed benchmark lands.
 pub const ABSENT_RUNTIME_REGISTRY_ROW_NAMES: &[&str] = &[
-    "manifold_voxelize_runtime_us_p99",
-    "manifold_canonicalize_runtime_us_p99",
     "manifold_octree_density_typical",
-    "manifold_hilbert_index_range_typical",
-    "umst_memory_inspect_runtime_us_p99",
-    "umst_memory_load_runtime_us_p99",
-    "umst_memory_local_tier_size_typical",
-    "umst_memory_store_runtime_us_p99",
-    "umst_memory_retention_mi_estimate_p99_us",
-    "umst_memory_retention_pareto_compute_p99_us",
     "solve_combinator_macos_package_power_ceiling_watts",
 ];
+
+/// `manifold_voxelize_runtime_us_p99` — nearest-rank p99 of `canonicalize_voxelize` (B-Arc).
+pub const MANIFOLD_VOXELIZE_RUNTIME_US_P99_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/manifold_voxelize_runtime_us_p99.jsonl",
+    methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
+};
+
+/// `manifold_canonicalize_runtime_us_p99` — p99 of voxelize + `fnv1a_64` (B-Arc).
+pub const MANIFOLD_CANONICALIZE_RUNTIME_US_P99_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/manifold_canonicalize_runtime_us_p99.jsonl",
+    methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
+};
+
+/// `manifold_hilbert_index_range_typical` — Hilbert index span on reference ucrs pair (M-5).
+pub const MANIFOLD_HILBERT_INDEX_RANGE_TYPICAL_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/manifold_hilbert_index_range_typical.jsonl",
+    methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
+};
+
+/// `umst_memory_inspect_runtime_us_p99` — p99 of `:memory inspect` formatter (B-Arc).
+pub const UMST_MEMORY_INSPECT_RUNTIME_US_P99_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_memory_inspect_runtime_us_p99.jsonl",
+    methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
+};
+
+/// `umst_memory_load_runtime_us_p99` — p99 of `MemoryBackend::load` (B-Arc).
+pub const UMST_MEMORY_LOAD_RUNTIME_US_P99_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_memory_load_runtime_us_p99.jsonl",
+    methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
+};
+
+/// `umst_memory_local_tier_size_typical` — device-tier row count on sled fixture (B-Arc).
+pub const UMST_MEMORY_LOCAL_TIER_SIZE_TYPICAL_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_memory_local_tier_size_typical.jsonl",
+    methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
+};
+
+/// `umst_memory_store_runtime_us_p99` — p99 of `MemoryBackend::store` (B-Arc).
+pub const UMST_MEMORY_STORE_RUNTIME_US_P99_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_memory_store_runtime_us_p99.jsonl",
+    methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
+};
+
+/// `umst_memory_retention_mi_estimate_p99_us` — p99 of `mi_estimate` (B-Arc).
+pub const UMST_MEMORY_RETENTION_MI_ESTIMATE_P99_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_memory_retention_mi_estimate_p99_us.jsonl",
+    methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
+};
+
+/// `umst_memory_retention_pareto_compute_p99_us` — p99 of `pareto_dominance` (B-Arc).
+pub const UMST_MEMORY_RETENTION_PARETO_COMPUTE_P99_DERIVATION: Derivation = Derivation::Measurement {
+    receipt_path: ".umst-ci/measurement-receipts/umst_memory_retention_pareto_compute_p99_us.jsonl",
+    methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
+};
 
 /// `hal_intel_cpu_logical_cores` — /proc/cpuinfo logical core count (H-9).
 pub const HAL_LOGICAL_CORES_DERIVATION: Derivation = Derivation::Measurement {
@@ -1056,6 +1105,25 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         }
         n if super::tier3_derivation::K5V_M0_REGISTRY_ROW_NAMES.contains(&n) => {
             Some(super::tier3_derivation::M_0_MANIFOLD_DEFINITION)
+        }
+        "manifold_voxelize_runtime_us_p99" => Some(MANIFOLD_VOXELIZE_RUNTIME_US_P99_DERIVATION),
+        "manifold_canonicalize_runtime_us_p99" => {
+            Some(MANIFOLD_CANONICALIZE_RUNTIME_US_P99_DERIVATION)
+        }
+        "manifold_hilbert_index_range_typical" => {
+            Some(MANIFOLD_HILBERT_INDEX_RANGE_TYPICAL_DERIVATION)
+        }
+        "umst_memory_inspect_runtime_us_p99" => Some(UMST_MEMORY_INSPECT_RUNTIME_US_P99_DERIVATION),
+        "umst_memory_load_runtime_us_p99" => Some(UMST_MEMORY_LOAD_RUNTIME_US_P99_DERIVATION),
+        "umst_memory_local_tier_size_typical" => {
+            Some(UMST_MEMORY_LOCAL_TIER_SIZE_TYPICAL_DERIVATION)
+        }
+        "umst_memory_store_runtime_us_p99" => Some(UMST_MEMORY_STORE_RUNTIME_US_P99_DERIVATION),
+        "umst_memory_retention_mi_estimate_p99_us" => {
+            Some(UMST_MEMORY_RETENTION_MI_ESTIMATE_P99_DERIVATION)
+        }
+        "umst_memory_retention_pareto_compute_p99_us" => {
+            Some(UMST_MEMORY_RETENTION_PARETO_COMPUTE_P99_DERIVATION)
         }
         "solve_combinator_macos_package_power_ceiling_watts" => {
             Some(MACOS_PACKAGE_POWER_CEILING_TYPED_ABSENCE_DERIVATION)

@@ -8,6 +8,13 @@
 
 use super::derivation::Derivation;
 use super::registry::REGISTRY;
+use super::tier2_derivation::{
+    MANIFOLD_CANONICALIZE_RUNTIME_US_P99_DERIVATION, MANIFOLD_HILBERT_INDEX_RANGE_TYPICAL_DERIVATION,
+    MANIFOLD_VOXELIZE_RUNTIME_US_P99_DERIVATION, UMST_MEMORY_INSPECT_RUNTIME_US_P99_DERIVATION,
+    UMST_MEMORY_LOAD_RUNTIME_US_P99_DERIVATION, UMST_MEMORY_LOCAL_TIER_SIZE_TYPICAL_DERIVATION,
+    UMST_MEMORY_RETENTION_MI_ESTIMATE_P99_DERIVATION,
+    UMST_MEMORY_RETENTION_PARETO_COMPUTE_P99_DERIVATION, UMST_MEMORY_STORE_RUNTIME_US_P99_DERIVATION,
+};
 use super::tier3_derivation::TUI_6B_THEME_BRIEF_SHA256;
 
 
@@ -116,16 +123,26 @@ pub fn derivation_for_pool_q_row(name: &str) -> Option<Derivation> {
         "solve_combinator_macos_package_power_ceiling_watts" => {
             Some(MACOS_PACKAGE_POWER_CEILING_TYPED_ABSENCE)
         }
-        "manifold_voxelize_runtime_us_p99"
-        | "manifold_canonicalize_runtime_us_p99"
-        | "manifold_octree_density_typical"
-        | "manifold_hilbert_index_range_typical"
-        | "umst_memory_inspect_runtime_us_p99"
-        | "umst_memory_load_runtime_us_p99"
-        | "umst_memory_local_tier_size_typical"
-        | "umst_memory_store_runtime_us_p99"
-        | "umst_memory_retention_mi_estimate_p99_us"
-        | "umst_memory_retention_pareto_compute_p99_us" => Some(B_ARC_TYPED_ABSENCE_DEFINITION),
+        "manifold_voxelize_runtime_us_p99" => Some(MANIFOLD_VOXELIZE_RUNTIME_US_P99_DERIVATION),
+        "manifold_canonicalize_runtime_us_p99" => {
+            Some(MANIFOLD_CANONICALIZE_RUNTIME_US_P99_DERIVATION)
+        }
+        "manifold_octree_density_typical" => Some(B_ARC_TYPED_ABSENCE_DEFINITION),
+        "manifold_hilbert_index_range_typical" => {
+            Some(MANIFOLD_HILBERT_INDEX_RANGE_TYPICAL_DERIVATION)
+        }
+        "umst_memory_inspect_runtime_us_p99" => Some(UMST_MEMORY_INSPECT_RUNTIME_US_P99_DERIVATION),
+        "umst_memory_load_runtime_us_p99" => Some(UMST_MEMORY_LOAD_RUNTIME_US_P99_DERIVATION),
+        "umst_memory_local_tier_size_typical" => {
+            Some(UMST_MEMORY_LOCAL_TIER_SIZE_TYPICAL_DERIVATION)
+        }
+        "umst_memory_store_runtime_us_p99" => Some(UMST_MEMORY_STORE_RUNTIME_US_P99_DERIVATION),
+        "umst_memory_retention_mi_estimate_p99_us" => {
+            Some(UMST_MEMORY_RETENTION_MI_ESTIMATE_P99_DERIVATION)
+        }
+        "umst_memory_retention_pareto_compute_p99_us" => {
+            Some(UMST_MEMORY_RETENTION_PARETO_COMPUTE_P99_DERIVATION)
+        }
         "umst_msdf_hilbert_persist_enabled" => Some(MSDF_HILBERT_PERSIST_ENABLED_DERIVATION),
         "umst_manifold_introspect_enabled" => Some(MANIFOLD_INTROSPECT_ENABLED_DERIVATION),
         "umst_mcert_strict_paired_default" => Some(MCERT_STRICT_PAIRED_DEFAULT_DERIVATION),

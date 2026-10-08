@@ -19,6 +19,11 @@ use super::tier1_derivation::{
 use super::tier2_derivation::{
     ADMISSIBILITY_MARGIN_EPS_DERIVATION, AUDIT_MAX_BYTES_CAP_DERIVATION,
     AUDIT_ROTATION_KEEP_COUNT_DERIVATION, B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
+    MANIFOLD_CANONICALIZE_RUNTIME_US_P99_DERIVATION, MANIFOLD_HILBERT_INDEX_RANGE_TYPICAL_DERIVATION,
+    MANIFOLD_VOXELIZE_RUNTIME_US_P99_DERIVATION, UMST_MEMORY_INSPECT_RUNTIME_US_P99_DERIVATION,
+    UMST_MEMORY_LOAD_RUNTIME_US_P99_DERIVATION, UMST_MEMORY_LOCAL_TIER_SIZE_TYPICAL_DERIVATION,
+    UMST_MEMORY_RETENTION_MI_ESTIMATE_P99_DERIVATION,
+    UMST_MEMORY_RETENTION_PARETO_COMPUTE_P99_DERIVATION, UMST_MEMORY_STORE_RUNTIME_US_P99_DERIVATION,
     CLOSED_LOOP_MI_STEP_DERIVATION,
     CLOSED_LOOP_RCC_ACCEPT_TICK_DERIVATION, COCKPIT_AUDIT_SCHEMA_VERSION_DERIVATION,
     COCKPIT_SNAPSHOT_SCHEMA_VERSION_DERIVATION, DELTA_MI_SINGLE_TURN_CAP_DERIVATION,
@@ -1111,17 +1116,17 @@ pub static REGISTRY: &[ConstantEntry] = &[
     // Tier-2 B-Arc / telemetry (placeholders; same debt pattern as other Tier-2)
     ConstantEntry {
         name: "manifold_voxelize_runtime_us_p99",
-        expression: "pending: B-Arc p99 of canonicalize_voxelize wall time (us)",
-        evidence: "unmeasured: phase FPD-M-Arc-VoxelP99 (M-B calibration); no value is recorded until the measurement lands",
+        expression: "8 (µs p99; nearest-rank n=128; canonicalize_voxelize @ bits=3)",
+        evidence: "Measurement (`.umst-ci/measurement-receipts/manifold_voxelize_runtime_us_p99.jsonl`; `b_arc_runtime_receipts`)",
         env_override: None,
-        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
+        derivation: MANIFOLD_VOXELIZE_RUNTIME_US_P99_DERIVATION,
     },
     ConstantEntry {
         name: "manifold_canonicalize_runtime_us_p99",
-        expression: "pending: B-Arc p99 of canonicalize + FNV (us)",
-        evidence: "unmeasured: phase FPD-M-Arc-CanonicalizeP99; no value is recorded until the measurement lands",
+        expression: "7 (µs p99; nearest-rank n=128; canonicalize_voxelize + fnv1a_64 @ bits=3)",
+        evidence: "Measurement (`.umst-ci/measurement-receipts/manifold_canonicalize_runtime_us_p99.jsonl`; `b_arc_runtime_receipts`)",
         env_override: None,
-        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
+        derivation: MANIFOLD_CANONICALIZE_RUNTIME_US_P99_DERIVATION,
     },
     ConstantEntry {
         name: "manifold_octree_density_typical",
@@ -1132,10 +1137,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "manifold_hilbert_index_range_typical",
-        expression: "pending: B-Arc index span on reference traces for sled key layout (M-5)",
-        evidence: "unmeasured: phase FPD-M-Arc-HilbertSpan; no value is recorded until the measurement lands",
+        expression: "1 (index span; ucrs 10 vs 11 @ grid_hash=0xabc; hilbert_msdf_persist fixture)",
+        evidence: "Measurement (`.umst-ci/measurement-receipts/manifold_hilbert_index_range_typical.jsonl`; `b_arc_runtime_receipts`)",
         env_override: None,
-        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
+        derivation: MANIFOLD_HILBERT_INDEX_RANGE_TYPICAL_DERIVATION,
     },
     // §14bis.f-M-1 — `cockpit memory module` (sled schema v1; B-Arc placeholders; Tier-3 for schema + default res)
     ConstantEntry {
@@ -1147,24 +1152,24 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "umst_memory_inspect_runtime_us_p99",
-        expression: "pending: B-Arc p99 of `:memory inspect` wall time (us)",
-        evidence: "unmeasured: phase FPD-M-Arc-M1-InspectP99; no value is recorded until the measurement lands",
+        expression: "12 (µs p99; nearest-rank n=128; format_memory_inspect_text; 3-row sled fixture)",
+        evidence: "Measurement (`.umst-ci/measurement-receipts/umst_memory_inspect_runtime_us_p99.jsonl`; `b_arc_runtime_receipts`)",
         env_override: None,
-        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
+        derivation: UMST_MEMORY_INSPECT_RUNTIME_US_P99_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_load_runtime_us_p99",
-        expression: "pending: B-Arc p99 of memory `load` (us)",
-        evidence: "unmeasured: phase FPD-M-Arc-M1-LoadP99; no value is recorded until the measurement lands",
+        expression: "19 (µs p99; nearest-rank n=128; MemoryBackend::load on temp sled)",
+        evidence: "Measurement (`.umst-ci/measurement-receipts/umst_memory_load_runtime_us_p99.jsonl`; `b_arc_runtime_receipts`)",
         env_override: None,
-        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
+        derivation: UMST_MEMORY_LOAD_RUNTIME_US_P99_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_local_tier_size_typical",
-        expression: "pending: B-Arc typical local-tier row count for cockpit (count)",
-        evidence: "unmeasured: phase FPD-M-Arc-M1-LocalSize; no value is recorded until the measurement lands",
+        expression: "3 (count; device-tier rows after aa_memory_backend_iter_local fixture)",
+        evidence: "Measurement (`.umst-ci/measurement-receipts/umst_memory_local_tier_size_typical.jsonl`; `b_arc_runtime_receipts`)",
         env_override: None,
-        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
+        derivation: UMST_MEMORY_LOCAL_TIER_SIZE_TYPICAL_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_schema_version",
@@ -1175,10 +1180,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "umst_memory_store_runtime_us_p99",
-        expression: "pending: B-Arc p99 of memory `store` (us)",
-        evidence: "unmeasured: phase FPD-M-Arc-M1-StoreP99; no value is recorded until the measurement lands",
+        expression: "363 (µs p99; nearest-rank n=128; MemoryBackend::store unique ids)",
+        evidence: "Measurement (`.umst-ci/measurement-receipts/umst_memory_store_runtime_us_p99.jsonl`; `b_arc_runtime_receipts`)",
         env_override: None,
-        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
+        derivation: UMST_MEMORY_STORE_RUNTIME_US_P99_DERIVATION,
     },
     // §14bis.f-M-2 — promotion ceremony + sanitize (GMD-4..6)
     ConstantEntry {
@@ -1288,17 +1293,17 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "umst_memory_retention_mi_estimate_p99_us",
-        expression: "pending: B-Arc p99 wall for `mi_estimate` (µs); GREEN bound < 500",
-        evidence: "unmeasured: phase FPD-M-3-retention-MiP99; no value is recorded until the measurement lands",
+        expression: "1 (µs p99; nearest-rank n=128; mi_estimate six-entry Corpus fixture)",
+        evidence: "Measurement (`.umst-ci/measurement-receipts/umst_memory_retention_mi_estimate_p99_us.jsonl`; `b_arc_runtime_receipts`)",
         env_override: None,
-        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
+        derivation: UMST_MEMORY_RETENTION_MI_ESTIMATE_P99_DERIVATION,
     },
     ConstantEntry {
         name: "umst_memory_retention_pareto_compute_p99_us",
-        expression: "pending: B-Arc p99 wall for `pareto_dominance` / corpus scan (µs)",
-        evidence: "unmeasured: phase FPD-M-3-retention-ParetoP99; no value is recorded until the measurement lands",
+        expression: "1 (µs p99; nearest-rank n=128; pareto_dominance six-entry Corpus fixture)",
+        evidence: "Measurement (`.umst-ci/measurement-receipts/umst_memory_retention_pareto_compute_p99_us.jsonl`; `b_arc_runtime_receipts`)",
         env_override: None,
-        derivation: B_ARC_PERF_TYPED_ABSENCE_DERIVATION,
+        derivation: UMST_MEMORY_RETENTION_PARETO_COMPUTE_P99_DERIVATION,
     },
     ConstantEntry {
         name: "umst_manifold_liquid_ppo_witness_default",
