@@ -33,7 +33,7 @@ use crate::profile_ldlt::{
 };
 use crate::solve_combinator::{
     unfold, CombinatorRefuse, EnergyBudget, ProblemProgressWindow, ProblemTolerance, SolveOutcome,
-    StepEnergyMeter,
+    StepEnergyMeter, UnfoldStop,
 };
 
 /// Why the eigensolver refused to start or to finish its certificates.
@@ -337,11 +337,8 @@ pub fn lowest_eigenpairs<Meter: StepEnergyMeter>(
         start,
         |k| ctx.residual(k),
         |k, _rung| ctx.step(k),
-        request.tolerance,
-        budget,
+        UnfoldStop::new(request.tolerance, budget, window, bits)?,
         meter,
-        window,
-        bits,
     )?;
     let finish = |k: Krylov| finalise(&ctx, pencil, &mfac, request, &k);
     Ok(match outcome {

@@ -115,7 +115,8 @@ pub use solve_combinator::{
     landauer_step_joules, unfold, BoundedPackageMeter, CombinatorRefuse, EnergyBudget,
     EnergySpendProvenance, EnergySpent, FixedJouleMeter, MeasuredPackageMeter, PackagePowerReader,
     ProblemProgressWindow, ProblemTolerance, ProgressCertificate, ResidualCertificate,
-    SolveOutcome, StallEvidence, StepEnergyMeter, StrategyRung, Thermo, UnmeasuredMeter,
+    SolveOutcome, StallEvidence, StepEnergyMeter, StrategyRung, Thermo, UnfoldStop,
+    UnmeasuredMeter,
 };
 /// CG stall window from the Lanczos spectrum of a CG coefficient trace.
 pub use cg_spectral_window::{CgCoeff, SpectralWindow, SpectralWindowRefuse};

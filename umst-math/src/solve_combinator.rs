@@ -467,17 +467,62 @@ pub fn landauer_step_joules(
     EnergySpent::from_finite_non_negative(j)
 }
 
+/// Stop policy of [`unfold`]: the residual target, the energy budget, the progress window
+/// and the bits erased per step that set the Landauer floor.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct UnfoldStop {
+    tolerance: ProblemTolerance,
+    budget: EnergyBudget,
+    window: ProblemProgressWindow,
+    bits_per_step: NotNan<f64>,
+}
+
+impl UnfoldStop {
+    /// Bind the stop policy. `bits_per_step` must be finite and strictly positive.
+    pub fn new(
+        tolerance: ProblemTolerance,
+        budget: EnergyBudget,
+        window: ProblemProgressWindow,
+        bits_per_step: f64,
+    ) -> Result<Self, CombinatorRefuse> {
+        let bits_per_step = finite_positive(bits_per_step, CombinatorRefuse::NonPositiveBits)?;
+        Ok(Self {
+            tolerance,
+            budget,
+            window,
+            bits_per_step,
+        })
+    }
+
+    /// Problem-derived residual target.
+    pub fn tolerance(self) -> ProblemTolerance {
+        self.tolerance
+    }
+
+    /// Energy available to the unfold.
+    pub fn budget(self) -> EnergyBudget {
+        self.budget
+    }
+
+    /// Consecutive non-improving steps allowed before escalation.
+    pub fn window(self) -> ProblemProgressWindow {
+        self.window
+    }
+
+    /// Bits erased per step (sets the Landauer floor).
+    pub fn bits_per_step(self) -> NotNan<f64> {
+        self.bits_per_step
+    }
+}
+
 /// Coalgebraic unfold. Stops only for Converged, Stalled (lattice exhausted),
 /// or BudgetSpent. No iteration ceiling. Debits measured energy, not Landauer×bits.
 pub fn unfold<S, ResidualOf, Step, Meter>(
     initial: S,
     residual_of: ResidualOf,
     mut step: Step,
-    tolerance: ProblemTolerance,
-    budget: EnergyBudget,
+    stop: UnfoldStop,
     meter: &Meter,
-    window: ProblemProgressWindow,
-    bits_per_step: f64,
 ) -> Result<SolveOutcome<S>, CombinatorRefuse>
 where
     S: Clone,
@@ -485,7 +530,12 @@ where
     Step: FnMut(&S, StrategyRung) -> Result<S, CombinatorRefuse>,
     Meter: StepEnergyMeter,
 {
-    let bits = finite_positive(bits_per_step, CombinatorRefuse::NonPositiveBits)?;
+    let UnfoldStop {
+        tolerance,
+        budget,
+        window,
+        bits_per_step: bits,
+    } = stop;
     let mut state = initial;
     let mut residual = residual_of(&state)?;
     let mut best = state.clone();
@@ -568,7 +618,7 @@ where
 }
 
 fn finite_positive(x: f64, on_non_positive: CombinatorRefuse) -> Result<NotNan<f64>, CombinatorRefuse> {
-    let nn = NotNan::new(x).map_err(|_| CombinatorRefuse::NonFiniteQuantity)?;
+    let nn = finite(x)?;
     if nn.into_inner() <= 0.0 {
         return Err(on_non_positive);
     }
@@ -576,11 +626,19 @@ fn finite_positive(x: f64, on_non_positive: CombinatorRefuse) -> Result<NotNan<f
 }
 
 fn finite_non_negative(x: f64) -> Result<NotNan<f64>, CombinatorRefuse> {
-    let nn = NotNan::new(x).map_err(|_| CombinatorRefuse::NonFiniteQuantity)?;
+    let nn = finite(x)?;
     if nn.into_inner() < 0.0 {
         return Err(CombinatorRefuse::NonPositiveBudget);
     }
     Ok(nn)
+}
+
+/// `NotNan` admits ±∞; a combinator quantity must be finite.
+fn finite(x: f64) -> Result<NotNan<f64>, CombinatorRefuse> {
+    if !x.is_finite() {
+        return Err(CombinatorRefuse::NonFiniteQuantity);
+    }
+    NotNan::new(x).map_err(|_| CombinatorRefuse::NonFiniteQuantity)
 }
 
 
@@ -690,11 +748,9 @@ mod tests {
             1.0_f64,
             abs_residual,
             |x, _rung| Ok(x * 0.5),
-            tolerance,
-            budget,
+            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0)
+                .expect("stop"),
             &paid_meter(),
-            one_step_window(),
-            1.0,
         )
         .expect("unfold");
         match out {
@@ -714,11 +770,9 @@ mod tests {
             1.0_f64,
             abs_residual,
             |x, _rung| Ok(*x),
-            tolerance,
-            budget,
+            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0)
+                .expect("stop"),
             &paid_meter(),
-            one_step_window(),
-            1.0,
         )
         .expect("unfold");
         match out {
@@ -740,11 +794,9 @@ mod tests {
             1.0_f64,
             abs_residual,
             |x, _rung| Ok(x * 0.5),
-            tolerance,
-            budget,
+            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0)
+                .expect("stop"),
             &paid_meter(),
-            one_step_window(),
-            1.0,
         )
         .expect("unfold");
         match out {
@@ -765,18 +817,28 @@ mod tests {
     fn unfold_refuses_compiled_style_zero_bits() {
         let tolerance = ProblemTolerance::from_problem(2.0, 1e-3).expect("tol");
         let budget = EnergyBudget::from_joules_at(1e-12, 293.15).expect("B");
-        let err = unfold(
-            1.0_f64,
-            abs_residual,
-            |x, _| Ok(*x),
-            tolerance,
-            budget,
-            &paid_meter(),
-            one_step_window(),
-            0.0,
-        )
-        .expect_err("zero bits");
+        let err = UnfoldStop::new(tolerance, budget, one_step_window(), 0.0)
+            .expect_err("zero bits");
         assert_eq!(err, CombinatorRefuse::NonPositiveBits);
+    }
+
+    #[test]
+    fn infinite_quantities_refused_as_non_finite() {
+        let tolerance = ProblemTolerance::from_problem(2.0, 1e-3).expect("tol");
+        let budget = EnergyBudget::from_joules_at(1e-12, 293.15).expect("B");
+        assert_eq!(
+            UnfoldStop::new(tolerance, budget, one_step_window(), f64::INFINITY),
+            Err(CombinatorRefuse::NonFiniteQuantity)
+        );
+        assert_eq!(
+            EnergyBudget::from_joules_at(f64::INFINITY, 293.15),
+            Err(CombinatorRefuse::NonFiniteQuantity)
+        );
+        assert_eq!(
+            ProblemTolerance::from_problem(f64::INFINITY, 1e-3),
+            Err(CombinatorRefuse::NonFiniteQuantity)
+        );
+        assert!(FixedJouleMeter::from_joules(f64::INFINITY).is_err());
     }
 
     #[test]
@@ -787,11 +849,9 @@ mod tests {
             1.0_f64,
             abs_residual,
             |x, _| Ok(x * 0.5),
-            tolerance,
-            budget,
+            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0)
+                .expect("stop"),
             &UnmeasuredMeter {},
-            one_step_window(),
-            1.0,
         )
         .expect_err("unmeasured");
         assert_eq!(err, CombinatorRefuse::Unmeasured);
@@ -810,11 +870,9 @@ mod tests {
             1.0_f64,
             abs_residual,
             |x, _| Ok(*x),
-            tolerance,
-            budget_tight,
+            UnfoldStop::new(tolerance, budget_tight, one_step_window(), 1.0)
+                .expect("stop"),
             &meter,
-            one_step_window(),
-            1.0,
         )
         .expect("unfold");
         match out {
@@ -837,11 +895,9 @@ mod tests {
             1.0_f64,
             abs_residual,
             |x, _| Ok(*x),
-            tolerance,
-            budget_stall,
+            UnfoldStop::new(tolerance, budget_stall, one_step_window(), 1.0)
+                .expect("stop"),
             &counting,
-            one_step_window(),
-            1.0,
         )
         .expect("count");
         match out {
@@ -861,11 +917,9 @@ mod tests {
             1.0_f64,
             abs_residual,
             |x, _| Ok(x * 0.5),
-            tolerance,
-            budget,
+            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0)
+                .expect("stop"),
             &FixedJouleMeter::from_joules(1e-40).expect("tiny"),
-            one_step_window(),
-            1.0,
         )
         .expect_err("below floor");
         assert_eq!(err, CombinatorRefuse::MeasuredBelowFloor);
@@ -900,11 +954,9 @@ mod tests {
             0_usize,
             residual_at_index,
             advance_index,
-            tolerance,
-            budget,
+            UnfoldStop::new(tolerance, budget, window, 1.0)
+                .expect("stop"),
             &paid_meter(),
-            window,
-            1.0,
         )
         .expect("unfold");
         match out {
@@ -931,11 +983,9 @@ mod tests {
                 strategies.set(rung);
                 advance_index(idx, rung)
             },
-            tolerance,
-            budget,
+            UnfoldStop::new(tolerance, budget, window, 1.0)
+                .expect("stop"),
             &paid_meter(),
-            window,
-            1.0,
         )
         .expect("unfold");
         match out {
