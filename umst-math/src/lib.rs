@@ -76,6 +76,10 @@ pub mod cg_spectral_window;
 pub mod kkt_outer_stop;
 /// Solver / regression numeric tolerance SSOT (derive from [`numeric_tolerance::ProblemScale`]).
 pub mod numeric_tolerance;
+/// Symmetric profile (skyline) matrices, their `L D Lᵀ` factor, definiteness and inertia certificates.
+pub mod profile_ldlt;
+/// Certified lowest eigenpairs of a symmetric pencil: shift-invert Lanczos as a budgeted unfold.
+pub mod generalized_eigen;
 pub mod sparse;
 pub mod tensor;
 pub mod theorem_blurbs;
