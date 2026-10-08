@@ -623,7 +623,7 @@ pub const K5H_REGISTRY_ROW_NAMES: &[&str] = &[
 // --- K-5i Tier-1 energy probes + ZCI toolchain pins (§14bis.k deepen wave 9) ---
 
 /// `rapl_package_dram_joules` — host system energy.
-/// This machine has no Linux powercap; the receipt integrates IORegistry `SystemPower`.
+/// This machine has no Linux powercap; the receipt integrates the IORegistry system-power reading.
 pub const RAPL_PACKAGE_DRAM_JOULES_DERIVATION: Derivation = Derivation::Measurement {
     receipt_path: ".umst-ci/measurement-receipts/rapl_package_dram_joules.jsonl",
     methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#hal-rapl-package-energy",
