@@ -82,7 +82,6 @@ pub const W29_STATISTICAL_MECHANICS_DEEPEN_CELL: &str = "W29-080-STATISTICAL_MEC
 pub const STATMECH_POSTURE_TAG: &str = "honest-statmech-virial-kb-surrogate-research-lane";
 
 /// Evaluated — rank-2 virial bridge measured (§4 Evaluated provenance; SSOT with umst-chem harness).
-#[must_use]
 pub const STATMECH_RANK2_VIRIAL_MEASURED: bool =
     STATMECH_VIRIAL_B4_BRIDGE_LANDED && STATMECH_B2_B3_SURROGATES_LANDED;
 

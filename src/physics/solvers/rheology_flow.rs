@@ -268,6 +268,7 @@ use crate::physics::topology::EdgeTopology;
 
 #[cfg(feature = "rheology-bingham")]
 use crate::core::iterate_until::iterate_until;
+#[cfg(feature = "rheology-bingham")]
 use crate::solve::{
     control_flow_iterate_budget, ControlFlowIterateBudget, ControlFlowIterateCertificate,
 };
@@ -276,7 +277,7 @@ use core::ops::ControlFlow;
 
 use burn::tensor::{backend::Backend, Int, Tensor};
 
-use crate::core::field::{Field, NodalDensityField, ScalarPressureField, VelocityField};
+use crate::core::field::{NodalDensityField, ScalarPressureField, VelocityField};
 
 use crate::physics::error::PhysicsError;
 

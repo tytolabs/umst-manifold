@@ -1196,6 +1196,8 @@ impl VectorMechanicsSolver {
         }
     }
 
+    /// f64 projected PCG on the packed bar network — the adjoint lane's equilibrium solve.
+    #[cfg(feature = "mechanics-adjoint")]
     #[allow(clippy::too_many_arguments)]
     fn packed_bar_network_equilibrium_pcg_f64<B: Backend<FloatElem = f32>>(
         u: &mut Tensor<B, 3>,

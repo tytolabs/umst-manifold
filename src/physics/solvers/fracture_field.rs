@@ -102,9 +102,9 @@ use burn::tensor::{backend::Backend, Int, Tensor};
 
 use core::ops::ControlFlow;
 
-use crate::core::field::{
-    DamageField, DisplacementField, Field, FractureEnergyField, SmallStrainField,
-};
+#[cfg(feature = "fracture-at2")]
+use crate::core::field::DisplacementField;
+use crate::core::field::{DamageField, Field, FractureEnergyField, SmallStrainField};
 use crate::core::iterate_until::iterate_until;
 use crate::physics::error::PhysicsError;
 #[cfg(feature = "fracture-at2")]

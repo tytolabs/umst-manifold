@@ -28,7 +28,7 @@
 use burn::tensor::{backend::Backend, Int, Tensor};
 
 use crate::core::field::{
-    AccelerationField, BodyForceField, DisplacementField, Field, NodalDensityField, VelocityField,
+    AccelerationField, BodyForceField, DisplacementField, NodalDensityField, VelocityField,
 };
 use crate::physics::PhysicsError;
 

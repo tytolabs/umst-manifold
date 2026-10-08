@@ -6,10 +6,9 @@
 
 use crate::constants_registry::GroundedConst;
 
-/// AdamW tensor step coefficient bundle for liquid-PPO.
-pub struct AdamwStepCoeffs;
-
-/// Reference substrate density for constraint-penalty tensor fills (kg/m³).
+/// Reference substrate density for constraint-penalty tensor fills (kg/m³); the penalty runs only
+/// in the reward-shaping lanes (`epistemic-ppo`, `kleisli-ppo-hot-bind`).
+#[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
 pub const LIQUID_PPO_SUBSTRATE_REFERENCE_DENSITY_KG_M3: GroundedConst<f32> = GroundedConst {
     name: "liquid_ppo_substrate_reference_density_kg_m3",
     value: 2400.0,

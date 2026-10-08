@@ -17,9 +17,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::runtime::catalog::traceability::{
-    CATALOG_MODULE_WIRED, LANDAUER_CBF_CATALOG_ID, SEMANTIC_CBF_CATALOG_ID,
-};
+use crate::runtime::catalog::traceability::{CATALOG_MODULE_WIRED, LANDAUER_CBF_CATALOG_ID};
 
 /// Lean module carrying the sole project axiom (`LandauerLaw.lean`).
 pub const LANDAUER_LAW_LEAN_MODULE: &str = "LandauerLaw";
@@ -347,7 +345,7 @@ impl WitnessPriorityQueue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runtime::catalog::traceability::CD_TRANSITION_CATALOG_ID;
+    use crate::runtime::catalog::traceability::{CD_TRANSITION_CATALOG_ID, SEMANTIC_CBF_CATALOG_ID};
 
     #[test]
     fn tcb_tokens_physical_second_law_only() {

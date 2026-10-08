@@ -45,3 +45,6 @@ pub use semantic_lane_schema::{
 pub use tensors::*;
 pub use traits::*;
 pub use umst_schema::*;
+// `traits` and `umst_schema` each pin `PRODUCTION_WIRED` and `PHYSICS_GREEN_CLAIMED`. The core-level
+// names are the carrier schema posture; the trait-port posture stays at `core::traits::*`.
+pub use umst_schema::{PHYSICS_GREEN_CLAIMED, PRODUCTION_WIRED};

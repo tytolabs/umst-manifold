@@ -19,9 +19,7 @@ use super::dec_typestate::{
     B1Incidence, DecTypestateError, ScalarChannelIdx, ScalarChannelSelector,
 };
 use super::field::{DamageField, Field, HumidityField, TemperatureField};
-use super::umst_schema::{
-    SCALAR_DAMAGE, SCALAR_HUMIDITY, SCALAR_TEMPERATURE, UMST_SCALAR_CHANNEL_COUNT,
-};
+use super::umst_schema::{SCALAR_DAMAGE, SCALAR_HUMIDITY, SCALAR_TEMPERATURE};
 
 /// W29 deepen cell id — carrier / gateway-proof slice only.
 pub const UMST_TENSORS_CELL_ID: &str = "W29-030-TENSORS";
@@ -507,6 +505,7 @@ mod tensors_tests {
     use burn_ndarray::{NdArray, NdArrayDevice};
 
     use super::*;
+    use crate::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
 
     type B = NdArray<f32>;
 

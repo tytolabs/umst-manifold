@@ -28,8 +28,9 @@ mod constants_registry_adamw_step;
 
 use self::constants_registry_adamw_step::{
     ADAMW_BETA1_COEFF, ADAMW_BETA2_COEFF, ADAMW_EPSILON, ADAMW_WEIGHT_DECAY,
-    LIQUID_PPO_SUBSTRATE_REFERENCE_DENSITY_KG_M3,
 };
+#[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
+use self::constants_registry_adamw_step::LIQUID_PPO_SUBSTRATE_REFERENCE_DENSITY_KG_M3;
 
 /// W29 wave cell id — Burn learner spine deepen.
 pub const LIQUID_PPO_CELL_ID: &str = "W29-012-LIQUID_PPO";
