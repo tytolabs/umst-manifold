@@ -6,8 +6,7 @@
 //! `LN_2`, `K_B`, `T_ROOM`, `RCC_FLOOR` → matching [`super::registry::REGISTRY`] rows.
 
 use super::derivation::{Derivation, LeanDecl};
-use super::registry::REGISTRY;
-use crate::landauer::K_B;
+use super::registry::{self, REGISTRY};
 
 /// Reference ambient anchor (matches `authority-pins/ambient_reference_300k.txt`; same value as `landauer_registry` when `math-constants` is on).
 const HOST_TEMPERATURE_REFERENCE_K: f64 = super::registry::HOST_TEMPERATURE_FALLBACK_K;
@@ -53,7 +52,9 @@ pub const RCC_FLOOR_DERIVATION: Derivation = Derivation::Policy {
 /// `landauer_floor_j_per_bit` — **k_B T ln 2** at reference 300 K (cockpit Landauer floor).
 pub const LANDAUER_FLOOR_J_PER_BIT_DERIVATION: Derivation = Derivation::Theorem {
     decl: LeanDecl { module: "LandauerLaw", name: "landauerBound" },
-    expected_value: K_B * HOST_TEMPERATURE_REFERENCE_K * std::f64::consts::LN_2,
+    expected_value: registry::K_BOLTZMANN_J_PER_K
+        * HOST_TEMPERATURE_REFERENCE_K
+        * std::f64::consts::LN_2,
 };
 
 /// K-2 deepen: Tier-0 Landauer floor row (reference-T bit energy).
@@ -107,7 +108,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn k2_canonical_derivations_non_pending() {
+    fn k2_canonical_derivations_non_pending() {}
+
+    #[test]
+    fn k_b_landauer_floor_uses_registry_si_row() {
+        let k_row = registry::K_BOLTZMANN_J_PER_K;
+        assert!(
+            (k_row - 1.380_649e-23).abs() <= 8.0 * f64::EPSILON * k_row.abs().max(1.380_649e-23),
+            "registry k_B must match CODATA SI2019 table (lower source: umst-constants at algebra edge)"
+        );
+        assert_eq!(
+            LANDAUER_FLOOR_J_PER_BIT_DERIVATION,
+            Derivation::Theorem {
+                decl: LeanDecl {
+                    module: "LandauerLaw",
+                    name: "landauerBound",
+                },
+                expected_value: k_row * HOST_TEMPERATURE_REFERENCE_K * std::f64::consts::LN_2,
+            }
+        );
     }
 
     #[test]
