@@ -153,7 +153,7 @@ fn adjoint_q1_hex_compliance_near_bar_z_skeleton_slender_limit() {
     };
 
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 4000,
+        max_cg_iterations: std::num::NonZeroUsize::new(4000),
         cg_tolerance: 1e-8_f32,
         pcg_tolerance: 1e-8_f32,
         use_preconditioner: true,

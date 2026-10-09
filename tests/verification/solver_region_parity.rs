@@ -32,7 +32,7 @@ fn solver_region_parity_cold_vs_warm_reuse() {
         e_min: 1e-9,
     };
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 120,
+        max_cg_iterations: std::num::NonZeroUsize::new(120),
         use_preconditioner: true,
         ..Default::default()
     };

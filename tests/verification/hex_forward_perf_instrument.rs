@@ -33,7 +33,7 @@ fn q1_hex_forward_perf_fields_smoke() {
         e_min: 1e-9,
     };
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 80,
+        max_cg_iterations: std::num::NonZeroUsize::new(80),
         use_preconditioner: true,
         ..Default::default()
     };

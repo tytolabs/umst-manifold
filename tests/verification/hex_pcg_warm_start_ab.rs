@@ -31,7 +31,7 @@ fn q1_hex_pcg_warm_start_matches_cold_compliance() {
         e_min: 1e-9,
     };
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         use_preconditioner: true,
         ..Default::default()
     };

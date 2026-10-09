@@ -19,6 +19,7 @@
 
 use super::adjoint_q1_hex::Q1HexSolveOptions;
 use super::time_orchestration::MechanicsInnerLoopConfig;
+use core::num::NonZeroUsize;
 use serde::Deserialize;
 
 /// W29 deepen cell — cockpit solve-budget honest fence bundle.
@@ -336,7 +337,10 @@ pub fn mechanics_config_from_cockpit(
     base: &MechanicsInnerLoopConfig,
 ) -> MechanicsInnerLoopConfig {
     let opts = q1hex_opts_from_cockpit(snap);
-    let max_it = opts.pcg_max_iter.unwrap_or(base.max_cg_iterations).max(1);
+    let max_it = opts
+        .pcg_max_iter
+        .map(|cap| NonZeroUsize::new(cap).unwrap_or(NonZeroUsize::MIN))
+        .or(base.max_cg_iterations);
     MechanicsInnerLoopConfig {
         max_cg_iterations: max_it,
         ..base.clone()
@@ -431,6 +435,18 @@ mod tests {
         let base = MechanicsInnerLoopConfig::default();
         let cg = mechanics_config_from_cockpit(&snap, &base);
         assert_eq!(cg.max_cg_iterations, base.max_cg_iterations);
+    }
+
+    #[test]
+    fn mechanics_config_keeps_explicit_single_iteration_bound() {
+        let snap = CockpitSnapshot::new(0.05, 200.0, 1.0);
+        let base = MechanicsInnerLoopConfig {
+            max_cg_iterations: Some(NonZeroUsize::MIN),
+            ..MechanicsInnerLoopConfig::default()
+        };
+        let cg = mechanics_config_from_cockpit(&snap, &base);
+        assert_eq!(cg.max_cg_iterations, Some(NonZeroUsize::MIN));
+        assert_eq!(cg.iteration_budget(40), 1);
     }
 
     #[test]

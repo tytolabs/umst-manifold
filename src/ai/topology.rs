@@ -1670,7 +1670,7 @@ mod simp_step_tests {
         let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([1, n, 3])), &dev);
 
         let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: n * 3,
+            max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
             cg_tolerance: umst_math::numeric_tolerance::mechanics_mid_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::mechanics_mid_cg_tol_f32(),
             use_preconditioner: true,
@@ -1739,7 +1739,7 @@ mod simp_step_tests {
         let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([1, n, 3])), &dev);
 
         let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: n * 3,
+            max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
             cg_tolerance: umst_math::numeric_tolerance::mechanics_mid_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::mechanics_mid_cg_tol_f32(),
             use_preconditioner: true,

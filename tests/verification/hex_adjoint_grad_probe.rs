@@ -68,7 +68,7 @@ fn q1_hex_adjoint_grad_nonzero_on_quick_grid() {
         e_min: 1.0,
     };
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         cg_tolerance: 1e-4,
         pcg_tolerance: 1e-4,
         use_preconditioner: true,
@@ -148,7 +148,7 @@ fn q1_hex_nodal_dot_matches_gather_surrogate_grad() {
         e_min: 1.0,
     };
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         cg_tolerance: 1e-4,
         pcg_tolerance: 1e-4,
         use_preconditioner: true,

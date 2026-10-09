@@ -59,7 +59,7 @@ fn run_probe_line(nx: usize, ny: usize, nz: usize, lx: f32, ly: f32, lz: f32, ma
         HEX_PCG_REL_TOL_F32
     };
     let cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: max_cg,
+        max_cg_iterations: std::num::NonZeroUsize::new(max_cg),
         cg_tolerance: lane_tol,
         pcg_tolerance: lane_tol,
         use_preconditioner: true,

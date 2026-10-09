@@ -296,7 +296,7 @@ fn bar_network_strain_matches_strain_tensor_for_fracture_after_mechanics() {
     let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([batch, n, 3])), &d);
 
     let cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         cg_tolerance: 1e-7,
         pcg_tolerance: 1e-7,
         use_preconditioner: true,
@@ -904,7 +904,7 @@ fn thmc_r_u_zero_at_solved_equilibrium_two_node_chain() {
     let damage = Tensor::<B, 3>::zeros([batch, n, 1], &d);
     let u0 = Tensor::<B, 3>::zeros([batch, n, 3], &d);
     let inner_cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,
@@ -1044,7 +1044,7 @@ fn thmc_quasi_static_r_u_shrink_increment_flat_humidity_parity_two_node_chain() 
     let damage = Tensor::<B, 3>::zeros([batch, n, 1], &d);
     let u0 = Tensor::<B, 3>::zeros([batch, n, 3], &d);
     let inner_cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,
@@ -1162,7 +1162,7 @@ fn thmc_quasi_static_r_u_shrink_increment_raises_norm_when_humidity_drops_two_no
     let damage = Tensor::<B, 3>::zeros([batch, n, 1], &d);
     let u0 = Tensor::<B, 3>::zeros([batch, n, 3], &d);
     let inner_cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,

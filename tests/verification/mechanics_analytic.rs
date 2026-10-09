@@ -333,7 +333,7 @@ fn cantilever_axial_chain_tip_displacement_n64() {
     let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([1, n, 3])), &dev);
 
     let cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 500,
+        max_cg_iterations: std::num::NonZeroUsize::new(500),
         cg_tolerance: 3e-5,
         pcg_tolerance: 3e-5,
         use_preconditioner: true,
@@ -419,7 +419,7 @@ fn packed_bar_network_equilibrium_uniform_axial_strain_tip_load_distinct_from_ac
     let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([1, n, 3])), &dev);
 
     let cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 500,
+        max_cg_iterations: std::num::NonZeroUsize::new(500),
         cg_tolerance: 3e-5,
         pcg_tolerance: 3e-5,
         use_preconditioner: true,
@@ -482,7 +482,7 @@ enum PlateBottomUzMaskKind {
 
 fn default_plate_cg_cfg(cg_tolerance: f32) -> MechanicsInnerLoopConfig {
     MechanicsInnerLoopConfig {
-        max_cg_iterations: 50_000,
+        max_cg_iterations: std::num::NonZeroUsize::new(50_000),
         cg_tolerance,
         pcg_tolerance: cg_tolerance,
         use_preconditioner: true,
@@ -595,7 +595,7 @@ fn run_plate_case_details_ext_ssss_bottom(
 #[inline]
 fn kirchhoff_plate_stiff_cg_cfg() -> MechanicsInnerLoopConfig {
     MechanicsInnerLoopConfig {
-        max_cg_iterations: 130_000,
+        max_cg_iterations: std::num::NonZeroUsize::new(130_000),
         // f32 Q1-hex PCG stalls near ~1e-4; keep above ensure_converged floor.
         cg_tolerance: 1e-4,
         pcg_tolerance: 1e-4,

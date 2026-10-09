@@ -392,7 +392,7 @@ fn thmc_mechanics_bar_idempotent_at_zero_load_equilibrium() {
         Tensor::<B, 3>::full([1, n, 1], 0.2_f32, &dev),
     );
     let cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 64,
+        max_cg_iterations: std::num::NonZeroUsize::new(64),
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,

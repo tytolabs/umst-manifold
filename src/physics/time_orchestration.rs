@@ -13,6 +13,8 @@
 //! Not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER` / OP-5. Fast-physics (`dt_fast_physics`)
 //! remains optional and does not imply EM/acoustics production wiring.
 
+use core::num::NonZeroUsize;
+
 /// Owning slice id for multi-scale time orchestration fence facets.
 pub const TIME_ORCHESTRATION_OWNING_SLICE: &str = "time-orchestration-clocks";
 
@@ -198,7 +200,8 @@ impl SimulationClocks {
 /// Controls for mechanical equilibrium — **decoupled** from `dt_chemistry`.
 #[derive(Clone, Debug)]
 pub struct MechanicsInnerLoopConfig {
-    pub max_cg_iterations: usize,
+    /// CG iteration ceiling; `None` grants one step per unknown of the solve at hand.
+    pub max_cg_iterations: Option<NonZeroUsize>,
     pub cg_tolerance: f32,
     /// Same scale as [`Self::cg_tolerance`] for preconditioned residual reporting (alias for tuning PCG).
     pub pcg_tolerance: f32,
@@ -210,45 +213,42 @@ pub struct MechanicsInnerLoopConfig {
 
 impl Default for MechanicsInnerLoopConfig {
     fn default() -> Self {
-        Self::for_unknowns(Self::UNSET_CG_ITERATIONS)
-    }
-}
-
-impl MechanicsInnerLoopConfig {
-    /// Stored when no mesh size was supplied. Solvers treat this as "use the unknown count".
-    pub const UNSET_CG_ITERATIONS: usize = 1;
-
-    /// Iteration ceiling of one step per unknown.
-    #[must_use]
-    pub fn for_unknowns(n_unknowns: usize) -> Self {
         use umst_math::numeric_tolerance::{LinearSolveRelativeTier, ProblemScale};
         let tol = umst_math::numeric_tolerance::linear_solve_relative_tol_f32(
             ProblemScale::unit(),
             LinearSolveRelativeTier::BarNetworkF32Default,
         );
         Self {
-            max_cg_iterations: n_unknowns.max(1),
+            max_cg_iterations: None,
             cg_tolerance: tol,
             pcg_tolerance: tol,
             use_preconditioner: true,
             max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
         }
     }
+}
 
-    /// Caller budget, or the unknown count when the config is still [`Self::default`].
+impl MechanicsInnerLoopConfig {
+    /// Iteration ceiling of one step per unknown, fixed at `n_unknowns` (at least one).
     #[must_use]
-    pub fn iteration_budget(&self, n_unknowns: usize) -> usize {
-        if self.max_cg_iterations == Self::UNSET_CG_ITERATIONS {
-            n_unknowns.max(1)
-        } else {
-            self.max_cg_iterations.max(1)
+    pub fn for_unknowns(n_unknowns: usize) -> Self {
+        Self {
+            max_cg_iterations: Some(NonZeroUsize::new(n_unknowns).unwrap_or(NonZeroUsize::MIN)),
+            ..Self::default()
         }
     }
+
+    /// Caller budget, or `n_unknowns` (at least one) when [`Self::max_cg_iterations`] is `None`.
+    #[must_use]
+    pub fn iteration_budget(&self, n_unknowns: usize) -> usize {
+        self.max_cg_iterations
+            .map_or(n_unknowns.max(1), NonZeroUsize::get)
+    }
+
     /// Fail-closed positivity fence for CG / equilibrium knobs.
+    ///
+    /// A zero CG budget is unrepresentable: [`Self::max_cg_iterations`] is `Option<NonZeroUsize>`.
     pub fn validate(&self) -> Result<(), &'static str> {
-        if self.max_cg_iterations == 0 {
-            return Err("max_cg_iterations must be ≥ 1");
-        }
         if !(self.cg_tolerance.is_finite() && self.cg_tolerance > 0.0) {
             return Err("cg_tolerance must be finite and > 0");
         }
@@ -337,22 +337,39 @@ mod tests {
     fn time_orchestration_mechanics_inner_loop_default_validates() {
         let cfg = MechanicsInnerLoopConfig::default();
         assert!(cfg.validate().is_ok());
-        assert_eq!(
-            cfg.max_cg_iterations,
-            MechanicsInnerLoopConfig::UNSET_CG_ITERATIONS
-        );
+        assert_eq!(cfg.max_cg_iterations, None);
         assert_eq!(cfg.iteration_budget(40), 40);
+        assert_eq!(cfg.iteration_budget(0), 1);
         assert_eq!(
             MechanicsInnerLoopConfig::for_unknowns(12).iteration_budget(99),
             12
+        );
+        assert_eq!(
+            MechanicsInnerLoopConfig::for_unknowns(0).max_cg_iterations,
+            Some(NonZeroUsize::MIN)
         );
         assert!(cfg.use_preconditioner);
         assert_eq!(cfg.max_equilibrium_sub_iters, 1);
 
         let bad = MechanicsInnerLoopConfig {
-            max_cg_iterations: 0,
+            max_equilibrium_sub_iters: 0,
             ..MechanicsInnerLoopConfig::default()
         };
         assert!(bad.validate().is_err());
+    }
+
+    #[test]
+    fn time_orchestration_explicit_single_iteration_budget_is_kept() {
+        let one = MechanicsInnerLoopConfig {
+            max_cg_iterations: Some(NonZeroUsize::MIN),
+            ..MechanicsInnerLoopConfig::default()
+        };
+        assert!(one.validate().is_ok());
+        assert_eq!(one.iteration_budget(40), 1);
+        assert_eq!(
+            NonZeroUsize::new(0),
+            None,
+            "a zero CG budget has no representation"
+        );
     }
 }

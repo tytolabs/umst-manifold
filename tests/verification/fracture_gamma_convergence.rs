@@ -1100,7 +1100,7 @@ fn staggered_fracture_compliance_monotone_increasing() {
     let rho_node = Tensor::<B, 3>::ones([batch, n, 1], &dev);
 
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         // Problem-size cap (3N PCG iterations).
         cg_tolerance: 1e-5,
         pcg_tolerance: 1e-5,
@@ -1426,7 +1426,7 @@ fn at2_solve_staggered_mechanics_outer_loose_stopping_one_pass() {
         staggered_mechanics_bar_fixture();
 
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         cg_tolerance: 1e-5,
         pcg_tolerance: 1e-5,
         use_preconditioner: true,
@@ -1504,7 +1504,7 @@ fn staggered_mechanics_outer_damage_stop_matches_long_budget() {
         staggered_mechanics_bar_fixture();
 
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         cg_tolerance: 1e-5,
         pcg_tolerance: 1e-5,
         use_preconditioner: true,

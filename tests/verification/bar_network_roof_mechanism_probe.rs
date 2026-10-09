@@ -188,7 +188,7 @@ impl HarnessFixture {
     /// Fixed PCG ceiling for the convergent perimeter-column witness (probe 1b), not ndof-scaled.
     fn roof_harness_inner_cfg(&self) -> MechanicsInnerLoopConfig {
         MechanicsInnerLoopConfig {
-            max_cg_iterations: 256,
+            max_cg_iterations: std::num::NonZeroUsize::new(256),
             cg_tolerance: 1e-4,
             pcg_tolerance: 1e-4,
             use_preconditioner: false,

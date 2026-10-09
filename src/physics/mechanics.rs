@@ -1564,7 +1564,7 @@ mod tests {
             dx_char: 1.0,
         };
         let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: report.iterations,
+            max_cg_iterations: std::num::NonZeroUsize::new(report.iterations),
             cg_tolerance: umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
             pcg_tolerance: umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
             use_preconditioner: true,
@@ -1731,7 +1731,7 @@ mod tests {
         let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([1, n, 3])), &dev);
 
         let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: n * 3,
+            max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
             // f32 bar-network PCG typically lands ~1e-7 rel residual; 1e-6 leaves headroom.
             cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
@@ -2099,7 +2099,7 @@ mod tests {
         let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &dev);
 
         let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: n * 3,
+            max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
             cg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             use_preconditioner: true,
@@ -2196,7 +2196,7 @@ mod tests {
         let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([1, n, 3])), &dev);
 
         let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: n * 3,
+            max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
             cg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             use_preconditioner: true,
@@ -2294,7 +2294,7 @@ mod tests {
         let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([1, n, 3])), &dev);
 
         let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: n * 3,
+            max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
             cg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::mechanics_tight_cg_tol_f32(),
             use_preconditioner: true,

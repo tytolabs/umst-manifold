@@ -108,7 +108,7 @@ fn l1_3_solver_region_ten_reuse_compliance_stable() {
         e_min: 1e-9,
     };
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         use_preconditioner: true,
         ..Default::default()
     };

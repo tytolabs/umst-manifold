@@ -47,7 +47,7 @@
 //!   including a cheap **\(d_1\!\circ\!d_0\approx 0\)** witness via [`dec_primal_max_abs_d1_of_scalar_gradient`].
 //!   **Solve:** **CSR matvec CG** first when \(N\le\) [`PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY`] and **`UMST_PHOTONICS_DEC_PATCH_CSR_INNER`** is not `off` (`auto` default); Gauss–Jordan on \(3N\) unknowns as fallback when \(N\le\) [`PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT`] (overridable to **0**
 //!   via `UMST_PHOTONICS_DEC_PATCH_FORCE_KRYLOV=1` for tests), then **CSR** retry when **`auto`** and dense failed, else **capped
-//!   matrix-free CG** up to [`PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV`] with caller [`MechanicsInnerLoopConfig::cg_tolerance`] / [`MechanicsInnerLoopConfig::max_cg_iterations`]
+//!   matrix-free CG** up to [`PHOTONICS_DEC_PATCH_MAX_NODES_KRYLOV`] with caller [`MechanicsInnerLoopConfig::cg_tolerance`] / [`MechanicsInnerLoopConfig::iteration_budget`]
 //!   — not a sparse-factorized production volumetric path.
 //!
 //! **Shipped elsewhere (same repo, not called from this solver path):**

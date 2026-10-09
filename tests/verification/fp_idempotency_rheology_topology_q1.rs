@@ -172,7 +172,7 @@ fn q1_hex_solve_equilibrium_idempotent_on_zero_load_fixed_bc() {
         e_min: 1.0,
     };
     let cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 400,
+        max_cg_iterations: std::num::NonZeroUsize::new(400),
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,

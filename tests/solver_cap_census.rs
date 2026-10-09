@@ -3,13 +3,14 @@
 //! Solver cap census — literal iteration ceilings under `src/physics` (not physics GREEN).
 //!
 //! Counts lines that bind a **positive integer literal** to a known iteration-cap field
-//! (`max_iter`, `max_iterations`, `max_cg_iterations`, `pcg_max_iter`, including `Some(n)`),
+//! (`max_iter`, `max_iterations`, `max_cg_iterations`, `pcg_max_iter`, including `Some(n)` and
+//! `NonZeroUsize::new(n)`),
 //! or declare a `usize` const whose name contains an iteration-cap token
 //! (`MAX_ITER`, `PCG_MAX`, `KRYLOV_MAX_ITER`, `JACOBI_SWEEPS`, `CG_MAX_IT`).
 //!
 //! Baseline `23` measured 2026-09-27 by walking `src/physics/**/*.rs` with the matchers
 //! in this file (no `cargo`). Shell cross-check:
-//! `rg -n --pcre2 '(?i)(max_iter(?:ations)?|max_cg_iterations|pcg_max_iter)\s*[:=]\s*(?:Some\()?([1-9][0-9]*)' umst/umst-manifold/src/physics`
+//! `rg -n --pcre2 '(?i)(max_iter(?:ations)?|max_cg_iterations|pcg_max_iter)\s*[:=]\s*(?:Some\(|(?:std::num::)?NonZeroUsize::new\()?([1-9][0-9]*)' umst/umst-manifold/src/physics`
 //! and `rg -n --pcre2 '(?i)const\s+[A-Z0-9_]*(?:MAX_ITER|PCG_MAX|KRYLOV_MAX_ITER|JACOBI_SWEEPS|CG_MAX_IT)[A-Z0-9_]*\s*:\s*usize\s*=\s*[1-9][0-9]+' umst/umst-manifold/src/physics`.
 
 use std::fs;
@@ -60,7 +61,11 @@ fn value_after_colon_or_eq(rest: &str) -> Option<usize> {
         .or_else(|| t.strip_prefix('='))
         .map(str::trim_start)
         .unwrap_or(t);
-    if let Some(inner) = t.strip_prefix("Some(") {
+    let t = t.strip_prefix("std::num::").unwrap_or(t);
+    if let Some(inner) = t
+        .strip_prefix("Some(")
+        .or_else(|| t.strip_prefix("NonZeroUsize::new("))
+    {
         return positive_literal_prefix(inner);
     }
     positive_literal_prefix(t)
@@ -171,4 +176,17 @@ fn solver_cap_census_select_excitement_selector_singleton() {
         "umst-algebra excitement selector must exist at {}",
         path.display()
     );
+}
+
+#[test]
+fn solver_cap_census_counts_nonzero_literal_caps() {
+    assert!(field_literal_iteration_cap_line(
+        "max_cg_iterations: std::num::NonZeroUsize::new(500),"
+    ));
+    assert!(field_literal_iteration_cap_line(
+        "max_cg_iterations: NonZeroUsize::new(500),"
+    ));
+    assert!(!field_literal_iteration_cap_line(
+        "max_cg_iterations: std::num::NonZeroUsize::new(n * 3),"
+    ));
 }

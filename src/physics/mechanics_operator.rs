@@ -271,7 +271,7 @@ mod parity_tests {
 
         let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
         let cfg = MechanicsInnerLoopConfig {
-            max_cg_iterations: free_dofs,
+            max_cg_iterations: std::num::NonZeroUsize::new(free_dofs),
             cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
             use_preconditioner: true,

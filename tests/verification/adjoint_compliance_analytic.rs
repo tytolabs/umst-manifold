@@ -137,7 +137,7 @@ fn adjoint_four_node_chain_compliance_matches_series_spring() {
 
     let damage = Tensor::<Inner, 3>::zeros([1, 4, 1], &dev);
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 500,
+        max_cg_iterations: std::num::NonZeroUsize::new(500),
         // The displacement and the recomputed equilibrium residual are f32: a solution rounded to f32
         // has relative residual of order κ·ε_f32 ≥ 1.2e-7, so a 1e-10 request can never be certified by
         // `ensure_bar_equilibrium`. Request the registry's f32 bar-network tier instead.
@@ -185,7 +185,7 @@ fn adjoint_four_node_chain_gradient_matches_finite_difference() {
         e_min: 0.0,
     };
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 500,
+        max_cg_iterations: std::num::NonZeroUsize::new(500),
         cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
         pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
         use_preconditioner: true,
@@ -295,7 +295,7 @@ fn adjoint_four_node_chain_gradient_matches_bendsoe_sigmund_formula() {
         e_min: 0.0,
     };
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 1000,
+        max_cg_iterations: std::num::NonZeroUsize::new(1000),
         // Same f32 floor as above: 1e-12 is below what an f32 iterate can certify.
         cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
         pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
@@ -369,7 +369,7 @@ fn adjoint_gradient_sign_is_negative_along_load_path() {
         e_min: 1e-6,
     };
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 500,
+        max_cg_iterations: std::num::NonZeroUsize::new(500),
         cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
         pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
         use_preconditioner: true,

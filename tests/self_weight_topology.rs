@@ -85,7 +85,7 @@ fn self_weight_beam_non_trivial_topology_smoke() {
     bm[2] = 0.0;
     let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &dev);
     let cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: 400,
+        max_cg_iterations: std::num::NonZeroUsize::new(400),
         cg_tolerance: 1e-7,
         pcg_tolerance: 1e-7,
         use_preconditioner: true,

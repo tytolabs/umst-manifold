@@ -140,7 +140,7 @@ fn staggered_one_outer_mechanics_strain_drives_at2_damage() {
     let boundary_mask = Tensor::from_data(Data::new(bm_data, Shape::new([batch, n, 3])), &dev);
 
     let cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         cg_tolerance: 1e-6,
         pcg_tolerance: 1e-6,
         use_preconditioner: true,

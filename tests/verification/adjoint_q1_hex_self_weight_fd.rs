@@ -144,7 +144,7 @@ fn quick_material() -> SimpElasticMaterial {
 
 fn quick_cg() -> MechanicsInnerLoopConfig {
     MechanicsInnerLoopConfig {
-        max_cg_iterations: 3000,
+        max_cg_iterations: std::num::NonZeroUsize::new(3000),
         cg_tolerance: 1e-5_f32,
         pcg_tolerance: 1e-5_f32,
         use_preconditioner: true,
@@ -154,7 +154,7 @@ fn quick_cg() -> MechanicsInnerLoopConfig {
 
 fn quick_cg_fd() -> MechanicsInnerLoopConfig {
     MechanicsInnerLoopConfig {
-        max_cg_iterations: 6000,
+        max_cg_iterations: std::num::NonZeroUsize::new(6000),
         cg_tolerance: 1e-5_f32,
         pcg_tolerance: 1e-5_f32,
         use_preconditioner: true,

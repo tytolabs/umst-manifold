@@ -273,7 +273,7 @@ fn two_node_rel_residual_metric_sane_and_converged() {
     let u_exact = f_tip * dx / (e * a * (1.0 + DAMAGE_REG));
 
     let cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         cg_tolerance: 1e-10,
         pcg_tolerance: 1e-10,
         use_preconditioner: true,
@@ -412,7 +412,7 @@ fn nine_node_chain_manufactured_solution() {
     let body_force = asm.projected_matvec(u_star.clone(), &mask);
 
     let cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         cg_tolerance: 1e-8,
         pcg_tolerance: 1e-8,
         use_preconditioner: true,
@@ -460,7 +460,7 @@ fn quick_plate_harness_load_pcg_converges() {
     let body_force = Tensor::from_data(Data::new(bf, Shape::new([1, n, 3])), &dev);
 
     let cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         cg_tolerance: 1e-4,
         pcg_tolerance: 1e-4,
         use_preconditioner: false,

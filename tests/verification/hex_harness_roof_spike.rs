@@ -81,7 +81,7 @@ fn q1_hex_harness_roof_traction_forward_converges() {
     };
 
     let cg = MechanicsInnerLoopConfig {
-        max_cg_iterations: n * 3,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
         cg_tolerance: 1e-4,
         pcg_tolerance: 1e-4,
         use_preconditioner: true,
@@ -130,7 +130,7 @@ fn q1_hex_harness_roof_traction_forward_converges() {
         &mut u,
         &mut diag,
         &mut scratch,
-        cg.max_cg_iterations.max(1),
+        cg.iteration_budget(n * 3),
         hex_precond_from_use_preconditioner(cg.use_preconditioner),
         tol,
         None,
