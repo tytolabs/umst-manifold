@@ -343,6 +343,16 @@ These anchors are cited by `umst-math` `REGISTRY` rows that carry no invented p9
 
 **Close when:** a Linux host with `/sys/class/powercap/intel-rapl:*/energy_uj` (package and DRAM domains) records at least ten counter deltas through a committed command, with the estimator, sample count and interval in the receipt.
 
+### smoother-qr-recorded-runs
+
+**Status:** open (measurement debt)
+
+**Rows:** `umst_smoother_q_rcc`, `umst_smoother_r_rcc`, `umst_smoother_q_mi`, `umst_smoother_r_mi`, `umst_smoother_q_eta_cog`, `umst_smoother_r_eta_cog`, `umst_smoother_q_dignity`, `umst_smoother_r_dignity`, `umst_smoother_q_landauer_slack`, `umst_smoother_r_landauer_slack`.
+
+**Plain read:** The smoothers run in egoff `CockpitHub::sample_now`, which pushes each raw cockpit lane through `CockpitSmoothers::apply`. The in-use (Q, R) values are defaults tuned on the `smoothing_ekf_e_bisim` fixture sequences. A variance of that fixture describes the test data, not the cockpit process, and no recorded cockpit run exists in the workspace (the egoff TUI log holds no lane values), so the rows stay `Absent` and the values stay in use as defaults.
+
+**Close when:** a recorded `CockpitHub` run (one `CockpitSnapshot` per line, at least 60 finite raw values per lane) is committed, and `python3 umst/egoff/.umst-ci/measurement-receipts/measure_smoother_qr.py <run.jsonl>` appends the ten receipts: Q and R by covariance matching of first differences under the local-level model, with a moving-block bootstrap interval. The script refuses a path under `tests/` or named as a fixture.
+
 ---
 
 ## Suggested close order

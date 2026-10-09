@@ -805,6 +805,11 @@ pub const COCKPIT_SMOOTHING_DEFAULT_DERIVATION: Derivation = Derivation::Pin {
     ref_name: "9c0434d3ebade8f697bbd402bb080ea00da76914",
 };
 
+/// Typed absence for the ten smoother (Q, R) rows. The in-use values are defaults tuned on the
+/// `smoothing_ekf_e_bisim` fixture sequences; a variance of the fixture is a statistic of the test data, not
+/// of the cockpit process, and no recorded cockpit run exists yet.
+pub const SMOOTHER_QR_TYPED_ABSENCE_REASON: &str = "smoother Q and R not measured: in-use values are defaults tuned on the smoothing_ekf_e_bisim fixture, and no recorded CockpitHub run exists; planned: innovation-sequence estimate from a recorded cockpit run; docs/PENDING_GAPS_PLAIN.md#smoother-qr-recorded-runs";
+
 /// SSOT: `umst_smoother_q_rcc` (method (b); SEQ0 bisim amplitude).
 pub const SMOOTHER_Q_RCC: f64 = 1.8;
 
@@ -824,39 +829,33 @@ pub const SMOOTHER_Q_ETA_COG: f64 = 1.4;
 pub const SMOOTHER_R_ETA_COG: f64 = 3_240.0;
 
 /// `umst_smoother_q_rcc` — TUI-7b method (b) rank+clamp on SEQ0 (`smoothing_ekf_e_bisim`).
-pub const SMOOTHER_Q_RCC_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_q_rcc.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq0",
+pub const SMOOTHER_Q_RCC_DERIVATION: Derivation = Derivation::Absent {
+    reason: SMOOTHER_QR_TYPED_ABSENCE_REASON,
 };
 
 /// `umst_smoother_r_rcc` — companion R for SEQ0.
-pub const SMOOTHER_R_RCC_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_r_rcc.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq0",
+pub const SMOOTHER_R_RCC_DERIVATION: Derivation = Derivation::Absent {
+    reason: SMOOTHER_QR_TYPED_ABSENCE_REASON,
 };
 
 /// `umst_smoother_q_mi` — SEQ1 ε-bisim fixture tuning.
-pub const SMOOTHER_Q_MI_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_q_mi.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq1",
+pub const SMOOTHER_Q_MI_DERIVATION: Derivation = Derivation::Absent {
+    reason: SMOOTHER_QR_TYPED_ABSENCE_REASON,
 };
 
 /// `umst_smoother_r_mi` — SEQ1 measurement noise.
-pub const SMOOTHER_R_MI_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_r_mi.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq1",
+pub const SMOOTHER_R_MI_DERIVATION: Derivation = Derivation::Absent {
+    reason: SMOOTHER_QR_TYPED_ABSENCE_REASON,
 };
 
 /// `umst_smoother_q_eta_cog` — SEQ2 ramp process noise.
-pub const SMOOTHER_Q_ETA_COG_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_q_eta_cog.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq2",
+pub const SMOOTHER_Q_ETA_COG_DERIVATION: Derivation = Derivation::Absent {
+    reason: SMOOTHER_QR_TYPED_ABSENCE_REASON,
 };
 
 /// `umst_smoother_r_eta_cog` — SEQ2 measurement noise.
-pub const SMOOTHER_R_ETA_COG_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_r_eta_cog.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq2",
+pub const SMOOTHER_R_ETA_COG_DERIVATION: Derivation = Derivation::Absent {
+    reason: SMOOTHER_QR_TYPED_ABSENCE_REASON,
 };
 
 /// K-5j TUI-7 smoother registry row names (7/7 for slice GREEN).
@@ -885,27 +884,23 @@ pub const SMOOTHER_Q_LANDAUER_SLACK: f64 = 2.0;
 pub const SMOOTHER_R_LANDAUER_SLACK: f64 = 3_300.0;
 
 /// `umst_smoother_q_dignity` — TUI-7b method (b) on SEQ3 dignity ramp.
-pub const SMOOTHER_Q_DIGNITY_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_q_dignity.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq3",
+pub const SMOOTHER_Q_DIGNITY_DERIVATION: Derivation = Derivation::Absent {
+    reason: SMOOTHER_QR_TYPED_ABSENCE_REASON,
 };
 
 /// `umst_smoother_r_dignity` — companion R for SEQ3.
-pub const SMOOTHER_R_DIGNITY_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_r_dignity.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq3",
+pub const SMOOTHER_R_DIGNITY_DERIVATION: Derivation = Derivation::Absent {
+    reason: SMOOTHER_QR_TYPED_ABSENCE_REASON,
 };
 
 /// `umst_smoother_q_landauer_slack` — SEQ4 Landauer slack process noise.
-pub const SMOOTHER_Q_LANDAUER_SLACK_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_q_landauer_slack.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq4",
+pub const SMOOTHER_Q_LANDAUER_SLACK_DERIVATION: Derivation = Derivation::Absent {
+    reason: SMOOTHER_QR_TYPED_ABSENCE_REASON,
 };
 
 /// `umst_smoother_r_landauer_slack` — SEQ4 measurement noise.
-pub const SMOOTHER_R_LANDAUER_SLACK_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/umst_smoother_r_landauer_slack.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#tui-7b-per-metric-qr-seq4",
+pub const SMOOTHER_R_LANDAUER_SLACK_DERIVATION: Derivation = Derivation::Absent {
+    reason: SMOOTHER_QR_TYPED_ABSENCE_REASON,
 };
 
 /// K-5k TUI-7 SEQ3/4 smoother registry row names (4/4 for slice GREEN).
@@ -1728,72 +1723,6 @@ mod tests {
         assert!(process["linux_powercap"].as_bool() == Some(false));
     }
 
-    fn fixture_array(text: &str, name: &str) -> Vec<f64> {
-        let key = format!("const {name}: [f64;");
-        let at = text.find(&key).unwrap_or_else(|| panic!("missing {name}"));
-        let eq = text[at..].find('=').expect("eq") + at;
-        let start = text[eq..].find('[').expect("open") + eq + 1;
-        let end = text[start..].find(']').expect("close") + start;
-        text[start..end]
-            .split(',')
-            .filter(|piece| !piece.trim().is_empty())
-            .map(|piece| piece.trim().parse::<f64>().expect("number"))
-            .collect()
-    }
-
-    fn sample_variance(values: &[f64]) -> f64 {
-        let n = values.len() as f64;
-        let mean = values.iter().sum::<f64>() / n;
-        values.iter().map(|v| (v - mean) * (v - mean)).sum::<f64>() / (n - 1.0)
-    }
-
-    #[test]
-    fn smoother_variances_match_the_recorded_fixture_sequences() {
-        let fixture = include_str!("../../tests/smoothing_ekf_e_bisim.rs");
-        let lanes = [
-            ("rcc", "SEQ0", "EXP0"),
-            ("mi", "SEQ1", "EXP1"),
-            ("eta_cog", "SEQ2", "EXP2"),
-            ("dignity", "SEQ3", "EXP3"),
-            ("landauer_slack", "SEQ4", "EXP4"),
-        ];
-        for (lane, seq_name, exp_name) in lanes {
-            let measured = fixture_array(fixture, seq_name);
-            let filtered = fixture_array(fixture, exp_name);
-            let steps: Vec<f64> = filtered.windows(2).map(|w| w[1] - w[0]).collect();
-            let residuals: Vec<f64> = measured
-                .iter()
-                .zip(&filtered)
-                .map(|(z, x)| z - x)
-                .collect();
-            let q = sample_variance(&steps);
-            let r = sample_variance(&residuals);
-            assert!(q > 0.0 && r > 0.0);
-            for (kind, value, count) in [("q", q, steps.len()), ("r", r, residuals.len())] {
-                let bytes = match (lane, kind) {
-                    ("rcc", "q") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_q_rcc.jsonl"),
-                    ("rcc", "r") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_r_rcc.jsonl"),
-                    ("mi", "q") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_q_mi.jsonl"),
-                    ("mi", "r") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_r_mi.jsonl"),
-                    ("eta_cog", "q") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_q_eta_cog.jsonl"),
-                    ("eta_cog", "r") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_r_eta_cog.jsonl"),
-                    ("dignity", "q") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_q_dignity.jsonl"),
-                    ("dignity", "r") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_r_dignity.jsonl"),
-                    ("landauer_slack", "q") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_q_landauer_slack.jsonl"),
-                    ("landauer_slack", "r") => include_str!("../../../../egoff/.umst-ci/measurement-receipts/umst_smoother_r_landauer_slack.jsonl"),
-                    _ => panic!("lane"),
-                };
-                let receipt: serde_json::Value = serde_json::from_str(bytes).expect("receipt");
-                let got = receipt["derived_value"].as_f64().expect("value");
-                let lo = receipt["interval"][0].as_f64().expect("lo");
-                let hi = receipt["interval"][1].as_f64().expect("hi");
-                assert!((got - value).abs() <= 1e-9 * value.max(1.0));
-                assert!(got > 0.0 && lo <= got && got <= hi);
-                assert_eq!(receipt["sample_count"].as_u64().expect("n"), count as u64);
-            }
-        }
-    }
-
     #[test]
     fn k5d_registry_rows_backfilled() {
         assert!(k5d_backfill_landed());
@@ -1904,5 +1833,16 @@ mod tests {
     #[test]
     fn rapl_row_is_typed_absent_on_a_host_without_a_rapl_counter() {
         assert_typed_absent_with_anchor("rapl_package_dram_joules");
+    }
+
+    #[test]
+    fn smoother_qr_rows_are_typed_absent_until_a_recorded_run() {
+        for name in K5J_REGISTRY_ROW_NAMES
+            .iter()
+            .chain(K5K_REGISTRY_ROW_NAMES)
+            .filter(|n| n.starts_with("umst_smoother_"))
+        {
+            assert_typed_absent_with_anchor(name);
+        }
     }
 }
