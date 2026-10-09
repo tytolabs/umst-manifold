@@ -217,7 +217,7 @@ impl EmittedStepRecord {
             step_mi,
             step_cost,
             thermodynamic_admissible: true,
-            confidence: 1.0,
+            confidence: umst_math::constants::registry::EMITTED_STEP_DEFAULT_CONFIDENCE,
         }
     }
 
@@ -256,7 +256,7 @@ fn default_thermodynamic_admissible() -> bool {
 
 #[cfg(feature = "serde")]
 fn default_confidence() -> f64 {
-    1.0
+    umst_math::constants::registry::EMITTED_STEP_DEFAULT_CONFIDENCE
 }
 
 /// Finite-horizon emitted trace at temperature `T` (Lean `EmittedTraceSchema n T`).

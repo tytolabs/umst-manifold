@@ -952,6 +952,29 @@ pub const NUMERICS_REGISTRY_ROW_NAMES: &[&str] = &[
     "edge_length_divisor_floor_f32",
 ];
 
+/// Rows lifted from functions whose whole body was a numeric literal (pool N_literal_returning_fns_advisory):
+/// each is a `Policy` stating its reason and admissible interval, read through `numeric_tolerance` or directly.
+pub const LITERAL_FN_REGISTRY_ROW_NAMES: &[&str] = &[
+    "uniform_grid_spacing_rtol_f32",
+    "field_algebra_rtol_f64",
+    "thmc_outer_newton_tol_f32",
+    "thmc_orchestrator_smoke_tol_f32",
+    "thmc_newton_residual_tol_f32",
+    "thmc_newton_fd_eps_f32",
+    "thmc_damped_newton_fd_eps_f32",
+    "acoustic_gmres_rel_tol_f32",
+    "acoustic_gmres_rel_tol_tight_f32",
+    "rheology_poisson_cg_rel_tol_f32",
+    "dec_matvec_abs_tol_f32",
+    "dec_matvec_rel_coeff_f32",
+    "virial_closed_form_abs_tol_f32",
+    "statmech_bulk_modulus_rel_tol_f64",
+    "statmech_fd_bulk_modulus_abs_tol_f32",
+    "rheology_analytic_fd_strain_eps_f64",
+    "fracture_psi_probe_strain_f32",
+    "emitted_step_default_confidence",
+];
+
 /// K-5d registry row names (6/6 for slice GREEN).
 pub const K5D_REGISTRY_ROW_NAMES: &[&str] = &[
     "landauer_proximity_multiplier",

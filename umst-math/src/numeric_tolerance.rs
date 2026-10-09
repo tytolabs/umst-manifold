@@ -40,7 +40,9 @@ impl ProblemScale {
     /// The unit scale (characteristic 1).
     #[must_use]
     pub const fn unit() -> Self {
-        Self { characteristic: 1.0 }
+        Self {
+            characteristic: 1.0,
+        }
     }
 
     #[must_use]
@@ -66,10 +68,7 @@ pub enum LinearSolveRelativeTier {
 
 /// Relative residual tolerance from scale × tier (never below `f32::EPSILON`).
 #[must_use]
-pub fn linear_solve_relative_tol_f32(
-    scale: ProblemScale,
-    tier: LinearSolveRelativeTier,
-) -> f32 {
+pub fn linear_solve_relative_tol_f32(scale: ProblemScale, tier: LinearSolveRelativeTier) -> f32 {
     let base = match tier {
         LinearSolveRelativeTier::BarNetworkF32Default => {
             crate::constants::registry::BAR_NETWORK_CG_REL_TOL
@@ -123,10 +122,7 @@ pub fn adjoint_reference_tol_f64() -> f64 {
 
 /// Same tiers for f64 reference solves and adjoint witnesses.
 #[must_use]
-pub fn linear_solve_relative_tol_f64(
-    scale: ProblemScale,
-    tier: LinearSolveRelativeTier,
-) -> f64 {
+pub fn linear_solve_relative_tol_f64(scale: ProblemScale, tier: LinearSolveRelativeTier) -> f64 {
     let base = match tier {
         LinearSolveRelativeTier::BarNetworkF32Default => {
             crate::constants::registry::BAR_NETWORK_CG_REL_TOL
@@ -145,8 +141,7 @@ pub fn linear_solve_relative_tol_f64(
 /// Symmetric finite-difference step from problem scale (central difference on f32 fields).
 #[must_use]
 pub fn finite_difference_step_f32(scale: ProblemScale) -> f32 {
-    let h = scale.effective().sqrt()
-        * crate::constants::registry::FINITE_DIFFERENCE_STEP_SCALE;
+    let h = scale.effective().sqrt() * crate::constants::registry::FINITE_DIFFERENCE_STEP_SCALE;
     h.clamp(
         crate::constants::registry::FINITE_DIFFERENCE_STEP_MIN,
         crate::constants::registry::FINITE_DIFFERENCE_STEP_MAX,
@@ -190,37 +185,37 @@ pub const fn gate_comparison_tol_f64() -> f64 {
 /// Relative tolerance for uniform grid spacing inference (photonics chain probes).
 #[must_use]
 pub const fn uniform_grid_spacing_rtol_f32() -> f32 {
-    1e-2
+    crate::constants::registry::UNIFORM_GRID_SPACING_RTOL_F32
 }
 
 /// Loose relative tolerance for rank-1 / field algebra regression checks.
 #[must_use]
 pub const fn field_algebra_rtol_f64() -> f64 {
-    1e-4
+    crate::constants::registry::FIELD_ALGEBRA_RTOL_F64
 }
 
 /// Default outer Newton tolerance for coupled THMC stepping (dimensionless).
 #[must_use]
 pub const fn thmc_outer_newton_tol_f32() -> f32 {
-    1e-3
+    crate::constants::registry::THMC_OUTER_NEWTON_TOL_F32
 }
 
 /// Orchestrator smoke-test THMC tolerance (tighter than production default).
 #[must_use]
 pub const fn thmc_orchestrator_smoke_tol_f32() -> f32 {
-    1e-4
+    crate::constants::registry::THMC_ORCHESTRATOR_SMOKE_TOL_F32
 }
 
 /// Residual floor for implicit THMC Newton / CG inner solves.
 #[must_use]
 pub const fn thmc_newton_residual_tol_f32() -> f32 {
-    1e-6
+    crate::constants::registry::THMC_NEWTON_RESIDUAL_TOL_F32
 }
 
 /// Finite-difference step for THMC Newton Jacobian probes (thermal block).
 #[must_use]
 pub const fn thmc_newton_fd_eps_f32() -> f32 {
-    1e-6
+    crate::constants::registry::THMC_NEWTON_FD_EPS_F32
 }
 
 /// Default outer Newton iteration budget for implicit THMC thermal block (registry SSOT).
@@ -244,67 +239,67 @@ pub const fn acoustic_gmres_default_iteration_budget() -> usize {
 /// FD step for damped Newton on stacked THMC implicit blocks.
 #[must_use]
 pub const fn thmc_damped_newton_fd_eps_f32() -> f32 {
-    1e-5
+    crate::constants::registry::THMC_DAMPED_NEWTON_FD_EPS_F32
 }
 
 /// Default GMRES relative tolerance for acoustic implicit Newmark solves.
 #[must_use]
 pub const fn acoustic_gmres_rel_tol_f32() -> f32 {
-    1e-4
+    crate::constants::registry::ACOUSTIC_GMRES_REL_TOL_F32
 }
 
 /// Tight GMRES relative tolerance (short-chain regression).
 #[must_use]
 pub const fn acoustic_gmres_rel_tol_tight_f32() -> f32 {
-    1e-7
+    crate::constants::registry::ACOUSTIC_GMRES_REL_TOL_TIGHT_F32
 }
 
 /// Default Poisson CG relative tolerance for Bingham flow pressure solve.
 #[must_use]
 pub const fn rheology_poisson_cg_rel_tol_f32() -> f32 {
-    2e-5
+    crate::constants::registry::RHEOLOGY_POISSON_CG_REL_TOL_F32
 }
 
 /// Absolute term in mixed DEC matvec operator parity checks.
 #[must_use]
 pub const fn dec_matvec_abs_tol_f32() -> f32 {
-    1e-4
+    crate::constants::registry::DEC_MATVEC_ABS_TOL_F32
 }
 
 /// Relative coefficient in mixed DEC matvec operator parity checks.
 #[must_use]
 pub const fn dec_matvec_rel_coeff_f32() -> f32 {
-    1e-3
+    crate::constants::registry::DEC_MATVEC_REL_COEFF_F32
 }
 
 /// Virial closed-form regression (f32).
 #[must_use]
 pub const fn virial_closed_form_abs_tol_f32() -> f32 {
-    2e-5
+    crate::constants::registry::VIRIAL_CLOSED_FORM_ABS_TOL_F32
 }
 
 /// Analytic bulk-modulus tensor parity vs Johnson reference (f64).
 #[must_use]
 pub const fn statmech_bulk_modulus_rel_tol_f64() -> f64 {
-    5e-4
+    crate::constants::registry::STATMECH_BULK_MODULUS_REL_TOL_F64
 }
 
 /// FD bulk-modulus parity for LJ virial path (f32).
 #[must_use]
 pub const fn statmech_fd_bulk_modulus_abs_tol_f32() -> f32 {
-    2e-3
+    crate::constants::registry::STATMECH_FD_BULK_MODULUS_ABS_TOL_F32
 }
 
 /// Regularized Bingham FD regression strain scale (f64).
 #[must_use]
 pub const fn rheology_analytic_fd_strain_eps_f64() -> f64 {
-    1e-4
+    crate::constants::registry::RHEOLOGY_ANALYTIC_FD_STRAIN_EPS_F64
 }
 
 /// Spectral tensile ψ surrogate probe strain (f32).
 #[must_use]
 pub const fn fracture_psi_probe_strain_f32() -> f32 {
-    1e-3
+    crate::constants::registry::FRACTURE_PSI_PROBE_STRAIN_F32
 }
 
 /// Edge-length divisor floor for axial strain (`elong / edge_len`) in bar networks.
@@ -319,30 +314,6 @@ pub const DEFAULT_EQUILIBRIUM_SUB_ITERS: u32 = 1;
 
 /// Hard cap on mechanics inner iterations per outer chemistry step (orchestration clocks).
 pub const DEFAULT_MECH_SUB_ITERS_PER_CHEM_CAP: u32 = 10_000;
-
-/// Bar-network / adjoint regression PCG iteration budget (fixture SSOT — not a solver-src literal cap).
-#[must_use]
-pub const fn bar_network_regression_cg_iteration_budget() -> usize {
-    500
-}
-
-/// Single-Newton electrochemistry verification fixture (linearized Jacobian smoke).
-#[must_use]
-pub const fn newton_pnp_single_iter_fixture_budget() -> usize {
-    1
-}
-
-/// Extended Newton budget for stiff PNP verification grids (above default fifty).
-#[must_use]
-pub const fn newton_pnp_verification_extended_iteration_budget() -> usize {
-    60
-}
-
-/// AT2 staggered outer-loop regression budget (phase-field damage outer witness).
-#[must_use]
-pub const fn fracture_at2_outer_regression_iteration_budget() -> usize {
-    40
-}
 
 #[cfg(test)]
 mod tests {

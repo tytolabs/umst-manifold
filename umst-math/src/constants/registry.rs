@@ -311,6 +311,168 @@ pub static REGISTRY: &[ConstantEntry] = &[
         },
     },
     ConstantEntry {
+        name: "uniform_grid_spacing_rtol_f32",
+        expression: "1e-2 relative step deviation accepted when the photonics chain infers a uniform spacing (UNIFORM_GRID_SPACING_RTOL_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "photonics uniform-chain inference accepts a coordinate chain when each step deviates from the span-mean spacing by at most this fraction; f32 linspace rounding is near 1e-6 relative, and a 1 % band refuses graded meshes that the uniform 1-D Laplacian would misrepresent at order Δh/h; admissible interval [1e-5, 5e-2]",
+        },
+    },
+    ConstantEntry {
+        name: "field_algebra_rtol_f64",
+        expression: "1e-4 relative closure of rank-1 field lattices against host golden values (FIELD_ALGEBRA_RTOL_F64)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "rank-1 field lattices round-trip through f32 tensors (unit roundoff 6e-8) over about ten operations, so the f32 noise floor is near 1e-6; 1e-4 keeps two decades of headroom and still rejects a 0.01 % parity break; admissible interval [1e-6, 1e-3]",
+        },
+    },
+    ConstantEntry {
+        name: "thmc_outer_newton_tol_f32",
+        expression: "1e-3 outer Newton tolerance of the coupled THMC step (dimensionless) (THMC_OUTER_NEWTON_TOL_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "the staggered temperature and reaction-extent split converges linearly, and with the default two outer passes it resolves the coupling error to about 1e-3 relative; a tighter tolerance needs a larger Newton budget; admissible interval [1e-5, 1e-2]",
+        },
+    },
+    ConstantEntry {
+        name: "thmc_orchestrator_smoke_tol_f32",
+        expression: "1e-4 THMC tolerance the orchestrator smoke test forwards (dimensionless) (THMC_ORCHESTRATOR_SMOKE_TOL_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "one decade tighter than the outer THMC default so the orchestrator test shows a non-default tolerance is forwarded unchanged; admissible interval [1e-6, 1e-3]",
+        },
+    },
+    ConstantEntry {
+        name: "thmc_newton_residual_tol_f32",
+        expression: "1e-6 relative residual floor of implicit THMC Newton and CG inner solves (THMC_NEWTON_RESIDUAL_TOL_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "about eight f32 unit roundoffs (f32 epsilon 1.19e-7), the smallest relative residual an f32 inner solve reaches reliably; admissible interval [9.5e-7, 1e-4]",
+        },
+    },
+    ConstantEntry {
+        name: "thmc_newton_fd_eps_f32",
+        expression: "1e-6 finite-difference step of the THMC thermal-block Jacobian probe (THMC_NEWTON_FD_EPS_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "the probe supplies Krylov directions for an inexact Newton step on an order-one scaled state; the f32 forward-difference rounding-truncation balance is sqrt(1.19e-7) = 3.5e-4, so this step lies below the balance and the probe is rounding-limited, which Newton tolerates as an inexact Jacobian; admissible interval [1e-6, 1e-3]",
+        },
+    },
+    ConstantEntry {
+        name: "thmc_damped_newton_fd_eps_f32",
+        expression: "1e-5 finite-difference step of damped Newton on stacked THMC implicit blocks (THMC_DAMPED_NEWTON_FD_EPS_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "the stacked temperature and reaction-extent block probes an order-one scaled state with a step one decade above the thermal-block probe, still below the f32 forward-difference balance sqrt(1.19e-7) = 3.5e-4; admissible interval [1e-6, 1e-3]",
+        },
+    },
+    ConstantEntry {
+        name: "acoustic_gmres_rel_tol_f32",
+        expression: "1e-4 GMRES relative residual of implicit Newmark acoustic steps (ACOUSTIC_GMRES_REL_TOL_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "the Newmark step carries an order dt^2 truncation error above 1e-4 at the default steps, so a tighter algebraic solve buys no accuracy; admissible interval [1e-6, 1e-3]",
+        },
+    },
+    ConstantEntry {
+        name: "acoustic_gmres_rel_tol_tight_f32",
+        expression: "1e-7 GMRES relative residual of the short-chain acoustic regression (ACOUSTIC_GMRES_REL_TOL_TIGHT_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "the two-node regression drives GMRES to the f32 unit roundoff (1.19e-7) so its acceleration matches the direct reference; only short chains reach it; admissible interval [1e-8, 1e-5]",
+        },
+    },
+    ConstantEntry {
+        name: "rheology_poisson_cg_rel_tol_f32",
+        expression: "2e-5 CG relative residual of the Bingham pressure Poisson solve (RHEOLOGY_POISSON_CG_REL_TOL_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "the pressure projection feeds an explicit f32 velocity update; 2e-5 sits two decades above the f32 unit roundoff (1.19e-7) so CG stops before it iterates on rounding, and below the 1e-4 band of the explicit update; admissible interval [1e-6, 1e-3]",
+        },
+    },
+    ConstantEntry {
+        name: "dec_matvec_abs_tol_f32",
+        expression: "1e-4 absolute term of the DEC COO versus operator matvec parity bound (DEC_MATVEC_ABS_TOL_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "the parity bound is abs + rel * max(|y|, 1); the COO and operator paths sum signed incidence products of order one in different orders, and the absolute term covers that f32 reordering error near zero outputs; admissible interval [1e-6, 1e-3]",
+        },
+    },
+    ConstantEntry {
+        name: "dec_matvec_rel_coeff_f32",
+        expression: "1e-3 relative coefficient of the DEC COO versus operator matvec parity bound (DEC_MATVEC_REL_COEFF_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "scales the parity bound with the operator output so large entries keep the same relative band against the f32 reordering error of the two summation paths; admissible interval [1e-5, 1e-2]",
+        },
+    },
+    ConstantEntry {
+        name: "virial_closed_form_abs_tol_f32",
+        expression: "2e-5 absolute tolerance of the virial closed-form bulk-modulus regression (VIRIAL_CLOSED_FORM_ABS_TOL_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "the batched tensor path and the scalar closed form evaluate the same third-order virial polynomial in f32 and differ only by evaluation order; 2e-5 covers that reordering at the tested reduced states; admissible interval [1e-6, 1e-3]",
+        },
+    },
+    ConstantEntry {
+        name: "statmech_bulk_modulus_rel_tol_f64",
+        expression: "5e-4 agreement of two relative-error paths against the Johnson 1993 reference (STATMECH_BULK_MODULUS_REL_TOL_F64)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "the scalar and tensor relative errors against the Johnson 1993 bulk modulus pass through f32 tensors before widening to f64, so they agree to about 1e-4; admissible interval [1e-6, 1e-2]",
+        },
+    },
+    ConstantEntry {
+        name: "statmech_fd_bulk_modulus_abs_tol_f32",
+        expression: "2e-3 absolute tolerance of the finite-difference bulk-modulus parity (STATMECH_FD_BULK_MODULUS_ABS_TOL_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "at the probe step h = 1e-3 the central difference of the f32 virial pressure has truncation of order h^2 = 1e-6 and rounding of order 1e-7 / h = 1e-4; 2e-3 leaves a decade over the rounding term; admissible interval [1e-4, 1e-2]",
+        },
+    },
+    ConstantEntry {
+        name: "rheology_analytic_fd_strain_eps_f64",
+        expression: "1e-4 strain-rate regularization of the regularized Bingham profile (1/s) (RHEOLOGY_ANALYTIC_FD_STRAIN_EPS_F64)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "the term tau0 x / (x + eps) replaces the Bingham yield step with a smooth ramp of width eps; the profile test checks the regularized balance mu x + tau0 x / (x + eps) = g |y| itself, so eps only has to stay positive and small against the sheared-zone rates; admissible interval [1e-8, 1e-2]",
+        },
+    },
+    ConstantEntry {
+        name: "fracture_psi_probe_strain_f32",
+        expression: "1e-3 probe strain of the spectral tensile free-energy surrogate test (FRACTURE_PSI_PROBE_STRAIN_F32)",
+        evidence: "policy: numerics (umst_math::numeric_tolerance)",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "a small-strain probe keeps the spectral tensile split in the linear-elastic range, and at 1e-3 the probe energy 4.5e-6 stays well above f32 rounding; admissible interval [1e-5, 1e-2]",
+        },
+    },
+    ConstantEntry {
+        name: "emitted_step_default_confidence",
+        expression: "1.0 confidence of an emitted epistemic step whose record omits it (EMITTED_STEP_DEFAULT_CONFIDENCE)",
+        evidence: "Lean EpistemicRuntimeSchemaContract.EmittedStepRecord field default; read by umst-manifold ros::epistemic_trace",
+        env_override: None,
+        derivation: Derivation::Policy {
+            rationale: "mirrors the field default confidence := 1 of the Lean structure EmittedStepRecord (EpistemicRuntimeSchemaContract), which EmittedTraceSchema.ofRollout also sets; EmittedTraceWellFormed bounds confidence to the admissible interval [0, 1]",
+        },
+    },
+    ConstantEntry {
         name: "min_promotion_credit_bits",
         expression: "1.0 bits minimum for inbox promotion (U2)",
         evidence: "UCRS observation credit quarantine; umst-ucrs MIN_PROMOTION_CREDIT_BITS",
@@ -1529,6 +1691,42 @@ pub const APPROX_EPSILON_F32_MID: f32 = 1.0e-5;
 pub const APPROX_EPSILON_F64_LOOSE: f64 = 1.0e-18;
 /// Row `edge_length_divisor_floor_f32` (m).
 pub const EDGE_LENGTH_DIVISOR_FLOOR_F32: f32 = 1e-30;
+/// Row `uniform_grid_spacing_rtol_f32`.
+pub const UNIFORM_GRID_SPACING_RTOL_F32: f32 = 1e-2;
+/// Row `field_algebra_rtol_f64`.
+pub const FIELD_ALGEBRA_RTOL_F64: f64 = 1e-4;
+/// Row `thmc_outer_newton_tol_f32`.
+pub const THMC_OUTER_NEWTON_TOL_F32: f32 = 1e-3;
+/// Row `thmc_orchestrator_smoke_tol_f32`.
+pub const THMC_ORCHESTRATOR_SMOKE_TOL_F32: f32 = 1e-4;
+/// Row `thmc_newton_residual_tol_f32`.
+pub const THMC_NEWTON_RESIDUAL_TOL_F32: f32 = 1e-6;
+/// Row `thmc_newton_fd_eps_f32`.
+pub const THMC_NEWTON_FD_EPS_F32: f32 = 1e-6;
+/// Row `thmc_damped_newton_fd_eps_f32`.
+pub const THMC_DAMPED_NEWTON_FD_EPS_F32: f32 = 1e-5;
+/// Row `acoustic_gmres_rel_tol_f32`.
+pub const ACOUSTIC_GMRES_REL_TOL_F32: f32 = 1e-4;
+/// Row `acoustic_gmres_rel_tol_tight_f32`.
+pub const ACOUSTIC_GMRES_REL_TOL_TIGHT_F32: f32 = 1e-7;
+/// Row `rheology_poisson_cg_rel_tol_f32`.
+pub const RHEOLOGY_POISSON_CG_REL_TOL_F32: f32 = 2e-5;
+/// Row `dec_matvec_abs_tol_f32`.
+pub const DEC_MATVEC_ABS_TOL_F32: f32 = 1e-4;
+/// Row `dec_matvec_rel_coeff_f32`.
+pub const DEC_MATVEC_REL_COEFF_F32: f32 = 1e-3;
+/// Row `virial_closed_form_abs_tol_f32`.
+pub const VIRIAL_CLOSED_FORM_ABS_TOL_F32: f32 = 2e-5;
+/// Row `statmech_bulk_modulus_rel_tol_f64`.
+pub const STATMECH_BULK_MODULUS_REL_TOL_F64: f64 = 5e-4;
+/// Row `statmech_fd_bulk_modulus_abs_tol_f32`.
+pub const STATMECH_FD_BULK_MODULUS_ABS_TOL_F32: f32 = 2e-3;
+/// Row `rheology_analytic_fd_strain_eps_f64`.
+pub const RHEOLOGY_ANALYTIC_FD_STRAIN_EPS_F64: f64 = 1e-4;
+/// Row `fracture_psi_probe_strain_f32`.
+pub const FRACTURE_PSI_PROBE_STRAIN_F32: f32 = 1e-3;
+/// Row `emitted_step_default_confidence`.
+pub const EMITTED_STEP_DEFAULT_CONFIDENCE: f64 = 1.0;
 
 /// THEOREM-BOUND: first `f64` token in `expression` (leading positive decimal); `None` if the row is non-numeric (e.g. `#RRGGBB` colors, string policies).
 /// Used for TUI-7b per-metric Joseph/Kalman covariances (`umst_smoother_{q,r}_*`).
@@ -1567,7 +1765,8 @@ pub const REGISTRY_BATCH_ROW_NAME_LISTS: &[&[&str]] = {
         K5B_REGISTRY_ROW_NAMES, K5C_REGISTRY_ROW_NAMES, K5D_REGISTRY_ROW_NAMES,
         K5E_REGISTRY_ROW_NAMES, K5F_REGISTRY_ROW_NAMES, K5G_REGISTRY_ROW_NAMES,
         K5H_REGISTRY_ROW_NAMES, K5I_REGISTRY_ROW_NAMES, K5J_REGISTRY_ROW_NAMES,
-        K5K_REGISTRY_ROW_NAMES, K5_REGISTRY_ROW_NAMES, NUMERICS_REGISTRY_ROW_NAMES,
+        K5K_REGISTRY_ROW_NAMES, K5_REGISTRY_ROW_NAMES, LITERAL_FN_REGISTRY_ROW_NAMES,
+        NUMERICS_REGISTRY_ROW_NAMES,
     };
     use super::tier3_derivation::{
         K4_REGISTRY_ROW_NAMES, K5L_REGISTRY_ROW_NAMES, K5M_REGISTRY_ROW_NAMES,
@@ -1585,6 +1784,7 @@ pub const REGISTRY_BATCH_ROW_NAME_LISTS: &[&[&str]] = {
         K3_TIER1_MEASUREMENT_ROW_NAMES,
         K3_TIER2_GATE_ROW_NAMES,
         NUMERICS_REGISTRY_ROW_NAMES,
+        LITERAL_FN_REGISTRY_ROW_NAMES,
         K4_REGISTRY_ROW_NAMES,
         K5_REGISTRY_ROW_NAMES,
         K5B_REGISTRY_ROW_NAMES,
@@ -1819,6 +2019,40 @@ mod tests {
             assert!(
                 policy_rationale_is_admissible(name, rationale),
                 "policy rationale for {name} must not echo its doc label and must carry reason + interval: {rationale}"
+            );
+        }
+    }
+
+    /// Each row lifted from a literal-returning function carries a reason and an admissible interval, and
+    /// its registered value (the expression's first token) lies inside that interval.
+    #[test]
+    fn literal_fn_rows_state_an_interval_that_holds_their_value() {
+        use crate::constants::tier2_derivation::LITERAL_FN_REGISTRY_ROW_NAMES;
+
+        for name in LITERAL_FN_REGISTRY_ROW_NAMES {
+            let entry = REGISTRY
+                .iter()
+                .find(|e| e.name == *name)
+                .unwrap_or_else(|| panic!("missing row {name}"));
+            let Derivation::Policy { rationale } = entry.derivation else {
+                panic!("{name} is a Policy row");
+            };
+            assert!(
+                policy_rationale_is_admissible(name, rationale),
+                "{name}: {rationale}"
+            );
+            let interval = rationale
+                .split("admissible interval [")
+                .nth(1)
+                .and_then(|r| r.split(']').next())
+                .unwrap_or_else(|| panic!("{name}: no interval"));
+            let (lo, hi) = interval.split_once(", ").expect("[lo, hi]");
+            let lo: f64 = lo.parse().expect("lo");
+            let hi: f64 = hi.parse().expect("hi");
+            let value = super::registry_first_f64_token(entry.expression).expect("value");
+            assert!(
+                lo < hi && (lo..=hi).contains(&value),
+                "{name}: {value} outside [{lo}, {hi}]"
             );
         }
     }

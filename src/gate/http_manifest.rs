@@ -11,8 +11,8 @@ use super::evaluator::GateEvaluator;
 use super::route::{canonical_strength_upper_bound_admissible, canonical_transition_outcome};
 use super::transition_eval_registry::{ThermodynamicTransitionContext, TransitionEvaluator};
 use super::transition_proposal::{
-    CELSIUS_TO_KELVIN_OFFSET_K, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
-    ThermodynamicStateSnapshot, TransitionFilter,
+    ThermodynamicStateSnapshot, TransitionFilter, CELSIUS_TO_KELVIN_OFFSET_K,
+    MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
 };
 use super::verdict::AdmissibilityVerdict;
 use crate::manifest::UmstManifest;
@@ -223,8 +223,9 @@ pub struct MixProposal {
     pub temperature_c: f64,
 }
 
+/// A proposal without a temperature is read at the ISO 554 reference 20 °C (registry `Definition`).
 fn default_temperature_c() -> f64 {
-    20.0
+    umst_math::constants::tier1_derivation::REFERENCE_CELSIUS_ISO554_C
 }
 
 #[allow(missing_docs)] // Legacy bool mirrors — prefer [`Self::admissibility_verdict`] / [`Self::is_admissible`]
@@ -416,25 +417,11 @@ pub type HttpMixGateEvaluator = HttpTransitionEvaluator;
 
 #[cfg(test)]
 mod tests {
-use crate::gate::transition_proposal::{
-    CENSUS_BINDER_LIQUID_RATIO, CENSUS_DT_ONE_HOUR_S, CENSUS_FREE_ENERGY_DROP_J,
-    CENSUS_GOLDEN_IDENTITY_ENTROPY, CENSUS_GOLDEN_IDENTITY_FREE_ENERGY_J,
-    CENSUS_GOLDEN_IDENTITY_REACTION_EXTENT, CENSUS_GOLDEN_IDENTITY_STRENGTH_MPA,
-    CENSUS_GOLDEN_MASS_REJECT_ENTROPY, CENSUS_GOLDEN_MASS_REJECT_STRENGTH_MPA,
-    CENSUS_GOLDEN_NEGATIVE_DISSIPATION_ENTROPY, CENSUS_GOLDEN_NEGATIVE_DISSIPATION_FREE_ENERGY_J,
-    CENSUS_GOLDEN_NEGATIVE_DISSIPATION_FREE_ENERGY_SPIKE_J,
-    CENSUS_GOLDEN_NEGATIVE_DISSIPATION_STRENGTH_MPA, CENSUS_HTTP_ADMISSIBILITY_REL_MARGIN,
-    CENSUS_HTTP_AGE_DAYS, CENSUS_HTTP_AIR_VOID_FRACTION, CENSUS_HTTP_CONSTITUENT_PRIMARY_KG,
-    CENSUS_HTTP_PREDICTED_STRENGTH_MPA, CENSUS_HTTP_TEMPERATURE_C, CENSUS_HTTP_WATER_KG,
-    CENSUS_INTRINSIC_STRENGTH_MPA, CENSUS_MASS_REJECT_DENSITY_KG_M3,
-    CENSUS_MASS_VIOLATION_DELTA_KG_M3, CENSUS_MIX_CALIBRATED_DENSITY_KG_M3,
-    CENSUS_NEGATIVE_DISSIPATION_DENSITY_KG_M3, CENSUS_OPEN_SYSTEM_POWER_W,
-    CENSUS_REACTION_EXTENT_HIGH, CENSUS_REACTION_EXTENT_INCREMENT, CENSUS_REACTION_EXTENT_LOW,
-    CENSUS_REACTION_EXTENT_MID, CENSUS_REACTION_EXTENT_NEAR_COMPLETE, CENSUS_REACTION_EXTENT_OVER,
-    CENSUS_REACTION_EXTENT_REGRESSION, CENSUS_STRENGTH_INTRINSIC_MPA, CENSUS_STRENGTH_MPA_MID,
-    CENSUS_STRENGTH_OPEN_SYSTEM_MPA, CENSUS_STRENGTH_REGRESSION_MPA,
-    MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
-};
+    use crate::gate::transition_proposal::{
+        CENSUS_HTTP_ADMISSIBILITY_REL_MARGIN, CENSUS_HTTP_AGE_DAYS, CENSUS_HTTP_AIR_VOID_FRACTION,
+        CENSUS_HTTP_CONSTITUENT_PRIMARY_KG, CENSUS_HTTP_PREDICTED_STRENGTH_MPA,
+        CENSUS_HTTP_TEMPERATURE_C, CENSUS_HTTP_WATER_KG, CENSUS_STRENGTH_INTRINSIC_MPA,
+    };
 
     use super::*;
 
@@ -482,8 +469,14 @@ use crate::gate::transition_proposal::{
     fn w8e14_gate_manifest_default_literals_match_prototype() {
         let m = GateManifest::default();
         assert_eq!(m.catalog_version, 1);
-        assert_eq!(m.strength_intrinsic_mpa, CENSUS_STRENGTH_INTRINSIC_MPA.value);
+        assert_eq!(
+            m.strength_intrinsic_mpa,
+            CENSUS_STRENGTH_INTRINSIC_MPA.value
+        );
         assert_eq!(m.air_void_fraction, CENSUS_HTTP_AIR_VOID_FRACTION.value);
-        assert_eq!(m.admissibility_rel_margin, CENSUS_HTTP_ADMISSIBILITY_REL_MARGIN.value);
+        assert_eq!(
+            m.admissibility_rel_margin,
+            CENSUS_HTTP_ADMISSIBILITY_REL_MARGIN.value
+        );
     }
 }
