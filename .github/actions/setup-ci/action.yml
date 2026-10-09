@@ -25,7 +25,9 @@ runs:
         F=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-foundations']['sha'])")
         A=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-cartridge-api']['sha'])")
         C=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-cartridges']['sha'])")
-        bash .github/scripts/checkout-umst-siblings.sh           "umst-foundations@${F}"           "umst-cartridge-api@${A}"           "umst-cartridges@${C}"
+        # umst-formal (public): umst-math and umst-algebra read its generated constants table (constants-rs) by path
+        FM=$(python3 -c "import tomllib; print(tomllib.load(open('.umst-pins.toml','rb'))['umst-formal']['sha'])")
+        bash .github/scripts/checkout-umst-siblings.sh           "umst-formal@${FM}"           "umst-foundations@${F}"           "umst-cartridge-api@${A}"           "umst-cartridges@${C}"
 
     - name: Skip private sibling checkout (public CI lane)
       if: inputs.checkout_private_siblings != 'true'

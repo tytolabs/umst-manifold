@@ -132,7 +132,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "k_boltzmann_j_per_k",
-        expression: "1.380649e-23 J/K (CODATA 2018; umst_math::landauer::K_B)",
+        expression: "1.380649e-23 J/K (SI 2019 exact; K_BOLTZMANN_J_PER_K = umst_constants::BOLTZMANN; umst_math::landauer::K_B)",
         evidence: "CODATA exact SI value (NIST CUU https://physics.nist.gov/cgi-bin/cuu/Value?k); umst-formal constants table row Boltzmann constant; umst-math::landauer::K_B",
         env_override: None,
         derivation: K_B_DERIVATION,
@@ -216,7 +216,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "q_hyd_j_per_kg",
-        expression: "4.5e5 J/kg (450 J/g × 1000 g/kg; formal hydrationHeatDefault; ψ = −Q_hyd·α)",
+        expression: "4.5e5 J/kg (450 J/g × 1000 g/kg; Q_HYDRATION_J_PER_KG = umst_constants::HYDRATION_HEAT_DEFAULT × 1000; ψ = −Q_hyd·α)",
         evidence: "policy: umst-formal row hydrationHeatDefault is 450 J/g, proved inside the cited clinker-phase heats (hydrationHeatDefault_in_range); J/kg follows by the exact factor 1000 g/kg",
         env_override: None,
         derivation: Q_HYD_J_PER_KG_DERIVATION,
@@ -1704,12 +1704,13 @@ pub const HOST_TEMPERATURE_FALLBACK_K: f64 = 300.0;
 pub const REFERENCE_TEMPERATURE_293_15_K: f64 =
     super::tier1_derivation::REFERENCE_TEMPERATURE_293_15_K;
 
-/// Boltzmann constant (J/K), CODATA 2018; row `k_boltzmann_j_per_k`.
-pub const K_BOLTZMANN_J_PER_K: f64 = 1.380_649e-23;
-/// Row `speed_of_light_m_per_s` (m/s), SI 2019 exact.
-pub const SPEED_OF_LIGHT_M_PER_S: f64 = 299_792_458.0;
-/// Row `avogadro_constant_per_mol` (1/mol), SI 2019 exact.
-pub const AVOGADRO_CONSTANT_PER_MOL: f64 = 6.022_140_76e23;
+/// Boltzmann constant (J/K), SI 2019 exact; row `k_boltzmann_j_per_k`. Read from the generated umst-formal
+/// table (`constants/constants.json` row `boltzmann`).
+pub const K_BOLTZMANN_J_PER_K: f64 = umst_constants::BOLTZMANN;
+/// Row `speed_of_light_m_per_s` (m/s), SI 2019 exact; umst-formal row `speedOfLight`.
+pub const SPEED_OF_LIGHT_M_PER_S: f64 = umst_constants::SPEED_OF_LIGHT;
+/// Row `avogadro_constant_per_mol` (1/mol), SI 2019 exact; umst-formal row `avogadro`.
+pub const AVOGADRO_CONSTANT_PER_MOL: f64 = umst_constants::AVOGADRO;
 /// Row `molar_gas_constant_j_per_mol_k` (J/(mol K)): `R = N_A k`.
 pub const MOLAR_GAS_CONSTANT_J_PER_MOL_K: f64 = AVOGADRO_CONSTANT_PER_MOL * K_BOLTZMANN_J_PER_K;
 /// Row `vacuum_magnetic_permeability_n_per_a2` (N/A²), CODATA 2018.
@@ -2156,6 +2157,27 @@ mod tests {
                 "{name}: {value} outside [{lo}, {hi}]"
             );
         }
+    }
+
+    /// The rows that read the generated umst-formal table carry the value of the formal row of the same
+    /// quantity, found by its id (the table, not a second literal); Q_hyd converts J/g to J/kg by 1000.
+    #[test]
+    fn formal_table_rows_read_by_code() {
+        let formal = |id: &str| {
+            umst_constants::ROWS
+                .iter()
+                .find(|r| r.id == id)
+                .unwrap_or_else(|| panic!("the formal table holds {id}"))
+                .value
+        };
+        assert_eq!(formal("boltzmann").to_bits(), super::K_BOLTZMANN_J_PER_K.to_bits());
+        assert_eq!(formal("boltzmann").to_bits(), crate::landauer::K_B.to_bits());
+        assert_eq!(formal("speedOfLight").to_bits(), super::SPEED_OF_LIGHT_M_PER_S.to_bits());
+        assert_eq!(formal("avogadro").to_bits(), super::AVOGADRO_CONSTANT_PER_MOL.to_bits());
+        assert_eq!(
+            (formal("hydrationHeatDefault") * 1_000.0).to_bits(),
+            crate::manifold::csg::Q_HYDRATION_J_PER_KG.to_bits()
+        );
     }
 
     /// The SI and JZG (1993) registry constants equal the values their authority snapshots state.

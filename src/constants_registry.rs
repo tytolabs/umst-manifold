@@ -92,19 +92,22 @@ pub const THMC_DENSE_NEWTON_MAX_STACKED_DOFS_GROUNDED: GroundedConst<usize> = Gr
     evidence: "src/physics/solvers/thmc_residual.rs post-3394b96",
 };
 
-/// CODATA 2018 Boltzmann constant (J/K) — re-export from `umst-math` when `math-constants` is on.
+/// Boltzmann constant (J/K), SI 2019 exact — re-export from `umst-math` when `math-constants` is on;
+/// `umst_math::landauer::K_B` reads the generated formal table (`umst_constants::BOLTZMANN`).
 #[cfg(feature = "math-constants")]
 pub const K_BOLTZMANN_CODATA: GroundedConst<f64> = GroundedConst {
     name: "k_boltzmann_j_per_k",
-    value: umst_math::landauer::K_B,
-    evidence: "umst-math::landauer::K_B (CODATA 2018)",
+    value: umst_math::constants::registry::K_BOLTZMANN_J_PER_K,
+    evidence: "umst-math::constants::registry::K_BOLTZMANN_J_PER_K = umst_constants::BOLTZMANN (SI 2019 exact)",
 };
 
-/// Landauer bit energy at 300 K (J/bit) — `k_B T ln 2` (CODATA 2018 `k_B`, same as `constants.rs` fallback).
+/// Landauer bit energy at 300 K (J/bit): `k_B T ln 2`, the floor `Constants.SIBridge.landauerBoundSI` fixes
+/// (umst-formal; the erase case of the second law with the exact SI `k_B`; Lean, Coq, Agda, Haskell parity).
+/// `k_B` is `umst_math::landauer::K_B`, which reads the generated formal table (`umst_constants::BOLTZMANN`).
 pub const LANDAUER_BIT_ENERGY_300K_J: GroundedConst<f64> = GroundedConst {
     name: "landauer_bit_energy_300k_j",
-    value: 1.380_649e-23 * 300.0 * std::f64::consts::LN_2,
-    evidence: "k_B T ln 2 — aligns with constants::landauer_bit_energy_joules fallback path",
+    value: umst_math::landauer::K_B * 300.0 * std::f64::consts::LN_2,
+    evidence: "Constants.SIBridge.landauerBoundSI (umst-formal): erasing one bit at T costs at least k_B T ln 2 J; evaluated at T = 300 K with k_B = umst_constants::BOLTZMANN",
 };
 
 /// THMC reaction-extent floats — SSOT in domain cartridge (`material_transition.rs` / `solvers/thmc.rs`).
@@ -154,6 +157,8 @@ const _: () = assert!(!registry_production_wired());
 
 /// Build introspection probe for registry posture done-when checks.
 #[must_use]
+// the probe reads `THMC_FLOATS_TODO` (a const today) so the flag follows the list when it empties
+#[allow(clippy::const_is_empty)]
 pub const fn registry_posture_probe() -> RegistryPostureProbe {
     RegistryPostureProbe {
         cell_id: CONSTANTS_REGISTRY_CELL_ID,
@@ -308,6 +313,10 @@ mod tests {
     fn landauer_300k_matches_runtime_helper() {
         let runtime = crate::constants::landauer_bit_energy_joules(300.0);
         assert!((LANDAUER_BIT_ENERGY_300K_J.value - runtime).abs() < 1e-30);
+        // the umst-math Landauer kernel (k_B from the formal table) at the 300 K reference gives the same floor
+        let t = ordered_float::NotNan::new(300.0).expect("finite");
+        let kernel = umst_math::landauer::landauer_bit_energy_joules(t).into_inner();
+        assert!((LANDAUER_BIT_ENERGY_300K_J.value - kernel).abs() <= 4.0 * f64::EPSILON * kernel);
     }
 
     #[cfg(any(

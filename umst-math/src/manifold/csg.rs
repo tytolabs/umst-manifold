@@ -51,7 +51,7 @@ pub fn helmholtz_gradient(q_hyd: f64) -> f64 {
 /// `UMST.Constants.SI.hydrationHeatDefault`). One kilogram is 1000 grams, so
 /// the joule-per-kilogram figure is that row times 1000. ψ = −Q_hyd·α is linear
 /// in α, so its Hessian is zero and ψ stays convex for α ∈ [0, 1].
-pub const Q_HYDRATION_J_PER_KG: f64 = 450.0 * 1_000.0;
+pub const Q_HYDRATION_J_PER_KG: f64 = umst_constants::HYDRATION_HEAT_DEFAULT * 1_000.0;
 const Q_HYDR: f64 = Q_HYDRATION_J_PER_KG;
 /// Mass-jump band (kg/m³) — registry: `gate_mass_tolerance_kg_m3`.
 pub const GATE_MASS_TOLERANCE_KG_M3: f64 = 100.0;
