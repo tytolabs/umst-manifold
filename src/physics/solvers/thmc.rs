@@ -273,8 +273,10 @@ impl ReactionExtentKinetics {
     }
 }
 
-/// Universal gas constant \(R\) for Arrhenius denominator (J·mol⁻¹·K⁻¹). CODATA-compatible float literal.
-pub const UNIVERSAL_GAS_CONSTANT_J_PER_MOL_K: f32 = 8.314_463_f32;
+/// Universal gas constant \(R = N_A k\) for the Arrhenius denominator (J·mol⁻¹·K⁻¹), the exact SI 2019
+/// value of registry row `molar_gas_constant_j_per_mol_k` rounded to `f32`.
+pub const UNIVERSAL_GAS_CONSTANT_J_PER_MOL_K: f32 =
+    umst_math::constants::registry::MOLAR_GAS_CONSTANT_J_PER_MOL_K as f32;
 
 /// Thermal plan: nodal temperature (and optional channels). Shape `[B, N, F_T]`.
 #[derive(Clone, Debug)]
@@ -1017,7 +1019,8 @@ impl Default for ThmcMonolithicNewtonConfig {
             iterations: 4_usize,
             damping: 1.0_f32,
             fd_eps: umst_math::numeric_tolerance::thmc_damped_newton_fd_eps_f32(),
-            stacked_residual_l2_tolerance: umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
+            stacked_residual_l2_tolerance:
+                umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
             stacked_residual_relative_to_initial: None,
         }
     }

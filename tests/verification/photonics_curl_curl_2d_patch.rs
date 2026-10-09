@@ -67,8 +67,8 @@ fn solve_maxwell_uniform_brick_two_quad_strip_residual() {
     let fe: Vec<i64> = faces_flat[..kc].to_vec();
     let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
     let omega = core::f32::consts::TAU * f_hz;
-    let k0 = omega / 2.998e8_f32;
-    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let k0 = omega / (umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32);
+    let mu0 = umst_math::constants::registry::VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2 as f32;
     let scale_j = omega * mu0;
     let jv = j.into_data().value;
     let ones_eps = vec![1.0_f32; n];

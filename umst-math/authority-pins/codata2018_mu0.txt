@@ -1,0 +1,9 @@
+# CODATA 2018 recommended value: vacuum magnetic permeability mu_0
+# Source: NIST Reference on Constants, Units, and Uncertainty (CODATA 2018), https://physics.nist.gov/cgi-bin/cuu/Value?mu0
+# Under the 2019 SI mu_0 is measured (via the fine-structure constant), no longer exactly 4 pi 1e-7 N/A^2.
+symbol: mu_0
+value_SI: 1.25663706212e-6
+unit: N/A^2
+standard_uncertainty: 0.00000000019e-6
+relative_standard_uncertainty: 1.5e-10
+revision: CODATA2018

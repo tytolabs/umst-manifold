@@ -60,9 +60,10 @@ pub const LJ_JOHNSON_1993_OP5_CLAIMED: bool = false;
 /// Whether the teqp-faithful MBWR alphar / P* / K* surface is landed in this module.
 pub const LJ_JOHNSON_1993_REFERENCE_SURFACE_LANDED: bool = true;
 
-/// Literature-approximate LJ critical temperature in reduced units (Johnson et al. 1993 regime).
-/// Used only as a **documentation / supercritical-check fence**, not a fitted critical solver.
-pub const LJ_JOHNSON_1993_T_C_STAR_APPROX: f64 = 1.32;
+/// LJ critical temperature in reduced units from the JZG (1993) fit (registry row
+/// `lj_jzg1993_critical_temperature_reduced`). Used only as a **documentation / supercritical-check
+/// fence**, not a fitted critical solver.
+pub const LJ_JOHNSON_1993_T_C_STAR_APPROX: f64 = umst_math::constants::registry::JZG1993_T_C_STAR;
 
 /// Honest deepen fence for meta / fleet probes.
 pub const LJ_JOHNSON_1993_HONEST_FENCE: &str =
@@ -121,45 +122,11 @@ pub fn lj_johnson_1993_reduced_state_finite(t_star: f64, rho_star: f64) -> bool 
     t_star.is_finite() && rho_star.is_finite() && t_star > 0.0 && rho_star >= 0.0
 }
 
-const GAMMA: f64 = 3.0;
+/// Exponent `γ` of `exp(-γ ρ*²)` in the MBWR form (registry row `lj_jzg1993_mbwr_gamma`).
+const GAMMA: f64 = umst_math::constants::registry::JZG1993_MBWR_GAMMA;
 
-/// Coefficient vector `x[1..32]` from Johnson et al. (1993) as embedded in teqp `LJ126Johnson1993`.
-#[allow(clippy::excessive_precision)]
-const X: [f64; 33] = [
-    0.0,
-    0.8623085097507421,
-    2.976218765822098,
-    -8.402230115796038,
-    0.1054136629203555,
-    -0.8564583828174598,
-    1.582759470107601,
-    0.7639421948305453,
-    1.753173414312048,
-    2.798291772190376e3,
-    -4.8394220260857657e-2,
-    0.9963265197721935,
-    -3.698000291272493e1,
-    2.084012299434647e1,
-    8.305402124717285e1,
-    -9.574799715203068e2,
-    -1.477746229234994e2,
-    6.398607852471505e1,
-    1.603993673294834e1,
-    6.805916615864377e1,
-    -2.791293578795945e3,
-    -6.245128304568454,
-    -8.116836104958410e3,
-    1.488735559561229e1,
-    -1.059346754655084e4,
-    -1.131607632802822e2,
-    -8.867771540418822e3,
-    -3.986982844450543e1,
-    -4.689270299917261e3,
-    2.593535277438717e2,
-    -2.694523589434903e3,
-    -7.218487631550215e2,
-    1.721802063863269e2,
-];
+/// Coefficient vector `x[1..32]` of Johnson et al. (1993) (registry row `lj_jzg1993_mbwr_coefficients`).
+const X: [f64; 33] = umst_math::constants::registry::JZG1993_MBWR_X;
 
 #[inline]
 fn pow2(t: f64) -> f64 {

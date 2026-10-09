@@ -93,6 +93,58 @@ pub const K2_TIER0_LANDAUER_ROW_NAMES: &[&str] = &["landauer_floor_j_per_bit"];
 /// K-2 deepen: ISO 554 reference-temperature row (Tier-1 `Definition`, local authority pin).
 pub const K2_ISO554_REFERENCE_TEMPERATURE_ROW_NAMES: &[&str] = &["reference_temperature_293_15_k"];
 
+/// SI 2019 defining-constant pin (c, N_A, k and R = N_A·k), local authority snapshot.
+pub const SI2019_DEFINING_CONSTANTS_AUTHORITY_URL: &str =
+    "umst-math/authority-pins/si2019_defining_constants.txt";
+
+/// Pinned SHA-256 of [`authority-pins/si2019_defining_constants.txt`](../../authority-pins/si2019_defining_constants.txt).
+pub const SI2019_DEFINING_CONSTANTS_AUTHORITY_SHA256: &str =
+    "a64ecf6b4cf78bed6c88b2ce01b84247c824ceeed83639f608ace18cc001364e";
+
+/// `speed_of_light_m_per_s`, `avogadro_constant_per_mol`, `molar_gas_constant_j_per_mol_k`: exact SI 2019 values.
+pub const SI2019_DEFINING_CONSTANTS_DERIVATION: Derivation = Derivation::Definition {
+    authority_url: SI2019_DEFINING_CONSTANTS_AUTHORITY_URL,
+    expected_sha256: SI2019_DEFINING_CONSTANTS_AUTHORITY_SHA256,
+};
+
+/// Johnson, Zollweg and Gubbins (1993) Lennard-Jones MBWR coefficient pin (doi:10.1080/00268979300100411).
+pub const JZG1993_LJ_MBWR_AUTHORITY_URL: &str =
+    "umst-math/authority-pins/jzg1993_lj_mbwr_coefficients.txt";
+
+/// Pinned SHA-256 of [`authority-pins/jzg1993_lj_mbwr_coefficients.txt`](../../authority-pins/jzg1993_lj_mbwr_coefficients.txt).
+pub const JZG1993_LJ_MBWR_AUTHORITY_SHA256: &str =
+    "d896643e492129446905a3cd1df4558349f43115968bd235a6c680860cee18b7";
+
+/// `lj_jzg1993_mbwr_coefficients`, `lj_jzg1993_mbwr_gamma`, `lj_jzg1993_critical_temperature_reduced`: cited table.
+pub const JZG1993_LJ_MBWR_DERIVATION: Derivation = Derivation::Definition {
+    authority_url: JZG1993_LJ_MBWR_AUTHORITY_URL,
+    expected_sha256: JZG1993_LJ_MBWR_AUTHORITY_SHA256,
+};
+
+/// CODATA 2018 vacuum magnetic permeability pin (measured under the 2019 SI).
+pub const CODATA2018_MU0_AUTHORITY_URL: &str = "umst-math/authority-pins/codata2018_mu0.txt";
+
+/// Pinned SHA-256 of [`authority-pins/codata2018_mu0.txt`](../../authority-pins/codata2018_mu0.txt).
+pub const CODATA2018_MU0_AUTHORITY_SHA256: &str =
+    "699ee91ebf950f286c72976c242e77dca7891bdc922abd3194bcceeb808dde11";
+
+/// `vacuum_magnetic_permeability_n_per_a2`: CODATA 2018 recommended value.
+pub const CODATA2018_MU0_DERIVATION: Derivation = Derivation::Definition {
+    authority_url: CODATA2018_MU0_AUTHORITY_URL,
+    expected_sha256: CODATA2018_MU0_AUTHORITY_SHA256,
+};
+
+/// Rows grounded on the SI 2019 defining constants and the JZG (1993) Lennard-Jones table.
+pub const K2_SI_AND_CITED_EOS_ROW_NAMES: &[&str] = &[
+    "speed_of_light_m_per_s",
+    "avogadro_constant_per_mol",
+    "molar_gas_constant_j_per_mol_k",
+    "lj_jzg1993_mbwr_coefficients",
+    "lj_jzg1993_mbwr_gamma",
+    "lj_jzg1993_critical_temperature_reduced",
+    "vacuum_magnetic_permeability_n_per_a2",
+];
+
 /// Canonical K-2 symbolic ids (operator / egoffplan vocabulary).
 pub const CANONICAL_SYMBOLS: &[&str] = &["LN_2", "K_B", "T_ROOM", "RCC_FLOOR"];
 

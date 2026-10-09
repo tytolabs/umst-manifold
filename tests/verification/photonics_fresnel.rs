@@ -734,7 +734,10 @@ fn apply_te_helmholtz_chain(n: usize, h: f32, k0: f32, eps: &[C], e: &[C]) -> Ve
         re: k0 * k0,
         im: 0.0,
     };
-    let one_h2 = C { re: inv_h2, im: 0.0 };
+    let one_h2 = C {
+        re: inv_h2,
+        im: 0.0,
+    };
     let mut out = vec![C::zero(); n];
     for i in 0..n {
         if i == 0 || i + 1 == n {
@@ -742,7 +745,10 @@ fn apply_te_helmholtz_chain(n: usize, h: f32, k0: f32, eps: &[C], e: &[C]) -> Ve
             continue;
         }
         let lap = C::add(
-            C::add(C::mul(one_h2, e[i - 1]), C::mul(C::scale(-2.0, one_h2), e[i])),
+            C::add(
+                C::mul(one_h2, e[i - 1]),
+                C::mul(C::scale(-2.0, one_h2), e[i]),
+            ),
             C::mul(one_h2, e[i + 1]),
         );
         out[i] = C::add(lap, C::mul(k0c, C::mul(eps[i], e[i])));
@@ -788,7 +794,7 @@ fn helmholtz_mms_sin_mode_recover() {
     // so the discrete system is well-conditioned (pure resonance would make A nearly singular).
     let k_spatial = core::f32::consts::PI / l;
     let k0 = 0.85 * k_spatial;
-    let c_light = 2.998e8_f32;
+    let c_light = umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32;
     let f_hz = k0 * c_light / (2.0 * core::f32::consts::PI);
 
     let edges = chain_edges(n);
@@ -806,7 +812,7 @@ fn helmholtz_mms_sin_mode_recover() {
 
     let b = apply_te_helmholtz_chain(n, h, k0, &eps, &e_ex);
     let omega = 2.0 * core::f32::consts::PI * f_hz;
-    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let mu0 = umst_math::constants::registry::VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2 as f32;
     let scale = omega * mu0;
 
     let mut jim = vec![0.0_f32; n];
@@ -906,7 +912,7 @@ fn two_half_spaces_fresnel_te_no_pml_matches_analytic() {
     let l = (n - 1) as f32 * h;
     let k_spatial = core::f32::consts::PI / l;
     let k0 = 0.85_f32 * k_spatial;
-    let c_light = 2.998e8_f32;
+    let c_light = umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32;
     let f_hz = k0 * c_light / (2.0 * core::f32::consts::PI);
 
     let n_left = n / 2;
@@ -928,7 +934,7 @@ fn two_half_spaces_fresnel_te_no_pml_matches_analytic() {
 
     let b = apply_te_helmholtz_chain(n, h, k0, &eps, &e_ex);
     let omega = 2.0 * core::f32::consts::PI * f_hz;
-    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let mu0 = umst_math::constants::registry::VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2 as f32;
     let scale = omega * mu0;
 
     let mut jim = vec![0.0_f32; n];
@@ -1456,7 +1462,7 @@ fn dec_te_primal_tensor_matches_chain_stencil() {
     let coords = coords_line_x(n, h);
     let f_hz = 2.4e9_f32;
     let omega = 2.0 * core::f32::consts::PI * f_hz;
-    let k0 = omega / 2.998e8_f32;
+    let k0 = omega / (umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32);
 
     let mut eyv = vec![0.0_f32; n];
     for i in 0..n {
@@ -1680,8 +1686,8 @@ fn solve_maxwell_dec_patch_quad_split_pin_residual_tight() {
     let fe: Vec<i64> = faces_flat[..kc].to_vec();
     let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
     let omega = core::f32::consts::TAU * f_hz;
-    let k0 = omega / 2.998e8_f32;
-    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let k0 = omega / (umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32);
+    let mu0 = umst_math::constants::registry::VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2 as f32;
     let scale_j = omega * mu0;
     let jv = j.into_data().value;
     let ones_eps = vec![1.0_f32; n];
@@ -1876,8 +1882,8 @@ fn solve_maxwell_curl_curl_dec_patch_csr_inner_matches_dense_quad_split() {
     let fe: Vec<i64> = faces_flat[..kc].to_vec();
     let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
     let omega = core::f32::consts::TAU * f_hz;
-    let k0 = omega / 2.998e8_f32;
-    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let k0 = omega / (umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32);
+    let mu0 = umst_math::constants::registry::VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2 as f32;
     let scale_j = omega * mu0;
     let jv = j.into_data().value;
     let ones_eps = vec![1.0_f32; n];
@@ -1977,8 +1983,8 @@ fn solve_maxwell_dec_patch_quad_split_scalar_eps_imag_stacked_residual() {
     let fe: Vec<i64> = faces_flat[..kc].to_vec();
     let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
     let omega = core::f32::consts::TAU * f_hz;
-    let k0 = omega / 2.998e8_f32;
-    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let k0 = omega / (umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32);
+    let mu0 = umst_math::constants::registry::VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2 as f32;
     let scale_j = omega * mu0;
     let jv = j.into_data().value;
     let mut b = vec![0.0_f32; dim];
@@ -2093,7 +2099,7 @@ fn dec_patch_gauged_csr_coo_matvec_matches_operator_quad_split() {
     let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
     let f_hz = 2.4e9_f32;
     let omega = core::f32::consts::TAU * f_hz;
-    let k0 = omega / 2.998e8_f32;
+    let k0 = omega / (umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32);
     let ones_eps = vec![1.0_f32; n];
     let drop_tol = 1e-8_f32;
     let coo = dec_patch_maxwell_gauged_operator_csr_coo(
@@ -2230,8 +2236,8 @@ fn solve_maxwell_dec_patch_quad_split_tensor_eps_residual() {
     let fe: Vec<i64> = faces_flat[..kc].to_vec();
     let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
     let omega = core::f32::consts::TAU * f_hz;
-    let k0 = omega / 2.998e8_f32;
-    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let k0 = omega / (umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32);
+    let mu0 = umst_math::constants::registry::VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2 as f32;
     let scale_j = omega * mu0;
     let jv = j.into_data().value;
     dec_patch_maxwell_natural_matvec_flat(
@@ -2321,8 +2327,8 @@ fn solve_maxwell_dec_patch_quad_split_embedded_r3_residual() {
     let fe: Vec<i64> = faces_flat[..kc].to_vec();
     let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
     let omega = core::f32::consts::TAU * f_hz;
-    let k0 = omega / 2.998e8_f32;
-    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let k0 = omega / (umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32);
+    let mu0 = umst_math::constants::registry::VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2 as f32;
     let scale_j = omega * mu0;
     let jv = j.into_data().value;
     let ones_eps = vec![1.0_f32; n];
@@ -2416,8 +2422,8 @@ fn solve_maxwell_dec_patch_two_quads_strip_residual() {
     let fe: Vec<i64> = faces_flat[..kc].to_vec();
     let fs: Vec<f32> = faces_flat[kc..].iter().map(|&s| s as f32).collect();
     let omega = core::f32::consts::TAU * f_hz;
-    let k0 = omega / 2.998e8_f32;
-    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let k0 = omega / (umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32);
+    let mu0 = umst_math::constants::registry::VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2 as f32;
     let scale_j = omega * mu0;
     let jv = j.into_data().value;
     let ones_eps = vec![1.0_f32; n];
@@ -2552,7 +2558,7 @@ fn dec_te_primal_piecewise_eps_matches_chain_stencil() {
     let coords = coords_line_x(n, h);
     let f_hz = 1.7e9_f32;
     let omega = 2.0 * core::f32::consts::PI * f_hz;
-    let k0 = omega / 2.998e8_f32;
+    let k0 = omega / (umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32);
 
     let mut eyv = vec![0.0_f32; n];
     for i in 0..n {
@@ -2604,7 +2610,7 @@ fn fresnel_interface_standing_wave_proxy() {
     let dev = device();
     let n = 801usize;
     let f_hz = 500e12_f32;
-    let c_light = 2.998e8_f32;
+    let c_light = umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32;
     let lambda = c_light / f_hz;
     let domain = 12.0 * lambda;
     let h = domain / (n - 1) as f32;
@@ -2719,7 +2725,7 @@ fn quarter_wave_stack_n10_reflectivity_above_0p95() {
 fn quarter_wave_stack_high_reflectivity() {
     let dev = device();
     let f_hz = 10e9_f32;
-    let c_light = 2.998e8_f32;
+    let c_light = umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32;
     let lambda = c_light / f_hz;
     let n1 = 2.0_f32;
     let n2 = 1.0_f32;

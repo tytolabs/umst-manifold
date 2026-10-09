@@ -136,6 +136,55 @@ pub static REGISTRY: &[ConstantEntry] = &[
         derivation: K_B_DERIVATION,
     },
     ConstantEntry {
+        name: "speed_of_light_m_per_s",
+        expression: "299792458 m/s (SI 2019 defining constant c, exact; SPEED_OF_LIGHT_M_PER_S)",
+        evidence: "BIPM SI Brochure 9th ed. (2019) Table 1; umst-math/authority-pins/si2019_defining_constants.txt",
+        env_override: None,
+        derivation: super::tier1_derivation::SI2019_DEFINING_CONSTANTS_DERIVATION,
+    },
+    ConstantEntry {
+        name: "avogadro_constant_per_mol",
+        expression: "6.02214076e23 1/mol (SI 2019 defining constant N_A, exact; AVOGADRO_CONSTANT_PER_MOL)",
+        evidence: "BIPM SI Brochure 9th ed. (2019) Table 1; umst-math/authority-pins/si2019_defining_constants.txt",
+        env_override: None,
+        derivation: super::tier1_derivation::SI2019_DEFINING_CONSTANTS_DERIVATION,
+    },
+    ConstantEntry {
+        name: "molar_gas_constant_j_per_mol_k",
+        expression: "8.31446261815324 J/(mol K) (R = N_A k, exact product; MOLAR_GAS_CONSTANT_J_PER_MOL_K)",
+        evidence: "SI 2019: N_A and k exact, so R = N_A k is exact; umst-math/authority-pins/si2019_defining_constants.txt",
+        env_override: None,
+        derivation: super::tier1_derivation::SI2019_DEFINING_CONSTANTS_DERIVATION,
+    },
+    ConstantEntry {
+        name: "lj_jzg1993_mbwr_coefficients",
+        expression: "33-entry reduced coefficient vector x[0..32] of the Lennard-Jones MBWR equation of state (JZG1993_MBWR_X)",
+        evidence: "Johnson, Zollweg, Gubbins, Mol. Phys. 78, 591 (1993), doi:10.1080/00268979300100411, as embedded in NIST teqp LJ126Johnson1993; umst-math/authority-pins/jzg1993_lj_mbwr_coefficients.txt",
+        env_override: None,
+        derivation: super::tier1_derivation::JZG1993_LJ_MBWR_DERIVATION,
+    },
+    ConstantEntry {
+        name: "lj_jzg1993_mbwr_gamma",
+        expression: "3 reduced exponent gamma of exp(-gamma rho*^2) in the JZG (1993) MBWR form (JZG1993_MBWR_GAMMA)",
+        evidence: "Johnson, Zollweg, Gubbins (1993); umst-math/authority-pins/jzg1993_lj_mbwr_coefficients.txt",
+        env_override: None,
+        derivation: super::tier1_derivation::JZG1993_LJ_MBWR_DERIVATION,
+    },
+    ConstantEntry {
+        name: "vacuum_magnetic_permeability_n_per_a2",
+        expression: "1.25663706212e-6 N/A^2 (CODATA 2018 mu_0, relative standard uncertainty 1.5e-10; VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2)",
+        evidence: "CODATA 2018 (NIST CUU https://physics.nist.gov/cgi-bin/cuu/Value?mu0); umst-math/authority-pins/codata2018_mu0.txt",
+        env_override: None,
+        derivation: super::tier1_derivation::CODATA2018_MU0_DERIVATION,
+    },
+    ConstantEntry {
+        name: "lj_jzg1993_critical_temperature_reduced",
+        expression: "1.313 reduced critical temperature k_B T_c / epsilon of the JZG (1993) fit (JZG1993_T_C_STAR)",
+        evidence: "Johnson, Zollweg, Gubbins (1993); umst-math/authority-pins/jzg1993_lj_mbwr_coefficients.txt",
+        env_override: None,
+        derivation: super::tier1_derivation::JZG1993_LJ_MBWR_DERIVATION,
+    },
+    ConstantEntry {
         name: "rcc_floor_residual_coherence",
         expression: "0.25 lower bound (RCC floor; residual coherence capacity)",
         evidence: "policy: residual-coherence floor 0.25; no formal statement fixes it",
@@ -1655,6 +1704,55 @@ pub const REFERENCE_TEMPERATURE_293_15_K: f64 =
 
 /// Boltzmann constant (J/K), CODATA 2018; row `k_boltzmann_j_per_k`.
 pub const K_BOLTZMANN_J_PER_K: f64 = 1.380_649e-23;
+/// Row `speed_of_light_m_per_s` (m/s), SI 2019 exact.
+pub const SPEED_OF_LIGHT_M_PER_S: f64 = 299_792_458.0;
+/// Row `avogadro_constant_per_mol` (1/mol), SI 2019 exact.
+pub const AVOGADRO_CONSTANT_PER_MOL: f64 = 6.022_140_76e23;
+/// Row `molar_gas_constant_j_per_mol_k` (J/(mol K)): `R = N_A k`.
+pub const MOLAR_GAS_CONSTANT_J_PER_MOL_K: f64 = AVOGADRO_CONSTANT_PER_MOL * K_BOLTZMANN_J_PER_K;
+/// Row `vacuum_magnetic_permeability_n_per_a2` (N/A²), CODATA 2018.
+pub const VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2: f64 = 1.256_637_062_12e-6;
+/// Row `lj_jzg1993_mbwr_gamma` (reduced).
+pub const JZG1993_MBWR_GAMMA: f64 = 3.0;
+/// Row `lj_jzg1993_critical_temperature_reduced` (reduced).
+pub const JZG1993_T_C_STAR: f64 = 1.313;
+/// Row `lj_jzg1993_mbwr_coefficients`: `x[1..32]` of Johnson, Zollweg and Gubbins (1993); `x[0]` is unused so `x[i]` keeps the paper's 1-based index.
+#[allow(clippy::excessive_precision)]
+pub const JZG1993_MBWR_X: [f64; 33] = [
+    0.0,
+    0.8623085097507421,
+    2.976218765822098,
+    -8.402230115796038,
+    0.1054136629203555,
+    -0.8564583828174598,
+    1.582759470107601,
+    0.7639421948305453,
+    1.753173414312048,
+    2.798291772190376e3,
+    -4.8394220260857657e-2,
+    0.9963265197721935,
+    -3.698000291272493e1,
+    2.084012299434647e1,
+    8.305402124717285e1,
+    -9.574799715203068e2,
+    -1.477746229234994e2,
+    6.398607852471505e1,
+    1.603993673294834e1,
+    6.805916615864377e1,
+    -2.791293578795945e3,
+    -6.245128304568454,
+    -8.116836104958410e3,
+    1.488735559561229e1,
+    -1.059346754655084e4,
+    -1.131607632802822e2,
+    -8.867771540418822e3,
+    -3.986982844450543e1,
+    -4.689270299917261e3,
+    2.593535277438717e2,
+    -2.694523589434903e3,
+    -7.218487631550215e2,
+    1.721802063863269e2,
+];
 /// Row `transition_tolerance`.
 pub const TRANSITION_TOLERANCE: f64 = 1e-6;
 /// Row `admissibility_margin_eps`.
@@ -1758,7 +1856,7 @@ pub const REGISTRY_BATCH_ROW_NAME_LISTS: &[&[&str]] = {
     use super::pool_q_constants_manifold::POOL_Q_REGISTRY_ROW_NAMES;
     use super::tier1_derivation::{
         K2_ISO554_REFERENCE_TEMPERATURE_ROW_NAMES, K2_REGISTRY_ROW_NAMES,
-        K2_TIER0_LANDAUER_ROW_NAMES,
+        K2_SI_AND_CITED_EOS_ROW_NAMES, K2_TIER0_LANDAUER_ROW_NAMES,
     };
     use super::tier2_derivation::{
         K3_REGISTRY_ROW_NAMES, K3_TIER1_MEASUREMENT_ROW_NAMES, K3_TIER2_GATE_ROW_NAMES,
@@ -1780,6 +1878,7 @@ pub const REGISTRY_BATCH_ROW_NAME_LISTS: &[&[&str]] = {
         K2_REGISTRY_ROW_NAMES,
         K2_TIER0_LANDAUER_ROW_NAMES,
         K2_ISO554_REFERENCE_TEMPERATURE_ROW_NAMES,
+        K2_SI_AND_CITED_EOS_ROW_NAMES,
         K3_REGISTRY_ROW_NAMES,
         K3_TIER1_MEASUREMENT_ROW_NAMES,
         K3_TIER2_GATE_ROW_NAMES,
@@ -2054,6 +2153,40 @@ mod tests {
                 lo < hi && (lo..=hi).contains(&value),
                 "{name}: {value} outside [{lo}, {hi}]"
             );
+        }
+    }
+
+    /// The SI and JZG (1993) registry constants equal the values their authority snapshots state.
+    #[test]
+    fn si_and_jzg_constants_match_their_authority_pins() {
+        fn value_of<'a>(pin: &'a str, key: &str) -> Vec<&'a str> {
+            pin.lines()
+                .filter_map(|l| l.strip_prefix(key))
+                .map(str::trim)
+                .collect()
+        }
+        let si = include_str!("../../authority-pins/si2019_defining_constants.txt");
+        let si_values = value_of(si, "value_SI:");
+        let parse = |v: &str| v.parse::<f64>().expect("SI value");
+        assert_eq!(parse(si_values[0]), super::SPEED_OF_LIGHT_M_PER_S);
+        assert_eq!(parse(si_values[1]), super::AVOGADRO_CONSTANT_PER_MOL);
+        assert_eq!(parse(si_values[2]), super::K_BOLTZMANN_J_PER_K);
+        let mu0 = include_str!("../../authority-pins/codata2018_mu0.txt");
+        assert_eq!(
+            parse(value_of(mu0, "value_SI:")[0]),
+            super::VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2
+        );
+        let r = parse(si_values[3]);
+        assert!((super::MOLAR_GAS_CONSTANT_J_PER_MOL_K - r).abs() <= r * f64::EPSILON);
+
+        let jzg = include_str!("../../authority-pins/jzg1993_lj_mbwr_coefficients.txt");
+        let scalars = value_of(jzg, "value:");
+        assert_eq!(parse(scalars[0]), super::JZG1993_MBWR_GAMMA);
+        assert_eq!(parse(scalars[1]), super::JZG1993_T_C_STAR);
+        for (k, x) in super::JZG1993_MBWR_X.iter().enumerate() {
+            let row = value_of(jzg, &format!("x[{k}]:"));
+            assert_eq!(row.len(), 1, "one x[{k}] row");
+            assert_eq!(parse(row[0]), *x, "x[{k}]");
         }
     }
 

@@ -68,7 +68,8 @@ impl ReactionExtentKineticsSpec {
         Self {
             arrhenius_prefactor_s: 1.0,
             activation_energy_j_per_mol: 1.0,
-            gas_constant_j_per_mol_k: 8.314_463,
+            gas_constant_j_per_mol_k: umst_math::constants::registry::MOLAR_GAS_CONSTANT_J_PER_MOL_K
+                as f32,
             t_min_k: 1.0,
             t_boost_ref_k: crate::constants::CELSIUS_TO_KELVIN_OFFSET_K as f32,
             t_boost_per_k: 0.0,

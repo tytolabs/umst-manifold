@@ -135,9 +135,9 @@ use crate::physics::dec_primal::{
     dec_primal_max_abs_d1_of_scalar_gradient, primal_divergence_from_edge_flux_topo,
     primal_scalar_edge_increment,
 };
-use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
 #[cfg(feature = "photonics")]
 use crate::physics::mechanics::bar_pcg_spectral_stall;
+use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
 #[cfg(feature = "photonics")]
 use crate::physics::topology::EdgeTopology;
 use crate::physics::PhysicsError;
@@ -270,6 +270,15 @@ struct UniformChain {
     len: usize,
     h: f32,
 }
+
+/// Vacuum speed of light (m/s) for `k_0 = ω / c`: the exact SI 2019 value of registry row
+/// `speed_of_light_m_per_s`, rounded to `f32` (the solver state is `f32`).
+const SPEED_OF_LIGHT_F32: f32 = umst_math::constants::registry::SPEED_OF_LIGHT_M_PER_S as f32;
+
+/// Vacuum magnetic permeability (N/A²): the CODATA 2018 value of registry row
+/// `vacuum_magnetic_permeability_n_per_a2`, rounded to `f32`.
+const VACUUM_MAGNETIC_PERMEABILITY_F32: f32 =
+    umst_math::constants::registry::VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2 as f32;
 
 /// Row-major nodal **3×3** relative permittivity: channel **`4`** is \(\varepsilon_{yy}\) (TE stub).
 #[cfg(feature = "photonics")]
@@ -483,8 +492,8 @@ fn uniform_chain_te_tridiagonal_and_rhs(
     pml_max_sigma: f32,
 ) -> (Vec<C>, Vec<C>, Vec<C>, Vec<C>) {
     let omega = 2.0 * core::f32::consts::PI * frequency_hz;
-    let k0 = omega / 2.998e8_f32;
-    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let k0 = omega / SPEED_OF_LIGHT_F32;
+    let mu0 = VACUUM_MAGNETIC_PERMEABILITY_F32;
     let scale_j = omega * mu0;
 
     let mut rhs = vec![C::zero(); chain.len];
@@ -536,7 +545,10 @@ fn uniform_chain_te_tridiagonal_and_rhs(
             continue;
         }
 
-        let one_h2 = C { re: inv_h2, im: 0.0 };
+        let one_h2 = C {
+            re: inv_h2,
+            im: 0.0,
+        };
         alpha[i] = one_h2;
         gamma[i] = one_h2;
         beta[i] = C::add(C::scale(-2.0, one_h2), C::mul(k0c, eps_node[i]));
@@ -569,7 +581,7 @@ fn uniform_chain_tm_tridiagonal_and_rhs(
         pml_max_sigma,
     );
     let omega = 2.0 * core::f32::consts::PI * frequency_hz;
-    let k0 = omega / 2.998e8_f32;
+    let k0 = omega / SPEED_OF_LIGHT_F32;
     let k0c = C {
         re: k0 * k0,
         im: 0.0,
@@ -655,9 +667,13 @@ pub enum DecPatchInnerCgOutcome {
 pub enum DecPatchInnerCgRefusal {
     NotSpdProven,
     IndefiniteConjugateDirection,
-    ResidualAboveTolerance { rel_residual: f32 },
+    ResidualAboveTolerance {
+        rel_residual: f32,
+    },
     /// A-norm estimate failed to halve over the Lanczos window. Not a residual certificate.
-    SpectralANormStall { rel_residual: f32 },
+    SpectralANormStall {
+        rel_residual: f32,
+    },
 }
 
 /// Injected knobs for the **small dense** [`PhotonicsDecFacesPatch`] solve branch.
@@ -1122,15 +1138,16 @@ impl PhotonicsSolver {
             }
 
             if let Some(chain) = extract_uniform_x_chain::<B>(n, &edges_b1, &coords_n3) {
-                let perm_real_host = match nodal_eps_r_real_for_te_chain(&relative_permittivity, d[0], n) {
-                    Some(v) => v,
-                    None => {
-                        return Err(PhysicsError::UnsupportedLayout {
+                let perm_real_host =
+                    match nodal_eps_r_real_for_te_chain(&relative_permittivity, d[0], n) {
+                        Some(v) => v,
+                        None => {
+                            return Err(PhysicsError::UnsupportedLayout {
                             context:
                                 "solve_maxwell_curl_curl: unsupported relative_permittivity layout",
                         });
-                    }
-                };
+                        }
+                    };
                 let perm_imag_host = eps_r_imag.clone().into_data().value;
                 let j_flat = impressed_current.clone().into_data().value;
                 let mut sr = vec![0.0_f32; n];
@@ -1339,7 +1356,8 @@ fn dec_patch_sym3_spd_witness(a9: &[f32; 9]) -> bool {
     if !(m2.is_finite() && m2 > 0.0_f32) {
         return false;
     }
-    let det = a00 * (a11 * a22 - a12 * a12) - a01 * (a01 * a22 - a12 * a02) + a02 * (a01 * a12 - a11 * a02);
+    let det = a00 * (a11 * a22 - a12 * a12) - a01 * (a01 * a22 - a12 * a02)
+        + a02 * (a01 * a12 - a11 * a02);
     det.is_finite() && det > 0.0_f32
 }
 
@@ -1534,7 +1552,9 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
                     rel_res
                 );
                 return DecPatchInnerCgOutcome::Refused(
-                    DecPatchInnerCgRefusal::SpectralANormStall { rel_residual: rel_res },
+                    DecPatchInnerCgRefusal::SpectralANormStall {
+                        rel_residual: rel_res,
+                    },
                 );
             }
             Ok(Some(false)) | Ok(None) => {}
@@ -1553,7 +1573,9 @@ fn solve_maxwell_dec_patch_conjugate_gradient(
         iter,
         max_iter
     );
-    DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::ResidualAboveTolerance { rel_residual: rel_res })
+    DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::ResidualAboveTolerance {
+        rel_residual: rel_res,
+    })
 }
 
 /// **COO** triplets \((\texttt{row},\texttt{col},\texttt{val})\) for the **gauge-pinned** patch Maxwell
@@ -1822,7 +1844,9 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
                     rel_res
                 );
                 return DecPatchInnerCgOutcome::Refused(
-                    DecPatchInnerCgRefusal::SpectralANormStall { rel_residual: rel_res },
+                    DecPatchInnerCgRefusal::SpectralANormStall {
+                        rel_residual: rel_res,
+                    },
                 );
             }
             Ok(Some(false)) | Ok(None) => {}
@@ -1841,7 +1865,9 @@ fn solve_maxwell_dec_patch_conjugate_gradient_csr(
         iter,
         max_iter
     );
-    DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::ResidualAboveTolerance { rel_residual: rel_res })
+    DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::ResidualAboveTolerance {
+        rel_residual: rel_res,
+    })
 }
 
 /// Stacked real operator for \(\mathbf{E}=\mathbf{E}'+i\mathbf{E}''\) with nodal scalar \(\varepsilon''\)
@@ -2106,11 +2132,9 @@ fn dec_patch_try_csr_inner_lossless(
         "dec_patch_try_csr_inner_lossless: CSR matvec CG (N={n}, nnz={})",
         va.len()
     );
-    Some(
-        solve_maxwell_dec_patch_conjugate_gradient_csr(
-            &rp, &ci, &va, b, dim, rel_tol, max_iter, spd,
-        ),
-    )
+    Some(solve_maxwell_dec_patch_conjugate_gradient_csr(
+        &rp, &ci, &va, b, dim, rel_tol, max_iter, spd,
+    ))
 }
 
 /// Primal **SI edge lengths** \(\ell_e=\lVert \mathbf{x}_j-\mathbf{x}_i\rVert\) for each oriented edge in `edges_b1`
@@ -2554,8 +2578,8 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
     }
 
     let omega = 2.0 * core::f32::consts::PI * frequency_hz;
-    let k0 = omega / 2.998e8_f32;
-    let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+    let k0 = omega / SPEED_OF_LIGHT_F32;
+    let mu0 = VACUUM_MAGNETIC_PERMEABILITY_F32;
     let scale_j = omega * mu0;
     let j_flat = impressed_current.clone().into_data().value;
 
@@ -2584,18 +2608,19 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
     let mut sol: Option<Vec<f32>> = None;
     let mut cg_refusal: Option<DecPatchInnerCgRefusal> = None;
 
-    let absorb_cg_outcome = |outcome: DecPatchInnerCgOutcome,
-                             sol: &mut Option<Vec<f32>>,
-                             cg_refusal: &mut Option<DecPatchInnerCgRefusal>| {
-        match outcome {
-            DecPatchInnerCgOutcome::Converged(v) => {
-                *sol = Some(v);
+    let absorb_cg_outcome =
+        |outcome: DecPatchInnerCgOutcome,
+         sol: &mut Option<Vec<f32>>,
+         cg_refusal: &mut Option<DecPatchInnerCgRefusal>| {
+            match outcome {
+                DecPatchInnerCgOutcome::Converged(v) => {
+                    *sol = Some(v);
+                }
+                DecPatchInnerCgOutcome::Refused(r) => {
+                    *cg_refusal = Some(r);
+                }
             }
-            DecPatchInnerCgOutcome::Refused(r) => {
-                *cg_refusal = Some(r);
-            }
-        }
-    };
+        };
 
     if lossy {
         let dim2 = 2 * dim;
@@ -2751,25 +2776,29 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
         }
     }
     if sol.is_none() && !lossy {
-        absorb_cg_outcome(solve_maxwell_dec_patch_conjugate_gradient(
-            n,
-            n_edges,
-            &src,
-            &tgt,
-            &coords,
-            k0,
-            eps_scalar.as_deref(),
-            eps_tensor9.as_deref(),
-            &faces_edge,
-            &faces_sign,
-            patch.face_column_ranges,
-            &b,
-            dim,
-            curl_constitutive,
-            rel_tol,
-            max_iter,
-            spd,
-        ), &mut sol, &mut cg_refusal);
+        absorb_cg_outcome(
+            solve_maxwell_dec_patch_conjugate_gradient(
+                n,
+                n_edges,
+                &src,
+                &tgt,
+                &coords,
+                k0,
+                eps_scalar.as_deref(),
+                eps_tensor9.as_deref(),
+                &faces_edge,
+                &faces_sign,
+                patch.face_column_ranges,
+                &b,
+                dim,
+                curl_constitutive,
+                rel_tol,
+                max_iter,
+                spd,
+            ),
+            &mut sol,
+            &mut cg_refusal,
+        );
     }
 
     let sol = match sol {
@@ -2826,7 +2855,7 @@ pub fn apply_dec_te_curl_curl_chain_operator<B: Backend<FloatElem = f32>>(
     let h = chain.h;
     let inv_h2 = 1.0 / (h * h);
     let omega = 2.0 * core::f32::consts::PI * frequency_hz;
-    let k0 = omega / 2.998e8_f32;
+    let k0 = omega / SPEED_OF_LIGHT_F32;
 
     let topo = EdgeTopology::new(edges_b1);
     let d0 = primal_scalar_edge_increment(ey.clone(), &topo);
@@ -3032,8 +3061,8 @@ mod photonics_sparse_csr_cg_parity_tests {
         let ranges: [(usize, usize); 2] = [(0, 3), (3, 6)];
         let f_hz = 2.4e9_f32;
         let omega = core::f32::consts::TAU * f_hz;
-        let k0 = omega / 2.998e8_f32;
-        let mu0 = 4.0e-7_f32 * core::f32::consts::PI;
+        let k0 = omega / super::SPEED_OF_LIGHT_F32;
+        let mu0 = super::VACUUM_MAGNETIC_PERMEABILITY_F32;
         let scale_j = omega * mu0;
         let mut j_flat = vec![0.0_f32; n * 3];
         j_flat[5] = 0.02;
@@ -3248,18 +3277,19 @@ mod dec_patch_inner_cg_spd_precondition_tests {
 
     #[test]
     fn spectral_a_norm_stall_outcome_is_distinct_from_converged() {
-        let stall = DecPatchInnerCgOutcome::Refused(
-            DecPatchInnerCgRefusal::SpectralANormStall { rel_residual: 0.25 },
-        );
+        let stall = DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::SpectralANormStall {
+            rel_residual: 0.25,
+        });
         let converged = DecPatchInnerCgOutcome::Converged(vec![1.0, 2.0, 3.0]);
         assert_ne!(stall, converged);
     }
 
     #[test]
     fn max_iter_fuse_is_residual_above_tolerance_not_converged() {
-        let fuse = DecPatchInnerCgOutcome::Refused(
-            DecPatchInnerCgRefusal::ResidualAboveTolerance { rel_residual: 0.99 },
-        );
+        let fuse =
+            DecPatchInnerCgOutcome::Refused(DecPatchInnerCgRefusal::ResidualAboveTolerance {
+                rel_residual: 0.99,
+            });
         assert_ne!(fuse, DecPatchInnerCgOutcome::Converged(vec![0.0]));
         assert_ne!(
             fuse,

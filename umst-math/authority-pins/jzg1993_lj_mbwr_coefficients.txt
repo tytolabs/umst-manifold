@@ -1,0 +1,47 @@
+# Johnson, Zollweg and Gubbins (1993) Lennard-Jones MBWR equation of state: coefficient vector and gamma
+# Citation: J. K. Johnson, J. A. Zollweg, K. E. Gubbins, The Lennard-Jones equation of state revisited,
+#           Mol. Phys. 78, 591-618 (1993), doi:10.1080/00268979300100411
+# Transcribed as embedded in NIST teqp (usnistgov/teqp, include/teqp/models/mie/lennardjones/johnson.hpp,
+# class LJ126Johnson1993); x[0] is an unused placeholder so x[i] matches the paper's 1-based index.
+symbol: gamma
+value: 3.0
+unit: 1 (reduced)
+symbol: T_c*
+value: 1.313
+unit: 1 (reduced, k_B T / epsilon)
+note: JZG (1993) critical temperature fit; the code fence LJ_JOHNSON_1993_T_C_STAR_APPROX sits just above it
+symbol: x[0..32]
+unit: 1 (reduced)
+x[0]: 0.0
+x[1]: 0.8623085097507421
+x[2]: 2.976218765822098
+x[3]: -8.402230115796038
+x[4]: 0.1054136629203555
+x[5]: -0.8564583828174598
+x[6]: 1.582759470107601
+x[7]: 0.7639421948305453
+x[8]: 1.753173414312048
+x[9]: 2.798291772190376e3
+x[10]: -4.8394220260857657e-2
+x[11]: 0.9963265197721935
+x[12]: -3.698000291272493e1
+x[13]: 2.084012299434647e1
+x[14]: 8.305402124717285e1
+x[15]: -9.574799715203068e2
+x[16]: -1.477746229234994e2
+x[17]: 6.398607852471505e1
+x[18]: 1.603993673294834e1
+x[19]: 6.805916615864377e1
+x[20]: -2.791293578795945e3
+x[21]: -6.245128304568454
+x[22]: -8.116836104958410e3
+x[23]: 1.488735559561229e1
+x[24]: -1.059346754655084e4
+x[25]: -1.131607632802822e2
+x[26]: -8.867771540418822e3
+x[27]: -3.986982844450543e1
+x[28]: -4.689270299917261e3
+x[29]: 2.593535277438717e2
+x[30]: -2.694523589434903e3
+x[31]: -7.218487631550215e2
+x[32]: 1.721802063863269e2
