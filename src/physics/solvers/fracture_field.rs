@@ -28,8 +28,11 @@
 //!   \(g(d) = (1-d)^2 + \eta\).
 //! - AT2-style nodal field: `Gc/l · d − Gc · l · Δ d ≈ 2(1-d) ψ⁺` with `Δ` from
 //!   [`crate::physics::laplacian::TopologicalLaplacian::scalar_laplacian`] on `edges_b1`.
-//! - Irreversibility: the damage update solves the AT2 variational inequality on the admissible set
-//!   \(\{d_{old} \le d \le 1\}\) (Bourdin–Francfort–Marigo 2008 §4.2; Miehe history field). Every
+//! - Irreversibility: damage may not decrease across a SecondLaw `.transition`
+//!   (`UMST.ProcessFamily.SecondLaw`, `umst-formal/Lean/Process.lean`; see
+//!   `project_damage_second_law_transition` for the anchor and its typed absence). The damage
+//!   update solves the AT2 variational inequality on \(\{d_{old} \le d \le 1\}\)
+//!   (Bourdin–Francfort–Marigo 2008 §4.2; Miehe history field). Every
 //!   red–black half-step is projected onto that set, and the stopping residual is the natural
 //!   residual \(D\,(d - P(d - r/D))\), which vanishes at the constrained minimiser. A pre-damaged state
 //!   at zero drive therefore returns \(d = d_{old}\).
@@ -497,7 +500,8 @@ pub fn strain_tensor_for_fracture_from_manifold<B: Backend<FloatElem = f32>>(
 }
 
 /// Relaxation factor \(\omega\) on each diagonally scaled parity half-step (\(\omega = 1\):
-/// projected red–black Gauss–Seidel).
+/// projected red–black Gauss–Seidel). Form: Policy (solver iteration choice; it changes the path to
+/// the constrained minimiser, not the minimiser).
 #[cfg(feature = "fracture-at2")]
 const RELAXATION_OMEGA: f32 = 1.0;
 
@@ -1109,7 +1113,8 @@ fn damage_at2_natural_residual_linf<B: Backend<FloatElem = f32>>(
     psi_plus: &Tensor<B, 3>,
 ) -> f32 {
     let (residual, diagonal) = damage_at2_residual_and_diagonal(d, l, gc, edges_b1, psi_plus);
-    let projected = project_damage_admissible(d.clone().sub(residual.div(diagonal.clone())), d_old);
+    let projected =
+        project_damage_second_law_transition(d.clone().sub(residual.div(diagonal.clone())), d_old);
     d.clone()
         .sub(projected)
         .mul(diagonal)
@@ -1118,10 +1123,20 @@ fn damage_at2_natural_residual_linf<B: Backend<FloatElem = f32>>(
         .into_scalar()
 }
 
-/// Projection onto the AT2 admissible set \(\{d_{old} \le d \le 1\}\) (irreversibility and the
-/// upper damage bound).
+/// Projection onto the damage set the SecondLaw `.transition` case admits from `d_old`:
+/// \(\{d_{old} \le d \le 1\}\). Damage is an internal variable whose rate carries non-negative
+/// dissipation, so a transition may not lower it; the upper bound is the fully broken state.
+///
+/// formal_anchor: lean://umst-formal/Lean/Process.lean#SecondLaw
+/// formal_status: Structural
+/// formal_anchor_rationale: The projection enforces the `.transition` constraint by construction
+/// for every damage update. The passive route (`ConvexPhiDissipation.gsmCartridge_passive_secondLaw`)
+/// does not yet cover it: the AT2 dissipation potential is the indicator of \(\dot d \ge 0\),
+/// extended-real and non-differentiable, which `GsmDissipationPotential` (real-valued,
+/// differentiable \(\varphi\)) cannot express. Typed absence: an indicator-potential (subdifferential)
+/// passive SecondLaw instance for AT2 damage; follow-up cell `FORMAL-AT2-INDICATOR-PASSIVE`.
 #[cfg(feature = "fracture-at2")]
-fn project_damage_admissible<B: Backend<FloatElem = f32>>(
+fn project_damage_second_law_transition<B: Backend<FloatElem = f32>>(
     d: Tensor<B, 3>,
     d_old: &Tensor<B, 3>,
 ) -> Tensor<B, 3> {
@@ -1138,7 +1153,7 @@ fn damage_relaxation_until_residual<B: Backend<FloatElem = f32>>(
     mask_odd: Tensor<B, 3>,
     psi_plus: Tensor<B, 3>,
 ) -> Result<Tensor<B, 3>, PhysicsError> {
-    let mut d = project_damage_admissible(d_old.clone(), &d_old);
+    let mut d = project_damage_second_law_transition(d_old.clone(), &d_old);
     let mut prev_res = damage_at2_natural_residual_linf(&d, &d_old, l, &gc, &edges_b1, &psi_plus);
     if prev_res < DAMAGE_RELAX_RESIDUAL_TOL {
         return Ok(d);
@@ -1178,7 +1193,7 @@ fn damage_relaxation_half_step<B: Backend<FloatElem = f32>>(
         .div(diagonal)
         .mul_scalar(RELAXATION_OMEGA)
         .mul(mask.clone());
-    project_damage_admissible(d.sub(increment), d_old)
+    project_damage_second_law_transition(d.sub(increment), d_old)
 }
 
 #[cfg(feature = "fracture-at2")]
