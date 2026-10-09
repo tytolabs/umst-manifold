@@ -94,6 +94,42 @@ impl Derivation {
         }
     }
 
+    /// The `docs/….md#anchor` an `Absent` reason cites, as (document path, anchor); `None` for any other
+    /// derivation or a reason without one. A typed absence names where its measurement is planned.
+    #[must_use]
+    pub fn absent_doc_anchor(self) -> Option<(&'static str, &'static str)> {
+        let Self::Absent { reason } = self else {
+            return None;
+        };
+        reason
+            .split(|c: char| c.is_whitespace() || c == ';' || c == ',')
+            .find_map(|tok| {
+                let (doc, anchor) = tok.split_once('#')?;
+                let is_md = std::path::Path::new(doc)
+                    .extension()
+                    .is_some_and(|e| e.eq_ignore_ascii_case("md"));
+                (is_md && !anchor.is_empty()).then_some((doc, anchor))
+            })
+    }
+
+    /// True when a field the derivation's kind requires is empty: such a row is classified in name only.
+    #[must_use]
+    pub fn payload_is_empty(self) -> bool {
+        match self {
+            Self::Theorem { decl, .. } => decl.module.is_empty() || decl.name.is_empty(),
+            Self::Measurement {
+                receipt_path,
+                methodology_anchor,
+            } => receipt_path.trim().is_empty() || methodology_anchor.trim().is_empty(),
+            Self::Definition {
+                authority_url,
+                expected_sha256,
+            } => authority_url.trim().is_empty() || expected_sha256.trim().is_empty(),
+            Self::Pin { repo, ref_name } => repo.trim().is_empty() || ref_name.trim().is_empty(),
+            Self::Policy { rationale } => rationale.trim().is_empty(),
+            Self::Absent { reason } => reason.trim().is_empty(),
+        }
+    }
 }
 
 /// K-1 landed witness — compile-time schema present on every `REGISTRY` row.

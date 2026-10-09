@@ -700,7 +700,7 @@ pub const K5H_REGISTRY_ROW_NAMES: &[&str] = &[
 // --- K-5i Tier-1 energy probes + ZCI toolchain pins (§14bis.k deepen wave 9) ---
 
 /// `rapl_package_dram_joules` — package plus DRAM energy from a RAPL counter. The reference host is Apple
-/// silicon, which exposes no RAPL package or DRAM counter; its IORegistry `SystemPower` is whole-machine
+/// silicon, which exposes no RAPL package or DRAM counter; its `IORegistry` `SystemPower` is whole-machine
 /// power and measures a different quantity, so the row stays Absent until a Linux powercap host records it.
 pub const RAPL_PACKAGE_DRAM_JOULES_DERIVATION: Derivation = Derivation::Absent {
     reason: "no RAPL package+DRAM counter on the Apple-silicon reference host; planned: Linux powercap intel-rapl receipt; docs/PENDING_GAPS_PLAIN.md#rapl-package-dram-counter",
@@ -1705,7 +1705,9 @@ mod tests {
         let power = values(&process["raw_power_w"]);
         assert!(power.windows(2).any(|w| (w[0] - w[1]).abs() > 0.0));
         let temp_k = process["temperature_k"].as_f64().expect("T");
-        let written = (cpu_bytes.len() + process_bytes.len()) as f64;
+        let written = f64::from(
+            u32::try_from(cpu_bytes.len() + process_bytes.len()).expect("receipt bytes fit u32"),
+        );
         let floor = crate::constants::registry::K_BOLTZMANN_J_PER_K
             * temp_k
             * 2.0_f64.ln()
@@ -1814,7 +1816,7 @@ mod tests {
         }
     }
 
-    /// The row is typed Absent and its reason's anchor is a heading of PENDING_GAPS_PLAIN.md.
+    /// The row is typed Absent and its reason's anchor is a heading of `PENDING_GAPS_PLAIN.md`.
     fn assert_typed_absent_with_anchor(name: &str) {
         let entry = REGISTRY
             .iter()
