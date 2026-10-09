@@ -58,6 +58,8 @@ pub mod order_statistics_band;
 pub mod pmic;
 /// L1a: matrix-free preconditioners paired with [`linear_operator`].
 pub mod preconditioner;
+/// M6: two-part tone joint of a luminance sample set (image columns, video frame halves) as a 2 ⊗ 2 density.
+pub mod raster_joint;
 pub mod rho_estimator;
 pub mod schrodinger;
 /// THEOREM-BOUND: scalar Kalman + Joseph EKF smoothers (§14bis.e-TUI-7; vendor umst-prototype-2a)
