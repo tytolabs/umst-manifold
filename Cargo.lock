@@ -2490,6 +2490,7 @@ dependencies = [
  "thiserror 1.0.69",
  "umst-constants",
  "umst-layout-codegen",
+ "umst-math",
 ]
 
 [[package]]
@@ -2692,6 +2693,7 @@ dependencies = [
  "sha3",
  "subtle",
  "thiserror 1.0.69",
+ "umst-constants",
  "umst-layout-codegen",
 ]
 
