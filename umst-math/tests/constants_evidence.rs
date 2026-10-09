@@ -122,7 +122,12 @@ fn theorem_flaw(catalog: &str, decl: LeanDecl) -> Option<String> {
         || decl.name.is_empty()
         || !catalog.contains(decl.module)
         || !catalog.contains(decl.name))
-    .then(|| format!("Lean declaration {}.{} not in the catalog", decl.module, decl.name))
+    .then(|| {
+        format!(
+            "Lean declaration {}.{} not in the catalog",
+            decl.module, decl.name
+        )
+    })
 }
 
 fn decoded_catalog(root: &Path) -> String {
@@ -140,7 +145,10 @@ fn open_repository_evidence(root: &Path) -> Vec<String> {
     for entry in REGISTRY {
         let kind = entry.derivation.label();
         if entry.derivation.payload_is_empty() {
-            open.push(format!("{kind} {}: derivation payload has an empty field", entry.name));
+            open.push(format!(
+                "{kind} {}: derivation payload has an empty field",
+                entry.name
+            ));
             continue;
         }
         let why = match entry.derivation {
@@ -175,7 +183,10 @@ fn open_repository_evidence(root: &Path) -> Vec<String> {
 
 /// A fresh directory under the system temp dir for one fixture test.
 fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("umst-constants-evidence-{name}-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!(
+        "umst-constants-evidence-{name}-{}",
+        std::process::id()
+    ));
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(&dir).expect("scratch dir");
     dir
@@ -196,7 +207,12 @@ fn receipt_rules_reject_repeated_readings_and_fixture_variances() {
         let p = dir.join(file);
         fs::write(&p, body).expect("write fixture receipt");
         let read = fs::read_to_string(&p).expect("read fixture receipt");
-        assert_eq!(receipt_flaw(&read).is_some(), bad, "{file}: {:?}", receipt_flaw(&read));
+        assert_eq!(
+            receipt_flaw(&read).is_some(),
+            bad,
+            "{file}: {:?}",
+            receipt_flaw(&read)
+        );
     }
     let _ = fs::remove_dir_all(&dir);
 }
@@ -205,7 +221,11 @@ fn receipt_rules_reject_repeated_readings_and_fixture_variances() {
 fn absent_rule_requires_an_existing_doc_heading() {
     let dir = scratch("absent");
     fs::create_dir_all(dir.join("docs")).expect("docs dir");
-    fs::write(dir.join("docs/GAPS.md"), "# Gaps\n\n### present-anchor\n\nbody\n").expect("doc");
+    fs::write(
+        dir.join("docs/GAPS.md"),
+        "# Gaps\n\n### present-anchor\n\nbody\n",
+    )
+    .expect("doc");
     let absent = |reason| Derivation::Absent { reason };
     assert!(absent_flaw(&dir, absent("measured later; docs/GAPS.md#present-anchor")).is_none());
     assert!(absent_flaw(&dir, absent("measured later; docs/GAPS.md#missing-anchor")).is_some());
@@ -217,10 +237,21 @@ fn absent_rule_requires_an_existing_doc_heading() {
 #[test]
 fn theorem_rule_requires_the_declaration_in_the_catalog() {
     let catalog = r#"{"modules":[{"id":"LandauerLaw","decls":["landauerBound","δMass_val"]}]}"#;
-    let catalog = serde_json::from_str::<Value>(catalog).expect("json").to_string();
-    let found = LeanDecl { module: "LandauerLaw", name: "landauerBound" };
-    let unicode = LeanDecl { module: "LandauerLaw", name: "δMass_val" };
-    let missing = LeanDecl { module: "LandauerLaw", name: "noSuchTheorem" };
+    let catalog = serde_json::from_str::<Value>(catalog)
+        .expect("json")
+        .to_string();
+    let found = LeanDecl {
+        module: "LandauerLaw",
+        name: "landauerBound",
+    };
+    let unicode = LeanDecl {
+        module: "LandauerLaw",
+        name: "δMass_val",
+    };
+    let missing = LeanDecl {
+        module: "LandauerLaw",
+        name: "noSuchTheorem",
+    };
     assert!(theorem_flaw(&catalog, found).is_none());
     assert!(theorem_flaw(&catalog, unicode).is_none());
     assert!(theorem_flaw(&catalog, missing).is_some());
@@ -230,7 +261,11 @@ fn theorem_rule_requires_the_declaration_in_the_catalog() {
 fn payload_rule_rejects_an_empty_derivation_field() {
     assert!(Derivation::Absent { reason: " " }.payload_is_empty());
     assert!(Derivation::Policy { rationale: "" }.payload_is_empty());
-    assert!(!Derivation::Pin { repo: "r", ref_name: "v1" }.payload_is_empty());
+    assert!(!Derivation::Pin {
+        repo: "r",
+        ref_name: "v1"
+    }
+    .payload_is_empty());
 }
 
 #[test]
@@ -255,7 +290,7 @@ fn every_registry_row_has_committed_evidence_by_content() {
 #[test]
 fn toolchain_pin_follows_the_resolved_compilers() {
     let pin = include_str!("../TOOLCHAIN_PIN.txt");
-    let lean = include_str!("../../../umst-formal/Lean/lean-toolchain");
+    let lean = include_str!("../authority-pins/upstream/umst-formal/Lean/lean-toolchain");
     let lean = lean.trim();
     assert!(
         pin.lines().any(|l| l.trim() == format!("lean: {lean}")),
@@ -270,21 +305,86 @@ fn toolchain_pin_follows_the_resolved_compilers() {
         pin.lines().any(|l| l.trim() == "rustc: 1.88"),
         "TOOLCHAIN_PIN rustc line must be 1.88"
     );
-    let haskell = include_str!("../../../egoff/egoff-haskell-toolchain.txt");
+    let haskell = include_str!("../authority-pins/upstream/egoff/ghc-version.txt");
     let ghc = haskell
         .lines()
         .find_map(|l| {
             let t = l.trim();
             t.strip_prefix("ghc ").map(str::trim)
         })
-        .expect("egoff haskell toolchain names one ghc");
+        .expect("the egoff GHC excerpt names one ghc");
     assert!(
         pin.lines().any(|l| l.trim() == format!("ghc: {ghc}")),
         "TOOLCHAIN_PIN must use the one GHC version {ghc}"
     );
-    let ghc_lines = pin
-        .lines()
-        .filter(|l| l.trim().starts_with("ghc:"))
-        .count();
+    let ghc_lines = pin.lines().filter(|l| l.trim().starts_with("ghc:")).count();
     assert_eq!(ghc_lines, 1, "one GHC pin line");
+}
+
+/// Committed copies of upstream authority files, by their path under `authority-pins/upstream/`.
+const AUTHORITY_PIN_COPIES: &[(&str, &[u8])] = &[
+    (
+        "umst-formal/constants/constants.json",
+        include_bytes!("../authority-pins/upstream/umst-formal/constants/constants.json"),
+    ),
+    (
+        "umst-formal/Lean/lean-toolchain",
+        include_bytes!("../authority-pins/upstream/umst-formal/Lean/lean-toolchain"),
+    ),
+    (
+        "egoff/ghc-version.txt",
+        include_bytes!("../authority-pins/upstream/egoff/ghc-version.txt"),
+    ),
+];
+
+/// Every committed upstream copy has one provenance record, its bytes hash to the recorded
+/// `copy_sha256`, and a whole-file copy records the same hash as its source.
+#[test]
+fn authority_pin_copies_match_provenance() {
+    let provenance = include_str!("../authority-pins/upstream/PROVENANCE.txt");
+    let records: Vec<Vec<(&str, &str)>> = provenance
+        .split("\n\n")
+        .map(|block| {
+            block
+                .lines()
+                .filter(|l| !l.starts_with('#'))
+                .filter_map(|l| l.split_once(": "))
+                .collect::<Vec<_>>()
+        })
+        .filter(|r| !r.is_empty())
+        .collect();
+    assert_eq!(
+        records.len(),
+        AUTHORITY_PIN_COPIES.len(),
+        "one record per copy"
+    );
+    for (copy, bytes) in AUTHORITY_PIN_COPIES {
+        let rec = records
+            .iter()
+            .find(|r| r.iter().any(|(k, v)| *k == "copy" && v == copy))
+            .unwrap_or_else(|| panic!("no provenance record for {copy}"));
+        let field = |key: &str| {
+            rec.iter()
+                .find(|(k, _)| *k == key)
+                .map(|(_, v)| *v)
+                .unwrap_or_else(|| panic!("{copy}: provenance lacks {key}"))
+        };
+        assert_eq!(
+            sha256_hex(bytes),
+            field("copy_sha256"),
+            "{copy}: bytes differ from the record"
+        );
+        assert_eq!(
+            field("source_commit").len(),
+            40,
+            "{copy}: source_commit is a full commit id"
+        );
+        if field("extract") == "whole" {
+            assert_eq!(
+                field("source_sha256"),
+                field("copy_sha256"),
+                "{copy}: a whole copy hashes as its source"
+            );
+        }
+    }
 }

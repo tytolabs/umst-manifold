@@ -88,10 +88,12 @@ pub const UMST_MEMORY_RETENTION_MI_ESTIMATE_P99_DERIVATION: Derivation = Derivat
 };
 
 /// `umst_memory_retention_pareto_compute_p99_us` — p99 of `pareto_dominance` (B-Arc).
-pub const UMST_MEMORY_RETENTION_PARETO_COMPUTE_P99_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/umst_memory_retention_pareto_compute_p99_us.jsonl",
-    methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
-};
+pub const UMST_MEMORY_RETENTION_PARETO_COMPUTE_P99_DERIVATION: Derivation =
+    Derivation::Measurement {
+        receipt_path:
+            ".umst-ci/measurement-receipts/umst_memory_retention_pareto_compute_p99_us.jsonl",
+        methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
+    };
 
 /// `hal_intel_cpu_logical_cores` — /proc/cpuinfo logical core count (H-9).
 pub const HAL_LOGICAL_CORES_DERIVATION: Derivation = Derivation::Measurement {
@@ -143,7 +145,10 @@ pub const ADMISSIBILITY_MARGIN_EPS_DERIVATION: Derivation = Derivation::Policy {
 
 /// `gate_mass_tolerance_kg_m3` — Concrete.Gate.δMass_val (SSOT [`gate_mass_tolerance_kg_m3_f64`]).
 pub const GATE_MASS_TOLERANCE_DERIVATION: Derivation = Derivation::Theorem {
-    decl: LeanDecl { module: "Concrete.Gate", name: "δMass_val" },
+    decl: LeanDecl {
+        module: "Concrete.Gate",
+        name: "δMass_val",
+    },
     expected_value: gate_mass_tolerance_kg_m3_f64(),
 };
 
@@ -173,7 +178,10 @@ pub const DEFAULT_STALENESS_CYCLE_COUNT: f64 = 6.0;
 
 /// `warmup_sample_threshold` — `max(3, ⌈√W⌉)` at reference **W = 32**.
 pub const WARMUP_SAMPLE_THRESHOLD_DERIVATION: Derivation = Derivation::Theorem {
-    decl: LeanDecl { module: "MedianConvergence", name: "sqrt_window_warmup_is_admissible" },
+    decl: LeanDecl {
+        module: "MedianConvergence",
+        name: "sqrt_window_warmup_is_admissible",
+    },
     expected_value: 6.0,
 };
 
@@ -191,7 +199,10 @@ pub const MIN_PROMOTION_CREDIT_DERIVATION: Derivation = Derivation::Policy {
 
 /// `dignity_scalar_range` — upper end `D_MAX` of the dignity range; Lean `Dignity.d_max : ℝ := 10` fixes it.
 pub const DIGNITY_SCALAR_RANGE_DERIVATION: Derivation = Derivation::Theorem {
-    decl: LeanDecl { module: "Dignity", name: "d_max" },
+    decl: LeanDecl {
+        module: "Dignity",
+        name: "d_max",
+    },
     expected_value: 10.0,
 };
 
@@ -251,7 +262,8 @@ pub const COCKPIT_SNAPSHOT_SCHEMA_VERSION_DERIVATION: Derivation = Derivation::P
 /// `eta_rolling_window_capacity` — rolling η deque capacity (`frugality::MEDIAN_WINDOW`).
 /// Policy: `UMST.Formal.OrderStatisticsBand::p25_p75_admissibility` was cited here, but its statement does not fix this value.
 pub const ETA_ROLLING_WINDOW_CAPACITY_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "rolling η deque capacity for frugality warmup; admissible interval [8, 128] samples.",
+    rationale:
+        "rolling η deque capacity for frugality warmup; admissible interval [8, 128] samples.",
 };
 
 /// K-5b cockpit policy batch registry row names.
@@ -313,7 +325,8 @@ pub const EMERGENCE_LAMBDA_DERIVATION: Derivation = Derivation::Policy {
 /// `umst_msdf_emergence_max_voxels` — default 3³ lattice cap for emergence SDF grid.
 /// Policy: `UMST.Formal.OrderStatisticsBand::order_statistic_concentration` was cited here, but its statement does not fix this value.
 pub const MSDF_EMERGENCE_MAX_VOXELS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "default 3³ lattice cap for emergence SDF grid; admissible interval [64, 4096] voxels.",
+    rationale:
+        "default 3³ lattice cap for emergence SDF grid; admissible interval [64, 4096] voxels.",
 };
 
 /// K-5c registry row names (6/6 for slice GREEN).
@@ -371,7 +384,8 @@ pub const STALENESS_THRESHOLD_MS_DERIVATION: Derivation = Derivation::Policy {
 /// `umst_discovery_lru_capacity` — model-discovery LRU operator bound (TUI-5).
 /// Policy: `UMST.Formal.OrderStatisticsBand::order_statistic_concentration` was cited here, but its statement does not fix this value.
 pub const DISCOVERY_LRU_CAPACITY_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "model-discovery LRU operator bound in cockpit cache; admissible interval [4, 64] entries.",
+    rationale:
+        "model-discovery LRU operator bound in cockpit cache; admissible interval [4, 64] entries.",
 };
 
 /// `umst_tui_render_debounce_ms` — idle telemetry redraw coalescing window (TUI-5).
@@ -427,7 +441,8 @@ pub const UMST_FFI_ABI_VERSION_DERIVATION: Derivation = Derivation::Policy {
 /// `umst_ffi_abi_version_min_compatible` — minimum compatible ABI for `assertAbiCompatible`.
 /// Policy: `UMST.Formal.FFI::abi_version_min_compatible` was cited here, but its statement does not fix this value.
 pub const UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "minimum compatible ABI for assertAbiCompatible; admissible interval [1, 16] version id.",
+    rationale:
+        "minimum compatible ABI for assertAbiCompatible; admissible interval [1, 16] version id.",
 };
 
 /// `umst_discovery_refresh_secs` — model-list HTTP poll cadence (cockpit hub).
@@ -445,7 +460,8 @@ pub const TOOL_TIMEOUT_SECS_DERIVATION: Derivation = Derivation::Policy {
 /// `audit_max_bytes_cap` — on-disk cockpit audit JSONL rotation cap.
 /// Policy: `UMST.Formal.EtaCog::eta_cog_nonneg` was cited here, but its statement does not fix this value.
 pub const AUDIT_MAX_BYTES_CAP_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "on-disk cockpit audit JSONL rotation byte cap; admissible interval [1 MiB, 64 MiB] bytes.",
+    rationale:
+        "on-disk cockpit audit JSONL rotation byte cap; admissible interval [1 MiB, 64 MiB] bytes.",
 };
 
 /// `umst_closed_loop_rcc_accept_tick` — per-accept RCC increment (cap 1.0).
@@ -491,7 +507,8 @@ pub const EMBEDDING_HTTP_TIMEOUT_SECONDS_DEFAULT: f64 = 30.0;
 /// `umst_memory_default_resolution_bits` — B-Arc default recorded resolution (clamped at voxelise).
 /// Policy: `UMST.Formal.OrderStatisticsBand::order_statistic_concentration` was cited here, but its statement does not fix this value.
 pub const MEMORY_DEFAULT_RESOLUTION_BITS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "B-Arc default recorded resolution clamped at voxelise; admissible interval [4, 16] bits.",
+    rationale:
+        "B-Arc default recorded resolution clamped at voxelise; admissible interval [4, 16] bits.",
 };
 
 /// `umst_memory_schema_version` — sled `MemoryV1` bincode wire discriminator.
@@ -503,7 +520,8 @@ pub const MEMORY_SCHEMA_VERSION_DERIVATION: Derivation = Derivation::Policy {
 /// `umst_memory_m2_promote_ceremony_atomic` — fail-fast promotion ceremony flag.
 /// Policy: `UMST.Formal.Convergence::rcc_lower_bound` was cited here, but its statement does not fix this value.
 pub const MEMORY_M2_PROMOTE_CEREMONY_ATOMIC_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "fail-fast Local→Shared promotion ceremony toggle; admissible interval [0, 1] boolean.",
+    rationale:
+        "fail-fast Local→Shared promotion ceremony toggle; admissible interval [0, 1] boolean.",
 };
 
 /// `umst_memory_m2_sanitize_serial_kinds_count` — GMD-6 serial artefact taxonomy size.
@@ -515,7 +533,8 @@ pub const MEMORY_M2_SANITIZE_SERIAL_KINDS_DERIVATION: Derivation = Derivation::P
 /// `umst_memory_m2_promotion_requires_theorem_default` — theorem binding required on promote.
 /// Policy: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` was cited here, but its statement does not fix this value.
 pub const MEMORY_M2_PROMOTION_REQUIRES_THEOREM_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "theorem binding required on promote by default; admissible interval [0, 1] boolean.",
+    rationale:
+        "theorem binding required on promote by default; admissible interval [0, 1] boolean.",
 };
 
 /// `umst_memory_ephemeral_ttl_hours_typical` — default ephemeral retention window (hours).
@@ -572,9 +591,11 @@ pub const MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN_DERIVATION: Derivation = Derivatio
 
 /// `umst_memory_m3_palette_federated_inspect_min_rows` — federation inspector offline floor.
 /// Policy: `UMST.Formal.Gate.gateCheckSound` was cited here, but its statement does not fix this value.
-pub const MEMORY_M3_PALETTE_FEDERATED_INSPECT_MIN_ROWS_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "federation inspector offline floor row count; admissible interval [0, 32] rows.",
-};
+pub const MEMORY_M3_PALETTE_FEDERATED_INSPECT_MIN_ROWS_DERIVATION: Derivation =
+    Derivation::Policy {
+        rationale:
+            "federation inspector offline floor row count; admissible interval [0, 32] rows.",
+    };
 
 /// `umst_memory_merge_safe_attestation_wire_version` — GMD-8 merge-safe witness wire gen.
 /// Policy: `UMST.Formal.Dignity::dignity_monotone_under_mi_gain` was cited here, but its statement does not fix this value.
@@ -677,7 +698,8 @@ pub const UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT_DERIVATION: Derivation = Deriva
 /// `umst_msdf_layer_stack_max_depth` — progressive MSDF ring cap when layer stack on.
 /// Policy: `UMST.Formal.OrderStatisticsBand::order_statistic_concentration` was cited here, but its statement does not fix this value.
 pub const MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT_DERIVATION: Derivation = Derivation::Policy {
-    rationale: "progressive MSDF ring cap when layer stack enabled; admissible interval [1, 16] layers.",
+    rationale:
+        "progressive MSDF ring cap when layer stack enabled; admissible interval [1, 16] layers.",
 };
 
 /// `umst_memory_hilbert_bits` — Hilbert curve order for sled key layout (M-5 policy).
@@ -945,11 +967,7 @@ pub const K5D_REGISTRY_ROW_NAMES: &[&str] = &[
 pub fn k5_backfilled_count() -> usize {
     K5_REGISTRY_ROW_NAMES
         .iter()
-        .filter(|name| {
-            REGISTRY
-                .iter()
-                .any(|e| e.name == **name)
-        })
+        .filter(|name| REGISTRY.iter().any(|e| e.name == **name))
         .count()
 }
 
@@ -1023,14 +1041,18 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "umst_h3b_reward_beta" => Some(H3B_REWARD_BETA_DERIVATION),
         "umst_h3b_reward_gamma" => Some(H3B_REWARD_GAMMA_DERIVATION),
         "umst_ffi_abi_version" => Some(UMST_FFI_ABI_VERSION_DERIVATION),
-        "umst_ffi_abi_version_min_compatible" => Some(UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DERIVATION),
+        "umst_ffi_abi_version_min_compatible" => {
+            Some(UMST_FFI_ABI_VERSION_MIN_COMPATIBLE_DERIVATION)
+        }
         "umst_discovery_refresh_secs" => Some(DISCOVERY_REFRESH_SECS_DERIVATION),
         "umst_tool_timeout_secs" => Some(TOOL_TIMEOUT_SECS_DERIVATION),
         "audit_max_bytes_cap" => Some(AUDIT_MAX_BYTES_CAP_DERIVATION),
         "umst_closed_loop_rcc_accept_tick" => Some(CLOSED_LOOP_RCC_ACCEPT_TICK_DERIVATION),
         "umst_memory_default_resolution_bits" => Some(MEMORY_DEFAULT_RESOLUTION_BITS_DERIVATION),
         "umst_memory_schema_version" => Some(MEMORY_SCHEMA_VERSION_DERIVATION),
-        "umst_memory_m2_promote_ceremony_atomic" => Some(MEMORY_M2_PROMOTE_CEREMONY_ATOMIC_DERIVATION),
+        "umst_memory_m2_promote_ceremony_atomic" => {
+            Some(MEMORY_M2_PROMOTE_CEREMONY_ATOMIC_DERIVATION)
+        }
         "umst_memory_m2_sanitize_serial_kinds_count" => {
             Some(MEMORY_M2_SANITIZE_SERIAL_KINDS_DERIVATION)
         }
@@ -1039,7 +1061,9 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         }
         "umst_memory_ephemeral_ttl_hours_typical" => Some(MEMORY_EPHEMERAL_TTL_HOURS_DERIVATION),
         "embedding_http_timeout_seconds" => Some(EMBEDDING_HTTP_TIMEOUT_SECONDS_DERIVATION),
-        n if n == K5G_ROW_SCRUB_SENTINEL_LEN => Some(MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN_DERIVATION),
+        n if n == K5G_ROW_SCRUB_SENTINEL_LEN => {
+            Some(MEMORY_M2_SERIAL_SCRUB_SENTINEL_LEN_DERIVATION)
+        }
         "umst_memory_m3_palette_federated_inspect_min_rows" => {
             Some(MEMORY_M3_PALETTE_FEDERATED_INSPECT_MIN_ROWS_DERIVATION)
         }
@@ -1058,7 +1082,9 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
         "umst_manifold_liquid_ppo_witness_default" => {
             Some(MANIFOLD_LIQUID_PPO_WITNESS_DEFAULT_DERIVATION)
         }
-        "umst_ucrs_memory_phase_bind_enabled" => Some(UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT_DERIVATION),
+        "umst_ucrs_memory_phase_bind_enabled" => {
+            Some(UCRS_MEMORY_PHASE_BIND_ENABLED_DEFAULT_DERIVATION)
+        }
         "umst_msdf_layer_stack_max_depth" => Some(MSDF_LAYER_STACK_MAX_DEPTH_DEFAULT_DERIVATION),
         "umst_memory_hilbert_bits" => Some(MEMORY_HILBERT_BITS_DEFAULT_DERIVATION),
         "rapl_package_dram_joules" => Some(RAPL_PACKAGE_DRAM_JOULES_DERIVATION),
@@ -1136,11 +1162,7 @@ pub fn derivation_for_registry_row(name: &str) -> Option<Derivation> {
 pub fn k5k_backfilled_count() -> usize {
     K5K_REGISTRY_ROW_NAMES
         .iter()
-        .filter(|name| {
-            REGISTRY
-                .iter()
-                .any(|e| e.name == **name)
-        })
+        .filter(|name| REGISTRY.iter().any(|e| e.name == **name))
         .count()
 }
 
@@ -1155,11 +1177,7 @@ pub fn k5k_backfill_landed() -> bool {
 pub fn k5j_backfilled_count() -> usize {
     K5J_REGISTRY_ROW_NAMES
         .iter()
-        .filter(|name| {
-            REGISTRY
-                .iter()
-                .any(|e| e.name == **name)
-        })
+        .filter(|name| REGISTRY.iter().any(|e| e.name == **name))
         .count()
 }
 
@@ -1174,11 +1192,7 @@ pub fn k5j_backfill_landed() -> bool {
 pub fn k5i_backfilled_count() -> usize {
     K5I_REGISTRY_ROW_NAMES
         .iter()
-        .filter(|name| {
-            REGISTRY
-                .iter()
-                .any(|e| e.name == **name)
-        })
+        .filter(|name| REGISTRY.iter().any(|e| e.name == **name))
         .count()
 }
 
@@ -1193,11 +1207,7 @@ pub fn k5i_backfill_landed() -> bool {
 pub fn k5h_backfilled_count() -> usize {
     K5H_REGISTRY_ROW_NAMES
         .iter()
-        .filter(|name| {
-            REGISTRY
-                .iter()
-                .any(|e| e.name == **name)
-        })
+        .filter(|name| REGISTRY.iter().any(|e| e.name == **name))
         .count()
 }
 
@@ -1212,11 +1222,7 @@ pub fn k5h_backfill_landed() -> bool {
 pub fn k5g_backfilled_count() -> usize {
     K5G_REGISTRY_ROW_NAMES
         .iter()
-        .filter(|name| {
-            REGISTRY
-                .iter()
-                .any(|e| e.name == **name)
-        })
+        .filter(|name| REGISTRY.iter().any(|e| e.name == **name))
         .count()
 }
 
@@ -1231,11 +1237,7 @@ pub fn k5g_backfill_landed() -> bool {
 pub fn k5f_backfilled_count() -> usize {
     K5F_REGISTRY_ROW_NAMES
         .iter()
-        .filter(|name| {
-            REGISTRY
-                .iter()
-                .any(|e| e.name == **name)
-        })
+        .filter(|name| REGISTRY.iter().any(|e| e.name == **name))
         .count()
 }
 
@@ -1250,11 +1252,7 @@ pub fn k5f_backfill_landed() -> bool {
 pub fn k5e_backfilled_count() -> usize {
     K5E_REGISTRY_ROW_NAMES
         .iter()
-        .filter(|name| {
-            REGISTRY
-                .iter()
-                .any(|e| e.name == **name)
-        })
+        .filter(|name| REGISTRY.iter().any(|e| e.name == **name))
         .count()
 }
 
@@ -1269,11 +1267,7 @@ pub fn k5e_backfill_landed() -> bool {
 pub fn k5d_backfilled_count() -> usize {
     K5D_REGISTRY_ROW_NAMES
         .iter()
-        .filter(|name| {
-            REGISTRY
-                .iter()
-                .any(|e| e.name == **name)
-        })
+        .filter(|name| REGISTRY.iter().any(|e| e.name == **name))
         .count()
 }
 
@@ -1288,11 +1282,7 @@ pub fn k5d_backfill_landed() -> bool {
 pub fn k5c_backfilled_count() -> usize {
     K5C_REGISTRY_ROW_NAMES
         .iter()
-        .filter(|name| {
-            REGISTRY
-                .iter()
-                .any(|e| e.name == **name)
-        })
+        .filter(|name| REGISTRY.iter().any(|e| e.name == **name))
         .count()
 }
 
@@ -1307,11 +1297,7 @@ pub fn k5c_backfill_landed() -> bool {
 pub fn k5b_backfilled_count() -> usize {
     K5B_REGISTRY_ROW_NAMES
         .iter()
-        .filter(|name| {
-            REGISTRY
-                .iter()
-                .any(|e| e.name == **name)
-        })
+        .filter(|name| REGISTRY.iter().any(|e| e.name == **name))
         .count()
 }
 
@@ -1326,11 +1312,7 @@ pub fn k5b_backfill_landed() -> bool {
 pub fn k3_tier2_gate_backfilled_count() -> usize {
     K3_TIER2_GATE_ROW_NAMES
         .iter()
-        .filter(|name| {
-            REGISTRY
-                .iter()
-                .any(|e| e.name == **name)
-        })
+        .filter(|name| REGISTRY.iter().any(|e| e.name == **name))
         .count()
 }
 
@@ -1339,11 +1321,7 @@ pub fn k3_tier2_gate_backfilled_count() -> usize {
 pub fn k3_backfilled_count() -> usize {
     K3_REGISTRY_ROW_NAMES
         .iter()
-        .filter(|name| {
-            REGISTRY
-                .iter()
-                .any(|e| e.name == **name)
-        })
+        .filter(|name| REGISTRY.iter().any(|e| e.name == **name))
         .count()
 }
 
@@ -1391,20 +1369,17 @@ mod tests {
 
     #[test]
     fn k3_tier2_gate_derivation_matches_registry_and_ssot() {
-        assert_eq!(k3_tier2_gate_backfilled_count(), K3_TIER2_GATE_ROW_NAMES.len());
+        assert_eq!(
+            k3_tier2_gate_backfilled_count(),
+            K3_TIER2_GATE_ROW_NAMES.len()
+        );
         for (name, expected) in [
-            (
-                "transition_tolerance",
-                TRANSITION_TOLERANCE_DERIVATION,
-            ),
+            ("transition_tolerance", TRANSITION_TOLERANCE_DERIVATION),
             (
                 "admissibility_margin_eps",
                 ADMISSIBILITY_MARGIN_EPS_DERIVATION,
             ),
-            (
-                "gate_mass_tolerance_kg_m3",
-                GATE_MASS_TOLERANCE_DERIVATION,
-            ),
+            ("gate_mass_tolerance_kg_m3", GATE_MASS_TOLERANCE_DERIVATION),
         ] {
             let entry = REGISTRY
                 .iter()
@@ -1412,13 +1387,22 @@ mod tests {
                 .expect("registry row");
             assert_eq!(entry.derivation, expected);
         }
-        assert!(matches!(TRANSITION_TOLERANCE_DERIVATION, Derivation::Policy { .. }));
-        assert!(matches!(ADMISSIBILITY_MARGIN_EPS_DERIVATION, Derivation::Policy { .. }));
+        assert!(matches!(
+            TRANSITION_TOLERANCE_DERIVATION,
+            Derivation::Policy { .. }
+        ));
+        assert!(matches!(
+            ADMISSIBILITY_MARGIN_EPS_DERIVATION,
+            Derivation::Policy { .. }
+        ));
         // `Concrete.Gate.δMass_val : δMass = 100`: the statement fixes the value.
         assert_eq!(
             GATE_MASS_TOLERANCE_DERIVATION,
             Derivation::Theorem {
-                decl: LeanDecl { module: "Concrete.Gate", name: "δMass_val" },
+                decl: LeanDecl {
+                    module: "Concrete.Gate",
+                    name: "δMass_val"
+                },
                 expected_value: gate_mass_tolerance_kg_m3_f64(),
             }
         );
@@ -1458,18 +1442,26 @@ mod tests {
         );
         for alpha in [0.0_f64, 0.25, 1.0] {
             let psi = crate::manifold::csg::helmholtz_sdf_1d(alpha, Q_HYDRATION_J_PER_KG);
-            assert!(psi <= 0.0, "psi = -Q*alpha stays non-positive at alpha {alpha}, got {psi}");
+            assert!(
+                psi <= 0.0,
+                "psi = -Q*alpha stays non-positive at alpha {alpha}, got {psi}"
+            );
             assert!((psi + Q_HYDRATION_J_PER_KG * alpha).abs() < 1e-6);
         }
     }
 
-    /// Formal table row `hydrationHeatDefault`, joules per gram.
+    /// Formal table row `hydrationHeatDefault`, joules per gram, read from the committed copy of
+    /// umst-formal `constants/constants.json` (provenance in `authority-pins/upstream/PROVENANCE.txt`).
     fn formal_hydration_heat_default_j_per_g() -> f64 {
-        let json = include_str!("../../../../umst-formal/constants/constants.json");
+        let json =
+            include_str!("../../authority-pins/upstream/umst-formal/constants/constants.json");
         let marker = "\"id\": \"hydrationHeatDefault\"";
         let idx = json.find(marker).expect("hydrationHeatDefault row");
         let slice = &json[idx..idx + 500];
-        assert!(slice.contains("\"unit\": \"J/g\""), "hydrationHeatDefault unit is J/g");
+        assert!(
+            slice.contains("\"unit\": \"J/g\""),
+            "hydrationHeatDefault unit is J/g"
+        );
         let num_key = "\"num\": \"";
         let n = slice.find(num_key).expect("hydrationHeatDefault num");
         let rest = &slice[n + num_key.len()..];
@@ -1484,7 +1476,10 @@ mod tests {
         assert_eq!(
             WARMUP_SAMPLE_THRESHOLD_DERIVATION,
             Derivation::Theorem {
-                decl: LeanDecl { module: "MedianConvergence", name: "sqrt_window_warmup_is_admissible" },
+                decl: LeanDecl {
+                    module: "MedianConvergence",
+                    name: "sqrt_window_warmup_is_admissible"
+                },
                 expected_value: warmup_threshold_at_reference_window(),
             }
         );
@@ -1671,7 +1666,10 @@ mod tests {
     fn host_energy_receipts_sample_each_step_and_clear_the_landauer_floor() {
         /// The last record of a JSONL receipt (the receipts are append-only logs).
         fn last(bytes: &str) -> serde_json::Value {
-            let line = bytes.lines().rfind(|l| !l.trim().is_empty()).expect("record");
+            let line = bytes
+                .lines()
+                .rfind(|l| !l.trim().is_empty())
+                .expect("record");
             serde_json::from_str(line).expect("receipt json")
         }
         fn values(v: &serde_json::Value) -> Vec<f64> {
@@ -1708,11 +1706,8 @@ mod tests {
         let written = f64::from(
             u32::try_from(cpu_bytes.len() + process_bytes.len()).expect("receipt bytes fit u32"),
         );
-        let floor = crate::constants::registry::K_BOLTZMANN_J_PER_K
-            * temp_k
-            * 2.0_f64.ln()
-            * 8.0
-            * written;
+        let floor =
+            crate::constants::registry::K_BOLTZMANN_J_PER_K * temp_k * 2.0_f64.ln() * 8.0 * written;
         let joules = process["derived_value"].as_f64().expect("J");
         let rlo = process["interval"][0].as_f64().expect("lo");
         let rhi = process["interval"][1].as_f64().expect("hi");

@@ -1,0 +1,494 @@
+{
+ "schema": "umst_constants_v1",
+ "rule": "Every constant is cited (a defining constant of the SI, with its authority), measured (a cited measurement with its standard uncertainty), or derived (a theorem in Lean, Coq and Agda and a property in Haskell from cited or measured rows). A policy row is a documented model choice, never a constant: its value, its reason, and the range of table rows it must lie in, proved in each language. Values are exact rationals. scripts/gen_constants.py generates every language's module and both README tables from this file; --check fails on drift.",
+ "authorities": {
+  "SI2019": "BIPM, The International System of Units (SI), 9th edition (2019), Table 1: the seven defining constants are exact by definition",
+  "CODATA2022": "Mohr, Tiesinga, Newell and Taylor, CODATA recommended values of the fundamental physical constants: 2022, Rev. Mod. Phys. 97 (2025)",
+  "Bentz2009": "D. P. Bentz, E. F. Irassar, B. E. Bucher and W. J. Weiss, Limestone Fillers Conserve Cement, Part 1: An analysis based on Powers' model, Concrete International, November 2009: Powers' model applied with the values assumed by Jensen and Hansen, in mass of water per mass of cement reacted (non-evaporable water 0.23, chemical shrinkage 0.064, gel water 0.19), and densities of water and cement assigned 1000 and 3150 kg/m^3",
+  "Powers1958": "T. C. Powers, Structure and Physical Properties of Hardened Portland Cement Paste, Journal of the American Ceramic Society (1958), doi:10.1111/j.1151-2916.1958.tb13494.x: compressive strength fc = A x^n of the gel-space ratio x, with A = 234 MPa and n = 3 for the cements and specimens examined",
+  "Taylor1997": "H. F. W. Taylor, Cement Chemistry, Thomas Telford, London (1997), enthalpies of complete hydration of the clinker phases as tabulated by P. Stutzman, S. Leigh and K. Dolly, Statistical Modeling Cement Heat of Hydration (NIST), Table 1: C3S -517 ± 13, C2S -262, C3A -1144 (to AFm) and -1672 (to AFt), C4AF -418 kJ/kg; the heat released is the negative of the enthalpy"
+ },
+ "constants": [
+  {
+   "id": "caesiumHyperfineFrequency",
+   "symbol": "ΔνCs",
+   "name": "caesium-133 hyperfine transition frequency",
+   "unit": "Hz",
+   "status": "cited",
+   "authority": "SI2019",
+   "num": "9192631770",
+   "den": "1",
+   "fibre": "both"
+  },
+  {
+   "id": "speedOfLight",
+   "symbol": "c",
+   "name": "speed of light in vacuum",
+   "unit": "m s⁻¹",
+   "status": "cited",
+   "authority": "SI2019",
+   "num": "299792458",
+   "den": "1",
+   "fibre": "both"
+  },
+  {
+   "id": "planck",
+   "symbol": "h",
+   "name": "Planck constant",
+   "unit": "J s",
+   "status": "cited",
+   "authority": "SI2019",
+   "num": "662607015",
+   "den": "10^42",
+   "fibre": "both"
+  },
+  {
+   "id": "elementaryCharge",
+   "symbol": "e",
+   "name": "elementary charge",
+   "unit": "C",
+   "status": "cited",
+   "authority": "SI2019",
+   "num": "1602176634",
+   "den": "10^28",
+   "fibre": "both"
+  },
+  {
+   "id": "boltzmann",
+   "symbol": "k_B",
+   "name": "Boltzmann constant",
+   "unit": "J K⁻¹",
+   "status": "cited",
+   "authority": "SI2019",
+   "num": "1380649",
+   "den": "10^29",
+   "fibre": "both",
+   "second_law": "under the second law in SI form, erasing one bit at temperature T costs at least k_B T ln 2 joules (Constants.SIBridge.landauerBoundSI), and the bound is attained (LandauerLaw.SecondLaw_landauerTight, in units of k_B)"
+  },
+  {
+   "id": "avogadro",
+   "symbol": "N_A",
+   "name": "Avogadro constant",
+   "unit": "mol⁻¹",
+   "status": "cited",
+   "authority": "SI2019",
+   "num": "602214076*10^15",
+   "den": "1",
+   "fibre": "both"
+  },
+  {
+   "id": "luminousEfficacy",
+   "symbol": "K_cd",
+   "name": "luminous efficacy of 540 THz radiation",
+   "unit": "lm W⁻¹",
+   "status": "cited",
+   "authority": "SI2019",
+   "num": "683",
+   "den": "1",
+   "fibre": "both"
+  },
+  {
+   "id": "gasConstant",
+   "symbol": "R",
+   "name": "molar gas constant",
+   "unit": "J mol⁻¹ K⁻¹",
+   "status": "derived",
+   "formula": "avogadro * boltzmann",
+   "fibre": "acting",
+   "second_law": "under the second law in SI form, erasing one mole of bits at temperature T costs at least R T ln 2 joules (Constants.SIBridge.molarLandauerBoundSI, with R = N_A k_B from Constants.SIBridge.molarLandauer)"
+  },
+  {
+   "id": "faraday",
+   "symbol": "F",
+   "name": "Faraday constant",
+   "unit": "C mol⁻¹",
+   "status": "derived",
+   "formula": "avogadro * elementaryCharge",
+   "fibre": "acting"
+  },
+  {
+   "id": "speedOfLightSquared",
+   "symbol": "c²",
+   "name": "mass–energy conversion factor",
+   "unit": "m² s⁻²",
+   "status": "derived",
+   "formula": "speedOfLight * speedOfLight",
+   "fibre": "acting",
+   "second_law": "the mass equivalent of the Landauer energy is k_B T ln 2 / c² (Constants.SIBridge.massEquivalent_eq)"
+  },
+  {
+   "id": "josephson",
+   "symbol": "K_J",
+   "name": "Josephson constant",
+   "unit": "Hz V⁻¹",
+   "status": "derived",
+   "formula": "2 * elementaryCharge / planck",
+   "fibre": "knowing"
+  },
+  {
+   "id": "vonKlitzing",
+   "symbol": "R_K",
+   "name": "von Klitzing constant",
+   "unit": "Ω",
+   "status": "derived",
+   "formula": "planck / (elementaryCharge * elementaryCharge)",
+   "fibre": "knowing"
+  },
+  {
+   "id": "fluxQuantum",
+   "symbol": "Φ₀",
+   "name": "magnetic flux quantum",
+   "unit": "Wb",
+   "status": "derived",
+   "formula": "planck / (2 * elementaryCharge)",
+   "fibre": "knowing"
+  },
+  {
+   "id": "conductanceQuantum",
+   "symbol": "G₀",
+   "name": "conductance quantum",
+   "unit": "S",
+   "status": "derived",
+   "formula": "2 * elementaryCharge * elementaryCharge / planck",
+   "fibre": "knowing"
+  },
+  {
+   "id": "fineStructure",
+   "symbol": "α",
+   "name": "fine-structure constant",
+   "unit": "1",
+   "status": "measured",
+   "authority": "CODATA2022",
+   "num": "72973525643",
+   "den": "10^13",
+   "uncertainty_num": "11",
+   "uncertainty_den": "10^13",
+   "fibre": "knowing"
+  },
+  {
+   "id": "electronMass",
+   "symbol": "m_e",
+   "name": "electron mass",
+   "unit": "kg",
+   "status": "measured",
+   "authority": "CODATA2022",
+   "num": "91093837139",
+   "den": "10^41",
+   "uncertainty_num": "28",
+   "uncertainty_den": "10^41",
+   "fibre": "knowing"
+  },
+  {
+   "id": "rydberg",
+   "symbol": "R∞",
+   "name": "Rydberg constant",
+   "unit": "m^-1",
+   "status": "derived",
+   "formula": "fineStructure * fineStructure * electronMass * speedOfLight / (2 * planck)",
+   "fibre": "knowing",
+   "crosscheck": {
+    "authority": "CODATA2022",
+    "num": "10973731568157",
+    "den": "10^6",
+    "uncertainty_num": "12",
+    "uncertainty_den": "10^6",
+    "bound": "propagated"
+   }
+  },
+  {
+   "id": "hartreeEnergy",
+   "symbol": "E_h",
+   "name": "Hartree energy",
+   "unit": "J",
+   "status": "derived",
+   "formula": "fineStructure * fineStructure * electronMass * speedOfLight * speedOfLight",
+   "fibre": "knowing",
+   "crosscheck": {
+    "authority": "CODATA2022",
+    "num": "43597447222060",
+    "den": "10^31",
+    "uncertainty_num": "48",
+    "uncertainty_den": "10^31",
+    "bound": "propagated"
+   }
+  },
+  {
+   "id": "comptonWavelength",
+   "symbol": "λ_C",
+   "name": "Compton wavelength",
+   "unit": "m",
+   "status": "derived",
+   "formula": "planck / (electronMass * speedOfLight)",
+   "fibre": "knowing",
+   "crosscheck": {
+    "authority": "CODATA2022",
+    "num": "242631023538",
+    "den": "10^23",
+    "uncertainty_num": "76",
+    "uncertainty_den": "10^23"
+   }
+  },
+  {
+   "id": "vacuumPermittivity",
+   "symbol": "ε₀",
+   "name": "vacuum electric permittivity",
+   "unit": "F m⁻¹",
+   "status": "derived",
+   "formula": "elementaryCharge * elementaryCharge / (2 * fineStructure * planck * speedOfLight)",
+   "fibre": "knowing",
+   "crosscheck": {
+    "authority": "CODATA2022",
+    "num": "88541878188",
+    "den": "10^22",
+    "uncertainty_num": "14",
+    "uncertainty_den": "10^22"
+   }
+  },
+  {
+   "id": "vacuumPermeability",
+   "symbol": "μ₀",
+   "name": "vacuum magnetic permeability",
+   "unit": "N A⁻²",
+   "status": "derived",
+   "formula": "2 * fineStructure * planck / (elementaryCharge * elementaryCharge * speedOfLight)",
+   "fibre": "knowing",
+   "crosscheck": {
+    "authority": "CODATA2022",
+    "num": "125663706127",
+    "den": "10^17",
+    "uncertainty_num": "20",
+    "uncertainty_den": "10^17"
+   }
+  },
+  {
+   "id": "nonEvaporableWater",
+   "symbol": "w_n",
+   "name": "non-evaporable water at complete hydration (Powers' model)",
+   "unit": "kg per kg cement",
+   "status": "cited",
+   "authority": "Bentz2009",
+   "num": "23",
+   "den": "100",
+   "fibre": "acting"
+  },
+  {
+   "id": "chemicalShrinkage",
+   "symbol": "w_cs",
+   "name": "chemical shrinkage at complete hydration (Powers' model)",
+   "unit": "kg water per kg cement",
+   "status": "cited",
+   "authority": "Bentz2009",
+   "num": "64",
+   "den": "1000",
+   "fibre": "acting"
+  },
+  {
+   "id": "gelWater",
+   "symbol": "w_g",
+   "name": "gel water at complete hydration (Powers' model)",
+   "unit": "kg per kg cement",
+   "status": "cited",
+   "authority": "Bentz2009",
+   "num": "19",
+   "den": "100",
+   "fibre": "acting"
+  },
+  {
+   "id": "waterDensity",
+   "symbol": "ρ_w",
+   "name": "density of water assigned in Powers' model",
+   "unit": "kg m⁻³",
+   "status": "cited",
+   "authority": "Bentz2009",
+   "num": "1000",
+   "den": "1",
+   "fibre": "acting"
+  },
+  {
+   "id": "cementDensity",
+   "symbol": "ρ_c",
+   "name": "density of cement assigned in Powers' model",
+   "unit": "kg m⁻³",
+   "status": "cited",
+   "authority": "Bentz2009",
+   "num": "3150",
+   "den": "1",
+   "fibre": "acting"
+  },
+  {
+   "id": "criticalWcSealed",
+   "symbol": "(w/c)*",
+   "name": "water-cement ratio at which sealed paste just hydrates completely",
+   "unit": "1",
+   "status": "derived",
+   "formula": "nonEvaporableWater + gelWater",
+   "fibre": "acting"
+  },
+  {
+   "id": "criticalWcSpace",
+   "symbol": "(w/c)_s",
+   "name": "water-cement ratio below which space limits complete hydration",
+   "unit": "1",
+   "status": "derived",
+   "formula": "nonEvaporableWater + gelWater - chemicalShrinkage",
+   "fibre": "acting"
+  },
+  {
+   "id": "densityRatio",
+   "symbol": "ρ_c/ρ_w",
+   "name": "specific gravity of cement in Powers' model",
+   "unit": "1",
+   "status": "derived",
+   "formula": "cementDensity / waterDensity",
+   "fibre": "acting"
+  },
+  {
+   "id": "shrinkageVolume",
+   "symbol": "v_cs",
+   "name": "chemical-shrinkage volume per volume of cement reacted",
+   "unit": "1",
+   "status": "derived",
+   "formula": "chemicalShrinkage * densityRatio",
+   "fibre": "acting"
+  },
+  {
+   "id": "gelWaterVolume",
+   "symbol": "v_gw",
+   "name": "gel-water volume per volume of cement reacted",
+   "unit": "1",
+   "status": "derived",
+   "formula": "gelWater * densityRatio",
+   "fibre": "acting"
+  },
+  {
+   "id": "capillaryConsumption",
+   "symbol": "v_cw",
+   "name": "capillary water consumed per volume of cement reacted",
+   "unit": "1",
+   "status": "derived",
+   "formula": "criticalWcSealed * densityRatio",
+   "fibre": "acting"
+  },
+  {
+   "id": "boundWater",
+   "symbol": "w_n − w_cs",
+   "name": "water bound into gel solids per mass of cement reacted",
+   "unit": "kg per kg cement",
+   "status": "derived",
+   "formula": "nonEvaporableWater - chemicalShrinkage",
+   "fibre": "acting"
+  },
+  {
+   "id": "boundWaterVolume",
+   "symbol": "v_b",
+   "name": "volume of water bound into gel solids per volume of cement reacted",
+   "unit": "1",
+   "status": "derived",
+   "formula": "boundWater * densityRatio",
+   "fibre": "acting"
+  },
+  {
+   "id": "gelSolidsVolume",
+   "symbol": "v_gs",
+   "name": "gel-solids volume per volume of cement reacted",
+   "unit": "1",
+   "status": "derived",
+   "formula": "1 + boundWaterVolume",
+   "fibre": "acting"
+  },
+  {
+   "id": "powersGelStrength",
+   "symbol": "A",
+   "name": "intrinsic strength of the gel in Powers' gel-space law",
+   "unit": "MPa",
+   "status": "cited",
+   "authority": "Powers1958",
+   "num": "234",
+   "den": "1",
+   "fibre": "acting"
+  },
+  {
+   "id": "powersGelExponent",
+   "symbol": "n",
+   "name": "exponent of Powers' gel-space law",
+   "unit": "1",
+   "status": "cited",
+   "authority": "Powers1958",
+   "num": "3",
+   "den": "1",
+   "fibre": "acting"
+  },
+  {
+   "id": "hydrationHeatC3S",
+   "symbol": "Q_C3S",
+   "name": "heat released by complete hydration of tricalcium silicate (alite)",
+   "unit": "J/g",
+   "status": "measured",
+   "authority": "Taylor1997",
+   "num": "517",
+   "den": "1",
+   "fibre": "acting",
+   "uncertainty_num": "13",
+   "uncertainty_den": "1"
+  },
+  {
+   "id": "hydrationHeatC2S",
+   "symbol": "Q_C2S",
+   "name": "heat released by complete hydration of dicalcium silicate (belite)",
+   "unit": "J/g",
+   "status": "cited",
+   "authority": "Taylor1997",
+   "num": "262",
+   "den": "1",
+   "fibre": "acting"
+  },
+  {
+   "id": "hydrationHeatC3AtoAFm",
+   "symbol": "Q_C3A,AFm",
+   "name": "heat released by complete hydration of tricalcium aluminate to AFm",
+   "unit": "J/g",
+   "status": "cited",
+   "authority": "Taylor1997",
+   "num": "1144",
+   "den": "1",
+   "fibre": "acting"
+  },
+  {
+   "id": "hydrationHeatC3AtoAFt",
+   "symbol": "Q_C3A,AFt",
+   "name": "heat released by complete hydration of tricalcium aluminate to AFt",
+   "unit": "J/g",
+   "status": "cited",
+   "authority": "Taylor1997",
+   "num": "1672",
+   "den": "1",
+   "fibre": "acting"
+  },
+  {
+   "id": "hydrationHeatC4AF",
+   "symbol": "Q_C4AF",
+   "name": "heat released by complete hydration of tetracalcium aluminoferrite",
+   "unit": "J/g",
+   "status": "cited",
+   "authority": "Taylor1997",
+   "num": "418",
+   "den": "1",
+   "fibre": "acting"
+  },
+  {
+   "id": "hydrationHeatDefault",
+   "symbol": "Q_hyd",
+   "name": "heat of complete hydration of a portland cement (model default)",
+   "unit": "J/g",
+   "status": "policy",
+   "num": "450",
+   "den": "1",
+   "fibre": "acting",
+   "reason": "a cement's heat of complete hydration is the mass-weighted sum of its phases' heats, so for a clinker of the four phases it lies between the least and the greatest phase heat; 450 is the gate's default for an unspecified portland cement",
+   "range": {
+    "low": "hydrationHeatC2S",
+    "high": "hydrationHeatC3AtoAFt"
+   }
+  }
+ ]
+}

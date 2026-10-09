@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
+# SPDX-License-Identifier: MIT
+# Committed copies of upstream authority files read by umst-math tests through include_str!.
+# A test reads only files inside this repository; each copy below records where it came from.
+# One record per blank-line-separated block; keys:
+#   copy           path of the copy, relative to this directory
+#   source_repo    upstream repository
+#   source_path    path of the source file in that repository
+#   source_commit  upstream commit the copy was taken from
+#   source_sha256  SHA-256 of the whole source file at that commit
+#   extract        whole (byte-identical copy) or the rule that selected the lines kept
+#   copy_sha256    SHA-256 of the committed copy
+# Refresh: take the file at the commit pinned in ../../../.umst-pins.toml (umst-formal) or at the
+# workspace root pin (egoff), then update both hashes; the test authority_pin_copies_match_provenance
+# fails on any copy whose bytes differ from its record.
+
+copy: umst-formal/constants/constants.json
+source_repo: https://github.com/tytolabs/umst-formal
+source_path: constants/constants.json
+source_commit: 7c85e0439bb7f2b67ff79327ad6289e4dd392b8f
+source_sha256: 7fa8abdb22d64a4a20833463f740c1f5cecb0d6cd7021b2d5be2b24ba4a4f456
+extract: whole
+copy_sha256: 7fa8abdb22d64a4a20833463f740c1f5cecb0d6cd7021b2d5be2b24ba4a4f456
+
+copy: umst-formal/Lean/lean-toolchain
+source_repo: https://github.com/tytolabs/umst-formal
+source_path: Lean/lean-toolchain
+source_commit: 7c85e0439bb7f2b67ff79327ad6289e4dd392b8f
+source_sha256: 190c6c74963949503698e8e5c3e208b07d14b4863ac0ce82d9664b2087ee8cc7
+extract: whole
+copy_sha256: 190c6c74963949503698e8e5c3e208b07d14b4863ac0ce82d9664b2087ee8cc7
+
+copy: egoff/ghc-version.txt
+source_repo: egoff (private sibling repository)
+source_path: egoff-haskell-toolchain.txt
+source_commit: 2cd673b5943e150a558222ee6afcdc7983c33948
+source_sha256: 771c404fbc3810b4019a466ee86e1941d97d3fd5c234addc1987fcd51bf1818e
+extract: the one line matching ^ghc [0-9]
+copy_sha256: 2fc4e9206e4f7876b9f011c4d00b61fe65bbed7cbe6f2992e243f08d27b76bb5
