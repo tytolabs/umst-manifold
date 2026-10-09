@@ -19,30 +19,24 @@ pub trait MetricSmoother: Send {
     fn update(&mut self, raw: f64) -> f64;
     /// MEASUREMENT: one step with explicit inter-sample time (ms)
     fn update_with_step_ms(&mut self, raw: f64, step_ms: f64) -> f64;
-    /// THEOREM-BOUND: filtered value after the last `update*`
-    fn current(&self) -> f64;
+    /// THEOREM-BOUND: filtered value after the last `update*`; `None` while the smoother holds no
+    /// value (an identity smoother before its first sample)
+    fn current(&self) -> Option<f64>;
     /// THEOREM-BOUND: filter variance (≥ 0, clamped)
     fn variance(&self) -> f64;
     /// MEASUREMENT: return to `new` / `from_env` initial
     fn reset(&mut self);
 }
 
-/// Initial smoother state when no host measurement exists: the additive identity.
-fn default_initial() -> f64 {
-    0.0
-}
-
-/// CONSTANT-BOUND: `UMST_COCKPIT_SMOOTHING=none` — identity
+/// CONSTANT-BOUND: `UMST_COCKPIT_SMOOTHING=none` — identity; holds the last sample, none before the first
 pub struct NoneSmoother {
-    v: f64,
+    v: Option<f64>,
 }
 
 impl NoneSmoother {
-    /// ZCI-EXEMPT: identity smoother
+    /// ZCI-EXEMPT: identity smoother with no sample yet
     pub fn new() -> Self {
-        Self {
-            v: default_initial(),
-        }
+        Self { v: None }
     }
 }
 
@@ -54,7 +48,7 @@ impl Default for NoneSmoother {
 
 impl MetricSmoother for NoneSmoother {
     fn update(&mut self, raw: f64) -> f64 {
-        self.v = raw;
+        self.v = Some(raw);
         raw
     }
 
@@ -62,7 +56,7 @@ impl MetricSmoother for NoneSmoother {
         self.update(raw)
     }
 
-    fn current(&self) -> f64 {
+    fn current(&self) -> Option<f64> {
         self.v
     }
 
@@ -72,6 +66,23 @@ impl MetricSmoother for NoneSmoother {
     }
 
     fn reset(&mut self) {
-        self.v = default_initial();
+        self.v = None;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{MetricSmoother, NoneSmoother};
+
+    #[test]
+    fn identity_smoother_holds_no_value_before_its_first_sample() {
+        let mut s = NoneSmoother::new();
+        assert_eq!(s.current(), None);
+        assert_eq!(s.update(3.5), 3.5);
+        assert_eq!(s.current(), Some(3.5));
+        assert_eq!(s.update_with_step_ms(-2.0, 7.0), -2.0);
+        assert_eq!(s.current(), Some(-2.0));
+        s.reset();
+        assert_eq!(s.current(), None);
     }
 }

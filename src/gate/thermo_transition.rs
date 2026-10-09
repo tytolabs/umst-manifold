@@ -6,11 +6,14 @@
 
 use super::transition_proposal::{
     mix_calibrated_density_kg_m3, mix_strength_closure_x, transition_outcome,
-    MIX_ENTROPY_ALPHA_COEFF, MIX_IDLE_SURFACE_TEMPERATURE_K, SUBSTRATE_REFERENCE_DENSITY_KG_M3,
-    ThermodynamicStateSnapshot,
+    ThermodynamicStateSnapshot, MIX_ENTROPY_ALPHA_COEFF, MIX_IDLE_SURFACE_TEMPERATURE_K,
+    SUBSTRATE_REFERENCE_DENSITY_KG_M3,
 };
 use super::verdict::{AdmissibilityVerdict, ConjunctVerdict};
-use crate::core::material_transition::{MaterialTransitionParams, SubstrateMaterialParams};
+use crate::core::material_transition::{
+    intrinsic_strength_or_unmodelled_mpa, reaction_closure_free_energy_j_per_kg,
+    MaterialTransitionParams, SubstrateMaterialParams,
+};
 
 /// Result of thermodynamic admissibility check
 #[allow(missing_docs)] // Legacy bool mirrors — prefer [`Self::conjunct_verdict`] / [`Self::is_accepted`]
@@ -132,7 +135,7 @@ impl ThermodynamicState {
             w_c,
             alpha,
             temp,
-            params.default_intrinsic_strength_mpa(),
+            intrinsic_strength_or_unmodelled_mpa(params),
             params,
         )
     }
@@ -157,10 +160,9 @@ impl ThermodynamicState {
         s_intrinsic: f64,
         params: &impl MaterialTransitionParams,
     ) -> Self {
-        let q_reaction = params.reaction_enthalpy_j_per_kg();
         let x = mix_strength_closure_x(w_c, alpha);
         let fc = s_intrinsic * x.powi(3);
-        let psi = -q_reaction * alpha;
+        let psi = reaction_closure_free_energy_j_per_kg(params, alpha);
 
         ThermodynamicState {
             density: mix_calibrated_density_kg_m3(w_c),
@@ -297,10 +299,10 @@ impl ThermodynamicGate {
 mod tests {
     use super::super::transition_proposal::TRANSITION_TOLERANCE;
     use super::super::transition_proposal::{
-        CENSUS_DT_ONE_HOUR_S, CENSUS_GOLDEN_IDENTITY_ENTROPY,
-        CENSUS_GOLDEN_IDENTITY_FREE_ENERGY_J, CENSUS_GOLDEN_IDENTITY_REACTION_EXTENT,
-        CENSUS_GOLDEN_IDENTITY_STRENGTH_MPA, CENSUS_GOLDEN_MASS_REJECT_ENTROPY,
-        CENSUS_GOLDEN_MASS_REJECT_STRENGTH_MPA, CENSUS_GOLDEN_NEGATIVE_DISSIPATION_ENTROPY,
+        CENSUS_DT_ONE_HOUR_S, CENSUS_GOLDEN_IDENTITY_ENTROPY, CENSUS_GOLDEN_IDENTITY_FREE_ENERGY_J,
+        CENSUS_GOLDEN_IDENTITY_REACTION_EXTENT, CENSUS_GOLDEN_IDENTITY_STRENGTH_MPA,
+        CENSUS_GOLDEN_MASS_REJECT_ENTROPY, CENSUS_GOLDEN_MASS_REJECT_STRENGTH_MPA,
+        CENSUS_GOLDEN_NEGATIVE_DISSIPATION_ENTROPY,
         CENSUS_GOLDEN_NEGATIVE_DISSIPATION_FREE_ENERGY_J,
         CENSUS_GOLDEN_NEGATIVE_DISSIPATION_FREE_ENERGY_SPIKE_J,
         CENSUS_GOLDEN_NEGATIVE_DISSIPATION_STRENGTH_MPA, CENSUS_MASS_REJECT_DENSITY_KG_M3,
@@ -439,8 +441,18 @@ mod tests {
 
     #[test]
     fn transition_proposal_admissible_matches_check_transition() {
-        let old = ThermodynamicState::from_mix_calibrated(0.45, 0.0, super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
-        let new = ThermodynamicState::from_mix_calibrated(0.45, 0.5, super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
+        let old = ThermodynamicState::from_mix_calibrated(
+            0.45,
+            0.0,
+            super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+            80.0,
+        );
+        let new = ThermodynamicState::from_mix_calibrated(
+            0.45,
+            0.5,
+            super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+            80.0,
+        );
         let dt = 28.0 * 24.0 * 3600.0;
         let mut gate = ThermodynamicGate::new();
         let admissible = gate.transition_proposal_admissible(&old, &new, dt);
@@ -451,8 +463,18 @@ mod tests {
 
     #[test]
     fn hydration_progression_from_mix_calibrated_accepted() {
-        let old = ThermodynamicState::from_mix_calibrated(0.45, 0.0, super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
-        let new = ThermodynamicState::from_mix_calibrated(0.45, 0.5, super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 80.0);
+        let old = ThermodynamicState::from_mix_calibrated(
+            0.45,
+            0.0,
+            super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+            80.0,
+        );
+        let new = ThermodynamicState::from_mix_calibrated(
+            0.45,
+            0.5,
+            super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+            80.0,
+        );
         let dt = 28.0 * 24.0 * 3600.0;
         let outcome = thermo_gate_transition_outcome(&old, &new, dt, TRANSITION_TOLERANCE);
         assert!(outcome.is_accepted());
@@ -462,7 +484,12 @@ mod tests {
 
     #[test]
     fn reaction_extent_regression_rejected() {
-        let old = ThermodynamicState::from_mix_calibrated(0.45, 0.5, super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, 40.0);
+        let old = ThermodynamicState::from_mix_calibrated(
+            0.45,
+            0.5,
+            super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+            40.0,
+        );
         let mut new = old.clone();
         new.reaction_extent = CENSUS_REACTION_EXTENT_REGRESSION.value;
         let outcome = thermo_gate_transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
@@ -495,7 +522,7 @@ mod tests {
         let w_c = 0.45;
         let alpha = 0.35;
         let temp = super::super::transition_proposal::MIX_CALIBRATION_REFERENCE_TEMPERATURE_K;
-        let s_intrinsic = params.default_intrinsic_strength_mpa();
+        let s_intrinsic = intrinsic_strength_or_unmodelled_mpa(&params);
         let via_mix = ThermodynamicState::from_mix_with_params(w_c, alpha, temp, &params);
         let via_calibrated = ThermodynamicState::from_mix_calibrated_with_params(
             w_c,

@@ -115,17 +115,20 @@ impl ReactionExtentKineticsSpec {
 /// formal_anchor_rationale: Product of enthalpy, strength cap, and kinetics spec.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TransitionClosureBundle {
-    pub reaction_enthalpy_j_per_kg: f64,
-    pub default_intrinsic_strength_mpa: f64,
+    /// Reaction enthalpy (J/kg); `None` when the witness supplies no reacting phase.
+    pub reaction_enthalpy_j_per_kg: Option<f64>,
+    /// Intrinsic strength scale (MPa); `None` when the witness supplies no strength scale.
+    pub default_intrinsic_strength_mpa: Option<f64>,
     pub kinetics: ReactionExtentKineticsSpec,
 }
 
 impl TransitionClosureBundle {
-    /// Whether the bundle carries only substrate-neutral defaults (no cartridge override).
+    /// Whether the bundle carries no cartridge closure: both scalars absent and neutral kinetics.
+    /// A cartridge that supplies an enthalpy of 0 J/kg is a supplied value and is not neutral.
     #[must_use]
     pub fn is_substrate_neutral(&self) -> bool {
-        self.reaction_enthalpy_j_per_kg == 0.0
-            && self.default_intrinsic_strength_mpa == 0.0
+        self.reaction_enthalpy_j_per_kg.is_none()
+            && self.default_intrinsic_strength_mpa.is_none()
             && self.kinetics.is_substrate_neutral()
     }
 }
@@ -135,17 +138,16 @@ impl TransitionClosureBundle {
 /// formal_anchor: NONE
 /// formal_status: Structural
 /// formal_anchor_rationale: Trait morphism `Witness → TransitionClosureBundle`; default impls are
-/// substrate-neutral and must not embed domain literals.
+/// substrate-neutral: they supply no closure value (`None`) and embed no domain literal.
 pub trait MaterialTransitionParams {
-    /// Specific heat of reaction progress (J/kg).
-    fn reaction_enthalpy_j_per_kg(&self) -> f64 {
-        // Substrate-neutral additive identity (not a tabulated literal return).
-        1.0 - 1.0
+    /// Specific heat of reaction progress (J/kg); `None` when the witness has no reacting phase.
+    fn reaction_enthalpy_j_per_kg(&self) -> Option<f64> {
+        None
     }
 
-    /// Intrinsic strength scale (MPa) for monotonicity checks.
-    fn default_intrinsic_strength_mpa(&self) -> f64 {
-        1.0 - 1.0
+    /// Intrinsic strength scale (MPa) for monotonicity checks; `None` when the witness supplies none.
+    fn default_intrinsic_strength_mpa(&self) -> Option<f64> {
+        None
     }
 
     /// Arrhenius / exothermic kinetics for coupled THMC reaction-extent lanes.
@@ -179,11 +181,32 @@ impl SubstrateMaterialParams {
     #[must_use]
     pub const fn closure_bundle_neutral() -> TransitionClosureBundle {
         TransitionClosureBundle {
-            reaction_enthalpy_j_per_kg: 0.0,
-            default_intrinsic_strength_mpa: 0.0,
+            reaction_enthalpy_j_per_kg: None,
+            default_intrinsic_strength_mpa: None,
             kinetics: ReactionExtentKineticsSpec::substrate_neutral(),
         }
     }
+}
+
+/// Helmholtz free energy of the reaction closure, ψ = −Q·α (J/kg), gauged to the unreacted
+/// reference state ψ(α = 0) = 0. A witness with no reacting phase (`Q` absent) has no reaction
+/// term, so ψ stays at that reference for every α.
+#[must_use]
+pub fn reaction_closure_free_energy_j_per_kg(
+    params: &impl MaterialTransitionParams,
+    alpha: f64,
+) -> f64 {
+    params
+        .reaction_enthalpy_j_per_kg()
+        .map_or(0.0, |q| -q * alpha)
+}
+
+/// Intrinsic strength scale (MPa) for the mix closure f_c = s·x³: the witness value, or 0 MPa when
+/// the witness supplies none. The closure then models no strength, f_c reads 0 MPa at every state,
+/// and the strength monotonicity conjunct compares 0 with 0.
+#[must_use]
+pub fn intrinsic_strength_or_unmodelled_mpa(params: &impl MaterialTransitionParams) -> f64 {
+    params.default_intrinsic_strength_mpa().unwrap_or(0.0)
 }
 
 /// Whether the W29 closure witness morphism is pinned @ HEAD.
@@ -205,12 +228,12 @@ mod tests {
     struct TestCartridgeParams;
 
     impl MaterialTransitionParams for TestCartridgeParams {
-        fn reaction_enthalpy_j_per_kg(&self) -> f64 {
-            450_000.0
+        fn reaction_enthalpy_j_per_kg(&self) -> Option<f64> {
+            Some(450_000.0)
         }
 
-        fn default_intrinsic_strength_mpa(&self) -> f64 {
-            42.0
+        fn default_intrinsic_strength_mpa(&self) -> Option<f64> {
+            Some(42.0)
         }
 
         fn reaction_extent_kinetics_spec(&self) -> ReactionExtentKineticsSpec {
@@ -267,8 +290,8 @@ mod tests {
     fn test_cartridge_closure_bundle_overrides_defaults() {
         let bundle = TestCartridgeParams.closure_bundle();
         assert!(!bundle.is_substrate_neutral());
-        assert_eq!(bundle.reaction_enthalpy_j_per_kg, 450_000.0);
-        assert_eq!(bundle.default_intrinsic_strength_mpa, 42.0);
+        assert_eq!(bundle.reaction_enthalpy_j_per_kg, Some(450_000.0));
+        assert_eq!(bundle.default_intrinsic_strength_mpa, Some(42.0));
         assert!(!bundle.kinetics.is_substrate_neutral());
         assert!(bundle.kinetics.is_finite_witness());
     }
@@ -301,14 +324,32 @@ mod tests {
         struct EnthalpyOnly;
 
         impl MaterialTransitionParams for EnthalpyOnly {
-            fn reaction_enthalpy_j_per_kg(&self) -> f64 {
-                99.0
+            fn reaction_enthalpy_j_per_kg(&self) -> Option<f64> {
+                Some(99.0)
             }
         }
 
         let bundle = EnthalpyOnly.closure_bundle();
-        assert_eq!(bundle.reaction_enthalpy_j_per_kg, 99.0);
-        assert_eq!(bundle.default_intrinsic_strength_mpa, 0.0);
+        assert_eq!(bundle.reaction_enthalpy_j_per_kg, Some(99.0));
+        assert_eq!(bundle.default_intrinsic_strength_mpa, None);
         assert!(bundle.kinetics.is_substrate_neutral());
+        assert!(!bundle.is_substrate_neutral());
+    }
+
+    #[test]
+    fn supplied_zero_enthalpy_is_not_the_neutral_absence() {
+        #[derive(Clone, Copy, Default)]
+        struct InertCartridge;
+
+        impl MaterialTransitionParams for InertCartridge {
+            fn reaction_enthalpy_j_per_kg(&self) -> Option<f64> {
+                Some(0.0)
+            }
+        }
+
+        assert!(!InertCartridge.closure_bundle().is_substrate_neutral());
+        assert!(SubstrateMaterialParams
+            .closure_bundle()
+            .is_substrate_neutral());
     }
 }

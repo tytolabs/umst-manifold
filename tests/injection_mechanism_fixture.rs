@@ -17,12 +17,12 @@ pub const FIXTURE_DEFAULT_S_INTRINSIC_MPA: f64 = 222.0;
 pub struct InjectionFixtureParams;
 
 impl MaterialTransitionParams for InjectionFixtureParams {
-    fn reaction_enthalpy_j_per_kg(&self) -> f64 {
-        FIXTURE_REACTION_ENTHALPY_J_PER_KG
+    fn reaction_enthalpy_j_per_kg(&self) -> Option<f64> {
+        Some(FIXTURE_REACTION_ENTHALPY_J_PER_KG)
     }
 
-    fn default_intrinsic_strength_mpa(&self) -> f64 {
-        FIXTURE_DEFAULT_S_INTRINSIC_MPA
+    fn default_intrinsic_strength_mpa(&self) -> Option<f64> {
+        Some(FIXTURE_DEFAULT_S_INTRINSIC_MPA)
     }
 
     fn reaction_extent_kinetics_spec(&self) -> ReactionExtentKineticsSpec {

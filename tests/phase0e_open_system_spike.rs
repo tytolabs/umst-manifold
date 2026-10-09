@@ -30,12 +30,12 @@ use umst_manifold::gate::ThermodynamicTransitionOutcome;
 struct PolymerSketchParams;
 
 impl MaterialTransitionParams for PolymerSketchParams {
-    fn reaction_enthalpy_j_per_kg(&self) -> f64 {
-        85_000.0
+    fn reaction_enthalpy_j_per_kg(&self) -> Option<f64> {
+        Some(85_000.0)
     }
 
-    fn default_intrinsic_strength_mpa(&self) -> f64 {
-        55.0
+    fn default_intrinsic_strength_mpa(&self) -> Option<f64> {
+        Some(55.0)
     }
 }
 

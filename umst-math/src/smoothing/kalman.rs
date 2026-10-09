@@ -103,8 +103,8 @@ impl MetricSmoother for KalmanSmoother {
         self.inner.update(raw, step_ms)
     }
 
-    fn current(&self) -> f64 {
-        self.inner.estimate()
+    fn current(&self) -> Option<f64> {
+        Some(self.inner.estimate())
     }
 
     fn variance(&self) -> f64 {
