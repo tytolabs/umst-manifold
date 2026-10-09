@@ -21,13 +21,13 @@ SPDX-License-Identifier: MIT
 | **2 — Hot-path** (Lean wired on robot gates) | **~26%** primary · **~15%** unified | **18/69** · **18/119** | **0 pp** — intentional; **not 100%** |
 | **3 — Org W8** (publish + remote bridge CI) | **Phase 1 done** · **G-02 done** · **G-03** optional | publish **1/1** @ **fe22437** · concrete bridge **1/1** · supercap **0/1** | Publish + **G-02** closed 2026-05-29 |
 
-**Pin:** `main` @ [`fe22437`](https://github.com/tytolabs/umst-manifold/commit/fe22437) (local HEAD = remote `refs/heads/main`).
+**Pin:** `main` @ `fe22437` (local HEAD = remote `refs/heads/main`).
 
 **Verify bundle (this wave):** `UMST_REQUIRE_FORMAL_EXPORT=1 bash scripts/verify_umst_stack.sh` → exit **0**, **`verify_umst_stack: OK`** @ **2026-05-29** (CI catalog-drift on **fe22437**). Prior exit **101** @ 2026-05-21 (manifest digest unit tests) is **not** reproducible on current `main`. **Manifold CI** + **catalog drift** workflows **success** on push **fe22437**.
 
 **26 gaps audited — what blocks scoped true 100%:**
 
-| Bucket | Count | Blocks scoped v1 100%? |
+| Bucket | Count | Blocks scoped v1 100% |
 |--------|-------|-------------------------|
 | **Scoped org (W8)** | **3** register rows (**G-01→G-03**) | **G-01** + **G-02** **done**; **G-03** optional (~**2%**) |
 | **Horizon (FFI)** | **1** (**G-26**) | **Excluded** from v1 scoped % |
@@ -54,7 +54,7 @@ SPDX-License-Identifier: MIT
 
 ## Honest completion ceiling (no unscoped 100%)
 
-| What you mean by “100%” | Honest % today | Still open? |
+| Meaning of “100%” | Honest % today | Open |
 |-------------------------|----------------|-------------|
 | **Plan work on disk** (14 YAML todos + fiber merge) | **100%** | Re-run verify after edits only |
 | **Production catalog pin (R0)** | **100%** | **119** modules, digest `0697014f…` — not **69** |
@@ -95,9 +95,9 @@ cargo test --features trace-calibration --test trace_calibration   # G.3 — als
 
 ## Layer key (R0–R6 track)
 
-| Layer | Plain name | What it is |
+| Layer | Plain name | Content |
 |-------|------------|------------|
-| **R0** | Catalog pin / digest | What proof bundle we ship — lock + drift CI |
+| **R0** | Catalog pin / digest | The shipped proof bundle: lock + drift CI |
 | **R1** | Second law / CD gate | Thermodynamic admissibility on transitions |
 | **R2** | Landauer / MI budget | Energy–information cost; η calibration morphism |
 | **R3** | Mix / constitutive | Material closure, cartridge policy |
@@ -113,7 +113,7 @@ cargo test --features trace-calibration --test trace_calibration   # G.3 — als
 
 These are the **only** items that block an honest “scoped god-grade 100%” claim without qualifiers. Everything else is polish, comms, or optional prototype lanes.
 
-| Blocker | Plain English | Layer | Owner | Proof on disk | Blocks scoped 100%? |
+| Blocker | Plain English | Layer | Owner | Proof on disk | Blocks scoped 100% |
 |---------|---------------|-------|-------|---------------|---------------------|
 | **W8 org** | Phase 1 publish **done** @ **fe22437**; **G-02** concrete GHA without `[patch]` **done**; **G-03** supercap remote optional | R5 / Org | **Human** (G-03 only) | `git ls-remote` → **fe22437**; concrete `manifest-bridge` on git dep | **G-03 only** (~2% optional) |
 | **G.2 aggregate** | Per-step + prototype **aggregate** ε envelopes (`epsMIAgg` / `epsCostAgg`) | R6 | **Code** ✅ | `epistemic_trace_schema` **13/13** in `verify_umst_stack.sh` | **No** — closed |
@@ -133,7 +133,7 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 |--|--|
 | **Blocks** | **0%** — `tytolabs/umst-manifold` `main` @ **fe22437**. |
 | **Done** | `pub mod manifest`; catalog lock **119**; drift CI + verify green on **fe22437**. |
-| **Proof** | `git ls-remote https://github.com/tytolabs/umst-manifold.git refs/heads/main` → **fe22437** (intellection-3to3); CI run **26649667467** success on GitHub **main**. |
+| **Proof** | `git ls-remote` of the umst-manifold remote `refs/heads/main` → **fe22437**; CI run **26649667467** success on GitHub **main**. |
 | **Human** | — |
 
 #### G-02 — Concrete cartridge CI on git dep (no patch) — **closed (2026-05-29)**
@@ -250,7 +250,7 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 |--------|-------------|---------------|----------|-----|-------|
 | **G-01** | Publish manifold `main` (**W8 Phase 1**) | R5 / Org | **0** | Closed @ **fe22437** | **code** ✅ |
 | **G-02** | Concrete CI without patch | R5 / Org | **0** | Closed 2026-05-29 | **code** ✅ |
-| **G-03** | Supercap remote bridge | R5 / Org | **~2** (optional) | When scheduled | **org** |
+| **G-03** | Supercap remote bridge | R5 / Org | **~2** (optional) | Unscheduled | **org** |
 | **G-04** | Strict catalog release default | R5 | **0** | Closed | **code** ✅ |
 | **G-05** | Auto-fill witness digest | R5 | **0** | Closed | **code** ✅ |
 | **G-06** | Manifest registry vs orchestrator | R5 | **0** | — | **code** (docs) |
@@ -286,7 +286,7 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 
 ### Honest blocked % (do not add table “Blocks %” column)
 
-| Lens | Remaining blocked | How to read it |
+| Lens | Remaining blocked | Reading |
 |------|-------------------|----------------|
 | **Local robustness** (`verify_umst_stack.sh` on **119** pin) | **0%** blocked | Green @ **2026-05-29** CI (**fe22437**) |
 | **In-repo automation (16 rows)** | **0%** | **16/16 = 100%** — G.2 **13/13** · G.3 **8/8** |
@@ -298,7 +298,7 @@ These are the **only** items that block an honest “scoped god-grade 100%” cl
 
 **Anti double-count rule:** Org **W8** is the main scoped headline; do not add org % + automation %.
 
-### What actually blocks saying “100%” without qualifiers
+### Blockers of an unqualified “100%”
 
 1. **G-03** (optional) — supercap remote `manifest-bridge` in GHA (~**2%** org).
 2. **FFI (G-26)** — horizon only; say “excluded from v1 scoped 100%.”
