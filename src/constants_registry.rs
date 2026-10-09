@@ -33,12 +33,18 @@ pub const REGISTRY_MASTER_RETICK: bool = false;
 pub const HONEST_FENCE: &str =
     "registry_landed=true thmc_floats_todo=true production_wired=false physics_green=false master_retick=false";
 
+pub use umst_math::constants::derivation::Derivation;
+
 /// One grounded numerical parameter (pure FP: copy types only).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GroundedConst<T: Copy> {
     pub name: &'static str,
     pub value: T,
     pub evidence: &'static str,
+    /// How the value is known, in the umst-math registry's terms (`Theorem`, `Definition`, `Policy`, `Absent`, …).
+    /// `None` when the value pins `umst_constants` by code (the formal table row is its derivation) and for a
+    /// test fixture literal, which grounds nothing.
+    pub derivation: Option<Derivation>,
 }
 
 /// Typed probe for W29 constants-registry posture honesty.
@@ -64,6 +70,9 @@ pub const HEX_PCG_REL_TOL_F32_GROUNDED: GroundedConst<f32> = GroundedConst {
     name: "hex_pcg_rel_tol_f32",
     value: crate::physics::hex_elasticity::HEX_PCG_REL_TOL_F32,
     evidence: "src/physics/hex_elasticity.rs — attainable κ·ε floor (arm-A 9×8×2, 2026-06-10)",
+    derivation: Some(Derivation::Policy {
+        rationale: "stopping rule of the f32 Q1-hex PCG lane: the attainable condition-number times f32 epsilon floor on the arm-A 9x8x2 mesh (2026-06-10); a solver choice, not a property of the material",
+    }),
 };
 
 /// Q1-hex f64 Striatus lane relative tolerance (SSOT: `hex_elasticity::HEX_PCG_REL_TOL_F64`).
@@ -75,6 +84,9 @@ pub const HEX_PCG_REL_TOL_F64_GROUNDED: GroundedConst<f32> = GroundedConst {
     name: "hex_pcg_rel_tol_f64",
     value: crate::physics::hex_elasticity::HEX_PCG_REL_TOL_F64,
     evidence: "src/physics/hex_elasticity.rs — re-grounded Striatus lane (2026-06-10)",
+    derivation: Some(Derivation::Policy {
+        rationale: "stopping rule of the f64 Striatus PCG lane (re-grounded 2026-06-10); a solver choice, not a property of the material",
+    }),
 };
 
 /// Default bar-network PCG relative tolerance (`MechanicsInnerLoopConfig` default).
@@ -82,6 +94,9 @@ pub const DEFAULT_BAR_PCG_REL_TOL: GroundedConst<f32> = GroundedConst {
     name: "mechanics_default_pcg_rel_tol",
     value: 1e-6,
     evidence: "src/physics/time_orchestration.rs MechanicsInnerLoopConfig::default",
+    derivation: Some(Derivation::Policy {
+        rationale: "default relative residual of the bar-network PCG (MechanicsInnerLoopConfig::default); a solver choice, not a property of the material",
+    }),
 };
 
 /// Dense monolithic THMC stacked-DOF cap (SSOT: `thmc_residual::THMC_DENSE_NEWTON_MAX_STACKED_DOFS`).
@@ -90,6 +105,9 @@ pub const THMC_DENSE_NEWTON_MAX_STACKED_DOFS_GROUNDED: GroundedConst<usize> = Gr
     name: "thmc_dense_newton_max_stacked_dofs",
     value: crate::physics::solvers::THMC_DENSE_NEWTON_MAX_STACKED_DOFS,
     evidence: "src/physics/solvers/thmc_residual.rs post-3394b96",
+    derivation: Some(Derivation::Policy {
+        rationale: "largest stacked THMC system the dense monolithic Newton factorises; above it the sparse path runs; a memory and time bound, not physics",
+    }),
 };
 
 /// Boltzmann constant (J/K), SI 2019 exact — re-export from `umst-math` when `math-constants` is on;
@@ -99,6 +117,7 @@ pub const K_BOLTZMANN_CODATA: GroundedConst<f64> = GroundedConst {
     name: "k_boltzmann_j_per_k",
     value: umst_math::constants::registry::K_BOLTZMANN_J_PER_K,
     evidence: "umst-math::constants::registry::K_BOLTZMANN_J_PER_K = umst_constants::BOLTZMANN (SI 2019 exact)",
+    derivation: None,
 };
 
 /// Landauer bit energy at 300 K (J/bit): `k_B T ln 2`, the floor `Constants.SIBridge.landauerBoundSI` fixes
@@ -108,6 +127,7 @@ pub const LANDAUER_BIT_ENERGY_300K_J: GroundedConst<f64> = GroundedConst {
     name: "landauer_bit_energy_300k_j",
     value: umst_math::landauer::K_B * 300.0 * std::f64::consts::LN_2,
     evidence: "Constants.SIBridge.landauerBoundSI (umst-formal): erasing one bit at T costs at least k_B T ln 2 J; evaluated at T = 300 K with k_B = umst_constants::BOLTZMANN",
+    derivation: None,
 };
 
 /// THMC reaction-extent floats — SSOT in domain cartridge (`material_transition.rs` / `solvers/thmc.rs`).
