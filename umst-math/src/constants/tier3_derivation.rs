@@ -277,7 +277,7 @@ pub const M_0_MANIFOLD_AUTHORITY: &str = "umst-math/src/manifold/mod.rs#M-Arc";
 
 /// Pinned SHA-256 of `umst-math/src/manifold/mod.rs`.
 pub const M_0_MANIFOLD_MOD_SHA256: &str =
-    "49f0291cad390cae20fa63c516429c488b2733ae9f0908648dfb5cd23fe5628d";
+    "2bfa38e51cad1008efb178f973a6f45e117cb37cac4d37540298e3ba1f608523";
 
 /// Shared `Derivation::Definition` for §14bis.f-M-0 manifold policy constants.
 pub const M_0_MANIFOLD_DEFINITION: Derivation = Derivation::Definition {
