@@ -808,7 +808,7 @@ pub const COCKPIT_SMOOTHING_DEFAULT_DERIVATION: Derivation = Derivation::Pin {
 /// Typed absence for the ten smoother (Q, R) rows. The in-use values are defaults tuned on the
 /// `smoothing_ekf_e_bisim` fixture sequences; a variance of the fixture is a statistic of the test data, not
 /// of the cockpit process, and no recorded cockpit run exists yet.
-pub const SMOOTHER_QR_TYPED_ABSENCE_REASON: &str = "smoother Q and R not measured: in-use values are defaults tuned on the smoothing_ekf_e_bisim fixture, and no recorded CockpitHub run exists; planned: innovation-sequence estimate from a recorded cockpit run; docs/PENDING_GAPS_PLAIN.md#smoother-qr-recorded-runs";
+pub const SMOOTHER_QR_TYPED_ABSENCE_REASON: &str = "smoother Q and R not measured: in-use values are defaults tuned on the smoothing_ekf_e_bisim fixture, and no recorded CockpitHub run exists. Planned: innovation-sequence estimate from a recorded cockpit run, docs/PENDING_GAPS_PLAIN.md#smoother-qr-recorded-runs";
 
 /// SSOT: `umst_smoother_q_rcc` (method (b); SEQ0 bisim amplitude).
 pub const SMOOTHER_Q_RCC: f64 = 1.8;
