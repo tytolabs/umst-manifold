@@ -699,20 +699,21 @@ pub const K5H_REGISTRY_ROW_NAMES: &[&str] = &[
 
 // --- K-5i Tier-1 energy probes + ZCI toolchain pins (§14bis.k deepen wave 9) ---
 
-/// `rapl_package_dram_joules` — host system energy.
-/// This machine has no Linux powercap; the receipt integrates the IORegistry system-power reading.
-pub const RAPL_PACKAGE_DRAM_JOULES_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/rapl_package_dram_joules.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#hal-rapl-package-energy",
+/// `rapl_package_dram_joules` — package plus DRAM energy from a RAPL counter. The reference host is Apple
+/// silicon, which exposes no RAPL package or DRAM counter; its IORegistry `SystemPower` is whole-machine
+/// power and measures a different quantity, so the row stays Absent until a Linux powercap host records it.
+pub const RAPL_PACKAGE_DRAM_JOULES_DERIVATION: Derivation = Derivation::Absent {
+    reason: "no RAPL package+DRAM counter on the Apple-silicon reference host; planned: Linux powercap intel-rapl receipt; docs/PENDING_GAPS_PLAIN.md#rapl-package-dram-counter",
 };
 
-/// `cpu_utilization_percent` — sysinfo global CPU util (portable).
+/// `cpu_utilization_percent` — host CPU utilization, one `top -l 2` second sample per power-gauge refresh.
 pub const CPU_UTILIZATION_PERCENT_DERIVATION: Derivation = Derivation::Measurement {
     receipt_path: ".umst-ci/measurement-receipts/cpu_utilization_percent.jsonl",
     methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#hal-cpu-utilization",
 };
 
-/// `process_joules_estimate` — system watts × Δt × busy fraction (upper bound).
+/// `process_joules_estimate` — whole-machine `SystemPower` watts × gauge interval × busy fraction (an upper
+/// bound on any one process).
 pub const PROCESS_JOULES_ESTIMATE_DERIVATION: Derivation = Derivation::Measurement {
     receipt_path: ".umst-ci/measurement-receipts/process_joules_estimate.jsonl",
     methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#energy-service-estimate",
@@ -1672,48 +1673,59 @@ mod tests {
     }
 
     #[test]
-    fn host_energy_receipts_clear_the_landauer_floor() {
-        fn load(bytes: &str) -> serde_json::Value {
-            serde_json::from_str(bytes).expect("receipt json")
+    fn host_energy_receipts_sample_each_step_and_clear_the_landauer_floor() {
+        /// The last record of a JSONL receipt (the receipts are append-only logs).
+        fn last(bytes: &str) -> serde_json::Value {
+            let line = bytes.lines().rfind(|l| !l.trim().is_empty()).expect("record");
+            serde_json::from_str(line).expect("receipt json")
+        }
+        fn values(v: &serde_json::Value) -> Vec<f64> {
+            v.as_array()
+                .expect("array")
+                .iter()
+                .map(|x| x.as_f64().expect("f64"))
+                .collect()
         }
         let cpu_bytes = include_str!(
             "../../../../egoff/.umst-ci/measurement-receipts/cpu_utilization_percent.jsonl"
         );
-        let package_bytes = include_str!(
-            "../../../../egoff/.umst-ci/measurement-receipts/rapl_package_dram_joules.jsonl"
-        );
         let process_bytes = include_str!(
             "../../../../egoff/.umst-ci/measurement-receipts/process_joules_estimate.jsonl"
         );
-        let cpu = load(cpu_bytes);
-        let package = load(package_bytes);
-        let process = load(process_bytes);
+        let cpu = last(cpu_bytes);
+        let process = last(process_bytes);
         let busy = cpu["derived_value"].as_f64().expect("cpu");
         let lo = cpu["interval"][0].as_f64().expect("lo");
         let hi = cpu["interval"][1].as_f64().expect("hi");
         assert!((0.0..=100.0).contains(&busy));
         assert!(lo <= busy && busy <= hi);
-        assert!(cpu["sample_count"].as_u64().expect("n") >= 2);
-        let temp_k = package["temperature_k"].as_f64().expect("T");
-        let written = (cpu_bytes.len() + package_bytes.len() + process_bytes.len()) as f64;
+        for receipt in [&cpu, &process] {
+            assert!(receipt["sample_count"].as_u64().expect("n") >= 10);
+            let samples = values(&receipt["raw_samples"]);
+            assert!(
+                samples.windows(2).any(|w| (w[0] - w[1]).abs() > 0.0),
+                "a sensor read once and repeated is not a sample"
+            );
+        }
+        let power = values(&process["raw_power_w"]);
+        assert!(power.windows(2).any(|w| (w[0] - w[1]).abs() > 0.0));
+        let temp_k = process["temperature_k"].as_f64().expect("T");
+        let written = (cpu_bytes.len() + process_bytes.len()) as f64;
         let floor = crate::constants::registry::K_BOLTZMANN_J_PER_K
             * temp_k
             * 2.0_f64.ln()
             * 8.0
             * written;
-        for receipt in [&package, &process] {
-            let joules = receipt["derived_value"].as_f64().expect("J");
-            let rlo = receipt["interval"][0].as_f64().expect("lo");
-            let rhi = receipt["interval"][1].as_f64().expect("hi");
-            assert!(joules >= floor);
-            assert!(rlo <= joules && joules <= rhi);
-            assert!(receipt["estimator"]
-                .as_str()
-                .expect("estimator")
-                .contains("SystemPower"));
-            assert!(receipt["linux_powercap"].as_bool() == Some(false));
-            assert!(receipt["sample_count"].as_u64().expect("n") >= 2);
-        }
+        let joules = process["derived_value"].as_f64().expect("J");
+        let rlo = process["interval"][0].as_f64().expect("lo");
+        let rhi = process["interval"][1].as_f64().expect("hi");
+        assert!(joules >= floor);
+        assert!(rlo <= joules && joules <= rhi);
+        assert!(process["power_source"]
+            .as_str()
+            .expect("power source")
+            .contains("whole-machine"));
+        assert!(process["linux_powercap"].as_bool() == Some(false));
     }
 
     fn fixture_array(text: &str, name: &str) -> Vec<f64> {
@@ -1871,5 +1883,26 @@ mod tests {
                 other => panic!("unexpected derivation for {name}: {other:?}"),
             }
         }
+    }
+
+    /// The row is typed Absent and its reason's anchor is a heading of PENDING_GAPS_PLAIN.md.
+    fn assert_typed_absent_with_anchor(name: &str) {
+        let entry = REGISTRY
+            .iter()
+            .find(|e| e.name == name)
+            .expect("registry row");
+        let Derivation::Absent { reason } = entry.derivation else {
+            panic!("{name} is {:?}, not a typed absence", entry.derivation);
+        };
+        let anchor = absent_reason_doc_anchor(reason);
+        assert!(
+            pending_gaps_plain_lists_anchor(anchor, pending_gaps_plain_for_absent_witness()),
+            "PENDING_GAPS_PLAIN.md missing anchor #{anchor} cited by {name}"
+        );
+    }
+
+    #[test]
+    fn rapl_row_is_typed_absent_on_a_host_without_a_rapl_counter() {
+        assert_typed_absent_with_anchor("rapl_package_dram_joules");
     }
 }

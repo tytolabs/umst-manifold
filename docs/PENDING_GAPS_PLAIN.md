@@ -333,6 +333,16 @@ These anchors are cited by `umst-math` `REGISTRY` rows that carry no invented p9
 
 **Close when:** a committed receipt names the estimator, sample count, interval, and the policy that distinguishes a ceiling from a single-second Combined Power reading.
 
+### rapl-package-dram-counter
+
+**Status:** open (measurement debt)
+
+**Row:** `rapl_package_dram_joules`.
+
+**Plain read:** The row names RAPL package plus DRAM energy. The reference host is Apple silicon, which has no RAPL counter; its IORegistry `SystemPower` reading is whole-machine power (every rail, display included), a different quantity. That reading feeds `process_joules_estimate`, labelled as whole-machine power, and this row stays `Absent`.
+
+**Close when:** a Linux host with `/sys/class/powercap/intel-rapl:*/energy_uj` (package and DRAM domains) records at least ten counter deltas through a committed command, with the estimator, sample count and interval in the receipt.
+
 ---
 
 ## Suggested close order
