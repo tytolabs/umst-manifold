@@ -317,11 +317,19 @@ These anchors are cited by `umst-math` `REGISTRY` rows that carry no invented p9
 
 **Status:** open (measurement debt)
 
-**Rows:** `manifold_voxelize_runtime_us_p99`, `manifold_canonicalize_runtime_us_p99`, `manifold_octree_density_typical`, `manifold_hilbert_index_range_typical`, `umst_memory_inspect_runtime_us_p99`, `umst_memory_load_runtime_us_p99`, `umst_memory_local_tier_size_typical`, `umst_memory_store_runtime_us_p99`, `umst_memory_retention_mi_estimate_p99_us`, `umst_memory_retention_pareto_compute_p99_us`.
+**Rows:** `manifold_octree_density_typical`, `manifold_hilbert_index_range_typical`, `umst_memory_local_tier_size_typical`.
 
-**Plain read:** B-Arc cockpit perf and memory telemetry placeholders stay typed `Absent` in the constants registry. A row moves to `Measurement` only after a committed JSONL receipt records p99 (or typical) wall time, sample count, estimator, and uncertainty interval on the reference host — not a bare float in source.
+**Plain read:** These rows describe a running cockpit workload: the non-empty leaf density of the action octree, the span of persisted Hilbert indices over a ucrs sequence, and the device-tier row count of a live memory store. A test fixture fixes each of them (one ucrs pair, three stored rows), so a statistic of a test is not their value, and the rows stay typed `Absent`.
 
-**Close when:** FPD-M-Arc calibration phases land with `umst-bench` or egoff `.umst-ci` receipts per row.
+**Close when:** a recorded cockpit memory session is committed and a script reads each quantity from it, with sample count, estimator and interval in the receipt.
+
+### b-arc-runtime-receipts
+
+**Status:** measured
+
+**Rows:** `manifold_voxelize_runtime_us_p99`, `manifold_canonicalize_runtime_us_p99`, `umst_memory_inspect_runtime_us_p99`, `umst_memory_load_runtime_us_p99`, `umst_memory_store_runtime_us_p99`, `umst_memory_retention_mi_estimate_p99_us`, `umst_memory_retention_pareto_compute_p99_us`.
+
+**Plain read:** `python3 umst/egoff/.umst-ci/measurement-receipts/measure_barc_runtime.py --runs 10` builds the egoff `b_arc_runtime_receipts` test binary once (release) and runs its ignored test `barc_runtime_p99_one_process_run` ten times, each a fresh process. A run times 128 calls of each operation in nanoseconds after a warm-up and records the nearest-rank p99. The receipt holds the ten per-run p99 values, their mean (the registry value), sample standard deviation, standard uncertainty of the mean, minimum and maximum, with host, CPU, power source, rustc, profile, the egoff and umst-manifold commits, the SHA-256 of the harness and of the resolving Cargo.lock, the load average before and after, and wall-clock stamps. The receipts of 9 October 2026 were taken under a load average of 140 to 158 on a 16-core host, so they state a loaded host; `MemoryBackend::store` (sled with a fresh id per call) carries the widest spread. A re-run on an idle host replaces them.
 
 ### unmeasured-power-ceiling
 

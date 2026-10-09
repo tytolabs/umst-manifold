@@ -30,9 +30,10 @@ pub const MACOS_PACKAGE_POWER_CEILING_TYPED_ABSENCE_DERIVATION: Derivation = Der
     reason: "macOS package power ceiling: samples recorded, no installed ceiling; docs/PENDING_GAPS_PLAIN.md#unmeasured-power-ceiling",
 };
 
-/// Methodology anchor for B-Arc perf measurement receipts (plain-language gap doc).
+/// Methodology anchor for the B-Arc runtime receipts: the mean over at least ten process runs of the
+/// nearest-rank p99 of 128 nanosecond wall-time samples, from `egoff/.umst-ci/measurement-receipts/measure_barc_runtime.py`.
 pub const B_ARC_PERF_MEASUREMENT_METHODOLOGY: &str =
-    "docs/PENDING_GAPS_PLAIN.md#b-arc-perf-typed-absence";
+    "docs/PENDING_GAPS_PLAIN.md#b-arc-runtime-receipts";
 
 /// Tier-2 B-Arc / macOS power runtime rows that stay `Absent` until a committed benchmark lands.
 pub const ABSENT_RUNTIME_REGISTRY_ROW_NAMES: &[&str] = &[
@@ -40,13 +41,13 @@ pub const ABSENT_RUNTIME_REGISTRY_ROW_NAMES: &[&str] = &[
     "solve_combinator_macos_package_power_ceiling_watts",
 ];
 
-/// `manifold_voxelize_runtime_us_p99` — nearest-rank p99 of `canonicalize_voxelize` (B-Arc).
+/// `manifold_voxelize_runtime_us_p99` — p99 wall time of `canonicalize_voxelize` (B-Arc), mean over process runs.
 pub const MANIFOLD_VOXELIZE_RUNTIME_US_P99_DERIVATION: Derivation = Derivation::Measurement {
     receipt_path: ".umst-ci/measurement-receipts/manifold_voxelize_runtime_us_p99.jsonl",
     methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
 };
 
-/// `manifold_canonicalize_runtime_us_p99` — p99 of voxelize + `fnv1a_64` (B-Arc).
+/// `manifold_canonicalize_runtime_us_p99` — p99 wall time of voxelize + `fnv1a_64` (B-Arc), mean over process runs.
 pub const MANIFOLD_CANONICALIZE_RUNTIME_US_P99_DERIVATION: Derivation = Derivation::Measurement {
     receipt_path: ".umst-ci/measurement-receipts/manifold_canonicalize_runtime_us_p99.jsonl",
     methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
@@ -797,16 +798,17 @@ pub const UMST_HASKELL_TOOLCHAIN_DERIVATION: Derivation = Derivation::Pin {
     ref_name: "9.10.3",
 };
 
-/// `egoff_candle_embed_batch_1000x_ceiling_us` — PERF-MEASURE-1 embed batch ceiling.
-pub const EGOFF_CANDLE_EMBED_BATCH_CEILING_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: "umst/umst-meta/crates/umst-bench/fixtures/perf_measure_1_posture.json",
-    methodology_anchor: "PERF-MEASURE-1; egoff/.benchmarks_baseline.json embed_ceiling_us",
+/// `egoff_candle_embed_batch_1000x_ceiling_us` — PERF-MEASURE-1 embed batch ceiling: a CI regression cap.
+/// The posture file it once cited (`umst-bench/fixtures/perf_measure_1_posture.json`) holds the cap and no
+/// samples, so the row is the cap it is, a policy.
+pub const EGOFF_CANDLE_EMBED_BATCH_CEILING_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "CI regression cap for 1000 CandleLinearEmbedding::embed_batch calls: 1.1 x the 1 000 000 us ceiling of egoff/.benchmarks_baseline.json (embedding_candle_linear); a test fails above it; no receipt measures it",
 };
 
-/// `egoff_manifold_action_canonicalize_p99_us` — PERF-MEASURE-1 canonicalize p99 ceiling.
-pub const EGOFF_MANIFOLD_CANONICALIZE_P99_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: "umst/umst-meta/crates/umst-bench/fixtures/perf_measure_1_posture.json",
-    methodology_anchor: "PERF-MEASURE-1; canonicalize_runtime_p99_under_500us",
+/// `egoff_manifold_action_canonicalize_p99_us` — PERF-MEASURE-1 canonicalize p99 ceiling: a CI regression
+/// cap read by `canonicalize_runtime_p99_under_500us`; the measured p99 is `manifold_canonicalize_runtime_us_p99`.
+pub const EGOFF_MANIFOLD_CANONICALIZE_P99_DERIVATION: Derivation = Derivation::Policy {
+    rationale: "CI regression cap on the p99 of action_sdf canonicalize at bits=3 (egoff test canonicalize_runtime_p99_under_500us, x20 in debug); the measured p99 is the row manifold_canonicalize_runtime_us_p99",
 };
 
 /// K-5i energy + ZCI toolchain registry row names (7/7 for slice GREEN).
