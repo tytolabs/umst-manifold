@@ -111,6 +111,94 @@ pub fn theorems_for_constant(constant_name: &str) -> Vec<crate::constants::deriv
     theorem_for_constant(constant_name).into_iter().collect()
 }
 
+/// Path of the pinned formal catalog of this checkout (`umst-manifold/artifacts/upstream_catalog.json`), the
+/// composed export that `catalog.lock.json` pins.
+#[must_use]
+pub fn pinned_catalog_path() -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../artifacts/upstream_catalog.json")
+}
+
+/// Why a catalog could not be read as a set of Lean declarations.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CatalogReadError {
+    /// The catalog file could not be read.
+    Unreadable(String),
+    /// The catalog is not JSON.
+    NotJson(String),
+    /// The catalog has no `modules` array.
+    NoModules,
+    /// A module entry lacks its `module` id.
+    ModuleWithoutId,
+}
+
+impl std::fmt::Display for CatalogReadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Unreadable(e) => write!(f, "catalog unreadable: {e}"),
+            Self::NotJson(e) => write!(f, "catalog is not JSON: {e}"),
+            Self::NoModules => f.write_str("catalog has no modules array"),
+            Self::ModuleWithoutId => f.write_str("catalog module without a module id"),
+        }
+    }
+}
+
+impl std::error::Error for CatalogReadError {}
+
+/// The declarations of a formal catalog, as `(module, name)` pairs, for resolving Lean citations.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct CatalogDeclarations(std::collections::BTreeSet<(String, String)>);
+
+impl CatalogDeclarations {
+    /// Parse a catalog in the `upstream_catalog.json` schema (`modules[].module`, `modules[].declarations.<kind>[]`).
+    ///
+    /// # Errors
+    /// [`CatalogReadError`] when the text is not JSON, has no module array, or a module has no id.
+    pub fn from_json(text: &str) -> Result<Self, CatalogReadError> {
+        let v: serde_json::Value =
+            serde_json::from_str(text).map_err(|e| CatalogReadError::NotJson(e.to_string()))?;
+        let modules = v["modules"].as_array().ok_or(CatalogReadError::NoModules)?;
+        let mut out = std::collections::BTreeSet::new();
+        for m in modules {
+            let module = m["module"].as_str().ok_or(CatalogReadError::ModuleWithoutId)?;
+            for names in m["declarations"].as_object().into_iter().flat_map(|o| o.values()) {
+                for n in names.as_array().into_iter().flatten().filter_map(serde_json::Value::as_str) {
+                    out.insert((module.to_string(), n.to_string()));
+                }
+            }
+        }
+        Ok(Self(out))
+    }
+
+    /// Read the pinned catalog of this checkout ([`pinned_catalog_path`]).
+    ///
+    /// # Errors
+    /// [`CatalogReadError`] when the file is absent or malformed.
+    pub fn pinned() -> Result<Self, CatalogReadError> {
+        let path = pinned_catalog_path();
+        let text = std::fs::read_to_string(&path)
+            .map_err(|e| CatalogReadError::Unreadable(format!("{}: {e}", path.display())))?;
+        Self::from_json(&text)
+    }
+
+    /// True when the catalog declares `decl.name` in module `decl.module`.
+    #[must_use]
+    pub fn resolves(&self, decl: crate::constants::derivation::LeanDecl) -> bool {
+        self.0.contains(&(decl.module.to_string(), decl.name.to_string()))
+    }
+
+    /// Number of `(module, name)` declarations in the catalog.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    /// True when the catalog declares nothing.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{constant_for_theorem, crosswalk_stats, theorem_for_constant, THEOREM_REGISTRY};
@@ -123,6 +211,32 @@ mod tests {
         let s = crosswalk_stats();
         assert!(s.derived_constant_rows > 0);
         assert_eq!(s.covered_derived_rows, s.derived_constant_rows);
+    }
+
+    #[test]
+    fn catalog_declarations_resolve_only_declared_names() {
+        use super::{CatalogDeclarations, CatalogReadError};
+        use crate::constants::derivation::LeanDecl;
+        let cat = CatalogDeclarations::from_json(
+            r#"{"modules":[{"module":"EtaCog","declarations":{"theorem":["eta_cog_nonneg"],"def":["eta_cog"]}}]}"#,
+        )
+        .expect("well-formed catalog");
+        assert_eq!(cat.len(), 2);
+        assert!(cat.resolves(LeanDecl { module: "EtaCog", name: "eta_cog_nonneg" }));
+        assert!(!cat.resolves(LeanDecl { module: "EtaCog", name: "eta_cog_positive" }));
+        assert!(!cat.resolves(LeanDecl { module: "Dignity", name: "eta_cog_nonneg" }));
+        assert_eq!(CatalogDeclarations::from_json("{}"), Err(CatalogReadError::NoModules));
+        assert!(matches!(CatalogDeclarations::from_json("not json"), Err(CatalogReadError::NotJson(_))));
+        assert_eq!(
+            CatalogDeclarations::from_json(r#"{"modules":[{"declarations":{}}]}"#),
+            Err(CatalogReadError::ModuleWithoutId)
+        );
+    }
+
+    #[test]
+    fn pinned_catalog_reads() {
+        let cat = super::CatalogDeclarations::pinned().expect("pinned catalog of this checkout");
+        assert!(cat.len() > 1000, "pinned catalog declares {} names", cat.len());
     }
 
     #[test]
