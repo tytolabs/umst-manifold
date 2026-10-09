@@ -11,6 +11,7 @@ gives the same answer in CI (siblings cloned at the pin) and in the monorepo (si
 Usage:
   python3 scripts/check_theorem_counts_ssot.py           # verify
   python3 scripts/check_theorem_counts_ssot.py --write   # re-measure at the pins and rewrite the snapshot
+  python3 scripts/check_theorem_counts_ssot.py --self-check  # synthetic cases for the comparison
 """
 
 from __future__ import annotations
@@ -31,6 +32,7 @@ SNAPSHOT = HERE / "theorem_counts_snapshot.json"
 PINS = REPO / ".umst-pins.toml"
 SIBLINGS = ("umst-formal", "umst-formal-double-slit")
 STATS_REL = Path("scripts") / "lean_declaration_stats.py"
+KEYS = ("sha", "lake_roots", "theorem", "lemma", "all_lean_theorem", "all_lean_lemma")
 
 
 def sibling_root(name: str) -> Path | None:
@@ -70,10 +72,46 @@ def counts_at(repo: Path, sha: str) -> dict:
     }
 
 
+def compare(expected: dict, measured: dict) -> list[str]:
+    """Mismatches between the snapshot and the counts measured at the pins (empty when they agree)."""
+    errors: list[str] = []
+    for name, got in measured.items():
+        want = expected.get(name, {})
+        for key in KEYS:
+            if want.get(key) != got[key]:
+                errors.append(
+                    f"{name}: {key} snapshot={want.get(key)} pinned={got[key]} "
+                    "(run scripts/check_theorem_counts_ssot.py --write after a pin bump)"
+                )
+    return errors
+
+
+def self_check() -> int:
+    """A pin bump with a stale snapshot, a count drift and a missing entry fail; agreement passes."""
+    at_pin = {"sha": "b" * 40, "lake_roots": 85, "theorem": 555, "lemma": 62,
+              "all_lean_theorem": 1343, "all_lean_lemma": 62}
+    cases = [
+        ("agreement passes", {"f": at_pin}, 0),
+        ("pin moved, snapshot stale", {"f": {**at_pin, "sha": "a" * 40}}, 1),
+        ("same pin, count drift", {"f": {**at_pin, "theorem": 554}}, 1),
+        ("sibling missing from snapshot", {}, len(KEYS)),
+    ]
+    bad = 0
+    for label, expected, want in cases:
+        got = len(compare(expected, {"f": at_pin}))
+        ok = got == want
+        bad += not ok
+        print(f"{'ok ' if ok else 'BAD'} {label}: {got} mismatch(es), want {want}")
+    return 1 if bad else 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--write", action="store_true", help="rewrite the snapshot at the pins")
+    ap.add_argument("--self-check", action="store_true", help="run the synthetic comparison cases")
     args = ap.parse_args()
+    if args.self_check:
+        return self_check()
 
     roots = {name: sibling_root(name) for name in SIBLINGS}
     missing = [name for name, root in roots.items() if root is None]
@@ -109,15 +147,7 @@ def main() -> int:
         print(f"FAIL: missing snapshot {SNAPSHOT} (run with --write)", file=sys.stderr)
         return 1
     expected = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
-    for name, got in measured.items():
-        want = expected.get(name, {})
-        for key in ("sha", "lake_roots", "theorem", "lemma", "all_lean_theorem", "all_lean_lemma"):
-            if want.get(key) != got[key]:
-                errors.append(
-                    f"{name}: {key} snapshot={want.get(key)} pinned={got[key]} "
-                    "(run scripts/check_theorem_counts_ssot.py --write after a pin bump)"
-                )
-
+    errors = compare(expected, measured)
     if errors:
         for e in errors:
             print(f"FAIL: {e}", file=sys.stderr)

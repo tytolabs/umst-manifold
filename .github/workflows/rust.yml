@@ -70,6 +70,7 @@ jobs:
       - name: theorem counts SSOT (lean_declaration_stats snapshot)
         run: |
           set -euo pipefail
+          python3 scripts/check_theorem_counts_ssot.py --self-check
           python3 scripts/check_theorem_counts_ssot.py
 
   # D3: constants registry docs ↔ Rust (non-blocking).
