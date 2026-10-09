@@ -138,6 +138,66 @@ pub const fn k1_schema_landed() -> bool {
     DERIVATION_SCHEMA_VERSION >= 1
 }
 
+/// Count of registry rows per derivation kind: the K-7 ratchet reads it (`Absent` rows are the constants not yet
+/// derived; a row with an empty payload is classified in name only).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct DerivationCensus {
+    /// Rows counted.
+    pub rows: usize,
+    /// `Theorem` rows.
+    pub theorem: usize,
+    /// `Measurement` rows.
+    pub measurement: usize,
+    /// `Definition` rows.
+    pub definition: usize,
+    /// `Pin` rows.
+    pub pin: usize,
+    /// `Policy` rows.
+    pub policy: usize,
+    /// `Absent` rows.
+    pub absent: usize,
+    /// Rows whose required payload field is empty ([`Derivation::payload_is_empty`]).
+    pub empty_payload: usize,
+}
+
+impl DerivationCensus {
+    /// Census of `derivations`.
+    #[must_use]
+    pub fn of<I: IntoIterator<Item = Derivation>>(derivations: I) -> Self {
+        let mut c = Self::default();
+        for d in derivations {
+            c.rows += 1;
+            match d {
+                Derivation::Theorem { .. } => c.theorem += 1,
+                Derivation::Measurement { .. } => c.measurement += 1,
+                Derivation::Definition { .. } => c.definition += 1,
+                Derivation::Pin { .. } => c.pin += 1,
+                Derivation::Policy { .. } => c.policy += 1,
+                Derivation::Absent { .. } => c.absent += 1,
+            }
+            if d.payload_is_empty() {
+                c.empty_payload += 1;
+            }
+        }
+        c
+    }
+
+    /// Census of the live `REGISTRY`.
+    #[must_use]
+    pub fn of_registry() -> Self {
+        Self::of(super::registry::REGISTRY.iter().map(|e| e.derivation))
+    }
+
+    /// One-line JSON object with every count.
+    #[must_use]
+    pub fn to_json(&self) -> String {
+        format!(
+            "{{\"rows\":{},\"theorem\":{},\"measurement\":{},\"definition\":{},\"pin\":{},\"policy\":{},\"absent\":{},\"empty_payload\":{}}}",
+            self.rows, self.theorem, self.measurement, self.definition, self.pin, self.policy, self.absent, self.empty_payload
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -147,6 +207,27 @@ mod tests {
         assert_eq!(Derivation::Policy { rationale: "r" }.label(), "Policy");
         assert_eq!(Derivation::Policy { rationale: "r" }.tier(), ConstantTier::Tier3Policy);
         assert!(k1_schema_landed());
+    }
+
+    #[test]
+    fn census_counts_each_kind_and_empty_payloads() {
+        let c = DerivationCensus::of([
+            Derivation::Absent { reason: "unmeasured; docs/x.md#plan" },
+            Derivation::Absent { reason: " " },
+            Derivation::Policy { rationale: "chosen" },
+            Derivation::Pin { repo: "umst-formal", ref_name: "main" },
+        ]);
+        assert_eq!((c.rows, c.absent, c.policy, c.pin, c.theorem, c.empty_payload), (4, 2, 1, 1, 0, 1));
+        assert_eq!(
+            c.to_json(),
+            r#"{"rows":4,"theorem":0,"measurement":0,"definition":0,"pin":1,"policy":1,"absent":2,"empty_payload":1}"#
+        );
+        let live = DerivationCensus::of_registry();
+        assert_eq!(live.rows, super::super::registry::REGISTRY.len());
+        assert_eq!(
+            live.theorem + live.measurement + live.definition + live.pin + live.policy + live.absent,
+            live.rows
+        );
     }
 
     #[test]
