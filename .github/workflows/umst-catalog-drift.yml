@@ -51,7 +51,7 @@ jobs:
     name: W-63 catalog public boundary (honest)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - run: test -f .github/scripts/checkout-umst-siblings.sh
 
   verify-umst-stack:
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: ./.github/actions/setup-ci
         with:
           checkout_private_siblings: "false"
@@ -74,14 +74,14 @@ jobs:
           echo "formal_sha=$fm" >> "$GITHUB_OUTPUT"
 
       - name: Checkout umst-formal-double-slit (catalog export)
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: tytolabs/umst-formal-double-slit
           ref: ${{ steps.upstream.outputs.double_slit_sha }}
           path: umst-formal-double-slit
 
       - name: Checkout umst-formal (classical fiber)
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: tytolabs/umst-formal
           ref: ${{ steps.upstream.outputs.formal_sha }}
