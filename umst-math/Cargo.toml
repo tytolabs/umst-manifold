@@ -15,6 +15,8 @@ math-constants = []
 # Host sysfs/proc probes at IO boundary; pure HAL paths use [`hal::HalProbeSnapshot`] injection.
 linux-hal-sysfs = []
 simd = ["dep:serde"]
+# Serde derives on the manifold action types (`manifold::action_sdf`) for consumers that persist them.
+serde = ["dep:serde"]
 
 [dependencies]
 blake3 = "1.8.2"

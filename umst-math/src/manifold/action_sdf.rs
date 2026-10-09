@@ -22,10 +22,13 @@ pub const SHAPE_QUOTIENT_DOMAIN: &[u8] = b"egoff.v1.action_quotient_id_from_shap
 
 /// Blake3-sized identifier for a voxelised canonical SDF at a given resolution.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
 pub struct ActionShapeId(pub [u8; 32]);
 
 /// Hard CSG combinator for a [`Action::Compose`] node.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(u8)]
 pub enum ComposeOp {
     /// Minimum of the children's distances.
@@ -45,6 +48,7 @@ impl ComposeOp {
 
 /// Analytic action geometry (negative inside, positive outside).
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Action {
     /// Ball of `radius` about `center`.
     Sphere {
