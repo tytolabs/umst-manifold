@@ -8,8 +8,8 @@ use super::{
     semantic_witness_section_quickcheck, witness_catalog_quickcheck_ok, CatalogFiberPin,
     CatalogLoadError, CatalogLock, WitnessCatalog, WitnessRecord, CATALOG_SCHEMA_STUB_REVISION,
     DEFAULT_SEMANTIC_COLD_WITNESS_ID, ENV_WITNESS_CATALOG_PATH, EXPECTED_MODULE_COUNT,
-    EXPECTED_UPSTREAM_CATALOG_DIGEST_HEX, WITNESS_CATALOG_EMBEDDED_LEN,
-    WITNESS_CATALOG_EMBEDDED_SHA256_HEX,
+    EXPECTED_UPSTREAM_CATALOG_DIGEST_HEX, FORMAL_CATALOG_MODULE_COUNT,
+    WITNESS_CATALOG_EMBEDDED_LEN, WITNESS_CATALOG_EMBEDDED_SHA256_HEX,
 };
 use std::path::Path;
 use std::sync::Mutex;
@@ -70,7 +70,7 @@ fn bundled_lock_matches_build_digest_semantics() {
         upstream,
         "build.rs must emit UMST_LOCK_UPSTREAM_CATALOG_DIGEST_HEX from lock JSON"
     );
-    assert_eq!(lock.module_count, Some(129));
+    assert_eq!(lock.module_count, Some(FORMAL_CATALOG_MODULE_COUNT));
     assert!(
         catalog_lock_bundle_sha256_hex().len() == 64,
         "expected 64-char hex fingerprint for lock-bundle digest",

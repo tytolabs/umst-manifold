@@ -369,8 +369,9 @@ pub const W29_109_DEEPEN_SCHEMA_VERSION: &str = "traceability_w29_109_deepen_v1"
 /// Honest posture tag — registration partition, not production flip.
 pub const TRACEABILITY_POSTURE_TAG: &str = "catalog-partition-wired-not-production";
 
-/// R0 lock `module_count` pin matching `catalog_all_ids_registered` / dual-pin lock.
-pub const TRACEABILITY_R0_MODULE_COUNT: usize = 129;
+/// R0 module count the Lean-module partition must cover: the module rows of the pinned formal export
+/// (`FORMAL_CATALOG_MODULE_COUNT`, computed by build.rs from `artifacts/upstream_catalog.json`).
+pub const TRACEABILITY_R0_MODULE_COUNT: usize = super::FORMAL_CATALOG_MODULE_COUNT as usize;
 
 /// Expected wired hop count on manifold partition side (production hop stays open).
 pub const W29_109_WIRE_HOP_WIRED_COUNT: u8 = 4;
@@ -685,7 +686,8 @@ mod tests {
         assert!(wired > 0, "expected CATALOG_MODULE_WIRED non-empty");
         assert!(allow > 0, "expected ALLOW_UNUSED_CATALOG_IDS non-empty");
         assert_eq!(total, TRACEABILITY_R0_MODULE_COUNT);
-        assert_eq!(wired + allow, 129);
+        let lock = super::super::CatalogLock::from_bundled().expect("bundled lock");
+        assert_eq!(lock.module_count.map(|n| n as usize), Some(wired + allow));
     }
 
     #[test]

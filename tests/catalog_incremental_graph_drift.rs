@@ -22,7 +22,9 @@ fn catalog_lock_pins_module_graph_edge_count_for_unified_export() {
         .and_then(|v| v.as_u64())
         .expect("catalog.lock.json must declare module_graph_edge_count for incremental graph drift guard (FP §6 Track G catalog registry)");
     assert_eq!(
-        pinned, 352,
-        "bump module_graph_edge_count after Lean import-graph churn (regen export first)"
+        pinned,
+        u64::from(umst_manifold::runtime::catalog::FORMAL_CATALOG_MODULE_GRAPH_EDGE_COUNT),
+        "lock module_graph_edge_count must equal the pinned formal export's module_graph_edges rows \
+         (regen export, then scripts/bump_catalog_lock.py)"
     );
 }

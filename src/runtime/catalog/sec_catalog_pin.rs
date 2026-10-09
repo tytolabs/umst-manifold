@@ -444,13 +444,14 @@ pub fn sec_catalog_pin_w29106_deepen_honest(probe: &SecCatalogPinW29106DeepenPro
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runtime::catalog::EXPECTED_MODULE_COUNT;
+    use crate::runtime::catalog::{CatalogLock, EXPECTED_MODULE_COUNT};
 
     #[test]
     fn board_slice_is_sec_catalog_pin() {
         assert_eq!(BOARD_SLICE_ID, "SEC-CATALOG-PIN");
         assert_eq!(JOB_ID, "AGAP-2350-SEC-CATALOG-PIN");
-        assert_eq!(EXPECTED_MODULE_COUNT, 129);
+        let lock = CatalogLock::from_bundled().expect("bundled lock");
+        assert_eq!(lock.module_count, Some(EXPECTED_MODULE_COUNT));
     }
 
     #[test]

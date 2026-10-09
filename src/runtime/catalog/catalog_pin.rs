@@ -24,12 +24,14 @@ use super::{
     is_preview_fiber_pin, lock_upstream_catalog_digest_hex, CatalogLock,
 };
 
-/// SSOT upstream / composed catalog digest (`artifacts/catalog.lock.json`).
-pub const EXPECTED_UPSTREAM_CATALOG_DIGEST_HEX: &str =
-    "17a6d8e17d9a4847231a255ffb1214db0319a7a2727ecd80708cb7f08045da1e";
+include!(concat!(env!("OUT_DIR"), "/formal_catalog_pin.rs"));
 
-/// Module count witness (same lock file).
-pub const EXPECTED_MODULE_COUNT: u32 = 129;
+/// Upstream / composed catalog digest the lock must carry: the pinned formal export's digest, recomputed
+/// from `artifacts/upstream_catalog.json` by build.rs (not read from the lock).
+pub const EXPECTED_UPSTREAM_CATALOG_DIGEST_HEX: &str = FORMAL_CATALOG_DIGEST_HEX;
+
+/// Module count the lock must carry: the module rows of the pinned formal export.
+pub const EXPECTED_MODULE_COUNT: u32 = FORMAL_CATALOG_MODULE_COUNT;
 
 /// Board slice id.
 pub const BOARD_SLICE_ID: &str = "SEC-CATALOG-PIN";
@@ -114,7 +116,8 @@ pub const CATALOG_PIN_WIRE_HOPS: &[CatalogPinWireHop] = &[
 pub enum CatalogPinMismatch {
     /// Embedded upstream digest ≠ [`EXPECTED_UPSTREAM_CATALOG_DIGEST_HEX`].
     Digest,
-    /// Lock JSON `module_count` ≠ [`EXPECTED_MODULE_COUNT`].
+    /// Lock JSON `module_count` ≠ [`EXPECTED_MODULE_COUNT`], or `module_graph_edge_count` ≠
+    /// [`FORMAL_CATALOG_MODULE_GRAPH_EDGE_COUNT`].
     ModuleCount,
     /// SHA-256 of bundled lock bytes ≠ [`catalog_lock_bundle_sha256_hex`].
     LockBundleContentAddress,
@@ -188,7 +191,9 @@ pub fn pin_witness_ok() -> Result<(), CatalogPinMismatch> {
 
     let json = bundled_catalog_lock_json();
     let module_count_needle = format!("\"module_count\": {EXPECTED_MODULE_COUNT}");
-    if !json.contains(&module_count_needle) {
+    let edge_count_needle =
+        format!("\"module_graph_edge_count\": {FORMAL_CATALOG_MODULE_GRAPH_EDGE_COUNT}");
+    if !json.contains(&module_count_needle) || !json.contains(&edge_count_needle) {
         return Err(CatalogPinMismatch::ModuleCount);
     }
 

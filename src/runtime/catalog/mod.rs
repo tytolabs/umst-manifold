@@ -17,6 +17,7 @@ pub use catalog_pin::{
     catalog_sha3_pin_witness_ok, composed_fiber_fingerprint_guard_holds,
     lock_bundle_content_address_hex, non_preview_fiber_fingerprint_hex, pin_witness_ok,
     CatalogPinMismatch, EXPECTED_MODULE_COUNT, EXPECTED_UPSTREAM_CATALOG_DIGEST_HEX,
+    FORMAL_CATALOG_DIGEST_HEX, FORMAL_CATALOG_MODULE_COUNT, FORMAL_CATALOG_MODULE_GRAPH_EDGE_COUNT,
 };
 pub use sec_catalog_pin::{
     catalog_digest, catalog_digest_hash_policy, catalog_pin_manifold_probe,

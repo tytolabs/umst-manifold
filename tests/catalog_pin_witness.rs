@@ -19,7 +19,7 @@ fn catalog_pin_digest_matches_ssot() {
 }
 
 #[test]
-fn catalog_pin_module_count_is_129() {
+fn catalog_pin_module_count_matches_formal_export() {
     let json = bundled_catalog_lock_json();
     assert!(json.contains(&format!("\"module_count\": {EXPECTED_MODULE_COUNT}")));
 }
