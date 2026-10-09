@@ -586,13 +586,12 @@ We maintain strict formal proof anchors (`formal_status`) mapping our Rust imple
 **Authoritative file:** [`artifacts/catalog.lock.json`](artifacts/catalog.lock.json)  
 **Do not hardcode module counts in sibling READMEs** — link this lock (concrete A1/F1).
 
-**Live values (pasted 2026-07-12 @ `80a5cef`):**
-
-| Field | Value |
-|:---|:---|
-| `module_count` | **129** |
-| `upstream_catalog_digest_hex` | `17a6d8e17d9a4847231a255ffb1214db0319a7a2727ecd80708cb7f08045da1e` |
-| Fiber pins | double-slit **62** · formal **73** · ucrs **9** |
+**Values:** `build.rs` recomputes the digest, module rows and edge rows of the pinned formal export
+[`artifacts/upstream_catalog.json`](artifacts/upstream_catalog.json) (the umst-formal-double-slit merged catalog at the
+[`.umst-pins.toml`](.umst-pins.toml) SHA) and emits them as `FORMAL_CATALOG_DIGEST_HEX`, `FORMAL_CATALOG_MODULE_COUNT`
+and `FORMAL_CATALOG_MODULE_GRAPH_EDGE_COUNT`; the lock must carry the same three values, and
+[`tests/catalog_lock_follows_formal_export.rs`](tests/catalog_lock_follows_formal_export.rs) fails when they differ.
+Print them with the first command under [Quick verify](#quick-verify-commands-we-ran).
 
 **Sibling Lean declaration snapshots** (via `python3 scripts/check_theorem_counts_ssot.py` → [`scripts/theorem_counts_snapshot.json`](scripts/theorem_counts_snapshot.json); script wins on mismatch):
 
@@ -707,7 +706,7 @@ Shared gate spine — **matter** (this repo + concrete) · **knowing** · **acti
 
 ## Release & agent path
 
-> Release notes in [CHANGELOG.md](CHANGELOG.md). Material-agnostic cartridge port: [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md). **Catalog SSOT:** [`artifacts/catalog.lock.json`](artifacts/catalog.lock.json) (**129** modules @ digest `17a6d8e1…` — re-open the file; do not trust this prose if they diverge). **v2.0.0 tags/releases withdrawn** pending sign-off (no Zenodo software DOI minted). **Stack verify:** see [Quick verify](#quick-verify-commands-we-ran) · [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md).
+> Release notes in [CHANGELOG.md](CHANGELOG.md). Material-agnostic cartridge port: [`docs/CARTRIDGE_PORT.md`](docs/CARTRIDGE_PORT.md). **Catalog SSOT:** [`artifacts/catalog.lock.json`](artifacts/catalog.lock.json) (module count and digest recomputed from the pinned formal export by `build.rs`). **v2.0.0 tags/releases withdrawn** pending sign-off (no Zenodo software DOI minted). **Stack verify:** see [Quick verify](#quick-verify-commands-we-ran) · [`docs/VERIFY_TRANSCRIPT.md`](docs/VERIFY_TRANSCRIPT.md).
 ### Fast Path for Agents
 
 | Goal | Start here |
