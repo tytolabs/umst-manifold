@@ -105,6 +105,10 @@ pub use solver_refusal::{
 pub use constants::registry::{ConstantEntry, ConstantTier};
 /// CONSTANT-BOUND: compiler pin snapshot parsed from `TOOLCHAIN_PIN.txt`.
 pub use constants::toolchain_pin::ToolchainSnapshot;
+/// Derivation of a registry row, its census, and the Lean declaration a theorem row names.
+pub use constants::derivation::{Derivation, DerivationCensus, LeanDecl};
+/// The pinned formal catalog as a set of Lean declarations, and the theorem–constant crosswalk coverage.
+pub use theorem_registry::{CatalogDeclarations, CatalogReadError, CrosswalkStats};
 /// THEOREM-BOUND: `combine_density_between` (re-export: density diagonal / CGD struct)
 pub use density::DensityDiag;
 /// THEOREM-BOUND: `clausiusDuhemFwd` (re-export: Englert duality / thermo bridge)
