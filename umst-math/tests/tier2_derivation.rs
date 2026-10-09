@@ -10,7 +10,7 @@ use umst_math::constants::tier2_derivation::{
 };
 
 #[test]
-fn k3_batch_rows_have_measurement_derivation() {
+fn k3_batch_rows_are_absent_until_an_intel_linux_host_measures() {
     assert!(k3_batch_landed());
     assert!(k3_measurement_pilot_landed());
     assert_eq!(k3_backfilled_count(), K3_REGISTRY_ROW_NAMES.len());
@@ -23,19 +23,15 @@ fn k3_batch_rows_have_measurement_derivation() {
             entry.derivation,
             derivation_for_registry_row(name).expect("lookup")
         );
-        assert!(matches!(entry.derivation, Derivation::Measurement { .. }));
+        assert!(matches!(entry.derivation, Derivation::Absent { .. }));
     }
 }
 
 #[test]
-fn k3_batch_receipt_paths_are_stable() {
-    let Derivation::Measurement {
-        receipt_path,
-        methodology_anchor,
-    } = HAL_L3_CACHE_DERIVATION
-    else {
-        panic!("expected Measurement");
+fn k3_l3_cache_absence_names_the_host_it_needs() {
+    let Derivation::Absent { reason } = HAL_L3_CACHE_DERIVATION else {
+        panic!("expected Absent until an Intel Linux host measures the L3 cache");
     };
-    assert!(receipt_path.contains("measurement-receipts"));
-    assert!(methodology_anchor.contains("COCKPIT_DESIGN_BRIEF"));
+    assert!(reason.contains("Intel Linux host"));
+    assert!(reason.ends_with("docs/PENDING_GAPS_PLAIN.md#hal-intel-linux-dev-host"));
 }

@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: MIT
 //! K-3 — Tier-2 measurement-derived constant derivations (§14bis.k · §0.11 CDD).
 //!
-//! H-9 HAL cluster batch: six `Tier1Measurement` registry rows with JSONL receipts.
+//! H-9 HAL cluster batch: six `Tier1Measurement` registry rows, typed `Absent` until an Intel Linux host
+//! runs the probe and commits a receipt.
 //! Every row is classified when written.
 
 use super::derivation::{Derivation, LeanDecl};
@@ -51,10 +52,11 @@ pub const MANIFOLD_CANONICALIZE_RUNTIME_US_P99_DERIVATION: Derivation = Derivati
     methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
 };
 
-/// `manifold_hilbert_index_range_typical` — Hilbert index span on reference ucrs pair (M-5).
-pub const MANIFOLD_HILBERT_INDEX_RANGE_TYPICAL_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/manifold_hilbert_index_range_typical.jsonl",
-    methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
+/// `manifold_hilbert_index_range_typical` — Hilbert index span over a running workload (M-5). The value once
+/// recorded (1) is the span of one fixed test pair (ucrs 10 and 11 at grid hash 0xabc in `hilbert_msdf_persist`),
+/// a property of the fixture, so the row stays Absent until a recorded cockpit memory run measures the span.
+pub const MANIFOLD_HILBERT_INDEX_RANGE_TYPICAL_DERIVATION: Derivation = Derivation::Absent {
+    reason: "Hilbert index span not measured: the recorded 1 is the span of one fixed test pair (ucrs 10 and 11 at grid hash 0xabc in hilbert_msdf_persist), a property of the fixture and not of a workload. Planned: span of persisted Hilbert indices over the ucrs sequence of a recorded cockpit memory run, docs/PENDING_GAPS_PLAIN.md#b-arc-perf-typed-absence",
 };
 
 /// `umst_memory_inspect_runtime_us_p99` — p99 of `:memory inspect` formatter (B-Arc).
@@ -69,10 +71,10 @@ pub const UMST_MEMORY_LOAD_RUNTIME_US_P99_DERIVATION: Derivation = Derivation::M
     methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
 };
 
-/// `umst_memory_local_tier_size_typical` — device-tier row count on sled fixture (B-Arc).
-pub const UMST_MEMORY_LOCAL_TIER_SIZE_TYPICAL_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/umst_memory_local_tier_size_typical.jsonl",
-    methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
+/// `umst_memory_local_tier_size_typical` — device-tier row count of a running memory store (B-Arc). The value
+/// once recorded (3) is the number of rows one test stores, so the row stays Absent until a device store is sampled.
+pub const UMST_MEMORY_LOCAL_TIER_SIZE_TYPICAL_DERIVATION: Derivation = Derivation::Absent {
+    reason: "device-tier row count not measured: the recorded 3 is the number of rows the aa_memory_backend_iter_local_returns_all_stored test stores, a property of the test and not of a device store. Planned: device-tier row counts sampled from a running egoff memory store over a recorded session, docs/PENDING_GAPS_PLAIN.md#b-arc-perf-typed-absence",
 };
 
 /// `umst_memory_store_runtime_us_p99` — p99 of `MemoryBackend::store` (B-Arc).
@@ -95,40 +97,39 @@ pub const UMST_MEMORY_RETENTION_PARETO_COMPUTE_P99_DERIVATION: Derivation =
         methodology_anchor: B_ARC_PERF_MEASUREMENT_METHODOLOGY,
     };
 
+/// The six H-9 HAL rows name properties of an Intel Linux development host read from `/proc` and `/sys`. The
+/// reference host is Apple silicon macOS, which has neither file system, and their earlier receipts were scaffolds
+/// carrying one zero sample with host `fixture-scaffold-darwin-arm64`. Each row stays Absent until the H-9 probe
+/// runs on an Intel Linux host and commits a receipt (docs/PENDING_GAPS_PLAIN.md#hal-intel-linux-dev-host).
+///
 /// `hal_intel_cpu_logical_cores` — /proc/cpuinfo logical core count (H-9).
-pub const HAL_LOGICAL_CORES_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/hal_intel_cpu_logical_cores.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#hal-logical-cores",
+pub const HAL_LOGICAL_CORES_DERIVATION: Derivation = Derivation::Absent {
+    reason: "Intel Linux logical core count not measured: the reference host is Apple silicon macOS with no /proc/cpuinfo, and the earlier receipt was a scaffold with one zero sample. Planned: H-9 probe on an Intel Linux host, docs/PENDING_GAPS_PLAIN.md#hal-intel-linux-dev-host",
 };
 
-/// `hal_intel_cpu_l3_cache_kb` — host-measured L3 cache size (H-9 sysfs/cpuinfo).
-pub const HAL_L3_CACHE_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/hal_intel_cpu_l3_cache_kb.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#hal-l3-cache-measurement",
+/// `hal_intel_cpu_l3_cache_kb` — /proc/cpuinfo or sysfs L3 cache size (H-9).
+pub const HAL_L3_CACHE_DERIVATION: Derivation = Derivation::Absent {
+    reason: "Intel L3 cache size not measured: the reference host is Apple silicon macOS with no /proc/cpuinfo or /sys/devices/system/cpu cache tree, and the earlier receipt was a scaffold with one zero sample. Planned: H-9 probe on an Intel Linux host, docs/PENDING_GAPS_PLAIN.md#hal-intel-linux-dev-host",
 };
 
 /// `hal_intel_igpu_present_on_dev_host` — Intel DRM vendor probe (H-9).
-pub const HAL_IGPU_PRESENT_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/hal_intel_igpu_present_on_dev_host.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#hal-igpu-present",
+pub const HAL_IGPU_PRESENT_DERIVATION: Derivation = Derivation::Absent {
+    reason: "Intel integrated GPU presence not measured: the reference host is Apple silicon macOS with no /sys/class/drm, and the earlier receipt was a scaffold with one zero sample. Planned: H-9 probe on an Intel Linux host, docs/PENDING_GAPS_PLAIN.md#hal-intel-linux-dev-host",
 };
 
 /// `hal_intel_npu_present_on_dev_host` — /sys/class/accel probe (H-9).
-pub const HAL_NPU_PRESENT_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/hal_intel_npu_present_on_dev_host.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#hal-npu-present",
+pub const HAL_NPU_PRESENT_DERIVATION: Derivation = Derivation::Absent {
+    reason: "Intel NPU presence not measured: the reference host is Apple silicon macOS with no /sys/class/accel, and the earlier receipt was a scaffold with one zero sample. Planned: H-9 probe on an Intel Linux host, docs/PENDING_GAPS_PLAIN.md#hal-intel-linux-dev-host",
 };
 
 /// `hal_linux_port_count_on_dev_host` — sysfs net + USB enumeration (H-9).
-pub const HAL_LINUX_PORT_COUNT_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/hal_linux_port_count_on_dev_host.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#hal-linux-port-count",
+pub const HAL_LINUX_PORT_COUNT_DERIVATION: Derivation = Derivation::Absent {
+    reason: "Linux port count not measured: the reference host is Apple silicon macOS with no /sys/class/net or /sys/bus/usb, and the earlier receipt was a scaffold with one zero sample. Planned: H-9 probe on a Linux host, docs/PENDING_GAPS_PLAIN.md#hal-intel-linux-dev-host",
 };
 
 /// `hal_linux_ram_total_kb` — /proc/meminfo MemTotal (H-9).
-pub const HAL_LINUX_RAM_TOTAL_DERIVATION: Derivation = Derivation::Measurement {
-    receipt_path: ".umst-ci/measurement-receipts/hal_linux_ram_total_kb.jsonl",
-    methodology_anchor: "COCKPIT_DESIGN_BRIEF.md#hal-linux-ram-total",
+pub const HAL_LINUX_RAM_TOTAL_DERIVATION: Derivation = Derivation::Absent {
+    reason: "Linux MemTotal not measured: the reference host is Apple silicon macOS with no /proc/meminfo, and the earlier receipt was a scaffold with one zero sample. Planned: H-9 probe on a Linux host, docs/PENDING_GAPS_PLAIN.md#hal-intel-linux-dev-host",
 };
 
 /// `transition_tolerance` — formal Gate.transitionTolerance (SSOT [`transition_tolerance_f64`]).
@@ -1016,7 +1017,7 @@ pub const K3_TIER2_GATE_ROW_NAMES: &[&str] = &[
     "gate_mass_tolerance_kg_m3",
 ];
 
-/// K-3 H-9 HAL batch registry row names (6/6 for slice GREEN).
+/// K-3 H-9 HAL batch registry row names (each typed `Absent` until an Intel Linux host measures it).
 pub const K3_REGISTRY_ROW_NAMES: &[&str] = &[
     "hal_intel_cpu_logical_cores",
     "hal_intel_cpu_l3_cache_kb",
@@ -1348,13 +1349,13 @@ pub fn k3_backfilled_count() -> usize {
         .count()
 }
 
-/// K-3 pilot scaffold landed — one measurement row + receipt path wired (legacy alias).
+/// K-3 batch rows present in REGISTRY (legacy alias of [`k3_batch_landed`]).
 #[must_use]
 pub fn k3_measurement_pilot_landed() -> bool {
     k3_batch_landed()
 }
 
-/// K-3 H-9 HAL batch landed — every batch row `Derivation::Measurement`.
+/// K-3 H-9 HAL batch landed — every batch row present in REGISTRY with its typed derivation.
 #[must_use]
 pub fn k3_batch_landed() -> bool {
     k3_backfilled_count() == K3_REGISTRY_ROW_NAMES.len()
@@ -1367,10 +1368,14 @@ mod tests {
     use crate::manifold::csg::Q_HYDRATION_J_PER_KG;
 
     #[test]
-    fn k3_batch_derivations_are_measurement() {
+    fn k3_batch_derivations_are_absent_until_an_intel_linux_host_measures() {
         for name in K3_REGISTRY_ROW_NAMES {
             let d = derivation_for_registry_row(name).expect("lookup");
-            assert_eq!(d.label(), "Measurement");
+            assert_eq!(d.label(), "Absent");
+            assert_eq!(
+                d.absent_doc_anchor(),
+                Some(("docs/PENDING_GAPS_PLAIN.md", "hal-intel-linux-dev-host"))
+            );
         }
     }
 

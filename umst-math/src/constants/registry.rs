@@ -558,46 +558,46 @@ pub static REGISTRY: &[ConstantEntry] = &[
         env_override: None,
         derivation: HUB_INTER_SAMPLE_PERIOD_MS_DERIVATION,
     },
-    // §14bis.f-H-9 — Linux/Intel HAL Tier-1 runtime anchors (provenance strings; NED: unmeasured if permission_denied)
+    // §14bis.f-H-9 — Linux/Intel HAL Tier-1 runtime anchors (provenance strings; Absent until an Intel Linux host runs the probe)
     ConstantEntry {
         name: "hal_intel_cpu_logical_cores",
         expression: "provenance: /proc/cpuinfo; runtime value: umst_math::hal::backends::linux::sysfs::cpuinfo_logical_cores (H-9); unmeasured: permission_denied if file unreadable",
-        evidence: "Measurement (H-9; NED §0.5); /proc/cpuinfo; cockpit startup HAL",
+        evidence: "unmeasured: no Intel Linux host has run the H-9 probe; the scaffold receipt held one zero sample (docs/PENDING_GAPS_PLAIN.md#hal-intel-linux-dev-host)",
         env_override: None,
         derivation: HAL_LOGICAL_CORES_DERIVATION,
     },
     ConstantEntry {
         name: "hal_intel_cpu_l3_cache_kb",
         expression: "provenance: /proc/cpuinfo (cache size); H-9 sysfs; unmeasured: permission_denied if unreadable",
-        evidence: "Measurement (H-9; /proc/cpuinfo l3_cache_kb best-effort)",
+        evidence: "unmeasured: no Intel Linux host has run the H-9 probe; the scaffold receipt held one zero sample (docs/PENDING_GAPS_PLAIN.md#hal-intel-linux-dev-host)",
         env_override: None,
         derivation: HAL_L3_CACHE_DERIVATION,
     },
     ConstantEntry {
         name: "hal_intel_igpu_present_on_dev_host",
         expression: "0|1 at H-9 probe: Intel 0x8086 DRM /sys/class/drm/card* (NPU/iGPU not conflated)",
-        evidence: "Measurement (H-9; /sys/class/drm/*/device/vendor)",
+        evidence: "unmeasured: no Intel Linux host has run the H-9 probe; the scaffold receipt held one zero sample (docs/PENDING_GAPS_PLAIN.md#hal-intel-linux-dev-host)",
         env_override: None,
         derivation: HAL_IGPU_PRESENT_DERIVATION,
     },
     ConstantEntry {
         name: "hal_intel_npu_present_on_dev_host",
         expression: "0|1 at H-9 probe: /sys/class/accel/accel0 exists",
-        evidence: "Measurement (H-9; /sys/class/accel)",
+        evidence: "unmeasured: no Intel Linux host has run the H-9 probe; the scaffold receipt held one zero sample (docs/PENDING_GAPS_PLAIN.md#hal-intel-linux-dev-host)",
         env_override: None,
         derivation: HAL_NPU_PRESENT_DERIVATION,
     },
     ConstantEntry {
         name: "hal_linux_port_count_on_dev_host",
         expression: "provenance: sysfs /sys/class/net (excl. lo) + /sys/bus/usb/devices count; H-9",
-        evidence: "Measurement (H-9; LinuxPort enumeration; NED honest empty)",
+        evidence: "unmeasured: no Linux host has run the H-9 probe; the scaffold receipt held one zero sample (docs/PENDING_GAPS_PLAIN.md#hal-intel-linux-dev-host)",
         env_override: None,
         derivation: HAL_LINUX_PORT_COUNT_DERIVATION,
     },
     ConstantEntry {
         name: "hal_linux_ram_total_kb",
         expression: "provenance: /proc/meminfo MemTotal; H-9",
-        evidence: "Measurement (H-9; /proc/meminfo)",
+        evidence: "unmeasured: no Linux host has run the H-9 probe; the scaffold receipt held one zero sample (docs/PENDING_GAPS_PLAIN.md#hal-intel-linux-dev-host)",
         env_override: None,
         derivation: HAL_LINUX_RAM_TOTAL_DERIVATION,
     },
@@ -1351,8 +1351,8 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "manifold_hilbert_index_range_typical",
-        expression: "1 (index span; ucrs 10 vs 11 @ grid_hash=0xabc; hilbert_msdf_persist fixture)",
-        evidence: "Measurement (`.umst-ci/measurement-receipts/manifold_hilbert_index_range_typical.jsonl`; `b_arc_runtime_receipts`)",
+        expression: "pending: typical span of persisted Hilbert indices over a recorded ucrs sequence",
+        evidence: "unmeasured: the recorded 1 was the span of one fixed test pair (ucrs 10 vs 11 @ grid_hash=0xabc), a fixture property; no value is recorded until a cockpit memory run measures it",
         env_override: None,
         derivation: MANIFOLD_HILBERT_INDEX_RANGE_TYPICAL_DERIVATION,
     },
@@ -1380,8 +1380,8 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "umst_memory_local_tier_size_typical",
-        expression: "3 (count; device-tier rows after aa_memory_backend_iter_local fixture)",
-        evidence: "Measurement (`.umst-ci/measurement-receipts/umst_memory_local_tier_size_typical.jsonl`; `b_arc_runtime_receipts`)",
+        expression: "pending: typical device-tier row count of a running memory store",
+        evidence: "unmeasured: the recorded 3 was the row count one test stores, a fixture property; no value is recorded until a device store is sampled",
         env_override: None,
         derivation: UMST_MEMORY_LOCAL_TIER_SIZE_TYPICAL_DERIVATION,
     },
@@ -2170,10 +2170,22 @@ mod tests {
                 .unwrap_or_else(|| panic!("the formal table holds {id}"))
                 .value
         };
-        assert_eq!(formal("boltzmann").to_bits(), super::K_BOLTZMANN_J_PER_K.to_bits());
-        assert_eq!(formal("boltzmann").to_bits(), crate::landauer::K_B.to_bits());
-        assert_eq!(formal("speedOfLight").to_bits(), super::SPEED_OF_LIGHT_M_PER_S.to_bits());
-        assert_eq!(formal("avogadro").to_bits(), super::AVOGADRO_CONSTANT_PER_MOL.to_bits());
+        assert_eq!(
+            formal("boltzmann").to_bits(),
+            super::K_BOLTZMANN_J_PER_K.to_bits()
+        );
+        assert_eq!(
+            formal("boltzmann").to_bits(),
+            crate::landauer::K_B.to_bits()
+        );
+        assert_eq!(
+            formal("speedOfLight").to_bits(),
+            super::SPEED_OF_LIGHT_M_PER_S.to_bits()
+        );
+        assert_eq!(
+            formal("avogadro").to_bits(),
+            super::AVOGADRO_CONSTANT_PER_MOL.to_bits()
+        );
         assert_eq!(
             (formal("hydrationHeatDefault") * 1_000.0).to_bits(),
             crate::manifold::csg::Q_HYDRATION_J_PER_KG.to_bits()

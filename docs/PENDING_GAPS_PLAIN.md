@@ -333,6 +333,8 @@ These anchors are cited by `umst-math` `REGISTRY` rows that carry no invented p9
 
 **Close when:** a committed receipt names the estimator, sample count, interval, and the policy that distinguishes a ceiling from a single-second Combined Power reading.
 
+**Operator command:** `powermetrics` needs root, so an agent session does not run it. The operator runs a sustained full load (for example `cargo test --release -p umst-math` in one terminal) and, in another, `sudo powermetrics --samplers cpu_power -i 1000 -n 120 -o powermetrics_ceiling.txt`, then repeats the pair at least ten times on separate runs. The receipt records each run's maximum Combined Power, the mean and spread of those maxima, the host model and OS build, the load command and the wall-clock stamps.
+
 ### rapl-package-dram-counter
 
 **Status:** open (measurement debt)
@@ -342,6 +344,16 @@ These anchors are cited by `umst-math` `REGISTRY` rows that carry no invented p9
 **Plain read:** The row names RAPL package plus DRAM energy. The reference host is Apple silicon, which has no RAPL counter; its IORegistry `SystemPower` reading is whole-machine power (every rail, display included), a different quantity. That reading feeds `process_joules_estimate`, labelled as whole-machine power, and this row stays `Absent`.
 
 **Close when:** a Linux host with `/sys/class/powercap/intel-rapl:*/energy_uj` (package and DRAM domains) records at least ten counter deltas through a committed command, with the estimator, sample count and interval in the receipt.
+
+### hal-intel-linux-dev-host
+
+**Status:** open (measurement debt)
+
+**Rows:** `hal_intel_cpu_logical_cores`, `hal_intel_cpu_l3_cache_kb`, `hal_intel_igpu_present_on_dev_host`, `hal_intel_npu_present_on_dev_host`, `hal_linux_port_count_on_dev_host`, `hal_linux_ram_total_kb`.
+
+**Plain read:** The rows name properties of an Intel Linux development host, read by the H-9 probes from `/proc/cpuinfo`, `/proc/meminfo`, `/sys/class/drm`, `/sys/class/accel`, `/sys/class/net` and `/sys/bus/usb/devices`. The reference host is Apple silicon macOS, which has none of these files. The receipts once cited were scaffolds holding one zero sample under the host name `fixture-scaffold-darwin-arm64`, so the rows are typed `Absent`.
+
+**Close when:** the H-9 probes (`umst_math::hal::probe_host::probe_sysfs_snapshot`, feature `linux-hal-sysfs`) run on an Intel Linux host at least ten times through a committed command, and each receipt records the host, kernel, the raw readings, their spread, and the wall-clock stamp.
 
 ### smoother-qr-recorded-runs
 
