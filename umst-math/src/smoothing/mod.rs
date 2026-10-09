@@ -76,12 +76,14 @@ mod tests {
 
     #[test]
     fn identity_smoother_holds_no_value_before_its_first_sample() {
+        use std::f64::consts::{E, PI};
+
         let mut s = NoneSmoother::new();
         assert_eq!(s.current(), None);
-        assert_eq!(s.update(3.5), 3.5);
-        assert_eq!(s.current(), Some(3.5));
-        assert_eq!(s.update_with_step_ms(-2.0, 7.0), -2.0);
-        assert_eq!(s.current(), Some(-2.0));
+        assert_eq!(s.update(E), E);
+        assert_eq!(s.current(), Some(E));
+        assert_eq!(s.update_with_step_ms(-PI, E), -PI);
+        assert_eq!(s.current(), Some(-PI));
         s.reset();
         assert_eq!(s.current(), None);
     }
