@@ -55,15 +55,16 @@ Formal Lean discharge for solver rows is **separate** from regression tests — 
 
 ## T3.6 framework primitives (POC → machinery)
 
-Master plan **T3.6** targets three validated primitives wired into solve witnesses and gate evidence ([`SOLVE_CONTRACT.md`](SOLVE_CONTRACT.md), [`rfc/GATE_EVIDENCE.md`](rfc/GATE_EVIDENCE.md)):
+Master plan **T3.6** named three POC primitives on branch `engine-slices` (three commits, preserved at tag `backup/engine-slices-20260624`). The branch is not merged; each primitive was decided on 2026-10-09 (cell MANIFOLD-ENGINE-SLICES-DECIDE) against the gate and solve surfaces on `main`:
 
-| Primitive | POC branch / commit | Witness hook | Validation | Merge status |
-| --- | --- | --- | --- | --- |
-| **Chaos fail-closed** | `engine-slices` @ `64da191` | `ThermodynamicMixFilter` well-formed snapshot guards; `SolveReport::gate_reject_non_converged_solve` | `tests/chaos_crucible_gate_transition.rs` (5/5) | **Not on `integ/sprint-1`** — awaits merge after `integration-solve-report` |
-| **Entropy tax catches gaming** | `engine-slices` @ `dadb50c` | `entropy_tax_j` / `SolveReport::entropy_tax_j` (Landauer floor excess) | `tests/entropy_tax_gaming.rs` (`tax_gaming > tax_honest`) | **Not on `integ/sprint-1`** — MI proxy uses `iterations`; full histogram MI deferred |
-| **Const-generic shape conservation** | `engine-slices` @ `e840b40` | `umst-math` trybuild rank contract (`DensityDiag<N>`) | `umst-math/tests/ui/rank_drop_fail.rs` (compile_fail), `rank_preserve_pass.rs` | **Not on `integ/sprint-1`** — compile-time only; no runtime slice wiring yet |
+| Primitive | Branch commit | Disposition on `main` | Test that carries it |
+| --- | --- | --- | --- |
+| **Chaos fail-closed** | `64da191` | **Ported.** The well-formed snapshot guard landed on `main` inside the pure evaluator `gate::transition_outcome` (wrapped by `TransitionFilter` = `ThermodynamicMixFilter`) and in `thermodynamic_transition_admissible_tol`, with a `MalformedInput` reject reason. The branch tests are ported onto that surface and widened to every snapshot field × {NaN, +∞, −∞} on both sides, non-positive temperature, every bad `dt`, and every argument of the pure predicate; the filter's rejection counter must move on each case. | `tests/chaos_crucible_gate_transition.rs` (5 tests) |
+| **Chaos fail-closed — solve witness hook** | `64da191` | **Superseded.** The branch added `SolveReport::gate_reject_non_converged_solve` (= `!converged()`). `main` carries the typed refusal `SolveReport::ensure_converged() -> Result<(), &str>` with distinct reasons for an inadmissible residual, a non-positive tolerance and a stall. | `solve_report::tests::solve_report_construction_and_converged`, `solve_report_refuses_nan_inf_residual` |
+| **Entropy tax catches gaming** | `dadb50c` | **Not ported.** `entropy_tax_j = D − k_B T ln 2 · ΔI` took ΔI (bits) from the solver iteration count, which is not a measured mutual information, and the second test asserts only that 50 × floor − floor > 1.5 × floor − floor. The Landauer floor itself is carried on `main` by `constants::landauer_bit_energy_joules` and by `ai::constraint_loss::landauer_slack_violation` (`relu(k_B T ln 2 · bits − credit)`). An excess-dissipation witness needs a measured ΔI before it can be tested. | `constants::tests::landauer_bit_energy_*`; `tests/rejection_witness.rs`; `tests/cross_backend_gate_determinism.rs` |
+| **Const-generic shape conservation** | `e840b40` | **Ported** as a rustdoc pair on `umst_math::tensor::partial_trace_second`: a passing example at rank 2 and an otherwise identical `compile_fail` example at rank 3. The branch used `trybuild`, which is not in the offline registry; stable rustdoc does not check `compile_fail` error codes, so the two examples differ only in the bound rank. | `cargo test -p umst-math --doc partial_trace_second` (2 doctests) |
 
-**Honest ceiling for this wave:** this file maps lanes and states POC status. Wiring primitives into every physics slice exit and gate HTTP payloads is **`integration-solve-report`** + Wave 1–3 solver-audit work — not claimed done here.
+Wiring these primitives into every physics slice exit and the gate HTTP payloads stays open (`integration-solve-report`, solver-audit waves 1–3).
 
 ---
 

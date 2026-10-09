@@ -40,6 +40,35 @@ pub fn tensor_diagonal<const NA: usize, const NB: usize, const NAB: usize>(
 ///
 /// Proof: `partial_trace` PSD / trace lemmas in `TensorPartialTrace`.
 /// DOI: 10.5281/zenodo.19159660
+///
+/// # Rank contract
+///
+/// The marginal's rank is the type parameter `NA`, so the compiler refuses to read it at any other
+/// rank. Tracing a uniform 6-state over a 3-state factor gives the uniform 2-state:
+///
+/// ```
+/// use umst_math::density::DensityDiag;
+/// use umst_math::tensor::partial_trace_second;
+///
+/// let ab = DensityDiag::<6>::try_from_diag([1.0 / 6.0; 6]).expect("uniform 6-state");
+/// let traced: DensityDiag<2> = partial_trace_second::<2, 3, 6>(&ab).expect("2·3 = 6");
+/// assert!(traced.p.iter().all(|x| (x.into_inner() - 0.5).abs() < 1e-12));
+/// ```
+///
+/// The same program with the marginal bound at rank 3 does not compile. It differs from the passing
+/// example above only in that binding, so the rank mismatch is the one compile error it can carry
+/// (stable rustdoc does not check `compile_fail` error codes, which is why the pair is kept identical).
+///
+/// ```compile_fail
+/// use umst_math::density::DensityDiag;
+/// use umst_math::tensor::partial_trace_second;
+///
+/// let ab = DensityDiag::<6>::try_from_diag([1.0 / 6.0; 6]).expect("uniform 6-state");
+/// let traced: DensityDiag<3> = partial_trace_second::<2, 3, 6>(&ab).expect("2·3 = 6");
+/// assert!(traced.p.iter().all(|x| (x.into_inner() - 0.5).abs() < 1e-12));
+/// ```
+///
+/// A factorisation that does not multiply out (`NA·NB ≠ NAB`) is refused at run time with `None`.
 pub fn partial_trace_second<const NA: usize, const NB: usize, const NAB: usize>(
     ab: &DensityDiag<NAB>,
 ) -> Option<DensityDiag<NA>> {
