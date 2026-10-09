@@ -2508,6 +2508,7 @@ name = "umst-cartridge-active"
 version = "0.1.0"
 dependencies = [
  "umst-cartridge-api",
+ "umst-cartridge-continuum",
  "umst-chem",
 ]
 
@@ -2568,6 +2569,8 @@ name = "umst-cartridge-fieldcoupled"
 version = "0.1.0"
 dependencies = [
  "umst-cartridge-api",
+ "umst-cartridge-continuum",
+ "umst-cartridge-polymer",
  "umst-chem",
 ]
 
@@ -2599,8 +2602,10 @@ name = "umst-cartridge-poromechanics"
 version = "0.1.0"
 dependencies = [
  "umst-cartridge-api",
+ "umst-cartridge-continuum",
  "umst-cartridge-grounded",
  "umst-chem",
+ "umst-constants",
 ]
 
 [[package]]
@@ -2608,6 +2613,7 @@ name = "umst-cartridge-solid-inelastic"
 version = "0.1.0"
 dependencies = [
  "umst-cartridge-api",
+ "umst-cartridge-continuum",
  "umst-cartridge-grounded",
  "umst-chem",
 ]
@@ -2615,6 +2621,9 @@ dependencies = [
 [[package]]
 name = "umst-chem"
 version = "0.1.0"
+dependencies = [
+ "umst-constants",
+]
 
 [[package]]
 name = "umst-constants"
@@ -2631,6 +2640,7 @@ dependencies = [
 name = "umst-gate"
 version = "0.1.0"
 dependencies = [
+ "umst-algebra",
  "umst-cartridge-api",
  "umst-dec",
 ]
