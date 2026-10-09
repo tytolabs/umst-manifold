@@ -96,22 +96,40 @@ jobs:
           set -euo pipefail
           python3 scripts/check_solver_status.py --check-manifest
 
-  # Required job: build the library + run tests on the CPU backend.
-  # Stays green on a vanilla GitHub runner without GPU/system libraries.
+  # W-63: the Rust jobs below build against umst-foundations, umst-cartridge-api and umst-cartridges
+  # by path. This job probes, without credentials, whether those siblings are publicly clonable; while
+  # they are private every job that needs them is skipped and this log names W-63. No secrets are used.
   w63-public-sibling-boundary:
     name: W-63 public sibling boundary (honest)
     runs-on: ubuntu-latest
+    outputs:
+      siblings: ${{ steps.probe.outputs.siblings }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-      - name: Document private sibling fence (no credentials on public runners)
+      - name: Probe private sibling fence (no credentials on public runners)
+        id: probe
         run: |
           set -euo pipefail
           test -f .github/scripts/checkout-umst-siblings.sh
-          echo "OK: public CI names W-63 when umst-foundations / umst-cartridge-api / umst-cartridges are private."
+          siblings=public
+          for name in umst-foundations umst-cartridge-api umst-cartridges; do
+            if git ls-remote --exit-code "https://github.com/tytolabs/${name}.git" HEAD >/dev/null 2>&1; then
+              echo "${name}: public"
+            else
+              echo "${name}: private"
+              siblings=private
+            fi
+          done
+          echo "siblings=${siblings}" >> "${GITHUB_OUTPUT}"
+          if [ "${siblings}" = private ]; then
+            echo "::notice::W-63: umst-foundations / umst-cartridge-api / umst-cartridges are private; the Rust build, test, lint, parity and benchmark jobs that depend on them by path are skipped on this public repository (resolve through the W-63 public ladder)."
+          fi
 
   build-test:
     name: build & test (ndarray backend)
     runs-on: ubuntu-latest
+    needs: w63-public-sibling-boundary
+    if: needs.w63-public-sibling-boundary.outputs.siblings == 'public'
     continue-on-error: true
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -142,7 +160,8 @@ jobs:
   solver-stable-pr:
     name: solver-stable tests (PR)
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    needs: w63-public-sibling-boundary
+    if: needs.w63-public-sibling-boundary.outputs.siblings == 'public' && (github.event_name == 'pull_request')
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: ./.github/actions/setup-ci
@@ -153,7 +172,8 @@ jobs:
   solver-research-check-pr:
     name: cargo check solver-stable,solver-research (PR)
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    needs: w63-public-sibling-boundary
+    if: needs.w63-public-sibling-boundary.outputs.siblings == 'public' && (github.event_name == 'pull_request')
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: ./.github/actions/setup-ci
@@ -164,7 +184,8 @@ jobs:
   phase4-verification-pr:
     name: Phase-4 verification tests (--release, PR)
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    needs: w63-public-sibling-boundary
+    if: needs.w63-public-sibling-boundary.outputs.siblings == 'public' && (github.event_name == 'pull_request')
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: ./.github/actions/setup-ci
@@ -181,7 +202,8 @@ jobs:
   hardware-perf-q1hex-pr:
     name: Q1-hex perf witnesses (PR)
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    needs: w63-public-sibling-boundary
+    if: needs.w63-public-sibling-boundary.outputs.siblings == 'public' && (github.event_name == 'pull_request')
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: ./.github/actions/setup-ci
@@ -198,7 +220,8 @@ jobs:
   solver-experimental-pr-optional:
     name: solver-experimental + physics guard (PR, optional)
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    needs: w63-public-sibling-boundary
+    if: needs.w63-public-sibling-boundary.outputs.siblings == 'public' && (github.event_name == 'pull_request')
     continue-on-error: true
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -212,8 +235,9 @@ jobs:
   research-stack:
     name: solver-experimental tests (main, release)
     runs-on: ubuntu-latest
+    needs: w63-public-sibling-boundary
     continue-on-error: true
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+    if: needs.w63-public-sibling-boundary.outputs.siblings == 'public' && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch')
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: ./.github/actions/setup-ci
@@ -232,6 +256,8 @@ jobs:
   verify-umst-stack:
     name: verify UMST stack (parity)
     runs-on: ubuntu-latest
+    needs: w63-public-sibling-boundary
+    if: needs.w63-public-sibling-boundary.outputs.siblings == 'public'
     continue-on-error: true
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -282,6 +308,8 @@ jobs:
   kleisli-ppo-hot-bind:
     name: kleisli PPO + landauer witness (CPU)
     runs-on: ubuntu-latest
+    needs: w63-public-sibling-boundary
+    if: needs.w63-public-sibling-boundary.outputs.siblings == 'public'
     continue-on-error: true
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -299,6 +327,8 @@ jobs:
   arena-vs-mcp:
     name: arena vs MCP benchmark (≥5×)
     runs-on: ubuntu-latest
+    needs: w63-public-sibling-boundary
+    if: needs.w63-public-sibling-boundary.outputs.siblings == 'public'
     # W-63: needs private siblings via setup-ci; non-blocking on public default branch.
     continue-on-error: true
     steps:
@@ -340,6 +370,8 @@ jobs:
   p4-gpu-witness:
     name: p4 GPU rejection witness (macOS Metal)
     runs-on: macos-latest
+    needs: w63-public-sibling-boundary
+    if: needs.w63-public-sibling-boundary.outputs.siblings == 'public'
     continue-on-error: true
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -360,6 +392,8 @@ jobs:
   lint:
     name: rustfmt + clippy
     runs-on: ubuntu-latest
+    needs: w63-public-sibling-boundary
+    if: needs.w63-public-sibling-boundary.outputs.siblings == 'public'
     continue-on-error: true
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1

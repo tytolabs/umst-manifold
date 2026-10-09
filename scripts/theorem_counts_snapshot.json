@@ -1,16 +1,18 @@
 {
   "umst-formal": {
-    "lake_roots": 62,
-    "theorem": 289,
-    "lemma": 24,
-    "all_lean_theorem": 296,
-    "all_lean_lemma": 24
+    "sha": "7c85e0439bb7f2b67ff79327ad6289e4dd392b8f",
+    "lake_roots": 85,
+    "theorem": 555,
+    "lemma": 62,
+    "all_lean_theorem": 1343,
+    "all_lean_lemma": 62
   },
   "umst-formal-double-slit": {
-    "lake_roots": 52,
-    "theorem": 486,
-    "lemma": 30,
-    "all_lean_theorem": 495,
-    "all_lean_lemma": 31
+    "sha": "51615ce79bc5ecd14de82d358aacd19a2ba11d61",
+    "lake_roots": 51,
+    "theorem": 465,
+    "lemma": 27,
+    "all_lean_theorem": 480,
+    "all_lean_lemma": 27
   }
 }
