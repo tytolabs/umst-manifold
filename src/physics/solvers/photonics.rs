@@ -1754,6 +1754,7 @@ pub fn dec_patch_csr_matvec_f32(
 /// Conjugate-gradient solve using an explicit **CSR** matvec for the same gauge-pinned
 /// patch operator as [`dec_patch_operator_apply_gauged`] / [`solve_maxwell_dec_patch_conjugate_gradient`].
 #[cfg(feature = "photonics")]
+#[allow(clippy::too_many_arguments)]
 fn solve_maxwell_dec_patch_conjugate_gradient_csr(
     row_ptr: &[usize],
     col_ind: &[usize],
@@ -2597,7 +2598,8 @@ fn solve_maxwell_dec_patch_direct<B: Backend<FloatElem = f32>>(
     let csr_inner = dec_patch_config.csr_inner;
     let curl_constitutive = dec_patch_config.curl_constitutive;
     let rel_tol = inner.pcg_tolerance.max(inner.cg_tolerance);
-    let max_iter = inner.max_cg_iterations.max(1);
+    // A default inner config carries the "unset" budget; it resolves to one CG step per unknown.
+    let max_iter = inner.iteration_budget(dim);
     let spd = dec_patch_inner_cg_spd_flag(
         lossy,
         eps_scalar.as_deref(),
@@ -2943,10 +2945,7 @@ mod photonics_matrix_six_honesty_tests {
         let a = [4.0_f32, 0.0, 0.0, 0.0, 9.0, 0.0, 0.0, 0.0, 1.0];
         let inv = match dec_patch_sym3_try_inverse(&a) {
             Some(v) => v,
-            None => {
-                assert!(false, "spd diagonal inverse");
-                return;
-            }
+            None => panic!("spd diagonal inverse"),
         };
         assert!((inv[0] - 0.25).abs() < 1e-6);
         assert!((inv[4] - 1.0 / 9.0).abs() < 1e-6);
@@ -2956,7 +2955,12 @@ mod photonics_matrix_six_honesty_tests {
 
     #[test]
     fn dec_patch_eps_inv_curl_matvec_scales_diagonal_tensor() {
-        // Single edge + one face: tensor ε=4·I vs ε⁻¹ curl should differ on Whitney projection.
+        // Single unit edge along x + one face, tensor ε = 4·I at both nodes. The curl leg sees the field
+        // only through its tangential projection (A·m)·t, so the field must have a component along the
+        // edge: a field normal to the edge gives zero in both modes and cannot tell ε from ε⁻¹.
+        // With m = t = x̂ the leg applies A twice: ½·(A t·t)·(A t) per node, i.e. ½·4·4 = 8 for ε and
+        // ½·¼·¼ = 1/32 for ε⁻¹. The gradient leg vanishes because the field is uniform, and the mass
+        // term k₀²·ε·x adds 4 in both modes (it always uses ε).
         let n = 2usize;
         let n_e = 1usize;
         let src = vec![0_i64];
@@ -2972,7 +2976,7 @@ mod photonics_matrix_six_honesty_tests {
             t9[i * 9 + 4] = 4.0;
             t9[i * 9 + 8] = 4.0;
         }
-        let x = vec![0.0_f32, 1.0, 0.0, 0.0, 1.0, 0.0];
+        let x = vec![1.0_f32, 0.0, 0.0, 1.0, 0.0, 0.0];
         let mut y_fwd = vec![0.0_f32; 6];
         let mut y_inv = vec![0.0_f32; 6];
         dec_patch_maxwell_natural_matvec_flat_constitutive(
@@ -3007,15 +3011,22 @@ mod photonics_matrix_six_honesty_tests {
             &ranges,
             DecPatchCurlConstitutive::EpsInvSymAvg,
         );
-        let mut diff = 0.0_f32;
+        let expect_fwd = [12.0_f32, 0.0, 0.0, 12.0, 0.0, 0.0];
+        let expect_inv = [4.0_f32 + 1.0 / 32.0, 0.0, 0.0, 4.0 + 1.0 / 32.0, 0.0, 0.0];
         for i in 0..6 {
-            diff = diff.max((y_fwd[i] - y_inv[i]).abs());
-            assert!(y_fwd[i].is_finite() && y_inv[i].is_finite());
+            assert!(
+                (y_fwd[i] - expect_fwd[i]).abs() <= 16.0 * f32::EPSILON * 12.0,
+                "ε curl leg y[{i}] = {} (expected {})",
+                y_fwd[i],
+                expect_fwd[i]
+            );
+            assert!(
+                (y_inv[i] - expect_inv[i]).abs() <= 16.0 * f32::EPSILON * 4.0,
+                "ε⁻¹ curl leg y[{i}] = {} (expected {})",
+                y_inv[i],
+                expect_inv[i]
+            );
         }
-        assert!(
-            diff > 1e-4_f32,
-            "ε vs ε⁻¹ curl constitutive must change the matvec (max abs diff {diff:.3e})"
-        );
     }
 }
 
@@ -3028,8 +3039,7 @@ mod photonics_sparse_csr_cg_parity_tests {
         dec_patch_csr_from_sorted_coo_f32, dec_patch_csr_matvec_f32,
         dec_patch_maxwell_gauged_operator_csr_coo, dec_patch_operator_apply_gauged,
         solve_maxwell_dec_patch_conjugate_gradient, solve_maxwell_dec_patch_conjugate_gradient_csr,
-        DecPatchCurlConstitutive, DecPatchInnerCgOutcome, DecPatchInnerCgRefusal,
-        DecPatchInnerCgSpdFlag,
+        DecPatchCurlConstitutive, DecPatchInnerCgOutcome, DecPatchInnerCgSpdFlag,
     };
     use crate::physics::time_orchestration::MechanicsInnerLoopConfig;
 
@@ -3102,10 +3112,7 @@ mod photonics_sparse_csr_cg_parity_tests {
         let merged = dec_patch_coo_sort_merge_f32(&coo);
         let (rp, ci, va) = match dec_patch_csr_from_sorted_coo_f32(dim, &merged) {
             Some(v) => v,
-            None => {
-                assert!(false, "csr from sorted coo");
-                return;
-            }
+            None => panic!("csr from sorted coo"),
         };
 
         let xv: Vec<f32> = (0..dim)
@@ -3173,15 +3180,12 @@ mod photonics_sparse_csr_cg_parity_tests {
         let merged = dec_patch_coo_sort_merge_f32(&coo);
         let (rp, ci, va) = match dec_patch_csr_from_sorted_coo_f32(dim, &merged) {
             Some(v) => v,
-            None => {
-                assert!(false, "csr from sorted coo");
-                return;
-            }
+            None => panic!("csr from sorted coo"),
         };
 
         let inner = MechanicsInnerLoopConfig::for_unknowns(dim);
         let rel_tol = inner.pcg_tolerance.max(inner.cg_tolerance);
-        let max_iter = inner.max_cg_iterations.max(1);
+        let max_iter = inner.iteration_budget(dim);
         let x_mf = solve_maxwell_dec_patch_conjugate_gradient(
             n,
             n_e,
@@ -3203,10 +3207,7 @@ mod photonics_sparse_csr_cg_parity_tests {
         );
         let x_mf = match x_mf {
             DecPatchInnerCgOutcome::Converged(v) => v,
-            DecPatchInnerCgOutcome::Refused(_) => {
-                assert!(false, "matrix-free cg");
-                return;
-            }
+            DecPatchInnerCgOutcome::Refused(_) => panic!("matrix-free cg"),
         };
         let x_csr = match solve_maxwell_dec_patch_conjugate_gradient_csr(
             &rp,
@@ -3219,10 +3220,7 @@ mod photonics_sparse_csr_cg_parity_tests {
             DecPatchInnerCgSpdFlag::SpdProven,
         ) {
             DecPatchInnerCgOutcome::Converged(v) => v,
-            DecPatchInnerCgOutcome::Refused(_) => {
-                assert!(false, "csr cg");
-                return;
-            }
+            DecPatchInnerCgOutcome::Refused(_) => panic!("csr cg"),
         };
 
         let mut mx = 0.0_f32;

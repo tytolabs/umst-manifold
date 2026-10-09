@@ -1,23 +1,27 @@
 // SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-//! Track K8 — research-tier CI must fail the job when a research test fails.
+//! Track K8 — the posture of the research-tier CI job, read from the workflow file.
 
-/// Honest posture: research CI is a merge/push gate, not an optional signal.
+/// Whether the `research-stack` job of `.github/workflows/rust.yml` fails the workflow.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ResearchCiPosture {
     /// `research-stack` fails the workflow on a failing research test.
     Required,
+    /// `research-stack` carries `continue-on-error: true` (W-63, 2026-10-01): its result is a signal,
+    /// and the job is skipped while the path siblings are private.
+    NonBlockingW63,
 }
 
 impl ResearchCiPosture {
-    /// Current posture.
-    pub const CURRENT: Self = Self::Required;
+    /// Current posture, as the workflow file states it (checked by the test below).
+    pub const CURRENT: Self = Self::NonBlockingW63;
 
     /// Stable label.
     #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Required => "required",
+            Self::NonBlockingW63 => "non_blocking_w63",
         }
     }
 }
@@ -27,15 +31,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn name_audit_research_ci_fails_the_job() {
-        assert_eq!(ResearchCiPosture::CURRENT, ResearchCiPosture::Required);
+    fn research_ci_posture_matches_the_workflow() {
         let src = include_str!("../.github/workflows/rust.yml");
         let start = match src.find("  research-stack:") {
             Some(i) => i,
-            None => {
-                assert!(false, "research-stack job missing");
-                return;
-            }
+            None => panic!("research-stack job missing"),
         };
         let rest = &src[start..];
         let end = rest
@@ -44,6 +44,11 @@ mod tests {
             .unwrap_or(src.len());
         let block = &src[start..end];
         assert!(block.contains("solver-experimental"));
-        assert!(!block.contains("continue-on-error"));
+        let non_blocking = block.contains("continue-on-error: true");
+        assert_eq!(
+            ResearchCiPosture::CURRENT == ResearchCiPosture::NonBlockingW63,
+            non_blocking,
+            "ResearchCiPosture::CURRENT must state what rust.yml research-stack does"
+        );
     }
 }

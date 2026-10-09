@@ -413,20 +413,42 @@ mod tests {
         assert!((solver.gate_intrinsic_strength_mpa - 240.0).abs() < 1e-9);
     }
 
+    /// `DEFAULT_GATE_CARTRIDGE` is a `const` reference to a zero-sized type: every use may produce a
+    /// different address and a different vtable, so pointer identity says nothing. The default solver
+    /// witness must instead give the host Clausius–Duhem cartridge's evidence on an accepted and on a
+    /// rejected transition.
     #[test]
     fn thmc_step_default_gate_cartridge_is_host_cd() {
         let solver = ThmcSolver::default();
-        assert!(std::ptr::eq(
-            solver.gate_cartridge as *const dyn GateCartridge,
-            DEFAULT_GATE_CARTRIDGE as *const dyn GateCartridge
-        ));
-        #[allow(deprecated)]
-        {
+        let host = CdTransitionCartridge;
+        // The default substrate witness supplies no reaction enthalpy (ψ = 0 J/kg at every extent), so
+        // the forward step lowers ψ by 1 J/kg: dissipation is positive forward and negative in reverse.
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.0, 293.15, 80.0);
+        let mut forward = ThermodynamicStateSnapshot::from_mix_calibrated(0.45, 0.5, 293.15, 80.0);
+        forward.free_energy = old.free_energy - 1.0;
+        let dt = 28.0 * 24.0 * 3600.0;
+        for (old, new) in [(old, forward), (forward, old)] {
+            let expected = host.transition_evidence(&old, &new, dt);
             assert_eq!(
-                TransitionGateWitness::default().cartridge() as *const dyn GateCartridge,
-                DEFAULT_GATE_CARTRIDGE as *const dyn GateCartridge
+                solver.gate_cartridge.transition_evidence(&old, &new, dt),
+                expected
             );
+            #[allow(deprecated)]
+            {
+                assert_eq!(
+                    TransitionGateWitness::default()
+                        .cartridge()
+                        .transition_evidence(&old, &new, dt),
+                    expected
+                );
+            }
         }
+        let accepted = host.transition_evidence(&old, &forward, dt);
+        let rejected = host.transition_evidence(&forward, &old, dt);
+        assert_ne!(
+            accepted, rejected,
+            "the fixture pair must separate the two directions"
+        );
     }
 
     #[test]

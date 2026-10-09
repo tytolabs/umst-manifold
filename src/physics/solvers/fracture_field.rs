@@ -1391,11 +1391,7 @@ fn jacobi_sweep_12<B: Backend<FloatElem = f32>>(
 fn tensile_strain_energy_density_spectral_jacobi<B: Backend<FloatElem = f32>>(
     strain: Tensor<B, 4>,
 ) -> Tensor<B, 3> {
-    tensile_strain_energy_density_lame(
-        strain,
-        FRACTURE_PSI_LAMBDA_DEFAULT,
-        FRACTURE_PSI_MU_DEFAULT,
-    )
+    tensile_strain_energy_density_lame(strain, FRACTURE_PSI_LAMBDA_DEFAULT, FRACTURE_PSI_MU_DEFAULT)
 }
 
 /// Isotropic tensile strain-energy density from spectral \(\langle\varepsilon\rangle_+\) and Lamé \(\lambda,\mu\).
@@ -1456,10 +1452,8 @@ mod fracture_at2_tests {
         tensile_strain_energy_density_spectral_jacobi, IrreversibilityRefused, StaggeredPhase,
         FRACTURE_PSI_LAMBDA_DEFAULT, FRACTURE_PSI_MU_DEFAULT,
     };
+    use crate::core::field::{DamageField, Field, FractureEnergyField, SmallStrainField};
     use crate::physics::error::PhysicsError;
-    use crate::core::field::{
-        DamageField, DisplacementField, Field, FractureEnergyField, SmallStrainField,
-    };
 
     type B = NdArray<f32>;
 
@@ -1488,14 +1482,9 @@ mod fracture_at2_tests {
         let edges_b1: Tensor<B, 2, Int> =
             Tensor::from_data(Data::new(Vec::<i64>::new(), Shape::new([2, 0])), &dev);
         let strain = Tensor::<B, 4>::zeros([batch, n, 3, 3], &dev);
-        let damage = Tensor::from_data(
-            Data::new(vec![1.0_f32], Shape::new([batch, n, 1])),
-            &dev,
-        );
-        let fracture_energy_gc = Tensor::from_data(
-            Data::new(vec![150.0_f32], Shape::new([batch, n, 1])),
-            &dev,
-        );
+        let damage = Tensor::from_data(Data::new(vec![1.0_f32], Shape::new([batch, n, 1])), &dev);
+        let fracture_energy_gc =
+            Tensor::from_data(Data::new(vec![150.0_f32], Shape::new([batch, n, 1])), &dev);
         let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
         let out = solver.update_damage(
             strain_field(strain),
@@ -1506,7 +1495,9 @@ mod fracture_at2_tests {
         match out {
             Err(PhysicsError::InvariantViolation { context })
                 if context == IrreversibilityRefused::CONTEXT => {}
-            other => panic!("expected irreversibility refusal on 1-point saturated damage, got {other:?}"),
+            other => panic!(
+                "expected irreversibility refusal on 1-point saturated damage, got {other:?}"
+            ),
         }
     }
 
@@ -1527,7 +1518,7 @@ mod fracture_at2_tests {
         let dev = NdArrayDevice::Cpu;
         let d = damage_field(Tensor::<B, 3>::zeros([1, 3, 1], &dev));
         let phase = StaggeredPhase::new_damage_outer(d);
-        let _ = match phase {
+        match phase {
             StaggeredPhase::DamageOuter { .. } => (),
             StaggeredPhase::MechanicsCoupled { .. } => panic!("unexpected variant"),
         };
@@ -1550,7 +1541,7 @@ mod fracture_at2_tests {
         let u = Tensor::<B, 3>::zeros([1, 3, 3], &dev);
         let d = damage_field(Tensor::<B, 3>::zeros([1, 3, 1], &dev));
         let phase = StaggeredPhase::new_mechanics_coupled(u, d);
-        let _ = match phase {
+        match phase {
             StaggeredPhase::MechanicsCoupled { .. } => (),
             StaggeredPhase::DamageOuter { .. } => panic!("unexpected variant"),
         };
@@ -1581,12 +1572,14 @@ mod fracture_at2_tests {
             FRACTURE_PSI_MU_DEFAULT,
         );
         let d0 = psi_default.clone().sub(psi_lame).abs().max().into_scalar();
-        assert!(d0 < 1e-12_f32, "default λ,μ must recover the shipped surrogate");
+        assert!(
+            d0 < 1e-12_f32,
+            "default λ,μ must recover the shipped surrogate"
+        );
         let probe_strain = umst_math::numeric_tolerance::fracture_psi_probe_strain_f32();
         let psi_lm = spectral_tensile_psi_plus_lame(strain, 1.0_f32, 1.0_f32);
         let got: f32 = psi_lm.into_data().value.iter().copied().sum();
-        let want = 3.0_f32
-            * (0.5_f32 * probe_strain * probe_strain + probe_strain * probe_strain);
+        let want = 3.0_f32 * (0.5_f32 * probe_strain * probe_strain + probe_strain * probe_strain);
         assert!((got - want).abs() < 1e-12_f32, "got={got} want={want}");
         assert!((degradation_g_f32(0.5, 0.01) - 0.26).abs() < 1e-12);
     }
@@ -1979,9 +1972,7 @@ mod fracture_idempotency_tests {
     use burn_ndarray::{NdArray, NdArrayDevice};
 
     use super::PhaseFieldFractureSolver;
-    use crate::core::field::{
-        DamageField, DisplacementField, Field, FractureEnergyField, SmallStrainField,
-    };
+    use crate::core::field::{DamageField, Field, FractureEnergyField, SmallStrainField};
 
     type B = NdArray<f32>;
 
@@ -2102,12 +2093,7 @@ mod fracture_idempotency_tests {
 /// Default-build degradation witness — no `fracture-at2` required.
 #[cfg(test)]
 mod fracture_honesty_fence_tests {
-    use super::{degradation_g_f32, PhaseFieldFractureSolver};
-    use crate::core::field::{Field, FractureEnergyField, SmallStrainField};
-    use burn::tensor::{Data, Int, Shape, Tensor};
-    use burn_ndarray::{NdArray, NdArrayDevice};
-
-    type B = NdArray<f32>;
+    use super::degradation_g_f32;
 
     #[test]
     fn degradation_g_f32_matches_miehe_quadratic() {
@@ -2119,8 +2105,18 @@ mod fracture_honesty_fence_tests {
         assert!((g1 - 0.02).abs() < 1e-12);
     }
 
+    /// Without `fracture-at2`, `update_damage` is the documented identity. With the feature the AT2
+    /// path runs instead; its behaviour on this zero-strain fixture is covered by
+    /// `update_damage_refuses_irreversibility_violation_one_point`.
+    #[cfg(not(feature = "fracture-at2"))]
     #[test]
     fn update_damage_default_build_is_identity_noop() {
+        use super::PhaseFieldFractureSolver;
+        use crate::core::field::{Field, FractureEnergyField, SmallStrainField};
+        use burn::tensor::{Data, Int, Shape, Tensor};
+        use burn_ndarray::{NdArray, NdArrayDevice};
+        type B = NdArray<f32>;
+
         let dev = NdArrayDevice::Cpu;
         let batch = 1usize;
         let n = 3usize;
@@ -2135,18 +2131,11 @@ mod fracture_honesty_fence_tests {
         let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
         let out = solver
             .update_damage(strain, damage.clone(), gc, edges_b1)
-            .expect("default-build update_damage must succeed as documented no-op");
-        #[cfg(not(feature = "fracture-at2"))]
-        {
-            assert_eq!(
-                out.into_tensor().into_data().value,
-                damage.into_tensor().into_data().value,
-                "without fracture-at2, update_damage is identity"
-            );
-        }
-        #[cfg(feature = "fracture-at2")]
-        {
-            let _ = (out, damage);
-        }
+            .expect("default-build update_damage is the documented identity");
+        assert_eq!(
+            out.into_tensor().into_data().value,
+            damage.into_tensor().into_data().value,
+            "without fracture-at2, update_damage is identity"
+        );
     }
 }

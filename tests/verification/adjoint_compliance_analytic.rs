@@ -138,8 +138,11 @@ fn adjoint_four_node_chain_compliance_matches_series_spring() {
     let damage = Tensor::<Inner, 3>::zeros([1, 4, 1], &dev);
     let cg = MechanicsInnerLoopConfig {
         max_cg_iterations: 500,
-        cg_tolerance: 1e-10,
-        pcg_tolerance: 1e-10,
+        // The displacement and the recomputed equilibrium residual are f32: a solution rounded to f32
+        // has relative residual of order κ·ε_f32 ≥ 1.2e-7, so a 1e-10 request can never be certified by
+        // `ensure_bar_equilibrium`. Request the registry's f32 bar-network tier instead.
+        cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
+        pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
         use_preconditioner: true,
         max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
@@ -183,8 +186,8 @@ fn adjoint_four_node_chain_gradient_matches_finite_difference() {
     };
     let cg = MechanicsInnerLoopConfig {
         max_cg_iterations: 500,
-        cg_tolerance: 1e-10,
-        pcg_tolerance: 1e-10,
+        cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
+        pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
         use_preconditioner: true,
         max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
@@ -293,8 +296,9 @@ fn adjoint_four_node_chain_gradient_matches_bendsoe_sigmund_formula() {
     };
     let cg = MechanicsInnerLoopConfig {
         max_cg_iterations: 1000,
-        cg_tolerance: 1e-12,
-        pcg_tolerance: 1e-12,
+        // Same f32 floor as above: 1e-12 is below what an f32 iterate can certify.
+        cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
+        pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
         use_preconditioner: true,
         max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
@@ -366,8 +370,8 @@ fn adjoint_gradient_sign_is_negative_along_load_path() {
     };
     let cg = MechanicsInnerLoopConfig {
         max_cg_iterations: 500,
-        cg_tolerance: 1e-10,
-        pcg_tolerance: 1e-10,
+        cg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
+        pcg_tolerance: umst_math::numeric_tolerance::bar_network_cg_tol_f32(),
         use_preconditioner: true,
         max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };

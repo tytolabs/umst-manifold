@@ -58,12 +58,12 @@ fn phase0e_census_delta_cbf_open_system_extension_cleared() {
     let ids: Vec<_> = OPEN_RECONCILIATION_DELTAS.iter().map(|d| d.id).collect();
     assert!(
         !ids.contains(&"cbf_open_system_extension"),
-        "0e must clear cbf_open_system_extension delta; open:\n{:?}",
-        ids
+        "0e must clear cbf_open_system_extension delta; open:\n{ids:?}"
     );
 }
 
 #[test]
+#[ignore = "W-106 operator decision: gate_parity_v0.json digest has three sources that disagree. umst-gate GATE_PARITY_V0_SHA256 = 7a3d3e5f… (fixture at umst-concrete-cartridge c90fbfe, 2026-08-06); this test = d5608148… (fixture at 244a6a5, UNLOCK-3, 2026-07-18); the live fixture hashes 149081fa… (945fa41, reference-state restore of 2026-09-30, same bytes as 030df11 of 2026-07-12). Not resolved by picking one."]
 fn phase0e_parity_digest_unchanged() {
     assert_eq!(
         GATE_PARITY_V0_SHA256,

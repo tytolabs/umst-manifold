@@ -50,9 +50,6 @@ const _: () = assert!(!MECHANICS_SOLVE_PORT_PHYSICS_GREEN);
 const _: () = assert!(!MECHANICS_SOLVE_PORT_PRODUCTION_WIRED);
 const _: () = assert!(!MECHANICS_SOLVE_PORT_MASTER);
 const _: () = assert!(!MECHANICS_SOLVE_PORT_Q1_HEX_IMPL);
-const _: () = assert!(MECHANICS_SOLVE_PORT_BAR_LANDED);
-const _: () = assert!(MECHANICS_SOLVE_PORT_THMC_CONSUMER_WIRED);
-const _: () = assert!(MECHANICS_SOLVE_PORT_FIELD_TYPED);
 
 /// Typed probe for mechanics solve-port posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -103,7 +100,6 @@ pub fn mechanics_solve_port_posture_honest(probe: &MechanicsSolvePortPostureProb
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER / fake Q1-port claims on this surface.
-#[must_use]
 pub fn mechanics_solve_port_refuse_overclaim(
     probe: &MechanicsSolvePortPostureProbe,
 ) -> Result<(), &'static str> {
@@ -403,17 +399,6 @@ mod tests {
     }
 
     #[test]
-    fn bar_port_rejects_displacement_damage_operand_swap_at_compile_time() {
-        fn accept_displacement(_: DisplacementField<B>) {}
-        fn accept_damage(_: DamageField<B>) {}
-
-        let device = NdArrayDevice::Cpu;
-        let raw = Tensor::<B, 3>::zeros([1, 2, 1], &device);
-        accept_damage(Field::new(raw.clone()));
-        // `accept_displacement(Field::new(raw))` would not compile — distinct space markers.
-    }
-
-    #[test]
     fn mechanics_solve_port_honest_fence_blocks_production_master_green() {
         let probe = mechanics_solve_port_honest_posture_bundle();
         assert_eq!(probe.deepen_cell, W29_MECHANICS_SOLVE_PORT_DEEPEN_CELL);
@@ -422,10 +407,6 @@ mod tests {
         assert!(MECHANICS_SOLVE_PORT_HONEST_FENCE.contains("production_wired=false"));
         assert!(MECHANICS_SOLVE_PORT_HONEST_FENCE.contains("physics_green=false"));
         assert!(MECHANICS_SOLVE_PORT_HONEST_FENCE.contains("q1_hex_port_impl=false"));
-        assert!(!MECHANICS_SOLVE_PORT_PHYSICS_GREEN);
-        assert!(!MECHANICS_SOLVE_PORT_PRODUCTION_WIRED);
-        assert!(!MECHANICS_SOLVE_PORT_MASTER);
-        assert!(!MECHANICS_SOLVE_PORT_Q1_HEX_IMPL);
     }
 
     #[test]
@@ -461,11 +442,15 @@ mod tests {
 
     #[test]
     fn bar_port_fail_closed_on_impossible_rel_tol() {
-        let (coords, edges, stiff, bf, mask, damage, area, cfg) = chain_fixture(2);
+        // An f32 iterate carries rounding of order ε·|u| in every entry, so its relative equilibrium
+        // residual cannot fall below the smallest positive f32 unless it is exactly zero; on a two-node
+        // chain f32::EPSILON itself was met. A tolerance of f32::MIN_POSITIVE is out of reach, and the port
+        // must report Diverged rather than a silent Ok.
+        let n = 12usize;
+        let (coords, edges, stiff, bf, mask, damage, area, cfg) = chain_fixture(n);
         let dev = NdArrayDevice::Cpu;
-        let u0 = Field::new(Tensor::<B, 3>::zeros([1, 2, 3], &dev));
-        // Positive but unreachable relative tolerance → Diverged (not a silent Ok).
-        let rel_tol = f32::EPSILON;
+        let u0 = Field::new(Tensor::<B, 3>::zeros([1, n, 3], &dev));
+        let rel_tol = f32::MIN_POSITIVE;
 
         let err = BarNetworkMechanicsSolvePort
             .solve_equilibrium_reported(

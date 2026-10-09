@@ -916,6 +916,25 @@ impl ThmcSolver {
     }
 }
 
+/// Relative forward-difference step for the `f32` THMC finite-difference Jacobians.
+///
+/// Each Jacobian column `j` is `(R(x + h_j e_j) − R(x)) / h_j` with `h_j = h · (1 + |x_j|)`, so `h` is a
+/// step relative to the variable's own scale (floored at one unit). For a forward difference evaluated in
+/// arithmetic with unit roundoff `ε`, the error in a derivative is bounded by
+///
+/// `(h_j / 2)·|R''|  +  2 ε |R| / h_j`,
+///
+/// truncation plus rounding. With the variable scaled so that `|R| / |R''| ≈ (1 + |x_j|)²`, the sum is
+/// smallest at `h = √ε`, where both terms are of order `√ε` and the relative Jacobian error is about
+/// `2√ε`. For `f32`, `ε = f32::EPSILON = 2⁻²³`, so `h = 2^(−11.5) ≈ 3.45·10⁻⁴` and the Jacobian carries
+/// about `7·10⁻⁴` relative error. The earlier fixed steps sat below this balance: `h = 10⁻⁵` gives a
+/// rounding term `2ε/h ≈ 2.4·10⁻²` and `h = 10⁻⁶` gives `≈ 2.4·10⁻¹`, i.e. Jacobians wrong in the
+/// second and first digit.
+#[must_use]
+pub fn thmc_forward_difference_relative_step_f32() -> f32 {
+    f32::EPSILON.sqrt()
+}
+
 /// Inner Newton / Krylov controls for the implicit thermal block (Phase 3.2 monolithic Newton seed).
 ///
 /// The implicit-Euler thermal residual
@@ -938,7 +957,7 @@ impl Default for ThmcNewtonConfig {
         Self {
             max_iterations: umst_math::numeric_tolerance::thmc_newton_default_iteration_budget(),
             residual_tolerance: umst_math::numeric_tolerance::thmc_newton_residual_tol_f32(),
-            finite_diff_eps: umst_math::numeric_tolerance::thmc_newton_fd_eps_f32(),
+            finite_diff_eps: thmc_forward_difference_relative_step_f32(),
             damping: 1.0_f32,
         }
     }
@@ -978,7 +997,7 @@ impl Default for ThmcImplicitTAlphaNewtonConfig {
         Self {
             iterations: 3_usize,
             damping: 1.0_f32,
-            fd_eps: umst_math::numeric_tolerance::thmc_damped_newton_fd_eps_f32(),
+            fd_eps: thmc_forward_difference_relative_step_f32(),
         }
     }
 }
@@ -1018,7 +1037,7 @@ impl Default for ThmcMonolithicNewtonConfig {
         Self {
             iterations: 4_usize,
             damping: 1.0_f32,
-            fd_eps: umst_math::numeric_tolerance::thmc_damped_newton_fd_eps_f32(),
+            fd_eps: thmc_forward_difference_relative_step_f32(),
             stacked_residual_l2_tolerance:
                 umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
             stacked_residual_relative_to_initial: None,

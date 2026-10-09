@@ -27,6 +27,7 @@ fn sha256_hex(bytes: &[u8]) -> String {
 }
 
 #[test]
+#[ignore = "W-106 operator decision: gate_parity_v0.json digest has three sources that disagree. umst-gate GATE_PARITY_V0_SHA256 = 7a3d3e5f… (fixture at umst-concrete-cartridge c90fbfe, 2026-08-06); this test = d5608148… (fixture at 244a6a5, UNLOCK-3, 2026-07-18); the live fixture hashes 149081fa… (945fa41, reference-state restore of 2026-09-30, same bytes as 030df11 of 2026-07-12). Not resolved by picking one."]
 fn phase0f_fixture_bytes_sha256_locked() {
     let path = gate_parity_fixture_path();
     let bytes = std::fs::read(&path).unwrap_or_else(|e| {
@@ -43,6 +44,7 @@ fn phase0f_fixture_bytes_sha256_locked() {
 }
 
 #[test]
+#[ignore = "W-106 operator decision: gate_parity_v0.json digest has three sources that disagree. umst-gate GATE_PARITY_V0_SHA256 = 7a3d3e5f… (fixture at umst-concrete-cartridge c90fbfe, 2026-08-06); this test = d5608148… (fixture at 244a6a5, UNLOCK-3, 2026-07-18); the live fixture hashes 149081fa… (945fa41, reference-state restore of 2026-09-30, same bytes as 030df11 of 2026-07-12). Not resolved by picking one."]
 fn phase0f_census_pins_match_live_fixture() {
     assert_eq!(
         GATE_PARITY_V0_SHA256,
@@ -82,6 +84,7 @@ fn phase0f_census_surface_complete() {
 }
 
 #[test]
+#[ignore = "W-106 operator decision: gate_parity_v0.json digest has three sources that disagree. umst-gate GATE_PARITY_V0_SHA256 = 7a3d3e5f… (fixture at umst-concrete-cartridge c90fbfe, 2026-08-06); this test = d5608148… (fixture at 244a6a5, UNLOCK-3, 2026-07-18); the live fixture hashes 149081fa… (945fa41, reference-state restore of 2026-09-30, same bytes as 030df11 of 2026-07-12). Not resolved by picking one."]
 fn phase0f_m0_receipt_parity_prefix() {
     assert_eq!(GATE_PARITY_V0_SHA256_PREFIX, "d5608148e29eeabd");
 }
@@ -93,6 +96,7 @@ fn phase0f_m0_receipt_parity_prefix() {
 // re-hashing the live fixture must be stable (no drift on re-read).
 
 #[test]
+#[ignore = "W-106 operator decision: gate_parity_v0.json digest has three sources that disagree. umst-gate GATE_PARITY_V0_SHA256 = 7a3d3e5f… (fixture at umst-concrete-cartridge c90fbfe, 2026-08-06); this test = d5608148… (fixture at 244a6a5, UNLOCK-3, 2026-07-18); the live fixture hashes 149081fa… (945fa41, reference-state restore of 2026-09-30, same bytes as 030df11 of 2026-07-12). Not resolved by picking one."]
 fn phase0f_fixture_digest_idempotent_on_rehash() {
     let path = gate_parity_fixture_path();
     let bytes = std::fs::read(&path).unwrap_or_else(|e| {
