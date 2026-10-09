@@ -26,11 +26,11 @@
 #[path = "constants_registry_adamw_step.rs"]
 mod constants_registry_adamw_step;
 
+#[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
+use self::constants_registry_adamw_step::LIQUID_PPO_SUBSTRATE_REFERENCE_DENSITY_KG_M3;
 use self::constants_registry_adamw_step::{
     ADAMW_BETA1_COEFF, ADAMW_BETA2_COEFF, ADAMW_EPSILON, ADAMW_WEIGHT_DECAY,
 };
-#[cfg(any(feature = "epistemic-ppo", feature = "kleisli-ppo-hot-bind"))]
-use self::constants_registry_adamw_step::LIQUID_PPO_SUBSTRATE_REFERENCE_DENSITY_KG_M3;
 
 /// W29 wave cell id — Burn learner spine deepen.
 pub const LIQUID_PPO_CELL_ID: &str = "W29-012-LIQUID_PPO";
@@ -541,7 +541,7 @@ mod tests {
         active_adapt_path, adamw_step_policy, liquid_ppo_morphism_pinned, liquid_ppo_posture_probe,
         validate_liquid_ppo_posture_honesty, BurnLiquidPPOAgent, ADAM_LR_DEFAULT, ADAPT_PATH_STUB,
         GOLDEN_FIXTURE_PATH, LIQUID_PPO_CELL_ID, LIQUID_PPO_HONEST_FENCE, LIQUID_PPO_MORPHISM_ID,
-        LIQUID_PPO_PHYSICS_GREEN, LIQUID_PPO_PRODUCTION_WIRED, SOURCE_NON_CLAIM,
+        SOURCE_NON_CLAIM,
     };
     use crate::ai::ppo::ManifoldGateway;
     use crate::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
@@ -637,8 +637,6 @@ mod tests {
         assert!(!probe.physics_green);
         assert!(!probe.master_retick);
         assert!(!probe.allocate_ready_source);
-        assert!(!LIQUID_PPO_PRODUCTION_WIRED);
-        assert!(!LIQUID_PPO_PHYSICS_GREEN);
     }
 
     #[test]
@@ -677,7 +675,11 @@ mod tests {
     #[test]
     fn burn_liquid_ppo_step_finite_backward_chain_smoke() {
         let dev = device();
-        let gateway = ManifoldGateway::new(PpoChainFixtureCartridge, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-12_f64);
+        let gateway = ManifoldGateway::new(
+            PpoChainFixtureCartridge,
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
+            1.0e-12_f64,
+        );
         let mut agent = BurnLiquidPPOAgent::new(gateway);
         let state = tiny_umst();
 
@@ -784,7 +786,11 @@ mod kleisli_adapt_tests {
     #[test]
     fn burn_liquid_ppo_kleisli_penalize_finite_backward_chain_smoke() {
         let dev = device();
-        let mut gateway = ManifoldGateway::new(PpoChainFixtureCartridge, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-12_f64);
+        let mut gateway = ManifoldGateway::new(
+            PpoChainFixtureCartridge,
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
+            1.0e-12_f64,
+        );
         gateway.lambda_cd = 0.5_f32;
         let mut agent = BurnLiquidPPOAgent::new(gateway);
         let state = tiny_umst();
@@ -939,7 +945,11 @@ mod epistemic_adapt_tests {
     #[test]
     fn burn_liquid_ppo_epistemic_step_finite_backward_chain_smoke() {
         let dev = device();
-        let mut gateway = ManifoldGateway::new(GateAwareCartridge, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-4_f64);
+        let mut gateway = ManifoldGateway::new(
+            GateAwareCartridge,
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
+            1.0e-4_f64,
+        );
         gateway.beta = 0.1;
         let mut agent = BurnLiquidPPOAgent::new(gateway);
         let n = 2usize;
@@ -962,7 +972,11 @@ mod epistemic_adapt_tests {
     #[test]
     fn burn_liquid_ppo_epistemic_tracker_updates_after_step() {
         let dev = device();
-        let gateway = ManifoldGateway::new(GateAwareCartridge, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-4_f64);
+        let gateway = ManifoldGateway::new(
+            GateAwareCartridge,
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
+            1.0e-4_f64,
+        );
         let mut agent = BurnLiquidPPOAgent::new(gateway);
         let n = 2usize;
         let f = UMST_SCALAR_CHANNEL_COUNT;

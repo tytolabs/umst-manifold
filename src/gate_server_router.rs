@@ -197,7 +197,7 @@ fn build_response(req: &ParsedRequest, runtime: &GateHttpRuntime) -> Vec<u8> {
     match classify_request_line(&req.request_line) {
         GateHttpRoute::Health => {
             let b = br#"{"status":"ok"}"#;
-            return http_payload_json(b);
+            http_payload_json(b)
         }
         GateHttpRoute::Gate => {
             let body_str = String::from_utf8_lossy(&req.body);
@@ -205,7 +205,7 @@ fn build_response(req: &ParsedRequest, runtime: &GateHttpRuntime) -> Vec<u8> {
                 Ok(p) => serde_json::to_string(&runtime.evaluate_transition(&p)).unwrap(),
                 Err(_) => serde_json::to_string(&gate_json_parse_response()).unwrap(),
             };
-            return http_payload("200 OK", &json);
+            http_payload("200 OK", &json)
         }
         GateHttpRoute::NotFound => {
             let body =

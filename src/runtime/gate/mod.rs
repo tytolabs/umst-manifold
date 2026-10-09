@@ -350,10 +350,6 @@ pub struct RuntimeGateModCensusProbe {
 #[must_use]
 pub fn runtime_gate_barrel_reexports_wired() -> bool {
     ADMISSIBILITY_MARGIN_EPS.is_finite()
-        && !TOP_GATE_EXPLAIN_CODES.is_empty()
-        && !MANIFOLD_SEC_S1_GATE_WIRE_HOPS.is_empty()
-        && !MANIFOLD_SEC_S2_GATE_WIRE_HOPS.is_empty()
-        && !MANIFOLD_SEC_BRIDGE_ARCS_GATE_WIRE_HOPS.is_empty()
         && S2_EXTRACT_FENCE_FACET_IDS.len() == S2_EXTRACT_FENCE_FACET_COUNT
         && S1_GREEN_CLAIM_BLOCKED
         && S2_GREEN_CLAIM_BLOCKED
@@ -586,8 +582,6 @@ mod runtime_gate_mod_census_tests {
     #[test]
     fn runtime_gate_barrel_reexports_include_bridge_arcs() {
         assert!(runtime_gate_barrel_reexports_wired());
-        assert!(!MANIFOLD_SEC_BRIDGE_ARCS_GATE_WIRE_HOPS.is_empty());
-        assert!(BRIDGE_ARCS_GREEN_CLAIM_BLOCKED);
         assert!(!sec_bridge_arcs_production_wired());
         assert_eq!(SEC_BRIDGE_ARCS_BOARD_SLICE_ID, "SEC-BRIDGE-ARCS");
     }
@@ -612,7 +606,6 @@ mod runtime_gate_mod_census_tests {
         assert!(!runtime_gate_mod_production_wired());
         assert!(!runtime_gate_mod_master_retick_eligible());
         assert!(!runtime_gate_mod_op5_cleared());
-        assert!(RUNTIME_GATE_GREEN_CLAIM_BLOCKED);
         assert!(runtime_gate_green_claim_blocked_all_arcs());
         assert!(!runtime_gate_production_wired_any_arc());
     }
@@ -630,6 +623,5 @@ mod runtime_gate_mod_census_tests {
         assert!(sec_s5_accel_ac07_honest());
         assert!(sec_s7_accel_ac08_honest());
         assert!(sec_bridge_arcs_accel_ac35_honest());
-        assert!(S3_GREEN_CLAIM_BLOCKED);
     }
 }

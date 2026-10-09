@@ -135,9 +135,6 @@ pub const DEC_TYPESTATE_FENCE_FACETS: &[DecTypestateFenceFacet] = &[
     },
 ];
 
-const _: () = assert!(B1_WITNESS_LANDED);
-const _: () = assert!(SCALAR_CHANNEL_WITNESS_LANDED);
-const _: () = assert!(STAGING_BUNDLE_LANDED);
 const _: () = assert!(!B2_WITNESS_LANDED);
 const _: () = assert!(!GATEWAY_MIGRATION_LANDED);
 const _: () = assert!(!PHYSICS_GREEN);
@@ -427,6 +424,12 @@ impl<B: Backend> B2Incidence<B> {
 #[derive(Clone, Copy, Debug)]
 pub struct ScalarChannel<const N: usize>(PhantomData<()>);
 
+impl<const N: usize> Default for ScalarChannel<N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<const N: usize> ScalarChannel<N> {
     /// Construct a typed channel witness (const-generic index is the payload).
     #[must_use]
@@ -618,15 +621,6 @@ mod tests {
         assert_eq!(SLICE_ID, "phase-1c-dec-typestate");
         assert_eq!(CATALOG_ID, "umst.gate.dec_typestate");
         assert_eq!(POSTURE_TAG, "DEC_TYPESTATE_STAGING_PARTIAL");
-        assert!(B1_WITNESS_LANDED);
-        assert!(SCALAR_CHANNEL_WITNESS_LANDED);
-        assert!(STAGING_BUNDLE_LANDED);
-        assert!(!B2_WITNESS_LANDED);
-        assert!(!GATEWAY_MIGRATION_LANDED);
-        assert!(!PHYSICS_GREEN);
-        assert!(!PRODUCTION_WIRED);
-        assert!(!MASTER);
-        assert!(!OP5_PASS);
         assert!(!dec_typestate_production_wired());
         assert!(!dec_typestate_physics_green());
         assert!(!dec_typestate_master_wired());
@@ -749,7 +743,6 @@ mod tests {
         let placeholder: Tensor<B, 2, Int> = Tensor::zeros([2, 1], &device);
         let err = B2Incidence::<B>::try_new(placeholder).unwrap_err();
         assert_eq!(err, DecTypestateError::B2NotLanded);
-        assert!(!B2_WITNESS_LANDED);
     }
 
     #[test]

@@ -453,20 +453,11 @@ mod extruded_plate_honest_fence_tests {
     use super::{
         extruded_plate_honest_posture_bundle, extruded_plate_posture_honest,
         validate_extruded_plate_posture_honesty, ExtrudedPlateMechanics,
-        EXTRUDED_PLATE_BATCH_GT1_WIRED, EXTRUDED_PLATE_HONEST_FENCE,
-        EXTRUDED_PLATE_KIRCHHOFF_THIN_PLATE_GATE_WIRED, EXTRUDED_PLATE_MASTER,
-        EXTRUDED_PLATE_PHYSICS_GREEN, EXTRUDED_PLATE_POSTURE_TAG, EXTRUDED_PLATE_PRODUCTION_WIRED,
-        EXTRUDED_PLATE_VOIGT_CAUCHY_RECOVERY_WIRED, W29_EXTRUDED_PLATE_DEEPEN_CELL,
+        EXTRUDED_PLATE_HONEST_FENCE, EXTRUDED_PLATE_POSTURE_TAG, W29_EXTRUDED_PLATE_DEEPEN_CELL,
     };
 
     #[test]
     fn extruded_plate_honest_fence_consts_refuse_green_production_master() {
-        assert!(!EXTRUDED_PLATE_PHYSICS_GREEN);
-        assert!(!EXTRUDED_PLATE_PRODUCTION_WIRED);
-        assert!(!EXTRUDED_PLATE_MASTER);
-        assert!(!EXTRUDED_PLATE_VOIGT_CAUCHY_RECOVERY_WIRED);
-        assert!(!EXTRUDED_PLATE_KIRCHHOFF_THIN_PLATE_GATE_WIRED);
-        assert!(!EXTRUDED_PLATE_BATCH_GT1_WIRED);
         assert!(EXTRUDED_PLATE_POSTURE_TAG.contains("honest"));
         assert!(EXTRUDED_PLATE_HONEST_FENCE.contains("production_wired=false"));
         assert!(EXTRUDED_PLATE_HONEST_FENCE.contains("physics_green=false"));

@@ -144,7 +144,6 @@ pub fn umst_tensors_deepen_honest(probe: &UmstTensorsDeepenProbe) -> bool {
 }
 
 /// Fail-closed honesty check — rejects any production / MASTER / B₂ invention.
-#[must_use]
 pub fn validate_umst_tensors_deepen_honesty() -> Result<(), &'static str> {
     if umst_tensors_production_wired() {
         return Err(
@@ -748,7 +747,8 @@ mod tensors_tests {
         let f = UMST_SCALAR_CHANNEL_COUNT;
         let mut flat = vec![0.0_f32; n * f];
         for (i, row) in flat.chunks_mut(f).enumerate() {
-            row[SCALAR_TEMPERATURE] = crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32 + i as f32;
+            row[SCALAR_TEMPERATURE] =
+                crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32 + i as f32;
             row[SCALAR_HUMIDITY] = 0.5 + 0.1 * i as f32;
             row[SCALAR_DAMAGE] = 0.01 * i as f32;
         }

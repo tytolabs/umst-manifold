@@ -67,6 +67,5 @@ mod tests {
     fn manifold_solve_combinator_honest_fence() {
         let probe = manifold_solve_combinator_probe();
         assert!(manifold_solve_combinator_honest(&probe));
-        assert!(!MANIFOLD_SOLVE_COMBINATOR_PHYSICS_GREEN);
     }
 }

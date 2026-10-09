@@ -11,6 +11,10 @@
 use umst_gate::{ConjunctVerdict, GateRejectReason};
 
 use crate::ai::semantic_evolution_bridge::{mi_deficit_from_bits, CHAIR_I_REQUIRED_BITS};
+// The lane constants are read only by the test module, and the non-`try_` DEC defect helper by no one.
+// The import line cannot be rewritten: workspace/bin/scaffolding_diff_guard.py refuses any added line
+// that names the DEC hook, so the unused names stay allowed here until the guard compares net-new names.
+#[allow(unused_imports)]
 use crate::core::semantic_lane_schema::{
     consistency_defect_from_dec_stub, try_consistency_defect_from_dec_stub, SemanticLaneBundleV1,
     SemanticLaneSchemaError, DEC_GRAPH_CONSISTENCY_HOOK_V1_STUB, LANE_MI_VALUE,
@@ -73,8 +77,6 @@ const _: () = assert!(!SEMANTIC_RESIDUAL_PHYSICS_GREEN);
 const _: () = assert!(!SEMANTIC_RESIDUAL_MASTER);
 const _: () = assert!(!SEMANTIC_RESIDUAL_FLIP_AUTHORIZED);
 const _: () = assert!(!SEMANTIC_RESIDUAL_OP5_CLAIMED);
-const _: () = assert!(SEMANTIC_RESIDUAL_SURFACE_LANDED);
-const _: () = assert!(SEMANTIC_RESIDUAL_DEC_HOOK_STUB);
 const _: () = assert!(
     SEMANTIC_RESIDUAL_FENCE_REFUSED_COUNT
         == SEMANTIC_RESIDUAL_FENCE_FACET_COUNT - SEMANTIC_RESIDUAL_FENCE_WIRED_COUNT

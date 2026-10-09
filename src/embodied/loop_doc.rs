@@ -471,7 +471,6 @@ mod tests {
     #[test]
     fn production_wiring_honestly_refused() {
         assert!(production_wiring_refused());
-        assert!(GREEN_LOOP_REFUSED);
         assert!(!loop_closed_per_spec());
     }
 

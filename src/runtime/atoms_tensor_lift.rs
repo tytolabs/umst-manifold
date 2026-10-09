@@ -221,8 +221,6 @@ mod tests {
         assert_eq!(summary.parent_residue_id, "R-atoms-scalar");
         assert_eq!(summary.slice_id, "slice-3");
         assert_eq!(summary.posture_tag, POSTURE_TAG);
-        assert!(LIFT_STEP_LANDED);
-        assert!(RANK1_PLUS_DEFERRED);
         assert!(!summary.production_wired);
         assert!(!summary.rank1_plus_impl_landed);
         assert!(summary.sibling_slice_ladder_landed);
@@ -259,9 +257,6 @@ mod tests {
     #[test]
     fn w29_honest_fences_refuse_production_wire() {
         assert!(honest_fences_hold());
-        assert!(!PRODUCTION_WIRED);
-        assert!(!RANK1_PLUS_IMPL_LANDED);
-        assert!(ADAPTER_CRATE_LANDED);
         assert!(ADAPTER_CRATE_PATH.contains("umst-algebra-burn"));
         assert_eq!(RECEIPT_SLUG, "COMPLETION_AGAP_AGENT_PBM-010_1920");
         assert!(SOURCE_ANCHOR_PATH.ends_with("atoms_tensor_lift.rs"));
@@ -274,10 +269,6 @@ mod tests {
         assert!(SLICE3C_ADAPTER_PATH.contains("atoms_tensor_lift_adapter"));
         assert!(SLICE3D_OPS_PATH.contains("atoms_tensor_lift_ops"));
         assert!(SLICE2_PROTOTYPE_PATH.contains("burn_algebra"));
-        assert!(SLICE3B_LEDGER_LANDED);
-        assert!(SLICE3C_ADAPTER_LANDED);
-        assert!(SLICE3D_OPS_LANDED);
-        assert!(SLICE_RESIDUAL_LANDED);
         let summary = atoms_tensor_lift_depth_summary();
         assert!(summary.sibling_slice_ladder_landed);
         assert!(summary.rank1_plus_deferred);

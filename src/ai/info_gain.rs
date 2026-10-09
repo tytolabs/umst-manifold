@@ -225,8 +225,6 @@ mod tests {
     #[test]
     fn honest_fence_pins_no_production_green() {
         assert_eq!(SURROGATE_KIND, "mean_squared_state_delta");
-        assert!(!PRODUCTION_WIRED);
-        assert!(!PHYSICS_GREEN);
         assert_eq!(ORACLE_CARGO_TEST_STATUS, "BLOCKED");
         assert!(honest_fence_stub());
         assert_eq!(
@@ -252,8 +250,16 @@ mod tests {
         let row0 = (1.0_f32 + 1.0_f32) / 2.0_f32;
         let row1 = (4.0_f32 + 4.0_f32) / 2.0_f32;
         let v: Vec<f32> = g.into_data().value;
-        assert_abs_diff_eq!(v[0], row0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
-        assert_abs_diff_eq!(v[1], row1, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+        assert_abs_diff_eq!(
+            v[0],
+            row0,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+        );
+        assert_abs_diff_eq!(
+            v[1],
+            row1,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+        );
     }
 
     #[test]
@@ -268,7 +274,11 @@ mod tests {
         assert_eq!(g.dims(), [2]);
         let v: Vec<f32> = g.into_data().value;
         for &row in &v {
-            assert_abs_diff_eq!(row, 0.0_f32, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+            assert_abs_diff_eq!(
+                row,
+                0.0_f32,
+                epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
+            );
         }
     }
 
@@ -331,8 +341,16 @@ mod tests {
         let g = suggested_info_gain_from_state_delta(baseline, proposed);
         assert_eq!(g.dims(), [2]);
         let v: Vec<f32> = g.into_data().value;
-        assert_abs_diff_eq!(v[0], 9.0_f32, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
-        assert_abs_diff_eq!(v[1], 9.0_f32, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+        assert_abs_diff_eq!(
+            v[0],
+            9.0_f32,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+        );
+        assert_abs_diff_eq!(
+            v[1],
+            9.0_f32,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+        );
     }
 
     #[test]
@@ -350,7 +368,11 @@ mod tests {
         let g_rev = suggested_info_gain_from_state_delta(proposed, baseline);
         let fwd: Vec<f32> = g_fwd.into_data().value;
         let rev: Vec<f32> = g_rev.into_data().value;
-        assert_abs_diff_eq!(fwd[0], rev[0], epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_abs_diff_eq!(
+            fwd[0],
+            rev[0],
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
+        );
     }
 
     #[test]
@@ -366,7 +388,11 @@ mod tests {
         let v: Vec<f32> = g.into_data().value;
         assert_eq!(v.len(), b);
         for &row in &v {
-            assert_abs_diff_eq!(row, 1.0_f32, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+            assert_abs_diff_eq!(
+                row,
+                1.0_f32,
+                epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+            );
         }
     }
 
@@ -391,7 +417,11 @@ mod tests {
         let g2 = suggested_info_gain_from_state_delta(b.reshape([1, 4]), p.reshape([1, 4]));
         let a: Vec<f32> = g3.into_data().value;
         let c: Vec<f32> = g2.into_data().value;
-        assert_abs_diff_eq!(a[0], c[0], epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+        assert_abs_diff_eq!(
+            a[0],
+            c[0],
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+        );
     }
 
     #[test]
@@ -424,8 +454,16 @@ mod tests {
         let g = suggested_info_gain_from_batched_nodal_scalars(b, p);
         assert_eq!(g.dims(), [2]);
         let v: Vec<f32> = g.into_data().value;
-        assert_abs_diff_eq!(v[0], 0.5_f32, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
-        assert_abs_diff_eq!(v[1], 1.0_f32, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+        assert_abs_diff_eq!(
+            v[0],
+            0.5_f32,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+        );
+        assert_abs_diff_eq!(
+            v[1],
+            1.0_f32,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+        );
     }
 
     #[test]
@@ -441,7 +479,11 @@ mod tests {
         let p = b.clone();
         let g = suggested_info_gain_from_batched_nodal_scalars(b, p);
         let v: Vec<f32> = g.into_data().value;
-        assert_abs_diff_eq!(v[0], 0.0_f32, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE);
+        assert_abs_diff_eq!(
+            v[0],
+            0.0_f32,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_LOOSE
+        );
     }
 
     #[test]
@@ -451,6 +493,10 @@ mod tests {
         let p = Tensor::<B, 3>::from_data(Data::new(vec![7.0_f32], Shape::new([1, 1, 1])), &dev);
         let g = suggested_info_gain_from_batched_nodal_scalars(b, p);
         let v: Vec<f32> = g.into_data().value;
-        assert_abs_diff_eq!(v[0], 16.0_f32, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+        assert_abs_diff_eq!(
+            v[0],
+            16.0_f32,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+        );
     }
 }

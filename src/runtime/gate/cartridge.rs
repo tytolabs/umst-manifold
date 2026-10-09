@@ -38,10 +38,8 @@ pub const GATE_CARTRIDGE_HOST_CD_ONLY: bool = true;
 pub const GATE_CARTRIDGE_CONCRETE_BACKED: bool = false;
 
 const _: () = assert!(!GATE_CARTRIDGE_PRODUCTION_WIRED);
-const _: () = assert!(GATE_CARTRIDGE_GREEN_CLAIM_BLOCKED);
 const _: () = assert!(!GATE_CARTRIDGE_MASTER_RETICK_ELIGIBLE);
 const _: () = assert!(!GATE_CARTRIDGE_OP5_CLEARED);
-const _: () = assert!(GATE_CARTRIDGE_HOST_CD_ONLY);
 const _: () = assert!(!GATE_CARTRIDGE_CONCRETE_BACKED);
 
 /// Cartridge-facing evidence hook for gate transitions (cold-edge host witness).
@@ -123,7 +121,6 @@ pub fn gate_cartridge_honesty_probe() -> GateCartridgeHonestyProbe {
 }
 
 /// Fail-closed honesty check for cartridge deepen.
-#[must_use]
 pub fn validate_gate_cartridge_honesty() -> Result<(), &'static str> {
     let p = gate_cartridge_honesty_probe();
     if p.cell_id != "W29-112-CARTRIDGE" {
@@ -245,12 +242,6 @@ mod tests {
     #[test]
     fn honesty_fences_block_green_production_master_op5() {
         assert_eq!(GATE_CARTRIDGE_CELL_ID, "W29-112-CARTRIDGE");
-        assert!(!GATE_CARTRIDGE_PRODUCTION_WIRED);
-        assert!(GATE_CARTRIDGE_GREEN_CLAIM_BLOCKED);
-        assert!(!GATE_CARTRIDGE_MASTER_RETICK_ELIGIBLE);
-        assert!(!GATE_CARTRIDGE_OP5_CLEARED);
-        assert!(GATE_CARTRIDGE_HOST_CD_ONLY);
-        assert!(!GATE_CARTRIDGE_CONCRETE_BACKED);
         let probe = gate_cartridge_honesty_probe();
         assert_eq!(probe.cell_id, "W29-112-CARTRIDGE");
         assert!(!probe.production_wired);

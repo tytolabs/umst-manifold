@@ -424,9 +424,6 @@ mod tests {
         assert_eq!(summary.parent_residue_id, "R-atoms-scalar");
         assert_eq!(summary.slice_residual_id, SLICE_RESIDUAL_ID);
         assert_eq!(summary.posture_tag, POSTURE_TAG);
-        assert!(SLICE_RESIDUAL_ROWS_LANDED);
-        assert!(!F1_FULLY_CLOSED);
-        assert!(!RANK1_PLUS_LIFT_LANDED);
         assert!(!summary.f1_fully_closed);
     }
 

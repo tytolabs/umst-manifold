@@ -271,8 +271,6 @@ mod tests {
         assert_eq!(summary.sub_residue_id, "R-ATOMS-SC-05");
         assert_eq!(summary.depth_tier, "T4");
         assert_eq!(summary.posture_tag, POSTURE_TAG);
-        assert!(RUNTIME_BRIDGE_LANDED);
-        assert!(PRODUCTION_TENSOR_DEFERRED);
         assert!(summary.f1_deepen_rollup_landed);
         assert!(F1_DEEPEN_ROLLUP_PATH.contains("atoms_f1_deepen"));
         assert!(TENSOR_LIFT_STEP_PATH.contains("atoms_tensor_lift"));

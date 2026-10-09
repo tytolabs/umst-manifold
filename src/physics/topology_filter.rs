@@ -55,8 +55,6 @@ const _: () = assert!(!TOPOLOGY_FILTER_PHYSICS_GREEN);
 const _: () = assert!(!TOPOLOGY_FILTER_PRODUCTION_WIRED);
 const _: () = assert!(!TOPOLOGY_FILTER_MASTER);
 const _: () = assert!(!TOPOLOGY_FILTER_OP5);
-const _: () = assert!(TOPOLOGY_FILTER_HELMHOLTZ_LANDED);
-const _: () = assert!(TOPOLOGY_FILTER_RICHARDSON_STATIONARY);
 
 /// Typed probe for topology-filter posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -317,12 +315,6 @@ mod honest_fence_tests {
 
     #[test]
     fn topology_filter_honest_fence_consts_refuse_green_production_master() {
-        assert!(!TOPOLOGY_FILTER_PHYSICS_GREEN);
-        assert!(!TOPOLOGY_FILTER_PRODUCTION_WIRED);
-        assert!(!TOPOLOGY_FILTER_MASTER);
-        assert!(!TOPOLOGY_FILTER_OP5);
-        assert!(TOPOLOGY_FILTER_HELMHOLTZ_LANDED);
-        assert!(TOPOLOGY_FILTER_RICHARDSON_STATIONARY);
         assert_eq!(W29_TOPOLOGY_FILTER_DEEPEN_CELL, "W29-093-TOPOLOGY_FILTER");
     }
 

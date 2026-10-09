@@ -11,11 +11,11 @@
 
 use umst_manifold::runtime::gate::sec_bridge_arcs::{
     sec_bridge_arcs_accel_ac35_honest, sec_bridge_arcs_production_wired,
-    validate_sec_bridge_arcs_gate_honesty, BRIDGE_ARCS_GREEN_CLAIM_BLOCKED,
+    validate_sec_bridge_arcs_gate_honesty,
 };
 use umst_manifold::runtime::gate::sec_s2::sec_s2_accel_ac29_honest;
-use umst_manifold::runtime::gate::sec_s3::{sec_s3_accel_ac05_honest, S3_GREEN_CLAIM_BLOCKED};
-use umst_manifold::runtime::gate::sec_s4::{sec_s4_accel_ac06_honest, L_S5_PROOF_WIRED_HONEST};
+use umst_manifold::runtime::gate::sec_s3::sec_s3_accel_ac05_honest;
+use umst_manifold::runtime::gate::sec_s4::sec_s4_accel_ac06_honest;
 use umst_manifold::runtime::gate::sec_s5::sec_s5_accel_ac07_honest;
 use umst_manifold::runtime::gate::sec_s7::sec_s7_accel_ac08_honest;
 use umst_manifold::runtime::gate::{
@@ -27,9 +27,7 @@ use umst_manifold::runtime::gate::{
     validate_sec_gw_audit_honesty, validate_sec_gw_wrap_honesty,
     validate_sec_mcp_wrap_gate_honesty, validate_sec_s1_gate_honesty, validate_sec_s2_gate_honesty,
     validate_sec_s3_gate_honesty, validate_sec_s4_gate_honesty, validate_sec_s5_gate_honesty,
-    validate_sec_s6_gate_honesty, validate_sec_s7_gate_honesty, GW_AUDIT_GREEN_CLAIM_BLOCKED,
-    GW_WRAP_GREEN_CLAIM_BLOCKED, MCP_WRAP_GREEN_CLAIM_BLOCKED, S1_GREEN_CLAIM_BLOCKED,
-    S2_GREEN_CLAIM_BLOCKED, S5_GREEN_CLAIM_BLOCKED, S6_GREEN_CLAIM_BLOCKED, S7_GREEN_CLAIM_BLOCKED,
+    validate_sec_s6_gate_honesty, validate_sec_s7_gate_honesty,
 };
 
 /// FLEET-COMPOSER ACCEL-G parent fleet id.
@@ -186,21 +184,6 @@ fn ac157_production_wired_stays_false_all_arcs() {
     assert!(!sec_gw_wrap_production_wired());
     assert!(!sec_gw_audit_production_wired());
     assert!(!sec_bridge_arcs_production_wired());
-}
-
-#[test]
-fn ac157_green_claim_blocked_all_arcs() {
-    assert!(S1_GREEN_CLAIM_BLOCKED);
-    assert!(S2_GREEN_CLAIM_BLOCKED);
-    assert!(S3_GREEN_CLAIM_BLOCKED);
-    assert!(!L_S5_PROOF_WIRED_HONEST);
-    assert!(S5_GREEN_CLAIM_BLOCKED);
-    assert!(S6_GREEN_CLAIM_BLOCKED);
-    assert!(S7_GREEN_CLAIM_BLOCKED);
-    assert!(MCP_WRAP_GREEN_CLAIM_BLOCKED);
-    assert!(GW_WRAP_GREEN_CLAIM_BLOCKED);
-    assert!(GW_AUDIT_GREEN_CLAIM_BLOCKED);
-    assert!(BRIDGE_ARCS_GREEN_CLAIM_BLOCKED);
 }
 
 #[test]

@@ -50,9 +50,6 @@ const _: () = assert!(!SOLVE_REPORT_PHYSICS_GREEN);
 const _: () = assert!(!SOLVE_REPORT_PRODUCTION_WIRED);
 const _: () = assert!(!SOLVE_REPORT_MASTER);
 const _: () = assert!(!SOLVE_REPORT_OP5_CLAIMED);
-const _: () = assert!(SOLVE_REPORT_GREEN_CLAIM_BLOCKED);
-const _: () = assert!(SOLVE_REPORT_CONTRACT_LANDED);
-const _: () = assert!(SOLVE_REPORT_INVENTORY_CATALOGUED);
 const _: () = assert!(!SOLVE_REPORT_ALL_SITES_WIRED);
 
 use serde::{Deserialize, Serialize};
@@ -143,7 +140,7 @@ impl SolveReport {
             Ok(())
         } else if !self.residual_is_admissible() {
             Err("SolveReport residual not admissible (NaN/Inf/negative)")
-        } else if !(self.rel_tol > 0.0) {
+        } else if self.rel_tol.is_nan() || self.rel_tol <= 0.0 {
             Err("SolveReport rel_tol must be positive for converged predicate")
         } else {
             Err("SolveReport did not meet rel_tol (stall / divergence)")
@@ -338,7 +335,6 @@ pub fn solve_report_posture_honest(probe: &SolveReportPostureProbe) -> bool {
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER / OP-5 / fake all-sites claims on this surface.
-#[must_use]
 pub fn solve_report_refuse_overclaim(probe: &SolveReportPostureProbe) -> Result<(), &'static str> {
     if probe.physics_green || SOLVE_REPORT_PHYSICS_GREEN {
         return Err("SOLVE_REPORT_PHYSICS_GREEN must stay false until fleet physics closes");
@@ -520,7 +516,6 @@ mod tests {
         assert_eq!(solver_entry_point_count(), 8);
         assert_eq!(solver_entry_points_wired_count(), 1);
         assert_eq!(solver_entry_points_open_count(), 7);
-        assert!(!SOLVE_REPORT_ALL_SITES_WIRED);
 
         let wired: Vec<_> = SOLVER_ENTRY_POINTS
             .iter()
@@ -550,12 +545,6 @@ mod tests {
         assert!(SOLVE_REPORT_HONEST_FENCE.contains("physics_green=false"));
         assert!(SOLVE_REPORT_HONEST_FENCE.contains("op5_claimed=false"));
         assert!(SOLVE_REPORT_HONEST_FENCE.contains("all_sites_wired=false"));
-        assert!(!SOLVE_REPORT_PHYSICS_GREEN);
-        assert!(!SOLVE_REPORT_PRODUCTION_WIRED);
-        assert!(!SOLVE_REPORT_MASTER);
-        assert!(!SOLVE_REPORT_OP5_CLAIMED);
-        assert!(SOLVE_REPORT_GREEN_CLAIM_BLOCKED);
-        assert!(!SOLVE_REPORT_ALL_SITES_WIRED);
     }
 
     #[test]

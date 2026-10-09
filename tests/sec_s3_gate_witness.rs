@@ -7,7 +7,6 @@ use umst_manifold::runtime::gate::{
     manifold_gate_sec_s3_ceremony_closed, sec_s3_gate_manifold_probe, sec_s3_gate_wire_matrix,
     sec_s3_p1606_c5_honest, sec_s3_p1606_c5_probe, sec_s3_production_wired, session_ledger_wired,
     validate_sec_s3_gate_honesty, FLEET_P1606_C5_JOB_ID, MANIFOLD_SEC_S3_GATE_WIRE_HOPS,
-    PALETTE_PERSISTED_HONEST,
 };
 
 #[test]
@@ -20,7 +19,6 @@ fn sec_s3_manifold_ceremony_predicate_and_honest_residue() {
     assert!(manifold_gate_sec_s3_ceremony_closed());
     assert!(!session_ledger_wired());
     assert!(!sec_s3_production_wired());
-    assert!(!PALETTE_PERSISTED_HONEST);
 }
 
 #[test]

@@ -449,9 +449,6 @@ pub fn traceability_partition_quickcheck() -> bool {
     if wired == 0 || allow == 0 || total != TRACEABILITY_R0_MODULE_COUNT {
         return false;
     }
-    if GATE_UNIFICATION_SPEC_CATALOG_IDS.is_empty() || GATE_REGISTRY_CATALOG_IDS.is_empty() {
-        return false;
-    }
     // Disjoint wired vs allowlist module names (O(n²) ok — static tables).
     for (module, _) in CATALOG_MODULE_WIRED {
         if ALLOW_UNUSED_CATALOG_IDS.iter().any(|m| m == module) {

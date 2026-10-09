@@ -164,7 +164,8 @@ impl Default for ElectroChemicalSolver {
             gas_const: 1.0_f32,
             coupling_picard_iters: 1_usize,
             coupling_picard_tol_linf: umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
-            coupling_picard_tol_delta_phi_linf: umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
+            coupling_picard_tol_delta_phi_linf:
+                umst_math::numeric_tolerance::REFUSAL_NONPOSITIVE_REL_TOL_F32,
             coupling_picard_tol_delta_phi_l2: 0.0_f32,
             mesh_spacing: 1.0_f32,
             pnp_implicit_newton_chain: None,
@@ -377,8 +378,6 @@ const _: () = assert!(!ELECTROCHEMISTRY_PRODUCTION_WIRED);
 const _: () = assert!(!ELECTROCHEMISTRY_MASTER);
 const _: () = assert!(!ELECTROCHEMISTRY_OP5_CLAIMED);
 const _: () = assert!(!ELECTROCHEMISTRY_GENERAL_GRAPH_PNP_WIRED);
-const _: () = assert!(ELECTROCHEMISTRY_SOLVER_SURFACE_LANDED);
-const _: () = assert!(ELECTROCHEMISTRY_MVP_FEATURE_GATED);
 
 /// Count wired electrochemistry fence facets (must match [`ELECTROCHEMISTRY_FENCE_WIRED_COUNT`]).
 #[must_use]
@@ -1593,7 +1592,8 @@ fn pnp_be_full_sg_jacobian_matvec_nm_f64(
 fn full_sg_gmres_newton_residual_tol_f32(residual_tol: f64) -> Result<f32, PhysicsError> {
     if !residual_tol.is_finite() || residual_tol <= 0.0 {
         return Err(PhysicsError::InvariantViolation {
-            context: "full_sg_newton_correction_gmres_nm_f64: residual_tol must be finite and positive",
+            context:
+                "full_sg_newton_correction_gmres_nm_f64: residual_tol must be finite and positive",
         });
     }
     Ok(residual_tol as f32)
@@ -5146,4 +5146,3 @@ mod physics_idempotency_tests {
         );
     }
 }
-

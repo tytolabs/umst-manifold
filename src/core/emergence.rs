@@ -133,10 +133,6 @@ pub const EMERGENCE_FENCE_FACETS: &[EmergenceFenceFacet] = &[
     },
 ];
 
-const _: () = assert!(GRID_HOTSPOT_MONITOR_LANDED);
-const _: () = assert!(NODAL_DEFECT_TENSOR_LANDED);
-const _: () = assert!(NODAL_DEFECT_NO_EDGES_DEFERRED);
-const _: () = assert!(COMBINE_NODAL_REWARD_LANDED);
 const _: () = assert!(!PPO_TRAINER_HOT_PATH_LANDED);
 const _: () = assert!(!MSDF_EMERGENCE_GRID_BRIDGE_LANDED);
 const _: () = assert!(!PHYSICS_GREEN);

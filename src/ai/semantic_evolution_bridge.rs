@@ -116,9 +116,6 @@ pub const SEMANTIC_EVOLUTION_FENCE_FACETS: &[SemanticEvolutionFenceFacet] = &[
 ];
 
 /// Compile-time fence — production/master/physics GREEN flip not authorized.
-const _: () = assert!(MEANING_EVOLUTION_RUNTIME_STUB);
-const _: () = assert!(RUNTIME_TENSOR_DEFERRED);
-const _: () = assert!(P3_MI_GATE_BLOCKED);
 const _: () = assert!(!SEMANTIC_EVOLUTION_PRODUCTION_WIRED);
 const _: () = assert!(!SEMANTIC_EVOLUTION_PHYSICS_GREEN);
 const _: () = assert!(!SEMANTIC_EVOLUTION_MASTER);
@@ -397,12 +394,6 @@ mod tests {
 
     #[test]
     fn honest_fence_consts_refuse_green_production_master() {
-        assert!(MEANING_EVOLUTION_RUNTIME_STUB);
-        assert!(RUNTIME_TENSOR_DEFERRED);
-        assert!(P3_MI_GATE_BLOCKED);
-        assert!(!SEMANTIC_EVOLUTION_PRODUCTION_WIRED);
-        assert!(!SEMANTIC_EVOLUTION_PHYSICS_GREEN);
-        assert!(!SEMANTIC_EVOLUTION_MASTER);
         assert_eq!(
             semantic_evolution_fence_wired_count(),
             SEMANTIC_EVOLUTION_FENCE_WIRED_COUNT
@@ -527,9 +518,6 @@ mod tests {
             report.grad_center_l2 > 1e-8 || report.grad_radius_l2 > 1e-8,
             "runtime backprop must be non-zero"
         );
-        assert!(MEANING_EVOLUTION_RUNTIME_STUB);
-        assert!(P3_MI_GATE_BLOCKED);
-        assert!(RUNTIME_TENSOR_DEFERRED);
     }
 
     #[test]

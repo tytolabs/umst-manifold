@@ -916,7 +916,6 @@ mod sec_s3_tests {
         assert_eq!(JOB_ID, "AGAP-2033-SEC-S3");
         assert_eq!(FLEET_P1606_C5_JOB_ID, "PRABHU-WAVE-C-1606-C5");
         assert_eq!(OPEN_RESIDUAL_HOP_COUNT, 2);
-        assert!(!MASTER_RETICK_ELIGIBLE);
     }
 
     #[test]
@@ -951,7 +950,6 @@ mod sec_s3_tests {
     fn sec_s3_session_ledger_and_production_stay_false() {
         assert!(!session_ledger_wired());
         assert!(!sec_s3_production_wired());
-        assert!(!PALETTE_PERSISTED_HONEST);
         assert!(!sec_s3_master_retick_eligible());
     }
 

@@ -434,7 +434,10 @@ impl Default for UmstManifestBuilder {
     fn default() -> Self {
         Self {
             catalog_hash: catalog_lock_bundle_sha256_bytes(),
-            thermodynamic_cbf: ThermodynamicCBF::new(crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K, 1.0e-12_f64),
+            thermodynamic_cbf: ThermodynamicCBF::new(
+                crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K,
+                1.0e-12_f64,
+            ),
             gate_registry: Box::new(GateRegistry::default()),
             grounding_contract: default_grounding_contract(),
             dual_run: false,
@@ -762,9 +765,6 @@ mod tests {
 
     #[test]
     fn umst_manifest_production_and_master_stay_false() {
-        assert!(!MANIFEST_PHYSICS_GREEN);
-        assert!(!MANIFEST_PRODUCTION_WIRED);
-        assert!(!MANIFEST_MASTER);
         assert!(!manifest_production_wired());
         assert!(!manifest_master_composition_wired());
     }

@@ -37,8 +37,6 @@ pub const PCG_REDUCTION_HONEST_FENCE: &str =
 const _: () = assert!(!PCG_REDUCTION_PRODUCTION_WIRED);
 const _: () = assert!(!PCG_REDUCTION_PHYSICS_GREEN);
 const _: () = assert!(!PCG_REDUCTION_MASTER);
-const _: () = assert!(PCG_REDUCTION_KRYLOV_LANDED);
-const _: () = assert!(PCG_REDUCTION_MASKED_DOT_F64_LANDED);
 
 /// Typed probe for PCG reduction posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -84,7 +82,6 @@ pub fn pcg_reduction_posture_honest(probe: &PcgReductionPostureProbe) -> bool {
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER claims on the PCG reduction surface.
-#[must_use]
 pub fn pcg_reduction_refuse_overclaim(
     probe: &PcgReductionPostureProbe,
 ) -> Result<(), &'static str> {

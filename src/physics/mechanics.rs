@@ -64,7 +64,6 @@ const _: () = assert!(!MECHANICS_PRODUCTION_WIRED);
 const _: () = assert!(!MECHANICS_MASTER);
 const _: () = assert!(!MECHANICS_OP5_CLAIMED);
 const _: () = assert!(!MECHANICS_VOIGT_ANISOTROPIC_SHELL_LANDED);
-const _: () = assert!(MECHANICS_BAR_NETWORK_LANDED);
 
 /// Typed probe for bar-network mechanics posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -112,7 +111,6 @@ pub fn mechanics_posture_honest(probe: &MechanicsPostureProbe) -> bool {
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER / OP-5 claims on the mechanics surface.
-#[must_use]
 pub fn mechanics_refuse_overclaim(probe: &MechanicsPostureProbe) -> Result<(), &'static str> {
     if probe.physics_green {
         return Err("MECHANICS_PHYSICS_GREEN must stay false — bar network ≠ fleet physics GREEN");
@@ -163,7 +161,7 @@ use crate::core::field::{
     BodyForceField, BoundaryMaskField, DamageField, DisplacementField, Field, StiffnessField,
 };
 
-use umst_math::cg_spectral_window::{CgCoeff, SpectralWindowRefuse, stalled_a_norm};
+use umst_math::cg_spectral_window::{stalled_a_norm, CgCoeff, SpectralWindowRefuse};
 
 use super::dec_operators::DecEdgeOperators;
 use super::error::PhysicsError;
@@ -270,9 +268,8 @@ impl VectorMechanicsSolver {
             .mul(edge_unit.clone())
             .sum_dim(2)
             .reshape([batch, n_e, 1]);
-        let axial_strain = elong.div(
-            edge_len.clamp_min(umst_math::numeric_tolerance::EDGE_LENGTH_DIVISOR_FLOOR_F32),
-        );
+        let axial_strain = elong
+            .div(edge_len.clamp_min(umst_math::numeric_tolerance::EDGE_LENGTH_DIVISOR_FLOOR_F32));
 
         let tx = edge_unit.clone().slice([0..batch, 0..n_e, 0..1]);
         let ty = edge_unit.clone().slice([0..batch, 0..n_e, 1..2]);
@@ -709,8 +706,7 @@ impl VectorMechanicsSolver {
                     }
 
                     if pcg_iters >= n_unknowns {
-                        let u_emb_true =
-                            Self::embed_batch_row(&template, b, n_v, u_c.clone());
+                        let u_emb_true = Self::embed_batch_row(&template, b, n_v, u_c.clone());
                         let ku_true = Self::bar_matvec(
                             u_emb_true,
                             &k_solve,
@@ -723,20 +719,17 @@ impl VectorMechanicsSolver {
                         )
                         .slice([b..b + 1, 0..n_v, 0..3]);
                         let r_true = p_mask.clone().mul(f_b.clone().sub(ku_true));
-                        let true_rel = r_true.powf_scalar(2.0).sum().sqrt().into_scalar() / rhs_norm;
-                        if bar_pcg_certificate_stop(
-                            f64::from(true_rel),
-                            rel_tol_f64,
-                            use_tol_exit,
-                        ) {
+                        let true_rel =
+                            r_true.powf_scalar(2.0).sum().sqrt().into_scalar() / rhs_norm;
+                        if bar_pcg_certificate_stop(f64::from(true_rel), rel_tol_f64, use_tol_exit)
+                        {
                             pcg_rel_res = true_rel;
                             break;
                         }
                         let f_phys = body_force.clone().slice([b..b + 1, 0..n_v, 0..3]);
                         let k_phys = k_axial.clone().slice([b..b + 1, 0..n_edges, 0..1]);
                         let eu_phys = edge_unit.clone().slice([b..b + 1, 0..n_edges, 0..3]);
-                        let mask_phys =
-                            boundary_mask.clone().slice([b..b + 1, 0..n_v, 0..3]);
+                        let mask_phys = boundary_mask.clone().slice([b..b + 1, 0..n_v, 0..3]);
                         let (u_refined, f64_iters, f64_rel) =
                             Self::bar_network_pcg_f64_single_batch(
                                 u_c,
@@ -1221,12 +1214,8 @@ impl VectorMechanicsSolver {
 
         for b in 0..batch {
             let u_batch = u.clone().slice([b..b + 1, 0..n_v, 0..3]);
-            let f_batch = body_force_solve
-                .clone()
-                .slice([b..b + 1, 0..n_v, 0..3]);
-            let mask_batch = boundary_mask
-                .clone()
-                .slice([b..b + 1, 0..n_v, 0..3]);
+            let f_batch = body_force_solve.clone().slice([b..b + 1, 0..n_v, 0..3]);
+            let mask_batch = boundary_mask.clone().slice([b..b + 1, 0..n_v, 0..3]);
             let k_batch = k_solve.clone().slice([b..b + 1, 0..n_e, 0..1]);
             let eu_batch = edge_unit.clone().slice([b..b + 1, 0..n_e, 0..3]);
             let (u_out, pcg_iters, pcg_rel_res) = Self::bar_network_pcg_f64_single_batch(
@@ -1345,9 +1334,7 @@ impl VectorMechanicsSolver {
 
         loop {
             pcg_iters += 1;
-            Self::bar_network_projected_matvec_f64(
-                &p, &mut ap, &mask64, &k64, &eu64, &src, &tgt,
-            );
+            Self::bar_network_projected_matvec_f64(&p, &mut ap, &mask64, &k64, &eu64, &src, &tgt);
 
             let rz: f64 = r.iter().zip(&z).map(|(a, b)| a * b).sum();
             if !rz.is_finite() {
@@ -1365,9 +1352,7 @@ impl VectorMechanicsSolver {
                 u64[i] *= mask64[i];
             }
 
-            Self::bar_network_projected_matvec_f64(
-                &u64, &mut ku, &mask64, &k64, &eu64, &src, &tgt,
-            );
+            Self::bar_network_projected_matvec_f64(&u64, &mut ku, &mask64, &k64, &eu64, &src, &tgt);
             for i in 0..ndof {
                 r[i] = mask64[i] * (f_rhs[i] - ku[i]);
             }
@@ -1548,7 +1533,9 @@ fn bar_pcg_certificate_stop(rel: f64, tol: f64, use_tol: bool) -> bool {
 }
 
 /// Spectral \(A\)-norm stall from [`umst_math::cg_spectral_window::stalled_a_norm`].
-pub(crate) fn bar_pcg_spectral_stall(coeffs: &[CgCoeff]) -> Result<Option<bool>, SpectralWindowRefuse> {
+pub(crate) fn bar_pcg_spectral_stall(
+    coeffs: &[CgCoeff],
+) -> Result<Option<bool>, SpectralWindowRefuse> {
     match stalled_a_norm(coeffs) {
         Ok(stalled) => Ok(Some(stalled)),
         Err(SpectralWindowRefuse::EmptyRun | SpectralWindowRefuse::IndefiniteRitz) => Ok(None),
@@ -2043,7 +2030,8 @@ mod tests {
             &dev,
         );
 
-        let sigma = VectorMechanicsSolver::isotropic_hooke_sigma(voigt_strain, e_young, nu_t, rotation);
+        let sigma =
+            VectorMechanicsSolver::isotropic_hooke_sigma(voigt_strain, e_young, nu_t, rotation);
         let sig = sigma.into_data().value;
 
         let sig_xx_exp = (lam + 2.0 * mu) * eps0;

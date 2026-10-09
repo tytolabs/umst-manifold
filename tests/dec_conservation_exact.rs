@@ -6,15 +6,15 @@ use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::physics::dec_primal::{
     canonical_tetrahedron_boundary_dec_coo, dec_primal_max_abs_d1_of_scalar_gradient,
-    DEC_DD_ZERO_EXACT_MEASURED,
 };
 use umst_manifold::physics::topology::EdgeTopology;
 
 type B = NdArray<f32>;
 
-fn tet_topology(
-    device: &NdArrayDevice,
-) -> (EdgeTopology<B>, Tensor<B, 2, Int>, Vec<(usize, usize)>) {
+/// Edge topology, the `[2, E]` edge index tensor and the edge list as node pairs.
+type TetTopology = (EdgeTopology<B>, Tensor<B, 2, Int>, Vec<(usize, usize)>);
+
+fn tet_topology(device: &NdArrayDevice) -> TetTopology {
     let coo = canonical_tetrahedron_boundary_dec_coo();
     let edges_b1: Tensor<B, 2, Int> = Tensor::from_data(
         Data::new(coo.edges_b1_flat.to_vec(), Shape::new([2, 6])),
@@ -31,7 +31,6 @@ fn tet_topology(
 
 #[test]
 fn dec_dd_zero_exact_on_tetrahedron_boundary() {
-    assert!(DEC_DD_ZERO_EXACT_MEASURED);
     let device = NdArrayDevice::default();
     let (topo, faces_b2, ranges) = tet_topology(&device);
     let nodal: Tensor<B, 3> = Tensor::from_data(

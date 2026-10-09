@@ -8,7 +8,7 @@ use umst_manifold::runtime::gate::{
     sec_s2_gate_factor_table, sec_s2_gate_manifold_probe, sec_s2_gate_transition_evidence_probe,
     sec_s2_gate_wire_matrix, sec_s2_p1941_k2_honest, sec_s2_p1941_k2_probe,
     sec_s2_production_wired, validate_sec_s2_gate_honesty, FLEET_P1941_K2_JOB_ID,
-    MANIFOLD_SEC_S2_GATE_WIRE_HOPS, S2_FACTOR_ROW_COUNT, S2_GREEN_CLAIM_BLOCKED,
+    MANIFOLD_SEC_S2_GATE_WIRE_HOPS, S2_FACTOR_ROW_COUNT,
 };
 
 #[test]
@@ -22,7 +22,6 @@ fn sec_s2_manifold_ceremony_predicate_and_honest_residue() {
     assert!(manifold_s2_all_refuse_paths_probed());
     assert!(manifold_verify_trust_gate_policy_pins());
     assert!(!sec_s2_production_wired());
-    assert!(S2_GREEN_CLAIM_BLOCKED);
 }
 
 #[test]

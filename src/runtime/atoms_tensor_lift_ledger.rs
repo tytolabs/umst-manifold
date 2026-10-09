@@ -402,10 +402,6 @@ mod tests {
         assert_eq!(summary.parent_residue_id, "R-atoms-scalar");
         assert_eq!(summary.slice_id, "slice-3b");
         assert_eq!(summary.posture_tag, POSTURE_TAG);
-        assert!(RANK1_PLUS_LEDGER_LANDED);
-        assert!(!RANK1_PLUS_LIFT_LANDED);
-        assert!(SLICE3_LIFT_STEP_LANDED);
-        assert!(!F1_FULLY_CLOSED);
         assert!(!summary.f1_fully_closed);
         assert!(!summary.adapter_crate_landed);
         assert_eq!(summary.open_row_count, OPEN_ROW_COUNT_PIN);

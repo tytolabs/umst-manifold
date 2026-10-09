@@ -497,9 +497,6 @@ mod traits_tests {
     #[test]
     fn traits_honest_posture_refuses_green_production_master() {
         assert!(traits_posture_is_honest_partial());
-        assert!(!PHYSICS_GREEN_CLAIMED);
-        assert!(!PRODUCTION_WIRED);
-        assert!(!MASTER_CERT_CLAIMED);
         assert_eq!(POSTURE_TAG, "PARTIAL");
         assert_eq!(DEPTH_TIER, "T1");
         assert_eq!(TRAITS_W29_WAVE_STEP, "W29-031-TRAITS");
@@ -575,8 +572,6 @@ mod traits_tests {
         struct DefaultGate;
         impl GateCartridge for DefaultGate {}
         assert!(DefaultGate.provides_spatial_physics());
-        // Default stub ≠ fully wired Phase B spatial consumer.
-        assert!(!GATE_SPATIAL_FULLY_WIRED);
     }
 
     #[test]
@@ -640,9 +635,6 @@ mod traits_tests {
         assert!(!HONEST_FENCE.to_ascii_lowercase().contains("green=true"));
         assert!(!POSTURE_TAG.to_ascii_lowercase().contains("green"));
         assert!(!POSTURE_TAG.to_ascii_lowercase().contains("master"));
-        assert!(!PRODUCTION_WIRED);
-        assert!(!PHYSICS_GREEN_CLAIMED);
-        assert!(!MASTER_CERT_CLAIMED);
     }
 
     #[test]

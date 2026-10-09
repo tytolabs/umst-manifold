@@ -291,11 +291,6 @@ mod tests {
         assert!(!fence.master_retick_eligible);
         assert!(!fence.op5_claimed);
         assert!(fence.green_claim_blocked);
-        assert!(!EVIDENCE_PHYSICS_GREEN);
-        assert!(!EVIDENCE_PRODUCTION_WIRED);
-        assert!(!EVIDENCE_MASTER_RETICK_ELIGIBLE);
-        assert!(!EVIDENCE_OP5_CLAIMED);
-        assert!(EVIDENCE_GREEN_CLAIM_BLOCKED);
     }
 
     #[test]

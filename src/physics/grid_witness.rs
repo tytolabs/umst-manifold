@@ -291,7 +291,7 @@ mod tests {
     fn demo_node_count() {
         assert_eq!(DemoGrid::N_NODES, 13 * 9 * 2);
         assert!(DemoGrid::node_formula_holds());
-        assert_eq!(DemoGrid::n_cells(), 12 * 8 * 1);
+        assert_eq!(DemoGrid::n_cells(), (12 * 8));
     }
 
     #[test]

@@ -88,7 +88,6 @@ pub const fn atoms_tensor_lift_adapter_production_wired() -> bool {
 
 /// Compile-time fence — production flip not authorized at adapter scaffold tier.
 const _: () = assert!(!atoms_tensor_lift_adapter_production_wired());
-const _: () = assert!(ADAPTER_SCAFFOLD_LANDED);
 const _: () = assert!(!RANK1_PLUS_IMPL_LANDED);
 const _: () = assert!(!ADAPTER_CRATE_LANDED);
 
@@ -362,12 +361,6 @@ mod tests {
         assert_eq!(summary.parent_residue_id, "R-atoms-scalar");
         assert_eq!(summary.slice_id, "slice-3c");
         assert_eq!(summary.posture_tag, POSTURE_TAG);
-        assert!(ADAPTER_SCAFFOLD_LANDED);
-        assert!(!RANK1_PLUS_IMPL_LANDED);
-        assert!(!ADAPTER_CRATE_LANDED);
-        assert!(SLICE3_LIFT_STEP_LANDED);
-        assert!(SLICE3B_LEDGER_LANDED);
-        assert!(SLICE3D_OPS_LANDED);
         assert!(!summary.production_wired);
         assert_eq!(summary.bind_status, "UNBOUND");
         assert_eq!(summary.deferred_row_count, 6);

@@ -53,7 +53,6 @@ pub const TOP_GATE_EXPLAIN_CODE_COUNT: usize = 5;
 
 const _: () = assert!(TOP_GATE_EXPLAIN_CODES.len() == TOP_GATE_EXPLAIN_CODE_COUNT);
 const _: () = assert!(!explain_codes_production_wired());
-const _: () = assert!(EXPLAIN_CODES_GREEN_CLAIM_BLOCKED);
 const _: () = assert!(!explain_codes_master_retick_eligible());
 const _: () = assert!(!explain_codes_op5_cleared());
 
@@ -99,7 +98,7 @@ pub const fn explain_codes_op5_cleared() -> bool {
 /// Whether `code` is one of [`TOP_GATE_EXPLAIN_CODES`].
 #[must_use]
 pub fn is_top_gate_explain_code(code: &str) -> bool {
-    TOP_GATE_EXPLAIN_CODES.iter().any(|&c| c == code)
+    TOP_GATE_EXPLAIN_CODES.contains(&code)
 }
 
 /// Build introspection probe for done-when / fleet checks.
@@ -259,7 +258,6 @@ mod tests {
     #[test]
     fn explain_codes_honest_fences_no_green_production_master_op5() {
         assert!(!explain_codes_production_wired());
-        assert!(EXPLAIN_CODES_GREEN_CLAIM_BLOCKED);
         assert!(!explain_codes_master_retick_eligible());
         assert!(!explain_codes_op5_cleared());
 

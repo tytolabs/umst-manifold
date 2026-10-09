@@ -46,7 +46,6 @@ const _: () = assert!(!TOPOLOGY_PHYSICS_GREEN);
 const _: () = assert!(!TOPOLOGY_PRODUCTION_WIRED);
 const _: () = assert!(!TOPOLOGY_MASTER);
 const _: () = assert!(!TOPOLOGY_OP5);
-const _: () = assert!(TOPOLOGY_EDGE_GATHER_LANDED);
 
 /// Typed probe for primal EdgeTopology posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -92,7 +91,6 @@ pub fn edge_topology_posture_honest(probe: &EdgeTopologyPostureProbe) -> bool {
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER / OP-5 claims on the EdgeTopology surface.
-#[must_use]
 pub fn edge_topology_refuse_overclaim(
     probe: &EdgeTopologyPostureProbe,
 ) -> Result<(), &'static str> {

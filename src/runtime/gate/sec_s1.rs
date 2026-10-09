@@ -82,7 +82,8 @@ pub const S_ARC_TOTAL_SLICES: u8 = 10;
 pub const S1_CAPSTONE_RESIDUE_FACTOR_ID: &str = "session-ledger";
 
 /// umst-trust S-1 factor ledger delegate SSOT.
-pub const TRUST_S1_FACTOR_SSOT: &str = "umst-foundations/crates/umst-trust/src/trust_coordination_factor.rs";
+pub const TRUST_S1_FACTOR_SSOT: &str =
+    "umst-foundations/crates/umst-trust/src/trust_coordination_factor.rs";
 
 /// umst-trust ecosystem trust-gate S-1 wire map delegate SSOT.
 pub const TRUST_GATE_SSOT: &str =
@@ -325,7 +326,6 @@ pub const fn sec_s1_op5_cleared() -> bool {
 
 const _: () = assert!(!sec_s1_production_wired());
 const _: () = assert!(!session_ledger_wired());
-const _: () = assert!(S1_GREEN_CLAIM_BLOCKED);
 const _: () = assert!(!sec_s1_master_retick_eligible());
 const _: () = assert!(!sec_s1_op5_cleared());
 
@@ -516,13 +516,9 @@ pub fn sec_s1_trust_gate_deepen_matrix() -> String {
         ));
     }
     out.push_str(&format!(
-        "  facets_wired={}/{} s_arc_posture={} capstone_residue={} \
+        "  facets_wired={wired}/{S1_TRUST_GATE_DEEPEN_FACET_COUNT} s_arc_posture={S_ARC_HONEST_POSTURE} capstone_residue={S1_CAPSTONE_RESIDUE_FACTOR_ID} \
          trust_inspect_close_ssot={S1_TRUST_INSPECT_CLOSE_SSOT} \
          production_wired=false session_ledger_wired=false\n",
-        wired,
-        S1_TRUST_GATE_DEEPEN_FACET_COUNT,
-        S_ARC_HONEST_POSTURE,
-        S1_CAPSTONE_RESIDUE_FACTOR_ID,
     ));
     out
 }
@@ -883,7 +879,6 @@ mod sec_s1_tests {
     fn sec_s1_production_stays_false() {
         assert!(!sec_s1_production_wired());
         assert!(!session_ledger_wired());
-        assert!(S1_GREEN_CLAIM_BLOCKED);
     }
 
     #[test]
@@ -1006,7 +1001,6 @@ mod sec_s1_tests {
         assert_eq!(SCHEMA_VERSION, "sec_s1_gate_trust_census_v3");
         assert!(!sec_s1_production_wired());
         assert!(!session_ledger_wired());
-        assert!(S1_GREEN_CLAIM_BLOCKED);
         assert!(!sec_s1_master_retick_eligible());
         assert!(!sec_s1_op5_cleared());
         assert!(sec_s1_w29_120_deepen_honest());

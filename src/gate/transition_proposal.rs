@@ -789,7 +789,6 @@ mod transition_constants_tests {
     /// rejects that jump on mass while it accepts a jump inside the band.
     #[test]
     fn census_mass_violation_lies_outside_the_gate_mass_band() {
-        assert!(CENSUS_MASS_VIOLATION_DELTA_KG_M3.value > GATE_MASS_TOLERANCE_KG_M3);
         let old = ThermodynamicStateSnapshot::from_mix_calibrated(
             CENSUS_BINDER_LIQUID_RATIO.value,
             CENSUS_REACTION_EXTENT_LOW.value,

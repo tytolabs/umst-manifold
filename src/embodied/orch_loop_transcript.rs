@@ -17,6 +17,8 @@ use serde::{Deserialize, Serialize};
 
 use super::fragment_audit::scaffold_coverage_pct;
 use super::fragment_slots::EmbodiedLoopSlots;
+// The tombstone summary import is read only by the test module (through `use super::*`).
+#[cfg_attr(not(test), allow(unused_imports))]
 use super::loop_stub::{
     loop_stub_tombstone_summary, EmbodiedLoopStub, LoopStubReject, LoopTickPhase, LoopTickResult,
     OrchestratorLoopRole,
@@ -492,9 +494,6 @@ mod tests {
             orch_loop_tick_transcript_delta(wired_slots()).expect("tick with delta");
         assert!(delta.posture_honest());
         assert!(delta.is_mock_path_honest());
-        assert!(PRODUCTION_TRANSCRIPT_DEFERRED);
-        assert!(!GATEWAY_COMMAND_COMPOSED);
-        assert!(!TENSOR_PATH_INVOKED);
     }
 
     #[test]

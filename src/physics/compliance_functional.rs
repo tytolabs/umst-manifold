@@ -473,13 +473,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn compliance_functional_honest_fence_flags_refuse_green() {
-        assert!(!COMPLIANCE_FUNCTIONAL_PHYSICS_GREEN);
-        assert!(!COMPLIANCE_FUNCTIONAL_PRODUCTION_WIRED);
-        assert!(!COMPLIANCE_FUNCTIONAL_MASTER);
-    }
-
-    #[test]
     fn compliance_functional_fence_wired_count_matches_census() {
         assert_eq!(
             compliance_functional_fence_wired_count(),

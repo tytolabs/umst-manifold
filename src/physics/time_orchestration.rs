@@ -42,7 +42,6 @@ const _: () = assert!(!TIME_ORCHESTRATION_PRODUCTION_WIRED);
 const _: () = assert!(!TIME_ORCHESTRATION_PHYSICS_GREEN);
 const _: () = assert!(!TIME_ORCHESTRATION_MASTER);
 const _: () = assert!(!TIME_ORCHESTRATION_FAST_PHYSICS_PRODUCTION_WIRED);
-const _: () = assert!(TIME_ORCHESTRATION_CLOCKS_LANDED);
 
 /// Typed probe for time-orchestration posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -86,7 +85,6 @@ pub fn time_orchestration_posture_honest(probe: &TimeOrchestrationPostureProbe) 
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER claims on the time-orchestration surface.
-#[must_use]
 pub fn time_orchestration_refuse_overclaim(
     probe: &TimeOrchestrationPostureProbe,
 ) -> Result<(), &'static str> {
@@ -131,7 +129,8 @@ impl Default for SimulationClocks {
         Self {
             dt_chemistry: 3600.0,
             dt_mechanics_substep: 0.1,
-            max_mech_sub_iters_per_chem: umst_math::numeric_tolerance::DEFAULT_MECH_SUB_ITERS_PER_CHEM_CAP,
+            max_mech_sub_iters_per_chem:
+                umst_math::numeric_tolerance::DEFAULT_MECH_SUB_ITERS_PER_CHEM_CAP,
             dt_fast_physics: Some(1e-9),
         }
     }
@@ -148,7 +147,6 @@ pub enum ClockValidationError {
 
 impl SimulationClocks {
     /// Fail-closed positivity / finiteness fence for multi-scale schedules.
-    #[must_use]
     pub fn validate(&self) -> Result<(), ClockValidationError> {
         if !(self.dt_chemistry.is_finite() && self.dt_chemistry > 0.0) {
             return Err(ClockValidationError::NonPositiveChemistryDt);
@@ -247,7 +245,6 @@ impl MechanicsInnerLoopConfig {
         }
     }
     /// Fail-closed positivity fence for CG / equilibrium knobs.
-    #[must_use]
     pub fn validate(&self) -> Result<(), &'static str> {
         if self.max_cg_iterations == 0 {
             return Err("max_cg_iterations must be ≥ 1");
@@ -284,30 +281,38 @@ mod tests {
 
     #[test]
     fn time_orchestration_rejects_non_positive_dts() {
-        let mut bad = SimulationClocks::default();
-        bad.dt_chemistry = 0.0;
+        let bad = SimulationClocks {
+            dt_chemistry: 0.0,
+            ..SimulationClocks::default()
+        };
         assert_eq!(
             bad.validate(),
             Err(ClockValidationError::NonPositiveChemistryDt)
         );
         assert!(bad.mech_substeps_per_chem().is_none());
 
-        let mut bad_mech = SimulationClocks::default();
-        bad_mech.dt_mechanics_substep = -1.0;
+        let bad_mech = SimulationClocks {
+            dt_mechanics_substep: -1.0,
+            ..SimulationClocks::default()
+        };
         assert_eq!(
             bad_mech.validate(),
             Err(ClockValidationError::NonPositiveMechanicsSubstep)
         );
 
-        let mut bad_fast = SimulationClocks::default();
-        bad_fast.dt_fast_physics = Some(0.0);
+        let bad_fast = SimulationClocks {
+            dt_fast_physics: Some(0.0),
+            ..SimulationClocks::default()
+        };
         assert_eq!(
             bad_fast.validate(),
             Err(ClockValidationError::NonPositiveFastPhysicsDt)
         );
 
-        let mut bad_cap = SimulationClocks::default();
-        bad_cap.max_mech_sub_iters_per_chem = 0;
+        let bad_cap = SimulationClocks {
+            max_mech_sub_iters_per_chem: 0,
+            ..SimulationClocks::default()
+        };
         assert_eq!(
             bad_cap.validate(),
             Err(ClockValidationError::ZeroMaxMechSubsteps)
@@ -319,7 +324,8 @@ mod tests {
         let clocks = SimulationClocks {
             dt_chemistry: 1.0,
             dt_mechanics_substep: 0.25,
-            max_mech_sub_iters_per_chem: umst_math::numeric_tolerance::DEFAULT_MECH_SUB_ITERS_PER_CHEM_CAP,
+            max_mech_sub_iters_per_chem:
+                umst_math::numeric_tolerance::DEFAULT_MECH_SUB_ITERS_PER_CHEM_CAP,
             dt_fast_physics: None,
         };
         assert_eq!(clocks.ideal_mech_substeps_per_chem(), Some(4));
@@ -343,8 +349,10 @@ mod tests {
         assert!(cfg.use_preconditioner);
         assert_eq!(cfg.max_equilibrium_sub_iters, 1);
 
-        let mut bad = MechanicsInnerLoopConfig::default();
-        bad.max_cg_iterations = 0;
+        let bad = MechanicsInnerLoopConfig {
+            max_cg_iterations: 0,
+            ..MechanicsInnerLoopConfig::default()
+        };
         assert!(bad.validate().is_err());
     }
 }

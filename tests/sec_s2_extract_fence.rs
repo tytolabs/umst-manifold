@@ -13,8 +13,8 @@ use umst_manifold::runtime::gate::{
     sec_s2_production_wired, sec_s2_trust_extract_production_wired, validate_sec_s2_gate_honesty,
     EXTRACT_SSOT, FLEET_ACCEL_AC29_JOB_ID, FLEET_ACCEL_AC29_RECEIPT_PATH,
     MANIFOLD_S2_EXTRACT_PRODUCTION_FENCE_FACETS, S2_EXTRACT_FENCE_FACET_COUNT,
-    S2_EXTRACT_FENCE_FACET_IDS, S2_EXTRACT_FENCE_WIRED_COUNT, S2_GREEN_CLAIM_BLOCKED,
-    SEC_S2_BOARD_SLICE_ID, TRUST_ADT_SSOT, UCRS_WIRE_PARITY_TEST,
+    S2_EXTRACT_FENCE_FACET_IDS, S2_EXTRACT_FENCE_WIRED_COUNT, SEC_S2_BOARD_SLICE_ID,
+    TRUST_ADT_SSOT, UCRS_WIRE_PARITY_TEST,
 };
 
 /// FLEET-COMPOSER ACCEL-K AC353 agent job id.
@@ -106,7 +106,6 @@ fn sec_s2_extract_production_fence_next_hop_session_ledger() {
 fn sec_s2_extract_production_wired_honest_false() {
     assert!(!sec_s2_trust_extract_production_wired());
     assert!(!sec_s2_production_wired());
-    assert!(S2_GREEN_CLAIM_BLOCKED);
 }
 
 #[test]

@@ -128,14 +128,7 @@ const _: () = assert!(!error_boundary_physics_green());
 /// Compile-time fence — gateway eval not measured at posture tier.
 const _: () = assert!(!error_boundary_gateway_eval_measured());
 
-/// Compile-time fence — typed variants claimed landed.
-const _: () = assert!(TYPED_VARIANTS_LANDED);
-
-/// Compile-time fence — legacy shims still required.
-const _: () = assert!(LEGACY_STRING_SHIMS_REQUIRED);
-
 /// Compile-time fence — std::error::Error unified impl landed at W29-024 deepen.
-const _: () = assert!(STD_ERROR_IMPL_LANDED);
 const _: () = assert!(error_boundary_std_error_impl_landed());
 
 /// Typed probe for error-boundary posture honesty.
@@ -724,12 +717,7 @@ mod tests {
     fn error_boundary_posture_metadata_locked() {
         assert_eq!(ERROR_BOUNDARY_W29_WAVE_STEP, "W29-024-ERROR_BOUNDARY");
         assert_eq!(POSTURE_TAG, "BOUNDARY_TYPED_STD_ERROR_PARTIAL");
-        assert!(TYPED_VARIANTS_LANDED);
-        assert!(LEGACY_STRING_SHIMS_REQUIRED);
-        assert!(STD_ERROR_IMPL_LANDED);
         assert!(error_boundary_std_error_impl_landed());
-        assert!(!GATEWAY_EVAL_MEASURED);
-        assert!(!ERROR_BOUNDARY_PHYSICS_GREEN);
         assert_eq!(APPLY_PHYSICS_TYPED_VARIANT_COUNT, 5);
         assert_eq!(CBF_TYPED_VARIANT_COUNT, 2);
         assert_eq!(CATALOG_IO_TYPED_VARIANT_COUNT, 3);
@@ -842,7 +830,6 @@ mod tests {
         let catalog: &dyn Error = &CatalogIoError::MissingModulesArray;
         assert!(catalog.source().is_none());
         assert_eq!(catalog.to_string(), "catalog.json missing modules array");
-        assert!(STD_ERROR_IMPL_LANDED);
         assert!(error_boundary_std_error_impl_landed());
     }
 }

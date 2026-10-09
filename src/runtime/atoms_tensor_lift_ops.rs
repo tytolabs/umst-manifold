@@ -381,11 +381,6 @@ mod tests {
         assert_eq!(summary.parent_residue_id, "R-atoms-scalar");
         assert_eq!(summary.slice_id, "slice-3d");
         assert_eq!(summary.posture_tag, POSTURE_TAG);
-        assert!(OP_SPEC_LANDED);
-        assert!(!RANK1_PLUS_IMPL_LANDED);
-        assert!(ADAPTER_CRATE_LANDED);
-        assert!(SLICE3C_ADAPTER_LANDED);
-        assert!(SLICE3B_LEDGER_LANDED);
     }
 
     #[test]

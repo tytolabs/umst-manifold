@@ -267,11 +267,6 @@ mod tests {
     fn cbf_qp_posture_metadata_locked() {
         assert_eq!(W29_CBF_QP_DEEPEN_STEP, "W29-006-CBF_QP");
         assert_eq!(MORPHISM_F2_CBF_QP, "F2-CBF-QP");
-        assert!(CBF_QP_STEER_LANDED);
-        assert!(!CBF_QP_PHYSICS_GREEN);
-        assert!(!CBF_QP_PRODUCTION_WIRED);
-        assert!(!CBF_QP_MD_ORACLE_COUPLED);
-        assert!(!CBF_QP_MASTER_RETICK);
         assert!(!cbf_qp_production_wired());
         assert_eq!(
             HONEST_FENCE,

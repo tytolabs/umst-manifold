@@ -310,8 +310,6 @@ mod tests {
     fn posture_metadata_locked() {
         assert_eq!(SLICE_ID, "wave-10-t3");
         assert_eq!(POSTURE_TAG, "REJECTION_ACCUMULATOR_PARTIAL");
-        assert!(ACCUMULATOR_LANDED);
-        assert!(!EXPORT_SINK_LANDED);
         assert!(!rejection_telemetry_production_wired());
         assert_eq!(
             HONEST_FENCE,

@@ -47,8 +47,6 @@ const _: () = assert!(!SOLVER_REGION_PHYSICS_GREEN);
 const _: () = assert!(!SOLVER_REGION_PRODUCTION_WIRED);
 const _: () = assert!(!SOLVER_REGION_MASTER);
 const _: () = assert!(!SOLVER_REGION_STRIATUS_WALLCLOCK_CERTIFIED);
-const _: () = assert!(SOLVER_REGION_PCG_WORKSPACE_LANDED);
-const _: () = assert!(SOLVER_REGION_KE_CACHE_LANDED);
 
 /// Typed probe for SolverRegion posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

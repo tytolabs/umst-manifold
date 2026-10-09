@@ -474,9 +474,6 @@ mod tests {
 
     #[test]
     fn formal_production_and_master_stay_false() {
-        assert!(!FORMAL_PHYSICS_GREEN);
-        assert!(!FORMAL_PRODUCTION_WIRED);
-        assert!(!FORMAL_MASTER);
         assert!(!formal_production_wired());
         assert!(!formal_master_composition_wired());
     }

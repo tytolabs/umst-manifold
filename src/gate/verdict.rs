@@ -5,37 +5,29 @@ pub use umst_gate::verdict::*;
 
 #[cfg(test)]
 mod tests {
-use crate::gate::transition_proposal::{
-    CENSUS_BINDER_LIQUID_RATIO, CENSUS_DT_ONE_HOUR_S, CENSUS_FREE_ENERGY_DROP_J,
-    CENSUS_GOLDEN_IDENTITY_ENTROPY, CENSUS_GOLDEN_IDENTITY_FREE_ENERGY_J,
-    CENSUS_GOLDEN_IDENTITY_REACTION_EXTENT, CENSUS_GOLDEN_IDENTITY_STRENGTH_MPA,
-    CENSUS_GOLDEN_MASS_REJECT_ENTROPY, CENSUS_GOLDEN_MASS_REJECT_STRENGTH_MPA,
-    CENSUS_GOLDEN_NEGATIVE_DISSIPATION_ENTROPY, CENSUS_GOLDEN_NEGATIVE_DISSIPATION_FREE_ENERGY_J,
-    CENSUS_GOLDEN_NEGATIVE_DISSIPATION_FREE_ENERGY_SPIKE_J,
-    CENSUS_GOLDEN_NEGATIVE_DISSIPATION_STRENGTH_MPA, CENSUS_HTTP_ADMISSIBILITY_REL_MARGIN,
-    CENSUS_HTTP_AGE_DAYS, CENSUS_HTTP_AIR_VOID_FRACTION, CENSUS_HTTP_CONSTITUENT_PRIMARY_KG,
-    CENSUS_HTTP_PREDICTED_STRENGTH_MPA, CENSUS_HTTP_TEMPERATURE_C, CENSUS_HTTP_WATER_KG,
-    CENSUS_INTRINSIC_STRENGTH_MPA, CENSUS_MASS_REJECT_DENSITY_KG_M3,
-    CENSUS_MASS_VIOLATION_DELTA_KG_M3, CENSUS_MIX_CALIBRATED_DENSITY_KG_M3,
-    CENSUS_NEGATIVE_DISSIPATION_DENSITY_KG_M3, CENSUS_OPEN_SYSTEM_POWER_W,
-    CENSUS_REACTION_EXTENT_HIGH, CENSUS_REACTION_EXTENT_INCREMENT, CENSUS_REACTION_EXTENT_LOW,
-    CENSUS_REACTION_EXTENT_MID, CENSUS_REACTION_EXTENT_NEAR_COMPLETE, CENSUS_REACTION_EXTENT_OVER,
-    CENSUS_REACTION_EXTENT_REGRESSION, CENSUS_STRENGTH_INTRINSIC_MPA, CENSUS_STRENGTH_MPA_MID,
-    CENSUS_STRENGTH_OPEN_SYSTEM_MPA, CENSUS_STRENGTH_REGRESSION_MPA,
-    MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
-};
+    use crate::gate::transition_proposal::{
+        CENSUS_BINDER_LIQUID_RATIO, CENSUS_DT_ONE_HOUR_S, CENSUS_GOLDEN_IDENTITY_ENTROPY,
+        CENSUS_GOLDEN_IDENTITY_FREE_ENERGY_J, CENSUS_GOLDEN_IDENTITY_REACTION_EXTENT,
+        CENSUS_GOLDEN_IDENTITY_STRENGTH_MPA, CENSUS_GOLDEN_MASS_REJECT_ENTROPY,
+        CENSUS_GOLDEN_MASS_REJECT_STRENGTH_MPA, CENSUS_GOLDEN_NEGATIVE_DISSIPATION_ENTROPY,
+        CENSUS_GOLDEN_NEGATIVE_DISSIPATION_FREE_ENERGY_J,
+        CENSUS_GOLDEN_NEGATIVE_DISSIPATION_FREE_ENERGY_SPIKE_J,
+        CENSUS_GOLDEN_NEGATIVE_DISSIPATION_STRENGTH_MPA, CENSUS_INTRINSIC_STRENGTH_MPA,
+        CENSUS_MASS_REJECT_DENSITY_KG_M3, CENSUS_NEGATIVE_DISSIPATION_DENSITY_KG_M3,
+        CENSUS_REACTION_EXTENT_HIGH, CENSUS_REACTION_EXTENT_LOW, CENSUS_REACTION_EXTENT_MID,
+        CENSUS_STRENGTH_MPA_MID, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+    };
 
     use super::*;
+    use crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
     use crate::gate::evaluator::{GateEvaluator, TransitionGateEvaluator, TransitionVerdict};
     use crate::gate::thermo_transition::ThermodynamicState;
     use crate::gate::transition_eval_registry::{
-        ThermodynamicMixEvaluator, ThermodynamicTransitionContext,
+        ThermodynamicTransitionContext, TransitionEvaluator,
     };
     use crate::gate::transition_proposal::{
-        transition_outcome, ThermodynamicMixFilter, ThermodynamicStateSnapshot,
-        TRANSITION_TOLERANCE,
+        transition_outcome, ThermodynamicStateSnapshot, TransitionFilter, TRANSITION_TOLERANCE,
     };
-    use crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K;
     use crate::gate::ThermodynamicTransitionEvaluator;
     use crate::runtime::catalog::traceability::{
         CD_TRANSITION_CATALOG_ID, THERMODYNAMIC_MIX_CATALOG_ID,
@@ -315,8 +307,18 @@ use crate::gate::transition_proposal::{
 
     #[test]
     fn verdict_phase0b_transition_outcome_rest_ladder() {
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(CENSUS_BINDER_LIQUID_RATIO.value, CENSUS_REACTION_EXTENT_LOW.value, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, CENSUS_INTRINSIC_STRENGTH_MPA.value);
-        let new = ThermodynamicStateSnapshot::from_mix_calibrated(CENSUS_BINDER_LIQUID_RATIO.value, CENSUS_REACTION_EXTENT_MID.value, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, CENSUS_STRENGTH_MPA_MID.value);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(
+            CENSUS_BINDER_LIQUID_RATIO.value,
+            CENSUS_REACTION_EXTENT_LOW.value,
+            MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+            CENSUS_INTRINSIC_STRENGTH_MPA.value,
+        );
+        let new = ThermodynamicStateSnapshot::from_mix_calibrated(
+            CENSUS_BINDER_LIQUID_RATIO.value,
+            CENSUS_REACTION_EXTENT_MID.value,
+            MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+            CENSUS_STRENGTH_MPA_MID.value,
+        );
         let outcome = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);
         assert_eq!(
             outcome.verdict(),
@@ -437,23 +439,51 @@ use crate::gate::transition_proposal::{
 
         let scenarios = [
             (
-                ThermodynamicStateSnapshot::from_mix_calibrated(CENSUS_BINDER_LIQUID_RATIO.value, CENSUS_REACTION_EXTENT_LOW.value, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, CENSUS_INTRINSIC_STRENGTH_MPA.value),
-                ThermodynamicStateSnapshot::from_mix_calibrated(CENSUS_BINDER_LIQUID_RATIO.value, CENSUS_REACTION_EXTENT_MID.value, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, CENSUS_STRENGTH_MPA_MID.value),
+                ThermodynamicStateSnapshot::from_mix_calibrated(
+                    CENSUS_BINDER_LIQUID_RATIO.value,
+                    CENSUS_REACTION_EXTENT_LOW.value,
+                    MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+                    CENSUS_INTRINSIC_STRENGTH_MPA.value,
+                ),
+                ThermodynamicStateSnapshot::from_mix_calibrated(
+                    CENSUS_BINDER_LIQUID_RATIO.value,
+                    CENSUS_REACTION_EXTENT_MID.value,
+                    MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+                    CENSUS_STRENGTH_MPA_MID.value,
+                ),
             ),
             (
-                ThermodynamicStateSnapshot::from_mix_calibrated(CENSUS_BINDER_LIQUID_RATIO.value, CENSUS_REACTION_EXTENT_HIGH.value, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, CENSUS_INTRINSIC_STRENGTH_MPA.value),
+                ThermodynamicStateSnapshot::from_mix_calibrated(
+                    CENSUS_BINDER_LIQUID_RATIO.value,
+                    CENSUS_REACTION_EXTENT_HIGH.value,
+                    MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+                    CENSUS_INTRINSIC_STRENGTH_MPA.value,
+                ),
                 {
-                    let mut n =
-                        ThermodynamicStateSnapshot::from_mix_calibrated(CENSUS_BINDER_LIQUID_RATIO.value, CENSUS_REACTION_EXTENT_HIGH.value, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, CENSUS_INTRINSIC_STRENGTH_MPA.value);
+                    let mut n = ThermodynamicStateSnapshot::from_mix_calibrated(
+                        CENSUS_BINDER_LIQUID_RATIO.value,
+                        CENSUS_REACTION_EXTENT_HIGH.value,
+                        MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+                        CENSUS_INTRINSIC_STRENGTH_MPA.value,
+                    );
                     n.reaction_extent = 0.1;
                     n
                 },
             ),
             (
-                ThermodynamicStateSnapshot::from_mix_calibrated(CENSUS_BINDER_LIQUID_RATIO.value, CENSUS_REACTION_EXTENT_LOW.value, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, CENSUS_INTRINSIC_STRENGTH_MPA.value),
+                ThermodynamicStateSnapshot::from_mix_calibrated(
+                    CENSUS_BINDER_LIQUID_RATIO.value,
+                    CENSUS_REACTION_EXTENT_LOW.value,
+                    MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+                    CENSUS_INTRINSIC_STRENGTH_MPA.value,
+                ),
                 {
-                    let mut n =
-                        ThermodynamicStateSnapshot::from_mix_calibrated(CENSUS_BINDER_LIQUID_RATIO.value, CENSUS_REACTION_EXTENT_MID.value, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, CENSUS_STRENGTH_MPA_MID.value);
+                    let mut n = ThermodynamicStateSnapshot::from_mix_calibrated(
+                        CENSUS_BINDER_LIQUID_RATIO.value,
+                        CENSUS_REACTION_EXTENT_MID.value,
+                        MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+                        CENSUS_STRENGTH_MPA_MID.value,
+                    );
                     n.strength = 10.0;
                     n
                 },
@@ -542,7 +572,7 @@ use crate::gate::transition_proposal::{
 
     #[test]
     fn verdict_mix_evaluator_golden_vectors_rest_ladder() {
-        let mut ev = ThermodynamicMixEvaluator::new(ThermodynamicMixFilter::new());
+        let mut ev = TransitionEvaluator::new(TransitionFilter::new());
         assert_eq!(ev.catalog_id(), THERMODYNAMIC_MIX_CATALOG_ID);
         assert_eq!(ev.gate_family(), "thermodynamic_mix_transition");
 
@@ -660,7 +690,12 @@ use crate::gate::transition_proposal::{
 
     #[test]
     fn verdict_transition_outcome_mass_reject_maps_mass_violation() {
-        let old = ThermodynamicStateSnapshot::from_mix_calibrated(CENSUS_BINDER_LIQUID_RATIO.value, CENSUS_REACTION_EXTENT_LOW.value, MIX_CALIBRATION_REFERENCE_TEMPERATURE_K, CENSUS_INTRINSIC_STRENGTH_MPA.value);
+        let old = ThermodynamicStateSnapshot::from_mix_calibrated(
+            CENSUS_BINDER_LIQUID_RATIO.value,
+            CENSUS_REACTION_EXTENT_LOW.value,
+            MIX_CALIBRATION_REFERENCE_TEMPERATURE_K,
+            CENSUS_INTRINSIC_STRENGTH_MPA.value,
+        );
         let mut new = old;
         new.density = old.density - 150.0;
         let outcome = transition_outcome(&old, &new, 1.0, TRANSITION_TOLERANCE);

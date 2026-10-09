@@ -260,7 +260,7 @@ fn semantic_lane_bundle_roundtrip_on_row() {
     let mut row = migrate_carrier_row(
         CarrierSchemaVersion::V0PhysicalOnly,
         CarrierSchemaVersion::V1SemanticExtended,
-        &vec![0.0; UMST_SCALAR_CHANNEL_COUNT],
+        &[0.0; UMST_SCALAR_CHANNEL_COUNT],
     )
     .expect("empty v1 row");
 

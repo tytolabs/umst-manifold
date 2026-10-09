@@ -20,9 +20,9 @@ use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 #[cfg(feature = "fracture-at2")]
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
-use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
 #[cfg(feature = "fracture-at2")]
 use umst_manifold::physics::error::PhysicsError;
+use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
 #[cfg(feature = "fracture-at2")]
 use umst_manifold::physics::solvers::{
     fracture_field::IrreversibilityRefused, spectral_tensile_psi_plus_from_strain,
@@ -35,6 +35,25 @@ use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 type B = NdArray<f32>;
 
 use umst_manifold::core::field::{DamageField, Field, SmallStrainField};
+
+/// `PhaseFieldFractureSolver::update_damage` on raw tensors (strain `[B,N,3,3]`, damage and `G_c`
+/// `[B,N,1]`), returning the damage tensor.
+fn update_damage_raw(
+    solver: &PhaseFieldFractureSolver,
+    strain: Tensor<B, 4>,
+    damage: Tensor<B, 3>,
+    fracture_energy_gc: Tensor<B, 3>,
+    edges_b1: Tensor<B, 2, Int>,
+) -> Result<Tensor<B, 3>, umst_manifold::physics::error::PhysicsError> {
+    solver
+        .update_damage(
+            SmallStrainField::from_tensor(strain),
+            Field::new(damage),
+            umst_manifold::core::field::FractureEnergyField::from_tensor(fracture_energy_gc),
+            edges_b1,
+        )
+        .map(Field::into_tensor)
+}
 
 fn strain_field(t: Tensor<B, 4>) -> SmallStrainField<B> {
     SmallStrainField::from_tensor(t)
@@ -118,7 +137,7 @@ fn update_damage_smoke_tiny_chain() {
 
     let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
 
-    let d_new = solver.update_damage_tensors(
+    let d_new = update_damage_raw(&solver,
         strain.clone(),
         damage.clone(),
         fracture_energy_gc.clone(),
@@ -194,7 +213,7 @@ fn at2_length_scale_sweep_non_regression() {
     for l in [0.06_f32, 0.09_f32, 0.12_f32] {
         let damage = Tensor::<B, 3>::zeros([batch, n, 1], &dev);
         let solver = PhaseFieldFractureSolver { length_scale: l };
-        let d_new = solver.update_damage_tensors(
+        let d_new = update_damage_raw(&solver,
             strain.clone(),
             damage,
             fracture_energy_gc.clone(),
@@ -241,8 +260,7 @@ fn at2_surface_energy_scale_matches_gc_order_of_magnitude() {
     let solver = PhaseFieldFractureSolver {
         length_scale: 0.08_f32,
     };
-    let d_new = solver
-        .update_damage_tensors(strain, damage, fracture_energy_gc, edges_b1)
+    let d_new = update_damage_raw(&solver, strain, damage, fracture_energy_gc, edges_b1)
         .expect("PhaseFieldFractureSolver::update_damage_tensors on tensile ε_xx for Gc/l·d̄ order-of-magnitude smoke (FP §6 Track 12 AT2 surface-energy scale witness)");
     let vals = d_new.into_data().value;
     let mean_d: f32 = vals.iter().sum::<f32>() / vals.len() as f32;
@@ -300,15 +318,14 @@ fn at2_gc_linear_scaling_smoke() {
 
     let solver = PhaseFieldFractureSolver { length_scale: l };
 
-    let d_lo = solver.update_damage_tensors(
+    let d_lo = update_damage_raw(&solver,
         strain.clone(),
         damage0.clone(),
         gc_field_lo,
         edges_b1.clone(),
     )
     .expect("PhaseFieldFractureSolver::update_damage_tensors at Gc=100 on tiny chain (FP §6 AT2 gc_linear_scaling low-Gc witness)");
-    let d_hi = solver
-        .update_damage_tensors(strain, damage0, gc_field_hi, edges_b1.clone())
+    let d_hi = update_damage_raw(&solver, strain, damage0, gc_field_hi, edges_b1.clone())
         .expect("PhaseFieldFractureSolver::update_damage_tensors at Gc=200 on tiny chain (FP §6 AT2 gc_linear_scaling high-Gc witness)");
 
     let vals_lo = d_lo.into_data().value;
@@ -377,7 +394,7 @@ fn staggered_two_outer_strains_exceeds_single_pass_weak_strain_only() {
 
     let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
 
-    let d_single_weak = solver.update_damage_tensors(
+    let d_single_weak = update_damage_raw(&solver,
         strain_weak.clone(),
         damage0.clone(),
         fracture_energy_gc.clone(),
@@ -475,7 +492,8 @@ fn at2_gamma_convergence_three_length_scales() {
         let solver = PhaseFieldFractureSolver { length_scale: l0 };
         let mut d_curr = damage.clone();
         for _ in 0..32 {
-            match solver.update_damage_tensors(
+            match update_damage_raw(
+                &solver,
                 strain.clone(),
                 d_curr.clone(),
                 fracture_energy_gc.clone(),
@@ -586,7 +604,8 @@ fn at2_gamma_convergence_multi_ratio_schedule_smoke() {
         let solver = PhaseFieldFractureSolver { length_scale: l0 };
         let mut d_curr = damage.clone();
         for _ in 0..32 {
-            match solver.update_damage_tensors(
+            match update_damage_raw(
+                &solver,
                 strain.clone(),
                 d_curr.clone(),
                 fracture_energy_gc.clone(),
@@ -691,7 +710,8 @@ fn at2_gamma_convergence_multi_ratio_psi_plus_schedule_smoke() {
 
         let solver = PhaseFieldFractureSolver { length_scale: l0 };
         // Precondition — AT2 irreversibility: pre-localised exponential seed cannot heal under ψ⁺ drive.
-        match solver.update_damage_tensors(
+        match update_damage_raw(
+            &solver,
             strain.clone(),
             damage.clone(),
             fracture_energy_gc.clone(),
@@ -916,7 +936,8 @@ fn at2_gamma_convergence_psi_plus_nonzero_three_length_scales() {
 
         let solver = PhaseFieldFractureSolver { length_scale: l0 };
         // Precondition — AT2 irreversibility: exponential seed + uniform tensile ψ⁺ refuses healing.
-        match solver.update_damage_tensors(
+        match update_damage_raw(
+            &solver,
             strain.clone(),
             damage.clone(),
             fracture_energy_gc.clone(),
@@ -924,9 +945,7 @@ fn at2_gamma_convergence_psi_plus_nonzero_three_length_scales() {
         ) {
             Err(e) => {
                 expect_at2_damage_healing_refused(e);
-                eprintln!(
-                    "Γ ψ⁺: l0={l0:.4} h={h:.4} N={n} max_psi={max_psi:.6} — healing refused"
-                );
+                eprintln!("Γ ψ⁺: l0={l0:.4} h={h:.4} N={n} max_psi={max_psi:.6} — healing refused");
             }
             Ok(d_curr) => {
                 let d_vals: Vec<f32> = d_curr.into_data().value;
@@ -1201,8 +1220,14 @@ fn staggered_fracture_compliance_monotone_increasing() {
     if healing_refused {
         assert!(d_last_max.is_finite(), "max_d={d_last_max}");
     } else {
-        assert!(c_final > c0, "expected compliance to grow: c0={c0} c_final={c_final}");
-        assert!(d_last_max > 0.5, "expected significant damage growth; max_d_final={d_last_max}");
+        assert!(
+            c_final > c0,
+            "expected compliance to grow: c0={c0} c_final={c_final}"
+        );
+        assert!(
+            d_last_max > 0.5,
+            "expected significant damage growth; max_d_final={d_last_max}"
+        );
     }
 
     // Monotone non-decreasing (allow ε = 1e-4 slack).

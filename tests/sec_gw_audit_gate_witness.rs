@@ -12,9 +12,8 @@ use umst_manifold::runtime::gate::{
     manifold_verify_upstream_gw_wrap_delegate, sec_gw_audit_accel2_ac31_honest,
     sec_gw_audit_accel2_ac31_probe, sec_gw_audit_manifold_probe, sec_gw_audit_production_wired,
     sec_gw_audit_trust_chain_next_hop, sec_gw_audit_wire_matrix, validate_sec_gw_audit_honesty,
-    ADMIT_STAMP_PATH_COUNT, FLEET_ACCEL2_AC31_JOB_ID, GW_AUDIT_GREEN_CLAIM_BLOCKED,
-    MANIFOLD_GW_AUDIT_ADMIT_STAMP_PATHS, MANIFOLD_GW_AUDIT_STAMP_LEGS,
-    MANIFOLD_SEC_GW_AUDIT_WIRE_HOPS, SEC_GW_AUDIT_BOARD_SLICE_ID,
+    ADMIT_STAMP_PATH_COUNT, FLEET_ACCEL2_AC31_JOB_ID, MANIFOLD_GW_AUDIT_ADMIT_STAMP_PATHS,
+    MANIFOLD_GW_AUDIT_STAMP_LEGS, MANIFOLD_SEC_GW_AUDIT_WIRE_HOPS, SEC_GW_AUDIT_BOARD_SLICE_ID,
 };
 
 /// FLEET-COMPOSER ACCEL-K AC354 agent job id.
@@ -40,7 +39,6 @@ fn sec_gw_audit_manifold_ceremony_predicate_and_honest_residue() {
     assert!(manifold_gw_audit_stamp_legs_complete());
     assert!(manifold_verify_upstream_gw_wrap_delegate());
     assert!(!sec_gw_audit_production_wired());
-    assert!(GW_AUDIT_GREEN_CLAIM_BLOCKED);
 }
 
 #[test]

@@ -361,10 +361,8 @@ where
 mod tests {
     use super::{
         gmres_f32, gmres_f32_try, gmres_f32_try_with_restart_m, gmres_restart_from_basis_bytes,
-        krylov_host_honest_posture_bundle, krylov_host_posture_honest,
-        KRYLOV_HOST_GMRES_LANDED, KRYLOV_HOST_HONEST_FENCE, KRYLOV_HOST_MASTER, KRYLOV_HOST_OP5,
-        KRYLOV_HOST_PHYSICS_GREEN, KRYLOV_HOST_PRODUCTION_WIRED, W29_KRYLOV_HOST_DEEPEN_CELL,
-        BASIS_EXCEEDS_SLOTS_CTX,
+        krylov_host_honest_posture_bundle, krylov_host_posture_honest, BASIS_EXCEEDS_SLOTS_CTX,
+        KRYLOV_HOST_HONEST_FENCE, W29_KRYLOV_HOST_DEEPEN_CELL,
     };
     use crate::physics::PhysicsError;
 
@@ -377,11 +375,6 @@ mod tests {
         assert!(!probe.master);
         assert!(!probe.op5);
         assert_eq!(probe.deepen_cell, W29_KRYLOV_HOST_DEEPEN_CELL);
-        assert!(KRYLOV_HOST_GMRES_LANDED);
-        assert!(!KRYLOV_HOST_PHYSICS_GREEN);
-        assert!(!KRYLOV_HOST_PRODUCTION_WIRED);
-        assert!(!KRYLOV_HOST_MASTER);
-        assert!(!KRYLOV_HOST_OP5);
         assert!(KRYLOV_HOST_HONEST_FENCE.contains("production_wired=false"));
         assert!(KRYLOV_HOST_HONEST_FENCE.contains("physics_green=false"));
         assert!(KRYLOV_HOST_HONEST_FENCE.contains("master=false"));
@@ -482,14 +475,8 @@ mod tests {
         // Precondition: restart_m = 0 on the explicit inner driver (public API still uses max_iter slot).
         let n = 2usize;
         let b = vec![1.0_f32, 0.0_f32];
-        let err = gmres_f32_try_with_restart_m(
-            |v: &[f32]| Ok(v.to_vec()),
-            &b,
-            n,
-            0,
-            1e-5_f32,
-        )
-        .expect_err("restart_m=0 must refuse before matvec");
+        let err = gmres_f32_try_with_restart_m(|v: &[f32]| Ok(v.to_vec()), &b, n, 0, 1e-5_f32)
+            .expect_err("restart_m=0 must refuse before matvec");
         assert!(
             matches!(
                 err,

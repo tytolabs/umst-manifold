@@ -709,7 +709,7 @@ mod tests {
         let vals = solver.rho.into_data().value;
         for v in vals {
             assert!(
-                v >= 0.1 - 1e-5 && v <= 0.9 + 1e-5,
+                (0.1 - 1e-5..=0.9 + 1e-5).contains(&v),
                 "rho {v} escaped config clamp"
             );
         }

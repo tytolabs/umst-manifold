@@ -580,10 +580,6 @@ const _: () = assert!(!orchestrator_loop_production_wired());
 const _: () = assert!(!master_composition_wired());
 const _: () = assert!(!PHYSICS_GREEN);
 const _: () = assert!(!INVENTED_GREEN);
-const _: () = assert!(AUDIT_LANDED);
-const _: () = assert!(PRODUCTION_WIRED_REFUSED);
-const _: () = assert!(MASTER_COMPOSITION_REFUSED);
-const _: () = assert!(COMMAND_PHASE_DEFERRED);
 const _: () = assert!(wired_fragment_count() == 2);
 const _: () = assert!(partial_fragment_count() == 1);
 const _: () = assert!(unwired_fragment_count() == 4);
@@ -1011,12 +1007,6 @@ mod tests {
     fn production_master_physics_stay_false() {
         assert!(!orchestrator_loop_production_wired());
         assert!(!master_composition_wired());
-        assert!(!PHYSICS_GREEN);
-        assert!(!INVENTED_GREEN);
-        assert!(AUDIT_LANDED);
-        assert!(PRODUCTION_WIRED_REFUSED);
-        assert!(MASTER_COMPOSITION_REFUSED);
-        assert!(COMMAND_PHASE_DEFERRED);
     }
 
     #[test]

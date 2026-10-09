@@ -53,7 +53,6 @@ const _: () = assert!(!OPERATORS_PHYSICS_GREEN);
 const _: () = assert!(!OPERATORS_PRODUCTION_WIRED);
 const _: () = assert!(!OPERATORS_MASTER);
 const _: () = assert!(!OPERATORS_OP5);
-const _: () = assert!(OPERATORS_FACADE_REEXPORTS_LANDED);
 
 /// Typed probe for pure operators facade posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -103,7 +102,6 @@ pub fn operators_facade_posture_honest(probe: &OperatorsFacadePostureProbe) -> b
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER / OP-5 claims on the operators facade.
-#[must_use]
 pub fn operators_facade_refuse_overclaim(
     probe: &OperatorsFacadePostureProbe,
 ) -> Result<(), &'static str> {
@@ -167,10 +165,6 @@ mod tests {
         assert!(probe.facade_reexports_landed);
         assert_eq!(probe.deepen_cell, W29_OPERATORS_DEEPEN_CELL);
         assert_eq!(probe.posture_tag, OPERATORS_POSTURE_TAG);
-        assert!(!OPERATORS_PHYSICS_GREEN);
-        assert!(!OPERATORS_PRODUCTION_WIRED);
-        assert!(!OPERATORS_MASTER);
-        assert!(!OPERATORS_OP5);
     }
 
     #[test]

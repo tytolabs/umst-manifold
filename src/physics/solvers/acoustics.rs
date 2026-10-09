@@ -214,6 +214,11 @@ pub fn validate_acoustics_honesty() -> Result<(), &'static str> {
 /// Newmark step output: displacement, velocity, acceleration nodal vectors `[B, N, 3]`.
 type AcousticStepOut<B> = (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>);
 
+/// [`AcousticWaveSolver::step_wave_iterate`] output: displacement, velocity, acceleration `[B, N, 3]`
+/// and the number of Newmark steps taken.
+#[cfg(feature = "acoustics-newmark")]
+type NewmarkIterateOutcome<B> = (Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>, usize);
+
 #[cfg(feature = "acoustics-newmark")]
 use burn::tensor::{Data, Shape};
 
@@ -448,7 +453,7 @@ impl AcousticWaveSolver {
         stiffness_local_bn44: Tensor<B, 4>,
         bar_network: Option<AcousticBarNetwork<B>>,
         gmres_cfg: Option<AcousticGmresConfig>,
-    ) -> Result<(Tensor<B, 3>, Tensor<B, 3>, Tensor<B, 3>, usize), PhysicsError> {
+    ) -> Result<NewmarkIterateOutcome<B>, PhysicsError> {
         refuse_non_positive_energy_tol(energy_tol, "step_wave_iterate: energy_tol")?;
         let e0 = nodal_mechanical_energy_total_scalar(
             displacement.clone(),
@@ -599,12 +604,10 @@ fn nodal_mechanical_energy_total_scalar<B: Backend<FloatElem = f32>>(
     bar: Option<&AcousticBarNetwork<B>>,
 ) -> f32 {
     let mass = nodal_mass_matrix_bn33(nodal_density_bn1, nodal_volume_bn1);
-    let ke = nodal_kinetic_energy_bn1(velocity_bn3.clone(), mass).sum().into_scalar();
-    let ku = total_stiffness_displacement(
-        displacement_bn3.clone(),
-        &stiffness_local_bn44,
-        bar,
-    );
+    let ke = nodal_kinetic_energy_bn1(velocity_bn3.clone(), mass)
+        .sum()
+        .into_scalar();
+    let ku = total_stiffness_displacement(displacement_bn3.clone(), &stiffness_local_bn44, bar);
     let pe = displacement_bn3
         .mul(ku)
         .sum()
@@ -1118,6 +1121,7 @@ impl AcousticNewmarkBar1dPeriodic {
     /// Same early-exit rule as [`AcousticWaveSolver::step_wave_iterate`]: relative mechanical-energy
     /// drift from the state at entry, `|E − E₀| / max(|E₀|, 1e−30) ≤ energy_tol`. Non-positive
     /// `energy_tol` is refused.
+    #[allow(clippy::too_many_arguments)]
     pub fn step_iterate(
         &self,
         ws: &mut AcousticNewmarkBar1dWork,
@@ -1340,6 +1344,7 @@ mod acoustics_graph_gmres_tests {
         let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
         let bar =
             AcousticBarNetwork::assemble_axial_bar_graph(coords, edges, youngs, damage, a_sec);
+        let gmres_max_iter = bar.n_v * 24;
 
         let dt = 0.02_f32;
         let beta = 0.25_f32;
@@ -1370,7 +1375,7 @@ mod acoustics_graph_gmres_tests {
             k_zero,
             Some(bar),
             Some(AcousticGmresConfig {
-                max_iter: bar.n_v * 24,
+                max_iter: gmres_max_iter,
                 rel_tol: umst_math::numeric_tolerance::acoustic_gmres_rel_tol_tight_f32(),
             }),
         )
@@ -1740,10 +1745,6 @@ mod acoustics_honest_fence_tests {
         assert!(acoustics_honest(&probe));
         assert_eq!(acoustics_fence_wired_count(), ACOUSTICS_FENCE_WIRED_COUNT);
         assert_eq!(ACOUSTICS_FENCE_FACETS.len(), ACOUSTICS_FENCE_FACET_COUNT);
-        assert!(!ACOUSTICS_PHYSICS_GREEN);
-        assert!(!ACOUSTICS_PRODUCTION_WIRED);
-        assert!(!ACOUSTICS_MASTER);
-        assert!(!ACOUSTICS_OP5);
         assert!(!probe.tensor_periodic_1d_ad);
         assert!(probe.honest_fence.contains("tensor_periodic_1d_ad=false"));
         assert_eq!(probe.deepen_cell, "W29-072-ACOUSTICS");

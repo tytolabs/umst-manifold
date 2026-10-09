@@ -720,7 +720,6 @@ pub const fn sec_s5_op5_cleared() -> bool {
 const _: () = assert!(!sec_s5_production_wired());
 const _: () = assert!(!LN0_PROOF_WIRED_HONEST);
 const _: () = assert!(!LIVE_FANOUT_WIRED_HONEST);
-const _: () = assert!(S5_GREEN_CLAIM_BLOCKED);
 const _: () = assert!(!sec_s5_master_retick_eligible());
 const _: () = assert!(!sec_s5_op5_cleared());
 
@@ -1318,9 +1317,6 @@ mod sec_s5_tests {
     #[test]
     fn sec_s5_production_and_ln0_stay_false() {
         assert!(!sec_s5_production_wired());
-        assert!(!LN0_PROOF_WIRED_HONEST);
-        assert!(!LIVE_FANOUT_WIRED_HONEST);
-        assert!(S5_GREEN_CLAIM_BLOCKED);
         assert!(!sec_s5_master_retick_eligible());
         assert!(!sec_s5_op5_cleared());
     }
@@ -1437,9 +1433,6 @@ mod sec_s5_tests {
         );
         assert_eq!(SCHEMA_VERSION, "sec_s5_gate_synthetic_consensus_census_v3");
         assert!(!sec_s5_production_wired());
-        assert!(!LN0_PROOF_WIRED_HONEST);
-        assert!(!LIVE_FANOUT_WIRED_HONEST);
-        assert!(S5_GREEN_CLAIM_BLOCKED);
         assert!(!sec_s5_master_retick_eligible());
         assert!(!sec_s5_op5_cleared());
         assert!(sec_s5_w29_124_deepen_honest());

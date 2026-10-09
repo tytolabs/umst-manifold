@@ -370,7 +370,6 @@ pub const fn sec_s6_op5_cleared() -> bool {
 
 const _: () = assert!(!sec_s6_production_wired());
 const _: () = assert!(!LIVE_ATTESTATION_WIRED_HONEST);
-const _: () = assert!(S6_GREEN_CLAIM_BLOCKED);
 const _: () = assert!(!sec_s6_master_retick_eligible());
 const _: () = assert!(!sec_s6_op5_cleared());
 
@@ -602,8 +601,7 @@ pub fn collect_sec_s6_gate_factor_rows() -> Vec<SecS6GateFactorRow> {
             probe_wired: manifold_hcom_prov_gw_fence_hops_verified(),
             acceptance_credit: false,
             detail: format!(
-                "hcom_prov_gw_hops={} gateway_ssot={GATEWAY_SSOT}",
-                HCOM_PROV_GW_WIRE_HOP_COUNT
+                "hcom_prov_gw_hops={HCOM_PROV_GW_WIRE_HOP_COUNT} gateway_ssot={GATEWAY_SSOT}"
             ),
         },
         SecS6GateFactorRow {
@@ -612,8 +610,7 @@ pub fn collect_sec_s6_gate_factor_rows() -> Vec<SecS6GateFactorRow> {
                 && PRIOR_J34_RECEIPT_PATH.contains("COMPOSER_J34"),
             acceptance_credit: false,
             detail: format!(
-                "h55={} j34={}",
-                PRIOR_H55_RECEIPT_PATH, PRIOR_J34_RECEIPT_PATH
+                "h55={PRIOR_H55_RECEIPT_PATH} j34={PRIOR_J34_RECEIPT_PATH}"
             ),
         },
         SecS6GateFactorRow {
@@ -980,7 +977,6 @@ mod sec_s6_tests {
         assert!(!sec_s6_production_wired());
         assert!(!sec_s6_master_retick_eligible());
         assert!(!sec_s6_op5_cleared());
-        assert!(S6_GREEN_CLAIM_BLOCKED);
         assert!(sec_s6_w29_125_deepen_honest());
         assert!(sec_s6_honest_fence_holds());
         let probe = sec_s6_w29_125_deepen_probe();

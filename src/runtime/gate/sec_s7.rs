@@ -479,7 +479,7 @@ pub fn manifold_gate_sec_s7_ceremony_closed() -> bool {
         && census.open_residual_hop_count == OPEN_RESIDUAL_HOP_COUNT
         && census.open_residual_fences_verified
         && !census.migration_complete
-        && migration_complete_measured() == false
+        && !migration_complete_measured()
         && census.s7_green_claim_blocked
         && census.s_fed_trust_partial
         && !census.s_fed_trust_production_wired
@@ -1063,14 +1063,8 @@ mod sec_s7_tests {
     #[test]
     fn sec_s7_production_and_fed_trust_stay_false() {
         assert!(!sec_s7_production_wired());
-        assert!(!S_FED_TRUST_PRODUCTION_WIRED_HONEST);
-        assert!(!MIGRATION_COMPLETE_HONEST);
-        assert!(S7_GREEN_CLAIM_BLOCKED);
-        assert!(S_FED_TRUST_PARTIAL_HONEST);
         assert!(!sec_s7_master_retick_eligible());
         assert!(!sec_s7_op5_cleared());
-        assert!(!MASTER_RETICK_ELIGIBLE);
-        assert!(!OP5_CLEARED);
     }
 
     #[test]

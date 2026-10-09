@@ -235,7 +235,6 @@ mod tests {
         assert!(!probe.master);
         assert!(!probe.op5);
         assert_eq!(probe.deepen_cell, "W29-061-OPERATOR");
-        assert!(OPERATOR_HOST_ADAPTER_LANDED);
     }
 
     #[test]

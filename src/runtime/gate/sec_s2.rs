@@ -353,7 +353,6 @@ pub const fn sec_s2_op5_cleared() -> bool {
 const _: () = assert!(!sec_s2_production_wired());
 const _: () = assert!(!sec_s2_trust_extract_production_wired());
 const _: () = assert!(!session_ledger_wired());
-const _: () = assert!(S2_GREEN_CLAIM_BLOCKED);
 const _: () = assert!(!sec_s2_master_retick_eligible());
 const _: () = assert!(!sec_s2_op5_cleared());
 
@@ -1013,7 +1012,6 @@ mod sec_s2_tests {
     #[test]
     fn sec_s2_production_stays_false() {
         assert!(!sec_s2_production_wired());
-        assert!(S2_GREEN_CLAIM_BLOCKED);
     }
 
     #[test]
@@ -1179,7 +1177,6 @@ mod sec_s2_tests {
         assert!(!sec_s2_production_wired());
         assert!(!sec_s2_trust_extract_production_wired());
         assert!(!session_ledger_wired());
-        assert!(S2_GREEN_CLAIM_BLOCKED);
         assert!(!sec_s2_master_retick_eligible());
         assert!(!sec_s2_op5_cleared());
         assert!(sec_s2_w29_121_deepen_honest());

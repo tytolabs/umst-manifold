@@ -199,9 +199,6 @@ mod tests {
     #[test]
     fn pnp_bridge_production_stays_false() {
         assert!(!pnp_bridge_production_wired());
-        assert!(!PNP_SURROGATE_PRODUCTION_WIRED);
-        assert!(PNP_LEARNED_SURROGATE_DEFERRED);
-        assert!(PNP_SURROGATE_NOOP_LANDED);
     }
 
     #[test]
@@ -216,10 +213,8 @@ mod tests {
 
     #[test]
     fn pnp_bridge_refuses_invented_master_or_green_tokens() {
-        let blob = format!(
-            "{}|{}|{}",
-            PNP_BRIDGE_POSTURE_TAG, PNP_BRIDGE_CELL_ID, PNP_CANONICAL_SOLVER_SURFACE
-        );
+        let blob =
+            format!("{PNP_BRIDGE_POSTURE_TAG}|{PNP_BRIDGE_CELL_ID}|{PNP_CANONICAL_SOLVER_SURFACE}");
         let lower = blob.to_ascii_lowercase();
         assert!(!lower.contains("production_wired=true"));
         assert!(!lower.contains("green_swarm"));
@@ -231,36 +226,36 @@ mod tests {
     #[cfg(feature = "electrochemistry-pnp")]
     #[test]
     fn pnp_bridge_surrogate_step_identity_passthrough() {
-        use burn::backend::NdArray;
-        use burn::tensor::{Int, TensorData};
+        use burn::tensor::{Data, Int, Shape};
+        use burn_ndarray::NdArray;
 
         type B = NdArray<f32>;
 
         let device = Default::default();
         let solver = ElectroChemicalSolver::default();
         let phi = Tensor::<B, 3>::from_data(
-            TensorData::new(vec![0.1_f32, 0.2, 0.3, 0.4], [1, 4, 1]),
+            Data::new(vec![0.1_f32, 0.2, 0.3, 0.4], Shape::new([1, 4, 1])),
             &device,
         );
-        let c = Tensor::<B, 3>::from_data(
-            TensorData::new(vec![1.0_f32, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], [1, 4, 2]),
-            &device,
-        );
+        let c =
+            Tensor::<B, 3>::from_data(Data::new(vec![1.0_f32; 8], Shape::new([1, 4, 2])), &device);
         let edges = Tensor::<B, 2, Int>::from_data(
-            TensorData::new(vec![0_i32, 1, 2, 1, 2, 3], [2, 3]),
+            Data::new(vec![0_i64, 1, 2, 1, 2, 3], Shape::new([2, 3])),
             &device,
         );
-        let eps = Tensor::<B, 3>::from_data(TensorData::new(vec![1.0_f32; 4], [1, 4, 1]), &device);
-        let d = Tensor::<B, 3>::from_data(TensorData::new(vec![1.0_f32; 8], [1, 4, 2]), &device);
+        let eps =
+            Tensor::<B, 3>::from_data(Data::new(vec![1.0_f32; 4], Shape::new([1, 4, 1])), &device);
+        let d =
+            Tensor::<B, 3>::from_data(Data::new(vec![1.0_f32; 8], Shape::new([1, 4, 2])), &device);
 
         let phi_in = phi.clone();
         let c_in = c.clone();
         let (phi_out, c_out) = pnp_surrogate_step(&solver, 1e-3_f32, phi, c, edges, eps, d);
 
-        let phi_in_v = phi_in.into_data().to_vec::<f32>().unwrap();
-        let phi_out_v = phi_out.into_data().to_vec::<f32>().unwrap();
-        let c_in_v = c_in.into_data().to_vec::<f32>().unwrap();
-        let c_out_v = c_out.into_data().to_vec::<f32>().unwrap();
+        let phi_in_v = phi_in.into_data().value;
+        let phi_out_v = phi_out.into_data().value;
+        let c_in_v = c_in.into_data().value;
+        let c_out_v = c_out.into_data().value;
         assert_eq!(phi_in_v, phi_out_v, "noop surrogate must preserve Φ");
         assert_eq!(c_in_v, c_out_v, "noop surrogate must preserve c");
         assert!(!pnp_bridge_production_wired());

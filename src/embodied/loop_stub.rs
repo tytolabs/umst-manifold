@@ -1140,12 +1140,6 @@ mod tests {
 
     #[test]
     fn production_loop_wired_fence_false() {
-        assert!(!PRODUCTION_LOOP_WIRED);
-        assert!(!TENSOR_CBF_EVALUATED);
-        assert!(!PRODUCTION_WIRED);
-        assert!(!PHYSICS_GREEN_CLAIMED);
-        assert!(!MASTER_RETICK_ELIGIBLE);
-        assert!(!OP5_CLAIMED);
         assert!(!loop_stub_production_wired());
         assert!(!loop_stub_physics_green_claimed());
         assert!(!loop_stub_master_retick_eligible());

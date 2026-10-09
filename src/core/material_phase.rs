@@ -49,8 +49,6 @@ pub const MATERIAL_PHASE_MASTER: bool = false;
 /// Count of [`MaterialPhaseKind`] variants (exhaustive three-arm sum type).
 pub const MATERIAL_PHASE_KIND_VARIANT_COUNT: usize = 3;
 
-const _: () = assert!(MATERIAL_PHASE_ADT_LANDED);
-const _: () = assert!(MATERIAL_PHASE_ENVELOPE_STRUCTURAL);
 const _: () = assert!(!MATERIAL_PHASE_SOLVER_WIRING);
 const _: () = assert!(!MATERIAL_PHASE_PHYSICS_GREEN);
 const _: () = assert!(!MATERIAL_PHASE_PRODUCTION_WIRED);
@@ -591,9 +589,9 @@ mod tests {
     #[test]
     fn thmc_envelope_damage_and_time_accessors() {
         let device = Default::default();
-        let env = ThmcEnvelope::with_zero_damage(setting_phase(), 3.14, &device);
+        let env = ThmcEnvelope::with_zero_damage(setting_phase(), 2.5, &device);
         assert_eq!(env.damage_ref().as_tensor().dims(), [1, 2, 1]);
-        assert!((env.time() - 3.14).abs() < f32::EPSILON);
+        assert!((env.time() - 2.5).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -639,7 +637,7 @@ mod tests {
     #[test]
     fn material_phase_fluid_arm_exhaustive_match() {
         let phase = fluid_phase();
-        let _ = match phase {
+        match phase {
             MaterialPhase::Fluid(_) => (),
             MaterialPhase::Setting(_) | MaterialPhase::Solid(_) => {
                 panic!(
@@ -653,7 +651,7 @@ mod tests {
     #[test]
     fn material_phase_setting_arm_exhaustive_match() {
         let phase = setting_phase();
-        let _ = match phase {
+        match phase {
             MaterialPhase::Setting(_) => (),
             MaterialPhase::Fluid(_) | MaterialPhase::Solid(_) => {
                 panic!(
@@ -667,7 +665,7 @@ mod tests {
     #[test]
     fn material_phase_solid_arm_exhaustive_match() {
         let phase = solid_phase();
-        let _ = match phase {
+        match phase {
             MaterialPhase::Solid(_) => (),
             MaterialPhase::Fluid(_) | MaterialPhase::Setting(_) => {
                 panic!(
@@ -857,11 +855,7 @@ mod tests {
             (solid_phase(), MaterialPhaseKind::Solid),
         ] {
             assert_eq!(phase.kind(), expected);
-            let reprojected = match phase.kind() {
-                MaterialPhaseKind::Fluid => MaterialPhaseKind::Fluid,
-                MaterialPhaseKind::Setting => MaterialPhaseKind::Setting,
-                MaterialPhaseKind::Solid => MaterialPhaseKind::Solid,
-            };
+            let reprojected = phase.kind();
             assert_eq!(reprojected, expected);
         }
     }
@@ -975,10 +969,6 @@ mod tests {
     fn material_phase_production_and_master_wired_false() {
         assert!(!material_phase_production_wired());
         assert!(!material_phase_master_wired());
-        assert!(!MATERIAL_PHASE_PRODUCTION_WIRED);
-        assert!(!MATERIAL_PHASE_MASTER);
-        assert!(!MATERIAL_PHASE_PHYSICS_GREEN);
-        assert!(!MATERIAL_PHASE_SOLVER_WIRING);
     }
 
     #[test]

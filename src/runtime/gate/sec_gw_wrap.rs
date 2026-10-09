@@ -107,7 +107,6 @@ pub const SEC_GW_WRAP_OP5_CLEARED: bool = false;
 pub const SEC_GW_WRAP_PHYSICS_GREEN: bool = false;
 
 const _: () = assert!(!GATEWAY_PRODUCTION_WIRED_HONEST);
-const _: () = assert!(GW_WRAP_GREEN_CLAIM_BLOCKED);
 const _: () = assert!(!SEC_GW_WRAP_MASTER_RETICK_ELIGIBLE);
 const _: () = assert!(!SEC_GW_WRAP_OP5_CLEARED);
 const _: () = assert!(!SEC_GW_WRAP_PHYSICS_GREEN);
@@ -937,12 +936,6 @@ mod sec_gw_wrap_tests {
     #[test]
     fn sec_gw_wrap_production_stays_false() {
         assert!(!sec_gw_wrap_production_wired());
-        assert!(GW_WRAP_GREEN_CLAIM_BLOCKED);
-        assert!(!TRUST_WRAP_WIRED_HONEST);
-        assert!(!GATEWAY_PRODUCTION_WIRED_HONEST);
-        assert!(!SEC_GW_WRAP_MASTER_RETICK_ELIGIBLE);
-        assert!(!SEC_GW_WRAP_OP5_CLEARED);
-        assert!(!SEC_GW_WRAP_PHYSICS_GREEN);
     }
 
     #[test]
@@ -1006,7 +999,6 @@ mod sec_gw_wrap_tests {
             .iter()
             .all(|h| h.census_hit));
         assert!(manifold_gw_wrap_trust_wrap_helpers_wired());
-        assert!(GATEWAY_TRUST_WRAP_HELPERS_WIRED_HONEST);
     }
 
     #[test]

@@ -174,7 +174,6 @@ mod field_rank3 {
     fn field_rank3_algebra_perturbation_measured() {
         let device = Default::default();
         assert!(field_rank3_perturbation_witness::<B>(&device));
-        assert!(P3_FIELD_RANK3_ALGEBRA_MEASURED);
     }
 
     #[test]

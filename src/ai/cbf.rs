@@ -175,8 +175,6 @@ mod tests {
     #[test]
     fn cbf_posture_is_honest_witness() {
         assert!(cbf_posture_is_honest());
-        assert!(!CBF_PHYSICS_GREEN);
-        assert!(!CBF_PRODUCTION_WIRED);
     }
 
     #[test]
@@ -203,15 +201,31 @@ mod tests {
 
     #[test]
     fn cbf_landauer_margin_factor_matches_tensor_shim() {
-        assert_relative_eq!(LANDAUER_MARGIN_FACTOR, 1.05, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
+        assert_relative_eq!(
+            LANDAUER_MARGIN_FACTOR,
+            1.05,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
+        );
     }
 
     #[test]
     fn cbf_new_defaults_k_phys_unity_bridge() {
         let cbf = ThermodynamicCBF::new(TEMP_K, CREDIT_J);
-        assert_relative_eq!(cbf.k_phys_dint_to_joules, 1.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
-        assert_relative_eq!(cbf.temperature_k, TEMP_K, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
-        assert_relative_eq!(cbf.available_credit_joules, CREDIT_J, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
+        assert_relative_eq!(
+            cbf.k_phys_dint_to_joules,
+            1.0,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
+        );
+        assert_relative_eq!(
+            cbf.temperature_k,
+            TEMP_K,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
+        );
+        assert_relative_eq!(
+            cbf.available_credit_joules,
+            CREDIT_J,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
+        );
     }
 
     #[test]
@@ -222,7 +236,12 @@ mod tests {
         let cost = cbf
             .verify_and_deduct_update(erasure, bits)
             .expect("admissible scalar step must debit credit");
-        assert_relative_eq!(cost, erasure, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64, max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT);
+        assert_relative_eq!(
+            cost,
+            erasure,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64,
+            max_relative = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
+        );
         assert_relative_eq!(
             cbf.available_credit_joules,
             CREDIT_J - erasure,

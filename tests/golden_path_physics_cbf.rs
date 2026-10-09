@@ -45,9 +45,7 @@ use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
 #[cfg(feature = "solver-experimental")]
 use umst_manifold::physics::orchestration::TopologyPhysicsOrchestrator;
 #[cfg(feature = "solver-experimental")]
-use umst_manifold::physics::solvers::{
-    ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcSolver, ThmcState,
-};
+use umst_manifold::physics::solvers::{ThmcSolver, ThmcState};
 
 type B = NdArray<f32>;
 

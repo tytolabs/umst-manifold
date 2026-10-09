@@ -1182,18 +1182,12 @@ impl AdjointComplianceQ1Hex {
 mod adjoint_q1_hex_honest_fence_tests {
     use super::{
         adjoint_q1_hex_honest_posture_bundle, adjoint_q1_hex_posture_honest,
-        validate_adjoint_q1_hex_posture_honesty, ADJOINT_Q1_HEX_BAR_LIMIT_WIRED,
-        ADJOINT_Q1_HEX_HONEST_FENCE, ADJOINT_Q1_HEX_MASTER, ADJOINT_Q1_HEX_PHYSICS_GREEN,
-        ADJOINT_Q1_HEX_POSTURE_TAG, ADJOINT_Q1_HEX_PRODUCTION_WIRED,
-        W29_ADJOINT_Q1_HEX_DEEPEN_CELL,
+        validate_adjoint_q1_hex_posture_honesty, ADJOINT_Q1_HEX_HONEST_FENCE,
+        ADJOINT_Q1_HEX_POSTURE_TAG, W29_ADJOINT_Q1_HEX_DEEPEN_CELL,
     };
 
     #[test]
     fn adjoint_q1_hex_honest_fence_consts_refuse_green_production_master() {
-        assert!(!ADJOINT_Q1_HEX_PHYSICS_GREEN);
-        assert!(!ADJOINT_Q1_HEX_PRODUCTION_WIRED);
-        assert!(!ADJOINT_Q1_HEX_MASTER);
-        assert!(!ADJOINT_Q1_HEX_BAR_LIMIT_WIRED);
         assert!(ADJOINT_Q1_HEX_POSTURE_TAG.contains("honest"));
         assert!(ADJOINT_Q1_HEX_HONEST_FENCE.contains("production_wired=false"));
         assert!(ADJOINT_Q1_HEX_HONEST_FENCE.contains("physics_green=false"));

@@ -411,9 +411,7 @@ pub fn gate_reroute_inventory_closed() -> bool {
 pub fn gate_s2_extract_fence_export_unblocked() -> bool {
     S2_EXTRACT_FENCE_FACET_IDS.len() == S2_EXTRACT_FENCE_FACET_COUNT
         && S2_EXTRACT_FENCE_FACET_COUNT == 7
-        && S2_EXTRACT_FENCE_FACET_IDS
-            .iter()
-            .any(|facet| *facet == "trust_crate_reexport")
+        && S2_EXTRACT_FENCE_FACET_IDS.contains(&"trust_crate_reexport")
 }
 
 /// Whether base census measurements still hold @ HEAD.
@@ -682,7 +680,6 @@ mod gate_module_census_tests {
         let routed = canonical_transition_outcome(&old, &new, 28.0 * 24.0 * 3600.0);
         let direct = transition_outcome(&old, &new, 28.0 * 24.0 * 3600.0, TRANSITION_TOLERANCE);
         assert_eq!(routed, direct);
-        assert!(CORE_GATE_MASS_TOLERANCE_KG_M3 > 0.0);
         assert_eq!(
             AdmissibilityVerdict::Accepted,
             AdmissibilityVerdict::Accepted

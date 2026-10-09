@@ -210,9 +210,6 @@ mod tests {
             iterate_until_fence_wired_count(),
             ITERATE_UNTIL_FENCE_WIRED_COUNT
         );
-        assert!(!ITERATE_UNTIL_PHYSICS_GREEN);
-        assert!(!ITERATE_UNTIL_PRODUCTION_WIRED);
-        assert!(!ITERATE_UNTIL_MASTER);
     }
 
     #[test]

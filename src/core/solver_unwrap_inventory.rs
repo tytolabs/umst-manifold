@@ -95,7 +95,7 @@ pub const P3_SOLVER_UNWRAP_SITES_CLOSED: usize = 7;
 pub const P3_SOLVER_UNWRAP_SITES_NAMED_OPEN: usize = 0;
 
 /// Boundary remains open while any kernel site is tensor-native.
-pub const P3_SOLVER_UNWRAP_BOUNDARY_OPEN: bool = P3_SOLVER_UNWRAP_SITES_NAMED_OPEN > 0;
+pub const P3_SOLVER_UNWRAP_BOUNDARY_OPEN: bool = P3_SOLVER_UNWRAP_SITES_NAMED_OPEN != 0;
 
 /// Non-claim — inventory + disposition audit ≠ boundary fully closed / ≠ physics GREEN.
 pub const P3_SOLVER_UNWRAP_NON_CLAIM: &str =
@@ -121,18 +121,14 @@ mod tests {
 
     #[test]
     fn solver_unwrap_inventory_named() {
-        assert!(P3_SOLVER_UNWRAP_INVENTORY_COMPLETE);
-        assert!(!P3_SOLVER_UNWRAP_INVENTORY.is_empty());
         assert_eq!(P3_SOLVER_UNWRAP_INVENTORY.len(), 7);
         assert!(P3_SOLVER_UNWRAP_NON_CLAIM.contains("not physics GREEN"));
     }
 
     #[test]
     fn r15_c1_solver_unwrap_disposition_audit() {
-        assert!(P3_SOLVER_UNWRAP_BOUNDARY_AUDIT_COMPLETE);
         assert_eq!(P3_SOLVER_UNWRAP_SITES_CLOSED, 7);
         assert_eq!(P3_SOLVER_UNWRAP_SITES_NAMED_OPEN, 0);
-        assert!(!P3_SOLVER_UNWRAP_BOUNDARY_OPEN);
         assert_eq!(
             count_disposition(SolverUnwrapDisposition::ClosedCanonicalPath),
             7

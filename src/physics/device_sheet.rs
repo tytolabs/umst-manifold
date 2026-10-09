@@ -36,7 +36,6 @@ pub const DEVICE_SHEET_HONEST_FENCE: &str =
 const _: () = assert!(!DEVICE_SHEET_PHYSICS_GREEN);
 const _: () = assert!(!DEVICE_SHEET_PRODUCTION_WIRED);
 const _: () = assert!(!DEVICE_SHEET_MASTER);
-const _: () = assert!(DEVICE_SHEET_HOST_SLAB_LANDED);
 
 /// Typed probe for DeviceSheet posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

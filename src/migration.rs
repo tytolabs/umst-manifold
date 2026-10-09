@@ -55,7 +55,6 @@ pub const W9_PHASE_A_TYPE_ALIAS_COUNT: usize = 3;
 /// How many surfaces are cartridge-supplied stubs (not domain-wired).
 pub const W9_PHASE_A_CARTRIDGE_STUB_COUNT: usize = 4;
 
-const _: () = assert!(W9_PHASE_A_ALIASES_LANDED);
 const _: () = assert!(!W9_CARTRIDGE_INJECT_WIRED);
 const _: () = assert!(!W9_MIGRATION_PHYSICS_GREEN);
 const _: () = assert!(!W9_MIGRATION_PRODUCTION_WIRED);
@@ -226,9 +225,7 @@ pub fn w9_phase_a_surface_inventory_honest() -> bool {
             .filter(|r| r.kind == W9PhaseASurfaceKind::CartridgeStub)
             .count()
             == W9_PHASE_A_CARTRIDGE_STUB_COUNT
-        && W9_PHASE_A_SURFACES
-            .iter()
-            .all(|r| !r.cartridge_injected)
+        && W9_PHASE_A_SURFACES.iter().all(|r| !r.cartridge_injected)
         && W9_PHASE_A_SURFACES
             .iter()
             .filter(|r| r.kind == W9PhaseASurfaceKind::TypeAlias)

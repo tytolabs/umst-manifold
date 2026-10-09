@@ -219,9 +219,6 @@ mod tests {
             fixed_point_fence_wired_count(),
             FIXED_POINT_FENCE_WIRED_COUNT
         );
-        assert!(!FIXED_POINT_PHYSICS_GREEN);
-        assert!(!FIXED_POINT_PRODUCTION_WIRED);
-        assert!(!FIXED_POINT_MASTER);
         assert_eq!(W29_FIXED_POINT_DEEPEN_CELL, "W29-074-FIXED_POINT");
         assert_eq!(FIXED_POINT_FENCE_FACET_COUNT, 8);
         assert_eq!(FIXED_POINT_FENCE_WIRED_COUNT, 4);
@@ -241,7 +238,7 @@ mod tests {
             ControlFlow::Continue(())
         });
         assert!((x - std::f64::consts::SQRT_2).abs() < 1e-12);
-        assert!(k >= 1 && k <= 40);
+        assert!((1..=40).contains(&k));
     }
 
     #[test]

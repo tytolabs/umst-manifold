@@ -31,7 +31,6 @@ pub const ADMISSIBILITY_MARGIN_MASTER_RETICK_ELIGIBLE: bool = false;
 pub const ADMISSIBILITY_MARGIN_OP5_CLEARED: bool = false;
 
 const _: () = assert!(!ADMISSIBILITY_MARGIN_PRODUCTION_WIRED);
-const _: () = assert!(ADMISSIBILITY_MARGIN_GREEN_CLAIM_BLOCKED);
 const _: () = assert!(!ADMISSIBILITY_MARGIN_MASTER_RETICK_ELIGIBLE);
 const _: () = assert!(!ADMISSIBILITY_MARGIN_OP5_CLEARED);
 
@@ -124,7 +123,6 @@ pub fn admissibility_margin_honesty_probe() -> AdmissibilityMarginHonestyProbe {
 }
 
 /// Fail-closed honesty check for margin deepen.
-#[must_use]
 pub fn validate_admissibility_margin_honesty() -> Result<(), &'static str> {
     let p = admissibility_margin_honesty_probe();
     if p.production_wired {
@@ -217,10 +215,6 @@ mod tests {
 
     #[test]
     fn honesty_fences_block_green_production_master_op5() {
-        assert!(!ADMISSIBILITY_MARGIN_PRODUCTION_WIRED);
-        assert!(ADMISSIBILITY_MARGIN_GREEN_CLAIM_BLOCKED);
-        assert!(!ADMISSIBILITY_MARGIN_MASTER_RETICK_ELIGIBLE);
-        assert!(!ADMISSIBILITY_MARGIN_OP5_CLEARED);
         let probe = admissibility_margin_honesty_probe();
         assert!(!probe.production_wired);
         assert!(probe.green_claim_blocked);

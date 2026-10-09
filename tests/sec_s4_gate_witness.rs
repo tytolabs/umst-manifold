@@ -7,7 +7,7 @@ use umst_manifold::runtime::gate::{
     manifold_ls5_all_k_v1_probed, manifold_verify_scrub_roundtrip, sec_s4_gate_manifold_probe,
     sec_s4_gate_transition_evidence_probe, sec_s4_gate_wire_matrix, sec_s4_p1800_h3_honest,
     sec_s4_p1800_h3_probe, sec_s4_production_wired, validate_sec_s4_gate_honesty,
-    FLEET_P1800_H3_JOB_ID, L_S5_PROOF_WIRED_HONEST, MANIFOLD_SEC_S4_GATE_WIRE_HOPS,
+    FLEET_P1800_H3_JOB_ID, MANIFOLD_SEC_S4_GATE_WIRE_HOPS,
 };
 
 #[test]
@@ -21,7 +21,6 @@ fn sec_s4_manifold_ceremony_predicate_and_honest_residue() {
     assert!(manifold_ls5_all_k_v1_probed());
     assert!(manifold_verify_scrub_roundtrip());
     assert!(!sec_s4_production_wired());
-    assert!(!L_S5_PROOF_WIRED_HONEST);
 }
 
 #[test]

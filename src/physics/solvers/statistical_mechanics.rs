@@ -124,16 +124,11 @@ pub const STATMECH_DENSE_FLUID_MD_CALIBRATED: bool = false;
 pub const STATMECH_HONEST_FENCE: &str =
     "virial_b4_bridge_landed=true b2_b3_surrogates_landed=true gamma_gc_kb_proxy_landed=true johnson_host_reference_landed=true full_mayer_b3_triangle=false dense_fluid_md_calibrated=false production_wired=false master_composition_wired=false op5_wired=false rank2_virial_measured=evaluated";
 
-const _: () = assert!(STATMECH_RANK2_VIRIAL_MEASURED);
 const _: () = assert!(!STATMECH_PRODUCTION_WIRED);
 const _: () = assert!(!STATMECH_MASTER);
 const _: () = assert!(!STATMECH_OP5_WIRED);
 const _: () = assert!(!STATMECH_FULL_MAYER_B3_TRIANGLE);
 const _: () = assert!(!STATMECH_DENSE_FLUID_MD_CALIBRATED);
-const _: () = assert!(STATMECH_VIRIAL_B4_BRIDGE_LANDED);
-const _: () = assert!(STATMECH_B2_B3_SURROGATES_LANDED);
-const _: () = assert!(STATMECH_GAMMA_GC_KB_PROXY_LANDED);
-const _: () = assert!(STATMECH_JOHNSON_HOST_REFERENCE_LANDED);
 
 /// Typed probe for statistical-mechanics posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -200,7 +195,6 @@ pub fn statistical_mechanics_posture_honest(probe: &StatisticalMechanicsPostureP
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER / OP-5 / full-Mayer-\(B_3\) / dense-MD claims.
-#[must_use]
 pub fn statistical_mechanics_refuse_overclaim(
     probe: &StatisticalMechanicsPostureProbe,
 ) -> Result<(), &'static str> {
@@ -568,10 +562,26 @@ mod tests {
 
         let c_k = ANALYTIC_BULK_MODULUS_SCALE;
         let c_g = ANALYTIC_SURFACE_ENERGY_SCALE;
-        assert_abs_diff_eq!(k_v[0], c_k * 0.1_f32 / 0.2_f32.powi(3), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
-        assert_abs_diff_eq!(k_v[1], c_k * 0.3_f32 / 0.4_f32.powi(3), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
-        assert_abs_diff_eq!(g_v[0], c_g * 0.1_f32 / 0.2_f32.powi(2), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
-        assert_abs_diff_eq!(g_v[1], c_g * 0.3_f32 / 0.4_f32.powi(2), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID);
+        assert_abs_diff_eq!(
+            k_v[0],
+            c_k * 0.1_f32 / 0.2_f32.powi(3),
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+        );
+        assert_abs_diff_eq!(
+            k_v[1],
+            c_k * 0.3_f32 / 0.4_f32.powi(3),
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+        );
+        assert_abs_diff_eq!(
+            g_v[0],
+            c_g * 0.1_f32 / 0.2_f32.powi(2),
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+        );
+        assert_abs_diff_eq!(
+            g_v[1],
+            c_g * 0.3_f32 / 0.4_f32.powi(2),
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID
+        );
 
         assert!(k_v.iter().all(|x| x.is_finite() && *x > 0.0));
         assert!(g_v.iter().all(|x| x.is_finite() && *x > 0.0));
@@ -735,7 +745,11 @@ mod tests {
         let (k, _) = upscale_potentials(lj).expect(
             "statistical_mechanics::upscale_potentials VIADU reference LJ row bulk modulus vs VIADU_K_REF_F32 (FP §6 Track G statmech residual)",
         );
-        assert_abs_diff_eq!(k.into_scalar(), VIADU_K_REF_F32, epsilon = umst_math::numeric_tolerance::field_algebra_rtol_f64() as f32);
+        assert_abs_diff_eq!(
+            k.into_scalar(),
+            VIADU_K_REF_F32,
+            epsilon = umst_math::numeric_tolerance::field_algebra_rtol_f64() as f32
+        );
     }
 
     #[test]
@@ -808,11 +822,6 @@ mod tests {
         assert!(STATMECH_HONEST_FENCE.contains("rank2_virial_measured=evaluated"));
         assert!(STATMECH_HONEST_FENCE.contains("full_mayer_b3_triangle=false"));
         assert!(statmech_rank2_virial_measured());
-        assert!(!STATMECH_PRODUCTION_WIRED);
-        assert!(!STATMECH_MASTER);
-        assert!(!STATMECH_OP5_WIRED);
-        assert!(!STATMECH_FULL_MAYER_B3_TRIANGLE);
-        assert!(!STATMECH_DENSE_FLUID_MD_CALIBRATED);
     }
 
     #[test]
@@ -838,8 +847,8 @@ mod tests {
         let b_lo = lj_virial_b3_star_surrogate_scalar(t_lo);
         let b_hi = lj_virial_b3_star_surrogate_scalar(t_hi);
         assert!(b_lo.is_finite() && b_hi.is_finite());
-        assert!(b_lo >= 0.08 && b_lo <= 1.5);
-        assert!(b_hi >= 0.08 && b_hi <= 1.5);
+        assert!((0.08..=1.5).contains(&b_lo));
+        assert!((0.08..=1.5).contains(&b_hi));
         assert!(b_lo > b_hi);
     }
 

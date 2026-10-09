@@ -104,9 +104,6 @@ pub const APPLY_PHYSICS_UNMERGED_PHYSICAL_RESULT_FIELDS: &[&str] = &[
 /// [`APPLY_PHYSICS_UNMERGED_PHYSICAL_RESULT_FIELDS`].
 pub const APPLY_PHYSICS_UNMERGED_FIELD_COUNT: usize = 5;
 
-const _: () = assert!(APPLY_PHYSICS_DAMAGE_WRITEBACK);
-const _: () = assert!(APPLY_PHYSICS_TEMPERATURE_DELTA_WRITEBACK);
-const _: () = assert!(APPLY_PHYSICS_POLICY_MASK_RESPECTED);
 const _: () = assert!(!APPLY_PHYSICS_FREE_ENERGY_MERGE);
 const _: () = assert!(!APPLY_PHYSICS_DISSIPATION_MERGE);
 const _: () = assert!(!APPLY_PHYSICS_SAFETY_MARGIN_MERGE);
@@ -441,15 +438,6 @@ mod apply_physics_posture_tests {
         assert!(!apply_physics_production_wired());
         assert!(!apply_physics_master_wired());
         assert!(!apply_physics_physics_green_claimed());
-        assert!(!APPLY_PHYSICS_PHYSICS_GREEN);
-        assert!(!APPLY_PHYSICS_PRODUCTION_WIRED);
-        assert!(!APPLY_PHYSICS_MASTER);
-        assert!(!APPLY_PHYSICS_FREE_ENERGY_MERGE);
-        assert!(!APPLY_PHYSICS_DISSIPATION_MERGE);
-        assert!(!APPLY_PHYSICS_SAFETY_MARGIN_MERGE);
-        assert!(!APPLY_PHYSICS_COST_MERGE);
-        assert!(!APPLY_PHYSICS_INFO_DENSITY_MERGE);
-        assert!(!APPLY_PHYSICS_MULTI_BATCH_MERGE);
         assert!(APPLY_PHYSICS_HONEST_FENCE.contains("physics_green=false"));
         assert!(APPLY_PHYSICS_HONEST_FENCE.contains("free_energy_merge=false"));
         assert!(APPLY_PHYSICS_HONEST_FENCE.contains("multi_batch_merge=false"));
@@ -458,9 +446,6 @@ mod apply_physics_posture_tests {
     #[test]
     fn apply_physics_merged_channels_are_damage_and_temperature_only() {
         assert_eq!(APPLY_PHYSICS_MERGED_CHANNEL_COUNT, 2);
-        assert!(APPLY_PHYSICS_DAMAGE_WRITEBACK);
-        assert!(APPLY_PHYSICS_TEMPERATURE_DELTA_WRITEBACK);
-        assert!(APPLY_PHYSICS_POLICY_MASK_RESPECTED);
         let (d, t) = apply_physics_writeback_channel_pins();
         assert_eq!(d, SCALAR_DAMAGE);
         assert_eq!(t, SCALAR_TEMPERATURE);

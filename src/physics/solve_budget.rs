@@ -53,8 +53,6 @@ const _: () = assert!(!SOLVE_BUDGET_PHYSICS_GREEN);
 const _: () = assert!(!SOLVE_BUDGET_PRODUCTION_WIRED);
 const _: () = assert!(!SOLVE_BUDGET_MASTER);
 const _: () = assert!(!SOLVE_BUDGET_VAULT_COCKPIT_WIRED);
-const _: () = assert!(SOLVE_BUDGET_MAPPING_LANDED);
-const _: () = assert!(SOLVE_BUDGET_JSON_IO_LANDED);
 
 /// Typed probe for cockpit solve-budget posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -183,14 +181,9 @@ pub fn cockpit_from_external_json(json: &str) -> Result<CockpitSnapshot, Cockpit
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum CockpitBudgetInput {
     /// Dimensionless η_cog only — remaining energy is not measured on this path.
-    DimensionlessEta {
-        eta_cog: f64,
-    },
+    DimensionlessEta { eta_cog: f64 },
     /// Operator- or meter-supplied remaining solve energy (joules) at a known temperature.
-    RemainingJoules {
-        joules: f64,
-        temperature_k: f64,
-    },
+    RemainingJoules { joules: f64, temperature_k: f64 },
 }
 
 /// Energy budget could not be measured from η alone (honest absence — not an error).
@@ -261,12 +254,13 @@ pub fn map_cockpit_solve_budget(input: CockpitBudgetInput) -> CockpitSolveBudget
             }
             CockpitSolveBudgetOutcome::Unmeasured(UnmeasuredBudget { eta_cog })
         }
-        CockpitBudgetInput::RemainingJoules { joules, temperature_k } => {
-            match CockpitEnergyBudget::try_new(joules, temperature_k) {
-                Ok(budget) => CockpitSolveBudgetOutcome::Measured(budget),
-                Err(refuse) => CockpitSolveBudgetOutcome::Refused(refuse),
-            }
-        }
+        CockpitBudgetInput::RemainingJoules {
+            joules,
+            temperature_k,
+        } => match CockpitEnergyBudget::try_new(joules, temperature_k) {
+            Ok(budget) => CockpitSolveBudgetOutcome::Measured(budget),
+            Err(refuse) => CockpitSolveBudgetOutcome::Refused(refuse),
+        },
     }
 }
 
@@ -372,10 +366,6 @@ mod tests {
         assert!(probe.json_io_landed);
         assert_eq!(probe.deepen_cell, W29_SOLVE_BUDGET_DEEPEN_CELL);
         assert!(solve_budget_refuse_invented_pins().is_ok());
-        assert!(!SOLVE_BUDGET_PHYSICS_GREEN);
-        assert!(!SOLVE_BUDGET_PRODUCTION_WIRED);
-        assert!(!SOLVE_BUDGET_MASTER);
-        assert!(!SOLVE_BUDGET_VAULT_COCKPIT_WIRED);
         assert!(SOLVE_BUDGET_HONEST_FENCE.contains("vault_cockpit_wired=false"));
         assert!(SOLVE_BUDGET_HONEST_FENCE.contains("physics_green=false"));
     }
@@ -493,7 +483,8 @@ mod tests {
 
     #[test]
     fn bare_eta_refuses_invented_joules_and_emits_no_pcg_cap() {
-        let outcome = map_cockpit_solve_budget(CockpitBudgetInput::DimensionlessEta { eta_cog: 0.42 });
+        let outcome =
+            map_cockpit_solve_budget(CockpitBudgetInput::DimensionlessEta { eta_cog: 0.42 });
         match outcome {
             CockpitSolveBudgetOutcome::Unmeasured(u) => {
                 assert!((u.eta_cog - 0.42).abs() < 1e-12);

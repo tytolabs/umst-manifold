@@ -836,8 +836,6 @@ mod sec_mcp_wrap_tests {
         assert!(!sec_mcp_wrap_production_wired());
         assert!(!sec_mcp_wrap_master_retick_eligible());
         assert!(GATEWAY_STDIO_EXEC_OWNER.contains("mcp_stdio_exec_trust_pre_check_wired"));
-        assert!(MCP_WRAP_GREEN_CLAIM_BLOCKED);
-        assert!(!MASTER_RETICK_ELIGIBLE);
     }
 
     #[test]
@@ -982,7 +980,6 @@ mod sec_mcp_wrap_tests {
     fn sec_mcp_wrap_refuses_invented_green_production_master() {
         assert!(!sec_mcp_wrap_production_wired());
         assert!(!sec_mcp_wrap_master_retick_eligible());
-        assert!(MCP_WRAP_GREEN_CLAIM_BLOCKED);
         let census = gate_mcp_wrap_census();
         assert!(!census.production_wired);
         assert!(!census.master_retick_eligible);

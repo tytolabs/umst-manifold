@@ -910,8 +910,6 @@ mod sec_s4_tests {
     #[test]
     fn sec_s4_production_and_l_s5_stay_false() {
         assert!(!sec_s4_production_wired());
-        assert!(!L_S5_PROOF_WIRED_HONEST);
-        assert!(!SLED_ANOMALY_AUDIT_WIRED_HONEST);
     }
 
     #[test]

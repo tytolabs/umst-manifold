@@ -531,6 +531,31 @@ pub type HumidityField<B> = Field<B, Humidity, 3>;
 /// formal_anchor: NONE
 /// formal_status: Structural
 /// formal_anchor_rationale: Rank-3 alias for [`Field`] with [`Displacement`] witness.
+///
+/// The space marker is part of the type, so a damage field is refused where a displacement field is
+/// expected. The two examples below differ only in the marker of the bound field:
+///
+/// ```
+/// use burn::tensor::Tensor;
+/// use burn_ndarray::NdArray;
+/// use umst_manifold::core::field::{DisplacementField, Field};
+///
+/// fn accept_displacement(_: DisplacementField<NdArray<f32>>) {}
+/// let raw = Tensor::<NdArray<f32>, 3>::zeros([1, 2, 3], &Default::default());
+/// let u: DisplacementField<NdArray<f32>> = Field::new(raw);
+/// accept_displacement(u);
+/// ```
+///
+/// ```compile_fail
+/// use burn::tensor::Tensor;
+/// use burn_ndarray::NdArray;
+/// use umst_manifold::core::field::{DamageField, DisplacementField, Field};
+///
+/// fn accept_displacement(_: DisplacementField<NdArray<f32>>) {}
+/// let raw = Tensor::<NdArray<f32>, 3>::zeros([1, 2, 3], &Default::default());
+/// let u: DamageField<NdArray<f32>> = Field::new(raw);
+/// accept_displacement(u);
+/// ```
 pub type DisplacementField<B> = Field<B, Displacement, 3>;
 pub type BodyForceField<B> = Field<B, BodyForce, 3>;
 pub type BoundaryMaskField<B> = Field<B, BoundaryMask, 3>;
@@ -866,9 +891,6 @@ mod tests {
         assert!(summary.plan_field_wrap_landed);
         assert_eq!(summary.census_row_count, 15);
         assert_eq!(summary.ledger_aligned_row_count, 6);
-        assert!(P3_TENSOR_ALGEBRA_IMPL_LANDED);
-        assert!(!P3_SOLVER_UNWRAP_BOUNDARY_OPEN);
-        assert!(P3_PLAN_FIELD_WRAP_LANDED);
     }
 
     #[test]

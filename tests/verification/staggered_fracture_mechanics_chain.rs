@@ -25,6 +25,7 @@ fn damage_field(t: Tensor<B, 3>) -> DamageField<B> {
     Field::new(t)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn max_abs_axial_edge_strain(
     u0: &Tensor<B, 3>,
     coords: &Tensor<B, 2>,
@@ -205,33 +206,29 @@ fn staggered_one_outer_mechanics_strain_drives_at2_damage() {
 
     let edges_for_damage = edges_b1.clone();
     let d_out = match fracture.update_damage_staggered(
-        |damage: &DamageField<B>| {
-            match strain_tensor_for_fracture_after_mechanics(
-                u0.clone(),
-                coords.clone(),
-                stiffness.clone(),
-                body_force.clone(),
-                edges_b1.clone(),
-                damage.as_tensor().clone(),
-                boundary_mask.clone(),
-                cross_section_area,
-                &cfg,
-                src3.clone(),
-                tgt3.clone(),
-                edge_unit.clone(),
-                edge_len.clone(),
-                n,
-            ) {
-                Ok(t) => strain_field(t),
-                Err(e) => {
-                    assert_mechanics_refusal_named(
-                        &e,
-                        "mechanics inner loop inside update_damage_staggered",
-                    );
-                    panic!(
-                        "mechanics strain provider must return Ok on loaded bar; refusal {e:?}"
-                    );
-                }
+        |damage: &DamageField<B>| match strain_tensor_for_fracture_after_mechanics(
+            u0.clone(),
+            coords.clone(),
+            stiffness.clone(),
+            body_force.clone(),
+            edges_b1.clone(),
+            damage.as_tensor().clone(),
+            boundary_mask.clone(),
+            cross_section_area,
+            &cfg,
+            src3.clone(),
+            tgt3.clone(),
+            edge_unit.clone(),
+            edge_len.clone(),
+            n,
+        ) {
+            Ok(t) => strain_field(t),
+            Err(e) => {
+                assert_mechanics_refusal_named(
+                    &e,
+                    "mechanics inner loop inside update_damage_staggered",
+                );
+                panic!("mechanics strain provider must return Ok on loaded bar; refusal {e:?}");
             }
         },
         damage_field(d_zero),

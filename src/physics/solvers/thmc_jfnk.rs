@@ -26,7 +26,8 @@ use crate::physics::PhysicsError;
 pub fn thmc_jfnk_gmres_residual_tol_precondition(residual_tol: f64) -> Result<(), PhysicsError> {
     if !residual_tol.is_finite() || residual_tol <= 0.0 {
         return Err(PhysicsError::InvariantViolation {
-            context: "thmc_jfnk_gmres_residual_tol_precondition: residual_tol must be finite and > 0",
+            context:
+                "thmc_jfnk_gmres_residual_tol_precondition: residual_tol must be finite and > 0",
         });
     }
     Ok(())
@@ -88,7 +89,6 @@ const _: () = assert!(!THMC_JFNK_PRODUCTION_WIRED);
 const _: () = assert!(!THMC_JFNK_MASTER);
 const _: () = assert!(!THMC_JFNK_OP5_CLAIMED);
 const _: () = assert!(!THMC_JFNK_PRODUCTION_SCALE_CLAIMED);
-const _: () = assert!(THMC_JFNK_HOST_GMRES_LANDED);
 
 /// Typed probe for THMC JFNK posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

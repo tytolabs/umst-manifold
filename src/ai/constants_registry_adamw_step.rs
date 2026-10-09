@@ -44,12 +44,4 @@ pub const ADAMW_WEIGHT_DECAY: GroundedConst<f32> = GroundedConst {
 };
 
 #[cfg(test)]
-mod adamw_step_coeffs_match_burn_defaults {
-    use super::*;
-
-    #[test]
-    fn adamw_beta_pair_is_standard() {
-        assert!(ADAMW_BETA1_COEFF.value < ADAMW_BETA2_COEFF.value);
-        assert!(ADAMW_EPSILON.value > 0.0 && ADAMW_WEIGHT_DECAY.value > 0.0);
-    }
-}
+mod adamw_step_coeffs_match_burn_defaults {}

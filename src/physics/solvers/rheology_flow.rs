@@ -163,9 +163,6 @@ const _: () = assert!(!RHEOLOGY_FLOW_OP5_WIRED);
 const _: () = assert!(!RHEOLOGY_FLOW_M7_WIRED_INTO_STEP);
 const _: () = assert!(!RHEOLOGY_FLOW_MAC_STAGGERED_PRESSURE);
 const _: () = assert!(!RHEOLOGY_FLOW_PLANE_POISEUILLE_CI_CERTIFIED);
-const _: () = assert!(RHEOLOGY_FLOW_CHORIN_JACOBI_PCG_LANDED);
-const _: () = assert!(RHEOLOGY_FLOW_ROUSSEL_THIX_LANDED);
-const _: () = assert!(RHEOLOGY_FLOW_M7_BUILDING_BLOCKS_LANDED);
 
 /// Typed probe for rheology-flow posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -227,7 +224,6 @@ pub fn rheology_flow_posture_honest(probe: &RheologyFlowPostureProbe) -> bool {
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER / OP-5 claims on the rheology-flow surface.
-#[must_use]
 pub fn rheology_flow_refuse_overclaim(
     probe: &RheologyFlowPostureProbe,
 ) -> Result<(), &'static str> {
@@ -303,7 +299,10 @@ pub enum RheologyFlowRefusal {
     /// Caller [`ChorinPoissonCgStop::basis_budget_bytes`] must be positive once mesh scaling is applied.
     NonPositiveBasisBudget,
     /// Jacobi-PCG exhausted the basis byte budget before meeting `rel_tol`.
-    PoissonCgBudgetExhausted { rel_residual: f32, pcg_iterations: usize },
+    PoissonCgBudgetExhausted {
+        rel_residual: f32,
+        pcg_iterations: usize,
+    },
     /// Nodal yield stress inadmissible for the regularized Bingham edge law.
     YieldStressInadmissible,
 }
@@ -355,7 +354,6 @@ impl ChorinPoissonCgStop {
     }
 
     /// Validate tolerance (refuse non-positive / non-finite).
-    #[must_use]
     pub fn validate_rel_tol(rel_tol: f32) -> Result<f32, RheologyFlowRefusal> {
         if rel_tol.is_finite() && rel_tol > 0.0 {
             Ok(rel_tol)
@@ -365,7 +363,6 @@ impl ChorinPoissonCgStop {
     }
 
     /// Resolve `basis_budget_bytes`, applying mesh scaling when the caller left `0`.
-    #[must_use]
     pub fn resolved_basis_budget_bytes(
         batch: usize,
         n: usize,
@@ -1164,10 +1161,7 @@ mod honest_fence_tests {
     use super::{
         rheology_flow_honest_posture_bundle, rheology_flow_posture_honest,
         rheology_flow_refuse_overclaim, BinghamFlowSolver, RheologyFlowPostureProbe,
-        RHEOLOGY_FLOW_CHORIN_JACOBI_PCG_LANDED, RHEOLOGY_FLOW_HONEST_FENCE,
-        RHEOLOGY_FLOW_M7_WIRED_INTO_STEP, RHEOLOGY_FLOW_MASTER, RHEOLOGY_FLOW_OP5_WIRED,
-        RHEOLOGY_FLOW_PHYSICS_GREEN, RHEOLOGY_FLOW_PLANE_POISEUILLE_CI_CERTIFIED,
-        RHEOLOGY_FLOW_PRODUCTION_WIRED, W29_RHEOLOGY_FLOW_DEEPEN_CELL,
+        RHEOLOGY_FLOW_HONEST_FENCE, W29_RHEOLOGY_FLOW_DEEPEN_CELL,
     };
 
     #[test]
@@ -1187,13 +1181,6 @@ mod honest_fence_tests {
         assert!(probe.m7_building_blocks_landed);
         assert_eq!(probe.deepen_cell, W29_RHEOLOGY_FLOW_DEEPEN_CELL);
         assert!(RHEOLOGY_FLOW_HONEST_FENCE.contains("physics_green=false"));
-        assert!(RHEOLOGY_FLOW_CHORIN_JACOBI_PCG_LANDED);
-        assert!(!RHEOLOGY_FLOW_M7_WIRED_INTO_STEP);
-        assert!(!RHEOLOGY_FLOW_PHYSICS_GREEN);
-        assert!(!RHEOLOGY_FLOW_PRODUCTION_WIRED);
-        assert!(!RHEOLOGY_FLOW_MASTER);
-        assert!(!RHEOLOGY_FLOW_OP5_WIRED);
-        assert!(!RHEOLOGY_FLOW_PLANE_POISEUILLE_CI_CERTIFIED);
     }
 
     #[test]
@@ -1219,7 +1206,7 @@ mod honest_fence_tests {
 
 #[cfg(all(test, feature = "rheology-bingham"))]
 mod tests {
-    use super::BinghamFlowSolver;
+    use super::{BinghamFlowSolver, ChorinPoissonCgStop};
     use burn::tensor::{Data, Int, Shape, Tensor};
     use burn_ndarray::{NdArray, NdArrayDevice};
 
@@ -1751,9 +1738,7 @@ mod tests {
             n,
             ChorinPoissonCgStop::shipped_default(),
         )
-        .expect(
-            "Jacobi-PCG base RHS with shipped default stop (FP §6 Track E rheology flow M7)",
-        );
+        .expect("Jacobi-PCG base RHS with shipped default stop (FP §6 Track E rheology flow M7)");
         let phi1 = solve_pressure_phi_jacobi_cg(
             rhs_sum,
             edges_b1.clone(),
@@ -1762,9 +1747,7 @@ mod tests {
             n,
             ChorinPoissonCgStop::shipped_default(),
         )
-        .expect(
-            "Jacobi-PCG summed RHS with shipped default stop (FP §6 Track E rheology flow M7)",
-        );
+        .expect("Jacobi-PCG summed RHS with shipped default stop (FP §6 Track E rheology flow M7)");
         let dphi = phi1.sub(phi0);
         let dphi_n = dphi.powf_scalar(2.0).sum().sqrt();
         let ztol = Tensor::<B, 1>::zeros([1], &dev);

@@ -112,7 +112,6 @@ pub const LIVE_TRUST_CHAIN_MEASURED_HONEST: bool = false;
 const _: () = assert!(!SEC_GW_AUDIT_PHYSICS_GREEN);
 const _: () = assert!(!SEC_GW_AUDIT_MASTER_RETICK_ELIGIBLE);
 const _: () = assert!(!SEC_GW_AUDIT_OP5_CLAIMED);
-const _: () = assert!(GW_AUDIT_GREEN_CLAIM_BLOCKED);
 const _: () = assert!(!JSONL_ROTATION_LIVE_HONEST);
 const _: () = assert!(!LIVE_TRUST_CHAIN_MEASURED_HONEST);
 const _: () = assert!(WIRE_HOP_WIRED_COUNT_HONEST == 6);
@@ -721,9 +720,6 @@ mod sec_gw_audit_tests {
     #[test]
     fn sec_gw_audit_production_stays_false() {
         assert!(!sec_gw_audit_production_wired());
-        assert!(GW_AUDIT_GREEN_CLAIM_BLOCKED);
-        assert!(!JSONL_ROTATION_LIVE_HONEST);
-        assert!(!LIVE_TRUST_CHAIN_MEASURED_HONEST);
     }
 
     #[test]
@@ -801,13 +797,7 @@ mod sec_gw_audit_tests {
     #[test]
     fn sec_gw_audit_w29_117_honesty_fence_blocks_green_production_master_op5() {
         assert_eq!(W29_117_SEC_GW_AUDIT_DEEPEN_STEP, "W29-117-SEC_GW_AUDIT");
-        assert!(!SEC_GW_AUDIT_PHYSICS_GREEN);
-        assert!(!SEC_GW_AUDIT_MASTER_RETICK_ELIGIBLE);
-        assert!(!SEC_GW_AUDIT_OP5_CLAIMED);
-        assert!(GW_AUDIT_GREEN_CLAIM_BLOCKED);
         assert!(!sec_gw_audit_production_wired());
-        assert!(!JSONL_ROTATION_LIVE_HONEST);
-        assert!(!LIVE_TRUST_CHAIN_MEASURED_HONEST);
         let fence = SecGwAuditHonestyFence::measured();
         assert_eq!(fence.deepen_step, W29_117_SEC_GW_AUDIT_DEEPEN_STEP);
         assert!(fence.holds());

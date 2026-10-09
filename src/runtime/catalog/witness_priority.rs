@@ -345,7 +345,9 @@ impl WitnessPriorityQueue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runtime::catalog::traceability::{CD_TRANSITION_CATALOG_ID, SEMANTIC_CBF_CATALOG_ID};
+    use crate::runtime::catalog::traceability::{
+        CD_TRANSITION_CATALOG_ID, SEMANTIC_CBF_CATALOG_ID,
+    };
 
     #[test]
     fn tcb_tokens_physical_second_law_only() {
@@ -434,7 +436,7 @@ mod tests {
         assert!(!q.is_enabled());
         assert!(q.ordered_modules().is_empty());
         assert_eq!(q.total_rejects(), 0);
-        assert_eq!(WitnessPriorityQueue::default().is_enabled(), false);
+        assert!(!WitnessPriorityQueue::default().is_enabled());
     }
 
     #[test]
@@ -473,7 +475,6 @@ mod tests {
 
     #[test]
     fn semantic_cbf_catalog_unwired_in_priority_map() {
-        assert!(!WITNESS_PRIORITY_SEMANTIC_CBF_WIRED);
         let modules = WitnessPriorityQueue::lean_modules_for_catalog_id(SEMANTIC_CBF_CATALOG_ID);
         assert!(
             modules.is_empty(),

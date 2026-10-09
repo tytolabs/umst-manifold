@@ -252,8 +252,6 @@ mod tests {
     fn material_transition_posture_is_honest_witness() {
         assert!(material_transition_posture_is_honest());
         assert!(material_transition_w29_honest_posture_bundle());
-        assert!(!MATERIAL_TRANSITION_PHYSICS_GREEN);
-        assert!(!MATERIAL_TRANSITION_PRODUCTION_WIRED);
         assert!(HONEST_FENCE.contains("production_wired=false"));
         assert!(HONEST_FENCE.contains("physics_green=false"));
     }

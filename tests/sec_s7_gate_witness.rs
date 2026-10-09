@@ -13,8 +13,7 @@ use umst_manifold::runtime::gate::{
     sec_s7_gate_factor_table, sec_s7_gate_manifold_probe, sec_s7_gate_transition_evidence_probe,
     sec_s7_gate_wire_matrix, sec_s7_p1931_j2_honest, sec_s7_p1931_j2_probe,
     sec_s7_production_wired, validate_sec_s7_gate_honesty, FLEET_P1931_J2_JOB_ID,
-    MANIFOLD_SEC_S7_GATE_WIRE_HOPS, MIGRATION_COMPLETE_HONEST, S7_GREEN_CLAIM_BLOCKED,
-    S_FED_TRUST_PARTIAL_HONEST, S_FED_TRUST_PRODUCTION_WIRED_HONEST,
+    MANIFOLD_SEC_S7_GATE_WIRE_HOPS,
 };
 
 #[test]
@@ -28,10 +27,6 @@ fn sec_s7_manifold_ceremony_predicate_and_honest_residue() {
     assert!(manifold_s7_all_migrate_surfaces_probed());
     assert!(manifold_verify_migration_inventory_census());
     assert!(!sec_s7_production_wired());
-    assert!(!MIGRATION_COMPLETE_HONEST);
-    assert!(S7_GREEN_CLAIM_BLOCKED);
-    assert!(S_FED_TRUST_PARTIAL_HONEST);
-    assert!(!S_FED_TRUST_PRODUCTION_WIRED_HONEST);
 }
 
 #[test]

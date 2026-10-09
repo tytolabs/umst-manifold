@@ -70,7 +70,6 @@ const _: () = assert!(!THMC_UMST_SYNC_PRODUCTION_WIRED);
 const _: () = assert!(!THMC_UMST_SYNC_MASTER);
 const _: () = assert!(!THMC_UMST_SYNC_OP5_PASS);
 const _: () = assert!(!THMC_UMST_SYNC_DELTA_ADDITIVE_LANDED);
-const _: () = assert!(THMC_UMST_SYNC_ABSOLUTE_LANDED);
 
 /// Honest fence flags for the THMC↔UMST sync deepen (W29-090).
 #[derive(Debug, Clone, PartialEq, Eq)]

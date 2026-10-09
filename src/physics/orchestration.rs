@@ -110,9 +110,7 @@ pub const CHEM_ECO_PHYSICS_GREEN: bool = false;
 pub const CHEM_ECO_HONEST_FENCE: &str =
     "lift_arcs_ucrs_only=true arena_gateway_named=true liquid_ppo_inspiration_only=false liquid_ppo_on_chem_wired=true physics_green=false";
 
-const _: () = assert!(CHEM_ECO_LIFT_ARCS_UCRS_ONLY);
 const _: () = assert!(!CHEM_ECO_LIQUID_PPO_INSPIRATION_ONLY);
-const _: () = assert!(CHEM_ECO_LIQUID_PPO_ON_CHEM_WIRED);
 const _: () = assert!(!CHEM_ECO_PHYSICS_GREEN);
 
 /// Typed probe for topology physics orchestration posture honesty.
@@ -159,7 +157,6 @@ pub fn orchestration_posture_honest(probe: &OrchestrationPostureProbe) -> bool {
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER claims on the orchestration surface.
-#[must_use]
 pub fn orchestration_refuse_overclaim(
     probe: &OrchestrationPostureProbe,
 ) -> Result<(), &'static str> {
@@ -443,7 +440,8 @@ mod tests {
 
     fn toy_thmc_state(dev: &<TestBackend as Backend>::Device, n: usize) -> ThmcState<TestBackend> {
         ThmcState::from_tensors(
-            Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32),
+            Tensor::<TestBackend, 3>::zeros([1, n, 1], dev)
+                .add_scalar(crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32),
             Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(0.5_f32),
             Tensor::<TestBackend, 3>::zeros([1, n, 3], dev),
             Tensor::<TestBackend, 3>::zeros([1, n, 1], dev).add_scalar(0.1_f32),

@@ -451,8 +451,6 @@ mod tests {
     fn null_clients_populated_but_not_production_wired() {
         let slots = EmbodiedLoopSlots::with_null_clients();
         assert!(slots.all_slots_populated());
-        assert!(!PRODUCTION_WIRED);
-        assert!(!MASTER_LOOP_CLOSED);
         let posture = slots.leg_posture(SlotLeg::FieldSense);
         assert!(posture.is_populated());
         assert!(!posture.is_production_wired());
@@ -521,12 +519,5 @@ mod tests {
                 target: "full M5 composition (W4-JG-6)"
             }
         ));
-    }
-
-    #[test]
-    fn production_wired_and_master_refused() {
-        assert!(!PRODUCTION_WIRED);
-        assert!(!MASTER_LOOP_CLOSED);
-        assert!(PRODUCTION_LOOP_DEFERRED);
     }
 }

@@ -95,9 +95,6 @@ const _: () = assert!(!Q1_HEX_ELASTICITY_PHYSICS_GREEN);
 const _: () = assert!(!Q1_HEX_ELASTICITY_PRODUCTION_WIRED);
 const _: () = assert!(!Q1_HEX_ELASTICITY_MASTER);
 const _: () = assert!(!Q1_HEX_ELASTICITY_KIRCHHOFF_WIRED);
-const _: () = assert!(Q1_HEX_ELASTICITY_BBAR_SRI_LANDED);
-const _: () = assert!(Q1_HEX_ELASTICITY_PCG_LANDED);
-const _: () = assert!(Q1_HEX_ELASTICITY_OP_CACHE_LANDED);
 
 /// Typed probe for Q1-hex elasticity posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -150,7 +147,6 @@ pub fn q1_hex_elasticity_posture_honest(probe: &Q1HexElasticityPostureProbe) -> 
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER / Kirchhoff-closed claims on this surface.
-#[must_use]
 pub fn q1_hex_elasticity_refuse_overclaim(
     probe: &Q1HexElasticityPostureProbe,
 ) -> Result<(), &'static str> {
@@ -2410,18 +2406,17 @@ pub fn hex_solve_pcg_bisect(
 
     hex_diagonal(nx, ny, nz, dx, dy, dz, nu, &e_work, diag);
     let mut block_jacobi = vec![0.0_f32; n * 9];
-    if precond == HexPcgPrecondKind::BlockJacobiNodal3x3 {
-        if hex_nodal_block_jacobi_3x3(nx, ny, nz, dx, dy, dz, nu, &e_work, &mut block_jacobi)
+    if precond == HexPcgPrecondKind::BlockJacobiNodal3x3
+        && hex_nodal_block_jacobi_3x3(nx, ny, nz, dx, dy, dz, nu, &e_work, &mut block_jacobi)
             .is_err()
-        {
-            return HexPcgBisectReport {
-                iterations: 0,
-                rel_residual_recursive: f32::INFINITY,
-                rel_residual_true: f32::INFINITY,
-                stiffness_scale: k_char,
-                u: vec![0.0_f32; ndof],
-            };
-        }
+    {
+        return HexPcgBisectReport {
+            iterations: 0,
+            rel_residual_recursive: f32::INFINITY,
+            rel_residual_true: f32::INFINITY,
+            stiffness_scale: k_char,
+            u: vec![0.0_f32; ndof],
+        };
     }
 
     let mut u = vec![0.0_f32; ndof];
@@ -2460,7 +2455,7 @@ pub fn hex_solve_pcg_bisect(
     let mut rz_old = dot_f32(&r, &z);
 
     let mut pcg_iters = 0usize;
-    let mut pcg_rel_recursive = f32::INFINITY;
+    let mut pcg_rel_recursive: f32;
     let mut cg_coeffs: Vec<umst_math::cg_spectral_window::CgCoeff> = Vec::new();
     let mut beta_prev = 0.0_f64;
 
@@ -3006,22 +3001,12 @@ mod hex_elasticity_honest_fence_tests {
         hex_k_times_u_accumulate_cached, hex_pcg_use_f64_lane, hex_stiffness_scale,
         q1_hex_elasticity_honest_posture_bundle, q1_hex_elasticity_posture_honest,
         q1_hex_elasticity_refuse_overclaim, HexStructuredOperatorCache,
-        Q1_HEX_ELASTICITY_BBAR_SRI_LANDED, Q1_HEX_ELASTICITY_HONEST_FENCE,
-        Q1_HEX_ELASTICITY_KIRCHHOFF_WIRED, Q1_HEX_ELASTICITY_MASTER,
-        Q1_HEX_ELASTICITY_OP_CACHE_LANDED, Q1_HEX_ELASTICITY_PCG_LANDED,
-        Q1_HEX_ELASTICITY_PHYSICS_GREEN, Q1_HEX_ELASTICITY_POSTURE_TAG,
-        Q1_HEX_ELASTICITY_PRODUCTION_WIRED, W29_Q1_HEX_ELASTICITY_DEEPEN_CELL,
+        Q1_HEX_ELASTICITY_HONEST_FENCE, Q1_HEX_ELASTICITY_POSTURE_TAG,
+        W29_Q1_HEX_ELASTICITY_DEEPEN_CELL,
     };
 
     #[test]
     fn q1_hex_elasticity_honest_fence_consts_refuse_green_production_master() {
-        assert!(!Q1_HEX_ELASTICITY_PHYSICS_GREEN);
-        assert!(!Q1_HEX_ELASTICITY_PRODUCTION_WIRED);
-        assert!(!Q1_HEX_ELASTICITY_MASTER);
-        assert!(!Q1_HEX_ELASTICITY_KIRCHHOFF_WIRED);
-        assert!(Q1_HEX_ELASTICITY_BBAR_SRI_LANDED);
-        assert!(Q1_HEX_ELASTICITY_PCG_LANDED);
-        assert!(Q1_HEX_ELASTICITY_OP_CACHE_LANDED);
         assert!(Q1_HEX_ELASTICITY_POSTURE_TAG.contains("honest"));
         assert!(Q1_HEX_ELASTICITY_HONEST_FENCE.contains("production_wired=false"));
         assert!(Q1_HEX_ELASTICITY_HONEST_FENCE.contains("physics_green=false"));

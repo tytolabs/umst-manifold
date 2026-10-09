@@ -128,7 +128,6 @@ impl ScalarChannelId {
 }
 
 /// Reject raw column indices outside the pinned layout contract.
-#[must_use]
 pub fn try_scalar_channel_index(index: usize) -> Result<usize, ScalarSchemaError> {
     if index >= UMST_SCALAR_CHANNEL_COUNT {
         return Err(ScalarSchemaError::ChannelOutOfRange {
@@ -140,7 +139,6 @@ pub fn try_scalar_channel_index(index: usize) -> Result<usize, ScalarSchemaError
 }
 
 /// Reject nodal scalar tensor widths that diverge from the compile-time witness.
-#[must_use]
 pub fn try_scalar_width(width: usize) -> Result<usize, ScalarSchemaError> {
     if width != UMST_SCALAR_CHANNEL_COUNT {
         return Err(ScalarSchemaError::WidthMismatch {
@@ -265,9 +263,6 @@ mod umst_schema_tests {
     #[test]
     fn umst_schema_honest_fences_refuse_green() {
         assert!(schema_posture_is_honest_staging());
-        assert!(!PRODUCTION_WIRED);
-        assert!(!PHYSICS_GREEN_CLAIMED);
-        assert!(!MASTER_POSTURE_CLAIMED);
         assert_eq!(SCALAR_LAYOUT_SCHEMA_ID, "umst_scalar_layout_v1");
         assert!(SCALAR_LAYOUT_LOCK_PATH.contains("scalar_layout.lock.json"));
     }

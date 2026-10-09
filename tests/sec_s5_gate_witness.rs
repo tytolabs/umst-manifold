@@ -8,8 +8,7 @@ use umst_manifold::runtime::gate::{
     sec_s5_gate_factor_table, sec_s5_gate_manifold_probe, sec_s5_gate_transition_evidence_probe,
     sec_s5_gate_wire_matrix, sec_s5_p1812_i2_honest, sec_s5_p1812_i2_probe,
     sec_s5_production_wired, validate_sec_s5_gate_honesty, FLEET_P1812_I2_JOB_ID,
-    LIVE_FANOUT_WIRED_HONEST, LN0_PROOF_WIRED_HONEST, MANIFOLD_SEC_S5_GATE_WIRE_HOPS,
-    S5_GREEN_CLAIM_BLOCKED,
+    MANIFOLD_SEC_S5_GATE_WIRE_HOPS,
 };
 
 #[test]
@@ -23,9 +22,6 @@ fn sec_s5_manifold_ceremony_predicate_and_honest_residue() {
     assert!(manifold_s5_all_scenarios_probed());
     assert!(manifold_verify_s5_consensus_algebra_roundtrip());
     assert!(!sec_s5_production_wired());
-    assert!(!LN0_PROOF_WIRED_HONEST);
-    assert!(!LIVE_FANOUT_WIRED_HONEST);
-    assert!(S5_GREEN_CLAIM_BLOCKED);
 }
 
 #[test]

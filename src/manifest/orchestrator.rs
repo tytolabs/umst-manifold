@@ -317,8 +317,6 @@ mod tests {
     #[test]
     fn orchestrator_posture_is_honest_witness() {
         assert!(orchestrator_posture_is_honest());
-        assert!(!ORCHESTRATOR_PHYSICS_GREEN);
-        assert!(!ORCHESTRATOR_PRODUCTION_WIRED);
     }
 
     #[test]

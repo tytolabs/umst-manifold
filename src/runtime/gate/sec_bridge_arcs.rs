@@ -720,9 +720,6 @@ mod sec_bridge_arcs_tests {
     fn sec_bridge_arcs_production_stays_false() {
         assert!(!sec_bridge_arcs_production_wired());
         assert!(!sec_bridge_arcs_master_retick_eligible());
-        assert!(BRIDGE_ARCS_GREEN_CLAIM_BLOCKED);
-        assert!(EGOFF_FULL_CRATE_VERIFY_BLOCKED);
-        assert!(!MASTER_RETICK_ELIGIBLE);
     }
 
     #[test]

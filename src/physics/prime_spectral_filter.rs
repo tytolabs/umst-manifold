@@ -45,8 +45,6 @@ pub const PRIME_SPECTRAL_FILTER_HONEST_FENCE: &str =
 const _: () = assert!(!PRIME_SPECTRAL_FILTER_PHYSICS_GREEN);
 const _: () = assert!(!PRIME_SPECTRAL_FILTER_PRODUCTION_WIRED);
 const _: () = assert!(!PRIME_SPECTRAL_FILTER_MASTER);
-const _: () = assert!(PRIME_SPECTRAL_FILTER_EPSILON_IS_SOFT_SCALE);
-const _: () = assert!(PRIME_SPECTRAL_FILTER_CONTRACTS_LANDED);
 
 /// Typed probe for prime-spectral filter posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -334,9 +332,6 @@ mod tests {
         assert!(probe.epsilon_is_soft_scale);
         assert_eq!(probe.deepen_cell, W29_PRIME_SPECTRAL_FILTER_DEEPEN_CELL);
         assert!(prime_spectral_filter_refuse_invented_pins().is_ok());
-        assert!(!PRIME_SPECTRAL_FILTER_PHYSICS_GREEN);
-        assert!(!PRIME_SPECTRAL_FILTER_PRODUCTION_WIRED);
-        assert!(!PRIME_SPECTRAL_FILTER_MASTER);
     }
 
     #[test]

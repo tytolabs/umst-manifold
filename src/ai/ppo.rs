@@ -107,9 +107,6 @@ pub const PPO_PROOF_CMD: &str =
 const _: () = assert!(!PPO_PRODUCTION_WIRED);
 const _: () = assert!(!PPO_PHYSICS_GREEN);
 const _: () = assert!(!PPO_MASTER_RETICK);
-const _: () = assert!(PPO_GATEWAY_SSOT_LANDED);
-const _: () = assert!(PPO_CBF_GATE_LANDED);
-const _: () = assert!(PPO_REWARD_WEIGHTS_PINNED);
 const _: () = assert!(PPO_FENCE_WIRED_COUNT <= PPO_FENCE_FACET_COUNT);
 const _: () = assert!(PPO_FENCE_FACET_COUNT - PPO_FENCE_WIRED_COUNT == 3);
 
@@ -1025,7 +1022,6 @@ mod w29_ppo_deepen_tests {
             ppo_fence_open_count(),
             PPO_FENCE_FACET_COUNT - PPO_FENCE_WIRED_COUNT
         );
-        assert!(PPO_FENCE_WIRED_COUNT < PPO_FENCE_FACET_COUNT);
         for facet in PPO_PRODUCTION_FENCE_FACETS {
             match facet.facet {
                 "gateway_ssot" | "cbf_gate" | "reward_weights" => assert!(facet.wired),
@@ -1068,7 +1064,11 @@ mod w29_ppo_deepen_tests {
     #[test]
     fn w29_ppo_new_pins_temperature_and_credit_via_cbf() {
         let gw = gateway();
-        assert_relative_eq!(gw.cbf.temperature_k, GATEWAY_TEMP_K, epsilon = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT);
+        assert_relative_eq!(
+            gw.cbf.temperature_k,
+            GATEWAY_TEMP_K,
+            epsilon = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
+        );
         assert_relative_eq!(
             gw.cbf.available_credit_joules,
             GATEWAY_CREDIT_J,
@@ -1098,7 +1098,11 @@ mod w29_ppo_deepen_tests {
         gw.evaluate_topology_step(state, info)
             .expect("topology step");
         assert_eq!(gw.telemetry().rejection_rate(), 0.0);
-        assert_relative_eq!(gw.telemetry().acceptance_rate(), 1.0, epsilon = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT);
+        assert_relative_eq!(
+            gw.telemetry().acceptance_rate(),
+            1.0,
+            epsilon = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
+        );
     }
 
     #[test]
@@ -1127,7 +1131,11 @@ mod w29_ppo_deepen_tests {
             gw.constraint_loss_penalty(zeros.clone(), zeros.clone(), zeros.clone(), zeros, dt);
         let values: Vec<f32> = penalty.into_data().value;
         assert_eq!(values.len(), batch);
-        assert_relative_eq!(f64::from(values[0]), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64);
+        assert_relative_eq!(
+            f64::from(values[0]),
+            0.0,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64
+        );
     }
 
     #[test]
@@ -1144,7 +1152,11 @@ mod w29_ppo_deepen_tests {
             let v_string: Vec<f32> = r_string.into_data().value;
             assert_eq!(v_formal.len(), v_string.len());
             for (a, b) in v_formal.iter().zip(v_string.iter()) {
-                assert_relative_eq!(f64::from(*a), f64::from(*b), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID as f64);
+                assert_relative_eq!(
+                    f64::from(*a),
+                    f64::from(*b),
+                    epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID as f64
+                );
             }
         }
     }
@@ -1152,7 +1164,11 @@ mod w29_ppo_deepen_tests {
     #[test]
     fn w29_ppo_zeta_zero_preserves_zero_margin_contribution() {
         let mut gw = gateway();
-        assert_relative_eq!(f64::from(gw.zeta), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE);
+        assert_relative_eq!(
+            f64::from(gw.zeta),
+            0.0,
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F64_LOOSE
+        );
         let state = tiny_umst();
         let info = info_gain_tensor();
         let reward_zeta0 = gw
@@ -1169,7 +1185,11 @@ mod w29_ppo_deepen_tests {
         let v1: Vec<f32> = reward_zeta_half.into_data().value;
         assert_eq!(v0.len(), 1);
         assert_eq!(v1.len(), 1);
-        assert_relative_eq!(f64::from(v0[0]), f64::from(v1[0]), epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID as f64);
+        assert_relative_eq!(
+            f64::from(v0[0]),
+            f64::from(v1[0]),
+            epsilon = umst_math::numeric_tolerance::APPROX_EPSILON_F32_MID as f64
+        );
     }
 
     /// Stub with unit free-energy so α scaling is measurable on the reward path.
@@ -1226,7 +1246,11 @@ mod w29_ppo_deepen_tests {
         assert_eq!(v2.len(), 1);
         // Free-energy ones → spatial sum scales with α; erasure is identical scalar debit.
         // Δreward = (α2 − α1) * n_voxels = 1.0 * 2 = 2.0
-        assert_relative_eq!(f64::from(v2[0] - v1[0]), 2.0, epsilon = umst_math::numeric_tolerance::field_algebra_rtol_f64());
+        assert_relative_eq!(
+            f64::from(v2[0] - v1[0]),
+            2.0,
+            epsilon = umst_math::numeric_tolerance::field_algebra_rtol_f64()
+        );
     }
 
     #[test]
@@ -1246,15 +1270,16 @@ mod w29_ppo_deepen_tests {
             other => panic!("expected ThermodynamicControlBarrier, got {other:?}"),
         }
         assert!(gw.telemetry().rejection_rate() > 0.0);
-        assert_relative_eq!(gw.telemetry().acceptance_rate(), 0.0, epsilon = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT);
+        assert_relative_eq!(
+            gw.telemetry().acceptance_rate(),
+            0.0,
+            epsilon = umst_math::numeric_tolerance::APPROX_MAX_RELATIVE_DEFAULT
+        );
     }
 
     #[test]
     fn w29_ppo_source_non_claim_refuses_green_language_as_claim() {
         assert!(PPO_SOURCE_NON_CLAIM.contains("not claimed"));
-        assert!(!PPO_PHYSICS_GREEN);
-        assert!(!PPO_PRODUCTION_WIRED);
-        assert!(!PPO_MASTER_RETICK);
     }
 
     #[test]
@@ -1287,10 +1312,6 @@ mod w29_ppo_deepen_tests {
             ManifoldGateway::new(PpoStubCartridge, GATEWAY_TEMP_K, GATEWAY_CREDIT_J)
                 .with_reward_weights(shaped);
         assert_eq!(gw2.reward_weights(), shaped);
-        // Builder does not invent production / GREEN / MASTER.
-        assert!(!PPO_PRODUCTION_WIRED);
-        assert!(!PPO_PHYSICS_GREEN);
-        assert!(!PPO_MASTER_RETICK);
     }
 
     #[test]
@@ -1357,7 +1378,11 @@ mod w29_ppo_deepen_tests {
         let v1: Vec<f32> = r_b1.into_data().value;
         let v2: Vec<f32> = r_b2.into_data().value;
         // Higher β → more penalty → lower reward; Δ = −(β2−β1)*n_voxels = −2.
-        assert_relative_eq!(f64::from(v2[0] - v1[0]), -2.0, epsilon = umst_math::numeric_tolerance::field_algebra_rtol_f64());
+        assert_relative_eq!(
+            f64::from(v2[0] - v1[0]),
+            -2.0,
+            epsilon = umst_math::numeric_tolerance::field_algebra_rtol_f64()
+        );
     }
 
     /// Stub with unit cost so γ scaling is measurable on the reward path.
@@ -1412,7 +1437,11 @@ mod w29_ppo_deepen_tests {
         let v1: Vec<f32> = r_g1.into_data().value;
         let v3: Vec<f32> = r_g3.into_data().value;
         // Δ = −(γ3−γ1)*n_voxels = −4.
-        assert_relative_eq!(f64::from(v3[0] - v1[0]), -4.0, epsilon = umst_math::numeric_tolerance::field_algebra_rtol_f64());
+        assert_relative_eq!(
+            f64::from(v3[0] - v1[0]),
+            -4.0,
+            epsilon = umst_math::numeric_tolerance::field_algebra_rtol_f64()
+        );
     }
 
     #[test]

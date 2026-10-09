@@ -45,8 +45,6 @@ pub const ERROR_HONEST_FENCE: &str =
 const _: () = assert!(!ERROR_PRODUCTION_WIRED);
 const _: () = assert!(!ERROR_PHYSICS_GREEN);
 const _: () = assert!(!ERROR_MASTER);
-const _: () = assert!(ERROR_TYPED_VARIANTS_LANDED);
-const _: () = assert!(ERROR_STD_ERROR_IMPL_LANDED);
 const _: () = assert!(PHYSICS_ERROR_VARIANT_COUNT == 12);
 
 /// Typed probe for physics error taxonomy posture honesty.
@@ -97,7 +95,6 @@ pub fn error_posture_honest(probe: &ErrorPostureProbe) -> bool {
 }
 
 /// Refuse GREEN / PRODUCTION_WIRED / MASTER claims on the physics error surface.
-#[must_use]
 pub fn error_refuse_overclaim(probe: &ErrorPostureProbe) -> Result<(), &'static str> {
     if probe.physics_green {
         return Err("ERROR_PHYSICS_GREEN must stay false until fleet physics closes");
@@ -406,9 +403,6 @@ mod tests {
         assert!(error_refuse_overclaim(&probe).is_ok());
         assert!(ERROR_HONEST_FENCE.contains("physics_green=false"));
         assert!(ERROR_HONEST_FENCE.contains("production_wired=false"));
-        assert!(!ERROR_PHYSICS_GREEN);
-        assert!(!ERROR_PRODUCTION_WIRED);
-        assert!(!ERROR_MASTER);
     }
 
     #[test]

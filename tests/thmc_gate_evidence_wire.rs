@@ -10,9 +10,7 @@ mod thmc_gate_evidence_wire {
     use umst_manifold::core::tensors::{MaterialCompositionTensor, UnifiedMaterialStateTensor};
     use umst_manifold::core::traits::{IScienceCartridge, PhysicalResult};
     use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
-    use umst_manifold::physics::solvers::{
-        ChemicalPlan, HydrologicPlan, MechanicalPlan, ThermalPlan, ThmcSolver, ThmcState,
-    };
+    use umst_manifold::physics::solvers::{ThmcSolver, ThmcState};
     use umst_manifold::runtime::catalog::traceability::CD_TRANSITION_CATALOG_ID;
     use umst_manifold::runtime::gate::AdmissibilityToken;
 

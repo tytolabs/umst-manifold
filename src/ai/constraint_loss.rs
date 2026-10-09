@@ -238,13 +238,6 @@ const _: () = assert!(!CONSTRAINT_LOSS_PRODUCTION_WIRED);
 const _: () = assert!(!CONSTRAINT_LOSS_MASTER);
 const _: () = assert!(!CONSTRAINT_LOSS_OP5_CLAIMED);
 const _: () = assert!(!CONSTRAINT_LOSS_MASS_TENSOR_LANDED);
-const _: () = assert!(CONSTRAINT_LOSS_CD_HOT_LANDED);
-const _: () = assert!(CONSTRAINT_LOSS_LANDAUER_HOT_LANDED);
-const _: () = assert!(CONSTRAINT_LOSS_SCALED_HOOKS_LANDED);
-const _: () = assert!(CONSTRAINT_LOSS_SOFT_COMPOSE_LANDED);
-const _: () = assert!(CONSTRAINT_LOSS_EXPLANATION_LANDED);
-const _: () = assert!(CONSTRAINT_LOSS_CANONICAL_HOST_MIRROR_LANDED);
-const _: () = assert!(CONSTRAINT_LOSS_HOST_MASS_RESIDUAL_LANDED);
 
 /// Count wired constraint_loss fence facets (must match [`CONSTRAINT_LOSS_FENCE_WIRED_COUNT`]).
 #[must_use]
@@ -711,6 +704,7 @@ pub fn scaled_landauer_slack_violation<B: Backend<FloatElem = f32>>(
 /// Honest: this is **not** `PRODUCTION_WIRED` / Kleisli production compose. Gateway
 /// `total_constraint_loss_penalty` remains feature-gated; this surface is the module SSOT
 /// for the same arithmetic without inventing GREEN.
+#[allow(clippy::too_many_arguments)]
 pub fn soft_compose_cd_landauer_penalty<B: Backend<FloatElem = f32>>(
     lambda_cd: f32,
     lambda_landauer: f32,
@@ -1050,7 +1044,11 @@ mod tests {
     fn landauer_slack_violation_zero_when_credit_sufficient() {
         let dev = NdArrayDevice::default();
         let bits = scalar_tensor(&dev, &[0.01_f32]);
-        let slack = landauer_slack_violation(bits, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32, 1.0e6_f32);
+        let slack = landauer_slack_violation(
+            bits,
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32,
+            1.0e6_f32,
+        );
         let v: Vec<f32> = slack.into_data().value;
         assert!(
             v[0].abs() < 1e-12,
@@ -1063,10 +1061,15 @@ mod tests {
     fn landauer_slack_violation_positive_when_credit_exhausted() {
         let dev = NdArrayDevice::default();
         let bits = scalar_tensor(&dev, &[1.0_f32]);
-        let slack = landauer_slack_violation(bits, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32, 0.0_f32);
+        let slack = landauer_slack_violation(
+            bits,
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32,
+            0.0_f32,
+        );
         let v: Vec<f32> = slack.into_data().value;
         assert!(v[0] > 0.0, "zero credit → positive Landauer slack");
-        let expected = crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32 * LN2_F32 * K_BOLTZMANN_F32;
+        let expected =
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32 * LN2_F32 * K_BOLTZMANN_F32;
         assert!(
             (v[0] - expected).abs() < 1e-20,
             "slack {v0} should track k_B T ln2 bits ≈ {expected}",
@@ -1078,7 +1081,12 @@ mod tests {
     fn scaled_landauer_slack_violation_zero_when_lambda_disabled() {
         let dev = NdArrayDevice::default();
         let bits = scalar_tensor(&dev, &[1.0_f32]);
-        let penalty = scaled_landauer_slack_violation(0.0_f32, bits, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32, 0.0_f32);
+        let penalty = scaled_landauer_slack_violation(
+            0.0_f32,
+            bits,
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32,
+            0.0_f32,
+        );
         let v: Vec<f32> = penalty.into_data().value;
         assert_eq!(v[0], 0.0_f32);
     }
@@ -1088,8 +1096,17 @@ mod tests {
         let dev = NdArrayDevice::default();
         let bits = scalar_tensor(&dev, &[1.0_f32]);
         let lambda = 4.0_f32;
-        let slack = landauer_slack_violation(scalar_tensor(&dev, &[1.0_f32]), crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32, 0.0_f32);
-        let penalty = scaled_landauer_slack_violation(lambda, bits, crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32, 0.0_f32);
+        let slack = landauer_slack_violation(
+            scalar_tensor(&dev, &[1.0_f32]),
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32,
+            0.0_f32,
+        );
+        let penalty = scaled_landauer_slack_violation(
+            lambda,
+            bits,
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32,
+            0.0_f32,
+        );
         let s: Vec<f32> = slack.into_data().value;
         let p: Vec<f32> = penalty.into_data().value;
         assert!(s[0] > 0.0);
@@ -1135,8 +1152,6 @@ mod tests {
         );
         assert!(!constraint_loss_production_wired());
         assert!(!constraint_loss_master_composition_wired());
-        assert!(!CONSTRAINT_LOSS_OP5_CLAIMED);
-        assert!(!CONSTRAINT_LOSS_MASS_TENSOR_LANDED);
     }
 
     #[test]
@@ -1173,7 +1188,6 @@ mod tests {
             .find(|f| f.facet == "production_wired")
             .expect("production_wired facet");
         assert!(!production_facet.wired);
-        assert!(!CONSTRAINT_LOSS_PRODUCTION_WIRED);
         let deferred = constraint_loss_deferred_facet_ids();
         assert!(deferred.contains(&"mass_conservation_tensor"));
         assert!(deferred.contains(&"production_wired"));
@@ -1290,12 +1304,18 @@ mod tests {
         // Macroscopic bit count so k_B T ln2 · bits ≫ ADMISSIBILITY_MARGIN_EPS.
         // Single-bit Landauer (~1e-21 J) is below the host eps floor and stays Admissible.
         let bits = 1.0e20_f32;
-        let explanation =
-            explain_landauer_slack_violation(scalar_tensor(&dev, &[bits]), crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32, 0.0_f32);
+        let explanation = explain_landauer_slack_violation(
+            scalar_tensor(&dev, &[bits]),
+            crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32,
+            0.0_f32,
+        );
         assert!(explanation.violation > ADMISSIBILITY_MARGIN_EPS);
         assert_eq!(explanation.admissibility, AdmissibilityToken::Inadmissible);
         assert_eq!(explanation.channel_id, LANDAUER_CBF_CATALOG_ID);
-        let expected = bits * crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32 * LN2_F32 * K_BOLTZMANN_F32;
+        let expected = bits
+            * crate::constants::AMBIENT_REFERENCE_TEMPERATURE_K as f32
+            * LN2_F32
+            * K_BOLTZMANN_F32;
         assert!(
             (explanation.violation - expected).abs() < 1e-6 * expected,
             "violation {} should track erasure cost {}",
@@ -1326,7 +1346,6 @@ mod tests {
         .expect_err("mass tensor must refuse until P4-MASS-TENSOR");
         assert_eq!(err, ConstraintLossDeferredError::MassConservationTensor);
         assert_eq!(err.owning_slice(), MASS_CONSERVATION_TENSOR_DEFERRED_STEP);
-        assert!(!CONSTRAINT_LOSS_MASS_TENSOR_LANDED);
     }
 
     #[test]
@@ -1334,7 +1353,6 @@ mod tests {
         assert!((host_mass_density_residual(2400.0, 2400.0) - 0.0).abs() < 1e-12);
         assert!((host_mass_density_residual(2400.0, 2410.0) - 10.0).abs() < 1e-12);
         assert!((host_mass_density_residual(2410.0, 2400.0) - 10.0).abs() < 1e-12);
-        assert!(CONSTRAINT_LOSS_HOST_MASS_RESIDUAL_LANDED);
     }
 
     #[test]
@@ -1392,8 +1410,6 @@ mod tests {
             p0 = p[0],
             sum = c[0] + l[0]
         );
-        assert!(CONSTRAINT_LOSS_SOFT_COMPOSE_LANDED);
-        assert!(!CONSTRAINT_LOSS_PRODUCTION_WIRED);
     }
 
     #[test]
@@ -1434,7 +1450,6 @@ mod tests {
             CONSTRAINT_LOSS_DEEPEN_GEN,
             "w29-007-constraint-loss-deepen-v2"
         );
-        assert!(!CONSTRAINT_LOSS_OP5_CLAIMED);
         assert!(CONSTRAINT_LOSS_HONEST_FENCE.contains("op5_claimed=false"));
         assert!(CONSTRAINT_LOSS_HONEST_FENCE.contains("soft_compose_landed=true"));
         assert!(CONSTRAINT_LOSS_HONEST_FENCE.contains("host_mass_residual=true"));

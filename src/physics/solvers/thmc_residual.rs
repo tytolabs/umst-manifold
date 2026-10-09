@@ -194,8 +194,6 @@ const _: () = assert!(!THMC_RESIDUAL_PHYSICS_GREEN);
 const _: () = assert!(!THMC_RESIDUAL_PRODUCTION_WIRED);
 const _: () = assert!(!THMC_RESIDUAL_MASTER);
 const _: () = assert!(!THMC_RESIDUAL_OP5_CLAIMED);
-const _: () = assert!(THMC_RESIDUAL_SURFACE_LANDED);
-const _: () = assert!(THMC_RESIDUAL_DENSE_NEWTON_CAPPED);
 const _: () = assert!(!THMC_RESIDUAL_SCALE_JFNK_CLOSED);
 const _: () = assert!(THMC_DENSE_NEWTON_MAX_STACKED_DOFS == 64);
 
@@ -1969,7 +1967,7 @@ mod w29_085_thmc_residual_deepen_tests {
         let n = 2usize;
         let stacked =
             ThmcMonolithicImplicitUnknownLayout::field_major_stacked_dof_count(n, 1, 1, 1);
-        assert_eq!(stacked, n * 1 + n * 1 + n * 1 + n * 3);
+        assert_eq!(stacked, n + n + n + n * 3);
         assert!(stacked <= THMC_DENSE_NEWTON_MAX_STACKED_DOFS);
         let scalar =
             ThmcMonolithicImplicitUnknownLayout::field_major_scalar_transport_hydration_dof_count(

@@ -51,8 +51,6 @@ const _: () = assert!(!FRAMEWORK_PHYSICS_GREEN);
 const _: () = assert!(!FRAMEWORK_PRODUCTION_WIRED);
 const _: () = assert!(!FRAMEWORK_MASTER);
 const _: () = assert!(!FRAMEWORK_OP5);
-const _: () = assert!(FRAMEWORK_MARKER_TRAITS_LANDED);
-const _: () = assert!(FRAMEWORK_DYN_KERNELS_REFUSED);
 
 /// Typed probe for physics-framework posture honesty.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

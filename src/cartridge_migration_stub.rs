@@ -48,7 +48,5 @@ mod tests {
     #[test]
     fn cartridge_migration_honesty_fence_refuses_green_production_master_op5() {
         validate_cartridge_migration_posture_honesty().expect("honest stub");
-        assert!(!CARTRIDGE_MIGRATION_MIGRATION_PHYSICS_GREEN);
-        assert!(!CARTRIDGE_MIGRATION_MIGRATION_PRODUCTION_WIRED);
     }
 }

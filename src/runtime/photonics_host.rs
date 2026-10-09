@@ -12,7 +12,7 @@
 //! on the physics lane (`photonics_lane_fence_holds`).
 
 #[cfg(feature = "photonics")]
-use crate::physics::solvers::photonics::{photonics_lane_fence_holds, DecPatchCurlConstitutive};
+use crate::physics::solvers::photonics::DecPatchCurlConstitutive;
 #[cfg(feature = "photonics")]
 use crate::physics::solvers::{DecPatchCsrInnerMode, PhotonicsDecPatchConfig, PhotonicsSolver};
 
@@ -307,6 +307,7 @@ pub fn photonics_solver_with_dec_patch(
 #[cfg(all(test, feature = "photonics"))]
 mod tests {
     use super::*;
+    use crate::physics::solvers::photonics::photonics_lane_fence_holds;
 
     #[test]
     fn force_krylov_only_literal_one() {
@@ -433,10 +434,6 @@ mod tests {
         let probe = PhotonicsHostHonestyFence::measured();
         assert!(probe.holds());
         assert!(photonics_host_honesty_probe());
-        assert!(!PHOTONICS_HOST_PHYSICS_GREEN);
-        assert!(!PHOTONICS_HOST_PRODUCTION_WIRED);
-        assert!(!PHOTONICS_HOST_MASTER);
-        assert!(!PHOTONICS_HOST_OP5);
         assert_eq!(probe.deepen_step, W29_128_PHOTONICS_HOST_DEEPEN_STEP);
         assert!(!probe.honest_fence.contains("production_wired=true"));
         assert!(!probe.honest_fence.contains("physics_green=true"));

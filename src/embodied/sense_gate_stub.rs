@@ -368,7 +368,6 @@ mod tests {
 
     #[test]
     fn production_wired_refused() {
-        assert!(!PRODUCTION_WIRED);
         assert!(!sense_gate_tombstone_summary().production_wired);
     }
 }

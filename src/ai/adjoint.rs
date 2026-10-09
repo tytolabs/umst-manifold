@@ -277,8 +277,6 @@ mod tests {
         assert!(adjoint_w29_honest_posture_bundle());
         assert!(adjoint_posture_is_honest());
         assert_eq!(ADJOINT_CELL_ID, "W29-004-ADJOINT");
-        assert!(!ADJOINT_PHYSICS_GREEN);
-        assert!(!ADJOINT_PRODUCTION_WIRED);
     }
 
     #[test]

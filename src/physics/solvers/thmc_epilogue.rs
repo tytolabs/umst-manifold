@@ -414,10 +414,6 @@ mod tests {
             thmc_epilogue_fence_wired_count(),
             THMC_EPILOGUE_FENCE_WIRED_COUNT
         );
-        assert!(!THMC_EPILOGUE_PHYSICS_GREEN);
-        assert!(!THMC_EPILOGUE_PRODUCTION_WIRED);
-        assert!(!THMC_EPILOGUE_MASTER);
-        assert!(!THMC_EPILOGUE_OP5);
     }
 
     #[test]

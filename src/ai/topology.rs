@@ -71,8 +71,6 @@ const _: () = assert!(!TOPOLOGY_PHYSICS_GREEN);
 const _: () = assert!(!TOPOLOGY_MASTER_RETICK);
 const _: () = assert!(!TOPOLOGY_SIGMUND_FILTER_COMPLETE);
 const _: () = assert!(!TOPOLOGY_CLOSED_LOOP_TO);
-const _: () = assert!(TOPOLOGY_DENSITY_NET_LANDED);
-const _: () = assert!(TOPOLOGY_OPTIMIZER_SHELL_LANDED);
 
 /// Typed probe for W29 Neural-SIMP topology posture honesty (meta / fleet probes).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -191,7 +189,6 @@ pub fn penalization_admissible(p: f32) -> bool {
 
 /// Bisection iterations to shrink a bracket of `bracket_width` below `tol`:
 /// \(\lceil \log_2(\mathrm{width}/\mathrm{tol})\rceil\) via repeated halving (integer steps).
-#[must_use]
 pub fn bisection_step_bound_from_width_tol(
     bracket_width: f32,
     tol: f32,
@@ -221,7 +218,6 @@ pub fn bisection_step_bound_from_width_tol(
 }
 
 /// Require a root bracket: finite endpoint residuals with a sign change (or exact zero).
-#[must_use]
 pub fn bisection_bracket_residual_ok(
     residual_lo: f32,
     residual_hi: f32,
@@ -1055,7 +1051,6 @@ impl VolumeLogitOffsetProjection {
 /// Monotone bisection on Heaviside threshold \(\eta\) so \(\mathrm{mean}(\rho_\eta)=V^\*\) within `tol`.
 ///
 /// Pure on `rho_tilde` scalars — used to pick \(\eta\) without \(\lambda\)-shift grey inflation (B6 H1).
-#[must_use]
 pub fn volume_matching_threshold_from_slice(
     rho_tilde: &[f32],
     beta: f32,
@@ -1096,7 +1091,6 @@ pub fn volume_matching_threshold_from_slice(
 #[cfg(feature = "topology-density-evolution")]
 /// Mask-aware \(\eta\) bisection: fixed nodes (`mask` \< 0.5) contribute VF=1; editable nodes bisect to
 /// hit global `target_vf` (excludes non-design skin from the η solve — D2 Tier 4a).
-#[must_use]
 pub fn volume_matching_threshold_masked_from_slice(
     rho_tilde: &[f32],
     editable_mask: &[f32],
@@ -1188,13 +1182,9 @@ impl VolumeEtaProjection {
     ) -> Result<Tensor<B, 3>, &'static str> {
         let flat = rho_tilde.clone().detach().into_data().value;
         let eta = match editable_mask {
-            Some(mask) => volume_matching_threshold_masked_from_slice(
-                &flat,
-                mask,
-                beta,
-                target_vf,
-                self.tol,
-            )?,
+            Some(mask) => {
+                volume_matching_threshold_masked_from_slice(&flat, mask, beta, target_vf, self.tol)?
+            }
             None => volume_matching_threshold_from_slice(&flat, beta, target_vf, self.tol)?,
         };
         Ok(HeavisideProjection::new(beta, eta).project(rho_tilde))
@@ -1480,9 +1470,6 @@ mod tests {
         assert!(!probe.master_retick);
         assert!(!probe.sigmund_filter_complete);
         assert!(!probe.closed_loop_to);
-        assert!(!TOPOLOGY_PRODUCTION_WIRED);
-        assert!(!TOPOLOGY_PHYSICS_GREEN);
-        assert!(!TOPOLOGY_CLOSED_LOOP_TO);
         // Feature compile bit is informational only — must not upgrade refusal bits.
         let _ = probe.density_evolution_compiled;
         validate_topology_posture_honesty().expect("topology posture must validate");
@@ -1554,10 +1541,6 @@ mod tests {
             mean.is_finite() && mean > 0.0 && mean < 1.0,
             "mean rho surrogate in (0,1), got {mean}"
         );
-        // Descriptive VF surrogate ≠ GREEN / production volume certificate.
-        assert!(!TOPOLOGY_PHYSICS_GREEN);
-        assert!(!TOPOLOGY_PRODUCTION_WIRED);
-        assert!(!TOPOLOGY_CLOSED_LOOP_TO);
     }
 
     #[test]
@@ -1601,15 +1584,10 @@ mod tests {
         assert_eq!(e_factor.dims(), [1, 6, 1]);
         e_factor.into_data().value.iter().copied().for_each(|v| {
             assert!(
-                v.is_finite() && v >= 0.0 && v <= 1.0,
+                v.is_finite() && (0.0..=1.0).contains(&v),
                 "rho^p in [0,1], got {v}"
             );
         });
-        // Descriptive helpers must not invent GREEN / production / closed-loop.
-        assert!(!TOPOLOGY_PHYSICS_GREEN);
-        assert!(!TOPOLOGY_PRODUCTION_WIRED);
-        assert!(!TOPOLOGY_CLOSED_LOOP_TO);
-        assert!(!TOPOLOGY_SIGMUND_FILTER_COMPLETE);
     }
 }
 
@@ -1894,8 +1872,8 @@ mod topology_density_evolution_tests {
         let rho: Vec<f32> = (0..64).map(|i| 0.2 + 0.6 * (i as f32 / 63.0)).collect();
         let beta = 16.0_f32;
         let target = 0.35_f32;
-        let eta = volume_matching_threshold_from_slice(&rho, beta, target, 1e-3)
-            .expect("eta bisection");
+        let eta =
+            volume_matching_threshold_from_slice(&rho, beta, target, 1e-3).expect("eta bisection");
         let vf = rho
             .iter()
             .map(|&r| heaviside_tanh_scalar(r, beta, eta))

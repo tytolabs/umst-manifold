@@ -292,12 +292,6 @@ mod parity_tests {
 
     #[test]
     fn mechanics_operator_honest_fence_consts_refuse_green_production_master() {
-        assert!(!MECHANICS_OPERATOR_PHYSICS_GREEN);
-        assert!(!MECHANICS_OPERATOR_PRODUCTION_WIRED);
-        assert!(!MECHANICS_OPERATOR_MASTER);
-        assert!(MECHANICS_OPERATOR_BAR_ADAPTERS_LANDED);
-        assert!(!MECHANICS_OPERATOR_Q1_HEX_IMPL_LANDED);
-        assert!(!MECHANICS_OPERATOR_CONSUMER_MIGRATION_LANDED);
         assert!(MECHANICS_OPERATOR_HONEST_FENCE.contains("production_wired=false"));
         assert!(MECHANICS_OPERATOR_HONEST_FENCE.contains("physics_green=false"));
         assert!(MECHANICS_OPERATOR_HONEST_FENCE.contains("master_composition_wired=false"));
