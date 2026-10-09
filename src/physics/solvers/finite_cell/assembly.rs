@@ -84,10 +84,15 @@ pub struct Discretisation {
     cell_of: HashMap<[usize; 3], usize>,
     roles: Vec<Role>,
     mass: MassProperties,
+    unit_moments: std::collections::BTreeMap<u16, RawMoments>,
     volumes: std::collections::BTreeMap<u16, f64>,
     diagnostics: Diagnostics,
     kind: ElementKind,
 }
+
+/// Raw moments of a solid at unit density (SI): `[∫1, ∫x, ∫y, ∫z, ∫x², ∫y², ∫z², ∫xy, ∫yz, ∫xz]`. Mass, first and
+/// second moments of any density field that is constant per material are linear in these.
+pub type RawMoments = [f64; 10];
 
 /// Cache key of a whole cell: edges (bit patterns) and material.
 type WholeKey = ([u64; 3], u16);
@@ -98,8 +103,7 @@ struct Acc {
     fractions: Vec<f64>,
     ijks: Vec<[usize; 3]>,
     cache: HashMap<WholeKey, Rc<ElementMatrices>>,
-    moments: [f64; 10],
-    volumes: std::collections::BTreeMap<u16, f64>,
+    unit_moments: std::collections::BTreeMap<u16, RawMoments>,
     diagnostics: Diagnostics,
 }
 
@@ -131,8 +135,7 @@ pub fn discretise<F: OccupancyField + ?Sized>(
         fractions: Vec::new(),
         ijks: Vec::new(),
         cache: HashMap::new(),
-        moments: [0.0; 10],
-        volumes: std::collections::BTreeMap::new(),
+        unit_moments: std::collections::BTreeMap::new(),
         diagnostics: Diagnostics::default(),
     };
     let acc = grid.cells().try_fold(init, |mut acc, ijk| {
@@ -142,10 +145,7 @@ pub fn discretise<F: OccupancyField + ?Sized>(
             return Ok(acc);
         }
         let h: [f64; 3] = std::array::from_fn(|i| chi[i] - clo[i]);
-        add_moments(&mut acc.moments, &quad, clo, chi, table)?;
-        quad.points
-            .iter()
-            .for_each(|q| *acc.volumes.entry(q.material).or_insert(0.0) += q.weight);
+        add_unit_moments(&mut acc.unit_moments, &quad, clo, chi);
         let whole_material = (quad.exactness == Exactness::Whole).then(|| quad.points[0].material);
         let key = whole_material.map(|m| (h.map(f64::to_bits), m));
         let cached = key.and_then(|k| acc.cache.get(&k).cloned());
@@ -189,31 +189,33 @@ pub fn discretise<F: OccupancyField + ?Sized>(
         .iter()
         .filter(|r| matches!(r, Role::Aggregated(_)))
         .count();
+    let moments = weighted_moments(&acc.unit_moments, &|m| table.density(m))?;
+    let volumes = acc.unit_moments.iter().map(|(&m, u)| (m, u[0])).collect();
     Ok(Discretisation {
         grid,
         cells: acc.cells,
         cell_of,
         roles,
-        mass: mass_properties(&acc.moments),
-        volumes: acc.volumes,
+        mass: mass_properties(&moments),
+        unit_moments: acc.unit_moments,
+        volumes,
         diagnostics,
         kind: spec.kind,
     })
 }
 
-/// Accumulate `∫ρ`, `∫ρx`, `∫ρ xᵢxⱼ` (upper triangle) over the cell's solid.
-fn add_moments(
-    m: &mut [f64; 10],
+/// Accumulate the unit-density moments `∫1`, `∫x`, `∫xᵢxⱼ` (upper triangle) of the cell's solid, per material.
+fn add_unit_moments(
+    acc: &mut std::collections::BTreeMap<u16, RawMoments>,
     quad: &CellQuadrature,
     lo: [f64; 3],
     hi: [f64; 3],
-    table: &MaterialTable,
-) -> Result<(), FiniteCellRefuse> {
+) {
     for q in &quad.points {
-        let rho = table.density(q.material)?;
         let x: [f64; 3] =
             std::array::from_fn(|i| lo[i] + (q.xi[i] + 1.0) / real(2) * (hi[i] - lo[i]));
-        let w = q.weight * rho;
+        let w = q.weight;
+        let m = acc.entry(q.material).or_insert([0.0; 10]);
         m[0] += w;
         (0..3).for_each(|i| m[1 + i] += w * x[i]);
         m[4] += w * x[0] * x[0];
@@ -223,7 +225,18 @@ fn add_moments(
         m[8] += w * x[1] * x[2];
         m[9] += w * x[0] * x[2];
     }
-    Ok(())
+}
+
+/// `Σ_m ρ_m · M_m`: the raw moments of the body with density `ρ_m` in material `m`.
+fn weighted_moments(
+    unit: &std::collections::BTreeMap<u16, RawMoments>,
+    density: &dyn Fn(u16) -> Result<f64, FiniteCellRefuse>,
+) -> Result<RawMoments, FiniteCellRefuse> {
+    unit.iter().try_fold([0.0; 10], |mut acc, (&m, u)| {
+        let rho = density(m)?;
+        (0..10).for_each(|i| acc[i] += rho * u[i]);
+        Ok(acc)
+    })
 }
 
 fn mass_properties(m: &[f64; 10]) -> MassProperties {
@@ -426,6 +439,28 @@ impl Discretisation {
     #[must_use]
     pub fn mass_properties(&self) -> MassProperties {
         self.mass
+    }
+
+    /// Unit-density raw moments per material index (SI), from the quadrature.
+    #[must_use]
+    pub fn material_moments(&self) -> &std::collections::BTreeMap<u16, RawMoments> {
+        &self.unit_moments
+    }
+
+    /// Mass properties of the same solid with density `density(m)` (kg/m³) in material `m`, exact for any densities
+    /// that are constant per material, with no new integration.
+    ///
+    /// # Errors
+    /// What `density` refuses; [`FiniteCellRefuse::EmptyBody`] when the mass is not positive.
+    pub fn mass_properties_with(
+        &self,
+        density: &dyn Fn(u16) -> Result<f64, FiniteCellRefuse>,
+    ) -> Result<MassProperties, FiniteCellRefuse> {
+        let m = weighted_moments(&self.unit_moments, density)?;
+        if !(m[0].is_finite() && m[0] > 0.0) {
+            return Err(FiniteCellRefuse::EmptyBody);
+        }
+        Ok(mass_properties(&m))
     }
 
     /// Solid volume per material index (m³), from the quadrature.

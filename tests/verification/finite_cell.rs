@@ -1313,3 +1313,48 @@ fn a_stiff_block_on_springs_settles_by_the_load_over_the_summed_stiffness() {
         Err(FiniteCellRefuse::InvalidSpring)
     ));
 }
+
+/// Mass properties are linear in per-material densities: the unit-density moments of a two-layer box give, for any
+/// densities, the mass, centre and inertia of the closed form, and the table's own densities reproduce
+/// `mass_properties`.
+#[test]
+fn per_material_moments_give_the_mass_properties_of_any_densities() {
+    let (a, b, c) = (0.04, 0.03, 0.02);
+    let slab = Slab {
+        lo: [0.0; 3],
+        hi: [a, b, c],
+        layers: vec![(c / 4.0, 0), (c, 1)],
+        conforming: true,
+    };
+    let card = isotropic_stiffness(E_AL, NU_AL);
+    let disc = discretise(
+        &slab,
+        &table(&[(card, RHO_AL), (card, RHO_AL / 3.0)]),
+        &spec([0.01, 0.01, 0.005], 0.0, ElementKind::Q1),
+    )
+    .expect("disc");
+    let own = disc
+        .mass_properties_with(&|m| Ok([RHO_AL, RHO_AL / 3.0][usize::from(m)]))
+        .expect("own densities");
+    let mp = disc.mass_properties();
+    assert!((own.mass - mp.mass).abs() <= 1e-12 * mp.mass);
+    assert!((own.inertia[0][0] - mp.inertia[0][0]).abs() <= 1e-12 * mp.inertia[0][0]);
+    let moments = disc.material_moments();
+    let (v0, v1) = (a * b * c / 4.0, a * b * c * 3.0 / 4.0);
+    assert!((moments[&0][0] - v0).abs() <= 1e-12 * v0 && (moments[&1][0] - v1).abs() <= 1e-12 * v1);
+    // Other densities: closed-form mass, centre height and inertia about the vertical axis.
+    let (r0, r1) = (1000.0, 7000.0);
+    let other = disc
+        .mass_properties_with(&|m| Ok([r0, r1][usize::from(m)]))
+        .expect("other densities");
+    let m = r0 * v0 + r1 * v1;
+    let zc = (r0 * v0 * c / 8.0 + r1 * v1 * (c / 4.0 + 3.0 * c / 8.0)) / m;
+    let izz = m * (a * a + b * b) / 12.0;
+    assert!((other.mass - m).abs() <= 1e-12 * m);
+    assert!((other.centroid[2] - zc).abs() <= 1e-12 * c);
+    assert!((other.inertia[2][2] - izz).abs() <= 1e-10 * izz);
+    assert_eq!(
+        disc.mass_properties_with(&|_| Ok(0.0)).map(|p| p.mass),
+        Err(FiniteCellRefuse::EmptyBody)
+    );
+}
