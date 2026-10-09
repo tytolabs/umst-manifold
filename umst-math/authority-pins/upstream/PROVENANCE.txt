@@ -17,10 +17,10 @@
 copy: umst-formal/constants/constants.json
 source_repo: https://github.com/tytolabs/umst-formal
 source_path: constants/constants.json
-source_commit: 7c85e0439bb7f2b67ff79327ad6289e4dd392b8f
-source_sha256: 7fa8abdb22d64a4a20833463f740c1f5cecb0d6cd7021b2d5be2b24ba4a4f456
+source_commit: 5598bcdec82c4dba6d2423a3a09e9966ec0a6af9
+source_sha256: 9d0e66a9e771f04136782270a4eb5528dfaf84e5fe8462f69aa43ace37c8c78a
 extract: whole
-copy_sha256: 7fa8abdb22d64a4a20833463f740c1f5cecb0d6cd7021b2d5be2b24ba4a4f456
+copy_sha256: 9d0e66a9e771f04136782270a4eb5528dfaf84e5fe8462f69aa43ace37c8c78a
 
 copy: umst-formal/Lean/lean-toolchain
 source_repo: https://github.com/tytolabs/umst-formal
