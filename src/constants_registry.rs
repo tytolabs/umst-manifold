@@ -1,37 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: MIT
-//! Immutable compile-time constants registry for manifold solvers (integration-contracts D3).
-//!
-//! **Law:** migrated rows point at a single Rust `const` or `umst-math` re-export; THMC reaction-extent
-//! floats remain **TODO** until cartridge calibration lands (no duplicate literals here).
-//!
-//! W29-020 deepen — honest SSOT fences only; does **not** claim production wiring, physics GREEN,
-//! or MASTER retick.
-
-/// W29-020 cell id (constants registry deepen).
-pub const CONSTANTS_REGISTRY_CELL_ID: &str = "W29-020-CONSTANTS_REGISTRY";
-
-/// Integration-contracts D3 morphism tag.
-pub const CONSTANTS_REGISTRY_MORPHISM: &str = "D3-GROUNDED-CONST";
-
-/// Honest posture — compile-time registry only; no GREEN invent.
-pub const CONSTANTS_REGISTRY_POSTURE_TAG: &str = "honest-grounded-const-ssot-only";
-
-/// Registry rows landed at compile-time SSOT re-exports.
-pub const REGISTRY_ROWS_LANDED: bool = true;
-
-/// Honest physics posture — registry documents SSOT; not a physics GREEN claim.
-pub const REGISTRY_PHYSICS_GREEN: bool = false;
-
-/// Honest refusal — not production-wired to cartridge calibration or live solver hot-bind.
-pub const REGISTRY_PRODUCTION_WIRED: bool = false;
-
-/// Operator master retick — **not** authorized from registry-only deepen.
-pub const REGISTRY_MASTER_RETICK: bool = false;
-
-/// Honest deepen fence for meta / fleet probes.
-pub const HONEST_FENCE: &str =
-    "registry_landed=true thmc_floats_todo=true production_wired=false physics_green=false master_retick=false";
+//! Compile-time constants registry for manifold solvers: each row names its value, the evidence it
+//! rests on and its typed derivation; migrated rows point at a single Rust `const` or a `umst-math`
+//! re-export. THMC reaction-extent floats stay in their solver until cartridge calibration lands.
 
 pub use umst_math::constants::derivation::Derivation;
 
@@ -45,20 +16,6 @@ pub struct GroundedConst<T: Copy> {
     /// `None` when the value pins `umst_constants` by code (the formal table row is its derivation) and for a
     /// test fixture literal, which grounds nothing.
     pub derivation: Option<Derivation>,
-}
-
-/// Typed probe for W29 constants-registry posture honesty.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct RegistryPostureProbe {
-    pub cell_id: &'static str,
-    pub morphism_id: &'static str,
-    pub posture_tag: &'static str,
-    pub registry_landed: bool,
-    pub physics_green: bool,
-    pub production_wired: bool,
-    pub master_retick: bool,
-    pub thmc_floats_todo: bool,
-    pub honest_fence: &'static str,
 }
 
 /// Q1-hex f32 PCG lane relative tolerance (SSOT: `hex_elasticity::HEX_PCG_REL_TOL_F32`).
@@ -154,103 +111,6 @@ pub const THMC_FLOATS_TODO: &[(&str, &str)] = &[
     ),
 ];
 
-/// Honest `production_wired` fence — never true until cartridge calibration wire measured.
-#[must_use]
-pub const fn registry_production_wired() -> bool {
-    false
-}
-
-/// Master retick eligible — false @ registry-only deepen pass.
-#[must_use]
-pub const fn registry_master_retick_eligible() -> bool {
-    false
-}
-
-/// Honest physics GREEN fence — registry documents SSOT; not a physics GREEN claim.
-#[must_use]
-pub const fn registry_physics_green() -> bool {
-    false
-}
-
-/// Compile-time fence — production flip not authorized at this slice.
-const _: () = assert!(!registry_production_wired());
-
-/// Build introspection probe for registry posture done-when checks.
-#[must_use]
-// the probe reads `THMC_FLOATS_TODO` (a const today) so the flag follows the list when it empties
-#[allow(clippy::const_is_empty)]
-pub const fn registry_posture_probe() -> RegistryPostureProbe {
-    RegistryPostureProbe {
-        cell_id: CONSTANTS_REGISTRY_CELL_ID,
-        morphism_id: CONSTANTS_REGISTRY_MORPHISM,
-        posture_tag: CONSTANTS_REGISTRY_POSTURE_TAG,
-        registry_landed: REGISTRY_ROWS_LANDED,
-        physics_green: REGISTRY_PHYSICS_GREEN,
-        production_wired: REGISTRY_PRODUCTION_WIRED,
-        master_retick: REGISTRY_MASTER_RETICK,
-        thmc_floats_todo: !THMC_FLOATS_TODO.is_empty(),
-        honest_fence: HONEST_FENCE,
-    }
-}
-
-/// Registry scaffold landed with THMC floats honestly open and no fake GREEN.
-#[must_use]
-pub fn registry_posture_honest(probe: &RegistryPostureProbe) -> bool {
-    probe.cell_id == CONSTANTS_REGISTRY_CELL_ID
-        && probe.morphism_id == CONSTANTS_REGISTRY_MORPHISM
-        && probe.posture_tag == CONSTANTS_REGISTRY_POSTURE_TAG
-        && probe.registry_landed
-        && !probe.physics_green
-        && !probe.production_wired
-        && !probe.master_retick
-        && probe.thmc_floats_todo
-}
-
-/// Validate registry posture honesty — fail closed on fake production / GREEN claims.
-pub fn validate_registry_posture_honesty() -> Result<(), &'static str> {
-    let probe = registry_posture_probe();
-    if probe.production_wired || registry_production_wired() {
-        return Err("registry_production_wired must stay false until cartridge calibration wire");
-    }
-    if probe.physics_green || registry_physics_green() {
-        return Err("registry_physics_green must stay false — SSOT registry is not physics GREEN");
-    }
-    if probe.master_retick || registry_master_retick_eligible() {
-        return Err("registry_master_retick must stay false at registry-only deepen");
-    }
-    if !registry_posture_honest(&probe) {
-        return Err("registry_posture_honest failed — fence mismatch");
-    }
-    if !probe.honest_fence.contains("production_wired=false") {
-        return Err("honest_fence missing production_wired=false");
-    }
-    if !probe.honest_fence.contains("physics_green=false") {
-        return Err("honest_fence missing physics_green=false");
-    }
-    if !probe.honest_fence.contains("master_retick=false") {
-        return Err("honest_fence missing master_retick=false");
-    }
-    Ok(())
-}
-
-/// Whether the registry morphism pins are stable @ HEAD.
-#[must_use]
-pub fn registry_morphism_pinned() -> bool {
-    CONSTANTS_REGISTRY_CELL_ID == "W29-020-CONSTANTS_REGISTRY"
-        && CONSTANTS_REGISTRY_MORPHISM == "D3-GROUNDED-CONST"
-        && CONSTANTS_REGISTRY_POSTURE_TAG == "honest-grounded-const-ssot-only"
-        && REGISTRY_ROWS_LANDED
-        && !REGISTRY_PRODUCTION_WIRED
-        && !REGISTRY_PHYSICS_GREEN
-        && !REGISTRY_MASTER_RETICK
-}
-
-/// Symbol names for THMC floats still TODO (cartridge calibration pending).
-#[must_use]
-pub fn thmc_floats_todo_names() -> Vec<&'static str> {
-    THMC_FLOATS_TODO.iter().map(|(sym, _)| *sym).collect()
-}
-
 /// All migrated row names for `scripts/check_constants.py` (values checked in Rust unit tests).
 #[must_use]
 #[allow(unused_mut)] // cfg-gated `push` extends the vec when features are on
@@ -277,43 +137,6 @@ pub fn migrated_registry_names() -> Vec<&'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn registry_cell_metadata_pinned() {
-        assert!(registry_morphism_pinned());
-        assert_eq!(CONSTANTS_REGISTRY_CELL_ID, "W29-020-CONSTANTS_REGISTRY");
-        assert_eq!(CONSTANTS_REGISTRY_MORPHISM, "D3-GROUNDED-CONST");
-    }
-
-    #[test]
-    fn registry_posture_probe_honest_fences_hold() {
-        let probe = registry_posture_probe();
-        assert!(registry_posture_honest(&probe));
-        assert!(!probe.production_wired);
-        assert!(!probe.physics_green);
-        assert!(!probe.master_retick);
-        assert!(probe.thmc_floats_todo);
-        assert!(!registry_production_wired());
-        assert!(!registry_physics_green());
-        assert!(!registry_master_retick_eligible());
-        assert!(probe.honest_fence.contains("production_wired=false"));
-        assert!(probe.honest_fence.contains("physics_green=false"));
-        assert!(probe.honest_fence.contains("master_retick=false"));
-        validate_registry_posture_honesty().expect("posture honesty");
-    }
-
-    #[test]
-    fn thmc_floats_todo_matches_docs_section() {
-        let names = thmc_floats_todo_names();
-        assert_eq!(names.len(), THMC_FLOATS_TODO.len());
-        assert!(names.contains(&"UNIVERSAL_GAS_CONSTANT_J_PER_MOL_K"));
-        assert!(names.contains(&"HYDRATION_ARRHENIUS_PREFACTOR_S"));
-        assert!(names.contains(&"HYDRATION_ACTIVATION_ENERGY_J_PER_MOL"));
-        for (sym, path) in THMC_FLOATS_TODO {
-            assert!(!sym.is_empty());
-            assert!(path.contains("thmc"));
-        }
-    }
 
     #[test]
     fn migrated_registry_names_always_include_bar_and_landauer() {
@@ -353,14 +176,5 @@ mod tests {
             HEX_PCG_REL_TOL_F64_GROUNDED.value,
             crate::physics::hex_elasticity::HEX_PCG_REL_TOL_F64
         );
-    }
-
-    #[test]
-    fn w29_020_constants_registry_fleet_verify() {
-        let probe = registry_posture_probe();
-        assert_eq!(probe.cell_id, "W29-020-CONSTANTS_REGISTRY");
-        assert!(registry_posture_honest(&probe));
-        assert!(registry_morphism_pinned());
-        validate_registry_posture_honesty().expect("fleet verify");
     }
 }

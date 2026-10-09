@@ -9,9 +9,6 @@
 use crate::constants_registry::{Derivation, GroundedConst};
 use umst_math::constants::tier1_derivation;
 
-/// Mix-calibrated bulk density closure for gate thermodynamic snapshots.
-pub struct MixCalibratedDensityClosure;
-
 /// Mix-calibration reference bath @ 20 °C (K).
 pub const MIX_CALIBRATION_REFERENCE_TEMPERATURE_K: GroundedConst<f64> = GroundedConst {
     name: "gate_mix_calibration_reference_temperature_k",
