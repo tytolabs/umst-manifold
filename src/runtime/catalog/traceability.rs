@@ -137,6 +137,13 @@ pub const ALLOW_UNUSED_CATALOG_IDS: &[&str] = &[
     "Concrete.StiffnessTransition",
     "Constants.SI",
     "Constants.SIBridge",
+    // Second-law bounds on dissipation coefficients and elastic moduli: the umst-constants table carries them as
+    // bounds (constants.json), and no runtime gate cites the Lean module.
+    "Constants.SecondLawDissipation",
+    "Constants.SecondLawElastic",
+    // Convex dissipation channels, Prony arms and passive restitution through `.transition`: formal-only, no
+    // runtime gate cites it yet.
+    "ConvexPhiChannels",
     "ConvexPhiDissipation",
     "CoordinationContract",
     "CoordinationCost",
@@ -146,6 +153,10 @@ pub const ALLOW_UNUSED_CATALOG_IDS: &[&str] = &[
     "Economic.PhysicsConstrainedAI",
     "ExamplesQubitEpistemic",
     "Excitement",
+    // `selectBy` over any linear order; its Rust twin is umst-algebra `select_by` (SELECT_BY_LEAN_ANCHOR), which is
+    // no runtime gate `catalog_id`, so the module stays formal-only like `Excitement`.
+    "ExcitementBy",
+    "ExcitementByProofs",
     "ExcitementProofs",
     "InterpretationFunctor",
     "KnowingFibreInstance",

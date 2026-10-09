@@ -2,24 +2,24 @@
   "version": 2,
   "role": "manifold_runtime_lock",
   "upstream_repo": "umst-formal-double-slit",
-  "upstream_catalog_digest_hex": "99cef947094176e435e60c5ad36287d2d0d21f2f0b48d5838bf603c744e56183",
-  "module_count": 224,
-  "module_graph_edge_count": 665,
+  "upstream_catalog_digest_hex": "58c2d9149d2b5eb21708c5d071d4840f3c6f6f8a05bacf42895d02d28f9542ff",
+  "module_count": 229,
+  "module_graph_edge_count": 678,
   "composition_rule": "cross_repo_merge_v1_primary_wins_basename",
-  "composed_catalog_digest_hex": "99cef947094176e435e60c5ad36287d2d0d21f2f0b48d5838bf603c744e56183",
-  "composed_primary_fiber_fingerprint_hex": "28e9255167bb830a74eee9338678a4cd029a500b328bfc2c599a73cfa12a2f7a",
+  "composed_catalog_digest_hex": "58c2d9149d2b5eb21708c5d071d4840f3c6f6f8a05bacf42895d02d28f9542ff",
+  "composed_primary_fiber_fingerprint_hex": "6ed6b210797fc5211ca8e9fab749336d8a2cd86fa5b707765e7509f32eb3d578",
   "fiber_pins": [
     {
       "repo": "umst-formal-double-slit",
-      "catalog_digest_hex": "b753520af1255572bb4d56b202d6939a2076102081a280346416adfc661ddbd4",
+      "catalog_digest_hex": "1a9a824a439ab8b4b149e517778241139240504cd46319c922e93bd571ec74a5",
       "module_count": 53,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"
     },
     {
       "repo": "umst-formal",
-      "catalog_digest_hex": "a852c8b27b79df49f31dcae1cd3a38614d226e8ad01fd26e2a55f106109a91e5",
-      "module_count": 172,
+      "catalog_digest_hex": "33b8d28a5c3ea1b28487e790c4195f1576f35287b58b4943f6e06148c2282463",
+      "module_count": 177,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"
     },
@@ -50,5 +50,5 @@
       }
     ]
   },
-  "notes": "Catalog bump: umst-formal 610f2c4 + double-slit 51615ce exports; merged 224 modules / 665 edges. UCRS fiber pin unchanged (preview). scripts/bump_catalog_lock.py"
+  "notes": "Catalog bump: umst-formal c81eea9 + double-slit dd089d3 exports; merged 229 modules / 678 edges. UCRS fiber pin unchanged (preview). scripts/bump_catalog_lock.py"
 }

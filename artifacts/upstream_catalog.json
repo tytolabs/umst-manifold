@@ -1651,6 +1651,80 @@
       "repo": "umst-formal"
     },
     {
+      "path": "Constants/SecondLawDissipation.lean",
+      "content_sha256": "e715431b4568b83aa3d7461722e15a9320b36d54e76cd0a08a7830997bf1729e",
+      "declarations": {
+        "theorem": [
+          "dissipation_coefficient_nonneg",
+          "viscosity_nonneg",
+          "bingham_nonneg",
+          "lossModulus_nonneg"
+        ]
+      },
+      "import_lines": [
+        "Process"
+      ],
+      "module": "Constants.SecondLawDissipation",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Constants/SecondLawElastic.lean",
+      "content_sha256": "827ef321ffc412b6e64fc2732a5d2e3f8ecdad862cd6640c37a9ea4493160bae",
+      "declarations": {
+        "theorem": [
+          "takes",
+          "relaxation_stiffness_nonneg",
+          "relaxation_modulus_pos",
+          "twoMode_stiffness_nonneg",
+          "isotropic_poisson_bounds",
+          "isotropic_young_nonneg",
+          "sls_relaxed_le_instantaneous",
+          "orthotropic_poisson_sq_le"
+        ],
+        "def": [
+          "poissonRatio",
+          "youngModulus",
+          "orthotropicEnergy"
+        ]
+      },
+      "import_lines": [
+        "Process"
+      ],
+      "module": "Constants.SecondLawElastic",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "ConvexPhiChannels.lean",
+      "content_sha256": "cc0efa96000e6e317eea26c508093dda0027b8b92a64bf570c85686e13cc09db",
+      "declarations": {
+        "structure": [
+          "GsmMultiPotential",
+          "PassiveGsmEnergyInequality"
+        ],
+        "def": [
+          "multiDissipationPower",
+          "pronyPotential",
+          "pronySeries"
+        ],
+        "theorem": [
+          "multi_dissipation_nonneg",
+          "inequality_secondLaw",
+          "supplied_inequality_secondLaw",
+          "multi_secondLaw",
+          "prony_dissipationPower_eq",
+          "prony_dissipation_nonneg",
+          "prony_secondLaw",
+          "restitution_le_one",
+          "restitution_energy_loss_nonneg"
+        ]
+      },
+      "import_lines": [
+        "ConvexPhiDissipation"
+      ],
+      "module": "ConvexPhiChannels",
+      "repo": "umst-formal"
+    },
+    {
       "path": "ConvexPhiDissipation.lean",
       "content_sha256": "256309c298beeb34daf489d88243252c05be73069f8794ecbb838493c97cd4b2",
       "declarations": {
@@ -2699,6 +2773,72 @@
         "DualLedger"
       ],
       "module": "Excitement",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "ExcitementBy.lean",
+      "content_sha256": "380161e6ae3471a468c845181cb111b1ba76168d9495b4960137b36764dda83a",
+      "declarations": {
+        "inductive": [
+          "Baseline"
+        ],
+        "def": [
+          "map",
+          "improves",
+          "pickMinBy",
+          "candKeyBy",
+          "minCandBy",
+          "selectBy"
+        ],
+        "theorem": [
+          "map_incumbent",
+          "map_open",
+          "pickMin_eq_pickMinBy",
+          "select_eq_selectBy"
+        ]
+      },
+      "import_lines": [
+        "Excitement",
+        "Mathlib.Data.Prod.Lex"
+      ],
+      "module": "ExcitementBy",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "ExcitementByProofs.lean",
+      "content_sha256": "2c234ef54b4d762679bc337d4174ae5422923a542f62166b00307e26a7b6272d",
+      "declarations": {
+        "theorem": [
+          "selectBy_empty",
+          "selectBy_admissible_from_result",
+          "selectBy_result_cbf",
+          "selectBy_result_dec",
+          "pickMinBy_eq_lex",
+          "pickMinBy_comm_of_ne_id",
+          "minCandBy_comm_of_ne_id",
+          "minCandBy_assoc",
+          "pickMinBy_right_comm_of_ne_id",
+          "pairwise_id_ne_of_mem",
+          "foldl_pickMinBy_perm",
+          "selectBy_perm_invariant",
+          "pickMinBy_strictMono",
+          "Baseline.improves_map_strictMono",
+          "selectBy_strictMono_invariant",
+          "pickMinBy_spec",
+          "foldl_pickMinBy_spec",
+          "selectBy_inl_spec",
+          "selectBy_mem",
+          "selectBy_minimal",
+          "selectBy_improves_incumbent",
+          "select_minimal_of_selectBy"
+        ]
+      },
+      "import_lines": [
+        "ExcitementBy",
+        "Mathlib.Data.List.Perm.Basic",
+        "Mathlib.Order.Monotone.Basic"
+      ],
+      "module": "ExcitementByProofs",
       "repo": "umst-formal"
     },
     {
@@ -6930,7 +7070,7 @@
     },
     {
       "path": "DensityState.lean",
-      "content_sha256": "37da5d422e130381eba4d77caa6e50c5c1e0aa483681fa379b033f545f631061",
+      "content_sha256": "eb2e5045fd3f0bd3fb1d6723d54900b22c263e6a784c4dc8b1cb6ec906daac2b",
       "declarations": {
         "structure": [
           "DensityMatCore"
@@ -6949,11 +7089,15 @@
           "trace_re_eq_one_n",
           "diag_re_le_one_n",
           "smul_psd",
+          "posSemidef_finset_sum",
+          "posSemidef_sum",
+          "mixedDensity_eq_convexCombo_two",
           "pureCarrier_posSemidef",
           "pureCarrier_trace",
           "pureDensity_carrier"
         ],
         "def": [
+          "convexComboDensity",
           "mixedDensity",
           "pureCarrier",
           "pureDensity"
@@ -6961,7 +7105,9 @@
       },
       "import_lines": [
         "Mathlib.Data.Complex.Basic",
+        "Mathlib.Data.Complex.BigOperators",
         "Mathlib.Data.Fintype.Basic",
+        "Mathlib.Data.Fintype.BigOperators",
         "Mathlib.Data.Matrix.RowCol",
         "Mathlib.LinearAlgebra.Matrix.PosDef",
         "Mathlib.LinearAlgebra.Matrix.Trace"
@@ -7497,7 +7643,7 @@
     },
     {
       "path": "ErasureChannel.lean",
-      "content_sha256": "b45b492a2045f481f37b96a77f88f29f63db6328dd0a6bb2a3df1df10c3e2a6f",
+      "content_sha256": "d086b7e9758bc59aacf803965e4703ddc1f150a567fb2021ba669fd2451fe703",
       "declarations": {
         "def": [
           "resetK0",
@@ -7524,17 +7670,28 @@
           "resetChannel_entropy_zero",
           "resetChannel_pathEntropyBits_zero",
           "resetChannel_landauerCost_zero",
-          "idealResetErasure_saturates"
+          "resetOutputState_eq_rhoZero",
+          "rhoZero_carrier_det_eq_zero",
+          "vonNeumannEntropy_rhoZero",
+          "resetChannel_output_vonNeumannEntropy_zero",
+          "resetChannel_diagonal_entropy_drop",
+          "resetChannel_diagonal_entropy_drop_rhoPlus_eq_log_two",
+          "resetChannel_pathEntropyBits_drop_rhoPlus_eq_one",
+          "idealResetErasure_saturates",
+          "idealResetErasure_saturationQuality",
+          "idealResetErasure_rhoPlus_dissipation_eq_landauerBitEnergy"
         ]
       },
       "import_lines": [
+        "ExamplesQubit",
         "LandauerBound",
         "Mathlib.Algebra.BigOperators.Fin",
         "Mathlib.Data.Complex.Basic",
         "Mathlib.Data.Fintype.BigOperators",
         "Mathlib.LinearAlgebra.Matrix.Trace",
         "Mathlib.Tactic.FinCases",
-        "MeasurementChannel"
+        "MeasurementChannel",
+        "VonNeumannEntropy"
       ],
       "module": "ErasureChannel",
       "repo": "umst-formal-double-slit"
@@ -7726,7 +7883,7 @@
     },
     {
       "path": "GeneralVisibility.lean",
-      "content_sha256": "8bd30b12a3cf3359c4ec5c26d3f0940620c7c504b925186016da682e4510f6e1",
+      "content_sha256": "efeec20840e38ed7654fae31c7ea17a8d27505075087f3a5acf40622289945fa",
       "declarations": {
         "def": [
           "coherenceL1",
@@ -7734,7 +7891,13 @@
         ],
         "theorem": [
           "fringeVisibility_n_nonneg",
+          "posSemidef_det_nonneg_fin_two",
+          "det_submatrix_two",
           "abs_entry_le_sqrt_diag_mul",
+          "coherenceL1_le_sqrtDoubleSum",
+          "sqrt_doubleSum_eq_sq_sub_one",
+          "sum_sqrt_sq_le_card",
+          "sqrt_doubleSum_le_pred",
           "coherenceL1_carrier_le",
           "fringeVisibility_n_le_one",
           "fringeVisibility_n_whichPath_apply"
@@ -7816,17 +7979,19 @@
     },
     {
       "path": "KleinInequality.lean",
-      "content_sha256": "0585280da9ec2e8fbcd11a22e292836324b184532b39834023d3d77a461a3d6f",
+      "content_sha256": "f45a4ff98a99628367ecd6b60a5e577a6151a351abec50b0cd509abe3fe3fffa",
       "declarations": {
         "theorem": [
           "gibbs_inequality",
-          "spectralRelativeEntropy_nonneg"
+          "unitary_row_normSq_sum",
+          "unitary_col_normSq_sum",
+          "spectralRelativeEntropy_nonneg",
+          "diag_unitary_conj_re_eq",
+          "vonNeumannEntropy_le_sum_negMulLog_diag_unitary_conj"
         ],
         "lemma": [
           "unitary_row_diagonal_mul_star",
-          "unitary_row_normSq_sum",
-          "unitary_col_diagonal_star_mul",
-          "unitary_col_normSq_sum"
+          "unitary_col_diagonal_star_mul"
         ],
         "def": [
           "spectralRelativeEntropy"
@@ -8049,7 +8214,7 @@
     },
     {
       "path": "MeasurementChannel.lean",
-      "content_sha256": "0a0d108d4c7a6630358caa86c091a1beb8af03d956d1ea9baa1c15cea9c1239e",
+      "content_sha256": "2d9e3e6cbefb4aba84758eac455a96acf730adc7eb691ffddd686c345a5ffcd2",
       "declarations": {
         "structure": [
           "KrausChannel"
@@ -8065,9 +8230,6 @@
         "theorem": [
           "map_expand",
           "posSemidef_map_term",
-          "PosSemidef.add",
-          "posSemidef_finset_sum",
-          "posSemidef_sum",
           "map_posSemidef",
           "trace_mul_sum",
           "trace_map_eq",
@@ -8294,19 +8456,25 @@
     },
     {
       "path": "QuantumMutualInfo.lean",
-      "content_sha256": "2f473c76ec8f88a9cd0039c2f26a2c5eb0f0f56ee06788ae92f8bcc9476b46e7",
+      "content_sha256": "d1a63281458419c2c9305f7316b53feef569867ec8dd8787345c08556d649b28",
       "declarations": {
         "def": [
           "quantumMutualInfo",
-          "quantumConditionalEntropy"
+          "quantumConditionalEntropy",
+          "quantumConditionalEntropy_B_given_A"
         ],
         "theorem": [
           "quantumMutualInfo_eq_entropy_minus_conditional",
+          "quantumMutualInfo_eq_entropy_minus_conditional_B_given_A",
           "quantumMutualInfo_le",
-          "quantumMutualInfo_product_eq_zero"
+          "quantumMutualInfo_product_eq_zero",
+          "sum_negMulLog_le_sum_negMulLog_marginals",
+          "vonNeumannEntropy_le_add_partialTrace",
+          "quantumMutualInfo_nonneg"
         ]
       },
       "import_lines": [
+        "KleinInequality",
         "KroneckerEigen",
         "TensorPartialTrace",
         "VonNeumannEntropy"
@@ -8367,7 +8535,7 @@
     },
     {
       "path": "TensorPartialTrace.lean",
-      "content_sha256": "624fb49b5940933b2a068b824506ebf7a21e280de84b530501c4496434dc3a4b",
+      "content_sha256": "a38208148369d4cbf3066623c2870582ce0ad0c7fcaf0a25156a9ce03f707cfa",
       "declarations": {
         "def": [
           "partialTraceRightProd",
@@ -8402,7 +8570,10 @@
           "partialTraceRightProd_toDensityMatrix_carrier",
           "partialTraceLeftProd_toDensityMatrix_carrier",
           "partialTraceRightProd_toDensityMatrix_tensor",
-          "partialTraceLeftProd_toDensityMatrix_tensor"
+          "partialTraceLeftProd_toDensityMatrix_tensor",
+          "conjTranspose_mul_mul_apply_self",
+          "sum_diag_kronecker_conj_right",
+          "sum_diag_kronecker_conj_left"
         ]
       },
       "import_lines": [
@@ -8420,7 +8591,7 @@
     },
     {
       "path": "VonNeumannEntropy.lean",
-      "content_sha256": "ac570a725c1d1cb6b83547e9bec142bd55fbea512ce94ffebdce28b5f4327f0b",
+      "content_sha256": "25bc72a32e8c13feea6469266ec0fda8424313413c2daa72a596f78492cbe256",
       "declarations": {
         "theorem": [
           "trace_eq_sum_eigenvalues_hermitian",
@@ -8428,6 +8599,9 @@
           "density_eigenvalues_sum_eq_one",
           "density_eigenvalues_sum_eq_one_real",
           "density_eigenvalues_le_one",
+          "trace_mul_self_eq_sum_eigenvalues_sq",
+          "trace_mul_self_re_eq_sum_sq",
+          "density_eigenvalue_mul_one_sub_eq_zero_of_trace_sq_eq_one",
           "vonNeumannEntropy_nonneg",
           "vonNeumannEntropy_le_log_n",
           "vonNeumannEntropy_congr_eigenvalues",
@@ -8448,7 +8622,10 @@
           "vonNeumannEntropy_unitarily_invariant",
           "vonNeumannEntropy_eq_sum_negMulLog_of_real_map_eq",
           "vonNeumannEntropy_eq_sum_negMulLog_of_diagonal_carrier",
-          "vonNeumannEntropy_pure_eq_zero"
+          "vonNeumannEntropy_eq_zero_of_trace_sq_eq_one",
+          "pureCarrier_trace_mul_self",
+          "vonNeumannEntropy_pure_eq_zero",
+          "vonNeumannEntropy_qubit_det_eq_zero"
         ],
         "def": [
           "vonNeumannEntropy",
@@ -8498,7 +8675,7 @@
     },
     {
       "path": "lakefile.lean",
-      "content_sha256": "25db620c24ceab7ecac5e8f1f9ba71e489640e057f6e4c4d2b48c71b8b2d31a3",
+      "content_sha256": "690dfd85b09f0995859d0932460b3babd36d9b4c891d15383c2b99ef4be0e633",
       "declarations": {},
       "import_lines": [
         "Lake"
@@ -9019,6 +9196,21 @@
       "to_approx": "Process"
     },
     {
+      "from": "Constants.SecondLawDissipation",
+      "import": "Process",
+      "to_approx": "Process"
+    },
+    {
+      "from": "Constants.SecondLawElastic",
+      "import": "Process",
+      "to_approx": "Process"
+    },
+    {
+      "from": "ConvexPhiChannels",
+      "import": "ConvexPhiDissipation",
+      "to_approx": "ConvexPhiDissipation"
+    },
+    {
       "from": "ConvexPhiDissipation",
       "import": "Mathlib.Analysis.Convex.Deriv",
       "to_approx": "Mathlib.Analysis.Convex.Deriv"
@@ -9382,6 +9574,31 @@
       "from": "Excitement",
       "import": "DualLedger",
       "to_approx": "DualLedger"
+    },
+    {
+      "from": "ExcitementBy",
+      "import": "Excitement",
+      "to_approx": "Excitement"
+    },
+    {
+      "from": "ExcitementBy",
+      "import": "Mathlib.Data.Prod.Lex",
+      "to_approx": "Mathlib.Data.Prod.Lex"
+    },
+    {
+      "from": "ExcitementByProofs",
+      "import": "ExcitementBy",
+      "to_approx": "ExcitementBy"
+    },
+    {
+      "from": "ExcitementByProofs",
+      "import": "Mathlib.Data.List.Perm.Basic",
+      "to_approx": "Mathlib.Data.List.Perm.Basic"
+    },
+    {
+      "from": "ExcitementByProofs",
+      "import": "Mathlib.Order.Monotone.Basic",
+      "to_approx": "Mathlib.Order.Monotone.Basic"
     },
     {
       "from": "ExcitementProofs",
@@ -10960,8 +11177,18 @@
     },
     {
       "from": "DensityState",
+      "import": "Mathlib.Data.Complex.BigOperators",
+      "to_approx": "Mathlib.Data.Complex.BigOperators"
+    },
+    {
+      "from": "DensityState",
       "import": "Mathlib.Data.Fintype.Basic",
       "to_approx": "Mathlib.Data.Fintype.Basic"
+    },
+    {
+      "from": "DensityState",
+      "import": "Mathlib.Data.Fintype.BigOperators",
+      "to_approx": "Mathlib.Data.Fintype.BigOperators"
     },
     {
       "from": "DensityState",
@@ -11125,6 +11352,11 @@
     },
     {
       "from": "ErasureChannel",
+      "import": "ExamplesQubit",
+      "to_approx": "ExamplesQubit"
+    },
+    {
+      "from": "ErasureChannel",
       "import": "LandauerBound",
       "to_approx": "LandauerBound"
     },
@@ -11157,6 +11389,11 @@
       "from": "ErasureChannel",
       "import": "MeasurementChannel",
       "to_approx": "MeasurementChannel"
+    },
+    {
+      "from": "ErasureChannel",
+      "import": "VonNeumannEntropy",
+      "to_approx": "VonNeumannEntropy"
     },
     {
       "from": "ExamplesQubit",
@@ -11670,6 +11907,11 @@
     },
     {
       "from": "QuantumMutualInfo",
+      "import": "KleinInequality",
+      "to_approx": "KleinInequality"
+    },
+    {
+      "from": "QuantumMutualInfo",
       "import": "KroneckerEigen",
       "to_approx": "KroneckerEigen"
     },
@@ -11834,5 +12076,5 @@
       "to_approx": "Lake"
     }
   ],
-  "digest": "99cef947094176e435e60c5ad36287d2d0d21f2f0b48d5838bf603c744e56183"
+  "digest": "58c2d9149d2b5eb21708c5d071d4840f3c6f6f8a05bacf42895d02d28f9542ff"
 }

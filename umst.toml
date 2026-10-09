@@ -26,5 +26,5 @@ notes = "Future rename target: umst-runtime (A3)."
 
 [registry.pins]
 pins_file = ".umst-pins.toml"
-umst-formal = "0aec25337758f254058ad253942e47e73d277339"
-umst-formal-double-slit = "96a5835d19172607eebd4935904844ef88c2e656"
+umst-formal = "c81eea963c08a9cf367bcf94038555a7ede905fe"
+umst-formal-double-slit = "f5f0d1516c01d898045a4a1bac0623bedc5c10e1"
