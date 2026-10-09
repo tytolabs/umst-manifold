@@ -779,18 +779,25 @@ pub const PYTHON_VERSION_PIN_DERIVATION: Derivation = Derivation::Pin {
     ref_name: "3.13.1",
 };
 
-/// Authority anchor for L-0 `umst_formal_pin_sha` (FORMAL_PIN.txt file digest).
+/// Authority anchor for L-0 `umst_formal_pin_sha`: the file `umst-adk formal-pins` renders the pin into.
 pub const L0_FORMAL_PIN_AUTHORITY: &str = "umst-math/FORMAL_PIN.txt";
-
-/// Pinned SHA-256 of `umst-math/FORMAL_PIN.txt`.
-pub const L0_FORMAL_PIN_FILE_SHA256: &str =
-    "f064139f82e259cddc8c648a388206b8396c42c39e99d85287fa9427f9a2daff";
 
 /// `umst_formal_pin_sha` — L-0 formal grounding synchrony file witness.
 pub const UMST_FORMAL_PIN_SHA_DERIVATION: Derivation = Derivation::Pin {
     repo: "tytolabs/umst-formal",
     ref_name: L0_FORMAL_PIN_AUTHORITY,
 };
+
+/// `manifold_formal_catalog_digest` — the composed formal catalog umst-manifold pins: umst-formal-double-slit's
+/// merged `artifacts/catalog.json` at the `.umst-pins.toml` commit, copied to umst-manifold
+/// `artifacts/upstream_catalog.json`, whose digest umst-manifold `build.rs` recomputes.
+pub const MANIFOLD_FORMAL_CATALOG_DIGEST_DERIVATION: Derivation = Derivation::Pin {
+    repo: "tytolabs/umst-formal-double-slit",
+    ref_name: "umst-manifold/.umst-pins.toml [umst-formal-double-slit]",
+};
+
+/// Registry rows pinning the composed formal catalog.
+pub const FORMAL_CATALOG_PIN_REGISTRY_ROW_NAMES: &[&str] = &["manifold_formal_catalog_digest"];
 
 /// `umst_haskell_toolchain_reference` — native Haskell gate pin (`egoff-haskell-toolchain.txt`).
 pub const UMST_HASKELL_TOOLCHAIN_DERIVATION: Derivation = Derivation::Pin {
