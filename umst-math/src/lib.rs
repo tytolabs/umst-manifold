@@ -38,6 +38,8 @@ pub mod hal;
 pub mod hypergraph;
 pub mod info_entropy;
 pub mod io;
+/// Finite-sample Jarzynski free-energy estimator with bias bounds, self-tested on the two-level quench.
+pub mod jarzynski;
 pub mod kernels;
 pub mod klein;
 pub mod kraus;
