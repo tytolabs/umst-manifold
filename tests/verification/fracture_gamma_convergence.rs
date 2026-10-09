@@ -8,8 +8,8 @@
 //! **Implemented (this fixture + `fracture_field.rs`):** inner AT2 damage relaxation uses **red–black**
 //! half-steps on the graph Laplacian (see solver module docs). With `--features fracture-at2`:
 //! `update_damage_smoke_tiny_chain` (finite \(d\); `outer_iterations == 1` with a fixed-strain
-//! provider matches [`PhaseFieldFractureSolver::update_damage`]); `at2_surface_energy_scale_matches_gc_order_of_magnitude` (order-of-magnitude
-//! \(G_c/l\cdot\bar d\) on the tiny chain); `at2_gc_linear_scaling_smoke` (doubling \(G_c\) at fixed \((l,\varepsilon)\): \(\bar d\) stays same order and \(G_c/l\cdot\bar d\) tracks \(\Delta G_c\) loosely — explicit sweep, **not** the Γ-limit scaling of \(G_c\) in the sharp-interface sense); **`at2_gamma_convergence_three_length_scales`** — three \((l_0,h)\) pairs with fixed \(h/l_0=\tfrac14\), \(\psi^+\equiv 0\), exponential damage seed at mid-span; discrete AT2 surface functional \(D_h\) has **relative error &lt; 2%** vs **`Gc`** on each mesh and **does not worsen** across refinement (successive errors within **`10^{-3}`**, fixed-strain relaxation with 32 outer passes — not a coupled mechanics \(\psi^+\) benchmark); **`at2_gamma_convergence_psi_plus_nonzero_three_length_scales`** (Track 12 §7.2) — same triple with uniform tensile \(\varepsilon_{xx}\), **`spectral_tensile_psi_plus_from_strain`** drive sanity, widened \(\tau_\Gamma\), non-worsening errors, and \(D_h > G_c\) vs the pure-surface optimum.
+//! provider matches [`PhaseFieldFractureSolver::update_damage`]); `at2_surface_energy_scale_matches_gc_order_of_magnitude` (uniform drive on the tiny chain:
+//! \(\bar d\) matches the closed-form minimiser \(2\psi^+/(G_c/l + 2\psi^+)\)); `at2_gc_linear_scaling_smoke` (doubling \(G_c\) at fixed \((l,\varepsilon)\) scales \(\bar d\) by the closed-form ratio \(\approx\tfrac12\) and leaves \(G_c/l\cdot\bar d \approx 2\psi^+\) unchanged); **`at2_gamma_convergence_three_length_scales`** — three \((l_0,h)\) pairs with fixed \(h/l_0=\tfrac14\), \(\psi^+\equiv 0\), exponential damage seed at mid-span; discrete AT2 surface functional \(D_h\) has **relative error &lt; 2%** vs **`Gc`** on each mesh and **does not worsen** across refinement (successive errors within **`10^{-3}`**, fixed-strain relaxation with 32 outer passes — not a coupled mechanics \(\psi^+\) benchmark); **`at2_gamma_convergence_psi_plus_nonzero_three_length_scales`** (Track 12 §7.2) — same triple with uniform tensile \(\varepsilon_{xx}\), **`spectral_tensile_psi_plus_from_strain`** drive sanity, widened \(\tau_\Gamma\), non-worsening errors, and \(D_h > G_c\) vs the pure-surface optimum.
 //!
 //! **Fixture:** shared **`discrete_at2_bar_surface_energy_1d`** + **`at2_discrete_surface_functional_toy_chain_matches_hand_total`** (guards the \(D_h\) sum used by **`at2_gamma_convergence_three_length_scales`**). **`at2_gamma_convergence_multi_ratio_schedule_smoke`** (Track 12 §7.3): fixed \(\ell_0\), \(\rho=h/\ell_0\in\{1/8,1/4,1/2\}\), same \(\psi^+\equiv 0\) exponential seed and 32-pass relaxation as [`at2_gamma_convergence_three_length_scales`]. **`at2_gamma_convergence_multi_ratio_psi_plus_schedule_smoke`** (Track 12 §7.3.1): same \(\rho\) rows as §7.3 with **uniform tensile** \(\varepsilon_{xx}\), **`spectral_tensile_psi_plus_from_strain`** drive sanity, widened \(\tau_\Gamma\) per row, and \(D_h>G_c\) vs the pure-surface optimum. **`at2_gamma_convergence_multi_ratio_psi_plus_outer_strain_ramp_smoke`** (Track 12 §7.3.2): identical multi-\(\rho\) meshing as §7.3.1 but **`PhaseFieldFractureSolver::update_damage_staggered`** with a **linear outer ramp** of \(\varepsilon_{xx}\) (nonzero schedule across 32 outers); final-drive \(\psi^+\) sanity, \(\tau_{\Gamma,j}\) on \(D_h\), and \(D_h>G_c\) vs the surface-only optimum. **Track 12 §7.4** — outer stopping (`update_damage_staggered_with_outer_cfg`, `StaggeredFractureConfig::outer_stopping`): **`at2_staggered_outer_cfg_fixed_iters_matches_legacy`**, **`at2_staggered_outer_loose_damage_linf_one_pass`**, **`at2_staggered_outer_rel_psi_loose_two_passes`**, **`at2_solve_staggered_mechanics_outer_loose_stopping_one_pass`**, **`staggered_mechanics_outer_damage_stop_matches_long_budget`**. **Research backlog** (stagger dissipation, THMC within-step stagger): [`docs/research/v0.4_track12_staggered_fracture_mechanics.md`](../../docs/research/v0.4_track12_staggered_fracture_mechanics.md) §7.
 
@@ -20,14 +20,11 @@ use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::tensors::UnifiedMaterialStateTensor;
 #[cfg(feature = "fracture-at2")]
 use umst_manifold::core::umst_schema::UMST_SCALAR_CHANNEL_COUNT;
-#[cfg(feature = "fracture-at2")]
-use umst_manifold::physics::error::PhysicsError;
 use umst_manifold::physics::solvers::PhaseFieldFractureSolver;
 #[cfg(feature = "fracture-at2")]
 use umst_manifold::physics::solvers::{
-    fracture_field::IrreversibilityRefused, spectral_tensile_psi_plus_from_strain,
-    strain_tensor_for_fracture_from_manifold, StaggeredFractureConfig,
-    StaggeredOuterDamageStopCriteria,
+    spectral_tensile_psi_plus_from_strain, strain_tensor_for_fracture_from_manifold,
+    StaggeredFractureConfig, StaggeredOuterDamageStopCriteria,
 };
 #[cfg(feature = "fracture-at2")]
 use umst_manifold::physics::time_orchestration::MechanicsInnerLoopConfig;
@@ -61,18 +58,6 @@ fn strain_field(t: Tensor<B, 4>) -> SmallStrainField<B> {
 
 fn damage_field(t: Tensor<B, 3>) -> DamageField<B> {
     Field::new(t)
-}
-
-/// Precondition — AT2 irreversibility: typed [`IrreversibilityRefused`] (`damage healing refused`).
-#[cfg(feature = "fracture-at2")]
-fn expect_at2_damage_healing_refused(err: PhysicsError) {
-    match err {
-        PhysicsError::InvariantViolation { context }
-            if context == IrreversibilityRefused::CONTEXT => {}
-        other => panic!(
-            "precondition AT2 irreversibility: expected damage healing refused; got {other:?}"
-        ),
-    }
 }
 
 /// Discrete AT2 **1-D bar** surface functional (same definition as `at2_gamma_convergence_three_length_scales`):
@@ -227,7 +212,8 @@ fn at2_length_scale_sweep_non_regression() {
     }
 }
 
-/// Stronger tensile strain on the smoke **tiny chain**: AT2 drive yields finite positive damage and a `Gc/l`-consistent dissipation scale.
+/// Uniform tensile strain on the **tiny chain**: \(\Delta d = 0\), so the AT2 minimiser is the
+/// closed form \(d = 2\psi^+/(G_c/l + 2\psi^+)\) at every node, and \(G_c/l\cdot\bar d = 2\psi^+(1-\bar d)\).
 #[cfg(feature = "fracture-at2")]
 #[test]
 fn at2_surface_energy_scale_matches_gc_order_of_magnitude() {
@@ -260,26 +246,33 @@ fn at2_surface_energy_scale_matches_gc_order_of_magnitude() {
     let solver = PhaseFieldFractureSolver {
         length_scale: 0.08_f32,
     };
+    let psi: f32 = spectral_tensile_psi_plus_from_strain(strain.clone())
+        .into_data()
+        .value[0];
     let d_new = update_damage_raw(&solver, strain, damage, fracture_energy_gc, edges_b1)
-        .expect("PhaseFieldFractureSolver::update_damage_tensors on tensile ε_xx for Gc/l·d̄ order-of-magnitude smoke (FP §6 Track 12 AT2 surface-energy scale witness)");
+        .expect("AT2 update on uniform tensile ε_xx");
     let vals = d_new.into_data().value;
-    let mean_d: f32 = vals.iter().sum::<f32>() / vals.len() as f32;
-    assert!(
-        mean_d > 1e-6_f32,
-        "expected AT2 mean damage under tensile strain; mean_d={mean_d}"
-    );
-
     let l = 0.08_f32;
+    let d_exact = 2.0 * psi / (gc / l + 2.0 * psi);
+    for &d in &vals {
+        assert!(
+            ((d - d_exact) / d_exact).abs() < 1e-2_f32,
+            "AT2 damage {d} must match the closed form {d_exact}; vals={vals:?}"
+        );
+    }
+
+    let mean_d: f32 = vals.iter().sum::<f32>() / vals.len() as f32;
     let dissipation_scale = gc / l * mean_d;
+    let drive = 2.0 * psi * (1.0 - mean_d);
     assert!(
-        (1e-3_f32..1e7_f32).contains(&dissipation_scale),
-        "Gc/l·d̄ scale {dissipation_scale} out of expected band"
+        ((dissipation_scale - drive) / drive).abs() < 1e-2_f32,
+        "Gc/l·d̄ = {dissipation_scale} must balance 2ψ⁺(1-d̄) = {drive}"
     );
 }
 
-/// Doubling \(G_c\) at fixed \((l,\varepsilon)\): **dissipation-scale** proxy \(G_c/l\cdot\bar d\) rises
-/// roughly with \(\Delta G_c\) (loose band); \(\bar d\) remains bounded and comparable order (explicit
-/// relaxation — not a claim of pointwise monotone \(\bar d\) vs \(G_c\) on this tiny chain).
+/// Doubling \(G_c\) at fixed \((l,\varepsilon)\) under uniform drive: \(\bar d\) scales by
+/// \((G_c^{lo}/l + 2\psi^+)/(G_c^{hi}/l + 2\psi^+) \approx \tfrac12\), and the dissipation proxy
+/// \(G_c/l\cdot\bar d = 2\psi^+(1-\bar d)\) is unchanged to first order.
 #[cfg(feature = "fracture-at2")]
 #[test]
 fn at2_gc_linear_scaling_smoke() {
@@ -316,17 +309,21 @@ fn at2_gc_linear_scaling_smoke() {
         &dev,
     );
 
+    let psi: f32 = spectral_tensile_psi_plus_from_strain(strain.clone())
+        .into_data()
+        .value[0];
     let solver = PhaseFieldFractureSolver { length_scale: l };
 
-    let d_lo = update_damage_raw(&solver,
+    let d_lo = update_damage_raw(
+        &solver,
         strain.clone(),
         damage0.clone(),
         gc_field_lo,
         edges_b1.clone(),
     )
-    .expect("PhaseFieldFractureSolver::update_damage_tensors at Gc=100 on tiny chain (FP §6 AT2 gc_linear_scaling low-Gc witness)");
+    .expect("AT2 update at Gc = 100 on the tiny chain");
     let d_hi = update_damage_raw(&solver, strain, damage0, gc_field_hi, edges_b1.clone())
-        .expect("PhaseFieldFractureSolver::update_damage_tensors at Gc=200 on tiny chain (FP §6 AT2 gc_linear_scaling high-Gc witness)");
+        .expect("AT2 update at Gc = 200 on the tiny chain");
 
     let vals_lo = d_lo.into_data().value;
     let vals_hi = d_hi.into_data().value;
@@ -334,26 +331,23 @@ fn at2_gc_linear_scaling_smoke() {
     let mean_hi: f32 = vals_hi.iter().sum::<f32>() / vals_hi.len() as f32;
 
     assert!(
-        mean_lo > 1e-8_f32 && mean_hi > 1e-8_f32,
+        mean_lo > 0.0 && mean_hi > 0.0,
         "expected positive mean damage at both Gc; mean_lo={mean_lo} mean_hi={mean_hi}"
     );
 
     let r_md = mean_hi / mean_lo;
+    let r_exact = (gc_lo / l + 2.0 * psi) / (gc_hi / l + 2.0 * psi);
     assert!(
-        (0.55_f32..1.65_f32).contains(&r_md),
-        "mean_d ratio (2Gc vs Gc) expected bounded O(1) smoke; mean_lo={mean_lo} mean_hi={mean_hi} r_md={r_md}"
+        ((r_md - r_exact) / r_exact).abs() < 1e-2_f32,
+        "mean_d ratio (2Gc vs Gc) {r_md} must match the closed form {r_exact}; mean_lo={mean_lo} mean_hi={mean_hi}"
     );
 
     let scale_lo = gc_lo / l * mean_lo;
     let scale_hi = gc_hi / l * mean_hi;
-    assert!(
-        scale_lo > 1e-6_f32 && scale_hi > 1e-6_f32,
-        "dissipation-scale proxy should stay above noise; scale_lo={scale_lo} scale_hi={scale_hi}"
-    );
     let r_scale = scale_hi / scale_lo;
     assert!(
-        (1.05_f32..3.8_f32).contains(&r_scale),
-        "Gc/l·d̄ should rise sub-quadratically when Gc doubles; scale_lo={scale_lo} scale_hi={scale_hi} r_scale={r_scale}"
+        (r_scale - 1.0).abs() < 1e-2_f32,
+        "Gc/l·d̄ = 2ψ⁺(1-d̄) must not change when Gc doubles; scale_lo={scale_lo} scale_hi={scale_hi} r_scale={r_scale}"
     );
 }
 
@@ -437,8 +431,8 @@ fn at2_gamma_convergence_three_length_scales() {
     let dev = NdArrayDevice::Cpu;
     let length_l: f32 = 5.0;
     let gc_val: f32 = 1.0;
-    // ψ⁺ ≡ 0: with **irreversibility** (`out.max_pair(damage_old)`) the relaxation cannot reduce the
-    // pre-localised seed, so `d` stays at the optimal AT2 continuum profile `exp(-|x-L/2|/l₀)`.
+    // ψ⁺ ≡ 0: the projected relaxation on `{d_old ≤ d ≤ 1}` cannot reduce the pre-localised seed,
+    // so `d` stays at the optimal AT2 continuum profile `exp(-|x-L/2|/l₀)`.
     // The discrete functional `D_h` evaluated on this profile is the textbook Γ-convergence quantity
     // (Bourdin–Francfort–Marigo 2000 §3.2 / Miehe 2010 §4.1). Continuum value is exactly `Gc`.
     let psi_plus_drive: f32 = 0.0;
@@ -492,19 +486,14 @@ fn at2_gamma_convergence_three_length_scales() {
         let solver = PhaseFieldFractureSolver { length_scale: l0 };
         let mut d_curr = damage.clone();
         for _ in 0..32 {
-            match update_damage_raw(
+            d_curr = update_damage_raw(
                 &solver,
                 strain.clone(),
-                d_curr.clone(),
+                d_curr,
                 fracture_energy_gc.clone(),
                 edges_b1.clone(),
-            ) {
-                Ok(next) => d_curr = next,
-                Err(err) => {
-                    expect_at2_damage_healing_refused(err);
-                    break;
-                }
-            }
+            )
+            .expect("AT2 fixed-strain pass on the exponential seed");
         }
 
         let d_vals: Vec<f32> = d_curr.into_data().value;
@@ -604,19 +593,14 @@ fn at2_gamma_convergence_multi_ratio_schedule_smoke() {
         let solver = PhaseFieldFractureSolver { length_scale: l0 };
         let mut d_curr = damage.clone();
         for _ in 0..32 {
-            match update_damage_raw(
+            d_curr = update_damage_raw(
                 &solver,
                 strain.clone(),
-                d_curr.clone(),
+                d_curr,
                 fracture_energy_gc.clone(),
                 edges_b1.clone(),
-            ) {
-                Ok(next) => d_curr = next,
-                Err(err) => {
-                    expect_at2_damage_healing_refused(err);
-                    break;
-                }
-            }
+            )
+            .expect("AT2 fixed-strain pass on the exponential seed");
         }
 
         let d_vals: Vec<f32> = d_curr.into_data().value;
@@ -709,37 +693,33 @@ fn at2_gamma_convergence_multi_ratio_psi_plus_schedule_smoke() {
         );
 
         let solver = PhaseFieldFractureSolver { length_scale: l0 };
-        // Precondition — AT2 irreversibility: pre-localised exponential seed cannot heal under ψ⁺ drive.
-        match update_damage_raw(
-            &solver,
-            strain.clone(),
-            damage.clone(),
-            fracture_energy_gc.clone(),
-            edges_b1.clone(),
-        ) {
-            Err(e) => {
-                expect_at2_damage_healing_refused(e);
-                eprintln!(
-                    "multi-ρ ψ⁺: ρ={rho:.4} h={h:.4} N={n} max_psi={max_psi:.6} — healing refused (τ_Γ,j={tau_j} not applicable)"
-                );
-            }
-            Ok(d_curr) => {
-                let d_vals: Vec<f32> = d_curr.into_data().value;
-                let d_h = discrete_at2_bar_surface_energy_1d(&d_vals, h, l0, gc_val);
-                let err = (d_h - gc_val).abs() / gc_val;
-                eprintln!(
-                    "multi-ρ ψ⁺: ρ={rho:.4} h={h:.4} N={n} D_h={d_h:.4} rel_err={err:.4} τ_Γ,j={tau_j} max_psi={max_psi:.6}"
-                );
-                assert!(
-                    err < tau_j,
-                    "ρ={rho}: |D_h-Gc|/Gc = {err} exceeds τ_Γ,j={tau_j} (D_h={d_h})"
-                );
-                assert!(
-                    d_h > gc_val + 1e-3_f32,
-                    "ρ={rho}: expected D_h > Gc + 1e-3 with tensile ψ⁺; D_h={d_h}"
-                );
-            }
+        let mut d_curr = damage.clone();
+        for _ in 0..32 {
+            d_curr = update_damage_raw(
+                &solver,
+                strain.clone(),
+                d_curr,
+                fracture_energy_gc.clone(),
+                edges_b1.clone(),
+            )
+            .expect("AT2 fixed-strain pass on the multi-ρ ψ⁺ row");
         }
+
+        let d_vals: Vec<f32> = d_curr.into_data().value;
+        let d_h = discrete_at2_bar_surface_energy_1d(&d_vals, h, l0, gc_val);
+        let err = (d_h - gc_val).abs() / gc_val;
+        eprintln!(
+            "multi-ρ ψ⁺: ρ={rho:.4} h={h:.4} N={n} D_h={d_h:.4} rel_err={err:.4} τ_Γ,j={tau_j} max_psi={max_psi:.6}"
+        );
+        assert!(
+            err < tau_j,
+            "ρ={rho}: |D_h-Gc|/Gc = {err} exceeds τ_Γ,j={tau_j} (D_h={d_h})"
+        );
+        // Finest ρ row can sit just above `Gc` (surface-dominated); keep a small strict margin.
+        assert!(
+            d_h > gc_val + 1e-3_f32,
+            "ρ={rho}: expected D_h > Gc + 1e-3 with tensile ψ⁺; D_h={d_h}"
+        );
     }
 }
 
@@ -826,42 +806,35 @@ fn at2_gamma_convergence_multi_ratio_psi_plus_outer_strain_ramp_smoke() {
             "ρ={rho}: terminal drive sanity max ψ⁺ vs floor; max_psi={max_psi} floor={psi_floor}"
         );
 
-        // Precondition — AT2 irreversibility: staggered ramp on a pre-localised seed refuses healing.
-        match solver.update_damage_staggered(
-            |_d: &DamageField<B>| {
-                let t = (outer_k as f32 / denom).clamp(0.0, 1.0);
-                let exx = exx_start + t * (exx_end - exx_start);
-                outer_k += 1;
-                strain_field(uniaxial_strain(&dev, batch, n, exx))
-            },
-            damage_field(damage),
-            fracture_energy_gc.clone(),
-            edges_b1.clone(),
-            outer_iters,
-        ) {
-            Err(e) => {
-                expect_at2_damage_healing_refused(e);
-                eprintln!(
-                    "multi-ρ ψ⁺ ramp: ρ={rho:.4} h={h:.4} N={n} max_psi={max_psi:.6} — healing refused (τ_Γ,j={tau_j} not applicable)"
-                );
-            }
-            Ok(d_curr) => {
-                let d_vals: Vec<f32> = d_curr.into_tensor().into_data().value;
-                let d_h = discrete_at2_bar_surface_energy_1d(&d_vals, h, l0, gc_val);
-                let err = (d_h - gc_val).abs() / gc_val;
-                eprintln!(
-                    "multi-ρ ψ⁺ ramp: ρ={rho:.4} h={h:.4} N={n} D_h={d_h:.4} rel_err={err:.4} τ_Γ,j={tau_j} max_psi={max_psi:.6}"
-                );
-                assert!(
-                    err < tau_j,
-                    "ρ={rho}: |D_h-Gc|/Gc = {err} exceeds τ_Γ,j={tau_j} (D_h={d_h})"
-                );
-                assert!(
-                    d_h > gc_val + 1e-3_f32,
-                    "ρ={rho}: expected D_h > Gc + 1e-3 with ramped ψ⁺; D_h={d_h}"
-                );
-            }
-        }
+        let d_curr = solver
+            .update_damage_staggered(
+                |_d: &DamageField<B>| {
+                    let t = (outer_k as f32 / denom).clamp(0.0, 1.0);
+                    let exx = exx_start + t * (exx_end - exx_start);
+                    outer_k += 1;
+                    strain_field(uniaxial_strain(&dev, batch, n, exx))
+                },
+                damage_field(damage),
+                fracture_energy_gc.clone(),
+                edges_b1.clone(),
+                outer_iters,
+            )
+            .expect("AT2 staggered linear outer ε_xx ramp on the multi-ρ bar");
+
+        let d_vals: Vec<f32> = d_curr.into_tensor().into_data().value;
+        let d_h = discrete_at2_bar_surface_energy_1d(&d_vals, h, l0, gc_val);
+        let err = (d_h - gc_val).abs() / gc_val;
+        eprintln!(
+            "multi-ρ ψ⁺ ramp: ρ={rho:.4} h={h:.4} N={n} D_h={d_h:.4} rel_err={err:.4} τ_Γ,j={tau_j} max_psi={max_psi:.6}"
+        );
+        assert!(
+            err < tau_j,
+            "ρ={rho}: |D_h-Gc|/Gc = {err} exceeds τ_Γ,j={tau_j} (D_h={d_h})"
+        );
+        assert!(
+            d_h > gc_val + 1e-3_f32,
+            "ρ={rho}: expected D_h > Gc + 1e-3 with ramped ψ⁺; D_h={d_h}"
+        );
     }
 }
 
@@ -935,56 +908,52 @@ fn at2_gamma_convergence_psi_plus_nonzero_three_length_scales() {
         );
 
         let solver = PhaseFieldFractureSolver { length_scale: l0 };
-        // Precondition — AT2 irreversibility: exponential seed + uniform tensile ψ⁺ refuses healing.
-        match update_damage_raw(
-            &solver,
-            strain.clone(),
-            damage.clone(),
-            fracture_energy_gc.clone(),
-            edges_b1.clone(),
-        ) {
-            Err(e) => {
-                expect_at2_damage_healing_refused(e);
-                eprintln!("Γ ψ⁺: l0={l0:.4} h={h:.4} N={n} max_psi={max_psi:.6} — healing refused");
-            }
-            Ok(d_curr) => {
-                let d_vals: Vec<f32> = d_curr.into_data().value;
-                let d_h = discrete_at2_bar_surface_energy_1d(&d_vals, h, l0, gc_val);
-                let err = (d_h - gc_val).abs() / gc_val;
-                d_hs.push(d_h);
-                errors.push(err);
-                eprintln!(
-                    "Γ ψ⁺: l0={l0:.4} h={h:.4} N={n} D_h={d_h:.4} rel_err={err:.4} max_psi={max_psi:.6}"
-                );
-            }
+        let mut d_curr = damage.clone();
+        for _ in 0..32 {
+            d_curr = update_damage_raw(
+                &solver,
+                strain.clone(),
+                d_curr,
+                fracture_energy_gc.clone(),
+                edges_b1.clone(),
+            )
+            .expect("AT2 fixed-strain pass on the Γ-convergence bar with tensile ψ⁺");
         }
+
+        let d_vals: Vec<f32> = d_curr.into_data().value;
+        let d_h = discrete_at2_bar_surface_energy_1d(&d_vals, h, l0, gc_val);
+        let err = (d_h - gc_val).abs() / gc_val;
+        d_hs.push(d_h);
+        errors.push(err);
+        eprintln!(
+            "Γ ψ⁺: l0={l0:.4} h={h:.4} N={n} D_h={d_h:.4} rel_err={err:.4} max_psi={max_psi:.6}"
+        );
     }
 
-    if !errors.is_empty() {
-        // Wider band than ψ⁺≡0 when relaxation completes without a healing proposal.
-        const TAU_GAMMA_PSI: f32 = 0.55_f32;
-        for (i, &err) in errors.iter().enumerate() {
-            let d_h = d_hs[i];
-            assert!(
-                err < TAU_GAMMA_PSI,
-                "Γ-type relative error too large at pair {i}: D_h={d_h} rel_err={err} (cap {TAU_GAMMA_PSI})",
-            );
-        }
+    // Wider band than ψ⁺≡0: tensile drive couples into damage; D_h need not sit at the sharp `Gc` optimum.
+    const TAU_GAMMA_PSI: f32 = 0.55_f32;
+    for (i, &err) in errors.iter().enumerate() {
+        let d_h = d_hs[i];
         assert!(
-            errors[1] <= errors[0] + 1e-3,
-            "error must not increase between coarse→mid: {errors:?}",
+            err < TAU_GAMMA_PSI,
+            "Γ-type relative error too large at pair {i}: D_h={d_h} rel_err={err} (cap {TAU_GAMMA_PSI})",
         );
-        assert!(
-            errors[2] <= errors[1] + 1e-3,
-            "error must not increase between mid→fine: {errors:?}",
-        );
+    }
+    assert!(
+        errors[1] <= errors[0] + 1e-3,
+        "error must not increase between coarse→mid: {errors:?}",
+    );
+    assert!(
+        errors[2] <= errors[1] + 1e-3,
+        "error must not increase between mid→fine: {errors:?}",
+    );
 
-        for dh in &d_hs {
-            assert!(
-                *dh > gc_val + 5e-3_f32,
-                "expected D_h > Gc on each mesh with strong ψ⁺; got D_h={dh}"
-            );
-        }
+    // Coupled drive lifts the discrete surface measure above the ψ⁺≡0 optimum (`D_h ≈ Gc`).
+    for dh in &d_hs {
+        assert!(
+            *dh > gc_val + 5e-3_f32,
+            "expected D_h > Gc on each mesh with strong ψ⁺; got D_h={dh}"
+        );
     }
 }
 
@@ -1132,7 +1101,7 @@ fn staggered_fracture_compliance_monotone_increasing() {
 
     let cg = MechanicsInnerLoopConfig {
         max_cg_iterations: n * 3,
-        // Problem-size cap. The monotone witness also refuses healing at the previous 400-step cap.
+        // Problem-size cap (3N PCG iterations).
         cg_tolerance: 1e-5,
         pcg_tolerance: 1e-5,
         use_preconditioner: true,
@@ -1170,7 +1139,6 @@ fn staggered_fracture_compliance_monotone_increasing() {
     let mut compliances: Vec<f32> = vec![c0];
     let outer_schedule = [2usize, 5, 10, 20, 30];
     let mut d_last_max: f32 = 0.0;
-    let mut healing_refused = false;
     for &k in outer_schedule.iter() {
         let cfg_k = StaggeredFractureConfig {
             outer_iters: k,
@@ -1180,7 +1148,7 @@ fn staggered_fracture_compliance_monotone_increasing() {
             kappa_reg: 1e-6,
             outer_stopping: StaggeredOuterDamageStopCriteria::default(),
         };
-        match PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
+        let (u_k, d_k) = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
             coords.clone(),
             edges_b1.clone(),
             body_force.clone(),
@@ -1190,45 +1158,28 @@ fn staggered_fracture_compliance_monotone_increasing() {
             cross_section_area,
             &cg,
             cfg_k,
-        ) {
-            Ok((u_k, d_k)) => {
-                let u_vals = u_k.into_data().value;
-                let d_vals = d_k.into_tensor().into_data().value;
-                let tip_u = u_vals[(n - 1) * 3];
-                let c_k = force * tip_u;
-                let max_d = d_vals.iter().copied().fold(0.0_f32, f32::max);
-                d_last_max = max_d;
-                eprintln!("staggered: k={k} c_k={c_k:.6} max_d={max_d:.4}");
-                compliances.push(c_k);
-            }
-            Err(e) => {
-                // Precondition — AT2 irreversibility: coupled stagger may refuse healing (not a CG budget issue).
-                expect_at2_damage_healing_refused(e);
-                healing_refused = true;
-                assert!(
-                    !compliances.is_empty(),
-                    "expected at least one converged mechanics outer sweep before healing refusal; k={k} compliances={compliances:?}"
-                );
-                eprintln!("staggered: k={k} — damage healing refused at outer_iters={k}");
-                break;
-            }
-        }
+        )
+        .expect("staggered mechanics–damage solve at outer_iters = k");
+        let u_vals = u_k.into_data().value;
+        let d_vals = d_k.into_tensor().into_data().value;
+        let tip_u = u_vals[(n - 1) * 3];
+        let c_k = force * tip_u;
+        let max_d = d_vals.iter().copied().fold(0.0_f32, f32::max);
+        d_last_max = max_d;
+        eprintln!("staggered: k={k} c_k={c_k:.6} max_d={max_d:.4}");
+        compliances.push(c_k);
     }
 
     let c_final = *compliances.last().expect("compliance recorded");
     assert!(c_final.is_finite() && c_final > 0.0, "c_final={c_final}");
-    if healing_refused {
-        assert!(d_last_max.is_finite(), "max_d={d_last_max}");
-    } else {
-        assert!(
-            c_final > c0,
-            "expected compliance to grow: c0={c0} c_final={c_final}"
-        );
-        assert!(
-            d_last_max > 0.5,
-            "expected significant damage growth; max_d_final={d_last_max}"
-        );
-    }
+    assert!(
+        c_final > c0,
+        "expected compliance to grow: c0={c0} c_final={c_final}"
+    );
+    assert!(
+        d_last_max > 0.5,
+        "expected significant damage growth; max_d_final={d_last_max}"
+    );
 
     // Monotone non-decreasing (allow ε = 1e-4 slack).
     for w in compliances.windows(2) {
@@ -1585,7 +1536,7 @@ fn staggered_mechanics_outer_damage_stop_matches_long_budget() {
         },
     };
 
-    let err_long = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
+    let (u_long, d_long) = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
         coords.clone(),
         edges_b1.clone(),
         body_force.clone(),
@@ -1596,9 +1547,8 @@ fn staggered_mechanics_outer_damage_stop_matches_long_budget() {
         &cg,
         cfg_long,
     )
-    .expect_err("8-outer full budget");
-    expect_at2_damage_healing_refused(err_long);
-    let err_stop = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
+    .expect("8-outer full budget");
+    let (u_s, d_s) = PhaseFieldFractureSolver::solve_staggered_with_mechanics::<B>(
         coords,
         edges_b1,
         body_force,
@@ -1609,6 +1559,16 @@ fn staggered_mechanics_outer_damage_stop_matches_long_budget() {
         &cg,
         cfg_inactive_stop,
     )
-    .expect_err("8-outer inactive damage stop");
-    expect_at2_damage_healing_refused(err_stop);
+    .expect("8-outer inactive damage stop");
+    let tol = 1e-4_f32;
+    let v1 = u_long.into_data().value;
+    let v2 = u_s.into_data().value;
+    for i in 0..v1.len() {
+        assert!((v1[i] - v2[i]).abs() < tol, "u mismatch at {i}");
+    }
+    let w1 = d_long.into_tensor().into_data().value;
+    let w2 = d_s.into_tensor().into_data().value;
+    for i in 0..w1.len() {
+        assert!((w1[i] - w2[i]).abs() < tol, "d mismatch at {i}");
+    }
 }

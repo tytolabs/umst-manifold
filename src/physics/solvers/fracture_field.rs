@@ -28,17 +28,20 @@
 //!   \(g(d) = (1-d)^2 + \eta\).
 //! - AT2-style nodal field: `Gc/l · d − Gc · l · Δ d ≈ 2(1-d) ψ⁺` with `Δ` from
 //!   [`crate::physics::laplacian::TopologicalLaplacian::scalar_laplacian`] on `edges_b1`.
-//! - Irreversibility: relaxation must not propose **healing** (`d_{trial} < d_{old}`); otherwise
-//!   [`IrreversibilityRefused`]. Otherwise `max(d_old, d_{trial})`, then clamp to `\[0, 1\]`.
+//! - Irreversibility: the damage update solves the AT2 variational inequality on the admissible set
+//!   \(\{d_{old} \le d \le 1\}\) (Bourdin–Francfort–Marigo 2008 §4.2; Miehe history field). Every
+//!   red–black half-step is projected onto that set, and the stopping residual is the natural
+//!   residual \(D\,(d - P(d - r/D))\), which vanishes at the constrained minimiser. A pre-damaged state
+//!   at zero drive therefore returns \(d = d_{old}\).
 //!
-//! ## Inner damage relaxation (Jacobi + graph Laplacian)
+//! ## Inner damage relaxation (projected red–black Gauss–Seidel + graph Laplacian)
 //!
-//! A plain Jacobi step on \((Gc/l - Gc\,l\,\Delta)\,d \approx 2(1-d)\psi^+\) can **checkerboard**
-//! on 1D chains (odd/even mode), which shows up as alternating **global sums** in `f32` smoke tests.
-//! We combine **smaller** \(\omega\), **node-parity red–black** half-steps, a **`\[0,1\]` clamp once
-//! per outer pair**, and **residual / stagnation stopping** on the AT2 damage equation (Farrell &
-//! Maurini 2017, doi:10.1002/nme.5300) so a terminal near-checkerboard state does not cancel the
-//! integrated damage to **0** in `f32`.
+//! Each half-step updates one node parity by \(d \leftarrow P(d - r/D)\), where \(D\) is the
+//! operator diagonal \(G_c/l + 2\psi^+ + G_c\,l\sum_j w_{ij}\). Diagonal scaling keeps the step
+//! stable for every \(G_c/l\) (an unscaled step \(d - \omega r\) diverges once
+//! \(\omega\,G_c/l > 2\)), and the red–black ordering is exact Gauss–Seidel on bipartite chains, so
+//! no odd/even checkerboard mode survives. Iteration stops on the natural residual or on residual
+//! stagnation (Farrell & Maurini 2017, doi:10.1002/nme.5300).
 //!
 //! Default builds (no `fracture-at2`): [`PhaseFieldFractureSolver::update_damage`] is a **documented
 //! no-op** — returns `Ok(damage)` unchanged so `cargo test` stays green.
@@ -493,41 +496,19 @@ pub fn strain_tensor_for_fracture_from_manifold<B: Backend<FloatElem = f32>>(
     }
 }
 
-/// Under-relaxation \(\omega\) on **each** parity half-step.
+/// Relaxation factor \(\omega\) on each diagonally scaled parity half-step (\(\omega = 1\):
+/// projected red–black Gauss–Seidel).
 #[cfg(feature = "fracture-at2")]
-const RELAXATION_OMEGA: f32 = 0.055;
+const RELAXATION_OMEGA: f32 = 1.0;
 
-/// Stop damage red–black when the AT2 equation residual (L∞) falls below this scale.
+/// Stop damage red–black when the natural residual of the AT2 variational inequality (L∞, AT2
+/// equation units) falls below this scale.
 #[cfg(feature = "fracture-at2")]
 const DAMAGE_RELAX_RESIDUAL_TOL: f32 = 1e-6_f32;
 
 /// Stop when residual decrease per outer pass falls below this (avoids unbounded sweeps without an integer cap).
 #[cfg(feature = "fracture-at2")]
 const DAMAGE_RELAX_RESIDUAL_STAGNATION_TOL: f32 = 1e-9_f32;
-
-/// Nodal tolerance for detecting a proposed healing increment \(d_{trial} - d_{old} < -\text{tol}\).
-#[cfg(feature = "fracture-at2")]
-const DAMAGE_IRREVERSIBILITY_HEALING_TOL: f32 = 1e-12_f32;
-
-/// AT2 phase-field damage update refused a proposed **healing** step (`d_{trial} < d_{old}`).
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct IrreversibilityRefused {
-    /// Minimum nodal increment `d_trial - d_old` (negative when healing was proposed).
-    pub min_nodal_increment: f32,
-}
-
-impl IrreversibilityRefused {
-    pub const CONTEXT: &'static str = "fracture AT2 irreversibility: damage healing refused";
-}
-
-impl From<IrreversibilityRefused> for PhysicsError {
-    fn from(r: IrreversibilityRefused) -> Self {
-        let _ = r.min_nodal_increment;
-        Self::InvariantViolation {
-            context: IrreversibilityRefused::CONTEXT,
-        }
-    }
-}
 
 /// Cyclic Jacobi sweeps \((0,1)\to(0,2)\to(1,2)\) per sweep; enough for `f32` diagonal drift \(\ll 10^{-4}\|\varepsilon\|\) in typical strain ranges.
 #[cfg(feature = "fracture-at2")]
@@ -1061,15 +1042,19 @@ fn node_parity_masks_b_n1<B: Backend<FloatElem = f32>>(
     (mask_even, mask_odd)
 }
 
-/// One outer damage-relaxation pass: even parity half-step, odd half-step, then `[0,1]` clamp.
+/// AT2 nodal residual \(r = (G_c/l)\,d - 2(1-d)\psi^+ - G_c\,l\,\Delta_w d\) and the operator
+/// diagonal \(D = G_c/l + 2\psi^+ + G_c\,l\,\sum_j w_{ij}\), with edge weights
+/// \(w_{ij} = 1 - (d_i + d_j)/2\) of [`TopologicalLaplacian::scalar_laplacian`]. \(D\) is the
+/// diagonal of the linearised operator with the weights frozen; it is strictly dominant, so the
+/// scaled step \(r/D\) is a convergent Jacobi / Gauss–Seidel increment for every \(G_c/l\).
 #[cfg(feature = "fracture-at2")]
-fn damage_at2_equation_residual_linf<B: Backend<FloatElem = f32>>(
+fn damage_at2_residual_and_diagonal<B: Backend<FloatElem = f32>>(
     d: &Tensor<B, 3>,
     l: f32,
     gc: &Tensor<B, 3>,
     edges_b1: &Tensor<B, 2, Int>,
     psi_plus: &Tensor<B, 3>,
-) -> f32 {
+) -> (Tensor<B, 3>, Tensor<B, 3>) {
     let l = l.max(1e-12);
     let lap_d = TopologicalLaplacian::scalar_laplacian(d.clone(), edges_b1.clone(), d.clone());
     let one_minus_d = Tensor::<B, 3>::ones_like(d).sub(d.clone());
@@ -1077,36 +1062,75 @@ fn damage_at2_equation_residual_linf<B: Backend<FloatElem = f32>>(
     let lin = gc.clone().div_scalar(l).mul(d.clone());
     let grad_term = gc.clone().mul_scalar(l).mul(lap_d);
     let residual = lin.sub(drive).sub(grad_term);
-    residual.abs().max().into_scalar()
+    let degree = damage_weighted_degree(d, edges_b1);
+    let diagonal = gc
+        .clone()
+        .div_scalar(l)
+        .add(psi_plus.clone().mul_scalar(2.0))
+        .add(gc.clone().mul_scalar(l).mul(degree));
+    (residual, diagonal)
 }
 
+/// Weighted node degree \(\sum_j w_{ij}\) with \(w_{ij} = 1 - (d_i + d_j)/2\), the edge weights of
+/// [`TopologicalLaplacian::scalar_laplacian`] when the damage field weights its own Laplacian.
 #[cfg(feature = "fracture-at2")]
-fn refuse_damage_healing_if_proposed<B: Backend<FloatElem = f32>>(
-    d_trial: &Tensor<B, 3>,
+fn damage_weighted_degree<B: Backend<FloatElem = f32>>(
+    d: &Tensor<B, 3>,
+    edges_b1: &Tensor<B, 2, Int>,
+) -> Tensor<B, 3> {
+    let [batch, _n, features] = d.dims();
+    let num_edges = edges_b1.dims()[1];
+    let endpoint = |row: usize| {
+        edges_b1
+            .clone()
+            .slice([row..row + 1])
+            .reshape([1, num_edges, 1])
+            .expand([batch, num_edges, features])
+    };
+    let (src, tgt) = (endpoint(0), endpoint(1));
+    let d_src = d.clone().gather(1, src.clone());
+    let d_tgt = d.clone().gather(1, tgt.clone());
+    let weight = Tensor::<B, 3>::ones_like(&d_src).sub(d_src.add(d_tgt).div_scalar(2.0_f32));
+    let to_src = Tensor::<B, 3>::zeros_like(d).scatter(1, src, weight.clone());
+    let to_tgt = Tensor::<B, 3>::zeros_like(d).scatter(1, tgt, weight);
+    to_src.add(to_tgt)
+}
+
+/// Natural residual \(\lVert D\,(d - P(d - r/D))\rVert_\infty\) of the AT2 variational inequality on
+/// \(\{d_{old} \le d \le 1\}\), in the units of the AT2 equation residual. Free nodes contribute
+/// \(|r|\); nodes held at \(d_{old}\) by a healing-direction residual contribute zero.
+#[cfg(feature = "fracture-at2")]
+fn damage_at2_natural_residual_linf<B: Backend<FloatElem = f32>>(
+    d: &Tensor<B, 3>,
     d_old: &Tensor<B, 3>,
-) -> Result<(), PhysicsError> {
-    let min_incr = d_trial.clone().sub(d_old.clone()).min().into_scalar();
-    if min_incr < -DAMAGE_IRREVERSIBILITY_HEALING_TOL {
-        return Err(IrreversibilityRefused {
-            min_nodal_increment: min_incr,
-        }
-        .into());
-    }
-    Ok(())
+    l: f32,
+    gc: &Tensor<B, 3>,
+    edges_b1: &Tensor<B, 2, Int>,
+    psi_plus: &Tensor<B, 3>,
+) -> f32 {
+    let (residual, diagonal) = damage_at2_residual_and_diagonal(d, l, gc, edges_b1, psi_plus);
+    let projected = project_damage_admissible(d.clone().sub(residual.div(diagonal.clone())), d_old);
+    d.clone()
+        .sub(projected)
+        .mul(diagonal)
+        .abs()
+        .max()
+        .into_scalar()
 }
 
+/// Projection onto the AT2 admissible set \(\{d_{old} \le d \le 1\}\) (irreversibility and the
+/// upper damage bound).
 #[cfg(feature = "fracture-at2")]
-fn apply_at2_irreversibility<B: Backend<FloatElem = f32>>(
-    d_trial: Tensor<B, 3>,
-    d_old: Tensor<B, 3>,
-) -> Result<Tensor<B, 3>, PhysicsError> {
-    refuse_damage_healing_if_proposed(&d_trial, &d_old)?;
-    Ok(d_trial.max_pair(d_old).clamp(0.0_f32, 1.0_f32))
+fn project_damage_admissible<B: Backend<FloatElem = f32>>(
+    d: Tensor<B, 3>,
+    d_old: &Tensor<B, 3>,
+) -> Tensor<B, 3> {
+    d.max_pair(d_old.clone()).clamp(0.0_f32, 1.0_f32)
 }
 
 #[cfg(feature = "fracture-at2")]
 fn damage_relaxation_until_residual<B: Backend<FloatElem = f32>>(
-    mut d: Tensor<B, 3>,
+    d_old: Tensor<B, 3>,
     l: f32,
     gc: Tensor<B, 3>,
     edges_b1: Tensor<B, 2, Int>,
@@ -1114,21 +1138,15 @@ fn damage_relaxation_until_residual<B: Backend<FloatElem = f32>>(
     mask_odd: Tensor<B, 3>,
     psi_plus: Tensor<B, 3>,
 ) -> Result<Tensor<B, 3>, PhysicsError> {
-    let mut prev_res = damage_at2_equation_residual_linf(&d, l, &gc, &edges_b1, &psi_plus);
+    let mut d = project_damage_admissible(d_old.clone(), &d_old);
+    let mut prev_res = damage_at2_natural_residual_linf(&d, &d_old, l, &gc, &edges_b1, &psi_plus);
     if prev_res < DAMAGE_RELAX_RESIDUAL_TOL {
         return Ok(d);
     }
     loop {
-        d = damage_relaxation_one_iteration(
-            d,
-            l,
-            gc.clone(),
-            edges_b1.clone(),
-            mask_even.clone(),
-            mask_odd.clone(),
-            psi_plus.clone(),
-        );
-        let res = damage_at2_equation_residual_linf(&d, l, &gc, &edges_b1, &psi_plus);
+        d = damage_relaxation_half_step(d, &d_old, l, &gc, &edges_b1, &mask_even, &psi_plus);
+        d = damage_relaxation_half_step(d, &d_old, l, &gc, &edges_b1, &mask_odd, &psi_plus);
+        let res = damage_at2_natural_residual_linf(&d, &d_old, l, &gc, &edges_b1, &psi_plus);
         if res < DAMAGE_RELAX_RESIDUAL_TOL {
             break;
         }
@@ -1142,34 +1160,25 @@ fn damage_relaxation_until_residual<B: Backend<FloatElem = f32>>(
     Ok(d)
 }
 
+/// One parity half-step of projected red–black Gauss–Seidel: \(d \leftarrow P(d - \omega\,m\,r/D)\)
+/// on the nodes selected by the parity mask \(m\), with \(P\) the projection onto
+/// \(\{d_{old} \le d \le 1\}\).
 #[cfg(feature = "fracture-at2")]
-fn damage_relaxation_one_iteration<B: Backend<FloatElem = f32>>(
+fn damage_relaxation_half_step<B: Backend<FloatElem = f32>>(
     d: Tensor<B, 3>,
+    d_old: &Tensor<B, 3>,
     l: f32,
-    gc: Tensor<B, 3>,
-    edges_b1: Tensor<B, 2, Int>,
-    mask_even: Tensor<B, 3>,
-    mask_odd: Tensor<B, 3>,
-    psi_plus: Tensor<B, 3>,
+    gc: &Tensor<B, 3>,
+    edges_b1: &Tensor<B, 2, Int>,
+    mask: &Tensor<B, 3>,
+    psi_plus: &Tensor<B, 3>,
 ) -> Tensor<B, 3> {
-    let l = l.max(1e-12);
-    let lap_d = TopologicalLaplacian::scalar_laplacian(d.clone(), edges_b1.clone(), d.clone());
-    let one_minus_d = Tensor::<B, 3>::ones_like(&d).sub(d.clone());
-    let drive = one_minus_d.mul(psi_plus.clone()).mul_scalar(2.0);
-    let lin = gc.clone().div_scalar(l).mul(d.clone());
-    let grad_term = gc.clone().mul_scalar(l).mul(lap_d);
-    let residual = lin.sub(drive).sub(grad_term);
-    let mut d = d.sub(residual.mul_scalar(RELAXATION_OMEGA).mul(mask_even));
-
-    let lap_d = TopologicalLaplacian::scalar_laplacian(d.clone(), edges_b1.clone(), d.clone());
-    let one_minus_d = Tensor::<B, 3>::ones_like(&d).sub(d.clone());
-    let drive = one_minus_d.mul(psi_plus.clone()).mul_scalar(2.0);
-    let lin = gc.clone().div_scalar(l).mul(d.clone());
-    let grad_term = gc.clone().mul_scalar(l).mul(lap_d);
-    let residual = lin.sub(drive).sub(grad_term);
-    d = d.sub(residual.mul_scalar(RELAXATION_OMEGA).mul(mask_odd));
-
-    d.clamp(0.0_f32, 1.0_f32)
+    let (residual, diagonal) = damage_at2_residual_and_diagonal(&d, l, gc, edges_b1, psi_plus);
+    let increment = residual
+        .div(diagonal)
+        .mul_scalar(RELAXATION_OMEGA)
+        .mul(mask.clone());
+    project_damage_admissible(d.sub(increment), d_old)
 }
 
 #[cfg(feature = "fracture-at2")]
@@ -1211,9 +1220,8 @@ fn update_damage_experimental<B: Backend<FloatElem = f32>>(
         psi_plus,
     )?;
 
-    let result = apply_at2_irreversibility(d, damage_old.clone())?;
-    damage_bn1_all_finite(&result, "fracture AT2 update_damage")?;
-    Ok(result)
+    damage_bn1_all_finite(&d, "fracture AT2 update_damage")?;
+    Ok(d)
 }
 
 /// Extract upper-triangle entries of symmetric strain, each `[B, N, 1]`.
@@ -1449,31 +1457,17 @@ mod fracture_at2_tests {
 
     use super::{
         degradation_g_f32, spectral_tensile_psi_plus_lame,
-        tensile_strain_energy_density_spectral_jacobi, IrreversibilityRefused, StaggeredPhase,
-        FRACTURE_PSI_LAMBDA_DEFAULT, FRACTURE_PSI_MU_DEFAULT,
+        tensile_strain_energy_density_spectral_jacobi, StaggeredPhase, FRACTURE_PSI_LAMBDA_DEFAULT,
+        FRACTURE_PSI_MU_DEFAULT,
     };
     use crate::core::field::{DamageField, Field, FractureEnergyField, SmallStrainField};
-    use crate::physics::error::PhysicsError;
 
     type B = NdArray<f32>;
 
-    /// Precondition — typed [`IrreversibilityRefused`] maps to [`PhysicsError`] before live calls.
+    /// Fully damaged single node at zero tensile drive: the unconstrained AT2 residual points toward
+    /// healing, and the constrained minimiser on \(\{d_{old} \le d \le 1\}\) is \(d = d_{old}\).
     #[test]
-    fn at2_irreversibility_refused_precondition_one_point() {
-        let refused = IrreversibilityRefused {
-            min_nodal_increment: -0.01_f32,
-        };
-        let err: PhysicsError = refused.into();
-        assert!(matches!(
-            err,
-            PhysicsError::InvariantViolation { context }
-            if context == IrreversibilityRefused::CONTEXT
-        ));
-    }
-
-    /// Fully damaged single node at zero tensile drive — relaxation must not heal; refuse typed error.
-    #[test]
-    fn update_damage_refuses_irreversibility_violation_one_point() {
+    fn update_damage_holds_saturated_damage_at_zero_drive_one_point() {
         use crate::physics::solvers::PhaseFieldFractureSolver;
 
         let dev = NdArrayDevice::Cpu;
@@ -1486,19 +1480,49 @@ mod fracture_at2_tests {
         let fracture_energy_gc =
             Tensor::from_data(Data::new(vec![150.0_f32], Shape::new([batch, n, 1])), &dev);
         let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
-        let out = solver.update_damage(
-            strain_field(strain),
-            damage_field(damage),
-            gc_field(fracture_energy_gc),
-            edges_b1,
+        let d_new = solver
+            .update_damage(
+                strain_field(strain),
+                damage_field(damage),
+                gc_field(fracture_energy_gc),
+                edges_b1,
+            )
+            .expect("AT2 update on saturated damage at zero drive")
+            .into_tensor()
+            .into_data()
+            .value;
+        assert_eq!(d_new, vec![1.0_f32], "d_new must equal d_old at zero drive");
+    }
+
+    /// Uniform pre-damage \(d_{old} = 0.1\) on a chain at zero strain: the update returns
+    /// \(d_{old}\) at every node.
+    #[test]
+    fn update_damage_holds_uniform_predamage_at_zero_drive() {
+        use crate::physics::solvers::PhaseFieldFractureSolver;
+
+        let dev = NdArrayDevice::Cpu;
+        let edges_b1: Tensor<B, 2, Int> =
+            Tensor::from_data(Data::new(vec![0i64, 1, 1, 2], Shape::new([2, 2])), &dev);
+        let strain = Tensor::<B, 4>::zeros([1, 3, 3, 3], &dev);
+        let damage = Tensor::from_data(Data::new(vec![0.1_f32; 3], Shape::new([1, 3, 1])), &dev);
+        let gc = Tensor::from_data(Data::new(vec![150.0_f32; 3], Shape::new([1, 3, 1])), &dev);
+        let solver = PhaseFieldFractureSolver { length_scale: 0.08 };
+        let d_new = solver
+            .update_damage(
+                strain_field(strain),
+                damage_field(damage),
+                gc_field(gc),
+                edges_b1,
+            )
+            .expect("AT2 update on uniform pre-damage at zero drive")
+            .into_tensor()
+            .into_data()
+            .value;
+        assert_eq!(
+            d_new,
+            vec![0.1_f32; 3],
+            "d_new must equal d_old at zero drive"
         );
-        match out {
-            Err(PhysicsError::InvariantViolation { context })
-                if context == IrreversibilityRefused::CONTEXT => {}
-            other => panic!(
-                "expected irreversibility refusal on 1-point saturated damage, got {other:?}"
-            ),
-        }
     }
 
     fn strain_field(t: Tensor<B, 4>) -> SmallStrainField<B> {
@@ -2106,8 +2130,9 @@ mod fracture_honesty_fence_tests {
     }
 
     /// Without `fracture-at2`, `update_damage` is the documented identity. With the feature the AT2
-    /// path runs instead; its behaviour on this zero-strain fixture is covered by
-    /// `update_damage_refuses_irreversibility_violation_one_point`.
+    /// path runs instead; its zero-drive behaviour (\(d = d_{old}\)) is covered by
+    /// `update_damage_holds_saturated_damage_at_zero_drive_one_point` and
+    /// `update_damage_holds_uniform_predamage_at_zero_drive`.
     #[cfg(not(feature = "fracture-at2"))]
     #[test]
     fn update_damage_default_build_is_identity_noop() {

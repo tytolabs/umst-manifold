@@ -321,7 +321,6 @@ fn thmc_reaction_extent_idempotent_when_rate_vanishes() {
 
 /// FP §6: operator-split `step` on uniform T/h, saturated α, zero u must be a fixed point.
 #[test]
-#[ignore = "blocked: fracture_field::apply_at2_irreversibility refuses (IrreversibilityRefused) the zero-load step from uniform d = 0.1 since bff11367 (2026-09-27) instead of projecting d = max(d_trial, d_old); operator decision on AT2 irreversibility"]
 fn thmc_operator_split_step_idempotent_at_quiescent_equilibrium() {
     let n = 2usize;
     let mut umst = toy_umst(n, 300.0, 0.5, 0.1);
@@ -454,7 +453,6 @@ fn thmc_fracture_update_damage_idempotent_at_zero_strain() {
 
 /// FP §6: orchestrator `run_plan_step` on quiescent equilibrium is a fixed point.
 #[test]
-#[ignore = "blocked: fracture_field::apply_at2_irreversibility refuses (IrreversibilityRefused) the zero-load step from uniform d = 0.1 since bff11367 (2026-09-27) instead of projecting d = max(d_trial, d_old); operator decision on AT2 irreversibility"]
 fn orchestrator_thmc_idempotent_at_equilibrium() {
     let n = 2usize;
     let mut manifold = toy_umst(n, 300.0, 0.5, 0.1);
@@ -512,7 +510,6 @@ fn orchestrator_thmc_idempotent_at_equilibrium() {
 
 /// FP §6: `run_plan_step_repeated(2)` at equilibrium matches a single `run_plan_step`.
 #[test]
-#[ignore = "blocked: fracture_field::apply_at2_irreversibility refuses (IrreversibilityRefused) the zero-load step from uniform d = 0.1 since bff11367 (2026-09-27) instead of projecting d = max(d_trial, d_old); operator decision on AT2 irreversibility"]
 fn orchestrator_run_plan_step_repeated_two_idempotent_at_equilibrium() {
     let n = 2usize;
     let mut manifold_a = toy_umst(n, 300.0, 0.5, 0.1);
