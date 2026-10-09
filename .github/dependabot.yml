@@ -2,38 +2,11 @@
 # SPDX-License-Identifier: MIT
 version: 2
 updates:
-  - package-ecosystem: "cargo"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    labels: ["dependencies"]
-    # Collapse non-major cargo updates into a single PR to cut review noise (O6 triage).
-    groups:
-      cargo-minor-patch:
-        update-types:
-          - "minor"
-          - "patch"
-    ignore:
-      # `umst-math` is a workspace path member (not a crates.io crate).
-      - dependency-name: "umst-math"
-      # sha2 0.11: Digest::finalize() returns hybrid-array; breaks catalog build_script hex formatting (see docs/DEPENDABOT_TRIAGE.md).
-      - dependency-name: "sha2"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "petgraph"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "bincode"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "burn"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "burn-ndarray"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "rand"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "thiserror"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "sha3"
-        update-types: ["version-update:semver-major"]
+  # W-63: no `cargo` ecosystem entry. Cargo.toml depends by path on ../umst-foundations,
+  # ../umst-cartridge-api and ../umst-cartridges, which are private; Dependabot fetches only this
+  # repository and aborts with path_dependencies_not_reachable before resolving any update. Cargo
+  # updates run by hand on a build-capable checkout (docs/DEPENDABOT_TRIAGE.md) until the W-63
+  # public ladder makes those siblings public; restore the entry and its ignore list then.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

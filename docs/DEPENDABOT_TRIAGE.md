@@ -35,3 +35,16 @@ pass. Applying and validating a bump requires building with the pinned `rustc 1.
 toolchain (`time-core@0.1.9` needs 1.88), which is unavailable in the Ops/cold environment.
 Bumps are deferred to a **build-capable worker** who can run `cargo build && cargo test` +
 `verify_umst_stack.sh` + catalog-drift before merging each (grouped) Dependabot PR.
+
+## W-63 cargo updater removed (2026-10-09)
+
+Every Dependabot `cargo` run on `main` failed with `path_dependencies_not_reachable`
+(runs 36925080411, 37842824020, 37842832452): `Cargo.toml` reaches `umst-foundations`,
+`umst-cartridge-api` and `umst-cartridges` by `../` path, those repositories are private, and
+Dependabot fetches this repository alone. `.github/dependabot.yml` therefore carries only the
+`github-actions` ecosystem. Removed `cargo` ignore rules, for restoration with the entry:
+`umst-math` (all), and semver-major for `sha2`, `petgraph`, `bincode`, `burn`, `burn-ndarray`,
+`rand`, `thiserror`, `sha3`; group `cargo-minor-patch` (minor + patch). Cargo bumps run by hand
+on a build-capable checkout with `cargo update`, `cargo test` and `verify_umst_stack.sh`.
+Open PR #64 (the last grouped cargo bump) can no longer be recreated by Dependabot.
+
