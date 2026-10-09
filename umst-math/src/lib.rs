@@ -27,7 +27,6 @@ pub mod crypto;
 pub mod density;
 pub mod dignity;
 pub mod dpi;
-pub mod economic;
 pub mod englert;
 pub mod epistemic;
 pub mod erasure;
