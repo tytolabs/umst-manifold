@@ -19,12 +19,10 @@ use crate::kahan::KahanSum;
 ///
 /// Proof context: Sagawa–Ueda feedback yield; sharp bound from PMIC in Oracle v2 (Phase 5).
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub const MIN_NEGENTROPY_FLOOR_BITS: f64 = 0.01;
 
 /// Legacy name — same value as [`MIN_NEGENTROPY_FLOOR_BITS`] (legacy oracle compatibility).
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub const MIN_NEGENTROPY: f64 = MIN_NEGENTROPY_FLOOR_BITS;
 
 /// Binary entropy **h₂(p)** lower envelope in **bits**: **4 p (1−p)** for `p ∈ [0, 1]`.
@@ -33,7 +31,7 @@ pub const MIN_NEGENTROPY: f64 = MIN_NEGENTROPY_FLOOR_BITS;
 /// after dividing the natural-log statement by `ln 2` (binary entropy in bits).
 /// DOI: 10.5281/zenodo.19159660
 #[inline]
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
+/// THEOREM-BOUND: `UMST.DoubleSlit.PMICEntropyInterior::four_mul_x_one_sub_x_mul_log_two_interior` (4x(1−x) ≤ h₂(x), bits)
 pub fn pmic_binary_entropy_lower_envelope_bits(p: f64) -> f64 {
     let p = p.clamp(0.0, 1.0);
     4.0 * p * (1.0 - p)
@@ -46,7 +44,7 @@ pub fn pmic_binary_entropy_lower_envelope_bits(p: f64) -> f64 {
 /// [`MIN_NEGENTROPY_FLOOR_BITS`] and participatory checks.
 ///
 /// Lean: `UMST.DoubleSlit.PMICEntropyInterior` family (envelope); DOI: 10.5281/zenodo.19159660.
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
+/// THEOREM-BOUND: `UMST.DoubleSlit.PMICEntropyInterior::four_mul_x_one_sub_x_mul_log_two_interior` (4x(1−x) ≤ h₂(x), bits)
 pub fn pmic_extensive_negentropy_floor_bits(text: &str) -> f64 {
     let clean = strip_think_tags(text);
     let tokens = tokenise(&clean);
@@ -65,21 +63,19 @@ pub fn pmic_extensive_negentropy_floor_bits(text: &str) -> f64 {
 ///
 /// Proof context: tunable band on [`text_entropy`] until Klein/DPI v2 (Phase 5+ sharp PMIC bounds); not a proved sharp bound.
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub const MIN_RICHNESS_ENTROPY: f64 = 0.5;
 
 /// Maximum per-token Shannon entropy (bits) for participatory richness upper band.
 ///
 /// Proof context: same as [`MIN_RICHNESS_ENTROPY`] — engineering band for Oracle participatory gate.
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub const MAX_RICHNESS_ENTROPY: f64 = 14.0;
 
 /// Shannon entropy **H(X) = −Σ p log₂ p** over a finite support (bits), Kahan-summed.
 ///
 /// Proof: classical limit of von Neumann on diagonal states (`VonNeumannEntropy` tree).
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
+/// THEOREM-BOUND: `UMST.Formal.InfoTheory::shannonEntropy_nonneg` (H ≥ 0)
 pub fn entropy(dist: &HashMap<String, f64>) -> f64 {
     let mut k = KahanSum::new();
     for p in dist.values().copied().filter(|&p| p > 0.0) {
@@ -92,7 +88,7 @@ pub fn entropy(dist: &HashMap<String, f64>) -> f64 {
 ///
 /// Proof: classical **H** on empirical token frequencies; UMST oracle estimator.
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
+/// THEOREM-BOUND: `UMST.Formal.InfoTheory::shannonEntropy_nonneg` (H ≥ 0)
 pub fn text_entropy(text: &str) -> f64 {
     let clean = strip_think_tags(text);
     let tokens = tokenise(&clean);
@@ -104,7 +100,7 @@ pub fn text_entropy(text: &str) -> f64 {
 ///
 /// Proof: `PMICEntropyInterior` / path entropy lemmas (double-slit).
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
+/// THEOREM-BOUND: `UMST.DoubleSlit.PMICEntropyInterior::four_mul_x_one_sub_x_mul_log_two_interior` (4x(1−x) ≤ h₂(x), bits)
 pub fn binary_entropy_bits(p: NotNan<f64>) -> NotNan<f64> {
     let x = p.into_inner().clamp(0.0, 1.0);
     if x <= 0.0 || x >= 1.0 {
@@ -118,7 +114,7 @@ pub fn binary_entropy_bits(p: NotNan<f64>) -> NotNan<f64> {
 ///
 /// Proof: diagonal von Neumann equals Shannon on spectrum.
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
+/// THEOREM-BOUND: `UMST.DoubleSlit.VonNeumannEntropy::vonNeumannEntropy_eq_sum_negMulLog_of_diagonal_carrier` (diagonal S(ρ) = Σ −pᵢ log pᵢ)
 pub fn shannon_diag_bits<const N: usize>(d: &DensityDiag<N>) -> NotNan<f64> {
     let mut k = KahanSum::new();
     for x in &d.p {
@@ -134,7 +130,7 @@ pub fn shannon_diag_bits<const N: usize>(d: &DensityDiag<N>) -> NotNan<f64> {
 ///
 /// Proof: same functional as [`shannon_diag_bits`] on explicit mass vector.
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
+/// THEOREM-BOUND: `UMST.Formal.InfoTheory::shannonEntropy_nonneg` (H ≥ 0)
 pub fn shannon_binary_kahan(probs: &[f64]) -> f64 {
     let mut k = KahanSum::new();
     for &p in probs {
@@ -149,7 +145,7 @@ pub fn shannon_binary_kahan(probs: &[f64]) -> f64 {
 ///
 /// Proof: `VonNeumannEntropy` — spectrum-only functional on diagonal ρ.
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
+/// THEOREM-BOUND: `UMST.DoubleSlit.VonNeumannEntropy::vonNeumannEntropy_eq_sum_negMulLog_of_diagonal_carrier` (diagonal S(ρ) = Σ −pᵢ log pᵢ)
 pub fn von_neumann_entropy_diagonal<const N: usize>(d: &DensityDiag<N>) -> NotNan<f64> {
     shannon_diag_bits(d)
 }
@@ -158,7 +154,7 @@ pub fn von_neumann_entropy_diagonal<const N: usize>(d: &DensityDiag<N>) -> NotNa
 ///
 /// Proof: `KleinInequality` classical diagonal case.
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
+/// THEOREM-BOUND: `UMST.DoubleSlit.KleinInequality::gibbs_inequality` (D(P‖Q) ≥ 0)
 pub fn kl_divergence(p: &HashMap<String, f64>, q: &HashMap<String, f64>) -> f64 {
     p.iter()
         .filter(|(_, pi)| **pi > 0.0)
@@ -178,7 +174,6 @@ pub fn kl_divergence(p: &HashMap<String, f64>, q: &HashMap<String, f64>) -> f64 
 ///
 /// Proof: extensive information yield context in `LandauerBound` / feedback literature.
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn negentropy(text: &str) -> f64 {
     let clean = strip_think_tags(text);
     let tokens = tokenise(&clean);
@@ -194,7 +189,6 @@ pub fn negentropy(text: &str) -> f64 {
 ///
 /// Proof: classical **I = H(X)+H(Y)−H(X,Y)** on empirical marginals (surrogate).
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn mutual_information(text_a: &str, text_b: &str) -> f64 {
     let ha = text_entropy(text_a);
     let hb = text_entropy(text_b);
@@ -207,7 +201,6 @@ pub fn mutual_information(text_a: &str, text_b: &str) -> f64 {
 ///
 /// Proof: classical **H(Y|X) = H(X,Y) − H(X)** on empirical estimators (surrogate).
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn conditional_entropy(text_x: &str, text_y: &str) -> f64 {
     let hx = text_entropy(text_x);
     let joint = format!("{text_x} {text_y}");
@@ -219,7 +212,6 @@ pub fn conditional_entropy(text_x: &str, text_y: &str) -> f64 {
 ///
 /// Proof: combines [`pmic_extensive_negentropy_floor_bits`] with [`negentropy`] (Oracle v2 gate).
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn thermodynamic_check(proposal: &str) -> bool {
     let floor = pmic_extensive_negentropy_floor_bits(proposal).max(MIN_NEGENTROPY_FLOOR_BITS);
     negentropy(proposal) >= floor
@@ -229,7 +221,6 @@ pub fn thermodynamic_check(proposal: &str) -> bool {
 ///
 /// Proof: band check on [`text_entropy`] — participatory surrogate until Klein/DPI v2 (Phase 5+ sharp PMIC bounds).
 /// DOI: 10.5281/zenodo.19159660
-/// THEOREM-BOUND: `UMST.Formal.InfoTheory::product_joint_mass` (§14bis.l W-3 G8)
 pub fn participatory_richness_check(proposal: &str) -> bool {
     let h = text_entropy(proposal);
     (MIN_RICHNESS_ENTROPY..=MAX_RICHNESS_ENTROPY).contains(&h)
