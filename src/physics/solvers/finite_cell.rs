@@ -95,6 +95,8 @@ pub enum FiniteCellRefuse {
     AggregationUnresolved,
     /// A support constrains an aggregated node whose masters are not all fixed alike (its value is theirs).
     SupportOnAggregatedNode,
+    /// A spring stiffness is negative or not finite, or a spring sits on an aggregated node or a fixed component.
+    InvalidSpring,
     /// The stiffness with the given supports is singular: the supports leave a mechanism.
     Mechanism,
     /// A profile operation refused.

@@ -19,7 +19,8 @@ pub use physics::solvers::fracture_field::PhaseFieldFractureSolver;
 /// and analysis types.
 pub use physics::solvers::finite_cell::analysis::{ApparentMass, InertiaRelief, ModeRequest};
 pub use physics::solvers::finite_cell::assembly::{
-    Diagnostics as FiniteCellDiagnostics, Discretisation, DiscretisationSpec, MassProperties, System as FiniteCellSystem,
+    Diagnostics as FiniteCellDiagnostics, Discretisation, DiscretisationSpec, MassProperties, Springs as FiniteCellSprings,
+    System as FiniteCellSystem,
 };
 pub use physics::solvers::finite_cell::element::{ElementKind, ElementMatrices};
 pub use physics::solvers::finite_cell::grid::TensorGrid;

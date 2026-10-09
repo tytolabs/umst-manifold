@@ -16,7 +16,7 @@ use umst_manifold::physics::solvers::finite_cell::analysis::{
     InertiaRelief, ModeRequest,
 };
 use umst_manifold::physics::solvers::finite_cell::assembly::{
-    assemble, discretise, Discretisation, DiscretisationSpec, System,
+    assemble, assemble_with_springs, discretise, Discretisation, DiscretisationSpec, System,
 };
 use umst_manifold::physics::solvers::finite_cell::element::ElementKind;
 use umst_manifold::physics::solvers::finite_cell::{
@@ -1244,4 +1244,72 @@ fn aggregation_removes_the_ill_conditioning_of_a_sliver() {
         raw < 1e-2 * aggregated,
         "aggregation must lift the smallest mass pivot by two orders: {raw} vs {aggregated}"
     );
+}
+
+/// A stiff block on soft grounded springs settles as a rigid body: the mean settlement of the sprung face is the load
+/// over the summed spring stiffness, and the springs carry the whole load.
+#[test]
+fn a_stiff_block_on_springs_settles_by_the_load_over_the_summed_stiffness() {
+    let (a, b, c) = (0.06, 0.04, 0.01);
+    let slab = Slab {
+        lo: [0.0; 3],
+        hi: [a, b, c],
+        layers: vec![],
+        conforming: true,
+    };
+    let disc = discretise(
+        &slab,
+        &aluminium(),
+        &spec([0.01, 0.01, 0.005], 0.0, ElementKind::Q1E9),
+    )
+    .expect("disc");
+    let tol = 1e-9;
+    let on_bottom = |p: [f64; 3]| p[2].abs() <= tol;
+    // In-plane pins at two bottom corners remove the in-plane rigid motions; the springs carry the rest.
+    let supports = move |p: [f64; 3]| -> [bool; 3] {
+        let at =
+            |x: f64, y: f64| on_bottom(p) && (p[0] - x).abs() <= tol && (p[1] - y).abs() <= tol;
+        [at(0.0, 0.0), at(0.0, 0.0) || at(a, 0.0), false]
+    };
+    let k_node = 1.0e3;
+    let springs =
+        move |p: [f64; 3]| -> [f64; 3] { [0.0, 0.0, if on_bottom(p) { k_node } else { 0.0 }] };
+    let sys = assemble_with_springs(&disc, &supports, &springs).expect("assemble");
+    let sprung: Vec<usize> = disc
+        .free_nodes()
+        .filter(|&n| on_bottom(disc.node_point(n)))
+        .collect();
+    let unit = surface_load(&disc, &sys, &slab, c, None, [0.0, 0.0, -1.0], tol).expect("load");
+    let total: f64 = disc
+        .free_nodes()
+        .filter_map(|n| sys.dof(n, 2))
+        .map(|i| -unit[i])
+        .sum();
+    let f: Vec<f64> = unit.iter().map(|v| v / total).collect();
+    let u = static_displacement(&sys, &f).expect("solve");
+    let settle: Vec<f64> = sprung
+        .iter()
+        .map(|&n| -u[sys.dof(n, 2).expect("free z")])
+        .collect();
+    let mean = settle.iter().sum::<f64>() / settle.len() as f64;
+    let expected = 1.0 / (k_node * sprung.len() as f64);
+    assert!(
+        (mean / expected - 1.0).abs() < 1e-3,
+        "mean settlement {mean} m against {expected} m"
+    );
+    // The springs carry the whole unit load.
+    let carried: f64 = settle.iter().map(|s| k_node * s).sum();
+    assert!((carried - 1.0).abs() < 1e-6, "springs carry {carried} N");
+    // A negative spring, or a spring on a fixed component, refuses.
+    let negative = |_: [f64; 3]| [0.0, 0.0, -1.0];
+    assert!(matches!(
+        assemble_with_springs(&disc, &supports, &negative),
+        Err(FiniteCellRefuse::InvalidSpring)
+    ));
+    let fixed_all = |_: [f64; 3]| [false, false, true];
+    let on_fixed = |p: [f64; 3]| [0.0, 0.0, if on_bottom(p) { 1.0 } else { 0.0 }];
+    assert!(matches!(
+        assemble_with_springs(&disc, &fixed_all, &on_fixed),
+        Err(FiniteCellRefuse::InvalidSpring)
+    ));
 }

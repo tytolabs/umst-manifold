@@ -361,6 +361,10 @@ fn dist2(a: [f64; 3], b: [f64; 3]) -> f64 {
 /// Which displacement components are fixed at a node, from its coordinates.
 pub type Supports<'a> = &'a dyn Fn([f64; 3]) -> [bool; 3];
 
+/// Elastic supports: the stiffness (N/m) of a grounded spring on each displacement component at a node, from its
+/// coordinates; zero for none.
+pub type Springs<'a> = &'a dyn Fn([f64; 3]) -> [f64; 3];
+
 /// Stiffness and consistent mass for one set of supports, with the map from nodes to degrees of freedom.
 #[derive(Clone, Debug)]
 pub struct System {
@@ -557,6 +561,20 @@ impl Discretisation {
 /// # Errors
 /// [`FiniteCellRefuse::SupportOnAggregatedNode`] when a support selects an aggregated node; profile refusals.
 pub fn assemble(disc: &Discretisation, supports: Supports<'_>) -> Result<System, FiniteCellRefuse> {
+    assemble_with_springs(disc, supports, &|_| [0.0; 3])
+}
+
+/// As [`assemble`], with grounded springs added to the stiffness of the free components they act on. A positive
+/// spring supports the system as a fixed component does, through its stiffness.
+///
+/// # Errors
+/// As [`assemble`]; [`FiniteCellRefuse::InvalidSpring`] for a negative or non-finite stiffness, or a positive one
+/// on an aggregated node or on a fixed component.
+pub fn assemble_with_springs(
+    disc: &Discretisation,
+    supports: Supports<'_>,
+    springs: Springs<'_>,
+) -> Result<System, FiniteCellRefuse> {
     let mut supported = false;
     let mut next = 0_usize;
     let mut dof = vec![[None; 3]; disc.roles.len()];
@@ -602,11 +620,33 @@ pub fn assemble(disc: &Discretisation, supports: Supports<'_>) -> Result<System,
             .flat_map(|&(n, _)| (0..3).filter_map(move |c| dof_of[n][c]))
             .collect()
     };
+    // One single-dof clique per spring on a free component; its diagonal already lies in every profile.
+    let mut grounded: Vec<(Vec<usize>, Vec<f64>)> = Vec::new();
+    for (node, role) in disc.roles.iter().enumerate() {
+        let k = springs(disc.node_point(node));
+        for (c, &kc) in k.iter().enumerate() {
+            if !(kc.is_finite() && kc >= 0.0) {
+                return Err(FiniteCellRefuse::InvalidSpring);
+            }
+            if kc > 0.0 {
+                match (role, dof[node][c]) {
+                    (Role::Free, Some(d)) => grounded.push((vec![d], vec![kc])),
+                    _ => return Err(FiniteCellRefuse::InvalidSpring),
+                }
+            }
+        }
+    }
+    supported |= !grounded.is_empty();
     let pattern = ProfilePattern::from_cliques(next, disc.cells.iter().map(indices))?;
-    let k = pattern.assemble_owned(disc.cells.iter().map(|c| {
-        let (d, k, _) = blocks(c);
-        (d, k)
-    }))?;
+    let k = pattern.assemble_owned(
+        disc.cells
+            .iter()
+            .map(|c| {
+                let (d, k, _) = blocks(c);
+                (d, k)
+            })
+            .chain(grounded),
+    )?;
     let m = pattern.assemble_owned(disc.cells.iter().map(|c| {
         let (d, _, m) = blocks(c);
         (d, m)
