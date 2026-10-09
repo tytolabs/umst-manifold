@@ -121,17 +121,15 @@ pub const JZG1993_LJ_MBWR_DERIVATION: Derivation = Derivation::Definition {
     expected_sha256: JZG1993_LJ_MBWR_AUTHORITY_SHA256,
 };
 
-/// CODATA 2018 vacuum magnetic permeability pin (measured under the 2019 SI).
-pub const CODATA2018_MU0_AUTHORITY_URL: &str = "umst-math/authority-pins/codata2018_mu0.txt";
-
-/// Pinned SHA-256 of [`authority-pins/codata2018_mu0.txt`](../../authority-pins/codata2018_mu0.txt).
-pub const CODATA2018_MU0_AUTHORITY_SHA256: &str =
-    "699ee91ebf950f286c72976c242e77dca7891bdc922abd3194bcceeb808dde11";
-
-/// `vacuum_magnetic_permeability_n_per_a2`: CODATA 2018 recommended value.
-pub const CODATA2018_MU0_DERIVATION: Derivation = Derivation::Definition {
-    authority_url: CODATA2018_MU0_AUTHORITY_URL,
-    expected_sha256: CODATA2018_MU0_AUTHORITY_SHA256,
+/// `vacuum_magnetic_permeability_n_per_a2`: μ₀ = 2αh/(e²c) from the exact SI h, e, c and the CODATA 2022
+/// fine-structure constant, proved equal to its exact rational in the umst-formal table
+/// (`Constants.SI.vacuumPermeability_value`) and read at runtime from `umst_constants::VACUUM_PERMEABILITY`.
+pub const SI_VACUUM_PERMEABILITY_DERIVATION: Derivation = Derivation::Theorem {
+    decl: LeanDecl {
+        module: "Constants.SI",
+        name: "vacuumPermeability_value",
+    },
+    expected_value: umst_constants::VACUUM_PERMEABILITY,
 };
 
 /// Rows grounded on the SI 2019 defining constants and the JZG (1993) Lennard-Jones table.

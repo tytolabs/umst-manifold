@@ -13,10 +13,9 @@ use super::pool_q_constants_manifold::{
     POOL_Q_COCKPIT_POLICY_DEFINITION, UMST_MATH_SIMD_FEATURE_DEFINITION,
 };
 use super::tier1_derivation::{
-    CODATA2018_MU0_DERIVATION, JZG1993_LJ_MBWR_DERIVATION, K_B_DERIVATION,
-    LANDAUER_FLOOR_J_PER_BIT_DERIVATION, LN_2_DERIVATION, RCC_FLOOR_DERIVATION,
-    REFERENCE_TEMPERATURE_293_15_K_DERIVATION, SI2019_DEFINING_CONSTANTS_DERIVATION,
-    T_ROOM_DERIVATION,
+    JZG1993_LJ_MBWR_DERIVATION, K_B_DERIVATION, LANDAUER_FLOOR_J_PER_BIT_DERIVATION,
+    LN_2_DERIVATION, RCC_FLOOR_DERIVATION, REFERENCE_TEMPERATURE_293_15_K_DERIVATION,
+    SI2019_DEFINING_CONSTANTS_DERIVATION, SI_VACUUM_PERMEABILITY_DERIVATION, T_ROOM_DERIVATION,
 };
 use super::tier2_derivation::{
     ADMISSIBILITY_MARGIN_EPS_DERIVATION, AGDA_VERSION_PIN_DERIVATION,
@@ -153,7 +152,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "molar_gas_constant_j_per_mol_k",
-        expression: "8.31446261815324 J/(mol K) (R = N_A k, exact product; MOLAR_GAS_CONSTANT_J_PER_MOL_K)",
+        expression: "8.31446261815324 J/(mol K) (R = N_A k, exact product; MOLAR_GAS_CONSTANT_J_PER_MOL_K = umst_constants::GAS_CONSTANT)",
         evidence: "SI 2019: N_A and k exact, so R = N_A k is exact; umst-math/authority-pins/si2019_defining_constants.txt",
         env_override: None,
         derivation: SI2019_DEFINING_CONSTANTS_DERIVATION,
@@ -174,10 +173,10 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "vacuum_magnetic_permeability_n_per_a2",
-        expression: "1.25663706212e-6 N/A^2 (CODATA 2018 mu_0, relative standard uncertainty 1.5e-10; VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2)",
-        evidence: "CODATA 2018 (NIST CUU https://physics.nist.gov/cgi-bin/cuu/Value?mu0); umst-math/authority-pins/codata2018_mu0.txt",
+        expression: "mu_0 = 2 alpha h / (e^2 c) = 1.2566370612628147e-6 N/A^2 (exact SI h, e, c; CODATA 2022 alpha; VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2 = umst_constants::VACUUM_PERMEABILITY)",
+        evidence: "umst-formal Constants.SI.vacuumPermeability_value (constants table row vacuumPermeability, within CODATA 2022 by vacuumPermeability_within_CODATA2022); bounded mu_0 > 0 by the second law: Constants.SecondLawElectromagnetic.vacuumPermeability_relaxation_secondLaw",
         env_override: None,
-        derivation: CODATA2018_MU0_DERIVATION,
+        derivation: SI_VACUUM_PERMEABILITY_DERIVATION,
     },
     ConstantEntry {
         name: "lj_jzg1993_critical_temperature_reduced",
@@ -1718,10 +1717,10 @@ pub const K_BOLTZMANN_J_PER_K: f64 = umst_constants::BOLTZMANN;
 pub const SPEED_OF_LIGHT_M_PER_S: f64 = umst_constants::SPEED_OF_LIGHT;
 /// Row `avogadro_constant_per_mol` (1/mol), SI 2019 exact; umst-formal row `avogadro`.
 pub const AVOGADRO_CONSTANT_PER_MOL: f64 = umst_constants::AVOGADRO;
-/// Row `molar_gas_constant_j_per_mol_k` (J/(mol K)): `R = N_A k`.
-pub const MOLAR_GAS_CONSTANT_J_PER_MOL_K: f64 = AVOGADRO_CONSTANT_PER_MOL * K_BOLTZMANN_J_PER_K;
-/// Row `vacuum_magnetic_permeability_n_per_a2` (N/A²), CODATA 2018.
-pub const VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2: f64 = 1.256_637_062_12e-6;
+/// Row `molar_gas_constant_j_per_mol_k` (J/(mol K)): `R = N_A k`; umst-formal row `gasConstant`.
+pub const MOLAR_GAS_CONSTANT_J_PER_MOL_K: f64 = umst_constants::GAS_CONSTANT;
+/// Row `vacuum_magnetic_permeability_n_per_a2` (N/A²): `μ₀ = 2αh/(e²c)`; umst-formal row `vacuumPermeability`.
+pub const VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2: f64 = umst_constants::VACUUM_PERMEABILITY;
 /// Row `lj_jzg1993_mbwr_gamma` (reduced).
 pub const JZG1993_MBWR_GAMMA: f64 = 3.0;
 /// Row `lj_jzg1993_critical_temperature_reduced` (reduced).
@@ -2215,11 +2214,6 @@ mod tests {
         assert_eq!(parse(si_values[0]), super::SPEED_OF_LIGHT_M_PER_S);
         assert_eq!(parse(si_values[1]), super::AVOGADRO_CONSTANT_PER_MOL);
         assert_eq!(parse(si_values[2]), super::K_BOLTZMANN_J_PER_K);
-        let mu0 = include_str!("../../authority-pins/codata2018_mu0.txt");
-        assert_eq!(
-            parse(value_of(mu0, "value_SI:")[0]),
-            super::VACUUM_MAGNETIC_PERMEABILITY_N_PER_A2
-        );
         let r = parse(si_values[3]);
         assert!((super::MOLAR_GAS_CONSTANT_J_PER_MOL_K - r).abs() <= r * f64::EPSILON);
 
