@@ -6,6 +6,8 @@
 
 // M-Arc: MEMORY-ARC-PLAN-v1.0 §0.14; parallel with H-9-mac (no `hal/` overlap).
 
+/// Analytic action trees, their SDF and their quotient keys (lifted from egoff-credit, E-2).
+pub mod action_sdf;
 pub mod canonicalize;
 pub mod csg;
 mod error;
