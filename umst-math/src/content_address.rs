@@ -3,6 +3,9 @@
 
 //! SSOT digest hex validation and Blake3 content addressing (shared kernel).
 
+/// The Blake3 proof chain over content-addressed heads.
+pub mod chain;
+
 /// Whether `s` is a well-formed 64-char lowercase/uppercase hex digest.
 #[must_use]
 pub const fn is_ssot_digest_hex(s: &str) -> bool {
@@ -37,8 +40,7 @@ pub fn blake3_content_address(parts: &[&[u8]]) -> [u8; 32] {
 mod tests {
     use super::*;
 
-    const MIXED_CASE_64: &str =
-        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789ABCDEF";
+    const MIXED_CASE_64: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789ABCDEF";
 
     #[test]
     fn ssot_digest_hex_accepts_64_mixed_case_hex() {
