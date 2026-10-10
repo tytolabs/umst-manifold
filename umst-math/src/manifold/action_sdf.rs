@@ -10,6 +10,10 @@
 //!
 //! The two domain separators below are wire bytes: recorded ledgers key on them, so they stay fixed.
 
+pub mod chair;
+
+pub use chair::compose_chair_action;
+
 use super::canonicalize::sdf_shape_canonicalize;
 use super::sdf::{ConstSdf, GateSdf, SphereSdf};
 use super::{ManifoldError, Sdf};
