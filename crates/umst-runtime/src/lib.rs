@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MPL-2.0
 //
 //! `umst-runtime` — executor crate (A3 alias of workspace-root `umst-manifold` during transition).
 //!
@@ -15,6 +15,8 @@ pub mod lean_extract_stub;
 #[cfg(feature = "nalgebra-tensor")]
 pub mod nalgebra_algebra_posture;
 pub mod num_dual_ad_posture;
+pub mod scalar_physics_port;
+pub use scalar_physics_port::CThermodynamicState;
 
 pub use burn_algebra_adapter_posture::{
     ADAPTER_CRATE_LANDED as BURN_ADAPTER_CRATE_LANDED,
