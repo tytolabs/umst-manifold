@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MIT
 //! `artifacts/catalog.lock.json` pins the pinned formal export `artifacts/upstream_catalog.json`
 //! (umst-formal-double-slit merged catalog at the `.umst-pins.toml` SHA): digest, module rows and edge rows.
-//! Both files are read from disk here, and the compiled `FORMAL_CATALOG_*` / `EXPECTED_*` constants must
-//! equal what the files say, so neither side can carry a stale literal.
+//! Both files are read from disk here, and the compiled `FORMAL_CATALOG_*` / `EXPECTED_*` constants (derived by
+//! umst-math `build.rs`) must equal what the files say, so neither side can carry a stale literal.
 
 use std::fs;
 use std::path::PathBuf;
@@ -88,5 +88,22 @@ fn compiled_catalog_pin_constants_follow_the_files_on_disk() {
     assert_eq!(
         field(&lock, "module_count").as_u64(),
         Some(TRACEABILITY_R0_MODULE_COUNT as u64)
+    );
+}
+
+#[test]
+fn umst_math_built_against_the_lock_this_crate_embeds() {
+    use umst_manifold::runtime::catalog::catalog_lock_bundle_sha256_hex;
+    assert_eq!(
+        umst_math::formal_catalog::MANIFOLD_CATALOG_LOCK_SHA256_HEX,
+        catalog_lock_bundle_sha256_hex(),
+        "umst-math and umst-manifold must hash the same artifacts/catalog.lock.json"
+    );
+    let on_disk = fs::read(umst_math::formal_catalog::MANIFOLD_CATALOG_LOCK_PATH)
+        .expect("lock at the path umst-math was built against");
+    assert_eq!(
+        on_disk,
+        fs::read(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("artifacts/catalog.lock.json"))
+            .expect("this crate's lock")
     );
 }

@@ -790,7 +790,7 @@ pub const UMST_FORMAL_PIN_SHA_DERIVATION: Derivation = Derivation::Pin {
 
 /// `manifold_formal_catalog_digest` — the composed formal catalog umst-manifold pins: umst-formal-double-slit's
 /// merged `artifacts/catalog.json` at the `.umst-pins.toml` commit, copied to umst-manifold
-/// `artifacts/upstream_catalog.json`, whose digest umst-manifold `build.rs` recomputes.
+/// `artifacts/upstream_catalog.json`, whose digest umst-math `build.rs` recomputes (`formal_catalog`).
 pub const MANIFOLD_FORMAL_CATALOG_DIGEST_DERIVATION: Derivation = Derivation::Pin {
     repo: "tytolabs/umst-formal-double-slit",
     ref_name: "umst-manifold/.umst-pins.toml [umst-formal-double-slit]",

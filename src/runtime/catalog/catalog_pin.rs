@@ -24,10 +24,13 @@ use super::{
     is_preview_fiber_pin, lock_upstream_catalog_digest_hex, CatalogLock,
 };
 
-include!(concat!(env!("OUT_DIR"), "/formal_catalog_pin.rs"));
+/// The formal catalog pin derived once by umst-math `build.rs` from `artifacts/upstream_catalog.json`.
+pub use umst_math::formal_catalog::{
+    FORMAL_CATALOG_DIGEST_HEX, FORMAL_CATALOG_MODULE_COUNT, FORMAL_CATALOG_MODULE_GRAPH_EDGE_COUNT,
+};
 
 /// Upstream / composed catalog digest the lock must carry: the pinned formal export's digest, recomputed
-/// from `artifacts/upstream_catalog.json` by build.rs (not read from the lock).
+/// from `artifacts/upstream_catalog.json` by umst-math `build.rs` (not read from the lock).
 pub const EXPECTED_UPSTREAM_CATALOG_DIGEST_HEX: &str = FORMAL_CATALOG_DIGEST_HEX;
 
 /// Module count the lock must carry: the module rows of the pinned formal export.

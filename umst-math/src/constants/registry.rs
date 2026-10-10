@@ -791,7 +791,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     },
     ConstantEntry {
         name: "manifold_formal_catalog_digest",
-        expression: "FORMAL_CATALOG_DIGEST_HEX: SHA-256 of the pinned formal export `artifacts/upstream_catalog.json`, recomputed by umst-manifold `build.rs`; the lock's `upstream_catalog_digest_hex` must equal it",
+        expression: "FORMAL_CATALOG_DIGEST_HEX: SHA-256 of the pinned formal export `artifacts/upstream_catalog.json`, recomputed by umst-math `build.rs` (`formal_catalog`); the lock's `upstream_catalog_digest_hex` must equal it",
         evidence: "umst-manifold `tests/catalog_lock_follows_formal_export.rs`; `scripts/bump_catalog_lock.py`",
         env_override: None,
         derivation: MANIFOLD_FORMAL_CATALOG_DIGEST_DERIVATION,

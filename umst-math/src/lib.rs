@@ -28,6 +28,7 @@ pub mod density;
 pub mod dignity;
 pub mod dpi;
 pub mod englert;
+pub mod formal_catalog;
 pub mod epistemic;
 pub mod erasure;
 pub mod eta_cog;
