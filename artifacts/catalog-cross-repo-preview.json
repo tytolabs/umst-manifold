@@ -10,12 +10,12 @@
   "secondary_repo": "umst-formal",
   "primary_lean_root": "Lean",
   "secondary_lean_root": "Lean",
-  "primary_module_count": 53,
-  "secondary_module_count": 177,
-  "merged_module_count": 229,
-  "primary_digest_hex": "1a9a824a439ab8b4b149e517778241139240504cd46319c922e93bd571ec74a5",
-  "secondary_digest_hex": "33b8d28a5c3ea1b28487e790c4195f1576f35287b58b4943f6e06148c2282463",
-  "merged_digest_hex": "58c2d9149d2b5eb21708c5d071d4840f3c6f6f8a05bacf42895d02d28f9542ff",
+  "primary_module_count": 54,
+  "secondary_module_count": 187,
+  "merged_module_count": 240,
+  "primary_digest_hex": "8fad801db6c7c91e95e10a2875a85d2d8848e89f69489aee82b1b97574534e6e",
+  "secondary_digest_hex": "38c087c88ea7c4b512c32f18bd210b046400538e33484101fa19a013a800c711",
+  "merged_digest_hex": "ddde666562ae54c93cf29107a916b96be1146b8534e0dc3ac4c0fbf5f977d9cd",
   "overlap_basename_count": 1,
   "only_in_primary_basename": [
     "CompressionCost",
@@ -51,6 +51,7 @@
     "InformationCostIdentity",
     "KleinInequality",
     "KnowingFibreInstance",
+    "KnowingFibreLaw",
     "KroneckerEigen",
     "LandauerBound",
     "LindbladDynamics",
@@ -80,6 +81,7 @@
     "AutoExperimenterPlaceholder",
     "AxiomProbe",
     "BackupRecovery",
+    "Bounds",
     "BurdenRecursionIsAdmissible",
     "CarrierProduct",
     "ClassicalMeasurementCost",
@@ -124,6 +126,7 @@
     "EndConditions",
     "EnrichedAdmissibility",
     "EntityRemote",
+    "EntropyProduction",
     "EnvGibbsDuhem",
     "EnvSampleSections",
     "EnvironmentContinuum",
@@ -147,6 +150,7 @@
     "GeometricMemory",
     "GossipTick",
     "GraphProperties",
+    "GsmMonoid",
     "HallucinationDetector",
     "Helmholtz",
     "HilbertPersist",
@@ -190,14 +194,17 @@
     "OverlayAdmit",
     "PadmaMembraneBacking",
     "PatternNuance",
+    "PhiGrammar",
     "PhysicsConstrainedAI",
     "PoromechanicsB3",
     "Powers",
+    "PowersCapillary",
     "PowersVolume",
     "PrimeSpectralCategory",
     "PrimeSpectralGuidance",
     "ProblemSize",
     "Process",
+    "ProcessFunctor",
     "ProvenancePreserve",
     "Reconcile",
     "RefineCost",
@@ -215,6 +222,10 @@
     "SecondLaw",
     "SecondLawDissipation",
     "SecondLawElastic",
+    "SecondLawElectromagnetic",
+    "SecondLawLandauerFactor",
+    "SecondLawPoroContinuum",
+    "SecondLawSolidInelastic",
     "SelfReferentialEconomicTensor",
     "SemanticEconomicModules",
     "SemanticFormal",
@@ -256,7 +267,7 @@
   "modules": [
     {
       "path": "Adjoint.lean",
-      "content_sha256": "c7325b5607925ea6aa0b9129f6d1080bb46ba41d5c197b4563e30938cdeca1c1",
+      "content_sha256": "c854a86c18e2a9d63fac7ce64733921aa7999852412b3136a0c34b643c3362dc",
       "declarations": {
         "def": [
           "adjointClosedForm"
@@ -862,6 +873,43 @@
       "repo": "umst-formal"
     },
     {
+      "path": "Chem/ProcessFunctor.lean",
+      "content_sha256": "f3ebf0d6aee7622aa928311f8f802e88f5067a416332b0b50dddf68da351143c",
+      "declarations": {
+        "def": [
+          "ThermochemicalTransition.process",
+          "ThermochemicalTransition.transformation",
+          "ThermochemicalTransition.idAt",
+          "ThermochemicalTransition.seq"
+        ],
+        "theorem": [
+          "chemSecondLaw_iff_process",
+          "secondLaw_iff_entropyDrop",
+          "secondLaw_iff_workFloor",
+          "ThermochemicalTransition.seq_idAt_left",
+          "ThermochemicalTransition.seq_idAt_right",
+          "ThermochemicalTransition.seq_assoc",
+          "process_idAt",
+          "process_seq",
+          "chemSecondLaw_idAt",
+          "chemSecondLaw_seq",
+          "PhysicalChemBridge.process_eq",
+          "PhysicalChemBridge.transformation_eq",
+          "PhysicalChemBridge.secondLaw_iff",
+          "secondLaw_identity_iff_work_nonneg",
+          "zeroWork_reversible_iff",
+          "coherentP0_eq_idAt",
+          "coherentP0_secondLaw_iff_work_nonneg",
+          "coherentP0_reversible"
+        ]
+      },
+      "import_lines": [
+        "Chem.SecondLaw"
+      ],
+      "module": "Chem.ProcessFunctor",
+      "repo": "umst-formal"
+    },
+    {
       "path": "Chem/RefineCost.lean",
       "content_sha256": "b2a2863144a4bf2f7064a8248f7787f2bfc99dbc50370711f003767b05f1e5ae",
       "declarations": {
@@ -914,7 +962,7 @@
     },
     {
       "path": "Chem/SecondLaw.lean",
-      "content_sha256": "a53528cf7835aab7a3c4d4bcf41f40ed44ce7454a72c4eacf17ea1ce399f0f09",
+      "content_sha256": "a61389820917a8be5286ffa4933ed7a88af981c6c6f386f77037aca4c0edff31",
       "declarations": {
         "structure": [
           "ThermochemicalTransition",
@@ -1099,6 +1147,73 @@
         "Core.Gate"
       ],
       "module": "Compat.Gate",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Composition/GsmMonoid.lean",
+      "content_sha256": "26759d3a379b298ed1c672365e2655f44238fe6666a5f5d1f8abc8bdeeaff0fd",
+      "declarations": {
+        "theorem": [
+          "potential_ext",
+          "zero_\u03c6",
+          "add_\u03c6",
+          "smul_\u03c6",
+          "dissipationPower_zero",
+          "dissipationPower_add",
+          "dissipationPower_smul",
+          "dissipationHom_apply",
+          "dissipationPower_sum",
+          "combination_summand_nonneg",
+          "cartridge_ext",
+          "cartridge_zero_dissip",
+          "cartridge_add_dissip",
+          "cartridge_smul_dissip",
+          "composite_passive_secondLaw",
+          "atom_ext",
+          "atom_zero_\u03c8",
+          "atom_zero_pot",
+          "atom_add_\u03c8",
+          "atom_add_pot",
+          "atom_smul_\u03c8",
+          "atom_smul_pot",
+          "atom_sum_\u03c8",
+          "atom_sum_pot",
+          "mem_admissibleCone",
+          "passiveStep_secondLaw",
+          "combination_secondLaw",
+          "tensor_power",
+          "tensor_secondLaw",
+          "convexGlue_secondLaw",
+          "glued_secondLaw_of_witness",
+          "glued_refused_of_negative_total",
+          "arbitrary_glue_not_closed",
+          "glueFraction_mem_unit",
+          "glueFraction_eq_zero_iff",
+          "glue_neg_of_fraction_gt_one",
+          "convexGlue_fraction_mem_unit"
+        ],
+        "def": [
+          "dissipationHom",
+          "dissipationAddHom",
+          "cartridgeDissipationHom",
+          "GsmAtom.toCartridge",
+          "PassiveStep",
+          "admissibleCone",
+          "tensor",
+          "glueFraction",
+          "glueAtom"
+        ],
+        "abbrev": [
+          "cartridgeAddCommMonoid"
+        ],
+        "structure": [
+          "GsmAtom"
+        ]
+      },
+      "import_lines": [
+        "ConvexPhiChannels"
+      ],
+      "module": "Composition.GsmMonoid",
       "repo": "umst-formal"
     },
     {
@@ -1552,6 +1667,34 @@
       "repo": "umst-formal"
     },
     {
+      "path": "Concrete/PowersCapillary.lean",
+      "content_sha256": "167eb16f33b0558fa9d469cc74508ef97090cdd64dae20106a67d94761914a29",
+      "declarations": {
+        "def": [
+          "capillaryPorosity",
+          "round2",
+          "round3",
+          "powersCapillaryWaterCoeff",
+          "powersPasteOffsetCoeff",
+          "powersCementVolumeCoeff"
+        ],
+        "theorem": [
+          "capillaryPorosity_eq",
+          "powersCapillaryWaterCoeff_value",
+          "powersPasteOffsetCoeff_value",
+          "powersCementVolumeCoeff_value",
+          "powersCapillaryWaterCoeff_err",
+          "powersPasteOffsetCoeff_err"
+        ]
+      },
+      "import_lines": [
+        "Concrete.PowersVolume",
+        "Mathlib.Tactic"
+      ],
+      "module": "Concrete.PowersCapillary",
+      "repo": "umst-formal"
+    },
+    {
       "path": "Concrete/PowersVolume.lean",
       "content_sha256": "63e3a12480c149e516705ed6245ac504ad7adfbf7baeab25701081adac5e2ae1",
       "declarations": {
@@ -1774,6 +1917,55 @@
       "repo": "umst-formal"
     },
     {
+      "path": "Constants/Bounds.lean",
+      "content_sha256": "d3bc78de1a7595bac66ba31cf44694755477f41162931be7a84b3a30df72c52f",
+      "declarations": {
+        "def": [
+          "elasticModulusPositive_lower",
+          "quadraticStiffnessNonneg_lower",
+          "isotropicPoissonRatio_lower",
+          "isotropicPoissonRatio_upper",
+          "isotropicYoungModulusNonneg_lower",
+          "relaxedModulusNonneg_lower",
+          "dissipationCoefficientNonneg_lower",
+          "viscosityNonneg_lower",
+          "binghamYieldStressNonneg_lower",
+          "binghamPlasticViscosityNonneg_lower",
+          "lossModulusNonneg_lower",
+          "restitutionAtMostOne_upper",
+          "permittivityNonneg_lower",
+          "permeabilityPositive_lower",
+          "conductanceNonneg_lower",
+          "resistanceNonneg_lower",
+          "coupledWellModulusPositive_lower",
+          "coupledWellCrossCoupling_lower",
+          "coupledWellCrossCoupling_upper",
+          "doubleWellModulusNonneg_lower",
+          "griffithFractureEnergyNonneg_lower",
+          "fractureToughnessNonneg_lower",
+          "nortonCoefficientNonneg_lower",
+          "parabolicRateConstantNonneg_lower",
+          "frictionalBondPrefactorNonneg_lower"
+        ],
+        "theorem": [
+          "permittivityNonneg_admits",
+          "permeabilityPositive_admits",
+          "conductanceNonneg_admits",
+          "resistanceNonneg_admits"
+        ]
+      },
+      "import_lines": [
+        "Constants.SI",
+        "Constants.SecondLawDissipation",
+        "Constants.SecondLawElastic",
+        "Constants.SecondLawElectromagnetic",
+        "Constants.SecondLawSolidInelastic",
+        "ConvexPhiChannels"
+      ],
+      "module": "Constants.Bounds",
+      "repo": "umst-formal"
+    },
+    {
       "path": "Constants/SI.lean",
       "content_sha256": "bbefa3a73b365b153e0ced82b5590049b1fc11aacf5980bec9ee1711788c7268",
       "declarations": {
@@ -1936,6 +2128,143 @@
         "Process"
       ],
       "module": "Constants.SecondLawElastic",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Constants/SecondLawElectromagnetic.lean",
+      "content_sha256": "58db31cd97e6880b29acb4e8437363f38656cad059dd1d2f29e04aaea9a38965",
+      "declarations": {
+        "def": [
+          "passiveStep"
+        ],
+        "theorem": [
+          "passiveStep_secondLaw_iff",
+          "electricRelaxation_secondLaw_iff",
+          "magneticRelaxation_secondLaw_iff",
+          "conductanceDissipation_secondLaw_iff",
+          "resistanceDissipation_secondLaw_iff",
+          "vacuumPermittivity_relaxation_secondLaw",
+          "vacuumPermeability_relaxation_secondLaw",
+          "conductanceQuantum_dissipation_secondLaw",
+          "vonKlitzing_dissipation_secondLaw"
+        ]
+      },
+      "import_lines": [
+        "Constants.SI",
+        "Process"
+      ],
+      "module": "Constants.SecondLawElectromagnetic",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Constants/SecondLawLandauerFactor.lean",
+      "content_sha256": "5eff065426bae42564386f55ce5a85f8f8563a73112e4b5b6ba0a37794778018",
+      "declarations": {
+        "def": [
+          "erasureAtFactor"
+        ],
+        "theorem": [
+          "secondLaw_uniformBit_iff",
+          "landauerFactor_isLeast"
+        ]
+      },
+      "import_lines": [
+        "Process"
+      ],
+      "module": "Constants.SecondLawLandauerFactor",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Constants/SecondLawPoroContinuum.lean",
+      "content_sha256": "0ff656e5552b954f029474c1014ced25ff70d6b11f35469f93bf25eef8862161",
+      "declarations": {
+        "theorem": [
+          "reaction_rate_nonneg",
+          "reaction_rate_constant_nonneg",
+          "fick_diffusivity_nonneg",
+          "darcy_permeability_nonneg",
+          "biot_coefficient_bounds",
+          "biot_storage_pos",
+          "isotropic_moduli_pos"
+        ]
+      },
+      "import_lines": [
+        "Constants.SecondLawDissipation",
+        "Constants.SecondLawElastic",
+        "Process"
+      ],
+      "module": "Constants.SecondLawPoroContinuum",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Constants/SecondLawSolidInelastic.lean",
+      "content_sha256": "aa798880dce21390b8a49b74f870f84235346e1047330cb67a6686a3d902aeea",
+      "declarations": {
+        "def": [
+          "coupledWell"
+        ],
+        "theorem": [
+          "coupledWell_bounds",
+          "doubleWell_modulus_nonneg",
+          "griffith_fracture_energy_nonneg",
+          "griffith_toughness_nonneg",
+          "norton_coefficient_nonneg",
+          "parabolic_rate_nonneg",
+          "frictional_bond_nonneg"
+        ]
+      },
+      "import_lines": [
+        "Constants.SecondLawDissipation"
+      ],
+      "module": "Constants.SecondLawSolidInelastic",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Convex/PhiGrammar.lean",
+      "content_sha256": "c7b0036bcf5c8a112fc0b7b9ec28558f9fc0a807076ffa20edfef2958ea839e3",
+      "declarations": {
+        "abbrev": [
+          "Rate"
+        ],
+        "def": [
+          "PSD",
+          "denote",
+          "coord",
+          "toPassivePotential",
+          "IsSubgradient",
+          "scalarRate",
+          "scalarPhi",
+          "toGsmPotential"
+        ],
+        "inductive": [
+          "PhiExpr"
+        ],
+        "theorem": [
+          "quad_nonneg",
+          "quad_convex",
+          "absRpow_convex",
+          "denote_zero",
+          "denote_nonneg",
+          "denote_convex",
+          "phi_le_subgradient_power",
+          "subgradient_power_nonneg",
+          "phiExpr_passive_secondLaw",
+          "phiExpr_gsmCartridge_secondLaw",
+          "no_expr_denotes_capped",
+          "no_expr_denotes_neg_sq"
+        ],
+        "structure": [
+          "PassivePotential"
+        ]
+      },
+      "import_lines": [
+        "ConvexPhiChannels",
+        "ConvexPhiDissipation",
+        "Mathlib.Analysis.Convex.Normed",
+        "Mathlib.Analysis.Convex.SpecificFunctions.Basic",
+        "Mathlib.Data.Matrix.Mul"
+      ],
+      "module": "Convex.PhiGrammar",
       "repo": "umst-formal"
     },
     {
@@ -3160,6 +3489,48 @@
         "PrimeSpectralCategory"
       ],
       "module": "FormalFoundations",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Generic/EntropyProduction.lean",
+      "content_sha256": "9b140ce65ae444ae7bad76d858ce178bd21f917014313aa9b45ecaeea91cfc99",
+      "declarations": {
+        "abbrev": [
+          "State"
+        ],
+        "def": [
+          "genericField",
+          "gradCLM",
+          "freeEnergyAt"
+        ],
+        "structure": [
+          "GenericAt",
+          "GenericSystem",
+          "GenericTrajectory"
+        ],
+        "theorem": [
+          "pair_transpose",
+          "antisymm_pair_self",
+          "energy_rate_zero",
+          "entropy_rate_eq",
+          "entropy_rate_nonneg",
+          "gradCLM_apply",
+          "energy_hasDerivAt",
+          "entropy_hasDerivAt",
+          "generic_energy_const",
+          "generic_entropy_monotone",
+          "generic_freeEnergy_descent",
+          "generic_secondLaw"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Analysis.Calculus.Deriv.Comp",
+        "Mathlib.Analysis.Calculus.MeanValue",
+        "Mathlib.Data.Matrix.Mul",
+        "Mathlib.Topology.Algebra.Module.FiniteDimension",
+        "Process"
+      ],
+      "module": "Generic.EntropyProduction",
       "repo": "umst-formal"
     },
     {
@@ -7176,7 +7547,7 @@
     },
     {
       "path": "scripts/print_axioms.lean",
-      "content_sha256": "ac29a155f0f5d6f6437afb15325c53ee7eaa6a40b0e086040f741e4b3a3dde83",
+      "content_sha256": "d56e68fc2e8051066381c7ab6ef8090bd053fad3a12d3c7657dd861c7721d579",
       "declarations": {
         "def": [
           "axiomClosure",
@@ -8286,6 +8657,40 @@
       "repo": "umst-formal-double-slit"
     },
     {
+      "path": "KnowingFibreLaw.lean",
+      "content_sha256": "3c71c1c849b2f242f1da7a9ef5a9319af6e34928f539a6f45bd876ec24460adb",
+      "declarations": {
+        "def": [
+          "pathRecordJoint",
+          "resetProcess_of_secondLaw"
+        ],
+        "theorem": [
+          "pathRecordJoint_marginalX",
+          "pathRecordJoint_marginalY",
+          "pathRecordJoint_jointEntropy",
+          "pathRecordJoint_mutualInformation",
+          "whichPath_measureFeedback_secondLaw",
+          "landauerBitEnergy_eq_kB",
+          "measureFeedback_extWork_le_landauerBitEnergy",
+          "readoutCost_le_landauerBitEnergy_of_secondLaw",
+          "erase_pathRecord_work",
+          "erase_pathRecord_cost_ge_bits",
+          "negMulLog_ge_mul_one_sub",
+          "one_sub_distinguishability_sq_le_two_mul_entropy",
+          "erase_pathRecord_cost_ge_complementarity",
+          "erase_pathRecord_cost_ge_visibility_sq",
+          "measure_then_erase_no_net_work"
+        ]
+      },
+      "import_lines": [
+        "KnowingFibreInstance",
+        "LandauerBound",
+        "QuantumClassicalBridge"
+      ],
+      "module": "KnowingFibreLaw",
+      "repo": "umst-formal-double-slit"
+    },
+    {
       "path": "KroneckerEigen.lean",
       "content_sha256": "6286c28954f2065c8fe0250773bfed4d9604961174129a7318e09e87e0c01628",
       "declarations": {
@@ -8920,7 +9325,7 @@
     },
     {
       "path": "lakefile.lean",
-      "content_sha256": "690dfd85b09f0995859d0932460b3babd36d9b4c891d15383c2b99ef4be0e633",
+      "content_sha256": "948c47589af97d71854fee1ae4dbd3b4860f526fbe2aeb60516c245242465eed",
       "declarations": {},
       "import_lines": [
         "Lake"
@@ -10010,6 +10415,40 @@
       "repo": "umst-formal-double-slit"
     },
     {
+      "path": "KnowingFibreLaw.lean",
+      "content_sha256": "3c71c1c849b2f242f1da7a9ef5a9319af6e34928f539a6f45bd876ec24460adb",
+      "declarations": {
+        "def": [
+          "pathRecordJoint",
+          "resetProcess_of_secondLaw"
+        ],
+        "theorem": [
+          "pathRecordJoint_marginalX",
+          "pathRecordJoint_marginalY",
+          "pathRecordJoint_jointEntropy",
+          "pathRecordJoint_mutualInformation",
+          "whichPath_measureFeedback_secondLaw",
+          "landauerBitEnergy_eq_kB",
+          "measureFeedback_extWork_le_landauerBitEnergy",
+          "readoutCost_le_landauerBitEnergy_of_secondLaw",
+          "erase_pathRecord_work",
+          "erase_pathRecord_cost_ge_bits",
+          "negMulLog_ge_mul_one_sub",
+          "one_sub_distinguishability_sq_le_two_mul_entropy",
+          "erase_pathRecord_cost_ge_complementarity",
+          "erase_pathRecord_cost_ge_visibility_sq",
+          "measure_then_erase_no_net_work"
+        ]
+      },
+      "import_lines": [
+        "KnowingFibreInstance",
+        "LandauerBound",
+        "QuantumClassicalBridge"
+      ],
+      "module": "KnowingFibreLaw",
+      "repo": "umst-formal-double-slit"
+    },
+    {
       "path": "KroneckerEigen.lean",
       "content_sha256": "6286c28954f2065c8fe0250773bfed4d9604961174129a7318e09e87e0c01628",
       "declarations": {
@@ -10644,7 +11083,7 @@
     },
     {
       "path": "lakefile.lean",
-      "content_sha256": "690dfd85b09f0995859d0932460b3babd36d9b4c891d15383c2b99ef4be0e633",
+      "content_sha256": "948c47589af97d71854fee1ae4dbd3b4860f526fbe2aeb60516c245242465eed",
       "declarations": {},
       "import_lines": [
         "Lake"
@@ -10656,7 +11095,7 @@
   "modules_secondary": [
     {
       "path": "Adjoint.lean",
-      "content_sha256": "c7325b5607925ea6aa0b9129f6d1080bb46ba41d5c197b4563e30938cdeca1c1",
+      "content_sha256": "c854a86c18e2a9d63fac7ce64733921aa7999852412b3136a0c34b643c3362dc",
       "declarations": {
         "def": [
           "adjointClosedForm"
@@ -11262,6 +11701,43 @@
       "repo": "umst-formal"
     },
     {
+      "path": "Chem/ProcessFunctor.lean",
+      "content_sha256": "f3ebf0d6aee7622aa928311f8f802e88f5067a416332b0b50dddf68da351143c",
+      "declarations": {
+        "def": [
+          "ThermochemicalTransition.process",
+          "ThermochemicalTransition.transformation",
+          "ThermochemicalTransition.idAt",
+          "ThermochemicalTransition.seq"
+        ],
+        "theorem": [
+          "chemSecondLaw_iff_process",
+          "secondLaw_iff_entropyDrop",
+          "secondLaw_iff_workFloor",
+          "ThermochemicalTransition.seq_idAt_left",
+          "ThermochemicalTransition.seq_idAt_right",
+          "ThermochemicalTransition.seq_assoc",
+          "process_idAt",
+          "process_seq",
+          "chemSecondLaw_idAt",
+          "chemSecondLaw_seq",
+          "PhysicalChemBridge.process_eq",
+          "PhysicalChemBridge.transformation_eq",
+          "PhysicalChemBridge.secondLaw_iff",
+          "secondLaw_identity_iff_work_nonneg",
+          "zeroWork_reversible_iff",
+          "coherentP0_eq_idAt",
+          "coherentP0_secondLaw_iff_work_nonneg",
+          "coherentP0_reversible"
+        ]
+      },
+      "import_lines": [
+        "Chem.SecondLaw"
+      ],
+      "module": "Chem.ProcessFunctor",
+      "repo": "umst-formal"
+    },
+    {
       "path": "Chem/RefineCost.lean",
       "content_sha256": "b2a2863144a4bf2f7064a8248f7787f2bfc99dbc50370711f003767b05f1e5ae",
       "declarations": {
@@ -11314,7 +11790,7 @@
     },
     {
       "path": "Chem/SecondLaw.lean",
-      "content_sha256": "a53528cf7835aab7a3c4d4bcf41f40ed44ce7454a72c4eacf17ea1ce399f0f09",
+      "content_sha256": "a61389820917a8be5286ffa4933ed7a88af981c6c6f386f77037aca4c0edff31",
       "declarations": {
         "structure": [
           "ThermochemicalTransition",
@@ -11499,6 +11975,73 @@
         "Core.Gate"
       ],
       "module": "Compat.Gate",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Composition/GsmMonoid.lean",
+      "content_sha256": "26759d3a379b298ed1c672365e2655f44238fe6666a5f5d1f8abc8bdeeaff0fd",
+      "declarations": {
+        "theorem": [
+          "potential_ext",
+          "zero_\u03c6",
+          "add_\u03c6",
+          "smul_\u03c6",
+          "dissipationPower_zero",
+          "dissipationPower_add",
+          "dissipationPower_smul",
+          "dissipationHom_apply",
+          "dissipationPower_sum",
+          "combination_summand_nonneg",
+          "cartridge_ext",
+          "cartridge_zero_dissip",
+          "cartridge_add_dissip",
+          "cartridge_smul_dissip",
+          "composite_passive_secondLaw",
+          "atom_ext",
+          "atom_zero_\u03c8",
+          "atom_zero_pot",
+          "atom_add_\u03c8",
+          "atom_add_pot",
+          "atom_smul_\u03c8",
+          "atom_smul_pot",
+          "atom_sum_\u03c8",
+          "atom_sum_pot",
+          "mem_admissibleCone",
+          "passiveStep_secondLaw",
+          "combination_secondLaw",
+          "tensor_power",
+          "tensor_secondLaw",
+          "convexGlue_secondLaw",
+          "glued_secondLaw_of_witness",
+          "glued_refused_of_negative_total",
+          "arbitrary_glue_not_closed",
+          "glueFraction_mem_unit",
+          "glueFraction_eq_zero_iff",
+          "glue_neg_of_fraction_gt_one",
+          "convexGlue_fraction_mem_unit"
+        ],
+        "def": [
+          "dissipationHom",
+          "dissipationAddHom",
+          "cartridgeDissipationHom",
+          "GsmAtom.toCartridge",
+          "PassiveStep",
+          "admissibleCone",
+          "tensor",
+          "glueFraction",
+          "glueAtom"
+        ],
+        "abbrev": [
+          "cartridgeAddCommMonoid"
+        ],
+        "structure": [
+          "GsmAtom"
+        ]
+      },
+      "import_lines": [
+        "ConvexPhiChannels"
+      ],
+      "module": "Composition.GsmMonoid",
       "repo": "umst-formal"
     },
     {
@@ -11952,6 +12495,34 @@
       "repo": "umst-formal"
     },
     {
+      "path": "Concrete/PowersCapillary.lean",
+      "content_sha256": "167eb16f33b0558fa9d469cc74508ef97090cdd64dae20106a67d94761914a29",
+      "declarations": {
+        "def": [
+          "capillaryPorosity",
+          "round2",
+          "round3",
+          "powersCapillaryWaterCoeff",
+          "powersPasteOffsetCoeff",
+          "powersCementVolumeCoeff"
+        ],
+        "theorem": [
+          "capillaryPorosity_eq",
+          "powersCapillaryWaterCoeff_value",
+          "powersPasteOffsetCoeff_value",
+          "powersCementVolumeCoeff_value",
+          "powersCapillaryWaterCoeff_err",
+          "powersPasteOffsetCoeff_err"
+        ]
+      },
+      "import_lines": [
+        "Concrete.PowersVolume",
+        "Mathlib.Tactic"
+      ],
+      "module": "Concrete.PowersCapillary",
+      "repo": "umst-formal"
+    },
+    {
       "path": "Concrete/PowersVolume.lean",
       "content_sha256": "63e3a12480c149e516705ed6245ac504ad7adfbf7baeab25701081adac5e2ae1",
       "declarations": {
@@ -12174,6 +12745,55 @@
       "repo": "umst-formal"
     },
     {
+      "path": "Constants/Bounds.lean",
+      "content_sha256": "d3bc78de1a7595bac66ba31cf44694755477f41162931be7a84b3a30df72c52f",
+      "declarations": {
+        "def": [
+          "elasticModulusPositive_lower",
+          "quadraticStiffnessNonneg_lower",
+          "isotropicPoissonRatio_lower",
+          "isotropicPoissonRatio_upper",
+          "isotropicYoungModulusNonneg_lower",
+          "relaxedModulusNonneg_lower",
+          "dissipationCoefficientNonneg_lower",
+          "viscosityNonneg_lower",
+          "binghamYieldStressNonneg_lower",
+          "binghamPlasticViscosityNonneg_lower",
+          "lossModulusNonneg_lower",
+          "restitutionAtMostOne_upper",
+          "permittivityNonneg_lower",
+          "permeabilityPositive_lower",
+          "conductanceNonneg_lower",
+          "resistanceNonneg_lower",
+          "coupledWellModulusPositive_lower",
+          "coupledWellCrossCoupling_lower",
+          "coupledWellCrossCoupling_upper",
+          "doubleWellModulusNonneg_lower",
+          "griffithFractureEnergyNonneg_lower",
+          "fractureToughnessNonneg_lower",
+          "nortonCoefficientNonneg_lower",
+          "parabolicRateConstantNonneg_lower",
+          "frictionalBondPrefactorNonneg_lower"
+        ],
+        "theorem": [
+          "permittivityNonneg_admits",
+          "permeabilityPositive_admits",
+          "conductanceNonneg_admits",
+          "resistanceNonneg_admits"
+        ]
+      },
+      "import_lines": [
+        "Constants.SI",
+        "Constants.SecondLawDissipation",
+        "Constants.SecondLawElastic",
+        "Constants.SecondLawElectromagnetic",
+        "Constants.SecondLawSolidInelastic",
+        "ConvexPhiChannels"
+      ],
+      "module": "Constants.Bounds",
+      "repo": "umst-formal"
+    },
+    {
       "path": "Constants/SI.lean",
       "content_sha256": "bbefa3a73b365b153e0ced82b5590049b1fc11aacf5980bec9ee1711788c7268",
       "declarations": {
@@ -12336,6 +12956,143 @@
         "Process"
       ],
       "module": "Constants.SecondLawElastic",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Constants/SecondLawElectromagnetic.lean",
+      "content_sha256": "58db31cd97e6880b29acb4e8437363f38656cad059dd1d2f29e04aaea9a38965",
+      "declarations": {
+        "def": [
+          "passiveStep"
+        ],
+        "theorem": [
+          "passiveStep_secondLaw_iff",
+          "electricRelaxation_secondLaw_iff",
+          "magneticRelaxation_secondLaw_iff",
+          "conductanceDissipation_secondLaw_iff",
+          "resistanceDissipation_secondLaw_iff",
+          "vacuumPermittivity_relaxation_secondLaw",
+          "vacuumPermeability_relaxation_secondLaw",
+          "conductanceQuantum_dissipation_secondLaw",
+          "vonKlitzing_dissipation_secondLaw"
+        ]
+      },
+      "import_lines": [
+        "Constants.SI",
+        "Process"
+      ],
+      "module": "Constants.SecondLawElectromagnetic",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Constants/SecondLawLandauerFactor.lean",
+      "content_sha256": "5eff065426bae42564386f55ce5a85f8f8563a73112e4b5b6ba0a37794778018",
+      "declarations": {
+        "def": [
+          "erasureAtFactor"
+        ],
+        "theorem": [
+          "secondLaw_uniformBit_iff",
+          "landauerFactor_isLeast"
+        ]
+      },
+      "import_lines": [
+        "Process"
+      ],
+      "module": "Constants.SecondLawLandauerFactor",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Constants/SecondLawPoroContinuum.lean",
+      "content_sha256": "0ff656e5552b954f029474c1014ced25ff70d6b11f35469f93bf25eef8862161",
+      "declarations": {
+        "theorem": [
+          "reaction_rate_nonneg",
+          "reaction_rate_constant_nonneg",
+          "fick_diffusivity_nonneg",
+          "darcy_permeability_nonneg",
+          "biot_coefficient_bounds",
+          "biot_storage_pos",
+          "isotropic_moduli_pos"
+        ]
+      },
+      "import_lines": [
+        "Constants.SecondLawDissipation",
+        "Constants.SecondLawElastic",
+        "Process"
+      ],
+      "module": "Constants.SecondLawPoroContinuum",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Constants/SecondLawSolidInelastic.lean",
+      "content_sha256": "aa798880dce21390b8a49b74f870f84235346e1047330cb67a6686a3d902aeea",
+      "declarations": {
+        "def": [
+          "coupledWell"
+        ],
+        "theorem": [
+          "coupledWell_bounds",
+          "doubleWell_modulus_nonneg",
+          "griffith_fracture_energy_nonneg",
+          "griffith_toughness_nonneg",
+          "norton_coefficient_nonneg",
+          "parabolic_rate_nonneg",
+          "frictional_bond_nonneg"
+        ]
+      },
+      "import_lines": [
+        "Constants.SecondLawDissipation"
+      ],
+      "module": "Constants.SecondLawSolidInelastic",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Convex/PhiGrammar.lean",
+      "content_sha256": "c7b0036bcf5c8a112fc0b7b9ec28558f9fc0a807076ffa20edfef2958ea839e3",
+      "declarations": {
+        "abbrev": [
+          "Rate"
+        ],
+        "def": [
+          "PSD",
+          "denote",
+          "coord",
+          "toPassivePotential",
+          "IsSubgradient",
+          "scalarRate",
+          "scalarPhi",
+          "toGsmPotential"
+        ],
+        "inductive": [
+          "PhiExpr"
+        ],
+        "theorem": [
+          "quad_nonneg",
+          "quad_convex",
+          "absRpow_convex",
+          "denote_zero",
+          "denote_nonneg",
+          "denote_convex",
+          "phi_le_subgradient_power",
+          "subgradient_power_nonneg",
+          "phiExpr_passive_secondLaw",
+          "phiExpr_gsmCartridge_secondLaw",
+          "no_expr_denotes_capped",
+          "no_expr_denotes_neg_sq"
+        ],
+        "structure": [
+          "PassivePotential"
+        ]
+      },
+      "import_lines": [
+        "ConvexPhiChannels",
+        "ConvexPhiDissipation",
+        "Mathlib.Analysis.Convex.Normed",
+        "Mathlib.Analysis.Convex.SpecificFunctions.Basic",
+        "Mathlib.Data.Matrix.Mul"
+      ],
+      "module": "Convex.PhiGrammar",
       "repo": "umst-formal"
     },
     {
@@ -13560,6 +14317,48 @@
         "PrimeSpectralCategory"
       ],
       "module": "FormalFoundations",
+      "repo": "umst-formal"
+    },
+    {
+      "path": "Generic/EntropyProduction.lean",
+      "content_sha256": "9b140ce65ae444ae7bad76d858ce178bd21f917014313aa9b45ecaeea91cfc99",
+      "declarations": {
+        "abbrev": [
+          "State"
+        ],
+        "def": [
+          "genericField",
+          "gradCLM",
+          "freeEnergyAt"
+        ],
+        "structure": [
+          "GenericAt",
+          "GenericSystem",
+          "GenericTrajectory"
+        ],
+        "theorem": [
+          "pair_transpose",
+          "antisymm_pair_self",
+          "energy_rate_zero",
+          "entropy_rate_eq",
+          "entropy_rate_nonneg",
+          "gradCLM_apply",
+          "energy_hasDerivAt",
+          "entropy_hasDerivAt",
+          "generic_energy_const",
+          "generic_entropy_monotone",
+          "generic_freeEnergy_descent",
+          "generic_secondLaw"
+        ]
+      },
+      "import_lines": [
+        "Mathlib.Analysis.Calculus.Deriv.Comp",
+        "Mathlib.Analysis.Calculus.MeanValue",
+        "Mathlib.Data.Matrix.Mul",
+        "Mathlib.Topology.Algebra.Module.FiniteDimension",
+        "Process"
+      ],
+      "module": "Generic.EntropyProduction",
       "repo": "umst-formal"
     },
     {
@@ -17576,7 +18375,7 @@
     },
     {
       "path": "lakefile.lean",
-      "content_sha256": "512a766baff4733a444ee760bac8f74f41c194089a256092532798aa7afcf0e6",
+      "content_sha256": "a79565743e14e3cf23870999e18f330c9dc3eefce565851a488130fecc042804",
       "declarations": {},
       "import_lines": [
         "Lake"
@@ -17586,7 +18385,7 @@
     },
     {
       "path": "scripts/print_axioms.lean",
-      "content_sha256": "ac29a155f0f5d6f6437afb15325c53ee7eaa6a40b0e086040f741e4b3a3dde83",
+      "content_sha256": "d56e68fc2e8051066381c7ab6ef8090bd053fad3a12d3c7657dd861c7721d579",
       "declarations": {
         "def": [
           "axiomClosure",

@@ -5,13 +5,13 @@
 # Protocol: docs/CATALOG_UPDATE_PROTOCOL.md
 
 [umst-formal-double-slit]
-sha = "f5f0d1516c01d898045a4a1bac0623bedc5c10e1"
-pinned_at = "2026-10-09T18:24:31Z"
+sha = "cb943a1f5bb543af84faa477193ded5c200ae243"
+pinned_at = "2026-10-10T03:21:41Z"
 repo = "https://github.com/tytolabs/umst-formal-double-slit"
 
 [umst-formal]
-sha = "c81eea963c08a9cf367bcf94038555a7ede905fe"
-pinned_at = "2026-10-09T18:24:31Z"
+sha = "be28749225150a71fe9f7c25cc94d6e025d2c3bf"
+pinned_at = "2026-10-10T03:21:41Z"
 repo = "https://github.com/tytolabs/umst-formal"
 
 [umst-foundations]

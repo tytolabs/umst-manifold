@@ -124,27 +124,46 @@ pub const ALLOW_UNUSED_CATALOG_IDS: &[&str] = &[
     "Chem.Environment.EnvironmentContinuum",
     "Chem.GroundStates",
     "Chem.KleisliInteract",
+    // Chemistry as a functor into the process family; consumer is umst-chem, which no runtime gate catalog_id names
+    // (follow-up cell CATALOG-ID-CHEM-PROCESS-FUNCTOR).
+    "Chem.ProcessFunctor",
     "Chem.OreAssemblage",
     "Chem.PatternNuance",
     "Chem.RefineCost",
     "Chem.SecondLaw",
     "CoarseGraining",
+    // Composition law of GSM atoms (commutative monoids, convex cones): the cartridge composites it admits are built
+    // in umst-cartridges, which no runtime gate catalog_id names (follow-up cell CATALOG-ID-GSM-COMPOSITION).
+    "Composition.GsmMonoid",
     "CompressionCost",
     "Concrete.MicroMechanics",
     "Concrete.PoromechanicsB3",
+    // Closed-form Powers capillary porosity; its rounded closure (0.36, 0.32) is carried by umst-cartridge-poromechanics
+    // `capillary_porosity`, which no runtime gate catalog_id names (follow-up cell CATALOG-ID-POROMECHANICS-CAPILLARY).
+    "Concrete.PowersCapillary",
     "Concrete.PowersVolume",
     "Concrete.ShrinkageB4",
     "Concrete.StiffnessTransition",
+    // Second-law bounds of the constants table (generated from constants.json) and the electromagnetic, poro-continuum
+    // and solid-inelastic bounds: consumers are the umst-constants bound rows and umst-cartridge-grounded
+    // SecondLawBoundRow, which no runtime gate catalog_id names (follow-up cell CATALOG-ID-CONSTANTS-BOUNDS).
+    "Constants.Bounds",
     "Constants.SI",
     "Constants.SIBridge",
     // Second-law bounds on dissipation coefficients and elastic moduli: the umst-constants table carries them as
     // bounds (constants.json), and no runtime gate cites the Lean module.
     "Constants.SecondLawDissipation",
     "Constants.SecondLawElastic",
+    "Constants.SecondLawElectromagnetic",
+    "Constants.SecondLawPoroContinuum",
+    "Constants.SecondLawSolidInelastic",
     // Convex dissipation channels, Prony arms and passive restitution through `.transition`: formal-only, no
     // runtime gate cites it yet.
     "ConvexPhiChannels",
     "ConvexPhiDissipation",
+    // Grammar of convex dissipation potentials; its Rust form is the umst-cartridges continuum and solid-inelastic
+    // dissipation, which no runtime gate catalog_id names (follow-up cell CATALOG-ID-GSM-COMPOSITION).
+    "Convex.PhiGrammar",
     "CoordinationContract",
     "CoordinationCost",
     "CoordinationCostP6",
@@ -152,6 +171,9 @@ pub const ALLOW_UNUSED_CATALOG_IDS: &[&str] = &[
     "Crypto.CryptoHypothesis",
     "Economic.PhysicsConstrainedAI",
     "ExamplesQubitEpistemic",
+    // GENERIC entropy production; consumer is umst-chem `fluctuation_theorem`, which no runtime gate catalog_id names
+    // (follow-up cell CATALOG-ID-CHEM-PROCESS-FUNCTOR).
+    "Generic.EntropyProduction",
     "Excitement",
     // `selectBy` over any linear order; its Rust twin is umst-algebra `select_by` (SELECT_BY_LEAN_ANCHOR), which is
     // no runtime gate `catalog_id`, so the module stays formal-only like `Excitement`.
@@ -248,6 +270,15 @@ pub const CATALOG_MODULE_WIRED: &[(&str, &[&str])] = &[
     ("GateCompat", &["umst.gate.cd_transition"]),
     ("InformationCostIdentity", &["umst.gate.landauer_cbf"]),
     ("LandauerBound", &["umst.gate.landauer_cbf"]),
+    // `landauerFactor_isLeast`: the least work per kelvin the `.erase` case admits for a uniform bit is ln 2, the
+    // factor `ThermodynamicCBF::calculate_landauer_cost` charges per resolved bit.
+    (
+        "Constants.SecondLawLandauerFactor",
+        &["umst.gate.landauer_cbf"],
+    ),
+    // `whichPath_measureFeedback_secondLaw`: a readout of I nats costs k_B·T·I as a `measureFeedback` case; the
+    // gate debits that cost for the mutual information an update resolves.
+    ("KnowingFibreLaw", &["umst.gate.landauer_cbf"]),
     ("LandauerExtension", &["umst.gate.landauer_cbf"]),
     ("LandauerLaw", &["umst.gate.landauer_cbf"]),
     // `SemanticSecondLaw` is absent from the composed Lean export (129-module lock);

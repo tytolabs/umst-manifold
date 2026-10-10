@@ -2,24 +2,24 @@
   "version": 2,
   "role": "manifold_runtime_lock",
   "upstream_repo": "umst-formal-double-slit",
-  "upstream_catalog_digest_hex": "58c2d9149d2b5eb21708c5d071d4840f3c6f6f8a05bacf42895d02d28f9542ff",
-  "module_count": 229,
-  "module_graph_edge_count": 678,
+  "upstream_catalog_digest_hex": "ddde666562ae54c93cf29107a916b96be1146b8534e0dc3ac4c0fbf5f977d9cd",
+  "module_count": 240,
+  "module_graph_edge_count": 708,
   "composition_rule": "cross_repo_merge_v1_primary_wins_basename",
-  "composed_catalog_digest_hex": "58c2d9149d2b5eb21708c5d071d4840f3c6f6f8a05bacf42895d02d28f9542ff",
-  "composed_primary_fiber_fingerprint_hex": "6ed6b210797fc5211ca8e9fab749336d8a2cd86fa5b707765e7509f32eb3d578",
+  "composed_catalog_digest_hex": "ddde666562ae54c93cf29107a916b96be1146b8534e0dc3ac4c0fbf5f977d9cd",
+  "composed_primary_fiber_fingerprint_hex": "6491f69840490d9b200f2e7cf55368bc2de400c05fd18ba990b7846fbc01dac7",
   "fiber_pins": [
     {
       "repo": "umst-formal-double-slit",
-      "catalog_digest_hex": "1a9a824a439ab8b4b149e517778241139240504cd46319c922e93bd571ec74a5",
-      "module_count": 53,
+      "catalog_digest_hex": "8fad801db6c7c91e95e10a2875a85d2d8848e89f69489aee82b1b97574534e6e",
+      "module_count": 54,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"
     },
     {
       "repo": "umst-formal",
-      "catalog_digest_hex": "33b8d28a5c3ea1b28487e790c4195f1576f35287b58b4943f6e06148c2282463",
-      "module_count": 177,
+      "catalog_digest_hex": "38c087c88ea7c4b512c32f18bd210b046400538e33484101fa19a013a800c711",
+      "module_count": 187,
       "lock_role": "lean_catalog_lock",
       "catalog_path": "artifacts/catalog.json"
     },
@@ -50,5 +50,5 @@
       }
     ]
   },
-  "notes": "Catalog bump: umst-formal c81eea9 + double-slit dd089d3 exports; merged 229 modules / 678 edges. UCRS fiber pin unchanged (preview). scripts/bump_catalog_lock.py"
+  "notes": "Catalog bump: umst-formal be28749 + double-slit cb943a1 exports; merged 240 modules / 708 edges. UCRS fiber pin unchanged (preview). scripts/bump_catalog_lock.py"
 }
