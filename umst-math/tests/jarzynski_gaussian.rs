@@ -104,7 +104,7 @@ mod runtime_meter {
     use super::Rat;
     use umst_math::jarzynski::{estimate, hoeffding_interval, FreeEnergyInterval, JarzynskiRefusal};
 
-    /// Measured false-alarm rate of excluding exact ΔF from a Hoeffding interval at level δ.
+    /// Seeded-replicate tally of Hoeffding interval exclusions for exact ΔF at level δ.
     #[derive(Debug, Clone, Copy, PartialEq)]
     pub struct IntegralFluctuationFalseAlarmMeter {
         pub replicates_attempted: usize,
