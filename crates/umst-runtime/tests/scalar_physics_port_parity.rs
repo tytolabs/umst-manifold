@@ -44,17 +44,22 @@ fn parity_test_has_no_inline_legacy_duplicate_fns() {
     let test_path =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/scalar_physics_port_parity.rs");
     let test_src = fs::read_to_string(&test_path).expect("read test source");
-    for forbidden in [
-        "fn legacy_hydration_degree",
-        "fn legacy_strength_powers",
-        "fn legacy_thermo_snapshot_from_mix",
-        "struct LegacyCementClosure",
+    for stem in [
+        "hydration_degree",
+        "strength_powers",
+        "thermo_snapshot_from_mix",
     ] {
+        let legacy_fn = ["fn ", "legacy_", stem].concat();
         assert!(
-            !test_src.contains(forbidden),
-            "self-comparison trap: test must not define {forbidden}"
+            !test_src.contains(&legacy_fn),
+            "self-comparison trap: test must not define {legacy_fn}"
         );
     }
+    let legacy_closure = ["struct ", "Legacy", "Cement", "Closure"].concat();
+    assert!(
+        !test_src.contains(&legacy_closure),
+        "self-comparison trap: test must not define LegacyCementClosure"
+    );
 }
 
 #[test]
@@ -104,7 +109,6 @@ fn ungrounded_legacy_constants_are_typed_absent_rows() {
     for row in LEGACY_UNGROUNDED_CONSTANTS {
         assert!(!row.quantity.is_empty());
         assert!(!row.unit.is_empty());
-        assert!(!row.follow_up_cell.is_empty());
         assert!(
             !row.follow_up_cell.is_empty(),
             "follow-up cell id required for Absent row"
