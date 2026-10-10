@@ -16,7 +16,10 @@ pub mod lean_extract_stub;
 pub mod nalgebra_algebra_posture;
 pub mod num_dual_ad_posture;
 pub mod scalar_physics_port;
-pub use scalar_physics_port::CThermodynamicState;
+pub use scalar_physics_port::{
+    CThermodynamicState, ScalarPhysicsPortRefuse, ScalarPhysicsQuantityAbsent,
+    LEGACY_SCALAR_PHYSICS_ORACLE, SCALAR_PHYSICS_PORT_MARKER,
+};
 
 pub use burn_algebra_adapter_posture::{
     ADAPTER_CRATE_LANDED as BURN_ADAPTER_CRATE_LANDED,
@@ -45,6 +48,14 @@ pub use burn_algebra_posture::{
     SLICE_RESIDUAL_PATH as BURN_ALGEBRA_SLICE_RESIDUAL_PATH,
     SLICE_RESIDUAL_ROWS_LANDED as BURN_ALGEBRA_SLICE_RESIDUAL_LANDED,
 };
+pub use lean_extract_stub::{
+    lean_extract_stub, lean_extract_stub_honest, lean_extract_stub_probe,
+    refuse_invented_extraction_complete as refuse_lean_extract_invented_complete, LeanExtractStub,
+    CELL_ID as LEAN_EXTRACT_STUB_CELL_ID, EXTRACTION_COMPLETE as LEAN_EXTRACT_COMPLETE,
+    FORMAL_PINS_AUTHORITY as LEAN_EXTRACT_FORMAL_PINS_AUTHORITY,
+    FORMAL_PIN_COUNT_TARGET as LEAN_EXTRACT_FORMAL_PIN_COUNT_TARGET, LEAN_EXTRACT_STUB_MARKER,
+    PHYSICS_GREEN as LEAN_EXTRACT_PHYSICS_GREEN,
+};
 #[cfg(feature = "nalgebra-tensor")]
 pub use nalgebra_algebra_posture::{
     BLUEPRINT_ROW as NALGEBRA_ALGEBRA_BLUEPRINT_ROW,
@@ -64,14 +75,6 @@ pub use num_dual_ad_posture::{
     POSTURE_TAG as NUM_DUAL_POSTURE, RECEIPT_SLUG as NUM_DUAL_RECEIPT_SLUG,
     RESEARCH_RECEIPT as NUM_DUAL_RESEARCH_RECEIPT, SCALAR_AD_LANDED as NUM_DUAL_SCALAR_AD_LANDED,
     SLICE_ID as NUM_DUAL_SLICE_ID, TENSOR_LIFT_LANDED as NUM_DUAL_TENSOR_LIFT_LANDED,
-};
-pub use lean_extract_stub::{
-    lean_extract_stub, lean_extract_stub_honest, lean_extract_stub_probe, LeanExtractStub,
-    CELL_ID as LEAN_EXTRACT_STUB_CELL_ID, EXTRACTION_COMPLETE as LEAN_EXTRACT_COMPLETE,
-    FORMAL_PINS_AUTHORITY as LEAN_EXTRACT_FORMAL_PINS_AUTHORITY,
-    FORMAL_PIN_COUNT_TARGET as LEAN_EXTRACT_FORMAL_PIN_COUNT_TARGET,
-    LEAN_EXTRACT_STUB_MARKER, PHYSICS_GREEN as LEAN_EXTRACT_PHYSICS_GREEN,
-    refuse_invented_extraction_complete as refuse_lean_extract_invented_complete,
 };
 
 pub use umst_manifold::*;
