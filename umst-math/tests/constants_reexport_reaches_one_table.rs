@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! constants reexport reaches one table: `umst_math::umst_constants` is the same SSOT as `umst-constants`.
 
 #[test]
