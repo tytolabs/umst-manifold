@@ -21,10 +21,6 @@ pub mod catalog_functor;
 pub mod constants;
 /// Formal constants table (`umst-constants`); runtime reads one SSOT through this re-export.
 pub use umst_constants;
-/// CG stall window from the Lanczos spectrum of the coefficient trace.
-pub mod cg_spectral_window;
-/// CG stall window: median gap between strict residual improvements.
-pub mod cg_stall_window;
 pub mod content_address;
 pub mod credit;
 /// §14bis.f-S-0 — PQC primitives (ML-KEM / ML-DSA / SLH-DSA / SHA3-256).
@@ -34,13 +30,11 @@ pub mod density;
 pub mod dignity;
 pub mod dpi;
 pub mod englert;
+pub mod formal_catalog;
 pub mod epistemic;
 pub mod erasure;
 pub mod eta_cog;
 pub mod fixtures;
-pub mod formal_catalog;
-/// Certified lowest eigenpairs of a symmetric pencil: shift-invert Lanczos as a budgeted unfold.
-pub mod generalized_eigen;
 /// §14bis.f-H-8: hardware abstraction *trait* surface (category **𝓗**; FORWARD-PLAN v1.2) — no backends
 #[allow(missing_docs)]
 pub mod hal;
@@ -50,8 +44,6 @@ pub mod io;
 /// Finite-sample Jarzynski free-energy estimator with bias bounds, self-tested on the two-level quench.
 pub mod jarzynski;
 pub mod kernels;
-/// Outer loop stops on a KKT certificate or the budget.
-pub mod kkt_outer_stop;
 pub mod klein;
 pub mod kraus;
 pub mod landauer;
@@ -66,51 +58,40 @@ pub mod linear_operator;
 pub mod manifold;
 pub mod median_convergence;
 pub mod mi;
-/// Solver / regression numeric tolerance SSOT (derive from [`numeric_tolerance::ProblemScale`]).
-pub mod numeric_tolerance;
 pub mod order_statistics_band;
 pub mod pmic;
 /// L1a: matrix-free preconditioners paired with [`linear_operator`].
 pub mod preconditioner;
-/// n_unknowns is escalation evidence for unfold, not a stop.
-pub mod problem_size_escalation;
-/// Symmetric profile (skyline) matrices, their `L D Lᵀ` factor, definiteness and inertia certificates.
-pub mod profile_ldlt;
 /// M6: two-part tone joint of a luminance sample set (image columns, video frame halves) as a 2 ⊗ 2 density.
 pub mod raster_joint;
 pub mod rho_estimator;
 pub mod schrodinger;
 /// THEOREM-BOUND: scalar Kalman + Joseph EKF smoothers (§14bis.e-TUI-7; vendor umst-prototype-2a)
 pub mod smoothing;
-/// Track C coalgebraic solve combinator — Thermo unfold, certified outcomes.
-pub mod solve_combinator;
 /// L1a: typed structural refusals before iterative solve (SOLVER_COMPOSITION_DESIGN §2.2).
 pub mod solver_refusal;
+/// Track C coalgebraic solve combinator — Thermo unfold, certified outcomes.
+pub mod solve_combinator;
+/// n_unknowns is escalation evidence for unfold, not a stop.
+pub mod problem_size_escalation;
+/// CG stall window: median gap between strict residual improvements.
+pub mod cg_stall_window;
+/// CG stall window from the Lanczos spectrum of the coefficient trace.
+pub mod cg_spectral_window;
+/// Outer loop stops on a KKT certificate or the budget.
+pub mod kkt_outer_stop;
+/// Solver / regression numeric tolerance SSOT (derive from [`numeric_tolerance::ProblemScale`]).
+pub mod numeric_tolerance;
+/// Symmetric profile (skyline) matrices, their `L D Lᵀ` factor, definiteness and inertia certificates.
+pub mod profile_ldlt;
+/// Certified lowest eigenpairs of a symmetric pencil: shift-invert Lanczos as a budgeted unfold.
+pub mod generalized_eigen;
 pub mod sparse;
 pub mod tensor;
 pub mod theorem_blurbs;
 pub mod theorem_registry;
 pub mod vne;
 
-/// CG stall window from the Lanczos spectrum of a CG coefficient trace.
-pub use cg_spectral_window::{CgCoeff, SpectralWindow, SpectralWindowRefuse};
-/// Derivation of a registry row, its census, and the Lean declaration a theorem row names.
-pub use constants::derivation::{Derivation, DerivationCensus, LeanDecl};
-/// CONSTANT-BOUND: CGD registry row types (re-export for wire gate on registry edits).
-pub use constants::registry::{ConstantEntry, ConstantTier};
-/// CONSTANT-BOUND: compiler pin snapshot parsed from `TOOLCHAIN_PIN.txt`.
-pub use constants::toolchain_pin::ToolchainSnapshot;
-/// THEOREM-BOUND: `combine_density_between` (re-export: density diagonal / CGD struct)
-pub use density::DensityDiag;
-/// THEOREM-BOUND: `clausiusDuhemFwd` (re-export: Englert duality / thermo bridge)
-pub use englert::{englert_bound_holds, englert_lhs};
-/// Certified lowest eigenpairs of a symmetric pencil (shift-invert Lanczos as a budgeted unfold).
-pub use generalized_eigen::{
-    lowest_eigenpairs, symmetric_eigen_small, tridiagonal_eigen, CertifiedEigenpair, Completeness,
-    Deflation, EigenBound, EigenRefuse, EigenRequest, GeneralizedEigenSolution, Pencil,
-};
-/// CONSTANT-BOUND: `landauer_floor_j_per_bit` (re-export: Landauer bit cost)
-pub use landauer::landauer_cost_diagonal_bits;
 /// L1a: linear operator witnesses and matvec trait.
 pub use linear_operator::{
     semidefinite_from_nullspace, semidefinite_nullspace, semidefinite_operator,
@@ -118,17 +99,27 @@ pub use linear_operator::{
     symmetric_operator, DiagonalOperator, IdentityOperator, LinearOperator, NullspaceWitness,
     OpError, Semidefinite, Spd, Symmetric,
 };
-/// THEOREM-BOUND: Clausius–Duhem admissibility (`Gate.lean` conjunct; SSOT for ucrs/formal drift)
-pub use manifold::csg::{clausius_duhem_admissible, ThermoGateState};
-/// THEOREM-BOUND: `credit_greedy_optimal` (re-export: PMIC / residual coherence capacity)
-pub use pmic::residual_coherence_capacity;
 /// L1a: preconditioner trait and diagonal / identity implementations.
 pub use preconditioner::{DiagonalPreconditioner, IdentityPreconditioner, Preconditioner};
-/// Profile matrices, their `L D Lᵀ` factor, and the definiteness and inertia certificates it carries.
-pub use profile_ldlt::{
-    ldlt, spd_factor, Clique, Inertia, LdltFactor, ProfilePattern, ProfileRefuse, SpdFactor,
-    SymmetricProfile,
+/// L1a: pre-iteration structural refusal witnesses (§2.2).
+pub use solver_refusal::{
+    Inconsistent, Mechanism, PrecisionInsufficient, SolverRefusal, SolverRefusalCertifyRefuse,
+    Underconstrained,
 };
+/// CONSTANT-BOUND: CGD registry row types (re-export for wire gate on registry edits).
+pub use constants::registry::{ConstantEntry, ConstantTier};
+/// CONSTANT-BOUND: compiler pin snapshot parsed from `TOOLCHAIN_PIN.txt`.
+pub use constants::toolchain_pin::ToolchainSnapshot;
+/// Derivation of a registry row, its census, and the Lean declaration a theorem row names.
+pub use constants::derivation::{Derivation, DerivationCensus, LeanDecl};
+/// The pinned formal catalog as a set of Lean declarations, and the theorem–constant crosswalk coverage.
+pub use theorem_registry::{CatalogDeclarations, CatalogReadError, CrosswalkStats};
+/// THEOREM-BOUND: `combine_density_between` (re-export: density diagonal / CGD struct)
+pub use density::DensityDiag;
+/// THEOREM-BOUND: `clausiusDuhemFwd` (re-export: Englert duality / thermo bridge)
+pub use englert::{englert_bound_holds, englert_lhs};
+/// CONSTANT-BOUND: `landauer_floor_j_per_bit` (re-export: Landauer bit cost)
+pub use landauer::landauer_cost_diagonal_bits;
 /// Track C: certified solve outcomes + UCRS Landauer budget types.
 pub use solve_combinator::{
     landauer_step_joules, unfold, BoundedPackageMeter, CombinatorRefuse, EnergyBudget,
@@ -137,10 +128,20 @@ pub use solve_combinator::{
     SolveOutcome, StallEvidence, StepEnergyMeter, StrategyRung, Thermo, UnfoldStop,
     UnmeasuredMeter,
 };
-/// L1a: pre-iteration structural refusal witnesses (§2.2).
-pub use solver_refusal::{
-    Inconsistent, Mechanism, PrecisionInsufficient, SolverRefusal, SolverRefusalCertifyRefuse,
-    Underconstrained,
+/// CG stall window from the Lanczos spectrum of a CG coefficient trace.
+pub use cg_spectral_window::{CgCoeff, SpectralWindow, SpectralWindowRefuse};
+/// Profile matrices, their `L D Lᵀ` factor, and the definiteness and inertia certificates it carries.
+pub use profile_ldlt::{
+    ldlt, spd_factor, Clique, Inertia, LdltFactor, ProfilePattern, ProfileRefuse, SpdFactor,
+    SymmetricProfile,
 };
-/// The pinned formal catalog as a set of Lean declarations, and the theorem–constant crosswalk coverage.
-pub use theorem_registry::{CatalogDeclarations, CatalogReadError, CrosswalkStats};
+/// Certified lowest eigenpairs of a symmetric pencil (shift-invert Lanczos as a budgeted unfold).
+pub use generalized_eigen::{
+    lowest_eigenpairs, symmetric_eigen_small, tridiagonal_eigen, CertifiedEigenpair, Completeness,
+    Deflation, EigenBound,
+    EigenRefuse, EigenRequest, GeneralizedEigenSolution, Pencil,
+};
+/// THEOREM-BOUND: Clausius–Duhem admissibility (`Gate.lean` conjunct; SSOT for ucrs/formal drift)
+pub use manifold::csg::{clausius_duhem_admissible, ThermoGateState};
+/// THEOREM-BOUND: `credit_greedy_optimal` (re-export: PMIC / residual coherence capacity)
+pub use pmic::residual_coherence_capacity;
