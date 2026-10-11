@@ -44,6 +44,11 @@ regex = "1.11.1"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = { version = "1.0.149" }
 subtle = "2.5"
+umst-constants = { path = "../../umst-formal/constants-rs" }
+
+[[test]]
+name = "constants_reexport_reaches_one_table"
+path = "tests/constants_reexport_reaches_one_table.rs"
 
 [[bin]]
 name = "simd_kernel_tolerance"
