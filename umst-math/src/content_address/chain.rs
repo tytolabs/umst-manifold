@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
-// SPDX-License-Identifier: LicenseRef-TYTO-Undecided
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 //! Blake3 proof chain: each head is `blake3(previous head || label)` (lifted from egoff `proof_chain`, E-3).
 //!

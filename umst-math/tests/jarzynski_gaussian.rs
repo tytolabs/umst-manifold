@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
-// SPDX-License-Identifier: LicenseRef-TYTO-Undecided
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Self-test of the finite-sample Jarzynski estimator on synthetic Gaussian reduced work
 //! (Jarzynski, Phys. Rev. Lett. 78, 2690, 1997): ΔF = μ − σ²/2, finite-N bias against the leading
 //! term of Gore, Ritort and Bustamante (Proc. Natl. Acad. Sci. U.S.A. 100, 12564, 2003), and the

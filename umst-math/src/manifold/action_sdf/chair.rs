@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
-// SPDX-License-Identifier: LicenseRef-TYTO-Undecided
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 //! The P2 chair: the action tree of the cross-language chair fixture (`chair_cross_lang_p2.json`, M6-C04 §3).
 //!
