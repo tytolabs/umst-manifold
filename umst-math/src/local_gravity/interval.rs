@@ -90,12 +90,20 @@ impl RatInterval {
     /// [`IntervalRefusal::Overflow`] for a non-finite or out-of-range input or a negative radius.
     pub fn around_f64(x: f64, radius: f64) -> Result<Self, IntervalRefusal> {
         const UNIT: f64 = 1.0e9;
-        if !x.is_finite() || !radius.is_finite() || radius < 0.0 || x.abs() > 1.0e15 || radius > 1.0e15 {
+        if !x.is_finite()
+            || !radius.is_finite()
+            || radius < 0.0
+            || x.abs() > 1.0e15
+            || radius > 1.0e15
+        {
             return Err(IntervalRefusal::Overflow);
         }
         let lo = ((x - radius) * UNIT).floor() as i128 - 1;
         let hi = ((x + radius) * UNIT).ceil() as i128 + 1;
-        Self::new(ExactRat::new(lo, 1_000_000_000)?, ExactRat::new(hi, 1_000_000_000)?)
+        Self::new(
+            ExactRat::new(lo, 1_000_000_000)?,
+            ExactRat::new(hi, 1_000_000_000)?,
+        )
     }
 
     fn outward(lo: ExactRat, hi: ExactRat) -> Result<Self, IntervalRefusal> {
@@ -108,7 +116,10 @@ impl RatInterval {
     ///
     /// [`IntervalRefusal::Overflow`] when an intermediate leaves `i128`.
     pub fn add(self, other: Self) -> Result<Self, IntervalRefusal> {
-        Self::outward(self.lo.checked_add(other.lo)?, self.hi.checked_add(other.hi)?)
+        Self::outward(
+            self.lo.checked_add(other.lo)?,
+            self.hi.checked_add(other.hi)?,
+        )
     }
 
     /// `self - other`, rounded outward.
@@ -117,7 +128,10 @@ impl RatInterval {
     ///
     /// [`IntervalRefusal::Overflow`] when an intermediate leaves `i128`.
     pub fn sub(self, other: Self) -> Result<Self, IntervalRefusal> {
-        Self::outward(self.lo.checked_sub(other.hi)?, self.hi.checked_sub(other.lo)?)
+        Self::outward(
+            self.lo.checked_sub(other.hi)?,
+            self.hi.checked_sub(other.lo)?,
+        )
     }
 
     /// `self · other`, rounded outward.
@@ -151,7 +165,11 @@ impl RatInterval {
     pub fn square(self) -> Result<Self, IntervalRefusal> {
         let (l2, h2) = (self.lo.checked_mul(self.lo)?, self.hi.checked_mul(self.hi)?);
         if self.lo.sign() != Ordering::Greater && self.hi.sign() != Ordering::Less {
-            let large = if l2.floor_to_scale(SCALE)?.try_cmp(h2.floor_to_scale(SCALE)?)? == Ordering::Greater {
+            let large = if l2
+                .floor_to_scale(SCALE)?
+                .try_cmp(h2.floor_to_scale(SCALE)?)?
+                == Ordering::Greater
+            {
                 l2
             } else {
                 h2
@@ -185,7 +203,8 @@ impl RatInterval {
     ///
     /// [`IntervalRefusal::Overflow`] when a comparison leaves `i128`.
     pub fn is_subset_of(self, other: Self) -> Result<bool, IntervalRefusal> {
-        Ok(self.lo.try_cmp(other.lo)? != Ordering::Less && self.hi.try_cmp(other.hi)? != Ordering::Greater)
+        Ok(self.lo.try_cmp(other.lo)? != Ordering::Less
+            && self.hi.try_cmp(other.hi)? != Ordering::Greater)
     }
 
     /// Whether `self ∩ other = ∅`.
@@ -194,6 +213,7 @@ impl RatInterval {
     ///
     /// [`IntervalRefusal::Overflow`] when a comparison leaves `i128`.
     pub fn is_disjoint_from(self, other: Self) -> Result<bool, IntervalRefusal> {
-        Ok(self.hi.try_cmp(other.lo)? == Ordering::Less || other.hi.try_cmp(self.lo)? == Ordering::Less)
+        Ok(self.hi.try_cmp(other.lo)? == Ordering::Less
+            || other.hi.try_cmp(self.lo)? == Ordering::Less)
     }
 }

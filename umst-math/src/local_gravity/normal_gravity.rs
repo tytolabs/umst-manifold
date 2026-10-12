@@ -62,17 +62,15 @@ pub fn wgs84_defining() -> Option<Wgs84Defining> {
         let approx = q.num() as f64 / q.den() as f64;
         ((approx - pin).abs() <= pin.abs() * 1e-15).then_some(q)
     };
+    let a_pin = umst_constants::WGS84SEMI_MAJOR_AXIS;
+    let inv_f_pin = umst_constants::WGS84INVERSE_FLATTENING;
+    let gm_pin = umst_constants::WGS84GM;
+    let omega_pin = umst_constants::WGS84ANGULAR_VELOCITY;
     Some(Wgs84Defining {
-        a_m: exact("wgs84SemiMajorAxis", umst_constants::WGS84SEMI_MAJOR_AXIS)?,
-        inv_f: exact(
-            "wgs84InverseFlattening",
-            umst_constants::WGS84INVERSE_FLATTENING,
-        )?,
-        gm_m3_s2: exact("wgs84GM", umst_constants::WGS84GM)?,
-        omega_rad_s: exact(
-            "wgs84AngularVelocity",
-            umst_constants::WGS84ANGULAR_VELOCITY,
-        )?,
+        a_m: exact("wgs84SemiMajorAxis", a_pin)?,
+        inv_f: exact("wgs84InverseFlattening", inv_f_pin)?,
+        gm_m3_s2: exact("wgs84GM", gm_pin)?,
+        omega_rad_s: exact("wgs84AngularVelocity", omega_pin)?,
     })
 }
 
@@ -290,7 +288,9 @@ fn scaled_series(t: ExactRat) -> Result<(RatInterval, RatInterval), NormalGravit
 /// # Errors
 ///
 /// [`NormalGravityRefusal::DerivationAbsent`] for `t` outside `[0, 1/2]`.
-pub fn somigliana_series(t: ExactRat) -> Result<(RatInterval, RatInterval), NormalGravityRefusal> {
+pub(crate) fn somigliana_series(
+    t: ExactRat,
+) -> Result<(RatInterval, RatInterval), NormalGravityRefusal> {
     let (a, b) = scaled_series(t)?;
     let inv = r(1, MICRO_SCALE)?;
     Ok((a.mul_scalar(inv)?, b.mul_scalar(inv)?))
@@ -446,7 +446,7 @@ mod tests {
         let lat = RatInterval::point(ExactRat::int(lat));
         GeodeticPosition::new(
             lat,
-            RatInterval::point(ExactRat::ZERO),
+            RatInterval::point(rr(0, 1)),
             RatInterval::point(ExactRat::int(height)),
         )
         .unwrap()
@@ -532,10 +532,10 @@ mod tests {
     fn algebraic_derivations_match_hand_computed_rationals() {
         // a = 1, 1/f = 4: f = 1/4, e² = (1/4)(7/4) = 7/16, b = 3/4.
         let d = Wgs84Defining {
-            a_m: ExactRat::ONE,
+            a_m: rr(1, 1),
             inv_f: ExactRat::int(4),
-            gm_m3_s2: ExactRat::ONE,
-            omega_rad_s: ExactRat::ZERO,
+            gm_m3_s2: rr(1, 1),
+            omega_rad_s: rr(0, 1),
         };
         assert_eq!(flattening(&d), Ok(rr(1, 4)));
         assert_eq!(first_eccentricity_squared(&d), Ok(rr(7, 16)));
@@ -550,16 +550,13 @@ mod tests {
         // a ≤ 0, 1/f < 2 and ω < 0 are not ellipsoids
         assert_eq!(
             flattening(&Wgs84Defining {
-                inv_f: ExactRat::ONE,
+                inv_f: rr(1, 1),
                 ..d
             }),
             Err(NormalGravityRefusal::InvalidDefining)
         );
         assert_eq!(
-            semi_minor_axis(&Wgs84Defining {
-                a_m: ExactRat::ZERO,
-                ..d
-            }),
+            semi_minor_axis(&Wgs84Defining { a_m: rr(0, 1), ..d }),
             Err(NormalGravityRefusal::InvalidDefining)
         );
     }
@@ -567,7 +564,7 @@ mod tests {
     #[test]
     fn the_series_at_zero_is_the_sphere_limit() {
         // A(0) = 2/15 and B(0) = 6/15: the leading coefficients, so B/A = 3.
-        let (a, b) = somigliana_series(ExactRat::ZERO).unwrap();
+        let (a, b) = somigliana_series(rr(0, 1)).unwrap();
         assert!(a
             .is_subset_of(
                 RatInterval::new(
@@ -601,7 +598,7 @@ mod tests {
     #[test]
     fn without_rotation_equator_and_pole_are_gm_over_ab_and_gm_over_a_squared() {
         // ω = 0 gives m = 0, γ_e = GM/(ab) and γ_p = GM/a² exactly.
-        let d = synthetic(ExactRat::ZERO);
+        let d = synthetic(rr(0, 1));
         let (a, b, gm) = (d.a_m, semi_minor_axis(&d).unwrap(), d.gm_m3_s2);
         let ge = gm.checked_div(a.checked_mul(b).unwrap()).unwrap();
         let gp = gm.checked_div(a.checked_mul(a).unwrap()).unwrap();

@@ -45,7 +45,11 @@ impl GeodeticPosition {
     ///
     /// [`GeodeticRefusal::LatitudeOutOfRange`] or [`GeodeticRefusal::LongitudeOutOfRange`] for an interval outside
     /// the ellipsoid's coordinate range; [`GeodeticRefusal::Interval`] when a comparison is not representable.
-    pub fn new(lat_deg: RatInterval, lon_deg: RatInterval, height_m: RatInterval) -> Result<Self, GeodeticRefusal> {
+    pub fn new(
+        lat_deg: RatInterval,
+        lon_deg: RatInterval,
+        height_m: RatInterval,
+    ) -> Result<Self, GeodeticRefusal> {
         let (lat_lim, lon_lim) = (ExactRat::int(90), ExactRat::int(180));
         if lat_deg.lo().try_cmp(lat_lim.checked_neg()?)? == Ordering::Less
             || lat_deg.hi().try_cmp(lat_lim)? == Ordering::Greater

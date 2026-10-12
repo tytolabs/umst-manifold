@@ -73,7 +73,10 @@ impl ExactRat {
         } else {
             (num, den)
         };
-        let d = gcd(num.unsigned_abs(), den.unsigned_abs()).max(1);
+        let d = gcd(num.unsigned_abs(), den.unsigned_abs());
+        if d == 0 {
+            return Err(RatRefusal::ZeroDenominator);
+        }
         // d divides both magnitudes, and den > 0, so the quotients fit in i128.
         Ok(Self {
             num: num / d as i128,
@@ -470,7 +473,7 @@ mod tests {
     #[test]
     fn refuses_a_height_that_is_not_positive() {
         assert_eq!(
-            local_gravity_admissible(ExactRat::ZERO, r(5, 1), r(100, 1)),
+            local_gravity_admissible(r(0, 1), r(5, 1), r(100, 1)),
             Err(GravityRefusal::NonPositiveHeight)
         );
         assert_eq!(
@@ -499,7 +502,7 @@ mod tests {
 
     fn position(lat_lo: i128, lat_hi: i128, den: i128, height: i128) -> GeodeticPosition {
         let lat = RatInterval::new(r(lat_lo, den), r(lat_hi, den)).unwrap();
-        let lon = RatInterval::point(ExactRat::ZERO);
+        let lon = RatInterval::point(r(0, 1));
         GeodeticPosition::new(lat, lon, RatInterval::point(ExactRat::int(height))).unwrap()
     }
 
@@ -520,7 +523,7 @@ mod tests {
             a_m: ExactRat::int(6_000_000),
             inv_f: ExactRat::int(300),
             gm_m3_s2: ExactRat::int(400_000_000_000_000),
-            omega_rad_s: ExactRat::ZERO,
+            omega_rad_s: r(0, 1),
         }
     }
 
@@ -589,7 +592,7 @@ mod tests {
         ));
         let zero_u = LocalGravity {
             lower_bound_from_lemma: ok_bound,
-            ..record(g, ExactRat::ZERO, at)
+            ..record(g, r(0, 1), at)
         };
         assert_eq!(
             local_gravity_admissible_at(&zero_u, r(1, 1), r(4, 1)),
@@ -629,7 +632,7 @@ mod tests {
             Err(GravityRefusal::PositionOutOfDomain)
         );
         let bad = normal_gravity::Wgs84Defining {
-            inv_f: ExactRat::ONE,
+            inv_f: r(1, 1),
             ..d
         };
         assert_eq!(
@@ -646,7 +649,7 @@ mod tests {
     #[test]
     fn a_position_outside_the_coordinate_range_or_reversed_is_refused() {
         let beyond = RatInterval::new(r(0, 1), r(91, 1)).unwrap();
-        let lon = RatInterval::point(ExactRat::ZERO);
+        let lon = RatInterval::point(r(0, 1));
         assert_eq!(
             GeodeticPosition::new(beyond, lon, lon),
             Err(geodetic::GeodeticRefusal::LatitudeOutOfRange)
