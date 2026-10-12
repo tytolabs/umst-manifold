@@ -125,7 +125,7 @@ pub fn impact_sound_mean_square_pressure(
         acc += p * p;
     }
     let ms = acc / samples as f64;
-    let _dissipation = modal_dissipation_power(0.0, 0.0, ms.max(0.0));
+    let _dissipation = modal_dissipation_power(0.0, 0.0, ms);
     ms
 }
 
