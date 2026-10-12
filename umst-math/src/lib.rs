@@ -53,6 +53,8 @@ pub mod landauer_registry;
 pub mod lindblad;
 /// L1a: matrix-free linear operators with certified structure witnesses (design §2.1).
 pub mod linear_operator;
+/// Free-fall gravity gate pinned to `UMST.FreeFall.freeFall_gravity_lower_bound`, over exact rationals.
+pub mod local_gravity;
 /// §14bis.f-M-0: M-Arc **manifold** pure math (S², SDF/CSG, Hilbert, octree; GMD) — no I/O
 #[allow(missing_docs)]
 pub mod manifold;
