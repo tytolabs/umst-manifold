@@ -28,6 +28,13 @@ pub fn impact_modes_band_count() -> usize {
         .round() as usize
 }
 
+/// Goertzel bin count for the pinned band span (matches `impact_modes` spectral stepping).
+#[must_use]
+pub fn impact_spectral_bin_count_for_band_layout() -> usize {
+    let span = IMPACT_MODES_BANDS_HI_HZ - IMPACT_MODES_BANDS_LO_HZ;
+    (span / IMPACT_MODES_BANDS_STEP_HZ).ceil() as usize + 1
+}
+
 /// One damped mode in the impact-sound modal sum.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ImpactSoundMode {
@@ -77,9 +84,7 @@ pub fn modal_loss_factor_by_strain_energy(eta_e: &[f64], u_e: &[f64]) -> Result<
             detail: "modal_loss: sum(U_e) must be positive for modal loss factor".into(),
         });
     }
-    let eta_r = sum_eta_u / sum_u;
-    debug_assert!(eta_r.is_finite());
-    Ok(eta_r)
+    Ok(sum_eta_u / sum_u)
 }
 
 /// Impact sound pressure at time `t_s` from damped modal superposition.

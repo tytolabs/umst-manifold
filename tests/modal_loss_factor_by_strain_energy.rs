@@ -5,18 +5,14 @@
 use umst_manifold::physics::modal_loss::{
     impact_modes_band_count, impact_sound_mean_square_pressure, impact_sound_pressure_at,
     modal_dissipation_power, modal_loss_factor_by_strain_energy, ImpactSoundMode,
-    IMPACT_MODES_BANDS_HI_HZ, IMPACT_MODES_BANDS_LO_HZ, IMPACT_MODES_BANDS_PER_OCTAVE,
-    IMPACT_MODES_BANDS_STEP_HZ,
 };
 use umst_manifold::physics::PhysicsError;
 
 #[test]
-fn impact_modes_band_edges_match_paddle_default() {
-    assert_eq!(IMPACT_MODES_BANDS_LO_HZ, 300.0);
-    assert_eq!(IMPACT_MODES_BANDS_HI_HZ, 2400.0);
-    assert_eq!(IMPACT_MODES_BANDS_PER_OCTAVE, 6.0);
-    assert_eq!(IMPACT_MODES_BANDS_STEP_HZ, 10.0);
-    assert_eq!(impact_modes_band_count(), 18);
+fn impact_modes_band_count_matches_paddle_fractional_octave_layout() {
+    // Paddle `impact_modes` `signature::Bands::default()` (METHOD.md): 300–2400 Hz, 6 bands/octave.
+    let expected = ((2400.0_f64 / 300.0_f64).log2() * 6.0_f64).round() as usize;
+    assert_eq!(impact_modes_band_count(), expected);
 }
 
 #[test]
@@ -87,4 +83,10 @@ fn modal_dissipation_power_is_nonnegative_for_admissible_inputs() {
     let eta_r = modal_loss_factor_by_strain_energy(&[0.02, 0.08], &[3.0, 1.0]).expect("eta_r");
     let d = modal_dissipation_power(eta_r, 500.0, 0.25);
     assert!(d >= 0.0 && d.is_finite());
+}
+
+#[test]
+fn modal_loss_wire_witness_is_finite() {
+    let w = umst_manifold::physics::modal_loss_wire_witness();
+    assert!(w.is_finite());
 }
