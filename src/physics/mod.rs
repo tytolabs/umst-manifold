@@ -29,6 +29,7 @@ pub mod mechanics;
 pub mod mechanics_operator;
 #[cfg(feature = "mechanics-adjoint")]
 pub mod mechanics_solve_port;
+pub mod modal_loss;
 pub mod operator;
 pub mod operators;
 pub mod orchestration;

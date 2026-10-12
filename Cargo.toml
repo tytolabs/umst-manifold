@@ -549,3 +549,7 @@ required-features = ["design-implicit-field"]
 [[test]]
 name = "semantic_lane_schema_migration"
 path = "tests/semantic_lane_schema_migration.rs"
+
+[[test]]
+name = "modal_loss_factor_by_strain_energy"
+path = "tests/modal_loss_factor_by_strain_energy.rs"
