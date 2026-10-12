@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! PB-B9: modal loss factor by element strain energy and impact-sound modal sum.
 
 use umst_manifold::physics::modal_loss::{

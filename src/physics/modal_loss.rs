@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //! Modal loss factor from element strain-energy weighting and impact-sound modal sums.
 //!
 //! For one mode with element strain energies `U_e` and element loss factors `eta_e >= 0`,
