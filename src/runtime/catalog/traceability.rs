@@ -5,7 +5,7 @@
 //! See **`docs/CATALOG_TRACEABILITY.md`** and classical anchors in **`docs/claims-vs-proofs.md`** /
 //! **`docs/DUAL_PIN_ARCHITECTURE.md`**. CI: `tests/catalog_all_ids_registered.rs`.
 //!
-//! Catalog partition deepen probes and honest fences (no invent GREEN / production_wired).
+//! Catalog partition tables and structural checks (no invent GREEN / production_wired).
 
 use serde::Serialize;
 
@@ -393,20 +393,10 @@ fn count_catalog_modules(path: &std::path::Path) -> Result<usize, CatalogIoError
     Ok(modules.len())
 }
 
-// ── Partition deepen · honest fence ───────────────────────────────────────────
-
-/// Honest posture — deepen measured Lean↔gate partition only; no invent claims.
-pub(crate) const TRACEABILITY_DEEPEN_HONEST_POSTURE: &str = "TRACEABILITY_DEEPEN_ONLY";
-
-/// Explicit non-claims (gate text).
-pub(crate) const TRACEABILITY_INVENT_NON_CLAIM: &str =
-    "not GREEN; not OP-5 PASS; not production_wired; not MASTER_RETICK";
-
-/// Deepen probe schema version (partition tables + wire map).
-pub(crate) const TRACEABILITY_DEEPEN_SCHEMA_VERSION: &str = "traceability_partition_deepen_v1";
+// ── Partition wire map · structural checks ────────────────────────────────────
 
 /// Honest posture tag — registration partition, not production flip.
-pub const TRACEABILITY_POSTURE_TAG: &str = "catalog-partition-wired-not-production";
+pub(crate) const TRACEABILITY_POSTURE_TAG: &str = "catalog-partition-wired-not-production";
 
 /// R0 module count the Lean-module partition must cover: the module rows of the pinned formal export
 /// (`FORMAL_CATALOG_MODULE_COUNT`, computed by build.rs from `artifacts/upstream_catalog.json`).
@@ -417,9 +407,6 @@ pub(crate) const TRACEABILITY_PARTITION_WIRE_HOP_WIRED_COUNT: u8 = 4;
 
 /// Total wire hops (four partition hops + one open production invent fence).
 pub(crate) const TRACEABILITY_PARTITION_WIRE_HOP_TOTAL: usize = 5;
-
-/// Unit tests in this module (`#[test]` fns below); keep in sync when adding tests.
-pub(crate) const TRACEABILITY_UNIT_TEST_COUNT: u8 = 10;
 
 /// One hop in the catalog traceability wire map.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -435,7 +422,7 @@ pub(crate) struct TraceabilityWireHop {
 }
 
 /// Manifold traceability wire map (partition tables → open production invent).
-pub const TRACEABILITY_WIRE_HOPS: &[TraceabilityWireHop] = &[
+pub(crate) const TRACEABILITY_WIRE_HOPS: &[TraceabilityWireHop] = &[
     TraceabilityWireHop {
         ordinal: 1,
         surface: "CATALOG_MODULE_WIRED",
@@ -470,13 +457,13 @@ pub const TRACEABILITY_WIRE_HOPS: &[TraceabilityWireHop] = &[
 
 /// Whether live production / GREEN invent is plumbed on this surface (honest `false`).
 #[must_use]
-pub const fn traceability_production_wired() -> bool {
+pub(crate) const fn traceability_production_wired() -> bool {
     false
 }
 
 /// Measured Lean-module partition counts (wired ∪ allowlist).
 #[must_use]
-pub fn traceability_partition_counts() -> (usize, usize, usize) {
+pub(crate) fn traceability_partition_counts() -> (usize, usize, usize) {
     let wired = CATALOG_MODULE_WIRED.len();
     let allow = ALLOW_UNUSED_CATALOG_IDS.len();
     (wired, allow, wired + allow)
@@ -484,7 +471,7 @@ pub fn traceability_partition_counts() -> (usize, usize, usize) {
 
 /// Structural quickcheck: partition tables non-empty, disjoint module names, R0 sum.
 #[must_use]
-pub fn traceability_partition_quickcheck() -> bool {
+pub(crate) fn traceability_partition_quickcheck() -> bool {
     let (wired, allow, total) = traceability_partition_counts();
     if wired == 0 || allow == 0 || total != TRACEABILITY_R0_MODULE_COUNT {
         return false;
@@ -524,7 +511,7 @@ pub fn traceability_partition_quickcheck() -> bool {
 
 /// Close predicate for the **partition** surface (not production invent).
 #[must_use]
-pub fn traceability_partition_ceremony_closed() -> bool {
+pub(crate) fn traceability_partition_ceremony_closed() -> bool {
     traceability_partition_quickcheck()
         && TRACEABILITY_WIRE_HOPS.iter().filter(|h| h.wired).count()
             == TRACEABILITY_PARTITION_WIRE_HOP_WIRED_COUNT as usize
@@ -578,131 +565,6 @@ pub(crate) fn traceability_partition_probe() -> TraceabilityPartitionProbe {
         spec_catalog_id_count: GATE_UNIFICATION_SPEC_CATALOG_IDS.len(),
         gate_registry_count: GATE_REGISTRY_CATALOG_IDS.len(),
         posture_tag: TRACEABILITY_POSTURE_TAG,
-    }
-}
-
-/// Honest fence flags for traceability deepen (partition surface only).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-pub(crate) struct TraceabilityDeepenHonestyProbe {
-    /// Honest posture label.
-    pub honest_posture: &'static str,
-    /// Explicit non-claim string.
-    pub non_claim: &'static str,
-    /// Live partition ceremony close predicate.
-    pub ceremony_closed: bool,
-    /// Partition structural quickcheck.
-    pub partition_quickcheck_ok: bool,
-    /// Wire hops wired (partition side).
-    pub wire_hop_wired_count: u8,
-    /// Total wire hops in map.
-    pub wire_hop_total: usize,
-    /// Partition total vs R0 pin.
-    pub partition_total: usize,
-    /// Production invent claim — always false.
-    pub production_wired_claimed: bool,
-    /// Physics/fleet GREEN invent claim — always false.
-    pub green_claimed: bool,
-    /// OP-5 PASS invent claim — always false.
-    pub op5_pass_claimed: bool,
-    /// MASTER_RETICK invent claim — always false.
-    pub master_retick_claimed: bool,
-    /// Aggregate honesty of this deepen probe.
-    pub deepen_honest: bool,
-}
-
-/// Build the traceability deepen honesty probe from live measurements.
-#[must_use]
-pub(crate) fn traceability_deepen_honesty_probe() -> TraceabilityDeepenHonestyProbe {
-    let production_wired_claimed = traceability_production_wired();
-    let green_claimed = false;
-    let op5_pass_claimed = false;
-    let master_retick_claimed = false;
-    let partition = traceability_partition_probe();
-    let ceremony_closed = partition.ceremony_closed;
-    let wire_hop_wired_count = partition.wire_hop_wired_count;
-    let wire_hop_total = partition.wire_hop_total;
-    let deepen_honest = ceremony_closed
-        && partition.partition_quickcheck_ok
-        && partition.partition_total == TRACEABILITY_R0_MODULE_COUNT
-        && wire_hop_wired_count == TRACEABILITY_PARTITION_WIRE_HOP_WIRED_COUNT
-        && wire_hop_total == TRACEABILITY_PARTITION_WIRE_HOP_TOTAL
-        && !production_wired_claimed
-        && !partition.production_wired
-        && !green_claimed
-        && !op5_pass_claimed
-        && !master_retick_claimed
-        && TRACEABILITY_INVENT_NON_CLAIM.contains("not GREEN")
-        && TRACEABILITY_INVENT_NON_CLAIM.contains("not OP-5 PASS")
-        && TRACEABILITY_INVENT_NON_CLAIM.contains("not production_wired")
-        && TRACEABILITY_INVENT_NON_CLAIM.contains("not MASTER_RETICK")
-        && TRACEABILITY_POSTURE_TAG.contains("not-production");
-    TraceabilityDeepenHonestyProbe {
-        honest_posture: TRACEABILITY_DEEPEN_HONEST_POSTURE,
-        non_claim: TRACEABILITY_INVENT_NON_CLAIM,
-        ceremony_closed,
-        partition_quickcheck_ok: partition.partition_quickcheck_ok,
-        wire_hop_wired_count,
-        wire_hop_total,
-        partition_total: partition.partition_total,
-        production_wired_claimed,
-        green_claimed,
-        op5_pass_claimed,
-        master_retick_claimed,
-        deepen_honest,
-    }
-}
-
-/// Whether the traceability deepen honesty probe passes.
-#[must_use]
-pub(crate) fn traceability_deepen_honesty_holds() -> bool {
-    traceability_deepen_honesty_probe().deepen_honest
-}
-
-/// Fence: refuse inventing GREEN / PRODUCTION_WIRED / MASTER / OP-5.
-#[must_use]
-pub(crate) fn traceability_invent_claim_fence_holds() -> bool {
-    let p = traceability_deepen_honesty_probe();
-    p.deepen_honest
-        && !p.green_claimed
-        && !p.production_wired_claimed
-        && !p.op5_pass_claimed
-        && !p.master_retick_claimed
-}
-
-/// Deepen census — measured counts for gate_deltas (no invent flags).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-pub(crate) struct TraceabilityPartitionCensus {
-    /// Wired Lean modules.
-    pub wired_module_count: usize,
-    /// Allowlist Lean modules.
-    pub allow_unused_count: usize,
-    /// Partition total.
-    pub partition_total: usize,
-    /// Spec catalog_id count.
-    pub spec_catalog_id_count: usize,
-    /// Kernel gate registry count.
-    pub gate_registry_count: usize,
-    /// Wired hops.
-    pub wire_hop_wired: u8,
-    /// Total hops.
-    pub wire_hop_total: usize,
-    /// Unit tests in this module (compile-time pin).
-    pub unit_tests_in_module: u8,
-}
-
-/// Build deepen census from live partition tables + wire map.
-#[must_use]
-pub(crate) fn traceability_partition_census() -> TraceabilityPartitionCensus {
-    let (wired_module_count, allow_unused_count, partition_total) = traceability_partition_counts();
-    TraceabilityPartitionCensus {
-        wired_module_count,
-        allow_unused_count,
-        partition_total,
-        spec_catalog_id_count: GATE_UNIFICATION_SPEC_CATALOG_IDS.len(),
-        gate_registry_count: GATE_REGISTRY_CATALOG_IDS.len(),
-        wire_hop_wired: TRACEABILITY_WIRE_HOPS.iter().filter(|h| h.wired).count() as u8,
-        wire_hop_total: TRACEABILITY_WIRE_HOPS.len(),
-        unit_tests_in_module: TRACEABILITY_UNIT_TEST_COUNT,
     }
 }
 
@@ -769,7 +631,10 @@ mod tests {
 
     #[test]
     fn wire_hops_four_of_five_wired() {
-        assert_eq!(TRACEABILITY_WIRE_HOPS.len(), TRACEABILITY_PARTITION_WIRE_HOP_TOTAL);
+        assert_eq!(
+            TRACEABILITY_WIRE_HOPS.len(),
+            TRACEABILITY_PARTITION_WIRE_HOP_TOTAL
+        );
         let wired = TRACEABILITY_WIRE_HOPS.iter().filter(|h| h.wired).count();
         assert_eq!(wired as u8, TRACEABILITY_PARTITION_WIRE_HOP_WIRED_COUNT);
         assert!(!TRACEABILITY_WIRE_HOPS[4].wired);
@@ -782,44 +647,13 @@ mod tests {
         assert!(probe.ceremony_closed);
         assert!(!probe.production_wired);
         assert_eq!(probe.partition_total, TRACEABILITY_R0_MODULE_COUNT);
-        assert_eq!(probe.wire_hop_wired_count, TRACEABILITY_PARTITION_WIRE_HOP_WIRED_COUNT);
+        assert_eq!(
+            probe.wire_hop_wired_count,
+            TRACEABILITY_PARTITION_WIRE_HOP_WIRED_COUNT
+        );
         assert_eq!(probe.wire_hop_total, TRACEABILITY_PARTITION_WIRE_HOP_TOTAL);
         assert_eq!(probe.posture_tag, TRACEABILITY_POSTURE_TAG);
         assert!(probe.spec_catalog_id_count >= 5);
         assert!(probe.gate_registry_count >= 4);
-    }
-
-    #[test]
-    fn deepen_honesty_fence_holds() {
-        let probe = traceability_deepen_honesty_probe();
-        assert!(probe.deepen_honest);
-        assert!(traceability_deepen_honesty_holds());
-        assert!(traceability_invent_claim_fence_holds());
-        assert!(!probe.green_claimed);
-        assert!(!probe.production_wired_claimed);
-        assert!(!probe.op5_pass_claimed);
-        assert!(!probe.master_retick_claimed);
-        assert!(probe.non_claim.contains("not GREEN"));
-        assert!(probe.non_claim.contains("not production_wired"));
-        assert!(probe.non_claim.contains("not OP-5 PASS"));
-        assert!(probe.non_claim.contains("not MASTER_RETICK"));
-    }
-
-    #[test]
-    fn partition_census_matches_tables() {
-        let census = traceability_partition_census();
-        let (wired, allow, total) = traceability_partition_counts();
-        assert_eq!(census.wired_module_count, wired);
-        assert_eq!(census.allow_unused_count, allow);
-        assert_eq!(census.partition_total, total);
-        assert_eq!(census.partition_total, TRACEABILITY_R0_MODULE_COUNT);
-        assert_eq!(census.wire_hop_wired, TRACEABILITY_PARTITION_WIRE_HOP_WIRED_COUNT);
-        assert_eq!(census.wire_hop_total, TRACEABILITY_PARTITION_WIRE_HOP_TOTAL);
-        assert_eq!(census.unit_tests_in_module, TRACEABILITY_UNIT_TEST_COUNT);
-        assert_eq!(
-            census.spec_catalog_id_count,
-            GATE_UNIFICATION_SPEC_CATALOG_IDS.len()
-        );
-        assert_eq!(census.gate_registry_count, GATE_REGISTRY_CATALOG_IDS.len());
     }
 }
