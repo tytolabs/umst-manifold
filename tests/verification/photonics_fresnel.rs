@@ -1045,7 +1045,8 @@ fn two_half_spaces_fresnel_te_no_pml_matches_analytic() {
 }
 
 /// Independent TM \(H_z\) Fresnel: same normal-incidence \(r=(n_1-n_2)/(n_1+n_2)\), but the
-/// \(1/\varepsilon\) stencil — not the TE \(E_y\) mass form.
+/// \(1/\varepsilon\) stencil — not the TE \(E_y\) mass form. Witnesses `polarisation_gap` between
+/// the TE and TM chains on the interior (must exceed `1e-2`).
 #[test]
 fn two_half_spaces_fresnel_tm_no_pml_matches_analytic() {
     let n = 129usize;
