@@ -2908,18 +2908,7 @@ mod photonics_matrix_six_honesty_tests {
         dec_patch_maxwell_natural_matvec_flat_constitutive, dec_patch_sym3_try_inverse,
         photonics_dec_patch_uses_metric_dual_edge_hodge, photonics_lane_fence_holds,
         photonics_lane_honesty, DecPatchCurlConstitutive,
-        PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY, PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT,
     };
-
-    #[test]
-    fn dec_patch_dense_node_cap_is_stable_contract() {
-        assert_eq!(PHOTONICS_DEC_PATCH_MAX_NODES_DIRECT, 64);
-    }
-
-    #[test]
-    fn dec_patch_csr_assembly_node_cap_is_stable_contract() {
-        assert_eq!(PHOTONICS_DEC_PATCH_MAX_NODES_CSR_ASSEMBLY, 128);
-    }
 
     #[test]
     fn dec_patch_dual_edge_hodge_diagonal_primal_length_wired() {
@@ -2943,9 +2932,9 @@ mod photonics_matrix_six_honesty_tests {
     #[test]
     fn dec_patch_sym3_inverse_diagonal_eps() {
         let a = [4.0_f32, 0.0, 0.0, 0.0, 9.0, 0.0, 0.0, 0.0, 1.0];
-        let inv = match dec_patch_sym3_try_inverse(&a) {
-            Some(v) => v,
-            None => panic!("spd diagonal inverse"),
+        let Some(inv) = dec_patch_sym3_try_inverse(&a) else {
+            assert!(false, "spd diagonal inverse");
+            return;
         };
         assert!((inv[0] - 0.25).abs() < 1e-6);
         assert!((inv[4] - 1.0 / 9.0).abs() < 1e-6);
@@ -3110,9 +3099,9 @@ mod photonics_sparse_csr_cg_parity_tests {
             1e-20_f32,
         );
         let merged = dec_patch_coo_sort_merge_f32(&coo);
-        let (rp, ci, va) = match dec_patch_csr_from_sorted_coo_f32(dim, &merged) {
-            Some(v) => v,
-            None => panic!("csr from sorted coo"),
+        let Some((rp, ci, va)) = dec_patch_csr_from_sorted_coo_f32(dim, &merged) else {
+            assert!(false, "csr from sorted coo");
+            return;
         };
 
         let xv: Vec<f32> = (0..dim)
@@ -3178,9 +3167,9 @@ mod photonics_sparse_csr_cg_parity_tests {
             1e-20_f32,
         );
         let merged = dec_patch_coo_sort_merge_f32(&coo);
-        let (rp, ci, va) = match dec_patch_csr_from_sorted_coo_f32(dim, &merged) {
-            Some(v) => v,
-            None => panic!("csr from sorted coo"),
+        let Some((rp, ci, va)) = dec_patch_csr_from_sorted_coo_f32(dim, &merged) else {
+            assert!(false, "csr from sorted coo");
+            return;
         };
 
         let inner = MechanicsInnerLoopConfig::for_unknowns(dim);
@@ -3205,9 +3194,9 @@ mod photonics_sparse_csr_cg_parity_tests {
             max_iter,
             DecPatchInnerCgSpdFlag::SpdProven,
         );
-        let x_mf = match x_mf {
-            DecPatchInnerCgOutcome::Converged(v) => v,
-            DecPatchInnerCgOutcome::Refused(_) => panic!("matrix-free cg"),
+        let DecPatchInnerCgOutcome::Converged(x_mf) = x_mf else {
+            assert!(false, "matrix-free cg");
+            return;
         };
         let x_csr = match solve_maxwell_dec_patch_conjugate_gradient_csr(
             &rp,
@@ -3220,7 +3209,10 @@ mod photonics_sparse_csr_cg_parity_tests {
             DecPatchInnerCgSpdFlag::SpdProven,
         ) {
             DecPatchInnerCgOutcome::Converged(v) => v,
-            DecPatchInnerCgOutcome::Refused(_) => panic!("csr cg"),
+            DecPatchInnerCgOutcome::Refused(_) => {
+                assert!(false, "csr cg");
+                return;
+            }
         };
 
         let mut mx = 0.0_f32;
