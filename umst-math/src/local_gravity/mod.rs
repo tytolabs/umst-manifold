@@ -117,11 +117,19 @@ impl ExactRat {
     ///
     /// [`RatRefusal::Overflow`] when an intermediate leaves `i128`.
     pub fn checked_add(self, other: Self) -> Result<Self, RatRefusal> {
-        let a = self.num.checked_mul(other.den).ok_or(RatRefusal::Overflow)?;
-        let b = other.num.checked_mul(self.den).ok_or(RatRefusal::Overflow)?;
+        let a = self
+            .num
+            .checked_mul(other.den)
+            .ok_or(RatRefusal::Overflow)?;
+        let b = other
+            .num
+            .checked_mul(self.den)
+            .ok_or(RatRefusal::Overflow)?;
         Self::new(
             a.checked_add(b).ok_or(RatRefusal::Overflow)?,
-            self.den.checked_mul(other.den).ok_or(RatRefusal::Overflow)?,
+            self.den
+                .checked_mul(other.den)
+                .ok_or(RatRefusal::Overflow)?,
         )
     }
 
@@ -153,8 +161,12 @@ impl ExactRat {
     /// [`RatRefusal::Overflow`] when an intermediate leaves `i128`.
     pub fn checked_mul(self, other: Self) -> Result<Self, RatRefusal> {
         Self::new(
-            self.num.checked_mul(other.num).ok_or(RatRefusal::Overflow)?,
-            self.den.checked_mul(other.den).ok_or(RatRefusal::Overflow)?,
+            self.num
+                .checked_mul(other.num)
+                .ok_or(RatRefusal::Overflow)?,
+            self.den
+                .checked_mul(other.den)
+                .ok_or(RatRefusal::Overflow)?,
         )
     }
 
@@ -168,8 +180,12 @@ impl ExactRat {
             return Err(RatRefusal::ZeroDenominator);
         }
         Self::new(
-            self.num.checked_mul(other.den).ok_or(RatRefusal::Overflow)?,
-            self.den.checked_mul(other.num).ok_or(RatRefusal::Overflow)?,
+            self.num
+                .checked_mul(other.den)
+                .ok_or(RatRefusal::Overflow)?,
+            self.den
+                .checked_mul(other.num)
+                .ok_or(RatRefusal::Overflow)?,
         )
     }
 
@@ -179,8 +195,14 @@ impl ExactRat {
     ///
     /// [`RatRefusal::Overflow`] when a cross product leaves `i128`.
     pub fn try_cmp(self, other: Self) -> Result<Ordering, RatRefusal> {
-        let a = self.num.checked_mul(other.den).ok_or(RatRefusal::Overflow)?;
-        let b = other.num.checked_mul(self.den).ok_or(RatRefusal::Overflow)?;
+        let a = self
+            .num
+            .checked_mul(other.den)
+            .ok_or(RatRefusal::Overflow)?;
+        let b = other
+            .num
+            .checked_mul(self.den)
+            .ok_or(RatRefusal::Overflow)?;
         Ok(a.cmp(&b))
     }
 
@@ -295,7 +317,11 @@ pub fn local_gravity_lower_bound(h: ExactRat, v: ExactRat) -> Result<ExactRat, G
 ///
 /// [`GravityRefusal::NonPositiveHeight`] for `h ≤ 0`; [`GravityRefusal::BelowLemmaBound`] for `g < v² / (2·h)`;
 /// [`GravityRefusal::Overflow`] when the comparison is not computable exactly.
-pub fn local_gravity_admissible(h: ExactRat, v: ExactRat, g: ExactRat) -> Result<(), GravityRefusal> {
+pub fn local_gravity_admissible(
+    h: ExactRat,
+    v: ExactRat,
+    g: ExactRat,
+) -> Result<(), GravityRefusal> {
     let bound = local_gravity_lower_bound(h, v)?;
     match g.try_cmp(bound)? {
         Ordering::Less => Err(GravityRefusal::BelowLemmaBound { bound }),
@@ -339,7 +365,7 @@ pub enum NormalGravityCheck {
 
 /// The combined gate: the scalar gate on `g = value` for a fall through `h` at speed `v`, the stated lemma bound
 /// equal to `v² / (2·h)`, a positive uncertainty, and, the
-/// normal gravity (the WGS84 defining parameters of [`normal_gravity::WGS84_DEFINING`]) at the position inside `[value − u, value + u]`. The scalar checks run first; `Ok(Absent)` is
+/// normal gravity (the WGS84 defining parameters of [`normal_gravity::wgs84_defining`]) at the position inside `[value − u, value + u]`. The scalar checks run first; `Ok(Absent)` is
 /// returned only when a derivation step is unavailable for the parameters.
 ///
 /// # Errors
@@ -354,7 +380,7 @@ pub fn local_gravity_admissible_at(
     h: ExactRat,
     v: ExactRat,
 ) -> Result<NormalGravityCheck, GravityRefusal> {
-    local_gravity_admissible_with(lg, h, v, normal_gravity::WGS84_DEFINING.as_ref())
+    local_gravity_admissible_with(lg, h, v, normal_gravity::wgs84_defining().as_ref())
 }
 
 fn local_gravity_admissible_with(
@@ -381,20 +407,30 @@ fn local_gravity_admissible_with(
     };
     let gamma = match normal_gravity::normal_gravity_interval(&lg.at, d) {
         Ok(g) => g,
-        Err(normal_gravity::NormalGravityRefusal::HeightOutOfRange) => return Err(GravityRefusal::PositionOutOfDomain),
+        Err(normal_gravity::NormalGravityRefusal::HeightOutOfRange) => {
+            return Err(GravityRefusal::PositionOutOfDomain)
+        }
         Err(normal_gravity::NormalGravityRefusal::InvalidDefining) => {
             return Err(GravityRefusal::DefiningParametersInvalid)
         }
         Err(normal_gravity::NormalGravityRefusal::DerivationAbsent { follow_up }) => {
             return Ok(NormalGravityCheck::Absent { follow_up })
         }
-        Err(normal_gravity::NormalGravityRefusal::Interval(_)) => return Err(GravityRefusal::Overflow),
+        Err(normal_gravity::NormalGravityRefusal::Interval(_)) => {
+            return Err(GravityRefusal::Overflow)
+        }
     };
     let band = RatInterval::new(lg.value.checked_sub(lg.u)?, lg.value.checked_add(lg.u)?)
         .map_err(|_| GravityRefusal::Overflow)?;
-    if gamma.is_subset_of(band).map_err(|_| GravityRefusal::Overflow)? {
+    if gamma
+        .is_subset_of(band)
+        .map_err(|_| GravityRefusal::Overflow)?
+    {
         Ok(NormalGravityCheck::Within { gamma })
-    } else if gamma.is_disjoint_from(band).map_err(|_| GravityRefusal::Overflow)? {
+    } else if gamma
+        .is_disjoint_from(band)
+        .map_err(|_| GravityRefusal::Overflow)?
+    {
         Err(GravityRefusal::NormalGravityOutsideU { gamma })
     } else {
         Err(GravityRefusal::LocationTooCoarse { gamma })
@@ -492,7 +528,9 @@ mod tests {
     fn synthetic_equatorial() -> ExactRat {
         let d = synthetic();
         let b = normal_gravity::semi_minor_axis(&d).unwrap();
-        d.gm_m3_s2.checked_div(d.a_m.checked_mul(b).unwrap()).unwrap()
+        d.gm_m3_s2
+            .checked_div(d.a_m.checked_mul(b).unwrap())
+            .unwrap()
     }
 
     /// Table 3.6 of NGA.STND.0036_1.0.0_WGS84 (2014): γe = 9.7803253359 m/s².
@@ -514,11 +552,19 @@ mod tests {
             Ok(NormalGravityCheck::Within { .. })
         ));
         assert!(matches!(
-            local_gravity_admissible_at(&mk(g.checked_add(r(1, 100)).unwrap(), r(1, 10_000), at), r(1, 1), r(4, 1)),
+            local_gravity_admissible_at(
+                &mk(g.checked_add(r(1, 100)).unwrap(), r(1, 10_000), at),
+                r(1, 1),
+                r(4, 1)
+            ),
             Err(GravityRefusal::NormalGravityOutsideU { .. })
         ));
         assert!(matches!(
-            local_gravity_admissible_at(&mk(g, r(1, 10_000), position(0, 90, 1, 0)), r(1, 1), r(4, 1)),
+            local_gravity_admissible_at(
+                &mk(g, r(1, 10_000), position(0, 90, 1, 0)),
+                r(1, 1),
+                r(4, 1)
+            ),
             Err(GravityRefusal::LocationTooCoarse { .. })
         ));
     }
@@ -560,7 +606,8 @@ mod tests {
             lower_bound_from_lemma: ok_bound,
             ..record(value, u, at)
         };
-        let gate = |lg: &LocalGravity| local_gravity_admissible_with(lg, r(1, 1), r(4, 1), Some(&d));
+        let gate =
+            |lg: &LocalGravity| local_gravity_admissible_with(lg, r(1, 1), r(4, 1), Some(&d));
         let sharp = position(0, 0, 1, 0);
         assert!(matches!(
             gate(&mk(g_e, r(1, 1000), sharp)),
@@ -581,9 +628,17 @@ mod tests {
             gate(&mk(g_e, r(1, 1000), position(0, 0, 1, 200_000))),
             Err(GravityRefusal::PositionOutOfDomain)
         );
-        let bad = normal_gravity::Wgs84Defining { inv_f: ExactRat::ONE, ..d };
+        let bad = normal_gravity::Wgs84Defining {
+            inv_f: ExactRat::ONE,
+            ..d
+        };
         assert_eq!(
-            local_gravity_admissible_with(&mk(g_e, r(1, 1000), sharp), r(1, 1), r(4, 1), Some(&bad)),
+            local_gravity_admissible_with(
+                &mk(g_e, r(1, 1000), sharp),
+                r(1, 1),
+                r(4, 1),
+                Some(&bad)
+            ),
             Err(GravityRefusal::DefiningParametersInvalid)
         );
     }
@@ -605,7 +660,10 @@ mod tests {
     /// The gate cites the lemma by the name `formal_parity.json` lists; renaming the lemma breaks this test.
     #[test]
     fn the_pin_names_a_statement_of_the_parity_contract() {
-        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../umst-formal/formal_parity.json");
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../umst-formal/formal_parity.json"
+        );
         let Ok(text) = std::fs::read_to_string(path) else {
             return;
         };
