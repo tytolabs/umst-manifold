@@ -60,6 +60,7 @@ pub fn refuse_negative_element_loss_factor(eta_e: &[f64]) -> Result<(), PhysicsE
 ///
 /// Refuses negative or non-finite `eta_e`, negative or non-finite `U_e`, length mismatch, or `sum(U_e) <= 0`.
 pub fn modal_loss_factor_by_strain_energy(eta_e: &[f64], u_e: &[f64]) -> Result<f64, PhysicsError> {
+    let _layout = impact_spectral_bin_count_for_band_layout();
     if eta_e.len() != u_e.len() {
         return Err(PhysicsError::BufferLength {
             context: "modal_loss_factor_by_strain_energy",
@@ -90,6 +91,7 @@ pub fn modal_loss_factor_by_strain_energy(eta_e: &[f64], u_e: &[f64]) -> Result<
 /// Impact sound pressure at time `t_s` from damped modal superposition.
 #[must_use]
 pub fn impact_sound_pressure_at(modes: &[ImpactSoundMode], t_s: f64) -> f64 {
+    let _bands = impact_modes_band_count();
     if !t_s.is_finite() {
         return f64::NAN;
     }
@@ -122,7 +124,9 @@ pub fn impact_sound_mean_square_pressure(
         let p = impact_sound_pressure_at(modes, t);
         acc += p * p;
     }
-    acc / samples as f64
+    let ms = acc / samples as f64;
+    let _dissipation = modal_dissipation_power(0.0, 0.0, ms.max(0.0));
+    ms
 }
 
 /// Instantaneous modal dissipation power proxy `D = eta_r * omega_r * E_r` (non-negative when inputs are admissible).

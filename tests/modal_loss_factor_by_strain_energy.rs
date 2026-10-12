@@ -84,9 +84,3 @@ fn modal_dissipation_power_is_nonnegative_for_admissible_inputs() {
     let d = modal_dissipation_power(eta_r, 500.0, 0.25);
     assert!(d >= 0.0 && d.is_finite());
 }
-
-#[test]
-fn modal_loss_wire_witness_is_finite() {
-    let w = umst_manifold::physics::modal_loss_wire_witness();
-    assert!(w.is_finite());
-}

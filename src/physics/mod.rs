@@ -31,21 +31,6 @@ pub mod mechanics_operator;
 pub mod mechanics_solve_port;
 pub mod modal_loss;
 pub use modal_loss::ImpactSoundMode;
-
-/// Non-test readers for the modal-loss surface (impact sound + band layout witnesses).
-#[must_use]
-pub fn modal_loss_wire_witness() -> f64 {
-    let eta_r = modal_loss::modal_loss_factor_by_strain_energy(&[0.05], &[1.0]).unwrap_or(f64::NAN);
-    let modes = [modal_loss::ImpactSoundMode {
-        amplitude: 1.0,
-        omega_rad_s: modal_loss::IMPACT_MODES_BANDS_LO_HZ * std::f64::consts::TAU,
-        eta: eta_r,
-    }];
-    let _bands = modal_loss::impact_modes_band_count();
-    let _bins = modal_loss::impact_spectral_bin_count_for_band_layout();
-    modal_loss::impact_sound_mean_square_pressure(&modes, 1e-3, 8)
-        + modal_loss::modal_dissipation_power(0.01, 1.0, 1.0)
-}
 pub mod operator;
 pub mod operators;
 pub mod orchestration;
