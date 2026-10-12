@@ -3,16 +3,16 @@
 //! PB-B9: modal loss factor by element strain energy and impact-sound modal sum.
 
 use umst_manifold::physics::modal_loss::{
-    impact_modes_band_count, impact_sound_mean_square_pressure, impact_sound_pressure_at,
+    impact_sound_band_count, impact_sound_mean_square_pressure, impact_sound_pressure_at,
     modal_dissipation_power, modal_loss_factor_by_strain_energy, ImpactSoundMode,
 };
 use umst_manifold::physics::PhysicsError;
 
 #[test]
-fn impact_modes_band_count_matches_paddle_fractional_octave_layout() {
-    // Paddle `impact_modes` `signature::Bands::default()` (METHOD.md): 300–2400 Hz, 6 bands/octave.
+fn impact_sound_band_count_matches_fractional_octave_layout() {
+    // Pinned fractional-octave impact-sound layout: 300–2400 Hz, 6 bands/octave.
     let expected = ((2400.0_f64 / 300.0_f64).log2() * 6.0_f64).round() as usize;
-    assert_eq!(impact_modes_band_count(), expected);
+    assert_eq!(impact_sound_band_count(), expected);
 }
 
 #[test]
