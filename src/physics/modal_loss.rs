@@ -7,7 +7,7 @@
 //! `eta_r = sum(eta_e U_e) / sum(U_e)`. The impact sound pressure uses that factor in the
 //! modal sum `p(t) = sum_r a_r exp(-eta_r omega_r t / 2) sin(omega_r t)`.
 //!
-//! Third-octave band edges match `signature::Bands::default()` in the paddle `impact_modes`
+//! Third-octave band edges match `signature::Bands::default()` in the paddle `impact_modes` tool
 //! instrument (`lo_hz`, `hi_hz`, `per_octave`); `step_hz` is used only for spectral analysis there.
 
 use crate::physics::PhysicsError;
