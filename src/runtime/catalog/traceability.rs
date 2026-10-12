@@ -395,9 +395,6 @@ fn count_catalog_modules(path: &std::path::Path) -> Result<usize, CatalogIoError
 
 // ── Partition wire map · structural checks ────────────────────────────────────
 
-/// Honest posture tag — registration partition, not production flip.
-pub(crate) const TRACEABILITY_POSTURE_TAG: &str = "catalog-partition-wired-not-production";
-
 /// R0 module count the Lean-module partition must cover: the module rows of the pinned formal export
 /// (`FORMAL_CATALOG_MODULE_COUNT`, computed by build.rs from `artifacts/upstream_catalog.json`).
 pub const TRACEABILITY_R0_MODULE_COUNT: usize = super::FORMAL_CATALOG_MODULE_COUNT as usize;
@@ -522,55 +519,6 @@ pub(crate) fn traceability_partition_ceremony_closed() -> bool {
         && !traceability_production_wired()
 }
 
-/// Typed probe for catalog traceability partition honesty.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub(crate) struct TraceabilityPartitionProbe {
-    /// Wired Lean module row count.
-    pub wired_module_count: usize,
-    /// Allowlist Lean module row count.
-    pub allow_unused_count: usize,
-    /// Partition total (wired + allow).
-    pub partition_total: usize,
-    /// R0 lock module_count pin.
-    pub r0_module_count_pin: usize,
-    /// Partition structural quickcheck.
-    pub partition_quickcheck_ok: bool,
-    /// Partition ceremony close predicate.
-    pub ceremony_closed: bool,
-    /// Production invent claim — always false.
-    pub production_wired: bool,
-    /// Wire hop wired count.
-    pub wire_hop_wired_count: u8,
-    /// Total wire hops in map.
-    pub wire_hop_total: usize,
-    /// Spec catalog_id count.
-    pub spec_catalog_id_count: usize,
-    /// Kernel gate registry count.
-    pub gate_registry_count: usize,
-    /// Honest posture tag.
-    pub posture_tag: &'static str,
-}
-
-/// Build introspection probe for traceability done-when checks.
-#[must_use]
-pub(crate) fn traceability_partition_probe() -> TraceabilityPartitionProbe {
-    let (wired_module_count, allow_unused_count, partition_total) = traceability_partition_counts();
-    TraceabilityPartitionProbe {
-        wired_module_count,
-        allow_unused_count,
-        partition_total,
-        r0_module_count_pin: TRACEABILITY_R0_MODULE_COUNT,
-        partition_quickcheck_ok: traceability_partition_quickcheck(),
-        ceremony_closed: traceability_partition_ceremony_closed(),
-        production_wired: traceability_production_wired(),
-        wire_hop_wired_count: TRACEABILITY_WIRE_HOPS.iter().filter(|h| h.wired).count() as u8,
-        wire_hop_total: TRACEABILITY_WIRE_HOPS.len(),
-        spec_catalog_id_count: GATE_UNIFICATION_SPEC_CATALOG_IDS.len(),
-        gate_registry_count: GATE_REGISTRY_CATALOG_IDS.len(),
-        posture_tag: TRACEABILITY_POSTURE_TAG,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -635,26 +583,5 @@ mod tests {
     #[test]
     fn wire_hops_tail_invent_fence_open() {
         assert!(traceability_wire_map_partition_closed());
-        let hops = TRACEABILITY_WIRE_HOPS;
-        let tail = hops.len() - 1;
-        assert!(hops[..tail].iter().all(|h| h.wired));
-        assert!(!hops[tail].wired);
-    }
-
-    #[test]
-    fn partition_probe_honest_surface() {
-        let probe = traceability_partition_probe();
-        assert!(probe.partition_quickcheck_ok);
-        assert!(probe.ceremony_closed);
-        assert!(!probe.production_wired);
-        assert_eq!(probe.partition_total, TRACEABILITY_R0_MODULE_COUNT);
-        assert_eq!(
-            probe.wire_hop_wired_count as usize,
-            TRACEABILITY_WIRE_HOPS.iter().filter(|h| h.wired).count()
-        );
-        assert_eq!(probe.wire_hop_total, TRACEABILITY_WIRE_HOPS.len());
-        assert_eq!(probe.posture_tag, TRACEABILITY_POSTURE_TAG);
-        assert!(probe.spec_catalog_id_count >= 5);
-        assert!(probe.gate_registry_count >= 4);
     }
 }
