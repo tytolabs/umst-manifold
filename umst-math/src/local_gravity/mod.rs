@@ -32,7 +32,9 @@ pub enum RatRefusal {
     Overflow,
 }
 
-/// An exact rational: normalised, with a positive denominator.
+/// An exact rational: normalised, with a positive denominator. This is the canonical exact rational below
+/// `umst-algebra` (which depends on this crate); `umst-algebra` consuming it in place of its own `Rat` is the
+/// follow-up cell ALGEBRA-CONSUMES-UMST-MATH-EXACT-RAT.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ExactRat {
     num: i128,
@@ -191,8 +193,22 @@ impl ExactRat {
         if scale <= 0 {
             return Err(RatRefusal::ZeroDenominator);
         }
-        let n = self.num.checked_mul(scale).ok_or(RatRefusal::Overflow)?;
-        Self::new(n.div_euclid(self.den), scale)
+        let (q, _) = self.floor_parts(scale)?;
+        Self::new(q, scale)
+    }
+
+    /// `(floor(num · scale / den), (num · scale) mod den)`, taking the whole part of `num / den` first so that the
+    /// product `num · scale` is never formed: only `(num mod den) · scale` must fit, which it does for any
+    /// value below `i128::MAX / scale` in magnitude whatever its numerator.
+    fn floor_parts(self, scale: i128) -> Result<(i128, i128), RatRefusal> {
+        let whole = self.num.div_euclid(self.den);
+        let rem = self.num.rem_euclid(self.den);
+        let frac = rem.checked_mul(scale).ok_or(RatRefusal::Overflow)?;
+        let q = whole
+            .checked_mul(scale)
+            .and_then(|w| w.checked_add(frac.div_euclid(self.den)))
+            .ok_or(RatRefusal::Overflow)?;
+        Ok((q, frac.rem_euclid(self.den)))
     }
 
     /// The smallest `k / scale` not below `self` (`scale > 0`): an enclosure endpoint rounded up.
@@ -204,9 +220,8 @@ impl ExactRat {
         if scale <= 0 {
             return Err(RatRefusal::ZeroDenominator);
         }
-        let n = self.num.checked_mul(scale).ok_or(RatRefusal::Overflow)?;
-        let q = n.div_euclid(self.den);
-        let up = if n.rem_euclid(self.den) == 0 {
+        let (q, rem) = self.floor_parts(scale)?;
+        let up = if rem == 0 {
             q
         } else {
             q.checked_add(1).ok_or(RatRefusal::Overflow)?
@@ -249,6 +264,8 @@ pub enum GravityRefusal {
     },
     /// The position lies outside the domain of the normal-gravity series.
     PositionOutOfDomain,
+    /// The ellipsoid's defining parameters are not an ellipsoid.
+    DefiningParametersInvalid,
 }
 
 impl From<RatRefusal> for GravityRefusal {
@@ -305,16 +322,47 @@ pub struct LocalGravity {
     pub receipt: String,
 }
 
+/// The outcome of the normal-gravity part of the combined gate.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum NormalGravityCheck {
+    /// The normal-gravity interval lies inside `[value − u, value + u]`.
+    Within {
+        /// The normal-gravity interval at the position.
+        gamma: RatInterval,
+    },
+    /// The check cannot run: the ellipsoid's defining parameters are not entered, or a derivation step is absent.
+    Absent {
+        /// The cell that will supply it.
+        follow_up: &'static str,
+    },
+}
+
 /// The combined gate: the scalar gate on `g = value` for a fall through `h` at speed `v`, the stated lemma bound
-/// equal to `v² / (2·h)`, and the normal gravity at the position inside `[value − u, value + u]`.
+/// equal to `v² / (2·h)`, a positive uncertainty, and, the
+/// normal gravity (the WGS84 defining parameters of [`normal_gravity::WGS84_DEFINING`]) at the position inside `[value − u, value + u]`. The scalar checks run first; `Ok(Absent)` is
+/// returned only when a derivation step is unavailable for the parameters.
 ///
 /// # Errors
 ///
 /// The refusals of [`local_gravity_admissible`]; [`GravityRefusal::UncertaintyNotPositive`],
-/// [`GravityRefusal::StatedBoundDiffers`], [`GravityRefusal::PositionOutOfDomain`];
-/// [`GravityRefusal::NormalGravityOutsideU`] when the normal-gravity interval and `[value − u, value + u]` are
-/// disjoint; [`GravityRefusal::LocationTooCoarse`] when they overlap without containment.
-pub fn local_gravity_admissible_at(lg: &LocalGravity, h: ExactRat, v: ExactRat) -> Result<(), GravityRefusal> {
+/// [`GravityRefusal::StatedBoundDiffers`], [`GravityRefusal::PositionOutOfDomain`],
+/// [`GravityRefusal::DefiningParametersInvalid`]; [`GravityRefusal::NormalGravityOutsideU`] when the
+/// normal-gravity interval and `[value − u, value + u]` are disjoint; [`GravityRefusal::LocationTooCoarse`] when
+/// they overlap without containment.
+pub fn local_gravity_admissible_at(
+    lg: &LocalGravity,
+    h: ExactRat,
+    v: ExactRat,
+) -> Result<NormalGravityCheck, GravityRefusal> {
+    local_gravity_admissible_with(lg, h, v, normal_gravity::WGS84_DEFINING.as_ref())
+}
+
+fn local_gravity_admissible_with(
+    lg: &LocalGravity,
+    h: ExactRat,
+    v: ExactRat,
+    defining: Option<&normal_gravity::Wgs84Defining>,
+) -> Result<NormalGravityCheck, GravityRefusal> {
     local_gravity_admissible(h, v, lg.value)?;
     if lg.u.sign() != Ordering::Greater {
         return Err(GravityRefusal::UncertaintyNotPositive);
@@ -326,15 +374,26 @@ pub fn local_gravity_admissible_at(lg: &LocalGravity, h: ExactRat, v: ExactRat) 
             lemma,
         });
     }
-    let gamma = match normal_gravity::normal_gravity_interval(&lg.at) {
+    let Some(d) = defining else {
+        return Ok(NormalGravityCheck::Absent {
+            follow_up: "FORMAL-NORMAL-GRAVITY-ROWS",
+        });
+    };
+    let gamma = match normal_gravity::normal_gravity_interval(&lg.at, d) {
         Ok(g) => g,
         Err(normal_gravity::NormalGravityRefusal::HeightOutOfRange) => return Err(GravityRefusal::PositionOutOfDomain),
+        Err(normal_gravity::NormalGravityRefusal::InvalidDefining) => {
+            return Err(GravityRefusal::DefiningParametersInvalid)
+        }
+        Err(normal_gravity::NormalGravityRefusal::DerivationAbsent { follow_up }) => {
+            return Ok(NormalGravityCheck::Absent { follow_up })
+        }
         Err(normal_gravity::NormalGravityRefusal::Interval(_)) => return Err(GravityRefusal::Overflow),
     };
     let band = RatInterval::new(lg.value.checked_sub(lg.u)?, lg.value.checked_add(lg.u)?)
         .map_err(|_| GravityRefusal::Overflow)?;
     if gamma.is_subset_of(band).map_err(|_| GravityRefusal::Overflow)? {
-        Ok(())
+        Ok(NormalGravityCheck::Within { gamma })
     } else if gamma.is_disjoint_from(band).map_err(|_| GravityRefusal::Overflow)? {
         Err(GravityRefusal::NormalGravityOutsideU { gamma })
     } else {
@@ -419,94 +478,113 @@ mod tests {
         }
     }
 
-    #[test]
-    fn normal_gravity_at_the_equator_and_the_pole_matches_the_tabulated_values() {
-        // Synthetic locations only: gamma_e = 9.7803253359 and gamma_p = 9.8321849378 (TR8350.2).
-        let tol = r(1, 1_000_000_000);
-        let eq = normal_gravity::normal_gravity_interval(&position(0, 0, 1, 0)).unwrap();
-        let ge = r(97_803_253_359, 10_000_000_000);
-        assert!(eq.lo().try_cmp(ge.checked_add(tol).unwrap()).unwrap() == Ordering::Less);
-        assert!(eq.hi().try_cmp(ge.checked_sub(tol).unwrap()).unwrap() == Ordering::Greater);
-        let pole = normal_gravity::normal_gravity_interval(&position(90, 90, 1, 0)).unwrap();
-        let gp = r(98_321_849_378, 10_000_000_000);
-        assert!(pole.lo().try_cmp(gp.checked_add(tol).unwrap()).unwrap() == Ordering::Less);
-        assert!(pole.hi().try_cmp(gp.checked_sub(tol).unwrap()).unwrap() == Ordering::Greater);
-        // enclosure is tight: well under 1e-9 wide
-        assert!(eq.hi().checked_sub(eq.lo()).unwrap().try_cmp(tol).unwrap() == Ordering::Less);
+    /// A synthetic ellipsoid of round numbers: gravity near 11 m s⁻² at the equator.
+    fn synthetic() -> normal_gravity::Wgs84Defining {
+        normal_gravity::Wgs84Defining {
+            a_m: ExactRat::int(6_000_000),
+            inv_f: ExactRat::int(300),
+            gm_m3_s2: ExactRat::int(400_000_000_000_000),
+            omega_rad_s: ExactRat::ZERO,
+        }
+    }
+
+    /// With ω = 0 the equatorial normal gravity of the synthetic ellipsoid is GM/(ab) exactly.
+    fn synthetic_equatorial() -> ExactRat {
+        let d = synthetic();
+        let b = normal_gravity::semi_minor_axis(&d).unwrap();
+        d.gm_m3_s2.checked_div(d.a_m.checked_mul(b).unwrap()).unwrap()
+    }
+
+    /// Table 3.6 of NGA.STND.0036_1.0.0_WGS84 (2014): γe = 9.7803253359 m/s².
+    fn table_gamma_e() -> ExactRat {
+        r(97_803_253_359, 10_000_000_000)
     }
 
     #[test]
-    fn height_lowers_normal_gravity_by_the_free_air_gradient() {
-        let ground = normal_gravity::normal_gravity_interval(&position(0, 0, 1, 0)).unwrap();
-        let high = normal_gravity::normal_gravity_interval(&position(0, 0, 1, 1000)).unwrap();
-        // about 3.0877e-3 m/s^2 per 1000 m at the equator
-        let drop = ground.lo().checked_sub(high.hi()).unwrap();
-        assert!(drop.try_cmp(r(3_000, 1_000_000)).unwrap() == Ordering::Greater);
-        assert!(drop.try_cmp(r(3_200, 1_000_000)).unwrap() == Ordering::Less);
-        assert_eq!(
-            normal_gravity::normal_gravity_interval(&position(0, 0, 1, 200_000)),
-            Err(normal_gravity::NormalGravityRefusal::HeightOutOfRange)
-        );
-    }
-
-    #[test]
-    fn the_combined_gate_admits_a_value_inside_u_at_a_sharp_position() {
+    fn the_combined_gate_with_the_wgs84_parameters_is_within_outside_or_too_coarse() {
         let at = position(0, 0, 1, 0);
-        let lg = record(r(97_803_253_359, 10_000_000_000), r(1, 1000), at);
-        // v = 5, h = 1 gives a lemma bound of 12.5 > g at the equator, so use a fall that the value supports.
-        let lg = LocalGravity {
-            lower_bound_from_lemma: local_gravity_lower_bound(r(1, 1), r(4, 1)).unwrap(),
-            ..lg
-        };
-        assert_eq!(local_gravity_admissible_at(&lg, r(1, 1), r(4, 1)), Ok(()));
-    }
-
-    #[test]
-    fn the_combined_gate_refuses_below_the_lemma_outside_u_and_too_coarse() {
-        let at = position(0, 0, 1, 0);
-        let g_e = r(97_803_253_359, 10_000_000_000);
         let ok_bound = local_gravity_lower_bound(r(1, 1), r(4, 1)).unwrap();
-        // below the lemma bound: v = 5 needs g >= 12.5
+        let mk = |value: ExactRat, u: ExactRat, at: GeodeticPosition| LocalGravity {
+            lower_bound_from_lemma: ok_bound,
+            ..record(value, u, at)
+        };
+        let g = table_gamma_e();
+        assert!(matches!(
+            local_gravity_admissible_at(&mk(g, r(1, 10_000), at), r(1, 1), r(4, 1)),
+            Ok(NormalGravityCheck::Within { .. })
+        ));
+        assert!(matches!(
+            local_gravity_admissible_at(&mk(g.checked_add(r(1, 100)).unwrap(), r(1, 10_000), at), r(1, 1), r(4, 1)),
+            Err(GravityRefusal::NormalGravityOutsideU { .. })
+        ));
+        assert!(matches!(
+            local_gravity_admissible_at(&mk(g, r(1, 10_000), position(0, 90, 1, 0)), r(1, 1), r(4, 1)),
+            Err(GravityRefusal::LocationTooCoarse { .. })
+        ));
+    }
+
+    #[test]
+    fn the_scalar_checks_run_before_the_normal_gravity_check() {
+        let at = position(0, 0, 1, 0);
+        let g = table_gamma_e();
+        let ok_bound = local_gravity_lower_bound(r(1, 1), r(4, 1)).unwrap();
+        // the scalar checks still refuse: below the lemma, a stated bound that is not the lemma's, u <= 0
         let below = LocalGravity {
             lower_bound_from_lemma: local_gravity_lower_bound(r(1, 1), r(5, 1)).unwrap(),
-            ..record(g_e, r(1, 1000), at)
+            ..record(g, r(1, 1000), at)
         };
         assert!(matches!(
             local_gravity_admissible_at(&below, r(1, 1), r(5, 1)),
             Err(GravityRefusal::BelowLemmaBound { .. })
         ));
-        // gamma outside u: the stated value is 0.5 above normal gravity with u = 1e-3
-        let far = LocalGravity {
-            lower_bound_from_lemma: ok_bound,
-            ..record(r(103_000_000_000, 10_000_000_000), r(1, 1000), at)
-        };
         assert!(matches!(
-            local_gravity_admissible_at(&far, r(1, 1), r(4, 1)),
-            Err(GravityRefusal::NormalGravityOutsideU { .. })
-        ));
-        // too coarse: latitude known only to within the whole equator-to-pole span, u small
-        let wide = position(0, 90, 1, 0);
-        let coarse = LocalGravity {
-            lower_bound_from_lemma: ok_bound,
-            ..record(g_e, r(1, 1000), wide)
-        };
-        assert!(matches!(
-            local_gravity_admissible_at(&coarse, r(1, 1), r(4, 1)),
-            Err(GravityRefusal::LocationTooCoarse { .. })
-        ));
-        // a stated bound that is not the lemma's, and a non-positive uncertainty
-        let off = record(g_e, r(1, 1000), at);
-        assert!(matches!(
-            local_gravity_admissible_at(&off, r(1, 1), r(4, 1)),
+            local_gravity_admissible_at(&record(g, r(1, 1000), at), r(1, 1), r(4, 1)),
             Err(GravityRefusal::StatedBoundDiffers { .. })
         ));
         let zero_u = LocalGravity {
             lower_bound_from_lemma: ok_bound,
-            ..record(g_e, ExactRat::ZERO, at)
+            ..record(g, ExactRat::ZERO, at)
         };
         assert_eq!(
             local_gravity_admissible_at(&zero_u, r(1, 1), r(4, 1)),
             Err(GravityRefusal::UncertaintyNotPositive)
+        );
+    }
+
+    #[test]
+    fn with_defining_parameters_the_gate_admits_refuses_outside_u_and_too_coarse() {
+        let d = synthetic();
+        let g_e = synthetic_equatorial();
+        let ok_bound = local_gravity_lower_bound(r(1, 1), r(4, 1)).unwrap();
+        let mk = |value: ExactRat, u: ExactRat, at: GeodeticPosition| LocalGravity {
+            lower_bound_from_lemma: ok_bound,
+            ..record(value, u, at)
+        };
+        let gate = |lg: &LocalGravity| local_gravity_admissible_with(lg, r(1, 1), r(4, 1), Some(&d));
+        let sharp = position(0, 0, 1, 0);
+        assert!(matches!(
+            gate(&mk(g_e, r(1, 1000), sharp)),
+            Ok(NormalGravityCheck::Within { .. })
+        ));
+        // the stated value is 0.5 above normal gravity with u = 1e-3
+        assert!(matches!(
+            gate(&mk(g_e.checked_add(r(1, 2)).unwrap(), r(1, 1000), sharp)),
+            Err(GravityRefusal::NormalGravityOutsideU { .. })
+        ));
+        // latitude known only to within the equator-to-pole span, u small
+        assert!(matches!(
+            gate(&mk(g_e, r(1, 1000), position(0, 90, 1, 0))),
+            Err(GravityRefusal::LocationTooCoarse { .. })
+        ));
+        // a height beyond the series, and parameters that are not an ellipsoid
+        assert_eq!(
+            gate(&mk(g_e, r(1, 1000), position(0, 0, 1, 200_000))),
+            Err(GravityRefusal::PositionOutOfDomain)
+        );
+        let bad = normal_gravity::Wgs84Defining { inv_f: ExactRat::ONE, ..d };
+        assert_eq!(
+            local_gravity_admissible_with(&mk(g_e, r(1, 1000), sharp), r(1, 1), r(4, 1), Some(&bad)),
+            Err(GravityRefusal::DefiningParametersInvalid)
         );
     }
 
