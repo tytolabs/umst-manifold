@@ -14,9 +14,30 @@ pub mod gate;
 pub mod gate_server_router;
 pub mod manifest;
 pub mod physics;
-pub use physics::hertz_contact::{
-    admit_hertz_sphere_plane_impact, HertzImpactOutcome, HertzImpactParams,
-};
+pub use physics::hertz_contact::{HertzImpactOutcome, HertzImpactParams};
+/// Production Hertz / Hunt–Crossley sphere-on-plane impact (PB-B10).
+///
+/// Body calls [`physics::hertz_contact::admit_hertz_sphere_plane_impact`] so the
+/// contact surface has a non-test reader (re-export alone is refused by wire).
+#[must_use]
+pub fn hertz_sphere_plane_impact(
+    params: HertzImpactParams,
+    modal: &[physics::modal_loss::ImpactSoundMode],
+    dt_s: f64,
+    energy_rel_tol: f64,
+) -> Result<HertzImpactOutcome, physics::PhysicsError> {
+    let outcome =
+        physics::hertz_contact::admit_hertz_sphere_plane_impact(params, modal, dt_s, energy_rel_tol)?;
+    if outcome.johnson_duration_citation
+        != physics::hertz_contact::JOHNSON_1985_DURATION_CITATION
+    {
+        return Err(physics::PhysicsError::Domain {
+            detail: "hertz: outcome citation pin drifted from JOHNSON_1985_DURATION_CITATION"
+                .into(),
+        });
+    }
+    Ok(outcome)
+}
 pub use physics::orchestration::{
     OrchestrationPostureProbe, TopologyPhysicsOrchestrator, TopologyPlanIntent,
 };
