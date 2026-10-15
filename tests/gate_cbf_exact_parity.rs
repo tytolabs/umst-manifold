@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Santhosh Shyamsundar and Santosh Prabhu Shenbagamoorthy
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Proof for cell BARRIER-CBF-ONE-LAW (umst-manifold part): the f64 credit gate `gate::cbf` is the `γ = 1` case of
-//! umst-algebra's exact discrete barrier. The gate admits an update when its Landauer cost `k_B T ln 2 · bits` does
+//! Proof for cell BARRIER-CBF-ONE-LAW (umst-manifold part), an exact parity test: the f64 credit gate `gate::cbf`
+//! is the `γ = 1` case of umst-algebra's exact discrete barrier. The gate admits an update when its Landauer cost `k_B T ln 2 · bits` does
 //! not exceed the credit; with the credit `m · k_B T` the barrier value after the update, in units of `k_B T`, is
 //! `h = m − ln 2 · bits`, and at `γ = 1` the decay floor is 0, so `discrete_cbf` admits exactly when `h ≥ 0`.
 //!
