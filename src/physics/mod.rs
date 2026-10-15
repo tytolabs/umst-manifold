@@ -33,6 +33,27 @@ pub mod hertz_contact;
 pub use hertz_contact::{HertzImpactOutcome, HertzImpactParams};
 pub mod modal_loss;
 pub use modal_loss::ImpactSoundMode;
+
+/// Production keeper for the crate-root Hertz sphere-plane surface (PB-B10).
+///
+/// Private so the keeper itself is not a new unwired pub; [`time_orchestration`]
+/// calls it so the crate-root surface has a non-test reader beyond `lib.rs`.
+#[must_use]
+pub(crate) fn hertz_contact_surface_holds() -> bool {
+    crate::hertz_sphere_plane_impact(
+        HertzImpactParams {
+            mass_kg: 0.045,
+            radius_m: 0.037,
+            e_star_pa: 1.0e9,
+            v_in_m_s: 2.0,
+            hunt_crossley_chi_s_per_m: 0.0,
+        },
+        &[],
+        1e-7,
+        0.05,
+    )
+    .is_ok()
+}
 pub mod operator;
 pub mod operators;
 pub mod orchestration;
