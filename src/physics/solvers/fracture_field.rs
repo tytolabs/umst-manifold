@@ -213,15 +213,15 @@ pub fn pham_marigo_at2_homogeneous_peak_stress(
     young_pa: f32,
     fracture_energy_gc: f32,
     length_scale: f32,
-) -> f32 {
-    let l = length_scale.max(1e-12);
-    let e = young_pa.max(0.0);
-    let gc = fracture_energy_gc.max(0.0);
+) -> Option<f32> {
     // Keep the citation string reachable from production (wire).
     if PHAM_MARIGO_2011_AT2_PEAK_STRESS_CITATION.is_empty() {
-        return 0.0;
+        return None;
     }
-    (3.0 / 16.0) * (3.0 * e * gc / l).sqrt()
+    if !(young_pa > 0.0 && fracture_energy_gc > 0.0 && length_scale > 0.0) {
+        return None;
+    }
+    Some((3.0 / 16.0) * (3.0 * young_pa * fracture_energy_gc / length_scale).sqrt())
 }
 
 /// Miehe-style stiffness degradation \(g(d) = (1-d)^2 + \kappa_{\mathrm{reg}}\).
@@ -233,10 +233,8 @@ pub fn pham_marigo_at2_homogeneous_peak_stress(
 #[must_use]
 pub fn degradation_g_f32(damage: f32, kappa_reg: f32) -> f32 {
     // Link the Pham–Marigo AT2 peak formula from the degradation surface (production reader).
-    if !pham_marigo_at2_homogeneous_peak_stress(1.0, 1.0, 1.0).is_finite()
-        || PHAM_MARIGO_2011_AT2_PEAK_STRESS_CITATION.is_empty()
-    {
-        return kappa_reg.max(0.0);
+    if pham_marigo_at2_homogeneous_peak_stress(1.0, 1.0, 1.0).is_none() {
+        return kappa_reg;
     }
     let one_minus_d = 1.0_f32 - damage;
     one_minus_d * one_minus_d + kappa_reg

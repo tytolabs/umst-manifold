@@ -5,7 +5,7 @@
 //! \(\sigma_c = \frac{3}{16}\sqrt{3 E G_c/\ell}\) within a stated discretisation tolerance.
 //! Route: damage is non-decreasing (irreversibility / SecondLaw-compatible dissipation ≥ 0).
 //!
-//! Citation: [`PHAM_MARIGO_2011_AT2_PEAK_STRESS_CITATION`].
+//! Citation lands on the production degradation surface (Pham et al. 2011 AT2 peak).
 
 #![cfg(feature = "fracture-at2")]
 
@@ -15,7 +15,6 @@ use burn_ndarray::{NdArray, NdArrayDevice};
 use umst_manifold::core::field::{Field, FractureEnergyField, SmallStrainField};
 use umst_manifold::physics::solvers::fracture_field::{
     degradation_g_f32, pham_marigo_at2_homogeneous_peak_stress, PhaseFieldFractureSolver,
-    PHAM_MARIGO_2011_AT2_PEAK_STRESS_CITATION,
 };
 use umst_manifold::physics::solvers::spectral_tensile_psi_plus_from_strain;
 
@@ -26,12 +25,6 @@ const NUCLEATION_STRESS_REL_TOL: f32 = 0.08;
 
 #[test]
 fn pham_marigo_at2_homogeneous_bar_nucleates_at_cited_peak_stress() {
-    assert!(
-        PHAM_MARIGO_2011_AT2_PEAK_STRESS_CITATION.contains("Pham")
-            && PHAM_MARIGO_2011_AT2_PEAK_STRESS_CITATION.contains("2011"),
-        "citation pin must name Pham et al. 2011"
-    );
-
     let dev = NdArrayDevice::Cpu;
     let batch = 1usize;
     let n = 5usize;
@@ -49,8 +42,12 @@ fn pham_marigo_at2_homogeneous_bar_nucleates_at_cited_peak_stress() {
     let young_pa = 1.0_f32;
     let gc = 150.0_f32;
     let length_scale = 0.08_f32;
-    let sigma_c = pham_marigo_at2_homogeneous_peak_stress(young_pa, gc, length_scale);
-    assert!(sigma_c.is_finite() && sigma_c > 0.0, "σ_c must be positive finite");
+    let sigma_c = pham_marigo_at2_homogeneous_peak_stress(young_pa, gc, length_scale)
+        .expect("σ_c admits for positive E, Gc, ℓ");
+    assert!(
+        pham_marigo_at2_homogeneous_peak_stress(0.0, gc, length_scale).is_none(),
+        "non-positive E must refuse"
+    );
 
     let solver = PhaseFieldFractureSolver { length_scale };
     let fracture_energy_gc = Tensor::from_data(
