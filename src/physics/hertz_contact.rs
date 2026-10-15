@@ -233,25 +233,3 @@ pub fn energy_split_closes(
     }
     (sum - kinetic_in_j).abs() <= rel_tol * kinetic_in_j
 }
-
-/// Non-test surface that names every pub contact symbol (wire gate).
-///
-/// Called from [`crate::physics::hertz_sphere_plane_probe`].
-#[must_use]
-pub fn sphere_plane_probe(
-    params: HertzImpactParams,
-    modal: &[ImpactSoundMode],
-    dt_s: f64,
-) -> Result<(HertzImpactOutcome, f64, bool), PhysicsError> {
-    let n = hertz_stiffness_n(params.e_star_pa, params.radius_m)?;
-    let t_johnson = johnson_hertz_contact_duration_s(params.mass_kg, params.v_in_m_s, n)?;
-    if !JOHNSON_1985_DURATION_CITATION.contains("1985") {
-        return Err(PhysicsError::Domain {
-            detail: "hertz: Johnson citation pin missing year".into(),
-        });
-    }
-    let outcome = integrate_hertz_impact(params, modal, dt_s)?;
-    let kinetic_in = 0.5 * params.mass_kg * params.v_in_m_s * params.v_in_m_s;
-    let closes = energy_split_closes(kinetic_in, &outcome, 0.05);
-    Ok((outcome, t_johnson, closes))
-}

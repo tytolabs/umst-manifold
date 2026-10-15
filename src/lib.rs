@@ -14,20 +14,10 @@ pub mod gate;
 pub mod gate_server_router;
 pub mod manifest;
 pub mod physics;
-pub use physics::hertz_contact::{HertzImpactOutcome, HertzImpactParams, sphere_plane_probe};
+pub use physics::hertz_contact::{HertzImpactOutcome, HertzImpactParams};
 pub use physics::orchestration::{
     OrchestrationPostureProbe, TopologyPhysicsOrchestrator, TopologyPlanIntent,
 };
-
-/// PB-B10: non-test reader for Hertz sphere-plane contact (wire gate).
-#[must_use]
-pub fn hertz_sphere_plane_probe(
-    params: HertzImpactParams,
-    modes: &[physics::modal_loss::ImpactSoundMode],
-    dt_s: f64,
-) -> Result<(HertzImpactOutcome, f64, bool), physics::PhysicsError> {
-    sphere_plane_probe(params, modes, dt_s)
-}
 /// Finite-cell hexahedral elasticity over an occupancy field (PB-B8): field, materials, grid, rule, elements, assembly
 /// and analysis types.
 pub use physics::solvers::finite_cell::analysis::{ApparentMass, InertiaRelief, ModeRequest};
