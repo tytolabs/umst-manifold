@@ -173,6 +173,11 @@ name = "fracture_gamma_convergence"
 path = "tests/verification/fracture_gamma_convergence.rs"
 
 [[test]]
+name = "pham_marigo_bar_nucleation"
+path = "tests/verification/pham_marigo_bar_nucleation.rs"
+required-features = ["fracture-at2"]
+
+[[test]]
 name = "staggered_fracture_mechanics_chain"
 path = "tests/verification/staggered_fracture_mechanics_chain.rs"
 required-features = ["fracture-at2"]
