@@ -24,7 +24,7 @@ pub const PENDING_GAPS_PLAIN_SHA256: &str =
 
 /// Pinned SHA-256 of `umst-math/Cargo.toml` (M-simd feature gate witness).
 pub const UMST_MATH_CARGO_TOML_SHA256: &str =
-    "fa43cf8f617eb35439d0b9ea3109b8d761da35b40c450fbe44b9c529a8db8f28";
+    "ccf17641fcb4141284991d231686a97f09620ef49d2c7b21deda6d9b23a2504c";
 
 /// Typed absence for Tier-2 B-Arc perf rows still awaiting calibration (no fabricated p99).
 pub const B_ARC_TYPED_ABSENCE_DEFINITION: Derivation = Derivation::Absent {

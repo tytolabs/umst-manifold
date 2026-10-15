@@ -1329,7 +1329,7 @@ pub static REGISTRY: &[ConstantEntry] = &[
     ConstantEntry {
         name: "egoff_manifold_action_canonicalize_p99_us",
         expression: "500 (µs p99 ceiling for action_sdf_canonicalize @ bits=3; release; debug ×20)",
-        evidence: "Policy (PERF-MEASURE-1 CI regression cap; `canonicalize_runtime_p99_under_500us`; measured p99: `manifold_canonicalize_runtime_us_p99`)",
+        evidence: "Policy (PERF-MEASURE-1 CI regression cap; `canonicalize_runtime_p99_under_500us`; the runtime row is `manifold_canonicalize_runtime_us_p99`)",
         env_override: None,
         derivation: EGOFF_MANIFOLD_CANONICALIZE_P99_DERIVATION,
     },
