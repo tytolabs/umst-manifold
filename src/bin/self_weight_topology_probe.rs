@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
-// SPDX-License-Identifier: MIT
-//! Operator probe: Bruyneel–Duysinx self-weight body force on a 2-node hanging chain.
-//! Exit 2 if the mass-penalty force is non-finite or non-negative in z (expects gravity −z).
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//! Self-weight topology probe: Bruyneel–Duysinx body force on a hanging chain.
+//! Exit 2 if the mass-penalty force is non-finite or mismatches the expected −z load.
 
 use umst_manifold::physics::mechanics::SelfWeightConfig;
 
