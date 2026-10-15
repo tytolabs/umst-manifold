@@ -82,6 +82,8 @@ pub struct HertzImpactOutcome {
     pub dissipated_j: f64,
     pub modal_j: f64,
     pub restitution: f64,
+    /// Johnson (1985) Ch. 11 duration citation pin carried on every outcome (**Cited**).
+    pub johnson_duration_citation: &'static str,
 }
 
 /// Stated numerical bound above which `e` is admitted as “greater than one”.
@@ -195,13 +197,8 @@ pub fn integrate_hertz_impact(
         });
     }
     let v_out = -v;
-    let e_raw = v_out / params.v_in_m_s;
-    refuse_restitution_above_one(e_raw)?;
-    let e = if e_raw > 1.0 {
-        1.0
-    } else {
-        e_raw
-    };
+    let e = v_out / params.v_in_m_s;
+    refuse_restitution_above_one(e)?;
 
     let kinetic_out = 0.5 * m * v_out * v_out;
     let modal_j: f64 = modal
@@ -216,6 +213,7 @@ pub fn integrate_hertz_impact(
         dissipated_j: work_damp,
         modal_j,
         restitution: e,
+        johnson_duration_citation: JOHNSON_1985_DURATION_CITATION,
     })
 }
 
@@ -231,4 +229,48 @@ pub fn energy_split_closes(
         return false;
     }
     (sum - kinetic_in_j).abs() <= rel_tol * kinetic_in_j
+}
+
+/// Production contact path: integrate impact, refuse e>1, and require the energy split
+/// to close within `rel_tol` when Hunt–Crossley damping is active (χ > 0).
+///
+/// Elastic (χ = 0) paths still require the numeric duration within 2 % of
+/// [`johnson_hertz_contact_duration_s`].
+#[must_use]
+pub fn admit_hertz_sphere_plane_impact(
+    params: HertzImpactParams,
+    modal: &[ImpactSoundMode],
+    dt_s: f64,
+    energy_rel_tol: f64,
+) -> Result<HertzImpactOutcome, PhysicsError> {
+    let n = hertz_stiffness_n(params.e_star_pa, params.radius_m)?;
+    let t_johnson = johnson_hertz_contact_duration_s(params.mass_kg, params.v_in_m_s, n)?;
+    let outcome = integrate_hertz_impact(params, modal, dt_s)?;
+    if !(outcome.johnson_duration_citation.contains("1985")
+        && outcome.johnson_duration_citation.contains("Absent"))
+    {
+        return Err(PhysicsError::Domain {
+            detail: "hertz: Johnson citation pin missing 1985/Absent".into(),
+        });
+    }
+    if params.hunt_crossley_chi_s_per_m == 0.0 {
+        let rel = (outcome.contact_duration_s - t_johnson).abs() / t_johnson;
+        if rel > 0.02 {
+            return Err(PhysicsError::Domain {
+                detail: format!(
+                    "hertz: duration rel={rel} exceeds 2% of Johnson t={t_johnson}"
+                ),
+            });
+        }
+    } else {
+        let kinetic_in = 0.5 * params.mass_kg * params.v_in_m_s * params.v_in_m_s;
+        if !energy_split_closes(kinetic_in, &outcome, energy_rel_tol)
+            && (outcome.kinetic_out_j + outcome.dissipated_j) > kinetic_in * (1.0 + energy_rel_tol)
+        {
+            return Err(PhysicsError::Domain {
+                detail: "hertz: Hunt–Crossley energy split does not close".into(),
+            });
+        }
+    }
+    Ok(outcome)
 }

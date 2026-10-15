@@ -14,7 +14,9 @@ pub mod gate;
 pub mod gate_server_router;
 pub mod manifest;
 pub mod physics;
-pub use physics::hertz_contact::{HertzImpactOutcome, HertzImpactParams};
+pub use physics::hertz_contact::{
+    admit_hertz_sphere_plane_impact, HertzImpactOutcome, HertzImpactParams,
+};
 pub use physics::orchestration::{
     OrchestrationPostureProbe, TopologyPhysicsOrchestrator, TopologyPlanIntent,
 };
