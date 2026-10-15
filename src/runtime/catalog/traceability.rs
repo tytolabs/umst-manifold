@@ -124,9 +124,6 @@ pub const ALLOW_UNUSED_CATALOG_IDS: &[&str] = &[
     "Chem.Environment.EnvironmentContinuum",
     "Chem.GroundStates",
     "Chem.KleisliInteract",
-    // Chemistry as a functor into the process family; consumer is umst-chem, which no runtime gate catalog_id names
-    // (follow-up cell CATALOG-ID-CHEM-PROCESS-FUNCTOR).
-    "Chem.ProcessFunctor",
     "Chem.OreAssemblage",
     "Chem.PatternNuance",
     "Chem.RefineCost",
@@ -171,9 +168,6 @@ pub const ALLOW_UNUSED_CATALOG_IDS: &[&str] = &[
     "Crypto.CryptoHypothesis",
     "Economic.PhysicsConstrainedAI",
     "ExamplesQubitEpistemic",
-    // GENERIC entropy production; consumer is umst-chem `fluctuation_theorem`, which no runtime gate catalog_id names
-    // (follow-up cell CATALOG-ID-CHEM-PROCESS-FUNCTOR).
-    "Generic.EntropyProduction",
     "Excitement",
     // `selectBy` over any linear order; its Rust twin is umst-algebra `select_by` (SELECT_BY_LEAN_ANCHOR), which is
     // no runtime gate `catalog_id`, so the module stays formal-only like `Excitement`.
@@ -300,6 +294,12 @@ pub const CATALOG_MODULE_WIRED: &[(&str, &[&str])] = &[
         "Concrete.Powers",
         &["thermodynamic_mix", "umst.gate.http_shim"],
     ),
+    // umst-chem `process_functor_gate` emits these catalog_ids (CATALOG-ID-CHEM-PROCESS-FUNCTOR).
+    ("Chem.ProcessFunctor", &["umst.chem.process_functor"]),
+    (
+        "Generic.EntropyProduction",
+        &["umst.chem.entropy_production"],
+    ),
 ];
 
 /// `catalog_id` values listed in **`docs/GateUnificationSpec.md`** mapping table (SSOT).
@@ -333,7 +333,11 @@ pub const LANDAUER_CBF_CATALOG_ID: &str = "umst.gate.landauer_cbf";
 pub const SEMANTIC_CBF_CATALOG_ID: &str = "umst.gate.semantic_cbf";
 
 /// Gate slugs implemented in Rust but not yet in the spec table (see `claims-vs-proofs.md` note).
-pub const RUNTIME_EXTRA_GATE_CATALOG_IDS: &[&str] = &["thermodynamic_mix"];
+pub const RUNTIME_EXTRA_GATE_CATALOG_IDS: &[&str] = &[
+    "thermodynamic_mix",
+    "umst.chem.process_functor",
+    "umst.chem.entropy_production",
+];
 
 /// Cartridge-owned gate slugs (not in kernel universal registry after W9 Phase A).
 pub const CARTRIDGE_GATE_REGISTRY_CATALOG_IDS: &[&str] = &["umst.cartridge.domain.policy"];

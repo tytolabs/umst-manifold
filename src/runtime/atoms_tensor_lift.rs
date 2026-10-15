@@ -177,6 +177,8 @@ pub struct AtomsTensorLiftDepthSummary {
     pub rank1_plus_impl_landed: bool,
     /// Sibling path census (ledger/adapter/ops/residual) — not F1 closure.
     pub sibling_slice_ladder_landed: bool,
+    /// Honest fence — burn adapter crate path landed.
+    pub adapter_crate_landed: bool,
 }
 
 /// Frozen depth summary — honest partial on 0D lift step only.
@@ -195,17 +197,20 @@ pub const fn atoms_tensor_lift_depth_summary() -> AtomsTensorLiftDepthSummary {
             && SLICE3C_ADAPTER_LANDED
             && SLICE3D_OPS_LANDED
             && SLICE_RESIDUAL_LANDED,
+        adapter_crate_landed: ADAPTER_CRATE_LANDED,
     }
 }
 
 /// Honest fence probe — production-wire / rank-1+ impl claims stay false; adapter crate landed.
+///
+/// Reads the measured depth summary it names (no zero-arg constant claim).
 #[must_use]
-pub const fn honest_fences_hold() -> bool {
-    LIFT_STEP_LANDED
-        && RANK1_PLUS_DEFERRED
-        && !PRODUCTION_WIRED
-        && !RANK1_PLUS_IMPL_LANDED
-        && ADAPTER_CRATE_LANDED
+pub const fn honest_fences_hold(summary: &AtomsTensorLiftDepthSummary) -> bool {
+    summary.lift_step_landed
+        && summary.rank1_plus_deferred
+        && !summary.production_wired
+        && !summary.rank1_plus_impl_landed
+        && summary.adapter_crate_landed
 }
 
 #[cfg(test)]
@@ -256,7 +261,8 @@ mod tests {
 
     #[test]
     fn w29_honest_fences_refuse_production_wire() {
-        assert!(honest_fences_hold());
+        let summary = atoms_tensor_lift_depth_summary();
+        assert!(honest_fences_hold(&summary));
         assert!(ADAPTER_CRATE_PATH.contains("umst-algebra-burn"));
         assert_eq!(RECEIPT_SLUG, "COMPLETION_AGAP_AGENT_PBM-010_1920");
         assert!(SOURCE_ANCHOR_PATH.ends_with("atoms_tensor_lift.rs"));

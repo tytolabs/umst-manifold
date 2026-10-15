@@ -1716,12 +1716,10 @@ mod tests {
                 .map(|x| x.as_f64().expect("f64"))
                 .collect()
         }
-        let cpu_bytes = include_str!(
-            "../../../../egoff/.umst-ci/measurement-receipts/cpu_utilization_percent.jsonl"
-        );
-        let process_bytes = include_str!(
-            "../../../../egoff/.umst-ci/measurement-receipts/process_joules_estimate.jsonl"
-        );
+        // Vendored under umst-math so committed-layout closes that pin only this repo still compile
+        // lib tests (egoff/.umst-ci receipts are not part of the manifold layout).
+        let cpu_bytes = include_str!("fixtures/cpu_utilization_percent.jsonl");
+        let process_bytes = include_str!("fixtures/process_joules_estimate.jsonl");
         let cpu = last(cpu_bytes);
         let process = last(process_bytes);
         let busy = cpu["derived_value"].as_f64().expect("cpu");

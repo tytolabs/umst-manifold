@@ -36,18 +36,16 @@ fn self_weight_body_force_q_scaling() {
 
 #[test]
 fn self_weight_beam_non_trivial_topology_smoke() {
+    // Hanging axial bar chain (gravity along −z). Bar networks have no bending stiffness;
+    // a near-colinear horizontal chain under transverse gravity is ill-conditioned and
+    // diverges in f32 PCG — axial self-weight is the honest smoke geometry.
     let dev = Default::default();
     let n = 8usize;
     let dx = 1.0_f32 / (n - 1) as f32;
     let mut coords = vec![0.0f32; n * 3];
     for i in 0..n {
-        coords[i * 3] = i as f32 * dx;
-        // Slight out-of-plane slope so axial bar stiffness couples to \(z\) under gravity (purely
-        // colinear \(x\) chains have no truss stiffness on transverse \(z\) DOFs).
-        coords[i * 3 + 2] = 0.02 * i as f32 * dx;
+        coords[i * 3 + 2] = -(i as f32) * dx;
     }
-    let coords_bn3: Tensor<B, 3> =
-        Tensor::from_data(Data::new(coords, Shape::new([1, n, 3])), &dev);
     let mut e = Vec::with_capacity((n - 1) * 2);
     for i in 0..(n - 1) {
         e.push(i as i64);
@@ -55,16 +53,10 @@ fn self_weight_beam_non_trivial_topology_smoke() {
     for i in 0..(n - 1) {
         e.push((i + 1) as i64);
     }
-    let edges: Tensor<B, 2, Int> = Tensor::<B, 1>::from_data(
-        Data::new(
-            e.iter().map(|&x| x as f32).collect::<Vec<_>>(),
-            Shape::new([e.len()]),
-        ),
-        &dev,
-    )
-    .reshape([2, n - 1])
-    .int();
-    let e0 = 200e9_f32;
+    let edges: Tensor<B, 2, Int> =
+        Tensor::from_data(Data::new(e, Shape::new([2, n - 1])), &dev);
+    // Soft Young modulus so tip stretch exceeds f32 smoke floor under self-weight.
+    let e0 = 1e6_f32;
     let a = 0.01_f32;
     let rho = Tensor::<B, 3>::full([1, n, 1], 0.7, &dev);
     let p = 3.0_f32;
@@ -79,19 +71,23 @@ fn self_weight_beam_non_trivial_topology_smoke() {
     let nu = Tensor::<B, 3>::full([1, n, 1], 0.3, &dev);
     let stiffness = Tensor::cat(vec![e_eff, nu], 2);
     let damage = Tensor::<B, 3>::zeros([1, n, 1], &dev);
+    // Free axial (z) DOFs except the support; pin transverse DOFs (no bar bending).
     let mut bm = vec![1.0f32; n * 3];
-    bm[0] = 0.0;
-    bm[1] = 0.0;
-    bm[2] = 0.0;
+    for i in 0..n {
+        bm[i * 3] = 0.0;
+        bm[i * 3 + 1] = 0.0;
+    }
+    bm[2] = 0.0; // fix support z
     let boundary_mask = Tensor::from_data(Data::new(bm, Shape::new([1, n, 3])), &dev);
+    let tol = umst_math::numeric_tolerance::bar_network_cg_tol_f32();
     let cfg = MechanicsInnerLoopConfig {
-        max_cg_iterations: std::num::NonZeroUsize::new(400),
-        cg_tolerance: 1e-7,
-        pcg_tolerance: 1e-7,
+        max_cg_iterations: std::num::NonZeroUsize::new(n * 3),
+        cg_tolerance: tol,
+        pcg_tolerance: tol,
         use_preconditioner: true,
         max_equilibrium_sub_iters: umst_math::numeric_tolerance::DEFAULT_EQUILIBRIUM_SUB_ITERS,
     };
-    let coords_n3 = coords_bn3.clone().reshape([n, 3]);
+    let coords_n3 = Tensor::from_data(Data::new(coords, Shape::new([n, 3])), &dev);
     let (u, _) = VectorMechanicsSolver::solve_equilibrium(
         Tensor::zeros([1, n, 3], &dev),
         coords_n3,
@@ -105,7 +101,10 @@ fn self_weight_beam_non_trivial_topology_smoke() {
     )
     .expect("VectorMechanicsSolver::solve_equilibrium on self-weight topology witness (FP §6 G4)");
     let tip_z = u.into_data().value[(n - 1) * 3 + 2].abs();
-    assert!(tip_z > 1e-9, "self-weight should bend beam");
+    assert!(
+        tip_z > 1e-9,
+        "self-weight should stretch hanging chain; tip_z={tip_z}"
+    );
 
     let proj = HeavisideProjection::new(64.0, 0.5);
     let r_mid = proj

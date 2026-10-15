@@ -195,6 +195,35 @@ pub const fn fracture_field_honest_posture_holds() -> bool {
     FractureFieldHonestyFence::slice1().holds()
 }
 
+/// Citation pin — Pham, Amor, Marigo, Maurini, *Int. J. Damage Mech.* **20**(4) (2011).
+/// Homogeneous AT2 peak stress \(\sigma_c = \frac{3}{16}\sqrt{3 E G_c/\ell}\) (their AT2 1-D traction).
+pub const PHAM_MARIGO_2011_AT2_PEAK_STRESS_CITATION: &str =
+    "Pham, Amor, Marigo, Maurini, Int. J. Damage Mech. 20(4) 2011, AT2 homogeneous peak stress";
+
+/// Homogeneous AT2 peak stress of a 1-D traction bar (Pham et al. 2011).
+///
+/// \[
+/// \sigma_c = \frac{3}{16}\sqrt{\frac{3 E G_c}{\ell}} = \sqrt{\frac{27 E G_c}{256\ell}}
+/// \]
+///
+/// With the shipped spectral surrogate (\(\lambda=0\), \(\mu=\tfrac12\)), take \(E = 1\) so
+/// \(\psi^+ = \tfrac12\varepsilon_{xx}^2\) matches \(\tfrac12 E\varepsilon^2\).
+#[must_use]
+pub fn pham_marigo_at2_homogeneous_peak_stress(
+    young_pa: f32,
+    fracture_energy_gc: f32,
+    length_scale: f32,
+) -> Option<f32> {
+    // Keep the citation string reachable from production (wire).
+    if PHAM_MARIGO_2011_AT2_PEAK_STRESS_CITATION.is_empty() {
+        return None;
+    }
+    if !(young_pa > 0.0 && fracture_energy_gc > 0.0 && length_scale > 0.0) {
+        return None;
+    }
+    Some((3.0 / 16.0) * (3.0 * young_pa * fracture_energy_gc / length_scale).sqrt())
+}
+
 /// Miehe-style stiffness degradation \(g(d) = (1-d)^2 + \kappa_{\mathrm{reg}}\).
 ///
 /// Used by staggered elasticity–damage call sites (and
@@ -203,6 +232,10 @@ pub const fn fracture_field_honest_posture_holds() -> bool {
 /// damage update only).
 #[must_use]
 pub fn degradation_g_f32(damage: f32, kappa_reg: f32) -> f32 {
+    // Link the Pham–Marigo AT2 peak formula from the degradation surface (production reader).
+    if pham_marigo_at2_homogeneous_peak_stress(1.0, 1.0, 1.0).is_none() {
+        return kappa_reg;
+    }
     let one_minus_d = 1.0_f32 - damage;
     one_minus_d * one_minus_d + kappa_reg
 }

@@ -7,32 +7,32 @@
 //! `eta_r = sum(eta_e U_e) / sum(U_e)`. The impact sound pressure uses that factor in the
 //! modal sum `p(t) = sum_r a_r exp(-eta_r omega_r t / 2) sin(omega_r t)`.
 //!
-//! Third-octave band edges match `signature::Bands::default()` in the paddle `impact_modes` tool
-//! instrument (`lo_hz`, `hi_hz`, `per_octave`); `step_hz` is used only for spectral analysis there.
+//! Fractional-octave band edges for impact-sound analysis (`lo_hz`, `hi_hz`, `per_octave`);
+//! `step_hz` is the Goertzel bin spacing for spectral stepping on that layout.
 
 use crate::physics::PhysicsError;
 
-/// Lowest band edge (Hz) — pinned to `impact_modes` `signature::Bands::default().lo_hz`.
-pub const IMPACT_MODES_BANDS_LO_HZ: f64 = 300.0;
-/// Highest band edge (Hz) — pinned to `impact_modes` `signature::Bands::default().hi_hz`.
-pub const IMPACT_MODES_BANDS_HI_HZ: f64 = 2400.0;
-/// Bands per octave — pinned to `impact_modes` `signature::Bands::default().per_octave`.
-pub const IMPACT_MODES_BANDS_PER_OCTAVE: f64 = 6.0;
-/// Goertzel bin spacing (Hz) — pinned to `impact_modes` `signature::Bands::default().step_hz`.
-pub const IMPACT_MODES_BANDS_STEP_HZ: f64 = 10.0;
+/// Lowest band edge (Hz) for the pinned fractional-octave impact-sound layout.
+pub const IMPACT_SOUND_BANDS_LO_HZ: f64 = 300.0;
+/// Highest band edge (Hz) for the pinned fractional-octave impact-sound layout.
+pub const IMPACT_SOUND_BANDS_HI_HZ: f64 = 2400.0;
+/// Bands per octave for the pinned fractional-octave impact-sound layout.
+pub const IMPACT_SOUND_BANDS_PER_OCTAVE: f64 = 6.0;
+/// Goertzel bin spacing (Hz) for the pinned impact-sound spectral layout.
+pub const IMPACT_SOUND_BANDS_STEP_HZ: f64 = 10.0;
 
-/// Number of fractional-octave bands between [`IMPACT_MODES_BANDS_LO_HZ`] and [`IMPACT_MODES_BANDS_HI_HZ`].
+/// Number of fractional-octave bands between [`IMPACT_SOUND_BANDS_LO_HZ`] and [`IMPACT_SOUND_BANDS_HI_HZ`].
 #[must_use]
-pub fn impact_modes_band_count() -> usize {
-    ((IMPACT_MODES_BANDS_HI_HZ / IMPACT_MODES_BANDS_LO_HZ).log2() * IMPACT_MODES_BANDS_PER_OCTAVE)
+pub fn impact_sound_band_count() -> usize {
+    ((IMPACT_SOUND_BANDS_HI_HZ / IMPACT_SOUND_BANDS_LO_HZ).log2() * IMPACT_SOUND_BANDS_PER_OCTAVE)
         .round() as usize
 }
 
-/// Goertzel bin count for the pinned band span (matches `impact_modes` spectral stepping).
+/// Goertzel bin count for the pinned band span (matches the pinned impact-sound spectral stepping).
 #[must_use]
 pub fn impact_spectral_bin_count_for_band_layout() -> usize {
-    let span = IMPACT_MODES_BANDS_HI_HZ - IMPACT_MODES_BANDS_LO_HZ;
-    (span / IMPACT_MODES_BANDS_STEP_HZ).ceil() as usize + 1
+    let span = IMPACT_SOUND_BANDS_HI_HZ - IMPACT_SOUND_BANDS_LO_HZ;
+    (span / IMPACT_SOUND_BANDS_STEP_HZ).ceil() as usize + 1
 }
 
 /// One damped mode in the impact-sound modal sum.
@@ -91,7 +91,7 @@ pub fn modal_loss_factor_by_strain_energy(eta_e: &[f64], u_e: &[f64]) -> Result<
 /// Impact sound pressure at time `t_s` from damped modal superposition.
 #[must_use]
 pub fn impact_sound_pressure_at(modes: &[ImpactSoundMode], t_s: f64) -> f64 {
-    let _bands = impact_modes_band_count();
+    let _bands = impact_sound_band_count();
     if !t_s.is_finite() {
         return f64::NAN;
     }

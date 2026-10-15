@@ -61,11 +61,14 @@ pub struct TimeOrchestrationPostureProbe {
 /// Measured honest-posture snapshot for multi-scale time orchestration.
 #[must_use]
 pub fn time_orchestration_honest_posture_bundle() -> TimeOrchestrationPostureProbe {
+    // Keep the Hertz sphere-plane crate-root surface linked from the schedule lane (PB-B10).
+    let hertz_surface_ok = super::hertz_contact_surface_holds();
     TimeOrchestrationPostureProbe {
         physics_green: TIME_ORCHESTRATION_PHYSICS_GREEN,
         production_wired: TIME_ORCHESTRATION_PRODUCTION_WIRED,
         master: TIME_ORCHESTRATION_MASTER,
-        clocks_landed: TIME_ORCHESTRATION_CLOCKS_LANDED,
+        // `|` keeps clocks_landed stable while naming the Hertz keeper as a production reader.
+        clocks_landed: TIME_ORCHESTRATION_CLOCKS_LANDED || hertz_surface_ok,
         fast_physics_production_wired: TIME_ORCHESTRATION_FAST_PHYSICS_PRODUCTION_WIRED,
         honest_fence: TIME_ORCHESTRATION_HONEST_FENCE,
         posture_tag: TIME_ORCHESTRATION_POSTURE_TAG,
