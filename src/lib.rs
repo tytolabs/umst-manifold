@@ -41,6 +41,9 @@ pub fn hertz_sphere_plane_impact(
 pub use physics::orchestration::{
     OrchestrationPostureProbe, TopologyPhysicsOrchestrator, TopologyPlanIntent,
 };
+pub use physics::time_orchestration::{
+    ClockValidationError, MechanicsInnerLoopConfig, SimulationClocks, TimeOrchestrationPostureProbe,
+};
 /// Finite-cell hexahedral elasticity over an occupancy field (PB-B8): field, materials, grid, rule, elements, assembly
 /// and analysis types.
 pub use physics::solvers::finite_cell::analysis::{ApparentMass, InertiaRelief, ModeRequest};
