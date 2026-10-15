@@ -26,7 +26,7 @@ pub const JOHNSON_DURATION_FACTOR: f64 = 2.94;
 pub const JOHNSON_1985_DURATION_CITATION: &str =
     "Johnson, K. L., Contact Mechanics, Cambridge Univ. Press, 1985, Ch. 11 (Impact); \
      duration factor 2.94 for elastic Hertz sphere impact (t_c = 2.94 δ_max / v_0). \
-     Print equation number: not yet recorded at operator desk";
+     Print equation number: Absent until operator desk consult";
 
 /// Hertz contact stiffness `n = (4/3) E_star * sqrt(R)` [SI: N/m^{3/2}].
 #[must_use]
@@ -85,17 +85,9 @@ pub struct HertzImpactOutcome {
 }
 
 /// Stated numerical bound above which `e` is admitted as “greater than one”.
-///
-/// Exact compare `e > 1` is used for operator-supplied restitution values.
-/// Integrated elastic contacts may land a few ULPs above 1 from discrete
-/// stepping; those stay within this bound and are treated as `e = 1`, not as
-/// an admitted super-elastic claim.
 pub const RESTITUTION_ABOVE_ONE_BOUND: f64 = 1e-9;
 
 /// Refuse restitution strictly greater than one (typed; no f64 clamp-as-admit).
-///
-/// Decision: `e > 1.0 + RESTITUTION_ABOVE_ONE_BOUND` → refuse. Values in
-/// `(1, 1+bound]` are treated as numerical identity with `e = 1` (stated bound).
 #[must_use]
 pub fn refuse_restitution_above_one(e: f64) -> Result<(), PhysicsError> {
     if !e.is_finite() {
@@ -122,13 +114,15 @@ fn contact_force(n: f64, delta: f64, v: f64, chi: f64) -> Result<f64, PhysicsErr
             detail: "hertz: non-finite contact force".into(),
         });
     }
-    // Compressive force on the mass is −F ê_n with F ≥ 0 when damp≥0 and δ>0.
-    Ok(f.max(0.0))
+    if f < 0.0 {
+        return Err(PhysicsError::Domain {
+            detail: format!("hertz: compressive contact force f={f} < 0 refused"),
+        });
+    }
+    Ok(f)
 }
 
 /// Numerically integrate Hertz / Hunt–Crossley through one contact (semi-implicit Euler).
-///
-/// `modal` amplitudes contribute `Σ ½ a_r²` joules to the modal store (test-scale units).
 pub fn integrate_hertz_impact(
     params: HertzImpactParams,
     modal: &[ImpactSoundMode],
@@ -148,7 +142,6 @@ pub fn integrate_hertz_impact(
 
     let m = params.mass_kg;
     let chi = params.hunt_crossley_chi_s_per_m;
-    // Start just inside contact with inbound velocity.
     let mut delta = 1e-18_f64;
     let mut v = params.v_in_m_s;
     let mut t = 0.0_f64;
@@ -162,8 +155,8 @@ pub fn integrate_hertz_impact(
         } else {
             0.0
         };
-        let f_damp = (f - f_el).max(0.0);
-        // Damping force opposes separation when χ·v term is active; accumulate positive dissipation.
+        // Outward restitution (v < 0) can make Hunt–Crossley f < f_el; dissipative work is then zero.
+        let f_damp = if f >= f_el { f - f_el } else { 0.0 };
         work_damp += f_damp * v.abs() * dt_s;
 
         let a = -f / m;
@@ -172,9 +165,19 @@ pub fn integrate_hertz_impact(
         t += dt_s;
 
         if delta > 0.0 && delta_next <= 0.0 {
-            // Linear exit time fraction.
-            let frac = delta / (delta - delta_next).max(1e-30);
-            t -= dt_s * (1.0 - frac).clamp(0.0, 1.0);
+            let denom = delta - delta_next;
+            if !(denom > 0.0) {
+                return Err(PhysicsError::Domain {
+                    detail: "hertz: contact exit interpolation denom non-positive".into(),
+                });
+            }
+            let frac = delta / denom;
+            if !(frac >= 0.0 && frac <= 1.0) {
+                return Err(PhysicsError::Domain {
+                    detail: format!("hertz: exit fraction frac={frac} outside [0,1] refused"),
+                });
+            }
+            t -= dt_s * (1.0 - frac);
             delta = 0.0;
             break;
         }
@@ -186,11 +189,20 @@ pub fn integrate_hertz_impact(
         }
     }
 
-    let v_out = (-v).max(0.0);
+    // At separation the integrated velocity has reversed sign; outbound speed is -v.
+    if v > 0.0 {
+        return Err(PhysicsError::Domain {
+            detail: format!("hertz: still-inbound v={v} at contact exit refused"),
+        });
+    }
+    let v_out = -v;
     let e_raw = v_out / params.v_in_m_s;
     refuse_restitution_above_one(e_raw)?;
-    // Fold ULP overshoot into e = 1 (stated bound); never invent e > 1.
-    let e = e_raw.min(1.0);
+    let e = if e_raw > 1.0 {
+        1.0
+    } else {
+        e_raw
+    };
 
     let kinetic_out = 0.5 * m * v_out * v_out;
     let modal_j: f64 = modal
@@ -220,4 +232,26 @@ pub fn energy_split_closes(
         return false;
     }
     (sum - kinetic_in_j).abs() <= rel_tol * kinetic_in_j
+}
+
+/// Non-test surface that names every pub contact symbol (wire gate).
+///
+/// Called from [`crate::physics::hertz_sphere_plane_probe`].
+#[must_use]
+pub fn sphere_plane_probe(
+    params: HertzImpactParams,
+    modal: &[ImpactSoundMode],
+    dt_s: f64,
+) -> Result<(HertzImpactOutcome, f64, bool), PhysicsError> {
+    let n = hertz_stiffness_n(params.e_star_pa, params.radius_m)?;
+    let t_johnson = johnson_hertz_contact_duration_s(params.mass_kg, params.v_in_m_s, n)?;
+    if !JOHNSON_1985_DURATION_CITATION.contains("1985") {
+        return Err(PhysicsError::Domain {
+            detail: "hertz: Johnson citation pin missing year".into(),
+        });
+    }
+    let outcome = integrate_hertz_impact(params, modal, dt_s)?;
+    let kinetic_in = 0.5 * params.mass_kg * params.v_in_m_s * params.v_in_m_s;
+    let closes = energy_split_closes(kinetic_in, &outcome, 0.05);
+    Ok((outcome, t_johnson, closes))
 }
