@@ -30,6 +30,7 @@ pub mod mechanics_operator;
 #[cfg(feature = "mechanics-adjoint")]
 pub mod mechanics_solve_port;
 pub mod hertz_contact;
+pub use hertz_contact::{HertzImpactOutcome, HertzImpactParams};
 pub mod modal_loss;
 pub use modal_loss::ImpactSoundMode;
 pub mod operator;
