@@ -241,11 +241,13 @@ pub struct NalgebraTensorLiftDepthSummary {
     /// Honest fence — MASTER tag stays false.
     pub master_claimed: bool,
     /// Honest fence — grad remains identity stub.
-    pub grad_is_identity_stub: bool,
+    pub grad_is_identity: bool,
     /// Honest fence — TensorAlgebra::mul is Hadamard only.
     pub matmul_product_deferred: bool,
     /// Honest fence — full tensor AD pairing still open.
     pub num_dual_tensor_ad_landed: bool,
+    /// Honest fence — scalar Dual AD strip landed.
+    pub num_dual_scalar_ad_landed: bool,
 }
 
 /// Frozen depth summary — honest partial on 3×3 scaffold only.
@@ -262,24 +264,27 @@ pub const fn nalgebra_tensor_lift_depth_summary() -> NalgebraTensorLiftDepthSumm
         num_dual_deferred: NUM_DUAL_DEFERRED,
         production_wired: PRODUCTION_WIRED,
         master_claimed: MASTER_CLAIMED,
-        grad_is_identity_stub: GRAD_IS_IDENTITY_STUB,
+        grad_is_identity: GRAD_IS_IDENTITY_STUB,
         matmul_product_deferred: MATMUL_PRODUCT_DEFERRED,
         num_dual_tensor_ad_landed: NUM_DUAL_TENSOR_AD_LANDED,
+        num_dual_scalar_ad_landed: NUM_DUAL_SCALAR_AD_LANDED,
     }
 }
 
 /// Honest fence probe — production / MASTER / matmul / tensor-AD claims stay false.
+///
+/// Reads the measured depth summary it names (no zero-arg constant claim).
 #[must_use]
-pub const fn honest_fences_hold() -> bool {
-    SCAFFOLD_LANDED
-        && CARTRIDGE_LIFT_DEFERRED
-        && !PRODUCTION_WIRED
-        && !MASTER_CLAIMED
-        && GRAD_IS_IDENTITY_STUB
-        && MATMUL_PRODUCT_DEFERRED
-        && !NUM_DUAL_TENSOR_AD_LANDED
-        && NUM_DUAL_SCALAR_AD_LANDED
-        && !NUM_DUAL_DEFERRED
+pub const fn honest_fences_hold(summary: &NalgebraTensorLiftDepthSummary) -> bool {
+    summary.scaffold_landed
+        && summary.cartridge_lift_deferred
+        && !summary.production_wired
+        && !summary.master_claimed
+        && summary.grad_is_identity
+        && summary.matmul_product_deferred
+        && !summary.num_dual_tensor_ad_landed
+        && summary.num_dual_scalar_ad_landed
+        && !summary.num_dual_deferred
 }
 
 #[cfg(test)]
@@ -302,10 +307,10 @@ mod tests {
         assert!(NUM_DUAL_SCALAR_AD_LANDED);
         assert!(!summary.production_wired);
         assert!(!summary.master_claimed);
-        assert!(summary.grad_is_identity_stub);
+        assert!(summary.grad_is_identity);
         assert!(summary.matmul_product_deferred);
         assert!(!summary.num_dual_tensor_ad_landed);
-        assert!(honest_fences_hold());
+        assert!(honest_fences_hold(&summary));
     }
 
     #[test]
@@ -401,7 +406,7 @@ mod tests {
     }
 
     #[test]
-    fn grad_is_identity_stub_measured() {
+    fn grad_is_identity_measured() {
         let a = lift_strain_voigt6([1.0, -1.0, 0.5, 0.1, 0.0, 0.0]);
         let graded = <NalgebraAlgebra as TensorAlgebra>::grad(a.clone());
         assert_eq!(graded.to_voigt6_symmetric(), a.to_voigt6_symmetric());

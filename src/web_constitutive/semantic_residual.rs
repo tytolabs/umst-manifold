@@ -262,18 +262,6 @@ impl WebSemanticGateOutcome {
     }
 }
 
-/// Honest production wiring — **false** until HCOM-008 + fleet measured eval.
-#[must_use]
-pub const fn semantic_residual_production_wired() -> bool {
-    SEMANTIC_RESIDUAL_PRODUCTION_WIRED
-}
-
-/// Honest physics GREEN claim — **false** (residual ≠ oracle).
-#[must_use]
-pub const fn semantic_residual_physics_green() -> bool {
-    SEMANTIC_RESIDUAL_PHYSICS_GREEN
-}
-
 /// Honest master-tier claim — **false** until orchestrator pin.
 #[must_use]
 pub const fn semantic_residual_master() -> bool {
@@ -316,8 +304,8 @@ pub fn semantic_residual_posture_probe() -> SemanticResidualPostureProbe {
         fence_facet_count: SEMANTIC_RESIDUAL_FENCE_FACET_COUNT,
         fence_wired_count: SEMANTIC_RESIDUAL_FENCE_WIRED_COUNT,
         fence_refused_count: SEMANTIC_RESIDUAL_FENCE_REFUSED_COUNT,
-        production_wired: semantic_residual_production_wired(),
-        physics_green: semantic_residual_physics_green(),
+        production_wired: SEMANTIC_RESIDUAL_PRODUCTION_WIRED,
+        physics_green: SEMANTIC_RESIDUAL_PHYSICS_GREEN,
         master: semantic_residual_master(),
         flip_authorized: semantic_residual_flip_authorized(),
         op5_claimed: semantic_residual_op5_claimed(),
