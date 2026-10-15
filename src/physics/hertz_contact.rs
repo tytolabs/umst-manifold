@@ -178,7 +178,6 @@ pub fn integrate_hertz_impact(
                 });
             }
             t -= dt_s * (1.0 - frac);
-            delta = 0.0;
             break;
         }
         delta = delta_next;

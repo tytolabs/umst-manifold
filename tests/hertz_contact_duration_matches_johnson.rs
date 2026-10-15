@@ -4,10 +4,19 @@
 
 use umst_manifold::physics::hertz_contact::{
     energy_split_closes, hertz_stiffness_n, integrate_hertz_impact, johnson_hertz_contact_duration_s,
-    refuse_restitution_above_one, HertzImpactParams,
+    refuse_restitution_above_one, HertzImpactParams, JOHNSON_1985_DURATION_CITATION,
+    JOHNSON_DURATION_FACTOR,
 };
 use umst_manifold::physics::modal_loss::ImpactSoundMode;
 use umst_manifold::physics::PhysicsError;
+
+#[test]
+fn johnson_citation_and_factor_are_present() {
+    assert!((JOHNSON_DURATION_FACTOR - 2.94).abs() < 1e-12);
+    assert!(JOHNSON_1985_DURATION_CITATION.contains("1985"));
+    assert!(JOHNSON_1985_DURATION_CITATION.contains("Ch. 11"));
+    assert!(JOHNSON_1985_DURATION_CITATION.contains("Absent"));
+}
 
 #[test]
 fn elastic_hertz_duration_within_two_percent_of_johnson() {
