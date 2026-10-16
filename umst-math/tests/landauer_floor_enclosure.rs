@@ -13,9 +13,7 @@ use umst_math::solve_combinator::{
     landauer_step_joules, unfold, CombinatorRefuse, EnergyBudget, FixedJouleMeter,
     ProblemProgressWindow, ProblemTolerance, UnfoldStop,
 };
-use umst_math::umst_constants::{
-    BOLTZMANN, LOG_TWO_ENCLOSURE_LOWER, LOG_TWO_ENCLOSURE_UPPER, ROWS,
-};
+use umst_math::umst_constants::{BOLTZMANN, ROWS};
 
 fn nn(x: f64) -> NotNan<f64> {
     NotNan::new(x).expect("finite")
@@ -73,10 +71,6 @@ fn enclosure_rows_are_the_pinned_rationals() {
     assert!(is(hi.exact_num, hi.exact_den, 6_931_471_808));
     assert!(lo.value < core::f64::consts::LN_2);
     assert!(core::f64::consts::LN_2 < hi.value);
-    assert_eq!(
-        (lo.value, hi.value),
-        (LOG_TWO_ENCLOSURE_LOWER, LOG_TWO_ENCLOSURE_UPPER)
-    );
 }
 
 #[test]
@@ -88,7 +82,7 @@ fn floor_is_the_enclosure_lower_end_rounded_down() {
         assert!(j < real * (1.0 - 3.0e-10), "T = {t}, bits = {bits}");
         assert!(j > real * (1.0 - 5.0e-10), "T = {t}, bits = {bits}");
         assert!(
-            j <= BOLTZMANN * t * LOG_TWO_ENCLOSURE_LOWER * bits,
+            j <= BOLTZMANN * t * (6_931_471_803.0 / 1.0e10) * bits,
             "T = {t}, bits = {bits}"
         );
     }
@@ -98,10 +92,10 @@ fn floor_is_the_enclosure_lower_end_rounded_down() {
 fn refusal_decides_about_the_real_floor() {
     let kt = BOLTZMANN * 300.0;
     // Between the enclosed floor and the binary64 ln 2 floor: admitted (the binary64 floor refused it).
-    assert_eq!(one_step(kt * (LOG_TWO_ENCLOSURE_LOWER + 2.0e-10)), Ok(()));
+    assert_eq!(one_step(kt * 6_931_471_805.0 / 1.0e10), Ok(()));
     // Below the enclosure's lower end, hence below the real floor: refused.
     assert_eq!(
-        one_step(kt * (LOG_TWO_ENCLOSURE_LOWER - 1.0e-10)),
+        one_step(kt * 6_931_471_802.0 / 1.0e10),
         Err(CombinatorRefuse::MeasuredBelowFloor)
     );
     // At the real floor and above: admitted.

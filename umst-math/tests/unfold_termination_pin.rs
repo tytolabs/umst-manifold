@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Law L-E pinned for the plain `unfold` (cell FORMAL-UNFOLD-TERMINATION-LANDAUER).
+//! The unfold termination pin: law L-E for the plain `unfold` in Rust (cell FORMAL-UNFOLD-TERMINATION-LANDAUER).
 //!
 //! Lean `UnfoldTermination.unfold_terminates_of_secondLaw`: steps that each spend at least the enclosed Landauer floor
 //! `ε = k_B · T · ln2_lo · b` and whose spends sum to at most `B` number at most `⌊B / ε⌋`. `UnfoldStop::max_steps`
