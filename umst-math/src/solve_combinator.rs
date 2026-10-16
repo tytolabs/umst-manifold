@@ -590,6 +590,21 @@ impl UnfoldStop {
     pub fn bits_per_step(self) -> NotNan<f64> {
         self.bits_per_step
     }
+
+    /// Law L-E (Lean `UnfoldTermination.unfold_terminates_of_secondLaw`): an [`unfold`] under this stop debits at
+    /// most `⌊B / ε⌋` steps, with `B` the budget and `ε` the enclosed Landauer floor of one step
+    /// ([`landauer_step_joules`]), because every debited step spends at least `ε` and the debits sum to at most `B`.
+    /// The quotient is raised by `2ε` relative before the floor, so the count is never below the exact `⌊B / ε⌋`.
+    pub fn max_steps(self) -> Result<u64, CombinatorRefuse> {
+        let floor = landauer_step_joules(self.budget.temperature_k(), self.bits_per_step)?
+            .ucrs_ledger_joules()?
+            .into_inner();
+        let q = self.budget.remaining_joules().into_inner() / floor * (1.0 + 2.0 * f64::EPSILON);
+        if !q.is_finite() || q >= u64::MAX as f64 {
+            return Err(CombinatorRefuse::NonFiniteQuantity);
+        }
+        Ok(q.floor() as u64)
+    }
 }
 
 /// Coalgebraic unfold. Stops only for Converged, Stalled (lattice exhausted),
