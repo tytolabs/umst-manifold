@@ -520,7 +520,13 @@ impl<A> Thermo<A> {
     }
 }
 
-/// Landauer floor for `bits_erased` at temperature `T`: `k_B · T · ln 2 · bits`.
+/// Landauer floor for `bits_erased` at temperature `T`, enclosed from below: `k_B · T · ln2_lo · bits` with
+/// `ln2_lo = 6931471803 / 10^10` the lower end of the rational enclosure of ln 2 (`umst_constants::
+/// LOG_TWO_ENCLOSURE_LOWER`, Lean `UnfoldTermination.ln2Lower_lt_log_two`), rounded down. The product takes four
+/// roundings to nearest (the constant and three multiplications), each within half an ulp, so the factor
+/// `1 − 4ε` leaves the result at or below the exact `k_B · T · ln2_lo · bits` of the given `T` and `bits`, and
+/// `ln2_lo < ln 2` leaves that below the Landauer floor itself: a spend below this value is below the real floor,
+/// so [`CombinatorRefuse::MeasuredBelowFloor`] decides about the real floor.
 pub fn landauer_step_joules(
     temperature_k: NotNan<f64>,
     bits_erased: NotNan<f64>,
@@ -533,7 +539,7 @@ pub fn landauer_step_joules(
     if t <= 0.0 {
         return Err(CombinatorRefuse::NonPositiveTemperature);
     }
-    let j = K_B * t * core::f64::consts::LN_2 * bits;
+    let j = K_B * t * umst_constants::LOG_TWO_ENCLOSURE_LOWER * bits * (1.0 - 4.0 * f64::EPSILON);
     let _ = finite_positive(j, CombinatorRefuse::NonFiniteQuantity)?;
     EnergySpent::from_finite_non_negative(j)
 }
