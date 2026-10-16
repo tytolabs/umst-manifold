@@ -14,107 +14,12 @@
 //!
 //! Enabled with **`topology-density-evolution`** / **`solver-experimental`**.
 //!
-//! # Honest boundary (W29-093)
+//! # Solve
 //!
-//! [`HelmholtzFilter`] lands domain/shape fences, a Richardson stationary solve of the discrete
-//! Helmholtz resolvent, and optional straight-through AD reattach. The stationary loop stops on
-//! relative \(\ell_2\) residual vs `cg_tolerance` (finite, \(>0\)); `max_cg_iterations` is
-//! historical API naming only — the solver is **Richardson**, not CG.
-//! Not physics GREEN, not `PRODUCTION_WIRED`, not `MASTER`, not OP-5.
-
-/// W29 deepen cell — topology density-filter honest fence bundle.
-pub const W29_TOPOLOGY_FILTER_DEEPEN_CELL: &str = "W29-093-TOPOLOGY_FILTER";
-
-/// Honest posture tag — Helmholtz PDE density filter research lane.
-pub const TOPOLOGY_FILTER_POSTURE_TAG: &str =
-    "honest-helmholtz-topology-density-filter-research-lane";
-
-/// Honest physics posture — unit/domain fences land; does not certify fleet physics GREEN.
-pub const TOPOLOGY_FILTER_PHYSICS_GREEN: bool = false;
-
-/// Production wiring — not claimed by topology_filter alone.
-pub const TOPOLOGY_FILTER_PRODUCTION_WIRED: bool = false;
-
-/// Master composition pin — not claimed by this module.
-pub const TOPOLOGY_FILTER_MASTER: bool = false;
-
-/// OP-5 composition pin — not claimed by this module.
-pub const TOPOLOGY_FILTER_OP5: bool = false;
-
-/// Helmholtz apply + domain/shape validation landed in this module.
-pub const TOPOLOGY_FILTER_HELMHOLTZ_LANDED: bool = true;
-
-/// Stationary solve is Richardson; stops on `cg_tolerance` (`max_cg_iterations` is historical naming).
-pub const TOPOLOGY_FILTER_RICHARDSON_STATIONARY: bool = true;
-
-/// Honest deepen fence for meta / fleet probes.
-pub const TOPOLOGY_FILTER_HONEST_FENCE: &str =
-    "helmholtz_apply_landed=true richardson_stationary_landed=true domain_shape_fences=true straight_through_ad_landed=true production_wired=false physics_green=false master=false op5=false";
-
-const _: () = assert!(!TOPOLOGY_FILTER_PHYSICS_GREEN);
-const _: () = assert!(!TOPOLOGY_FILTER_PRODUCTION_WIRED);
-const _: () = assert!(!TOPOLOGY_FILTER_MASTER);
-const _: () = assert!(!TOPOLOGY_FILTER_OP5);
-
-/// Typed probe for topology-filter posture honesty.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TopologyFilterPostureProbe {
-    pub physics_green: bool,
-    pub production_wired: bool,
-    pub master: bool,
-    pub op5: bool,
-    pub helmholtz_landed: bool,
-    pub richardson_stationary: bool,
-    pub honest_fence: &'static str,
-    pub posture_tag: &'static str,
-    pub deepen_cell: &'static str,
-}
-
-/// Measured honest-posture snapshot for the Helmholtz topology density filter.
-#[must_use]
-pub fn topology_filter_honest_posture_bundle() -> TopologyFilterPostureProbe {
-    TopologyFilterPostureProbe {
-        physics_green: TOPOLOGY_FILTER_PHYSICS_GREEN,
-        production_wired: TOPOLOGY_FILTER_PRODUCTION_WIRED,
-        master: TOPOLOGY_FILTER_MASTER,
-        op5: TOPOLOGY_FILTER_OP5,
-        helmholtz_landed: TOPOLOGY_FILTER_HELMHOLTZ_LANDED,
-        richardson_stationary: TOPOLOGY_FILTER_RICHARDSON_STATIONARY,
-        honest_fence: TOPOLOGY_FILTER_HONEST_FENCE,
-        posture_tag: TOPOLOGY_FILTER_POSTURE_TAG,
-        deepen_cell: W29_TOPOLOGY_FILTER_DEEPEN_CELL,
-    }
-}
-
-/// Helmholtz filter landed with production/master/GREEN/OP-5 honestly open.
-#[must_use]
-pub fn topology_filter_posture_honest(probe: &TopologyFilterPostureProbe) -> bool {
-    !probe.physics_green
-        && !probe.production_wired
-        && !probe.master
-        && !probe.op5
-        && probe.helmholtz_landed
-        && probe.richardson_stationary
-        && probe.deepen_cell == W29_TOPOLOGY_FILTER_DEEPEN_CELL
-        && probe.honest_fence.contains("helmholtz_apply_landed=true")
-        && probe
-            .honest_fence
-            .contains("richardson_stationary_landed=true")
-        && probe.honest_fence.contains("domain_shape_fences=true")
-        && probe.honest_fence.contains("production_wired=false")
-        && probe.honest_fence.contains("physics_green=false")
-        && probe.honest_fence.contains("master=false")
-        && probe.honest_fence.contains("op5=false")
-}
-
-/// Validate topology-filter honesty — fail closed on fake production/master/GREEN/OP-5 claims.
-pub fn validate_topology_filter_honesty() -> Result<(), &'static str> {
-    let probe = topology_filter_honest_posture_bundle();
-    if !topology_filter_posture_honest(&probe) {
-        return Err("topology_filter_probe failed honesty predicate");
-    }
-    Ok(())
-}
+//! [`HelmholtzFilter`] validates domain and shapes, solves the discrete Helmholtz resolvent by
+//! Richardson iteration with a step from the Gershgorin bound, and offers a straight-through
+//! AD reattach. The iteration stops on the relative \(\ell_2\) residual against `cg_tolerance`
+//! (finite, \(>0\)) or refuses; `max_cg_iterations` is historical API naming only.
 
 use burn::tensor::{
     backend::{AutodiffBackend, Backend},
@@ -242,7 +147,7 @@ fn helmholtz_lambda_upper<B: Backend<FloatElem = f32>>(
         )?;
         degree[i] += 1;
     }
-    let max_degree = degree.into_iter().max().unwrap_or(0) as f32;
+    let max_degree = degree.into_iter().fold(0usize, usize::max) as f32;
     let bound = 1.0 + 2.0 * scale * max_degree;
     if bound.is_finite() {
         Ok(bound)
@@ -336,35 +241,8 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
 }
 
 #[cfg(test)]
-mod honest_fence_tests {
+mod precondition_tests {
     use super::*;
-
-    #[test]
-    fn topology_filter_honest_posture_refuses_green_production_master_op5() {
-        let probe = topology_filter_honest_posture_bundle();
-        assert!(topology_filter_posture_honest(&probe));
-        assert!(!probe.physics_green);
-        assert!(!probe.production_wired);
-        assert!(!probe.master);
-        assert!(!probe.op5);
-        assert!(probe.helmholtz_landed);
-        assert!(probe.richardson_stationary);
-        assert_eq!(probe.deepen_cell, W29_TOPOLOGY_FILTER_DEEPEN_CELL);
-        assert_eq!(probe.posture_tag, TOPOLOGY_FILTER_POSTURE_TAG);
-        assert!(probe
-            .honest_fence
-            .contains("richardson_stationary_landed=true"));
-        assert!(!probe.honest_fence.contains("physics_green=true"));
-        assert!(!probe.honest_fence.contains("production_wired=true"));
-        assert!(!probe.honest_fence.contains("master=true"));
-        assert!(!probe.honest_fence.contains("op5=true"));
-        validate_topology_filter_honesty().expect("honesty validation must pass");
-    }
-
-    #[test]
-    fn topology_filter_honest_fence_consts_refuse_green_production_master() {
-        assert_eq!(W29_TOPOLOGY_FILTER_DEEPEN_CELL, "W29-093-TOPOLOGY_FILTER");
-    }
 
     #[test]
     fn topology_filter_new_stores_constructor_fields() {
@@ -438,7 +316,7 @@ mod tests {
     }
 
     #[test]
-    fn striatus_extruded_plate_inner_finite() {
+    fn striatus_extruded_plate_inner_finite() -> Result<(), PhysicsError> {
         use crate::physics::extruded_plate::ExtrudedPlateMechanics;
         let dev = Default::default();
         let plate = ExtrudedPlateMechanics {
@@ -459,9 +337,7 @@ mod tests {
             &dev,
         );
         let f = HelmholtzFilter::new((2.0 * dx_f).max(1e-6), 240, 1e-5);
-        let out = f
-            .apply(rho_t, edges, dx_f)
-            .expect("HelmholtzFilter::apply on striatus extruded-plate random rho field (FP §6 topology filter verification)");
+        let out = f.apply(rho_t, edges, dx_f)?;
         let v = out.into_data().value;
         let mx = tensor_max(&v);
         let nan = v.iter().filter(|x| !x.is_finite()).count();
@@ -469,10 +345,11 @@ mod tests {
             nan == 0 && mx.is_finite(),
             "striatus helm: nan_count={nan} max={mx}"
         );
+        Ok(())
     }
 
     #[test]
-    fn stationary_chain_nonzero_for_delta() {
+    fn stationary_chain_nonzero_for_delta() -> Result<(), PhysicsError> {
         let dev = Default::default();
         let n = 16usize;
         let mut rho = vec![0.0f32; n];
@@ -492,15 +369,14 @@ mod tests {
         .reshape([2, n - 1])
         .int();
         let f = HelmholtzFilter::new(1.5, 12_000, 1e-6);
-        let out = f
-            .apply(rho_t, edges, 1.0)
-            .expect("HelmholtzFilter::apply on 16-node chain delta field (FP §6 topology filter verification)");
+        let out = f.apply(rho_t, edges, 1.0)?;
         let v = out.into_data().value;
         let mx = tensor_max(&v);
         assert!(
             mx.is_finite() && mx > 0.02 && mx <= 1.2,
             "filtered peak out of band: {mx}"
         );
+        Ok(())
     }
 
     #[test]

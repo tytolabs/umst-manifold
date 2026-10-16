@@ -15,6 +15,9 @@ pub mod gate_server_router;
 pub mod manifest;
 pub mod physics;
 pub use physics::hertz_contact::{HertzImpactOutcome, HertzImpactParams};
+/// Helmholtz density filter: Richardson with a Gershgorin step, refusing an unconverged field.
+#[cfg(feature = "topology-density-evolution")]
+pub use physics::topology_filter::HelmholtzFilter;
 /// Production Hertz / Hunt–Crossley sphere-on-plane impact (PB-B10).
 ///
 /// Body calls [`physics::hertz_contact::admit_hertz_sphere_plane_impact`] so the
