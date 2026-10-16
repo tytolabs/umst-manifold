@@ -21,6 +21,7 @@ pub use control_flow_iterate_budget::{
     control_flow_iterate_budget, ControlFlowIterateBudget, ControlFlowIterateCertificate,
 };
 pub use implicit_adjoint::{
-    implicit_sensitivity, solve_then_sensitivity, AdjointRefuse, ImplicitSensitivity,
+    implicit_sensitivity, solve_then_sensitivity, AdjointRefuse, ForwardSolve, ImplicitModel,
+    ImplicitSensitivity,
 };
 pub use scalar_residual_unfold::scalar_residual_unfold;

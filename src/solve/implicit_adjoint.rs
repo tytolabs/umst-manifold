@@ -71,14 +71,34 @@ pub struct ImplicitSensitivity {
     pub forward_tolerance: SumEnclosure,
 }
 
-/// `dJ/dθ` at the converged state of `state` by one adjoint solve.
+/// The implicit model at fixed parameters: `R(u, θ)` and the target `J(u)`.
 ///
 /// `residual(u, θ)` returns `R` of length `u.len()`; `target(u)` returns `J` of length 1.
+pub struct ImplicitModel<'a, R, J> {
+    /// The parameters `θ`.
+    pub theta: &'a [f64],
+    /// `R(u, θ)` on Burn tensors.
+    pub residual: R,
+    /// `J(u)` on Burn tensors.
+    pub target: J,
+}
+
+/// The forward solve handed to [`nested_unfold`]: start, residual norm, step and stop policy.
+pub struct ForwardSolve<ResidualOf, Step> {
+    /// Initial state.
+    pub initial: Vec<f64>,
+    /// Residual norm of a state.
+    pub residual_of: ResidualOf,
+    /// One solver step.
+    pub step: Step,
+    /// Tolerance, budget, progress window and bits per step.
+    pub stop: UnfoldStop,
+}
+
+/// `dJ/dθ` at the converged state of `state` by one adjoint solve.
 pub fn implicit_sensitivity<B, R, J>(
     state: &Nested<Vec<f64>>,
-    theta: &[f64],
-    residual: R,
-    target: J,
+    model: &ImplicitModel<'_, R, J>,
     device: &B::Device,
 ) -> Result<ImplicitSensitivity, AdjointRefuse>
 where
@@ -86,6 +106,11 @@ where
     R: Fn(Tensor<B, 1>, Tensor<B, 1>) -> Tensor<B, 1>,
     J: Fn(Tensor<B, 1>) -> Tensor<B, 1>,
 {
+    let ImplicitModel {
+        theta,
+        residual,
+        target,
+    } = model;
     let certified = state
         .as_ref()
         .map_err(|r| AdjointRefuse::NotConverged(r.clone()))?;
@@ -149,18 +174,12 @@ where
     })
 }
 
-/// The Kleisli composite of the forward solve and the adjoint: `nested_unfold` under its
-/// own sub-meter, then [`implicit_sensitivity`] at its converged state.
-#[allow(clippy::too_many_arguments)]
+/// The Kleisli composite of the forward solve and the adjoint: [`nested_unfold`] under
+/// its own sub-meter, then [`implicit_sensitivity`] at its converged state.
 pub fn solve_then_sensitivity<B, ResidualOf, Step, Meter, R, J>(
-    initial: Vec<f64>,
-    residual_of: ResidualOf,
-    step: Step,
-    stop: UnfoldStop,
+    forward: ForwardSolve<ResidualOf, Step>,
     meter: &Meter,
-    theta: &[f64],
-    residual: R,
-    target: J,
+    model: &ImplicitModel<'_, R, J>,
     device: &B::Device,
 ) -> (Nested<Vec<f64>>, Result<ImplicitSensitivity, AdjointRefuse>)
 where
@@ -171,8 +190,14 @@ where
     R: Fn(Tensor<B, 1>, Tensor<B, 1>) -> Tensor<B, 1>,
     J: Fn(Tensor<B, 1>) -> Tensor<B, 1>,
 {
+    let ForwardSolve {
+        initial,
+        residual_of,
+        step,
+        stop,
+    } = forward;
     let state = nested_unfold(initial, residual_of, step, stop, meter);
-    let sensitivity = implicit_sensitivity::<B, R, J>(&state, theta, residual, target, device);
+    let sensitivity = implicit_sensitivity::<B, R, J>(&state, model, device);
     (state, sensitivity)
 }
 

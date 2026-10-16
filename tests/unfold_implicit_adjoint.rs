@@ -13,7 +13,8 @@ use burn::tensor::Tensor;
 use burn_ndarray::{NdArray, NdArrayDevice};
 use ordered_float::NotNan;
 use umst_manifold::solve::{
-    implicit_sensitivity, solve_then_sensitivity, AdjointRefuse, ImplicitSensitivity,
+    implicit_sensitivity, solve_then_sensitivity, AdjointRefuse, ForwardSolve, ImplicitModel,
+    ImplicitSensitivity,
 };
 use umst_math::solve_combinator::{
     CombinatorRefuse, EnergyBudget, FixedJouleMeter, ProblemProgressWindow, ProblemTolerance,
@@ -105,14 +106,18 @@ fn component(k: usize) -> impl Fn(Tensor<B, 1>) -> Tensor<B, 1> {
 
 fn sensitivity(k: usize) -> (Vec<f64>, ImplicitSensitivity) {
     let (state, s) = solve_then_sensitivity::<B, _, _, _, _, _>(
-        vec![1.0, 1.0],
-        max_abs_residual(THETA),
-        newton(THETA),
-        stop(1e-12),
+        ForwardSolve {
+            initial: vec![1.0, 1.0],
+            residual_of: max_abs_residual(THETA),
+            step: newton(THETA),
+            stop: stop(1e-12),
+        },
         &meter(),
-        &THETA,
-        residual_t,
-        component(k),
+        &ImplicitModel {
+            theta: &THETA,
+            residual: residual_t,
+            target: component(k),
+        },
         &NdArrayDevice::default(),
     );
     let u = state.expect("forward converges").value().clone();
@@ -161,9 +166,11 @@ fn a_stalled_state_is_refused() {
     );
     let out = implicit_sensitivity::<B, _, _>(
         &stalled,
-        &THETA,
-        residual_t,
-        component(0),
+        &ImplicitModel {
+            theta: &THETA,
+            residual: residual_t,
+            target: component(0),
+        },
         &NdArrayDevice::default(),
     );
     assert!(matches!(
@@ -183,9 +190,11 @@ fn a_budget_spent_state_is_refused() {
     );
     let out = implicit_sensitivity::<B, _, _>(
         &starved,
-        &THETA,
-        residual_t,
-        component(0),
+        &ImplicitModel {
+            theta: &THETA,
+            residual: residual_t,
+            target: component(0),
+        },
         &NdArrayDevice::default(),
     );
     assert!(matches!(
@@ -208,9 +217,11 @@ fn a_singular_jacobian_is_refused() {
     );
     let out = implicit_sensitivity::<B, _, _>(
         &state,
-        &[0.0],
-        |u: Tensor<B, 1>, th: Tensor<B, 1>| u.clone() * u - th,
-        |u: Tensor<B, 1>| u,
+        &ImplicitModel {
+            theta: &[0.0],
+            residual: |u: Tensor<B, 1>, th: Tensor<B, 1>| u.clone() * u - th,
+            target: |u: Tensor<B, 1>| u,
+        },
         &NdArrayDevice::default(),
     );
     assert_eq!(out, Err(AdjointRefuse::SingularJacobian { column: 0 }));
@@ -220,9 +231,11 @@ fn a_singular_jacobian_is_refused() {
 fn a_target_of_the_wrong_length_is_refused() {
     let out = implicit_sensitivity::<B, _, _>(
         &forward(THETA),
-        &THETA,
-        residual_t,
-        |u: Tensor<B, 1>| u,
+        &ImplicitModel {
+            theta: &THETA,
+            residual: residual_t,
+            target: |u: Tensor<B, 1>| u,
+        },
         &NdArrayDevice::default(),
     );
     assert_eq!(
