@@ -174,7 +174,7 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
     tol: f32,
 ) -> Result<Tensor<B, 3>, PhysicsError> {
     let mut x = Tensor::<B, 3>::zeros_like(&rhs);
-    let n_nodes = rhs.dims()[1].max(1);
+    let n_nodes = rhs.dims()[1];
     let lambda_upper = helmholtz_lambda_upper(&edges_b1, n_nodes, scale)?;
     let omega = 1.0 / lambda_upper;
     let rhs_norm = rhs.clone().powf_scalar(2.0).sum().into_data().value[0]
