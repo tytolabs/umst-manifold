@@ -34,7 +34,7 @@ fn helmholtz_autodiff_striatus_40x40x4() {
     let n = plate.n_nodes();
     let edges = plate.edges_b1::<B>(&device);
     let dx_f = dx.min(dy).min(dz);
-    let helm = HelmholtzFilter::new((2.0 * dx_f).max(1e-6), 240, 1e-7);
+    let helm = HelmholtzFilter::new((2.0 * dx_f).max(1e-6), 240, 1e-5);
 
     let rho = Tensor::<B, 3>::random(
         Shape::new([1, n, 1]),

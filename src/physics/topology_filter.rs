@@ -224,6 +224,43 @@ impl HelmholtzFilter {
     }
 }
 
+/// Gershgorin upper bound on λmax of `A = I − s·L_ours = I + s·L_std` for edge coefficients
+/// in `[0, 1]`: row `i` of `L_std` has absolute row sum `2·deg(i)`, so
+/// `λmax(A) ≤ 1 + 2·s·max_i deg(i)` (Gershgorin 1931), with `deg` counting every incidence
+/// in the edge list.
+fn helmholtz_lambda_upper<B: Backend<FloatElem = f32>>(
+    edges_b1: &Tensor<B, 2, Int>,
+    n_nodes: usize,
+    scale: f32,
+) -> Result<f32, PhysicsError> {
+    let mut degree = vec![0usize; n_nodes];
+    for node in edges_b1.clone().into_data().convert::<i64>().value {
+        let i = usize::try_from(node).ok().filter(|i| *i < n_nodes).ok_or(
+            PhysicsError::InvariantViolation {
+                context: "HelmholtzFilter::apply edge index outside the node range",
+            },
+        )?;
+        degree[i] += 1;
+    }
+    let max_degree = degree.into_iter().max().unwrap_or(0) as f32;
+    let bound = 1.0 + 2.0 * scale * max_degree;
+    if bound.is_finite() {
+        Ok(bound)
+    } else {
+        Err(PhysicsError::NonFinite {
+            context: "HelmholtzFilter::apply Gershgorin bound",
+        })
+    }
+}
+
+/// Richardson iteration `x ← x + ω(ρ − A x)` with `ω = 1/λ̄`, `λ̄` the Gershgorin bound.
+///
+/// `A` is symmetric with spectrum in `[1, λ̄]`, so `‖I − ωA‖₂ ≤ q = 1 − 1/λ̄` and the residual
+/// contracts by `q` per step; `⌈ln(tol)/ln(q)⌉` steps reach `tol` in exact arithmetic. A run that
+/// exceeds that count by a stall window, or whose residual stops decreasing over the stall
+/// window, has not met
+/// its tolerance and is refused with its last relative residual
+/// ([`PhysicsError::Diverged`]); no unconverged field is returned.
 fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
     rhs: Tensor<B, 3>,
     edges_b1: Tensor<B, 2, Int>,
@@ -232,11 +269,9 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
     tol: f32,
 ) -> Result<Tensor<B, 3>, PhysicsError> {
     let mut x = Tensor::<B, 3>::zeros_like(&rhs);
-    let n_nodes = rhs.dims()[1].max(1) as f32;
-    let n_edges = edges_b1.dims()[1].max(1) as f32;
-    let avg_degree = (2.0 * n_edges / n_nodes).max(1.0);
-    let lambda_upper = (2.0 * avg_degree).max(8.0);
-    let omega = (1.7 / (1.0 + scale * lambda_upper)).clamp(0.008, 0.22);
+    let n_nodes = rhs.dims()[1].max(1);
+    let lambda_upper = helmholtz_lambda_upper(&edges_b1, n_nodes, scale)?;
+    let omega = 1.0 / lambda_upper;
     let rhs_norm = rhs.clone().powf_scalar(2.0).sum().into_data().value[0]
         .sqrt()
         .max(1e-20);
@@ -245,14 +280,21 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
             context: "HelmholtzFilter::apply rhs norm",
         });
     }
-    let tol_rel = tol;
-    let stall_window = rhs.dims()[1].max(1);
-    let tol_steps = if tol_rel.is_finite() && tol_rel > 0.0 && tol_rel < 1.0 {
-        (1.0 / tol_rel).log2().ceil().max(1.0) as usize
+    let contraction = f64::from(1.0 - omega);
+    let step_bound = if contraction > 0.0 {
+        ((f64::from(tol)).ln() / contraction.ln()).ceil().max(1.0) as usize
     } else {
         1
     };
-    let step_bound = stall_window.saturating_mul(tol_steps).max(1);
+    // In exact arithmetic the residual halves within `⌈ln ½ / ln q⌉` steps, so a run whose best
+    // residual does not improve for that many steps sits on its binary32 rounding floor; the
+    // same window is the slack the run may take beyond the exact count.
+    let stall_window = if contraction > 0.0 {
+        ((0.5_f64).ln() / contraction.ln()).ceil().max(1.0) as usize
+    } else {
+        1
+    };
+    let step_bound = step_bound.saturating_add(stall_window);
     let mut best_r = f32::INFINITY;
     let mut stall = 0usize;
     let mut richardson_iter = 0usize;
@@ -267,7 +309,7 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
                 context: "HelmholtzFilter::apply Richardson residual",
             });
         }
-        if r_norm <= tol_rel * rhs_norm || richardson_iter >= step_bound || stall >= stall_window {
+        if r_norm <= tol * rhs_norm {
             break;
         }
         if r_norm < best_r {
@@ -275,6 +317,12 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
             stall = 0;
         } else {
             stall += 1;
+        }
+        if richardson_iter >= step_bound || stall >= stall_window {
+            return Err(PhysicsError::Diverged {
+                eq_rel: r_norm / rhs_norm,
+                pcg_iterations: richardson_iter,
+            });
         }
         richardson_iter += 1;
         x = x.clone().add(resid.mul_scalar(omega));
@@ -410,7 +458,7 @@ mod tests {
             burn::tensor::Distribution::Uniform(0.05, 0.95),
             &dev,
         );
-        let f = HelmholtzFilter::new((2.0 * dx_f).max(1e-6), 240, 1e-7);
+        let f = HelmholtzFilter::new((2.0 * dx_f).max(1e-6), 240, 1e-5);
         let out = f
             .apply(rho_t, edges, dx_f)
             .expect("HelmholtzFilter::apply on striatus extruded-plate random rho field (FP §6 topology filter verification)");
@@ -443,7 +491,7 @@ mod tests {
         )
         .reshape([2, n - 1])
         .int();
-        let f = HelmholtzFilter::new(1.5, 12_000, 1e-7);
+        let f = HelmholtzFilter::new(1.5, 12_000, 1e-6);
         let out = f
             .apply(rho_t, edges, 1.0)
             .expect("HelmholtzFilter::apply on 16-node chain delta field (FP §6 topology filter verification)");
