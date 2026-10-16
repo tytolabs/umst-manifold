@@ -8,6 +8,9 @@
 //! absence [`EnergySpent::absent`], never a number. `unfold` debits an absent step at the
 //! certified Landauer floor, so the step count stays bounded by `UnfoldStop::max_steps`
 //! (law L-E), and the grade of every sum it enters is the meet, `Absent`.
+//!
+//! Consumer: the metered Helmholtz density filter (`physics::topology_filter`, with an energy
+//! budget) meters each of its dissipative steps with this meter.
 
 use umst_math::solve_combinator::{CombinatorRefuse, EnergySpent, StepEnergyMeter};
 use umst_ucrs::rapl::{read_package_energy, EnergyReading};
