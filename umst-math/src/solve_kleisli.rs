@@ -24,6 +24,11 @@
 //! fold (`umst-adk`) consuming ledgers as outcome rows, `unfold` followed by the fold
 //! forms a hylomorphism (six-fibre blueprint §12.6).
 //!
+//! Consumer: `umst_manifold::solve::implicit_adjoint` runs the forward solve through
+//! [`nested_unfold`] and reads the chain's [`ToleranceChain::residual_sum`] and
+//! [`ToleranceChain::tolerance_sum`] as the residual budget of the state its adjoint
+//! differentiates.
+//!
 //! Laws: bind associativity, the budget monoid (sum of measured spends ≥ sum of
 //! Landauer floors) and error propagation over rational intervals are the
 //! statements of cell `FORMAL-UNFOLD-KLEISLI-LAWS` (`umst-formal/Lean/UnfoldKleisli.lean`,
