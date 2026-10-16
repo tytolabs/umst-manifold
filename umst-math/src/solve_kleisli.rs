@@ -304,11 +304,6 @@ impl<X> Certified<X> {
         &self.value
     }
 
-    /// Take the certified value.
-    pub fn into_value(self) -> X {
-        self.value
-    }
-
     /// One spend entry per nested solve.
     pub fn ledger(&self) -> &SpendLedger {
         &self.ledger
@@ -356,23 +351,6 @@ where
     F: FnOnce(X) -> Nested<Y>,
 {
     m.and_then(|c| c.and_then(f))
-}
-
-/// Method form of bind on [`Nested`], so composites chain left to right.
-pub trait NestedBind<X> {
-    /// [`and_then`] as a method.
-    fn bind<Y, F>(self, f: F) -> Nested<Y>
-    where
-        F: FnOnce(X) -> Nested<Y>;
-}
-
-impl<X> NestedBind<X> for Nested<X> {
-    fn bind<Y, F>(self, f: F) -> Nested<Y>
-    where
-        F: FnOnce(X) -> Nested<Y>,
-    {
-        and_then(self, f)
-    }
 }
 
 /// Kleisli composite `f >=> g`.

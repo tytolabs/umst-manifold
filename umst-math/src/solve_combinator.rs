@@ -71,21 +71,11 @@ impl EnergyBudget {
         self.temperature_k
     }
 
-    /// Identity of the budget monoid at `temperature_k`: zero joules.
-    pub fn zero_at(temperature_k: f64) -> Result<Self, CombinatorRefuse> {
-        let temperature_k =
-            finite_positive(temperature_k, CombinatorRefuse::NonPositiveTemperature)?;
-        Ok(Self {
-            joules: finite_non_negative(0.0)?,
-            temperature_k,
-        })
-    }
-
     /// Monoid operation: the budget of an outer solve is the sum of its inner budgets.
     ///
     /// Defined for budgets at one temperature whose binary64 sum is exact (zero
     /// two-sum error), so the operation is associative and commutative with
-    /// [`EnergyBudget::zero_at`] as identity; anything else is a typed refusal.
+    /// the zero share of [`EnergyBudget::split`] as identity; anything else is a typed refusal.
     pub fn plus(self, other: Self) -> Result<Self, CombinatorRefuse> {
         if self.temperature_k != other.temperature_k {
             return Err(CombinatorRefuse::TemperatureMismatch);

@@ -14,8 +14,19 @@ use umst_math::solve_combinator::{
     StepEnergyMeter, StrategyRung, UnfoldStop, UnmeasuredMeter,
 };
 use umst_math::solve_kleisli::{
-    and_then, compose, nested_unfold, Certified, Nested, NestedBind, NestedRefuse, SumEnclosure,
+    and_then, compose, nested_unfold, Certified, Nested, NestedRefuse, SumEnclosure,
 };
+
+/// Method form of `and_then`, so the composites below read left to right.
+trait AndThenNested<X> {
+    fn and_then_nested<Y>(self, f: impl FnOnce(X) -> Nested<Y>) -> Nested<Y>;
+}
+
+impl<X> AndThenNested<X> for Nested<X> {
+    fn and_then_nested<Y>(self, f: impl FnOnce(X) -> Nested<Y>) -> Nested<Y> {
+        and_then(self, f)
+    }
+}
 
 const T_K: f64 = 293.15;
 /// 2⁻⁶⁰ J per step: above the Landauer floor k_B·T·ln 2 ≈ 2.8·10⁻²¹ J at 293.15 K.
@@ -95,7 +106,8 @@ fn budget_is_an_exact_monoid_with_a_split() {
     let (first, rest) = outer.split(OUTER_J / 4.0).expect("exact split");
     assert_eq!(first.plus(rest).expect("sum"), outer);
     let (second, third) = rest.split(OUTER_J / 2.0).expect("exact split");
-    let zero = EnergyBudget::zero_at(T_K).expect("zero");
+    let (zero, same) = outer.split(0.0).expect("zero share");
+    assert_eq!(same, outer);
     assert_eq!(first.plus(zero).expect("right id"), first);
     assert_eq!(zero.plus(first).expect("left id"), first);
     let l = first
@@ -128,8 +140,8 @@ fn outer_spend_is_the_sum_of_sub_meters_within_the_outer_budget() {
     let (b1, rest) = outer.split(OUTER_J / 4.0).expect("split");
     let (b2, b3) = rest.split(OUTER_J / 4.0).expect("split");
     let c = sqrt_solve(2.0, b1, &m, &n)
-        .bind(|y| sqrt_solve(y + 7.0, b2, &m, &n))
-        .bind(|w| sqrt_solve(3.0 * w, b3, &m, &n))
+        .and_then_nested(|y| sqrt_solve(y + 7.0, b2, &m, &n))
+        .and_then_nested(|w| sqrt_solve(3.0 * w, b3, &m, &n))
         .expect("converges");
     let total = c.ledger().total().expect("total");
     let all_steps = f64::from(n.get()) * STEP_J;
@@ -149,8 +161,8 @@ fn an_inner_refusal_is_the_outer_refusal() {
     let n = Cell::new(0);
     let ran_h = Cell::new(false);
     let out = sqrt_solve(2.0, share(), &m, &n)
-        .bind(|y| sqrt_solve(y + 7.0, share(), &absent, &n))
-        .bind(|w| {
+        .and_then_nested(|y| sqrt_solve(y + 7.0, share(), &absent, &n))
+        .and_then_nested(|w| {
             ran_h.set(true);
             sqrt_solve(w, share(), &m, &n)
         });
@@ -176,8 +188,8 @@ fn an_inner_budget_spent_stops_the_composite() {
     let starved = EnergyBudget::from_joules_at(STEP_J / 2.0, T_K).expect("starved");
     let ran_h = Cell::new(false);
     let out = sqrt_solve(2.0, share(), &m, &n)
-        .bind(|y| sqrt_solve(y + 7.0, starved, &m, &n))
-        .bind(|w| {
+        .and_then_nested(|y| sqrt_solve(y + 7.0, starved, &m, &n))
+        .and_then_nested(|w| {
             ran_h.set(true);
             Ok(Certified::unit(w))
         });
@@ -242,7 +254,7 @@ fn tolerance_chain_carries_each_certificate() {
     let m = meter();
     let n = Cell::new(0);
     let c = sqrt_solve(2.0, share(), &m, &n)
-        .bind(|y| sqrt_solve(y + 7.0, share(), &m, &n))
+        .and_then_nested(|y| sqrt_solve(y + 7.0, share(), &m, &n))
         .expect("converges");
     let chain = c.chain();
     let tol = chain.tolerance_sum().expect("tolerance sum");
