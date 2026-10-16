@@ -18,10 +18,7 @@ pub struct PackageEnergyMeter;
 
 /// One counter reading, or `None` when the host gives none to this process.
 fn reading() -> Option<EnergyReading> {
-    match read_package_energy() {
-        Ok(r) => Some(r),
-        Err(_) => None,
-    }
+    read_package_energy().ok()
 }
 
 impl StepEnergyMeter for PackageEnergyMeter {
