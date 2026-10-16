@@ -5,12 +5,14 @@
 //! Termination is energy + problem-derived tolerance, not a compiled `max_iters` ceiling.
 //! Physics solver sites adopt these wrappers in follow-on cells; this crate stays honest open.
 
+pub mod calibration_fit;
 pub mod cap_migration;
 pub mod combinator_posture;
 pub mod control_flow_iterate_budget;
 pub mod implicit_adjoint;
 pub mod scalar_residual_unfold;
 
+pub use calibration_fit::{calibrate, CalibrationModel, CalibrationRefuse};
 pub use cap_migration::{CapMigrationDisposition, CapMigrationSite, CAP_MIGRATION_SITES};
 pub use combinator_posture::{
     manifold_solve_combinator_honest, manifold_solve_combinator_probe,

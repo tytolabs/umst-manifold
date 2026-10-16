@@ -37,6 +37,9 @@ pub enum CombinatorRefuse {
     TemperatureMismatch,
     /// A budget split or sum is not exact in binary64: its parts would not add back to the whole.
     InexactBudgetSum,
+    /// A step's own nested solve, adjoint or admissibility gate refused; the caller that
+    /// built the step carries the typed cause.
+    StepRefused,
 }
 
 /// Remaining energy, set by the operator or the problem. Never a compiled cap.

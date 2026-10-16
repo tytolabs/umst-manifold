@@ -261,7 +261,10 @@ fn finite(xs: &[f64]) -> Result<(), AdjointRefuse> {
 }
 
 /// `M x = b` by Gaussian elimination with partial pivoting; an exactly zero pivot refuses.
-fn solve_dense(mut m: Vec<Vec<f64>>, mut b: Vec<f64>) -> Result<Vec<f64>, AdjointRefuse> {
+pub(crate) fn solve_dense(
+    mut m: Vec<Vec<f64>>,
+    mut b: Vec<f64>,
+) -> Result<Vec<f64>, AdjointRefuse> {
     let n = b.len();
     for col in 0..n {
         let pivot = (col..n)
