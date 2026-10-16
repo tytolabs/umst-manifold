@@ -11,10 +11,11 @@ use std::cell::Cell;
 
 use ordered_float::NotNan;
 use umst_manifold::solve::PackageEnergyMeter;
+use umst_math::dignity::core::honest_spend;
 use umst_math::solve_combinator::{
     landauer_step_joules, unfold, CombinatorRefuse, EnergyBudget, EnergySpendProvenance,
-    EnergySpent, HonestSpend, ProblemProgressWindow, ProblemTolerance, SolveOutcome,
-    StepEnergyMeter, StrategyRung, UnfoldStop,
+    EnergySpent, ProblemProgressWindow, ProblemTolerance, SolveOutcome, StepEnergyMeter,
+    StrategyRung, UnfoldStop,
 };
 use umst_math::solve_kleisli::nested_unfold;
 use umst_ucrs::rapl::read_package_energy;
@@ -121,13 +122,18 @@ fn the_grade_of_a_sum_is_the_meet_and_honest_spend_has_no_value_on_absence() {
         measured.plus(measured).expect("sum").provenance(),
         EnergySpendProvenance::Measured
     );
-    assert_eq!(measured.honest_for(T_K, 1.0), HonestSpend::Holds);
+    // honest_spend takes joules; an absent spend has none to give it, so the predicate's
+    // input is the typed refusal and the decision is absent, through the meet.
+    let decide = |spend: EnergySpent| {
+        spend
+            .ucrs_ledger_joules()
+            .map(|j| honest_spend(T_K, 1.0, j.into_inner()))
+    };
+    assert_eq!(decide(measured), Ok(true));
     assert_eq!(
-        EnergySpent::measured(floor_joules() / 2.0)
-            .expect("half floor")
-            .honest_for(T_K, 1.0),
-        HonestSpend::Fails
+        decide(EnergySpent::measured(floor_joules() / 2.0).expect("half floor")),
+        Ok(false)
     );
-    assert_eq!(absent.honest_for(T_K, 1.0), HonestSpend::Absent);
-    assert_eq!(sum.honest_for(T_K, 1.0), HonestSpend::Absent);
+    assert_eq!(decide(absent), Err(CombinatorRefuse::Unmeasured));
+    assert_eq!(decide(sum), Err(CombinatorRefuse::Unmeasured));
 }

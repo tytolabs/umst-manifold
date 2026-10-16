@@ -137,17 +137,6 @@ pub enum EnergySpendProvenance {
     Measured,
 }
 
-/// Whether a spend pays for a number of erased bits at the Landauer rate.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum HonestSpend {
-    /// `k_B·T·ln 2·bits ≤ spend`.
-    Holds,
-    /// `k_B·T·ln 2·bits > spend`.
-    Fails,
-    /// The spend is absent, so the predicate has no value.
-    Absent,
-}
-
 /// Energy already spent, graded by [`EnergySpendProvenance`]. Commutative monoid under
 /// addition with the meet of grades.
 ///
@@ -225,18 +214,6 @@ impl EnergySpent {
             _ => None,
         };
         Ok(Self { joules, provenance })
-    }
-
-    /// The Landauer honest-spend predicate (`crate::dignity::core::honest_spend`) on this
-    /// spend; an absent spend has no value.
-    pub fn honest_for(self, temperature_k: f64, bits: f64) -> HonestSpend {
-        match self.joules {
-            None => HonestSpend::Absent,
-            Some(j) if crate::dignity::core::honest_spend(temperature_k, bits, j) => {
-                HonestSpend::Holds
-            }
-            Some(_) => HonestSpend::Fails,
-        }
     }
 
     /// Joules debited from the budget for this step: the spend when present, the certified
