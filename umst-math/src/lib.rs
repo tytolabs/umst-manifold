@@ -132,6 +132,11 @@ pub use solve_combinator::{
     SolveOutcome, StallEvidence, StepEnergyMeter, StrategyRung, Thermo, UnfoldStop,
     UnmeasuredMeter,
 };
+/// Nested solves composed as Kleisli arrows: the converged composite, its refusal, spends and certificates.
+pub use solve_kleisli::{
+    nested_unfold, Converged, Nested, NestedRefuse, NestedSpend, SpendLedger, SubMeter,
+    SumEnclosure, ToleranceChain,
+};
 /// CG stall window from the Lanczos spectrum of a CG coefficient trace.
 pub use cg_spectral_window::{CgCoeff, SpectralWindow, SpectralWindowRefuse};
 /// Profile matrices, their `L D Lᵀ` factor, and the definiteness and inertia certificates it carries.

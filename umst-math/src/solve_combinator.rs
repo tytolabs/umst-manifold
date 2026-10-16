@@ -241,8 +241,9 @@ impl ProblemTolerance {
 /// ```compile_fail
 /// use umst_math::solve_combinator::{ProblemTolerance, ResidualCertificate};
 /// use ordered_float::NotNan;
-/// let tolerance = ProblemTolerance::from_problem(1.0, 1.0).unwrap();
-/// let forged = ResidualCertificate::of(NotNan::new(0.0).unwrap(), tolerance);
+/// fn forge(residual: NotNan<f64>, tolerance: ProblemTolerance) -> ResidualCertificate {
+///     ResidualCertificate::of(residual, tolerance)
+/// }
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ResidualCertificate {
