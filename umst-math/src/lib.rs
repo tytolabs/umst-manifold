@@ -74,6 +74,8 @@ pub mod smoothing;
 pub mod solver_refusal;
 /// Track C coalgebraic solve combinator — Thermo unfold, certified outcomes.
 pub mod solve_combinator;
+/// Nested solves composed as Kleisli arrows under `unfold`: budget shares, sub-meters, tolerance chain.
+pub mod solve_kleisli;
 /// n_unknowns is escalation evidence for unfold, not a stop.
 pub mod problem_size_escalation;
 /// CG stall window: median gap between strict residual improvements.

@@ -33,6 +33,10 @@ pub enum CombinatorRefuse {
     MeasuredBelowFloor,
     /// Progress window length was not strictly positive.
     NonPositiveWindow,
+    /// Two energy budgets at different temperatures were added or compared.
+    TemperatureMismatch,
+    /// A budget split or sum is not exact in binary64: its parts would not add back to the whole.
+    InexactBudgetSum,
 }
 
 /// Remaining energy, set by the operator or the problem. Never a compiled cap.
@@ -65,6 +69,56 @@ impl EnergyBudget {
     /// Absolute temperature used for the Landauer floor (kelvin).
     pub fn temperature_k(self) -> NotNan<f64> {
         self.temperature_k
+    }
+
+    /// Identity of the budget monoid at `temperature_k`: zero joules.
+    pub fn zero_at(temperature_k: f64) -> Result<Self, CombinatorRefuse> {
+        let temperature_k =
+            finite_positive(temperature_k, CombinatorRefuse::NonPositiveTemperature)?;
+        Ok(Self {
+            joules: finite_non_negative(0.0)?,
+            temperature_k,
+        })
+    }
+
+    /// Monoid operation: the budget of an outer solve is the sum of its inner budgets.
+    ///
+    /// Defined for budgets at one temperature whose binary64 sum is exact (zero
+    /// two-sum error), so the operation is associative and commutative with
+    /// [`EnergyBudget::zero_at`] as identity; anything else is a typed refusal.
+    pub fn plus(self, other: Self) -> Result<Self, CombinatorRefuse> {
+        if self.temperature_k != other.temperature_k {
+            return Err(CombinatorRefuse::TemperatureMismatch);
+        }
+        let (sum, err) = two_sum(self.joules.into_inner(), other.joules.into_inner());
+        if err != 0.0 {
+            return Err(CombinatorRefuse::InexactBudgetSum);
+        }
+        Ok(Self {
+            joules: finite_non_negative(sum)?,
+            temperature_k: self.temperature_k,
+        })
+    }
+
+    /// Split into a share of `first_joules` for one nested solve and the rest.
+    ///
+    /// The two shares add back to `self` exactly under [`EnergyBudget::plus`];
+    /// a share outside `[0, remaining]` or a split that would not add back exactly is refused.
+    pub fn split(self, first_joules: f64) -> Result<(Self, Self), CombinatorRefuse> {
+        let first = finite_non_negative(first_joules)?;
+        if first > self.joules {
+            return Err(CombinatorRefuse::NonPositiveBudget);
+        }
+        let rest = finite_non_negative(self.joules.into_inner() - first.into_inner())?;
+        let (sum, err) = two_sum(first.into_inner(), rest.into_inner());
+        if err != 0.0 || sum != self.joules.into_inner() {
+            return Err(CombinatorRefuse::InexactBudgetSum);
+        }
+        let share = |joules| Self {
+            joules,
+            temperature_k: self.temperature_k,
+        };
+        Ok((share(first), share(rest)))
     }
 
     fn try_debit(self, cost: EnergySpent) -> Result<Self, CombinatorRefuse> {
@@ -615,6 +669,15 @@ where
             }
         }
     }
+}
+
+/// Knuth's error-free two-sum: `a + b = sum + err` exactly for finite binary64 inputs
+/// whose sum does not overflow.
+pub(crate) fn two_sum(a: f64, b: f64) -> (f64, f64) {
+    let sum = a + b;
+    let b_virtual = sum - a;
+    let a_virtual = sum - b_virtual;
+    (sum, (a - a_virtual) + (b - b_virtual))
 }
 
 fn finite_positive(x: f64, on_non_positive: CombinatorRefuse) -> Result<NotNan<f64>, CombinatorRefuse> {
