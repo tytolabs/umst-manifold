@@ -19,6 +19,13 @@ use umst_math::solve_combinator::{
 use umst_math::solve_kleisli::{nested_unfold, Converged, NestedRefuse};
 
 type B = Autodiff<NdArray<f64>>;
+type Residual = fn(Tensor<B, 1>, Tensor<B, 1>) -> Tensor<B, 1>;
+type Target = fn(Tensor<B, 1>) -> Tensor<B, 1>;
+type Model = ImplicitModel<'static, Residual, Target>;
+type Forward = ForwardSolve<
+    Box<dyn Fn(&Vec<f64>) -> Result<NotNan<f64>, CombinatorRefuse>>,
+    Box<dyn FnMut(&Vec<f64>, StrategyRung) -> Result<Vec<f64>, CombinatorRefuse>>,
+>;
 
 const THETA: [f64; 2] = [1.5, 2.0];
 
@@ -26,21 +33,15 @@ fn r(u: f64) -> f64 {
     u.powi(3) + THETA[0] * u - THETA[1]
 }
 
-fn forward(
-    start: f64,
-    joules: f64,
-) -> ForwardSolve<
-    impl Fn(&Vec<f64>) -> Result<NotNan<f64>, CombinatorRefuse>,
-    impl FnMut(&Vec<f64>, StrategyRung) -> Result<Vec<f64>, CombinatorRefuse>,
-> {
+fn forward(start: f64, joules: f64) -> Forward {
     ForwardSolve {
         initial: vec![start],
-        residual_of: |u: &Vec<f64>| {
+        residual_of: Box::new(|u: &Vec<f64>| {
             NotNan::new(r(u[0]).abs()).map_err(|_| CombinatorRefuse::NonFiniteQuantity)
-        },
-        step: |u: &Vec<f64>, _rung: StrategyRung| {
+        }),
+        step: Box::new(|u: &Vec<f64>, _rung: StrategyRung| {
             Ok(vec![u[0] - r(u[0]) / (3.0 * u[0] * u[0] + THETA[0])])
-        },
+        }),
         stop: UnfoldStop::new(
             ProblemTolerance::from_problem(1.0, 1e-13).expect("tolerance"),
             EnergyBudget::from_joules_at(joules, 293.15).expect("budget"),
@@ -61,11 +62,7 @@ fn residual_t(u: Tensor<B, 1>, th: Tensor<B, 1>) -> Tensor<B, 1> {
     u.clone() * u.clone() * u.clone() + t0 * u - t1
 }
 
-fn model() -> ImplicitModel<
-    'static,
-    fn(Tensor<B, 1>, Tensor<B, 1>) -> Tensor<B, 1>,
-    fn(Tensor<B, 1>) -> Tensor<B, 1>,
-> {
+fn model() -> Model {
     ImplicitModel {
         theta: &THETA,
         residual: residual_t,

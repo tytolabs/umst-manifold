@@ -18,6 +18,10 @@ use umst_math::solve_combinator::{
 use umst_math::solve_kleisli::{lift, nested_unfold, Converged, Nested, NestedRefuse};
 
 type B = Autodiff<NdArray<f64>>;
+type Forward = ForwardSolve<
+    Box<dyn Fn(&Vec<f64>) -> Result<NotNan<f64>, CombinatorRefuse>>,
+    Box<dyn FnMut(&Vec<f64>, StrategyRung) -> Result<Vec<f64>, CombinatorRefuse>>,
+>;
 
 const THETA: [f64; 2] = [1.5, 2.0];
 
@@ -35,21 +39,15 @@ fn r(u: f64, th: [f64; 2]) -> f64 {
     u.powi(3) + th[0] * u - th[1]
 }
 
-fn forward(
-    th: [f64; 2],
-    start: f64,
-) -> ForwardSolve<
-    impl Fn(&Vec<f64>) -> Result<NotNan<f64>, CombinatorRefuse>,
-    impl FnMut(&Vec<f64>, StrategyRung) -> Result<Vec<f64>, CombinatorRefuse>,
-> {
+fn forward(th: [f64; 2], start: f64) -> Forward {
     ForwardSolve {
         initial: vec![start],
-        residual_of: move |u: &Vec<f64>| {
+        residual_of: Box::new(move |u: &Vec<f64>| {
             NotNan::new(r(u[0], th).abs()).map_err(|_| CombinatorRefuse::NonFiniteQuantity)
-        },
-        step: move |u: &Vec<f64>, _rung: StrategyRung| {
+        }),
+        step: Box::new(move |u: &Vec<f64>, _rung: StrategyRung| {
             Ok(vec![u[0] - r(u[0], th) / (3.0 * u[0] * u[0] + th[0])])
-        },
+        }),
         stop: stop(),
     }
 }
