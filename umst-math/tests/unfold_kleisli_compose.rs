@@ -14,7 +14,7 @@ use umst_math::solve_combinator::{
     StepEnergyMeter, StrategyRung, UnfoldStop, UnmeasuredMeter,
 };
 use umst_math::solve_kleisli::{
-    and_then, compose, nested_unfold, Certified, Nested, NestedRefuse, SumEnclosure,
+    and_then, compose, nested_unfold, Converged, Nested, NestedRefuse, SumEnclosure,
 };
 
 /// Method form of `and_then`, so the composites below read left to right.
@@ -96,8 +96,8 @@ fn unit_is_left_and_right_identity() {
     let m = meter();
     let n = Cell::new(0);
     let f = |a: f64| sqrt_solve(a, share(), &m, &n);
-    assert_eq!(and_then(Ok(Certified::unit(5.0)), f), f(5.0));
-    assert_eq!(and_then(f(5.0), |x| Ok(Certified::unit(x))), f(5.0));
+    assert_eq!(and_then(Ok(Converged::unit(5.0)), f), f(5.0));
+    assert_eq!(and_then(f(5.0), |x| Ok(Converged::unit(x))), f(5.0));
 }
 
 #[test]
@@ -191,7 +191,7 @@ fn an_inner_budget_spent_stops_the_composite() {
         .and_then_nested(|y| sqrt_solve(y + 7.0, starved, &m, &n))
         .and_then_nested(|w| {
             ran_h.set(true);
-            Ok(Certified::unit(w))
+            Ok(Converged::unit(w))
         });
     match out {
         Err(NestedRefuse::BudgetSpent { ledger, chain, .. }) => {

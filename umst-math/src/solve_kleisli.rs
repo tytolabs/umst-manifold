@@ -3,9 +3,9 @@
 //! Nested solves composed as Kleisli arrows under [`unfold`].
 //!
 //! A nested solve is an arrow `X → Nested<Y>`, where [`Nested`] is
-//! `Result<Certified<Y>, NestedRefuse>`: the error monad over a writer whose
+//! `Result<Converged<Y>, NestedRefuse>`: the error monad over a writer whose
 //! monoid is the pair (spend ledger, tolerance chain), both under concatenation.
-//! [`Certified::and_then`] is bind; [`compose`] is the Kleisli composite `f >=> g`.
+//! [`Converged::and_then`] is bind; [`compose`] is the Kleisli composite `f >=> g`.
 //!
 //! - **Converged only continues.** An inner solve that ends `Stalled` or
 //!   `BudgetSpent`, or refuses, is the outer solve's refusal ([`NestedRefuse`]),
@@ -176,13 +176,13 @@ impl ToleranceChain {
 
     /// Whether every link meets its tolerance.
     pub fn meets(&self) -> bool {
-        self.0.iter().all(|c| c.meets)
+        self.0.iter().all(|c| c.meets())
     }
 
     /// Enclosure of the sum of the links' residuals.
     pub fn residual_sum(&self) -> Result<SumEnclosure, CombinatorRefuse> {
         self.0.iter().try_fold(SumEnclosure::zero(), |acc, c| {
-            acc.plus(SumEnclosure::point(c.residual.into_inner())?)
+            acc.plus(SumEnclosure::point(c.residual().into_inner())?)
         })
     }
 
@@ -190,15 +190,21 @@ impl ToleranceChain {
     /// when errors propagate additively.
     pub fn tolerance_sum(&self) -> Result<SumEnclosure, CombinatorRefuse> {
         self.0.iter().try_fold(SumEnclosure::zero(), |acc, c| {
-            acc.plus(SumEnclosure::point(c.tolerance.residual().into_inner())?)
+            acc.plus(SumEnclosure::point(c.tolerance().residual().into_inner())?)
         })
     }
 }
 
 /// A converged composite: its value, the spend of every nested solve and the chain of
 /// their certificates.
+///
+/// The fields are private; a composite with a certificate comes only from [`lift`] of a
+/// `Converged` outcome of `unfold` (through [`nested_unfold`]) and from bind. The unit
+/// carries no certificate, so its chain is empty and a consumer that needs a converged
+/// state refuses it. No functor map is offered: a value changed after the solve would
+/// keep certificates that do not describe it.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Certified<X> {
+pub struct Converged<X> {
     value: X,
     ledger: SpendLedger,
     chain: ToleranceChain,
@@ -292,9 +298,9 @@ impl NestedRefuse {
 }
 
 /// The Kleisli object: a converged composite or the refusal that stopped it.
-pub type Nested<X> = Result<Certified<X>, NestedRefuse>;
+pub type Nested<X> = Result<Converged<X>, NestedRefuse>;
 
-impl<X> Certified<X> {
+impl<X> Converged<X> {
     /// Monad unit: a value with no spend and no certificate.
     pub fn unit(value: X) -> Self {
         Self {
@@ -331,21 +337,12 @@ impl<X> Certified<X> {
             chain,
         } = self;
         match f(value) {
-            Ok(next) => Ok(Certified {
+            Ok(next) => Ok(Converged {
                 value: next.value,
                 ledger: ledger.concat(next.ledger),
                 chain: chain.concat(next.chain),
             }),
             Err(refuse) => Err(refuse.after(ledger, chain)),
-        }
-    }
-
-    /// Functor map on the value; spends and certificates unchanged.
-    pub fn map<Y, F: FnOnce(X) -> Y>(self, f: F) -> Certified<Y> {
-        Certified {
-            value: f(self.value),
-            ledger: self.ledger,
-            chain: self.chain,
         }
     }
 }
@@ -375,7 +372,7 @@ pub fn lift<X>(
     let ledger = SpendLedger::single(spend);
     let chain = ToleranceChain::empty();
     match outcome {
-        Ok(SolveOutcome::Converged { x, certificate }) => Ok(Certified {
+        Ok(SolveOutcome::Converged { x, certificate }) => Ok(Converged {
             value: x,
             ledger,
             chain: ToleranceChain::single(certificate),

@@ -232,25 +232,48 @@ impl ProblemTolerance {
     }
 }
 
-/// A-posteriori residual versus the problem-derived tolerance.
+/// A-posteriori residual versus the problem-derived tolerance, as `unfold` measured it.
+///
+/// The fields are private and the only constructor is crate-private, so a certificate
+/// exists only where `unfold` compared a residual it computed; a caller reads it and
+/// cannot forge or alter one (law L-J of the adaptive unfold blueprint).
+///
+/// ```compile_fail
+/// use umst_math::solve_combinator::{ProblemTolerance, ResidualCertificate};
+/// use ordered_float::NotNan;
+/// let tolerance = ProblemTolerance::from_problem(1.0, 1.0).unwrap();
+/// let forged = ResidualCertificate::of(NotNan::new(0.0).unwrap(), tolerance);
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ResidualCertificate {
-    /// Measured residual (floats compute; exact/ball decide at N4).
-    pub residual: NotNan<f64>,
-    /// Problem-derived target.
-    pub tolerance: ProblemTolerance,
-    /// Whether `residual ≤ tolerance`.
-    pub meets: bool,
+    residual: NotNan<f64>,
+    tolerance: ProblemTolerance,
+    meets: bool,
 }
 
 impl ResidualCertificate {
     /// Compare a residual to the problem tolerance.
-    pub fn of(residual: NotNan<f64>, tolerance: ProblemTolerance) -> Self {
+    pub(crate) fn of(residual: NotNan<f64>, tolerance: ProblemTolerance) -> Self {
         Self {
             residual,
             tolerance,
             meets: residual <= tolerance.residual,
         }
+    }
+
+    /// Measured residual (floats compute; exact/ball decide at N4).
+    pub fn residual(self) -> NotNan<f64> {
+        self.residual
+    }
+
+    /// Problem-derived target.
+    pub fn tolerance(self) -> ProblemTolerance {
+        self.tolerance
+    }
+
+    /// Whether `residual ≤ tolerance`.
+    pub fn meets(self) -> bool {
+        self.meets
     }
 }
 
@@ -808,7 +831,7 @@ mod tests {
         .expect("unfold");
         match out {
             SolveOutcome::Converged { x, certificate } => {
-                assert!(certificate.meets);
+                assert!(certificate.meets());
                 assert!(x.abs() <= tolerance.residual().into_inner());
             }
             other => panic!("expected Converged, got {other:?}"),
@@ -1015,8 +1038,8 @@ mod tests {
         match out {
             SolveOutcome::Converged { x, certificate } => {
                 assert_eq!(x, 3);
-                assert!(certificate.meets);
-                assert_eq!(certificate.residual, nn(0.4));
+                assert!(certificate.meets());
+                assert_eq!(certificate.residual(), nn(0.4));
             }
             other => panic!("expected Converged, got {other:?}"),
         }

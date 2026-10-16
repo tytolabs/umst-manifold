@@ -13,9 +13,10 @@
 //!   partial pivoting; an exactly zero pivot is the typed refusal
 //!   [`AdjointRefuse::SingularJacobian`]. The solve's residual `‖Aᵀλ − ∂J/∂u‖∞` is
 //!   measured afterwards and reported, not assumed.
-//! - The state must be a [`Certified`] composite from
-//!   [`umst_math::solve_kleisli`] whose tolerance chain meets; `Stalled`,
-//!   `BudgetSpent` or a refusal is [`AdjointRefuse::NotConverged`].
+//! - The state must be a [`Converged`](umst_math::solve_kleisli::Converged) composite from
+//!   [`umst_math::solve_kleisli`] with a non-empty tolerance chain that meets; `Stalled`,
+//!   `BudgetSpent` or a refusal is [`AdjointRefuse::NotConverged`], and a unit state that
+//!   no solve produced is [`AdjointRefuse::Uncertified`].
 //!
 //! The derivative holds at the converged state `u*`, whose residual the certificate
 //! chain bounds (`forward_residual`, `forward_tolerance`); the sensitivity carries no
@@ -28,6 +29,7 @@
 use burn::tensor::backend::{AutodiffBackend, Backend};
 use burn::tensor::{Data, Shape, Tensor};
 use ordered_float::NotNan;
+use std::sync::Mutex;
 use umst_math::solve_combinator::{CombinatorRefuse, StepEnergyMeter, StrategyRung, UnfoldStop};
 use umst_math::solve_kleisli::{nested_unfold, Nested, NestedRefuse, SumEnclosure};
 
@@ -36,6 +38,9 @@ use umst_math::solve_kleisli::{nested_unfold, Nested, NestedRefuse, SumEnclosure
 pub enum AdjointRefuse {
     /// The forward solve did not converge; its refusal is carried.
     NotConverged(NestedRefuse),
+    /// The state carries no residual certificate (an empty tolerance chain): it was
+    /// never solved, so the implicit function theorem has no converged state to act at.
+    Uncertified,
     /// A certificate in the forward chain does not meet its tolerance.
     ChainNotMet,
     /// `R(u, θ)` or `J(u)` has the wrong length.
@@ -47,6 +52,8 @@ pub enum AdjointRefuse {
     },
     /// A Jacobian entry, gradient or adjoint value is NaN or infinite.
     NonFinite,
+    /// A backward pass reached no gradient for `u` or `θ`: `R` or `J` does not depend on it.
+    NoGradient,
     /// `∂R/∂u` has an exactly zero pivot in this column after partial pivoting.
     SingularJacobian {
         /// Elimination column at which the pivot vanished.
@@ -111,9 +118,19 @@ where
         residual,
         target,
     } = model;
+    // burn-autodiff 0.13.2 keeps one process-wide graph server (`runtime/mutex.rs`,
+    // `static SERVER`); backward passes on two threads at once drop each other's nodes, and
+    // a gradient goes missing (9 of 40 parallel runs of this module's test, 0 of 40 serial,
+    // 16 October 2026). The passes below therefore run one sensitivity at a time.
+    let _serial = AUTODIFF_PASSES
+        .lock()
+        .unwrap_or_else(|held| held.into_inner());
     let certified = state
         .as_ref()
         .map_err(|r| AdjointRefuse::NotConverged(r.clone()))?;
+    if certified.chain().links().is_empty() {
+        return Err(AdjointRefuse::Uncertified);
+    }
     if !certified.chain().meets() {
         return Err(AdjointRefuse::ChainNotMet);
     }
@@ -208,8 +225,11 @@ fn tensor<B: Backend>(xs: &[f64], device: &B::Device) -> Tensor<B, 1> {
     )
 }
 
+/// One sensitivity's backward passes at a time (see [`implicit_sensitivity`]).
+static AUTODIFF_PASSES: Mutex<()> = Mutex::new(());
+
 /// The gradient of the last backward pass with respect to `x`; a tensor the pass did
-/// not reach has a zero gradient.
+/// not reach is [`AdjointRefuse::NoGradient`].
 fn gradient<B: AutodiffBackend>(
     x: &Tensor<B, 1>,
     grads: &B::Gradients,
@@ -217,7 +237,7 @@ fn gradient<B: AutodiffBackend>(
 ) -> Result<Vec<f64>, AdjointRefuse> {
     let values = match x.grad(grads) {
         Some(g) => g.into_data().convert::<f64>().value,
-        None => vec![0.0; len],
+        None => return Err(AdjointRefuse::NoGradient),
     };
     same_len(len, values.len())?;
     finite(&values)?;
