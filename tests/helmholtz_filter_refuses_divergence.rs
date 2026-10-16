@@ -6,7 +6,9 @@
 //! The filter solves `(I + s·L_std) x = ρ` with `s = (r/dx)²` by Richardson iteration, which
 //! converges only for a step `ω < 2/λmax`. Each field the filter returns is checked here
 //! against its own residual `‖ρ − A x‖ / ‖ρ‖`, so a filter that returns a diverged or
-//! stalled field fails; a run that cannot reach its tolerance must refuse.
+//! stalled field fails; a run that cannot reach its tolerance must refuse. The filter is
+//! built with the `topology-density-evolution` feature, and so is this test.
+#![cfg(feature = "topology-density-evolution")]
 
 use burn::tensor::{Data, Int, Shape, Tensor};
 use burn_ndarray::{NdArray, NdArrayDevice};
