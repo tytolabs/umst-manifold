@@ -106,7 +106,11 @@ pub struct ForwardSolve<ResidualOf, Step> {
 }
 
 /// `dJ/dθ` at the converged state of `state` by one adjoint solve.
-pub fn implicit_sensitivity<B, R, J>(
+///
+/// Crate-private: a caller reaches it only through [`solve_then_sensitivity`], which hands
+/// it the state its own forward solve produced, so a composite whose last value came from a
+/// later pure step cannot carry the forward solve's certificates into the adjoint.
+pub(crate) fn implicit_sensitivity<B, R, J>(
     state: &Nested<Vec<f64>>,
     model: &ImplicitModel<'_, R, J>,
     device: &B::Device,
@@ -194,8 +198,13 @@ where
     })
 }
 
-/// The Kleisli composite of the forward solve and the adjoint: [`nested_unfold`] under
+/// The only public route to a sensitivity: the Kleisli composite of the forward solve and
+/// the adjoint, [`nested_unfold`] under
 /// its own sub-meter, then [`implicit_sensitivity`] at its converged state.
+///
+/// ```compile_fail,E0603
+/// use umst_manifold::solve::implicit_adjoint::implicit_sensitivity;
+/// ```
 pub fn solve_then_sensitivity<B, ResidualOf, Step, Meter, R, J>(
     forward: ForwardSolve<ResidualOf, Step>,
     meter: &Meter,

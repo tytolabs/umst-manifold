@@ -13,8 +13,7 @@ use burn::tensor::Tensor;
 use burn_ndarray::{NdArray, NdArrayDevice};
 use ordered_float::NotNan;
 use umst_manifold::solve::{
-    implicit_sensitivity, solve_then_sensitivity, AdjointRefuse, ForwardSolve, ImplicitModel,
-    ImplicitSensitivity,
+    solve_then_sensitivity, AdjointRefuse, ForwardSolve, ImplicitModel, ImplicitSensitivity,
 };
 use umst_math::solve_combinator::{
     CombinatorRefuse, EnergyBudget, FixedJouleMeter, ProblemProgressWindow, ProblemTolerance,
@@ -157,15 +156,14 @@ fn adjoint_agrees_with_finite_differences_and_the_implicit_function_theorem() {
 
 #[test]
 fn a_stalled_state_is_refused() {
-    let stalled = nested_unfold(
-        vec![1.0, 1.0],
-        max_abs_residual(THETA),
-        |u: &Vec<f64>, _rung: StrategyRung| Ok(u.clone()),
-        stop(1e-12),
+    let (_, out) = solve_then_sensitivity::<B, _, _, _, _, _>(
+        ForwardSolve {
+            initial: vec![1.0, 1.0],
+            residual_of: max_abs_residual(THETA),
+            step: |u: &Vec<f64>, _rung: StrategyRung| Ok(u.clone()),
+            stop: stop(1e-12),
+        },
         &meter(),
-    );
-    let out = implicit_sensitivity::<B, _, _>(
-        &stalled,
         &ImplicitModel {
             theta: &THETA,
             residual: residual_t,
@@ -181,15 +179,14 @@ fn a_stalled_state_is_refused() {
 
 #[test]
 fn a_budget_spent_state_is_refused() {
-    let starved = nested_unfold(
-        vec![1.0, 1.0],
-        max_abs_residual(THETA),
-        newton(THETA),
-        stop(1e-19),
+    let (_, out) = solve_then_sensitivity::<B, _, _, _, _, _>(
+        ForwardSolve {
+            initial: vec![1.0, 1.0],
+            residual_of: max_abs_residual(THETA),
+            step: newton(THETA),
+            stop: stop(1e-19),
+        },
         &meter(),
-    );
-    let out = implicit_sensitivity::<B, _, _>(
-        &starved,
         &ImplicitModel {
             theta: &THETA,
             residual: residual_t,
@@ -208,15 +205,16 @@ fn a_budget_spent_state_is_refused() {
 #[test]
 fn a_singular_jacobian_is_refused() {
     // R = u² − θ at θ = 0: u = 0 converges at once and ∂R/∂u = 0.
-    let state = nested_unfold(
-        vec![0.0],
-        |u: &Vec<f64>| NotNan::new(u[0] * u[0]).map_err(|_| CombinatorRefuse::NonFiniteQuantity),
-        |u: &Vec<f64>, _rung: StrategyRung| Ok(u.clone()),
-        stop(1e-12),
+    let (_, out) = solve_then_sensitivity::<B, _, _, _, _, _>(
+        ForwardSolve {
+            initial: vec![0.0],
+            residual_of: |u: &Vec<f64>| {
+                NotNan::new(u[0] * u[0]).map_err(|_| CombinatorRefuse::NonFiniteQuantity)
+            },
+            step: |u: &Vec<f64>, _rung: StrategyRung| Ok(u.clone()),
+            stop: stop(1e-12),
+        },
         &meter(),
-    );
-    let out = implicit_sensitivity::<B, _, _>(
-        &state,
         &ImplicitModel {
             theta: &[0.0],
             residual: |u: Tensor<B, 1>, th: Tensor<B, 1>| u.clone() * u - th,
@@ -229,8 +227,14 @@ fn a_singular_jacobian_is_refused() {
 
 #[test]
 fn a_target_of_the_wrong_length_is_refused() {
-    let out = implicit_sensitivity::<B, _, _>(
-        &forward(THETA),
+    let (_, out) = solve_then_sensitivity::<B, _, _, _, _, _>(
+        ForwardSolve {
+            initial: vec![1.0, 1.0],
+            residual_of: max_abs_residual(THETA),
+            step: newton(THETA),
+            stop: stop(1e-12),
+        },
+        &meter(),
         &ImplicitModel {
             theta: &THETA,
             residual: residual_t,
