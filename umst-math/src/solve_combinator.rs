@@ -658,7 +658,10 @@ impl UnfoldStop {
 }
 
 /// Coalgebraic unfold. Stops only for Converged, Stalled (lattice exhausted),
-/// or BudgetSpent. No iteration ceiling. Debits measured energy, not Landauer×bits.
+/// or BudgetSpent. No compiled iteration ceiling: every step debits at least the Landauer
+/// floor (a measured spend below it is refused, an absent spend is debited at it), so at
+/// most [`UnfoldStop::max_steps`] debits fit the budget (law L-E), and the loop runs on
+/// that fuel; when the count exceeds `u64` the budget alone bounds the run.
 pub fn unfold<S, ResidualOf, Step, Meter>(
     initial: S,
     residual_of: ResidualOf,
@@ -694,7 +697,25 @@ where
         });
     }
 
+    // L-E fuel: debits that fit the budget at the floor. `max_steps` refuses a count past
+    // `u64` with NonFiniteQuantity; that run is bounded by its budget alone.
+    let fuel = match stop.max_steps() {
+        Ok(n) => Some(n),
+        Err(CombinatorRefuse::NonFiniteQuantity) => None,
+        Err(other) => return Err(other),
+    };
+    let mut debits: u64 = 0;
     loop {
+        if fuel.is_some_and(|f| debits > f) {
+            return Ok(SolveOutcome::BudgetSpent {
+                best,
+                spent,
+                progress_certificate: ProgressCertificate {
+                    residual: best_residual,
+                    spent,
+                },
+            });
+        }
         let floor = landauer_step_joules(remaining.temperature_k(), bits)?;
 
         let (next, cost) = meter.measure(|| step(&state, strategy))?;
@@ -705,6 +726,7 @@ where
             Ok(next_budget) => {
                 remaining = next_budget;
                 spent = spent.plus(cost)?;
+                debits += 1;
             }
             Err(_) => {
                 return Ok(SolveOutcome::BudgetSpent {
