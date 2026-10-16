@@ -9,6 +9,7 @@ pub mod calibration_fit;
 pub mod cap_migration;
 pub mod combinator_posture;
 pub mod control_flow_iterate_budget;
+pub mod dissipation_step;
 pub mod implicit_adjoint;
 pub mod scalar_residual_unfold;
 
@@ -21,6 +22,10 @@ pub use combinator_posture::{
 };
 pub use control_flow_iterate_budget::{
     control_flow_iterate_budget, ControlFlowIterateBudget, ControlFlowIterateCertificate,
+};
+pub use dissipation_step::{
+    admit, admitted_step, dissipative_unfold, Admitted, DissipationStepRefuse, DissipativeStep,
+    StepBalance, StepKind,
 };
 pub use implicit_adjoint::{
     implicit_sensitivity, solve_then_sensitivity, AdjointRefuse, ForwardSolve, ImplicitModel,
