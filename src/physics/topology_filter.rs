@@ -26,8 +26,19 @@ use burn::tensor::{
     Int, Tensor,
 };
 
+use ordered_float::NotNan;
+use umst_cartridge_api::convex_phi::PassivePhi;
+use umst_math::solve_combinator::{
+    CombinatorRefuse, EnergyBudget, ProblemProgressWindow, ProblemTolerance, UnfoldStop,
+};
+use umst_math::solve_kleisli::NestedRefuse;
+
 use super::error::PhysicsError;
 use super::laplacian::TopologicalLaplacian;
+use crate::solve::dissipation_step::{
+    dissipative_unfold, DissipationStepRefuse, DissipativeStep, StepKind,
+};
+use crate::solve::PackageEnergyMeter;
 
 fn validate_helmholtz_inputs<B: Backend>(
     rho: &Tensor<B, 3>,
@@ -86,6 +97,8 @@ pub struct HelmholtzFilter {
     pub radius: f32,
     pub max_cg_iterations: usize,
     pub cg_tolerance: f32,
+    /// Energy budget of the metered solve; `None` runs the unmetered Richardson loop.
+    pub energy_budget: Option<EnergyBudget>,
 }
 
 impl HelmholtzFilter {
@@ -96,6 +109,18 @@ impl HelmholtzFilter {
             radius,
             max_cg_iterations,
             cg_tolerance,
+            energy_budget: None,
+        }
+    }
+
+    /// Run the filter as a metered unfold under `budget`: each Richardson step is a
+    /// dissipative step on the passive route (`ψ = ½xᵀAx`, `φ = ½|v|²`) admitted by the core
+    /// gate, metered by the host package energy counter.
+    #[must_use]
+    pub fn with_energy_budget(self, budget: EnergyBudget) -> Self {
+        Self {
+            energy_budget: Some(budget),
+            ..self
         }
     }
 
@@ -111,7 +136,10 @@ impl HelmholtzFilter {
         let dx_safe = dx.max(1e-30);
         let scale = (self.radius / dx_safe).powi(2);
         let damage = Tensor::<B, 3>::zeros_like(&rho);
-        helmholtz_stationary(rho, edges_b1, damage, scale, tol_use)
+        match self.energy_budget {
+            Some(budget) => helmholtz_unfold(rho, edges_b1, damage, scale, tol_use, budget),
+            None => helmholtz_stationary(rho, edges_b1, damage, scale, tol_use),
+        }
     }
 
     /// Helmholtz on the **inner** backend, re-attached with straight-through gradients (B6 H2).
@@ -238,6 +266,246 @@ fn helmholtz_stationary<B: Backend<FloatElem = f32>>(
         });
     }
     Ok(x)
+}
+
+/// The Helmholtz energy on the host: `ψ(x) = ½xᵀAx`, `w(x) = ρᵀx`, `φ(v) = ½|v|²`, with
+/// `A = I − s·L_ours` assembled from the edge list in binary64. The state is the field
+/// `[batch, node, channel]` flattened row-major.
+struct HelmholtzEnergy {
+    nodes: usize,
+    channels: usize,
+    batches: usize,
+    edges: Vec<(usize, usize)>,
+    /// Flow coefficient `1 − (d_s + d_t)/2` per `(batch, edge, channel)`.
+    coefficient: Vec<f64>,
+    scale: f64,
+    rho: Vec<f64>,
+    phi: PassivePhi,
+    /// Steps proposed so far.
+    proposals: std::cell::Cell<usize>,
+}
+
+impl HelmholtzEnergy {
+    fn index(&self, b: usize, i: usize, c: usize) -> usize {
+        (b * self.nodes + i) * self.channels + c
+    }
+
+    /// `A x`.
+    fn apply_a(&self, x: &[f64]) -> Vec<f64> {
+        let mut ax = x.to_vec();
+        let e_count = self.edges.len();
+        for b in 0..self.batches {
+            for (e, &(src, tgt)) in self.edges.iter().enumerate() {
+                for c in 0..self.channels {
+                    let k = self.coefficient[(b * e_count + e) * self.channels + c];
+                    let (is, it) = (self.index(b, src, c), self.index(b, tgt, c));
+                    let flow = k * (x[it] - x[is]);
+                    // L_ours adds +flow at the source and −flow at the target; A = I − s·L_ours.
+                    ax[is] -= self.scale * flow;
+                    ax[it] += self.scale * flow;
+                }
+            }
+        }
+        ax
+    }
+
+    fn relative_residual(&self, x: &[f64]) -> f64 {
+        let ax = self.apply_a(x);
+        let r: f64 = self
+            .rho
+            .iter()
+            .zip(&ax)
+            .map(|(p, a)| (p - a) * (p - a))
+            .sum();
+        r.sqrt() / norm(&self.rho)
+    }
+}
+
+fn norm(x: &[f64]) -> f64 {
+    x.iter().map(|v| v * v).sum::<f64>().sqrt()
+}
+
+impl DissipativeStep for HelmholtzEnergy {
+    fn free_energy(&self, x: &[f64]) -> f64 {
+        0.5 * x
+            .iter()
+            .zip(self.apply_a(x))
+            .map(|(a, b)| a * b)
+            .sum::<f64>()
+    }
+    fn dissipation(&self) -> &PassivePhi {
+        &self.phi
+    }
+    fn work(&self, x: &[f64]) -> f64 {
+        self.rho.iter().zip(x).map(|(p, v)| p * v).sum()
+    }
+    fn kind(&self) -> StepKind {
+        StepKind::Explicit
+    }
+    fn propose(&self, x0: &[f64], tau: f64) -> Result<Vec<f64>, CombinatorRefuse> {
+        self.proposals.set(self.proposals.get() + 1);
+        let ax = self.apply_a(x0);
+        Ok(x0
+            .iter()
+            .zip(&ax)
+            .zip(&self.rho)
+            .map(|((x, a), p)| x + tau * (p - a))
+            .collect())
+    }
+}
+
+/// `φ(v) = ½|v|²` over `dim` coordinates as a passive grammar tree of balanced depth.
+fn half_square_norm(dim: usize) -> Result<PassivePhi, PhysicsError> {
+    let refused = |_| PhysicsError::InvariantViolation {
+        context: "HelmholtzFilter metered solve: passive dissipation potential",
+    };
+    let mut level: Vec<PassivePhi> = (0..dim)
+        .map(|i| PassivePhi::power(dim, i, 2.0).map_err(refused))
+        .collect::<Result<_, _>>()?;
+    while level.len() > 1 {
+        let mut next = Vec::with_capacity(level.len().div_ceil(2));
+        let mut it = level.into_iter();
+        while let Some(a) = it.next() {
+            next.push(match it.next() {
+                Some(b) => PassivePhi::sum(a, b).map_err(refused)?,
+                None => a,
+            });
+        }
+        level = next;
+    }
+    let root = level.pop().ok_or(PhysicsError::InvariantViolation {
+        context: "HelmholtzFilter metered solve: empty field",
+    })?;
+    PassivePhi::scale(0.5, root).map_err(refused)
+}
+
+fn host_values<B: Backend<FloatElem = f32>>(t: Tensor<B, 3>) -> Vec<f64> {
+    t.into_data().value.into_iter().map(f64::from).collect()
+}
+
+/// The Helmholtz solve as a metered unfold of dissipative steps: the step is the Richardson
+/// step `x + ω(ρ − A x)` with `ω = 1/λ̄`, a forward step on `ψ − w` that the core gate admits
+/// under `φ = ½|v|²` because `ω·λmax(A) ≤ 1`. The gate tolerance is the stated rounding bound
+/// `4·n·ε·λ̄²·‖ρ‖²` of the binary64 balance over `n` values (Higham 2002, *Accuracy and
+/// Stability of Numerical Algorithms*, §3.1, `γ_n`).
+fn helmholtz_unfold<B: Backend<FloatElem = f32>>(
+    rhs: Tensor<B, 3>,
+    edges_b1: Tensor<B, 2, Int>,
+    damage: Tensor<B, 3>,
+    scale: f32,
+    tol: f32,
+    budget: EnergyBudget,
+) -> Result<Tensor<B, 3>, PhysicsError> {
+    let device = rhs.device();
+    let [batches, nodes, channels] = rhs.dims();
+    let damage_channels = damage.dims()[2];
+    let lambda_upper = f64::from(helmholtz_lambda_upper(&edges_b1, nodes, scale)?);
+    let edge_list: Vec<i64> = edges_b1.into_data().convert::<i64>().value;
+    let e_count = edge_list.len() / 2;
+    let node = |v: i64| {
+        usize::try_from(v)
+            .ok()
+            .filter(|i| *i < nodes)
+            .ok_or(PhysicsError::InvariantViolation {
+                context: "HelmholtzFilter::apply edge index outside the node range",
+            })
+    };
+    let edges: Vec<(usize, usize)> = (0..e_count)
+        .map(|e| Ok((node(edge_list[e])?, node(edge_list[e_count + e])?)))
+        .collect::<Result<_, PhysicsError>>()?;
+    let d = host_values(damage);
+    let mut coefficient = Vec::with_capacity(batches * e_count * channels);
+    for b in 0..batches {
+        for &(src, tgt) in &edges {
+            for c in 0..channels {
+                let dc = if damage_channels == channels { c } else { 0 };
+                let at = |i: usize| d[(b * nodes + i) * damage_channels + dc];
+                coefficient.push(1.0 - (at(src) + at(tgt)) / 2.0);
+            }
+        }
+    }
+    let rho = host_values(rhs);
+    let n = rho.len();
+    let energy = HelmholtzEnergy {
+        nodes,
+        channels,
+        batches,
+        edges,
+        coefficient,
+        scale: f64::from(scale),
+        phi: half_square_norm(n)?,
+        rho,
+        proposals: std::cell::Cell::new(0),
+    };
+    let omega = 1.0 / lambda_upper;
+    let halving = ((0.5_f64).ln() / (1.0 - omega).ln()).ceil().max(1.0);
+    let window = ProblemProgressWindow::from_krylov_restart(
+        u32::try_from(halving as u64).map_err(|_| PhysicsError::InvariantViolation {
+            context: "HelmholtzFilter metered solve: progress window",
+        })?,
+    )
+    .map_err(combinator)?;
+    let stop = UnfoldStop::new(
+        ProblemTolerance::from_problem(1.0, f64::from(tol)).map_err(combinator)?,
+        budget,
+        window,
+        64.0 * n as f64,
+    )
+    .map_err(combinator)?;
+    let gate_tolerance =
+        4.0 * n as f64 * f64::EPSILON * lambda_upper * lambda_upper * norm(&energy.rho).powi(2);
+    let solved = dissipative_unfold(
+        &[&energy],
+        |x: &[f64]| {
+            NotNan::new(energy.relative_residual(x))
+                .map_err(|_| CombinatorRefuse::NonFiniteQuantity)
+        },
+        vec![0.0; n],
+        omega,
+        gate_tolerance,
+        stop,
+        &PackageEnergyMeter,
+    )
+    .map_err(|r| refusal(r, energy.proposals.get()))?;
+    let field: Vec<f32> = solved.value().value().iter().map(|v| *v as f32).collect();
+    Ok(Tensor::from_data(
+        burn::tensor::Data::new(field, burn::tensor::Shape::new([batches, nodes, channels])),
+        &device,
+    ))
+}
+
+fn combinator(_: CombinatorRefuse) -> PhysicsError {
+    PhysicsError::InvariantViolation {
+        context: "HelmholtzFilter metered solve: stop policy",
+    }
+}
+
+/// The metered solve's refusal as the filter's typed error; a stall or a spent budget
+/// carries the last relative residual.
+fn refusal(r: DissipationStepRefuse, steps: usize) -> PhysicsError {
+    match r {
+        DissipationStepRefuse::Outer(NestedRefuse::Stalled { evidence, .. }) => {
+            PhysicsError::Diverged {
+                eq_rel: evidence.residual.into_inner() as f32,
+                pcg_iterations: steps,
+            }
+        }
+        DissipationStepRefuse::Outer(NestedRefuse::BudgetSpent { progress, .. }) => {
+            PhysicsError::Diverged {
+                eq_rel: progress.residual.into_inner() as f32,
+                pcg_iterations: steps,
+            }
+        }
+        DissipationStepRefuse::Rejected { .. } => PhysicsError::GateEvidenceRejected {
+            context: "HelmholtzFilter metered step rejected by the core gate",
+        },
+        DissipationStepRefuse::NonFinite => PhysicsError::NonFinite {
+            context: "HelmholtzFilter metered step",
+        },
+        _ => PhysicsError::InvariantViolation {
+            context: "HelmholtzFilter metered solve refused",
+        },
+    }
 }
 
 #[cfg(test)]

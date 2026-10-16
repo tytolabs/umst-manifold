@@ -43,6 +43,9 @@ pub enum StepKind {
     Proximal,
     /// Proximal step in the Wasserstein metric (JKO).
     Jko,
+    /// Forward step `x − τ·∇(ψ − w)`; with `ψ = ½xᵀAx` it satisfies L3 for `φ = ½|v|²`
+    /// exactly when `τ·λmax(A) ≤ 1`.
+    Explicit,
 }
 
 /// One step of a passive model: ψ, φ, the work functional, the information term and the
