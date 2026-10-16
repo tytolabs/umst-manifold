@@ -23,6 +23,9 @@
 //! claim beyond that state. Exact unilateral contact has no adjoint here: it stays a
 //! typed absence (unfold blueprint §13); regularised contact enters as a smooth `R`.
 //!
+//! Consumer: [`super::calibration_fit`] takes one Gauss–Newton row per experiment from
+//! [`solve_then_sensitivity`].
+//!
 //! This is the sensitivity path of `MANIFOLD-AUTODIFF-DERIVED-BRIDGE` for implicit
 //! solves and supplies the dual weights of dual-weighted residual marking.
 
