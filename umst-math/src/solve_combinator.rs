@@ -238,7 +238,7 @@ impl ProblemTolerance {
 /// exists only where `unfold` compared a residual it computed; a caller reads it and
 /// cannot forge or alter one (law L-J of the adaptive unfold blueprint).
 ///
-/// ```compile_fail
+/// ```compile_fail,E0624
 /// use umst_math::solve_combinator::{ProblemTolerance, ResidualCertificate};
 /// use ordered_float::NotNan;
 /// fn forge(residual: NotNan<f64>, tolerance: ProblemTolerance) -> ResidualCertificate {
