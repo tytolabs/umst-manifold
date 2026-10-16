@@ -95,9 +95,9 @@ impl SumEnclosure {
 /// The metered spend of one nested solve.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct NestedSpend {
-    /// Enclosure of the sum of the solve's step spends, in joules.
+    /// Enclosure of the sum of the solve's measured step spends, in joules.
     pub joules: SumEnclosure,
-    /// `Measured` only when every step was measured.
+    /// The meet of the step grades: `Measured` only when every step was measured.
     pub provenance: EnergySpendProvenance,
 }
 
@@ -127,24 +127,23 @@ impl SpendLedger {
         self
     }
 
-    /// Enclosure of the total spend: a left fold of the entries.
+    /// Enclosure of the total spend: a left fold of the entries;
+    /// [`CombinatorRefuse::Unmeasured`] when an entry is absent, since then no total exists.
     pub fn total(&self) -> Result<SumEnclosure, CombinatorRefuse> {
+        if self.provenance() == EnergySpendProvenance::Absent {
+            return Err(CombinatorRefuse::Unmeasured);
+        }
         self.0
             .iter()
             .try_fold(SumEnclosure::zero(), |acc, e| acc.plus(e.joules))
     }
 
-    /// `Measured` only when every entry is measured; the empty ledger is `Measured`.
+    /// The meet of the entries' grades; the empty ledger is `Measured`.
     pub fn provenance(&self) -> EnergySpendProvenance {
-        if self
-            .0
+        self.0
             .iter()
-            .all(|e| e.provenance == EnergySpendProvenance::Measured)
-        {
-            EnergySpendProvenance::Measured
-        } else {
-            EnergySpendProvenance::BoundedAbove
-        }
+            .map(|e| e.provenance)
+            .fold(EnergySpendProvenance::Measured, Ord::min)
     }
 }
 
@@ -399,12 +398,13 @@ pub fn lift<X>(
 }
 
 /// The meter of one nested solve: delegates each step to the outer meter and
-/// posts the step spends into one enclosure.
+/// posts the step spends into one enclosure; the entry's grade is the meet of the step
+/// grades, and an absent step adds no joules to the enclosure.
 #[derive(Debug)]
 pub struct SubMeter<'m, M> {
     outer: &'m M,
     posted: Cell<SumEnclosure>,
-    bounded: Cell<bool>,
+    grade: Cell<EnergySpendProvenance>,
 }
 
 impl<'m, M: StepEnergyMeter> SubMeter<'m, M> {
@@ -413,7 +413,7 @@ impl<'m, M: StepEnergyMeter> SubMeter<'m, M> {
         Self {
             outer,
             posted: Cell::new(SumEnclosure::zero()),
-            bounded: Cell::new(false),
+            grade: Cell::new(EnergySpendProvenance::Measured),
         }
     }
 
@@ -421,11 +421,7 @@ impl<'m, M: StepEnergyMeter> SubMeter<'m, M> {
     pub fn spend(&self) -> NestedSpend {
         NestedSpend {
             joules: self.posted.get(),
-            provenance: if self.bounded.get() {
-                EnergySpendProvenance::BoundedAbove
-            } else {
-                EnergySpendProvenance::Measured
-            },
+            provenance: self.grade.get(),
         }
     }
 }
@@ -436,11 +432,11 @@ impl<M: StepEnergyMeter> StepEnergyMeter for SubMeter<'_, M> {
         F: FnOnce() -> Result<T, CombinatorRefuse>,
     {
         let (value, cost) = self.outer.measure(step)?;
-        let joules = cost.ucrs_ledger_joules()?.into_inner();
-        self.posted
-            .set(self.posted.get().plus(SumEnclosure::point(joules)?)?);
-        if cost.provenance() == EnergySpendProvenance::BoundedAbove {
-            self.bounded.set(true);
+        self.grade.set(self.grade.get().min(cost.provenance()));
+        if cost.provenance() != EnergySpendProvenance::Absent {
+            let joules = cost.ucrs_ledger_joules()?.into_inner();
+            self.posted
+                .set(self.posted.get().plus(SumEnclosure::point(joules)?)?);
         }
         Ok((value, cost))
     }

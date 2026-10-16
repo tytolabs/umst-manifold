@@ -51,10 +51,7 @@ pub struct EnergyBudget {
 
 impl EnergyBudget {
     /// Build a live budget. Both arguments must be finite and strictly positive.
-    pub fn from_joules_at(
-        joules: f64,
-        temperature_k: f64,
-    ) -> Result<Self, CombinatorRefuse> {
+    pub fn from_joules_at(joules: f64, temperature_k: f64) -> Result<Self, CombinatorRefuse> {
         let joules = finite_positive(joules, CombinatorRefuse::NonPositiveBudget)?;
         let temperature_k =
             finite_positive(temperature_k, CombinatorRefuse::NonPositiveTemperature)?;
@@ -114,8 +111,8 @@ impl EnergyBudget {
         Ok((share(first), share(rest)))
     }
 
-    fn try_debit(self, cost: EnergySpent) -> Result<Self, CombinatorRefuse> {
-        let next = self.joules.into_inner() - cost.joules;
+    fn try_debit(self, joules: f64) -> Result<Self, CombinatorRefuse> {
+        let next = self.joules.into_inner() - joules;
         if next < 0.0 {
             return Err(CombinatorRefuse::NonPositiveBudget);
         }
@@ -127,21 +124,38 @@ impl EnergyBudget {
     }
 }
 
-/// Whether step energy was measured live or bounded above from elapsed × ceiling.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// The grade of a step spend: measured live, bounded above from elapsed × ceiling, or absent.
+///
+/// Ordered `Absent < BoundedAbove < Measured`; the grade of a sum is the meet (the weaker one).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum EnergySpendProvenance {
-    /// Elapsed × package power from a reader or injected meter.
-    Measured,
+    /// No reading: the step ran and its joules are unknown (a typed absence, never a number).
+    Absent,
     /// Elapsed × operator-supplied package power ceiling (conservative upper bound).
     BoundedAbove,
+    /// Elapsed × package power, or a package energy counter, from a reader or injected meter.
+    Measured,
 }
 
-/// Energy already spent. Commutative monoid under addition.
+/// Whether a spend pays for a number of erased bits at the Landauer rate.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HonestSpend {
+    /// `k_B·T·ln 2·bits ≤ spend`.
+    Holds,
+    /// `k_B·T·ln 2·bits > spend`.
+    Fails,
+    /// The spend is absent, so the predicate has no value.
+    Absent,
+}
+
+/// Energy already spent, graded by [`EnergySpendProvenance`]. Commutative monoid under
+/// addition with the meet of grades.
 ///
-/// `joules` is finite and ≥ 0 by construction (`Eq` is the constructor invariant).
+/// `joules` is finite and ≥ 0 when present, and absent exactly when the grade is
+/// [`EnergySpendProvenance::Absent`] (constructor invariant).
 #[derive(Clone, Copy, Debug)]
 pub struct EnergySpent {
-    joules: f64,
+    joules: Option<f64>,
     provenance: EnergySpendProvenance,
 }
 
@@ -157,8 +171,21 @@ impl EnergySpent {
     /// Additive identity (Defined 0 J).
     pub fn zero() -> Self {
         Self {
-            joules: 0.0,
+            joules: Some(0.0),
             provenance: EnergySpendProvenance::Measured,
+        }
+    }
+
+    /// A spend measured by a reader: finite and ≥ 0, else refused.
+    pub fn measured(joules: f64) -> Result<Self, CombinatorRefuse> {
+        Self::from_finite_non_negative(joules)
+    }
+
+    /// The spend of a step no reader measured.
+    pub fn absent() -> Self {
+        Self {
+            joules: None,
+            provenance: EnergySpendProvenance::Absent,
         }
     }
 
@@ -170,7 +197,7 @@ impl EnergySpent {
     fn from_finite_non_negative(joules: f64) -> Result<Self, CombinatorRefuse> {
         let nn = finite_non_negative(joules)?;
         Ok(Self {
-            joules: nn.into_inner(),
+            joules: Some(nn.into_inner()),
             provenance: EnergySpendProvenance::Measured,
         })
     }
@@ -178,33 +205,53 @@ impl EnergySpent {
     fn from_bounded_finite_non_negative(joules: f64) -> Result<Self, CombinatorRefuse> {
         let nn = finite_non_negative(joules)?;
         Ok(Self {
-            joules: nn.into_inner(),
+            joules: Some(nn.into_inner()),
             provenance: EnergySpendProvenance::BoundedAbove,
         })
     }
 
-    /// Joules recorded on the UCRS Landauer ledger for this spend.
+    /// Joules recorded on the UCRS Landauer ledger for this spend;
+    /// [`CombinatorRefuse::Unmeasured`] when the spend is absent.
     pub fn ucrs_ledger_joules(self) -> Result<NotNan<f64>, CombinatorRefuse> {
-        finite_non_negative(self.joules)
+        finite_non_negative(self.joules.ok_or(CombinatorRefuse::Unmeasured)?)
     }
 
-    /// Monoid operation. Parallel composition adds spends.
+    /// Monoid operation. Parallel composition adds spends; the grade is the meet, so one
+    /// absent part makes the sum absent.
     pub fn plus(self, other: Self) -> Result<Self, CombinatorRefuse> {
-        let provenance = match (self.provenance, other.provenance) {
-            (EnergySpendProvenance::Measured, EnergySpendProvenance::Measured) => {
-                EnergySpendProvenance::Measured
-            }
-            _ => EnergySpendProvenance::BoundedAbove,
+        let provenance = self.provenance.min(other.provenance);
+        let joules = match (self.joules, other.joules) {
+            (Some(a), Some(b)) => Some(finite_non_negative(a + b)?.into_inner()),
+            _ => None,
         };
-        let nn = finite_non_negative(self.joules + other.joules)?;
-        Ok(Self {
-            joules: nn.into_inner(),
-            provenance,
-        })
+        Ok(Self { joules, provenance })
+    }
+
+    /// The Landauer honest-spend predicate (`crate::dignity::core::honest_spend`) on this
+    /// spend; an absent spend has no value.
+    pub fn honest_for(self, temperature_k: f64, bits: f64) -> HonestSpend {
+        match self.joules {
+            None => HonestSpend::Absent,
+            Some(j) if crate::dignity::core::honest_spend(temperature_k, bits, j) => {
+                HonestSpend::Holds
+            }
+            Some(_) => HonestSpend::Fails,
+        }
+    }
+
+    /// Joules debited from the budget for this step: the spend when present, the certified
+    /// Landauer floor when absent, so every step still debits at least the floor (law L-E).
+    fn debit_joules(self, floor: Self) -> Result<f64, CombinatorRefuse> {
+        self.joules
+            .or(floor.joules)
+            .ok_or(CombinatorRefuse::Unmeasured)
     }
 
     fn is_below(self, floor: Self) -> bool {
-        self.joules < floor.joules
+        match (self.joules, floor.joules) {
+            (Some(j), Some(f)) => j < f,
+            _ => false,
+        }
     }
 }
 
@@ -420,7 +467,10 @@ impl StepEnergyMeter for BoundedPackageMeter {
         let t0 = std::time::Instant::now();
         let value = step()?;
         let joules = self.ceiling_watts.into_inner() * t0.elapsed().as_secs_f64();
-        Ok((value, EnergySpent::from_bounded_finite_non_negative(joules)?))
+        Ok((
+            value,
+            EnergySpent::from_bounded_finite_non_negative(joules)?,
+        ))
     }
 }
 
@@ -651,7 +701,7 @@ where
         if cost.is_below(floor) {
             return Err(CombinatorRefuse::MeasuredBelowFloor);
         }
-        match remaining.try_debit(cost) {
+        match remaining.try_debit(cost.debit_joules(floor)?) {
             Ok(next_budget) => {
                 remaining = next_budget;
                 spent = spent.plus(cost)?;
@@ -718,7 +768,10 @@ pub(crate) fn two_sum(a: f64, b: f64) -> (f64, f64) {
     (sum, (a - a_virtual) + (b - b_virtual))
 }
 
-fn finite_positive(x: f64, on_non_positive: CombinatorRefuse) -> Result<NotNan<f64>, CombinatorRefuse> {
+fn finite_positive(
+    x: f64,
+    on_non_positive: CombinatorRefuse,
+) -> Result<NotNan<f64>, CombinatorRefuse> {
     let nn = finite(x)?;
     if nn.into_inner() <= 0.0 {
         return Err(on_non_positive);
@@ -741,7 +794,6 @@ fn finite(x: f64) -> Result<NotNan<f64>, CombinatorRefuse> {
     }
     NotNan::new(x).map_err(|_| CombinatorRefuse::NonFiniteQuantity)
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -784,13 +836,15 @@ mod tests {
     #[test]
     fn thermo_left_and_right_identity() {
         let m = Thermo::unit(7_i32);
-        let right = m
-            .clone()
-            .bind(|x| Ok(Thermo::unit(x)))
-            .expect("right id");
+        let right = m.clone().bind(|x| Ok(Thermo::unit(x))).expect("right id");
         assert_eq!(right, Thermo::unit(7));
         let left = Thermo::unit(7)
-            .bind(|x| Ok(Thermo { value: x + 1, spent: EnergySpent::zero() }))
+            .bind(|x| {
+                Ok(Thermo {
+                    value: x + 1,
+                    spent: EnergySpent::zero(),
+                })
+            })
             .expect("left id");
         assert_eq!(left.value, 8);
         assert_eq!(left.spent, EnergySpent::zero());
@@ -815,15 +869,8 @@ mod tests {
             value: 3,
             spent: spend(4.0),
         };
-        let left = m
-            .clone()
-            .bind(f)
-            .expect("f")
-            .bind(g)
-            .expect("g");
-        let right = m
-            .bind(|x| f(x)?.bind(g))
-            .expect("assoc");
+        let left = m.clone().bind(f).expect("f").bind(g).expect("g");
+        let right = m.bind(|x| f(x)?.bind(g)).expect("assoc");
         assert_eq!(left, right);
         assert_eq!(left.value, 8);
         assert_eq!(left.spent, spend(7.0));
@@ -836,7 +883,9 @@ mod tests {
         let cost = landauer_step_joules(t, bits).expect("cost");
         let budget = EnergyBudget::from_joules_at(1e-18, 293.15).expect("budget");
         let before = budget.remaining_joules();
-        let after = budget.try_debit(cost).expect("debit");
+        let after = budget
+            .try_debit(cost.ucrs_ledger_joules().expect("cost").into_inner())
+            .expect("debit");
         assert!(after.remaining_joules() < before);
         assert!(cost.ucrs_ledger_joules().expect("finite").into_inner() > 0.0);
     }
@@ -849,8 +898,7 @@ mod tests {
             1.0_f64,
             abs_residual,
             |x, _rung| Ok(x * 0.5),
-            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0)
-                .expect("stop"),
+            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0).expect("stop"),
             &paid_meter(),
         )
         .expect("unfold");
@@ -871,8 +919,7 @@ mod tests {
             1.0_f64,
             abs_residual,
             |x, _rung| Ok(*x),
-            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0)
-                .expect("stop"),
+            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0).expect("stop"),
             &paid_meter(),
         )
         .expect("unfold");
@@ -895,8 +942,7 @@ mod tests {
             1.0_f64,
             abs_residual,
             |x, _rung| Ok(x * 0.5),
-            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0)
-                .expect("stop"),
+            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0).expect("stop"),
             &paid_meter(),
         )
         .expect("unfold");
@@ -918,8 +964,8 @@ mod tests {
     fn unfold_refuses_compiled_style_zero_bits() {
         let tolerance = ProblemTolerance::from_problem(2.0, 1e-3).expect("tol");
         let budget = EnergyBudget::from_joules_at(1e-12, 293.15).expect("B");
-        let err = UnfoldStop::new(tolerance, budget, one_step_window(), 0.0)
-            .expect_err("zero bits");
+        let err =
+            UnfoldStop::new(tolerance, budget, one_step_window(), 0.0).expect_err("zero bits");
         assert_eq!(err, CombinatorRefuse::NonPositiveBits);
     }
 
@@ -950,8 +996,7 @@ mod tests {
             1.0_f64,
             abs_residual,
             |x, _| Ok(x * 0.5),
-            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0)
-                .expect("stop"),
+            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0).expect("stop"),
             &UnmeasuredMeter {},
         )
         .expect_err("unmeasured");
@@ -971,8 +1016,7 @@ mod tests {
             1.0_f64,
             abs_residual,
             |x, _| Ok(*x),
-            UnfoldStop::new(tolerance, budget_tight, one_step_window(), 1.0)
-                .expect("stop"),
+            UnfoldStop::new(tolerance, budget_tight, one_step_window(), 1.0).expect("stop"),
             &meter,
         )
         .expect("unfold");
@@ -996,15 +1040,17 @@ mod tests {
             1.0_f64,
             abs_residual,
             |x, _| Ok(*x),
-            UnfoldStop::new(tolerance, budget_stall, one_step_window(), 1.0)
-                .expect("stop"),
+            UnfoldStop::new(tolerance, budget_stall, one_step_window(), 1.0).expect("stop"),
             &counting,
         )
         .expect("count");
         match out {
             SolveOutcome::Stalled { .. } => {
                 assert_eq!(posts.get(), 5);
-                assert!(3.0 * f64::from(posts.get()) > floor.ucrs_ledger_joules().expect("f").into_inner() * 1e10);
+                assert!(
+                    3.0 * f64::from(posts.get())
+                        > floor.ucrs_ledger_joules().expect("f").into_inner() * 1e10
+                );
             }
             other => panic!("expected Stalled after 5×3 J with 16 J budget, got {other:?}"),
         }
@@ -1018,8 +1064,7 @@ mod tests {
             1.0_f64,
             abs_residual,
             |x, _| Ok(x * 0.5),
-            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0)
-                .expect("stop"),
+            UnfoldStop::new(tolerance, budget, one_step_window(), 1.0).expect("stop"),
             &FixedJouleMeter::from_joules(1e-40).expect("tiny"),
         )
         .expect_err("below floor");
@@ -1055,8 +1100,7 @@ mod tests {
             0_usize,
             residual_at_index,
             advance_index,
-            UnfoldStop::new(tolerance, budget, window, 1.0)
-                .expect("stop"),
+            UnfoldStop::new(tolerance, budget, window, 1.0).expect("stop"),
             &paid_meter(),
         )
         .expect("unfold");
@@ -1084,8 +1128,7 @@ mod tests {
                 strategies.set(rung);
                 advance_index(idx, rung)
             },
-            UnfoldStop::new(tolerance, budget, window, 1.0)
-                .expect("stop"),
+            UnfoldStop::new(tolerance, budget, window, 1.0).expect("stop"),
             &paid_meter(),
         )
         .expect("unfold");
@@ -1101,9 +1144,7 @@ mod tests {
     #[test]
     fn bounded_package_meter_labels_spend_bounded_above() {
         let meter = BoundedPackageMeter::from_operator_ceiling_watts(42.0).expect("ceiling");
-        let (_v, spent) = meter
-            .measure(|| Ok(1_i32))
-            .expect("bounded measure");
+        let (_v, spent) = meter.measure(|| Ok(1_i32)).expect("bounded measure");
         assert_eq!(spent.provenance(), EnergySpendProvenance::BoundedAbove);
     }
 

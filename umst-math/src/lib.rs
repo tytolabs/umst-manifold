@@ -127,7 +127,7 @@ pub use landauer::landauer_cost_diagonal_bits;
 /// Track C: certified solve outcomes + UCRS Landauer budget types.
 pub use solve_combinator::{
     landauer_step_joules, unfold, BoundedPackageMeter, CombinatorRefuse, EnergyBudget,
-    EnergySpendProvenance, EnergySpent, FixedJouleMeter, MeasuredPackageMeter, PackagePowerReader,
+    EnergySpendProvenance, EnergySpent, FixedJouleMeter, HonestSpend, MeasuredPackageMeter, PackagePowerReader,
     ProblemProgressWindow, ProblemTolerance, ProgressCertificate, ResidualCertificate,
     SolveOutcome, StallEvidence, StepEnergyMeter, StrategyRung, Thermo, UnfoldStop,
     UnmeasuredMeter,

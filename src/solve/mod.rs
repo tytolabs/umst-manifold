@@ -11,6 +11,7 @@ pub mod combinator_posture;
 pub mod control_flow_iterate_budget;
 pub mod dissipation_step;
 pub mod implicit_adjoint;
+pub mod package_energy_meter;
 pub mod scalar_residual_unfold;
 
 pub use calibration_fit::{calibrate, CalibrationModel, CalibrationRefuse};
@@ -31,4 +32,5 @@ pub use implicit_adjoint::{
     solve_then_sensitivity, AdjointRefuse, ForwardSolve, ImplicitModel,
     ImplicitSensitivity,
 };
+pub use package_energy_meter::PackageEnergyMeter;
 pub use scalar_residual_unfold::scalar_residual_unfold;
