@@ -36,7 +36,7 @@ use umst_math::solve_kleisli::NestedRefuse;
 use super::error::PhysicsError;
 use super::laplacian::TopologicalLaplacian;
 use crate::solve::dissipation_step::{
-    dissipative_unfold, DissipationStepRefuse, DissipativeStep, StepKind,
+    dissipative_unfold, Admitted, DissipationStepRefuse, DissipativeStep, StepBalance, StepKind,
 };
 use crate::solve::PackageEnergyMeter;
 
@@ -469,7 +469,8 @@ fn helmholtz_unfold<B: Backend<FloatElem = f32>>(
     .map_err(|r| refusal(r, energy.proposals.get()))?;
     // The composite of admitted steps is admitted (L1 with L3): the summed balance of the
     // run satisfies the summed inequality within the summed tolerance.
-    let steps = solved.value().steps();
+    let run: &Admitted<Vec<f64>> = solved.value();
+    let steps: &[StepBalance] = run.steps();
     let (delta_psi, dissipated, work_in) = steps.iter().fold((0.0, 0.0, 0.0), |(a, b, c), x| {
         (a + x.delta_psi(), b + x.dissipated(), c + x.work_in())
     });
@@ -479,7 +480,7 @@ fn helmholtz_unfold<B: Backend<FloatElem = f32>>(
                 "HelmholtzFilter metered run: summed balance breaks the dissipation inequality",
         });
     }
-    let field: Vec<f32> = solved.value().value().iter().map(|v| *v as f32).collect();
+    let field: Vec<f32> = run.value().iter().map(|v| *v as f32).collect();
     Ok(Tensor::from_data(
         burn::tensor::Data::new(field, burn::tensor::Shape::new([batches, nodes, channels])),
         &device,
