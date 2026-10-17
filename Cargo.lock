@@ -2808,6 +2808,7 @@ dependencies = [
  "umst-cartridge-poromechanics",
  "umst-cartridge-solid-inelastic",
  "umst-chem",
+ "umst-constants",
  "umst-gate",
  "umst-jennings-legacy",
  "uuid",
@@ -2885,6 +2886,7 @@ dependencies = [
  "umst-cartridge-continuum",
  "umst-cartridge-grounded",
  "umst-chem",
+ "umst-constants",
 ]
 
 [[package]]
