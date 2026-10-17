@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Santosh Prabhu Shenbagamoorthy and Santhosh Shyamsundar
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Proof for cell UNFOLD-KLEISLI-LAWS-PIN: nested solves composed by `solve_kleisli` satisfy, on
+//! Unfold Kleisli laws pins (cell UNFOLD-KLEISLI-LAWS-PIN): nested solves composed by
+//! `solve_kleisli` satisfy, on
 //! generated inputs, the statements umst-formal `UnfoldKleisli` proves in four languages:
 //! bind_assoc (L1: bind is associative with unit as identity, an inner refusal is the outer
 //! refusal, an outer spend is the sum of its inner spends), bind_honest (L2: honest spends,
