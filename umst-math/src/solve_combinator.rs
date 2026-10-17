@@ -622,6 +622,9 @@ impl UnfoldStop {
     /// most `⌊B / ε⌋` steps, with `B` the budget and `ε` the enclosed Landauer floor of one step
     /// ([`landauer_step_joules`]), because every debited step spends at least `ε` and the debits sum to at most `B`.
     /// The quotient is raised by `2ε` relative before the floor, so the count is never below the exact `⌊B / ε⌋`.
+    /// [`unfold`] takes the count as its fuel: a run whose debits pass it ends in `BudgetSpent`, so the bound the
+    /// second law gives is the loop bound the code runs, and `tests/unfold_termination_pin.rs` checks a floor-priced
+    /// run meets it exactly.
     pub fn max_steps(self) -> Result<u64, CombinatorRefuse> {
         let floor = landauer_step_joules(self.budget.temperature_k(), self.bits_per_step)?
             .ucrs_ledger_joules()?
