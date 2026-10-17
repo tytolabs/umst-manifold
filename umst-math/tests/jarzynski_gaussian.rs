@@ -3,9 +3,13 @@
 //! Self-test of the finite-sample Jarzynski estimator on synthetic Gaussian reduced work
 //! (Jarzynski, Phys. Rev. Lett. 78, 2690, 1997): ΔF = μ − σ²/2, finite-N bias against the leading
 //! term of Gore, Ritort and Bustamante (Proc. Natl. Acad. Sci. U.S.A. 100, 12564, 2003), and the
-//! Hoeffding interval false-alarm rate via [`umst_math::jarzynski::hoeffding_interval`] at level δ.
+//! false-alarm rate of [`umst_math::jarzynski_meter::integral_fluctuation_check`] at level δ, together with its power
+//! against a wrong free-energy change.
 
 use umst_math::jarzynski::estimate;
+use umst_math::jarzynski_meter::{
+    gaussian_leading_bias, integral_fluctuation_check, record_false_alarms, Level,
+};
 
 /// Exact rationals for the Gaussian parameters; `f64` enters only through [`Rat::to_f64`] at the sampling edge.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -21,10 +25,7 @@ impl Rat {
     }
 
     fn sub(self, o: Self) -> Self {
-        Self::new(
-            self.num * o.den - o.num * self.den,
-            self.den * o.den,
-        )
+        Self::new(self.num * o.den - o.num * self.den, self.den * o.den)
     }
 
     fn div(self, o: Self) -> Self {
@@ -49,7 +50,6 @@ impl Rat {
     fn to_f64(self) -> f64 {
         self.num as f64 / self.den as f64
     }
-
 }
 
 /// SplitMix64 (G. L. Steele, D. Lea and C. H. Flood, OOPSLA 2014).
@@ -99,114 +99,8 @@ fn draw_batch(
     Some(works)
 }
 
-/// Non-test entry points: call runtime [`estimate`] and [`hoeffding_interval`]; rational meter admission.
-mod runtime_meter {
-    use super::Rat;
-    use umst_math::jarzynski::{estimate, hoeffding_interval, FreeEnergyInterval, JarzynskiRefusal};
-
-    /// Seeded-replicate tally of Hoeffding interval exclusions for exact ΔF at level δ.
-    #[derive(Debug, Clone, Copy, PartialEq)]
-    pub struct IntegralFluctuationFalseAlarmMeter {
-        pub replicates_attempted: usize,
-        pub replicates_valid: usize,
-        pub alarms: usize,
-        pub delta_level: Rat,
-    }
-
-    impl IntegralFluctuationFalseAlarmMeter {
-        pub fn false_alarm_rate(&self) -> Rat {
-            if self.replicates_valid == 0 {
-                return Rat::new(0, 1);
-            }
-            Rat::new(self.alarms as i64, self.replicates_valid as i64)
-        }
-    }
-
-    /// Population ⟨e^{−tw}⟩ for w ~ N(μ, σ²): exp(−tμ + t²σ²/2), at the runtime edge for Gore reference bias.
-    fn mean_exp_neg_tw(mu: f64, sigma_sq: f64, t: f64) -> f64 {
-        (-t * mu + 0.5 * t * t * sigma_sq).exp()
-    }
-
-    /// Leading finite-N bias (Gore, Ritort and Bustamante, PNAS 2003): Var(e^{−w}) / (2N ⟨e^{−w}⟩²).
-    pub fn gore_population_leading_bias(mu: f64, sigma_sq: f64, n: usize) -> f64 {
-        let mu_exp = mean_exp_neg_tw(mu, sigma_sq, 1.0);
-        let mean_sq = mean_exp_neg_tw(mu, sigma_sq, 2.0);
-        let var_exp = mean_sq - mu_exp * mu_exp;
-        var_exp / (2.0 * n as f64 * mu_exp * mu_exp)
-    }
-
-    /// Exact ΔF from rationals lies outside the runtime Hoeffding interval (one false alarm draw).
-    pub fn hoeffding_false_alarm(
-        works: &[f64],
-        delta_f_r: Rat,
-        edge_slack: f64,
-        support: (f64, f64),
-        delta: Rat,
-    ) -> Result<bool, JarzynskiRefusal> {
-        let ci = hoeffding_interval(works, support, delta.to_f64())?;
-        Ok(!interval_covers_delta_f(ci, delta_f_r, edge_slack))
-    }
-
-    fn interval_covers_delta_f(ci: FreeEnergyInterval, delta_f_r: Rat, edge_slack: f64) -> bool {
-        let slack = edge_slack + delta_f_r.conversion_bound_f64();
-        let df = delta_f_r.to_f64();
-        ci.lower <= df + slack && df - slack <= ci.upper
-    }
-
-    /// Accumulate false alarms over seeded replicates using [`hoeffding_interval`].
-    pub fn record_integral_fluctuation_false_alarm_meter(
-        draw: &mut impl FnMut() -> Option<Vec<f64>>,
-        delta_f_r: Rat,
-        edge_slack: f64,
-        support: (f64, f64),
-        delta: Rat,
-        replicates: usize,
-    ) -> Result<IntegralFluctuationFalseAlarmMeter, JarzynskiRefusal> {
-        let mut alarms = 0usize;
-        let mut valid = 0usize;
-        for _ in 0..replicates {
-            let Some(works) = draw() else {
-                continue;
-            };
-            valid += 1;
-            if hoeffding_false_alarm(&works, delta_f_r, edge_slack, support, delta)? {
-                alarms += 1;
-            }
-        }
-        Ok(IntegralFluctuationFalseAlarmMeter {
-            replicates_attempted: replicates,
-            replicates_valid: valid,
-            alarms,
-            delta_level: delta,
-        })
-    }
-
-    /// [`estimate`] delta-method bias vs Gore population leading term (runtime sample vs reference edge).
-    pub fn gore_delta_method_admission(
-        works: &[f64],
-        mu: f64,
-        sigma_sq: f64,
-        relative_tol: Rat,
-        edge_slack: f64,
-    ) -> Result<(), JarzynskiRefusal> {
-        let est = estimate(works)?;
-        let leading = gore_population_leading_bias(mu, sigma_sq, works.len());
-        let diff = (est.delta_method_bias() - leading).abs();
-        let tol = relative_tol.to_f64() * leading.abs() + edge_slack;
-        if diff > tol {
-            return Err(JarzynskiRefusal::Support { index: None });
-        }
-        Ok(())
-    }
-}
-
 #[test]
 fn gaussian_entropy_production_estimator_and_integral_fluctuation_meter() {
-    use runtime_meter::{
-        gore_delta_method_admission, record_integral_fluctuation_false_alarm_meter,
-        IntegralFluctuationFalseAlarmMeter,
-    };
-
     let mu_r = Rat::new(7, 4);
     let sigma_sq_r = Rat::new(3, 8);
     let delta_f_r = Rat::jarzynski_delta_f(mu_r, sigma_sq_r);
@@ -217,6 +111,7 @@ fn gaussian_entropy_production_estimator_and_integral_fluctuation_meter() {
     let sigma_sq = sigma_sq_r.to_f64();
     let sigma = sigma_sq.sqrt();
     let delta_f = delta_f_r.to_f64();
+    let delta_f_bound = delta_f_r.conversion_bound_f64();
 
     let mean_exp = (-mu + 0.5 * sigma_sq).exp();
     assert!(
@@ -225,7 +120,7 @@ fn gaussian_entropy_production_estimator_and_integral_fluctuation_meter() {
     );
 
     let n_gore = 2048usize;
-    let delta = Rat::new(1, 20);
+    let level = Level::new(1, 20).expect("level");
     let support = (mu - 4.0 * sigma, mu + 4.0 * sigma);
     let mut rng = SplitMix64(0xa055_1a42_026u64);
 
@@ -233,33 +128,32 @@ fn gaussian_entropy_production_estimator_and_integral_fluctuation_meter() {
     while gore_works.is_none() {
         gore_works = draw_batch(&mut rng, mu, sigma, n_gore, support);
     }
-    gore_delta_method_admission(
-        gore_works.as_ref().expect("batch"),
-        mu,
-        sigma_sq,
-        Rat::new(1, 20),
-        edge_slack,
-    )
-    .expect("Gore leading term vs delta-method bias");
+    let est = estimate(gore_works.as_ref().expect("batch")).expect("finite works");
+    let leading = gaussian_leading_bias(mu, sigma_sq, n_gore);
+    assert!(
+        (est.delta_method_bias() - leading).abs() <= 0.05 * leading.abs() + edge_slack,
+        "Gore leading term {leading} against delta-method bias {}",
+        est.delta_method_bias()
+    );
 
     let n_if = 64usize;
     let replicates = 400usize;
-    let meter = record_integral_fluctuation_false_alarm_meter(
+    let tally = record_false_alarms(
         &mut || draw_batch(&mut rng, mu, sigma, n_if, support),
-        delta_f_r,
-        edge_slack,
+        delta_f,
+        delta_f_bound,
         support,
-        delta,
+        level,
         replicates,
     )
     .expect("Hoeffding meter");
     assert!(
-        meter.replicates_valid >= replicates / 2,
+        tally.replicates_valid >= replicates / 2,
         "too many support rejections"
     );
 
     let mut estimates = Vec::new();
-    for _ in 0..meter.replicates_valid {
+    for _ in 0..tally.replicates_valid {
         let Some(works) = draw_batch(&mut rng, mu, sigma, n_if, support) else {
             continue;
         };
@@ -274,31 +168,142 @@ fn gaussian_entropy_production_estimator_and_integral_fluctuation_meter() {
         .map(|e| (e - mean_est).powi(2))
         .sum::<f64>()
         / (r - 1.0))
-    .sqrt();
+        .sqrt();
     assert!(mean_est - delta_f >= -1e-12, "Monte Carlo bias negative");
 
-    let r_meter = meter.replicates_valid as f64;
-    let false_alarm_rate = meter.false_alarm_rate().to_f64();
-    let delta_level = delta.to_f64();
     eprintln!(
-        "IF false-alarm meter: replicates={} alarms={} rate={false_alarm_rate:.6} delta={delta_level:.6} spread_sd={sd:.6}",
-        meter.replicates_valid,
-        meter.alarms,
+        "IF false-alarm meter: replicates={} alarms={} rate={:.6} delta={:.6} spread_sd={sd:.6}",
+        tally.replicates_valid,
+        tally.alarms,
+        tally.rate(),
+        level.as_f64(),
     );
     assert!(
-        false_alarm_rate
-            <= delta_level
-                + 3.0 * (delta_level * (1.0 - delta_level) / r_meter).sqrt()
-                + edge_slack,
-        "false-alarm rate {false_alarm_rate} above δ={delta_level}"
+        tally.within_level(3.0),
+        "false-alarm rate {} above δ={}",
+        tally.rate(),
+        level.as_f64()
     );
-    let _typed: IntegralFluctuationFalseAlarmMeter = meter;
+}
+
+/// The meter has power: at N = 4096 the Hoeffding interval is narrow enough that a free-energy change wrong by
+/// half a k_B·T raises the alarm on every replicate, while the true change stays within δ. A meter that never
+/// alarms passes the false-alarm test above and fails here.
+#[test]
+fn wrong_free_energy_raises_the_alarm_and_the_true_one_stays_within_the_level() {
+    let mu_r = Rat::new(7, 4);
+    let sigma_sq_r = Rat::new(3, 8);
+    let delta_f_r = Rat::jarzynski_delta_f(mu_r, sigma_sq_r);
+    let mu = mu_r.to_f64();
+    let sigma = sigma_sq_r.to_f64().sqrt();
+    let delta_f = delta_f_r.to_f64();
+    let bound = delta_f_r.conversion_bound_f64();
+    let support = (mu - 4.0 * sigma, mu + 4.0 * sigma);
+    let level = Level::new(1, 20).expect("level");
+    let n = 4096usize;
+    let replicates = 100usize;
+
+    let mut rng = SplitMix64(0x70e5_c0de_2026u64);
+    let true_tally = record_false_alarms(
+        &mut || draw_batch(&mut rng, mu, sigma, n, support),
+        delta_f,
+        bound,
+        support,
+        level,
+        replicates,
+    )
+    .expect("true change");
+    assert!(true_tally.replicates_valid >= replicates / 2);
+    assert!(
+        true_tally.within_level(3.0),
+        "true ΔF alarms at rate {}",
+        true_tally.rate()
+    );
+
+    let mut rng = SplitMix64(0x70e5_c0de_2026u64);
+    let wrong_tally = record_false_alarms(
+        &mut || draw_batch(&mut rng, mu, sigma, n, support),
+        delta_f + 0.5,
+        bound,
+        support,
+        level,
+        replicates,
+    )
+    .expect("wrong change");
+    assert_eq!(
+        wrong_tally.alarms, wrong_tally.replicates_valid,
+        "a free-energy change wrong by 0.5 must alarm on every valid replicate"
+    );
+}
+
+#[test]
+fn alarm_follows_the_interval_and_the_stated_error_bound() {
+    let works = [1.0, 1.1, 1.2, 1.3];
+    let support = (0.5, 2.0);
+    let level = Level::new(1, 10).expect("level");
+    let ci = integral_fluctuation_check(&works, 1.0, 0.0, support, level)
+        .expect("works in support")
+        .interval();
+    assert!(ci.lower < ci.upper);
+    let inside = 0.5 * (ci.lower + ci.upper);
+    assert!(
+        !integral_fluctuation_check(&works, inside, 0.0, support, level)
+            .unwrap()
+            .is_alarm()
+    );
+    let just_below = ci.lower - 1e-3;
+    assert!(
+        integral_fluctuation_check(&works, just_below, 0.0, support, level)
+            .unwrap()
+            .is_alarm()
+    );
+    assert!(
+        !integral_fluctuation_check(&works, just_below, 2e-3, support, level)
+            .unwrap()
+            .is_alarm(),
+        "an error bound that reaches the interval removes the alarm"
+    );
+    let just_above = ci.upper + 1e-3;
+    assert!(
+        integral_fluctuation_check(&works, just_above, 0.0, support, level)
+            .unwrap()
+            .is_alarm()
+    );
+}
+
+#[test]
+fn level_and_tally_compare_by_exact_integers() {
+    assert!(Level::new(0, 5).is_err());
+    assert!(Level::new(5, 5).is_err());
+    assert!(Level::new(6, 5).is_err());
+    assert!(Level::new(1, 0).is_err());
+    let level = Level::new(1, 20).expect("level");
+    let at = umst_math::jarzynski_meter::FalseAlarmTally {
+        replicates_attempted: 40,
+        replicates_valid: 40,
+        alarms: 2,
+        level,
+    };
+    assert!(
+        !at.rate_exceeds_level(),
+        "2 / 40 equals δ = 1 / 20 and does not exceed it"
+    );
+    let over = umst_math::jarzynski_meter::FalseAlarmTally { alarms: 3, ..at };
+    assert!(over.rate_exceeds_level());
+    let invalid = umst_math::jarzynski_meter::FalseAlarmTally {
+        replicates_attempted: 40,
+        replicates_valid: 20,
+        alarms: 2,
+        level,
+    };
+    assert!(
+        invalid.rate_exceeds_level(),
+        "the rate counts valid replicates only: 2 / 20 exceeds 1 / 20"
+    );
 }
 
 #[test]
 fn three_percent_bias_injection_fails_replicate_centering() {
-    use runtime_meter::gore_population_leading_bias;
-
     let mu_r = Rat::new(7, 4);
     let sigma_sq_r = Rat::new(3, 8);
     let delta_f_r = Rat::jarzynski_delta_f(mu_r, sigma_sq_r);
@@ -315,22 +320,17 @@ fn three_percent_bias_injection_fails_replicate_centering() {
         let Some(works) = draw_batch(&mut rng, mu, sigma, n, support) else {
             continue;
         };
-        estimates.push(
-            estimate(&works)
-                .expect("finite works")
-                .delta_f,
-        );
+        estimates.push(estimate(&works).expect("finite works").delta_f);
     }
     let r = estimates.len() as f64;
     assert!(r >= replicates as f64 / 2.0);
     let mean = estimates.iter().sum::<f64>() / r;
-    let sd = (estimates
-        .iter()
-        .map(|e| (e - mean).powi(2))
-        .sum::<f64>()
-        / (r - 1.0))
-    .sqrt();
-    let center = delta_f + gore_population_leading_bias(mu, sigma_sq_r.to_f64(), n);
+    let sd = (estimates.iter().map(|e| (e - mean).powi(2)).sum::<f64>() / (r - 1.0)).sqrt();
+    let center = delta_f + gaussian_leading_bias(mu, sigma_sq_r.to_f64(), n);
+    assert!(
+        (mean - center).abs() <= 4.0 * sd / r.sqrt() + 1e-12,
+        "replicate mean {mean} off the Gore centre {center}"
+    );
     let biased = center * 1.03;
     assert!(
         (mean - biased).abs() > 4.0 * sd / r.sqrt() + 1e-12,
