@@ -36,8 +36,9 @@
 //! property-tested in `tests/unfold_kleisli_compose.rs`.
 
 use crate::solve_combinator::{
-    two_sum, unfold, CombinatorRefuse, EnergySpendProvenance, EnergySpent, ProgressCertificate,
-    ResidualCertificate, SolveOutcome, StallEvidence, StepEnergyMeter, StrategyRung, UnfoldStop,
+    landauer_step_joules, two_sum, unfold, CombinatorRefuse, EnergySpendProvenance, EnergySpent,
+    ProgressCertificate, ResidualCertificate, SolveOutcome, StallEvidence, StepEnergyMeter,
+    StrategyRung, UnfoldStop,
 };
 use core::cell::Cell;
 use ordered_float::NotNan;
@@ -97,6 +98,10 @@ impl SumEnclosure {
 pub struct NestedSpend {
     /// Enclosure of the sum of the solve's measured step spends, in joules.
     pub joules: SumEnclosure,
+    /// Enclosure of the sum of the solve's Landauer floors `k_B·T·ln 2·b`, one per step,
+    /// in joules. A measured entry is honest when `floor ≤ joules` (law L2,
+    /// `UMST.UnfoldKleisli.bind_honest`: honest spends bind to an honest spend).
+    pub floor: SumEnclosure,
     /// The meet of the step grades: `Measured` only when every step was measured.
     pub provenance: EnergySpendProvenance,
 }
@@ -398,29 +403,35 @@ pub fn lift<X>(
 }
 
 /// The meter of one nested solve: delegates each step to the outer meter and
-/// posts the step spends into one enclosure; the entry's grade is the meet of the step
-/// grades, and an absent step adds no joules to the enclosure.
+/// posts the step spends into one enclosure and each step's Landauer floor into another;
+/// the entry's grade is the meet of the step grades, and an absent step adds no joules to
+/// the spend enclosure (its floor is still posted).
 #[derive(Debug)]
 pub struct SubMeter<'m, M> {
     outer: &'m M,
+    floor_per_step: f64,
     posted: Cell<SumEnclosure>,
+    floors: Cell<SumEnclosure>,
     grade: Cell<EnergySpendProvenance>,
 }
 
 impl<'m, M: StepEnergyMeter> SubMeter<'m, M> {
-    /// A fresh sub-meter over `outer` with nothing posted.
-    pub fn over(outer: &'m M) -> Self {
-        Self {
+    /// A fresh sub-meter over `outer` whose steps each carry the Landauer floor `floor`.
+    pub fn over(outer: &'m M, floor: EnergySpent) -> Result<Self, CombinatorRefuse> {
+        Ok(Self {
             outer,
+            floor_per_step: floor.ucrs_ledger_joules()?.into_inner(),
             posted: Cell::new(SumEnclosure::zero()),
+            floors: Cell::new(SumEnclosure::zero()),
             grade: Cell::new(EnergySpendProvenance::Measured),
-        }
+        })
     }
 
     /// The spend posted so far, as one ledger entry.
     pub fn spend(&self) -> NestedSpend {
         NestedSpend {
             joules: self.posted.get(),
+            floor: self.floors.get(),
             provenance: self.grade.get(),
         }
     }
@@ -433,6 +444,11 @@ impl<M: StepEnergyMeter> StepEnergyMeter for SubMeter<'_, M> {
     {
         let (value, cost) = self.outer.measure(step)?;
         self.grade.set(self.grade.get().min(cost.provenance()));
+        self.floors.set(
+            self.floors
+                .get()
+                .plus(SumEnclosure::point(self.floor_per_step)?)?,
+        );
         if cost.provenance() != EnergySpendProvenance::Absent {
             let joules = cost.ucrs_ledger_joules()?.into_inner();
             self.posted
@@ -456,7 +472,26 @@ where
     Step: FnMut(&S, StrategyRung) -> Result<S, CombinatorRefuse>,
     Meter: StepEnergyMeter,
 {
-    let sub = SubMeter::over(meter);
+    let floor = match landauer_step_joules(stop.budget().temperature_k(), stop.bits_per_step()) {
+        Ok(floor) => floor,
+        Err(cause) => {
+            return Err(NestedRefuse::Refused {
+                cause,
+                ledger: SpendLedger::empty(),
+                chain: ToleranceChain::empty(),
+            })
+        }
+    };
+    let sub = match SubMeter::over(meter, floor) {
+        Ok(sub) => sub,
+        Err(cause) => {
+            return Err(NestedRefuse::Refused {
+                cause,
+                ledger: SpendLedger::empty(),
+                chain: ToleranceChain::empty(),
+            })
+        }
+    };
     let outcome = unfold(initial, residual_of, step, stop, &sub);
     lift(outcome, sub.spend())
 }
