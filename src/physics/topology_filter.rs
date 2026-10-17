@@ -467,6 +467,18 @@ fn helmholtz_unfold<B: Backend<FloatElem = f32>>(
         &PackageEnergyMeter,
     )
     .map_err(|r| refusal(r, energy.proposals.get()))?;
+    // The composite of admitted steps is admitted (L1 with L3): the summed balance of the
+    // run satisfies the summed inequality within the summed tolerance.
+    let steps = solved.value().steps();
+    let (delta_psi, dissipated, work_in) = steps.iter().fold((0.0, 0.0, 0.0), |(a, b, c), x| {
+        (a + x.delta_psi(), b + x.dissipated(), c + x.work_in())
+    });
+    if delta_psi + dissipated > work_in + gate_tolerance * omega * steps.len() as f64 {
+        return Err(PhysicsError::GateEvidenceRejected {
+            context:
+                "HelmholtzFilter metered run: summed balance breaks the dissipation inequality",
+        });
+    }
     let field: Vec<f32> = solved.value().value().iter().map(|v| *v as f32).collect();
     Ok(Tensor::from_data(
         burn::tensor::Data::new(field, burn::tensor::Shape::new([batches, nodes, channels])),
