@@ -283,19 +283,6 @@ fn scaled_series(t: ExactRat) -> Result<(RatInterval, RatInterval), NormalGravit
     Ok((horner(&a_coef)?.add(rem)?, horner(&b_coef)?.add(rem)?))
 }
 
-/// Enclosures of A(t) and B(t) for `0 ≤ t ≤ 1/2`.
-///
-/// # Errors
-///
-/// [`NormalGravityRefusal::DerivationAbsent`] for `t` outside `[0, 1/2]`.
-pub(crate) fn somigliana_series(
-    t: ExactRat,
-) -> Result<(RatInterval, RatInterval), NormalGravityRefusal> {
-    let (a, b) = scaled_series(t)?;
-    let inv = r(1, MICRO_SCALE)?;
-    Ok((a.mul_scalar(inv)?, b.mul_scalar(inv)?))
-}
-
 /// The constants derived from the four defining parameters, as enclosures.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DerivedConstants {
@@ -427,6 +414,15 @@ pub fn normal_gravity_interval(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Enclosures of A(t) and B(t) for `0 ≤ t ≤ 1/2`, scaled back from the `10⁶` grid `scaled_series` computes on.
+    fn somigliana_series(
+        t: ExactRat,
+    ) -> Result<(RatInterval, RatInterval), NormalGravityRefusal> {
+        let (a, b) = scaled_series(t)?;
+        let inv = r(1, MICRO_SCALE)?;
+        Ok((a.mul_scalar(inv)?, b.mul_scalar(inv)?))
+    }
 
     fn rr(n: i128, d: i128) -> ExactRat {
         ExactRat::new(n, d).unwrap()
